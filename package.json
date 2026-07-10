@@ -1,0 +1,16 @@
+{
+  "name": "ipo-one",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.3",
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "lint:boundaries": "node scripts/lint-boundaries.mjs",
+    "check": "npm run lint:boundaries && npm test",
+    "dev": "node apps/api/src/server.js",
+    "dev:api": "node apps/api/src/server.js",
+    "demo": "node packages/mvp-flow/src/run-vertical-slice.js",
+    "demo:vertical-slice": "node packages/mvp-flow/src/run-vertical-slice.js"
+  }
+}

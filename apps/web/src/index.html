@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IPO.ONE Interactive MVP</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">IPO.ONE public demo</p>
+        <h1>Agent Lockbox Credit Primitive</h1>
+      </div>
+      <div class="safety-strip" aria-label="Demo safety disclaimers">
+        <span>No real lending</span>
+        <span>No real funds</span>
+        <span>No financial advice</span>
+        <span>Demo score only</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="rail" aria-label="Demo navigation">
+        <a href="#agent">Agent</a>
+        <a href="#lockbox">Lockbox</a>
+        <a href="#credit-line">Credit Line</a>
+        <a href="#spend">Provider Spend</a>
+        <a href="#repayment">Repayment</a>
+        <a href="#learning">Learning</a>
+        <a href="#admin">Admin</a>
+      </aside>
+
+      <section class="workspace">
+        <section class="status-band" id="statusBand">
+          <div>
+            <span class="label">Agent</span>
+            <strong id="agentStatus">Not created</strong>
+          </div>
+          <div>
+            <span class="label">Lockbox</span>
+            <strong id="lockboxStatus">Not created</strong>
+          </div>
+          <div>
+            <span class="label">Credit Score</span>
+            <strong id="scoreStatus">500</strong>
+          </div>
+          <div>
+            <span class="label">Risk Tier</span>
+            <strong id="riskTierStatus">Watch</strong>
+          </div>
+          <div>
+            <span class="label">Outstanding</span>
+            <strong id="outstandingStatus">$0.00</strong>
+          </div>
+        </section>
+
+        <section id="agent" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Screen 1</p>
+              <h2>Agent Setup</h2>
+            </div>
+            <button id="createAgentBtn" class="primary">Create Demo Agent</button>
+          </div>
+          <div class="grid two">
+            <div class="field-list">
+              <div><span>Subject</span><strong id="agentId">-</strong></div>
+              <div><span>Principal</span><strong id="principalId">-</strong></div>
+              <div><span>Agent status</span><strong id="agentLifecycleStatus">-</strong></div>
+              <div><span>Principal binding</span><strong id="principalBinding">-</strong></div>
+            </div>
+            <div class="action-box">
+              <label for="walletInput">Mock CAIP-10 wallet</label>
+              <input id="walletInput" value="eip155:8453:0x1111111111111111111111111111111111111111" />
+              <button id="bindWalletBtn">Bind Mock Wallet</button>
+              <p id="walletBindingText" class="muted">Wallet binding will be hash-backed in the event log.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="lockbox" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Screen 2</p>
+              <h2>Lockbox</h2>
+            </div>
+            <button id="createLockboxBtn" class="primary">Create Lockbox</button>
+          </div>
+          <div class="grid three">
+            <div class="metric"><span>Balance</span><strong id="lockboxBalance">$0.00</strong></div>
+            <div class="metric"><span>Revenue captured</span><strong id="revenueCaptured">$0.00</strong></div>
+            <div class="metric"><span>Withdrawal status</span><strong>Restricted</strong></div>
+          </div>
+          <p class="rule">Repayment priority: active obligations are repaid from Lockbox revenue before any surplus can be released.</p>
+        </section>
+
+        <section id="credit-line" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Screen 3</p>
+              <h2>Credit Line</h2>
+            </div>
+            <button id="requestCreditBtn" class="primary">Request Demo Credit Line</button>
+          </div>
+          <div class="grid four">
+            <div class="metric"><span>Approved amount</span><strong id="creditLimit">$0.00</strong></div>
+            <div class="metric"><span>Utilization</span><strong id="creditUtilization">$0.00</strong></div>
+            <div class="metric"><span>Demo interest rate</span><strong id="demoRate">-</strong></div>
+            <div class="metric"><span>Obligation status</span><strong id="obligationStatus">None</strong></div>
+          </div>
+          <p id="creditDecisionReasons" class="reason-line">Risk decision reasons will appear after approval.</p>
+        </section>
+
+        <section id="spend" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Screen 4</p>
+              <h2>Provider Spend</h2>
+            </div>
+            <button id="submitSpendBtn" class="primary">Submit Spend Request</button>
+          </div>
+          <div class="grid two">
+            <div class="action-box">
+              <label for="providerSelect">Whitelisted provider</label>
+              <select id="providerSelect"></select>
+              <label for="spendAmount">Spend amount</label>
+              <input id="spendAmount" type="number" min="1" step="1" value="500" />
+              <div class="button-row">
+                <button id="recordSettlementBtn">Record Settlement</button>
+                <button id="rejectSpendBtn">Try Non-Allowlisted Spend</button>
+              </div>
+            </div>
+            <div>
+              <div class="metric"><span>Latest result</span><strong id="spendResult">No request yet</strong></div>
+              <p id="spendReason" class="reason-line">Rejected spend reason will appear here.</p>
+              <div id="spendList" class="compact-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="repayment" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Screen 5</p>
+              <h2>Revenue Capture & Repayment</h2>
+            </div>
+            <div class="button-row">
+              <button id="captureRevenueBtn" class="primary">Simulate Revenue</button>
+              <button id="autoRepayBtn">Trigger Auto Repayment</button>
+            </div>
+          </div>
+          <div class="grid two">
+            <div class="action-box">
+              <label for="revenueAmount">Revenue amount</label>
+              <input id="revenueAmount" type="number" min="1" step="1" value="650" />
+              <p class="muted">Revenue is mock stablecoin in minor-unit demo accounting.</p>
+            </div>
+            <div class="field-list">
+              <div><span>Outstanding principal</span><strong id="repaymentOutstanding">$0.00</strong></div>
+              <div><span>Repayments</span><strong id="repaymentCount">0</strong></div>
+              <div><span>Repayment state</span><strong id="repaymentState">Waiting</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="learning" class="panel wide">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Screen 6</p>
+              <h2>Credit Learning Dashboard</h2>
+            </div>
+            <div class="button-row">
+              <button id="evaluateLearningBtn">Evaluate Now</button>
+              <button id="healthyCycleBtn" class="primary">Cycle 1 Healthy</button>
+              <button id="riskyCycleBtn">Cycle 2 Risky</button>
+              <button id="recoveryCycleBtn">Cycle 3 Recovery</button>
+            </div>
+          </div>
+          <div class="learning-grid">
+            <div class="score-card">
+              <div class="score-ring" id="scoreRing"><span id="scoreValue">500</span></div>
+              <div>
+                <span class="label">Current risk tier</span>
+                <strong id="profileTier">Watch</strong>
+                <p id="learningSummary" class="muted">Transparent rule-based scoring. No production RL or black-box AI.</p>
+              </div>
+            </div>
+            <div class="grid three">
+              <div class="metric"><span>Current limit</span><strong id="profileLimit">$0.00</strong></div>
+              <div class="metric"><span>Next limit</span><strong id="nextLimit">$0.00</strong></div>
+              <div class="metric"><span>Next demo rate</span><strong id="nextRate">-</strong></div>
+            </div>
+          </div>
+          <div class="grid three">
+            <div class="metric"><span>Repayment performance</span><strong id="repaymentMetric">0%</strong></div>
+            <div class="metric"><span>Utilization behavior</span><strong id="utilizationMetric">0%</strong></div>
+            <div class="metric"><span>Revenue consistency</span><strong id="revenueMetric">0%</strong></div>
+          </div>
+          <div class="grid two">
+            <div>
+              <h3>Recent Reputation Signals</h3>
+              <div id="signalList" class="compact-list"></div>
+            </div>
+            <div>
+              <h3>Score History</h3>
+              <div id="scoreHistory" class="history-bars"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="admin" class="panel wide">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Screen 7</p>
+              <h2>Admin Dashboard</h2>
+            </div>
+            <div class="button-row">
+              <button id="refreshBtn">Refresh</button>
+              <button id="resetBtn">Reset Demo</button>
+            </div>
+          </div>
+          <div class="grid four">
+            <div class="metric"><span>Credit lines</span><strong id="adminCreditLines">0</strong></div>
+            <div class="metric"><span>Obligations</span><strong id="adminObligations">0</strong></div>
+            <div class="metric"><span>Outstanding</span><strong id="adminOutstanding">$0.00</strong></div>
+            <div class="metric"><span>Timeline events</span><strong id="adminEvents">0</strong></div>
+          </div>
+          <div class="admin-grid">
+            <div>
+              <h3>Current Objects</h3>
+              <pre id="objectInspector" class="inspector"></pre>
+            </div>
+            <div>
+              <h3>Event / Audit Timeline</h3>
+              <div id="timeline" class="timeline"></div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
