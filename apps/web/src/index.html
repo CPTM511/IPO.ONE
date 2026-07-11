@@ -3,244 +3,431 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>IPO.ONE Interactive MVP</title>
+    <meta name="theme-color" content="#15171c" />
+    <meta name="description" content="IPO.ONE public sandbox control plane for programmable Agent obligations and repayment evidence." />
+    <title>IPO.ONE Control Plane</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">IPO.ONE public demo</p>
-        <h1>Agent Lockbox Credit Primitive</h1>
-      </div>
-      <div class="safety-strip" aria-label="Demo safety disclaimers">
-        <span>No real lending</span>
-        <span>No real funds</span>
-        <span>No financial advice</span>
-        <span>Demo score only</span>
-      </div>
-    </header>
+    <a class="skip-link" href="#mainContent">Skip to workspace</a>
 
-    <main class="layout">
-      <aside class="rail" aria-label="Demo navigation">
-        <a href="#agent">Agent</a>
-        <a href="#lockbox">Lockbox</a>
-        <a href="#credit-line">Credit Line</a>
-        <a href="#spend">Provider Spend</a>
-        <a href="#repayment">Repayment</a>
-        <a href="#learning">Learning</a>
-        <a href="#admin">Admin</a>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true">1</div>
+          <div>
+            <strong>IPO.ONE</strong>
+            <span>Obligation protocol</span>
+          </div>
+          <button class="icon-button sidebar-close" id="sidebarCloseBtn" type="button" aria-label="Close navigation" title="Close navigation">
+            <svg aria-hidden="true"><use href="/icons.svg#x"></use></svg>
+          </button>
+        </div>
+
+        <div class="environment-card">
+          <span class="live-dot" aria-hidden="true"></span>
+          <div>
+            <strong>Public sandbox</strong>
+            <span>Protocol v0.3</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Workspace views">
+          <button class="nav-item active" type="button" data-view="overview" aria-current="page">
+            <svg aria-hidden="true"><use href="/icons.svg#layout-dashboard"></use></svg>
+            <span>Overview</span>
+          </button>
+          <button class="nav-item" type="button" data-view="agent">
+            <svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg>
+            <span>Agent Workspace</span>
+          </button>
+          <button class="nav-item" type="button" data-view="credit">
+            <svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg>
+            <span>Credit & Learning</span>
+          </button>
+          <button class="nav-item" type="button" data-view="transfers">
+            <svg aria-hidden="true"><use href="/icons.svg#arrow-left-right"></use></svg>
+            <span>Transfers</span>
+          </button>
+          <button class="nav-item" type="button" data-view="evidence">
+            <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
+            <span>Evidence</span>
+          </button>
+          <button class="nav-item" type="button" data-view="risk">
+            <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+            <span>Risk Operations</span>
+          </button>
+          <button class="nav-item" type="button" data-view="developer">
+            <svg aria-hidden="true"><use href="/icons.svg#code"></use></svg>
+            <span>Agent Runtime</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div><span>API</span><strong id="sidebarApiStatus">Connecting</strong></div>
+          <div><span>Rail</span><strong>Sandbox only</strong></div>
+          <a href="/openapi.json" target="_blank" rel="noreferrer">
+            OpenAPI contract
+            <svg aria-hidden="true"><use href="/icons.svg#external-link"></use></svg>
+          </a>
+        </div>
       </aside>
 
-      <section class="workspace">
-        <section class="status-band" id="statusBand">
-          <div>
-            <span class="label">Agent</span>
-            <strong id="agentStatus">Not created</strong>
-          </div>
-          <div>
-            <span class="label">Lockbox</span>
-            <strong id="lockboxStatus">Not created</strong>
-          </div>
-          <div>
-            <span class="label">Credit Score</span>
-            <strong id="scoreStatus">500</strong>
-          </div>
-          <div>
-            <span class="label">Risk Tier</span>
-            <strong id="riskTierStatus">Watch</strong>
-          </div>
-          <div>
-            <span class="label">Outstanding</span>
-            <strong id="outstandingStatus">$0.00</strong>
-          </div>
-        </section>
+      <button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Close navigation"></button>
 
-        <section id="agent" class="panel">
-          <div class="panel-header">
+      <div class="main-shell" id="mainShell">
+        <header class="topbar">
+          <div class="topbar-title">
+            <button class="icon-button mobile-menu" id="mobileMenuBtn" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false" title="Open navigation">
+              <svg aria-hidden="true"><use href="/icons.svg#menu"></use></svg>
+            </button>
             <div>
-              <p class="eyebrow">Screen 1</p>
-              <h2>Agent Setup</h2>
-            </div>
-            <button id="createAgentBtn" class="primary">Create Demo Agent</button>
-          </div>
-          <div class="grid two">
-            <div class="field-list">
-              <div><span>Subject</span><strong id="agentId">-</strong></div>
-              <div><span>Principal</span><strong id="principalId">-</strong></div>
-              <div><span>Agent status</span><strong id="agentLifecycleStatus">-</strong></div>
-              <div><span>Principal binding</span><strong id="principalBinding">-</strong></div>
-            </div>
-            <div class="action-box">
-              <label for="walletInput">Mock CAIP-10 wallet</label>
-              <input id="walletInput" value="eip155:8453:0x1111111111111111111111111111111111111111" />
-              <button id="bindWalletBtn">Bind Mock Wallet</button>
-              <p id="walletBindingText" class="muted">Wallet binding will be hash-backed in the event log.</p>
+              <span id="viewEyebrow">Operator Console</span>
+              <h1 id="viewTitle">Control plane</h1>
             </div>
           </div>
-        </section>
 
-        <section id="lockbox" class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Screen 2</p>
-              <h2>Lockbox</h2>
+          <div class="topbar-actions">
+            <div class="mode-switch" role="group" aria-label="Interaction mode">
+              <button id="operatorModeBtn" class="active" type="button" aria-pressed="true">Human Operator</button>
+              <button id="agentModeBtn" type="button" aria-pressed="false">Agent Runtime</button>
             </div>
-            <button id="createLockboxBtn" class="primary">Create Lockbox</button>
+            <div class="connection-chip" id="connectionChip" role="status">
+              <span class="connection-dot" aria-hidden="true"></span>
+              <span id="connectionStatus">Connecting</span>
+            </div>
           </div>
-          <div class="grid three">
-            <div class="metric"><span>Balance</span><strong id="lockboxBalance">$0.00</strong></div>
-            <div class="metric"><span>Revenue captured</span><strong id="revenueCaptured">$0.00</strong></div>
-            <div class="metric"><span>Withdrawal status</span><strong>Restricted</strong></div>
-          </div>
-          <p class="rule">Repayment priority: active obligations are repaid from Lockbox revenue before any surplus can be released.</p>
-        </section>
+        </header>
 
-        <section id="credit-line" class="panel">
-          <div class="panel-header">
+        <main id="mainContent" tabindex="-1">
+          <section class="safety-banner" aria-label="Sandbox safety boundary">
             <div>
-              <p class="eyebrow">Screen 3</p>
-              <h2>Credit Line</h2>
+              <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+              <strong>Public beta sandbox</strong>
             </div>
-            <button id="requestCreditBtn" class="primary">Request Demo Credit Line</button>
-          </div>
-          <div class="grid four">
-            <div class="metric"><span>Approved amount</span><strong id="creditLimit">$0.00</strong></div>
-            <div class="metric"><span>Utilization</span><strong id="creditUtilization">$0.00</strong></div>
-            <div class="metric"><span>Demo interest rate</span><strong id="demoRate">-</strong></div>
-            <div class="metric"><span>Obligation status</span><strong id="obligationStatus">None</strong></div>
-          </div>
-          <p id="creditDecisionReasons" class="reason-line">Risk decision reasons will appear after approval.</p>
-        </section>
+            <div class="safety-items">
+              <span>No real lending</span>
+              <span>No real funds</span>
+              <span>No financial advice</span>
+              <span>Demo score only</span>
+            </div>
+          </section>
 
-        <section id="spend" class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Screen 4</p>
-              <h2>Provider Spend</h2>
-            </div>
-            <button id="submitSpendBtn" class="primary">Submit Spend Request</button>
-          </div>
-          <div class="grid two">
-            <div class="action-box">
-              <label for="providerSelect">Whitelisted provider</label>
-              <select id="providerSelect"></select>
-              <label for="spendAmount">Spend amount</label>
-              <input id="spendAmount" type="number" min="1" step="1" value="500" />
-              <div class="button-row">
-                <button id="recordSettlementBtn">Record Settlement</button>
-                <button id="rejectSpendBtn">Try Non-Allowlisted Spend</button>
-              </div>
-            </div>
-            <div>
-              <div class="metric"><span>Latest result</span><strong id="spendResult">No request yet</strong></div>
-              <p id="spendReason" class="reason-line">Rejected spend reason will appear here.</p>
-              <div id="spendList" class="compact-list"></div>
-            </div>
-          </div>
-        </section>
-
-        <section id="repayment" class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Screen 5</p>
-              <h2>Revenue Capture & Repayment</h2>
-            </div>
-            <div class="button-row">
-              <button id="captureRevenueBtn" class="primary">Simulate Revenue</button>
-              <button id="autoRepayBtn">Trigger Auto Repayment</button>
-            </div>
-          </div>
-          <div class="grid two">
-            <div class="action-box">
-              <label for="revenueAmount">Revenue amount</label>
-              <input id="revenueAmount" type="number" min="1" step="1" value="650" />
-              <p class="muted">Revenue is mock stablecoin in minor-unit demo accounting.</p>
-            </div>
-            <div class="field-list">
-              <div><span>Outstanding principal</span><strong id="repaymentOutstanding">$0.00</strong></div>
-              <div><span>Repayments</span><strong id="repaymentCount">0</strong></div>
-              <div><span>Repayment state</span><strong id="repaymentState">Waiting</strong></div>
-            </div>
-          </div>
-        </section>
-
-        <section id="learning" class="panel wide">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Screen 6</p>
-              <h2>Credit Learning Dashboard</h2>
-            </div>
-            <div class="button-row">
-              <button id="evaluateLearningBtn">Evaluate Now</button>
-              <button id="healthyCycleBtn" class="primary">Cycle 1 Healthy</button>
-              <button id="riskyCycleBtn">Cycle 2 Risky</button>
-              <button id="recoveryCycleBtn">Cycle 3 Recovery</button>
-            </div>
-          </div>
-          <div class="learning-grid">
-            <div class="score-card">
-              <div class="score-ring" id="scoreRing"><span id="scoreValue">500</span></div>
+          <section class="view active" data-view-panel="overview" aria-labelledby="overviewTitle">
+            <div class="view-heading">
               <div>
-                <span class="label">Current risk tier</span>
-                <strong id="profileTier">Watch</strong>
-                <p id="learningSummary" class="muted">Transparent rule-based scoring. No production RL or black-box AI.</p>
+                <p class="eyebrow">Live protocol position</p>
+                <h2 id="overviewTitle">Agent credit control plane</h2>
+                <p>Policy-bound provider spend, cashflow capture, repayment, and verifiable Evidence.</p>
+              </div>
+              <div class="heading-actions">
+                <button class="secondary icon-text" id="refreshBtn" type="button">
+                  <svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>
+                  Refresh
+                </button>
+                <button class="primary icon-text" id="runFullFlowBtn" type="button">
+                  <svg aria-hidden="true"><use href="/icons.svg#play"></use></svg>
+                  Run verified flow
+                </button>
               </div>
             </div>
-            <div class="grid three">
-              <div class="metric"><span>Current limit</span><strong id="profileLimit">$0.00</strong></div>
-              <div class="metric"><span>Next limit</span><strong id="nextLimit">$0.00</strong></div>
-              <div class="metric"><span>Next demo rate</span><strong id="nextRate">-</strong></div>
-            </div>
-          </div>
-          <div class="grid three">
-            <div class="metric"><span>Repayment performance</span><strong id="repaymentMetric">0%</strong></div>
-            <div class="metric"><span>Utilization behavior</span><strong id="utilizationMetric">0%</strong></div>
-            <div class="metric"><span>Revenue consistency</span><strong id="revenueMetric">0%</strong></div>
-          </div>
-          <div class="grid two">
-            <div>
-              <h3>Recent Reputation Signals</h3>
-              <div id="signalList" class="compact-list"></div>
-            </div>
-            <div>
-              <h3>Score History</h3>
-              <div id="scoreHistory" class="history-bars"></div>
-            </div>
-          </div>
-        </section>
 
-        <section id="admin" class="panel wide">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Screen 7</p>
-              <h2>Admin Dashboard</h2>
+            <section class="position-band" aria-label="Current protocol position">
+              <div class="position-head">
+                <div>
+                  <span class="position-kicker">AGENT LOCKBOX / USD DEMO</span>
+                  <strong id="positionName">No active Agent</strong>
+                </div>
+                <span class="state-pill" id="positionState">Setup required</span>
+              </div>
+              <div class="position-metrics">
+                <div><span>Available capacity</span><strong id="overviewAvailable">$0.00</strong></div>
+                <div><span>Outstanding</span><strong id="outstandingStatus">$0.00</strong></div>
+                <div><span>Lockbox</span><strong id="overviewLockbox">$0.00</strong></div>
+                <div><span>Credit score</span><strong id="scoreStatus">500</strong></div>
+                <div><span>Risk tier</span><strong id="riskTierStatus">Watch</strong></div>
+              </div>
+            </section>
+
+            <div class="overview-grid">
+              <section class="panel workflow-panel" aria-labelledby="workflowTitle">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Launch sequence</p>
+                    <h3 id="workflowTitle">Verified obligation lifecycle</h3>
+                  </div>
+                  <span id="workflowProgress">0 of 6 complete</span>
+                </div>
+                <div class="workflow-list" id="workflowList">
+                  <button type="button" data-go-view="agent" data-workflow="agent">
+                    <span class="step-index">01</span><span><strong>Create Agent</strong><small>Subject, Principal, Mandate</small></span><span class="step-state">Next</span>
+                  </button>
+                  <button type="button" data-go-view="agent" data-workflow="lockbox">
+                    <span class="step-index">02</span><span><strong>Open Lockbox</strong><small>Revenue capture route</small></span><span class="step-state">Waiting</span>
+                  </button>
+                  <button type="button" data-go-view="credit" data-workflow="credit">
+                    <span class="step-index">03</span><span><strong>Approve Credit Line</strong><small>Explainable policy decision</small></span><span class="step-state">Waiting</span>
+                  </button>
+                  <button type="button" data-go-view="transfers" data-workflow="spend">
+                    <span class="step-index">04</span><span><strong>Authorize Provider Spend</strong><small>Allowlist and Mandate checks</small></span><span class="step-state">Waiting</span>
+                  </button>
+                  <button type="button" data-go-view="transfers" data-workflow="settlement">
+                    <span class="step-index">05</span><span><strong>Finalize Settlement</strong><small>Rail receipt and replay proof</small></span><span class="step-state">Waiting</span>
+                  </button>
+                  <button type="button" data-go-view="transfers" data-workflow="repayment">
+                    <span class="step-index">06</span><span><strong>Route Repayment</strong><small>Ledger and Evidence closure</small></span><span class="step-state">Waiting</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="panel posture-panel" aria-labelledby="postureTitle">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Protocol posture</p>
+                    <h3 id="postureTitle">Controls and integrity</h3>
+                  </div>
+                  <span class="health-label" id="postureHealth">Ready</span>
+                </div>
+                <div class="posture-list">
+                  <div><span>Agent</span><strong id="agentStatus">Not created</strong></div>
+                  <div><span>Lockbox</span><strong id="lockboxStatus">Not created</strong></div>
+                  <div><span>Mandate</span><strong id="mandateStatus">Not created</strong></div>
+                  <div><span>Ledger integrity</span><strong id="overviewLedger">Balanced</strong></div>
+                  <div><span>Event replay</span><strong id="overviewReplay">Waiting</strong></div>
+                  <div><span>Evidence envelopes</span><strong id="overviewEvidence">0</strong></div>
+                </div>
+              </section>
             </div>
-            <div class="button-row">
-              <button id="refreshBtn">Refresh</button>
-              <button id="resetBtn">Reset Demo</button>
+
+            <section class="panel activity-panel" aria-labelledby="activityTitle">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Latest activity</p>
+                  <h3 id="activityTitle">Protocol events</h3>
+                </div>
+                <button class="text-button" type="button" data-go-view="evidence">View Evidence <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></button>
+              </div>
+              <div class="activity-table" id="overviewTimeline"></div>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="agent" aria-labelledby="agentViewTitle">
+            <div class="view-heading">
+              <div><p class="eyebrow">Identity and authority</p><h2 id="agentViewTitle">Agent Workspace</h2><p>Bind one accountable Principal to one scoped Agent and its cashflow route.</p></div>
+              <button id="createAgentBtn" class="primary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#plus"></use></svg>Create Demo Agent</button>
             </div>
-          </div>
-          <div class="grid four">
-            <div class="metric"><span>Credit lines</span><strong id="adminCreditLines">0</strong></div>
-            <div class="metric"><span>Obligations</span><strong id="adminObligations">0</strong></div>
-            <div class="metric"><span>Outstanding</span><strong id="adminOutstanding">$0.00</strong></div>
-            <div class="metric"><span>Timeline events</span><strong id="adminEvents">0</strong></div>
-          </div>
-          <div class="admin-grid">
-            <div>
-              <h3>Current Objects</h3>
+
+            <section class="panel" aria-labelledby="agentSetupTitle">
+              <div class="panel-heading"><div><p class="eyebrow">Subject registry</p><h3 id="agentSetupTitle">Agent Setup</h3></div><span class="state-pill neutral" id="agentLifecycleStatus">Not created</span></div>
+              <div class="two-column-detail">
+                <dl class="detail-list">
+                  <div><dt>Subject</dt><dd id="agentId">-</dd></div>
+                  <div><dt>Principal</dt><dd id="principalId">-</dd></div>
+                  <div><dt>Principal binding</dt><dd id="principalBinding">-</dd></div>
+                  <div><dt>Mandate</dt><dd id="mandateId">-</dd></div>
+                  <div><dt>Mandate scope</dt><dd id="mandateScope">-</dd></div>
+                  <div><dt>Mandate utilization</dt><dd id="mandateUtilization">-</dd></div>
+                </dl>
+                <form class="action-panel" id="walletBindingForm">
+                  <div class="action-title"><svg aria-hidden="true"><use href="/icons.svg#link"></use></svg><div><strong>Account binding</strong><span>CAIP-10 sandbox proof</span></div></div>
+                  <label for="walletInput">Mock CAIP-10 account</label>
+                  <input id="walletInput" value="eip155:8453:0x1111111111111111111111111111111111111111" autocomplete="off" spellcheck="false" />
+                  <button id="bindWalletBtn" class="secondary" type="submit">Bind Mock Wallet</button>
+                  <p id="walletBindingText" class="helper">Awaiting Agent creation.</p>
+                </form>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="lockboxTitle">
+              <div class="panel-heading"><div><p class="eyebrow">Cashflow control</p><h3 id="lockboxTitle">Lockbox</h3></div><button id="createLockboxBtn" class="secondary" type="button">Create Lockbox</button></div>
+              <div class="data-strip four">
+                <div><span>Balance</span><strong id="lockboxBalance">$0.00</strong></div>
+                <div><span>Revenue captured</span><strong id="revenueCaptured">$0.00</strong></div>
+                <div><span>Journal entries</span><strong id="ledgerJournalCount">0</strong></div>
+                <div><span>Ledger integrity</span><strong id="ledgerIntegrity">Balanced</strong></div>
+              </div>
+              <p class="policy-note"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>Active obligations are repaid from Lockbox revenue before surplus release.</p>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="credit" aria-labelledby="creditViewTitle">
+            <div class="view-heading">
+              <div><p class="eyebrow">Deterministic risk policy</p><h2 id="creditViewTitle">Credit & Learning</h2><p>Evidence-derived recommendations remain subordinate to hard policy and caps.</p></div>
+              <button id="requestCreditBtn" class="primary" type="button">Request Demo Credit Line</button>
+            </div>
+
+            <section class="panel" aria-labelledby="creditLineTitle">
+              <div class="panel-heading"><div><p class="eyebrow">Current position</p><h3 id="creditLineTitle">Credit Line</h3></div><span class="state-pill neutral" id="obligationStatus">None</span></div>
+              <div class="data-strip four">
+                <div><span>Approved amount</span><strong id="creditLimit">$0.00</strong></div>
+                <div><span>Utilization</span><strong id="creditUtilization">$0.00</strong></div>
+                <div><span>Demo interest rate</span><strong id="demoRate">-</strong></div>
+                <div><span>Outstanding</span><strong id="repaymentOutstanding">$0.00</strong></div>
+              </div>
+              <p id="creditDecisionReasons" class="decision-reason">Risk decision reasons will appear after approval.</p>
+            </section>
+
+            <section class="panel learning-panel" aria-labelledby="learningTitle">
+              <div class="panel-heading stacked-mobile">
+                <div><p class="eyebrow">Evidence-derived profile</p><h3 id="learningTitle">Credit Learning Dashboard</h3></div>
+                <div class="button-row compact">
+                  <button id="evaluateLearningBtn" type="button">Evaluate</button>
+                  <button id="healthyCycleBtn" type="button">Healthy cycle</button>
+                  <button id="riskyCycleBtn" type="button">Risky cycle</button>
+                  <button id="recoveryCycleBtn" type="button">Recovery cycle</button>
+                </div>
+              </div>
+              <div class="learning-layout">
+                <div class="score-panel">
+                  <div class="score-ring" id="scoreRing"><span id="scoreValue">500</span></div>
+                  <div><span class="field-label">Current risk tier</span><strong id="profileTier">Watch</strong><p id="learningSummary">Initial profile</p></div>
+                </div>
+                <div class="learning-stats">
+                  <div><span>Current limit</span><strong id="profileLimit">$0.00</strong></div>
+                  <div><span>Next limit</span><strong id="nextLimit">$0.00</strong></div>
+                  <div><span>Next demo rate</span><strong id="nextRate">-</strong></div>
+                </div>
+              </div>
+              <div class="behavior-grid">
+                <div><span>Repayment performance</span><strong id="repaymentMetric">0%</strong><div class="meter"><i id="repaymentMeter"></i></div></div>
+                <div><span>Utilization behavior</span><strong id="utilizationMetric">0%</strong><div class="meter"><i id="utilizationMeter"></i></div></div>
+                <div><span>Revenue consistency</span><strong id="revenueMetric">0%</strong><div class="meter"><i id="revenueMeter"></i></div></div>
+              </div>
+              <div class="two-column-detail learning-detail">
+                <div><h4>Recent Reputation Signals</h4><div id="signalList" class="compact-list"></div></div>
+                <div><h4>Score History</h4><div id="scoreHistory" class="history-bars"></div></div>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="transfers" aria-labelledby="transfersViewTitle">
+            <div class="view-heading"><div><p class="eyebrow">Execution and settlement</p><h2 id="transfersViewTitle">Transfers</h2><p>Every provider payment is policy-bound, replayable, and sandbox-only.</p></div></div>
+
+            <div class="split-layout">
+              <section class="panel" aria-labelledby="providerSpendTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Spend policy</p><h3 id="providerSpendTitle">Provider Spend</h3></div><span class="state-pill neutral" id="spendResult">No request</span></div>
+                <form class="action-panel inline-form" id="spendForm">
+                  <div><label for="providerSelect">Allowlisted provider</label><select id="providerSelect"></select></div>
+                  <div><label for="spendAmount">Amount (USD demo)</label><input id="spendAmount" type="number" min="1" step="1" value="500" inputmode="decimal" /></div>
+                  <button id="submitSpendBtn" class="primary" type="submit">Submit Spend</button>
+                </form>
+                <p id="spendReason" class="decision-reason">No policy decision recorded.</p>
+                <div class="button-row">
+                  <button id="recordSettlementBtn" class="secondary" type="button">Record Settlement</button>
+                  <button id="rejectSpendBtn" class="danger-text" type="button">Test policy rejection</button>
+                </div>
+                <div id="spendList" class="compact-list"></div>
+              </section>
+
+              <section class="panel" aria-labelledby="railTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Rail state</p><h3 id="railTitle">Settlement</h3></div><span id="railName">Sandbox ready</span></div>
+                <div class="key-value-list">
+                  <div><span>Transfer Intent</span><strong id="transferStatus">None</strong></div>
+                  <div><span>Settlement finality</span><strong id="settlementFinality">None</strong></div>
+                  <div><span>Event replay</span><strong id="railReplayStatus">Waiting</strong></div>
+                </div>
+                <p class="policy-note"><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>Transfer state is rebuilt from append-only events. No production funds move.</p>
+              </section>
+            </div>
+
+            <section class="panel" aria-labelledby="repaymentTitle">
+              <div class="panel-heading stacked-mobile">
+                <div><p class="eyebrow">Cashflow waterfall</p><h3 id="repaymentTitle">Revenue Capture & Repayment</h3></div>
+                <div class="button-row"><button id="captureRevenueBtn" class="primary" type="button">Capture Revenue</button><button id="autoRepayBtn" type="button">Auto Repay</button></div>
+              </div>
+              <div class="repayment-layout">
+                <div><label for="revenueAmount">Revenue amount (USD demo)</label><input id="revenueAmount" type="number" min="1" step="1" value="650" inputmode="decimal" /></div>
+                <div><span>Repayments</span><strong id="repaymentCount">0</strong></div>
+                <div><span>Repayment state</span><strong id="repaymentState">Waiting</strong></div>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="evidence" aria-labelledby="evidenceViewTitle">
+            <div class="view-heading"><div><p class="eyebrow">Canonical audit surface</p><h2 id="evidenceViewTitle">Evidence</h2><p>Versioned protocol events connect decisions, transfers, settlement, and repayment.</p></div></div>
+            <div class="data-strip six evidence-summary">
+              <div><span>Timeline events</span><strong id="adminEvents">0</strong></div>
+              <div><span>Evidence envelopes</span><strong id="adminEvidence">0</strong></div>
+              <div><span>Active plugins</span><strong id="adminPlugins">0</strong></div>
+              <div><span>Credit lines</span><strong id="adminCreditLines">0</strong></div>
+              <div><span>Obligations</span><strong id="adminObligations">0</strong></div>
+              <div><span>Exposure</span><strong id="adminOutstanding">$0.00</strong></div>
+            </div>
+            <div class="split-layout evidence-layout">
+              <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Append-only feed</p><h3>Evidence Stream</h3></div></div><div id="evidenceList" class="compact-list evidence-list"></div></section>
+              <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Event and audit</p><h3>Timeline</h3></div></div><div id="timeline" class="timeline"></div></section>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="risk" aria-labelledby="riskViewTitle">
+            <div class="view-heading">
+              <div><p class="eyebrow">Human-controlled safety plane</p><h2 id="riskViewTitle">Risk Operations</h2><p>Inspect protocol contracts and state without bypassing policy or Evidence.</p></div>
+              <button id="resetBtn" class="secondary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#rotate-ccw"></use></svg>Reset Sandbox</button>
+            </div>
+            <section class="panel" aria-labelledby="adminTitle">
+              <div class="panel-heading"><div><p class="eyebrow">Control status</p><h3 id="adminTitle">Admin Dashboard</h3></div><span class="state-pill">Sandbox</span></div>
+              <div class="contract-grid">
+                <div><h4>Plugin Contracts</h4><div id="pluginList" class="compact-list"></div></div>
+                <div><h4>Rail Contracts</h4><div id="railList" class="compact-list"></div></div>
+              </div>
+            </section>
+            <section class="panel inspector-panel" aria-labelledby="inspectorTitle">
+              <div class="panel-heading"><div><p class="eyebrow">Protocol state</p><h3 id="inspectorTitle">Object inspector</h3></div></div>
               <pre id="objectInspector" class="inspector"></pre>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="developer" aria-labelledby="developerViewTitle">
+            <div class="view-heading">
+              <div><p class="eyebrow">Machine interaction surface</p><h2 id="developerViewTitle">Agent Runtime</h2><p>Typed commands and stable Evidence over the same protocol state used by human operators.</p></div>
+              <a class="button-link secondary icon-text" href="/openapi.json" target="_blank" rel="noreferrer"><svg aria-hidden="true"><use href="/icons.svg#book-open"></use></svg>OpenAPI</a>
             </div>
-            <div>
-              <h3>Event / Audit Timeline</h3>
-              <div id="timeline" class="timeline"></div>
+
+            <section class="runtime-band" aria-label="Agent runtime status">
+              <div><span>Base URL</span><strong id="runtimeBaseUrl">http://127.0.0.1:3000</strong></div>
+              <div><span>Contract</span><strong>OpenAPI 3.1.2</strong></div>
+              <div><span>SDK</span><strong>@ipo-one/sdk alpha</strong></div>
+              <div><span>Sandbox session</span><strong id="runtimeSessionId">Starting</strong></div>
+              <div><span>Last request</span><strong id="lastRequestId">None</strong></div>
+            </section>
+
+            <div class="developer-grid">
+              <section class="panel code-panel" aria-labelledby="sdkTitle">
+                <div class="panel-heading"><div><p class="eyebrow">JavaScript</p><h3 id="sdkTitle">SDK quick start</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy SDK example" title="Copy SDK example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
+                <pre id="sdkSnippet"><code>import { IpoOneClient } from "@ipo-one/sdk";
+
+const ipo = new IpoOneClient({
+  baseUrl: "http://127.0.0.1:3000"
+});
+
+const agent = await ipo.createAgent({
+  displayName: "Revenue Agent"
+});</code></pre>
+              </section>
+              <section class="panel" aria-labelledby="capabilityTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Current contract</p><h3 id="capabilityTitle">Runtime capabilities</h3></div><span class="state-pill">21 operations</span></div>
+                <div class="capability-list">
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Stable Problem Details</strong><small>Machine codes and request correlation</small></span></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Mutation safety</strong><small>No automatic SDK retries</small></span></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Chain-neutral IDs</strong><small>CAIP-2 and CAIP-10 boundaries</small></span></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Sandbox Evidence</strong><small>Transfer, settlement, and repayment replay</small></span></div>
+                </div>
+              </section>
             </div>
-          </div>
-        </section>
-      </section>
-    </main>
+
+            <section class="panel request-panel" aria-labelledby="requestLogTitle">
+              <div class="panel-heading"><div><p class="eyebrow">Session telemetry</p><h3 id="requestLogTitle">Request log</h3></div><span id="requestLogCount">0 requests</span></div>
+              <div class="request-log" id="requestLog"></div>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="operationStatus" class="sr-only" role="status" aria-live="polite"></div>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

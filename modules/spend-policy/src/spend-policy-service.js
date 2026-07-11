@@ -1,10 +1,14 @@
 import {
   CreditEventType,
+  DomainError,
+  MandateCapability,
   ProviderStatus,
   SpendPolicyStatus,
   SpendRequestStatus,
   SpendRequestTransitions,
   assertCAIP10,
+  assertNonEmptyString,
+  assertNonNegativeMinorUnits,
   assertPositiveMinorUnits,
   assertTransition,
   createCreditEvent,
@@ -12,11 +16,11 @@ import {
   createSpendPolicy,
   createSpendRequest
 } from "../../../packages/domain/src/index.js";
-import { DomainError } from "../../../packages/domain/src/index.js";
 
 export class SpendPolicyService {
-  constructor({ eventStore }) {
+  constructor({ eventStore, authorizationService }) {
     this.eventStore = eventStore;
+    this.authorizationService = authorizationService;
     this.providers = new Map();
     this.policies = new Map();
     this.spendRequests = new Map();
@@ -49,6 +53,9 @@ export class SpendPolicyService {
     assertPositiveMinorUnits(input.perTxLimitMinor, "perTxLimitMinor");
     assertPositiveMinorUnits(input.dailyLimitMinor, "dailyLimitMinor");
     assertPositiveMinorUnits(input.obligationCapMinor, "obligationCapMinor");
+    if (BigInt(input.perTxLimitMinor) > BigInt(input.dailyLimitMinor)) {
+      throw new DomainError("invalid_spend_policy_limits", "per transaction limit cannot exceed daily limit");
+    }
     const policy = createSpendPolicy(input);
     this.policies.set(policy.spendPolicyId, policy);
     this.eventStore.appendCreditEvent(
@@ -66,12 +73,36 @@ export class SpendPolicyService {
     return structuredClone(policy);
   }
 
-  requestSpend({ subjectId, providerId, spendPolicyId, assetId, amountMinor, purposeCode, creditAvailableMinor }) {
-    const request = createSpendRequest({ subjectId, providerId, spendPolicyId, assetId, amountMinor, purposeCode });
+  requestSpend({ mandateId, subjectId, providerId, spendPolicyId, assetId, amountMinor, purposeCode, creditAvailableMinor }) {
+    const request = createSpendRequest({ mandateId, subjectId, providerId, spendPolicyId, assetId, amountMinor, purposeCode });
     const provider = this.providers.get(providerId);
     const policy = this.policies.get(spendPolicyId);
     const amount = assertPositiveMinorUnits(amountMinor);
+    const creditAvailable = assertNonNegativeMinorUnits(creditAvailableMinor, "creditAvailableMinor");
+    assertNonEmptyString("purposeCode", purposeCode);
     let rejectionReason;
+
+    this.eventStore.appendCreditEvent(
+      createCreditEvent({
+        eventType: CreditEventType.SPEND_REQUESTED,
+        subjectId,
+        payload: {
+          spendRequestId: request.spendRequestId,
+          mandateId,
+          providerId,
+          spendPolicyId,
+          assetId,
+          amountMinor: amount.toString(),
+          purposeCode
+        }
+      })
+    );
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (policy && policy.dailySpentDate !== today) {
+      policy.dailySpentMinor = "0";
+      policy.dailySpentDate = today;
+    }
 
     if (!provider || provider.status !== ProviderStatus.ALLOWLISTED) {
       rejectionReason = "provider_not_allowlisted";
@@ -79,13 +110,34 @@ export class SpendPolicyService {
       rejectionReason = "policy_not_active";
     } else if (policy.subjectId !== subjectId || policy.providerId !== providerId || policy.assetId !== assetId) {
       rejectionReason = "policy_scope_mismatch";
-    } else if (amount > BigInt(policy.perTxLimitMinor)) {
+    } else if (policy.category !== purposeCode) {
+      rejectionReason = "purpose_not_allowed";
+    } else if (!this.authorizationService) {
+      rejectionReason = "authorization_unavailable";
+    } else {
+      try {
+        this.authorizationService.assertAuthorized({
+          mandateId,
+          subjectId,
+          capability: MandateCapability.PROVIDER_SPEND,
+          providerId,
+          category: purposeCode,
+          assetId,
+          amountMinor
+        });
+      } catch (error) {
+        if (!(error instanceof DomainError)) throw error;
+        rejectionReason = error.code;
+      }
+    }
+
+    if (!rejectionReason && amount > BigInt(policy.perTxLimitMinor)) {
       rejectionReason = "per_tx_limit_exceeded";
-    } else if (amount + BigInt(policy.dailySpentMinor) > BigInt(policy.dailyLimitMinor)) {
+    } else if (!rejectionReason && amount + BigInt(policy.dailySpentMinor) > BigInt(policy.dailyLimitMinor)) {
       rejectionReason = "daily_limit_exceeded";
-    } else if (amount > BigInt(policy.obligationCapMinor)) {
+    } else if (!rejectionReason && amount > BigInt(policy.obligationCapMinor)) {
       rejectionReason = "obligation_cap_exceeded";
-    } else if (amount > BigInt(creditAvailableMinor)) {
+    } else if (!rejectionReason && amount > creditAvailable) {
       rejectionReason = "credit_available_exceeded";
     }
 
@@ -96,6 +148,16 @@ export class SpendPolicyService {
     request.updatedAt = new Date().toISOString();
 
     if (!rejectionReason) {
+      this.authorizationService.reserveUtilization({
+        mandateId,
+        reservationId: request.spendRequestId,
+        subjectId,
+        capability: MandateCapability.PROVIDER_SPEND,
+        providerId,
+        category: purposeCode,
+        assetId,
+        amountMinor
+      });
       policy.dailySpentMinor = (BigInt(policy.dailySpentMinor) + amount).toString();
     }
 
@@ -106,6 +168,7 @@ export class SpendPolicyService {
         subjectId,
         payload: {
           spendRequestId: request.spendRequestId,
+          mandateId,
           providerId,
           spendPolicyId,
           assetId,

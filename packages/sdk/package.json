@@ -1,0 +1,12 @@
+{
+  "name": "@ipo-one/sdk",
+  "version": "0.3.0-alpha.4",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./src/index.js"
+    }
+  }
+}

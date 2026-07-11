@@ -1,0 +1,1348 @@
+{
+  "openapi": "3.1.2",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "IPO.ONE Agent Lockbox API",
+    "version": "0.3.0-alpha.4",
+    "summary": "Machine-readable Agent obligation, payment, and repayment sandbox",
+    "description": "Developer contract for the public IPO.ONE Agent Lockbox MVP. This API is sandbox-only: it does not perform real lending, custody, underwriting, KYC, or production fund movement."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:3000",
+      "description": "Local public-beta sandbox"
+    }
+  ],
+  "security": [],
+  "x-ipo-one-maturity": "demo",
+  "x-ipo-one-safety": {
+    "realFunds": false,
+    "realLending": false,
+    "productionAuthentication": false,
+    "productionCommandIdempotency": false,
+    "humanCreditExecution": false,
+    "sandboxSessionAuthentication": false,
+    "sandboxLimits": {
+      "requestBodyBytes": 65536,
+      "requestTargetCharacters": 2048,
+      "sessionTtlMinutes": 30,
+      "sessionsPerProcess": 128,
+      "mutationsPerSession": 32,
+      "requestsPerProcessMinute": 600,
+      "concurrentRequestsPerProcess": 64
+    }
+  },
+  "tags": [
+    {
+      "name": "System"
+    },
+    {
+      "name": "Agent"
+    },
+    {
+      "name": "Credit"
+    },
+    {
+      "name": "Rail"
+    },
+    {
+      "name": "Evidence"
+    },
+    {
+      "name": "Demo"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "System"
+        ],
+        "summary": "Read local service health",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Health"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/agents": {
+      "post": {
+        "operationId": "createAgent",
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Create the single local demo Agent and Principal",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/CreateAgent"
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/DemoStateCreated"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/agents/{id}/wallet-bindings": {
+      "post": {
+        "operationId": "bindAgentWallet",
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Bind a mock CAIP-10 execution account",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          },
+          {
+            "$ref": "#/components/parameters/AgentId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/BindWallet"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/agents/{id}/lockbox": {
+      "post": {
+        "operationId": "createAgentLockbox",
+        "tags": [
+          "Agent",
+          "Credit"
+        ],
+        "summary": "Create the sandbox Agent Lockbox",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          },
+          {
+            "$ref": "#/components/parameters/AgentId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/EmptyCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/agents/{id}/credit-line": {
+      "post": {
+        "operationId": "requestAgentCreditLine",
+        "tags": [
+          "Credit"
+        ],
+        "summary": "Request a deterministic demo credit line",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          },
+          {
+            "$ref": "#/components/parameters/AgentId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/EmptyCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/spend-requests": {
+      "post": {
+        "operationId": "submitSpendRequest",
+        "tags": [
+          "Credit",
+          "Rail"
+        ],
+        "summary": "Request policy-bound sandbox Provider spend",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/SpendRequest"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/settlements": {
+      "post": {
+        "operationId": "recordSettlement",
+        "tags": [
+          "Rail"
+        ],
+        "summary": "Record finalized sandbox settlement Evidence",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/SettlementCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/revenue-capture": {
+      "post": {
+        "operationId": "captureRevenue",
+        "tags": [
+          "Credit"
+        ],
+        "summary": "Capture sandbox Agent revenue in the Lockbox",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/RevenueCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/repayments/auto": {
+      "post": {
+        "operationId": "autoRepay",
+        "tags": [
+          "Credit"
+        ],
+        "summary": "Apply Lockbox revenue through the repayment waterfall",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AgentCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/credit-learning/evaluate": {
+      "post": {
+        "operationId": "evaluateCreditLearning",
+        "tags": [
+          "Credit",
+          "Evidence"
+        ],
+        "summary": "Evaluate new local Evidence without double counting",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AgentCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/demo/cycles/healthy": {
+      "post": {
+        "operationId": "runHealthyCycle",
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Run a synthetic healthy learning scenario",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AgentCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/demo/cycles/risky": {
+      "post": {
+        "operationId": "runRiskyCycle",
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Run a synthetic risky learning scenario",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AgentCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/demo/cycles/recovery": {
+      "post": {
+        "operationId": "runRecoveryCycle",
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Run a synthetic recovery learning scenario",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AgentCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/agents/{id}/status": {
+      "get": {
+        "operationId": "getAgentStatus",
+        "tags": [
+          "Agent",
+          "Credit"
+        ],
+        "summary": "Read the composed local Agent state",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          },
+          {
+            "$ref": "#/components/parameters/AgentId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/agents/{id}/credit-profile": {
+      "get": {
+        "operationId": "getCreditProfile",
+        "tags": [
+          "Credit",
+          "Demo"
+        ],
+        "summary": "Read the educational demo credit profile",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          },
+          {
+            "$ref": "#/components/parameters/AgentId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/CreditProfile"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/admin/audit": {
+      "get": {
+        "operationId": "getDemoAudit",
+        "tags": [
+          "Evidence",
+          "Demo"
+        ],
+        "summary": "Read the local audit and Evidence timeline",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Audit"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/rails": {
+      "get": {
+        "operationId": "listSandboxRails",
+        "tags": [
+          "Rail"
+        ],
+        "summary": "List sandbox Rail descriptors and conformance",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Rails"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/transfer-intents/{id}": {
+      "get": {
+        "operationId": "getTransferIntent",
+        "tags": [
+          "Rail",
+          "Evidence"
+        ],
+        "summary": "Read a Transfer Intent and replay proof",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          },
+          {
+            "$ref": "#/components/parameters/TransferIntentId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/TransferIntent"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/demo/state": {
+      "get": {
+        "operationId": "getDemoState",
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Read current process-local sandbox state without mutation",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/demo/vertical-slice": {
+      "get": {
+        "operationId": "runVerticalSlice",
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Run an isolated complete Agent Lockbox demonstration",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/VerticalSlice"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/demo/reset": {
+      "post": {
+        "operationId": "resetDemo",
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Reset all process-local demo state",
+        "x-ipo-one-maturity": "demo",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/SandboxSessionId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/EmptyCommand"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DemoState"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "RequestId": {
+        "name": "X-Request-ID",
+        "in": "header",
+        "required": false,
+        "description": "Optional bounded correlation ID. Unsafe values are replaced, never reflected.",
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
+        }
+      },
+      "AgentId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      },
+      "TransferIntentId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      },
+      "SandboxSessionId": {
+        "name": "X-IPO-ONE-Sandbox-Session",
+        "in": "header",
+        "required": false,
+        "description": "High-entropy, non-authenticating sandbox partition ID. Reuse it across one demo workflow; it does not grant identity or authorization.",
+        "schema": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+        }
+      }
+    },
+    "headers": {
+      "RequestId": {
+        "description": "Server-accepted or generated request correlation ID.",
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        }
+      },
+      "SandboxSessionId": {
+        "description": "Accepted or generated non-authenticating sandbox partition ID.",
+        "schema": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128
+        }
+      }
+    },
+    "requestBodies": {
+      "CreateAgent": {
+        "required": false,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateAgentRequest"
+            }
+          }
+        }
+      },
+      "BindWallet": {
+        "required": false,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BindWalletRequest"
+            }
+          }
+        }
+      },
+      "EmptyCommand": {
+        "required": false,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/EmptyCommand"
+            }
+          }
+        }
+      },
+      "SpendRequest": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SpendRequest"
+            }
+          }
+        }
+      },
+      "SettlementCommand": {
+        "required": false,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SettlementCommand"
+            }
+          }
+        }
+      },
+      "RevenueCommand": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RevenueCommand"
+            }
+          }
+        }
+      },
+      "AgentCommand": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AgentCommand"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Health": {
+        "description": "Local service health",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Health"
+            }
+          }
+        }
+      },
+      "DemoState": {
+        "description": "Current process-local demo state",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DemoState"
+            }
+          }
+        }
+      },
+      "DemoStateCreated": {
+        "description": "Demo Agent created",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DemoState"
+            }
+          }
+        }
+      },
+      "CreditProfile": {
+        "description": "Educational local credit profile",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/JsonObject"
+            }
+          }
+        }
+      },
+      "Audit": {
+        "description": "Local event, audit, and Evidence data",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/JsonObject"
+            }
+          }
+        }
+      },
+      "Rails": {
+        "description": "Sandbox Rail descriptors",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RailsResponse"
+            }
+          }
+        }
+      },
+      "TransferIntent": {
+        "description": "Transfer Intent and replay proof",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/TransferIntentResponse"
+            }
+          }
+        }
+      },
+      "VerticalSlice": {
+        "description": "Isolated vertical-slice result",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/VerticalSliceResponse"
+            }
+          }
+        }
+      },
+      "Problem": {
+        "description": "RFC 9457-compatible problem response",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/RequestId"
+          },
+          "X-IPO-ONE-Sandbox-Session": {
+            "$ref": "#/components/headers/SandboxSessionId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "JsonObject": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "MoneyMinor": {
+        "type": "string",
+        "maxLength": 78,
+        "pattern": "^(0|[1-9][0-9]*)$",
+        "description": "Non-negative integer minor units; never a floating-point amount."
+      },
+      "EmptyCommand": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "CreateAgentRequest": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "additionalProperties": false
+      },
+      "BindWalletRequest": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "additionalProperties": false
+      },
+      "SpendRequest": {
+        "type": "object",
+        "required": [
+          "agentId",
+          "providerId",
+          "amountMinor"
+        ],
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "providerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "amountMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "purposeCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "default": "compute"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SettlementCommand": {
+        "type": "object",
+        "properties": {
+          "spendRequestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "additionalProperties": false
+      },
+      "RevenueCommand": {
+        "type": "object",
+        "required": [
+          "agentId",
+          "amountMinor"
+        ],
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "amountMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentCommand": {
+        "type": "object",
+        "required": [
+          "agentId"
+        ],
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "required": [
+          "ok",
+          "service",
+          "mode"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "service": {
+            "const": "ipo-one-api"
+          },
+          "mode": {
+            "const": "public-beta-sandbox"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SafetyBoundary": {
+        "type": "object",
+        "required": [
+          "noRealLending",
+          "noRealFunds",
+          "noFinancialAdvice",
+          "productionRailNetworkCalls"
+        ],
+        "properties": {
+          "noRealLending": {
+            "const": true
+          },
+          "noRealFunds": {
+            "const": true
+          },
+          "noFinancialAdvice": {
+            "const": true
+          },
+          "productionRailNetworkCalls": {
+            "const": false
+          }
+        },
+        "additionalProperties": true
+      },
+      "DemoState": {
+        "type": "object",
+        "required": [
+          "safety",
+          "assetId",
+          "assetScale",
+          "providers",
+          "transferIntents",
+          "settlementReceipts",
+          "obligations",
+          "repayments"
+        ],
+        "properties": {
+          "safety": {
+            "$ref": "#/components/schemas/SafetyBoundary"
+          },
+          "assetId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "assetScale": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30
+          },
+          "principal": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "agent": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "mandate": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "transferIntents": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "settlementReceipts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "obligations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "repayments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "RailsResponse": {
+        "type": "object",
+        "required": [
+          "rails"
+        ],
+        "properties": {
+          "rails": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransferIntentResponse": {
+        "type": "object",
+        "required": [
+          "transferIntent",
+          "replayProof"
+        ],
+        "properties": {
+          "transferIntent": {
+            "type": "object"
+          },
+          "replayProof": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "VerticalSliceResponse": {
+        "type": "object",
+        "required": [
+          "subjectId",
+          "mandateStatus",
+          "spendRequestStatus",
+          "obligationStatus",
+          "productionFundsMoved",
+          "transferIntentStatus",
+          "railReplayable",
+          "ledgerBalanced"
+        ],
+        "properties": {
+          "subjectId": {
+            "type": "string"
+          },
+          "mandateStatus": {
+            "type": "string"
+          },
+          "spendRequestStatus": {
+            "type": "string"
+          },
+          "obligationStatus": {
+            "type": "string"
+          },
+          "outstandingMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "creditLineUtilizedMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "productionFundsMoved": {
+            "const": false
+          },
+          "railId": {
+            "type": "string"
+          },
+          "transferIntentStatus": {
+            "type": "string"
+          },
+          "settlementFinality": {
+            "type": "string"
+          },
+          "railReplayable": {
+            "const": true
+          },
+          "ledgerBalanced": {
+            "const": true
+          },
+          "ledgerTransactionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "evidenceEnvelopeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "adminExposure": {
+            "type": "object"
+          },
+          "timelineEvents": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code",
+          "requestId",
+          "schemaVersion"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,95}$"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "schemaVersion": {
+            "const": "problem_details.v1"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

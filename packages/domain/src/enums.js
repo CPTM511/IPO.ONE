@@ -42,11 +42,48 @@ export const AccountBindingStatus = Object.freeze({
   COMPROMISED: "compromised"
 });
 
+export const MandateStatus = Object.freeze({
+  DRAFT: "draft",
+  ACTIVE: "active",
+  SUSPENDED: "suspended",
+  REVOKED: "revoked",
+  EXPIRED: "expired"
+});
+
+export const MandateCapability = Object.freeze({
+  REQUEST_CREDIT: "request_credit",
+  PROVIDER_SPEND: "provider_spend",
+  CAPTURE_REVENUE: "capture_revenue",
+  ROUTE_REPAYMENT: "route_repayment"
+});
+
 export const LockboxStatus = Object.freeze({
   CREATED: "created",
   ACTIVE: "active",
   FROZEN: "frozen",
   CLOSED: "closed"
+});
+
+export const LedgerAccountStatus = Object.freeze({
+  ACTIVE: "active",
+  FROZEN: "frozen",
+  CLOSED: "closed"
+});
+
+export const LedgerEntryDirection = Object.freeze({
+  DEBIT: "debit",
+  CREDIT: "credit"
+});
+
+export const LedgerNormalSide = Object.freeze({
+  DEBIT: "debit",
+  CREDIT: "credit"
+});
+
+export const LedgerAccountType = Object.freeze({
+  LOCKBOX_ASSET: "lockbox_asset",
+  EXTERNAL_REVENUE: "external_revenue",
+  REPAYMENT_CLEARING: "repayment_clearing"
 });
 
 export const CreditLineStatus = Object.freeze({
@@ -100,10 +137,83 @@ export const ProviderStatus = Object.freeze({
   CLOSED: "closed"
 });
 
+export const PluginType = Object.freeze({
+  IDENTITY: "identity",
+  COMPLIANCE: "compliance",
+  PAYMENT_RAIL: "payment_rail",
+  ON_OFF_RAMP: "on_off_ramp",
+  PROVIDER: "provider",
+  ATTESTER: "attester",
+  CHAIN: "chain",
+  RISK: "risk"
+});
+
+export const PluginStatus = Object.freeze({
+  PENDING: "pending",
+  ACTIVE: "active",
+  SUSPENDED: "suspended",
+  REVOKED: "revoked"
+});
+
+export const PluginAuthMethod = Object.freeze({
+  OAUTH2: "oauth2",
+  SIGNED_REQUEST: "signed_request",
+  MTLS: "mtls",
+  NONE: "none"
+});
+
+export const PluginFailurePolicy = Object.freeze({
+  FAIL_CLOSED: "fail_closed",
+  QUEUE_FOR_REVIEW: "queue_for_review",
+  DENY_AND_ALERT: "deny_and_alert"
+});
+
 export const SettlementStatus = Object.freeze({
   RECORDED: "recorded",
   SETTLED: "settled",
   FAILED: "failed"
+});
+
+export const RailKind = Object.freeze({
+  WEB2: "web2",
+  WEB3: "web3",
+  HYBRID: "hybrid"
+});
+
+export const RailFinalityModel = Object.freeze({
+  INSTANT: "instant",
+  ASYNC: "async",
+  CHAIN: "chain"
+});
+
+export const TransferDirection = Object.freeze({
+  ON_RAMP: "on_ramp",
+  OFF_RAMP: "off_ramp",
+  NATIVE: "native"
+});
+
+export const TransferIntentStatus = Object.freeze({
+  CREATED: "created",
+  QUOTED: "quoted",
+  AUTHORIZED: "authorized",
+  SUBMITTED: "submitted",
+  PENDING: "pending",
+  SETTLED: "settled",
+  FAILED: "failed",
+  REVERSED: "reversed",
+  EXPIRED: "expired"
+});
+
+export const SettlementOutcome = Object.freeze({
+  SUCCEEDED: "succeeded",
+  FAILED: "failed",
+  REVERSED: "reversed"
+});
+
+export const SettlementFinality = Object.freeze({
+  PENDING: "pending",
+  CONFIRMED: "confirmed",
+  FINALIZED: "finalized"
 });
 
 export const RiskAction = Object.freeze({
@@ -148,8 +258,17 @@ export const CreditEventType = Object.freeze({
   PRINCIPAL_CREATED: "principal_created",
   ACCOUNT_BOUND: "account_bound",
   WALLET_BOUND: "wallet_bound",
+  MANDATE_CREATED: "mandate_created",
+  MANDATE_STATUS_CHANGED: "mandate_status_changed",
+  MANDATE_UTILIZATION_RESERVED: "mandate_utilization_reserved",
+  MANDATE_UTILIZATION_RELEASED: "mandate_utilization_released",
+  LEDGER_ACCOUNT_OPENED: "ledger_account_opened",
+  LEDGER_TRANSACTION_POSTED: "ledger_transaction_posted",
+  PLUGIN_REGISTERED: "plugin_registered",
+  PLUGIN_STATUS_CHANGED: "plugin_status_changed",
   LOCKBOX_CREATED: "lockbox_created",
   LOCKBOX_STATUS_CHANGED: "lockbox_status_changed",
+  LOCKBOX_BALANCE_DEBITED: "lockbox_balance_debited",
   REVENUE_CAPTURED: "revenue_captured",
   PROVIDER_ALLOWLISTED: "provider_allowlisted",
   SPEND_POLICY_CREATED: "spend_policy_created",
@@ -161,6 +280,7 @@ export const CreditEventType = Object.freeze({
   CREDIT_LINE_GRANTED: "credit_line_granted",
   CREDIT_LINE_UTILIZED: "credit_line_utilized",
   CREDIT_LINE_RELEASED: "credit_line_released",
+  CREDIT_LINE_ADJUSTED: "credit_line_adjusted",
   CREDIT_LINE_STATUS_CHANGED: "credit_line_status_changed",
   RISK_DECISION_CREATED: "risk_decision_created",
   OBLIGATION_CREATED: "obligation_created",
@@ -168,10 +288,14 @@ export const CreditEventType = Object.freeze({
   OBLIGATION_UPDATED: "obligation_updated",
   REPAYMENT_POSTED: "repayment_posted",
   REPAYMENT_CAPTURED: "repayment_captured",
+  REPAYMENT_ROUTED: "repayment_routed",
   DEFAULT_RECORDED: "default_recorded",
-  PAYMENT_INSTRUCTION_CREATED: "payment_instruction_created",
-  SETTLEMENT_RECORDED: "settlement_recorded",
-  SETTLEMENT_COMPLETED: "settlement_completed",
+  TRANSFER_INTENT_CREATED: "transfer_intent_created",
+  TRANSFER_QUOTED: "transfer_quoted",
+  TRANSFER_AUTHORIZED: "transfer_authorized",
+  TRANSFER_SUBMITTED: "transfer_submitted",
+  TRANSFER_EXPIRED: "transfer_expired",
+  SETTLEMENT_RECEIPT_RECORDED: "settlement_receipt_recorded",
   CREDIT_PROFILE_CREATED: "credit_profile_created",
   CREDIT_SCORE_UPDATED: "credit_score_updated",
   REPUTATION_SIGNAL_RECORDED: "reputation_signal_recorded",

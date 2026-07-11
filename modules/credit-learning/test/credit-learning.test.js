@@ -58,3 +58,31 @@ test("manual evaluation rejects unknown signals", () => {
   assert.equal(result.profile.currentScore, 380);
   assert.equal(result.profile.riskTier, "restricted");
 });
+
+test("empty evaluations do not manufacture positive behavior", () => {
+  const service = new CreditLearningService({ eventStore: new EventStore() });
+  service.createProfile({ subjectId: "subject_1", initialScore: 500, currentCreditLimitMinor: "1000" });
+
+  const result = service.evaluate({
+    subjectId: "subject_1",
+    signals: [],
+    currentCreditLimitMinor: "1000"
+  });
+
+  assert.equal(result.profile.currentScore, 500);
+  assert.equal(result.signals.length, 0);
+});
+
+test("score events record the applied delta after score clamping", () => {
+  const service = new CreditLearningService({ eventStore: new EventStore() });
+  service.createProfile({ subjectId: "subject_1", initialScore: 840, currentCreditLimitMinor: "1000" });
+
+  const result = service.evaluate({
+    subjectId: "subject_1",
+    signals: [CreditLearningSignalType.ON_TIME_REPAYMENT],
+    currentCreditLimitMinor: "1000"
+  });
+
+  assert.equal(result.profile.currentScore, 850);
+  assert.equal(result.signals[0].scoreDelta, 10);
+});

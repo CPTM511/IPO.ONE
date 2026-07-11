@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/transfer-intent.schema.json",
+  "title": "IPO.ONE Transfer Intent v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "transferIntentId",
+    "transferIntentHash",
+    "requestHash",
+    "idempotencyKey",
+    "subjectId",
+    "mandateId",
+    "policyDecisionRef",
+    "providerId",
+    "purposeCode",
+    "railId",
+    "direction",
+    "sourceMoney",
+    "destinationAsset",
+    "sourceAccountRefHash",
+    "destinationAccountRefHash",
+    "status",
+    "settlementReceipts",
+    "version",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "createdAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "transferIntentId": { "type": "string", "minLength": 1 },
+    "transferIntentHash": { "$ref": "#/$defs/hash" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "subjectId": { "type": "string", "minLength": 1 },
+    "mandateId": { "type": "string", "minLength": 1 },
+    "policyDecisionRef": { "type": "string", "minLength": 1 },
+    "providerId": { "type": "string", "minLength": 1 },
+    "purposeCode": { "type": "string", "minLength": 1 },
+    "railId": { "type": "string", "minLength": 1 },
+    "direction": { "enum": ["on_ramp", "off_ramp", "native"] },
+    "sourceMoney": { "$ref": "#/$defs/money" },
+    "destinationAsset": { "$ref": "#/$defs/asset" },
+    "sourceAccountRefHash": { "$ref": "#/$defs/hash" },
+    "destinationAccountRefHash": { "$ref": "#/$defs/hash" },
+    "status": {
+      "enum": ["created", "quoted", "authorized", "submitted", "pending", "settled", "failed", "reversed", "expired"]
+    },
+    "quote": { "$ref": "https://schemas.ipo.one/v2/transfer-quote.schema.json" },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mandateId", "policyDecisionRef", "actorRef", "authorizedAt"],
+      "properties": {
+        "mandateId": { "type": "string", "minLength": 1 },
+        "policyDecisionRef": { "type": "string", "minLength": 1 },
+        "actorRef": { "type": "string", "minLength": 1 },
+        "authorizedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "submission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["railReferenceHash", "submittedAt", "sandboxOnly", "productionFundsMoved"],
+      "properties": {
+        "railReferenceHash": { "$ref": "#/$defs/hash" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false }
+      }
+    },
+    "settlementReceipts": {
+      "type": "array",
+      "items": { "$ref": "https://schemas.ipo.one/v2/settlement-receipt.schema.json" }
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": { "const": "transfer_intent.v2" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "scale"],
+      "properties": {
+        "assetId": { "type": "string", "minLength": 1 },
+        "scale": { "type": "integer", "minimum": 0, "maximum": 30 }
+      }
+    },
+    "money": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "scale", "amountMinor"],
+      "properties": {
+        "assetId": { "type": "string", "minLength": 1 },
+        "scale": { "type": "integer", "minimum": 0, "maximum": 30 },
+        "amountMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" }
+      }
+    }
+  }
+}

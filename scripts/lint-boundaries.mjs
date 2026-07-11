@@ -3,14 +3,19 @@ import { dirname, join, normalize, resolve } from "node:path";
 
 const root = process.cwd();
 const requiredModules = [
+  "authorization",
   "event-audit",
   "identity",
+  "ledger",
   "lockbox",
   "obligation",
   "spend-policy",
   "risk",
   "credit-learning",
   "payment",
+  "persistence",
+  "plugin-registry",
+  "rail",
   "settlement",
   "admin"
 ];

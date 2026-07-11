@@ -1,12 +1,14 @@
-import { AccountPurpose, PrincipalType, SubjectType } from "../../../packages/domain/src/index.js";
+import { AccountPurpose, MandateCapability, PrincipalType, SubjectType } from "../../../packages/domain/src/index.js";
 import { createMvpServices } from "./services.js";
+import { MVP_ASSET_ID } from "./constants.js";
 
-export const MVP_ASSET_ID = "eip155:8453/erc20:usdc";
+export { MVP_ASSET_ID, MVP_ASSET_SCALE, MVP_RAIL_ID } from "./constants.js";
 
-export function runVerticalSlice() {
+export async function runVerticalSlice() {
   const services = createMvpServices();
   const {
     adminService,
+    mandateService,
     identityService,
     lockboxService,
     obligationService,
@@ -55,8 +57,24 @@ export function runVerticalSlice() {
     obligationCapMinor: "100000",
     category: "model_api"
   });
+  const mandate = mandateService.activateMandate(
+    mandateService.createMandate({
+      principalId: principal.principalId,
+      subjectId: subject.subjectId,
+      capabilities: Object.values(MandateCapability),
+      allowedProviderIds: [provider.providerId],
+      allowedCategories: ["model_api"],
+      assetIds: [MVP_ASSET_ID],
+      perActionLimitMinor: "500000",
+      aggregateLimitMinor: "500000",
+      nonce: "agent-mandate-1",
+      termsRef: "urn:ipo.one:demo:vertical-slice-mandate:v2"
+    }).mandateId,
+    { actorId: principal.principalId }
+  );
   const creditLineResult = riskService.requestCreditLine({
     subjectId: subject.subjectId,
+    mandateId: mandate.mandateId,
     assetId: MVP_ASSET_ID,
     inputs: {
       capturedRevenue30dMinor: "1000000",
@@ -76,6 +94,7 @@ export function runVerticalSlice() {
   });
   const creditLine = creditLineResult.creditLine;
   const spendRequest = spendPolicyService.requestSpend({
+    mandateId: mandate.mandateId,
     subjectId: subject.subjectId,
     providerId: provider.providerId,
     spendPolicyId: spendPolicy.spendPolicyId,
@@ -90,6 +109,7 @@ export function runVerticalSlice() {
     obligationService.createObligation({
       subjectId: subject.subjectId,
       principalId: principal.principalId,
+      mandateId: mandate.mandateId,
       assetId: MVP_ASSET_ID,
       amountMinor: spendRequest.amountMinor,
       dueAt: new Date(Date.now() + 7 * 86400_000).toISOString(),
@@ -98,18 +118,17 @@ export function runVerticalSlice() {
       nonce: spendRequest.spendRequestId
     }).obligationId
   );
-  const paymentInstruction = paymentService.prepareProviderPayment({
+  const paymentInstruction = await paymentService.prepareProviderPayment({
     spendRequest,
     providerSettlementAccountId: provider.settlementAccountIdRef
   });
-  const settlement = settlementService.settle(
-    settlementService.recordSettlement({
-      spendRequestId: spendRequest.spendRequestId,
-      providerId: provider.providerId,
-      assetId: MVP_ASSET_ID,
-      amountMinor: spendRequest.amountMinor
-    }).settlementId
-  );
+  const pendingSettlement = await settlementService.recordSettlement({
+    spendRequestId: spendRequest.spendRequestId,
+    providerId: provider.providerId,
+    assetId: MVP_ASSET_ID,
+    amountMinor: spendRequest.amountMinor
+  });
+  const settlement = await settlementService.settle(pendingSettlement.settlementId);
   const settledSpend = spendPolicyService.settleSpend(spendRequest.spendRequestId);
   const fundedLockbox = lockboxService.captureRevenue({
     lockboxId: lockbox.lockboxId,
@@ -126,12 +145,18 @@ export function runVerticalSlice() {
   const finalCreditLine = riskService.getCreditLine(creditLine.creditLineId);
   const adminExposure = adminService.getExposure();
   const adminTimeline = adminService.getSubjectTimeline(subject.subjectId);
+  const ledger = services.ledgerService.getSnapshot();
+  const evidenceEnvelopeCount = services.eventStore.listEvidenceEnvelopes().length;
+  const transferIntent = await services.railService.findTransferIntentByPolicyDecision(spendRequest.spendRequestId);
+  const settlementReceipt = transferIntent.settlementReceipts.at(-1);
+  const railReplayProof = await services.railService.getReplayProof(transferIntent.transferIntentId);
 
   return {
     services,
     summary: {
       principal,
       subject,
+      mandate,
       executionBinding,
       lockbox: lockboxService.getLockbox(lockbox.lockboxId),
       provider,
@@ -142,16 +167,21 @@ export function runVerticalSlice() {
       obligation: finalObligation,
       paymentInstruction,
       settlement,
+      transferIntent,
+      settlementReceipt,
+      railReplayProof,
       fundedLockbox,
       repaymentResult,
+      ledger,
+      evidenceEnvelopeCount,
       adminExposure,
       adminTimeline
     }
   };
 }
 
-export function runRejectedSpendPath() {
-  const { summary } = runVerticalSlice();
+export async function runRejectedSpendPath() {
+  const { summary } = await runVerticalSlice();
   const services = createMvpServices();
   const principal = services.identityService.createPrincipal({ principalType: PrincipalType.DEVELOPER });
   const pending = services.identityService.createSubject({
@@ -172,7 +202,23 @@ export function runRejectedSpendPath() {
     dailyLimitMinor: "100",
     obligationCapMinor: "100"
   });
+  const mandate = services.mandateService.activateMandate(
+    services.mandateService.createMandate({
+      principalId: principal.principalId,
+      subjectId: subject.subjectId,
+      capabilities: [MandateCapability.PROVIDER_SPEND],
+      allowedProviderIds: [provider.providerId],
+      allowedCategories: ["model_api"],
+      assetIds: [MVP_ASSET_ID],
+      perActionLimitMinor: "100",
+      aggregateLimitMinor: "100",
+      nonce: "reject-mandate-1",
+      termsRef: "urn:ipo.one:demo:reject-mandate:v2"
+    }).mandateId,
+    { actorId: principal.principalId }
+  );
   const rejected = services.spendPolicyService.requestSpend({
+    mandateId: mandate.mandateId,
     subjectId: subject.subjectId,
     providerId: "provider_not_allowed",
     spendPolicyId: policy.spendPolicyId,
@@ -185,11 +231,12 @@ export function runRejectedSpendPath() {
   return { happyPathEventCount: summary.adminTimeline.length, rejected };
 }
 
-export function runOverdueDefaultRepresentation() {
-  const { services, summary } = runVerticalSlice();
+export async function runOverdueDefaultRepresentation() {
+  const { services, summary } = await runVerticalSlice();
   const obligation = services.obligationService.createObligation({
     subjectId: summary.subject.subjectId,
     principalId: summary.principal.principalId,
+    mandateId: summary.mandate.mandateId,
     assetId: MVP_ASSET_ID,
     amountMinor: "1000",
     dueAt: new Date(Date.now() - 86400_000).toISOString(),
