@@ -81,7 +81,7 @@ jobs:
           test "$runtime_user" = "65532:65532"
           runtime_version="$(docker run --rm --entrypoint=/nodejs/bin/node ipo-one:ci --version)"
           echo "Runtime Node: $runtime_version"
-          test "$runtime_version" = "v24.17.0"
+          test "$runtime_version" = "v24.18.0"
           if docker run --rm --entrypoint=/bin/sh ipo-one:ci -c true; then
             echo "Production image unexpectedly contains a shell" >&2
             exit 1

@@ -14,7 +14,7 @@ const [dockerfile, dockerignore, service, workflow, packageJson, nodeVersion] = 
   source(".node-version")
 ]);
 
-assert.match(dockerfile, /node:24\.17\.0-bookworm-slim@sha256:[a-f0-9]{64}/);
+assert.match(dockerfile, /node:24\.18\.0-bookworm-slim@sha256:[a-f0-9]{64}/);
 assert.match(dockerfile, /gcr\.io\/distroless\/nodejs24-debian13:nonroot@sha256:[a-f0-9]{64}/);
 assert.match(dockerfile, /^USER 65532:65532$/m);
 assert.match(dockerfile, /^HEALTHCHECK /m);
@@ -46,7 +46,7 @@ assert.match(workflow, /postgres:17\.10-alpine3\.23@sha256:[a-f0-9]{64}/);
 assert.equal(/uses:\s+[^\s]+@v\d/.test(workflow), false, "GitHub Actions must use immutable commits");
 
 const manifest = JSON.parse(packageJson);
-assert.equal(manifest.engines?.node, ">=24.17.0 <25");
-assert.equal(nodeVersion.trim(), "24.17.0");
+assert.equal(manifest.engines?.node, ">=24.18.0 <25");
+assert.equal(nodeVersion.trim(), "24.18.0");
 
 console.log("Deployment artifacts satisfy the public-sandbox baseline.");

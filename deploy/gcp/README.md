@@ -45,7 +45,7 @@ store a long-lived Google service-account JSON key in GitHub or this repository.
 
 ## 1. Build an Immutable Image
 
-Use Node 24.17.0 and pnpm 11.1.3. Build from the exact green Git commit:
+Use Node 24.18.0 and pnpm 11.1.3. Build from the exact green Git commit:
 
 ```sh
 git status --short

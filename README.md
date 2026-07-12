@@ -228,7 +228,7 @@ workload, organization, wallet, or tenant. Do not place private data in them.
 
 ### Prerequisites
 
-- Node.js 24 LTS
+- Node.js 24.18.0 LTS
 - pnpm 11.1.3
 - PostgreSQL 17 only for the optional durable-event test suite
 
