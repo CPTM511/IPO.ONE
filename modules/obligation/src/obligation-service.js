@@ -3,6 +3,7 @@ import {
   ObligationStatus,
   ObligationTransitions,
   assertDueAt,
+  assertNonEmptyString,
   assertPositiveMinorUnits,
   assertTransition,
   createCreditEvent,
@@ -19,6 +20,7 @@ export class ObligationService {
   }
 
   createObligation(input) {
+    assertNonEmptyString("mandateId", input.mandateId);
     assertPositiveMinorUnits(input.amountMinor);
     assertDueAt(input.dueAt);
     const obligation = createObligation(input);
@@ -32,6 +34,7 @@ export class ObligationService {
           obligationId: obligation.obligationId,
           obligationHash: obligation.obligationHash,
           principalId: obligation.principalId,
+          mandateId: obligation.mandateId,
           amountMinor: obligation.principalAmountMinor,
           dueAt: obligation.dueAt
         }

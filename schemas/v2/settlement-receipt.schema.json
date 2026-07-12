@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/settlement-receipt.schema.json",
+  "title": "IPO.ONE Settlement Receipt v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "settlementReceiptId",
+    "settlementReceiptHash",
+    "transferIntentId",
+    "transferQuoteId",
+    "railId",
+    "railReferenceHash",
+    "providerEventIdHash",
+    "outcome",
+    "finality",
+    "sourceMoney",
+    "feeMoney",
+    "destinationMoney",
+    "idempotencyKey",
+    "occurredAt",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "schemaVersion"
+  ],
+  "properties": {
+    "settlementReceiptId": { "type": "string", "minLength": 1 },
+    "settlementReceiptHash": { "$ref": "#/$defs/hash" },
+    "transferIntentId": { "type": "string", "minLength": 1 },
+    "transferQuoteId": { "type": "string", "minLength": 1 },
+    "railId": { "type": "string", "minLength": 1 },
+    "railReferenceHash": { "$ref": "#/$defs/hash" },
+    "providerEventIdHash": { "$ref": "#/$defs/hash" },
+    "outcome": { "enum": ["succeeded", "failed", "reversed"] },
+    "finality": { "enum": ["pending", "confirmed", "finalized"] },
+    "sourceMoney": { "$ref": "#/$defs/money" },
+    "feeMoney": { "$ref": "#/$defs/money" },
+    "destinationMoney": { "$ref": "#/$defs/money" },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "schemaVersion": { "const": "settlement_receipt.v2" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "money": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "scale", "amountMinor"],
+      "properties": {
+        "assetId": { "type": "string", "minLength": 1 },
+        "scale": { "type": "integer", "minimum": 0, "maximum": 30 },
+        "amountMinor": { "type": "string", "pattern": "^[0-9]+$" }
+      }
+    }
+  }
+}

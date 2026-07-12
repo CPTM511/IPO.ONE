@@ -4,12 +4,13 @@ import {
   CreditEventType,
   CreditLineStatus,
   FinalityStatus,
+  LedgerAccountStatus,
   LockboxStatus,
+  MandateStatus,
   ObligationStatus,
   PrincipalStatus,
   ProviderStatus,
   RiskTier,
-  SettlementStatus,
   SpendPolicyStatus,
   SpendRequestStatus,
   SubjectStatus
@@ -96,6 +97,58 @@ export function createAccountBinding({ subjectId, account, signatureHash, nonce,
   };
 }
 
+export function createMandate({
+  principalId,
+  subjectId,
+  capabilities,
+  allowedProviderIds = [],
+  allowedCategories = [],
+  assetIds,
+  perActionLimitMinor,
+  aggregateLimitMinor,
+  validFrom,
+  expiresAt,
+  nonce,
+  termsRef,
+  now = new Date()
+}) {
+  const mandateHash = hashId("mandate", {
+    principalId,
+    subjectId,
+    capabilities,
+    allowedProviderIds,
+    allowedCategories,
+    assetIds,
+    perActionLimitMinor,
+    aggregateLimitMinor,
+    validFrom,
+    expiresAt,
+    nonce,
+    termsRef: termsRef ?? null
+  });
+  return {
+    mandateId: createOperationalId("mandate"),
+    mandateHash,
+    principalId,
+    subjectId,
+    capabilities: [...capabilities],
+    allowedProviderIds: [...allowedProviderIds],
+    allowedCategories: [...allowedCategories],
+    assetIds: [...assetIds],
+    perActionLimitMinor,
+    aggregateLimitMinor,
+    utilizedMinor: "0",
+    validFrom,
+    expiresAt,
+    nonce,
+    termsRef,
+    status: MandateStatus.DRAFT,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+    schemaVersion: "mandate.v2"
+  };
+}
+
 export function createLockbox({ subjectId, chainId, assetId, accountId, now = new Date() }) {
   return {
     lockboxId: createOperationalId("lockbox"),
@@ -110,6 +163,73 @@ export function createLockbox({ subjectId, chainId, assetId, accountId, now = ne
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     schemaVersion: "lockbox.v1"
+  };
+}
+
+export function createLedgerAccount({ ownerType, ownerId, assetId, accountType, normalSide, now = new Date() }) {
+  return {
+    ledgerAccountId: createOperationalId("ledger_account"),
+    ledgerAccountHash: hashId("ledger_account", { ownerType, ownerId, assetId, accountType }),
+    ownerType,
+    ownerId,
+    assetId,
+    accountType,
+    normalSide,
+    status: LedgerAccountStatus.ACTIVE,
+    openedAt: now.toISOString(),
+    schemaVersion: "ledger_account.v1"
+  };
+}
+
+export function createLedgerTransaction({
+  idempotencyKey,
+  transactionType,
+  assetId,
+  referenceType,
+  referenceId,
+  metadata,
+  normalizedEntries,
+  debitTotalMinor,
+  creditTotalMinor,
+  now = new Date()
+}) {
+  const transactionHash = hashId("ledger_transaction", {
+    idempotencyKey,
+    transactionType,
+    assetId,
+    referenceType,
+    referenceId,
+    metadata,
+    entries: normalizedEntries
+  });
+  return {
+    ledgerTransactionId: createOperationalId("ledger_transaction"),
+    transactionHash,
+    idempotencyKey,
+    transactionType,
+    assetId,
+    referenceType,
+    referenceId,
+    metadata: structuredClone(metadata ?? {}),
+    metadataHash: hashId("ledger_metadata", metadata ?? {}),
+    debitTotalMinor,
+    creditTotalMinor,
+    entryCount: normalizedEntries.length,
+    postedAt: now.toISOString(),
+    schemaVersion: "ledger_transaction.v1"
+  };
+}
+
+export function createLedgerEntry({ ledgerTransactionId, ledgerAccountId, direction, amountMinor, sequence, now = new Date() }) {
+  return {
+    ledgerEntryId: createOperationalId("ledger_entry"),
+    ledgerTransactionId,
+    ledgerAccountId,
+    direction,
+    amountMinor,
+    sequence,
+    postedAt: now.toISOString(),
+    schemaVersion: "ledger_entry.v1"
   };
 }
 
@@ -156,6 +276,7 @@ export function createSpendPolicy({
     dailyLimitMinor,
     obligationCapMinor,
     dailySpentMinor: "0",
+    dailySpentDate: now.toISOString().slice(0, 10),
     status: SpendPolicyStatus.ACTIVE,
     createdAt: now.toISOString(),
     schemaVersion: "spend_policy.v1"
@@ -164,6 +285,7 @@ export function createSpendPolicy({
 
 export function createSpendRequest({
   subjectId,
+  mandateId,
   providerId,
   spendPolicyId,
   assetId,
@@ -174,6 +296,7 @@ export function createSpendRequest({
   return {
     spendRequestId: createOperationalId("spend_request"),
     subjectId,
+    mandateId,
     providerId,
     spendPolicyId,
     assetId,
@@ -187,13 +310,22 @@ export function createSpendRequest({
   };
 }
 
-export function createCreditLine({ subjectId, assetId, limitMinor, riskSnapshotId, now = new Date() }) {
+export function createCreditLine({
+  subjectId,
+  mandateId,
+  assetId,
+  limitMinor,
+  utilizedMinor = "0",
+  riskSnapshotId,
+  now = new Date()
+}) {
   return {
     creditLineId: createOperationalId("credit_line"),
     subjectId,
+    mandateId,
     assetId,
     limitMinor,
-    utilizedMinor: "0",
+    utilizedMinor,
     status: CreditLineStatus.APPROVED,
     riskSnapshotId,
     createdAt: now.toISOString(),
@@ -205,6 +337,7 @@ export function createCreditLine({ subjectId, assetId, limitMinor, riskSnapshotI
 export function createObligation({
   subjectId,
   principalId,
+  mandateId,
   assetId,
   amountMinor,
   dueAt,
@@ -216,6 +349,7 @@ export function createObligation({
   const obligationHash = createObligationHash({
     subjectId,
     principalId,
+    mandateId,
     assetId,
     amountMinor,
     dueAt,
@@ -228,6 +362,7 @@ export function createObligation({
     obligationHash,
     subjectId,
     principalId,
+    mandateId,
     assetId,
     principalAmountMinor: amountMinor,
     outstandingPrincipalMinor: amountMinor,
@@ -272,22 +407,9 @@ export function createRepayment({ obligationId, subjectId, assetId, amountMinor,
   };
 }
 
-export function createSettlement({ spendRequestId, providerId, assetId, amountMinor, now = new Date() }) {
-  return {
-    settlementId: createOperationalId("settlement"),
-    spendRequestId,
-    providerId,
-    assetId,
-    amountMinor,
-    status: SettlementStatus.RECORDED,
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-    schemaVersion: "settlement.v1"
-  };
-}
-
 export function createRiskDecision({
   subjectId,
+  mandateId,
   assetId,
   status,
   limitMinor,
@@ -299,6 +421,7 @@ export function createRiskDecision({
   return {
     riskDecisionId: createOperationalId("risk_decision"),
     subjectId,
+    mandateId,
     assetId,
     status,
     modelVersion: "risk-rules-v0",
@@ -457,6 +580,7 @@ export function createCreditEvent({
   chainId,
   txHash,
   blockNumber,
+  finalityStatus = FinalityStatus.FINALIZED,
   now = new Date()
 }) {
   return {
@@ -467,7 +591,7 @@ export function createCreditEvent({
     chainId,
     txHash,
     blockNumber,
-    finalityStatus: FinalityStatus.FINALIZED,
+    finalityStatus,
     payloadHash: hashId("event_payload", payload ?? {}),
     payload,
     occurredAt: now.toISOString(),

@@ -3,6 +3,7 @@ import {
   CreditLearningCycleType,
   CreditLearningSignalType,
   RiskTier,
+  assertNonNegativeMinorUnits,
   createBehavioralMetric,
   createCreditEvent,
   createCreditLearningEvent,
@@ -72,6 +73,24 @@ function clampScore(score) {
   return Math.max(300, Math.min(850, score));
 }
 
+function assertScore(score, name = "score") {
+  if (!Number.isInteger(score) || score < 300 || score > 850) {
+    throw new DomainError("invalid_credit_score", `${name} must be an integer between 300 and 850`, {
+      name,
+      score
+    });
+  }
+}
+
+function assertBps(value, name) {
+  if (!Number.isInteger(value) || value < 0 || value > 10000) {
+    throw new DomainError("invalid_basis_points", `${name} must be an integer between 0 and 10000`, {
+      name,
+      value
+    });
+  }
+}
+
 function recommendationForTier(riskTier, currentLimitMinor) {
   const current = BigInt(currentLimitMinor ?? "0");
   if (riskTier === RiskTier.PRIME) return { nextLimit: ((current * 150n) / 100n).toString(), reasonCode: "prime_increase_50pct" };
@@ -94,6 +113,8 @@ export class CreditLearningService {
 
   createProfile({ subjectId, initialScore = 500, currentCreditLimitMinor = "0" }) {
     if (this.profiles.has(subjectId)) return this.getProfile(subjectId);
+    assertScore(initialScore, "initialScore");
+    assertNonNegativeMinorUnits(currentCreditLimitMinor, "currentCreditLimitMinor");
     const profile = createCreditProfile({ subjectId, initialScore, currentCreditLimitMinor });
     this.profiles.set(subjectId, profile);
     this.eventStore.appendCreditEvent(
@@ -121,8 +142,15 @@ export class CreditLearningService {
     cycleType = CreditLearningCycleType.MANUAL,
     relatedEventId
   }) {
+    assertNonNegativeMinorUnits(currentCreditLimitMinor ?? "0", "currentCreditLimitMinor");
+    assertBps(repaymentPerformanceBps, "repaymentPerformanceBps");
+    assertBps(utilizationBehaviorBps, "utilizationBehaviorBps");
+    assertBps(revenueConsistencyBps, "revenueConsistencyBps");
+    if (currentDemoInterestRateBps !== undefined && currentDemoInterestRateBps !== null) {
+      assertBps(currentDemoInterestRateBps, "currentDemoInterestRateBps");
+    }
     const profile = this.#requireOrCreateProfile(subjectId, currentCreditLimitMinor);
-    const normalizedSignals = signals.length > 0 ? signals : [CreditLearningSignalType.LOW_UTILIZATION];
+    const normalizedSignals = signals;
     const previousTier = profile.riskTier;
     const createdSignals = [];
 
@@ -133,13 +161,14 @@ export class CreditLearningService {
       }
       const previousScore = profile.currentScore;
       const newScore = clampScore(previousScore + rule.delta);
+      const appliedDelta = newScore - previousScore;
       profile.currentScore = newScore;
       profile.riskTier = tierForScore(newScore);
 
       const signal = createReputationSignal({
         subjectId,
         signalType,
-        scoreDelta: rule.delta,
+        scoreDelta: appliedDelta,
         previousScore,
         newScore,
         reasonCode: rule.reasonCode,
@@ -171,7 +200,7 @@ export class CreditLearningService {
           subjectId,
           payload: {
             signalType,
-            scoreDelta: rule.delta,
+            scoreDelta: appliedDelta,
             previousScore,
             newScore,
             reasonCode: rule.reasonCode,

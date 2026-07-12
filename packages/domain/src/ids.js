@@ -1,20 +1,27 @@
 import { createHash, randomUUID } from "node:crypto";
 
+export const DEMO_HASH_ALGORITHM = "sha3-256";
+export const DEMO_HASH_DOMAIN = "IPO_ONE_DEMO_V1";
+
 function stableSerialize(value) {
-  if (value === null || value === undefined) return String(value);
+  if (value === null) return "null";
+  if (value === undefined) return "null";
   if (typeof value === "bigint") return value.toString();
   if (typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(",")}]`;
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item === undefined ? null : item)).join(",")}]`;
+  }
 
   return `{${Object.keys(value)
+    .filter((key) => value[key] !== undefined)
     .sort()
     .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
     .join(",")}}`;
 }
 
 export function hashId(namespace, payload) {
-  return `0x${createHash("sha3-256")
-    .update("IPO_ONE_V1")
+  return `0x${createHash(DEMO_HASH_ALGORITHM)
+    .update(DEMO_HASH_DOMAIN)
     .update("\0")
     .update(namespace)
     .update("\0")

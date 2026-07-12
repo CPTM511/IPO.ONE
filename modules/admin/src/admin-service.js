@@ -1,4 +1,4 @@
-import { createAdminAction, createAuditEvent } from "../../../packages/domain/src/index.js";
+import { CreditEventType, createAdminAction, createCreditEvent } from "../../../packages/domain/src/index.js";
 
 export class AdminService {
   constructor({ eventStore, riskService, obligationService }) {
@@ -15,7 +15,8 @@ export class AdminService {
   getAuditLog() {
     return {
       creditEvents: this.eventStore.listCreditEvents(),
-      auditEvents: this.eventStore.listAuditEvents()
+      auditEvents: this.eventStore.listAuditEvents(),
+      evidenceEnvelopes: this.eventStore.listEvidenceEnvelopes()
     };
   }
 
@@ -44,17 +45,14 @@ export class AdminService {
       reason
     });
     this.adminActions.set(action.adminActionId, action);
-    this.eventStore.appendAuditEvent(
-      createAuditEvent({
-        actorId: adminId,
-        actionType: action.actionType,
-        targetType: action.targetType,
-        targetId: action.targetId,
-        reason,
+    const line = this.riskService.freezeCreditLine({ creditLineId, adminId, reason });
+    this.eventStore.appendCreditEvent(
+      createCreditEvent({
+        eventType: CreditEventType.ADMIN_ACTION_RECORDED,
+        subjectId: line.subjectId,
         payload: action
       })
     );
-    const line = this.riskService.freezeCreditLine({ creditLineId, adminId, reason });
     return { action: structuredClone(action), creditLine: line };
   }
 }

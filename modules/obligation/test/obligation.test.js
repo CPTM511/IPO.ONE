@@ -8,7 +8,8 @@ function createServiceWithActiveObligation() {
   const obligation = service.createObligation({
     subjectId: "subject_1",
     principalId: "principal_1",
-    assetId: "eip155:8453/erc20:usdc",
+    mandateId: "mandate_1",
+    assetId: "urn:ipo-one:sandbox-asset:usd-cent",
     amountMinor: "100",
     dueAt: new Date(Date.now() + 86400_000).toISOString(),
     spendPolicyId: "policy_1",
@@ -34,7 +35,8 @@ test("obligation service rejects invalid direct repayment from created", () => {
   const obligation = service.createObligation({
     subjectId: "subject_1",
     principalId: "principal_1",
-    assetId: "eip155:8453/erc20:usdc",
+    mandateId: "mandate_1",
+    assetId: "urn:ipo-one:sandbox-asset:usd-cent",
     amountMinor: "100",
     dueAt: new Date(Date.now() + 86400_000).toISOString(),
     spendPolicyId: "policy_1",
@@ -43,4 +45,14 @@ test("obligation service rejects invalid direct repayment from created", () => {
   });
 
   assert.throws(() => service.applyRepayment({ obligationId: obligation.obligationId, amountMinor: "10" }), /not in a repayable/);
+});
+
+test("overdue obligation can be cured by full repayment", () => {
+  const { service, obligation } = createServiceWithActiveObligation();
+  service.markOverdue(obligation.obligationId);
+
+  const result = service.applyRepayment({ obligationId: obligation.obligationId, amountMinor: "100" });
+
+  assert.equal(result.obligation.status, "fully_repaid");
+  assert.equal(result.obligation.outstandingPrincipalMinor, "0");
 });

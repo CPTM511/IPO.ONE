@@ -2,6 +2,8 @@ import { DomainError } from "./errors.js";
 
 const CAIP2_PATTERN = /^[a-z0-9-]+:[A-Za-z0-9-]+$/;
 const CAIP10_PATTERN = /^[a-z0-9-]+:[A-Za-z0-9-]+:[A-Za-z0-9:._%-]+$/;
+const MAX_DOMAIN_STRING_LENGTH = 2048;
+const MAX_MINOR_UNIT_DIGITS = 78;
 const BANNED_PII_KEYS = new Set([
   "ssn",
   "passport",
@@ -10,7 +12,19 @@ const BANNED_PII_KEYS = new Set([
   "nationalid",
   "phonenumber",
   "rawkyc",
+  "accountnumber",
+  "bankaccount",
+  "bankaccountnumber",
+  "routingnumber",
+  "iban",
   "privatekey",
+  "apikey",
+  "accesstoken",
+  "refreshtoken",
+  "password",
+  "clientsecret",
+  "webhooksecret",
+  "credentials",
   "seedphrase",
   "mnemonic",
   "secret"
@@ -26,17 +40,31 @@ export function assertEnumValue(name, value, allowedValues) {
 }
 
 export function assertNonEmptyString(name, value) {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (
+    typeof value !== "string" ||
+    value.trim().length === 0 ||
+    value.length > MAX_DOMAIN_STRING_LENGTH
+  ) {
     throw new DomainError("invalid_string", `${name} must be a non-empty string`, { name });
   }
 }
 
 export function toMinorUnitBigInt(value, name = "amountMinor") {
-  if (typeof value === "bigint") return value;
-  if (typeof value !== "string" || !/^[0-9]+$/.test(value)) {
+  if (typeof value === "bigint") {
+    if (value.toString().replace("-", "").length > MAX_MINOR_UNIT_DIGITS) {
+      throw new DomainError("invalid_minor_units", `${name} exceeds the supported decimal width`, { name });
+    }
+    return value;
+  }
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length > MAX_MINOR_UNIT_DIGITS ||
+    !/^(0|[1-9][0-9]*)$/.test(value)
+  ) {
     throw new DomainError("invalid_minor_units", `${name} must be an unsigned integer string`, {
       name,
-      value
+      value: typeof value === "string" && value.length > 128 ? "[redacted: oversized]" : value
     });
   }
   return BigInt(value);

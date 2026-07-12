@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/transfer-quote.schema.json",
+  "title": "IPO.ONE Transfer Quote v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "transferQuoteId",
+    "transferQuoteHash",
+    "transferIntentId",
+    "railId",
+    "sourceMoney",
+    "feeMoney",
+    "destinationMoney",
+    "rate",
+    "expiresAt",
+    "idempotencyKey",
+    "createdAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "transferQuoteId": { "type": "string", "minLength": 1 },
+    "transferQuoteHash": { "$ref": "#/$defs/hash" },
+    "transferIntentId": { "type": "string", "minLength": 1 },
+    "railId": { "type": "string", "minLength": 1 },
+    "sourceMoney": { "$ref": "#/$defs/money" },
+    "feeMoney": { "$ref": "#/$defs/money" },
+    "destinationMoney": { "$ref": "#/$defs/money" },
+    "rate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceUnits", "destinationUnits"],
+      "properties": {
+        "sourceUnits": { "$ref": "#/$defs/positiveMinor" },
+        "destinationUnits": { "$ref": "#/$defs/positiveMinor" }
+      }
+    },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": { "const": "transfer_quote.v2" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "minor": { "type": "string", "pattern": "^[0-9]+$" },
+    "positiveMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+    "money": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "scale", "amountMinor"],
+      "properties": {
+        "assetId": { "type": "string", "minLength": 1 },
+        "scale": { "type": "integer", "minimum": 0, "maximum": 30 },
+        "amountMinor": { "$ref": "#/$defs/minor" }
+      }
+    }
+  }
+}

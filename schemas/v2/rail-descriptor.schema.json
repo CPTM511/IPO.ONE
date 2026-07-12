@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/rail-descriptor.schema.json",
+  "title": "IPO.ONE Rail Descriptor v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "railId",
+    "displayName",
+    "railKind",
+    "directions",
+    "sourceAssets",
+    "destinationAssets",
+    "finalityModel",
+    "sandboxOnly",
+    "adapterVersion",
+    "descriptorHash",
+    "schemaVersion"
+  ],
+  "properties": {
+    "railId": { "type": "string", "pattern": "^rail_[a-z0-9]+(?:_[a-z0-9]+)*$" },
+    "displayName": { "type": "string", "minLength": 1 },
+    "railKind": { "enum": ["web2", "web3", "hybrid"] },
+    "directions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["on_ramp", "off_ramp", "native"] }
+    },
+    "sourceAssets": { "$ref": "#/$defs/assets" },
+    "destinationAssets": { "$ref": "#/$defs/assets" },
+    "finalityModel": { "enum": ["instant", "async", "chain"] },
+    "sandboxOnly": { "type": "boolean" },
+    "adapterVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "schemaVersion": { "const": "rail_descriptor.v2" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "scale"],
+      "properties": {
+        "assetId": { "type": "string", "minLength": 1 },
+        "scale": { "type": "integer", "minimum": 0, "maximum": 30 }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/asset" }
+    }
+  }
+}

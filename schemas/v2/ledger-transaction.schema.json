@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/ledger-transaction.schema.json",
+  "title": "IPO.ONE Ledger Transaction v1",
+  "description": "Debit and credit equality is a runtime and database invariant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ledgerTransactionId",
+    "transactionHash",
+    "idempotencyKey",
+    "transactionType",
+    "assetId",
+    "referenceType",
+    "referenceId",
+    "metadata",
+    "metadataHash",
+    "debitTotalMinor",
+    "creditTotalMinor",
+    "entryCount",
+    "entries",
+    "postedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "ledgerTransactionId": { "type": "string", "minLength": 1 },
+    "transactionHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "transactionType": { "type": "string", "minLength": 1 },
+    "assetId": { "type": "string", "minLength": 1 },
+    "referenceType": { "type": "string", "minLength": 1 },
+    "referenceId": { "type": "string", "minLength": 1 },
+    "metadata": { "type": "object" },
+    "metadataHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "debitTotalMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+    "creditTotalMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+    "entryCount": { "type": "integer", "minimum": 2 },
+    "entries": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ledgerEntryId", "ledgerTransactionId", "ledgerAccountId", "direction", "amountMinor", "sequence", "postedAt", "schemaVersion"],
+        "properties": {
+          "ledgerEntryId": { "type": "string", "minLength": 1 },
+          "ledgerTransactionId": { "type": "string", "minLength": 1 },
+          "ledgerAccountId": { "type": "string", "minLength": 1 },
+          "direction": { "enum": ["debit", "credit"] },
+          "amountMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+          "sequence": { "type": "integer", "minimum": 0 },
+          "postedAt": { "type": "string", "format": "date-time" },
+          "schemaVersion": { "const": "ledger_entry.v1" }
+        }
+      }
+    },
+    "postedAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": { "const": "ledger_transaction.v1" }
+  }
+}

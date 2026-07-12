@@ -1,0 +1,16 @@
+{
+  "name": "IPO.ONE Control Plane",
+  "short_name": "IPO.ONE",
+  "description": "Public sandbox for programmable Agent obligations and repayment evidence.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#15171c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

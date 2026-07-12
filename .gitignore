@@ -1,9 +1,12 @@
 node_modules/
+.pnpm-store/
 .DS_Store
 .turbo/
 .next/
 dist/
 coverage/
+.playwright-cli/
+output/playwright/
 *.log
 .env
 .env.*
