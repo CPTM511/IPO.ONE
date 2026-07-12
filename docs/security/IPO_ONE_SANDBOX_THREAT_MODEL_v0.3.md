@@ -1,9 +1,9 @@
 # IPO.ONE Public Sandbox Threat Model v0.3
 
 Version: v0.3
-Date: 2026-07-11
-Status: Implemented local launch-candidate controls; hosted release remains a
-separate security and operations decision
+Date: 2026-07-12
+Status: Repository and container launch-candidate controls implemented; hosted
+edge remains a separate security and operations decision
 
 ## Scope and Security Claim
 
@@ -26,6 +26,7 @@ for real funds, credentials, KYC/PII, legal agreements, or financial decisions.
 | Browser integrity | API-controlled values must not execute script or escape the intended DOM and resource policy. |
 | Error boundary | Public failures must not expose stack traces, filesystem paths, secrets, SQL details, or raw internal errors. |
 | Repository and CI | Dependencies must be locked, CI permissions minimal, and third-party actions pinned immutably. |
+| Public origin | Internet traffic must traverse the approved HTTPS edge and cannot select an arbitrary application Host. |
 
 There are intentionally no production secrets, private keys, raw KYC records,
 custodied assets, or real payment credentials in the supported sandbox surface.
@@ -34,7 +35,9 @@ custodied assets, or real payment credentials in the supported sandbox surface.
 
 ```text
 Untrusted browser / Agent client
-  -> strict Node HTTP boundary
+  -> proposed HTTPS load balancer and Cloud Armor
+  -> load-balancer-only Cloud Run origin
+  -> strict Host/HTTPS Node HTTP boundary
   -> per-session serialized demo controller
   -> domain services and fail-closed policy checks
   -> in-memory event, Evidence, Ledger, and sandbox Rail state
@@ -44,6 +47,7 @@ Optional isolated test database
 
 GitHub contributor input
   -> read-only, SHA-pinned quality workflow
+  -> digest-pinned, non-root, read-only-smoked container
 ```
 
 Remote plugin manifests are data only. The current runtime loads no plugin
@@ -78,12 +82,15 @@ Those are deployment concerns and must be assessed separately.
 | Request smuggling ambiguity | Strict Node parser, 16 KiB header cap, conflicting transfer/content length rejection, malformed-client handler | Raw malformed HTTP test |
 | Method/content confusion | Explicit method allowlists, JSON and structured-suffix JSON only, compressed body rejection | `405` and `415` attack tests |
 | Mass assignment / prototype pollution | Per-operation field allowlists, JSON object root, prohibited prototype keys | Unknown field and pollution-key tests |
-| Path traversal / Host manipulation | Fixed URL base, origin-form target enforcement, canonical relative-path containment | hostile Host, ambiguous target, and encoded traversal tests |
+| Path traversal / Host manipulation | Exact Host allowlist, origin-form target enforcement, canonical relative-path containment | byte-level hostile Host, ambiguous target, and encoded traversal tests |
+| Origin bypass / downgrade | Production requires trusted HTTPS proxy proof and HSTS; proposed Cloud Run ingress is load-balancer-only with default URL disabled | production child-process tests for 421, 426, HSTS, and release headers; cloud control pending |
 | Reflected header injection | Bounded safe request/session patterns; unsafe values replaced with UUIDs | hostile identifier test |
 | Browser injection / clickjacking | text-safe DOM rendering, same-origin CSP, frame denial, MIME protection, no third-party runtime assets | static UI assertions and browser regression |
 | Error information disclosure | RFC 9457 Problem Details, stable codes, generic unexpected-error detail | unit and live malformed-input tests |
 | SQL injection / replay corruption | Parameterized values, serializable transaction, optimistic stream version, idempotency hash, outbox/inbox constraints | PostgreSQL rollback, concurrency, replay, lease, and restart suite |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
+| Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
+| Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
 
 The matrix is aligned to the OWASP API Security Top 10, especially API4
 Unrestricted Resource Consumption, API6 Sensitive Business Flows, API8
@@ -96,8 +103,9 @@ The following are known and intentional blockers, not hidden launch claims:
 1. A sandbox session ID is not a secret or credential. Anyone who knows it can
    inspect and alter that demo state. No private or valuable data may enter it.
 2. In-process limits are defense in depth, not distributed DDoS protection.
-   Hosted release requires TLS, edge rate/body/connection limits, origin
-   restrictions, monitoring, rollback, and an incident owner.
+   The proposed edge is documented but not deployed; hosted release still
+   requires verified TLS, Cloud Armor, quotas, monitoring, rollback, and an
+   incident owner.
 3. The sandbox has no AuthN, tenant identity, RBAC, object authorization,
    durable command gateway, dual control, or break-glass mechanism.
 4. Most demo state is in memory and is lost on restart. Only the optional Rail

@@ -1,9 +1,9 @@
 # IPO.ONE Public Beta Launch Readiness v0.3
 
 Version: v0.3
-Date: 2026-07-11
-Status: Local launch candidate complete; hosted release requires a green CI run
-and explicit hosting/security approval
+Date: 2026-07-12
+Status: Repository hosting baseline complete; hosted release requires a green
+CI run plus explicit cloud, edge, monitoring, security, and DNS approval
 
 This gate applies only to the public, no-real-funds sandbox. It does not approve
 production credit, custody, KYC processing, contracts, external Providers,
@@ -34,6 +34,9 @@ two audiences over one state model:
 | Protocol correctness | Schema, boundary, migration, domain, Ledger, Mandate, Rail, Evidence, risk, and vertical-slice checks pass. |
 | Durable Rail proof | PostgreSQL migration, rollback, idempotency, concurrency, outbox/inbox, and restart replay suite passes. |
 | Supply chain | Locked pnpm install, production audit, and a GitHub Actions quality gate are present. |
+| Production runtime | Invalid public mode, origin, Host, HTTPS proxy, HSTS, release, or no-real-funds configuration fails closed. |
+| Container boundary | Digest-pinned Node 24 LTS image, non-root runtime, health check, and CI read-only/no-capability smoke are defined. |
+| Machine discovery | Human/Agent endpoints and disabled real-funds/Human-credit capabilities are explicit at `/.well-known/ipo-one.json`. |
 
 Sandbox session IDs are isolation hints, not credentials. Knowledge of an ID
 must never be treated as identity, authorization, or tenant membership.
@@ -41,9 +44,14 @@ must never be treated as identity, authorization, or tenant membership.
 ## Hosted Release Checklist
 
 - [ ] GitHub Actions quality workflow passes on the exact release commit.
+- [x] Repository production configuration, Host/HTTPS enforcement, probes, and
+  immutable release metadata are implemented and adversarially tested.
+- [x] Proposed Cloud Run origin is load-balancer-only with its default URL disabled.
 - [ ] Hosting target, TLS, domain, origin, proxy trust, and rollback owner are approved.
 - [ ] Edge request/body limits and coarse abuse protection are enabled.
-- [ ] Logs retain request IDs but exclude request bodies, secrets, and raw PII.
+- [x] Application logs retain request IDs but exclude request bodies, queries,
+  sandbox session IDs, raw IPs, secrets, and raw PII.
+- [ ] Hosted edge and cloud log fields/retention are reviewed and approved.
 - [ ] Availability monitoring checks `/healthz` and the full smoke path.
 - [ ] Public copy continues to state no real lending, no real funds, no financial advice, and demo score only.
 - [ ] Analytics remains disabled unless privacy review explicitly approves it.
@@ -66,3 +74,8 @@ relabelled as production financial readiness.
 The repository-level attack model and residual-risk register are maintained in
 `docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md`. Application limits are
 defense in depth and do not close the hosted edge checklist above.
+
+The proposed hosting boundary and operator sequence are maintained in
+`docs/architecture/ADR-014-public-sandbox-hosting-boundary.md` and
+`deploy/gcp/README.md`. Neither document is deployment evidence until the
+external controls are applied and verified.

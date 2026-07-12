@@ -578,6 +578,15 @@ function renderAdmin() {
 function renderRuntime() {
   if (!el("requestLog")) return;
   el("runtimeBaseUrl").textContent = window.location.origin;
+  el("sdkSnippet").textContent = `import { IpoOneClient } from "@ipo-one/sdk";
+
+const ipo = new IpoOneClient({
+  baseUrl: ${JSON.stringify(window.location.origin)}
+});
+
+const agent = await ipo.createAgent({
+  displayName: "Revenue Agent"
+});`;
   el("runtimeSessionId").textContent = sandboxSessionId;
   el("lastRequestId").textContent = lastRequestId ?? "None";
   el("requestLogCount").textContent = `${requestLog.length} request${requestLog.length === 1 ? "" : "s"}`;

@@ -24,10 +24,12 @@ rails, compliance partners, and capital systems that need to share one
 auditable obligation state without collapsing identity, authorization, money
 movement, accounting, and risk into one black box.
 
-> **Current status:** public-beta sandbox launch candidate. It performs no real
-> lending, custody, KYC, underwriting, or production fund movement. A hosted
-> release still requires a green CI run plus explicit hosting and security
-> approval. Real-value use is prohibited by the current product boundary.
+> **Current status:** publicly deployable sandbox candidate. The repository now
+> includes a fail-closed production runtime, hardened container, Cloud Run
+> service template, Human/Agent discovery, and hosted-release runbook. It is not
+> yet live at `ipo.one`; cloud, edge, certificate, monitoring, and DNS execution
+> still require explicit review. It performs no real lending, custody, KYC,
+> underwriting, or production fund movement. Real-value use is prohibited.
 
 ## The Product Thesis
 
@@ -104,8 +106,9 @@ They are visibly labelled and must not be treated as underwriting evidence.
 
 ```mermaid
 flowchart TB
-  Human["Human Operator"] --> HTTP["Strict HTTP boundary"]
-  Agent["Agent Runtime / SDK"] --> HTTP
+  Human["Human Operator"] --> Edge["HTTPS load balancer + Cloud Armor"]
+  Agent["Agent Runtime / SDK"] --> Edge
+  Edge --> HTTP["Allowlisted same-origin HTTP boundary"]
   HTTP --> Session["Bounded sandbox session and serialized operations"]
   Session --> Flow["Agent Lockbox orchestrator"]
 
@@ -192,7 +195,7 @@ responses carry `X-Request-ID`; failures use RFC 9457-compatible
 
 | Surface | Operations |
 | --- | --- |
-| System | health and OpenAPI discovery |
+| System | liveness/readiness, Human/Agent discovery, security contact, and OpenAPI |
 | Agent | create Subject/Principal, bind account, create Lockbox, request credit, read status |
 | Credit | Provider spend, revenue capture, auto repayment, evidence evaluation, credit profile |
 | Rail and Evidence | settlement, Rail inventory, Transfer Intent replay proof, Admin audit |
@@ -238,6 +241,9 @@ Open:
 
 - Control plane: `http://127.0.0.1:3000`
 - Health: `http://127.0.0.1:3000/healthz`
+- Liveness: `http://127.0.0.1:3000/livez`
+- Readiness: `http://127.0.0.1:3000/readyz`
+- Agent discovery: `http://127.0.0.1:3000/.well-known/ipo-one.json`
 - OpenAPI: `http://127.0.0.1:3000/openapi.json`
 - Complete proof: `http://127.0.0.1:3000/v1/demo/vertical-slice`
 
@@ -265,8 +271,10 @@ fund-moving adapter.
 | Browser | same-origin CSP, frame denial, MIME protection, no referrer, restricted permissions, text-safe rendering |
 | State | 30-minute TTL, 128 sessions/process, serialized session operations, 32 mutations/session, reset support |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
+| Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |
-| Supply chain | locked pnpm graph, frozen install, production audit, read-only CI permissions, full-SHA GitHub Actions |
+| Runtime | shell-free distroless Node 24 LTS image, digest pinning, UID 65532, immutable release ID, structured PII-safe application logs |
+| Supply chain | locked pnpm graph, frozen install, production audit, read-only CI permissions, full-SHA GitHub Actions, read-only container smoke |
 
 Application limits are defense in depth. They are not a substitute for TLS,
 edge DDoS controls, origin policy, monitoring, incident response, or an
@@ -275,10 +283,30 @@ residual-risk register are in
 [`IPO.ONE Public Sandbox Threat Model v0.3`](docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md).
 Report vulnerabilities according to [`SECURITY.md`](SECURITY.md).
 
+## Public Deployment
+
+The proposed public boundary keeps GoDaddy as authoritative DNS and places a
+Google Cloud global external HTTPS load balancer and Cloud Armor in front of a
+load-balancer-only Cloud Run origin. The same `https://ipo.one` origin serves
+the Human Console, Agent API, OpenAPI contract, and discovery document.
+
+Repository checks can prove the image and application contract; they cannot
+prove an external certificate, cloud IAM policy, DNS record, WAF policy, alert,
+or operator response. Those controls must be reviewed and captured during the
+deployment itself.
+
+- Architecture decision: [`ADR-014`](docs/architecture/ADR-014-public-sandbox-hosting-boundary.md)
+- Deployment runbook: [`deploy/gcp/README.md`](deploy/gcp/README.md)
+- Issue evidence: [`OPS-001A`](docs/codex/tasks/OPS_001_PUBLIC_SANDBOX_HOSTING_BASELINE.md)
+
+The public container deliberately refuses to start unless it receives the
+exact no-real-funds acknowledgement and an HTTPS, HSTS, trusted-ingress
+configuration. No cloud credential belongs in a repository `.env` file.
+
 ## Verification
 
 ```sh
-pnpm run check          # boundaries, schemas, OpenAPI, migrations, 72 unit/contract tests
+pnpm run check          # boundaries, schemas, OpenAPI, migrations, deployment, unit/contract tests
 pnpm run test:security  # live adversarial HTTP and state-bounding suite
 pnpm run demo           # isolated Agent Lockbox vertical slice
 pnpm audit --prod       # published production dependency advisories
@@ -340,7 +368,7 @@ humans and Agents.
 
 | Stage | Product state | Gate |
 | --- | --- | --- |
-| Public sandbox | Current | No real funds or private data; inspectable UI, API, SDK, protocol kernel, sandbox Rail, Evidence, Ledger, and tests |
+| Public sandbox | Deployment candidate | No real funds or private data; inspectable UI/API/SDK, hardened production container, proposed edge boundary, and release tests |
 | Closed design-partner pilot | Next | Approved AuthN/tenant/RBAC model, durable command path, signed Mandates, certified adapters, reconciliation, SLOs, legal/security/privacy review |
 | Controlled production Agent credit | Future | Licensed and capital partners, reviewed custody and fund paths, per-provider/chain caps, dual control, break-glass, monitoring, disaster recovery |
 | Human-compatible and multi-chain network | Long term | Licensed Originators, Consent/KYC references, loan tape, stop-loss covenants, finality/reorg controls, portable Credit Passport and attestations |
@@ -355,7 +383,9 @@ Near-term engineering priorities are:
    and wallet/account proof.
 4. Certify out-of-process Provider, KYP, payment, on/off-ramp, and chain adapters
    with signed requests, webhook replay protection, revocation, and failure policy.
-5. Add reconciliation, finality/reorg handling, capacity reservations,
+5. Execute `OPS-001A`: approved cloud identity, HTTPS edge, Cloud Armor,
+   monitoring, incident ownership, immutable release, and GoDaddy DNS cutover.
+6. Add reconciliation, finality/reorg handling, capacity reservations,
    observability, incident operations, backup, restore, and disaster recovery.
 
 The requirement trace and commercialization sequence are maintained in

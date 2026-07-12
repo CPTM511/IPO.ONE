@@ -9,9 +9,27 @@ import {
   createRequestId
 } from "../../../packages/api-contract/src/index.js";
 import { createInteractiveDemo } from "../../../packages/mvp-flow/src/index.js";
+import {
+  isAllowedRequestHost,
+  loadRuntimeConfig,
+  requestUsesHttps
+} from "./runtime-config.js";
 
-const port = Number(process.env.PORT ?? 3000);
-const host = process.env.HOST ?? "127.0.0.1";
+let runtimeConfig;
+try {
+  runtimeConfig = loadRuntimeConfig();
+} catch (error) {
+  process.stderr.write(`${JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: "fatal",
+    event: "runtime_configuration_rejected",
+    service: "ipo-one-api",
+    errorName: error?.name ?? "Error",
+    reason: error?.message ?? "Invalid runtime configuration"
+  })}\n`);
+  process.exit(78);
+}
+
 const rootDir = fileURLToPath(new URL("../../..", import.meta.url));
 const webDir = join(rootDir, "apps", "web", "src");
 const openApiPath = join(rootDir, "api", "openapi", "ipo-one.v1.json");
@@ -23,6 +41,13 @@ const MAX_REQUEST_TARGET_LENGTH = 2048;
 const MAX_SANDBOX_MUTATIONS = 32;
 const GLOBAL_REQUESTS_PER_MINUTE = 600;
 const MAX_CONCURRENT_REQUESTS = 64;
+const OPERATIONAL_PATHS = new Set(["/healthz", "/livez", "/readyz"]);
+const DISCOVERY_PATHS = new Set([
+  "/.well-known/ipo-one",
+  "/.well-known/ipo-one.json",
+  "/.well-known/security.txt",
+  "/robots.txt"
+]);
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -46,7 +71,8 @@ const browserSecurityHeaders = {
     "object-src 'none'",
     "script-src 'self'",
     "style-src 'self'",
-    "style-src-attr 'unsafe-inline'"
+    "style-src-attr 'unsafe-inline'",
+    ...(runtimeConfig.production ? ["upgrade-insecure-requests"] : [])
   ].join("; "),
   "cross-origin-opener-policy": "same-origin",
   "cross-origin-resource-policy": "same-origin",
@@ -174,6 +200,10 @@ function responseHeaders(response, headers = {}) {
   return {
     ...browserSecurityHeaders,
     "x-request-id": response.ipoOneRequestId,
+    "x-ipo-one-release": runtimeConfig.release,
+    ...(runtimeConfig.hstsMaxAge > 0
+      ? { "strict-transport-security": `max-age=${runtimeConfig.hstsMaxAge}` }
+      : {}),
     ...(response.ipoOneSandboxSessionId
       ? { "x-ipo-one-sandbox-session": response.ipoOneSandboxSessionId }
       : {}),
@@ -181,14 +211,25 @@ function responseHeaders(response, headers = {}) {
   };
 }
 
-function sendJson(response, statusCode, payload) {
+function sendJson(response, statusCode, payload, headers = {}) {
   const body = JSON.stringify(payload, null, 2);
   response.writeHead(statusCode, responseHeaders(response, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body),
-    "cache-control": "no-store"
+    "cache-control": "no-store",
+    ...headers
   }));
-  response.end(body);
+  response.end(response.ipoOneHeadOnly ? undefined : body);
+}
+
+function sendText(response, statusCode, body, contentType, headers = {}) {
+  response.writeHead(statusCode, responseHeaders(response, {
+    "content-type": contentType,
+    "content-length": Buffer.byteLength(body),
+    "cache-control": "no-store",
+    ...headers
+  }));
+  response.end(response.ipoOneHeadOnly ? undefined : body);
 }
 
 function sendProblem(response, error) {
@@ -197,6 +238,7 @@ function sendProblem(response, error) {
     return;
   }
   const problem = createProblemDetails(error, { requestId: response.ipoOneRequestId });
+  response.ipoOneErrorCode = problem.code;
   const body = JSON.stringify(problem, null, 2);
   response.writeHead(problem.status, responseHeaders(response, {
     ...(error instanceof ApiBoundaryError ? error.headers : {}),
@@ -374,14 +416,111 @@ async function sendStatic(request, response, pathname) {
   await sendFile(request, response, filePath, cacheControl);
 }
 
+function logEvent(level, event, fields = {}) {
+  const record = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    service: "ipo-one-api",
+    release: runtimeConfig.release,
+    ...fields
+  });
+  (level === "error" || level === "fatal" ? process.stderr : process.stdout).write(`${record}\n`);
+}
+
+function routeCategory(pathname) {
+  if (OPERATIONAL_PATHS.has(pathname)) return `operational:${pathname.slice(1)}`;
+  if (DISCOVERY_PATHS.has(pathname)) return "discovery";
+  if (pathname === "/openapi.json") return "openapi";
+  if (pathname.startsWith("/v1/")) return "api:v1";
+  if (pathname === "/" || contentTypes[extname(pathname)] || pathname === "/favicon.ico") return "web";
+  return "other";
+}
+
+function discoveryDocument() {
+  return {
+    schemaVersion: "ipo_one_discovery.v1",
+    protocol: "IPO.ONE",
+    serviceClass: runtimeConfig.deploymentMode,
+    release: runtimeConfig.release,
+    interfaces: {
+      humanConsole: runtimeConfig.publicOrigin,
+      agentApi: `${runtimeConfig.publicOrigin}/v1`,
+      openApi: `${runtimeConfig.publicOrigin}/openapi.json`
+    },
+    interactionModes: ["human", "agent"],
+    capabilities: [
+      "agent_subject_sandbox",
+      "caip_10_account_binding_sandbox",
+      "lockbox_simulation",
+      "repayment_event_simulation",
+      "credit_learning_simulation"
+    ],
+    safety: {
+      realFundsEnabled: false,
+      productionCreditEnabled: false,
+      humanCreditEnabled: false,
+      syntheticDataOnly: true
+    }
+  };
+}
+
+function securityText() {
+  const expires = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+  return [
+    `Contact: ${runtimeConfig.securityContact}`,
+    `Expires: ${expires}`,
+    `Canonical: ${runtimeConfig.publicOrigin}/.well-known/security.txt`,
+    "Preferred-Languages: en, zh",
+    "Policy: https://github.com/CPTM511/IPO.ONE/security/policy",
+    ""
+  ].join("\n");
+}
+
+function handleSystemResource(request, response, pathname) {
+  if (!["GET", "HEAD"].includes(request.method)) {
+    throw new ApiBoundaryError("method_not_allowed", "Only GET and HEAD are available for this resource.", {
+      status: 405,
+      headers: { allow: "GET, HEAD" }
+    });
+  }
+  response.ipoOneHeadOnly = request.method === "HEAD";
+
+  if (pathname === "/livez") {
+    sendJson(response, 200, { ok: true });
+    return true;
+  }
+  if (pathname === "/healthz" || pathname === "/readyz") {
+    sendJson(response, 200, {
+      ok: true,
+      service: "ipo-one-api",
+      mode: runtimeConfig.deploymentMode,
+      release: runtimeConfig.release
+    });
+    return true;
+  }
+  if (pathname === "/.well-known/ipo-one" || pathname === "/.well-known/ipo-one.json") {
+    sendJson(response, 200, discoveryDocument(), { "cache-control": "public, max-age=300" });
+    return true;
+  }
+  if (pathname === "/.well-known/security.txt") {
+    sendText(response, 200, securityText(), "text/plain; charset=utf-8", {
+      "cache-control": "public, max-age=3600"
+    });
+    return true;
+  }
+  if (pathname === "/robots.txt") {
+    sendText(response, 200, "User-agent: *\nAllow: /\nDisallow: /v1/\n", "text/plain; charset=utf-8", {
+      "cache-control": "public, max-age=3600"
+    });
+    return true;
+  }
+  return false;
+}
+
 async function handleApi(request, response, url) {
   const pathname = url.pathname;
   const demo = request.ipoOneDemo;
-
-  if (request.method === "GET" && pathname === "/healthz") {
-    sendJson(response, 200, { ok: true, service: "ipo-one-api", mode: "public-beta-sandbox" });
-    return;
-  }
 
   if (request.method === "GET" && pathname === "/v1/demo/state") {
     sendJson(response, 200, await demo.getStatus());
@@ -519,9 +658,22 @@ async function handleApi(request, response, url) {
 const server = createServer({
   insecureHTTPParser: false,
   maxHeaderSize: 16 * 1024,
-  rejectNonStandardBodyWrites: true
+  rejectNonStandardBodyWrites: true,
+  requireHostHeader: true
 }, async (request, response) => {
+  const startedAt = process.hrtime.bigint();
   response.ipoOneRequestId = createRequestId(request.headers);
+  response.ipoOneRouteCategory = "unparsed";
+  response.once("finish", () => {
+    logEvent("info", "http_request_completed", {
+      requestId: response.ipoOneRequestId,
+      method: request.method,
+      route: response.ipoOneRouteCategory,
+      status: response.statusCode,
+      durationMs: Math.round(Number(process.hrtime.bigint() - startedAt) / 1_000_000),
+      ...(response.ipoOneErrorCode ? { errorCode: response.ipoOneErrorCode } : {})
+    });
+  });
   let admitted = false;
   try {
     admitRequest();
@@ -542,7 +694,29 @@ const server = createServer({
       );
     }
     const url = new URL(request.url, "http://ipo.one.local");
-    const isApiResource = url.pathname === "/healthz" || url.pathname.startsWith("/v1/");
+    response.ipoOneRouteCategory = routeCategory(url.pathname);
+    const isOperationalResource = OPERATIONAL_PATHS.has(url.pathname);
+    if (!isAllowedRequestHost(request.headers.host, runtimeConfig, { operational: isOperationalResource })) {
+      throw new ApiBoundaryError(
+        "misdirected_request",
+        "The request Host is not served by this deployment.",
+        { status: 421 }
+      );
+    }
+    if (runtimeConfig.production && !isOperationalResource && !requestUsesHttps(request.headers, runtimeConfig)) {
+      throw new ApiBoundaryError(
+        "https_required",
+        "The public service is available only through the approved HTTPS ingress.",
+        { status: 426, headers: { upgrade: "TLS/1.2, HTTP/1.1" } }
+      );
+    }
+
+    if (OPERATIONAL_PATHS.has(url.pathname) || DISCOVERY_PATHS.has(url.pathname)) {
+      handleSystemResource(request, response, url.pathname);
+      return;
+    }
+
+    const isApiResource = url.pathname.startsWith("/v1/");
     if (isApiResource) {
       if (!API_METHODS.has(request.method)) {
         throw new ApiBoundaryError("method_not_allowed", "Only GET and POST are available for API resources.", {
@@ -556,12 +730,11 @@ const server = createServer({
         headers: { allow: "GET, HEAD, POST" }
       });
     }
+
     if (isApiResource) {
       response.ipoOneSandboxSessionId = sandboxSessionId(request.headers);
-      if (url.pathname.startsWith("/v1/")) {
-        request.ipoOneSessionEntry = entryForSession(response.ipoOneSandboxSessionId);
-        request.ipoOneDemo = request.ipoOneSessionEntry.demo;
-      }
+      request.ipoOneSessionEntry = entryForSession(response.ipoOneSandboxSessionId);
+      request.ipoOneDemo = request.ipoOneSessionEntry.demo;
     }
     if (url.pathname === "/favicon.ico") {
       response.writeHead(204, responseHeaders(response, {
@@ -574,7 +747,7 @@ const server = createServer({
       await sendFile(request, response, openApiPath, "public, max-age=0, must-revalidate");
       return;
     }
-    if (url.pathname === "/healthz" || url.pathname.startsWith("/v1/")) {
+    if (url.pathname.startsWith("/v1/")) {
       if (request.method === "POST") {
         request.ipoOneBody = await readJson(request, url.pathname);
       }
@@ -592,6 +765,13 @@ const server = createServer({
     }
     await sendStatic(request, response, url.pathname);
   } catch (error) {
+    if (!(error instanceof ApiBoundaryError) && error?.name !== "DomainError") {
+      logEvent("error", "http_request_failed", {
+        requestId: response.ipoOneRequestId,
+        route: response.ipoOneRouteCategory,
+        errorName: error?.name ?? "Error"
+      });
+    }
     sendProblem(response, error);
   } finally {
     if (admitted) activeRequestCount -= 1;
@@ -614,15 +794,29 @@ server.on("clientError", (error, socket) => {
   socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 });
 
-function shutdown() {
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logEvent("info", "shutdown_started", { signal });
   server.closeIdleConnections?.();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(1), 5_000).unref();
 }
 
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
 
-server.listen(port, host, () => {
-  console.log(`IPO.ONE public-beta control plane listening on http://${host}:${port}`);
+server.on("error", (error) => {
+  logEvent("fatal", "server_error", { errorName: error?.name ?? "Error", errorCode: error?.code });
+  process.exitCode = 1;
+});
+
+server.listen(runtimeConfig.port, runtimeConfig.host, () => {
+  logEvent("info", "server_started", {
+    host: runtimeConfig.host,
+    port: runtimeConfig.port,
+    mode: runtimeConfig.deploymentMode,
+    nodeEnvironment: runtimeConfig.nodeEnvironment
+  });
 });

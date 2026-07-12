@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.1.3",
+  "engines": {
+    "node": ">=24.17.0 <25"
+  },
   "scripts": {
     "test": "node scripts/run-tests.mjs",
     "test:security": "node --test security/test/server-security.test.mjs",
@@ -12,11 +15,12 @@
     "check:schemas": "node scripts/check-schemas.mjs",
     "check:openapi": "node scripts/check-openapi.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
+    "check:deploy": "node scripts/check-deploy.mjs",
     "db:migrate": "node scripts/migrate.mjs up",
     "db:rollback": "node scripts/migrate.mjs down",
     "db:status": "node scripts/migrate.mjs status",
     "smoke:api": "node scripts/smoke-api.mjs",
-    "check": "pnpm run lint:boundaries && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm test",
+    "check": "pnpm run lint:boundaries && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm run check:deploy && pnpm test",
     "dev": "node apps/api/src/server.js",
     "dev:api": "node apps/api/src/server.js",
     "demo": "node packages/mvp-flow/src/run-vertical-slice.js",
