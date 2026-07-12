@@ -37,6 +37,12 @@ for (const upFile of upFiles) {
       failures.push(`${downFile} does not drop function ${fn}`);
     }
   }
+  for (const match of up.matchAll(/CREATE (?:UNIQUE )?INDEX ([a-z_]+)[\s\S]*? ON ([a-z_]+)/g)) {
+    const [, index, table] = match;
+    if (!down.includes(`DROP INDEX IF EXISTS ${index};`) && !down.includes(`DROP TABLE IF EXISTS ${table};`)) {
+      failures.push(`${downFile} does not drop index ${index} or its table ${table}`);
+    }
+  }
 }
 
 const up = combinedUp.join("\n");
@@ -56,6 +62,13 @@ for (const required of [
   "CREATE TABLE command_idempotency",
   "CREATE TABLE outbox_messages",
   "CREATE TABLE inbox_messages",
+  "CREATE TABLE command_events",
+  "CREATE TABLE projection_registry",
+  "CREATE TABLE projection_snapshots",
+  "CREATE TABLE risk_decisions",
+  "CREATE TABLE reconciliation_runs",
+  "CREATE TABLE reconciliation_discrepancies",
+  "CREATE TABLE projection_replay_jobs",
   "DEFERRABLE INITIALLY DEFERRED",
   "ledger_transactions_immutable",
   "ledger_entries_immutable",
@@ -65,6 +78,8 @@ for (const required of [
   "domain_events_immutable",
   "outbox_payload_immutable",
   "inbox_identity_immutable",
+  "command_events_immutable",
+  "projection_snapshots_immutable",
   "production_funds_moved BOOLEAN NOT NULL CHECK (production_funds_moved = FALSE)",
   "CHECK (debit_total_minor = credit_total_minor)"
 ]) {

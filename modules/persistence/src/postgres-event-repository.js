@@ -5,13 +5,17 @@ import {
 } from "../../../packages/domain/src/index.js";
 
 const RETRYABLE_TRANSACTION_CODES = new Set(["40001", "40P01"]);
+const MAX_REPOSITORY_STRING_LENGTH = 2048;
+const MAX_EVENT_PAYLOAD_BYTES = 64 * 1024;
+const MAX_COMMAND_PAYLOAD_BYTES = 1024 * 1024;
+const MAX_COMMAND_RESPONSE_BYTES = 256 * 1024;
 
 function clone(value) {
   return structuredClone(value);
 }
 
 function assertString(name, value) {
-  if (typeof value !== "string" || value.length === 0) {
+  if (typeof value !== "string" || value.length === 0 || value.length > MAX_REPOSITORY_STRING_LENGTH) {
     throw new DomainError("invalid_repository_input", `${name} must be a non-empty string`, { name });
   }
 }
@@ -32,6 +36,22 @@ function timestamp(value) {
 
 function json(value) {
   return JSON.stringify(value);
+}
+
+function normalizeJsonValue(value, name) {
+  if (value === undefined) return undefined;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (error) {
+    throw new DomainError("invalid_json_value", `${name} must be JSON-compatible`, {
+      name,
+      reason: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
+function streamKey(aggregateType, aggregateId) {
+  return `${aggregateType}\0${aggregateId}`;
 }
 
 function mapEvidenceRow(row) {
@@ -135,26 +155,7 @@ export class PostgresEventRepository {
   async findCommand({ idempotencyKey, commandHash }) {
     assertString("idempotencyKey", idempotencyKey);
     assertString("commandHash", commandHash);
-    const result = await this.pool.query(
-      `SELECT c.command_hash, c.status, c.event_id, d.event_json
-         FROM command_idempotency c
-         LEFT JOIN domain_events d ON d.id = c.event_id
-        WHERE c.idempotency_key = $1`,
-      [idempotencyKey]
-    );
-    if (result.rowCount === 0) return undefined;
-    const row = result.rows[0];
-    if (row.command_hash !== commandHash) {
-      throw new DomainError("event_idempotency_conflict", "idempotency key was reused with a different command", {
-        idempotencyKey
-      });
-    }
-    if (row.status !== "completed" || !row.event_json) {
-      throw new DomainError("incomplete_idempotent_command", "idempotent command exists without a completed event", {
-        idempotencyKey
-      });
-    }
-    return { event: clone(row.event_json), replayed: true };
+    return this.#findCommand(this.pool, { idempotencyKey, commandHash });
   }
 
   async appendCommand({
@@ -164,23 +165,97 @@ export class PostgresEventRepository {
     idempotencyKey,
     commandHash,
     event,
-    outboxTopic = this.outboxTopic
+    outboxTopic = this.outboxTopic,
+    response,
+    applyProjection
   }) {
-    for (const [name, value] of Object.entries({ aggregateType, aggregateId, idempotencyKey, commandHash, outboxTopic })) {
+    const result = await this.appendCommandBatch({
+      aggregateType,
+      aggregateId,
+      idempotencyKey,
+      commandHash,
+      events: [{ aggregateType, aggregateId, expectedVersion, event, outboxTopic }],
+      response,
+      applyProjection
+    });
+    return {
+      event: result.event,
+      evidence: result.evidence,
+      response: result.response,
+      replayed: result.replayed
+    };
+  }
+
+  async appendCommandBatch({
+    aggregateType,
+    aggregateId,
+    idempotencyKey,
+    commandHash,
+    events,
+    response,
+    applyProjection
+  }) {
+    for (const [name, value] of Object.entries({ aggregateType, aggregateId, idempotencyKey, commandHash })) {
       assertString(name, value);
     }
-    const normalizedExpectedVersion = toSafeVersion(expectedVersion, "expectedVersion");
-    if (!event || typeof event !== "object") {
-      throw new DomainError("invalid_domain_event", "event must be an object");
+    if (!Array.isArray(events) || events.length === 0 || events.length > 128) {
+      throw new DomainError("invalid_command_event_set", "events must contain between 1 and 128 domain events");
     }
-    for (const name of ["eventId", "eventType", "payloadHash", "occurredAt", "schemaVersion"]) {
-      assertString(`event.${name}`, event[name]);
+    if (applyProjection !== undefined && typeof applyProjection !== "function") {
+      throw new DomainError("invalid_projection_handler", "applyProjection must be a function");
     }
-    const computedEventPayloadHash = hashId("event_payload", event.payload ?? {});
-    if (event.payloadHash !== computedEventPayloadHash) {
-      throw new DomainError("invalid_event_payload_hash", "event payload hash does not match its payload", {
-        eventId: event.eventId
-      });
+
+    const normalizedResponse = normalizeJsonValue(response, "response");
+    if (
+      normalizedResponse !== undefined &&
+      Buffer.byteLength(json(normalizedResponse)) > MAX_COMMAND_RESPONSE_BYTES
+    ) {
+      throw new DomainError("command_response_too_large", "command response exceeds the repository limit");
+    }
+    let commandPayloadBytes = 0;
+    const normalizedEvents = events.map((descriptor, eventIndex) => {
+      if (!descriptor || typeof descriptor !== "object") {
+        throw new DomainError("invalid_domain_event", "event descriptor must be an object", { eventIndex });
+      }
+      const normalized = {
+        aggregateType: descriptor.aggregateType,
+        aggregateId: descriptor.aggregateId,
+        expectedVersion: toSafeVersion(descriptor.expectedVersion, `events[${eventIndex}].expectedVersion`),
+        event: descriptor.event,
+        outboxTopic: descriptor.outboxTopic ?? this.outboxTopic
+      };
+      for (const [name, value] of Object.entries({
+        aggregateType: normalized.aggregateType,
+        aggregateId: normalized.aggregateId,
+        outboxTopic: normalized.outboxTopic
+      })) {
+        assertString(`events[${eventIndex}].${name}`, value);
+      }
+      if (!normalized.event || typeof normalized.event !== "object") {
+        throw new DomainError("invalid_domain_event", "event must be an object", { eventIndex });
+      }
+      for (const name of ["eventId", "eventType", "payloadHash", "occurredAt", "schemaVersion"]) {
+        assertString(`events[${eventIndex}].event.${name}`, normalized.event[name]);
+      }
+      const computedEventPayloadHash = hashId("event_payload", normalized.event.payload ?? {});
+      if (normalized.event.payloadHash !== computedEventPayloadHash) {
+        throw new DomainError("invalid_event_payload_hash", "event payload hash does not match its payload", {
+          eventId: normalized.event.eventId,
+          eventIndex
+        });
+      }
+      const payloadBytes = Buffer.byteLength(json(normalized.event.payload ?? {}));
+      if (payloadBytes > MAX_EVENT_PAYLOAD_BYTES) {
+        throw new DomainError("event_payload_too_large", "event payload exceeds the repository limit", { eventIndex });
+      }
+      commandPayloadBytes += payloadBytes;
+      return normalized;
+    });
+    if (commandPayloadBytes > MAX_COMMAND_PAYLOAD_BYTES) {
+      throw new DomainError("command_payload_too_large", "combined command event payloads exceed the repository limit");
+    }
+    if (new Set(normalizedEvents.map(({ event }) => event.eventId)).size !== normalizedEvents.length) {
+      throw new DomainError("duplicate_command_event", "a command cannot contain duplicate event ids");
     }
 
     return this.#withSerializableTransaction(async (client) => {
@@ -194,208 +269,380 @@ export class PostgresEventRepository {
       );
 
       if (insertedCommand.rowCount === 0) {
-        const existing = await client.query(
-          `SELECT c.command_hash, c.status, c.event_id, d.event_json
-             FROM command_idempotency c
-             LEFT JOIN domain_events d ON d.id = c.event_id
-            WHERE c.idempotency_key = $1
-            FOR UPDATE OF c`,
-          [idempotencyKey]
-        );
-        const row = existing.rows[0];
-        if (!row || row.command_hash !== commandHash) {
-          throw new DomainError("event_idempotency_conflict", "idempotency key was reused with a different command", {
-            idempotencyKey
-          });
-        }
-        if (row.status !== "completed" || !row.event_json) {
-          throw new DomainError("incomplete_idempotent_command", "idempotent command is not complete", {
-            idempotencyKey
-          });
-        }
-        return { event: clone(row.event_json), replayed: true };
+        return this.#findCommand(client, {
+          idempotencyKey,
+          commandHash,
+          expectedAggregateType: aggregateType,
+          expectedAggregateId: aggregateId,
+          lock: true
+        });
       }
 
       await this.#injectFault("after_command_reserved", { aggregateType, aggregateId, idempotencyKey, client });
-      await client.query(
-        `INSERT INTO aggregate_stream_heads(aggregate_type, aggregate_id, current_version)
-         VALUES ($1, $2, 0)
-         ON CONFLICT DO NOTHING`,
-        [aggregateType, aggregateId]
-      );
-      const headResult = await client.query(
-        `SELECT current_version
-           FROM aggregate_stream_heads
-          WHERE aggregate_type = $1 AND aggregate_id = $2
-          FOR UPDATE`,
-        [aggregateType, aggregateId]
-      );
-      const actualVersion = toSafeVersion(headResult.rows[0].current_version);
-      if (actualVersion !== normalizedExpectedVersion) {
-        throw new DomainError("stale_aggregate_version", "aggregate changed since it was read", {
-          aggregateType,
-          aggregateId,
-          expectedVersion: normalizedExpectedVersion,
-          actualVersion
+      const streamDescriptors = new Map();
+      for (const descriptor of normalizedEvents) {
+        streamDescriptors.set(streamKey(descriptor.aggregateType, descriptor.aggregateId), {
+          aggregateType: descriptor.aggregateType,
+          aggregateId: descriptor.aggregateId
         });
       }
-      const aggregateVersion = actualVersion + 1;
-      if (
-        event.payload?.intentVersion !== undefined &&
-        toSafeVersion(event.payload.intentVersion, "intentVersion") !== aggregateVersion
-      ) {
-        throw new DomainError("event_version_mismatch", "event payload version does not match the aggregate stream", {
+      const orderedStreams = [...streamDescriptors.values()].sort(
+        (left, right) =>
+          left.aggregateType.localeCompare(right.aggregateType) || left.aggregateId.localeCompare(right.aggregateId)
+      );
+      for (const stream of orderedStreams) {
+        await client.query(
+          `INSERT INTO aggregate_stream_heads(aggregate_type, aggregate_id, current_version)
+           VALUES ($1, $2, 0)
+           ON CONFLICT DO NOTHING`,
+          [stream.aggregateType, stream.aggregateId]
+        );
+      }
+
+      const streamVersions = new Map();
+      for (const stream of orderedStreams) {
+        const headResult = await client.query(
+          `SELECT current_version
+             FROM aggregate_stream_heads
+            WHERE aggregate_type = $1 AND aggregate_id = $2
+            FOR UPDATE`,
+          [stream.aggregateType, stream.aggregateId]
+        );
+        streamVersions.set(
+          streamKey(stream.aggregateType, stream.aggregateId),
+          toSafeVersion(headResult.rows[0].current_version)
+        );
+      }
+
+      const committed = [];
+      for (let eventIndex = 0; eventIndex < normalizedEvents.length; eventIndex += 1) {
+        const descriptor = normalizedEvents[eventIndex];
+        const key = streamKey(descriptor.aggregateType, descriptor.aggregateId);
+        const actualVersion = streamVersions.get(key);
+        if (actualVersion !== descriptor.expectedVersion) {
+          throw new DomainError("stale_aggregate_version", "aggregate changed since it was read", {
+            aggregateType: descriptor.aggregateType,
+            aggregateId: descriptor.aggregateId,
+            expectedVersion: descriptor.expectedVersion,
+            actualVersion,
+            eventIndex
+          });
+        }
+        const aggregateVersion = actualVersion + 1;
+        const event = descriptor.event;
+        if (
+          event.payload?.intentVersion !== undefined &&
+          toSafeVersion(event.payload.intentVersion, "intentVersion") !== aggregateVersion
+        ) {
+          throw new DomainError("event_version_mismatch", "event payload version does not match the aggregate stream", {
+            aggregateVersion,
+            intentVersion: event.payload.intentVersion,
+            eventIndex
+          });
+        }
+        streamVersions.set(key, aggregateVersion);
+
+        const recordedAt = this.clock().toISOString();
+        const evidence = createEvidenceEnvelope({
+          eventId: event.eventId,
+          eventType: event.eventType,
+          aggregateType: descriptor.aggregateType,
+          aggregateId: descriptor.aggregateId,
           aggregateVersion,
-          intentVersion: event.payload.intentVersion
+          subjectId: event.subjectId,
+          obligationId: event.obligationId,
+          causationId: event.payload?.causationId,
+          correlationId: event.payload?.correlationId ?? event.subjectId ?? event.eventId,
+          idempotencyKey: eventIndex === 0 ? idempotencyKey : `${idempotencyKey}:${eventIndex}`,
+          actorRef: event.payload?.actorId ?? "system:ipo.one.postgres",
+          sourceSystem: this.sourceSystem,
+          sourceFinality: event.finalityStatus,
+          payload: event.payload ?? {},
+          occurredAt: event.occurredAt,
+          recordedAt
+        });
+
+        await client.query(
+          `INSERT INTO domain_events(
+             id, event_type, aggregate_type, aggregate_id, aggregate_version,
+             subject_id, obligation_id, source_finality, payload_hash, payload,
+             event_json, occurred_at, recorded_at, schema_version
+           ) VALUES (
+             $1, $2, $3, $4, $5,
+             $6, $7, $8, $9, $10,
+             $11, $12, $13, $14
+           )`,
+          [
+            event.eventId,
+            event.eventType,
+            descriptor.aggregateType,
+            descriptor.aggregateId,
+            aggregateVersion,
+            event.subjectId ?? null,
+            event.obligationId ?? null,
+            event.finalityStatus,
+            event.payloadHash,
+            json(event.payload ?? {}),
+            json(event),
+            event.occurredAt,
+            recordedAt,
+            event.schemaVersion
+          ]
+        );
+        await this.#injectFault("after_event_inserted", {
+          aggregateType: descriptor.aggregateType,
+          aggregateId: descriptor.aggregateId,
+          idempotencyKey,
+          eventIndex,
+          client
+        });
+
+        await client.query(
+          `INSERT INTO credit_events(
+             id, event_type, subject_id, obligation_id, payload_hash, payload_ref,
+             finality_status, occurred_at
+           ) VALUES ($1, $2, $3, $4, $5, NULL, $6, $7)`,
+          [
+            event.eventId,
+            event.eventType,
+            event.subjectId ?? null,
+            event.obligationId ?? null,
+            event.payloadHash,
+            event.finalityStatus,
+            event.occurredAt
+          ]
+        );
+        await client.query(
+          `INSERT INTO evidence_envelopes(
+             id, evidence_hash, event_type, aggregate_type, aggregate_id,
+             aggregate_version, subject_id, obligation_id, causation_id,
+             correlation_id, idempotency_key, actor_ref, source_system,
+             source_finality, payload_hash, payload_ref, payload,
+             attestation_refs, occurred_at, recorded_at, schema_version
+           ) VALUES (
+             $1, $2, $3, $4, $5,
+             $6, $7, $8, $9,
+             $10, $11, $12, $13,
+             $14, $15, $16, $17,
+             $18, $19, $20, $21
+           )`,
+          [
+            evidence.evidenceId,
+            evidence.evidenceHash,
+            evidence.eventType,
+            evidence.aggregateType,
+            evidence.aggregateId,
+            evidence.aggregateVersion,
+            evidence.subjectId ?? null,
+            evidence.obligationId ?? null,
+            evidence.causationId ?? null,
+            evidence.correlationId,
+            evidence.idempotencyKey,
+            evidence.actorRef,
+            evidence.sourceSystem,
+            evidence.sourceFinality,
+            evidence.payloadHash,
+            evidence.payloadRef ?? null,
+            json(evidence.payload),
+            json(evidence.attestationRefs),
+            evidence.occurredAt,
+            evidence.recordedAt,
+            evidence.schemaVersion
+          ]
+        );
+
+        const durableEvent = {
+          ...event,
+          aggregateType: descriptor.aggregateType,
+          aggregateId: descriptor.aggregateId,
+          aggregateVersion
+        };
+        const outboxPayload = { event: durableEvent, evidence };
+        await client.query(
+          `INSERT INTO outbox_messages(
+             id, event_id, topic, message_key, payload, payload_hash, headers,
+             occurred_at, max_attempts
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            `outbox_${event.eventId}`,
+            event.eventId,
+            descriptor.outboxTopic,
+            descriptor.aggregateId,
+            json(outboxPayload),
+            hashId("outbox_payload", outboxPayload),
+            json({
+              aggregateType: descriptor.aggregateType,
+              aggregateVersion,
+              schemaVersion: event.schemaVersion
+            }),
+            event.occurredAt,
+            this.maxOutboxAttempts
+          ]
+        );
+        await client.query(
+          `INSERT INTO command_events(
+             idempotency_key, sequence, event_id, aggregate_type, aggregate_id, aggregate_version
+           ) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            idempotencyKey,
+            eventIndex,
+            event.eventId,
+            descriptor.aggregateType,
+            descriptor.aggregateId,
+            aggregateVersion
+          ]
+        );
+        await this.#injectFault("after_outbox_inserted", {
+          aggregateType: descriptor.aggregateType,
+          aggregateId: descriptor.aggregateId,
+          idempotencyKey,
+          eventIndex,
+          client
+        });
+        committed.push({
+          event: clone(event),
+          evidence: clone(evidence),
+          aggregateType: descriptor.aggregateType,
+          aggregateId: descriptor.aggregateId,
+          aggregateVersion
         });
       }
 
-      const recordedAt = this.clock().toISOString();
-      const evidence = createEvidenceEnvelope({
-        eventId: event.eventId,
-        eventType: event.eventType,
-        aggregateType,
-        aggregateId,
-        aggregateVersion,
-        subjectId: event.subjectId,
-        obligationId: event.obligationId,
-        causationId: event.payload?.causationId,
-        correlationId: event.payload?.correlationId ?? event.subjectId ?? event.eventId,
-        idempotencyKey,
-        actorRef: event.payload?.actorId ?? "system:ipo.one.postgres",
-        sourceSystem: this.sourceSystem,
-        sourceFinality: event.finalityStatus,
-        payload: event.payload ?? {},
-        occurredAt: event.occurredAt,
-        recordedAt
-      });
-
-      await client.query(
-        `INSERT INTO domain_events(
-           id, event_type, aggregate_type, aggregate_id, aggregate_version,
-           subject_id, obligation_id, source_finality, payload_hash, payload,
-           event_json, occurred_at, recorded_at, schema_version
-         ) VALUES (
-           $1, $2, $3, $4, $5,
-           $6, $7, $8, $9, $10,
-           $11, $12, $13, $14
-         )`,
-        [
-          event.eventId,
-          event.eventType,
-          aggregateType,
-          aggregateId,
-          aggregateVersion,
-          event.subjectId ?? null,
-          event.obligationId ?? null,
-          event.finalityStatus,
-          event.payloadHash,
-          json(event.payload ?? {}),
-          json(event),
-          event.occurredAt,
-          recordedAt,
-          event.schemaVersion
-        ]
-      );
-      await this.#injectFault("after_event_inserted", { aggregateType, aggregateId, idempotencyKey, client });
-
-      await client.query(
-        `INSERT INTO credit_events(
-           id, event_type, subject_id, obligation_id, payload_hash, payload_ref,
-           finality_status, occurred_at
-         ) VALUES ($1, $2, $3, $4, $5, NULL, $6, $7)`,
-        [
-          event.eventId,
-          event.eventType,
-          event.subjectId ?? null,
-          event.obligationId ?? null,
-          event.payloadHash,
-          event.finalityStatus,
-          event.occurredAt
-        ]
-      );
-      await client.query(
-        `INSERT INTO evidence_envelopes(
-           id, evidence_hash, event_type, aggregate_type, aggregate_id,
-           aggregate_version, subject_id, obligation_id, causation_id,
-           correlation_id, idempotency_key, actor_ref, source_system,
-           source_finality, payload_hash, payload_ref, payload,
-           attestation_refs, occurred_at, recorded_at, schema_version
-         ) VALUES (
-           $1, $2, $3, $4, $5,
-           $6, $7, $8, $9,
-           $10, $11, $12, $13,
-           $14, $15, $16, $17,
-           $18, $19, $20, $21
-         )`,
-        [
-          evidence.evidenceId,
-          evidence.evidenceHash,
-          evidence.eventType,
-          evidence.aggregateType,
-          evidence.aggregateId,
-          evidence.aggregateVersion,
-          evidence.subjectId ?? null,
-          evidence.obligationId ?? null,
-          evidence.causationId ?? null,
-          evidence.correlationId,
-          evidence.idempotencyKey,
-          evidence.actorRef,
-          evidence.sourceSystem,
-          evidence.sourceFinality,
-          evidence.payloadHash,
-          evidence.payloadRef ?? null,
-          json(evidence.payload),
-          json(evidence.attestationRefs),
-          evidence.occurredAt,
-          evidence.recordedAt,
-          evidence.schemaVersion
-        ]
-      );
-
-      const durableEvent = {
-        ...event,
-        aggregateType,
-        aggregateId,
-        aggregateVersion
+      const storedResponse = normalizedResponse ?? {
+        eventIds: committed.map(({ event }) => event.eventId),
+        aggregateVersions: committed.map(({ aggregateType: type, aggregateId: id, aggregateVersion: version }) => ({
+          aggregateType: type,
+          aggregateId: id,
+          aggregateVersion: version
+        }))
       };
-      const outboxPayload = { event: durableEvent, evidence };
-      const outboxMessageId = `outbox_${event.eventId}`;
-      await client.query(
-        `INSERT INTO outbox_messages(
-           id, event_id, topic, message_key, payload, payload_hash, headers,
-           occurred_at, max_attempts
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
-          outboxMessageId,
-          event.eventId,
-          outboxTopic,
-          aggregateId,
-          json(outboxPayload),
-          hashId("outbox_payload", outboxPayload),
-          json({ aggregateType, aggregateVersion, schemaVersion: event.schemaVersion }),
-          event.occurredAt,
-          this.maxOutboxAttempts
-        ]
-      );
-      await this.#injectFault("after_outbox_inserted", { aggregateType, aggregateId, idempotencyKey, client });
+      if (applyProjection) {
+        await applyProjection({
+          client,
+          command: { aggregateType, aggregateId, idempotencyKey, commandHash },
+          committed: clone(committed),
+          response: clone(storedResponse)
+        });
+        await this.#injectFault("after_projection_applied", { aggregateType, aggregateId, idempotencyKey, client });
+      }
 
-      await client.query(
-        `UPDATE aggregate_stream_heads
-            SET current_version = $3, updated_at = clock_timestamp()
-          WHERE aggregate_type = $1 AND aggregate_id = $2`,
-        [aggregateType, aggregateId, aggregateVersion]
-      );
+      for (const stream of orderedStreams) {
+        await client.query(
+          `UPDATE aggregate_stream_heads
+              SET current_version = $3, updated_at = clock_timestamp()
+            WHERE aggregate_type = $1 AND aggregate_id = $2`,
+          [
+            stream.aggregateType,
+            stream.aggregateId,
+            streamVersions.get(streamKey(stream.aggregateType, stream.aggregateId))
+          ]
+        );
+      }
       await client.query(
         `UPDATE command_idempotency
             SET status = 'completed', event_id = $2, response_json = $3,
+                response_hash = $4,
                 updated_at = clock_timestamp()
           WHERE idempotency_key = $1`,
-        [idempotencyKey, event.eventId, json({ eventId: event.eventId, aggregateVersion })]
+        [
+          idempotencyKey,
+          committed[0].event.eventId,
+          json(storedResponse),
+          hashId("command_response", storedResponse)
+        ]
       );
 
-      return { event: clone(event), evidence: clone(evidence), replayed: false };
+      return {
+        event: clone(committed[0].event),
+        events: committed.map(({ event }) => clone(event)),
+        evidence: clone(committed[0].evidence),
+        evidences: committed.map(({ evidence }) => clone(evidence)),
+        response: clone(storedResponse),
+        replayed: false
+      };
     });
+  }
+
+  async #findCommand(
+    queryable,
+    { idempotencyKey, commandHash, expectedAggregateType, expectedAggregateId, lock = false }
+  ) {
+    const commandResult = await queryable.query(
+      `SELECT command_hash, aggregate_type, aggregate_id, status, event_id, response_json, response_hash
+         FROM command_idempotency
+        WHERE idempotency_key = $1
+        ${lock ? "FOR UPDATE" : ""}`,
+      [idempotencyKey]
+    );
+    if (commandResult.rowCount === 0) return undefined;
+    const command = commandResult.rows[0];
+    if (command.command_hash !== commandHash) {
+      throw new DomainError("event_idempotency_conflict", "idempotency key was reused with a different command", {
+        idempotencyKey
+      });
+    }
+    if (
+      (expectedAggregateType !== undefined && command.aggregate_type !== expectedAggregateType) ||
+      (expectedAggregateId !== undefined && command.aggregate_id !== expectedAggregateId)
+    ) {
+      throw new DomainError("event_idempotency_conflict", "idempotency key belongs to a different command aggregate", {
+        idempotencyKey
+      });
+    }
+    if (command.status !== "completed" || !command.event_id || command.response_json === null) {
+      throw new DomainError("incomplete_idempotent_command", "idempotent command exists without a completed event set", {
+        idempotencyKey
+      });
+    }
+    if (
+      command.response_hash &&
+      command.response_hash !== "legacy:unverified" &&
+      command.response_hash !== hashId("command_response", command.response_json)
+    ) {
+      throw new DomainError("command_response_hash_mismatch", "stored idempotent response failed its integrity check", {
+        idempotencyKey
+      });
+    }
+
+    const eventResult = await queryable.query(
+      `SELECT d.event_json
+         FROM command_events ce
+         JOIN domain_events d ON d.id = ce.event_id
+        WHERE ce.idempotency_key = $1
+        ORDER BY ce.sequence`,
+      [idempotencyKey]
+    );
+    let events = eventResult.rows.map((row) => clone(row.event_json));
+    if (events.length === 0) {
+      const legacy = await queryable.query("SELECT event_json FROM domain_events WHERE id = $1", [command.event_id]);
+      if (legacy.rowCount === 0) {
+        throw new DomainError("incomplete_idempotent_command", "idempotent command event is missing", {
+          idempotencyKey
+        });
+      }
+      events = [clone(legacy.rows[0].event_json)];
+    }
+    const evidenceResult = await queryable.query(
+      `SELECT e.*
+         FROM command_events ce
+         JOIN evidence_envelopes e ON e.id = ce.event_id
+        WHERE ce.idempotency_key = $1
+        ORDER BY ce.sequence`,
+      [idempotencyKey]
+    );
+    let evidences = evidenceResult.rows.map(mapEvidenceRow);
+    if (evidences.length === 0) {
+      const legacyEvidence = await queryable.query("SELECT * FROM evidence_envelopes WHERE id = $1", [command.event_id]);
+      evidences = legacyEvidence.rows.map(mapEvidenceRow);
+    }
+    return {
+      event: clone(events[0]),
+      events,
+      evidence: evidences[0] ? clone(evidences[0]) : undefined,
+      evidences: evidences.map(clone),
+      response: clone(command.response_json),
+      replayed: true
+    };
   }
 
   async listEvents({ aggregateType, aggregateId } = {}) {

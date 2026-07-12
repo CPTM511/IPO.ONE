@@ -487,14 +487,14 @@ MVP 首选：一条执行链 + centralized canonical reservation service + per-c
 | Capability | Current reality |
 | --- | --- |
 | Browser demo | Real local interaction against one Node process. |
-| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID 和 alpha SDK；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant；仍无 rate limit、runtime schema enforcement 或 durable command gateway。 |
+| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID、alpha SDK 及进程级流量/并发边界；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant；仍无 tenant credential quota、runtime schema enforcement 或 durable command gateway。 |
 | Wallet binding | CAIP-like format plus explicit mock signature; no production cryptographic verification. |
 | Payment | Instruction records only; no funds move. |
-| Lockbox | In-memory balance projection plus balanced double-entry demo ledger; no contract or custody. |
+| Lockbox | Public demo uses an in-memory projection; normalized Lockbox/Ledger repositories, immutable snapshots and reconciliation are PostgreSQL-tested but not composed behind the API; no contract or custody. |
 | Credit line | Deterministic demo rules over supplied inputs; no verified revenue adapter. |
 | Credit learning | Rule-based demo; event-derived primary evaluation after hardening; scripted cycles remain synthetic. |
-| Events | Core services use append-only in-memory Evidence; Rail supports optional PostgreSQL event sourcing, replay, outbox and inbox. |
-| Database | Two migration pairs are validated; Rail command/event/Evidence/outbox/inbox persistence is PostgreSQL-tested, while non-Rail core state remains process-local. |
+| Events | Public demo services use append-only in-memory Evidence; Rail and the core repository foundation support PostgreSQL batch events, replay, Evidence, outbox/inbox, normalized projections and discrepancy Evidence. |
+| Database | Four reversible migration pairs are validated. Rail plus Principal/Subject/Mandate/Provider/Spend/Lockbox/Ledger/Obligation/Repayment/Risk/Admin repositories, immutable snapshots, reconciliation and approval-gated repair are PostgreSQL-tested; the public command path remains process-local. |
 | Smart contracts | Not present. |
 | Multi-chain | Identifier shape only; no chain registry/indexer/finality/cap enforcement. |
 | Human compatibility | Partial enums/prototype guard; no complete consent/originator/loan-tape runtime. |
@@ -602,13 +602,18 @@ slice proposed by this review:
 - SQL projection/receipt structures and immutable receipt/quote guards; and
 - API/UI replay proof for the Agent provider-spend demonstration.
 
-DATA-001 / EVENT-001 now completes the Rail event-runtime portion of Milestone
-B: PostgreSQL is connected through an explicit repository composition and
-transactional outbox/inbox plus crash/retry/restart tests pass. Milestone B is
-still incomplete because Subject, Mandate, Obligation, Lockbox, Ledger, Risk,
-and Admin state are not durably composed; AuthN/RBAC/tenant isolation,
-reconciliation, webhook verification, remote adapter certification, custody,
-and real settlement do not exist.
+DATA-001 / EVENT-001 completes the Rail event-runtime portion of Milestone B.
+DATA-002 and the local RECON-001 foundation now add a serializable multi-event
+unit of work, normalized core repositories, immutable projection snapshots,
+event/state/Ledger reconciliation, discrepancy Evidence, and approval-gated
+repair. Crash/retry/restart, drift, concurrency, and repair tests run against
+real PostgreSQL.
+
+Milestone B is still incomplete at the application boundary: the public demo
+orchestrator remains process-local, and no authenticated tenant command gateway
+uses these repositories. AuthN/RBAC/tenant isolation, signed account/Mandate
+proof, webhook verification, remote adapter certification, custody, production
+database operations, and real settlement do not exist.
 
 ## 14. Final Recommendation
 

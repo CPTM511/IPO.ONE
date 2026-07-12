@@ -62,13 +62,15 @@ must never be treated as identity, authorization, or tenant membership.
 The following remain blockers for any real value or private multi-tenant launch:
 
 - AuthN, tenant model, RBAC, object authorization, dual control, and break-glass.
-- Durable non-Rail state, backup/restore, reconciliation, and operator replay.
+- Authenticated tenant-scoped durable command composition, production database
+  backup/restore, scheduled reconciliation, and authorized operator replay.
 - Signed Mandates, nonce/key rotation, wallet verification, and remote attestations.
 - Certified Provider workers, signed webhooks, custody/fund-path review, and caps.
 - Legal, risk, security, privacy, and jurisdiction approval.
 
-Those controls remain sequenced in `SECURITY-001`, `DATA-002`, `RECON-001`,
-`AUTH-002`, `PROVIDER-001`, and `OPS-001`. A public beta success must not be
+Those controls remain sequenced in `SECURITY-001`, `DATA-003`, `AUTH-002`,
+`PROVIDER-001`, and `OPS-001`; DATA-002 and the local RECON-001 repository
+foundation do not satisfy the production operations gate. A public beta success must not be
 relabelled as production financial readiness.
 
 The repository-level attack model and residual-risk register are maintained in

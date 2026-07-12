@@ -26,10 +26,14 @@ movement, accounting, and risk into one black box.
 
 > **Current status:** publicly deployable sandbox candidate. The repository now
 > includes a fail-closed production runtime, hardened container, Cloud Run
-> service template, Human/Agent discovery, and hosted-release runbook. It is not
+> service template, Human/Agent discovery, durable core repository and
+> reconciliation foundation, and hosted-release runbook. It is not
 > yet live at `ipo.one`; cloud, edge, certificate, monitoring, and DNS execution
-> still require explicit review. It performs no real lending, custody, KYC,
-> underwriting, or production fund movement. Real-value use is prohibited.
+> still require explicit review. The public API intentionally remains an
+> isolated process-local sandbox until tenant/AuthN decisions are approved; the
+> durable repository is not a customer command path. It performs no real
+> lending, custody, KYC, underwriting, or production fund movement. Real-value
+> use is prohibited.
 
 ## The Product Thesis
 
@@ -131,7 +135,9 @@ flowchart TB
   Learning --> Evidence
   Ledger --> Evidence
 
-  Rail -. optional durable repository .-> Postgres["PostgreSQL event runtime"]
+  Flow -. pilot repository boundary; not wired to public demo .-> Postgres["PostgreSQL event + core projection runtime"]
+  Rail -. optional durable repository .-> Postgres
+  Postgres --> Recon["Reconciliation + immutable recovery snapshots"]
   Plugins["Reviewed plugin manifests"] -. data contracts only .-> Flow
 ```
 
@@ -149,7 +155,8 @@ flowchart TB
 | Evidence | Portable event envelope, hashes, aggregate version, causation, correlation, finality | `evidence_event.v2` emitted across the kernel |
 | Credit Learning | Explainable behavior signals and next-cycle recommendations | Deterministic, rule-based, evidence-aware demo engine |
 | Plugin Registry | Trust state and data contract for KYC/KYP, Rail, Provider, chain, and risk adapters | Manifest validation only; no executable plugin loading |
-| Persistence | Command idempotency, aggregate versions, events, outbox, inbox, replay | Optional PostgreSQL Rail runtime; other demo state remains process-local |
+| Persistence | Batch command idempotency, aggregate versions, events, outbox, inbox, normalized state, immutable snapshots, replay | PostgreSQL Rail and core repository foundation; public demo composition remains process-local |
+| Reconciliation | Event/state/Ledger checks, discrepancy Evidence, dry-run planning, approval-gated repair | Deterministic PostgreSQL service and operator runbook; no automatic production repair |
 
 ### Repository Layout
 
@@ -174,7 +181,7 @@ modules/
   payment/             No-funds payment and repayment instructions
   rail/                Event-sourced transfer and settlement kernel
   settlement/          Compatibility projection over Rail Evidence
-  persistence/         PostgreSQL event, outbox, inbox, and replay runtime
+  persistence/         PostgreSQL event, core projection, reconciliation, and replay runtime
   plugin-registry/     Reviewed integration manifests
   credit-learning/     Explainable signals and recommendations
   event-audit/         Append-only event and Evidence storage
@@ -326,9 +333,11 @@ export DATABASE_URL=postgresql://127.0.0.1:5432/ipo_one_test
 pnpm run test:postgres
 ```
 
-That suite covers migration up/down/up, injected atomic rollback, idempotency
-conflict, concurrent writers, outbox lease recovery, transactional inbox
-deduplication, and restart replay. GitHub Actions repeats the locked install,
+That suite covers migration up/down/up, injected rollback before and after core
+projection writes, multi-event idempotency, concurrent writers, outbox lease
+recovery, transactional inbox deduplication, restart replay, normalized core
+state, projection hashes, Ledger/state reconciliation, drift Evidence, and
+approval-gated idempotent repair. GitHub Actions repeats the locked install,
 all repository and adversarial checks, PostgreSQL recovery, isolated demo,
 dependency audit, and live smoke on every push and pull request.
 
@@ -369,24 +378,24 @@ humans and Agents.
 | Stage | Product state | Gate |
 | --- | --- | --- |
 | Public sandbox | Deployment candidate | No real funds or private data; inspectable UI/API/SDK, hardened production container, proposed edge boundary, and release tests |
-| Closed design-partner pilot | Next | Approved AuthN/tenant/RBAC model, durable command path, signed Mandates, certified adapters, reconciliation, SLOs, legal/security/privacy review |
+| Closed design-partner pilot | Next | Approved AuthN/tenant/RBAC model, durable application command gateway, signed Mandates, certified adapters, SLOs, legal/security/privacy review |
 | Controlled production Agent credit | Future | Licensed and capital partners, reviewed custody and fund paths, per-provider/chain caps, dual control, break-glass, monitoring, disaster recovery |
 | Human-compatible and multi-chain network | Long term | Licensed Originators, Consent/KYC references, loan tape, stop-loss covenants, finality/reorg controls, portable Credit Passport and attestations |
 
 Near-term engineering priorities are:
 
-1. Extend reviewed PostgreSQL persistence and reconciliation from Rail to
-   Mandate, Ledger, Lockbox, Obligation, Risk, and Admin projections.
-2. Complete `SECURITY-001`: AuthN, tenant ownership, object/function RBAC,
+1. Complete `SECURITY-001`: AuthN, tenant ownership, object/function RBAC,
    credential lifecycle, rate policy, dual control, and break-glass.
+2. Compose the reviewed PostgreSQL core repositories behind an authenticated,
+   tenant-scoped durable command gateway; keep the public demo isolated.
 3. Add cryptographically signed Mandates, nonce/replay protection, key rotation,
    and wallet/account proof.
 4. Certify out-of-process Provider, KYP, payment, on/off-ramp, and chain adapters
    with signed requests, webhook replay protection, revocation, and failure policy.
 5. Execute `OPS-001A`: approved cloud identity, HTTPS edge, Cloud Armor,
    monitoring, incident ownership, immutable release, and GoDaddy DNS cutover.
-6. Add reconciliation, finality/reorg handling, capacity reservations,
-   observability, incident operations, backup, restore, and disaster recovery.
+6. Add finality/reorg handling, capacity reservations, observability, scheduled
+   reconciliation, incident operations, backup, restore, and disaster recovery.
 
 The requirement trace and commercialization sequence are maintained in
 [`IPO.ONE Commercialization Roadmap v0.3`](docs/guidance/IPO_ONE_COMMERCIALIZATION_ROADMAP_v0.3_DRAFT.md).
