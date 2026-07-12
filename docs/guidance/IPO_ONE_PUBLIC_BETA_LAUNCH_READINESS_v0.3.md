@@ -37,6 +37,7 @@ two audiences over one state model:
 | Production runtime | Invalid public mode, origin, Host, HTTPS proxy, HSTS, release, or no-real-funds configuration fails closed. |
 | Container boundary | Digest-pinned Node 24 LTS image, non-root runtime, health check, and CI read-only/no-capability smoke are defined. |
 | Machine discovery | Human/Agent endpoints and disabled real-funds/Human-credit capabilities are explicit at `/.well-known/ipo-one.json`. |
+| Launch governance | Versioned profiles require canonical fresh evidence, exact commit and image digest, complete named gates, and protected-environment authorization; private-data and real-value profiles are policy-locked. |
 
 Sandbox session IDs are isolation hints, not credentials. Knowledge of an ID
 must never be treated as identity, authorization, or tenant membership.
@@ -44,6 +45,8 @@ must never be treated as identity, authorization, or tenant membership.
 ## Hosted Release Checklist
 
 - [ ] GitHub Actions quality workflow passes on the exact release commit.
+- [ ] `launch:verify` passes against private evidence for the exact release SHA;
+  the committed pending template continues to fail.
 - [x] Repository production configuration, Host/HTTPS enforcement, probes, and
   immutable release metadata are implemented and adversarially tested.
 - [x] Proposed Cloud Run origin is load-balancer-only with its default URL disabled.
@@ -81,3 +84,8 @@ The proposed hosting boundary and operator sequence are maintained in
 `docs/architecture/ADR-014-public-sandbox-hosting-boundary.md` and
 `deploy/gcp/README.md`. Neither document is deployment evidence until the
 external controls are applied and verified.
+
+`deploy/launch-policy.v1.json` and its verifier make release evidence
+machine-checkable, but do not replace protected-environment review, cloud IAM,
+edge validation, or DNS change authorization. Only the public no-real-funds,
+no-private-data profile is currently enabled.

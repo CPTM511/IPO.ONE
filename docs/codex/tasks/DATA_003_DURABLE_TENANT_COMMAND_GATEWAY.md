@@ -32,6 +32,18 @@ would turn a safe demo into shared unauthenticated customer state.
 - No migration of anonymous sandbox sessions into tenant customer records.
 - No direct database access from browser or Agent clients.
 
+## Likely Files After Approval
+
+- `apps/api/src/*`
+- `modules/authorization/*`
+- `modules/identity/*`
+- `modules/persistence/*`
+- `packages/api-contract/*`
+- `api/openapi/ipo-one.v1.json`
+- `db/migrations/*`
+- `security/test/*`
+- `docs/architecture/*`
+
 ## Acceptance Criteria
 
 - Two-tenant negative tests cover every object route and command.

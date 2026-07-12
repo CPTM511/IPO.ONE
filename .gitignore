@@ -11,3 +11,4 @@ output/playwright/
 .env
 .env.*
 !.env.example
+deploy/approvals/*.local.json

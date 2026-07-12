@@ -305,6 +305,8 @@ deployment itself.
 - Architecture decision: [`ADR-014`](docs/architecture/ADR-014-public-sandbox-hosting-boundary.md)
 - Deployment runbook: [`deploy/gcp/README.md`](deploy/gcp/README.md)
 - Issue evidence: [`OPS-001A`](docs/codex/tasks/OPS_001_PUBLIC_SANDBOX_HOSTING_BASELINE.md)
+- Launch policy: [`launch-policy.v1.json`](deploy/launch-policy.v1.json)
+- Executable evidence gate: [`OPS-002`](docs/codex/tasks/OPS_002_EXECUTABLE_LAUNCH_EVIDENCE_GATE.md)
 
 The public container deliberately refuses to start unless it receives the
 exact no-real-funds acknowledgement and an HTTPS, HSTS, trusted-ingress
@@ -313,11 +315,25 @@ configuration. No cloud credential belongs in a repository `.env` file.
 ## Verification
 
 ```sh
-pnpm run check          # boundaries, schemas, OpenAPI, migrations, deployment, unit/contract tests
+pnpm run check          # boundaries, contracts, migrations, deployment/policy, unit tests
+pnpm run check:launch-policy
 pnpm run test:security  # live adversarial HTTP and state-bounding suite
 pnpm run demo           # isolated Agent Lockbox vertical slice
 pnpm audit --prod       # published production dependency advisories
 ```
+
+Release evidence is private and must identify the exact green commit. The
+committed pending template is designed to fail:
+
+```sh
+pnpm run launch:verify -- \
+  --evidence deploy/approvals/public-sandbox.local.json \
+  --profile public_sandbox \
+  --expected-sha <exact-green-40-character-commit-sha>
+```
+
+Passing verifies the evidence contract only. It does not grant GitHub, GCP,
+GoDaddy, tenant, fund, Provider, KYC/KYP, or production permission.
 
 With the dev server running:
 
@@ -377,23 +393,24 @@ humans and Agents.
 
 | Stage | Product state | Gate |
 | --- | --- | --- |
-| Public sandbox | Deployment candidate | No real funds or private data; inspectable UI/API/SDK, hardened production container, proposed edge boundary, and release tests |
-| Closed design-partner pilot | Next | Approved AuthN/tenant/RBAC model, durable application command gateway, signed Mandates, certified adapters, SLOs, legal/security/privacy review |
-| Controlled production Agent credit | Future | Licensed and capital partners, reviewed custody and fund paths, per-provider/chain caps, dual control, break-glass, monitoring, disaster recovery |
+| Public sandbox | Deployment candidate | No real funds or private data; executable launch evidence plus approved external cloud/edge/DNS controls required |
+| Closed design-partner pilot | Policy-locked | Approved and implemented tenant/RLS, Human/workload AuthN, object AuthZ, durable gateway, dual control, abuse limits, recovery, legal/security/privacy review |
+| Controlled production Agent credit | Policy-locked | Closed-pilot exit, signed provider and capital partners, reviewed custody/fund paths, caps/loss owner, independent review, on-call and stop-loss |
 | Human-compatible and multi-chain network | Long term | Licensed Originators, Consent/KYC references, loan tape, stop-loss covenants, finality/reorg controls, portable Credit Passport and attestations |
 
 Near-term engineering priorities are:
 
-1. Complete `SECURITY-001`: AuthN, tenant ownership, object/function RBAC,
-   credential lifecycle, rate policy, dual control, and break-glass.
-2. Compose the reviewed PostgreSQL core repositories behind an authenticated,
+1. Approve `SECURITY-001`, then execute `TENANT-001`, `AUTHN-001`, `AUTHZ-001`,
+   `APPROVAL-001`, and `ABUSE-001` as independently reviewed changes.
+2. Execute `DATA-003`: compose the reviewed PostgreSQL repositories behind an authenticated,
    tenant-scoped durable command gateway; keep the public demo isolated.
 3. Add cryptographically signed Mandates, nonce/replay protection, key rotation,
    and wallet/account proof.
 4. Certify out-of-process Provider, KYP, payment, on/off-ramp, and chain adapters
    with signed requests, webhook replay protection, revocation, and failure policy.
-5. Execute `OPS-001A`: approved cloud identity, HTTPS edge, Cloud Armor,
-   monitoring, incident ownership, immutable release, and GoDaddy DNS cutover.
+5. Execute `OPS-001A/OPS-002`: approved cloud identity, protected release
+   environment, HTTPS edge, Cloud Armor, monitoring, incident ownership,
+   immutable evidence, and GoDaddy DNS cutover.
 6. Add finality/reorg handling, capacity reservations, observability, scheduled
    reconciliation, incident operations, backup, restore, and disaster recovery.
 
