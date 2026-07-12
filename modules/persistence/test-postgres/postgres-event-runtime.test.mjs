@@ -1,15 +1,50 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  AccountPurpose,
+  CreditLineStatus,
+  LedgerAccountType,
+  LedgerEntryDirection,
+  LedgerNormalSide,
+  LockboxStatus,
+  MandateCapability,
+  MandateStatus,
+  ObligationStatus,
+  PrincipalType,
+  RiskAction,
   SettlementFinality,
   SettlementOutcome,
+  SubjectStatus,
+  SubjectType,
   TransferDirection,
+  createAccountBinding,
+  createAdminAction,
+  createCreditLine,
   createCreditEvent,
+  createLedgerAccount,
+  createLedgerEntry,
+  createLedgerTransaction,
+  createLockbox,
+  createMandate,
+  createObligation,
+  createPrincipal,
+  createProvider,
+  createRiskDecision,
+  createSpendPolicy,
+  createSpendRequest,
+  createSubject,
+  createWalletAccount,
   hashId
 } from "../../../packages/domain/src/index.js";
 import { RailService, SandboxRailAdapter } from "../../rail/src/index.js";
 import { migrateDown, migrateUp, migrationStatus } from "../../../scripts/migrate.mjs";
-import { PostgresEventRepository, createPostgresPool } from "../src/index.js";
+import {
+  CoreProjectionType,
+  PostgresCoreRepository,
+  PostgresEventRepository,
+  PostgresReconciliationService,
+  createPostgresPool
+} from "../src/index.js";
 
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const FIXED_NOW = new Date("2026-07-11T00:00:00.000Z");
@@ -47,6 +82,320 @@ async function runtimeCounts(pool) {
   return result.rows[0];
 }
 
+async function resetCoreRuntime(pool) {
+  await pool.query(`
+    TRUNCATE TABLE
+      projection_replay_jobs,
+      reconciliation_discrepancies,
+      reconciliation_runs,
+      projection_registry,
+      projection_snapshots,
+      command_events,
+      risk_decisions,
+      admin_actions,
+      repayment_events,
+      obligations,
+      credit_lines,
+      lockboxes,
+      ledger_entries,
+      ledger_transactions,
+      ledger_accounts,
+      spend_requests,
+      spend_policies,
+      providers,
+      account_bindings,
+      mandates,
+      subjects,
+      principals,
+      outbox_messages,
+      inbox_messages,
+      command_idempotency,
+      domain_events,
+      aggregate_stream_heads,
+      evidence_envelopes,
+      credit_events
+    RESTART IDENTITY CASCADE
+  `);
+}
+
+function buildCoreFixture() {
+  const now = FIXED_NOW;
+  const principal = createPrincipal({ principalType: PrincipalType.DEVELOPER, jurisdiction: "US", now });
+  const subject = {
+    ...createSubject({
+      subjectType: SubjectType.AGENT,
+      primaryPrincipalId: principal.principalId,
+      displayName: "Durable Pilot Agent",
+      now
+    }),
+    status: SubjectStatus.ACTIVE
+  };
+  const walletAccount = createWalletAccount({
+    accountId: "eip155:8453:0x1111111111111111111111111111111111111111",
+    purpose: AccountPurpose.EXECUTION,
+    verificationMethod: "verified_signature",
+    now
+  });
+  const accountBinding = createAccountBinding({
+    subjectId: subject.subjectId,
+    account: walletAccount,
+    signatureHash: hashId("signature", { fixture: "durable-account-binding" }),
+    nonce: "durable-account-binding-1",
+    now
+  });
+  const provider = createProvider({
+    name: "Durable Compute Provider",
+    settlementAccountId: PROVIDER_ACCOUNT,
+    riskTier: "tier_1",
+    now
+  });
+  const mandate = {
+    ...createMandate({
+      principalId: principal.principalId,
+      subjectId: subject.subjectId,
+      capabilities: Object.values(MandateCapability),
+      allowedProviderIds: [provider.providerId],
+      allowedCategories: ["compute"],
+      assetIds: [ASSET.assetId],
+      perActionLimitMinor: "100000",
+      aggregateLimitMinor: "500000",
+      validFrom: now.toISOString(),
+      expiresAt: new Date(now.getTime() + 86400_000).toISOString(),
+      nonce: "durable-mandate-1",
+      termsRef: "urn:ipo.one:test:durable-mandate:v1",
+      now
+    }),
+    status: MandateStatus.ACTIVE
+  };
+  const spendPolicy = createSpendPolicy({
+    subjectId: subject.subjectId,
+    providerId: provider.providerId,
+    assetId: ASSET.assetId,
+    perTxLimitMinor: "100000",
+    dailyLimitMinor: "250000",
+    obligationCapMinor: "100000",
+    category: "compute",
+    now
+  });
+  const spendRequest = {
+    ...createSpendRequest({
+      subjectId: subject.subjectId,
+      mandateId: mandate.mandateId,
+      providerId: provider.providerId,
+      spendPolicyId: spendPolicy.spendPolicyId,
+      assetId: ASSET.assetId,
+      amountMinor: "10000",
+      purposeCode: "compute",
+      now
+    }),
+    status: "approved"
+  };
+  mandate.utilizedMinor = spendRequest.amountMinor;
+  spendPolicy.dailySpentMinor = spendRequest.amountMinor;
+  const reservation = {
+    reservationId: spendRequest.spendRequestId,
+    reservationHash: hashId("mandate_reservation", {
+      mandateId: mandate.mandateId,
+      reservationId: spendRequest.spendRequestId,
+      subjectId: subject.subjectId,
+      capability: MandateCapability.PROVIDER_SPEND,
+      providerId: provider.providerId,
+      category: "compute",
+      assetId: ASSET.assetId,
+      amountMinor: spendRequest.amountMinor
+    }),
+    mandateId: mandate.mandateId,
+    subjectId: subject.subjectId,
+    capability: MandateCapability.PROVIDER_SPEND,
+    providerId: provider.providerId,
+    category: "compute",
+    assetId: ASSET.assetId,
+    amountMinor: spendRequest.amountMinor,
+    releasedMinor: "0",
+    createdAt: now.toISOString(),
+    schemaVersion: "mandate_reservation.v1"
+  };
+  const baseLockbox = createLockbox({
+    subjectId: subject.subjectId,
+    chainId: "eip155:8453",
+    assetId: ASSET.assetId,
+    accountId: "eip155:8453:0x2222222222222222222222222222222222222222",
+    now
+  });
+  const lockboxAccount = createLedgerAccount({
+    ownerType: "lockbox",
+    ownerId: baseLockbox.lockboxId,
+    assetId: ASSET.assetId,
+    accountType: LedgerAccountType.LOCKBOX_ASSET,
+    normalSide: LedgerNormalSide.DEBIT,
+    now
+  });
+  const revenueAccount = createLedgerAccount({
+    ownerType: "system",
+    ownerId: "external_revenue",
+    assetId: ASSET.assetId,
+    accountType: LedgerAccountType.EXTERNAL_REVENUE,
+    normalSide: LedgerNormalSide.CREDIT,
+    now
+  });
+  const repaymentAccount = createLedgerAccount({
+    ownerType: "system",
+    ownerId: "repayment_clearing",
+    assetId: ASSET.assetId,
+    accountType: LedgerAccountType.REPAYMENT_CLEARING,
+    normalSide: LedgerNormalSide.DEBIT,
+    now
+  });
+  const lockbox = {
+    ...baseLockbox,
+    status: LockboxStatus.ACTIVE,
+    ledgerAccountId: lockboxAccount.ledgerAccountId,
+    revenueLedgerAccountId: revenueAccount.ledgerAccountId,
+    repaymentLedgerAccountId: repaymentAccount.ledgerAccountId
+  };
+  const normalizedEntries = [
+    { ledgerAccountId: lockboxAccount.ledgerAccountId, direction: LedgerEntryDirection.DEBIT, amountMinor: "10000", sequence: 0 },
+    { ledgerAccountId: revenueAccount.ledgerAccountId, direction: LedgerEntryDirection.CREDIT, amountMinor: "10000", sequence: 1 }
+  ];
+  const ledgerTransaction = createLedgerTransaction({
+    idempotencyKey: "durable-ledger-capture-1",
+    transactionType: "lockbox_revenue_capture",
+    assetId: ASSET.assetId,
+    referenceType: "lockbox",
+    referenceId: lockbox.lockboxId,
+    metadata: { source: "postgres_test" },
+    normalizedEntries,
+    debitTotalMinor: "10000",
+    creditTotalMinor: "10000",
+    now
+  });
+  ledgerTransaction.entries = normalizedEntries.map((entry) =>
+    createLedgerEntry({
+      ledgerTransactionId: ledgerTransaction.ledgerTransactionId,
+      ledgerAccountId: entry.ledgerAccountId,
+      direction: entry.direction,
+      amountMinor: entry.amountMinor,
+      sequence: entry.sequence,
+      now
+    })
+  );
+  const riskDecision = createRiskDecision({
+    subjectId: subject.subjectId,
+    mandateId: mandate.mandateId,
+    assetId: ASSET.assetId,
+    status: CreditLineStatus.APPROVED,
+    limitMinor: "500000",
+    action: RiskAction.NONE,
+    reasons: [{ code: "approved_by_rules_v0", message: "test fixture" }],
+    now
+  });
+  const creditLine = createCreditLine({
+    subjectId: subject.subjectId,
+    mandateId: mandate.mandateId,
+    assetId: ASSET.assetId,
+    limitMinor: "500000",
+    utilizedMinor: spendRequest.amountMinor,
+    riskSnapshotId: riskDecision.riskDecisionId,
+    now
+  });
+  const obligation = {
+    ...createObligation({
+      subjectId: subject.subjectId,
+      principalId: principal.principalId,
+      mandateId: mandate.mandateId,
+      assetId: ASSET.assetId,
+      amountMinor: "10000",
+      dueAt: new Date(now.getTime() + 86400_000).toISOString(),
+      spendPolicyId: spendPolicy.spendPolicyId,
+      cashflowRouteId: `route_${lockbox.lockboxId}`,
+      nonce: spendRequest.spendRequestId,
+      now
+    }),
+    status: ObligationStatus.ACTIVE
+  };
+  const adminAction = createAdminAction({
+    adminId: "system:test",
+    actionType: "pilot_fixture_created",
+    targetType: "subject",
+    targetId: subject.subjectId,
+    reason: "postgres durability verification",
+    now
+  });
+
+  const events = [
+    {
+      aggregateType: "principal",
+      aggregateId: principal.principalId,
+      expectedVersion: 0,
+      event: createTestEvent({
+        eventType: "principal_created",
+        payload: { principalId: principal.principalId },
+        now
+      })
+    },
+    {
+      aggregateType: "subject",
+      aggregateId: subject.subjectId,
+      expectedVersion: 0,
+      event: createTestEvent({
+        eventType: "subject_created",
+        subjectId: subject.subjectId,
+        payload: { subjectId: subject.subjectId, principalId: principal.principalId },
+        now
+      })
+    },
+    {
+      aggregateType: "subject",
+      aggregateId: subject.subjectId,
+      expectedVersion: 1,
+      event: createTestEvent({
+        eventType: "pilot_control_plane_initialized",
+        subjectId: subject.subjectId,
+        payload: { subjectId: subject.subjectId, lockboxId: lockbox.lockboxId },
+        now
+      })
+    }
+  ];
+  const sourceEventId = events[2].event.eventId;
+  const writes = [
+    { type: CoreProjectionType.PRINCIPAL, value: principal, eventId: events[0].event.eventId },
+    { type: CoreProjectionType.SUBJECT, value: subject, eventId: events[1].event.eventId },
+    { type: CoreProjectionType.ACCOUNT_BINDING, value: accountBinding, eventId: sourceEventId },
+    { type: CoreProjectionType.PROVIDER, value: provider, eventId: sourceEventId },
+    { type: CoreProjectionType.MANDATE, value: mandate, eventId: sourceEventId },
+    { type: CoreProjectionType.MANDATE_RESERVATION, value: reservation, eventId: sourceEventId },
+    { type: CoreProjectionType.SPEND_POLICY, value: spendPolicy, eventId: sourceEventId },
+    { type: CoreProjectionType.SPEND_REQUEST, value: spendRequest, eventId: sourceEventId },
+    { type: CoreProjectionType.LEDGER_ACCOUNT, value: lockboxAccount, eventId: sourceEventId },
+    { type: CoreProjectionType.LEDGER_ACCOUNT, value: revenueAccount, eventId: sourceEventId },
+    { type: CoreProjectionType.LEDGER_ACCOUNT, value: repaymentAccount, eventId: sourceEventId },
+    { type: CoreProjectionType.LOCKBOX, value: lockbox, eventId: sourceEventId },
+    { type: CoreProjectionType.LEDGER_TRANSACTION, value: ledgerTransaction, eventId: sourceEventId },
+    { type: CoreProjectionType.RISK_DECISION, value: riskDecision, eventId: sourceEventId },
+    { type: CoreProjectionType.CREDIT_LINE, value: creditLine, eventId: sourceEventId },
+    { type: CoreProjectionType.OBLIGATION, value: obligation, eventId: sourceEventId },
+    { type: CoreProjectionType.ADMIN_ACTION, value: adminAction, eventId: sourceEventId }
+  ];
+  return {
+    principal,
+    subject,
+    accountBinding,
+    provider,
+    mandate,
+    reservation,
+    spendPolicy,
+    spendRequest,
+    lockbox,
+    ledgerTransaction,
+    riskDecision,
+    creditLine,
+    obligation,
+    adminAction,
+    events,
+    writes
+  };
+}
+
 test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeout: 60_000 }, async (t) => {
   assert.ok(CONNECTION_STRING, "DATABASE_URL must be provided by scripts/run-postgres-tests.mjs");
   const pool = createPostgresPool({
@@ -61,12 +410,69 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       const appliedCount = initialStatus.filter((migration) => migration.applied).length;
       if (appliedCount > 0) await migrateDown({ pool, steps: appliedCount });
 
-      assert.deepEqual(await migrateUp({ pool }), ["0001_mvp_foundation", "0002_event_runtime"]);
+      assert.deepEqual(await migrateUp({ pool }), [
+        "0001_mvp_foundation",
+        "0002_event_runtime",
+        "0003_core_aggregate_persistence",
+        "0004_reconciliation_runtime"
+      ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 2 }), ["0002_event_runtime", "0001_mvp_foundation"]);
-      assert.deepEqual(await migrateUp({ pool }), ["0001_mvp_foundation", "0002_event_runtime"]);
+      assert.deepEqual(await migrateDown({ pool, steps: 4 }), [
+        "0004_reconciliation_runtime",
+        "0003_core_aggregate_persistence",
+        "0002_event_runtime",
+        "0001_mvp_foundation"
+      ]);
+      assert.deepEqual(await migrateUp({ pool }), [
+        "0001_mvp_foundation",
+        "0002_event_runtime",
+        "0003_core_aggregate_persistence",
+        "0004_reconciliation_runtime"
+      ]);
+
+      assert.deepEqual(await migrateDown({ pool, steps: 2 }), [
+        "0004_reconciliation_runtime",
+        "0003_core_aggregate_persistence"
+      ]);
+      await pool.query(
+        `INSERT INTO principals(id, principal_hash, principal_type, jurisdiction, status, created_at)
+         VALUES ('principal_legacy_upgrade', 'hash_principal_legacy_upgrade', 'developer', 'US', 'active', $1)`,
+        [FIXED_NOW.toISOString()]
+      );
+      await pool.query(
+        `INSERT INTO subjects(id, subject_hash, subject_type, status, display_name, created_at, updated_at)
+         VALUES (
+           'subject_legacy_upgrade', 'hash_subject_legacy_upgrade', 'agent', 'active',
+           'Legacy Upgrade Fixture', $1, $1
+         )`,
+        [FIXED_NOW.toISOString()]
+      );
+      assert.deepEqual(await migrateUp({ pool }), [
+        "0003_core_aggregate_persistence",
+        "0004_reconciliation_runtime"
+      ]);
+      assert.equal(
+        (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
+          .rows[0].primary_principal_id,
+        null
+      );
+      await assert.rejects(
+        () =>
+          pool.query(
+            `INSERT INTO subjects(
+               id, subject_hash, subject_type, status, display_name,
+               primary_principal_id, created_at, updated_at
+             ) VALUES (
+               'subject_missing_principal', 'hash_subject_missing_principal', 'agent',
+               'active', 'Invalid New Subject', NULL, $1, $1
+             )`,
+            [FIXED_NOW.toISOString()]
+          ),
+        (error) => error.code === "23514"
+      );
+      await pool.query("TRUNCATE TABLE principals RESTART IDENTITY CASCADE");
     });
 
     await t.test("an injected crash rolls back command, event, Evidence, outbox, and stream head", async () => {
@@ -299,6 +705,344 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       } finally {
         await pool.query("DROP TABLE IF EXISTS integration_test_effects");
       }
+    });
+
+    await t.test("a multi-event core command rolls back projections after an injected crash", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const command = {
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "core-command-crash-1",
+        commandHash: hashId("core_command", { fixture: "durable-pilot-v1" }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: {
+          principalId: fixture.principal.principalId,
+          subjectId: fixture.subject.subjectId,
+          lockboxId: fixture.lockbox.lockboxId
+        }
+      };
+      const crashingEvents = new PostgresEventRepository({
+        pool,
+        faultInjector: ({ stage }) => {
+          if (stage === "after_projection_applied") throw new Error("injected core projection crash");
+        }
+      });
+      const crashingRepository = new PostgresCoreRepository({ pool, eventRepository: crashingEvents });
+
+      await assert.rejects(() => crashingRepository.commitCommand(command), /injected core projection crash/);
+      const rolledBack = await pool.query(`
+        SELECT
+          (SELECT count(*)::int FROM principals) AS principals,
+          (SELECT count(*)::int FROM subjects) AS subjects,
+          (SELECT count(*)::int FROM ledger_transactions) AS ledger_transactions,
+          (SELECT count(*)::int FROM domain_events) AS events,
+          (SELECT count(*)::int FROM outbox_messages) AS outbox,
+          (SELECT count(*)::int FROM projection_registry) AS projections,
+          (SELECT count(*)::int FROM projection_snapshots) AS snapshots,
+          (SELECT count(*)::int FROM command_events) AS command_events
+      `);
+      assert.deepEqual(rolledBack.rows[0], {
+        principals: 0,
+        subjects: 0,
+        ledger_transactions: 0,
+        events: 0,
+        outbox: 0,
+        projections: 0,
+        snapshots: 0,
+        command_events: 0
+      });
+    });
+
+    await t.test("core projections survive restart and replay the original command response", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const command = {
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "core-command-durable-1",
+        commandHash: hashId("core_command", { fixture: "durable-pilot-v1" }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: {
+          principalId: fixture.principal.principalId,
+          subjectId: fixture.subject.subjectId,
+          lockboxId: fixture.lockbox.lockboxId
+        }
+      };
+
+      const firstRepository = new PostgresCoreRepository({ pool });
+      const committed = await firstRepository.commitCommand(command);
+      assert.equal(committed.replayed, false);
+      assert.equal(committed.events.length, 3);
+      assert.deepEqual(committed.response, command.response);
+
+      const restartedRepository = new PostgresCoreRepository({ pool });
+      const [principal, subject, accountBinding, mandate, lockbox, ledgerTransaction, obligation, riskDecision, adminAction] =
+        await Promise.all([
+          restartedRepository.getPrincipal(fixture.principal.principalId),
+          restartedRepository.getSubject(fixture.subject.subjectId),
+          restartedRepository.getAccountBinding(fixture.accountBinding.accountBindingId),
+          restartedRepository.getMandate(fixture.mandate.mandateId),
+          restartedRepository.getLockbox(fixture.lockbox.lockboxId),
+          restartedRepository.getLedgerTransaction(fixture.ledgerTransaction.ledgerTransactionId),
+          restartedRepository.getObligation(fixture.obligation.obligationId),
+          restartedRepository.getRiskDecision(fixture.riskDecision.riskDecisionId),
+          restartedRepository.getAdminAction(fixture.adminAction.adminActionId)
+        ]);
+      assert.deepEqual(principal.linkedSubjectIds, [fixture.subject.subjectId]);
+      assert.equal(subject.primaryPrincipalId, fixture.principal.principalId);
+      assert.deepEqual(subject.linkedAccountIds, [fixture.accountBinding.accountBindingId]);
+      assert.equal(accountBinding.verificationMethod, "verified_signature");
+      assert.equal(mandate.status, MandateStatus.ACTIVE);
+      assert.equal(lockbox.balanceMinor, "10000");
+      assert.equal(lockbox.capturedRevenueMinor, "10000");
+      assert.equal(ledgerTransaction.entries.length, 2);
+      assert.equal(ledgerTransaction.debitTotalMinor, "10000");
+      assert.equal(obligation.outstandingPrincipalMinor, "10000");
+      assert.equal(riskDecision.riskDecisionId, fixture.riskDecision.riskDecisionId);
+      assert.equal(adminAction.reason, fixture.adminAction.reason);
+
+      const registration = await restartedRepository.getProjectionRegistration(
+        CoreProjectionType.OBLIGATION,
+        fixture.obligation.obligationId
+      );
+      assert.equal(registration.rootAggregateId, fixture.subject.subjectId);
+      assert.equal(registration.lastEventId, fixture.events[2].event.eventId);
+      assert.equal(registration.aggregateVersion, 2);
+      const projectionProof = await restartedRepository.verifyProjection(
+        CoreProjectionType.OBLIGATION,
+        fixture.obligation.obligationId
+      );
+      assert.equal(projectionProof.matches, true);
+
+      const replay = await restartedRepository.commitCommand(command);
+      assert.equal(replay.replayed, true);
+      assert.deepEqual(replay.response, command.response);
+      assert.deepEqual(
+        replay.events.map((event) => event.eventId),
+        committed.events.map((event) => event.eventId)
+      );
+      const counts = await pool.query(`
+        SELECT
+          (SELECT count(*)::int FROM command_idempotency) AS commands,
+          (SELECT count(*)::int FROM command_events) AS command_events,
+          (SELECT count(*)::int FROM domain_events) AS events,
+          (SELECT count(*)::int FROM outbox_messages) AS outbox,
+          (SELECT count(*)::int FROM projection_registry) AS projections,
+          (SELECT count(*)::int FROM projection_snapshots) AS snapshots
+      `);
+      assert.deepEqual(counts.rows[0], {
+        commands: 1,
+        command_events: 3,
+        events: 3,
+        outbox: 3,
+        projections: fixture.writes.length,
+        snapshots: fixture.writes.length
+      });
+
+      await assert.rejects(
+        () =>
+          restartedRepository.commitCommand({
+            ...command,
+            commandHash: hashId("core_command", { fixture: "conflicting-input" })
+        }),
+        (error) => error.code === "event_idempotency_conflict"
+      );
+
+      const conflictingBindingEvent = createTestEvent({
+        eventType: "account_binding_changed",
+        subjectId: fixture.subject.subjectId,
+        payload: { accountBindingId: fixture.accountBinding.accountBindingId },
+        now: new Date(FIXED_NOW.getTime() + 1000)
+      });
+      await assert.rejects(
+        () =>
+          restartedRepository.commitCommand({
+            aggregateType: "subject",
+            aggregateId: fixture.subject.subjectId,
+            idempotencyKey: "core-binding-identity-conflict",
+            commandHash: hashId("core_command", { case: "binding_identity_conflict" }),
+            events: [
+              {
+                aggregateType: "subject",
+                aggregateId: fixture.subject.subjectId,
+                expectedVersion: 2,
+                event: conflictingBindingEvent
+              }
+            ],
+            writes: [
+              {
+                type: CoreProjectionType.ACCOUNT_BINDING,
+                value: { ...fixture.accountBinding, purpose: AccountPurpose.PRIMARY },
+                eventId: conflictingBindingEvent.eventId
+              }
+            ],
+            response: { changed: true }
+          }),
+        (error) => error.code === "projection_identity_conflict"
+      );
+      assert.equal(
+        (await restartedRepository.getAccountBinding(fixture.accountBinding.accountBindingId)).purpose,
+        AccountPurpose.EXECUTION
+      );
+    });
+
+    await t.test("core stream races produce one projection winner", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const repository = new PostgresCoreRepository({ pool });
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "core-race-seed",
+        commandHash: hashId("core_command", { race: "seed" }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { status: fixture.subject.status }
+      });
+
+      const attempts = [SubjectStatus.SUSPENDED, SubjectStatus.CLOSED].map((status) => {
+        const nextSubject = {
+          ...fixture.subject,
+          status,
+          updatedAt: new Date(FIXED_NOW.getTime() + 1000).toISOString()
+        };
+        const event = createTestEvent({
+          eventType: "subject_status_changed",
+          subjectId: fixture.subject.subjectId,
+          payload: { subjectId: fixture.subject.subjectId, newStatus: status },
+          now: new Date(FIXED_NOW.getTime() + 1000)
+        });
+        return repository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId,
+          idempotencyKey: `core-race-${status}`,
+          commandHash: hashId("core_command", { race: status }),
+          events: [
+            {
+              aggregateType: "subject",
+              aggregateId: fixture.subject.subjectId,
+              expectedVersion: 2,
+              event
+            }
+          ],
+          writes: [{ type: CoreProjectionType.SUBJECT, value: nextSubject, eventId: event.eventId }],
+          response: { status }
+        });
+      });
+      const results = await Promise.allSettled(attempts);
+      assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+      const rejected = results.find((result) => result.status === "rejected");
+      assert.equal(rejected.reason.code, "stale_aggregate_version");
+      const stored = await repository.getSubject(fixture.subject.subjectId);
+      const winner = results.find((result) => result.status === "fulfilled").value.response.status;
+      assert.equal(stored.status, winner);
+      assert.equal(
+        await repository.eventRepository.getStreamVersion({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId
+        }),
+        3
+      );
+    });
+
+    await t.test("reconciliation detects drift and approval-gated repair restores a clean state", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const coreRepository = new PostgresCoreRepository({ pool });
+      await coreRepository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "reconciliation-fixture-1",
+        commandHash: hashId("core_command", { reconciliation: "fixture" }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { subjectId: fixture.subject.subjectId }
+      });
+      const reconciliation = new PostgresReconciliationService({
+        pool,
+        coreRepository,
+        eventRepository: coreRepository.eventRepository,
+        release: "postgres-test",
+        clock: (() => {
+          let tick = 0;
+          return () => new Date(FIXED_NOW.getTime() + 10_000 + tick++ * 1000);
+        })()
+      });
+
+      const clean = await reconciliation.run({
+        initiatedBy: "system:test-reconciliation",
+        idempotencyKey: "reconciliation-clean-1"
+      });
+      assert.equal(clean.status, "passed", JSON.stringify(await reconciliation.getRun(clean.runId)));
+      assert.equal(clean.discrepancyCount, 0);
+      const cleanReplay = await reconciliation.run({
+        initiatedBy: "system:test-reconciliation",
+        idempotencyKey: "reconciliation-clean-1"
+      });
+      assert.equal(cleanReplay.replayed, true);
+      assert.equal(cleanReplay.runId, clean.runId);
+      const cleanRun = await reconciliation.getRun(clean.runId);
+      assert.equal(cleanRun.discrepancies.length, 0);
+      assert.ok(cleanRun.evidenceEventId);
+
+      await pool.query(
+        `UPDATE obligations
+            SET outstanding_minor = 9000,
+                repaid_amount_minor = 1000,
+                updated_at = clock_timestamp()
+          WHERE id = $1`,
+        [fixture.obligation.obligationId]
+      );
+      const drifted = await reconciliation.run({ initiatedBy: "system:test-reconciliation" });
+      assert.equal(drifted.status, "failed");
+      assert.ok(drifted.criticalCount >= 2);
+      const driftedRun = await reconciliation.getRun(drifted.runId);
+      const codes = new Set(driftedRun.discrepancies.map((item) => item.checkCode));
+      assert.equal(codes.has("projection_hash_mismatch"), true);
+      assert.equal(codes.has("obligation_repayment_mismatch"), true);
+      assert.equal(codes.has("credit_exposure_mismatch"), true);
+      assert.equal(driftedRun.discrepancies.every((item) => item.evidenceEventId), true);
+
+      const plan = await reconciliation.planProjectionReplay({
+        entityType: CoreProjectionType.OBLIGATION,
+        entityId: fixture.obligation.obligationId,
+        requestedBy: "operator:test",
+        reason: "restore the verified obligation projection"
+      });
+      assert.equal(plan.wouldRepair, true);
+      assert.equal(plan.snapshotAvailable, true);
+
+      const repaired = await reconciliation.repairProjection({
+        entityType: CoreProjectionType.OBLIGATION,
+        entityId: fixture.obligation.obligationId,
+        approvedBy: "operator:test",
+        reason: "restore the verified obligation projection",
+        idempotencyKey: "projection-repair-obligation-1"
+      });
+      assert.equal(repaired.status, "completed");
+      assert.ok(repaired.repairEventId);
+      const repairReplay = await reconciliation.repairProjection({
+        entityType: CoreProjectionType.OBLIGATION,
+        entityId: fixture.obligation.obligationId,
+        approvedBy: "operator:test",
+        reason: "restore the verified obligation projection",
+        idempotencyKey: "projection-repair-obligation-1"
+      });
+      assert.deepEqual(repairReplay, repaired);
+
+      const restored = await coreRepository.getObligation(fixture.obligation.obligationId);
+      assert.equal(restored.outstandingPrincipalMinor, fixture.obligation.outstandingPrincipalMinor);
+      assert.equal(restored.repaidAmountMinor, fixture.obligation.repaidAmountMinor);
+      assert.equal(
+        (await coreRepository.verifyProjection(CoreProjectionType.OBLIGATION, fixture.obligation.obligationId)).matches,
+        true
+      );
+      const finalRun = await reconciliation.run({ initiatedBy: "system:test-reconciliation" });
+      assert.equal(finalRun.status, "passed");
+      assert.equal(finalRun.discrepancyCount, 0);
     });
 
     await t.test("a fresh Rail Service reconstructs state and idempotency from PostgreSQL", async () => {

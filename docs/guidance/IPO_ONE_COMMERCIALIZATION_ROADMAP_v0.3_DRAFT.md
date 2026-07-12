@@ -56,20 +56,20 @@ volume fee. It should not depend on high consumer APR, token issuance, or TVL.
 
 | Canonical requirement | Current evidence | Current truth | Required next issue |
 | --- | --- | --- | --- |
-| FR-001 Subject Registry | Agent/Human/Org/Originator enums; Agent and prototype Human creation | Local service works; no tenant persistence or production status controls | DATA-002, SECURITY-001 |
+| FR-001 Subject Registry | Agent/Human/Org/Originator enums; Agent and prototype Human creation; normalized Subject/Principal repository | Durable repository foundation is complete; public demo composition remains process-local and has no tenant controls | DATA-003, SECURITY-001 |
 | FR-002 Principal Binding | Principal is separate and required by Agent flows | Local responsibility binding works; no authenticated ownership proof | SECURITY-001, AUTH-002 |
 | FR-003 Multi-chain Account Binding | CAIP-2/10 validation and bindings | Identifier-ready; signatures, nonce persistence, and cross-chain replay rejection are not production-grade | AUTH-002, CHAIN-001 |
-| FR-004 Agent Lockbox | Local Lockbox and balanced ledger repayment path | Functional sandbox; non-Rail state is not durable and no custody exists | DATA-002, RECON-001 |
-| FR-005 Spend Policy | Provider/category/amount checks and live Mandate recheck | Local controls work; tenant/provider caps and production enforcement remain | DATA-002, SECURITY-001, CONTRACT-001 |
-| FR-006 Obligation Registry | Obligation lifecycle and required references | Local state only; canonical authorization/funding state machine still needs ADR | ARCH-002, DATA-002 |
-| FR-007 Repayment Router | Partial/full repayment, utilization release, Evidence | Functional local path; durable ledger transaction and reconciliation remain | DATA-002, RECON-001 |
+| FR-004 Agent Lockbox | Local Lockbox and balanced ledger repayment path; durable normalized Lockbox/Ledger projections | Repository and reconciliation foundation is complete; default sandbox is still process-local and no custody exists | DATA-003, CUSTODY-001 |
+| FR-005 Spend Policy | Provider/category/amount checks, live Mandate recheck, durable policy/request/reservation projections | Persistence foundation is complete; tenant/provider caps and production enforcement remain | DATA-003, SECURITY-001, CONTRACT-001 |
+| FR-006 Obligation Registry | Obligation lifecycle, required references, immutable snapshots, drift detection and repair Evidence | Durable repository foundation is complete; canonical authorization/funding state machine still needs ADR and command-gateway composition | ARCH-002, DATA-003 |
+| FR-007 Repayment Router | Partial/full repayment, utilization release, Evidence; durable Ledger/Obligation/Repayment repositories and reconciliation | Persistence controls are proven in isolation; the public API still uses the process-local demo orchestrator | DATA-003, AUTH-002 |
 | FR-008 Risk Engine v0 | Deterministic reason-coded local decision | Demo inputs are partly synthetic; point-in-time evidence features and policy registry remain | RISK-002 |
 | FR-009 Admin Console | Exposure and freeze path with audit events | No AuthN, tenant isolation, RBAC, dual control, or break-glass policy | SECURITY-001 |
 | FR-010 Human Prototype | Prototype Human Subject and reserved DPD/restructure states | Consent, KYC/VC reference contract, Originator, and loan-tape simulator are not implemented | HUMAN-001 |
-| FR-011 Event Indexer | Rail event replay and PostgreSQL stream runtime | No chain indexer, finality/reorg invalidation, materialized reconciliation, or multi-chain exposure | INDEXER-001, RECON-001 |
+| FR-011 Event Indexer | Rail event replay, multi-event PostgreSQL runtime, materialized core projections and deterministic reconciliation | Local database replay/reconciliation foundation is complete; no chain indexer, finality/reorg invalidation, or multi-chain exposure service | INDEXER-001 |
 | FR-012 Provider Sandbox | Local allowlist, sandbox Rail, deterministic settlement | No signed remote webhook, provider auth, conformance service, or SLA telemetry | PROVIDER-001 |
-| OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; runtime schema enforcement, compatibility policy, AuthN, and durable command gateway remain | SECURITY-001, DATA-002 |
-| Transactional event runtime | Rail event/Evidence/outbox/inbox crash-tested on PostgreSQL | Complete for Rail only; other aggregate state remains process-local | DATA-002 |
+| OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; runtime schema enforcement, compatibility policy, AuthN, and durable application command gateway remain | SECURITY-001, DATA-003 |
+| Transactional event runtime | Batch command/event/Evidence/outbox plus normalized core projections, immutable snapshots, reconciliation and approval-gated repair crash-tested on PostgreSQL | Repository foundation is complete for Rail and core entities; default API composition remains process-local pending tenant/auth decisions | DATA-003, SECURITY-001 |
 | Public sandbox hosting | Fail-closed production config, Host/HTTPS boundary, discovery, pinned non-root container, Cloud Run template | Repository baseline complete; cloud edge, CI release evidence, monitoring, and DNS cutover remain | OPS-001A |
 
 This matrix is the implementation source of truth. “Public MVP complete” means
@@ -80,7 +80,7 @@ that the canonical Launch Checklist has passed.
 
 `API-001` is complete for the local sandbox surface. The repository now verifies
 21/21 OpenAPI operations, stable Problem Details and request correlation, SDK
-route parity, 72 database-free tests, 7 adversarial HTTP tests, and 8 PostgreSQL integration tests. The
+route parity, 78 database-free tests, 8 adversarial HTTP tests, and 12 PostgreSQL integration subtests. The
 live SDK/API smoke completes settlement and full repayment without real funds.
 
 `SECURITY-001` is prepared as a design gate and is not yet authorized for
@@ -101,6 +101,30 @@ load balancer, Cloud Armor, certificate, monitoring, incident ownership,
 GoDaddy DNS, and post-cutover verification still require named human approval.
 No AuthN, durable customer state, private data, or real funds are enabled.
 
+### V0.3 Data and Reconciliation Checkpoint (2026-07-12)
+
+`DATA-002` and the local `RECON-001` foundation are complete at the repository
+layer. One serializable unit of work can now commit an ordered multi-aggregate
+event set, Evidence, compatibility events, outbox messages, idempotent response,
+normalized core projections, immutable projection snapshots, and projection
+registry hashes. Principal, Subject, account binding, Mandate reservation and
+release, Provider, SpendPolicy/Request, Lockbox, Ledger, Obligation/Repayment,
+CreditLine, RiskDecision, and AdminAction projections are restart-readable.
+
+Reconciliation checks event companions, stream heads, command links and
+response hashes, projection/snapshot/registry equality, Ledger integrity,
+Lockbox balance, Mandate utilization, Obligation arithmetic, repayment totals,
+and Agent credit exposure. Discrepancies emit Evidence; repair is dry-run by
+default and requires an explicit actor, reason, and idempotency key before a new
+repair event/snapshot can be appended. Real PostgreSQL tests prove rollback
+after projection writes, restart replay, concurrent writer exclusion, drift
+detection, and idempotent repair.
+
+This does not make the public API durable or pilot-authorized. `DATA-003` must
+compose this repository behind an authenticated tenant command gateway after
+`SECURITY-001` decisions. No production database, customer data, scheduled
+repair, backup/DR, or real-value path is enabled.
+
 ## 4. Staged Delivery Plan
 
 ### V0.3: Pilot-Ready Control Plane
@@ -112,10 +136,10 @@ non-funds sandbox.
    contract tests.
 2. `SECURITY-001`: AuthN design, tenant model, RBAC matrix, object-level
    authorization, rate limits, audit reasons, dual control, break-glass.
-3. `DATA-002`: durable Subject, Principal, Mandate, SpendPolicy, Obligation,
+3. `DATA-002` (complete locally): durable Subject, Principal, Mandate, SpendPolicy, Obligation,
    Lockbox, Ledger, RiskDecision, and Admin repositories using the event/outbox
    transaction model.
-4. `RECON-001`: materialized projections, ledger/event/state reconciliation,
+4. `RECON-001` (complete locally): materialized projections, ledger/event/state reconciliation,
    replay jobs, discrepancy Evidence, operator runbook.
 5. `AUTH-002`: signed Mandate/account challenge, nonce persistence, expiry,
    revocation, key rotation, replay tests.

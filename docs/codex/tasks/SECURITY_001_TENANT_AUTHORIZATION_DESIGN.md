@@ -3,6 +3,9 @@
 Status: Ready for Founder/CTO/Security review. Implementation is not authorized
 by this document.
 
+Recommended decisions and the exact approval record are maintained in
+`docs/security/IPO_ONE_TENANT_AUTHORIZATION_DECISION_PACK_v0.1.md`.
+
 ## Context
 
 API-001 makes the current sandbox API explicit and testable, but it intentionally
