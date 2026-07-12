@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { request as createHttpRequest } from "node:http";
 import net from "node:net";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -55,6 +56,32 @@ function rawRequest(payload) {
   });
 }
 
+function requestWithHost(targetPort, path, requestHeaders = {}) {
+  return new Promise((resolve, reject) => {
+    const request = createHttpRequest({
+      host: "127.0.0.1",
+      port: targetPort,
+      path,
+      method: "GET",
+      headers: requestHeaders
+    }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => {
+        const body = Buffer.concat(chunks).toString("utf8");
+        resolve({
+          body,
+          headers: response.headers,
+          json: () => JSON.parse(body),
+          status: response.statusCode
+        });
+      });
+    });
+    request.on("error", reject);
+    request.end();
+  });
+}
+
 test("public sandbox rejects adversarial HTTP input and bounds mutable state", async (t) => {
   let output = "";
   const child = spawn(process.execPath, ["apps/api/src/server.js"], {
@@ -86,9 +113,16 @@ test("public sandbox rejects adversarial HTTP input and bounds mutable state", a
   await waitForServer(child, () => output);
 
   await t.test("security headers and identifiers are closed and non-reflective", async () => {
+    const rejected = await requestWithHost(port, "/v1/demo/state", {
+      host: "attacker.invalid",
+      "x-request-id": "short",
+      "x-ipo-one-sandbox-session": "short"
+    });
+    assert.equal(rejected.status, 421);
+    assert.equal(rejected.json().code, "misdirected_request");
+
     const response = await fetch(`${baseUrl}/v1/demo/state`, {
       headers: {
-        host: "attacker.invalid",
         "x-request-id": "short",
         "x-ipo-one-sandbox-session": "short"
       }
@@ -107,6 +141,10 @@ test("public sandbox rejects adversarial HTTP input and bounds mutable state", a
     const optionsResponse = await fetch(`${baseUrl}/v1/demo/state`, { method: "OPTIONS" });
     assert.equal(optionsResponse.status, 405);
     assert.equal(optionsResponse.headers.get("allow"), "GET, POST");
+
+    const systemOptions = await fetch(`${baseUrl}/readyz`, { method: "OPTIONS" });
+    assert.equal(systemOptions.status, 405);
+    assert.equal(systemOptions.headers.get("allow"), "GET, HEAD");
 
     const wrongType = await fetch(`${baseUrl}/v1/agents`, {
       method: "POST",
@@ -222,4 +260,92 @@ test("public sandbox rejects adversarial HTTP input and bounds mutable state", a
   });
 
   assert.equal(child.exitCode, null, `server must remain alive after adversarial requests\n${output}`);
+});
+
+test("production runtime enforces the approved public ingress contract", async (t) => {
+  const productionPort = port + 1;
+  const productionBaseUrl = `http://127.0.0.1:${productionPort}`;
+  let output = "";
+  const child = spawn(process.execPath, ["apps/api/src/server.js"], {
+    cwd: rootDir,
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+      HOST: "0.0.0.0",
+      PORT: String(productionPort),
+      IPO_ONE_ALLOWED_HOSTS: "ipo.one,www.ipo.one",
+      IPO_ONE_DEPLOYMENT_MODE: "public_sandbox",
+      IPO_ONE_HSTS_MAX_AGE: "86400",
+      IPO_ONE_PUBLIC_ORIGIN: "https://ipo.one",
+      IPO_ONE_PUBLIC_SANDBOX_ACK: "I_UNDERSTAND_NO_REAL_FUNDS",
+      IPO_ONE_RELEASE_SHA: "security-test-release",
+      IPO_ONE_SECURITY_CONTACT: "https://github.com/CPTM511/IPO.ONE/security",
+      IPO_ONE_TRUST_PROXY: "true"
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  child.stdout.on("data", (chunk) => { output += chunk; });
+  child.stderr.on("data", (chunk) => { output += chunk; });
+  t.after(async () => {
+    if (child.exitCode === null) {
+      child.kill("SIGTERM");
+      await Promise.race([
+        once(child, "exit"),
+        new Promise((resolve) => setTimeout(resolve, 1_000))
+      ]);
+    }
+    if (child.exitCode === null) child.kill("SIGKILL");
+    child.stdout.destroy();
+    child.stderr.destroy();
+  });
+
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    if (child.exitCode !== null) {
+      throw new Error(`production security server exited early (${child.exitCode})\n${output}`);
+    }
+    try {
+      const response = await fetch(`${productionBaseUrl}/livez`);
+      if (response.ok) break;
+    } catch {
+      // The child may still be binding its container-style socket.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  const live = await fetch(`${productionBaseUrl}/livez`);
+  assert.equal(live.status, 200);
+  assert.deepEqual(await live.json(), { ok: true });
+
+  const noTlsProof = await requestWithHost(productionPort, "/", { host: "ipo.one" });
+  assert.equal(noTlsProof.status, 426);
+  assert.equal(noTlsProof.json().code, "https_required");
+
+  const wrongHost = await requestWithHost(productionPort, "/", {
+    host: "attacker.invalid",
+    "x-forwarded-proto": "https"
+  });
+  assert.equal(wrongHost.status, 421);
+  assert.equal(wrongHost.json().code, "misdirected_request");
+
+  const consoleResponse = await requestWithHost(productionPort, "/", {
+    host: "ipo.one",
+    "x-forwarded-proto": "https"
+  });
+  assert.equal(consoleResponse.status, 200);
+  assert.equal(consoleResponse.headers["x-ipo-one-release"], "security-test-release");
+  assert.equal(consoleResponse.headers["strict-transport-security"], "max-age=86400");
+  assert.match(consoleResponse.headers["content-security-policy"], /upgrade-insecure-requests/);
+
+  const discovery = await requestWithHost(productionPort, "/.well-known/ipo-one.json", {
+    host: "ipo.one",
+    "x-forwarded-proto": "https"
+  });
+  assert.equal(discovery.status, 200);
+  const document = discovery.json();
+  assert.equal(document.interfaces.humanConsole, "https://ipo.one");
+  assert.equal(document.interfaces.agentApi, "https://ipo.one/v1");
+  assert.equal(document.safety.realFundsEnabled, false);
+  assert.equal(document.safety.humanCreditEnabled, false);
+
+  assert.equal(child.exitCode, null, `production server must remain alive\n${output}`);
 });

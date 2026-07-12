@@ -70,6 +70,7 @@ volume fee. It should not depend on high consumer APR, token issuance, or TVL.
 | FR-012 Provider Sandbox | Local allowlist, sandbox Rail, deterministic settlement | No signed remote webhook, provider auth, conformance service, or SLA telemetry | PROVIDER-001 |
 | OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; runtime schema enforcement, compatibility policy, AuthN, and durable command gateway remain | SECURITY-001, DATA-002 |
 | Transactional event runtime | Rail event/Evidence/outbox/inbox crash-tested on PostgreSQL | Complete for Rail only; other aggregate state remains process-local | DATA-002 |
+| Public sandbox hosting | Fail-closed production config, Host/HTTPS boundary, discovery, pinned non-root container, Cloud Run template | Repository baseline complete; cloud edge, CI release evidence, monitoring, and DNS cutover remain | OPS-001A |
 
 This matrix is the implementation source of truth. “Public MVP complete” means
 the interactive demonstration is complete; it must not be used as evidence
@@ -85,6 +86,20 @@ live SDK/API smoke completes settlement and full repayment without real funds.
 `SECURITY-001` is prepared as a design gate and is not yet authorized for
 implementation. No production AuthN, tenant, RBAC, rate-limit, credential, or
 permission claim has been added.
+
+### V0.3 Hosting Checkpoint (2026-07-12)
+
+`OPS-001A` is complete at the repository level. Production startup now fails
+closed unless the no-real-funds public sandbox, HTTPS origin, trusted proxy,
+HSTS, release, Host allowlist, and security contact are explicit. The proposed
+image is digest-pinned and non-root; CI is configured to run it read-only with
+capabilities removed. The application publishes liveness, readiness, security,
+and Human/Agent discovery endpoints and emits bounded structured logs.
+
+This is not hosted-release evidence. GCP project/region/IAM, Artifact Registry,
+load balancer, Cloud Armor, certificate, monitoring, incident ownership,
+GoDaddy DNS, and post-cutover verification still require named human approval.
+No AuthN, durable customer state, private data, or real funds are enabled.
 
 ## 4. Staged Delivery Plan
 

@@ -99,6 +99,8 @@ test("public beta control plane includes required workflows and launch safeguard
   assert.ok(js.includes("event.key === \"Escape\""));
   assert.ok(js.includes("x-ipo-one-sandbox-session"));
   assert.ok(js.includes("sessionStorage.getItem"));
+  assert.ok(js.includes("baseUrl: ${JSON.stringify(window.location.origin)}"));
+  assert.equal(html.includes("baseUrl: \"http://127.0.0.1:3000\""), false);
   assert.equal(js.includes(".innerHTML"), false, "API-controlled values must use text-safe DOM rendering");
 });
 

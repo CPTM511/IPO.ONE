@@ -386,7 +386,7 @@
             </div>
 
             <section class="runtime-band" aria-label="Agent runtime status">
-              <div><span>Base URL</span><strong id="runtimeBaseUrl">http://127.0.0.1:3000</strong></div>
+              <div><span>Base URL</span><strong id="runtimeBaseUrl">Current origin</strong></div>
               <div><span>Contract</span><strong>OpenAPI 3.1.2</strong></div>
               <div><span>SDK</span><strong>@ipo-one/sdk alpha</strong></div>
               <div><span>Sandbox session</span><strong id="runtimeSessionId">Starting</strong></div>
@@ -396,15 +396,7 @@
             <div class="developer-grid">
               <section class="panel code-panel" aria-labelledby="sdkTitle">
                 <div class="panel-heading"><div><p class="eyebrow">JavaScript</p><h3 id="sdkTitle">SDK quick start</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy SDK example" title="Copy SDK example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
-                <pre id="sdkSnippet"><code>import { IpoOneClient } from "@ipo-one/sdk";
-
-const ipo = new IpoOneClient({
-  baseUrl: "http://127.0.0.1:3000"
-});
-
-const agent = await ipo.createAgent({
-  displayName: "Revenue Agent"
-});</code></pre>
+                <pre><code id="sdkSnippet"></code></pre>
               </section>
               <section class="panel" aria-labelledby="capabilityTitle">
                 <div class="panel-heading"><div><p class="eyebrow">Current contract</p><h3 id="capabilityTitle">Runtime capabilities</h3></div><span class="state-pill">21 operations</span></div>
