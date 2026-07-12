@@ -1,0 +1,203 @@
+{
+  "schemaVersion": "ipo.one.launch-policy/v1",
+  "policyVersion": "1.0.0",
+  "repository": "CPTM511/IPO.ONE",
+  "evidenceSchemaVersion": "ipo.one.launch-evidence/v1",
+  "profiles": {
+    "public_sandbox": {
+      "displayName": "Public no-real-funds sandbox",
+      "releaseEnabled": true,
+      "environment": "public-sandbox",
+      "maxReleaseAgeHours": 72,
+      "capabilities": {
+        "realFundsEnabled": false,
+        "humanCreditEnabled": false,
+        "privateTenantDataEnabled": false,
+        "externalProviderExecutionEnabled": false
+      },
+      "gates": [
+        {
+          "id": "repository_quality",
+          "ownerRole": "Engineering",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "supply_chain_provenance",
+          "ownerRole": "Security/Engineering",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "cloud_runtime_boundary",
+          "ownerRole": "CloudOps",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "edge_tls_waf",
+          "ownerRole": "Security/CloudOps",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "hosted_abuse_controls",
+          "ownerRole": "Security/Operations",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "observability_alerting",
+          "ownerRole": "Operations",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "logging_privacy_retention",
+          "ownerRole": "Privacy/Security",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "incident_takedown_rollback",
+          "ownerRole": "Operations/Security",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "public_safety_copy",
+          "ownerRole": "Product/Legal",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "dns_cutover",
+          "ownerRole": "Founder/Operations",
+          "maxAgeHours": 24
+        },
+        {
+          "id": "security_owner_review",
+          "ownerRole": "Security/CTO",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "release_owner_authorization",
+          "ownerRole": "Founder/Release Owner",
+          "maxAgeHours": 24
+        }
+      ],
+      "unlockRequirements": []
+    },
+    "closed_non_funds_pilot": {
+      "displayName": "Closed commercial non-funds pilot",
+      "releaseEnabled": false,
+      "environment": "closed-pilot",
+      "maxReleaseAgeHours": 24,
+      "capabilities": {
+        "realFundsEnabled": false,
+        "humanCreditEnabled": false,
+        "privateTenantDataEnabled": true,
+        "externalProviderExecutionEnabled": false
+      },
+      "gates": [
+        {
+          "id": "security_001_approval",
+          "ownerRole": "Founder/CTO/Security",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "tenant_authn_authz_tests",
+          "ownerRole": "Security/Engineering",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "durable_data_restore",
+          "ownerRole": "Backend/DevOps",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "reconciliation_operations",
+          "ownerRole": "Operations/Risk",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "independent_pentest",
+          "ownerRole": "Independent Security",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "privacy_legal_terms",
+          "ownerRole": "Legal/Privacy",
+          "maxAgeHours": 2160
+        },
+        {
+          "id": "support_slo_oncall",
+          "ownerRole": "Operations/Product",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "pilot_participant_approval",
+          "ownerRole": "Founder/Product",
+          "maxAgeHours": 720
+        }
+      ],
+      "unlockRequirements": [
+        "Approve SECURITY-001 SEC-D01 through SEC-D09 and record jurisdiction and retention owner.",
+        "Complete TENANT-001, AUTHN-001, AUTHZ-001, DATA-003, APPROVAL-001, and ABUSE-001.",
+        "Pass independent penetration, backup/restore, reconciliation, privacy, incident, and support gates.",
+        "Approve a policy revision that unlocks this profile; evidence alone cannot unlock it."
+      ]
+    },
+    "controlled_agent_credit_pilot": {
+      "displayName": "Controlled Agent-only real-value credit pilot",
+      "releaseEnabled": false,
+      "environment": "controlled-agent-credit-pilot",
+      "maxReleaseAgeHours": 24,
+      "capabilities": {
+        "realFundsEnabled": true,
+        "humanCreditEnabled": false,
+        "privateTenantDataEnabled": true,
+        "externalProviderExecutionEnabled": true
+      },
+      "gates": [
+        {
+          "id": "closed_pilot_exit",
+          "ownerRole": "Founder/Product/Security",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "signed_provider_integration",
+          "ownerRole": "Partnerships/Operations",
+          "maxAgeHours": 2160
+        },
+        {
+          "id": "funds_custody_legal",
+          "ownerRole": "Founder/Legal/Security",
+          "maxAgeHours": 2160
+        },
+        {
+          "id": "risk_caps_loss_owner",
+          "ownerRole": "Risk/Founder",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "signed_mandate_wallet_review",
+          "ownerRole": "Security/Engineering",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "chain_asset_capital",
+          "ownerRole": "Founder/Legal/Risk",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "independent_value_path_review",
+          "ownerRole": "Independent Security",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "production_oncall_stop_loss",
+          "ownerRole": "Operations/Risk",
+          "maxAgeHours": 168
+        }
+      ],
+      "unlockRequirements": [
+        "Complete and formally exit the closed non-funds pilot with no unresolved P0 or P1 finding.",
+        "Approve one provider, chain, asset, capital source, total cap, per-Agent cap, and explicit loss bearer.",
+        "Complete custody, fund-path, legal, risk, security, privacy, incident, provider, and independent review.",
+        "Approve a policy revision that unlocks this profile; evidence alone cannot unlock it."
+      ]
+    }
+  }
+}

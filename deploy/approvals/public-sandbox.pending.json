@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "ipo.one.launch-evidence/v1",
+  "policyVersion": "1.0.0",
+  "profile": "public_sandbox",
+  "release": {
+    "repository": "CPTM511/IPO.ONE",
+    "commitSha": "[EXACT_GREEN_COMMIT_SHA]",
+    "ciRunUrl": "[IMMUTABLE_GITHUB_ACTIONS_RUN_URL]",
+    "imageUri": "[IMMUTABLE_ARTIFACT_REGISTRY_IMAGE_DIGEST]",
+    "builtAt": "[ISO_8601_UTC_TIMESTAMP]"
+  },
+  "capabilities": {
+    "realFundsEnabled": false,
+    "humanCreditEnabled": false,
+    "privateTenantDataEnabled": false,
+    "externalProviderExecutionEnabled": false
+  },
+  "externalAuthorization": {
+    "system": "protected_environment",
+    "environment": "public-sandbox",
+    "approvalUrl": "[PROTECTED_ENVIRONMENT_APPROVAL_URL]",
+    "approvedAt": "[ISO_8601_UTC_TIMESTAMP]"
+  },
+  "gates": [
+    {
+      "id": "repository_quality",
+      "status": "pending",
+      "ownerRole": "Engineering",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "supply_chain_provenance",
+      "status": "pending",
+      "ownerRole": "Security/Engineering",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "cloud_runtime_boundary",
+      "status": "pending",
+      "ownerRole": "CloudOps",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "edge_tls_waf",
+      "status": "pending",
+      "ownerRole": "Security/CloudOps",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "hosted_abuse_controls",
+      "status": "pending",
+      "ownerRole": "Security/Operations",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "observability_alerting",
+      "status": "pending",
+      "ownerRole": "Operations",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "logging_privacy_retention",
+      "status": "pending",
+      "ownerRole": "Privacy/Security",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "incident_takedown_rollback",
+      "status": "pending",
+      "ownerRole": "Operations/Security",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "public_safety_copy",
+      "status": "pending",
+      "ownerRole": "Product/Legal",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "dns_cutover",
+      "status": "pending",
+      "ownerRole": "Founder/Operations",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "security_owner_review",
+      "status": "pending",
+      "ownerRole": "Security/CTO",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "release_owner_authorization",
+      "status": "pending",
+      "ownerRole": "Founder/Release Owner",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    }
+  ]
+}

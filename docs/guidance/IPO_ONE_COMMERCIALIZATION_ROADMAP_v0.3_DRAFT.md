@@ -71,6 +71,7 @@ volume fee. It should not depend on high consumer APR, token issuance, or TVL.
 | OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; runtime schema enforcement, compatibility policy, AuthN, and durable application command gateway remain | SECURITY-001, DATA-003 |
 | Transactional event runtime | Batch command/event/Evidence/outbox plus normalized core projections, immutable snapshots, reconciliation and approval-gated repair crash-tested on PostgreSQL | Repository foundation is complete for Rail and core entities; default API composition remains process-local pending tenant/auth decisions | DATA-003, SECURITY-001 |
 | Public sandbox hosting | Fail-closed production config, Host/HTTPS boundary, discovery, pinned non-root container, Cloud Run template | Repository baseline complete; cloud edge, CI release evidence, monitoring, and DNS cutover remain | OPS-001A |
+| Release governance | Versioned public/closed/real-value profiles, canonical evidence contract, exact release identity, approval age/expiry, complete gate set, protected-environment reference | Public sandbox evidence is executable; closed private and real-value profiles are policy-locked pending implementation and named approvals | OPS-002, SECURITY-001 |
 
 This matrix is the implementation source of truth. “Public MVP complete” means
 the interactive demonstration is complete; it must not be used as evidence
@@ -80,7 +81,7 @@ that the canonical Launch Checklist has passed.
 
 `API-001` is complete for the local sandbox surface. The repository now verifies
 21/21 OpenAPI operations, stable Problem Details and request correlation, SDK
-route parity, 78 database-free tests, 8 adversarial HTTP tests, and 12 PostgreSQL integration subtests. The
+route parity, 87 database-free tests, 8 adversarial HTTP tests, and 12 PostgreSQL integration subtests. The
 live SDK/API smoke completes settlement and full repayment without real funds.
 
 `SECURITY-001` is prepared as a design gate and is not yet authorized for
@@ -125,6 +126,20 @@ compose this repository behind an authenticated tenant command gateway after
 `SECURITY-001` decisions. No production database, customer data, scheduled
 repair, backup/DR, or real-value path is enabled.
 
+### V0.3 Launch Governance Checkpoint (2026-07-12)
+
+`OPS-002` adds a versioned launch policy and strict canonical evidence
+contract. Verification rejects duplicate-key ambiguity, placeholders, stale or
+expired approval, wrong owner, missing/extra/duplicate gate, mutable image,
+wrong release SHA, unsafe evidence URL, capability escalation, and any attempt
+to use a policy-locked profile. A protected-environment approval reference is
+mandatory, and the committed pending template is continuously proven invalid.
+
+This is a necessary governance control, not an approval system. It performs no
+cloud, DNS, identity, private-data, Provider, KYC/KYP, or fund operation. The
+closed non-funds and controlled Agent credit profiles can be unlocked only by
+reviewed policy changes after their implementation and human gates are proven.
+
 ## 4. Staged Delivery Plan
 
 ### V0.3: Pilot-Ready Control Plane
@@ -134,8 +149,8 @@ non-funds sandbox.
 
 1. `API-001` (complete locally): OpenAPI, stable errors/request IDs, typed SDK,
    contract tests.
-2. `SECURITY-001`: AuthN design, tenant model, RBAC matrix, object-level
-   authorization, rate limits, audit reasons, dual control, break-glass.
+2. `SECURITY-001`: approve the decision pack, then implement `TENANT-001`,
+   `AUTHN-001`, `AUTHZ-001`, `APPROVAL-001`, and `ABUSE-001` as separate changes.
 3. `DATA-002` (complete locally): durable Subject, Principal, Mandate, SpendPolicy, Obligation,
    Lockbox, Ledger, RiskDecision, and Admin repositories using the event/outbox
    transaction model.

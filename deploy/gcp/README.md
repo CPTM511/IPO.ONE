@@ -43,6 +43,29 @@ Do not execute a deployment until the named owners approve:
 Use GitHub OIDC Workload Identity Federation for deployment. Do not create or
 store a long-lived Google service-account JSON key in GitHub or this repository.
 
+## 0. Verify the Release Authorization Contract
+
+The versioned policy is `deploy/launch-policy.v1.json`. The committed
+`deploy/approvals/public-sandbox.pending.json` file is intentionally invalid and
+must remain pending. Record actual evidence only in an ignored `*.local.json`
+file or approved private change-control system.
+
+Before any build, cloud, edge, or DNS mutation, verify the exact candidate:
+
+```sh
+pnpm run launch:verify -- \
+  --evidence deploy/approvals/public-sandbox.local.json \
+  --profile public_sandbox \
+  --expected-sha "$(git rev-parse HEAD)"
+```
+
+The verifier requires an immutable CI run, digest image, fresh named gates,
+exact capability boundary, and protected-environment approval reference. A
+passing file is necessary but not sufficient: GitHub Environment protection,
+cloud IAM, Security/Release Owner review, and DNS change approval remain the
+authoritative controls. Closed private and real-value profiles are
+policy-locked and cannot be unlocked by editing an evidence file.
+
 ## 1. Build an Immutable Image
 
 Use Node 24.18.0 and pnpm 11.1.3. Build from the exact green Git commit:
