@@ -70,7 +70,7 @@ volume fee. It should not depend on high consumer APR, token issuance, or TVL.
 | FR-012 Provider Sandbox | Local allowlist, sandbox Rail, deterministic settlement | No signed remote webhook, provider auth, conformance service, or SLA telemetry | PROVIDER-001 |
 | OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; runtime schema enforcement, compatibility policy, AuthN, and durable application command gateway remain | SECURITY-001, DATA-003 |
 | Transactional event runtime | Batch command/event/Evidence/outbox plus normalized core projections, immutable snapshots, reconciliation and approval-gated repair crash-tested on PostgreSQL | Repository foundation is complete for Rail and core entities; default API composition remains process-local pending tenant/auth decisions | DATA-003, SECURITY-001 |
-| Public sandbox hosting | Fail-closed production config, Host/HTTPS boundary, discovery, pinned non-root container, Cloud Run template | Repository baseline complete; cloud edge, CI release evidence, monitoring, and DNS cutover remain | OPS-001A |
+| Public sandbox hosting | Fail-closed runtime, immutable image, load-balancer-only Cloud Run, managed TLS, Cloud Armor, monitoring, and GoDaddy root-A cutover | Public no-funds sandbox is live at `https://ipo.one`; protected-environment evidence, alert recipients, incident ownership, and independent review remain | OPS-001A, OPS-002 |
 | Release governance | Versioned public/closed/real-value profiles, canonical evidence contract, exact release identity, approval age/expiry, complete gate set, protected-environment reference | Public sandbox evidence is executable; closed private and real-value profiles are policy-locked pending implementation and named approvals | OPS-002, SECURITY-001 |
 
 This matrix is the implementation source of truth. “Public MVP complete” means
@@ -88,19 +88,25 @@ live SDK/API smoke completes settlement and full repayment without real funds.
 implementation. No production AuthN, tenant, RBAC, rate-limit, credential, or
 permission claim has been added.
 
-### V0.3 Hosting Checkpoint (2026-07-12)
+### V0.3 Hosting Checkpoint (updated 2026-07-13)
 
-`OPS-001A` is complete at the repository level. Production startup now fails
-closed unless the no-real-funds public sandbox, HTTPS origin, trusted proxy,
-HSTS, release, Host allowlist, and security contact are explicit. The proposed
-image is digest-pinned and non-root; CI is configured to run it read-only with
-capabilities removed. The application publishes liveness, readiness, security,
-and Human/Agent discovery endpoints and emits bounded structured logs.
+`OPS-001A` is complete for the approved public no-real-funds sandbox. The exact
+green release is deployed in dedicated GCP project
+`ipo-one-public-sandbox-cptm511`, region `asia-southeast1`, behind a global
+HTTPS load balancer, active Google-managed certificate, minimum TLS 1.2, and
+Cloud Armor. Cloud Run is load-balancer-only, its default URL is disabled, and
+the zero-role runtime uses a digest-pinned non-root image. GoDaddy remains
+authoritative and only the root A value changed; unrelated DNS and mail records
+were preserved. Multi-region readiness monitoring and core service alerts are
+enabled, and both SDK and responsive Human UI lifecycle checks passed.
 
-This is not hosted-release evidence. GCP project/region/IAM, Artifact Registry,
-load balancer, Cloud Armor, certificate, monitoring, incident ownership,
-GoDaddy DNS, and post-cutover verification still require named human approval.
-No AuthN, durable customer state, private data, or real funds are enabled.
+The hosted surface remains an anonymous, process-local, synthetic-data sandbox.
+It does not add AuthN, a durable customer command path, private data, external
+Provider execution, KYC/KYP, real credit, custody, or funds. The protected
+environment approval reference, named notification recipients, incident and
+takedown owners, formal retention review, and independent security review
+remain launch-governance gates. See
+`docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
 
 ### V0.3 Data and Reconciliation Checkpoint (2026-07-12)
 
@@ -164,8 +170,9 @@ non-funds sandbox.
    decisions; demo score remains educational only.
 8. `HUMAN-001`: non-production Consent/KYC-reference/Originator/loan-tape
    simulator with an enforced no-funds boundary.
-9. `OPS-001`: metrics, SLOs, alerts, dependency inventory, threat model,
-   incident/replay/key-rotation runbooks, launch evidence automation.
+9. `OPS-001`: extend the deployed uptime and service alerts with named
+   recipients, SLO reporting, scheduled full-lifecycle synthetic checks,
+   incident/replay/key-rotation ownership, and protected release evidence.
 
 Exit gate:
 

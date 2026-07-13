@@ -1,7 +1,8 @@
 # OPS-001A: Public Sandbox Hosting Baseline
 
-Status: Repository implementation complete; hosted execution pending approval
-Date: 2026-07-12
+Status: Approved public no-real-funds sandbox hosted and verified; private-data
+and real-value operations remain prohibited
+Date: 2026-07-13
 
 ## Context
 
@@ -61,9 +62,9 @@ readiness.
   no-new-privileges, and bounded process/memory/CPU resources.
 - [x] Cloud Run template restricts ingress to internal/load-balancer paths,
   disables the default URL, and configures startup/liveness/readiness probes.
-- [ ] Exact release commit passes GitHub CI container verification.
-- [ ] GCP load balancer, Cloud Armor, certificate, alerts, and rollback are approved and verified.
-- [ ] GoDaddy DNS cutover is approved and `https://ipo.one` passes post-cutover checks.
+- [x] Exact release commit passes GitHub CI container verification.
+- [x] GCP load balancer, Cloud Armor, certificate, core alerts, and rollback are approved and verified.
+- [x] GoDaddy root-A cutover is approved and `https://ipo.one` passes post-cutover checks.
 
 ## Test Commands
 
@@ -86,3 +87,16 @@ git diff --check
 - [x] The exact safety mode is discoverable by humans and machines.
 - [ ] Independent penetration test and hosted edge test complete before private data.
 - [ ] Founder/CTO/Security sign the deployment evidence and incident ownership.
+
+## Hosted Evidence
+
+The public sandbox is deployed at `https://ipo.one` from release
+`00598584f437f71ebb1dd8a3517585ad8fc96ce9`. Exact GCP resources, DNS
+preservation checks, live SDK/UI results, scanner counts, monitoring resources,
+and residual governance gates are recorded in
+`docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
+
+This completion status applies only to the anonymous synthetic-data sandbox.
+It does not close the independent penetration-test, protected-environment,
+notification-recipient, named incident-owner, AuthN/AuthZ, private-data, or
+real-value gates.

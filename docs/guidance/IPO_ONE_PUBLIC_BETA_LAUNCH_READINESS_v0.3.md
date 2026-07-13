@@ -2,12 +2,42 @@
 
 Version: v0.3
 Date: 2026-07-12
-Status: Repository hosting baseline complete; hosted release requires a green
-CI run plus explicit cloud, edge, monitoring, security, and DNS approval
+Status: Public no-real-funds sandbox hosted at `https://ipo.one`; private-data,
+real-value, protected-release, notification, and named incident-owner gates
+remain open
 
 This gate applies only to the public, no-real-funds sandbox. It does not approve
 production credit, custody, KYC processing, contracts, external Providers,
 capital, or Human lending.
+
+## Hosted Deployment Checkpoint (2026-07-13)
+
+The approved public-sandbox boundary is now deployed in GCP project
+`ipo-one-public-sandbox-cptm511`, region `asia-southeast1`, at release
+`00598584f437f71ebb1dd8a3517585ad8fc96ce9`.
+
+Verified hosted controls:
+
+- GoDaddy remains authoritative; only the root A value changed to the reserved
+  load-balancer IP `136.68.214.66`. NS, MX, SPF/TXT, `www`, and `apiv1` were
+  preserved.
+- Google-managed certificates for `ipo.one` and `www.ipo.one` are active;
+  HTTP redirects to HTTPS and the edge requires minimum TLS 1.2.
+- Cloud Armor rejects unknown hosts, applies a per-IP throttle, records denies,
+  and keeps SQLi/XSS rules in preview pending false-positive review.
+- Cloud Run accepts only internal/load-balancer ingress, exposes no default
+  `run.app` URL, runs the immutable digest-pinned image as the zero-role runtime
+  identity, and reports the exact release SHA.
+- Three-region certificate-validating readiness monitoring and alert policies
+  for readiness, 5xx, P99 latency, and instance saturation are enabled.
+- Live SDK and Human UI flows completed the full no-funds obligation lifecycle;
+  the UI was inspected at 1440x900 and 390x844.
+
+This checkpoint is hosted public-sandbox evidence only. It does not satisfy the
+policy's protected-environment approval, named alert-recipient, incident-owner,
+independent penetration-test, private-data, or real-value gates. Detailed
+resource identifiers, test evidence, scanner results, and rollback state are in
+`docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
 
 ## Launch Definition
 
@@ -44,20 +74,20 @@ must never be treated as identity, authorization, or tenant membership.
 
 ## Hosted Release Checklist
 
-- [ ] GitHub Actions quality workflow passes on the exact release commit.
+- [x] GitHub Actions quality workflow passes on the exact release commit.
 - [ ] `launch:verify` passes against private evidence for the exact release SHA;
   the committed pending template continues to fail.
 - [x] Repository production configuration, Host/HTTPS enforcement, probes, and
   immutable release metadata are implemented and adversarially tested.
-- [x] Proposed Cloud Run origin is load-balancer-only with its default URL disabled.
-- [ ] Hosting target, TLS, domain, origin, proxy trust, and rollback owner are approved.
-- [ ] Edge request/body limits and coarse abuse protection are enabled.
+- [x] Cloud Run origin is load-balancer-only with its default URL disabled.
+- [x] Hosting target, TLS, domain, origin, proxy trust, and DNS rollback are approved and verified.
+- [x] Edge request limits and coarse abuse protection are enabled; application body limits remain fail-closed.
 - [x] Application logs retain request IDs but exclude request bodies, queries,
   sandbox session IDs, raw IPs, secrets, and raw PII.
-- [ ] Hosted edge and cloud log fields/retention are reviewed and approved.
-- [ ] Availability monitoring checks `/healthz` and the full smoke path.
-- [ ] Public copy continues to state no real lending, no real funds, no financial advice, and demo score only.
-- [ ] Analytics remains disabled unless privacy review explicitly approves it.
+- [ ] Hosted edge and cloud log fields/30-day default retention are formally reviewed and approved.
+- [ ] Continuous monitoring covers readiness; a one-time full smoke passed, but a scheduled full synthetic lifecycle is not yet configured.
+- [x] Public copy states no real lending, no real funds, no financial advice, and demo score only.
+- [x] Analytics remains disabled unless privacy review explicitly approves it.
 - [ ] Incident contact and takedown procedure are documented before sharing broadly.
 
 ## Production No-Go
@@ -80,10 +110,10 @@ The repository-level attack model and residual-risk register are maintained in
 `docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md`. Application limits are
 defense in depth and do not close the hosted edge checklist above.
 
-The proposed hosting boundary and operator sequence are maintained in
+The implemented hosting boundary and operator sequence are maintained in
 `docs/architecture/ADR-014-public-sandbox-hosting-boundary.md` and
-`deploy/gcp/README.md`. Neither document is deployment evidence until the
-external controls are applied and verified.
+`deploy/gcp/README.md`. The external control record is maintained separately in
+`docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
 
 `deploy/launch-policy.v1.json` and its verifier make release evidence
 machine-checkable, but do not replace protected-environment review, cloud IAM,

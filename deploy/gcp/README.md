@@ -23,6 +23,47 @@ Cloud Run (load-balancer ingress only; default URL disabled)
 Non-root, immutable IPO.ONE public-sandbox image
 ```
 
+## Live Public-Sandbox Record (2026-07-13)
+
+This runbook was executed for the approved no-real-funds profile. The current
+rollback baseline and immutable deployment identity are:
+
+| Resource | Verified value |
+| --- | --- |
+| Project / number | `ipo-one-public-sandbox-cptm511` / `94790935766` |
+| Region | `asia-southeast1` |
+| Cloud Run | `ipo-one-public-sandbox`, revision `ipo-one-public-sandbox-00001-szw` |
+| Runtime identity | `ipo-one-runtime@ipo-one-public-sandbox-cptm511.iam.gserviceaccount.com` with no project roles and no user-managed keys |
+| Release | `00598584f437f71ebb1dd8a3517585ad8fc96ce9` |
+| Image | `asia-southeast1-docker.pkg.dev/ipo-one-public-sandbox-cptm511/ipo-one/public-sandbox@sha256:53186cf01d969e8e12988f6164f8f069bb0b180d853fe73a3d95f7342a602105` |
+| Build / CI | Cloud Build `7cd93d44-d5d4-4e01-a8e9-d25d80df5519`; GitHub Actions `29234107882` |
+| Edge | `136.68.214.66`; backend `ipo-one-backend`; policy `ipo-one-edge-policy`; certificate `ipo-one-managed-cert` |
+| DNS | Root A `136.68.214.66`, TTL 600; rollback A `54.251.69.243` |
+| Log retention | GCP `_Default` bucket, 30 days; formal retention review remains open |
+
+Cloud Run ingress is `internal-and-cloud-load-balancing`, the default
+`run.app` URL is disabled, and the minimum/maximum instance bounds are 1/10.
+The edge denies unknown hosts at priority 100, throttles at 300 requests per
+minute per IP at priority 200, and keeps SQLi/XSS WAF rules in preview. Do not
+promote preview WAF rules without reviewing production logs for false positives.
+
+Monitoring resources:
+
+- `ipo-one-readyz`: one-minute HTTPS check from Asia Pacific, Europe, and US
+  Oregon; certificate validation, HTTP 200, and `public_sandbox` body match are
+  required.
+- Alert policies cover multi-region readiness failure, Cloud Run 5xx rate,
+  sustained P99 latency above two seconds, and sustained instance count above
+  8 of the configured maximum 10.
+- Log-match alert policy `4580130542078666976` opens when Cloud Armor enforces
+  its rate-limit threshold and rate-limits repeated notifications.
+- Logs-based metric `ipo_one_cloud_armor_denies` records Cloud Armor deny
+  outcomes. Notification channels and a named incident/takedown owner remain
+  mandatory before a private design-partner pilot.
+
+The full verification record is
+`docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
+
 Google recommends a global external Application Load Balancer for a production
 custom domain in front of Cloud Run. Direct Cloud Run domain mapping remains a
 Preview feature and is not the selected path.
@@ -167,11 +208,17 @@ IP in application logs, secret, or private data.
 
 ## 5. GoDaddy DNS Cutover
 
-As observed on 2026-07-12, GoDaddy nameservers are authoritative and the root A
-record points to `54.251.69.243`; HTTP and HTTPS did not return a service. Recheck
-immediately before changing DNS because this external state can drift.
+The 2026-07-13 cutover preserved GoDaddy nameservers and changed only the root
+A record from `54.251.69.243` to `136.68.214.66`. GoDaddy's minimum accepted TTL
+was 600 seconds. Both authoritative nameservers returned the new value, and NS,
+MX, SPF/TXT, `www`, `apiv1`, and the absence of a root AAAA record were verified
+after the change.
 
-1. Lower only the root A TTL to 300 seconds at least one prior TTL in advance.
+For a future cutover or rollback, recheck immediately before changing DNS
+because external state can drift:
+
+1. Lower only the root A TTL to the provider's accepted minimum at least one
+   prior TTL in advance.
 2. Preserve NS, MX, SPF/TXT, and every mail-related record.
 3. Replace only the root `@` A value with the reserved load-balancer IPv4.
 4. Add `www` only if it is in the certificate, Host allowlist, and redirect plan.
