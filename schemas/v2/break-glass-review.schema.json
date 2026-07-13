@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/break-glass-review.schema.json",
+  "title": "IPO.ONE Break Glass Review v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "breakGlassReviewId",
+    "reviewHash",
+    "tenantId",
+    "breakGlassIncidentId",
+    "incidentHash",
+    "reviewerActorId",
+    "reviewerClientId",
+    "findingsRefHash",
+    "version",
+    "completedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "breakGlassReviewId": { "$ref": "#/$defs/identifier" },
+    "reviewHash": { "$ref": "#/$defs/contentHash" },
+    "tenantId": { "$ref": "#/$defs/identifier" },
+    "breakGlassIncidentId": { "$ref": "#/$defs/identifier" },
+    "incidentHash": { "$ref": "#/$defs/contentHash" },
+    "reviewerActorId": { "$ref": "#/$defs/identifier" },
+    "reviewerClientId": { "$ref": "#/$defs/identifier" },
+    "findingsRefHash": { "$ref": "#/$defs/referenceHash" },
+    "version": { "const": 1 },
+    "completedAt": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "break_glass_review.v1" }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "contentHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "referenceHash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

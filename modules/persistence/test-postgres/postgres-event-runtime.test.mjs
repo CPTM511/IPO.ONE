@@ -37,6 +37,25 @@ import {
   createWalletAccount,
   hashId
 } from "../../../packages/domain/src/index.js";
+import { ActorType } from "../../authentication/src/index.js";
+import {
+  PilotCapability,
+  RoleBundle
+} from "../../authorization/src/index.js";
+import {
+  FIXED_NOW as AUTHORIZATION_FIXED_NOW,
+  authorizationRequest,
+  createAuthorizationHarness
+} from "../../authorization/test/support/authorization-fixture.js";
+import {
+  ApprovalDecisionValue,
+  ApprovalProposalStatus,
+  ApprovalService,
+  BreakGlassIncidentStatus,
+  BreakGlassReviewStatus,
+  BreakGlassService,
+  createBreakGlassRuntimeConfig
+} from "../../approval/src/index.js";
 import { RailService, SandboxRailAdapter } from "../../rail/src/index.js";
 import { migrateDown, migrateUp, migrationStatus } from "../../../scripts/migrate.mjs";
 import {
@@ -71,7 +90,13 @@ const TENANT_OWNED_TABLES = [
   "account_bindings",
   "admin_actions",
   "aggregate_stream_heads",
+  "approval_decisions",
+  "approval_executions",
+  "approval_proposals",
   "behavioral_metrics",
+  "break_glass_custodian_decisions",
+  "break_glass_incidents",
+  "break_glass_reviews",
   "command_events",
   "command_idempotency",
   "credit_events",
@@ -163,6 +188,12 @@ async function runtimeCounts(pool) {
 async function resetCoreRuntime(pool) {
   await pool.query(`
     TRUNCATE TABLE
+      break_glass_reviews,
+      break_glass_custodian_decisions,
+      break_glass_incidents,
+      approval_executions,
+      approval_decisions,
+      approval_proposals,
       projection_replay_jobs,
       reconciliation_discrepancies,
       reconciliation_runs,
@@ -474,6 +505,191 @@ function buildCoreFixture() {
   };
 }
 
+function createDurableApprovalHarness(repository, resourceId) {
+  const state = { approvalService: undefined };
+  const harness = createAuthorizationHarness({
+    approvalVerifier: {
+      assertApproved(input) {
+        return state.approvalService.assertApproved(input);
+      }
+    }
+  });
+  const createService = (nextRepository) => new ApprovalService({
+    repository: nextRepository,
+    policyRegistry: harness.policyRegistry,
+    directory: harness.directory,
+    credentialRegistry: harness.credentialRegistry,
+    referenceHasher: harness.referenceHasher,
+    clock: () => AUTHORIZATION_FIXED_NOW
+  });
+  state.approvalService = createService(repository);
+  const commandActor = harness.addIdentity({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId: "actor_pg_risk_command",
+    actorType: ActorType.RISK_OPERATOR,
+    roleBundle: RoleBundle.RISK_OPERATOR,
+    capabilities: [
+      PilotCapability.RISK_LIMIT_INCREASE,
+      PilotCapability.APPROVAL_PROPOSE,
+      PilotCapability.APPROVAL_DECIDE,
+      PilotCapability.APPROVAL_CANCEL
+    ]
+  });
+  const riskApprover = harness.addIdentity({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId: "actor_pg_risk_approver",
+    actorType: ActorType.RISK_OPERATOR,
+    roleBundle: RoleBundle.RISK_OPERATOR,
+    capabilities: [PilotCapability.APPROVAL_DECIDE]
+  });
+  const operationsApprover = harness.addIdentity({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId: "actor_pg_operations_approver",
+    actorType: ActorType.OPERATIONS_OPERATOR,
+    roleBundle: RoleBundle.OPERATIONS_OPERATOR,
+    capabilities: [PilotCapability.APPROVAL_DECIDE]
+  });
+  harness.directory.registerResource({
+    tenantId: TENANT_CONTEXT.tenantId,
+    resourceType: "credit_line",
+    resourceId,
+    now: AUTHORIZATION_FIXED_NOW
+  });
+  harness.livePolicyAdapter.register({
+    tenantId: TENANT_CONTEXT.tenantId,
+    operationId: "pilotIncreaseCreditLimit",
+    resourceType: "credit_line",
+    resourceId,
+    checks: ["risk", "cap", "credit_line_state", "stop_loss"],
+    allowed: true
+  });
+  const commandRequest = authorizationRequest(
+    commandActor.authenticationContext,
+    "pilotIncreaseCreditLimit",
+    {
+      resource: { resourceType: "credit_line", resourceId },
+      reasonCode: "approved_exposure_change",
+      idempotencyKey: "postgres-increase-credit-limit-0001"
+    }
+  );
+  return {
+    commandActor,
+    commandRequest,
+    harness,
+    operationsApprover,
+    riskApprover,
+    get approvalService() {
+      return state.approvalService;
+    },
+    restart(nextRepository) {
+      state.approvalService = createService(nextRepository);
+      return state.approvalService;
+    }
+  };
+}
+
+async function seedApprovalIdentity(pool, identity) {
+  const context = identity.authenticationContext;
+  const membership = identity.membership;
+  await pool.query(
+    `INSERT INTO actors(
+       id, actor_hash, actor_type, status, created_at, updated_at, schema_version
+     ) VALUES ($1, $2, $3, 'active', $4, $4, 'actor.v1')
+     ON CONFLICT (id) DO NOTHING`,
+    [
+      context.actorId,
+      hashId("postgres_approval_actor", { actorId: context.actorId }),
+      context.actorType,
+      AUTHORIZATION_FIXED_NOW.toISOString()
+    ]
+  );
+  await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+    `INSERT INTO memberships(
+       id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
+       status, valid_from, created_at, updated_at, schema_version
+     ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $7, $7, 'membership.v1')
+     ON CONFLICT (id) DO NOTHING`,
+    [
+      membership.membershipId,
+      hashId("postgres_approval_membership", { membershipId: membership.membershipId }),
+      TENANT_CONTEXT.tenantId,
+      context.actorId,
+      membership.roleBundle,
+      JSON.stringify(membership.capabilities),
+      AUTHORIZATION_FIXED_NOW.toISOString()
+    ]
+  ));
+}
+
+function createDurableBreakGlassHarness(repository) {
+  const harness = createAuthorizationHarness();
+  const requester = harness.addIdentity({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId: "actor_pg_break_glass_requester",
+    actorType: ActorType.RISK_OPERATOR,
+    roleBundle: RoleBundle.RISK_OPERATOR,
+    capabilities: [PilotCapability.APPROVAL_READ]
+  });
+  const riskCustodian = harness.addIdentity({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId: "actor_pg_break_glass_risk_custodian",
+    actorType: ActorType.RISK_OPERATOR,
+    roleBundle: RoleBundle.RISK_OPERATOR,
+    capabilities: [PilotCapability.APPROVAL_READ]
+  });
+  const operationsCustodian = harness.addIdentity({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId: "actor_pg_break_glass_operations_custodian",
+    actorType: ActorType.OPERATIONS_OPERATOR,
+    roleBundle: RoleBundle.OPERATIONS_OPERATOR,
+    capabilities: [PilotCapability.APPROVAL_READ]
+  });
+  const reviewOwner = harness.addIdentity({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId: "actor_pg_break_glass_review_owner",
+    actorType: ActorType.AUDITOR,
+    roleBundle: RoleBundle.AUDITOR,
+    capabilities: [PilotCapability.APPROVAL_READ]
+  });
+  const config = createBreakGlassRuntimeConfig({
+    enabled: true,
+    environment: "local_postgres_test",
+    deploymentApprovalRef: "approval_local_test_only",
+    requesterActorIds: [requester.authenticationContext.actorId],
+    custodianActorIds: [
+      riskCustodian.authenticationContext.actorId,
+      operationsCustodian.authenticationContext.actorId
+    ],
+    reviewOwnerActorId: reviewOwner.authenticationContext.actorId,
+    notificationTargetRef: "notification_local_test_sink",
+    maximumSessionMs: 5 * 60_000
+  });
+  const state = { service: undefined };
+  const createService = (nextRepository) => new BreakGlassService({
+    repository: nextRepository,
+    directory: harness.directory,
+    credentialRegistry: harness.credentialRegistry,
+    referenceHasher: harness.referenceHasher,
+    config,
+    clock: () => AUTHORIZATION_FIXED_NOW
+  });
+  state.service = createService(repository);
+  return {
+    harness,
+    operationsCustodian,
+    requester,
+    reviewOwner,
+    riskCustodian,
+    get service() {
+      return state.service;
+    },
+    restart(nextRepository) {
+      state.service = createService(nextRepository);
+      return state.service;
+    }
+  };
+}
+
 test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeout: 60_000 }, async (t) => {
   assert.ok(CONNECTION_STRING, "DATABASE_URL must be provided by scripts/run-postgres-tests.mjs");
   const pool = createPostgresPool({
@@ -493,12 +709,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0002_event_runtime",
         "0003_core_aggregate_persistence",
         "0004_reconciliation_runtime",
-        "0005_tenant_isolation_rls"
+        "0005_tenant_isolation_rls",
+        "0006_approval_runtime"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 5 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 6 }), [
+        "0006_approval_runtime",
         "0005_tenant_isolation_rls",
         "0004_reconciliation_runtime",
         "0003_core_aggregate_persistence",
@@ -510,10 +728,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0002_event_runtime",
         "0003_core_aggregate_persistence",
         "0004_reconciliation_runtime",
-        "0005_tenant_isolation_rls"
+        "0005_tenant_isolation_rls",
+        "0006_approval_runtime"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 3 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 4 }), [
+        "0006_approval_runtime",
         "0005_tenant_isolation_rls",
         "0004_reconciliation_runtime",
         "0003_core_aggregate_persistence"
@@ -534,7 +754,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.deepEqual(await migrateUp({ pool }), [
         "0003_core_aggregate_persistence",
         "0004_reconciliation_runtime",
-        "0005_tenant_isolation_rls"
+        "0005_tenant_isolation_rls",
+        "0006_approval_runtime"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -1482,6 +1703,399 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         }),
         3
       );
+    });
+
+    await t.test("durable dual control survives restart and executes one atomic mutation", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const initialRepository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      await initialRepository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "approval-core-fixture-0001",
+        commandHash: hashId("core_command", { approval: "fixture" }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { creditLineId: fixture.creditLine.creditLineId }
+      });
+
+      const state = createDurableApprovalHarness(
+        initialRepository,
+        fixture.creditLine.creditLineId
+      );
+      await Promise.all([
+        seedApprovalIdentity(pool, state.commandActor),
+        seedApprovalIdentity(pool, state.riskApprover),
+        seedApprovalIdentity(pool, state.operationsApprover)
+      ]);
+      const preparation = await state.harness.service.prepareApproval(state.commandRequest);
+      const proposed = await state.approvalService.propose({
+        approvalPreparation: preparation,
+        authenticationContext: state.commandActor.authenticationContext,
+        idempotencyKey: "postgres-approval-proposal-0001",
+        expiresAt: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 30 * 60_000),
+        now: AUTHORIZATION_FIXED_NOW
+      });
+      const riskApproved = await state.approvalService.decide({
+        approvalProposalId: proposed.proposal.approvalProposalId,
+        expectedVersion: proposed.proposal.version,
+        decision: ApprovalDecisionValue.APPROVE,
+        reasonCode: "approval_confirmed",
+        authenticationContext: state.riskApprover.authenticationContext,
+        idempotencyKey: "postgres-approval-risk-decision-0001",
+        now: AUTHORIZATION_FIXED_NOW
+      });
+      const fullyApproved = await state.approvalService.decide({
+        approvalProposalId: proposed.proposal.approvalProposalId,
+        expectedVersion: riskApproved.proposal.version,
+        decision: ApprovalDecisionValue.APPROVE,
+        reasonCode: "approval_confirmed",
+        authenticationContext: state.operationsApprover.authenticationContext,
+        idempotencyKey: "postgres-approval-operations-decision-0001",
+        now: AUTHORIZATION_FIXED_NOW
+      });
+      assert.equal(fullyApproved.proposal.status, ApprovalProposalStatus.APPROVED);
+
+      const restartedRepository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      state.restart(restartedRepository);
+      assert.equal(
+        (await restartedRepository.getApprovalProposal(proposed.proposal.approvalProposalId)).status,
+        ApprovalProposalStatus.APPROVED
+      );
+      assert.equal(
+        (await restartedRepository.listApprovalDecisions(proposed.proposal.approvalProposalId)).length,
+        2
+      );
+
+      const approvalArtifact = {
+        proposalId: fullyApproved.proposal.approvalProposalId,
+        proposalVersion: fullyApproved.proposal.version
+      };
+      const authorizeAndRevalidate = async (requestSuffix) => {
+        const decision = await state.harness.service.authorize({
+          ...state.commandRequest,
+          requestId: `request_postgres_approval_${requestSuffix}`,
+          correlationId: `correlation_postgres_approval_${requestSuffix}`,
+          approvalArtifact
+        });
+        return state.harness.service.revalidate({
+          decision,
+          authenticationContext: state.commandActor.authenticationContext,
+          now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 1_000)
+        });
+      };
+      const [leftDecision, rightDecision] = await Promise.all([
+        authorizeAndRevalidate("left"),
+        authorizeAndRevalidate("right")
+      ]);
+      assert.notEqual(leftDecision.decisionId, rightDecision.decisionId);
+
+      const executionTime = new Date(AUTHORIZATION_FIXED_NOW.getTime() + 2_000);
+      const buildMutation = () => {
+        const event = createCreditEvent({
+          eventType: "credit_limit_increased",
+          subjectId: fixture.subject.subjectId,
+          payload: {
+            creditLineId: fixture.creditLine.creditLineId,
+            previousLimitMinor: fixture.creditLine.limitMinor,
+            limitMinor: "150000",
+            actorId: state.commandActor.authenticationContext.actorId
+          },
+          now: executionTime
+        });
+        return {
+          events: [{
+            aggregateType: "credit_line",
+            aggregateId: fixture.creditLine.creditLineId,
+            expectedVersion: 0,
+            event
+          }],
+          writes: [{
+            type: CoreProjectionType.CREDIT_LINE,
+            value: {
+              ...fixture.creditLine,
+              limitMinor: "150000",
+              updatedAt: executionTime.toISOString()
+            },
+            eventId: event.eventId
+          }],
+          response: {
+            creditLineId: fixture.creditLine.creditLineId,
+            previousLimitMinor: fixture.creditLine.limitMinor,
+            limitMinor: "150000"
+          }
+        };
+      };
+      const executionKey = state.commandRequest.idempotencyKey;
+      const executionAttempts = await Promise.allSettled([
+        state.approvalService.executeApprovedCommand({
+          authorizationDecision: leftDecision,
+          idempotencyKey: executionKey,
+          buildApprovedMutation: buildMutation,
+          now: executionTime
+        }),
+        state.approvalService.executeApprovedCommand({
+          authorizationDecision: rightDecision,
+          idempotencyKey: executionKey,
+          buildApprovedMutation: buildMutation,
+          now: executionTime
+        })
+      ]);
+      assert.equal(executionAttempts.every(({ status }) => status === "fulfilled"), true);
+      const executionResults = executionAttempts.map(({ value }) => value);
+      assert.equal(executionResults.filter(({ replayed }) => replayed).length, 1);
+      assert.equal(executionResults.filter(({ replayed }) => !replayed).length, 1);
+      assert.equal(
+        new Set(executionResults.map(({ approvalExecution }) =>
+          approvalExecution.approvalExecutionId
+        )).size,
+        1
+      );
+      const winner = executionResults.find(({ replayed }) => !replayed);
+      assert.equal(winner.result.limitMinor, "150000");
+
+      const finalRepository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      state.restart(finalRepository);
+      const retry = await state.approvalService.executeApprovedCommand({
+        authorizationDecision: rightDecision,
+        idempotencyKey: executionKey,
+        buildApprovedMutation() {
+          throw new Error("an idempotent retry must not rebuild the mutation");
+        },
+        now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 3_000)
+      });
+      assert.equal(retry.replayed, true);
+      assert.equal(
+        retry.approvalExecution.approvalExecutionId,
+        winner.approvalExecution.approvalExecutionId
+      );
+      assert.equal(
+        (await finalRepository.getCreditLine(fixture.creditLine.creditLineId)).limitMinor,
+        "150000"
+      );
+      const executedProposal = await finalRepository.getApprovalProposal(
+        proposed.proposal.approvalProposalId
+      );
+      assert.equal(executedProposal.status, ApprovalProposalStatus.EXECUTED);
+      assert.equal(executedProposal.version, fullyApproved.proposal.version + 1);
+      assert.equal(
+        (await finalRepository.getApprovalExecutionByProposal(executedProposal.approvalProposalId))
+          .approvalExecutionId,
+        executedProposal.executionId
+      );
+
+      const approvalReaderRole = "ipo_one_approval_reader_test";
+      if ((await pool.query("SELECT 1 FROM pg_roles WHERE rolname = $1", [approvalReaderRole])).rowCount > 0) {
+        await pool.query(`DROP OWNED BY ${approvalReaderRole}`);
+        await pool.query(`DROP ROLE ${approvalReaderRole}`);
+      }
+      await pool.query(
+        `CREATE ROLE ${approvalReaderRole} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+      );
+      await pool.query(`GRANT USAGE ON SCHEMA public TO ${approvalReaderRole}`);
+      await pool.query(`GRANT SELECT ON approval_proposals TO ${approvalReaderRole}`);
+      const readProposalAs = async (context) => {
+        const client = await pool.connect();
+        try {
+          await client.query("BEGIN");
+          await client.query(`SET LOCAL ROLE ${approvalReaderRole}`);
+          await setTenantTransactionContext(client, context);
+          const result = await client.query(
+            "SELECT id FROM approval_proposals WHERE id = $1",
+            [executedProposal.approvalProposalId]
+          );
+          await client.query("COMMIT");
+          return result.rows;
+        } catch (error) {
+          await client.query("ROLLBACK");
+          throw error;
+        } finally {
+          client.release();
+        }
+      };
+      try {
+        assert.equal((await readProposalAs(TENANT_CONTEXT)).length, 1);
+        assert.equal((await readProposalAs(TENANT_TWO_CONTEXT)).length, 0);
+      } finally {
+        await pool.query(`DROP OWNED BY ${approvalReaderRole}`);
+        await pool.query(`DROP ROLE ${approvalReaderRole}`);
+      }
+
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+          "UPDATE approval_decisions SET reason_code = 'tampered' WHERE proposal_id = $1",
+          [executedProposal.approvalProposalId]
+        )),
+        /append-only rows cannot be updated or deleted/
+      );
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+          "DELETE FROM approval_proposals WHERE id = $1",
+          [executedProposal.approvalProposalId]
+        )),
+        /append-only rows cannot be updated or deleted/
+      );
+
+      const reconciliation = new PostgresReconciliationService({
+        pool,
+        coreRepository: finalRepository,
+        eventRepository: finalRepository.eventRepository,
+        release: "postgres-approval-test",
+        clock: () => new Date(AUTHORIZATION_FIXED_NOW.getTime() + 4_000)
+      });
+      const reconciled = await reconciliation.run({
+        initiatedBy: "system:test-approval-reconciliation",
+        idempotencyKey: "approval-reconciliation-clean-0001"
+      });
+      assert.equal(reconciled.status, "passed", JSON.stringify(await reconciliation.getRun(reconciled.runId)));
+      assert.equal(reconciled.discrepancyCount, 0);
+    });
+
+    await t.test("durable break glass remains protective, bounded, restart-safe, and reviewable", async () => {
+      await resetCoreRuntime(pool);
+      const initialRepository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const state = createDurableBreakGlassHarness(initialRepository);
+      await Promise.all([
+        seedApprovalIdentity(pool, state.requester),
+        seedApprovalIdentity(pool, state.riskCustodian),
+        seedApprovalIdentity(pool, state.operationsCustodian),
+        seedApprovalIdentity(pool, state.reviewOwner)
+      ]);
+      const declared = await state.service.declareIncident({
+        authenticationContext: state.requester.authenticationContext,
+        reasonCode: "security_incident",
+        allowedActions: ["risk.freeze", "provider.pause"],
+        resourceScopes: [{ resourceType: "subject", resourceId: "subject_break_glass_test" }],
+        idempotencyKey: "postgres-break-glass-declare-0001",
+        now: AUTHORIZATION_FIXED_NOW
+      });
+      assert.equal(declared.incident.status, BreakGlassIncidentStatus.PENDING_CUSTODIANS);
+
+      const firstRestart = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      state.restart(firstRestart);
+      assert.equal(
+        (await firstRestart.getBreakGlassIncident(declared.incident.breakGlassIncidentId)).version,
+        1
+      );
+      const firstConfirmation = await state.service.confirmCustodian({
+        breakGlassIncidentId: declared.incident.breakGlassIncidentId,
+        expectedVersion: 1,
+        authenticationContext: state.riskCustodian.authenticationContext,
+        hardwareKeyRefHash: state.harness.referenceHasher.hash(
+          "break_glass.hardware_key",
+          "postgres-risk-custodian-key"
+        ),
+        idempotencyKey: "postgres-break-glass-risk-confirm-0001",
+        now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 1_000)
+      });
+      assert.equal(firstConfirmation.incident.status, BreakGlassIncidentStatus.PENDING_CUSTODIANS);
+
+      const secondRestart = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      state.restart(secondRestart);
+      const activated = await state.service.confirmCustodian({
+        breakGlassIncidentId: declared.incident.breakGlassIncidentId,
+        expectedVersion: firstConfirmation.incident.version,
+        authenticationContext: state.operationsCustodian.authenticationContext,
+        hardwareKeyRefHash: state.harness.referenceHasher.hash(
+          "break_glass.hardware_key",
+          "postgres-operations-custodian-key"
+        ),
+        idempotencyKey: "postgres-break-glass-operations-confirm-0001",
+        now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 2_000)
+      });
+      assert.equal(activated.incident.status, BreakGlassIncidentStatus.ACTIVE);
+      assert.equal(activated.custodianDecisions.length, 2);
+
+      const protectiveAuthorization = await state.service.assertProtectiveScope({
+        breakGlassIncidentId: declared.incident.breakGlassIncidentId,
+        action: "risk.freeze",
+        resourceType: "subject",
+        resourceId: "subject_break_glass_test",
+        authenticationContext: state.requester.authenticationContext,
+        now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 2_500)
+      });
+      assert.equal(
+        (await state.service.revalidateProtectiveAuthorization({
+          breakGlassAuthorization: protectiveAuthorization,
+          authenticationContext: state.requester.authenticationContext,
+          now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 2_500)
+        })).authorizationDecision,
+        "protective_only"
+      );
+      await assert.rejects(
+        () => state.service.assertProtectiveScope({
+          breakGlassIncidentId: declared.incident.breakGlassIncidentId,
+          action: "risk.unfreeze",
+          resourceType: "subject",
+          resourceId: "subject_break_glass_test",
+          authenticationContext: state.requester.authenticationContext,
+          now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 2_500)
+        }),
+        (error) => error.code === "break_glass_scope_rejected"
+      );
+
+      const closed = await state.service.close({
+        breakGlassIncidentId: declared.incident.breakGlassIncidentId,
+        expectedVersion: activated.incident.version,
+        authenticationContext: state.requester.authenticationContext,
+        idempotencyKey: "postgres-break-glass-close-0001",
+        now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 3_000)
+      });
+      assert.equal(closed.incident.status, BreakGlassIncidentStatus.CLOSED);
+      assert.equal(closed.incident.reviewStatus, BreakGlassReviewStatus.PENDING);
+
+      const finalRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      state.restart(finalRepository);
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+          "DELETE FROM break_glass_incidents WHERE id = $1",
+          [declared.incident.breakGlassIncidentId]
+        )),
+        /append-only rows cannot be updated or deleted/
+      );
+      const reviewed = await state.service.review({
+        breakGlassIncidentId: declared.incident.breakGlassIncidentId,
+        expectedVersion: closed.incident.version,
+        authenticationContext: state.reviewOwner.authenticationContext,
+        findingsRefHash: state.harness.referenceHasher.hash(
+          "break_glass.review",
+          "postgres-break-glass-review-findings"
+        ),
+        idempotencyKey: "postgres-break-glass-review-0001",
+        now: new Date(AUTHORIZATION_FIXED_NOW.getTime() + 4_000)
+      });
+      assert.equal(reviewed.incident.reviewStatus, BreakGlassReviewStatus.COMPLETED);
+      assert.equal(
+        (await finalRepository.getBreakGlassReview(declared.incident.breakGlassIncidentId))
+          .breakGlassReviewId,
+        reviewed.review.breakGlassReviewId
+      );
+
+      const reconciliation = new PostgresReconciliationService({
+        pool,
+        coreRepository: finalRepository,
+        eventRepository: finalRepository.eventRepository,
+        release: "postgres-break-glass-test",
+        clock: () => new Date(AUTHORIZATION_FIXED_NOW.getTime() + 5_000)
+      });
+      const reconciled = await reconciliation.run({
+        initiatedBy: "system:test-break-glass-reconciliation",
+        idempotencyKey: "break-glass-reconciliation-clean-0001"
+      });
+      assert.equal(reconciled.status, "passed", JSON.stringify(await reconciliation.getRun(reconciled.runId)));
+      assert.equal(reconciled.discrepancyCount, 0);
     });
 
     await t.test("reconciliation detects drift and approval-gated repair restores a clean state", async () => {

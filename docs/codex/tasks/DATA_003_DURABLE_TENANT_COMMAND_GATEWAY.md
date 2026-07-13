@@ -1,7 +1,8 @@
 # DATA-003: Durable Tenant Command Gateway
 
-Status: Sequenced after SECURITY-001 approval; implementation is not yet
-authorized.
+Status: Authorized for local non-funds implementation by SECURITY-001 and
+sequenced after the completed APPROVAL-001 boundary plus ABUSE-001. Not yet
+implemented or deployment-approved.
 
 ## Context
 
@@ -21,13 +22,22 @@ would turn a safe demo into shared unauthenticated customer state.
   set through the DATA-002 unit of work.
 - Require command idempotency, object ownership, live Mandate/SpendPolicy/risk
   checks, reason/approval fields, and authorization audit events.
+- After authenticating the current Actor/Tenant, recover an already-completed
+  same-command idempotent response before mutable resource/live-state checks
+  can misclassify a post-restart retry. Unseen or conflicting commands must
+  still pass full authorization and revalidation before any mutation.
+- For break-glass protective commands, bind the configured requester plus the
+  current incident status, version, expiry, exact action, and exact resource in
+  the same transaction as the business mutation; a process-branded
+  authorization is not durable authority after restart.
 - Expose separate Human BFF and Agent API clients over the same tenant-scoped
   protocol commands.
 - Keep the current no-auth public sandbox isolated and clearly labelled.
 
 ## Non-Goals
 
-- No implementation before SECURITY-001 SEC-D01 through SEC-D09 approval.
+- No implementation outside the approved SECURITY-001 SEC-D01 through SEC-D09
+  local non-funds boundary.
 - No real funds, custody, Human lending, production provider, or raw PII.
 - No migration of anonymous sandbox sessions into tenant customer records.
 - No direct database access from browser or Agent clients.

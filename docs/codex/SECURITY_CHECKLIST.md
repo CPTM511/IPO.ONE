@@ -27,6 +27,8 @@
 - [x] CI repeats locked install, contract/schema/migration tests, PostgreSQL recovery, live smoke, and production dependency audit.
 - [x] Local Human/workload AuthN produces a branded non-authorizing context with active Actor/Credential and exact Credential-version binding.
 - [x] Local tenant AuthZ is deny-by-default across explicit capabilities, Membership/client binding, object ownership, AccessGrants, live checks, MFA, reason/idempotency/approval policy, revalidation, and awaited allow/deny audit.
+- [x] Local non-funds dual control uses server-prepared exact-command proposals, one Risk and one Operations approver, durable immutable decisions, current-authority revalidation, atomic single execution, forced RLS, and reconciliation.
+- [x] Local break glass is disabled by default, requires two configured hardware-key custodians when explicitly test-enabled, is exact-scope/protective-only, cannot increase authority or move funds, expires without refresh, and requires review.
 - [x] Public sandbox operations remain explicitly isolated from authenticated tenant authority.
 
 Open human-review items before production:
@@ -34,7 +36,7 @@ Open human-review items before production:
 - [ ] Select first production execution chain.
 - [ ] Select initial allowlisted Providers.
 - [ ] Review all smart-contract fund paths.
-- [ ] Review and activate production role assignments, dual control, multisig, timelock, break-glass, and deployment controls.
+- [ ] Review and activate production role assignments, named dual-control operators, multisig, timelock, break-glass custodians/review owner/notifications, and deployment controls.
 - [ ] Review compliance boundary for any future Human or Originator flow.
 - [ ] Expand reviewed persistence and replay/reconciliation jobs beyond the Rail event stream.
 - [x] Add an append-only double-entry ledger for the local Lockbox model.

@@ -181,6 +181,8 @@ export class PostgresReconciliationService {
     await this.#checkObligations(add);
     checkCount += 1;
     await this.#checkCreditExposure(add);
+    checkCount += 1;
+    await this.#checkApprovalIntegrity(add);
 
     if (truncatedCount > 0) {
       discrepancies.push({
@@ -646,6 +648,12 @@ export class PostgresReconciliationService {
         UNION ALL SELECT 'credit_line', id FROM credit_lines
         UNION ALL SELECT 'risk_decision', id FROM risk_decisions
         UNION ALL SELECT 'admin_action', id FROM admin_actions
+        UNION ALL SELECT 'approval_proposal', id FROM approval_proposals
+        UNION ALL SELECT 'approval_decision', id FROM approval_decisions
+        UNION ALL SELECT 'approval_execution', id FROM approval_executions
+        UNION ALL SELECT 'break_glass_incident', id FROM break_glass_incidents
+        UNION ALL SELECT 'break_glass_custodian_decision', id FROM break_glass_custodian_decisions
+        UNION ALL SELECT 'break_glass_review', id FROM break_glass_reviews
       )
       SELECT
         COALESCE(e.entity_type, r.entity_type) AS entity_type,
@@ -893,6 +901,154 @@ export class PostgresReconciliationService {
           assetId: row.asset_id,
           utilizedMinor: row.utilized_minor,
           outstandingMinor: row.outstanding_minor
+        }
+      });
+    }
+  }
+
+  async #checkApprovalIntegrity(add) {
+    const approvalResult = await this.#read(`
+      WITH decision_summary AS (
+        SELECT
+          proposal_id,
+          COUNT(*) FILTER (WHERE decision = 'approve')::int AS approval_count,
+          COUNT(DISTINCT approver_actor_id) FILTER (WHERE decision = 'approve')::int
+            AS distinct_actor_count,
+          COUNT(DISTINCT approver_role_bundle) FILTER (WHERE decision = 'approve')::int
+            AS distinct_role_count,
+          COALESCE(
+            jsonb_agg(to_jsonb(id) ORDER BY id) FILTER (WHERE decision = 'approve'),
+            '[]'::jsonb
+          ) AS approval_ids,
+          COALESCE(
+            jsonb_agg(to_jsonb(approver_role_bundle) ORDER BY approver_role_bundle)
+              FILTER (WHERE decision = 'approve'),
+            '[]'::jsonb
+          ) AS approved_roles
+        FROM approval_decisions
+        GROUP BY proposal_id
+      )
+      SELECT
+        p.id,
+        p.status,
+        p.version,
+        p.required_approval_count,
+        p.required_approver_role_bundles,
+        COALESCE(d.approval_count, 0) AS approval_count,
+        COALESCE(d.distinct_actor_count, 0) AS distinct_actor_count,
+        COALESCE(d.distinct_role_count, 0) AS distinct_role_count,
+        COALESCE(d.approval_ids, '[]'::jsonb) AS approval_ids,
+        e.id AS execution_id,
+        e.proposal_version AS execution_proposal_version,
+        e.approval_decision_ids AS execution_approval_ids
+      FROM approval_proposals p
+      LEFT JOIN decision_summary d ON d.proposal_id = p.id
+      LEFT JOIN approval_executions e ON e.proposal_id = p.id
+      WHERE (
+          p.status IN ('approved', 'executed')
+          AND (
+            COALESCE(d.approval_count, 0) <> p.required_approval_count
+            OR COALESCE(d.distinct_actor_count, 0) <> p.required_approval_count
+            OR COALESCE(d.distinct_role_count, 0) <> p.required_approval_count
+            OR COALESCE(d.approved_roles, '[]'::jsonb) <> (
+              SELECT COALESCE(
+                jsonb_agg(to_jsonb(required.role) ORDER BY required.role),
+                '[]'::jsonb
+              )
+              FROM jsonb_array_elements_text(p.required_approver_role_bundles) AS required(role)
+            )
+          )
+        )
+        OR (p.status = 'executed' AND (
+          e.id IS NULL
+          OR p.execution_id IS DISTINCT FROM e.id
+          OR e.proposal_version + 1 <> p.version
+          OR e.proposal_hash <> p.proposal_hash
+          OR e.command_hash <> p.command_hash
+          OR NOT (
+            e.approval_decision_ids @> COALESCE(d.approval_ids, '[]'::jsonb)
+            AND COALESCE(d.approval_ids, '[]'::jsonb) @> e.approval_decision_ids
+          )
+        ))
+        OR (p.status <> 'executed' AND e.id IS NOT NULL)
+        OR EXISTS (
+          SELECT 1
+          FROM approval_decisions bad
+          WHERE bad.proposal_id = p.id
+            AND (
+              bad.proposal_hash <> p.proposal_hash
+              OR bad.command_hash <> p.command_hash
+              OR bad.policy_version <> p.policy_version
+            )
+        )
+      ORDER BY p.id
+      LIMIT $1
+    `, [this.maxDiscrepancies]);
+    for (const row of approvalResult.rows) {
+      add({
+        checkCode: "approval_linkage_mismatch",
+        entityType: "approval_proposal",
+        entityId: row.id,
+        details: {
+          status: row.status,
+          proposalVersion: Number(row.version),
+          requiredApprovalCount: row.required_approval_count,
+          approvalCount: row.approval_count,
+          distinctActorCount: row.distinct_actor_count,
+          distinctRoleCount: row.distinct_role_count,
+          approvalIds: row.approval_ids,
+          executionId: row.execution_id,
+          executionProposalVersion: row.execution_proposal_version === null
+            ? null
+            : Number(row.execution_proposal_version),
+          executionApprovalIds: row.execution_approval_ids
+        }
+      });
+    }
+
+    const breakGlassResult = await this.#read(`
+      WITH custodian_summary AS (
+        SELECT incident_id,
+               COUNT(*)::int AS decision_count,
+               COUNT(DISTINCT custodian_actor_id)::int AS distinct_custodian_count,
+               BOOL_AND(d.incident_hash = i.incident_hash) AS hashes_match
+          FROM break_glass_custodian_decisions d
+          JOIN break_glass_incidents i ON i.id = d.incident_id
+         GROUP BY incident_id
+      )
+      SELECT i.id, i.status, i.review_status,
+             COALESCE(c.decision_count, 0) AS decision_count,
+             COALESCE(c.distinct_custodian_count, 0) AS distinct_custodian_count,
+             r.id AS review_id
+        FROM break_glass_incidents i
+        LEFT JOIN custodian_summary c ON c.incident_id = i.id
+        LEFT JOIN break_glass_reviews r ON r.incident_id = i.id
+       WHERE (
+           i.status IN ('active', 'expired', 'closed')
+           AND (
+             COALESCE(c.decision_count, 0) <> 2
+             OR COALESCE(c.distinct_custodian_count, 0) <> 2
+             OR COALESCE(c.hashes_match, FALSE) IS NOT TRUE
+           )
+         )
+          OR (i.review_status = 'completed' AND (
+            r.id IS NULL OR r.incident_hash <> i.incident_hash
+          ))
+          OR (i.review_status <> 'completed' AND r.id IS NOT NULL)
+       ORDER BY i.id
+       LIMIT $1
+    `, [this.maxDiscrepancies]);
+    for (const row of breakGlassResult.rows) {
+      add({
+        checkCode: "break_glass_linkage_mismatch",
+        entityType: "break_glass_incident",
+        entityId: row.id,
+        details: {
+          status: row.status,
+          reviewStatus: row.review_status,
+          custodianDecisionCount: row.decision_count,
+          distinctCustodianCount: row.distinct_custodian_count,
+          reviewId: row.review_id
         }
       });
     }

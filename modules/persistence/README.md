@@ -25,6 +25,20 @@ replication privileges. Migration 0005 forces RLS on every tenant-owned table
 and scopes stream, command, inbox, Evidence, and projection identities by
 tenant. The public demo still does not compose this durable path.
 
+Migration 0006 adds the local non-funds approval runtime: versioned
+ApprovalProposal state, immutable ApprovalDecision and ApprovalExecution
+records, and separately gated break-glass incident, custodian, and review
+records. These projections use the same serializable command/Event/Evidence/
+outbox/snapshot transaction as business state. Reconciliation verifies their
+projection hashes and proposal/decision/execution or
+incident/custodian/review linkage. Forced RLS and transaction-local Tenant
+context apply to every new table.
+
+The durable records do not activate production identity or permissions. The
+current Credential, Membership, resource, live-policy, and authorization-audit
+adapters remain local reference implementations until DATA-003 composes
+reviewed stores behind a separate authenticated Tenant command gateway.
+
 Run the real integration suite only against an isolated test database:
 
 ```sh

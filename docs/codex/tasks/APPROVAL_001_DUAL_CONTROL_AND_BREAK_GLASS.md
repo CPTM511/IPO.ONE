@@ -1,7 +1,8 @@
 # APPROVAL-001: Dual Control and Break Glass
 
-Status: Sequenced after SECURITY-001 approval and authenticated tenant
-authorization. Implementation is not yet authorized.
+Status: Implemented and verified as a local non-funds domain and PostgreSQL
+boundary under SECURITY-001. Not wired to the public runtime or approved for
+production activation.
 
 ## Context
 
@@ -10,7 +11,7 @@ key, unfreeze, and repair increases must never be unilateral. IPO.ONE needs a
 durable proposal/approval/execution state machine and a narrowly bounded
 break-glass path that cannot become a permanent super-admin mechanism.
 
-## Scope After Approval
+## Implemented Scope
 
 - Add immutable ApprovalProposal and ApprovalDecision records bound to tenant,
   action, resource, exact command hash, aggregate versions, reason, proposer,
@@ -79,11 +80,51 @@ pnpm run smoke:api
 
 ## Security Checklist
 
-- [ ] Operation classification and approver separation are approved.
-- [ ] Approval binds exact tenant, resource, command, versions, and policy.
-- [ ] Self-approval and Actor/client aliasing are impossible.
-- [ ] Expiry, cancellation, replay, concurrency, and TOCTOU are tested.
-- [ ] Break-glass scope, duration, custody, notification, and review are fixed.
-- [ ] Break glass cannot unfreeze, increase exposure, move funds, or read PII.
-- [ ] All transitions emit bounded audit/Evidence without secrets.
-- [ ] Production action and deployment remain separate approvals.
+- [x] Operation classification and two-role approver separation are fixed for all current high-impact commands.
+- [x] Approval binds exact Tenant, resource, command, versions, reason, and policy.
+- [x] Self-approval and Actor/client aliasing do not create additional approvers.
+- [x] Expiry, cancellation, replay, concurrency, restart recovery, and TOCTOU are tested.
+- [x] Break-glass scope, duration, custody, notification reference, and review are fixed.
+- [x] Break glass cannot unfreeze, increase exposure, move funds, mutate history, or read PII.
+- [x] All persisted transitions emit bounded Event, Evidence, snapshot, and outbox records without secrets.
+- [x] Production action and deployment remain separate approvals.
+
+## Implementation Evidence (2026-07-14)
+
+- ADR-020 records the exact-command proposal, two-role decision, atomic
+  execution, and protective-only break-glass decisions.
+- Migration `0006_approval_runtime` adds tenant-owned proposal, decision,
+  execution, incident, custodian, and review records with forced RLS,
+  append-only/transition guards, expiry bounds, and reversible migration.
+- The authorization boundary creates a server-branded preparation and accepts
+  only `{ proposalId, proposalVersion }` as the external artifact. Approval
+  verification is repeated during authorization and immediate pre-mutation
+  revalidation.
+- The serializable PostgreSQL command commits business mutation, proposal
+  execution, Events, Evidence, outbox, snapshots, and projection hashes as one
+  unit. Reconciliation checks approval and break-glass linkage.
+- Protective break-glass authority is requester-bound and records the exact
+  Actor, client, Credential/Policy versions, incident version, action, and
+  resource. A live revalidation rejects closed, expired, changed, cross-Tenant,
+  or differently authenticated use before the command boundary.
+- Real PostgreSQL tests prove restart recovery, concurrent single execution,
+  stable idempotent retry across distinct current authorization decisions,
+  cross-Tenant RLS, immutable decisions, and the complete declaration through
+  review break-glass lifecycle.
+- JSON Schema 2020-12 contracts cover all six durable records. CI runs an
+  explicit policy-classification drift gate and approval security checks.
+
+## Remaining Deployment Gates
+
+- Human IdP vendor and production Credential/Membership stores.
+- Named break-glass custodians, requester set, review owner, hardware-key
+  enrollment, notification delivery, and protected-environment approval.
+- DATA-003 authenticated Tenant command gateway and transaction composition.
+  It must recover completed idempotent responses after process restart without
+  treating an expired process-branded decision as durable authority, and must
+  bind live break-glass incident status/version/scope into the same protective
+  command transaction.
+- ABUSE-001 Actor/Tenant limits and sensitive-flow anti-automation controls.
+- Production database operations, backup/restore, monitoring, incident
+  ownership, independent security review, private-data approval, Providers,
+  KYC/KYP, custody, and any real-value path.

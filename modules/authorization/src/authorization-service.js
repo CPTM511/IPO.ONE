@@ -24,9 +24,10 @@ import {
 
 const trustedAuthorizationDecisions = new WeakSet();
 const authorizationFacts = new WeakMap();
+const trustedApprovalPreparations = new WeakSet();
 
-function decisionVersion(name, value) {
-  if (!Number.isSafeInteger(value) || value < 0) {
+function decisionVersion(name, value, { minimum = 0 } = {}) {
+  if (!Number.isSafeInteger(value) || value < minimum) {
     throw authorizationError("invalid_authorization_decision", `${name} is invalid`);
   }
   return value;
@@ -37,6 +38,15 @@ function createAuthorizationDecision(input, facts) {
   const expiresAt = authorizationTimestamp("expiresAt", input.expiresAt);
   if (expiresAt <= authorizedAt) {
     throw authorizationError("invalid_authorization_decision", "authorization decision expiry is invalid");
+  }
+  if (
+    (input.accessGrantId === undefined) !== (input.accessGrantVersion === undefined) ||
+    (input.approvalProposalId === undefined) !== (input.approvalProposalVersion === undefined)
+  ) {
+    throw authorizationError(
+      "invalid_authorization_decision",
+      "authorization decision reference is incomplete"
+    );
   }
   const decision = {
     decisionId: createOperationalId("authorization_decision"),
@@ -53,7 +63,7 @@ function createAuthorizationDecision(input, facts) {
     policyVersion: assertAuthorizationIdentifier("policyVersion", input.policyVersion),
     requiredCapability: assertAuthorizationIdentifier("requiredCapability", input.requiredCapability),
     membershipId: assertAuthorizationIdentifier("membershipId", input.membershipId),
-    membershipVersion: decisionVersion("membershipVersion", input.membershipVersion),
+    membershipVersion: decisionVersion("membershipVersion", input.membershipVersion, { minimum: 1 }),
     revalidationCount: decisionVersion("revalidationCount", input.revalidationCount),
     resourceVersion: decisionVersion("resourceVersion", input.resourceVersion),
     liveStateVersion: decisionVersion("liveStateVersion", input.liveStateVersion),
@@ -61,7 +71,9 @@ function createAuthorizationDecision(input, facts) {
       ? {}
       : {
           accessGrantId: assertAuthorizationIdentifier("accessGrantId", input.accessGrantId),
-          accessGrantVersion: decisionVersion("accessGrantVersion", input.accessGrantVersion)
+          accessGrantVersion: decisionVersion("accessGrantVersion", input.accessGrantVersion, {
+            minimum: 1
+          })
         }),
     tokenJtiHash: assertAuthorizationString("tokenJtiHash", input.tokenJtiHash, {
       minimum: 32,
@@ -91,6 +103,19 @@ function createAuthorizationDecision(input, facts) {
       maximumItems: 8,
       itemValidator: assertAuthorizationIdentifier
     }),
+    ...(input.approvalProposalId === undefined
+      ? {}
+      : {
+          approvalProposalId: assertAuthorizationIdentifier(
+            "approvalProposalId",
+            input.approvalProposalId
+          ),
+          approvalProposalVersion: decisionVersion(
+            "approvalProposalVersion",
+            input.approvalProposalVersion,
+            { minimum: 1 }
+          )
+        }),
     authorizedAt: authorizedAt.toISOString(),
     expiresAt: expiresAt.toISOString(),
     schemaVersion: AUTHORIZATION_DECISION_SCHEMA_VERSION
@@ -99,6 +124,60 @@ function createAuthorizationDecision(input, facts) {
   trustedAuthorizationDecisions.add(decision);
   authorizationFacts.set(decision, deepFreezeAuthorization(cloneAuthorization(facts)));
   return decision;
+}
+
+function createApprovalPreparation(input) {
+  const preparedAt = authorizationTimestamp("preparedAt", input.preparedAt);
+  const expiresAt = authorizationTimestamp("expiresAt", input.expiresAt);
+  if (expiresAt <= preparedAt || expiresAt.getTime() - preparedAt.getTime() > 60_000) {
+    throw authorizationError("invalid_approval_preparation", "approval preparation expiry is invalid");
+  }
+  const preparation = deepFreezeAuthorization({
+    preparationId: createOperationalId("approval_preparation"),
+    tenantId: assertAuthorizationIdentifier("tenantId", input.tenantId),
+    commandActorId: assertAuthorizationIdentifier("commandActorId", input.commandActorId),
+    commandActorType: assertAuthorizationIdentifier("commandActorType", input.commandActorType),
+    commandClientId: assertAuthorizationIdentifier("commandClientId", input.commandClientId),
+    operationId: assertAuthorizationIdentifier("operationId", input.operationId),
+    action: assertAuthorizationIdentifier("action", input.action),
+    resourceType: assertAuthorizationIdentifier("resourceType", input.resourceType),
+    resourceId: assertAuthorizationIdentifier("resourceId", input.resourceId),
+    resourceVersion: decisionVersion("resourceVersion", input.resourceVersion),
+    liveStateVersion: decisionVersion("liveStateVersion", input.liveStateVersion),
+    policyVersion: assertAuthorizationIdentifier("policyVersion", input.policyVersion),
+    reasonCode: assertReasonCode("reasonCode", input.reasonCode),
+    commandHash: assertAuthorizationString("commandHash", input.commandHash, {
+      minimum: 66,
+      maximum: 66,
+      pattern: /^0x[0-9a-f]{64}$/
+    }),
+    idempotencyKeyHash: assertAuthorizationString(
+      "idempotencyKeyHash",
+      input.idempotencyKeyHash,
+      { minimum: 32, maximum: 128, pattern: /^[A-Za-z0-9_-]+$/ }
+    ),
+    preparedAt: preparedAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    schemaVersion: "approval_preparation.v1"
+  });
+  trustedApprovalPreparations.add(preparation);
+  return preparation;
+}
+
+export function assertApprovalPreparation(
+  preparation,
+  { now = new Date(), allowExpired = false } = {}
+) {
+  if (!preparation || typeof preparation !== "object" || !trustedApprovalPreparations.has(preparation)) {
+    throw authorizationError(
+      "approval_preparation_required",
+      "a server-created approval preparation is required"
+    );
+  }
+  if (!allowExpired && new Date(preparation.expiresAt) <= authorizationTimestamp("now", now)) {
+    throw authorizationError("approval_preparation_expired", "approval preparation has expired");
+  }
+  return preparation;
 }
 
 export function assertAuthorizationDecision(decision, { now } = {}) {
@@ -214,19 +293,13 @@ function denialResource(normalized, policy) {
 
 function snapshotApprovalArtifact(value) {
   if (value === undefined) return undefined;
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw authorizationError("invalid_authorization_input", "approvalArtifact must be an object");
-  }
-  try {
-    const snapshot = cloneAuthorization(value);
-    const serialized = JSON.stringify(snapshot);
-    if (serialized === undefined || serialized.length > 32_768) {
-      throw new Error("approval artifact is not bounded");
-    }
-    return deepFreezeAuthorization(snapshot);
-  } catch {
-    throw authorizationError("invalid_authorization_input", "approvalArtifact is invalid");
-  }
+  assertAuthorizationShape("approvalArtifact", value, {
+    required: ["proposalId", "proposalVersion"]
+  });
+  return deepFreezeAuthorization({
+    proposalId: assertAuthorizationIdentifier("proposalId", value.proposalId),
+    proposalVersion: decisionVersion("proposalVersion", value.proposalVersion, { minimum: 1 })
+  });
 }
 
 export class AuthorizationService {
@@ -270,6 +343,11 @@ export class AuthorizationService {
     return this.#evaluate(normalized);
   }
 
+  async prepareApproval(input) {
+    const normalized = normalizeRequest(input);
+    return this.#evaluate(normalized, {}, { prepareApproval: true });
+  }
+
   async revalidate(input) {
     assertAuthorizationShape("authorization revalidation", input, {
       required: ["decision", "authenticationContext"],
@@ -304,14 +382,14 @@ export class AuthorizationService {
     });
   }
 
-  async #evaluate(normalized, expected = {}) {
+  async #evaluate(normalized, expected = {}, { prepareApproval = false } = {}) {
     const context = normalized.authenticationContext;
     let policy;
     let membership;
     let resource;
     let accessGrant;
     let liveStateVersion = 0;
-    let approvalIds = [];
+    let approval = { approvalIds: [] };
     try {
       policy = await stage("route_contract_rejected", async () => {
         const resolved = this.policyRegistry.getAuthenticated(normalized.operationId);
@@ -428,7 +506,48 @@ export class AuthorizationService {
         throw new AuthorizationStageError("authorization_state_changed");
       }
 
-      approvalIds = await stage("approval_requirement_rejected", async () =>
+      if (prepareApproval) {
+        if (
+          policy.approvalRequirement !== ApprovalRequirement.DUAL_CONTROL ||
+          normalized.approvalArtifact !== undefined ||
+          !normalized.reasonCode ||
+          !idempotencyKeyHash
+        ) {
+          throw new AuthorizationStageError("approval_preparation_rejected");
+        }
+        const preparation = createApprovalPreparation({
+          tenantId: context.tenantId,
+          commandActorId: context.actorId,
+          commandActorType: context.actorType,
+          commandClientId: context.clientId,
+          operationId: policy.operationId,
+          action: policy.action,
+          resourceType: policy.resourceType,
+          resourceId: resource?.resourceId ?? "resource_pending",
+          resourceVersion: resource?.version ?? 0,
+          liveStateVersion,
+          policyVersion: context.policyVersion,
+          reasonCode: normalized.reasonCode,
+          commandHash,
+          idempotencyKeyHash,
+          preparedAt: normalized.now,
+          expiresAt: new Date(normalized.now.getTime() + this.decisionTtlMs)
+        });
+        await this.#appendAudit({
+          normalized,
+          context,
+          policy,
+          membership,
+          resourceId: resource?.resourceId ?? "resource_pending",
+          accessGrant,
+          decision: AuthorizationDecisionValue.DENY,
+          reasonCode: "approval_required",
+          approvalIds: []
+        });
+        return preparation;
+      }
+
+      approval = await stage("approval_requirement_rejected", async () =>
         this.#verifyApproval({ normalized, policy, context, resource, commandHash })
       );
 
@@ -467,7 +586,9 @@ export class AuthorizationService {
         authorizationRequestHash,
         commandHash,
         idempotencyKeyHash,
-        approvalIds,
+        approvalIds: approval.approvalIds,
+        approvalProposalId: approval.proposalId,
+        approvalProposalVersion: approval.proposalVersion,
         authorizedAt: normalized.now,
         expiresAt: new Date(normalized.now.getTime() + this.decisionTtlMs)
       }, facts);
@@ -480,7 +601,9 @@ export class AuthorizationService {
         accessGrant,
         decision: AuthorizationDecisionValue.ALLOW,
         reasonCode: normalized.reasonCode ?? "authorization_allowed",
-        approvalIds
+        approvalIds: approval.approvalIds,
+        approvalProposalId: approval.proposalId,
+        approvalProposalVersion: approval.proposalVersion
       });
       return decision;
     } catch (error) {
@@ -584,7 +707,7 @@ export class AuthorizationService {
       if (normalized.approvalArtifact !== undefined) {
         throw new Error("unused approval authority is rejected");
       }
-      return [];
+      return { approvalIds: [] };
     }
     if (!this.approvalVerifier?.assertApproved || normalized.approvalArtifact === undefined) {
       throw new Error("dual-control approval is unavailable");
@@ -596,12 +719,21 @@ export class AuthorizationService {
       action: policy.action,
       resourceType: policy.resourceType,
       resourceId: resource?.resourceId ?? "resource_pending",
+      operationId: policy.operationId,
+      resourceVersion: resource?.version ?? 0,
+      reasonCode: normalized.reasonCode,
       commandHash,
       policyVersion: context.policyVersion,
       now: normalized.now
     });
     assertAuthorizationShape("verified approval", verified, {
-      required: ["approvalIds", "approverActorIds", "commandHash"]
+      required: [
+        "approvalIds",
+        "approverActorIds",
+        "commandHash",
+        "proposalId",
+        "proposalVersion"
+      ]
     });
     const approvalIds = assertAuthorizationList("approvalIds", verified.approvalIds, {
       maximumItems: 8,
@@ -617,11 +749,17 @@ export class AuthorizationService {
       approvalIds.length < 2 ||
       approverActorIds.length !== approvalIds.length ||
       approverActorIds.includes(context.actorId) ||
-      verified.commandHash !== commandHash
+      verified.commandHash !== commandHash ||
+      verified.proposalId !== normalized.approvalArtifact.proposalId ||
+      verified.proposalVersion !== normalized.approvalArtifact.proposalVersion
     ) {
       throw new Error("dual-control approval does not match the command");
     }
-    return approvalIds;
+    return {
+      approvalIds,
+      proposalId: verified.proposalId,
+      proposalVersion: decisionVersion("proposalVersion", verified.proposalVersion, { minimum: 1 })
+    };
   }
 
   async #appendAudit({
@@ -633,7 +771,9 @@ export class AuthorizationService {
     accessGrant,
     decision,
     reasonCode,
-    approvalIds
+    approvalIds,
+    approvalProposalId,
+    approvalProposalVersion
   }) {
     try {
       await this.auditStore.append({
@@ -653,6 +793,9 @@ export class AuthorizationService {
         policyVersion: context.policyVersion,
         reasonCode,
         approvalIds,
+        ...(approvalProposalId === undefined
+          ? {}
+          : { approvalProposalId, approvalProposalVersion }),
         membershipId: membership?.membershipId ?? "membership_unresolved",
         ...(accessGrant ? { accessGrantId: accessGrant.accessGrantId } : {}),
         ...(normalized.sourceNetworkRefHash

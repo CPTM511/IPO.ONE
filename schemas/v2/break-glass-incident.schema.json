@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/break-glass-incident.schema.json",
+  "title": "IPO.ONE Break Glass Incident v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "breakGlassIncidentId",
+    "incidentHash",
+    "tenantId",
+    "reasonCode",
+    "allowedActions",
+    "resourceScopes",
+    "requestedByActorId",
+    "requestedByClientId",
+    "custodianActorIds",
+    "reviewOwnerActorId",
+    "deploymentApprovalRefHash",
+    "notificationTargetRefHash",
+    "maximumSessionMs",
+    "status",
+    "reviewStatus",
+    "version",
+    "activationDeadline",
+    "declaredAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "breakGlassIncidentId": { "$ref": "#/$defs/identifier" },
+    "incidentHash": { "$ref": "#/$defs/contentHash" },
+    "tenantId": { "$ref": "#/$defs/identifier" },
+    "reasonCode": { "$ref": "#/$defs/reasonCode" },
+    "allowedActions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["credential.revoke", "provider.pause", "risk.freeze", "tenant.command.pause", "worker.delivery.pause"]
+      }
+    },
+    "resourceScopes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resourceType", "resourceId"],
+        "properties": {
+          "resourceType": { "$ref": "#/$defs/identifier" },
+          "resourceId": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "requestedByActorId": { "$ref": "#/$defs/identifier" },
+    "requestedByClientId": { "$ref": "#/$defs/identifier" },
+    "custodianActorIds": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "reviewOwnerActorId": { "$ref": "#/$defs/identifier" },
+    "deploymentApprovalRefHash": { "$ref": "#/$defs/referenceHash" },
+    "notificationTargetRefHash": { "$ref": "#/$defs/referenceHash" },
+    "maximumSessionMs": { "type": "integer", "minimum": 60000, "maximum": 1800000 },
+    "status": { "enum": ["pending_custodians", "active", "expired", "closed", "canceled"] },
+    "reviewStatus": { "enum": ["not_required", "pending", "completed", "overdue"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "activationDeadline": { "$ref": "#/$defs/timestamp" },
+    "activatedAt": { "$ref": "#/$defs/timestamp" },
+    "expiresAt": { "$ref": "#/$defs/timestamp" },
+    "expiredAt": { "$ref": "#/$defs/timestamp" },
+    "closedAt": { "$ref": "#/$defs/timestamp" },
+    "canceledAt": { "$ref": "#/$defs/timestamp" },
+    "reviewDueAt": { "$ref": "#/$defs/timestamp" },
+    "declaredAt": { "$ref": "#/$defs/timestamp" },
+    "updatedAt": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "break_glass_incident.v1" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["active", "expired", "closed"] } }, "required": ["status"] },
+      "then": { "required": ["activatedAt", "expiresAt", "reviewDueAt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "expired" } }, "required": ["status"] },
+      "then": { "required": ["expiredAt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "closed" } }, "required": ["status"] },
+      "then": { "required": ["closedAt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "canceled" } }, "required": ["status"] },
+      "then": { "required": ["canceledAt"] }
+    }
+  ],
+  "$defs": {
+    "identifier": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "contentHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "referenceHash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "reasonCode": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

@@ -94,6 +94,11 @@ export const PilotCapability = Object.freeze({
   PROVIDER_PAUSE: "provider.pause",
   PROJECTION_REPAIR_PLAN: "projection_repair.plan",
   PROJECTION_REPAIR_EXECUTE: "projection_repair.execute",
+  APPROVAL_PROPOSE: "approval.propose",
+  APPROVAL_DECIDE: "approval.decide",
+  APPROVAL_READ: "approval.read",
+  APPROVAL_CANCEL: "approval.cancel",
+  APPROVAL_EXPIRE: "approval.expire",
   WORKER_OUTBOX_PUBLISH: "worker.outbox.publish",
   WORKER_INBOX_PROCESS: "worker.inbox.process"
 });
@@ -124,7 +129,11 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.RISK_FREEZE,
     PilotCapability.RISK_LIMIT_REDUCE,
     PilotCapability.RISK_LIMIT_INCREASE,
-    PilotCapability.RISK_UNFREEZE
+    PilotCapability.RISK_UNFREEZE,
+    PilotCapability.APPROVAL_PROPOSE,
+    PilotCapability.APPROVAL_DECIDE,
+    PilotCapability.APPROVAL_READ,
+    PilotCapability.APPROVAL_CANCEL
   ]),
   [RoleBundle.OPERATIONS_OPERATOR]: Object.freeze([
     PilotCapability.PROVIDER_HEALTH_READ,
@@ -132,13 +141,18 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.RISK_FREEZE,
     PilotCapability.PROVIDER_PAUSE,
     PilotCapability.PROJECTION_REPAIR_PLAN,
-    PilotCapability.PROJECTION_REPAIR_EXECUTE
+    PilotCapability.PROJECTION_REPAIR_EXECUTE,
+    PilotCapability.APPROVAL_PROPOSE,
+    PilotCapability.APPROVAL_DECIDE,
+    PilotCapability.APPROVAL_READ,
+    PilotCapability.APPROVAL_CANCEL
   ]),
   [RoleBundle.AUDITOR]: Object.freeze([
     PilotCapability.EVIDENCE_READ,
     PilotCapability.AUDIT_EXPORT,
     PilotCapability.RISK_READ_TENANT,
-    PilotCapability.RECONCILIATION_READ
+    PilotCapability.RECONCILIATION_READ,
+    PilotCapability.APPROVAL_READ
   ]),
   [RoleBundle.PROVIDER_SERVICE]: Object.freeze([
     PilotCapability.PROVIDER_INTENT_READ,
@@ -151,7 +165,8 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.RECONCILIATION_READ,
     PilotCapability.RECONCILIATION_RUN,
     PilotCapability.PROJECTION_REPAIR_PLAN,
-    PilotCapability.PROJECTION_REPAIR_EXECUTE
+    PilotCapability.PROJECTION_REPAIR_EXECUTE,
+    PilotCapability.APPROVAL_EXPIRE
   ])
 });
 
@@ -174,4 +189,12 @@ export const EXPOSURE_INCREASE_REASON_CODES = Object.freeze([
 export const REPAIR_REASON_CODES = Object.freeze([
   "projection_drift",
   "reconciliation_discrepancy"
+]);
+
+export const APPROVAL_LIFECYCLE_REASON_CODES = Object.freeze([
+  "approval_confirmed",
+  "approval_rejected",
+  "approval_window_elapsed",
+  "proposal_canceled",
+  "proposal_superseded"
 ]);

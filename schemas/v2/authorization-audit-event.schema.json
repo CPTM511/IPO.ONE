@@ -63,6 +63,8 @@
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 2, "maxLength": 256 }
     },
+    "approvalProposalId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "approvalProposalVersion": { "type": "integer", "minimum": 1 },
     "membershipId": { "type": "string", "minLength": 2, "maxLength": 256 },
     "accessGrantId": { "type": "string", "minLength": 2, "maxLength": 256 },
     "sourceNetworkRefHash": {
@@ -72,5 +74,9 @@
       "pattern": "^[A-Za-z0-9_-]+$"
     },
     "schemaVersion": { "const": "authorization_audit_event.v1" }
+  },
+  "dependentRequired": {
+    "approvalProposalId": ["approvalProposalVersion"],
+    "approvalProposalVersion": ["approvalProposalId"]
   }
 }

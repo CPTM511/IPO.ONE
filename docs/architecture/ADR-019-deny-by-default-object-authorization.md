@@ -44,7 +44,8 @@ authenticated tenant authorization model.
    idempotency key. Exposure increases, unfreeze, and projection repair require
    an exact command-bound dual-control artifact. The verifier contract requires
    at least two distinct approver Actors and rejects self-approval by the
-   command Actor; durable approvals remain APPROVAL-001 work.
+   command Actor. ADR-020 and APPROVAL-001 provide the durable local non-funds
+   proposal/decision/execution boundary.
 8. Only `AuthorizationService` can mint a trusted allow decision. The minting
    function and decision facts are module-private. Decisions are frozen,
    process-branded, command-hashed, token-reference-bound, and valid for no more
@@ -81,8 +82,10 @@ authenticated tenant authorization model.
   reviewed transaction boundary and must bind the decision's operation,
   resource, and command hash to the invoked handler. Authorization alone does
   not make the current public sandbox a tenant API.
-- APPROVAL-001 must provide durable, expiring, two-Actor approval artifacts.
-  ABUSE-001 must add Actor/Tenant command limits and enumeration controls.
+- APPROVAL-001 now provides durable, expiring, two-Actor approval artifacts
+  locally. ABUSE-001 must add Actor/Tenant command limits and enumeration
+  controls; DATA-003 must compose the approved boundaries behind authenticated
+  durable handlers.
 - Human IdP selection, production credentials and roles, break-glass owners,
   private data, real funds, Provider execution, and deployment remain explicit
   approval gates.

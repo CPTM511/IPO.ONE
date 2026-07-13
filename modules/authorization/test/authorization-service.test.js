@@ -420,9 +420,15 @@ test("protective actions require reason and idempotency while increases require 
     async assertApproved({ approvalArtifact, commandHash }) {
       assert.equal(Object.isFrozen(approvalArtifact), true);
       return {
-        approvalIds: approvalArtifact.approvalIds,
-        approverActorIds: approvalArtifact.approverActorIds,
-        commandHash: approvalArtifact.matchCommand ? commandHash : `0x${"0".repeat(64)}`
+        proposalId: approvalArtifact.proposalId,
+        proposalVersion: approvalArtifact.proposalVersion,
+        approvalIds: ["approval_risk_001", "approval_security_001"],
+        approverActorIds: approvalArtifact.proposalId === "approval_proposal_self"
+          ? ["actor_risk_alpha", "actor_security_approver"]
+          : ["actor_risk_approver", "actor_security_approver"],
+        commandHash: approvalArtifact.proposalId === "approval_proposal_wrong_command"
+          ? `0x${"0".repeat(64)}`
+          : commandHash
       };
     }
   };
@@ -490,31 +496,39 @@ test("protective actions require reason and idempotency while increases require 
     idempotencyKey: "increase-credit-command-0001"
   });
   await denied(() => harness.service.authorize(increase));
+  await assert.rejects(
+    () => harness.service.authorize({
+      ...increase,
+      approvalArtifact: {
+        proposalId: "approval_proposal_zero_version",
+        proposalVersion: 0
+      }
+    }),
+    (error) => error.code === "invalid_authorization_decision"
+  );
   const approved = await harness.service.authorize({
     ...increase,
     approvalArtifact: {
-      approvalIds: ["approval_risk_001", "approval_security_001"],
-      approverActorIds: ["actor_risk_approver", "actor_security_approver"],
-      matchCommand: true
+      proposalId: "approval_proposal_001",
+      proposalVersion: 3
     }
   });
   assert.deepEqual(approved.approvalIds, ["approval_risk_001", "approval_security_001"]);
+  assert.equal(approved.approvalProposalId, "approval_proposal_001");
   await denied(() => harness.service.authorize({
     ...increase,
     idempotencyKey: "increase-credit-command-self-approval",
     approvalArtifact: {
-      approvalIds: ["approval_risk_self", "approval_security_003"],
-      approverActorIds: ["actor_risk_alpha", "actor_security_approver"],
-      matchCommand: true
+      proposalId: "approval_proposal_self",
+      proposalVersion: 3
     }
   }));
   await denied(() => harness.service.authorize({
     ...increase,
     idempotencyKey: "increase-credit-command-0002",
     approvalArtifact: {
-      approvalIds: ["approval_risk_002", "approval_security_002"],
-      approverActorIds: ["actor_risk_approver", "actor_security_approver"],
-      matchCommand: false
+      proposalId: "approval_proposal_wrong_command",
+      proposalVersion: 3
     }
   }));
 });

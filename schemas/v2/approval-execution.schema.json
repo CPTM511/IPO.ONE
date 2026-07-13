@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/approval-execution.schema.json",
+  "title": "IPO.ONE Approval Execution v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "approvalExecutionId",
+    "executionHash",
+    "tenantId",
+    "approvalProposalId",
+    "proposalVersion",
+    "proposalHash",
+    "commandHash",
+    "authorizationDecisionId",
+    "executedByActorId",
+    "idempotencyKeyHash",
+    "approvalDecisionIds",
+    "businessEventIds",
+    "resultHash",
+    "version",
+    "executedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "approvalExecutionId": { "$ref": "#/$defs/identifier" },
+    "executionHash": { "$ref": "#/$defs/contentHash" },
+    "tenantId": { "$ref": "#/$defs/identifier" },
+    "approvalProposalId": { "$ref": "#/$defs/identifier" },
+    "proposalVersion": { "type": "integer", "minimum": 1 },
+    "proposalHash": { "$ref": "#/$defs/contentHash" },
+    "commandHash": { "$ref": "#/$defs/contentHash" },
+    "authorizationDecisionId": { "$ref": "#/$defs/identifier" },
+    "executedByActorId": { "$ref": "#/$defs/identifier" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/referenceHash" },
+    "approvalDecisionIds": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "businessEventIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "resultHash": { "$ref": "#/$defs/contentHash" },
+    "version": { "const": 1 },
+    "executedAt": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "approval_execution.v1" }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "contentHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "referenceHash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}
