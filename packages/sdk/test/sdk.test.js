@@ -45,6 +45,7 @@ test("SDK exposes Problem Details without parsing human text", async () => {
     instance: "urn:ipo-one:request:server-request-404",
     code: "transfer_intent_not_found",
     requestId: "server-request-404",
+    retryAfterClass: "manual",
     schemaVersion: "problem_details.v1"
   };
   const client = new IpoOneClient({
@@ -58,7 +59,8 @@ test("SDK exposes Problem Details without parsing human text", async () => {
       error instanceof IpoOneApiError &&
       error.status === 404 &&
       error.code === "transfer_intent_not_found" &&
-      error.requestId === "server-request-404"
+      error.requestId === "server-request-404" &&
+      error.problem.retryAfterClass === "manual"
   );
 });
 

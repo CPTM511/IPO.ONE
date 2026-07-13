@@ -124,7 +124,8 @@ pnpm run smoke:api
   treating an expired process-branded decision as durable authority, and must
   bind live break-glass incident status/version/scope into the same protective
   command transaction.
-- ABUSE-001 Actor/Tenant limits and sensitive-flow anti-automation controls.
+- Production cross-Tenant quota/edge provider and DATA-003 composition of the
+  completed local ABUSE-001 admission boundary before resource resolution.
 - Production database operations, backup/restore, monitoring, incident
   ownership, independent security review, private-data approval, Providers,
   KYC/KYP, custody, and any real-value path.

@@ -1,22 +1,29 @@
 # DATA-003: Durable Tenant Command Gateway
 
 Status: Authorized for local non-funds implementation by SECURITY-001 and
-sequenced after the completed APPROVAL-001 boundary plus ABUSE-001. Not yet
-implemented or deployment-approved.
+now sequenced after the completed APPROVAL-001 and ABUSE-001 boundaries. This
+is the next independent local implementation issue; it is not implemented or
+deployment-approved.
 
 ## Context
 
 DATA-002 and RECON-001 provide durable normalized repositories, immutable
-snapshots, reconciliation, and approval-gated repair. The public API still uses
-isolated process-local sandbox sessions because no approved Tenant/Actor/AuthN/
-AuthZ model exists. Wiring PostgreSQL directly into that unauthenticated API
-would turn a safe demo into shared unauthenticated customer state.
+snapshots, reconciliation, and approval-gated repair. TENANT-001, AUTHN-001,
+AUTHZ-001, APPROVAL-001, and ABUSE-001 now provide approved local non-funds
+security boundaries. The public API still uses isolated process-local sandbox
+sessions because those boundaries have deliberately not been composed into an
+authenticated Tenant gateway. Wiring PostgreSQL directly into that anonymous
+API would turn a safe demo into shared unauthenticated customer state.
 
 ## Scope After Approval
 
 - Compose the durable core repositories behind authenticated tenant command
   handlers, not behind the public demo session controller.
 - Derive Actor and Tenant only from the verified security context.
+- Acquire an ABUSE-001 admission before any resource lookup, bind it to the
+  same Actor/client/operation/idempotency identity, and coordinate successful
+  persistent-resource accounting with the business transaction. Lease expiry
+  must never roll back a resource count for a business mutation that committed.
 - Load current normalized state inside the serializable command transaction.
 - Execute shared domain invariants and commit the full event/projection write
   set through the DATA-002 unit of work.
@@ -74,7 +81,7 @@ pnpm run smoke:api
 
 ## Security Checklist
 
-- [ ] SECURITY-001 approval is recorded.
+- [x] SECURITY-001 local non-funds approval is recorded.
 - [ ] Tenant derives from verified context, never request data.
 - [ ] Object ownership and RLS both fail closed.
 - [ ] No token, secret, signature, raw account proof, or PII is persisted.

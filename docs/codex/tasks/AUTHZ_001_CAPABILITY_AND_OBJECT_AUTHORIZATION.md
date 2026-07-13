@@ -2,8 +2,8 @@
 
 Status: Local non-funds policy foundation implemented on 2026-07-13 under the
 approved SECURITY-001 SEC-D01 through SEC-D09 decision pack. Durable command
-composition, durable adapters, APPROVAL-001, ABUSE-001, and deployment remain
-gates.
+composition, durable identity/directory/audit adapters, and deployment remain
+gates. APPROVAL-001 and ABUSE-001 are complete local non-funds boundaries.
 
 ## Context
 
@@ -122,5 +122,6 @@ contracts without claiming that integration is complete.
 - [x] Allow and deny audits are bounded and contain no raw credentials or PII.
 - [x] Named capabilities require explicit live protocol and risk invariants.
 - [ ] Durable command transaction and authenticated API composition are complete.
-- [ ] Durable approval, abuse-control, directory, and audit adapters are complete.
+- [x] Durable approval and abuse-control adapters are complete locally.
+- [ ] Durable identity, directory, and authorization-audit adapters are complete.
 - [x] Production policy activation remains a separate approval.

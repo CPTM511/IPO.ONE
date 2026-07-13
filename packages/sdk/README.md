@@ -2,8 +2,9 @@
 
 Zero-runtime-dependency client for the current public Agent Lockbox MVP API.
 The package is deliberately private and alpha until AuthN, tenant isolation,
-durable HTTP command idempotency, compatibility policy, and production hosting
-are approved and implemented.
+durable HTTP command idempotency, authenticated command/resource composition,
+compatibility policy, and production identity/quota operations are reviewed and
+deployed. Their local non-funds foundations are not public API authority.
 
 The client never retries mutating requests automatically. Callers can supply a
 stable request ID for correlation, an abort signal, and explicit headers. API

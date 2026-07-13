@@ -1337,6 +1337,15 @@
             "minLength": 8,
             "maxLength": 128
           },
+          "retryAfterClass": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "short",
+              "long"
+            ],
+            "description": "Coarse retry guidance that never exposes configured thresholds or tenant utilization."
+          },
           "schemaVersion": {
             "const": "problem_details.v1"
           }

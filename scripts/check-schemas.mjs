@@ -4,6 +4,7 @@ import { join } from "node:path";
 const schemaDirectory = join(process.cwd(), "schemas", "v2");
 const requiredFiles = new Set([
   "access-grant.schema.json",
+  "abuse-control-policy.schema.json",
   "approval-decision.schema.json",
   "approval-execution.schema.json",
   "approval-proposal.schema.json",

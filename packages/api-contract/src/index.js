@@ -16,12 +16,24 @@ const CLIENT_ERROR_STATUSES = new Map([
   ["unsupported_media_type", 415],
   ["authorization_denied", 404],
   ["authorization_unavailable", 503],
+  ["request_budget_exceeded", 429],
+  ["request_admission_unavailable", 503],
+  ["automatic_retry_prohibited", 409],
+  ["idempotency_in_progress", 409],
+  ["request_admission_expired", 409],
   ["https_required", 426],
   ["global_rate_limit_exceeded", 429],
   ["sandbox_mutation_limit_exceeded", 429],
   ["server_busy", 503],
   ["not_found", 404]
 ]);
+const RETRY_METADATA_CODES = new Set([
+  "request_budget_exceeded",
+  "request_admission_unavailable",
+  "automatic_retry_prohibited",
+  "idempotency_in_progress"
+]);
+const RETRY_AFTER_CLASSES = new Set(["manual", "short", "long"]);
 
 function stripCodePrefix(code, message) {
   const prefix = `${code}: `;
@@ -104,6 +116,10 @@ export function createProblemDetails(error, { requestId }) {
   const detail = isKnownClientError
     ? stripCodePrefix(code, String(error.message))
     : "An unexpected error occurred. Use the request ID when contacting support.";
+  const retryAfterClass = RETRY_METADATA_CODES.has(code) &&
+    RETRY_AFTER_CLASSES.has(error?.details?.retryAfterClass)
+    ? error.details.retryAfterClass
+    : undefined;
 
   return {
     type: `urn:ipo-one:problem:${code}`,
@@ -113,6 +129,7 @@ export function createProblemDetails(error, { requestId }) {
     instance: `urn:ipo-one:request:${requestId}`,
     code,
     requestId,
+    ...(retryAfterClass === undefined ? {} : { retryAfterClass }),
     schemaVersion: "problem_details.v1"
   };
 }
