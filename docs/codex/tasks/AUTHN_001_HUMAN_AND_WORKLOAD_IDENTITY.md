@@ -112,7 +112,9 @@ The foundation is intentionally not wired to `apps/api` or `ipo.one`. Durable
 credential/session/replay/event repositories are DATA-003 work. AUTHZ-001 now
 provides the local membership, route, capability, ownership, AccessGrant,
 revalidation, and non-enumerating error contracts; durable command composition,
-approval issuance, abuse controls, and deployment remain follow-on work.
+durable identity/audit adapters, and deployment remain follow-on work.
+APPROVAL-001 and ABUSE-001 now provide separate local non-funds approval and
+resource-admission boundaries but are still not composed into public routes.
 
 ## Security Checklist
 

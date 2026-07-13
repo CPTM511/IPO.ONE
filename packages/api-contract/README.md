@@ -6,4 +6,7 @@ authorization, tenant, billing, or fund-movement behavior.
 
 Unknown server failures are deliberately redacted. Domain errors retain stable
 machine codes and client-actionable descriptions without exposing stacks,
-database errors, filesystem paths, or secrets.
+database errors, filesystem paths, or secrets. Approved admission errors may
+add only the closed `manual`, `short`, or `long` retry class; configured limits,
+Tenant utilization, object existence, and infrastructure topology are never
+serialized.

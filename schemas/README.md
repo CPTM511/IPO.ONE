@@ -38,3 +38,10 @@ glass is represented separately because it can authorize only fixed protective
 actions and never grants general or exposure-increasing authority. Production
 roles, named custodians, notification delivery, and deployment activation are
 not implied by these schemas.
+
+The Abuse Control Policy contract freezes the approved local non-funds
+ABUSE-001 classifications, hard ceilings, and public credential/discovery
+profiles. Runtime counters store only tenant scope, low-cardinality policy
+fields, and irreversible Actor/client/network/account references. Production
+edge policy and a cross-tenant distributed global store remain deployment
+decisions.

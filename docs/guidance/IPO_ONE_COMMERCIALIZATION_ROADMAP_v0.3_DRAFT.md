@@ -60,18 +60,18 @@ volume fee. It should not depend on high consumer APR, token issuance, or TVL.
 | FR-002 Principal Binding | Principal is separate and required by Agent flows; local capability/object authorization binds Actor, Tenant, client, and resource | Local responsibility and authorization semantics work; no durable authenticated command gateway or signed account ownership proof | DATA-003, AUTH-002 |
 | FR-003 Multi-chain Account Binding | CAIP-2/10 validation and bindings | Identifier-ready; signatures, nonce persistence, and cross-chain replay rejection are not production-grade | AUTH-002, CHAIN-001 |
 | FR-004 Agent Lockbox | Local Lockbox and balanced ledger repayment path; durable normalized Lockbox/Ledger projections | Repository and reconciliation foundation is complete; default sandbox is still process-local and no custody exists | DATA-003, CUSTODY-001 |
-| FR-005 Spend Policy | Provider/category/amount checks, live Mandate recheck, durable policy/request/reservation projections | Persistence and local authorization foundations are complete; authenticated gateway, abuse controls, tenant/provider caps, and production enforcement remain | DATA-003, ABUSE-001, CONTRACT-001 |
+| FR-005 Spend Policy | Provider/category/amount checks, live Mandate recheck, durable policy/request/reservation projections, and atomic economic/resource admission | Persistence, authorization, and ABUSE-001 foundations are complete locally; authenticated gateway, calibrated production caps, and production enforcement remain | DATA-003, CONTRACT-001 |
 | FR-006 Obligation Registry | Obligation lifecycle, required references, immutable snapshots, drift detection and repair Evidence | Durable repository foundation is complete; canonical authorization/funding state machine still needs ADR and command-gateway composition | ARCH-002, DATA-003 |
 | FR-007 Repayment Router | Partial/full repayment, utilization release, Evidence; durable Ledger/Obligation/Repayment repositories and reconciliation | Persistence controls are proven in isolation; the public API still uses the process-local demo orchestrator | DATA-003, AUTH-002 |
 | FR-008 Risk Engine v0 | Deterministic reason-coded local decision | Demo inputs are partly synthetic; point-in-time evidence features and policy registry remain | RISK-002 |
-| FR-009 Admin Console | Exposure/freeze path, local Human/workload AuthN, deny-by-default Tenant/object AuthZ, exact-command durable dual control, and protective-only break glass | Security semantics and PostgreSQL records are local non-funds foundations only; no authenticated gateway, durable identity adapters, abuse controls, production roles, or named break-glass activation | ABUSE-001, DATA-003, OPS-001 |
+| FR-009 Admin Console | Exposure/freeze path, local Human/workload AuthN, deny-by-default Tenant/object AuthZ, exact-command durable dual control, protective-only break glass, and privileged admission limits | Security semantics and PostgreSQL records are local non-funds foundations only; no authenticated gateway, durable identity adapters, production quota provider/roles, or named break-glass activation | DATA-003, OPS-001 |
 | FR-010 Human Prototype | Prototype Human Subject and reserved DPD/restructure states | Consent, KYC/VC reference contract, Originator, and loan-tape simulator are not implemented | HUMAN-001 |
 | FR-011 Event Indexer | Rail event replay, multi-event PostgreSQL runtime, materialized core projections and deterministic reconciliation | Local database replay/reconciliation foundation is complete; no chain indexer, finality/reorg invalidation, or multi-chain exposure service | INDEXER-001 |
 | FR-012 Provider Sandbox | Local allowlist, sandbox Rail, deterministic settlement | No signed remote webhook, provider auth, conformance service, or SLA telemetry | PROVIDER-001 |
-| OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; local AuthN/AuthZ/approval are not public routes, and runtime schema enforcement, compatibility policy, abuse limits, and durable application command gateway remain | ABUSE-001, DATA-003 |
+| OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; optional coarse retry class; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; local AuthN/AuthZ/approval/admission are not public routes, and authenticated runtime schema enforcement, compatibility policy, and durable application command gateway remain | DATA-003 |
 | Transactional event runtime | Batch command/event/Evidence/outbox plus normalized core and approval projections, immutable snapshots, approval/execution linkage, reconciliation and approval-gated repair crash-tested on PostgreSQL | Repository foundation is complete for Rail, core entities, exact-command dual control, and protective break glass; default API composition remains process-local | DATA-003 |
 | Public sandbox hosting | Fail-closed runtime, immutable image, load-balancer-only Cloud Run, managed TLS, Cloud Armor, monitoring, and GoDaddy root-A cutover | Public no-funds sandbox is live at `https://ipo.one`; protected-environment evidence, alert recipients, incident ownership, and independent review remain | OPS-001A, OPS-002 |
-| Release governance | Versioned public/closed/real-value profiles, canonical evidence contract, exact release identity, approval age/expiry, complete gate set, protected-environment reference | Public sandbox evidence is executable; closed private and real-value profiles are policy-locked pending abuse/gateway implementation and named approvals | OPS-002, ABUSE-001, DATA-003 |
+| Release governance | Versioned public/closed/real-value profiles, canonical evidence contract, exact release identity, approval age/expiry, complete gate set, protected-environment reference | Public sandbox evidence is executable; closed private and real-value profiles are policy-locked pending gateway composition, production quota/edge selection, and named approvals | OPS-002, DATA-003 |
 
 This matrix is the implementation source of truth. “Public MVP complete” means
 the interactive demonstration is complete; it must not be used as evidence
@@ -90,6 +90,13 @@ RLS, provider-neutral Human/workload identity, and deny-by-default
 capability/object authorization locally. They are not exposed by the public
 sandbox. Human IdP selection, production credentials/roles, private data,
 deployment activation, and real value remain separate gates.
+
+`ABUSE-001` now adds a closed `abuse_001.v1` policy over every authenticated
+operation, exact SEC-D08 defaults, trusted Actor/client/Tenant/network/account
+derivation, resource-blind denial, atomic in-memory and PostgreSQL stores,
+restart leases, persistent-resource rollback/retention, idempotent replay
+disposition, forced RLS, bounded coarse retry metadata, and low-cardinality
+telemetry. It is a local boundary only and is not exposed by `ipo.one`.
 
 ### V0.3 Hosting Checkpoint (updated 2026-07-13)
 
@@ -159,6 +166,28 @@ This checkpoint does not name or activate production operators or custodians,
 deliver notifications, expose Tenant routes, approve a Human IdP, enable
 private data, or grant cloud, Provider, KYC/KYP, custody, or fund authority.
 
+### V0.3 Resource Admission Checkpoint (2026-07-14)
+
+`ABUSE-001` is implemented and verified for the approved local non-funds
+boundary. All 27 current authenticated Tenant operations are classified once.
+The policy preserves 30/minute discovery, 600/3,000 reads, 120/600 mutations,
+30/minute economic and privileged paths, 10 attempts/10 minutes credentials,
+and 6/minute batch defaults, with explicit client, network, operation, service,
+concurrency, byte, count, queue, time, retry, and cost ceilings.
+
+Admission accepts no resource ID and occurs before object resolution. Tenant,
+Actor, and client derive only from Authentication Context; network/account
+references must be server-created and pre-hashed. Stable Problem Details expose
+only `manual`, `short`, or `long`. Multi-instance PostgreSQL tests prove atomic
+concurrency, restart-retained rates, idempotent economic replay, resource
+rollback, migration reversal, and forced-RLS coverage.
+
+This checkpoint does not select a production distributed/global store, tune
+edge limits, cancel arbitrary work, provide a durable command response, or
+wire Tenant routes. `DATA-003` must compose admission, authorization, completed
+response replay, business mutation, and successful resource accounting without
+allowing lease expiry to contradict committed domain state.
+
 ### V0.3 Launch Governance Checkpoint (2026-07-12)
 
 `OPS-002` adds a versioned launch policy and strict canonical evidence
@@ -183,22 +212,25 @@ non-funds sandbox.
 1. `API-001` (complete locally): OpenAPI, stable errors/request IDs, typed SDK,
    contract tests.
 2. `SECURITY-001` (approved for local non-funds implementation): `TENANT-001`,
-   `AUTHN-001`, `AUTHZ-001`, and `APPROVAL-001` are complete locally;
-   `ABUSE-001` remains the next independent security change.
-3. `DATA-002` (complete locally): durable Subject, Principal, Mandate, SpendPolicy, Obligation,
+   `AUTHN-001`, `AUTHZ-001`, `APPROVAL-001`, and `ABUSE-001` are complete locally.
+3. `DATA-003` (next independent implementation): compose trusted admission,
+   authorization, durable idempotent response recovery, business mutation,
+   audit, and resource completion behind separate Human BFF and Agent Tenant
+   clients while preserving the anonymous public sandbox boundary.
+4. `DATA-002` (complete locally): durable Subject, Principal, Mandate, SpendPolicy, Obligation,
    Lockbox, Ledger, RiskDecision, and Admin repositories using the event/outbox
    transaction model.
-4. `RECON-001` (complete locally): materialized projections, ledger/event/state reconciliation,
+5. `RECON-001` (complete locally): materialized projections, ledger/event/state reconciliation,
    replay jobs, discrepancy Evidence, operator runbook.
-5. `AUTH-002`: signed Mandate/account challenge, nonce persistence, expiry,
+6. `AUTH-002`: signed Mandate/account challenge, nonce persistence, expiry,
    revocation, key rotation, replay tests.
-6. `PROVIDER-001`: out-of-process provider sandbox, signed webhooks, inbox
+7. `PROVIDER-001`: out-of-process provider sandbox, signed webhooks, inbox
    dedupe, retries, circuit breaker, conformance fixtures.
-7. `RISK-002`: versioned evidence-derived features and point-in-time policy
+8. `RISK-002`: versioned evidence-derived features and point-in-time policy
    decisions; demo score remains educational only.
-8. `HUMAN-001`: non-production Consent/KYC-reference/Originator/loan-tape
+9. `HUMAN-001`: non-production Consent/KYC-reference/Originator/loan-tape
    simulator with an enforced no-funds boundary.
-9. `OPS-001`: extend the deployed uptime and service alerts with named
+10. `OPS-001`: extend the deployed uptime and service alerts with named
    recipients, SLO reporting, scheduled full-lifecycle synthetic checks,
    incident/replay/key-rotation ownership, and protected release evidence.
 

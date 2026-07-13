@@ -2,8 +2,9 @@
 
 Version: v0.3
 Date: 2026-07-12
-Status: Repository, container, local non-funds tenant-RLS controls, and hosted
-public-sandbox edge implemented; authenticated durable composition, private
+Status: Repository, container, local non-funds Tenant/RLS/authentication/
+authorization/approval/resource-admission controls, and hosted public-sandbox
+edge implemented; authenticated durable composition, private
 data, real value, independent review, and named response ownership remain
 separate security and operations decisions
 
@@ -29,7 +30,7 @@ for real funds, credentials, KYC/PII, legal agreements, or financial decisions.
 | Error boundary | Public failures must not expose stack traces, filesystem paths, secrets, SQL details, or raw internal errors. |
 | Repository and CI | Dependencies must be locked, CI permissions minimal, and third-party actions pinned immutably. |
 | Public origin | Internet traffic must traverse the approved HTTPS edge and cannot select an arbitrary application Host. |
-| Optional durable tenant state | One tenant cannot read, mutate, reference, or block another tenant's command and protocol state. |
+| Optional durable tenant state | One Tenant cannot read, mutate, reference, or block another Tenant's command, protocol, approval, or admission state. |
 
 There are intentionally no production secrets, private keys, raw KYC records,
 custodied assets, or real payment credentials in the supported sandbox surface.
@@ -48,6 +49,7 @@ Untrusted browser / Agent client
 Optional isolated test database
   <- branded transaction-local Tenant Security Context
   <- non-owner application role + forced PostgreSQL RLS
+  <- atomic rate/capacity/admission/command-charge reservations
   <- parameterized repository and checksum-locked migrations
 
 GitHub contributor input
@@ -95,6 +97,7 @@ Those are deployment concerns and must be assessed separately.
 | Error information disclosure | RFC 9457 Problem Details, stable codes, generic unexpected-error detail | unit and live malformed-input tests |
 | SQL injection / replay corruption | Parameterized values, serializable transaction, optimistic stream version, idempotency hash, outbox/inbox constraints | PostgreSQL rollback, concurrency, replay, lease, and restart suite |
 | Durable cross-tenant access or key collision | Immutable `tenant_id`, tenant-aware foreign keys and runtime identities, non-owner role verification, transaction-local context, `ENABLE` + `FORCE RLS`, `USING`/`WITH CHECK`, and write guards | Two-tenant least-privilege read/write/FK/key-reuse matrix, pooled context cleanup, and full catalog coverage assertion |
+| Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, valid/missing cross-Tenant resource-blind denial, bounded eviction, and source leakage assertions |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
 | Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
 | Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
@@ -109,16 +112,18 @@ The following are known and intentional blockers, not hidden launch claims:
 
 1. A sandbox session ID is not a secret or credential. Anyone who knows it can
    inspect and alter that demo state. No private or valuable data may enter it.
-2. In-process limits are defense in depth, not distributed DDoS protection.
+2. In-process limits and the local ABUSE-001 boundary are defense in depth, not
+   distributed DDoS protection or a production cross-Tenant global quota store.
    TLS, Cloud Armor, coarse rate limiting, external readiness monitoring, and
    DNS rollback are deployed. Quota/load testing, false-positive review,
    notification recipients, and a named incident/takedown owner remain open.
 3. The public sandbox has no AuthN, RBAC, authenticated durable command gateway,
-   dual control, or break-glass mechanism. The optional PostgreSQL foundation
-   now enforces Tenant Security Context and RLS, but it is not reachable from
-   the anonymous public API and is not a production identity claim.
-4. Most demo state is in memory and is lost on restart. Only the optional Rail
-   repository has PostgreSQL recovery evidence.
+   dual control, break glass, or authenticated resource admission. Those local
+   foundations enforce trusted context and forced RLS but are not reachable
+   from the anonymous public API and are not a production identity claim.
+4. Public demo state is in memory and is lost on restart. Optional PostgreSQL
+   Rail, normalized core, reconciliation, approval/break-glass, and admission
+   repositories have recovery evidence but are not composed into public routes.
 5. Wallet binding signatures are demo fixtures. No production key proof,
    nonce store, rotation, revocation, or credential lifecycle is implemented.
 6. Dependency audit detects published advisories; it is not proof that a

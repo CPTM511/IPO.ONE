@@ -63,6 +63,36 @@ test("domain and boundary errors map to stable Problem Details", () => {
   );
   assert.equal(unavailable.status, 503);
   assert.equal(unavailable.title, "Service Unavailable");
+
+  const budget = createProblemDetails(
+    new DomainError(
+      "request_budget_exceeded",
+      "The request budget is temporarily unavailable.",
+      { retryAfterClass: "short", configuredLimit: 30, tenantUtilization: 29 }
+    ),
+    { requestId: "pilot-request-007" }
+  );
+  assert.equal(budget.status, 429);
+  assert.equal(budget.retryAfterClass, "short");
+  assert.equal(Object.hasOwn(budget, "configuredLimit"), false);
+  assert.equal(Object.hasOwn(budget, "tenantUtilization"), false);
+
+  const retryProhibited = createProblemDetails(
+    new DomainError(
+      "automatic_retry_prohibited",
+      "Automatic retry is not permitted for this operation.",
+      { retryAfterClass: "manual" }
+    ),
+    { requestId: "pilot-request-008" }
+  );
+  assert.equal(retryProhibited.status, 409);
+  assert.equal(retryProhibited.retryAfterClass, "manual");
+
+  const unrelatedMetadata = createProblemDetails(
+    new DomainError("invalid_request_field", "field is invalid", { retryAfterClass: "short" }),
+    { requestId: "pilot-request-009" }
+  );
+  assert.equal(Object.hasOwn(unrelatedMetadata, "retryAfterClass"), false);
 });
 
 test("unexpected errors are redacted", () => {

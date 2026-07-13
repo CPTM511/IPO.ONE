@@ -131,6 +131,12 @@ if (!spec.components?.responses?.Problem?.content?.["application/problem+json"])
 if (spec.components?.schemas?.ProblemDetails?.additionalProperties !== false) {
   failures.push("ProblemDetails must be a closed schema");
 }
+if (
+  JSON.stringify(spec.components?.schemas?.ProblemDetails?.properties?.retryAfterClass?.enum) !==
+  JSON.stringify(["manual", "short", "long"])
+) {
+  failures.push("ProblemDetails retry metadata must use the closed coarse classes");
+}
 
 function resolvePointer(pointer) {
   if (!pointer.startsWith("#/")) return undefined;

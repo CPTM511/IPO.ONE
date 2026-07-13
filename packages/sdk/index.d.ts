@@ -8,6 +8,7 @@ export interface ProblemDetails {
   instance: string;
   code: string;
   requestId: string;
+  retryAfterClass?: "manual" | "short" | "long";
   schemaVersion: "problem_details.v1";
 }
 

@@ -37,7 +37,19 @@ import {
   createWalletAccount,
   hashId
 } from "../../../packages/domain/src/index.js";
-import { ActorType } from "../../authentication/src/index.js";
+import {
+  ActorType,
+  ClientAuthenticationMethod,
+  SenderConstraintMethod
+} from "../../authentication/src/index.js";
+import { createAuthenticationContext } from "../../authentication/src/authentication-context.js";
+import {
+  AbuseControlService,
+  AdmissionDisposition,
+  AdmissionOutcome,
+  PostgresQuotaStore,
+  abuseHash
+} from "../../abuse-control/src/index.js";
 import {
   PilotCapability,
   RoleBundle
@@ -71,6 +83,8 @@ import {
 
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const FIXED_NOW = new Date("2026-07-11T00:00:00.000Z");
+const ABUSE_RATE_WINDOW_MS = 60_000;
+const ABUSE_RATE_TEST_RUNWAY_MS = 5_000;
 const ASSET = { assetId: "asset:demo-usd", scale: 2 };
 const PROVIDER_ACCOUNT = "eip155:8453:0x3333333333333333333333333333333333333333";
 const TENANT_CONTEXT = createTenantSecurityContext({
@@ -86,6 +100,10 @@ const TENANT_TWO_CONTEXT = createTenantSecurityContext({
   source: "local_test"
 });
 const TENANT_OWNED_TABLES = [
+  "abuse_admissions",
+  "abuse_capacity_buckets",
+  "abuse_command_charges",
+  "abuse_rate_buckets",
   "access_grants",
   "account_bindings",
   "admin_actions",
@@ -225,6 +243,48 @@ async function resetCoreRuntime(pool) {
       credit_events
     RESTART IDENTITY CASCADE
   `);
+}
+
+async function resetAbuseRuntime(pool) {
+  await pool.query(`
+    TRUNCATE TABLE
+      abuse_command_charges,
+      abuse_admissions,
+      abuse_capacity_buckets,
+      abuse_rate_buckets
+    RESTART IDENTITY CASCADE
+  `);
+}
+
+async function waitForAbuseRateWindowRunway(pool) {
+  const result = await pool.query(
+    "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms"
+  );
+  const nowMs = Number(result.rows[0]?.now_ms);
+  assert.equal(Number.isSafeInteger(nowMs), true);
+  const remainingMs = ABUSE_RATE_WINDOW_MS - (nowMs % ABUSE_RATE_WINDOW_MS);
+  if (remainingMs < ABUSE_RATE_TEST_RUNWAY_MS) {
+    await new Promise((resolve) => setTimeout(resolve, remainingMs + 25));
+  }
+}
+
+function createAbuseAuthenticationContext(actorId) {
+  return createAuthenticationContext({
+    tenantId: TENANT_CONTEXT.tenantId,
+    actorId,
+    actorType: ActorType.AGENT,
+    clientId: `client_${actorId}`,
+    credentialId: `credential_${actorId}`,
+    credentialVersion: 1,
+    policyVersion: "security_001.v1",
+    capabilities: ["credit.request"],
+    roles: ["agent"],
+    tokenJtiHash: abuseHash("postgres_test_token", { actorId }),
+    authenticationMethod: ClientAuthenticationMethod.PRIVATE_KEY_JWT,
+    senderConstraintMethod: SenderConstraintMethod.DPOP,
+    authenticatedAt: new Date(),
+    amr: []
+  });
 }
 
 function buildCoreFixture() {
@@ -710,12 +770,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0003_core_aggregate_persistence",
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
-        "0006_approval_runtime"
+        "0006_approval_runtime",
+        "0007_abuse_control_runtime"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 6 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 7 }), [
+        "0007_abuse_control_runtime",
         "0006_approval_runtime",
         "0005_tenant_isolation_rls",
         "0004_reconciliation_runtime",
@@ -729,10 +791,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0003_core_aggregate_persistence",
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
-        "0006_approval_runtime"
+        "0006_approval_runtime",
+        "0007_abuse_control_runtime"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 4 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 5 }), [
+        "0007_abuse_control_runtime",
         "0006_approval_runtime",
         "0005_tenant_isolation_rls",
         "0004_reconciliation_runtime",
@@ -755,7 +819,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0003_core_aggregate_persistence",
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
-        "0006_approval_runtime"
+        "0006_approval_runtime",
+        "0007_abuse_control_runtime"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -1113,6 +1178,109 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         await pool.query("TRUNCATE TABLE principals RESTART IDENTITY CASCADE");
         await dropAppRole();
       }
+    });
+
+    await t.test("distributed quota reservations survive races, restart, replay, and rollback", async () => {
+      await resetAbuseRuntime(pool);
+      await waitForAbuseRateWindowRunway(pool);
+      const context = createAbuseAuthenticationContext("actor_postgres_abuse_race");
+      const createStore = () => new PostgresQuotaStore({
+        eventRepository: new PostgresEventRepository({
+          pool,
+          tenantContext: TENANT_CONTEXT,
+          transactionRetries: 10
+        })
+      });
+      const firstStore = createStore();
+      const secondStore = createStore();
+      const firstService = new AbuseControlService({ store: firstStore });
+      const secondService = new AbuseControlService({ store: secondStore });
+      const attempts = await Promise.allSettled(Array.from({ length: 8 }, (_, index) =>
+        (index % 2 === 0 ? firstService : secondService).admitTenant({
+          authenticationContext: context,
+          operationId: "pilotSubmitSpend",
+          idempotencyKey: `postgres-concurrent-spend-${index}`
+        })
+      ));
+      const admitted = attempts.filter((item) => item.status === "fulfilled").map((item) => item.value);
+      const denied = attempts.filter((item) => item.status === "rejected").map((item) => item.reason);
+      assert.equal(
+        admitted.length,
+        2,
+        JSON.stringify(denied.map((error) => ({ code: error.code, message: error.message })))
+      );
+      assert.equal(denied.length, 6);
+      assert.equal(denied.every((error) => error.code === "request_budget_exceeded"), true);
+      for (const admission of admitted) {
+        await firstService.complete({ admission, outcome: AdmissionOutcome.SUCCEEDED });
+      }
+
+      const restartedRateService = new AbuseControlService({ store: createStore() });
+      for (let index = 8; index < 30; index += 1) {
+        const admission = await restartedRateService.admitTenant({
+          authenticationContext: context,
+          operationId: "pilotSubmitSpend",
+          idempotencyKey: `postgres-rate-spend-${index}`
+        });
+        await restartedRateService.complete({ admission, outcome: AdmissionOutcome.SUCCEEDED });
+      }
+      await assert.rejects(
+        () => restartedRateService.admitTenant({
+          authenticationContext: context,
+          operationId: "pilotSubmitSpend",
+          idempotencyKey: "postgres-rate-spend-over-limit"
+        }),
+        (error) => error.code === "request_budget_exceeded"
+      );
+
+      const replayContext = createAbuseAuthenticationContext("actor_postgres_abuse_replay");
+      const replayInput = {
+        authenticationContext: replayContext,
+        operationId: "pilotRequestCredit",
+        idempotencyKey: "postgres-economic-replay-0001",
+        resourceDeltas: { open_obligations: 1 }
+      };
+      const replayService = new AbuseControlService({ store: createStore() });
+      const original = await replayService.admitTenant(replayInput);
+      const originalResult = await replayService.executeAdmitted({
+        admission: original,
+        execute: async () => ({ obligationId: "obligation_postgres_abuse_001" })
+      });
+      const restartedReplayService = new AbuseControlService({ store: createStore() });
+      const replay = await restartedReplayService.admitTenant(replayInput);
+      assert.equal(replay.disposition, AdmissionDisposition.REPLAY);
+      const replayResult = await restartedReplayService.executeAdmitted({
+        admission: replay,
+        execute: async () => { throw new Error("replay executed twice"); },
+        loadReplay: async () => originalResult.value
+      });
+      assert.deepEqual(replayResult, { value: originalResult.value, replayed: true });
+      assert.equal((await restartedReplayService.store.snapshot()).capacities.open_obligations, 1);
+
+      const rollbackContext = createAbuseAuthenticationContext("actor_postgres_abuse_rollback");
+      const failedService = new AbuseControlService({ store: createStore() });
+      const failed = await failedService.admitTenant({
+        authenticationContext: rollbackContext,
+        operationId: "pilotFreezeSubject",
+        idempotencyKey: "postgres-resource-rollback-0001",
+        resourceDeltas: { providers: 100 }
+      });
+      await failedService.complete({ admission: failed, outcome: AdmissionOutcome.FAILED });
+      const afterFailureService = new AbuseControlService({ store: createStore() });
+      const afterFailure = await afterFailureService.admitTenant({
+        authenticationContext: rollbackContext,
+        operationId: "pilotFreezeSubject",
+        idempotencyKey: "postgres-resource-after-rollback",
+        resourceDeltas: { providers: 100 }
+      });
+      await afterFailureService.complete({
+        admission: afterFailure,
+        outcome: AdmissionOutcome.SUCCEEDED
+      });
+      const finalSnapshot = await afterFailureService.store.snapshot();
+      assert.equal(finalSnapshot.capacities.providers, 100);
+      assert.equal(finalSnapshot.charges.succeeded >= 2, true);
+      await resetAbuseRuntime(pool);
     });
 
     await t.test("two tenants can reuse stream and idempotency identities without coupling", async () => {

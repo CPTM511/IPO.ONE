@@ -29,6 +29,9 @@
 - [x] Local tenant AuthZ is deny-by-default across explicit capabilities, Membership/client binding, object ownership, AccessGrants, live checks, MFA, reason/idempotency/approval policy, revalidation, and awaited allow/deny audit.
 - [x] Local non-funds dual control uses server-prepared exact-command proposals, one Risk and one Operations approver, durable immutable decisions, current-authority revalidation, atomic single execution, forced RLS, and reconciliation.
 - [x] Local break glass is disabled by default, requires two configured hardware-key custodians when explicitly test-enabled, is exact-scope/protective-only, cannot increase authority or move funds, expires without refresh, and requires review.
+- [x] Local ABUSE-001 classifies every authenticated operation, derives Tenant/Actor/client only from trusted context, admits before object lookup, enforces atomic rates/resources/concurrency/retry/cost, and returns non-enumerating coarse retry metadata.
+- [x] Local quota state stores only Tenant scope, low-cardinality policy fields, and hashed Actor/client/network/account/command references under forced PostgreSQL RLS.
+- [x] Local admission tests cover two-store races, restart-retained limits, idempotent replay, success retention/failure rollback, bounded eviction, clock rollback, unavailable stores, and telemetry leakage.
 - [x] Public sandbox operations remain explicitly isolated from authenticated tenant authority.
 
 Open human-review items before production:
@@ -38,9 +41,10 @@ Open human-review items before production:
 - [ ] Review all smart-contract fund paths.
 - [ ] Review and activate production role assignments, named dual-control operators, multisig, timelock, break-glass custodians/review owner/notifications, and deployment controls.
 - [ ] Review compliance boundary for any future Human or Originator flow.
-- [ ] Expand reviewed persistence and replay/reconciliation jobs beyond the Rail event stream.
+- [x] Expand local reviewed persistence and replay/reconciliation beyond the Rail event stream to normalized core, approval/break-glass, and resource-admission state.
 - [x] Add an append-only double-entry ledger for the local Lockbox model.
 - [ ] Review and operate production PostgreSQL, broker workers, backups, encryption, IAM, observability, and disaster recovery before any real value path.
+- [ ] Select, load-test, and operate the production cross-Tenant quota/edge/provider budget layers; bind named alert and false-positive owners.
 - [ ] Replace demo SHA3-256 IDs with reviewed Keccak-compatible protocol encoding and cross-language test vectors.
 - [x] Implement Mandate as a first-class, revocable Agent authorization object.
 - [ ] Review and implement Human Consent/delegation semantics before any Human execution.

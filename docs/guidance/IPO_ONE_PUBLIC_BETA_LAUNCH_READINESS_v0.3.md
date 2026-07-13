@@ -1,7 +1,7 @@
 # IPO.ONE Public Beta Launch Readiness v0.3
 
 Version: v0.3
-Date: 2026-07-12
+Date: 2026-07-14
 Status: Public no-real-funds sandbox hosted at `https://ipo.one`; private-data,
 real-value, protected-release, notification, and named incident-owner gates
 remain open
@@ -43,10 +43,12 @@ resource identifiers, test evidence, scanner results, and rollback state are in
 
 Tenant/RLS, provider-neutral AuthN, deny-by-default object AuthZ, durable
 exact-command dual control, and a disabled-by-default protective break-glass
-state machine are now implemented and tested as local non-funds boundaries.
+state machine plus atomic rate/resource/cost admission are now implemented and
+tested as local non-funds boundaries.
 They are deliberately not composed into or deployed over the anonymous public
 sandbox. Human IdP selection, durable identity/authorization/audit adapters,
-ABUSE-001, DATA-003, production roles, named break-glass owners/notifications,
+DATA-003, a production distributed quota/edge provider, production roles,
+named break-glass owners/notifications,
 private-data approval, and any real-value authority remain open gates.
 
 ## Launch Definition
@@ -71,6 +73,7 @@ two audiences over one state model:
 | Browser safety | CSP, frame denial, MIME protection, no-referrer, permissions policy, and same-origin isolation are returned by the live server. |
 | Visitor isolation | High-entropy sandbox partitions use a 30-minute TTL, 128-entry LRU, serialized operations, and a 32-mutation budget; SDK/browser clients retain one partition per session. |
 | Adversarial HTTP boundary | Strict methods/media types, 64 KiB bodies, bounded JSON/amounts/targets, parser and path hardening, timeouts, connection/concurrency/request limits, and redacted problems pass a live attack suite. |
+| Local Tenant resource admission | SEC-D08 Actor/client/Tenant/operation/network/account limits, bounded resources/cost, resource-blind problems, atomic PostgreSQL races, restart leases, and forced RLS pass local tests; this is not deployed on the anonymous sandbox. |
 | Protocol correctness | Schema, boundary, migration, domain, Ledger, Mandate, Rail, Evidence, risk, and vertical-slice checks pass. |
 | Durable Rail proof | PostgreSQL migration, rollback, idempotency, concurrency, outbox/inbox, and restart replay suite passes. |
 | Supply chain | Locked pnpm install, production audit, and a GitHub Actions quality gate are present. |
@@ -105,7 +108,8 @@ must never be treated as identity, authorization, or tenant membership.
 The following remain blockers for any real value or private multi-tenant launch:
 
 - Production Human IdP plus durable identity, authorization, and audit stores;
-  authenticated Tenant command composition and ABUSE-001 controls.
+  authenticated Tenant command composition and a reviewed production
+  distributed quota/edge provider using the completed ABUSE-001 contract.
 - Production role assignment, named dual-control operators, break-glass
   custodians/review owner/notification delivery, and protected activation.
 - Authenticated tenant-scoped durable command composition, production database
@@ -114,9 +118,9 @@ The following remain blockers for any real value or private multi-tenant launch:
 - Certified Provider workers, signed webhooks, custody/fund-path review, and caps.
 - Legal, risk, security, privacy, and jurisdiction approval.
 
-The remaining controls are sequenced in `ABUSE-001`, `DATA-003`, `AUTH-002`,
-`PROVIDER-001`, and `OPS-001`; completed local SECURITY-001, APPROVAL-001,
-DATA-002, and RECON-001 foundations do not satisfy the production operations
+The remaining controls are sequenced in `DATA-003`, `AUTH-002`, `PROVIDER-001`,
+and `OPS-001`; completed local SECURITY-001, APPROVAL-001, ABUSE-001, DATA-002,
+and RECON-001 foundations do not satisfy the production operations
 gate. A public beta success must not be
 relabelled as production financial readiness.
 
