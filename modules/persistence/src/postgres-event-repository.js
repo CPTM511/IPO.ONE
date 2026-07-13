@@ -24,6 +24,12 @@ function assertString(name, value) {
   }
 }
 
+function assertQueryable(queryable) {
+  if (!queryable || typeof queryable.query !== "function") {
+    throw new DomainError("postgres_client_required", "an active pg-compatible transaction client is required");
+  }
+}
+
 function toSafeVersion(value, name = "aggregateVersion") {
   const version = Number(value);
   if (!Number.isSafeInteger(version) || version < 0) {
@@ -164,6 +170,30 @@ export class PostgresEventRepository {
     return this.withTenantRead((client) => this.#findCommand(client, { idempotencyKey, commandHash }));
   }
 
+  async findCommandInTransaction(client, {
+    idempotencyKey,
+    commandHash,
+    expectedAggregateType,
+    expectedAggregateId,
+    lock = false
+  }) {
+    assertQueryable(client);
+    assertString("idempotencyKey", idempotencyKey);
+    assertString("commandHash", commandHash);
+    if (expectedAggregateType !== undefined) assertString("expectedAggregateType", expectedAggregateType);
+    if (expectedAggregateId !== undefined) assertString("expectedAggregateId", expectedAggregateId);
+    if (typeof lock !== "boolean") {
+      throw new DomainError("invalid_repository_input", "lock must be a boolean", { name: "lock" });
+    }
+    return this.#findCommand(client, {
+      idempotencyKey,
+      commandHash,
+      expectedAggregateType,
+      expectedAggregateId,
+      lock
+    });
+  }
+
   async withTenantRead(operation) {
     if (typeof operation !== "function") {
       throw new DomainError("tenant_operation_required", "tenant read operation must be a function");
@@ -222,7 +252,16 @@ export class PostgresEventRepository {
     };
   }
 
-  async appendCommandBatch({
+  async appendCommandBatch(input) {
+    return this.#appendCommandBatch(input);
+  }
+
+  async appendCommandBatchInTransaction(client, input) {
+    assertQueryable(client);
+    return this.#appendCommandBatch(input, client);
+  }
+
+  async #appendCommandBatch({
     aggregateType,
     aggregateId,
     idempotencyKey,
@@ -230,7 +269,7 @@ export class PostgresEventRepository {
     events,
     response,
     applyProjection
-  }) {
+  }, transactionClient) {
     for (const [name, value] of Object.entries({ aggregateType, aggregateId, idempotencyKey, commandHash })) {
       assertString(name, value);
     }
@@ -294,7 +333,7 @@ export class PostgresEventRepository {
       throw new DomainError("duplicate_command_event", "a command cannot contain duplicate event ids");
     }
 
-    return this.#withSerializableTransaction(async (client) => {
+    const operation = async (client) => {
       const insertedCommand = await client.query(
         `INSERT INTO command_idempotency(
            idempotency_key, command_hash, aggregate_type, aggregate_id, status
@@ -596,7 +635,10 @@ export class PostgresEventRepository {
         response: clone(storedResponse),
         replayed: false
       };
-    });
+    };
+    return transactionClient
+      ? operation(transactionClient)
+      : this.#withSerializableTransaction(operation);
   }
 
   async #findCommand(
@@ -736,6 +778,23 @@ export class PostgresEventRepository {
         WHERE aggregate_type = $1 AND aggregate_id = $2`,
       [aggregateType, aggregateId]
     ));
+    return result.rowCount === 0 ? 0 : toSafeVersion(result.rows[0].current_version);
+  }
+
+  async getStreamVersionInTransaction(client, { aggregateType, aggregateId, lock = false }) {
+    assertQueryable(client);
+    assertString("aggregateType", aggregateType);
+    assertString("aggregateId", aggregateId);
+    if (typeof lock !== "boolean") {
+      throw new DomainError("invalid_repository_input", "lock must be a boolean", { name: "lock" });
+    }
+    const result = await client.query(
+      `SELECT current_version
+         FROM aggregate_stream_heads
+        WHERE aggregate_type = $1 AND aggregate_id = $2
+        ${lock ? "FOR UPDATE" : ""}`,
+      [aggregateType, aggregateId]
+    );
     return result.rowCount === 0 ? 0 : toSafeVersion(result.rows[0].current_version);
   }
 

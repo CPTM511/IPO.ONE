@@ -18,7 +18,8 @@ const requiredModules = [
   "plugin-registry",
   "rail",
   "settlement",
-  "admin"
+  "admin",
+  "tenant-command-gateway"
 ];
 
 async function exists(path) {

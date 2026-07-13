@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { hashId } from "../../../packages/domain/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
 import {
   AccessGrantCapability,
@@ -44,7 +45,7 @@ test("Human and Agent commands use one branded deny-by-default authorization dec
   assert.equal(decision.authorizationDecision, "allow");
   assert.equal(decision.revalidationCount, 0);
   assert.equal(decision.resourceVersion, 0);
-  assert.equal(decision.schemaVersion, "authorization_decision.v1");
+  assert.equal(decision.schemaVersion, "authorization_decision.v2");
   assert.throws(
     () => assertAuthorizationDecision(structuredClone(decision)),
     (error) => error.code === "authorization_decision_required"
@@ -531,6 +532,73 @@ test("protective actions require reason and idempotency while increases require 
       proposalVersion: 3
     }
   }));
+});
+
+test("command payload hash binds authorization and prevents stale approval reuse", async () => {
+  let approvedCommandHash;
+  const approvalVerifier = {
+    async assertApproved({ approvalArtifact }) {
+      return {
+        proposalId: approvalArtifact.proposalId,
+        proposalVersion: approvalArtifact.proposalVersion,
+        approvalIds: ["approval_risk_payload", "approval_security_payload"],
+        approverActorIds: ["actor_risk_approver", "actor_security_approver"],
+        commandHash: approvedCommandHash
+      };
+    }
+  };
+  const harness = createAuthorizationHarness({ approvalVerifier });
+  const risk = harness.addIdentity({
+    tenantId: "tenant_payload_binding",
+    actorId: "actor_risk_payload_binding",
+    actorType: ActorType.RISK_OPERATOR,
+    roleBundle: RoleBundle.RISK_OPERATOR,
+    capabilities: [PilotCapability.RISK_LIMIT_INCREASE]
+  });
+  harness.directory.registerResource({
+    tenantId: "tenant_payload_binding",
+    resourceType: "credit_line",
+    resourceId: "credit_line_payload_binding",
+    now: FIXED_NOW
+  });
+  harness.livePolicyAdapter.register({
+    tenantId: "tenant_payload_binding",
+    operationId: "pilotIncreaseCreditLimit",
+    resourceType: "credit_line",
+    resourceId: "credit_line_payload_binding",
+    checks: ["risk", "cap", "credit_line_state", "stop_loss"],
+    allowed: true
+  });
+  const firstPayloadHash = hashId("authorization_test_payload", { limitMinor: "10000" });
+  const changedPayloadHash = hashId("authorization_test_payload", { limitMinor: "25000" });
+  const request = authorizationRequest(risk.authenticationContext, "pilotIncreaseCreditLimit", {
+    resource: { resourceType: "credit_line", resourceId: "credit_line_payload_binding" },
+    reasonCode: "approved_exposure_change",
+    idempotencyKey: "increase-credit-payload-bound-0001",
+    commandPayloadHash: firstPayloadHash
+  });
+  const preparation = await harness.service.prepareApproval(request);
+  approvedCommandHash = preparation.commandHash;
+  assert.equal(preparation.schemaVersion, "approval_preparation.v2");
+  assert.equal(preparation.commandPayloadHash, firstPayloadHash);
+
+  const approvalArtifact = {
+    proposalId: "approval_proposal_payload_bound",
+    proposalVersion: 1
+  };
+  const approved = await harness.service.authorize({ ...request, approvalArtifact });
+  assert.equal(approved.commandHash, preparation.commandHash);
+  assert.equal(approved.commandPayloadHash, firstPayloadHash);
+
+  await denied(() => harness.service.authorize({
+    ...request,
+    commandPayloadHash: changedPayloadHash,
+    approvalArtifact
+  }));
+  assert.notEqual(
+    harness.auditStore.list().at(-1).commandHash,
+    preparation.commandHash
+  );
 });
 
 test("audit exhaustion fails closed and audit records contain no credential material", async () => {
