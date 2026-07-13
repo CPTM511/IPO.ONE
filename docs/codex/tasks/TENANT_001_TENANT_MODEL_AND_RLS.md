@@ -1,7 +1,11 @@
 # TENANT-001: Tenant Model and PostgreSQL RLS
 
-Status: Sequenced after explicit SECURITY-001 SEC-D01 through SEC-D09
-approval. Implementation is not yet authorized.
+Status: Approved for local non-funds implementation on 2026-07-13. Production
+database roles and activation remain a deployment gate.
+
+Implementation state: persistence/RLS foundation implemented by migration
+0005; authenticated application authorization and evented Tenant administration
+remain follow-on work and are not claimed complete here.
 
 ## Context
 
@@ -78,12 +82,27 @@ pnpm run smoke:api
 
 ## Security Checklist
 
-- [ ] SECURITY-001 approval record is immutable and linked from the change.
-- [ ] Tenant derives only from verified server-side context.
-- [ ] Application role is non-owner, non-superuser, and non-`BYPASSRLS`.
-- [ ] Tenant tables use `ENABLE` and `FORCE ROW LEVEL SECURITY`.
-- [ ] `USING` and `WITH CHECK` cover reads and writes.
-- [ ] Transaction-local context is tested across pooled connection reuse.
+- [x] SECURITY-001 approval record is immutable and linked from the change.
+- [x] Tenant derives only from verified server-side context.
+- [x] Application role is non-owner, non-superuser, and non-`BYPASSRLS`.
+- [x] Tenant tables use `ENABLE` and `FORCE ROW LEVEL SECURITY`.
+- [x] `USING` and `WITH CHECK` cover reads and writes.
+- [x] Transaction-local context is tested across pooled connection reuse.
 - [ ] Cross-tenant errors, timing, counts, and identifiers do not enumerate.
-- [ ] No anonymous session, raw PII, token, proof, or secret is migrated.
-- [ ] Production database activation remains a separate approval.
+- [x] No anonymous session, raw PII, token, proof, or secret is migrated.
+- [x] Production database activation remains a separate approval.
+
+## Foundation Evidence
+
+- Migration 0005 performs reversible synthetic backfill and adds Tenant,
+  Actor, Membership, AccessGrant, immutable ownership, tenant-aware foreign
+  keys, tenant-scoped runtime identities, forced RLS, and write guards.
+- Repository reads and writes require a branded Tenant Security Context and
+  use transaction-local settings only.
+- The PostgreSQL suite runs through a real least-privilege application role,
+  verifies every tenant-owned table in the system catalog, proves pooled
+  context cleanup, rejects cross-tenant writes/references, and proves that two
+  tenants can reuse the same stream and idempotency keys independently.
+- Evented Tenant administration, authenticated route capability enforcement,
+  non-enumeration timing analysis, and production role/IAM provisioning remain
+  explicitly tracked follow-on gates.

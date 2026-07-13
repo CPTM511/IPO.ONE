@@ -1,10 +1,13 @@
 # SECURITY-001: Tenant and Authorization Design Gate
 
-Status: Ready for Founder/CTO/Security review. Implementation is not authorized
-by this document.
+Status: SEC-D01 through SEC-D09 approved on 2026-07-13 for local non-funds
+implementation only. Production identity, private-data, fund, and deployment
+activation remain unauthorized.
 
 Recommended decisions and the exact approval record are maintained in
 `docs/security/IPO_ONE_TENANT_AUTHORIZATION_DECISION_PACK_v0.1.md`.
+The completed scope and remaining gates are recorded in
+`docs/security/IPO_ONE_SECURITY_001_APPROVAL_2026-07-13.md`.
 
 ## Context
 

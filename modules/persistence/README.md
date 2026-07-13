@@ -16,6 +16,15 @@ The public interactive demo does not require PostgreSQL. Durable mode is
 enabled only by explicit composition with a PostgreSQL pool and `DATABASE_URL`.
 Credentials are environment-only and never included in events or logs.
 
+Durable repository construction also requires a server-created Tenant Security
+Context. Each read or write runs in a transaction that sets `app.tenant_id`,
+`app.actor_id`, and `app.policy_version` with transaction-local parameterized
+settings. The application role must pass `assertTenantDatabaseRole`: it cannot
+own an RLS table or hold superuser, `BYPASSRLS`, database/role creation, or
+replication privileges. Migration 0005 forces RLS on every tenant-owned table
+and scopes stream, command, inbox, Evidence, and projection identities by
+tenant. The public demo still does not compose this durable path.
+
 Run the real integration suite only against an isolated test database:
 
 ```sh

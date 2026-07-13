@@ -1,7 +1,8 @@
 # IPO.ONE Tenant, Identity, and Authorization Decision Pack v0.1
 
-Status: Proposed for Founder/CTO/Security approval. No production permission is
-granted by this document.
+Status: SEC-D01 through SEC-D09 approved on 2026-07-13 for local non-funds
+implementation only. No production permission is granted by this document;
+the Human IdP and break-glass ownership remain deployment gates.
 
 Date: 2026-07-12
 
@@ -242,6 +243,19 @@ gate. Pilot jurisdiction: [value]. Legal retention owner: [value].
 Break-glass custodians/review owner remain a deployment gate.
 ```
 
+Recorded on 2026-07-13 for local non-funds implementation:
+
+```text
+SEC-D01 through SEC-D09: approved
+Pilot jurisdiction: United States
+Legal retention owner: IPO Consulting
+Human IdP vendor: deployment gate
+Break-glass custodians/review owner: deployment gate
+```
+
+The bounded approval and explicit no-go scope are maintained in
+`IPO_ONE_SECURITY_001_APPROVAL_2026-07-13.md`.
+
 ## 4. Implementation Sequence After Approval
 
 1. `TENANT-001`: Tenant/Actor/Membership/AccessGrant schema, tenant backfill,
@@ -271,4 +285,3 @@ Break-glass custodians/review owner remain a deployment gate.
 - PostgreSQL Row Security Policies and transaction-local `SET`:
   https://www.postgresql.org/docs/17/ddl-rowsecurity.html
   https://www.postgresql.org/docs/current/sql-set.html
-

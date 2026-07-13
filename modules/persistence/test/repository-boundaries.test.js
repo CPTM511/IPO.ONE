@@ -4,8 +4,16 @@ import { createCreditEvent, hashId } from "../../../packages/domain/src/index.js
 import {
   CoreProjectionType,
   PostgresCoreRepository,
-  PostgresEventRepository
+  PostgresEventRepository,
+  createTenantSecurityContext
 } from "../src/index.js";
+
+const TENANT_CONTEXT = createTenantSecurityContext({
+  tenantId: "tenant_ipo_one_local_pilot",
+  actorId: "actor_local_system",
+  policyVersion: "security_001.v1",
+  source: "local_test"
+});
 
 function unreachablePool() {
   return {
@@ -28,7 +36,7 @@ function eventDescriptor(payload = { operation: "boundary_test" }) {
 }
 
 test("event repository rejects oversized event and response payloads before database access", async () => {
-  const repository = new PostgresEventRepository({ pool: unreachablePool() });
+  const repository = new PostgresEventRepository({ pool: unreachablePool(), tenantContext: TENANT_CONTEXT });
   await assert.rejects(
     () =>
       repository.appendCommandBatch({
@@ -56,7 +64,10 @@ test("event repository rejects oversized event and response payloads before data
 
 test("core repository rejects duplicate, oversized, and raw-PII projection writes before database access", async () => {
   const pool = unreachablePool();
-  const repository = new PostgresCoreRepository({ pool, eventRepository: new PostgresEventRepository({ pool }) });
+  const repository = new PostgresCoreRepository({
+    pool,
+    eventRepository: new PostgresEventRepository({ pool, tenantContext: TENANT_CONTEXT })
+  });
   const command = {
     aggregateType: "subject",
     aggregateId: "subject_boundary_1",

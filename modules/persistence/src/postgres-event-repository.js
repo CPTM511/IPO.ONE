@@ -3,6 +3,10 @@ import {
   createEvidenceEnvelope,
   hashId
 } from "../../../packages/domain/src/index.js";
+import {
+  assertTenantSecurityContext,
+  setTenantTransactionContext
+} from "./postgres-tenant-context.js";
 
 const RETRYABLE_TRANSACTION_CODES = new Set(["40001", "40P01"]);
 const MAX_REPOSITORY_STRING_LENGTH = 2048;
@@ -125,6 +129,7 @@ function mapInboxRow(row) {
 export class PostgresEventRepository {
   constructor({
     pool,
+    tenantContext,
     sourceSystem = "ipo.one.postgres",
     outboxTopic = "ipo.one.domain-events.v1",
     transactionRetries = 3,
@@ -144,6 +149,7 @@ export class PostgresEventRepository {
       throw new DomainError("invalid_outbox_attempts", "maxOutboxAttempts must be a positive safe integer");
     }
     this.pool = pool;
+    this.tenantContext = assertTenantSecurityContext(tenantContext);
     this.sourceSystem = sourceSystem;
     this.outboxTopic = outboxTopic;
     this.transactionRetries = transactionRetries;
@@ -155,7 +161,37 @@ export class PostgresEventRepository {
   async findCommand({ idempotencyKey, commandHash }) {
     assertString("idempotencyKey", idempotencyKey);
     assertString("commandHash", commandHash);
-    return this.#findCommand(this.pool, { idempotencyKey, commandHash });
+    return this.withTenantRead((client) => this.#findCommand(client, { idempotencyKey, commandHash }));
+  }
+
+  async withTenantRead(operation) {
+    if (typeof operation !== "function") {
+      throw new DomainError("tenant_operation_required", "tenant read operation must be a function");
+    }
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+      await setTenantTransactionContext(client, this.tenantContext);
+      const result = await operation(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // Preserve the original transaction error.
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async withTenantWrite(operation) {
+    if (typeof operation !== "function") {
+      throw new DomainError("tenant_operation_required", "tenant write operation must be a function");
+    }
+    return this.#withSerializableTransaction(operation);
   }
 
   async appendCommand({
@@ -658,13 +694,13 @@ export class PostgresEventRepository {
       values.push(aggregateId);
       where.push(`aggregate_id = $${values.length}`);
     }
-    const result = await this.pool.query(
+    const result = await this.withTenantRead((client) => client.query(
       `SELECT event_json
          FROM domain_events
         ${where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""}
         ORDER BY aggregate_type, aggregate_id, aggregate_version`,
       values
-    );
+    ));
     return result.rows.map((row) => clone(row.event_json));
   }
 
@@ -681,25 +717,25 @@ export class PostgresEventRepository {
       values.push(aggregateId);
       where.push(`aggregate_id = $${values.length}`);
     }
-    const result = await this.pool.query(
+    const result = await this.withTenantRead((client) => client.query(
       `SELECT *
          FROM evidence_envelopes
         ${where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""}
         ORDER BY aggregate_type, aggregate_id, aggregate_version`,
       values
-    );
+    ));
     return result.rows.map(mapEvidenceRow);
   }
 
   async getStreamVersion({ aggregateType, aggregateId }) {
     assertString("aggregateType", aggregateType);
     assertString("aggregateId", aggregateId);
-    const result = await this.pool.query(
+    const result = await this.withTenantRead((client) => client.query(
       `SELECT current_version
          FROM aggregate_stream_heads
         WHERE aggregate_type = $1 AND aggregate_id = $2`,
       [aggregateType, aggregateId]
-    );
+    ));
     return result.rowCount === 0 ? 0 : toSafeVersion(result.rows[0].current_version);
   }
 
@@ -756,7 +792,7 @@ export class PostgresEventRepository {
   async markOutboxPublished({ outboxMessageId, workerId }) {
     assertString("outboxMessageId", outboxMessageId);
     assertString("workerId", workerId);
-    const result = await this.pool.query(
+    const result = await this.withTenantWrite((client) => client.query(
       `UPDATE outbox_messages
           SET published_at = clock_timestamp(), locked_by = NULL, locked_at = NULL,
               last_error = NULL
@@ -766,7 +802,7 @@ export class PostgresEventRepository {
           AND dead_lettered_at IS NULL
       RETURNING *`,
       [outboxMessageId, workerId]
-    );
+    ));
     if (result.rowCount !== 1) {
       throw new DomainError("outbox_lease_not_owned", "outbox message is not leased by this worker", {
         outboxMessageId,
@@ -781,7 +817,7 @@ export class PostgresEventRepository {
     assertString("workerId", workerId);
     const message = error instanceof Error ? error.message : String(error);
     const normalizedRetryAt = retryAt instanceof Date ? retryAt.toISOString() : new Date(retryAt).toISOString();
-    const result = await this.pool.query(
+    const result = await this.withTenantWrite((client) => client.query(
       `UPDATE outbox_messages
           SET locked_by = NULL,
               locked_at = NULL,
@@ -794,7 +830,7 @@ export class PostgresEventRepository {
           AND dead_lettered_at IS NULL
       RETURNING *`,
       [outboxMessageId, workerId, message.slice(0, 2000), normalizedRetryAt]
-    );
+    ));
     if (result.rowCount !== 1) {
       throw new DomainError("outbox_lease_not_owned", "outbox message is not leased by this worker", {
         outboxMessageId,
@@ -808,11 +844,11 @@ export class PostgresEventRepository {
     const where = [];
     if (!includePublished) where.push("published_at IS NULL");
     if (!includeDeadLettered) where.push("dead_lettered_at IS NULL");
-    const result = await this.pool.query(
+    const result = await this.withTenantRead((client) => client.query(
       `SELECT * FROM outbox_messages
        ${where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""}
        ORDER BY occurred_at, id`
-    );
+    ));
     return result.rows.map(mapOutboxRow);
   }
 
@@ -882,10 +918,10 @@ export class PostgresEventRepository {
   async getInboxMessage({ consumerName, eventId }) {
     assertString("consumerName", consumerName);
     assertString("eventId", eventId);
-    const result = await this.pool.query(
+    const result = await this.withTenantRead((client) => client.query(
       "SELECT * FROM inbox_messages WHERE consumer_name = $1 AND event_id = $2",
       [consumerName, eventId]
-    );
+    ));
     return result.rowCount === 0 ? undefined : mapInboxRow(result.rows[0]);
   }
 
@@ -895,6 +931,7 @@ export class PostgresEventRepository {
       let retry = false;
       try {
         await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+        await setTenantTransactionContext(client, this.tenantContext);
         const result = await operation(client);
         await client.query("COMMIT");
         return result;

@@ -88,6 +88,7 @@ export class PostgresReconciliationService {
     pool,
     eventRepository,
     coreRepository,
+    tenantContext,
     release = "local",
     maxDiscrepancies = 100,
     maxEntities = 10_000,
@@ -104,8 +105,11 @@ export class PostgresReconciliationService {
       throw new DomainError("invalid_reconciliation_limit", "maxEntities must be an integer from 100 through 100000");
     }
     this.pool = pool;
-    this.eventRepository = eventRepository ?? new PostgresEventRepository({ pool });
-    this.coreRepository = coreRepository ?? new PostgresCoreRepository({ pool, eventRepository: this.eventRepository });
+    this.eventRepository = eventRepository ?? new PostgresEventRepository({ pool, tenantContext });
+    this.coreRepository = coreRepository ?? new PostgresCoreRepository({
+      pool,
+      eventRepository: this.eventRepository
+    });
     this.release = release;
     this.maxDiscrepancies = maxDiscrepancies;
     this.maxEntities = maxEntities;
@@ -306,13 +310,13 @@ export class PostgresReconciliationService {
 
   async getRun(runId) {
     assertString("runId", runId, 300);
-    const [runResult, discrepancyResult] = await Promise.all([
-      this.pool.query("SELECT * FROM reconciliation_runs WHERE id = $1", [runId]),
-      this.pool.query(
+    const [runResult, discrepancyResult] = await this.eventRepository.withTenantRead((client) => Promise.all([
+      client.query("SELECT * FROM reconciliation_runs WHERE id = $1", [runId]),
+      client.query(
         "SELECT * FROM reconciliation_discrepancies WHERE run_id = $1 ORDER BY detected_at, id",
         [runId]
       )
-    ]);
+    ]));
     const run = mapRun(runResult.rows[0]);
     return run ? { ...run, discrepancies: discrepancyResult.rows.map(mapDiscrepancy) } : undefined;
   }
@@ -357,7 +361,7 @@ export class PostgresReconciliationService {
       observedHash: proof.actualHash,
       schemaVersion: "projection_replay_plan.v1"
     };
-    await this.pool.query(
+    await this.#write(
       `INSERT INTO projection_replay_jobs(
          id, idempotency_key, request_hash, entity_type, entity_id, requested_by, reason, dry_run, status,
          source_snapshot_id, source_hash, observed_hash, result, requested_at, completed_at
@@ -408,13 +412,13 @@ export class PostgresReconciliationService {
 
     const requestedAt = this.clock();
     const jobId = createOperationalId("projection_replay_job");
-    const inserted = await this.pool.query(
+    const inserted = await this.#write(
       `INSERT INTO projection_replay_jobs(
          id, idempotency_key, request_hash, entity_type, entity_id, requested_by,
          reason, dry_run, status, source_snapshot_id, source_hash, observed_hash,
          result, requested_at
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, 'awaiting_approval', $8, $9, $10, $11, $12)
-       ON CONFLICT (idempotency_key) DO NOTHING
+       ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
        RETURNING id`,
       [
         jobId,
@@ -433,7 +437,7 @@ export class PostgresReconciliationService {
     );
     let replayJobId = jobId;
     if (inserted.rowCount === 0) {
-      const existing = await this.pool.query(
+      const existing = await this.#read(
         "SELECT id, request_hash, status, result FROM projection_replay_jobs WHERE idempotency_key = $1",
         [idempotencyKey]
       );
@@ -468,7 +472,7 @@ export class PostgresReconciliationService {
         replayed: repair.replayed,
         schemaVersion: "projection_repair_result.v1"
       };
-      await this.pool.query(
+      await this.#write(
         `UPDATE projection_replay_jobs
             SET status = 'completed', repair_event_id = $2, result = $3, completed_at = $4
           WHERE id = $1`,
@@ -476,7 +480,7 @@ export class PostgresReconciliationService {
       );
       return result;
     } catch (error) {
-      await this.pool.query(
+      await this.#write(
         `UPDATE projection_replay_jobs
             SET status = 'failed',
                 result = $2,
@@ -493,7 +497,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkStreamHeads(add) {
-    const result = await this.pool.query(`
+    const result = await this.#read(`
       WITH event_versions AS (
         SELECT aggregate_type, aggregate_id, MAX(aggregate_version)::bigint AS event_version
           FROM domain_events
@@ -524,7 +528,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkEventCompanions(add) {
-    const result = await this.pool.query(`
+    const result = await this.#read(`
       SELECT d.id AS event_id,
              COUNT(DISTINCT e.id)::int AS evidence_count,
              COUNT(DISTINCT c.id)::int AS credit_event_count,
@@ -559,7 +563,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkCommandIntegrity(add) {
-    const mismatchedLinks = await this.pool.query(`
+    const mismatchedLinks = await this.#read(`
       SELECT ce.event_id, ce.aggregate_type AS linked_type, ce.aggregate_id AS linked_id,
              ce.aggregate_version AS linked_version, d.aggregate_type, d.aggregate_id, d.aggregate_version
         FROM command_events ce
@@ -582,7 +586,7 @@ export class PostgresReconciliationService {
       });
     }
 
-    const commands = await this.pool.query(`
+    const commands = await this.#read(`
       SELECT idempotency_key, response_json, response_hash
         FROM command_idempotency
        WHERE status = 'completed'
@@ -623,7 +627,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkProjectionCoverage(add) {
-    const result = await this.pool.query(`
+    const result = await this.#read(`
       WITH entities(entity_type, entity_id) AS (
         SELECT 'principal', id FROM principals
         UNION ALL SELECT 'subject', id FROM subjects
@@ -681,7 +685,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkProjectionHashes(add) {
-    const result = await this.pool.query(
+    const result = await this.#read(
       "SELECT entity_type, entity_id FROM projection_registry ORDER BY entity_type, entity_id LIMIT $1",
       [this.maxEntities + 1]
     );
@@ -715,7 +719,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkLedger(add) {
-    const result = await this.pool.query(`
+    const result = await this.#read(`
       SELECT lt.id,
              lt.entry_count,
              COUNT(le.id)::int AS actual_entry_count,
@@ -756,7 +760,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkLockboxes(add) {
-    const result = await this.pool.query(`
+    const result = await this.#read(`
       SELECT l.id,
              COALESCE(SUM(CASE
                WHEN e.direction = 'debit' THEN e.amount_minor
@@ -785,7 +789,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkMandates(add) {
-    const result = await this.pool.query(`
+    const result = await this.#read(`
       SELECT m.id,
              m.utilized_minor::text AS utilized_minor,
              COALESCE(SUM(r.amount_minor - r.released_minor), 0)::text AS reserved_minor
@@ -807,7 +811,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkObligations(add) {
-    const stateResult = await this.pool.query(`
+    const stateResult = await this.#read(`
       SELECT id, status, amount_minor::text, outstanding_minor::text,
              repaid_amount_minor::text, accrued_fees_minor::text
         FROM obligations
@@ -834,7 +838,7 @@ export class PostgresReconciliationService {
       });
     }
 
-    const repaymentResult = await this.pool.query(`
+    const repaymentResult = await this.#read(`
       SELECT o.id, o.repaid_amount_minor::text AS obligation_repaid_minor,
              COALESCE(SUM(r.amount_minor), 0)::text AS repayment_event_minor
         FROM obligations o
@@ -858,7 +862,7 @@ export class PostgresReconciliationService {
   }
 
   async #checkCreditExposure(add) {
-    const result = await this.pool.query(`
+    const result = await this.#read(`
       WITH exposure AS (
         SELECT o.subject_id, o.asset_id, SUM(o.outstanding_minor) AS outstanding_minor
           FROM obligations o
@@ -892,5 +896,13 @@ export class PostgresReconciliationService {
         }
       });
     }
+  }
+
+  async #read(statement, values = []) {
+    return this.eventRepository.withTenantRead((client) => client.query(statement, values));
+  }
+
+  async #write(statement, values = []) {
+    return this.eventRepository.withTenantWrite((client) => client.query(statement, values));
   }
 }
