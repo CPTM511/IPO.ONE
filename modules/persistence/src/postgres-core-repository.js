@@ -66,6 +66,12 @@ function assertString(name, value) {
   }
 }
 
+function assertQueryable(queryable) {
+  if (!queryable || typeof queryable.query !== "function") {
+    throw new DomainError("postgres_client_required", "an active pg-compatible transaction client is required");
+  }
+}
+
 function normalizeJson(value, name) {
   try {
     return JSON.parse(JSON.stringify(value));
@@ -673,7 +679,25 @@ export class PostgresCoreRepository {
     return this.eventRepository.findCommand(input);
   }
 
-  async commitCommand({ aggregateType, aggregateId, idempotencyKey, commandHash, events, writes, response }) {
+  async findCommandInTransaction(client, input) {
+    assertQueryable(client);
+    return this.eventRepository.findCommandInTransaction(client, input);
+  }
+
+  async withTenantTransaction(operation) {
+    return this.eventRepository.withTenantWrite(operation);
+  }
+
+  async commitCommand(input) {
+    return this.#commitCommand(input);
+  }
+
+  async commitCommandInTransaction(client, input) {
+    assertQueryable(client);
+    return this.#commitCommand(input, client);
+  }
+
+  async #commitCommand({ aggregateType, aggregateId, idempotencyKey, commandHash, events, writes, response }, client) {
     for (const [name, value] of Object.entries({ aggregateType, aggregateId, idempotencyKey, commandHash })) {
       assertString(name, value);
     }
@@ -691,7 +715,10 @@ export class PostgresCoreRepository {
       throw new DomainError("duplicate_projection_write", "a command may write each projected entity only once");
     }
 
-    return this.eventRepository.appendCommandBatch({
+    const appendCommand = client
+      ? (command) => this.eventRepository.appendCommandBatchInTransaction(client, command)
+      : (command) => this.eventRepository.appendCommandBatch(command);
+    return appendCommand({
       aggregateType,
       aggregateId,
       idempotencyKey,
@@ -778,6 +805,16 @@ export class PostgresCoreRepository {
     return mapPrincipal(principal.rows[0], subjects.rows.map((row) => row.id));
   }
 
+  async findPrincipalByHashInTransaction(client, principalHash) {
+    assertQueryable(client);
+    assertString("principalHash", principalHash);
+    const result = await client.query(
+      "SELECT * FROM principals WHERE principal_hash = $1",
+      [principalHash]
+    );
+    return mapPrincipal(result.rows[0]);
+  }
+
   async getSubject(subjectId) {
     assertString("subjectId", subjectId);
     const [subject, bindings] = await this.eventRepository.withTenantRead((client) => Promise.all([
@@ -841,6 +878,29 @@ export class PostgresCoreRepository {
   async getLockbox(lockboxId) {
     assertString("lockboxId", lockboxId);
     const result = await this.#tenantQuery(
+      `SELECT l.*,
+              COALESCE(SUM(CASE
+                WHEN e.account_id = l.ledger_account_id AND e.direction = 'debit' THEN e.amount_minor
+                WHEN e.account_id = l.ledger_account_id AND e.direction = 'credit' THEN -e.amount_minor
+                ELSE 0
+              END), 0)::text AS balance_minor,
+              COALESCE(SUM(CASE
+                WHEN e.account_id = l.ledger_account_id AND e.direction = 'debit' THEN e.amount_minor
+                ELSE 0
+              END), 0)::text AS captured_revenue_minor
+         FROM lockboxes l
+         LEFT JOIN ledger_entries e ON e.account_id = l.ledger_account_id
+        WHERE l.id = $1
+        GROUP BY l.id`,
+      [lockboxId]
+    );
+    return mapLockbox(result.rows[0]);
+  }
+
+  async getLockboxInTransaction(client, lockboxId) {
+    assertQueryable(client);
+    assertString("lockboxId", lockboxId);
+    const result = await client.query(
       `SELECT l.*,
               COALESCE(SUM(CASE
                 WHEN e.account_id = l.ledger_account_id AND e.direction = 'debit' THEN e.amount_minor
@@ -1041,6 +1101,53 @@ export class PostgresCoreRepository {
       payload: row.payload,
       recordedAt: timestamp(row.recorded_at)
     };
+  }
+
+  async getProjectionInTransaction(client, entityType, entityId, { lock = false } = {}) {
+    assertQueryable(client);
+    assertString("entityType", entityType);
+    assertString("entityId", entityId);
+    if (typeof lock !== "boolean") {
+      throw new DomainError("invalid_core_projection", "lock must be a boolean");
+    }
+    const result = await client.query(
+      `SELECT r.entity_hash AS registry_hash,
+              r.root_aggregate_type AS registry_root_aggregate_type,
+              r.root_aggregate_id AS registry_root_aggregate_id,
+              r.aggregate_version AS registry_aggregate_version,
+              s.entity_hash AS snapshot_hash,
+              s.root_aggregate_type,
+              s.root_aggregate_id,
+              s.aggregate_version,
+              s.payload
+         FROM projection_registry r
+         JOIN LATERAL (
+           SELECT entity_hash, root_aggregate_type, root_aggregate_id, aggregate_version, payload
+             FROM projection_snapshots
+            WHERE entity_type = r.entity_type AND entity_id = r.entity_id
+            ORDER BY write_sequence DESC
+            LIMIT 1
+         ) s ON TRUE
+        WHERE r.entity_type = $1 AND r.entity_id = $2
+        ${lock ? "FOR UPDATE OF r" : ""}`,
+      [entityType, entityId]
+    );
+    if (result.rowCount === 0) return undefined;
+    const row = result.rows[0];
+    const payloadHash = createCoreProjectionHash(entityType, row.payload);
+    if (
+      row.registry_hash !== row.snapshot_hash ||
+      row.snapshot_hash !== payloadHash ||
+      row.registry_root_aggregate_type !== row.root_aggregate_type ||
+      row.registry_root_aggregate_id !== row.root_aggregate_id ||
+      Number(row.registry_aggregate_version) !== Number(row.aggregate_version)
+    ) {
+      throw new DomainError("projection_integrity_mismatch", "durable projection registry and snapshot disagree", {
+        entityType,
+        entityId
+      });
+    }
+    return clone(row.payload);
   }
 
   async verifyProjection(entityType, entityId) {

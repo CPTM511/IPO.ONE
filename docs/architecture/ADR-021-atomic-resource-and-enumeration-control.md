@@ -72,11 +72,10 @@ can return a denial while an uncancelled datastore reservation commits later.
   model without embedding product-specific checks in HTTP middleware.
 - Current process and edge limits remain independent layers instead of being
   mislabeled as authenticated customer quotas.
-- `DATA-003` can compose admission before authorization/resource lookup and use
-  the durable command repository for completed-response replay. It must bind
-  actual execution/upstream deadlines and coordinate successful quota state
-  with the business transaction; the current module deliberately makes no
-  production atomic-composition claim.
+- ADR-022 and the DATA-003 foundation now compose admission before
+  authorization/resource lookup and coordinate admission completion with the
+  local non-funds business transaction. Production deadline cancellation,
+  cross-Tenant global limits, and deployment atomicity remain unapproved.
 - Resource counters need lifecycle release and reconciliation against durable
   domain truth. They do not replace Obligation, Provider, Credential, or
   AccessGrant repositories.

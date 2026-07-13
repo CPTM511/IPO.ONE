@@ -111,6 +111,9 @@ const TENANT_OWNED_TABLES = [
   "approval_decisions",
   "approval_executions",
   "approval_proposals",
+  "authorization_audit_events",
+  "authorization_resource_bindings",
+  "authorization_resources",
   "behavioral_metrics",
   "break_glass_custodian_decisions",
   "break_glass_incidents",
@@ -148,6 +151,7 @@ const TENANT_OWNED_TABLES = [
   "spend_policies",
   "spend_requests",
   "subjects",
+  "tenant_command_executions",
   "transfer_intents",
   "transfer_quotes"
 ];
@@ -666,8 +670,12 @@ async function seedApprovalIdentity(pool, identity) {
   await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
     `INSERT INTO memberships(
        id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
-       status, valid_from, created_at, updated_at, schema_version
-     ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $7, $7, 'membership.v1')
+       client_ids, policy_version, status, valid_from, created_at, updated_at,
+       version, schema_version
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6, $7, $8,
+       'active', $9, $9, $9, 1, 'membership.v1'
+     )
      ON CONFLICT (id) DO NOTHING`,
     [
       membership.membershipId,
@@ -676,6 +684,8 @@ async function seedApprovalIdentity(pool, identity) {
       context.actorId,
       membership.roleBundle,
       JSON.stringify(membership.capabilities),
+      JSON.stringify(membership.clientIds),
+      membership.policyVersion,
       AUTHORIZATION_FIXED_NOW.toISOString()
     ]
   ));
@@ -771,12 +781,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
-        "0007_abuse_control_runtime"
+        "0007_abuse_control_runtime",
+        "0008_durable_tenant_command_gateway"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 7 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 8 }), [
+        "0008_durable_tenant_command_gateway",
         "0007_abuse_control_runtime",
         "0006_approval_runtime",
         "0005_tenant_isolation_rls",
@@ -792,10 +804,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
-        "0007_abuse_control_runtime"
+        "0007_abuse_control_runtime",
+        "0008_durable_tenant_command_gateway"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 5 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 6 }), [
+        "0008_durable_tenant_command_gateway",
         "0007_abuse_control_runtime",
         "0006_approval_runtime",
         "0005_tenant_isolation_rls",
@@ -820,7 +834,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
-        "0007_abuse_control_runtime"
+        "0007_abuse_control_runtime",
+        "0008_durable_tenant_command_gateway"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -1049,16 +1064,17 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
           [FIXED_NOW.toISOString()]
         );
         await withTenantTransaction(pool, TENANT_TWO_CONTEXT, (client) => client.query(
-          `INSERT INTO memberships(
-             id, membership_hash, tenant_id, actor_id, role_bundle,
-             capabilities, status, valid_from, created_at, updated_at,
-             schema_version
-           ) VALUES (
-             'membership_tenant_two_system', 'membership_hash_tenant_two_system',
-             'tenant_ipo_one_test_two', 'actor_tenant_two_system',
-             'system_worker', '["local_non_funds_repository"]'::jsonb,
-             'active', $1, $1, $1, 'membership.v1'
-           ) ON CONFLICT (id) DO NOTHING`,
+           `INSERT INTO memberships(
+              id, membership_hash, tenant_id, actor_id, role_bundle,
+              capabilities, client_ids, policy_version, status, valid_from,
+              created_at, updated_at, version, schema_version
+            ) VALUES (
+              'membership_tenant_two_system', 'membership_hash_tenant_two_system',
+              'tenant_ipo_one_test_two', 'actor_tenant_two_system',
+              'system_worker', '["local_non_funds_repository"]'::jsonb,
+              '["client_actor_tenant_two_system"]'::jsonb, 'security_001.v1',
+              'active', $1, $1, $1, 1, 'membership.v1'
+            ) ON CONFLICT (id) DO NOTHING`,
           [FIXED_NOW.toISOString()]
         ));
 

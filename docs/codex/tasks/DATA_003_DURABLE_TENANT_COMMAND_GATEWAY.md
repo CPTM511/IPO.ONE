@@ -1,9 +1,10 @@
 # DATA-003: Durable Tenant Command Gateway
 
-Status: Authorized for local non-funds implementation by SECURITY-001 and
-now sequenced after the completed APPROVAL-001 and ABUSE-001 boundaries. This
-is the next independent local implementation issue; it is not implemented or
-deployment-approved.
+Status: In progress for the SECURITY-001 local non-funds boundary. The durable
+transaction foundation, Human Agent-Subject creation command, and Agent
+self-read query are implemented and verified. Remaining Agent Lockbox,
+worker, approval, and administrative handlers are not yet composed. No public
+route or deployment is approved.
 
 ## Context
 
@@ -40,6 +41,40 @@ API would turn a safe demo into shared unauthenticated customer state.
 - Expose separate Human BFF and Agent API clients over the same tenant-scoped
   protocol commands.
 - Keep the current no-auth public sandbox isolated and clearly labelled.
+
+## Implemented Foundation
+
+- Migration `0008_durable_tenant_command_gateway` adds versioned Membership
+  client/policy facts, immutable Human-to-Agent controller assignment,
+  versioned AccessGrants, authorization resources, multi-Actor resource
+  bindings, append-only authorization audit, and append-only command execution
+  authority with forced RLS. Legacy Memberships fail closed until explicitly
+  provisioned to a client.
+- `TenantCommandGateway` acquires a distributed admission before lookup and
+  owns the serializable transaction through admission completion.
+- Existing event/core repositories support caller-owned transaction methods;
+  the legacy standalone transaction API remains compatible.
+- Exact payload hashes now bind authorization decisions, revalidation, and
+  approval command hashes.
+- Human and Agent protocol clients share one closed handler registry. The
+  first handlers implement `pilotCreateAgentSubject` and
+  `pilotReadAgentSelf`.
+- Two-Tenant, same-Tenant controller-confusion, concurrent Membership
+  revocation, restart replay, conflicting reuse, concurrent duplicate,
+  denial-only audit, append-only tamper, and reconciliation tests pass.
+- ADR-022 records transaction ownership, replay ordering, advisory/row lock,
+  and public-sandbox isolation decisions.
+
+## Remaining Composition
+
+- Durable draft Mandate and verified CAIP-10 binding setup.
+- Agent credit request, allowlisted spend, Lockbox revenue capture, automated
+  repayment, and associated live-state adapters.
+- Worker, approval, protective risk, audit/export, and reconciliation command
+  handlers over the same Gateway protocol.
+- Complete two-Tenant negative coverage for each newly composed operation.
+- Deployment-specific IdP, Credential persistence/provisioning, least-
+  privilege role manifest, retention jobs, alerting, and edge controls.
 
 ## Non-Goals
 
@@ -82,8 +117,9 @@ pnpm run smoke:api
 ## Security Checklist
 
 - [x] SECURITY-001 local non-funds approval is recorded.
-- [ ] Tenant derives from verified context, never request data.
-- [ ] Object ownership and RLS both fail closed.
-- [ ] No token, secret, signature, raw account proof, or PII is persisted.
-- [ ] Public sandbox and tenant command routes use separate state boundaries.
+- [x] Tenant derives from verified context, never request data.
+- [x] Implemented object ownership and RLS both fail closed.
+- [x] No token, secret, signature, raw account proof, or PII is persisted by
+  the Gateway.
+- [x] Public sandbox and Tenant Gateway use separate state boundaries.
 - [ ] Production activation remains a separate deployment approval.

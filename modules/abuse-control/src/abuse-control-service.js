@@ -36,6 +36,7 @@ const ADMISSION_OUTCOMES = new Set(Object.values(AdmissionOutcome));
 const trustedAdmissions = new WeakSet();
 const admissionFacts = new WeakMap();
 const admissionLifecycle = new WeakMap();
+const admissionTransactionClaims = new WeakMap();
 
 function normalizeBoundedCounters(name, value, allowedNames) {
   if (value === undefined) return Object.fromEntries(allowedNames.map((item) => [item, 0]));
@@ -46,7 +47,7 @@ function normalizeBoundedCounters(name, value, allowedNames) {
   ]));
 }
 
-function idempotencyHash({ tenantId, operationId, idempotencyKey }) {
+function idempotencyHash({ tenantId, operationId, idempotencyKey, actorRefHash, clientRefHash }) {
   if (
     typeof idempotencyKey !== "string" ||
     idempotencyKey.length < 8 ||
@@ -55,7 +56,13 @@ function idempotencyHash({ tenantId, operationId, idempotencyKey }) {
   ) {
     throw abuseError("invalid_idempotency_key", "A bounded idempotency key is required.");
   }
-  return abuseHash("command_reference", { tenantId, operationId, idempotencyKey });
+  return abuseHash("command_reference", {
+    tenantId,
+    operationId,
+    actorRefHash: actorRefHash ?? null,
+    clientRefHash: clientRefHash ?? null,
+    idempotencyKey
+  });
 }
 
 function rateReservation({ keyHash, dimension, windowMs, limit, units = 1, commandScoped = false }) {
@@ -215,6 +222,102 @@ export class AbuseControlService {
     return this.#finishClaimedAdmission(admission, outcome);
   }
 
+  async lockAdmissionForTransaction({ admission, client, authenticationContext, operationId }) {
+    this.assertAdmission(admission, { authenticationContext, operationId });
+    if (typeof this.store.lockAdmissionInTransaction !== "function") {
+      throw abuseError(
+        "transactional_admission_unavailable",
+        "the quota store does not support transactional admissions"
+      );
+    }
+    this.#claimAdmission(admission);
+    try {
+      const lock = await this.store.lockAdmissionInTransaction({
+        client,
+        admissionId: admission.admissionId,
+        tenantId: admission.tenantId,
+        operationId: admission.operationId,
+        replayed: admission.disposition === AdmissionDisposition.REPLAY
+      });
+      admissionTransactionClaims.set(admission, {
+        client,
+        lock,
+        state: "locked",
+        outcome: undefined
+      });
+      return lock;
+    } catch (error) {
+      admissionLifecycle.set(
+        admission,
+        error instanceof DomainError && ["request_admission_expired", "request_admission_consumed"].includes(error.code)
+          ? "consumed"
+          : "indeterminate"
+      );
+      if (error instanceof DomainError) throw error;
+      throw admissionUnavailable();
+    }
+  }
+
+  async completeAdmissionInTransaction({
+    admission,
+    client,
+    outcome,
+    retainPersistentResources = outcome === AdmissionOutcome.SUCCEEDED
+  }) {
+    if (!ADMISSION_OUTCOMES.has(outcome)) {
+      throw abuseError("invalid_abuse_control_input", "admission outcome is invalid");
+    }
+    const claim = admissionTransactionClaims.get(admission);
+    if (
+      admissionLifecycle.get(admission) !== "claimed" ||
+      !claim ||
+      claim.client !== client ||
+      claim.state !== "locked" ||
+      typeof this.store.finishAdmissionInTransaction !== "function"
+    ) {
+      throw abuseError("request_admission_mismatch", "transactional admission claim is invalid");
+    }
+    const result = await this.store.finishAdmissionInTransaction({
+      client,
+      lock: claim.lock,
+      outcome,
+      retainPersistentResources
+    });
+    claim.state = "finished";
+    claim.outcome = outcome;
+    return result;
+  }
+
+  confirmAdmissionTransactionCommit({ admission }) {
+    const claim = admissionTransactionClaims.get(admission);
+    if (
+      admissionLifecycle.get(admission) !== "claimed" ||
+      !claim ||
+      claim.state !== "finished" ||
+      !ADMISSION_OUTCOMES.has(claim.outcome)
+    ) {
+      throw abuseError("request_admission_mismatch", "transactional admission completion is invalid");
+    }
+    admissionLifecycle.set(admission, "consumed");
+    admissionTransactionClaims.delete(admission);
+    this.telemetry.record({
+      surface: admission.surface,
+      quotaClass: admission.quotaClass,
+      outcome: claim.outcome === AdmissionOutcome.SUCCEEDED ? "completed" : "failed",
+      reason: claim.outcome === AdmissionOutcome.SUCCEEDED ? "none" : "execution"
+    });
+  }
+
+  async failAdmissionAfterTransactionRollback({ admission }) {
+    const claim = admissionTransactionClaims.get(admission);
+    if (admissionLifecycle.get(admission) !== "claimed" || !claim) {
+      throw abuseError("request_admission_mismatch", "transactional admission rollback is invalid");
+    }
+    admissionTransactionClaims.delete(admission);
+    admissionLifecycle.set(admission, "active");
+    return this.complete({ admission, outcome: AdmissionOutcome.FAILED });
+  }
+
   async #finishClaimedAdmission(admission, outcome) {
     try {
       const result = await this.store.finish({
@@ -337,7 +440,13 @@ export class AbuseControlService {
 
     const commandRefHash = idempotencyKey === undefined
       ? undefined
-      : idempotencyHash({ tenantId, operationId, idempotencyKey });
+      : idempotencyHash({
+          tenantId,
+          operationId,
+          idempotencyKey,
+          actorRefHash,
+          clientRefHash
+        });
     const rateReservations = [];
     const rateDimensions = {
       actor: actorRefHash,

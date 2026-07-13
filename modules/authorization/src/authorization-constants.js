@@ -1,6 +1,6 @@
 export const AUTHORIZATION_POLICY_VERSION = "security_001.v1";
-export const AUTHORIZATION_DECISION_SCHEMA_VERSION = "authorization_decision.v1";
-export const AUTHORIZATION_AUDIT_SCHEMA_VERSION = "authorization_audit_event.v1";
+export const AUTHORIZATION_DECISION_SCHEMA_VERSION = "authorization_decision.v2";
+export const AUTHORIZATION_AUDIT_SCHEMA_VERSION = "authorization_audit_event.v2";
 
 export const AuthorizationSurface = Object.freeze({
   PUBLIC_SANDBOX: "public_sandbox",

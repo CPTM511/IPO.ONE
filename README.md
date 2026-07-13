@@ -39,12 +39,18 @@ movement, accounting, and risk into one black box.
 > resource admission now implements the approved SEC-D08 Actor/client/Tenant/
 > operation limits, credential/discovery throttles, idempotent economic charge,
 > bounded resources, generic retry metadata, and forced-RLS persistence locally.
-> The Human IdP, durable identity/authorization/audit stores, authenticated
-> command gateway, production cross-Tenant quota/edge provider, production role
-> assignment, named break-glass custodians/review owner, notification delivery,
-> and protected deployment approval remain gates. It performs no real lending,
-> custody, KYC, underwriting, private-data processing, or production fund movement.
-> Real-value use is prohibited.
+> DATA-003 now adds a local PostgreSQL-backed Tenant Command Gateway foundation:
+> fail-closed Membership/client/controller facts, durable authorization resources,
+> exact-payload audit and command authority, atomic admission completion,
+> Human-controlled Agent Subject creation, and Agent self-read. It is not
+> mounted on the public
+> API, and the remaining Lockbox credit/spend/revenue/repayment, worker, approval,
+> and administrative handlers are not yet composed. The Human IdP, durable
+> Credential provisioning, production cross-Tenant quota/edge provider,
+> production role assignment, named break-glass custodians/review owner,
+> notification delivery, and protected deployment approval remain gates. It
+> performs no real lending, custody, KYC, underwriting, private-data processing,
+> or production fund movement. Real-value use is prohibited.
 
 ## The Product Thesis
 
@@ -126,8 +132,8 @@ flowchart TB
   Edge --> HTTP["Allowlisted same-origin HTTP boundary"]
   HTTP --> Session["Bounded sandbox session and serialized operations"]
   Session --> Flow["Agent Lockbox orchestrator"]
-  Edge -. "DATA-003 pending; not public" .-> TenantGateway["Authenticated Human / Agent Tenant gateway"]
-  TenantGateway -.-> Admission["Trusted-context resource admission"]
+  Edge -. "local only; not public" .-> TenantGateway["Authenticated Human / Agent Tenant gateway"]
+  TenantGateway --> Admission["Trusted-context resource admission"]
 
   Flow --> Identity["Identity"]
   Flow --> Mandate["Mandate"]
@@ -151,7 +157,8 @@ flowchart TB
   Ledger --> Evidence
 
   Flow -. pilot repository boundary; not wired to public demo .-> Postgres["PostgreSQL event + core projection runtime"]
-  Admission -. local non-funds boundary .-> Postgres
+  TenantGateway --> Postgres
+  Admission --> Postgres
   Rail -. optional durable repository .-> Postgres
   Postgres --> Recon["Reconciliation + immutable recovery snapshots"]
   Plugins["Reviewed plugin manifests"] -. data contracts only .-> Flow
@@ -163,9 +170,10 @@ flowchart TB
 | --- | --- | --- |
 | Identity | Principal, Agent/Human Subject, CAIP account references | Agent flow live; Human execution blocked |
 | Authentication | Human OIDC/PKCE BFF and sender-bound Agent/Provider/system identity | Approved local non-funds foundation with closed claims, active Actor/Credential binding, DPoP/mTLS, session/CSRF controls, and lifecycle events; not wired to the public sandbox |
-| Authorization | Shared Human/Agent capability policy, Membership/client binding, object ownership, AccessGrants, live checks, MFA, reasons, idempotency, approval, revalidation, and allow/deny audit | Approved local non-funds foundation with private short-lived decisions and non-enumerating denials; in-memory adapters, not wired to the public sandbox |
+| Authorization | Shared Human/Agent capability policy, Membership/client/controller binding, object ownership, AccessGrants, live checks, MFA, reasons, idempotency, approval, revalidation, and allow/deny audit | Approved local non-funds foundation with private short-lived v2 decisions, PostgreSQL Membership/resource/audit adapters, non-enumerating denials, and exact payload binding; not wired to the public sandbox |
 | Approval | Exact-command proposal, two-role decisions, atomic single execution, and separately gated protective break glass | Durable PostgreSQL local non-funds boundary with forced RLS, immutable/guarded records, Event/Evidence/outbox linkage, restart recovery, and reconciliation; disabled/not wired on the public sandbox |
 | Resource Admission | Versioned Actor/client/Tenant/operation/network/account rates, concurrency, bytes, durable counts, queue/export/time/retry/cost budgets, and resource-blind denial | Approved SEC-D08 local non-funds boundary with deterministic and PostgreSQL atomic stores, restart leases, coarse retry classes, and low-cardinality telemetry; not wired to the public sandbox |
+| Tenant Command Gateway | One authenticated protocol and serializable commit boundary for Human/Agent operations | PostgreSQL-backed DATA-003 foundation with exact replay identity, row-locked authorization facts, immutable Human-to-Agent controller assignment, atomic audit/Event/Evidence/projection/admission completion, and two pilot handlers; local non-funds only |
 | Mandate | Capability, counterparty, asset, amount, time, nonce, and revocation scope | First-class, fail-closed local service |
 | Spend Policy | Provider allowlist, category, transaction, daily, and obligation limits | Enforced before spend and Rail submission |
 | Obligation | Principal, amount, due state, repayment, overdue/default-compatible lifecycle | Versioned local aggregate |
@@ -175,7 +183,7 @@ flowchart TB
 | Evidence | Portable event envelope, hashes, aggregate version, causation, correlation, finality | `evidence_event.v2` emitted across the kernel |
 | Credit Learning | Explainable behavior signals and next-cycle recommendations | Deterministic, rule-based, evidence-aware demo engine |
 | Plugin Registry | Trust state and data contract for KYC/KYP, Rail, Provider, chain, and risk adapters | Manifest validation only; no executable plugin loading |
-| Persistence | Tenant ownership, batch command idempotency, aggregate versions, events, outbox, inbox, normalized state, immutable snapshots, replay | PostgreSQL Tenant/Actor/Membership/AccessGrant, approval/break-glass, and resource-admission schemas with forced RLS, tenant-scoped runtime identities, Rail and core repository foundation; public demo composition remains process-local |
+| Persistence | Tenant ownership, batch command idempotency, aggregate versions, events, outbox, inbox, normalized state, immutable snapshots, replay | Eight reversible PostgreSQL migrations now cover Tenant/Actor/Membership/AccessGrant, approval/break-glass, resource admission, authorization resources/audit, and command execution authority with forced RLS; public demo composition remains process-local |
 | Reconciliation | Event/state/Ledger/approval checks, discrepancy Evidence, dry-run planning, approval-gated repair | Deterministic PostgreSQL service and operator runbook; no automatic production repair |
 
 ### Repository Layout
@@ -193,6 +201,7 @@ packages/
 modules/
   authentication/      Provider-neutral Human and sender-bound workload identity
   authorization/       Deny-by-default capability and object authorization
+  tenant-command-gateway/ Authenticated durable Human/Agent transaction boundary
   approval/            Durable dual control and protective break glass
   abuse-control/       Atomic rate, resource, cost, and enumeration admission
   identity/            Principals, Subjects, and account bindings
@@ -325,6 +334,7 @@ fund-moving adapter.
 | Local pilot AuthZ | Versioned deny-by-default policies, capability intersection, Membership/client binding, Actor/Tenant ownership, exact AccessGrants, live checks, reason/idempotency/approval rules, private short-lived decisions, TOCTOU revalidation, and awaited allow/deny audit; not enabled on the public runtime |
 | Local pilot Approval | Server-prepared exact-command proposals, distinct Risk/Operations approvers, current Credential/Membership/MFA revalidation, serializable single execution, immutable Evidence, forced RLS, and protective-only break glass; local non-funds only and not enabled on the public runtime |
 | Local pilot Admission | Closed `abuse_001.v1` policy over trusted Actor/client/Tenant/network/account context; atomic rates, concurrency, bytes, durable counts, queue/export/retry/cost, replay disposition, restart leases, forced RLS, coarse retry metadata, and low-cardinality telemetry; local non-funds only and not enabled on the public runtime |
+| Local pilot Tenant Gateway | Admission before lookup; exact authenticated replay identity; serializable authorization/Event/Evidence/projection/response commit; immutable controller binding; RLS plus row-locked TOCTOU checks; only Agent-Subject create/self-read implemented and not enabled publicly |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
 | Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |
@@ -409,13 +419,16 @@ export DATABASE_URL=postgresql://127.0.0.1:5432/ipo_one_test
 pnpm run test:postgres
 ```
 
-That suite covers migration up/down/up, injected rollback before and after core
-projection writes, multi-event idempotency, concurrent writers, outbox lease
+That suite currently passes 28 tests covering migration up/down/up, injected
+rollback before and after core projection writes, multi-event idempotency,
+concurrent writers, outbox lease
 recovery, transactional inbox deduplication, restart replay, normalized core
 state, projection hashes, Ledger/state reconciliation, durable two-role approval
 and atomic execution, protective break-glass declaration through review, atomic
 multi-adapter admission races, restart-retained rates, economic replay/resource
-rollback, drift Evidence, and approval-gated idempotent repair. GitHub Actions repeats the locked install,
+rollback, same- and cross-Tenant ownership denial, concurrent Membership
+revocation, durable Gateway replay, drift Evidence, and approval-gated
+idempotent repair. GitHub Actions repeats the locked install,
 all repository and adversarial checks, PostgreSQL recovery, isolated demo,
 dependency audit, and live smoke on every push and pull request.
 
@@ -456,18 +469,17 @@ humans and Agents.
 | Stage | Product state | Gate |
 | --- | --- | --- |
 | Public sandbox | Live | No real funds or private data; hosted at `ipo.one` with approved cloud/edge/DNS controls and explicit residual governance gates |
-| Closed design-partner pilot | Policy-locked | Approved and implemented tenant/RLS, Human/workload AuthN, object AuthZ, durable gateway, dual control, abuse limits, recovery, legal/security/privacy review |
+| Closed design-partner pilot | Policy-locked | Complete authenticated Lockbox handler composition, production IdP/Credential provisioning, least-privilege roles, tenant/RLS, dual control, abuse limits, recovery, legal/security/privacy review |
 | Controlled production Agent credit | Policy-locked | Closed-pilot exit, signed provider and capital partners, reviewed custody/fund paths, caps/loss owner, independent review, on-call and stop-loss |
 | Human-compatible and multi-chain network | Long term | Licensed Originators, Consent/KYC references, loan tape, stop-loss covenants, finality/reorg controls, portable Credit Passport and attestations |
 
 Near-term engineering priorities are:
 
-1. Review the implemented local non-funds `AUTHN-001`, `AUTHZ-001`,
-   `APPROVAL-001`, and `ABUSE-001` boundaries, then execute `DATA-003`: replace
-   local identity/authorization/audit adapters and compose
-   the reviewed PostgreSQL repositories behind an authenticated, tenant-scoped
-   durable command gateway with admission before object lookup and atomic
-   command/resource completion; keep the public demo isolated.
+1. Complete `DATA-003` on the implemented durable Gateway foundation: compose
+   Mandate, verified CAIP-10 binding, credit request, allowlisted spend, Lockbox
+   revenue, repayment, worker, approval, protective-risk, audit/export, and
+   reconciliation handlers; add two-Tenant negative tests for each while the
+   public demo remains isolated.
 2. Add cryptographically signed Mandates, nonce/replay protection, key rotation,
    and wallet/account proof.
 3. Certify out-of-process Provider, KYP, payment, on/off-ramp, and chain adapters
@@ -475,7 +487,7 @@ Near-term engineering priorities are:
 4. Complete the remaining public-sandbox governance: protected-environment
    release approval, named alert recipients, incident/takedown ownership,
    reviewed log retention, and an independent external security assessment.
-6. Add finality/reorg handling, capacity reservations, product telemetry, scheduled
+5. Add finality/reorg handling, capacity reservations, product telemetry, scheduled
    reconciliation, incident operations, backup, restore, and disaster recovery.
 
 The requirement trace and commercialization sequence are maintained in

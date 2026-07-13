@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { hashId } from "../../../../packages/domain/src/index.js";
 import {
   ActorType,
   ClientAuthenticationMethod,
@@ -142,6 +143,10 @@ export function authorizationRequest(authenticationContext, operationId, overrid
     operationId,
     requestId: `request_${operationId}_001`,
     correlationId: `correlation_${operationId}_001`,
+    commandPayloadHash: hashId("authorization_test_command_payload", {
+      operationId,
+      fixture: "default"
+    }),
     now: FIXED_NOW,
     ...overrides
   };

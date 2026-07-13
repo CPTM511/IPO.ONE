@@ -25,6 +25,7 @@
     "liveStateVersion",
     "tokenJtiHash",
     "authorizationRequestHash",
+    "commandPayloadHash",
     "commandHash",
     "approvalIds",
     "authorizedAt",
@@ -74,6 +75,7 @@
       "maxLength": 128,
       "pattern": "^[A-Za-z0-9_-]+$"
     },
+    "commandPayloadHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
     "commandHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
     "idempotencyKeyHash": {
       "type": "string",
@@ -91,7 +93,7 @@
     "approvalProposalVersion": { "type": "integer", "minimum": 1 },
     "authorizedAt": { "type": "string", "format": "date-time" },
     "expiresAt": { "type": "string", "format": "date-time" },
-    "schemaVersion": { "const": "authorization_decision.v1" }
+    "schemaVersion": { "const": "authorization_decision.v2" }
   },
   "dependentRequired": {
     "accessGrantId": ["accessGrantVersion"],

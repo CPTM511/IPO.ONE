@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readdirSync } from "node:fs";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -14,9 +15,18 @@ if (!/(^|[_-])test($|[_-])/.test(databaseName) && process.env.IPO_ONE_ALLOW_DB_R
   process.exit(1);
 }
 
+const testFiles = [
+  ...readdirSync("modules/persistence/test-postgres")
+    .filter((file) => file.endsWith(".test.mjs"))
+    .map((file) => `modules/persistence/test-postgres/${file}`),
+  ...readdirSync("modules/tenant-command-gateway/test-postgres")
+    .filter((file) => file.endsWith(".test.mjs"))
+    .map((file) => `modules/tenant-command-gateway/test-postgres/${file}`)
+].sort();
+
 const result = spawnSync(
   process.execPath,
-  ["--test", "modules/persistence/test-postgres/postgres-event-runtime.test.mjs"],
+  ["--test", "--test-concurrency=1", ...testFiles],
   { stdio: "inherit", env: process.env }
 );
 

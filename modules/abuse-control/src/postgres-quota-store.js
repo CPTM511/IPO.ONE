@@ -7,9 +7,12 @@ import {
   assertQuotaStoreRelease,
   assertQuotaStoreRequest
 } from "./quota-store-contract.js";
+import { ABUSE_POLICY_VERSION } from "./abuse-constants.js";
 
 const COMMAND_RETENTION_MS = 24 * 60 * 60_000;
 const STATEMENT_TIMEOUT_MS = 2_000;
+const trustedAdmissionLocks = new WeakSet();
+const admissionLockFacts = new WeakMap();
 
 function asDate(value) {
   return value instanceof Date ? value : new Date(value);
@@ -248,47 +251,89 @@ export class PostgresQuotaStore {
       await this.#configureTransaction(client);
       const now = await this.#databaseNow(client);
       await this.#cleanupExpired(client, now, admissionId);
-      const result = await client.query(
-        `SELECT * FROM abuse_admissions
-          WHERE tenant_id = $1 AND id = $2
-          FOR UPDATE`,
-        [this.tenantId, admissionId]
-      );
-      const admission = result.rows[0];
-      if (!admission) throw abuseError("admission_not_found", "request admission is not available");
+      const admission = await this.#selectAdmissionForUpdate(client, admissionId);
       if (admission.state !== "pending") return { state: admission.state };
       const expired = asDate(admission.expires_at) <= now;
-      const finalOutcome = expired ? "expired" : outcome;
-      await this.#releaseAdmissionCapacities(client, admission, finalOutcome, now);
-      await client.query(
-        `UPDATE abuse_admissions
-            SET state = $3, outcome = $4, completed_at = $5, version = version + 1
-          WHERE tenant_id = $1 AND id = $2`,
-        [
-          this.tenantId,
-          admissionId,
-          expired ? "expired" : "completed",
-          finalOutcome,
-          now
-        ]
+      return this.#completeLockedAdmission(
+        client,
+        admission,
+        expired ? "expired" : outcome,
+        now,
+        !expired && outcome === "succeeded"
       );
-      if (admission.command_ref_hash && !admission.replayed) {
-        await client.query(
-          `UPDATE abuse_command_charges
-              SET status = $4, expires_at = $5, updated_at = $5, version = version + 1
-            WHERE tenant_id = $1 AND command_ref_hash = $2
-              AND active_admission_id = $3 AND status = 'pending'`,
-          [
-            this.tenantId,
-            admission.command_ref_hash,
-            admissionId,
-            finalOutcome === "succeeded" ? "succeeded" : "failed",
-            new Date(now.getTime() + COMMAND_RETENTION_MS)
-          ]
-        );
-      }
-      return { state: expired ? "expired" : "completed" };
     });
+  }
+
+  async lockAdmissionInTransaction({
+    client,
+    admissionId,
+    tenantId,
+    operationId,
+    replayed
+  }) {
+    if (!client || typeof client.query !== "function") {
+      throw abuseError("invalid_abuse_store_config", "an active PostgreSQL transaction client is required");
+    }
+    assertAbuseIdentifier("admissionId", admissionId);
+    assertAbuseIdentifier("operationId", operationId);
+    if (tenantId !== this.tenantId || typeof replayed !== "boolean") {
+      throw abuseError("invalid_abuse_control_input", "admission transaction lock is invalid");
+    }
+    await this.#configureTransaction(client);
+    const now = await this.#databaseNow(client);
+    const admission = await this.#selectAdmissionForUpdate(client, admissionId);
+    if (
+      admission.state !== "pending" ||
+      admission.operation_id !== operationId ||
+      admission.policy_version !== ABUSE_POLICY_VERSION ||
+      admission.replayed !== replayed
+    ) {
+      throw abuseError("request_admission_consumed", "request admission is unavailable");
+    }
+    if (asDate(admission.expires_at) <= now) {
+      throw abuseError("request_admission_expired", "request admission has expired");
+    }
+    const lock = Object.freeze({
+      admissionId,
+      tenantId,
+      operationId,
+      replayed,
+      lockedAt: now.toISOString()
+    });
+    trustedAdmissionLocks.add(lock);
+    admissionLockFacts.set(lock, { client, completed: false });
+    return lock;
+  }
+
+  async finishAdmissionInTransaction({ client, lock, outcome, retainPersistentResources = outcome === "succeeded" }) {
+    if (!new Set(["succeeded", "failed"]).has(outcome)) {
+      throw abuseError("invalid_abuse_control_input", "admission completion is invalid");
+    }
+    if (typeof retainPersistentResources !== "boolean" || (outcome !== "succeeded" && retainPersistentResources)) {
+      throw abuseError("invalid_abuse_control_input", "persistent resource completion is invalid");
+    }
+    const facts = lock && trustedAdmissionLocks.has(lock) ? admissionLockFacts.get(lock) : undefined;
+    if (!facts || facts.client !== client || facts.completed) {
+      throw abuseError("request_admission_mismatch", "admission transaction lock is invalid");
+    }
+    const admission = await this.#selectAdmissionForUpdate(client, lock.admissionId);
+    if (
+      admission.state !== "pending" ||
+      admission.operation_id !== lock.operationId ||
+      admission.replayed !== lock.replayed
+    ) {
+      throw abuseError("request_admission_consumed", "request admission is unavailable");
+    }
+    const now = await this.#databaseNow(client);
+    const result = await this.#completeLockedAdmission(
+      client,
+      admission,
+      outcome,
+      now,
+      retainPersistentResources
+    );
+    facts.completed = true;
+    return result;
   }
 
   async release({ tenantId, reservations }) {
@@ -385,6 +430,56 @@ export class PostgresQuotaStore {
         );
       }
     }
+  }
+
+  async #selectAdmissionForUpdate(client, admissionId) {
+    const result = await client.query(
+      `SELECT * FROM abuse_admissions
+        WHERE tenant_id = $1 AND id = $2
+        FOR UPDATE`,
+      [this.tenantId, admissionId]
+    );
+    const admission = result.rows[0];
+    if (!admission) throw abuseError("admission_not_found", "request admission is not available");
+    return admission;
+  }
+
+  async #completeLockedAdmission(client, admission, outcome, now, retainPersistentResources = false) {
+    const expired = outcome === "expired";
+    await this.#releaseAdmissionCapacities(
+      client,
+      admission,
+      retainPersistentResources ? outcome : "failed",
+      now
+    );
+    await client.query(
+      `UPDATE abuse_admissions
+          SET state = $3, outcome = $4, completed_at = $5, version = version + 1
+        WHERE tenant_id = $1 AND id = $2`,
+      [
+        this.tenantId,
+        admission.id,
+        expired ? "expired" : "completed",
+        outcome,
+        now
+      ]
+    );
+    if (admission.command_ref_hash && !admission.replayed) {
+      await client.query(
+        `UPDATE abuse_command_charges
+            SET status = $4, expires_at = $5, updated_at = $5, version = version + 1
+          WHERE tenant_id = $1 AND command_ref_hash = $2
+            AND active_admission_id = $3 AND status = 'pending'`,
+        [
+          this.tenantId,
+          admission.command_ref_hash,
+          admission.id,
+          outcome === "succeeded" ? "succeeded" : "failed",
+          new Date(now.getTime() + COMMAND_RETENTION_MS)
+        ]
+      );
+    }
+    return { state: expired ? "expired" : "completed" };
   }
 
   async #releaseAdmissionCapacities(client, admission, outcome, now) {
