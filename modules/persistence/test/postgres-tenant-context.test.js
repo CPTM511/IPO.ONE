@@ -4,9 +4,17 @@ import {
   assertTenantDatabaseRole,
   assertTenantSecurityContext,
   createTenantSecurityContext,
+  createTenantSecurityContextFromAuthorization,
   setTenantTransactionContext
 } from "../src/index.js";
 import { createAuthenticationContext } from "../../authentication/src/authentication-context.js";
+import { ActorType } from "../../authentication/src/constants.js";
+import { PilotCapability, RoleBundle } from "../../authorization/src/index.js";
+import {
+  FIXED_NOW,
+  authorizationRequest,
+  createAuthorizationHarness
+} from "../../authorization/test/support/authorization-fixture.js";
 
 const VALID_CONTEXT = {
   tenantId: "tenant_ipo_one_local_pilot",
@@ -42,6 +50,7 @@ test("verified Tenant Security Context requires the exact trusted Authentication
     actorType: "system_worker",
     clientId: "client_local_worker",
     credentialId: "credential_local_worker",
+    credentialVersion: 1,
     policyVersion: "security_001.v1",
     capabilities: ["local_non_funds_repository"],
     roles: ["system_worker"],
@@ -78,6 +87,78 @@ test("verified Tenant Security Context requires the exact trusted Authentication
       authenticationContext: { ...authentication }
     }),
     (error) => error.code === "authentication_context_required"
+  );
+});
+
+test("tenant command context requires a current revalidated Authorization Decision", async () => {
+  const harness = createAuthorizationHarness();
+  const worker = harness.addIdentity({
+    tenantId: "tenant_ipo_one_local_pilot",
+    actorId: "actor_local_system",
+    actorType: ActorType.SYSTEM_WORKER,
+    roleBundle: RoleBundle.SYSTEM_WORKER,
+    capabilities: [PilotCapability.WORKER_OUTBOX_PUBLISH]
+  });
+  harness.directory.registerResource({
+    tenantId: worker.authenticationContext.tenantId,
+    resourceType: "outbox_message",
+    resourceId: "outbox_message_001",
+    now: FIXED_NOW
+  });
+  harness.livePolicyAdapter.register({
+    tenantId: worker.authenticationContext.tenantId,
+    operationId: "workerPublishOutbox",
+    resourceType: "outbox_message",
+    resourceId: "outbox_message_001",
+    checks: ["worker_lease", "delivery_attempt"],
+    allowed: true
+  });
+  const initial = await harness.service.authorize(authorizationRequest(
+    worker.authenticationContext,
+    "workerPublishOutbox",
+    {
+      resource: { resourceType: "outbox_message", resourceId: "outbox_message_001" },
+      idempotencyKey: "publish-outbox-message-0001"
+    }
+  ));
+  assert.throws(
+    () => createTenantSecurityContextFromAuthorization({
+      authenticationContext: worker.authenticationContext,
+      authorizationDecision: initial,
+      now: FIXED_NOW
+    }),
+    (error) => error.code === "tenant_authorization_context_mismatch"
+  );
+
+  const revalidationTime = new Date(FIXED_NOW.getTime() + 1_000);
+  const revalidated = await harness.service.revalidate({
+    decision: initial,
+    authenticationContext: worker.authenticationContext,
+    now: revalidationTime
+  });
+  const context = createTenantSecurityContextFromAuthorization({
+    authenticationContext: worker.authenticationContext,
+    authorizationDecision: revalidated,
+    now: revalidationTime
+  });
+  assert.equal(context.source, "verified_authorization");
+  assert.equal(context.authorizationDecisionId, revalidated.decisionId);
+  assert.equal(context.operationId, "workerPublishOutbox");
+  assert.throws(
+    () => createTenantSecurityContextFromAuthorization({
+      authenticationContext: structuredClone(worker.authenticationContext),
+      authorizationDecision: revalidated,
+      now: revalidationTime
+    }),
+    (error) => error.code === "authentication_context_required"
+  );
+  assert.throws(
+    () => createTenantSecurityContextFromAuthorization({
+      authenticationContext: worker.authenticationContext,
+      authorizationDecision: revalidated,
+      now: new Date(revalidationTime.getTime() + 30_001)
+    }),
+    (error) => error.code === "authorization_decision_expired"
   );
 });
 

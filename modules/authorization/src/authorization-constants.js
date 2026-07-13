@@ -1,0 +1,177 @@
+export const AUTHORIZATION_POLICY_VERSION = "security_001.v1";
+export const AUTHORIZATION_DECISION_SCHEMA_VERSION = "authorization_decision.v1";
+export const AUTHORIZATION_AUDIT_SCHEMA_VERSION = "authorization_audit_event.v1";
+
+export const AuthorizationSurface = Object.freeze({
+  PUBLIC_SANDBOX: "public_sandbox",
+  AUTHENTICATED_TENANT: "authenticated_tenant",
+  TENANT_WORKER: "tenant_worker"
+});
+
+export const OwnershipRule = Object.freeze({
+  NONE: "none",
+  ACTOR: "actor",
+  TENANT: "tenant",
+  TENANT_OR_ACCESS_GRANT: "tenant_or_access_grant",
+  SANDBOX_PARTITION: "sandbox_partition"
+});
+
+export const ApprovalRequirement = Object.freeze({
+  NONE: "none",
+  PROTECTIVE: "protective_single_actor",
+  DUAL_CONTROL: "dual_control",
+  PROHIBITED: "prohibited"
+});
+
+export const IdempotencyRequirement = Object.freeze({
+  OPTIONAL: "optional",
+  REQUIRED: "required",
+  PROHIBITED: "prohibited"
+});
+
+export const AuthorizationDecisionValue = Object.freeze({
+  ALLOW: "allow",
+  DENY: "deny"
+});
+
+export const MembershipStatus = Object.freeze({
+  ACTIVE: "active",
+  SUSPENDED: "suspended",
+  REVOKED: "revoked",
+  EXPIRED: "expired"
+});
+
+export const AccessGrantStatus = Object.freeze({
+  ACTIVE: "active",
+  REVOKED: "revoked",
+  EXPIRED: "expired"
+});
+
+export const AccessGrantCapability = Object.freeze({
+  PROVIDER_INTENT_DELIVERY: "provider_intent_delivery",
+  SCOPED_AUDIT_READ: "scoped_audit_read",
+  PLATFORM_RECONCILIATION_READ: "platform_reconciliation_read"
+});
+
+export const RoleBundle = Object.freeze({
+  TENANT_OWNER: "tenant_owner",
+  DEVELOPER: "developer",
+  AGENT_RUNTIME: "agent_runtime",
+  RISK_OPERATOR: "risk_operator",
+  OPERATIONS_OPERATOR: "operations_operator",
+  AUDITOR: "auditor",
+  PROVIDER_SERVICE: "provider_service",
+  SYSTEM_WORKER: "system_worker"
+});
+
+export const PilotCapability = Object.freeze({
+  TENANT_MEMBERSHIP_MANAGE: "tenant.membership.manage",
+  TENANT_CLIENT_MANAGE: "tenant.client.manage",
+  TENANT_SETTINGS_READ: "tenant.settings.read",
+  TENANT_SETTINGS_WRITE: "tenant.settings.write",
+  TENANT_SUMMARY_READ: "tenant.summary.read",
+  AGENT_CREATE: "agent.create",
+  AGENT_MANAGE_OWNED: "agent.manage.owned",
+  INTEGRATION_READ_OWNED: "integration.read.owned",
+  MANDATE_DRAFT_CREATE: "mandate.draft.create",
+  SUBJECT_READ_SELF: "subject.read.self",
+  CREDIT_REQUEST: "credit.request",
+  SPEND_REQUEST: "spend.request",
+  REVENUE_CAPTURE: "revenue.capture",
+  REPAYMENT_EXECUTE: "repayment.execute",
+  RISK_READ_TENANT: "risk.read.tenant",
+  RISK_FREEZE: "risk.freeze",
+  RISK_LIMIT_REDUCE: "risk.limit.reduce",
+  RISK_LIMIT_INCREASE: "risk.limit.increase",
+  RISK_UNFREEZE: "risk.unfreeze",
+  PROVIDER_INTENT_READ: "provider.intent.read",
+  PROVIDER_INTENT_ACKNOWLEDGE: "provider.intent.acknowledge",
+  EVIDENCE_READ: "evidence.read",
+  AUDIT_EXPORT: "audit.export",
+  PROVIDER_HEALTH_READ: "provider.health.read",
+  RECONCILIATION_READ: "reconciliation.read",
+  RECONCILIATION_RUN: "reconciliation.run",
+  PROVIDER_PAUSE: "provider.pause",
+  PROJECTION_REPAIR_PLAN: "projection_repair.plan",
+  PROJECTION_REPAIR_EXECUTE: "projection_repair.execute",
+  WORKER_OUTBOX_PUBLISH: "worker.outbox.publish",
+  WORKER_INBOX_PROCESS: "worker.inbox.process"
+});
+
+export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
+  [RoleBundle.TENANT_OWNER]: Object.freeze([
+    PilotCapability.TENANT_MEMBERSHIP_MANAGE,
+    PilotCapability.TENANT_CLIENT_MANAGE,
+    PilotCapability.TENANT_SETTINGS_READ,
+    PilotCapability.TENANT_SETTINGS_WRITE,
+    PilotCapability.TENANT_SUMMARY_READ
+  ]),
+  [RoleBundle.DEVELOPER]: Object.freeze([
+    PilotCapability.AGENT_CREATE,
+    PilotCapability.AGENT_MANAGE_OWNED,
+    PilotCapability.INTEGRATION_READ_OWNED,
+    PilotCapability.MANDATE_DRAFT_CREATE
+  ]),
+  [RoleBundle.AGENT_RUNTIME]: Object.freeze([
+    PilotCapability.SUBJECT_READ_SELF,
+    PilotCapability.CREDIT_REQUEST,
+    PilotCapability.SPEND_REQUEST,
+    PilotCapability.REVENUE_CAPTURE,
+    PilotCapability.REPAYMENT_EXECUTE
+  ]),
+  [RoleBundle.RISK_OPERATOR]: Object.freeze([
+    PilotCapability.RISK_READ_TENANT,
+    PilotCapability.RISK_FREEZE,
+    PilotCapability.RISK_LIMIT_REDUCE,
+    PilotCapability.RISK_LIMIT_INCREASE,
+    PilotCapability.RISK_UNFREEZE
+  ]),
+  [RoleBundle.OPERATIONS_OPERATOR]: Object.freeze([
+    PilotCapability.PROVIDER_HEALTH_READ,
+    PilotCapability.RECONCILIATION_READ,
+    PilotCapability.RISK_FREEZE,
+    PilotCapability.PROVIDER_PAUSE,
+    PilotCapability.PROJECTION_REPAIR_PLAN,
+    PilotCapability.PROJECTION_REPAIR_EXECUTE
+  ]),
+  [RoleBundle.AUDITOR]: Object.freeze([
+    PilotCapability.EVIDENCE_READ,
+    PilotCapability.AUDIT_EXPORT,
+    PilotCapability.RISK_READ_TENANT,
+    PilotCapability.RECONCILIATION_READ
+  ]),
+  [RoleBundle.PROVIDER_SERVICE]: Object.freeze([
+    PilotCapability.PROVIDER_INTENT_READ,
+    PilotCapability.PROVIDER_INTENT_ACKNOWLEDGE
+  ]),
+  [RoleBundle.SYSTEM_WORKER]: Object.freeze([
+    PilotCapability.WORKER_OUTBOX_PUBLISH,
+    PilotCapability.WORKER_INBOX_PROCESS,
+    PilotCapability.REPAYMENT_EXECUTE,
+    PilotCapability.RECONCILIATION_READ,
+    PilotCapability.RECONCILIATION_RUN,
+    PilotCapability.PROJECTION_REPAIR_PLAN,
+    PilotCapability.PROJECTION_REPAIR_EXECUTE
+  ])
+});
+
+export const PROTECTIVE_REASON_CODES = Object.freeze([
+  "credential_compromise",
+  "operator_request",
+  "provider_failure",
+  "reconciliation_failure",
+  "risk_limit_breach",
+  "security_incident",
+  "stop_loss_triggered"
+]);
+
+export const EXPOSURE_INCREASE_REASON_CODES = Object.freeze([
+  "approved_exposure_change",
+  "contractual_limit_change",
+  "pilot_credit_review"
+]);
+
+export const REPAIR_REASON_CODES = Object.freeze([
+  "projection_drift",
+  "reconciliation_discrepancy"
+]);

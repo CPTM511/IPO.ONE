@@ -3,11 +3,15 @@ import { join } from "node:path";
 
 const schemaDirectory = join(process.cwd(), "schemas", "v2");
 const requiredFiles = new Set([
+  "access-grant.schema.json",
   "authentication-context.schema.json",
   "authentication-event.schema.json",
+  "authorization-audit-event.schema.json",
+  "authorization-decision.schema.json",
   "evidence-event.schema.json",
   "ledger-transaction.schema.json",
   "mandate.schema.json",
+  "membership.schema.json",
   "plugin-manifest.schema.json",
   "rail-descriptor.schema.json",
   "settlement-receipt.schema.json",

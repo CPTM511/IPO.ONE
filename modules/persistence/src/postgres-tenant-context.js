@@ -1,10 +1,12 @@
 import { DomainError } from "../../../packages/domain/src/index.js";
 import { assertAuthenticationContext } from "../../authentication/src/index.js";
+import { assertAuthorizationDecision } from "../../authorization/src/index.js";
 
 const trustedContexts = new WeakSet();
 const CONTEXT_VALUE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/;
 const ALLOWED_CONTEXT_SOURCES = new Set([
   "verified_authentication",
+  "verified_authorization",
   "system_worker",
   "local_test"
 ]);
@@ -24,7 +26,9 @@ export function createTenantSecurityContext({
   actorId,
   policyVersion,
   source,
-  authenticationContext
+  authenticationContext,
+  authorizationDecision,
+  now
 }) {
   assertContextValue("tenantId", tenantId);
   assertContextValue("actorId", actorId);
@@ -36,7 +40,7 @@ export function createTenantSecurityContext({
       { source }
     );
   }
-  if (source === "verified_authentication") {
+  if (source === "verified_authentication" || source === "verified_authorization") {
     const trusted = assertAuthenticationContext(authenticationContext);
     if (
       trusted.tenantId !== tenantId ||
@@ -48,13 +52,47 @@ export function createTenantSecurityContext({
         "Tenant Security Context must match the verified Authentication Context"
       );
     }
-  } else if (authenticationContext !== undefined) {
+    if (source === "verified_authorization") {
+      const authorization = assertAuthorizationDecision(authorizationDecision, { now: now ?? new Date() });
+      if (
+        authorization.revalidationCount < 1 ||
+        authorization.tenantId !== trusted.tenantId ||
+        authorization.actorId !== trusted.actorId ||
+        authorization.actorType !== trusted.actorType ||
+        authorization.clientId !== trusted.clientId ||
+        authorization.credentialId !== trusted.credentialId ||
+        authorization.policyVersion !== trusted.policyVersion ||
+        authorization.tokenJtiHash !== trusted.tokenJtiHash
+      ) {
+        throw new DomainError(
+          "tenant_authorization_context_mismatch",
+          "Tenant command context must match a revalidated Authorization Decision"
+        );
+      }
+    } else if (authorizationDecision !== undefined) {
+      throw new DomainError(
+        "invalid_tenant_security_context",
+        "authorizationDecision requires verified authorization"
+      );
+    }
+  } else if (authenticationContext !== undefined || authorizationDecision !== undefined) {
     throw new DomainError(
       "invalid_tenant_security_context",
       "authenticationContext is only valid for verified authentication"
     );
   }
-  const context = Object.freeze({ tenantId, actorId, policyVersion, source });
+  const context = Object.freeze({
+    tenantId,
+    actorId,
+    policyVersion,
+    source,
+    ...(source === "verified_authorization"
+      ? {
+          authorizationDecisionId: authorizationDecision.decisionId,
+          operationId: authorizationDecision.operationId
+        }
+      : {})
+  });
   trustedContexts.add(context);
   return context;
 }
@@ -67,6 +105,24 @@ export function createTenantSecurityContextFromAuthentication(authenticationCont
     policyVersion: trusted.policyVersion,
     source: "verified_authentication",
     authenticationContext: trusted
+  });
+}
+
+export function createTenantSecurityContextFromAuthorization({
+  authenticationContext,
+  authorizationDecision,
+  now = new Date()
+}) {
+  const authentication = assertAuthenticationContext(authenticationContext);
+  const authorization = assertAuthorizationDecision(authorizationDecision);
+  return createTenantSecurityContext({
+    tenantId: authentication.tenantId,
+    actorId: authentication.actorId,
+    policyVersion: authentication.policyVersion,
+    source: "verified_authorization",
+    authenticationContext: authentication,
+    authorizationDecision: authorization,
+    now
   });
 }
 

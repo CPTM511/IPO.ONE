@@ -14,6 +14,8 @@ const CLIENT_ERROR_STATUSES = new Map([
   ["uri_too_long", 414],
   ["unsupported_content_encoding", 415],
   ["unsupported_media_type", 415],
+  ["authorization_denied", 404],
+  ["authorization_unavailable", 503],
   ["https_required", 426],
   ["global_rate_limit_exceeded", 429],
   ["sandbox_mutation_limit_exceeded", 429],

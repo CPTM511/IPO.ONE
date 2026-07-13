@@ -49,6 +49,7 @@ test("Authentication Context is server-created, frozen, and never an authorizati
     actorType: ActorType.AGENT,
     clientId: "client_alpha",
     credentialId: "credential_alpha",
+    credentialVersion: 1,
     policyVersion: "security_001.v1",
     capabilities: ["credit.request"],
     roles: ["agent_runtime"],
@@ -59,7 +60,7 @@ test("Authentication Context is server-created, frozen, and never an authorizati
     amr: []
   });
   assert.equal(context.authorizationDecision, "not_evaluated");
-  assert.equal(context.schemaVersion, "authentication_context.v1");
+  assert.equal(context.schemaVersion, "authentication_context.v2");
   assert.equal(Object.isFrozen(context), true);
   assert.equal(Object.isFrozen(context.capabilities), true);
   assert.equal(assertAuthenticationContext(context), context);
@@ -143,6 +144,74 @@ test("credential records hash external subjects and lifecycle events contain no 
       payload: { value: "unclassified data is forbidden" }
     }),
     (error) => error.code === "invalid_authentication_claims"
+  );
+});
+
+test("Human OIDC supports shared clients and multi-tenant identities while workload clients stay unique", () => {
+  const referenceHasher = createReferenceHasher(randomBytes(32));
+  const eventStore = new InMemoryAuthenticationEventStore();
+  const actorDirectory = new InMemoryActorDirectory();
+  const registry = new InMemoryCredentialRegistry({ referenceHasher, eventStore, actorDirectory });
+  const register = ({
+    actorId,
+    actorType,
+    externalSubject,
+    tenantId = "tenant_alpha",
+    registerActor = true
+  }) => {
+    if (registerActor) actorDirectory.register({ actorId, actorType });
+    return registry.register({
+      tenantId,
+      actorId,
+      actorType,
+      issuer: "https://issuer.local.test",
+      externalSubject,
+      clientId: actorType === ActorType.HUMAN ? "shared_human_console" : "shared_workload_client",
+      clientAuthenticationMethod: actorType === ActorType.HUMAN
+        ? ClientAuthenticationMethod.OIDC_PKCE_BFF
+        : ClientAuthenticationMethod.PRIVATE_KEY_JWT,
+      senderConstraint: {
+        method: actorType === ActorType.HUMAN
+          ? SenderConstraintMethod.HOST_SESSION
+          : SenderConstraintMethod.DPOP,
+        thumbprint: "s".repeat(43)
+      },
+      roles: [],
+      allowedCapabilities: ["subject.read"],
+      policyVersion: "security_001.v1",
+      performedByActorId: "actor_security_admin",
+      reasonCode: "shared_client_test",
+      now: new Date("2026-07-13T00:00:00.000Z")
+    });
+  };
+
+  register({ actorId: "actor_human_one", actorType: ActorType.HUMAN, externalSubject: "human-one" });
+  register({ actorId: "actor_human_two", actorType: ActorType.HUMAN, externalSubject: "human-two" });
+  const firstTenant = register({
+    actorId: "actor_human_multi_tenant",
+    actorType: ActorType.HUMAN,
+    externalSubject: "human-multi-tenant",
+    tenantId: "tenant_alpha"
+  });
+  const secondTenant = register({
+    actorId: "actor_human_multi_tenant",
+    actorType: ActorType.HUMAN,
+    externalSubject: "human-multi-tenant",
+    tenantId: "tenant_beta",
+    registerActor: false
+  });
+  assert.notEqual(firstTenant.credentialId, secondTenant.credentialId);
+  assert.equal(registry.findBySubject({
+    issuer: "https://issuer.local.test",
+    tenantId: "tenant_beta",
+    externalSubject: "human-multi-tenant",
+    clientId: "shared_human_console",
+    now: new Date("2026-07-13T00:00:00.000Z")
+  }).credentialId, secondTenant.credentialId);
+  register({ actorId: "actor_agent_one", actorType: ActorType.AGENT, externalSubject: "agent-one" });
+  assert.throws(
+    () => register({ actorId: "actor_agent_two", actorType: ActorType.AGENT, externalSubject: "agent-two" }),
+    (error) => error.code === "authentication_credential_conflict"
   );
 });
 

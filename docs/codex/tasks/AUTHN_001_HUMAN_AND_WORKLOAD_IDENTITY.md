@@ -98,15 +98,21 @@ pnpm run smoke:api
 - Credential and session lifecycle events use closed payloads and contain no raw
   external subject, token, authorization code, cookie, verifier, signature,
   private key, or PII. Test signing keys are generated only in memory.
+- Authentication Context v2 binds the exact active Credential version. Workload
+  authorization and Human sessions fail immediately after Credential rotation;
+  reviewed Human OIDC clients can serve multiple distinct subjects and bind one
+  Human identity to separate tenant credentials without weakening unique
+  workload-client binding inside a tenant.
 - `modules/persistence` accepts source `verified_authentication` only when the
   exact branded Authentication Context matches Tenant, Actor, and policy values.
 - ADR-018 records the boundary and explains why OIDC `nonce` and OAuth `cnf` are
   profile security fields rather than business authorization claims.
 
 The foundation is intentionally not wired to `apps/api` or `ipo.one`. Durable
-credential/session/replay/event repositories are DATA-003 work. Active
-membership, route policy, object authorization, AccessGrants, approvals, and
-non-enumerating authenticated API responses are AUTHZ-001 and follow-on work.
+credential/session/replay/event repositories are DATA-003 work. AUTHZ-001 now
+provides the local membership, route, capability, ownership, AccessGrant,
+revalidation, and non-enumerating error contracts; durable command composition,
+approval issuance, abuse controls, and deployment remain follow-on work.
 
 ## Security Checklist
 

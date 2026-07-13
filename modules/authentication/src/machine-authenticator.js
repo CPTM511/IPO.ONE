@@ -161,6 +161,7 @@ export class MachineAuthenticator {
     }
     const credential = this.credentialRegistry.findBySubject({
       issuer: claims.iss,
+      tenantId,
       externalSubject: subject,
       clientId,
       now
@@ -219,6 +220,7 @@ export class MachineAuthenticator {
       actorType,
       clientId,
       credentialId: credential.credentialId,
+      credentialVersion: credential.version,
       policyVersion,
       capabilities,
       roles: credential.roles,

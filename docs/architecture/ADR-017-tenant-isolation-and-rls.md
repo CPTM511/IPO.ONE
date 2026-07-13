@@ -18,9 +18,11 @@ authorization.
    Tenant in the closed pilot.
 2. Actor identity remains separate from Tenant membership so one Human Actor
    may have several memberships, while every request selects one active Tenant.
-3. A server-created Tenant Security Context contains exactly `tenant_id`,
-   `actor_id`, and `policy_version`. Request bodies, paths, queries, arbitrary
-   headers, wallet addresses, plugins, and Subject IDs cannot create it.
+3. A server-created base Tenant Security Context contains `tenant_id`,
+   `actor_id`, and `policy_version`. A verified command context additionally
+   records the server-minted authorization decision ID and operation ID for the
+   command gateway. Request bodies, paths, queries, arbitrary headers, wallet
+   addresses, plugins, and Subject IDs cannot create either context.
 4. PostgreSQL context is set with parameterized transaction-local `set_config`
    calls after `BEGIN`. It disappears on commit, rollback, and pooled-connection
    reuse.

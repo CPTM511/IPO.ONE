@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/authorization-audit-event.schema.json",
+  "title": "IPO.ONE Authorization Audit Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "occurredAt",
+    "requestId",
+    "correlationId",
+    "tenantId",
+    "actorId",
+    "actorType",
+    "clientId",
+    "tokenJtiHash",
+    "operationId",
+    "action",
+    "resourceType",
+    "resourceId",
+    "authorizationDecision",
+    "policyVersion",
+    "reasonCode",
+    "approvalIds",
+    "membershipId",
+    "schemaVersion"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "requestId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "correlationId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "tenantId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "actorId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "actorType": {
+      "enum": [
+        "human",
+        "agent",
+        "provider",
+        "risk_operator",
+        "operations_operator",
+        "auditor",
+        "system_worker"
+      ]
+    },
+    "clientId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "tokenJtiHash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "operationId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "action": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "resourceType": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "resourceId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "authorizationDecision": { "enum": ["allow", "deny"] },
+    "policyVersion": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "reasonCode": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" },
+    "approvalIds": {
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 2, "maxLength": 256 }
+    },
+    "membershipId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "accessGrantId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "sourceNetworkRefHash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "schemaVersion": { "const": "authorization_audit_event.v1" }
+  }
+}

@@ -69,6 +69,7 @@ Human-compatible states such as KYC pending, DPD, restructured, repurchased, and
 
 ## Required Modules
 
+- `authentication`
 - `event-audit`
 - `authorization`
 - `identity`
@@ -93,6 +94,9 @@ Human-compatible states such as KYC pending, DPD, restructured, repurchased, and
 - Active obligations must be repaid from Lockbox revenue before surplus release.
 - Human prototype data must not include raw PII.
 - Multi-chain IDs must be chain-agnostic and must not use chain-local counters as business identifiers.
+- Authentication is request-scoped identity only. Tenant actions require the
+  shared versioned capability/object authorization boundary and current live
+  protocol controls.
 
 ## Testing Requirements
 

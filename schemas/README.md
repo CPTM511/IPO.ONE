@@ -21,3 +21,10 @@ local non-funds AUTHN-001 boundary. They contain keyed references and security
 metadata only, never bearer tokens, cookies, authorization codes, signatures,
 private keys, raw external subjects, or PII. They are not exposed by the public
 sandbox and do not represent an authorization decision.
+
+The Membership, AccessGrant, authorization decision, and authorization audit
+contracts describe the approved local non-funds AUTHZ-001 boundary. Runtime
+authority is the intersection of an active credential, active Membership,
+versioned operation policy, exact object ownership or AccessGrant, and current
+domain controls. An authorization decision is short-lived, server-created, and
+must be revalidated inside a durable command transaction before any mutation.

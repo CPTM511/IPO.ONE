@@ -1,1 +1,7 @@
+export * from "./authorization-audit-store.js";
+export * from "./authorization-constants.js";
+export * from "./authorization-directory.js";
+export * from "./authorization-policy.js";
+export * from "./authorization-service.js";
+export * from "./live-policy-adapter.js";
 export * from "./mandate-service.js";
