@@ -49,13 +49,27 @@ export class InMemoryAuthorizationAuditStore {
         "approvalIds",
         "membershipId"
       ],
-      optional: ["accessGrantId", "sourceNetworkRefHash"]
+      optional: [
+        "accessGrantId",
+        "approvalProposalId",
+        "approvalProposalVersion",
+        "sourceNetworkRefHash"
+      ]
     });
     if (this.#events.length >= this.maximumEvents) {
       throw authorizationError("authorization_audit_capacity_exceeded", "authorization audit capacity is exhausted");
     }
     if (!DECISIONS.has(input.authorizationDecision)) {
       throw authorizationError("invalid_authorization_audit", "authorization decision is invalid");
+    }
+    if (
+      (input.approvalProposalId === undefined) !==
+      (input.approvalProposalVersion === undefined)
+    ) {
+      throw authorizationError(
+        "invalid_authorization_audit",
+        "approval proposal identity is incomplete"
+      );
     }
     const event = {
       eventId: createOperationalId("authorization_event"),
@@ -82,6 +96,23 @@ export class InMemoryAuthorizationAuditStore {
         maximumItems: 8,
         itemValidator: assertAuthorizationIdentifier
       }),
+      ...(input.approvalProposalId === undefined
+        ? {}
+        : {
+            approvalProposalId: assertAuthorizationIdentifier(
+              "approvalProposalId",
+              input.approvalProposalId
+            ),
+            approvalProposalVersion: (() => {
+              if (!Number.isSafeInteger(input.approvalProposalVersion) || input.approvalProposalVersion < 1) {
+                throw authorizationError(
+                  "invalid_authorization_audit",
+                  "approval proposal version is invalid"
+                );
+              }
+              return input.approvalProposalVersion;
+            })()
+          }),
       membershipId: assertAuthorizationIdentifier("membershipId", input.membershipId),
       ...(input.accessGrantId === undefined
         ? {}

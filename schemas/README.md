@@ -28,3 +28,13 @@ authority is the intersection of an active credential, active Membership,
 versioned operation policy, exact object ownership or AccessGrant, and current
 domain controls. An authorization decision is short-lived, server-created, and
 must be revalidated inside a durable command transaction before any mutation.
+
+ApprovalProposal, ApprovalDecision, ApprovalExecution, break-glass incident,
+custodian decision, and review contracts describe the local non-funds
+APPROVAL-001 boundary. Proposals bind the exact command and current versions;
+decisions bind distinct Actor, role, Credential, Membership, and MFA evidence;
+execution links the two approvals to one idempotent business event set. Break
+glass is represented separately because it can authorize only fixed protective
+actions and never grants general or exposure-increasing authority. Production
+roles, named custodians, notification delivery, and deployment activation are
+not implied by these schemas.

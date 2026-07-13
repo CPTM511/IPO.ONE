@@ -1,6 +1,7 @@
 import { ActorType } from "../../authentication/src/constants.js";
 import {
   AUTHORIZATION_POLICY_VERSION,
+  APPROVAL_LIFECYCLE_REASON_CODES,
   AccessGrantCapability,
   ApprovalRequirement,
   AuthorizationSurface,
@@ -107,6 +108,47 @@ export const PUBLIC_SANDBOX_OPERATION_POLICIES = Object.freeze([
 ]);
 
 export const TENANT_OPERATION_POLICIES = Object.freeze([
+  tenantOperation({
+    operationId: "pilotProposeApproval",
+    action: "approval.propose",
+    resourceType: "approval_proposal",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.APPROVAL_PROPOSE,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadApproval",
+    action: "approval.read",
+    resourceType: "approval_proposal",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.APPROVAL_READ,
+    ownershipRule: OwnershipRule.TENANT,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR]
+  }),
+  tenantOperation({
+    operationId: "pilotDecideApproval",
+    action: "approval.decide",
+    resourceType: "approval_proposal",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.APPROVAL_DECIDE,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: APPROVAL_LIFECYCLE_REASON_CODES,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
+  }),
+  tenantOperation({
+    operationId: "pilotCancelApproval",
+    action: "approval.cancel",
+    resourceType: "approval_proposal",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.APPROVAL_CANCEL,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: ["proposal_canceled", "proposal_superseded"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
+  }),
   tenantOperation({
     operationId: "pilotCreateAgentSubject",
     action: "agent.create",
@@ -291,6 +333,17 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     ownershipRule: OwnershipRule.TENANT,
     idempotencyRequirement: IdempotencyRequirement.REQUIRED,
     liveChecks: ["worker_lease", "delivery_attempt"],
+    worker: true
+  }),
+  tenantOperation({
+    operationId: "workerExpireApproval",
+    action: "approval.expire",
+    resourceType: "approval_proposal",
+    allowedActorTypes: [ActorType.SYSTEM_WORKER],
+    requiredCapability: PilotCapability.APPROVAL_EXPIRE,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: ["approval_window_elapsed"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
     worker: true
   }),
   tenantOperation({

@@ -20,7 +20,9 @@ contract. Audit adapter failure fails closed, including asynchronous failures.
 
 The current directories, live-state adapter, and audit store are bounded
 in-memory reference implementations for local non-funds validation. DATA-003
-must provide durable repositories and transactional command composition;
-APPROVAL-001 and ABUSE-001 must provide durable dual control and resource
-controls. No current code enables production permissions, real funds, KYC/KYP,
-Provider execution, or authenticated public deployment.
+must provide durable identity/authorization/audit repositories and authenticated
+transactional command composition. APPROVAL-001 now provides exact-command
+durable dual control and protective-only break glass locally; ABUSE-001 must
+still add Actor/Tenant resource and sensitive-flow controls. No current code
+enables production permissions, real funds, KYC/KYP, Provider execution, or
+authenticated public deployment.

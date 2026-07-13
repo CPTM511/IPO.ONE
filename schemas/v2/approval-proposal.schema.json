@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/approval-proposal.schema.json",
+  "title": "IPO.ONE Approval Proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "approvalProposalId",
+    "proposalHash",
+    "tenantId",
+    "operationId",
+    "action",
+    "resourceType",
+    "resourceId",
+    "commandActorId",
+    "commandActorType",
+    "commandClientId",
+    "commandHash",
+    "idempotencyKeyHash",
+    "resourceVersion",
+    "liveStateVersion",
+    "reasonCode",
+    "policyVersion",
+    "approvalPolicyVersion",
+    "proposerActorId",
+    "proposerClientId",
+    "proposerMembershipId",
+    "proposerMembershipVersion",
+    "requiredApproverRoleBundles",
+    "requiredApprovalCount",
+    "status",
+    "version",
+    "expiresAt",
+    "createdAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "approvalProposalId": { "$ref": "#/$defs/identifier" },
+    "proposalHash": { "$ref": "#/$defs/contentHash" },
+    "tenantId": { "$ref": "#/$defs/identifier" },
+    "operationId": { "$ref": "#/$defs/identifier" },
+    "action": { "$ref": "#/$defs/identifier" },
+    "resourceType": { "$ref": "#/$defs/identifier" },
+    "resourceId": { "$ref": "#/$defs/identifier" },
+    "commandActorId": { "$ref": "#/$defs/identifier" },
+    "commandActorType": { "$ref": "#/$defs/actorType" },
+    "commandClientId": { "$ref": "#/$defs/identifier" },
+    "commandHash": { "$ref": "#/$defs/contentHash" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/referenceHash" },
+    "resourceVersion": { "type": "integer", "minimum": 0 },
+    "liveStateVersion": { "type": "integer", "minimum": 0 },
+    "reasonCode": { "$ref": "#/$defs/reasonCode" },
+    "policyVersion": { "$ref": "#/$defs/identifier" },
+    "approvalPolicyVersion": { "const": "approval_001.v1" },
+    "proposerActorId": { "$ref": "#/$defs/identifier" },
+    "proposerClientId": { "$ref": "#/$defs/identifier" },
+    "proposerMembershipId": { "$ref": "#/$defs/identifier" },
+    "proposerMembershipVersion": { "type": "integer", "minimum": 1 },
+    "requiredApproverRoleBundles": {
+      "const": ["risk_operator", "operations_operator"]
+    },
+    "requiredApprovalCount": { "const": 2 },
+    "status": {
+      "enum": ["pending", "approved", "rejected", "canceled", "expired", "superseded", "executed"]
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "expiresAt": { "$ref": "#/$defs/timestamp" },
+    "approvedAt": { "$ref": "#/$defs/timestamp" },
+    "rejectedAt": { "$ref": "#/$defs/timestamp" },
+    "canceledAt": { "$ref": "#/$defs/timestamp" },
+    "expiredAt": { "$ref": "#/$defs/timestamp" },
+    "supersededAt": { "$ref": "#/$defs/timestamp" },
+    "supersededByProposalId": { "$ref": "#/$defs/identifier" },
+    "executedAt": { "$ref": "#/$defs/timestamp" },
+    "executionId": { "$ref": "#/$defs/identifier" },
+    "createdAt": { "$ref": "#/$defs/timestamp" },
+    "updatedAt": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "approval_proposal.v1" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "approved" } }, "required": ["status"] },
+      "then": { "required": ["approvedAt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "rejected" } }, "required": ["status"] },
+      "then": { "required": ["rejectedAt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "canceled" } }, "required": ["status"] },
+      "then": { "required": ["canceledAt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "expired" } }, "required": ["status"] },
+      "then": { "required": ["expiredAt"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "superseded" } }, "required": ["status"] },
+      "then": { "required": ["supersededAt", "supersededByProposalId"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "executed" } }, "required": ["status"] },
+      "then": { "required": ["approvedAt", "executedAt", "executionId"] }
+    }
+  ],
+  "$defs": {
+    "identifier": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "contentHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "referenceHash": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "reasonCode": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "actorType": {
+      "enum": ["human", "agent", "provider", "risk_operator", "operations_operator", "auditor", "system_worker"]
+    }
+  }
+}

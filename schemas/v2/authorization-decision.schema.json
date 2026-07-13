@@ -87,12 +87,16 @@
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 2, "maxLength": 256 }
     },
+    "approvalProposalId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "approvalProposalVersion": { "type": "integer", "minimum": 1 },
     "authorizedAt": { "type": "string", "format": "date-time" },
     "expiresAt": { "type": "string", "format": "date-time" },
     "schemaVersion": { "const": "authorization_decision.v1" }
   },
   "dependentRequired": {
     "accessGrantId": ["accessGrantVersion"],
-    "accessGrantVersion": ["accessGrantId"]
+    "accessGrantVersion": ["accessGrantId"],
+    "approvalProposalId": ["approvalProposalVersion"],
+    "approvalProposalVersion": ["approvalProposalId"]
   }
 }

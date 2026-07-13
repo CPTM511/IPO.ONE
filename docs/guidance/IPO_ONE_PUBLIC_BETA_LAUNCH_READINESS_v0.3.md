@@ -39,6 +39,16 @@ independent penetration-test, private-data, or real-value gates. Detailed
 resource identifiers, test evidence, scanner results, and rollback state are in
 `docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
 
+## Local Security-Control Checkpoint (2026-07-14)
+
+Tenant/RLS, provider-neutral AuthN, deny-by-default object AuthZ, durable
+exact-command dual control, and a disabled-by-default protective break-glass
+state machine are now implemented and tested as local non-funds boundaries.
+They are deliberately not composed into or deployed over the anonymous public
+sandbox. Human IdP selection, durable identity/authorization/audit adapters,
+ABUSE-001, DATA-003, production roles, named break-glass owners/notifications,
+private-data approval, and any real-value authority remain open gates.
+
 ## Launch Definition
 
 The public beta demonstrates one complete Agent Lockbox obligation lifecycle to
@@ -94,16 +104,20 @@ must never be treated as identity, authorization, or tenant membership.
 
 The following remain blockers for any real value or private multi-tenant launch:
 
-- AuthN, tenant model, RBAC, object authorization, dual control, and break-glass.
+- Production Human IdP plus durable identity, authorization, and audit stores;
+  authenticated Tenant command composition and ABUSE-001 controls.
+- Production role assignment, named dual-control operators, break-glass
+  custodians/review owner/notification delivery, and protected activation.
 - Authenticated tenant-scoped durable command composition, production database
   backup/restore, scheduled reconciliation, and authorized operator replay.
 - Signed Mandates, nonce/key rotation, wallet verification, and remote attestations.
 - Certified Provider workers, signed webhooks, custody/fund-path review, and caps.
 - Legal, risk, security, privacy, and jurisdiction approval.
 
-Those controls remain sequenced in `SECURITY-001`, `DATA-003`, `AUTH-002`,
-`PROVIDER-001`, and `OPS-001`; DATA-002 and the local RECON-001 repository
-foundation do not satisfy the production operations gate. A public beta success must not be
+The remaining controls are sequenced in `ABUSE-001`, `DATA-003`, `AUTH-002`,
+`PROVIDER-001`, and `OPS-001`; completed local SECURITY-001, APPROVAL-001,
+DATA-002, and RECON-001 foundations do not satisfy the production operations
+gate. A public beta success must not be
 relabelled as production financial readiness.
 
 The repository-level attack model and residual-risk register are maintained in

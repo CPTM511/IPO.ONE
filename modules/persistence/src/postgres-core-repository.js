@@ -5,6 +5,7 @@ import {
   hashId
 } from "../../../packages/domain/src/index.js";
 import { PostgresEventRepository } from "./postgres-event-repository.js";
+import { ApprovalProjectionType } from "../../approval/src/approval-constants.js";
 
 export const CoreProjectionType = Object.freeze({
   PRINCIPAL: "principal",
@@ -23,7 +24,8 @@ export const CoreProjectionType = Object.freeze({
   REPAYMENT: "repayment",
   CREDIT_LINE: "credit_line",
   RISK_DECISION: "risk_decision",
-  ADMIN_ACTION: "admin_action"
+  ADMIN_ACTION: "admin_action",
+  ...ApprovalProjectionType
 });
 
 const ENTITY_ID_FIELDS = Object.freeze({
@@ -43,7 +45,13 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.REPAYMENT]: "repaymentId",
   [CoreProjectionType.CREDIT_LINE]: "creditLineId",
   [CoreProjectionType.RISK_DECISION]: "riskDecisionId",
-  [CoreProjectionType.ADMIN_ACTION]: "adminActionId"
+  [CoreProjectionType.ADMIN_ACTION]: "adminActionId",
+  [CoreProjectionType.APPROVAL_PROPOSAL]: "approvalProposalId",
+  [CoreProjectionType.APPROVAL_DECISION]: "approvalDecisionId",
+  [CoreProjectionType.APPROVAL_EXECUTION]: "approvalExecutionId",
+  [CoreProjectionType.BREAK_GLASS_INCIDENT]: "breakGlassIncidentId",
+  [CoreProjectionType.BREAK_GLASS_CUSTODIAN_DECISION]: "breakGlassCustodianDecisionId",
+  [CoreProjectionType.BREAK_GLASS_REVIEW]: "breakGlassReviewId"
 });
 const MAX_PROJECTION_BYTES = 128 * 1024;
 const MAX_PROJECTION_WRITE_SET_BYTES = 2 * 1024 * 1024;
@@ -80,6 +88,14 @@ function timestamp(value) {
 function dateOnly(value) {
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   return typeof value === "string" ? value.slice(0, 10) : value;
+}
+
+function safeInteger(value, name) {
+  const normalized = Number(value);
+  if (!Number.isSafeInteger(normalized) || normalized < 0) {
+    throw new DomainError("invalid_core_projection", `${name} is not a safe integer`, { name });
+  }
+  return normalized;
 }
 
 function projectionConflict(entityType, entityId) {
@@ -478,6 +494,172 @@ function mapAdminAction(row) {
   };
 }
 
+function mapApprovalProposal(row) {
+  if (!row) return undefined;
+  return {
+    approvalProposalId: row.id,
+    proposalHash: row.proposal_hash,
+    tenantId: row.tenant_id,
+    operationId: row.operation_id,
+    action: row.action,
+    resourceType: row.resource_type,
+    resourceId: row.resource_id,
+    commandActorId: row.command_actor_id,
+    commandActorType: row.command_actor_type,
+    commandClientId: row.command_client_id,
+    commandHash: row.command_hash,
+    idempotencyKeyHash: row.idempotency_key_hash,
+    resourceVersion: safeInteger(row.resource_version, "resourceVersion"),
+    liveStateVersion: safeInteger(row.live_state_version, "liveStateVersion"),
+    reasonCode: row.reason_code,
+    policyVersion: row.policy_version,
+    approvalPolicyVersion: row.approval_policy_version,
+    proposerActorId: row.proposer_actor_id,
+    proposerClientId: row.proposer_client_id,
+    proposerMembershipId: row.proposer_membership_id,
+    proposerMembershipVersion: safeInteger(row.proposer_membership_version, "proposerMembershipVersion"),
+    requiredApproverRoleBundles: row.required_approver_role_bundles,
+    requiredApprovalCount: row.required_approval_count,
+    status: row.status,
+    version: safeInteger(row.version, "version"),
+    expiresAt: timestamp(row.expires_at),
+    approvedAt: row.approved_at ? timestamp(row.approved_at) : undefined,
+    rejectedAt: row.rejected_at ? timestamp(row.rejected_at) : undefined,
+    canceledAt: row.canceled_at ? timestamp(row.canceled_at) : undefined,
+    expiredAt: row.expired_at ? timestamp(row.expired_at) : undefined,
+    supersededAt: row.superseded_at ? timestamp(row.superseded_at) : undefined,
+    supersededByProposalId: row.superseded_by_proposal_id ?? undefined,
+    executedAt: row.executed_at ? timestamp(row.executed_at) : undefined,
+    executionId: row.execution_id ?? undefined,
+    createdAt: timestamp(row.created_at),
+    updatedAt: timestamp(row.updated_at),
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapApprovalDecision(row) {
+  if (!row) return undefined;
+  return {
+    approvalDecisionId: row.id,
+    decisionHash: row.decision_hash,
+    tenantId: row.tenant_id,
+    approvalProposalId: row.proposal_id,
+    proposalVersion: safeInteger(row.proposal_version, "proposalVersion"),
+    proposalHash: row.proposal_hash,
+    commandHash: row.command_hash,
+    policyVersion: row.policy_version,
+    decision: row.decision,
+    reasonCode: row.reason_code,
+    approverActorId: row.approver_actor_id,
+    approverActorType: row.approver_actor_type,
+    approverClientId: row.approver_client_id,
+    approverCredentialId: row.approver_credential_id,
+    approverCredentialVersion: safeInteger(row.approver_credential_version, "approverCredentialVersion"),
+    approverMembershipId: row.approver_membership_id,
+    approverMembershipVersion: safeInteger(row.approver_membership_version, "approverMembershipVersion"),
+    approverRoleBundle: row.approver_role_bundle,
+    authTime: timestamp(row.auth_time),
+    authenticationMethods: row.authentication_methods,
+    tokenJtiHash: row.token_jti_hash,
+    version: safeInteger(row.version, "version"),
+    createdAt: timestamp(row.created_at),
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapApprovalExecution(row) {
+  if (!row) return undefined;
+  return {
+    approvalExecutionId: row.id,
+    executionHash: row.execution_hash,
+    tenantId: row.tenant_id,
+    approvalProposalId: row.proposal_id,
+    proposalVersion: safeInteger(row.proposal_version, "proposalVersion"),
+    proposalHash: row.proposal_hash,
+    commandHash: row.command_hash,
+    authorizationDecisionId: row.authorization_decision_id,
+    executedByActorId: row.executed_by_actor_id,
+    idempotencyKeyHash: row.idempotency_key_hash,
+    approvalDecisionIds: row.approval_decision_ids,
+    businessEventIds: row.business_event_ids,
+    resultHash: row.result_hash,
+    version: safeInteger(row.version, "version"),
+    executedAt: timestamp(row.executed_at),
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapBreakGlassIncident(row) {
+  if (!row) return undefined;
+  return {
+    breakGlassIncidentId: row.id,
+    incidentHash: row.incident_hash,
+    tenantId: row.tenant_id,
+    reasonCode: row.reason_code,
+    allowedActions: row.allowed_actions,
+    resourceScopes: row.resource_scopes,
+    requestedByActorId: row.requested_by_actor_id,
+    requestedByClientId: row.requested_by_client_id,
+    custodianActorIds: row.custodian_actor_ids,
+    reviewOwnerActorId: row.review_owner_actor_id,
+    deploymentApprovalRefHash: row.deployment_approval_ref_hash,
+    notificationTargetRefHash: row.notification_target_ref_hash,
+    maximumSessionMs: safeInteger(row.maximum_session_ms, "maximumSessionMs"),
+    status: row.status,
+    reviewStatus: row.review_status,
+    version: safeInteger(row.version, "version"),
+    activationDeadline: timestamp(row.activation_deadline),
+    activatedAt: row.activated_at ? timestamp(row.activated_at) : undefined,
+    expiresAt: row.expires_at ? timestamp(row.expires_at) : undefined,
+    expiredAt: row.expired_at ? timestamp(row.expired_at) : undefined,
+    closedAt: row.closed_at ? timestamp(row.closed_at) : undefined,
+    canceledAt: row.canceled_at ? timestamp(row.canceled_at) : undefined,
+    reviewDueAt: row.review_due_at ? timestamp(row.review_due_at) : undefined,
+    declaredAt: timestamp(row.declared_at),
+    updatedAt: timestamp(row.updated_at),
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapBreakGlassCustodianDecision(row) {
+  if (!row) return undefined;
+  return {
+    breakGlassCustodianDecisionId: row.id,
+    decisionHash: row.decision_hash,
+    tenantId: row.tenant_id,
+    breakGlassIncidentId: row.incident_id,
+    incidentVersion: safeInteger(row.incident_version, "incidentVersion"),
+    incidentHash: row.incident_hash,
+    custodianActorId: row.custodian_actor_id,
+    custodianClientId: row.custodian_client_id,
+    custodianCredentialId: row.custodian_credential_id,
+    custodianCredentialVersion: safeInteger(row.custodian_credential_version, "custodianCredentialVersion"),
+    hardwareKeyRefHash: row.hardware_key_ref_hash,
+    authTime: timestamp(row.auth_time),
+    authenticationMethods: row.authentication_methods,
+    version: safeInteger(row.version, "version"),
+    createdAt: timestamp(row.created_at),
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapBreakGlassReview(row) {
+  if (!row) return undefined;
+  return {
+    breakGlassReviewId: row.id,
+    reviewHash: row.review_hash,
+    tenantId: row.tenant_id,
+    breakGlassIncidentId: row.incident_id,
+    incidentHash: row.incident_hash,
+    reviewerActorId: row.reviewer_actor_id,
+    reviewerClientId: row.reviewer_client_id,
+    findingsRefHash: row.findings_ref_hash,
+    version: safeInteger(row.version, "version"),
+    completedAt: timestamp(row.completed_at),
+    schemaVersion: row.schema_version
+  };
+}
+
 export class PostgresCoreRepository {
   constructor({ pool, eventRepository, tenantContext } = {}) {
     if (!pool || typeof pool.query !== "function") {
@@ -485,6 +667,10 @@ export class PostgresCoreRepository {
     }
     this.pool = pool;
     this.eventRepository = eventRepository ?? new PostgresEventRepository({ pool, tenantContext });
+  }
+
+  async findCommand(input) {
+    return this.eventRepository.findCommand(input);
   }
 
   async commitCommand({ aggregateType, aggregateId, idempotencyKey, commandHash, events, writes, response }) {
@@ -714,6 +900,96 @@ export class PostgresCoreRepository {
     return this.#getOne("adminActionId", adminActionId, "SELECT * FROM admin_actions WHERE id = $1", mapAdminAction);
   }
 
+  async getApprovalProposal(approvalProposalId) {
+    return this.#getOne(
+      "approvalProposalId",
+      approvalProposalId,
+      "SELECT * FROM approval_proposals WHERE id = $1",
+      mapApprovalProposal
+    );
+  }
+
+  async listApprovalDecisions(approvalProposalId) {
+    assertString("approvalProposalId", approvalProposalId);
+    const result = await this.#tenantQuery(
+      "SELECT * FROM approval_decisions WHERE proposal_id = $1 ORDER BY created_at, id",
+      [approvalProposalId]
+    );
+    return result.rows.map(mapApprovalDecision);
+  }
+
+  async getApprovalDecision(approvalDecisionId) {
+    return this.#getOne(
+      "approvalDecisionId",
+      approvalDecisionId,
+      "SELECT * FROM approval_decisions WHERE id = $1",
+      mapApprovalDecision
+    );
+  }
+
+  async getApprovalExecution(approvalExecutionId) {
+    return this.#getOne(
+      "approvalExecutionId",
+      approvalExecutionId,
+      "SELECT * FROM approval_executions WHERE id = $1",
+      mapApprovalExecution
+    );
+  }
+
+  async getApprovalExecutionByProposal(approvalProposalId) {
+    return this.#getOne(
+      "approvalProposalId",
+      approvalProposalId,
+      "SELECT * FROM approval_executions WHERE proposal_id = $1",
+      mapApprovalExecution
+    );
+  }
+
+  async getBreakGlassIncident(breakGlassIncidentId) {
+    return this.#getOne(
+      "breakGlassIncidentId",
+      breakGlassIncidentId,
+      "SELECT * FROM break_glass_incidents WHERE id = $1",
+      mapBreakGlassIncident
+    );
+  }
+
+  async listBreakGlassCustodianDecisions(breakGlassIncidentId) {
+    assertString("breakGlassIncidentId", breakGlassIncidentId);
+    const result = await this.#tenantQuery(
+      "SELECT * FROM break_glass_custodian_decisions WHERE incident_id = $1 ORDER BY created_at, id",
+      [breakGlassIncidentId]
+    );
+    return result.rows.map(mapBreakGlassCustodianDecision);
+  }
+
+  async getBreakGlassCustodianDecision(breakGlassCustodianDecisionId) {
+    return this.#getOne(
+      "breakGlassCustodianDecisionId",
+      breakGlassCustodianDecisionId,
+      "SELECT * FROM break_glass_custodian_decisions WHERE id = $1",
+      mapBreakGlassCustodianDecision
+    );
+  }
+
+  async getBreakGlassReviewById(breakGlassReviewId) {
+    return this.#getOne(
+      "breakGlassReviewId",
+      breakGlassReviewId,
+      "SELECT * FROM break_glass_reviews WHERE id = $1",
+      mapBreakGlassReview
+    );
+  }
+
+  async getBreakGlassReview(breakGlassIncidentId) {
+    return this.#getOne(
+      "breakGlassIncidentId",
+      breakGlassIncidentId,
+      "SELECT * FROM break_glass_reviews WHERE incident_id = $1",
+      mapBreakGlassReview
+    );
+  }
+
   async getProjectionRegistration(entityType, entityId) {
     assertString("entityType", entityType);
     assertString("entityId", entityId);
@@ -935,6 +1211,24 @@ export class PostgresCoreRepository {
       case CoreProjectionType.ADMIN_ACTION:
         value = await this.getAdminAction(entityId);
         break;
+      case CoreProjectionType.APPROVAL_PROPOSAL:
+        value = await this.getApprovalProposal(entityId);
+        break;
+      case CoreProjectionType.APPROVAL_DECISION:
+        value = await this.getApprovalDecision(entityId);
+        break;
+      case CoreProjectionType.APPROVAL_EXECUTION:
+        value = await this.getApprovalExecution(entityId);
+        break;
+      case CoreProjectionType.BREAK_GLASS_INCIDENT:
+        value = await this.getBreakGlassIncident(entityId);
+        break;
+      case CoreProjectionType.BREAK_GLASS_CUSTODIAN_DECISION:
+        value = await this.getBreakGlassCustodianDecision(entityId);
+        break;
+      case CoreProjectionType.BREAK_GLASS_REVIEW:
+        value = await this.getBreakGlassReviewById(entityId);
+        break;
       default:
         throw new DomainError("unsupported_projection_type", "projection type is not supported", { entityType });
     }
@@ -1009,6 +1303,18 @@ export class PostgresCoreRepository {
         return this.#writeRiskDecision(client, value);
       case CoreProjectionType.ADMIN_ACTION:
         return this.#writeAdminAction(client, value);
+      case CoreProjectionType.APPROVAL_PROPOSAL:
+        return this.#writeApprovalProposal(client, value);
+      case CoreProjectionType.APPROVAL_DECISION:
+        return this.#writeApprovalDecision(client, value);
+      case CoreProjectionType.APPROVAL_EXECUTION:
+        return this.#writeApprovalExecution(client, value);
+      case CoreProjectionType.BREAK_GLASS_INCIDENT:
+        return this.#writeBreakGlassIncident(client, value);
+      case CoreProjectionType.BREAK_GLASS_CUSTODIAN_DECISION:
+        return this.#writeBreakGlassCustodianDecision(client, value);
+      case CoreProjectionType.BREAK_GLASS_REVIEW:
+        return this.#writeBreakGlassReview(client, value);
       default:
         throw new DomainError("unsupported_projection_type", "projection type is not implemented", { type: write.type });
     }
@@ -1618,6 +1924,312 @@ export class PostgresCoreRepository {
     const normalizedValue = { ...value, payloadHash, payload };
     if (hashId("projection_compare", mapAdminAction(existing.rows[0])) !== hashId("projection_compare", normalizedValue)) {
       throw projectionConflict(CoreProjectionType.ADMIN_ACTION, value.adminActionId);
+    }
+  }
+
+  async #writeApprovalProposal(client, value) {
+    const result = await client.query(
+      `INSERT INTO approval_proposals(
+         id, proposal_hash, operation_id, action, resource_type, resource_id,
+         command_actor_id, command_actor_type, command_client_id, command_hash,
+         idempotency_key_hash, resource_version, live_state_version, reason_code,
+         policy_version, approval_policy_version, proposer_actor_id,
+         proposer_client_id, proposer_membership_id, proposer_membership_version,
+         required_approver_role_bundles, required_approval_count, status, version,
+         expires_at, approved_at, rejected_at, canceled_at, expired_at,
+         superseded_at, superseded_by_proposal_id, executed_at, execution_id,
+         created_at, updated_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+         $31, $32, $33, $34, $35, $36
+       )
+       ON CONFLICT (id) DO UPDATE
+         SET status = EXCLUDED.status,
+             version = EXCLUDED.version,
+             approved_at = EXCLUDED.approved_at,
+             rejected_at = EXCLUDED.rejected_at,
+             canceled_at = EXCLUDED.canceled_at,
+             expired_at = EXCLUDED.expired_at,
+             superseded_at = EXCLUDED.superseded_at,
+             superseded_by_proposal_id = EXCLUDED.superseded_by_proposal_id,
+             executed_at = EXCLUDED.executed_at,
+             execution_id = EXCLUDED.execution_id,
+             updated_at = EXCLUDED.updated_at
+       WHERE approval_proposals.proposal_hash = EXCLUDED.proposal_hash
+         AND approval_proposals.version + 1 = EXCLUDED.version
+       RETURNING id`,
+      [
+        value.approvalProposalId,
+        value.proposalHash,
+        value.operationId,
+        value.action,
+        value.resourceType,
+        value.resourceId,
+        value.commandActorId,
+        value.commandActorType,
+        value.commandClientId,
+        value.commandHash,
+        value.idempotencyKeyHash,
+        value.resourceVersion,
+        value.liveStateVersion,
+        value.reasonCode,
+        value.policyVersion,
+        value.approvalPolicyVersion,
+        value.proposerActorId,
+        value.proposerClientId,
+        value.proposerMembershipId,
+        value.proposerMembershipVersion,
+        json(value.requiredApproverRoleBundles),
+        value.requiredApprovalCount,
+        value.status,
+        value.version,
+        value.expiresAt,
+        value.approvedAt ?? null,
+        value.rejectedAt ?? null,
+        value.canceledAt ?? null,
+        value.expiredAt ?? null,
+        value.supersededAt ?? null,
+        value.supersededByProposalId ?? null,
+        value.executedAt ?? null,
+        value.executionId ?? null,
+        value.createdAt,
+        value.updatedAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.APPROVAL_PROPOSAL, value.approvalProposalId);
+    }
+  }
+
+  async #writeApprovalDecision(client, value) {
+    const result = await client.query(
+      `INSERT INTO approval_decisions(
+         id, proposal_id, decision_hash, proposal_version, proposal_hash,
+         command_hash, policy_version, decision, reason_code, approver_actor_id,
+         approver_actor_type, approver_client_id, approver_credential_id,
+         approver_credential_version, approver_membership_id,
+         approver_membership_version, approver_role_bundle, auth_time,
+         authentication_methods, token_jti_hash, version, created_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+         $21, $22, $23
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.approvalDecisionId,
+        value.approvalProposalId,
+        value.decisionHash,
+        value.proposalVersion,
+        value.proposalHash,
+        value.commandHash,
+        value.policyVersion,
+        value.decision,
+        value.reasonCode,
+        value.approverActorId,
+        value.approverActorType,
+        value.approverClientId,
+        value.approverCredentialId,
+        value.approverCredentialVersion,
+        value.approverMembershipId,
+        value.approverMembershipVersion,
+        value.approverRoleBundle,
+        value.authTime,
+        json(value.authenticationMethods),
+        value.tokenJtiHash,
+        value.version,
+        value.createdAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount === 1) return;
+    const existing = await client.query("SELECT * FROM approval_decisions WHERE id = $1", [
+      value.approvalDecisionId
+    ]);
+    if (hashId("projection_compare", mapApprovalDecision(existing.rows[0])) !== hashId("projection_compare", value)) {
+      throw projectionConflict(CoreProjectionType.APPROVAL_DECISION, value.approvalDecisionId);
+    }
+  }
+
+  async #writeApprovalExecution(client, value) {
+    const result = await client.query(
+      `INSERT INTO approval_executions(
+         id, proposal_id, execution_hash, proposal_version, proposal_hash,
+         command_hash, authorization_decision_id, executed_by_actor_id,
+         idempotency_key_hash, approval_decision_ids, business_event_ids,
+         result_hash, version, executed_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.approvalExecutionId,
+        value.approvalProposalId,
+        value.executionHash,
+        value.proposalVersion,
+        value.proposalHash,
+        value.commandHash,
+        value.authorizationDecisionId,
+        value.executedByActorId,
+        value.idempotencyKeyHash,
+        json(value.approvalDecisionIds),
+        json(value.businessEventIds),
+        value.resultHash,
+        value.version,
+        value.executedAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount === 1) return;
+    const existing = await client.query("SELECT * FROM approval_executions WHERE id = $1", [
+      value.approvalExecutionId
+    ]);
+    if (hashId("projection_compare", mapApprovalExecution(existing.rows[0])) !== hashId("projection_compare", value)) {
+      throw projectionConflict(CoreProjectionType.APPROVAL_EXECUTION, value.approvalExecutionId);
+    }
+  }
+
+  async #writeBreakGlassIncident(client, value) {
+    const result = await client.query(
+      `INSERT INTO break_glass_incidents(
+         id, incident_hash, reason_code, allowed_actions, resource_scopes,
+         requested_by_actor_id, requested_by_client_id, custodian_actor_ids,
+         review_owner_actor_id, deployment_approval_ref_hash,
+         notification_target_ref_hash, maximum_session_ms, status,
+         review_status, version, activation_deadline, activated_at, expires_at,
+         expired_at, closed_at, canceled_at, review_due_at, declared_at,
+         updated_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+         $21, $22, $23, $24, $25
+       )
+       ON CONFLICT (id) DO UPDATE
+         SET status = EXCLUDED.status,
+             review_status = EXCLUDED.review_status,
+             version = EXCLUDED.version,
+             activated_at = EXCLUDED.activated_at,
+             expires_at = EXCLUDED.expires_at,
+             expired_at = EXCLUDED.expired_at,
+             closed_at = EXCLUDED.closed_at,
+             canceled_at = EXCLUDED.canceled_at,
+             review_due_at = EXCLUDED.review_due_at,
+             updated_at = EXCLUDED.updated_at
+       WHERE break_glass_incidents.incident_hash = EXCLUDED.incident_hash
+         AND break_glass_incidents.version + 1 = EXCLUDED.version
+       RETURNING id`,
+      [
+        value.breakGlassIncidentId,
+        value.incidentHash,
+        value.reasonCode,
+        json(value.allowedActions),
+        json(value.resourceScopes),
+        value.requestedByActorId,
+        value.requestedByClientId,
+        json(value.custodianActorIds),
+        value.reviewOwnerActorId,
+        value.deploymentApprovalRefHash,
+        value.notificationTargetRefHash,
+        value.maximumSessionMs,
+        value.status,
+        value.reviewStatus,
+        value.version,
+        value.activationDeadline,
+        value.activatedAt ?? null,
+        value.expiresAt ?? null,
+        value.expiredAt ?? null,
+        value.closedAt ?? null,
+        value.canceledAt ?? null,
+        value.reviewDueAt ?? null,
+        value.declaredAt,
+        value.updatedAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.BREAK_GLASS_INCIDENT, value.breakGlassIncidentId);
+    }
+  }
+
+  async #writeBreakGlassCustodianDecision(client, value) {
+    const result = await client.query(
+      `INSERT INTO break_glass_custodian_decisions(
+         id, incident_id, decision_hash, incident_version, incident_hash,
+         custodian_actor_id, custodian_client_id, custodian_credential_id,
+         custodian_credential_version, hardware_key_ref_hash, auth_time,
+         authentication_methods, version, created_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.breakGlassCustodianDecisionId,
+        value.breakGlassIncidentId,
+        value.decisionHash,
+        value.incidentVersion,
+        value.incidentHash,
+        value.custodianActorId,
+        value.custodianClientId,
+        value.custodianCredentialId,
+        value.custodianCredentialVersion,
+        value.hardwareKeyRefHash,
+        value.authTime,
+        json(value.authenticationMethods),
+        value.version,
+        value.createdAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount === 1) return;
+    const existing = await client.query("SELECT * FROM break_glass_custodian_decisions WHERE id = $1", [
+      value.breakGlassCustodianDecisionId
+    ]);
+    if (
+      hashId("projection_compare", mapBreakGlassCustodianDecision(existing.rows[0])) !==
+      hashId("projection_compare", value)
+    ) {
+      throw projectionConflict(
+        CoreProjectionType.BREAK_GLASS_CUSTODIAN_DECISION,
+        value.breakGlassCustodianDecisionId
+      );
+    }
+  }
+
+  async #writeBreakGlassReview(client, value) {
+    const result = await client.query(
+      `INSERT INTO break_glass_reviews(
+         id, incident_id, review_hash, incident_hash, reviewer_actor_id,
+         reviewer_client_id, findings_ref_hash, version, completed_at, schema_version
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.breakGlassReviewId,
+        value.breakGlassIncidentId,
+        value.reviewHash,
+        value.incidentHash,
+        value.reviewerActorId,
+        value.reviewerClientId,
+        value.findingsRefHash,
+        value.version,
+        value.completedAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount === 1) return;
+    const existing = await client.query("SELECT * FROM break_glass_reviews WHERE id = $1", [
+      value.breakGlassReviewId
+    ]);
+    if (hashId("projection_compare", mapBreakGlassReview(existing.rows[0])) !== hashId("projection_compare", value)) {
+      throw projectionConflict(CoreProjectionType.BREAK_GLASS_REVIEW, value.breakGlassReviewId);
     }
   }
 }
