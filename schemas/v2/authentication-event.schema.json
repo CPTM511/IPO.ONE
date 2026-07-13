@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/authentication-event.schema.json",
+  "title": "IPO.ONE Authentication Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "tenantId",
+    "actorId",
+    "credentialId",
+    "reasonCode",
+    "occurredAt",
+    "payload",
+    "schemaVersion"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "eventType": {
+      "enum": [
+        "credential_registered",
+        "credential_rotated",
+        "credential_suspended",
+        "credential_revoked",
+        "credential_expired",
+        "session_created",
+        "session_rotated",
+        "session_revoked",
+        "session_expired"
+      ]
+    },
+    "tenantId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "actorId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "credentialId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "reasonCode": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actorType": { "type": "string" },
+        "clientAuthenticationMethod": { "type": "string" },
+        "senderConstraintMethod": { "type": "string" },
+        "version": { "type": "integer", "minimum": 1 },
+        "status": { "type": "string" },
+        "sessionRefHash": { "type": "string", "minLength": 32, "maxLength": 128 },
+        "rotation": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "schemaVersion": { "const": "authentication_event.v1" }
+  }
+}

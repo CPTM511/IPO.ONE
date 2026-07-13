@@ -29,6 +29,7 @@
     "demo:vertical-slice": "node packages/mvp-flow/src/run-vertical-slice.js"
   },
   "dependencies": {
+    "jose": "6.2.3",
     "pg": "^8.22.0"
   }
 }
