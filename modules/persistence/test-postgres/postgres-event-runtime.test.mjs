@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
 import test from "node:test";
 import {
   AccountPurpose,
@@ -903,8 +904,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         await pool.query(`DROP ROLE ${appRole}`);
       };
       await dropAppRole();
+      const appRolePassword = randomBytes(24).toString("base64url");
+      const quotedPassword = (
+        await pool.query("SELECT quote_literal($1) AS value", [appRolePassword])
+      ).rows[0].value;
       await pool.query(
-        `CREATE ROLE ${appRole} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+        `CREATE ROLE ${appRole} LOGIN PASSWORD ${quotedPassword} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
       );
       await pool.query(`GRANT USAGE ON SCHEMA public TO ${appRole}`);
       await pool.query(
@@ -916,7 +921,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       );
       const appConnection = new URL(CONNECTION_STRING);
       appConnection.username = appRole;
-      appConnection.password = "";
+      appConnection.password = appRolePassword;
       const appPool = createPostgresPool({
         connectionString: appConnection.toString(),
         max: 4,
