@@ -6,6 +6,7 @@ import {
   createTenantSecurityContext,
   setTenantTransactionContext
 } from "../src/index.js";
+import { createAuthenticationContext } from "../../authentication/src/authentication-context.js";
 
 const VALID_CONTEXT = {
   tenantId: "tenant_ipo_one_local_pilot",
@@ -31,6 +32,52 @@ test("Tenant Security Context is closed, bounded, and server-created", () => {
   assert.throws(
     () => createTenantSecurityContext({ ...VALID_CONTEXT, source: "request_body" }),
     (error) => error.code === "invalid_tenant_security_context"
+  );
+});
+
+test("verified Tenant Security Context requires the exact trusted Authentication Context", () => {
+  const authentication = createAuthenticationContext({
+    tenantId: "tenant_ipo_one_local_pilot",
+    actorId: "actor_local_system",
+    actorType: "system_worker",
+    clientId: "client_local_worker",
+    credentialId: "credential_local_worker",
+    policyVersion: "security_001.v1",
+    capabilities: ["local_non_funds_repository"],
+    roles: ["system_worker"],
+    tokenJtiHash: "a".repeat(43),
+    authenticationMethod: "private_key_jwt",
+    senderConstraintMethod: "dpop",
+    authenticatedAt: new Date("2026-07-13T00:00:00.000Z"),
+    amr: []
+  });
+  const context = createTenantSecurityContext({
+    tenantId: authentication.tenantId,
+    actorId: authentication.actorId,
+    policyVersion: authentication.policyVersion,
+    source: "verified_authentication",
+    authenticationContext: authentication
+  });
+  assert.equal(context.source, "verified_authentication");
+  assert.throws(
+    () => createTenantSecurityContext({
+      tenantId: authentication.tenantId,
+      actorId: "actor_other",
+      policyVersion: authentication.policyVersion,
+      source: "verified_authentication",
+      authenticationContext: authentication
+    }),
+    (error) => error.code === "tenant_authentication_context_mismatch"
+  );
+  assert.throws(
+    () => createTenantSecurityContext({
+      tenantId: authentication.tenantId,
+      actorId: authentication.actorId,
+      policyVersion: authentication.policyVersion,
+      source: "verified_authentication",
+      authenticationContext: { ...authentication }
+    }),
+    (error) => error.code === "authentication_context_required"
   );
 });
 

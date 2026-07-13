@@ -1,4 +1,5 @@
 import { DomainError } from "../../../packages/domain/src/index.js";
+import { assertAuthenticationContext } from "../../authentication/src/index.js";
 
 const trustedContexts = new WeakSet();
 const CONTEXT_VALUE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/;
@@ -18,7 +19,13 @@ function assertContextValue(name, value) {
   }
 }
 
-export function createTenantSecurityContext({ tenantId, actorId, policyVersion, source }) {
+export function createTenantSecurityContext({
+  tenantId,
+  actorId,
+  policyVersion,
+  source,
+  authenticationContext
+}) {
   assertContextValue("tenantId", tenantId);
   assertContextValue("actorId", actorId);
   assertContextValue("policyVersion", policyVersion);
@@ -29,9 +36,38 @@ export function createTenantSecurityContext({ tenantId, actorId, policyVersion, 
       { source }
     );
   }
+  if (source === "verified_authentication") {
+    const trusted = assertAuthenticationContext(authenticationContext);
+    if (
+      trusted.tenantId !== tenantId ||
+      trusted.actorId !== actorId ||
+      trusted.policyVersion !== policyVersion
+    ) {
+      throw new DomainError(
+        "tenant_authentication_context_mismatch",
+        "Tenant Security Context must match the verified Authentication Context"
+      );
+    }
+  } else if (authenticationContext !== undefined) {
+    throw new DomainError(
+      "invalid_tenant_security_context",
+      "authenticationContext is only valid for verified authentication"
+    );
+  }
   const context = Object.freeze({ tenantId, actorId, policyVersion, source });
   trustedContexts.add(context);
   return context;
+}
+
+export function createTenantSecurityContextFromAuthentication(authenticationContext) {
+  const trusted = assertAuthenticationContext(authenticationContext);
+  return createTenantSecurityContext({
+    tenantId: trusted.tenantId,
+    actorId: trusted.actorId,
+    policyVersion: trusted.policyVersion,
+    source: "verified_authentication",
+    authenticationContext: trusted
+  });
 }
 
 export function assertTenantSecurityContext(context) {

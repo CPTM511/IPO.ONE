@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 const schemaDirectory = join(process.cwd(), "schemas", "v2");
 const requiredFiles = new Set([
+  "authentication-context.schema.json",
+  "authentication-event.schema.json",
   "evidence-event.schema.json",
   "ledger-transaction.schema.json",
   "mandate.schema.json",

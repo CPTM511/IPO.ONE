@@ -3,6 +3,7 @@ import { dirname, join, normalize, resolve } from "node:path";
 
 const root = process.cwd();
 const requiredModules = [
+  "authentication",
   "authorization",
   "event-audit",
   "identity",

@@ -15,3 +15,9 @@ implication. `transfer-intent.v2` is the event-sourced aggregate,
 `settlement-receipt.v2` records outcome and finality as immutable evidence. The
 only current descriptor is sandbox-only; production Rail schemas and adapter
 certification remain review-gated.
+
+The authentication context and lifecycle-event contracts describe the approved
+local non-funds AUTHN-001 boundary. They contain keyed references and security
+metadata only, never bearer tokens, cookies, authorization codes, signatures,
+private keys, raw external subjects, or PII. They are not exposed by the public
+sandbox and do not represent an authorization decision.

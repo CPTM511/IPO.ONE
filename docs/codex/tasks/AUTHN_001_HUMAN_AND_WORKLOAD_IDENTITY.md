@@ -1,7 +1,8 @@
 # AUTHN-001: Human and Workload Identity Boundary
 
-Status: Sequenced after explicit SECURITY-001 SEC-D01 through SEC-D09
-approval. Human IdP vendor and production credentials remain deployment gates.
+Status: Local non-funds foundation implemented on 2026-07-13 under the approved
+SECURITY-001 SEC-D01 through SEC-D09 decision pack. Human IdP vendor, durable
+authenticated routes, production credentials, and deployment remain gates.
 
 ## Context
 
@@ -80,14 +81,41 @@ pnpm run test:security
 pnpm run smoke:api
 ```
 
+## Local Foundation Evidence
+
+- `modules/authentication` implements closed JWT preflight, asymmetric JOSE
+  verification, pinned and bounded JWKS refresh, active Actor/Credential binding,
+  HMAC identity references, and a branded non-authorizing Authentication Context.
+- Human OIDC BFF tests cover S256 PKCE, one-time state/nonce transactions,
+  registered redirects, strict token response shape, host cookies, CSRF, login
+  fixation, rotation, logout, inactivity, absolute expiry, deprovisioning, and
+  recent phishing-resistant MFA; IdP code exchange has a hard timeout.
+- Workload tests cover five-minute token limits, closed claims, tenant/client/
+  actor/policy/capability binding, DPoP request and access-token binding, proof
+  replay, trusted mTLS evidence, credential and Actor revocation, JWKS overlap,
+  key withdrawal, cache bounds, unknown-key refresh cooldown, network failure,
+  and fetch timeout.
+- Credential and session lifecycle events use closed payloads and contain no raw
+  external subject, token, authorization code, cookie, verifier, signature,
+  private key, or PII. Test signing keys are generated only in memory.
+- `modules/persistence` accepts source `verified_authentication` only when the
+  exact branded Authentication Context matches Tenant, Actor, and policy values.
+- ADR-018 records the boundary and explains why OIDC `nonce` and OAuth `cnf` are
+  profile security fields rather than business authorization claims.
+
+The foundation is intentionally not wired to `apps/api` or `ipo.one`. Durable
+credential/session/replay/event repositories are DATA-003 work. Active
+membership, route policy, object authorization, AccessGrants, approvals, and
+non-enumerating authenticated API responses are AUTHZ-001 and follow-on work.
+
 ## Security Checklist
 
-- [ ] SECURITY-001 approval record is linked.
-- [ ] OIDC, OAuth, DPoP/private-key/mTLS profiles match the approved decision.
-- [ ] Token/session schemas are closed and size-bounded.
-- [ ] Issuer, audience, algorithms, redirect URIs, and key sources are pinned.
-- [ ] Session fixation, CSRF, replay, key rotation, and revocation are tested.
-- [ ] Privileged actions require recent phishing-resistant MFA.
-- [ ] External roles never map directly to runtime capabilities.
-- [ ] No raw credential or private key is committed or logged.
-- [ ] Production IdP and credentials remain separate deployment approvals.
+- [x] SECURITY-001 approval record is linked.
+- [x] OIDC, OAuth, DPoP/private-key/mTLS profiles match the approved decision.
+- [x] Token/session schemas are closed and size-bounded.
+- [x] Issuer, audience, algorithms, redirect URIs, and key sources are pinned.
+- [x] Session fixation, CSRF, replay, key rotation, and revocation are tested.
+- [x] Privileged actions require recent phishing-resistant MFA.
+- [x] External roles never map directly to runtime capabilities.
+- [x] No raw credential or private key is committed or logged.
+- [x] Production IdP and credentials remain separate deployment approvals.

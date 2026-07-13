@@ -31,10 +31,11 @@ movement, accounting, and risk into one black box.
 > Cloud Run origin with its default URL disabled. External readiness, 5xx,
 > latency, capacity, and edge-deny monitoring are configured. The public API
 > intentionally remains an isolated process-local sandbox: SECURITY-001 is
-> approved only for local non-funds implementation, while the Human IdP,
-> authenticated durable command gateway, production roles, alert recipients,
-> and break-glass owners remain gates. It performs no real lending, custody,
-> KYC, underwriting, private-data processing, or production fund movement.
+> approved only for local non-funds implementation. The provider-neutral Human
+> and workload authentication foundation now exists locally but is not exposed
+> by `ipo.one`; the Human IdP, authenticated durable command gateway, production
+> roles, alert recipients, and break-glass owners remain gates. It performs no
+> real lending, custody, KYC, underwriting, private-data processing, or production fund movement.
 > Real-value use is prohibited.
 
 ## The Product Thesis
@@ -148,6 +149,7 @@ flowchart TB
 | Component | Responsibility | Current implementation |
 | --- | --- | --- |
 | Identity | Principal, Agent/Human Subject, CAIP account references | Agent flow live; Human execution blocked |
+| Authentication | Human OIDC/PKCE BFF and sender-bound Agent/Provider/system identity | Approved local non-funds foundation with closed claims, active Actor/Credential binding, DPoP/mTLS, session/CSRF controls, and lifecycle events; not wired to the public sandbox |
 | Mandate | Capability, counterparty, asset, amount, time, nonce, and revocation scope | First-class, fail-closed local service |
 | Spend Policy | Provider allowlist, category, transaction, daily, and obligation limits | Enforced before spend and Rail submission |
 | Obligation | Principal, amount, due state, repayment, overdue/default-compatible lifecycle | Versioned local aggregate |
@@ -173,6 +175,7 @@ packages/
   mvp-flow/            Vertical-slice composition and demo controller
   sdk/                 Alpha JavaScript client and TypeScript declarations
 modules/
+  authentication/      Provider-neutral Human and sender-bound workload identity
   authorization/       Revocable Mandates
   identity/            Principals, Subjects, and account bindings
   ledger/              Double-entry accounting
@@ -300,6 +303,7 @@ fund-moving adapter.
 | Browser | same-origin CSP, frame denial, MIME protection, no referrer, restricted permissions, text-safe rendering |
 | State | 30-minute TTL, 128 sessions/process, serialized session operations, 32 mutations/session, reset support |
 | Optional durable store | Server-created transaction-local Tenant Security Context, non-owner role verification, tenant-aware foreign keys, forced PostgreSQL RLS, and cross-tenant key isolation |
+| Local pilot AuthN | Closed JWT/header claims, asymmetric JOSE, bounded pinned JWKS, active Actor/Credential binding, HMAC identity references, OIDC PKCE host sessions, CSRF, DPoP/mTLS, replay protection, revocation, and recent phishing-resistant MFA; not enabled on the public runtime |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
 | Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |
@@ -324,7 +328,7 @@ the Human Console, Agent API, OpenAPI contract, and discovery document.
 | --- | --- |
 | GCP project / region | `ipo-one-public-sandbox-cptm511` / `asia-southeast1` |
 | Release | `00598584f437f71ebb1dd8a3517585ad8fc96ce9` |
-| CI | [Quality Gate run 29234107882](https://github.com/CPTM511/IPO.ONE/actions/runs/29234107882) |
+| CI | [Quality Gate run 29250998398](https://github.com/CPTM511/IPO.ONE/actions/runs/29250998398) |
 | Image | `asia-southeast1-docker.pkg.dev/ipo-one-public-sandbox-cptm511/ipo-one/public-sandbox@sha256:53186cf01d969e8e12988f6164f8f069bb0b180d853fe73a3d95f7342a602105` |
 | Edge | Reserved IP `136.68.214.66`, managed TLS, minimum TLS 1.2, Cloud Armor host allowlist and per-IP throttle |
 | Origin | Cloud Run revision `ipo-one-public-sandbox-00001-szw`; ingress restricted to internal/load-balancer; default URL disabled |
@@ -434,8 +438,8 @@ humans and Agents.
 
 Near-term engineering priorities are:
 
-1. Approve `SECURITY-001`, then execute `TENANT-001`, `AUTHN-001`, `AUTHZ-001`,
-   `APPROVAL-001`, and `ABUSE-001` as independently reviewed changes.
+1. Review the implemented local non-funds `AUTHN-001` boundary, then execute
+   `AUTHZ-001`, `APPROVAL-001`, and `ABUSE-001` as independently reviewed changes.
 2. Execute `DATA-003`: compose the reviewed PostgreSQL repositories behind an authenticated,
    tenant-scoped durable command gateway; keep the public demo isolated.
 3. Add cryptographically signed Mandates, nonce/replay protection, key rotation,

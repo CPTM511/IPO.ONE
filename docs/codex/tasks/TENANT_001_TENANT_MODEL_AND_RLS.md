@@ -99,6 +99,9 @@ pnpm run smoke:api
   keys, tenant-scoped runtime identities, forced RLS, and write guards.
 - Repository reads and writes require a branded Tenant Security Context and
   use transaction-local settings only.
+- Source `verified_authentication` now requires the exact branded AUTHN-001
+  Authentication Context; cloned or mismatched Tenant, Actor, and policy values
+  fail before PostgreSQL context is set.
 - The PostgreSQL suite runs through a real least-privilege application role,
   verifies every tenant-owned table in the system catalog, proves pooled
   context cleanup, rejects cross-tenant writes/references, and proves that two
