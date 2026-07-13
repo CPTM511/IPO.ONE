@@ -27,11 +27,14 @@ movement, accounting, and risk into one black box.
 > **Current status:** publicly deployable sandbox candidate. The repository now
 > includes a fail-closed production runtime, hardened container, Cloud Run
 > service template, Human/Agent discovery, durable core repository and
-> reconciliation foundation, and hosted-release runbook. It is not
+> reconciliation foundation, transaction-scoped PostgreSQL tenant RLS, and a
+> hosted-release runbook. It is not
 > yet live at `ipo.one`; cloud, edge, certificate, monitoring, and DNS execution
 > still require explicit review. The public API intentionally remains an
-> isolated process-local sandbox until tenant/AuthN decisions are approved; the
-> durable repository is not a customer command path. It performs no real
+> isolated process-local sandbox: SECURITY-001 is approved only for local
+> non-funds implementation, while the Human IdP, authenticated durable command
+> gateway, production roles, and break-glass owners remain deployment gates.
+> The durable repository is not a customer command path. It performs no real
 > lending, custody, KYC, underwriting, or production fund movement. Real-value
 > use is prohibited.
 
@@ -155,7 +158,7 @@ flowchart TB
 | Evidence | Portable event envelope, hashes, aggregate version, causation, correlation, finality | `evidence_event.v2` emitted across the kernel |
 | Credit Learning | Explainable behavior signals and next-cycle recommendations | Deterministic, rule-based, evidence-aware demo engine |
 | Plugin Registry | Trust state and data contract for KYC/KYP, Rail, Provider, chain, and risk adapters | Manifest validation only; no executable plugin loading |
-| Persistence | Batch command idempotency, aggregate versions, events, outbox, inbox, normalized state, immutable snapshots, replay | PostgreSQL Rail and core repository foundation; public demo composition remains process-local |
+| Persistence | Tenant ownership, batch command idempotency, aggregate versions, events, outbox, inbox, normalized state, immutable snapshots, replay | PostgreSQL Tenant/Actor/Membership/AccessGrant schema, forced RLS, tenant-scoped runtime identities, Rail and core repository foundation; public demo composition remains process-local |
 | Reconciliation | Event/state/Ledger checks, discrepancy Evidence, dry-run planning, approval-gated repair | Deterministic PostgreSQL service and operator runbook; no automatic production repair |
 
 ### Repository Layout
@@ -277,6 +280,7 @@ fund-moving adapter.
 | Financial values | decimal strings only, no floats, no leading-zero ambiguity, maximum 78 digits |
 | Browser | same-origin CSP, frame denial, MIME protection, no referrer, restricted permissions, text-safe rendering |
 | State | 30-minute TTL, 128 sessions/process, serialized session operations, 32 mutations/session, reset support |
+| Optional durable store | Server-created transaction-local Tenant Security Context, non-owner role verification, tenant-aware foreign keys, forced PostgreSQL RLS, and cross-tenant key isolation |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
 | Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |

@@ -2,8 +2,9 @@
 
 Version: v0.3
 Date: 2026-07-12
-Status: Repository and container launch-candidate controls implemented; hosted
-edge remains a separate security and operations decision
+Status: Repository, container, and local non-funds tenant-RLS controls
+implemented; authenticated durable composition and hosted edge remain separate
+security and operations decisions
 
 ## Scope and Security Claim
 
@@ -27,6 +28,7 @@ for real funds, credentials, KYC/PII, legal agreements, or financial decisions.
 | Error boundary | Public failures must not expose stack traces, filesystem paths, secrets, SQL details, or raw internal errors. |
 | Repository and CI | Dependencies must be locked, CI permissions minimal, and third-party actions pinned immutably. |
 | Public origin | Internet traffic must traverse the approved HTTPS edge and cannot select an arbitrary application Host. |
+| Optional durable tenant state | One tenant cannot read, mutate, reference, or block another tenant's command and protocol state. |
 
 There are intentionally no production secrets, private keys, raw KYC records,
 custodied assets, or real payment credentials in the supported sandbox surface.
@@ -43,7 +45,9 @@ Untrusted browser / Agent client
   -> in-memory event, Evidence, Ledger, and sandbox Rail state
 
 Optional isolated test database
-  <- parameterized PostgreSQL repository and checksum-locked migrations
+  <- branded transaction-local Tenant Security Context
+  <- non-owner application role + forced PostgreSQL RLS
+  <- parameterized repository and checksum-locked migrations
 
 GitHub contributor input
   -> read-only, SHA-pinned quality workflow
@@ -88,6 +92,7 @@ Those are deployment concerns and must be assessed separately.
 | Browser injection / clickjacking | text-safe DOM rendering, same-origin CSP, frame denial, MIME protection, no third-party runtime assets | static UI assertions and browser regression |
 | Error information disclosure | RFC 9457 Problem Details, stable codes, generic unexpected-error detail | unit and live malformed-input tests |
 | SQL injection / replay corruption | Parameterized values, serializable transaction, optimistic stream version, idempotency hash, outbox/inbox constraints | PostgreSQL rollback, concurrency, replay, lease, and restart suite |
+| Durable cross-tenant access or key collision | Immutable `tenant_id`, tenant-aware foreign keys and runtime identities, non-owner role verification, transaction-local context, `ENABLE` + `FORCE RLS`, `USING`/`WITH CHECK`, and write guards | Two-tenant least-privilege read/write/FK/key-reuse matrix, pooled context cleanup, and full catalog coverage assertion |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
 | Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
 | Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
@@ -106,8 +111,10 @@ The following are known and intentional blockers, not hidden launch claims:
    The proposed edge is documented but not deployed; hosted release still
    requires verified TLS, Cloud Armor, quotas, monitoring, rollback, and an
    incident owner.
-3. The sandbox has no AuthN, tenant identity, RBAC, object authorization,
-   durable command gateway, dual control, or break-glass mechanism.
+3. The public sandbox has no AuthN, RBAC, authenticated durable command gateway,
+   dual control, or break-glass mechanism. The optional PostgreSQL foundation
+   now enforces Tenant Security Context and RLS, but it is not reachable from
+   the anonymous public API and is not a production identity claim.
 4. Most demo state is in memory and is lost on restart. Only the optional Rail
    repository has PostgreSQL recovery evidence.
 5. Wallet binding signatures are demo fixtures. No production key proof,
@@ -118,7 +125,8 @@ The following are known and intentional blockers, not hidden launch claims:
    cloud configuration review, or production infrastructure review has occurred.
 
 Any real-value, private multi-tenant, regulated, or externally integrated use
-is prohibited until `SECURITY-001` and the production launch gates are approved.
+is prohibited until the remaining SECURITY-001 deployment owners, identity
+provider, authenticated gateway, and production launch gates are approved.
 
 ## Verification Commands
 

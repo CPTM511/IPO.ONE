@@ -479,12 +479,12 @@ function mapAdminAction(row) {
 }
 
 export class PostgresCoreRepository {
-  constructor({ pool, eventRepository } = {}) {
+  constructor({ pool, eventRepository, tenantContext } = {}) {
     if (!pool || typeof pool.query !== "function") {
       throw new DomainError("postgres_pool_required", "PostgresCoreRepository requires a pg-compatible pool");
     }
     this.pool = pool;
-    this.eventRepository = eventRepository ?? new PostgresEventRepository({ pool });
+    this.eventRepository = eventRepository ?? new PostgresEventRepository({ pool, tenantContext });
   }
 
   async commitCommand({ aggregateType, aggregateId, idempotencyKey, commandHash, events, writes, response }) {
@@ -557,7 +557,7 @@ export class PostgresCoreRepository {
                  entity_type, entity_id, entity_hash, root_aggregate_type,
                  root_aggregate_id, aggregate_version, last_event_id, updated_at
                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-               ON CONFLICT (entity_type, entity_id) DO UPDATE
+               ON CONFLICT (tenant_id, entity_type, entity_id) DO UPDATE
                  SET entity_hash = EXCLUDED.entity_hash,
                      root_aggregate_type = EXCLUDED.root_aggregate_type,
                      root_aggregate_id = EXCLUDED.root_aggregate_id,
@@ -585,19 +585,19 @@ export class PostgresCoreRepository {
 
   async getPrincipal(principalId) {
     assertString("principalId", principalId);
-    const [principal, subjects] = await Promise.all([
-      this.pool.query("SELECT * FROM principals WHERE id = $1", [principalId]),
-      this.pool.query("SELECT id FROM subjects WHERE primary_principal_id = $1 ORDER BY created_at, id", [principalId])
-    ]);
+    const [principal, subjects] = await this.eventRepository.withTenantRead((client) => Promise.all([
+      client.query("SELECT * FROM principals WHERE id = $1", [principalId]),
+      client.query("SELECT id FROM subjects WHERE primary_principal_id = $1 ORDER BY created_at, id", [principalId])
+    ]));
     return mapPrincipal(principal.rows[0], subjects.rows.map((row) => row.id));
   }
 
   async getSubject(subjectId) {
     assertString("subjectId", subjectId);
-    const [subject, bindings] = await Promise.all([
-      this.pool.query("SELECT * FROM subjects WHERE id = $1", [subjectId]),
-      this.pool.query("SELECT id FROM account_bindings WHERE subject_id = $1 ORDER BY bound_at, id", [subjectId])
-    ]);
+    const [subject, bindings] = await this.eventRepository.withTenantRead((client) => Promise.all([
+      client.query("SELECT * FROM subjects WHERE id = $1", [subjectId]),
+      client.query("SELECT id FROM account_bindings WHERE subject_id = $1 ORDER BY bound_at, id", [subjectId])
+    ]));
     return mapSubject(subject.rows[0], bindings.rows.map((row) => row.id));
   }
 
@@ -645,16 +645,16 @@ export class PostgresCoreRepository {
 
   async getLedgerTransaction(ledgerTransactionId) {
     assertString("ledgerTransactionId", ledgerTransactionId);
-    const [transaction, entries] = await Promise.all([
-      this.pool.query("SELECT * FROM ledger_transactions WHERE id = $1", [ledgerTransactionId]),
-      this.pool.query("SELECT * FROM ledger_entries WHERE transaction_id = $1 ORDER BY sequence", [ledgerTransactionId])
-    ]);
+    const [transaction, entries] = await this.eventRepository.withTenantRead((client) => Promise.all([
+      client.query("SELECT * FROM ledger_transactions WHERE id = $1", [ledgerTransactionId]),
+      client.query("SELECT * FROM ledger_entries WHERE transaction_id = $1 ORDER BY sequence", [ledgerTransactionId])
+    ]));
     return mapLedgerTransaction(transaction.rows[0], entries.rows.map(mapLedgerEntry));
   }
 
   async getLockbox(lockboxId) {
     assertString("lockboxId", lockboxId);
-    const result = await this.pool.query(
+    const result = await this.#tenantQuery(
       `SELECT l.*,
               COALESCE(SUM(CASE
                 WHEN e.account_id = l.ledger_account_id AND e.direction = 'debit' THEN e.amount_minor
@@ -691,7 +691,7 @@ export class PostgresCoreRepository {
       values.push(status);
       where.push(`status = $${values.length}`);
     }
-    const result = await this.pool.query(
+    const result = await this.#tenantQuery(
       `SELECT * FROM obligations ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY created_at, id`,
       values
     );
@@ -717,7 +717,7 @@ export class PostgresCoreRepository {
   async getProjectionRegistration(entityType, entityId) {
     assertString("entityType", entityType);
     assertString("entityId", entityId);
-    const result = await this.pool.query(
+    const result = await this.#tenantQuery(
       `SELECT entity_type, entity_id, entity_hash, root_aggregate_type,
               root_aggregate_id, aggregate_version, last_event_id, updated_at
          FROM projection_registry
@@ -741,7 +741,7 @@ export class PostgresCoreRepository {
   async getLatestProjectionSnapshot(entityType, entityId) {
     assertString("entityType", entityType);
     assertString("entityId", entityId);
-    const result = await this.pool.query(
+    const result = await this.#tenantQuery(
       `SELECT id, write_sequence, entity_type, entity_id, entity_hash, root_aggregate_type,
               root_aggregate_id, aggregate_version, source_event_id, payload, recorded_at
          FROM projection_snapshots
@@ -964,8 +964,12 @@ export class PostgresCoreRepository {
 
   async #getOne(name, id, statement, mapper) {
     assertString(name, id);
-    const result = await this.pool.query(statement, [id]);
+    const result = await this.#tenantQuery(statement, [id]);
     return mapper(result.rows[0]);
+  }
+
+  async #tenantQuery(statement, values = []) {
+    return this.eventRepository.withTenantRead((client) => client.query(statement, values));
   }
 
   async #applyWrite(client, write, occurredAt) {

@@ -43,13 +43,90 @@ import {
   PostgresCoreRepository,
   PostgresEventRepository,
   PostgresReconciliationService,
-  createPostgresPool
+  assertTenantDatabaseRole,
+  createTenantSecurityContext,
+  createPostgresPool,
+  setTenantTransactionContext
 } from "../src/index.js";
 
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const FIXED_NOW = new Date("2026-07-11T00:00:00.000Z");
 const ASSET = { assetId: "asset:demo-usd", scale: 2 };
 const PROVIDER_ACCOUNT = "eip155:8453:0x3333333333333333333333333333333333333333";
+const TENANT_CONTEXT = createTenantSecurityContext({
+  tenantId: "tenant_ipo_one_local_pilot",
+  actorId: "actor_local_system",
+  policyVersion: "security_001.v1",
+  source: "local_test"
+});
+const TENANT_TWO_CONTEXT = createTenantSecurityContext({
+  tenantId: "tenant_ipo_one_test_two",
+  actorId: "actor_tenant_two_system",
+  policyVersion: "security_001.v1",
+  source: "local_test"
+});
+const TENANT_OWNED_TABLES = [
+  "access_grants",
+  "account_bindings",
+  "admin_actions",
+  "aggregate_stream_heads",
+  "behavioral_metrics",
+  "command_events",
+  "command_idempotency",
+  "credit_events",
+  "credit_learning_events",
+  "credit_lines",
+  "credit_profiles",
+  "domain_events",
+  "evidence_envelopes",
+  "inbox_messages",
+  "ledger_accounts",
+  "ledger_entries",
+  "ledger_transactions",
+  "lockboxes",
+  "mandate_releases",
+  "mandate_reservations",
+  "mandates",
+  "memberships",
+  "obligations",
+  "outbox_messages",
+  "principals",
+  "projection_registry",
+  "projection_replay_jobs",
+  "projection_snapshots",
+  "providers",
+  "reconciliation_discrepancies",
+  "reconciliation_runs",
+  "repayment_events",
+  "reputation_signals",
+  "risk_decisions",
+  "settlement_receipts",
+  "spend_policies",
+  "spend_requests",
+  "subjects",
+  "transfer_intents",
+  "transfer_quotes"
+];
+
+async function withTenantTransaction(pool, context, operation) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await setTenantTransactionContext(client, context);
+    const result = await operation(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original test failure.
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 function createTestEvent({ eventType = "integration_test_event", subjectId = "subject_pg_test", payload = {}, now = FIXED_NOW } = {}) {
   return createCreditEvent({ eventType, subjectId, payload, now });
@@ -414,12 +491,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0001_mvp_foundation",
         "0002_event_runtime",
         "0003_core_aggregate_persistence",
-        "0004_reconciliation_runtime"
+        "0004_reconciliation_runtime",
+        "0005_tenant_isolation_rls"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 4 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 5 }), [
+        "0005_tenant_isolation_rls",
         "0004_reconciliation_runtime",
         "0003_core_aggregate_persistence",
         "0002_event_runtime",
@@ -429,10 +508,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0001_mvp_foundation",
         "0002_event_runtime",
         "0003_core_aggregate_persistence",
-        "0004_reconciliation_runtime"
+        "0004_reconciliation_runtime",
+        "0005_tenant_isolation_rls"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 2 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 3 }), [
+        "0005_tenant_isolation_rls",
         "0004_reconciliation_runtime",
         "0003_core_aggregate_persistence"
       ]);
@@ -451,7 +532,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       );
       assert.deepEqual(await migrateUp({ pool }), [
         "0003_core_aggregate_persistence",
-        "0004_reconciliation_runtime"
+        "0004_reconciliation_runtime",
+        "0005_tenant_isolation_rls"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -460,7 +542,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       );
       await assert.rejects(
         () =>
-          pool.query(
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
             `INSERT INTO subjects(
                id, subject_hash, subject_type, status, display_name,
                primary_principal_id, created_at, updated_at
@@ -469,10 +551,444 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
                'active', 'Invalid New Subject', NULL, $1, $1
              )`,
             [FIXED_NOW.toISOString()]
-          ),
+          )),
         (error) => error.code === "23514"
       );
       await pool.query("TRUNCATE TABLE principals RESTART IDENTITY CASCADE");
+    });
+
+    await t.test("tenant context, RLS, role posture, and pooled reuse fail closed", async () => {
+      const appRole = "ipo_one_app_test";
+      const dropAppRole = async () => {
+        const exists = await pool.query("SELECT 1 FROM pg_roles WHERE rolname = $1", [appRole]);
+        if (exists.rowCount === 0) return;
+        await pool.query(`DROP OWNED BY ${appRole}`);
+        await pool.query(`DROP ROLE ${appRole}`);
+      };
+      await dropAppRole();
+      const tenantTableCoverage = await pool.query(`
+        SELECT
+          c.relname AS table_name,
+          c.relrowsecurity AS rls_enabled,
+          c.relforcerowsecurity AS rls_forced,
+          EXISTS (
+            SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid
+          ) AS has_policy,
+          EXISTS (
+            SELECT 1
+              FROM pg_trigger t
+             WHERE t.tgrelid = c.oid
+               AND t.tgname = 'tenant_context_guard_' || c.relname
+               AND t.tgenabled = 'O'
+               AND NOT t.tgisinternal
+          ) AS has_write_guard
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = current_schema()
+          AND c.relkind IN ('r', 'p')
+          AND EXISTS (
+            SELECT 1
+              FROM pg_attribute a
+             WHERE a.attrelid = c.oid
+               AND a.attname = 'tenant_id'
+               AND NOT a.attisdropped
+          )
+        ORDER BY c.relname
+      `);
+      assert.deepEqual(
+        tenantTableCoverage.rows.map((row) => row.table_name),
+        TENANT_OWNED_TABLES
+      );
+      assert.equal(
+        tenantTableCoverage.rows.every((row) =>
+          row.rls_enabled && row.rls_forced && row.has_policy && row.has_write_guard
+        ),
+        true
+      );
+      const missingTenantForeignKeys = await pool.query(`
+        SELECT source.relname AS source_table, original.conname AS constraint_name,
+               target.relname AS target_table
+          FROM pg_constraint original
+          JOIN pg_class source ON source.oid = original.conrelid
+          JOIN pg_class target ON target.oid = original.confrelid
+         WHERE original.contype = 'f'
+           AND EXISTS (
+             SELECT 1 FROM pg_attribute source_tenant
+              WHERE source_tenant.attrelid = source.oid
+                AND source_tenant.attname = 'tenant_id'
+                AND NOT source_tenant.attisdropped
+           )
+           AND EXISTS (
+             SELECT 1 FROM pg_attribute target_tenant
+              WHERE target_tenant.attrelid = target.oid
+                AND target_tenant.attname = 'tenant_id'
+                AND NOT target_tenant.attisdropped
+           )
+           AND NOT EXISTS (
+             SELECT 1
+               FROM unnest(original.conkey) source_key
+               JOIN pg_attribute source_attribute
+                 ON source_attribute.attrelid = source.oid
+                AND source_attribute.attnum = source_key
+              WHERE source_attribute.attname = 'tenant_id'
+           )
+           AND NOT EXISTS (
+             SELECT 1
+               FROM pg_constraint tenant_constraint
+              WHERE tenant_constraint.contype = 'f'
+                AND tenant_constraint.conrelid = original.conrelid
+                AND tenant_constraint.confrelid = original.confrelid
+                AND original.conkey <@ tenant_constraint.conkey
+                AND EXISTS (
+                  SELECT 1
+                    FROM unnest(tenant_constraint.conkey) tenant_key
+                    JOIN pg_attribute tenant_attribute
+                      ON tenant_attribute.attrelid = source.oid
+                     AND tenant_attribute.attnum = tenant_key
+                   WHERE tenant_attribute.attname = 'tenant_id'
+                )
+           )
+         ORDER BY source.relname, original.conname
+      `);
+      assert.deepEqual(missingTenantForeignKeys.rows, []);
+      const unscopedIdempotencyTables = await pool.query(`
+        SELECT c.relname AS table_name
+          FROM pg_class c
+         WHERE c.relkind IN ('r', 'p')
+           AND EXISTS (
+           SELECT 1 FROM pg_attribute tenant_column
+            WHERE tenant_column.attrelid = c.oid
+              AND tenant_column.attname = 'tenant_id'
+              AND NOT tenant_column.attisdropped
+         )
+           AND EXISTS (
+             SELECT 1 FROM pg_attribute idempotency_column
+              WHERE idempotency_column.attrelid = c.oid
+                AND idempotency_column.attname = 'idempotency_key'
+                AND NOT idempotency_column.attisdropped
+           )
+           AND NOT EXISTS (
+             SELECT 1
+               FROM pg_constraint identity_constraint
+              WHERE identity_constraint.conrelid = c.oid
+                AND identity_constraint.contype IN ('p', 'u')
+                AND EXISTS (
+                  SELECT 1
+                    FROM unnest(identity_constraint.conkey) identity_key
+                    JOIN pg_attribute identity_attribute
+                      ON identity_attribute.attrelid = c.oid
+                     AND identity_attribute.attnum = identity_key
+                   WHERE identity_attribute.attname = 'tenant_id'
+                )
+                AND EXISTS (
+                  SELECT 1
+                    FROM unnest(identity_constraint.conkey) identity_key
+                    JOIN pg_attribute identity_attribute
+                      ON identity_attribute.attrelid = c.oid
+                     AND identity_attribute.attnum = identity_key
+                   WHERE identity_attribute.attname = 'idempotency_key'
+                )
+           )
+         ORDER BY c.relname
+      `);
+      assert.deepEqual(unscopedIdempotencyTables.rows, []);
+      const rootRlsCoverage = await pool.query(`
+        SELECT c.relname AS table_name, c.relrowsecurity AS rls_enabled,
+               c.relforcerowsecurity AS rls_forced,
+               EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid) AS has_policy
+          FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+         WHERE n.nspname = current_schema()
+           AND c.relname IN ('actors', 'tenants')
+         ORDER BY c.relname
+      `);
+      assert.deepEqual(
+        rootRlsCoverage.rows,
+        [
+          { table_name: "actors", rls_enabled: true, rls_forced: true, has_policy: true },
+          { table_name: "tenants", rls_enabled: true, rls_forced: true, has_policy: true }
+        ]
+      );
+      await pool.query(`CREATE ROLE ${appRole} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
+      await pool.query(`GRANT USAGE ON SCHEMA public TO ${appRole}`);
+      await pool.query(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON
+           tenants, actors, memberships, access_grants, principals, subjects
+         TO ${appRole}`
+      );
+
+      const appTransaction = async (context, operation, { includeContext = true } = {}) => {
+        const client = await pool.connect();
+        try {
+          await client.query("BEGIN");
+          await client.query(`SET LOCAL ROLE ${appRole}`);
+          if (includeContext) await setTenantTransactionContext(client, context);
+          const result = await operation(client);
+          await client.query("COMMIT");
+          return result;
+        } catch (error) {
+          try {
+            await client.query("ROLLBACK");
+          } catch {
+            // Preserve the original test error.
+          }
+          throw error;
+        } finally {
+          client.release();
+        }
+      };
+
+      try {
+        await pool.query(
+          `INSERT INTO tenants(
+             id, tenant_hash, organization_ref, display_name, status,
+             pilot_jurisdiction, legal_retention_owner_ref, created_at,
+             updated_at, schema_version
+           ) VALUES (
+             'tenant_ipo_one_test_two', 'tenant_hash_test_two',
+             'org:test-two', 'Tenant Two', 'active', 'US', 'org:test-two',
+             $1, $1, 'tenant.v1'
+           ) ON CONFLICT (id) DO NOTHING`,
+          [FIXED_NOW.toISOString()]
+        );
+        await pool.query(
+          `INSERT INTO actors(
+             id, actor_hash, actor_type, status, created_at, updated_at,
+             schema_version
+           ) VALUES (
+             'actor_tenant_two_system', 'actor_hash_tenant_two_system',
+             'system_worker', 'active', $1, $1, 'actor.v1'
+           ) ON CONFLICT (id) DO NOTHING`,
+          [FIXED_NOW.toISOString()]
+        );
+        await withTenantTransaction(pool, TENANT_TWO_CONTEXT, (client) => client.query(
+          `INSERT INTO memberships(
+             id, membership_hash, tenant_id, actor_id, role_bundle,
+             capabilities, status, valid_from, created_at, updated_at,
+             schema_version
+           ) VALUES (
+             'membership_tenant_two_system', 'membership_hash_tenant_two_system',
+             'tenant_ipo_one_test_two', 'actor_tenant_two_system',
+             'system_worker', '["local_non_funds_repository"]'::jsonb,
+             'active', $1, $1, $1, 'membership.v1'
+           ) ON CONFLICT (id) DO NOTHING`,
+          [FIXED_NOW.toISOString()]
+        ));
+
+        const seedTenant = (context, suffix) => withTenantTransaction(pool, context, async (client) => {
+          await client.query(
+            `INSERT INTO principals(
+               id, principal_hash, principal_type, jurisdiction, status,
+               created_at
+             ) VALUES ($1, $2, 'developer', 'US', 'active', $3)`,
+            [`principal_rls_${suffix}`, `principal_hash_rls_${suffix}`, FIXED_NOW.toISOString()]
+          );
+          await client.query(
+            `INSERT INTO subjects(
+               id, subject_hash, subject_type, status, display_name,
+               primary_principal_id, created_at, updated_at
+             ) VALUES ($1, $2, 'agent', 'active', $3, $4, $5, $5)`,
+            [
+              `subject_rls_${suffix}`,
+              `subject_hash_rls_${suffix}`,
+              `Tenant ${suffix} Agent`,
+              `principal_rls_${suffix}`,
+              FIXED_NOW.toISOString()
+            ]
+          );
+        });
+        await seedTenant(TENANT_CONTEXT, "one");
+        await seedTenant(TENANT_TWO_CONTEXT, "two");
+
+        const roleProof = await appTransaction(TENANT_CONTEXT, (client) => assertTenantDatabaseRole(client));
+        assert.equal(roleProof.roleName, appRole);
+
+        const tenantOneRows = await appTransaction(TENANT_CONTEXT, (client) =>
+          client.query("SELECT id, tenant_id FROM subjects ORDER BY id")
+        );
+        assert.deepEqual(tenantOneRows.rows, [{
+          id: "subject_rls_one",
+          tenant_id: TENANT_CONTEXT.tenantId
+        }]);
+        const hiddenTenantTwo = await appTransaction(TENANT_CONTEXT, (client) =>
+          client.query("SELECT id FROM subjects WHERE id = 'subject_rls_two'")
+        );
+        assert.equal(hiddenTenantTwo.rowCount, 0);
+
+        const tenantTwoRows = await appTransaction(TENANT_TWO_CONTEXT, (client) =>
+          client.query("SELECT id, tenant_id FROM subjects ORDER BY id")
+        );
+        assert.deepEqual(tenantTwoRows.rows, [{
+          id: "subject_rls_two",
+          tenant_id: TENANT_TWO_CONTEXT.tenantId
+        }]);
+
+        await assert.rejects(
+          () => appTransaction(TENANT_CONTEXT, (client) => client.query(
+            `INSERT INTO subjects(
+               id, subject_hash, subject_type, status, display_name,
+               primary_principal_id, created_at, updated_at, tenant_id
+             ) VALUES (
+               'subject_cross_tenant_explicit', 'subject_hash_cross_explicit',
+               'agent', 'active', 'Cross Tenant Explicit', 'principal_rls_two',
+               $1, $1, 'tenant_ipo_one_test_two'
+             )`,
+            [FIXED_NOW.toISOString()]
+          )),
+          (error) => error.code === "42501"
+        );
+
+        await assert.rejects(
+          () => appTransaction(TENANT_CONTEXT, (client) => client.query(
+            `INSERT INTO subjects(
+               id, subject_hash, subject_type, status, display_name,
+               primary_principal_id, created_at, updated_at
+             ) VALUES (
+               'subject_cross_tenant_fk', 'subject_hash_cross_fk', 'agent',
+               'active', 'Cross Tenant FK', 'principal_rls_two', $1, $1
+             )`,
+            [FIXED_NOW.toISOString()]
+          )),
+          (error) => error.code === "23503"
+        );
+
+        await assert.rejects(
+          () => appTransaction(TENANT_CONTEXT, (client) => client.query(
+            `INSERT INTO principals(
+               id, principal_hash, principal_type, jurisdiction, status,
+               created_at
+             ) VALUES (
+               'principal_missing_context', 'principal_hash_missing_context',
+               'developer', 'US', 'active', $1
+             )`,
+            [FIXED_NOW.toISOString()]
+          ), { includeContext: false }),
+          (error) => error.code === "42501"
+        );
+
+        const pooledClient = await pool.connect();
+        try {
+          await pooledClient.query("BEGIN");
+          await pooledClient.query(`SET LOCAL ROLE ${appRole}`);
+          await setTenantTransactionContext(pooledClient, TENANT_CONTEXT);
+          assert.equal(
+            (await pooledClient.query("SELECT count(*)::int AS count FROM subjects")).rows[0].count,
+            1
+          );
+          await pooledClient.query("COMMIT");
+
+          await pooledClient.query("BEGIN");
+          await pooledClient.query(`SET LOCAL ROLE ${appRole}`);
+          assert.equal(
+            (await pooledClient.query("SELECT count(*)::int AS count FROM subjects")).rows[0].count,
+            0
+          );
+          await pooledClient.query("ROLLBACK");
+        } finally {
+          pooledClient.release();
+        }
+      } finally {
+        await pool.query("TRUNCATE TABLE principals RESTART IDENTITY CASCADE");
+        await dropAppRole();
+      }
+    });
+
+    await t.test("two tenants can reuse stream and idempotency identities without coupling", async () => {
+      await resetRuntime(pool);
+      const appRole = "ipo_one_runtime_tenant_test";
+      const dropAppRole = async () => {
+        const exists = await pool.query("SELECT 1 FROM pg_roles WHERE rolname = $1", [appRole]);
+        if (exists.rowCount === 0) return;
+        await pool.query(`DROP OWNED BY ${appRole}`);
+        await pool.query(`DROP ROLE ${appRole}`);
+      };
+      await dropAppRole();
+      await pool.query(
+        `CREATE ROLE ${appRole} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+      );
+      await pool.query(`GRANT USAGE ON SCHEMA public TO ${appRole}`);
+      await pool.query(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON
+           aggregate_stream_heads, domain_events, command_idempotency,
+           outbox_messages, inbox_messages, evidence_envelopes, credit_events,
+           command_events
+         TO ${appRole}`
+      );
+      const appConnection = new URL(CONNECTION_STRING);
+      appConnection.username = appRole;
+      appConnection.password = "";
+      const appPool = createPostgresPool({
+        connectionString: appConnection.toString(),
+        max: 4,
+        applicationName: "ipo-one-runtime-tenant-test"
+      });
+
+      try {
+        await assertTenantDatabaseRole(appPool);
+        const tenantOneRepository = new PostgresEventRepository({
+          pool: appPool,
+          tenantContext: TENANT_CONTEXT
+        });
+        const tenantTwoRepository = new PostgresEventRepository({
+          pool: appPool,
+          tenantContext: TENANT_TWO_CONTEXT
+        });
+        const sharedIdentity = {
+          aggregateType: "tenant_scoped_aggregate",
+          aggregateId: "shared_aggregate_id",
+          expectedVersion: 0,
+          idempotencyKey: "shared_idempotency_key",
+          commandHash: hashId("integration_command", { operation: "tenant-scoped" })
+        };
+        const tenantOneCommand = {
+          ...sharedIdentity,
+          event: createTestEvent({
+            subjectId: "subject_tenant_one_event",
+            payload: { tenant: "one" }
+          })
+        };
+        const tenantTwoCommand = {
+          ...sharedIdentity,
+          event: createTestEvent({
+            subjectId: "subject_tenant_two_event",
+            payload: { tenant: "two" }
+          })
+        };
+
+        const [tenantOneCommit, tenantTwoCommit] = await Promise.all([
+          tenantOneRepository.appendCommand(tenantOneCommand),
+          tenantTwoRepository.appendCommand(tenantTwoCommand)
+        ]);
+
+        assert.equal(tenantOneCommit.replayed, false);
+        assert.equal(tenantTwoCommit.replayed, false);
+        assert.notEqual(tenantOneCommit.event.eventId, tenantTwoCommit.event.eventId);
+        assert.deepEqual(
+          (await tenantOneRepository.listEvents(sharedIdentity)).map((event) => event.eventId),
+          [tenantOneCommit.event.eventId]
+        );
+        assert.deepEqual(
+          (await tenantTwoRepository.listEvents(sharedIdentity)).map((event) => event.eventId),
+          [tenantTwoCommit.event.eventId]
+        );
+        assert.equal(await tenantOneRepository.getStreamVersion(sharedIdentity), 1);
+        assert.equal(await tenantTwoRepository.getStreamVersion(sharedIdentity), 1);
+
+        const tenantOneReplay = await tenantOneRepository.appendCommand(tenantOneCommand);
+        assert.equal(tenantOneReplay.replayed, true);
+        assert.equal(tenantOneReplay.event.eventId, tenantOneCommit.event.eventId);
+        assert.deepEqual(await runtimeCounts(pool), {
+          commands: 2,
+          events: 2,
+          evidence: 2,
+          credit_events: 2,
+          outbox: 2,
+          stream_heads: 2
+        });
+      } finally {
+        await appPool.end();
+        await dropAppRole();
+      }
     });
 
     await t.test("an injected crash rolls back command, event, Evidence, outbox, and stream head", async () => {
@@ -488,6 +1004,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       };
       const crashingRepository = new PostgresEventRepository({
         pool,
+        tenantContext: TENANT_CONTEXT,
         faultInjector: ({ stage }) => {
           if (stage === "after_event_inserted") throw new Error("injected process crash");
         }
@@ -503,7 +1020,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         stream_heads: 0
       });
 
-      const repository = new PostgresEventRepository({ pool });
+      const repository = new PostgresEventRepository({ pool, tenantContext: TENANT_CONTEXT });
       const committed = await repository.appendCommand(input);
       assert.equal(committed.replayed, false);
       assert.deepEqual(await runtimeCounts(pool), {
@@ -519,7 +1036,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
 
     await t.test("command replay is stable and conflicting idempotency reuse fails closed", async () => {
       await resetRuntime(pool);
-      const repository = new PostgresEventRepository({ pool });
+      const repository = new PostgresEventRepository({ pool, tenantContext: TENANT_CONTEXT });
       const command = {
         aggregateType: "integration_aggregate",
         aggregateId: "aggregate_idempotency",
@@ -544,7 +1061,11 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
 
     await t.test("concurrent writers with one expected version produce one winner", async () => {
       await resetRuntime(pool);
-      const repository = new PostgresEventRepository({ pool, transactionRetries: 5 });
+      const repository = new PostgresEventRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        transactionRetries: 5
+      });
       const aggregate = { aggregateType: "integration_aggregate", aggregateId: "aggregate_race" };
       await repository.appendCommand({
         ...aggregate,
@@ -574,7 +1095,11 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
 
     await t.test("outbox leases recover after worker death and terminate at the retry bound", async () => {
       await resetRuntime(pool);
-      const repository = new PostgresEventRepository({ pool, maxOutboxAttempts: 2 });
+      const repository = new PostgresEventRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        maxOutboxAttempts: 2
+      });
       await repository.appendCommand({
         aggregateType: "integration_aggregate",
         aggregateId: "aggregate_outbox_dead",
@@ -588,10 +1113,10 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.equal(firstClaim.length, 1);
       assert.equal((await repository.claimOutboxBatch({ workerId: "worker-waiting", limit: 1, leaseMs: 60_000 })).length, 0);
 
-      await pool.query(
+      await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
         "UPDATE outbox_messages SET locked_at = clock_timestamp() - interval '2 minutes' WHERE id = $1",
         [firstClaim[0].outboxMessageId]
-      );
+      ));
       const recovered = await repository.claimOutboxBatch({ workerId: "worker-recovery", limit: 1, leaseMs: 60_000 });
       assert.equal(recovered[0].outboxMessageId, firstClaim[0].outboxMessageId);
       assert.equal(recovered[0].attempts, 2);
@@ -618,7 +1143,11 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       });
       assert.ok(published.publishedAt);
 
-      const finalAttemptRepository = new PostgresEventRepository({ pool, maxOutboxAttempts: 1 });
+      const finalAttemptRepository = new PostgresEventRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        maxOutboxAttempts: 1
+      });
       await finalAttemptRepository.appendCommand({
         aggregateType: "integration_aggregate",
         aggregateId: "aggregate_outbox_final_crash",
@@ -632,10 +1161,10 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         limit: 1,
         leaseMs: 60_000
       });
-      await pool.query(
+      await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
         "UPDATE outbox_messages SET locked_at = clock_timestamp() - interval '2 minutes' WHERE id = $1",
         [finalClaim[0].outboxMessageId]
-      );
+      ));
       assert.equal(
         (await finalAttemptRepository.claimOutboxBatch({ workerId: "worker-after-final-crash", limit: 1, leaseMs: 60_000 }))
           .length,
@@ -661,6 +1190,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       try {
         const crashingRepository = new PostgresEventRepository({
           pool,
+          tenantContext: TENANT_CONTEXT,
           faultInjector: ({ stage }) => {
             if (stage === "before_inbox_complete") throw new Error("injected inbox crash");
           }
@@ -672,7 +1202,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         assert.equal((await pool.query("SELECT count(*)::int AS count FROM integration_test_effects")).rows[0].count, 0);
         assert.equal((await pool.query("SELECT count(*)::int AS count FROM inbox_messages")).rows[0].count, 0);
 
-        const repository = new PostgresEventRepository({ pool });
+        const repository = new PostgresEventRepository({ pool, tenantContext: TENANT_CONTEXT });
         const first = await repository.processInbox({
           consumerName: "projection",
           eventId: "inbox-1",
@@ -725,6 +1255,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       };
       const crashingEvents = new PostgresEventRepository({
         pool,
+        tenantContext: TENANT_CONTEXT,
         faultInjector: ({ stage }) => {
           if (stage === "after_projection_applied") throw new Error("injected core projection crash");
         }
@@ -772,13 +1303,13 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         }
       };
 
-      const firstRepository = new PostgresCoreRepository({ pool });
+      const firstRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
       const committed = await firstRepository.commitCommand(command);
       assert.equal(committed.replayed, false);
       assert.equal(committed.events.length, 3);
       assert.deepEqual(committed.response, command.response);
 
-      const restartedRepository = new PostgresCoreRepository({ pool });
+      const restartedRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
       const [principal, subject, accountBinding, mandate, lockbox, ledgerTransaction, obligation, riskDecision, adminAction] =
         await Promise.all([
           restartedRepository.getPrincipal(fixture.principal.principalId),
@@ -892,7 +1423,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
     await t.test("core stream races produce one projection winner", async () => {
       await resetCoreRuntime(pool);
       const fixture = buildCoreFixture();
-      const repository = new PostgresCoreRepository({ pool });
+      const repository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
       await repository.commitCommand({
         aggregateType: "subject",
         aggregateId: fixture.subject.subjectId,
@@ -951,7 +1482,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
     await t.test("reconciliation detects drift and approval-gated repair restores a clean state", async () => {
       await resetCoreRuntime(pool);
       const fixture = buildCoreFixture();
-      const coreRepository = new PostgresCoreRepository({ pool });
+      const coreRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
       await coreRepository.commitCommand({
         aggregateType: "subject",
         aggregateId: fixture.subject.subjectId,
@@ -988,14 +1519,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.equal(cleanRun.discrepancies.length, 0);
       assert.ok(cleanRun.evidenceEventId);
 
-      await pool.query(
+      await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
         `UPDATE obligations
             SET outstanding_minor = 9000,
                 repaid_amount_minor = 1000,
                 updated_at = clock_timestamp()
           WHERE id = $1`,
         [fixture.obligation.obligationId]
-      );
+      ));
       const drifted = await reconciliation.run({ initiatedBy: "system:test-reconciliation" });
       assert.equal(drifted.status, "failed");
       assert.ok(drifted.criticalCount >= 2);
@@ -1072,7 +1603,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       const adapter = new SandboxRailAdapter({ sourceAssets: [ASSET] });
       const createRail = () =>
         new RailService({
-          eventRepository: new PostgresEventRepository({ pool }),
+          eventRepository: new PostgresEventRepository({ pool, tenantContext: TENANT_CONTEXT }),
           policyDecisionService,
           authorizationService,
           adapters: [adapter]
@@ -1122,7 +1653,10 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.equal(proof.replayable, true);
       assert.equal(proof.eventCount, 5);
       assert.equal((await restartedRail.listSettlementReceipts()).length, 1);
-      assert.equal((await new PostgresEventRepository({ pool }).listOutbox()).length, 5);
+      assert.equal(
+        (await new PostgresEventRepository({ pool, tenantContext: TENANT_CONTEXT }).listOutbox()).length,
+        5
+      );
 
       const replay = await restartedRail.simulateSettlement({
         transferIntentId: intent.transferIntentId,
@@ -1134,7 +1668,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         now: FIXED_NOW
       });
       assert.deepEqual(replay, intent);
-      assert.equal((await new PostgresEventRepository({ pool }).listEvents({ aggregateId: intent.transferIntentId })).length, 5);
+      assert.equal(
+        (await new PostgresEventRepository({ pool, tenantContext: TENANT_CONTEXT }).listEvents({
+          aggregateId: intent.transferIntentId
+        })).length,
+        5
+      );
     });
   } finally {
     await pool.end();
