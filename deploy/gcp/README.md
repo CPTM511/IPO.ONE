@@ -88,7 +88,7 @@ the identity published by the distroless project:
 
 ```sh
 cosign verify \
-  gcr.io/distroless/nodejs24-debian13@sha256:963cc560b7093af878b28cfbdaea3ec099ba445b8974e3454fe9170f532bf4be \
+  gcr.io/distroless/nodejs24-debian13@sha256:70a2c12a0d76018b54d7bd01c5e3677632eeed9f890ba318d6db55fc54cf3baa \
   --certificate-oidc-issuer https://accounts.google.com \
   --certificate-identity keyless@distroless.iam.gserviceaccount.com
 ```
