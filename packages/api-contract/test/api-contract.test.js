@@ -48,6 +48,21 @@ test("domain and boundary errors map to stable Problem Details", () => {
     { requestId: "pilot-request-004" }
   );
   assert.equal(rateLimited.status, 429);
+
+  const denied = createProblemDetails(
+    new DomainError("authorization_denied", "The requested operation is not available."),
+    { requestId: "pilot-request-005" }
+  );
+  assert.equal(denied.status, 404);
+  assert.equal(denied.title, "Not Found");
+  assert.equal(denied.detail, "The requested operation is not available.");
+
+  const unavailable = createProblemDetails(
+    new DomainError("authorization_unavailable", "Authorization is temporarily unavailable."),
+    { requestId: "pilot-request-006" }
+  );
+  assert.equal(unavailable.status, 503);
+  assert.equal(unavailable.title, "Service Unavailable");
 });
 
 test("unexpected errors are redacted", () => {

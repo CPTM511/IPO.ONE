@@ -225,6 +225,7 @@ export class HumanOidcBff {
     }
     const credential = this.credentialRegistry.findBySubject({
       issuer: claims.iss,
+      tenantId,
       externalSubject: assertBoundedString("sub", claims.sub, { maximum: 512 }),
       clientId,
       now
@@ -256,6 +257,7 @@ export class HumanOidcBff {
       actorType,
       clientId,
       credentialId: credential.credentialId,
+      credentialVersion: credential.version,
       policyVersion,
       capabilities: credential.allowedCapabilities,
       roles: credential.roles,

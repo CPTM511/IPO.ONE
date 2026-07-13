@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { PUBLIC_SANDBOX_OPERATION_POLICIES } from "../modules/authorization/src/authorization-policy.js";
 
 const root = process.cwd();
 const specPath = join(root, "api", "openapi", "ipo-one.v1.json");
@@ -51,6 +52,7 @@ for (const path of documentedPaths) {
 }
 
 const operationIds = new Set();
+const documentedOperations = new Map();
 const methods = new Set(["get", "post", "put", "patch", "delete"]);
 let operationCount = 0;
 for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
@@ -63,6 +65,10 @@ for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
       failures.push(`duplicate operationId: ${operation.operationId}`);
     } else {
       operationIds.add(operation.operationId);
+      documentedOperations.set(operation.operationId, {
+        method: method.toUpperCase(),
+        path
+      });
     }
     if (operation["x-ipo-one-maturity"] !== "demo") {
       failures.push(`${method.toUpperCase()} ${path} must declare demo maturity`);
@@ -82,6 +88,32 @@ for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
     if (method === "post" && !operation.requestBody) {
       failures.push(`POST ${path} is missing requestBody`);
     }
+  }
+}
+
+const authorizationPolicies = new Map(
+  PUBLIC_SANDBOX_OPERATION_POLICIES.map((policy) => [policy.operationId, policy])
+);
+for (const [operationId, operation] of documentedOperations) {
+  const policy = authorizationPolicies.get(operationId);
+  if (!policy) {
+    failures.push(`operation is missing public-sandbox authorization classification: ${operationId}`);
+    continue;
+  }
+  if (policy.transport.method !== operation.method || policy.transport.path !== operation.path) {
+    failures.push(`authorization classification does not match OpenAPI: ${operationId}`);
+  }
+  if (
+    policy.surface !== "public_sandbox" ||
+    policy.ownershipRule !== "sandbox_partition" ||
+    policy.auditRequirement !== "http_boundary"
+  ) {
+    failures.push(`public operation has an unsafe authorization classification: ${operationId}`);
+  }
+}
+for (const operationId of authorizationPolicies.keys()) {
+  if (!documentedOperations.has(operationId)) {
+    failures.push(`authorization classification references an unknown OpenAPI operation: ${operationId}`);
   }
 }
 

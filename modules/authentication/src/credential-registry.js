@@ -140,9 +140,13 @@ export class InMemoryCredentialRegistry {
     const tenantId = assertSafeIdentifier("tenantId", input.tenantId);
     const clientId = assertSafeIdentifier("clientId", input.clientId);
     const externalSubjectHash = this.referenceHasher.hash("subject", `${issuer}\0${externalSubject}`);
-    const subjectKey = `${issuer}\0${clientId}\0${externalSubjectHash}`;
+    const subjectKey = `${issuer}\0${tenantId}\0${clientId}\0${externalSubjectHash}`;
     const clientKey = `${issuer}\0${tenantId}\0${clientId}`;
-    if (this.#credentialIdsBySubject.has(subjectKey) || this.#credentialIdsByClient.has(clientKey)) {
+    const humanProfile = HUMAN_ACTOR_TYPES.has(input.actorType);
+    if (
+      this.#credentialIdsBySubject.has(subjectKey) ||
+      (!humanProfile && this.#credentialIdsByClient.has(clientKey))
+    ) {
       throw authenticationError("authentication_credential_conflict", "credential binding already exists");
     }
     const normalizedSenderConstraint = senderConstraint(input.senderConstraint);
@@ -182,18 +186,21 @@ export class InMemoryCredentialRegistry {
     });
     this.#credentials.set(credential.credentialId, credential);
     this.#credentialIdsBySubject.set(subjectKey, credential.credentialId);
-    this.#credentialIdsByClient.set(clientKey, credential.credentialId);
+    if (!humanProfile) this.#credentialIdsByClient.set(clientKey, credential.credentialId);
     return clone(credential);
   }
 
-  findBySubject({ issuer, externalSubject, clientId, now = new Date() }) {
+  findBySubject({ issuer, tenantId, externalSubject, clientId, now = new Date() }) {
     const normalizedIssuer = exactHttpsOrigin("issuer", issuer);
+    const normalizedTenantId = assertSafeIdentifier("tenantId", tenantId);
     const normalizedClientId = assertSafeIdentifier("clientId", clientId);
     const subjectHash = this.referenceHasher.hash(
       "subject",
       `${normalizedIssuer}\0${assertBoundedString("externalSubject", externalSubject, { maximum: 512 })}`
     );
-    const id = this.#credentialIdsBySubject.get(`${normalizedIssuer}\0${normalizedClientId}\0${subjectHash}`);
+    const id = this.#credentialIdsBySubject.get(
+      `${normalizedIssuer}\0${normalizedTenantId}\0${normalizedClientId}\0${subjectHash}`
+    );
     return this.assertActive(id, now);
   }
 

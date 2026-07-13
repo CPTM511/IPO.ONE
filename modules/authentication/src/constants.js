@@ -41,5 +41,5 @@ export const AuthenticationEventType = Object.freeze({
 
 export const PHISHING_RESISTANT_AMR = Object.freeze(["hwk", "webauthn", "fido"]);
 
-export const AUTHENTICATION_CONTEXT_SCHEMA_VERSION = "authentication_context.v1";
+export const AUTHENTICATION_CONTEXT_SCHEMA_VERSION = "authentication_context.v2";
 export const AUTHENTICATION_CLAIMS_SCHEMA_VERSION = "authentication_claims.v1";

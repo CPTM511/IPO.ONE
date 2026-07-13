@@ -249,6 +249,29 @@ test("Human session enforces origin and CSRF on mutations, rotates, logs out, an
   assert.equal(fixture.bff.logout({ sessionHandle: rotated.cookie.value, now: NOW }).revoked, false);
 });
 
+test("Human sessions fail closed immediately after credential rotation", async () => {
+  const fixture = await createFixture();
+  const issued = await (await fixture.beginAndIssue()).complete();
+  fixture.credentialRegistry.rotate({
+    credentialId: fixture.credential.credentialId,
+    senderConstraint: {
+      method: SenderConstraintMethod.HOST_SESSION,
+      thumbprint: "r".repeat(43)
+    },
+    performedByActorId: "actor_security_admin",
+    reasonCode: "credential_key_rotation",
+    now: new Date(NOW.getTime() + 1_000)
+  });
+  assert.throws(
+    () => fixture.bff.authenticateSession({
+      sessionHandle: issued.cookie.value,
+      requestMethod: "GET",
+      now: new Date(NOW.getTime() + 2_000)
+    }),
+    (error) => error.code === "authentication_session_rejected"
+  );
+});
+
 test("login transactions are one-time and reject state, redirect, nonce, and token response confusion", async () => {
   const fixture = await createFixture();
   const wrongStateFlow = await fixture.beginAndIssue();

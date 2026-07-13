@@ -112,6 +112,7 @@ export class InMemoryHumanSessionStore {
       actorType: assertSafeIdentifier("actorType", input.actorType),
       clientId: assertSafeIdentifier("clientId", input.clientId),
       credentialId: assertSafeIdentifier("credentialId", input.credentialId),
+      credentialVersion: input.credentialVersion,
       policyVersion: assertSafeIdentifier("policyVersion", input.policyVersion),
       capabilities: Object.freeze([...(input.capabilities ?? [])]),
       roles: Object.freeze([...(input.roles ?? [])]),
@@ -125,6 +126,9 @@ export class InMemoryHumanSessionStore {
       status: "active",
       rotation: 0
     };
+    if (!Number.isSafeInteger(session.credentialVersion) || session.credentialVersion < 1) {
+      throw authenticationError("invalid_authentication_input", "credentialVersion is invalid");
+    }
     this.#event(AuthenticationEventType.SESSION_CREATED, session, "human_login", now);
     this.#sessions.set(sessionRefHash, session);
     return this.#issued(session, handle, csrfToken);
@@ -148,14 +152,20 @@ export class InMemoryHumanSessionStore {
         throw authenticationError("csrf_token_rejected", "CSRF token is invalid");
       }
     }
-    this.credentialRegistry.assertActive(session.credentialId, now);
+    const credential = this.credentialRegistry.assertActive(session.credentialId, now);
+    if (credential.version !== session.credentialVersion) {
+      throw authenticationError("authentication_session_rejected", "session credential version is stale");
+    }
     session.lastSeenAt = now.toISOString();
     return this.#context(session, now);
   }
 
   rotate({ sessionHandle, reasonCode = "session_rotation", now = new Date() }) {
     const current = this.#require(sessionHandle, now);
-    this.credentialRegistry.assertActive(current.credentialId, now);
+    const credential = this.credentialRegistry.assertActive(current.credentialId, now);
+    if (credential.version !== current.credentialVersion) {
+      throw authenticationError("authentication_session_rejected", "session credential version is stale");
+    }
     const handle = randomOpaqueValue();
     const csrfToken = randomOpaqueValue();
     const next = {
@@ -223,6 +233,7 @@ export class InMemoryHumanSessionStore {
       actorType: session.actorType,
       clientId: session.clientId,
       credentialId: session.credentialId,
+      credentialVersion: session.credentialVersion,
       policyVersion: session.policyVersion,
       capabilities: session.capabilities,
       roles: session.roles,

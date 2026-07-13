@@ -31,10 +31,12 @@ movement, accounting, and risk into one black box.
 > Cloud Run origin with its default URL disabled. External readiness, 5xx,
 > latency, capacity, and edge-deny monitoring are configured. The public API
 > intentionally remains an isolated process-local sandbox: SECURITY-001 is
-> approved only for local non-funds implementation. The provider-neutral Human
-> and workload authentication foundation now exists locally but is not exposed
-> by `ipo.one`; the Human IdP, authenticated durable command gateway, production
-> roles, alert recipients, and break-glass owners remain gates. It performs no
+> approved only for local non-funds implementation. Provider-neutral Human and
+> workload authentication plus deny-by-default capability/object authorization
+> now exist locally but are not exposed by `ipo.one`; the Human IdP, durable
+> identity/authorization stores, authenticated command gateway, dual control,
+> abuse controls, production roles, alert recipients, and break-glass owners
+> remain gates. It performs no
 > real lending, custody, KYC, underwriting, private-data processing, or production fund movement.
 > Real-value use is prohibited.
 
@@ -150,6 +152,7 @@ flowchart TB
 | --- | --- | --- |
 | Identity | Principal, Agent/Human Subject, CAIP account references | Agent flow live; Human execution blocked |
 | Authentication | Human OIDC/PKCE BFF and sender-bound Agent/Provider/system identity | Approved local non-funds foundation with closed claims, active Actor/Credential binding, DPoP/mTLS, session/CSRF controls, and lifecycle events; not wired to the public sandbox |
+| Authorization | Shared Human/Agent capability policy, Membership/client binding, object ownership, AccessGrants, live checks, MFA, reasons, idempotency, approval, revalidation, and allow/deny audit | Approved local non-funds foundation with private short-lived decisions and non-enumerating denials; in-memory adapters, not wired to the public sandbox |
 | Mandate | Capability, counterparty, asset, amount, time, nonce, and revocation scope | First-class, fail-closed local service |
 | Spend Policy | Provider allowlist, category, transaction, daily, and obligation limits | Enforced before spend and Rail submission |
 | Obligation | Principal, amount, due state, repayment, overdue/default-compatible lifecycle | Versioned local aggregate |
@@ -176,7 +179,7 @@ packages/
   sdk/                 Alpha JavaScript client and TypeScript declarations
 modules/
   authentication/      Provider-neutral Human and sender-bound workload identity
-  authorization/       Revocable Mandates
+  authorization/       Revocable Mandates plus capability/object authorization
   identity/            Principals, Subjects, and account bindings
   ledger/              Double-entry accounting
   lockbox/             Revenue capture
@@ -304,6 +307,7 @@ fund-moving adapter.
 | State | 30-minute TTL, 128 sessions/process, serialized session operations, 32 mutations/session, reset support |
 | Optional durable store | Server-created transaction-local Tenant Security Context, non-owner role verification, tenant-aware foreign keys, forced PostgreSQL RLS, and cross-tenant key isolation |
 | Local pilot AuthN | Closed JWT/header claims, asymmetric JOSE, bounded pinned JWKS, active Actor/Credential binding, HMAC identity references, OIDC PKCE host sessions, CSRF, DPoP/mTLS, replay protection, revocation, and recent phishing-resistant MFA; not enabled on the public runtime |
+| Local pilot AuthZ | Versioned deny-by-default policies, capability intersection, Membership/client binding, Actor/Tenant ownership, exact AccessGrants, live checks, reason/idempotency/approval rules, private short-lived decisions, TOCTOU revalidation, and awaited allow/deny audit; not enabled on the public runtime |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
 | Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |
@@ -438,10 +442,12 @@ humans and Agents.
 
 Near-term engineering priorities are:
 
-1. Review the implemented local non-funds `AUTHN-001` boundary, then execute
-   `AUTHZ-001`, `APPROVAL-001`, and `ABUSE-001` as independently reviewed changes.
-2. Execute `DATA-003`: compose the reviewed PostgreSQL repositories behind an authenticated,
-   tenant-scoped durable command gateway; keep the public demo isolated.
+1. Review the implemented local non-funds `AUTHN-001` and `AUTHZ-001`
+   boundaries, then execute `APPROVAL-001` and `ABUSE-001` as independently
+   reviewed changes.
+2. Execute `DATA-003`: replace local identity/authorization adapters and compose
+   the reviewed PostgreSQL repositories behind an authenticated, tenant-scoped
+   durable command gateway; keep the public demo isolated.
 3. Add cryptographically signed Mandates, nonce/replay protection, key rotation,
    and wallet/account proof.
 4. Certify out-of-process Provider, KYP, payment, on/off-ramp, and chain adapters

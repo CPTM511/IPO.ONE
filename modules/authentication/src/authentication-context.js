@@ -42,6 +42,7 @@ export function createAuthenticationContext(input) {
     actorType,
     clientId: assertSafeIdentifier("clientId", input.clientId),
     credentialId: assertSafeIdentifier("credentialId", input.credentialId),
+    credentialVersion: input.credentialVersion,
     policyVersion: assertSafeIdentifier("policyVersion", input.policyVersion),
     capabilities: assertStringList("capabilities", input.capabilities ?? []),
     roles: assertStringList("roles", input.roles ?? [], { maximumItems: 16 }),
@@ -60,6 +61,9 @@ export function createAuthenticationContext(input) {
     authorizationDecision: "not_evaluated",
     schemaVersion: AUTHENTICATION_CONTEXT_SCHEMA_VERSION
   };
+  if (!Number.isSafeInteger(context.credentialVersion) || context.credentialVersion < 1) {
+    throw new DomainError("invalid_authentication_context", "credentialVersion must be a positive integer");
+  }
   deepFreeze(context);
   trustedAuthenticationContexts.add(context);
   return context;

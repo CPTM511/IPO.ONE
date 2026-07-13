@@ -25,13 +25,16 @@
 - [x] Browser and SDK sandbox sessions are high-entropy, TTL/LRU/mutation bounded, serialized per session, and explicitly not treated as authentication or tenant identity.
 - [x] Live HTTP input is method/media/path/shape bounded with strict parser settings, request/connection timeouts, global fallback budgets, and adversarial regression tests.
 - [x] CI repeats locked install, contract/schema/migration tests, PostgreSQL recovery, live smoke, and production dependency audit.
+- [x] Local Human/workload AuthN produces a branded non-authorizing context with active Actor/Credential and exact Credential-version binding.
+- [x] Local tenant AuthZ is deny-by-default across explicit capabilities, Membership/client binding, object ownership, AccessGrants, live checks, MFA, reason/idempotency/approval policy, revalidation, and awaited allow/deny audit.
+- [x] Public sandbox operations remain explicitly isolated from authenticated tenant authority.
 
 Open human-review items before production:
 
 - [ ] Select first production execution chain.
 - [ ] Select initial allowlisted Providers.
 - [ ] Review all smart-contract fund paths.
-- [ ] Review RBAC, multisig, timelock, and deployment controls.
+- [ ] Review and activate production role assignments, dual control, multisig, timelock, break-glass, and deployment controls.
 - [ ] Review compliance boundary for any future Human or Originator flow.
 - [ ] Expand reviewed persistence and replay/reconciliation jobs beyond the Rail event stream.
 - [x] Add an append-only double-entry ledger for the local Lockbox model.
