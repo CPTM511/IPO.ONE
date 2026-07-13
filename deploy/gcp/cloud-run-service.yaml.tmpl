@@ -72,17 +72,6 @@ spec:
             timeoutSeconds: 2
             failureThreshold: 3
             periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: 8080
-              httpHeaders:
-                - name: Host
-                  value: 127.0.0.1
-            timeoutSeconds: 2
-            successThreshold: 1
-            failureThreshold: 3
-            periodSeconds: 5
   traffic:
     - percent: 100
       latestRevision: true
