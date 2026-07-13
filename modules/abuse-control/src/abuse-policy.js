@@ -39,6 +39,8 @@ export const HARD_CEILINGS = deepFreezeAbuse({
     [RequestMetric.UPSTREAM_COST_UNITS]: 100
   },
   resources: {
+    [ResourceKind.AGENT_SUBJECTS]: 500,
+    [ResourceKind.MANDATES]: 1_000,
     [ResourceKind.OPEN_OBLIGATIONS]: 1_000,
     [ResourceKind.PROVIDERS]: 100,
     [ResourceKind.CREDENTIALS]: 50,

@@ -44,12 +44,14 @@ resource identifiers, test evidence, scanner results, and rollback state are in
 Tenant/RLS, provider-neutral AuthN, deny-by-default object AuthZ, durable
 exact-command dual control, and a disabled-by-default protective break-glass
 state machine plus atomic rate/resource/cost admission are now implemented and
-tested as local non-funds boundaries.
-They are deliberately not composed into or deployed over the anonymous public
-sandbox. Human IdP selection, durable identity/authorization/audit adapters,
-DATA-003, a production distributed quota/edge provider, production roles,
-named break-glass owners/notifications,
-private-data approval, and any real-value authority remain open gates.
+tested as local non-funds boundaries. A separate durable Tenant Command Gateway
+now composes Agent Subject creation, unsigned non-executable draft Mandate
+creation, and bounded Agent self-read with domain-anchored resource caps.
+These controls are deliberately not deployed over the anonymous public sandbox.
+Human IdP selection, production Credential provisioning and identity adapters,
+remaining DATA-003 lifecycle handlers, a production distributed quota/edge
+provider, production roles, named break-glass owners/notifications, private-data
+approval, and any real-value authority remain open gates.
 
 ## Launch Definition
 
@@ -74,6 +76,7 @@ two audiences over one state model:
 | Visitor isolation | High-entropy sandbox partitions use a 30-minute TTL, 128-entry LRU, serialized operations, and a 32-mutation budget; SDK/browser clients retain one partition per session. |
 | Adversarial HTTP boundary | Strict methods/media types, 64 KiB bodies, bounded JSON/amounts/targets, parser and path hardening, timeouts, connection/concurrency/request limits, and redacted problems pass a live attack suite. |
 | Local Tenant resource admission | SEC-D08 Actor/client/Tenant/operation/network/account limits, bounded resources/cost, resource-blind problems, atomic PostgreSQL races, restart leases, and forced RLS pass local tests; this is not deployed on the anonymous sandbox. |
+| Local Tenant Gateway | Human-controlled Agent Subject and unsigned draft Mandate creation plus bounded Agent self-read commit through one PostgreSQL authority boundary; no public route or executable Mandate is enabled. |
 | Protocol correctness | Schema, boundary, migration, domain, Ledger, Mandate, Rail, Evidence, risk, and vertical-slice checks pass. |
 | Durable Rail proof | PostgreSQL migration, rollback, idempotency, concurrency, outbox/inbox, and restart replay suite passes. |
 | Supply chain | Locked pnpm install, production audit, and a GitHub Actions quality gate are present. |
@@ -107,13 +110,13 @@ must never be treated as identity, authorization, or tenant membership.
 
 The following remain blockers for any real value or private multi-tenant launch:
 
-- Production Human IdP plus durable identity, authorization, and audit stores;
-  authenticated Tenant command composition and a reviewed production
-  distributed quota/edge provider using the completed ABUSE-001 contract.
+- Production Human IdP, Credential provisioning, identity/authorization/audit
+  operations, completion of authenticated Tenant command composition, and a
+  reviewed production distributed quota/edge provider using ABUSE-001.
 - Production role assignment, named dual-control operators, break-glass
   custodians/review owner/notification delivery, and protected activation.
-- Authenticated tenant-scoped durable command composition, production database
-  backup/restore, scheduled reconciliation, and authorized operator replay.
+- Production database backup/restore, scheduled reconciliation, authorized
+  operator replay, and reviewed deployment of the durable Tenant Gateway.
 - Signed Mandates, nonce/key rotation, wallet verification, and remote attestations.
 - Certified Provider workers, signed webhooks, custody/fund-path review, and caps.
 - Legal, risk, security, privacy, and jurisdiction approval.

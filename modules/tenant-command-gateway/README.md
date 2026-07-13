@@ -16,8 +16,11 @@ immutable Human controller, so a same-Tenant developer cannot claim another
 controller's Agent Actor. Existing non-system Memberships migrate with no
 allowed client until explicitly provisioned.
 
-The first DATA-003 handlers cover a Human-controlled Agent Subject creation
-command and the Agent's self-read query. Both Human BFF and Agent clients use
-the same protocol envelope and have no direct database access. This module is
-local non-funds infrastructure only; it does not expose a public route or
-authorize production deployment.
+The reviewed DATA-003 operations cover Human-controlled Agent Subject creation,
+Human-only creation of a durable unsigned Mandate draft for that Subject, and
+the Agent's bounded self-read query. Persistent Agent Subject and Mandate
+admission is anchored to Tenant-scoped durable row counts before object lookup
+and synchronized again inside the business transaction. Both Human BFF and
+Agent clients use the same protocol envelope and have no direct database
+access. This module is local non-funds infrastructure only; it does not expose
+a public route, activate a Mandate, or authorize production deployment.

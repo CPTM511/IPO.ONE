@@ -34,6 +34,7 @@ export class TenantCommandHandlerRegistry {
         (handler.kind === "command" && typeof handler.plan !== "function") ||
         (handler.kind === "query" && typeof handler.execute !== "function") ||
         (handler.resourceDeltas !== undefined && typeof handler.resourceDeltas !== "function") ||
+        (handler.loadResourceBaselines !== undefined && typeof handler.loadResourceBaselines !== "function") ||
         this.#handlers.has(operationId)
       ) {
         throw new DomainError("invalid_tenant_command_handler", "tenant command handler contract is invalid", {

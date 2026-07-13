@@ -8,6 +8,7 @@ import {
   QUOTA_PROFILES,
   QuotaClass,
   RequestMetric,
+  ResourceKind,
   TENANT_ABUSE_OPERATION_POLICIES
 } from "../src/index.js";
 
@@ -54,6 +55,8 @@ test("every authenticated operation has exactly one closed quota classification"
 });
 
 test("all configured values remain within immutable hard ceilings", () => {
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.AGENT_SUBJECTS], 500);
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.MANDATES], 1_000);
   for (const profile of Object.values(QUOTA_PROFILES)) {
     assert.ok(profile.windowMs <= HARD_CEILINGS.rate.windowMs);
     for (const [scope, value] of Object.entries(profile.rate)) {
@@ -64,6 +67,9 @@ test("all configured values remain within immutable hard ceilings", () => {
     }
     for (const [metric, value] of Object.entries(profile.metrics)) {
       assert.ok(value <= HARD_CEILINGS.metrics[metric], `${profile.quotaClass}.${metric}`);
+    }
+    for (const [kind, value] of Object.entries(profile.resources)) {
+      assert.ok(value <= HARD_CEILINGS.resources[kind], `${profile.quotaClass}.${kind}`);
     }
     assert.ok(profile.admissionLeaseMs <= HARD_CEILINGS.admissionLeaseMs);
     assert.ok(profile.maxAutomaticRetries <= HARD_CEILINGS.automaticRetries);

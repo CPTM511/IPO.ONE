@@ -3,16 +3,16 @@
 Version: v0.3
 Date: 2026-07-12
 Status: Repository, container, local non-funds Tenant/RLS/authentication/
-authorization/approval/resource-admission controls, and hosted public-sandbox
-edge implemented; authenticated durable composition, private
-data, real value, independent review, and named response ownership remain
-separate security and operations decisions
+authorization/approval/resource-admission controls, limited local authenticated
+durable composition, and hosted public-sandbox edge implemented; public Tenant
+routing, private data, real value, independent review, and named response
+ownership remain separate security and operations decisions
 
 ## Scope and Security Claim
 
 This model covers the repository's no-real-funds Node.js public sandbox, static
 control plane, OpenAPI contract, JavaScript SDK, in-memory demo state, sandbox
-Rail adapter, and optional PostgreSQL event-runtime tests.
+Rail adapter, and isolated PostgreSQL event-runtime and Tenant Gateway tests.
 
 The claim is deliberately bounded: the sandbox is hardened and adversarially
 tested for its declared demo use. It is not claimed to be invulnerable, formally
@@ -49,6 +49,7 @@ Untrusted browser / Agent client
 Optional isolated test database
   <- branded transaction-local Tenant Security Context
   <- non-owner application role + forced PostgreSQL RLS
+  <- authenticated Tenant Command Gateway for reviewed local operations
   <- atomic rate/capacity/admission/command-charge reservations
   <- parameterized repository and checksum-locked migrations
 
@@ -97,7 +98,8 @@ Those are deployment concerns and must be assessed separately.
 | Error information disclosure | RFC 9457 Problem Details, stable codes, generic unexpected-error detail | unit and live malformed-input tests |
 | SQL injection / replay corruption | Parameterized values, serializable transaction, optimistic stream version, idempotency hash, outbox/inbox constraints | PostgreSQL rollback, concurrency, replay, lease, and restart suite |
 | Durable cross-tenant access or key collision | Immutable `tenant_id`, tenant-aware foreign keys and runtime identities, non-owner role verification, transaction-local context, `ENABLE` + `FORCE RLS`, `USING`/`WITH CHECK`, and write guards | Two-tenant least-privilege read/write/FK/key-reuse matrix, pooled context cleanup, and full catalog coverage assertion |
-| Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, valid/missing cross-Tenant resource-blind denial, bounded eviction, and source leakage assertions |
+| Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; durable Agent Subject/Mandate baselines loaded under Tenant-and-kind locks; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, stale/absent-counter recovery, at-cap valid/missing resource-blind denial, bounded eviction, and source leakage assertions |
+| Authenticated command authority drift | One serializable Gateway transaction locks admission and live authorization facts, revalidates Subject/Principal state, and atomically commits audit, Event, Evidence, outbox, projection, idempotent response, and retained capacity | Two-Tenant and same-Tenant denial, concurrent Membership/Subject mutation, nonce race, exact replay, append-only tamper, bounded Mandate read, and reconciliation tests |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
 | Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
 | Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
@@ -118,12 +120,13 @@ The following are known and intentional blockers, not hidden launch claims:
    DNS rollback are deployed. Quota/load testing, false-positive review,
    notification recipients, and a named incident/takedown owner remain open.
 3. The public sandbox has no AuthN, RBAC, authenticated durable command gateway,
-   dual control, break glass, or authenticated resource admission. Those local
-   foundations enforce trusted context and forced RLS but are not reachable
-   from the anonymous public API and are not a production identity claim.
-4. Public demo state is in memory and is lost on restart. Optional PostgreSQL
-   Rail, normalized core, reconciliation, approval/break-glass, and admission
-   repositories have recovery evidence but are not composed into public routes.
+   dual control, break glass, or authenticated resource admission. The separate
+   local Gateway currently composes only Agent Subject, unsigned draft Mandate,
+   and Agent self-read operations; it is not reachable from the anonymous public
+   API and is not a production identity or authority claim.
+4. Public demo state is in memory and is lost on restart. PostgreSQL Rail,
+   normalized core, reconciliation, approval/break-glass, admission, and limited
+   Tenant Gateway composition have recovery evidence but are not public routes.
 5. Wallet binding signatures are demo fixtures. No production key proof,
    nonce store, rotation, revocation, or credential lifecycle is implemented.
 6. Dependency audit detects published advisories; it is not proof that a
@@ -134,7 +137,8 @@ The following are known and intentional blockers, not hidden launch claims:
 
 Any real-value, private multi-tenant, regulated, or externally integrated use
 is prohibited until the remaining SECURITY-001 deployment owners, identity
-provider, authenticated gateway, and production launch gates are approved.
+provider, full authenticated Gateway composition, and production launch gates
+are approved.
 
 ## Verification Commands
 

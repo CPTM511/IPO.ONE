@@ -51,6 +51,25 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
       ...(networkContext === undefined ? {} : { networkContext })
     });
   }
+
+  async createDraftMandate({
+    subjectId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId,
+    networkContext
+  }) {
+    return this.execute({
+      operationId: "pilotCreateDraftMandate",
+      payload,
+      resource: { resourceType: "subject", resourceId: subjectId },
+      idempotencyKey,
+      requestId,
+      correlationId,
+      ...(networkContext === undefined ? {} : { networkContext })
+    });
+  }
 }
 
 export class AgentTenantCommandClient extends TenantProtocolClient {

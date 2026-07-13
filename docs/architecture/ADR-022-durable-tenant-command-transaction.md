@@ -81,8 +81,9 @@ a payload different from the payload that was executed.
   an in-progress denial or the exact completed replay.
 - RLS remains defense in depth rather than the sole ownership check. Durable
   resource bindings and authorization policy must both allow an object.
-- The implemented first slice covers Human Agent-Subject creation and Agent
-  self-read. Remaining Agent Lockbox credit, spend, revenue, repayment, worker,
+- The implemented slice covers Human Agent-Subject creation, Human-controlled
+  non-executable draft Mandate creation, and bounded Agent self-read. Remaining
+  signed activation, Agent Lockbox credit, spend, revenue, repayment, worker,
   approval, and administrative handlers must use this same transaction
   protocol before DATA-003 is complete.
 - Human IdP vendor selection, durable Credential provisioning, production role
@@ -101,7 +102,7 @@ a payload different from the payload that was executed.
 - Concurrent duplicate single execution with replay.
 - Append-only audit and command authority tamper rejection.
 - Full reconciliation after each Tenant flow.
-- Complete PostgreSQL regression: 28/28 tests passed on Node.js `v24.18.0`.
+- Complete PostgreSQL regression passes on Node.js `v24.18.0`.
 
 Required commands remain:
 
