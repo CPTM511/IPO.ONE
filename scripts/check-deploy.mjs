@@ -35,12 +35,16 @@ for (const requiredSetting of [
   "https://ipo.one",
   "startupProbe:",
   "livenessProbe:",
-  "readinessProbe:",
   "serviceAccountName: ${SERVICE_ACCOUNT_EMAIL}",
   "image: ${IMAGE_URI}"
 ]) {
   assert.ok(service.includes(requiredSetting), `missing deployment guard: ${requiredSetting}`);
 }
+assert.doesNotMatch(
+  service,
+  /^\s+readinessProbe:/m,
+  "Cloud Run readiness probes cannot carry the localhost Host header required by the production runtime"
+);
 assert.doesNotMatch(service, /(PASSWORD|PRIVATE_KEY|API_TOKEN|DATABASE_URL)/);
 assert.match(workflow, /postgres:17\.10-alpine3\.23@sha256:[a-f0-9]{64}/);
 assert.equal(/uses:\s+[^\s]+@v\d/.test(workflow), false, "GitHub Actions must use immutable commits");
