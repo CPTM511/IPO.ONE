@@ -24,19 +24,18 @@ rails, compliance partners, and capital systems that need to share one
 auditable obligation state without collapsing identity, authorization, money
 movement, accounting, and risk into one black box.
 
-> **Current status:** publicly deployable sandbox candidate. The repository now
-> includes a fail-closed production runtime, hardened container, Cloud Run
-> service template, Human/Agent discovery, durable core repository and
-> reconciliation foundation, transaction-scoped PostgreSQL tenant RLS, and a
-> hosted-release runbook. It is not
-> yet live at `ipo.one`; cloud, edge, certificate, monitoring, and DNS execution
-> still require explicit review. The public API intentionally remains an
-> isolated process-local sandbox: SECURITY-001 is approved only for local
-> non-funds implementation, while the Human IdP, authenticated durable command
-> gateway, production roles, and break-glass owners remain deployment gates.
-> The durable repository is not a customer command path. It performs no real
-> lending, custody, KYC, underwriting, or production fund movement. Real-value
-> use is prohibited.
+> **Current status:** the public, no-real-funds sandbox is live at
+> [https://ipo.one](https://ipo.one). Release
+> `00598584f437f71ebb1dd8a3517585ad8fc96ce9` runs behind a Google Cloud global
+> HTTPS load balancer, Google-managed TLS, Cloud Armor, and a load-balancer-only
+> Cloud Run origin with its default URL disabled. External readiness, 5xx,
+> latency, capacity, and edge-deny monitoring are configured. The public API
+> intentionally remains an isolated process-local sandbox: SECURITY-001 is
+> approved only for local non-funds implementation, while the Human IdP,
+> authenticated durable command gateway, production roles, alert recipients,
+> and break-glass owners remain gates. It performs no real lending, custody,
+> KYC, underwriting, private-data processing, or production fund movement.
+> Real-value use is prohibited.
 
 ## The Product Thesis
 
@@ -234,6 +233,26 @@ state = await ipo.requestCreditLine(agentId);
 Sandbox sessions preserve one workflow; they do not authenticate a person,
 workload, organization, wallet, or tenant. Do not place private data in them.
 
+## Use the Public Sandbox
+
+The hosted surface is available to both humans and machine clients:
+
+- Human control plane: [https://ipo.one](https://ipo.one)
+- Agent discovery: [https://ipo.one/.well-known/ipo-one.json](https://ipo.one/.well-known/ipo-one.json)
+- OpenAPI 3.1.2: [https://ipo.one/openapi.json](https://ipo.one/openapi.json)
+- Security contact: [https://ipo.one/.well-known/security.txt](https://ipo.one/.well-known/security.txt)
+- Readiness: [https://ipo.one/readyz](https://ipo.one/readyz)
+
+Run the repository's complete Agent lifecycle against the public endpoint:
+
+```sh
+BASE_URL=https://ipo.one pnpm run smoke:api
+```
+
+This creates only synthetic, short-lived demo state. A sandbox session ID is
+not a credential, and the public service must never receive secrets, private
+customer data, raw KYC/PII, legal agreements, or real payment instructions.
+
 ## Run Locally
 
 ### Prerequisites
@@ -296,15 +315,26 @@ Report vulnerabilities according to [`SECURITY.md`](SECURITY.md).
 
 ## Public Deployment
 
-The proposed public boundary keeps GoDaddy as authoritative DNS and places a
-Google Cloud global external HTTPS load balancer and Cloud Armor in front of a
+The public boundary keeps GoDaddy authoritative DNS and places a Google Cloud
+global external HTTPS load balancer and Cloud Armor in front of a
 load-balancer-only Cloud Run origin. The same `https://ipo.one` origin serves
 the Human Console, Agent API, OpenAPI contract, and discovery document.
 
-Repository checks can prove the image and application contract; they cannot
-prove an external certificate, cloud IAM policy, DNS record, WAF policy, alert,
-or operator response. Those controls must be reviewed and captured during the
-deployment itself.
+| Deployment fact | Verified value |
+| --- | --- |
+| GCP project / region | `ipo-one-public-sandbox-cptm511` / `asia-southeast1` |
+| Release | `00598584f437f71ebb1dd8a3517585ad8fc96ce9` |
+| CI | [Quality Gate run 29234107882](https://github.com/CPTM511/IPO.ONE/actions/runs/29234107882) |
+| Image | `asia-southeast1-docker.pkg.dev/ipo-one-public-sandbox-cptm511/ipo-one/public-sandbox@sha256:53186cf01d969e8e12988f6164f8f069bb0b180d853fe73a3d95f7342a602105` |
+| Edge | Reserved IP `136.68.214.66`, managed TLS, minimum TLS 1.2, Cloud Armor host allowlist and per-IP throttle |
+| Origin | Cloud Run revision `ipo-one-public-sandbox-00001-szw`; ingress restricted to internal/load-balancer; default URL disabled |
+| Monitoring | Three-region HTTPS readiness check; readiness, 5xx, P99 latency, capacity, and Cloud Armor rate-limit policies; edge-deny metric |
+| DNS | Root A changed only; NS, MX, SPF/TXT, `www`, and `apiv1` records preserved |
+
+The deployment facts above are public-sandbox evidence, not a claim of formal
+verification or financial-production authorization. Full commands, rollback
+state, scanner results, and residual gates are recorded in
+[`IPO.ONE Public Sandbox Deployment Evidence v0.1`](docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md).
 
 - Architecture decision: [`ADR-014`](docs/architecture/ADR-014-public-sandbox-hosting-boundary.md)
 - Deployment runbook: [`deploy/gcp/README.md`](deploy/gcp/README.md)
@@ -397,7 +427,7 @@ humans and Agents.
 
 | Stage | Product state | Gate |
 | --- | --- | --- |
-| Public sandbox | Deployment candidate | No real funds or private data; executable launch evidence plus approved external cloud/edge/DNS controls required |
+| Public sandbox | Live | No real funds or private data; hosted at `ipo.one` with approved cloud/edge/DNS controls and explicit residual governance gates |
 | Closed design-partner pilot | Policy-locked | Approved and implemented tenant/RLS, Human/workload AuthN, object AuthZ, durable gateway, dual control, abuse limits, recovery, legal/security/privacy review |
 | Controlled production Agent credit | Policy-locked | Closed-pilot exit, signed provider and capital partners, reviewed custody/fund paths, caps/loss owner, independent review, on-call and stop-loss |
 | Human-compatible and multi-chain network | Long term | Licensed Originators, Consent/KYC references, loan tape, stop-loss covenants, finality/reorg controls, portable Credit Passport and attestations |
@@ -412,10 +442,10 @@ Near-term engineering priorities are:
    and wallet/account proof.
 4. Certify out-of-process Provider, KYP, payment, on/off-ramp, and chain adapters
    with signed requests, webhook replay protection, revocation, and failure policy.
-5. Execute `OPS-001A/OPS-002`: approved cloud identity, protected release
-   environment, HTTPS edge, Cloud Armor, monitoring, incident ownership,
-   immutable evidence, and GoDaddy DNS cutover.
-6. Add finality/reorg handling, capacity reservations, observability, scheduled
+5. Complete the remaining public-sandbox governance: protected-environment
+   release approval, named alert recipients, incident/takedown ownership,
+   reviewed log retention, and an independent external security assessment.
+6. Add finality/reorg handling, capacity reservations, product telemetry, scheduled
    reconciliation, incident operations, backup, restore, and disaster recovery.
 
 The requirement trace and commercialization sequence are maintained in

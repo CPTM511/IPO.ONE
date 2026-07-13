@@ -1,7 +1,8 @@
 # ADR-014: Public Sandbox Hosting and Origin Boundary
 
-- Status: Proposed; repository implementation complete, cloud execution requires approval
-- Date: 2026-07-12
+- Status: Accepted and implemented for the public no-real-funds sandbox;
+  private-data and real-value profiles remain prohibited
+- Date: 2026-07-13
 
 ## Context
 
@@ -50,6 +51,17 @@ equivalent short-lived identity. Long-lived service-account JSON keys are not
 accepted. The runtime service account receives no cloud API role until a
 specific dependency requires and documents one.
 
+## Implementation Checkpoint
+
+On 2026-07-13 this boundary was deployed in GCP project
+`ipo-one-public-sandbox-cptm511`, region `asia-southeast1`, and the root A
+record was cut over to reserved address `136.68.214.66`. Managed TLS is active
+for `ipo.one` and `www.ipo.one`; Cloud Armor, the HTTPS redirect, the
+load-balancer-only origin, disabled default URL, immutable release identity,
+multi-region readiness check, service alerts, DNS preservation, and rollback
+value were verified. The exact hosted evidence is recorded in
+`docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
+
 ## Consequences
 
 - Human and Agent clients share one release, hostname, CSP, contract, and
@@ -67,9 +79,11 @@ specific dependency requires and documents one.
 
 ## Approval Gates
 
-Before DNS cutover, Founder/CTO/Security must approve the GCP project, region,
-billing owner, runtime and deploy identities, Cloud Armor policy, security
-contact, log retention, alert recipients, rollback owner, and exact DNS change.
+The public-sandbox GCP project, region, billing, runtime identity, Cloud Armor,
+security contact, DNS rollback, and exact root-A change were authorized for the
+no-real-funds deployment. Protected-environment approval, formal multi-role
+evidence sign-off, named alert recipients, incident/takedown ownership, and log
+retention review remain open governance requirements.
 
 Before any real value or private data, the Production No-Go list in the public
 beta launch gate still applies in full.

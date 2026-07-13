@@ -1,7 +1,8 @@
 # SECURITY-002: Sandbox Attack-Surface Validation
 
-Status: Implemented local launch candidate; hosted edge gate remains open
-Date: 2026-07-11
+Status: Local and hosted public-sandbox boundary verified; independent review
+and private-data/value gates remain open
+Date: 2026-07-13
 
 ## Context
 
@@ -74,9 +75,19 @@ git diff --check
 - [x] Every retained in-memory collection exposed to an anonymous visitor has a
   practical process or workflow bound.
 - [x] CI permissions remain `contents: read`; third-party actions use full SHAs.
-- [ ] Hosted TLS, edge abuse controls, origin policy, monitoring, rollback, and
-  incident ownership approved by Founder/CTO/Security.
+- [x] Hosted TLS, edge abuse controls, origin policy, monitoring, and DNS
+  rollback are approved and verified for the no-real-funds public sandbox.
+- [ ] Named notification recipients and incident/takedown ownership are approved.
 - [ ] Independent penetration test completed before any private data or value path.
+
+## Hosted Verification Evidence
+
+The 2026-07-13 release added no new application capability. Hosted checks
+verified active managed TLS, HTTPS redirect, unknown-host Cloud Armor denial,
+load-balancer-only Cloud Run ingress, unavailable default origin, exact release
+headers, multi-region readiness monitoring, rate-limit alerting, the complete
+Agent API smoke, and the responsive Human lifecycle. See
+`docs/security/IPO_ONE_PUBLIC_SANDBOX_DEPLOYMENT_EVIDENCE_v0.1.md`.
 
 ## Local Verification Evidence
 

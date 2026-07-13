@@ -2,9 +2,10 @@
 
 Version: v0.3
 Date: 2026-07-12
-Status: Repository, container, and local non-funds tenant-RLS controls
-implemented; authenticated durable composition and hosted edge remain separate
-security and operations decisions
+Status: Repository, container, local non-funds tenant-RLS controls, and hosted
+public-sandbox edge implemented; authenticated durable composition, private
+data, real value, independent review, and named response ownership remain
+separate security and operations decisions
 
 ## Scope and Security Claim
 
@@ -37,7 +38,7 @@ custodied assets, or real payment credentials in the supported sandbox surface.
 
 ```text
 Untrusted browser / Agent client
-  -> proposed HTTPS load balancer and Cloud Armor
+  -> Google Cloud HTTPS load balancer and Cloud Armor
   -> load-balancer-only Cloud Run origin
   -> strict Host/HTTPS Node HTTP boundary
   -> per-session serialized demo controller
@@ -87,7 +88,8 @@ Those are deployment concerns and must be assessed separately.
 | Method/content confusion | Explicit method allowlists, JSON and structured-suffix JSON only, compressed body rejection | `405` and `415` attack tests |
 | Mass assignment / prototype pollution | Per-operation field allowlists, JSON object root, prohibited prototype keys | Unknown field and pollution-key tests |
 | Path traversal / Host manipulation | Exact Host allowlist, origin-form target enforcement, canonical relative-path containment | byte-level hostile Host, ambiguous target, and encoded traversal tests |
-| Origin bypass / downgrade | Production requires trusted HTTPS proxy proof and HSTS; proposed Cloud Run ingress is load-balancer-only with default URL disabled | production child-process tests for 421, 426, HSTS, and release headers; cloud control pending |
+| Origin bypass / downgrade | Trusted HTTPS proxy proof and HSTS; Cloud Run ingress is load-balancer-only with default URL disabled | production child-process tests plus hosted DNS, TLS, redirect, unknown-Host, release-header, and unavailable-origin checks |
+| Edge host and request abuse | Exact edge host allowlist, per-IP throttle, deny logging, preview SQLi/XSS rules, and application resource bounds | unknown-host `403`, Cloud Armor logs, logs-based deny metric, and multi-region uptime check |
 | Reflected header injection | Bounded safe request/session patterns; unsafe values replaced with UUIDs | hostile identifier test |
 | Browser injection / clickjacking | text-safe DOM rendering, same-origin CSP, frame denial, MIME protection, no third-party runtime assets | static UI assertions and browser regression |
 | Error information disclosure | RFC 9457 Problem Details, stable codes, generic unexpected-error detail | unit and live malformed-input tests |
@@ -108,9 +110,9 @@ The following are known and intentional blockers, not hidden launch claims:
 1. A sandbox session ID is not a secret or credential. Anyone who knows it can
    inspect and alter that demo state. No private or valuable data may enter it.
 2. In-process limits are defense in depth, not distributed DDoS protection.
-   The proposed edge is documented but not deployed; hosted release still
-   requires verified TLS, Cloud Armor, quotas, monitoring, rollback, and an
-   incident owner.
+   TLS, Cloud Armor, coarse rate limiting, external readiness monitoring, and
+   DNS rollback are deployed. Quota/load testing, false-positive review,
+   notification recipients, and a named incident/takedown owner remain open.
 3. The public sandbox has no AuthN, RBAC, authenticated durable command gateway,
    dual control, or break-glass mechanism. The optional PostgreSQL foundation
    now enforces Tenant Security Context and RLS, but it is not reachable from
@@ -122,7 +124,8 @@ The following are known and intentional blockers, not hidden launch claims:
 6. Dependency audit detects published advisories; it is not proof that a
    dependency or the platform contains no unknown vulnerability.
 7. No independent penetration test, formal verification, smart-contract audit,
-   cloud configuration review, or production infrastructure review has occurred.
+   or independent cloud/infrastructure review has occurred. The deployment was
+   verified against the repository runbook, but that is not independent assurance.
 
 Any real-value, private multi-tenant, regulated, or externally integrated use
 is prohibited until the remaining SECURITY-001 deployment owners, identity
