@@ -363,6 +363,8 @@ test("draft Mandate management reads exact state and plans terminal resource clo
 
 test("Human and Agent clients inject only their verified context into one protocol", async () => {
   const calls = [];
+  let authenticationContextLookups = 0;
+  let networkContextLookups = 0;
   const gateway = {
     async execute(command) {
       calls.push(command);
@@ -373,7 +375,14 @@ test("Human and Agent clients inject only their verified context into one protoc
   const agentContext = authenticationContext(ActorType.AGENT, "actor_agent_alpha");
   const human = new HumanTenantCommandClient({
     gateway,
-    authenticationContextProvider: async () => humanContext
+    authenticationContextProvider: async () => {
+      authenticationContextLookups += 1;
+      return humanContext;
+    },
+    networkContextProvider: async () => {
+      networkContextLookups += 1;
+      return { source: "trusted_test_adapter" };
+    }
   });
   const agent = new AgentTenantCommandClient({
     gateway,
@@ -388,7 +397,18 @@ test("Human and Agent clients inject only their verified context into one protoc
   });
   await human.createDraftMandate({
     subjectId: "subject_alpha",
-    payload: {},
+    payload: {
+      capabilities: ["provider_spend", "request_credit"],
+      allowedProviderIds: ["provider_alpha"],
+      allowedCategories: ["compute"],
+      assetIds: ["urn:ipo-one:sandbox-asset:usd-cent"],
+      perActionLimitMinor: "100",
+      aggregateLimitMinor: "1000",
+      validFrom: "2026-07-14T00:00:00.000Z",
+      expiresAt: "2027-01-14T00:00:00.000Z",
+      nonce: "mandate-nonce-alpha-0002",
+      termsRef: "urn:ipo.one:terms:mandate-alpha:v1"
+    },
     idempotencyKey: "create-mandate-alpha-0001",
     requestId: "request_human_002",
     correlationId: "correlation_human_002"
@@ -412,6 +432,7 @@ test("Human and Agent clients inject only their verified context into one protoc
   });
 
   assert.equal(calls[0].authenticationContext, humanContext);
+  assert.deepEqual(calls[0].networkContext, { source: "trusted_test_adapter" });
   assert.equal(calls[0].operationId, "pilotCreateAgentSubject");
   assert.equal(calls[1].authenticationContext, humanContext);
   assert.equal(calls[1].operationId, "pilotCreateDraftMandate");
@@ -425,4 +446,22 @@ test("Human and Agent clients inject only their verified context into one protoc
   assert.equal(calls[4].operationId, "pilotReadAgentSelf");
   assert.equal(Object.hasOwn(calls[0], "tenantId"), false);
   assert.equal(Object.hasOwn(calls[4], "actorId"), false);
+  assert.equal(calls.every((call) => call.schemaVersion === "tenant_protocol_request.v1"), true);
+  assert.equal(authenticationContextLookups, 4);
+  assert.equal(networkContextLookups, 4);
+
+  const lookupsBeforeInvalidRequest = authenticationContextLookups;
+  await assert.rejects(
+    () => human.execute({
+      operationId: "pilotCreateAgentSubject",
+      payload: { subjectActorId: "actor_agent_alpha", displayName: "Alpha" },
+      idempotencyKey: "create-agent-alpha-invalid-0001",
+      requestId: "request_human_invalid_001",
+      correlationId: "correlation_human_invalid_001",
+      authenticationContext: { tenantId: "caller_controlled" }
+    }),
+    (error) => error.code === "invalid_tenant_protocol_request"
+  );
+  assert.equal(authenticationContextLookups, lookupsBeforeInvalidRequest);
+  assert.equal(calls.length, 5);
 });

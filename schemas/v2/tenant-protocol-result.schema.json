@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json",
+  "title": "IPO.ONE Tenant Protocol Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operationId", "replayed", "response", "schemaVersion"],
+  "properties": {
+    "operationId": {
+      "enum": [
+        "pilotCreateAgentSubject",
+        "pilotCreateDraftMandate",
+        "pilotReadAgentSelf",
+        "pilotReadMandate",
+        "pilotRevokeDraftMandate"
+      ]
+    },
+    "replayed": { "type": "boolean" },
+    "response": { "type": "object" },
+    "schemaVersion": { "const": "tenant_protocol_result.v1" }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "operationId": { "const": "pilotCreateAgentSubject" },
+        "response": { "$ref": "#/$defs/agentSubjectCreated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotCreateDraftMandate" },
+        "response": { "$ref": "#/$defs/draftMandateCreated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadAgentSelf" },
+        "response": { "$ref": "#/$defs/agentSubjectView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadMandate" },
+        "response": { "$ref": "#/$defs/mandateView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotRevokeDraftMandate" },
+        "response": { "$ref": "#/$defs/draftMandateRevoked" }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "minorUnits": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 78,
+      "pattern": "^[0-9]+$"
+    },
+    "positiveMinorUnits": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 78,
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "agentSubjectCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principalId",
+        "subjectId",
+        "subjectHash",
+        "subjectType",
+        "status",
+        "schemaVersion"
+      ],
+      "properties": {
+        "principalId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "subjectType": { "const": "agent" },
+        "status": { "enum": ["pending", "active", "suspended", "closed"] },
+        "schemaVersion": { "const": "tenant_agent_subject_created.v1" }
+      }
+    },
+    "draftMandateCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mandateId",
+        "mandateHash",
+        "subjectId",
+        "status",
+        "capabilities",
+        "assetIds",
+        "perActionLimitMinor",
+        "aggregateLimitMinor",
+        "validFrom",
+        "expiresAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "mandateId": { "$ref": "#/$defs/identifier" },
+        "mandateHash": { "$ref": "#/$defs/hash" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "status": { "const": "draft" },
+        "capabilities": { "$ref": "#/$defs/mandateCapabilities" },
+        "assetIds": { "$ref": "#/$defs/assetIds" },
+        "perActionLimitMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "aggregateLimitMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "validFrom": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "tenant_draft_mandate_created.v1" }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectId",
+        "subjectHash",
+        "subjectType",
+        "displayName",
+        "primaryPrincipalId",
+        "status",
+        "riskTier",
+        "prototypeOnly",
+        "createdAt",
+        "updatedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "subjectType": { "const": "agent" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "primaryPrincipalId": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["pending", "active", "suspended", "closed"] },
+        "riskTier": { "enum": ["unrated", "tier_1", "tier_2", "tier_3", "tier_4"] },
+        "metadataRef": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "prototypeOnly": { "type": "boolean" },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "subject.v1" }
+      }
+    },
+    "mandateSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mandateId",
+        "mandateHash",
+        "status",
+        "capabilities",
+        "assetIds",
+        "providerScopeCount",
+        "categoryScopeCount",
+        "perActionLimitMinor",
+        "aggregateLimitMinor",
+        "utilizedMinor",
+        "validFrom",
+        "expiresAt",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "mandateId": { "$ref": "#/$defs/identifier" },
+        "mandateHash": { "$ref": "#/$defs/hash" },
+        "status": { "enum": ["draft", "active", "suspended", "revoked", "expired"] },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "request_credit",
+              "provider_spend",
+              "capture_revenue",
+              "route_repayment"
+            ]
+          }
+        },
+        "assetIds": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "providerScopeCount": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "categoryScopeCount": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "perActionLimitMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "aggregateLimitMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "utilizedMinor": { "$ref": "#/$defs/minorUnits" },
+        "validFrom": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "agentSubjectView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "mandates", "hasMoreMandates", "schemaVersion"],
+      "properties": {
+        "subject": { "$ref": "#/$defs/subject" },
+        "mandates": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/mandateSummary" }
+        },
+        "hasMoreMandates": { "type": "boolean" },
+        "schemaVersion": { "const": "tenant_agent_subject_view.v2" }
+      }
+    },
+    "mandateView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mandate", "schemaVersion"],
+      "properties": {
+        "mandate": { "$ref": "https://schemas.ipo.one/v2/mandate.schema.json" },
+        "schemaVersion": { "const": "tenant_mandate_view.v1" }
+      }
+    },
+    "draftMandateRevoked": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mandateId",
+        "mandateHash",
+        "subjectId",
+        "status",
+        "reasonCode",
+        "updatedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "mandateId": { "$ref": "#/$defs/identifier" },
+        "mandateHash": { "$ref": "#/$defs/hash" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "status": { "const": "revoked" },
+        "reasonCode": {
+          "enum": ["credential_compromise", "operator_request", "security_incident"]
+        },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "tenant_draft_mandate_revoked.v1" }
+      }
+    },
+    "mandateCapabilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "request_credit",
+          "provider_spend",
+          "capture_revenue",
+          "route_repayment"
+        ]
+      }
+    },
+    "assetIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    }
+  }
+}

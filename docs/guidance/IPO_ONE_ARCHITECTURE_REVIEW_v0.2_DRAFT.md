@@ -487,7 +487,7 @@ MVP 首选：一条执行链 + centralized canonical reservation service + per-c
 | Capability | Current reality |
 | --- | --- |
 | Browser demo | Real local interaction against one Node process. |
-| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID、alpha SDK 及进程级流量/并发边界；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant。本地另有 durable Tenant Command Gateway，已组合 Agent Subject 创建、unsigned draft Mandate create/read/revoke 和 Agent self-read；尚未成为 public route，也没有 production credential provisioning 或 runtime schema enforcement。 |
+| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID、alpha SDK 及进程级流量/并发边界；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant。本地另有 durable Tenant Command Gateway，已组合 Agent Subject 创建、unsigned draft Mandate create/read/revoke 和 Agent self-read。API-002 已为这 5 个 operation 增加 closed request/result/catalog JSON Schema、TypeScript discriminated union、conformance fixtures，以及 pre-admission request / pre-commit result runtime enforcement；它仍不是 public route，也没有 production credential provisioning 或 authenticated HTTP/MCP/A2A transport。 |
 | Wallet binding | CAIP-like format plus explicit mock signature; no production cryptographic verification. |
 | Payment | Instruction records only; no funds move. |
 | Lockbox | Public demo uses an in-memory projection; normalized Lockbox/Ledger repositories, immutable snapshots and reconciliation are PostgreSQL-tested but not composed behind the API; no contract or custody. |
@@ -613,7 +613,10 @@ Milestone B is still incomplete at the application boundary: the public demo
 orchestrator remains process-local. A separate authenticated Tenant Command
 Gateway now uses these repositories for Agent Subject creation, unsigned draft
 Mandate create/read/revoke, and Agent self-read, but the Lockbox lifecycle is
-not yet composed. Production identity provisioning, signed account/Mandate proof,
+not yet composed. Its five-operation local application protocol now has closed
+versioned request/result/catalog schemas, fixtures, typed declarations, runtime
+validation, and repository drift checks; the catalog enables only in-process
+non-funds use. Production identity provisioning, signed account/Mandate proof,
 webhook verification, remote adapter certification, custody, production
 database operations, and real settlement do not exist.
 

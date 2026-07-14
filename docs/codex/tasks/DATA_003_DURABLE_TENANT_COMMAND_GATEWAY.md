@@ -60,6 +60,15 @@ API would turn a safe demo into shared unauthenticated customer state.
   reviewed operations implement `pilotCreateAgentSubject`,
   `pilotCreateDraftMandate`, `pilotReadMandate`,
   `pilotRevokeDraftMandate`, and `pilotReadAgentSelf`.
+- API-002 publishes closed `tenant_protocol_request.v1`,
+  `tenant_protocol_result.v1`, and `tenant_protocol_catalog.v1` contracts for
+  exactly those five operations. Caller validation precedes trusted AuthN/
+  network-context injection and admission; result validation precedes command
+  commit. The request schema version is part of exact command identity.
+- Repository conformance proves catalog parity with handlers, authorization,
+  abuse classification, fixtures, and public-sandbox isolation. TypeScript
+  discriminated unions expose the same operation/result mapping without adding
+  a network endpoint.
 - Migration `0009_durable_identity_resource_capacity` adds conservative Agent
   Subject and Mandate resource ceilings. Handler baseline loaders reconcile
   durable Tenant counts during pre-lookup admission and again inside the

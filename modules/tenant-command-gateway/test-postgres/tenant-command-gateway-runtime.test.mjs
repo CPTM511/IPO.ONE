@@ -6,6 +6,7 @@ import {
   createCreditEvent,
   hashId
 } from "../../../packages/domain/src/index.js";
+import { TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION } from "../../../packages/api-contract/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
 import {
   PilotCapability,
@@ -391,6 +392,35 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     let tenantOneMandateId;
     let firstMandateCommand;
 
+    await t.test("invalid protocol request fails before admission and authorization", async () => {
+      const before = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM abuse_admissions WHERE tenant_id = $1) AS admissions,
+           (SELECT count(*)::int FROM authorization_audit_events WHERE tenant_id = $1) AS audits`,
+        [TENANT_TWO]
+      );
+      await assert.rejects(
+        () => runtime.execute({
+          authenticationContext: identities.tenantTwoHuman.authenticationContext,
+          operationId: "pilotReadMandate",
+          resource: { resourceType: "mandate", resourceId: `mandate_missing_${RUN_ID}` },
+          payload: {},
+          requestId: `request-invalid-contract-${RUN_ID}`,
+          correlationId: `correlation-invalid-contract-${RUN_ID}`,
+          schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+          tenantId: TENANT_ONE
+        }),
+        (error) => error.code === "invalid_tenant_protocol_request"
+      );
+      const after = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM abuse_admissions WHERE tenant_id = $1) AS admissions,
+           (SELECT count(*)::int FROM authorization_audit_events WHERE tenant_id = $1) AS audits`,
+        [TENANT_TWO]
+      );
+      assert.deepEqual(after.rows, before.rows);
+    });
+
     await t.test("Human command and Agent query share one durable protocol", async () => {
       const created = await tenantOneHuman.createAgentSubject(firstCommand);
       tenantOneSubjectId = created.response.subjectId;
@@ -415,6 +445,64 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         [TENANT_ONE]
       );
       assert.deepEqual(counts.rows[0], { events: 2, snapshots: 2, executions: 1, audits: 4 });
+    });
+
+    await t.test("invalid handler result rolls back the complete command transaction", async () => {
+      const handlers = createTenantFoundationHandlers().map((handler) => {
+        if (handler.operationId !== "pilotCreateAgentSubject") return handler;
+        return {
+          ...handler,
+          async plan(input) {
+            const plan = await handler.plan(input);
+            return {
+              ...plan,
+              response: { ...plan.response, uncontractedAuthority: true }
+            };
+          }
+        };
+      });
+      const hostileRuntime = gateway(appPool, harness, handlers);
+      const hostileClient = humanClient(
+        hostileRuntime,
+        identities.tenantTwoHuman.authenticationContext
+      );
+      const stableState = async () => ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM principals WHERE tenant_id = $1) AS principals,
+           (SELECT count(*)::int FROM subjects WHERE tenant_id = $1) AS subjects,
+           (SELECT count(*)::int FROM domain_events WHERE tenant_id = $1) AS events,
+           (SELECT count(*)::int FROM evidence_envelopes WHERE tenant_id = $1) AS evidence,
+           (SELECT count(*)::int FROM projection_snapshots WHERE tenant_id = $1) AS projections,
+           (SELECT count(*)::int FROM authorization_resources WHERE tenant_id = $1) AS resources,
+           (SELECT count(*)::int FROM authorization_resource_bindings WHERE tenant_id = $1) AS bindings,
+           (SELECT count(*)::int FROM command_idempotency WHERE tenant_id = $1) AS commands,
+           (SELECT count(*)::int FROM tenant_command_executions WHERE tenant_id = $1) AS executions,
+           (SELECT count(*)::int FROM authorization_audit_events WHERE tenant_id = $1) AS audits,
+           (SELECT COALESCE(sum(used_count), 0)::int FROM abuse_capacity_buckets
+             WHERE tenant_id = $1 AND kind = 'agent_subjects') AS agent_capacity`,
+        [TENANT_TWO]
+      );
+      const before = await stableState();
+      const command = createCommand({
+        subjectActorId: identities.tenantTwoAgent.authenticationContext.actorId,
+        displayName: "Invalid Result Must Roll Back",
+        idempotencyKey: `invalid-result-${RUN_ID}-0001`
+      });
+      await assert.rejects(
+        () => hostileClient.createAgentSubject(command),
+        (error) => error.code === "invalid_tenant_protocol_result"
+      );
+      const after = await stableState();
+      assert.deepEqual(after.rows, before.rows);
+      const failedAdmission = await ownerPool.query(
+        `SELECT state, outcome
+           FROM abuse_admissions
+          WHERE tenant_id = $1 AND operation_id = 'pilotCreateAgentSubject'
+          ORDER BY issued_at DESC
+          LIMIT 1`,
+        [TENANT_TWO]
+      );
+      assert.deepEqual(failedAdmission.rows, [{ state: "completed", outcome: "failed" }]);
     });
 
     await t.test("Human controller creates one durable draft Mandate and Agent reads a bounded summary", async () => {
@@ -715,6 +803,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       await assert.rejects(
         () => runtime.execute({
           authenticationContext: identities.tenantOneAgent.authenticationContext,
+          schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
           operationId: "pilotCreateDraftMandate",
           resource: { resourceType: "subject", resourceId: tenantOneSubjectId },
           payload: firstMandateCommand.payload,
@@ -727,6 +816,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       await assert.rejects(
         () => runtime.execute({
           authenticationContext: identities.tenantOneAgent.authenticationContext,
+          schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
           operationId: "pilotReadMandate",
           resource: { resourceType: "mandate", resourceId: tenantOneMandateId },
           payload: {},
@@ -738,6 +828,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       await assert.rejects(
         () => runtime.execute({
           authenticationContext: identities.tenantOneAgent.authenticationContext,
+          schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
           operationId: "pilotRevokeDraftMandate",
           resource: { resourceType: "mandate", resourceId: tenantOneMandateId },
           payload: {},
@@ -779,7 +870,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           }),
           payload: { ...firstMandateCommand.payload, subjectId: "subject_attacker" }
         }),
-        (error) => error.code === "invalid_tenant_command_payload"
+        (error) => error.code === "invalid_tenant_protocol_request"
       );
       const capacity = await ownerPool.query(
         `SELECT used_count::int AS count
@@ -1084,6 +1175,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       await assert.rejects(
         () => runtime.execute({
           authenticationContext: identities.tenantTwoAgent.authenticationContext,
+          schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
           operationId: "pilotCreateAgentSubject",
           payload: {
             subjectActorId: identities.tenantTwoAgent.authenticationContext.actorId,

@@ -3,6 +3,11 @@ import {
   assertNoRawPiiReference,
   hashId
 } from "../../../packages/domain/src/index.js";
+import {
+  TENANT_PROTOCOL_RESULT_SCHEMA_VERSION,
+  assertTenantProtocolRequest,
+  assertTenantProtocolResult
+} from "../../../packages/api-contract/src/index.js";
 import { assertAuthenticationContext } from "../../authentication/src/index.js";
 import {
   AbuseControlService,
@@ -31,7 +36,8 @@ const ENVELOPE_REQUIRED_KEYS = new Set([
   "operationId",
   "payload",
   "requestId",
-  "correlationId"
+  "correlationId",
+  "schemaVersion"
 ]);
 const ENVELOPE_OPTIONAL_KEYS = new Set([
   "idempotencyKey",
@@ -54,6 +60,7 @@ const RESERVED_PAYLOAD_AUTHORITY_KEYS = new Set([
   "admissionId"
 ]);
 const MAX_BODY_BYTES = 64 * 1024;
+const TRUSTED_ENVELOPE_KEYS = new Set(["authenticationContext", "networkContext"]);
 
 function assertIdentifier(name, value, { minimum = 1, maximum = 2048 } = {}) {
   if (
@@ -72,6 +79,15 @@ function assertPlainObject(name, value) {
     throw new DomainError("invalid_tenant_command", `${name} must be a plain object`);
   }
   return value;
+}
+
+function assertCallerRequest(input) {
+  assertPlainObject("tenant command envelope", input);
+  const request = Object.fromEntries(
+    Object.entries(input).filter(([key]) => !TRUSTED_ENVELOPE_KEYS.has(key))
+  );
+  assertTenantProtocolRequest(request);
+  return request;
 }
 
 function requireResourceBaselines(plan, resourceDeltas) {
@@ -127,7 +143,7 @@ function normalizeEnvelope(input, handler) {
     }
     resource = Object.freeze({
       resourceType: assertIdentifier("resource.resourceType", input.resource.resourceType, { maximum: 128 }),
-      resourceId: assertIdentifier("resource.resourceId", input.resource.resourceId)
+      resourceId: assertIdentifier("resource.resourceId", input.resource.resourceId, { maximum: 256 })
     });
   }
   const idempotencyKey = input.idempotencyKey === undefined
@@ -156,8 +172,8 @@ function normalizeEnvelope(input, handler) {
     authenticationContext,
     operationId: assertIdentifier("operationId", input.operationId, { maximum: 128 }),
     payload: Object.freeze(payload),
-    requestId: assertIdentifier("requestId", input.requestId),
-    correlationId: assertIdentifier("correlationId", input.correlationId),
+    requestId: assertIdentifier("requestId", input.requestId, { minimum: 8, maximum: 128 }),
+    correlationId: assertIdentifier("correlationId", input.correlationId, { minimum: 8, maximum: 128 }),
     idempotencyKey,
     resource,
     purpose: input.purpose === undefined
@@ -168,7 +184,8 @@ function normalizeEnvelope(input, handler) {
       : assertIdentifier("reasonCode", input.reasonCode, { maximum: 128 }),
     approvalArtifact,
     networkContext: input.networkContext,
-    retryAttempt
+    retryAttempt,
+    schemaVersion: input.schemaVersion
   });
   const bodyBytes = Buffer.byteLength(JSON.stringify({
     operationId: normalized.operationId,
@@ -179,7 +196,9 @@ function normalizeEnvelope(input, handler) {
     resource: normalized.resource,
     purpose: normalized.purpose,
     reasonCode: normalized.reasonCode,
-    approvalArtifact: normalized.approvalArtifact
+    approvalArtifact: normalized.approvalArtifact,
+    retryAttempt: normalized.retryAttempt,
+    schemaVersion: normalized.schemaVersion
   }));
   if (bodyBytes > MAX_BODY_BYTES) {
     throw new DomainError("tenant_command_too_large", "tenant command exceeds the gateway limit");
@@ -191,6 +210,7 @@ function createCommandIdentity(envelope, referenceHasher) {
   const context = envelope.authenticationContext;
   const commandPayloadHash = hashId("tenant_command_payload", {
     operationId: envelope.operationId,
+    schemaVersion: envelope.schemaVersion,
     payload: envelope.payload,
     resource: envelope.resource ?? null,
     purpose: envelope.purpose ?? null,
@@ -260,13 +280,60 @@ function stableConcurrencyError(error) {
   return error;
 }
 
-function assertQueryResponse(response) {
-  assertNoRawPiiReference(response, "tenantQuery.response");
-  const bytes = Buffer.byteLength(JSON.stringify(response));
+function normalizeJsonValue(value, ancestors = new Set()) {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (Number.isFinite(value)) return value;
+    throw new DomainError("invalid_tenant_protocol_result", "tenant protocol result is not JSON-safe");
+  }
+  if (typeof value !== "object") {
+    throw new DomainError("invalid_tenant_protocol_result", "tenant protocol result is not JSON-safe");
+  }
+  if (ancestors.has(value)) {
+    throw new DomainError("invalid_tenant_protocol_result", "tenant protocol result is not JSON-safe");
+  }
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) {
+      return value.map((item, index) => {
+        if (!Object.hasOwn(value, index) || item === undefined) {
+          throw new DomainError("invalid_tenant_protocol_result", "tenant protocol result is not JSON-safe");
+        }
+        return normalizeJsonValue(item, ancestors);
+      });
+    }
+    if (Object.getPrototypeOf(value) !== Object.prototype || Object.getOwnPropertySymbols(value).length > 0) {
+      throw new DomainError("invalid_tenant_protocol_result", "tenant protocol result is not JSON-safe");
+    }
+    const normalized = {};
+    for (const [key, item] of Object.entries(value)) {
+      if (item !== undefined) normalized[key] = normalizeJsonValue(item, ancestors);
+    }
+    return normalized;
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+function assertResponseSafety(response) {
+  const normalized = normalizeJsonValue(response);
+  assertNoRawPiiReference(normalized, "tenantProtocol.response");
+  const bytes = Buffer.byteLength(JSON.stringify(normalized));
   if (bytes > 256 * 1024) {
     throw new DomainError("command_response_too_large", "tenant response exceeds the gateway limit");
   }
-  return response;
+  return normalized;
+}
+
+function createProtocolResult(envelope, response, replayed) {
+  const result = {
+    operationId: envelope.operationId,
+    replayed,
+    response: assertResponseSafety(response),
+    schemaVersion: TENANT_PROTOCOL_RESULT_SCHEMA_VERSION
+  };
+  assertTenantProtocolResult(result);
+  return Object.freeze(result);
 }
 
 export class TenantCommandGateway {
@@ -304,7 +371,8 @@ export class TenantCommandGateway {
   }
 
   async execute(input) {
-    const operationId = assertIdentifier("operationId", input?.operationId, { maximum: 128 });
+    const callerRequest = assertCallerRequest(input);
+    const operationId = assertIdentifier("operationId", callerRequest.operationId, { maximum: 128 });
     const handler = this.handlers.require(operationId);
     const { normalized: envelope, bodyBytes } = normalizeEnvelope(input, handler);
     if (envelope.operationId !== handler.operationId) {
@@ -397,13 +465,14 @@ export class TenantCommandGateway {
               clientRefHash: identity.clientRefHash,
               response: replay.response
             });
+            const result = createProtocolResult(envelope, replay.response, true);
             await abuseControl.completeAdmissionInTransaction({
               admission,
               client,
               outcome: AdmissionOutcome.SUCCEEDED,
               retainPersistentResources: false
             });
-            return { kind: "success", response: replay.response, replayed: true };
+            return { kind: "success", result };
           }
           if (admission.disposition === AdmissionDisposition.REPLAY) {
             throw new DomainError(
@@ -482,7 +551,7 @@ export class TenantCommandGateway {
         await setTenantTransactionContext(client, authorizedContext);
 
         if (handler.kind === "query") {
-          const response = assertQueryResponse(await handler.execute({
+          const response = await handler.execute({
             client,
             coreRepository,
             authenticationContext: envelope.authenticationContext,
@@ -492,14 +561,15 @@ export class TenantCommandGateway {
             now: transactionNow,
             requestId: envelope.requestId,
             correlationId: envelope.correlationId
-          }));
+          });
+          const result = createProtocolResult(envelope, response, false);
           await abuseControl.completeAdmissionInTransaction({
             admission,
             client,
             outcome: AdmissionOutcome.SUCCEEDED,
             retainPersistentResources: false
           });
-          return { kind: "success", response, replayed: false };
+          return { kind: "success", result };
         }
 
         const plan = await handler.plan({
@@ -540,6 +610,7 @@ export class TenantCommandGateway {
             );
           }
         }
+        const plannedResult = createProtocolResult(envelope, plan.response, false);
         const resourceBaselines = requireResourceBaselines(plan, resourceDeltas);
         if (resourceBaselines !== undefined) {
           await abuseControl.synchronizePersistentResourcesInTransaction({
@@ -555,11 +626,12 @@ export class TenantCommandGateway {
           commandHash: identity.requestIdentityHash,
           events: plan.events,
           writes: plan.writes,
-          response: plan.response
+          response: plannedResult.response
         });
         if (committed.replayed) {
           throw new DomainError("tenant_command_transaction_conflict", "command changed during execution");
         }
+        const committedResult = createProtocolResult(envelope, committed.response, false);
         if (plan.authorizationResource !== undefined) {
           await directory.registerResource({
             ...plan.authorizationResource,
@@ -600,17 +672,12 @@ export class TenantCommandGateway {
           outcome: AdmissionOutcome.SUCCEEDED,
           retainPersistentResources: true
         });
-        return { kind: "success", response: committed.response, replayed: false };
+        return { kind: "success", result: committedResult };
       });
       transactionCommitted = true;
       abuseControl.confirmAdmissionTransactionCommit({ admission });
       if (outcome.kind === "denied") throw outcome.error;
-      return Object.freeze({
-        operationId: envelope.operationId,
-        replayed: outcome.replayed,
-        response: structuredClone(outcome.response),
-        schemaVersion: "tenant_protocol_result.v1"
-      });
+      return outcome.result;
     } catch (error) {
       if (!transactionCommitted) {
         try {

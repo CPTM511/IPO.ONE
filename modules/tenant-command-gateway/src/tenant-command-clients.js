@@ -1,4 +1,8 @@
 import { DomainError } from "../../../packages/domain/src/index.js";
+import {
+  TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+  assertTenantProtocolRequest
+} from "../../../packages/api-contract/src/index.js";
 import { ActorType, assertAuthenticationContext } from "../../authentication/src/index.js";
 
 const HUMAN_CLIENT_ACTOR_TYPES = new Set([
@@ -11,11 +15,17 @@ const HUMAN_CLIENT_ACTOR_TYPES = new Set([
 class TenantProtocolClient {
   #allowedActorTypes;
 
-  constructor({ gateway, authenticationContextProvider, allowedActorTypes }) {
+  constructor({
+    gateway,
+    authenticationContextProvider,
+    networkContextProvider,
+    allowedActorTypes
+  }) {
     if (
       !gateway ||
       typeof gateway.execute !== "function" ||
       typeof authenticationContextProvider !== "function" ||
+      (networkContextProvider !== undefined && typeof networkContextProvider !== "function") ||
       !(allowedActorTypes instanceof Set) ||
       allowedActorTypes.size === 0
     ) {
@@ -23,16 +33,27 @@ class TenantProtocolClient {
     }
     this.gateway = gateway;
     this.authenticationContextProvider = authenticationContextProvider;
+    this.networkContextProvider = networkContextProvider;
     this.#allowedActorTypes = new Set(allowedActorTypes);
     Object.freeze(this);
   }
 
   async execute(command) {
+    const request = {
+      ...command,
+      schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
+    };
+    assertTenantProtocolRequest(request);
     const authenticationContext = assertAuthenticationContext(await this.authenticationContextProvider());
     if (!this.#allowedActorTypes.has(authenticationContext.actorType)) {
       throw new DomainError("tenant_protocol_client_mismatch", "authenticated Actor cannot use this client");
     }
-    return this.gateway.execute({ ...command, authenticationContext });
+    const networkContext = await this.networkContextProvider?.();
+    return this.gateway.execute({
+      ...request,
+      authenticationContext,
+      ...(networkContext === undefined ? {} : { networkContext })
+    });
   }
 }
 
@@ -41,14 +62,13 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     super({ ...input, allowedActorTypes: HUMAN_CLIENT_ACTOR_TYPES });
   }
 
-  async createAgentSubject({ payload, idempotencyKey, requestId, correlationId, networkContext }) {
+  async createAgentSubject({ payload, idempotencyKey, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotCreateAgentSubject",
       payload,
       idempotencyKey,
       requestId,
-      correlationId,
-      ...(networkContext === undefined ? {} : { networkContext })
+      correlationId
     });
   }
 
@@ -57,8 +77,7 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     payload,
     idempotencyKey,
     requestId,
-    correlationId,
-    networkContext
+    correlationId
   }) {
     return this.execute({
       operationId: "pilotCreateDraftMandate",
@@ -66,19 +85,17 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
       resource: { resourceType: "subject", resourceId: subjectId },
       idempotencyKey,
       requestId,
-      correlationId,
-      ...(networkContext === undefined ? {} : { networkContext })
+      correlationId
     });
   }
 
-  async getMandate({ mandateId, requestId, correlationId, networkContext }) {
+  async getMandate({ mandateId, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadMandate",
       payload: {},
       resource: { resourceType: "mandate", resourceId: mandateId },
       requestId,
-      correlationId,
-      ...(networkContext === undefined ? {} : { networkContext })
+      correlationId
     });
   }
 
@@ -87,8 +104,7 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     reasonCode,
     idempotencyKey,
     requestId,
-    correlationId,
-    networkContext
+    correlationId
   }) {
     return this.execute({
       operationId: "pilotRevokeDraftMandate",
@@ -97,8 +113,7 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
       reasonCode,
       idempotencyKey,
       requestId,
-      correlationId,
-      ...(networkContext === undefined ? {} : { networkContext })
+      correlationId
     });
   }
 }
@@ -108,14 +123,13 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     super({ ...input, allowedActorTypes: new Set([ActorType.AGENT]) });
   }
 
-  async getSelf({ subjectId, requestId, correlationId, networkContext }) {
+  async getSelf({ subjectId, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadAgentSelf",
       payload: {},
       resource: { resourceType: "subject", resourceId: subjectId },
       requestId,
-      correlationId,
-      ...(networkContext === undefined ? {} : { networkContext })
+      correlationId
     });
   }
 }
