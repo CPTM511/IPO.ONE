@@ -174,6 +174,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
   [QuotaClass.READ]: [
     "pilotReadApproval",
     "pilotReadAgentSelf",
+    "pilotReadMandate",
     "pilotReadTenantRisk",
     "pilotReadProviderIntent",
     "pilotReadEvidence"
@@ -181,6 +182,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
   [QuotaClass.MUTATION]: [
     "pilotCreateAgentSubject",
     "pilotCreateDraftMandate",
+    "pilotRevokeDraftMandate",
     "pilotAcknowledgeProviderIntent"
   ],
   [QuotaClass.ECONOMIC]: [

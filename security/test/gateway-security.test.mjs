@@ -64,3 +64,30 @@ test("durable Gateway authority is Tenant-scoped, append-only, and non-secret", 
   }
   assert.doesNotMatch(migration, /access_token|refresh_token|private_key|raw_ip|request_body|kyc_payload/i);
 });
+
+test("durable draft Mandate management can only reduce authority", async () => {
+  const [handlers, gateway, server] = await Promise.all([
+    source("modules/tenant-command-gateway/src/mandate-handlers.js"),
+    source("modules/tenant-command-gateway/src/tenant-command-gateway.js"),
+    source("apps/api/src/server.js")
+  ]);
+  for (const required of [
+    "pilotReadMandate",
+    "pilotRevokeDraftMandate",
+    "MandateStatus.REVOKED",
+    'expectedStatus: "active"',
+    'nextStatus: "closed"'
+  ]) {
+    assert.match(handlers, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  for (const required of [
+    "authorizationResourceTransition",
+    "authorizationDecision.resourceType",
+    "authorizationDecision.resourceId",
+    "authorizationDecision.resourceVersion"
+  ]) {
+    assert.match(gateway, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.doesNotMatch(handlers, /MandateStatus\.ACTIVE|activateMandate|signature|walletProof/i);
+  assert.doesNotMatch(server, /pilotReadMandate|pilotRevokeDraftMandate|tenant-command-gateway/);
+});

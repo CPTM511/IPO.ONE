@@ -74,6 +74,7 @@ export const PilotCapability = Object.freeze({
   AGENT_MANAGE_OWNED: "agent.manage.owned",
   INTEGRATION_READ_OWNED: "integration.read.owned",
   MANDATE_DRAFT_CREATE: "mandate.draft.create",
+  MANDATE_DRAFT_REVOKE: "mandate.draft.revoke",
   SUBJECT_READ_SELF: "subject.read.self",
   CREDIT_REQUEST: "credit.request",
   SPEND_REQUEST: "spend.request",
@@ -115,7 +116,8 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.AGENT_CREATE,
     PilotCapability.AGENT_MANAGE_OWNED,
     PilotCapability.INTEGRATION_READ_OWNED,
-    PilotCapability.MANDATE_DRAFT_CREATE
+    PilotCapability.MANDATE_DRAFT_CREATE,
+    PilotCapability.MANDATE_DRAFT_REVOKE
   ]),
   [RoleBundle.AGENT_RUNTIME]: Object.freeze([
     PilotCapability.SUBJECT_READ_SELF,

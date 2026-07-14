@@ -1,5 +1,6 @@
 import {
   DomainError,
+  MandateStatus,
   SubjectStatus,
   SubjectType
 } from "../../../packages/domain/src/index.js";
@@ -13,32 +14,55 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
   }
   return Object.freeze({
     async evaluate({ policy, resource }) {
-      if (
-        handler.operationId !== "pilotCreateDraftMandate" ||
-        policy.operationId !== handler.operationId ||
-        policy.liveChecks.length !== 1 ||
-        policy.liveChecks[0] !== "subject_state" ||
-        resource?.resourceType !== "subject"
-      ) {
+      if (policy.operationId !== handler.operationId || policy.liveChecks.length !== 1) {
         throw new DomainError("authorization_live_policy_rejected", "live policy is unavailable");
       }
-      const state = await coreRepository.getProjectionStateInTransaction(
-        client,
-        CoreProjectionType.SUBJECT,
-        resource.resourceId,
-        { lock: true }
-      );
+
       if (
-        !state ||
-        state.value.subjectType !== SubjectType.AGENT ||
-        !ALLOWED_DRAFT_SUBJECT_STATUSES.has(state.value.status)
+        handler.operationId === "pilotCreateDraftMandate" &&
+        policy.liveChecks[0] === "subject_state" &&
+        resource?.resourceType === "subject"
       ) {
-        throw new DomainError("authorization_live_policy_rejected", "live Subject state rejected the operation");
+        const state = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.SUBJECT,
+          resource.resourceId,
+          { lock: true }
+        );
+        if (
+          !state ||
+          state.value.subjectType !== SubjectType.AGENT ||
+          !ALLOWED_DRAFT_SUBJECT_STATUSES.has(state.value.status)
+        ) {
+          throw new DomainError("authorization_live_policy_rejected", "live Subject state rejected the operation");
+        }
+        return Object.freeze({
+          liveStateVersion: state.aggregateVersion,
+          evaluatedChecks: Object.freeze(["subject_state"])
+        });
       }
-      return Object.freeze({
-        liveStateVersion: state.aggregateVersion,
-        evaluatedChecks: Object.freeze(["subject_state"])
-      });
+
+      if (
+        handler.operationId === "pilotRevokeDraftMandate" &&
+        policy.liveChecks[0] === "mandate_state" &&
+        resource?.resourceType === "mandate"
+      ) {
+        const state = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.MANDATE,
+          resource.resourceId,
+          { lock: true }
+        );
+        if (!state || state.value.status !== MandateStatus.DRAFT) {
+          throw new DomainError("authorization_live_policy_rejected", "live Mandate state rejected the operation");
+        }
+        return Object.freeze({
+          liveStateVersion: state.aggregateVersion,
+          evaluatedChecks: Object.freeze(["mandate_state"])
+        });
+      }
+
+      throw new DomainError("authorization_live_policy_rejected", "live policy is unavailable");
     }
   });
 }

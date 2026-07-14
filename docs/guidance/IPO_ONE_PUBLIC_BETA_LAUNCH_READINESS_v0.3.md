@@ -46,7 +46,8 @@ exact-command dual control, and a disabled-by-default protective break-glass
 state machine plus atomic rate/resource/cost admission are now implemented and
 tested as local non-funds boundaries. A separate durable Tenant Command Gateway
 now composes Agent Subject creation, unsigned non-executable draft Mandate
-creation, and bounded Agent self-read with domain-anchored resource caps.
+creation, Human owner read, terminal reason-coded draft revocation, and bounded
+Agent self-read with domain-anchored resource caps.
 These controls are deliberately not deployed over the anonymous public sandbox.
 Human IdP selection, production Credential provisioning and identity adapters,
 remaining DATA-003 lifecycle handlers, a production distributed quota/edge
@@ -76,7 +77,7 @@ two audiences over one state model:
 | Visitor isolation | High-entropy sandbox partitions use a 30-minute TTL, 128-entry LRU, serialized operations, and a 32-mutation budget; SDK/browser clients retain one partition per session. |
 | Adversarial HTTP boundary | Strict methods/media types, 64 KiB bodies, bounded JSON/amounts/targets, parser and path hardening, timeouts, connection/concurrency/request limits, and redacted problems pass a live attack suite. |
 | Local Tenant resource admission | SEC-D08 Actor/client/Tenant/operation/network/account limits, bounded resources/cost, resource-blind problems, atomic PostgreSQL races, restart leases, and forced RLS pass local tests; this is not deployed on the anonymous sandbox. |
-| Local Tenant Gateway | Human-controlled Agent Subject and unsigned draft Mandate creation plus bounded Agent self-read commit through one PostgreSQL authority boundary; no public route or executable Mandate is enabled. |
+| Local Tenant Gateway | Human-controlled Agent Subject creation, unsigned draft Mandate create/read/revoke, and bounded Agent self-read commit through one PostgreSQL authority boundary; no public route or executable Mandate is enabled. |
 | Protocol correctness | Schema, boundary, migration, domain, Ledger, Mandate, Rail, Evidence, risk, and vertical-slice checks pass. |
 | Durable Rail proof | PostgreSQL migration, rollback, idempotency, concurrency, outbox/inbox, and restart replay suite passes. |
 | Supply chain | Locked pnpm install, production audit, and a GitHub Actions quality gate are present. |

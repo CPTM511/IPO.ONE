@@ -99,7 +99,7 @@ Those are deployment concerns and must be assessed separately.
 | SQL injection / replay corruption | Parameterized values, serializable transaction, optimistic stream version, idempotency hash, outbox/inbox constraints | PostgreSQL rollback, concurrency, replay, lease, and restart suite |
 | Durable cross-tenant access or key collision | Immutable `tenant_id`, tenant-aware foreign keys and runtime identities, non-owner role verification, transaction-local context, `ENABLE` + `FORCE RLS`, `USING`/`WITH CHECK`, and write guards | Two-tenant least-privilege read/write/FK/key-reuse matrix, pooled context cleanup, and full catalog coverage assertion |
 | Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; durable Agent Subject/Mandate baselines loaded under Tenant-and-kind locks; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, stale/absent-counter recovery, at-cap valid/missing resource-blind denial, bounded eviction, and source leakage assertions |
-| Authenticated command authority drift | One serializable Gateway transaction locks admission and live authorization facts, revalidates Subject/Principal state, and atomically commits audit, Event, Evidence, outbox, projection, idempotent response, and retained capacity | Two-Tenant and same-Tenant denial, concurrent Membership/Subject mutation, nonce race, exact replay, append-only tamper, bounded Mandate read, and reconciliation tests |
+| Authenticated command authority drift | One serializable Gateway transaction locks admission and live authorization facts and atomically commits audit, Event, Evidence, outbox, projection, authorization-resource transition, idempotent response, and retained capacity | Two-Tenant and same-Tenant denial, concurrent Membership/Subject mutation, nonce/revocation races, replay after resource closure, protective revocation under inactive Subject/Principal state, bounded Mandate reads, append-only tamper, and reconciliation tests |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
 | Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
 | Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
@@ -121,9 +121,10 @@ The following are known and intentional blockers, not hidden launch claims:
    notification recipients, and a named incident/takedown owner remain open.
 3. The public sandbox has no AuthN, RBAC, authenticated durable command gateway,
    dual control, break glass, or authenticated resource admission. The separate
-   local Gateway currently composes only Agent Subject, unsigned draft Mandate,
-   and Agent self-read operations; it is not reachable from the anonymous public
-   API and is not a production identity or authority claim.
+   local Gateway currently composes only Agent Subject creation, unsigned draft
+   Mandate create/read/revoke, and Agent self-read operations; it is not
+   reachable from the anonymous public API and is not a production identity or
+   executable-authority claim.
 4. Public demo state is in memory and is lost on restart. PostgreSQL Rail,
    normalized core, reconciliation, approval/break-glass, admission, and limited
    Tenant Gateway composition have recovery evidence but are not public routes.

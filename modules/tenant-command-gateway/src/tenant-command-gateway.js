@@ -509,11 +509,37 @@ export class TenantCommandGateway {
           authenticationContext: envelope.authenticationContext,
           authorizationDecision,
           payload: structuredClone(envelope.payload),
+          reasonCode: envelope.reasonCode,
           now: transactionNow,
           requestId: envelope.requestId,
           correlationId: envelope.correlationId
         });
         assertPlainObject("tenant command plan", plan);
+        if (
+          plan.authorizationResource !== undefined &&
+          plan.authorizationResourceTransition !== undefined
+        ) {
+          throw new DomainError(
+            "invalid_tenant_command_plan",
+            "tenant command cannot register and transition one authorization resource"
+          );
+        }
+        if (plan.authorizationResourceTransition !== undefined) {
+          const transition = assertPlainObject(
+            "tenant command authorization resource transition",
+            plan.authorizationResourceTransition
+          );
+          if (
+            transition.resourceType !== authorizationDecision.resourceType ||
+            transition.resourceId !== authorizationDecision.resourceId ||
+            transition.expectedVersion !== authorizationDecision.resourceVersion
+          ) {
+            throw new DomainError(
+              "invalid_tenant_command_plan",
+              "authorization resource transition does not match the current decision"
+            );
+          }
+        }
         const resourceBaselines = requireResourceBaselines(plan, resourceDeltas);
         if (resourceBaselines !== undefined) {
           await abuseControl.synchronizePersistentResourcesInTransaction({
@@ -537,6 +563,18 @@ export class TenantCommandGateway {
         if (plan.authorizationResource !== undefined) {
           await directory.registerResource({
             ...plan.authorizationResource,
+            now: transactionNow
+          });
+        }
+        if (plan.authorizationResourceTransition !== undefined) {
+          if (typeof directory.transitionResource !== "function") {
+            throw new DomainError(
+              "invalid_tenant_command_plan",
+              "authorization resource transition is unavailable"
+            );
+          }
+          await directory.transitionResource({
+            ...plan.authorizationResourceTransition,
             now: transactionNow
           });
         }

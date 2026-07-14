@@ -115,10 +115,10 @@ async function seedIdentity(pool, tenantId, identity, { controllerActorId } = {}
   ));
 }
 
-function gateway(pool, harness) {
+function gateway(pool, harness, handlers = createTenantFoundationHandlers()) {
   return new TenantCommandGateway({
     pool,
-    handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers()),
+    handlers: new TenantCommandHandlerRegistry(handlers),
     policyRegistry: harness.policyRegistry,
     credentialRegistry: harness.credentialRegistry,
     referenceHasher: harness.referenceHasher,
@@ -167,6 +167,16 @@ function createMandateCommand({ subjectId, idempotencyKey, nonce = `${idempotenc
       termsRef: "urn:ipo.one:test:gateway-mandate:v1",
       ...overrides
     },
+    idempotencyKey,
+    requestId: `request_${idempotencyKey}`,
+    correlationId: `correlation_${idempotencyKey}`
+  };
+}
+
+function revokeMandateCommand({ mandateId, idempotencyKey, reasonCode = "operator_request" }) {
+  return {
+    mandateId,
+    reasonCode,
     idempotencyKey,
     requestId: `request_${idempotencyKey}`,
     correlationId: `correlation_${idempotencyKey}`
@@ -257,7 +267,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_human_${RUN_ID}`,
         actorType: ActorType.HUMAN,
         roleBundle: RoleBundle.DEVELOPER,
-        capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.MANDATE_DRAFT_CREATE],
+        capabilities: [
+          PilotCapability.AGENT_CREATE,
+          PilotCapability.INTEGRATION_READ_OWNED,
+          PilotCapability.MANDATE_DRAFT_CREATE,
+          PilotCapability.MANDATE_DRAFT_REVOKE
+        ],
         now: IDENTITY_NOW
       }),
       tenantOneAgent: harness.addIdentity({
@@ -273,7 +288,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_other_human_${RUN_ID}`,
         actorType: ActorType.HUMAN,
         roleBundle: RoleBundle.DEVELOPER,
-        capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.MANDATE_DRAFT_CREATE],
+        capabilities: [
+          PilotCapability.AGENT_CREATE,
+          PilotCapability.INTEGRATION_READ_OWNED,
+          PilotCapability.MANDATE_DRAFT_CREATE,
+          PilotCapability.MANDATE_DRAFT_REVOKE
+        ],
         now: IDENTITY_NOW
       }),
       tenantTwoHuman: harness.addIdentity({
@@ -281,7 +301,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_two_human_${RUN_ID}`,
         actorType: ActorType.HUMAN,
         roleBundle: RoleBundle.DEVELOPER,
-        capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.MANDATE_DRAFT_CREATE],
+        capabilities: [
+          PilotCapability.AGENT_CREATE,
+          PilotCapability.INTEGRATION_READ_OWNED,
+          PilotCapability.MANDATE_DRAFT_CREATE,
+          PilotCapability.MANDATE_DRAFT_REVOKE
+        ],
         now: IDENTITY_NOW
       }),
       tenantTwoAgent: harness.addIdentity({
@@ -326,6 +351,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       `GRANT UPDATE (resource_id) ON
          authorization_resources, authorization_resource_bindings
        TO ${APP_ROLE}`
+    );
+    await ownerPool.query(
+      `GRANT UPDATE (status, version, updated_at) ON authorization_resources TO ${APP_ROLE}`
     );
     await ownerPool.query(
       `GRANT INSERT, UPDATE, DELETE ON
@@ -411,6 +439,15 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(self.response.mandates[0].mandateId, tenantOneMandateId);
       assert.equal(self.response.mandates[0].status, "draft");
 
+      const humanView = await tenantOneHuman.getMandate({
+        mandateId: tenantOneMandateId,
+        requestId: `request-human-mandate-${RUN_ID}`,
+        correlationId: `correlation-human-mandate-${RUN_ID}`
+      });
+      assert.equal(humanView.response.schemaVersion, "tenant_mandate_view.v1");
+      assert.equal(humanView.response.mandate.mandateId, tenantOneMandateId);
+      assert.equal(humanView.response.mandate.nonce, firstMandateCommand.payload.nonce);
+
       const durable = await ownerPool.query(
         `SELECT
            (SELECT count(*)::int FROM mandates WHERE tenant_id = $1 AND id = $2) AS mandates,
@@ -430,6 +467,166 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         agent_subjects: 1,
         mandate_capacity: 1
       });
+    });
+
+    await t.test("Gateway rejects a handler plan that targets a different authorization resource", async () => {
+      const handlers = createTenantFoundationHandlers().map((handler) => {
+        if (handler.operationId !== "pilotRevokeDraftMandate") return handler;
+        return {
+          ...handler,
+          async plan(input) {
+            const plan = await handler.plan(input);
+            return {
+              ...plan,
+              authorizationResourceTransition: {
+                ...plan.authorizationResourceTransition,
+                resourceId: `${plan.authorizationResourceTransition.resourceId}_attacker`
+              }
+            };
+          }
+        };
+      });
+      const hostileRuntime = gateway(appPool, harness, handlers);
+      const hostileClient = humanClient(
+        hostileRuntime,
+        identities.tenantOneHuman.authenticationContext
+      );
+      const before = await ownerPool.query(
+        `SELECT m.status AS mandate_status,
+                r.status AS resource_status,
+                r.version::int AS resource_version,
+                (SELECT count(*)::int
+                   FROM domain_events e
+                  WHERE e.tenant_id = m.tenant_id
+                    AND e.aggregate_type = 'mandate'
+                    AND e.aggregate_id = m.id) AS event_count
+           FROM mandates m
+           JOIN authorization_resources r
+             ON r.tenant_id = m.tenant_id
+            AND r.resource_type = 'mandate'
+            AND r.resource_id = m.id
+          WHERE m.tenant_id = $1 AND m.id = $2`,
+        [TENANT_ONE, tenantOneMandateId]
+      );
+      await assert.rejects(
+        () => hostileClient.revokeDraftMandate(revokeMandateCommand({
+          mandateId: tenantOneMandateId,
+          idempotencyKey: `revoke-mandate-plan-target-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "invalid_tenant_command_plan"
+      );
+      const after = await ownerPool.query(
+        `SELECT m.status AS mandate_status,
+                r.status AS resource_status,
+                r.version::int AS resource_version,
+                (SELECT count(*)::int
+                   FROM domain_events e
+                  WHERE e.tenant_id = m.tenant_id
+                    AND e.aggregate_type = 'mandate'
+                    AND e.aggregate_id = m.id) AS event_count
+           FROM mandates m
+           JOIN authorization_resources r
+             ON r.tenant_id = m.tenant_id
+            AND r.resource_type = 'mandate'
+            AND r.resource_id = m.id
+          WHERE m.tenant_id = $1 AND m.id = $2`,
+        [TENANT_ONE, tenantOneMandateId]
+      );
+      assert.deepEqual(after.rows, before.rows);
+      assert.deepEqual(after.rows, [{
+        mandate_status: "draft",
+        resource_status: "active",
+        resource_version: 1,
+        event_count: 1
+      }]);
+    });
+
+    await t.test("Human revokes one durable draft and Agent observes the terminal state", async () => {
+      const created = await tenantOneHuman.createDraftMandate(createMandateCommand({
+        subjectId: tenantOneSubjectId,
+        idempotencyKey: `create-mandate-revocable-${RUN_ID}-0001`
+      }));
+      const mandateId = created.response.mandateId;
+      const command = revokeMandateCommand({
+        mandateId,
+        idempotencyKey: `revoke-mandate-${RUN_ID}-0001`
+      });
+      const revoked = await tenantOneHuman.revokeDraftMandate(command);
+      assert.equal(revoked.replayed, false);
+      assert.equal(revoked.response.mandateId, mandateId);
+      assert.equal(revoked.response.status, "revoked");
+      assert.equal(revoked.response.reasonCode, "operator_request");
+
+      const replay = await tenantOneHuman.revokeDraftMandate(command);
+      assert.equal(replay.replayed, true);
+      assert.deepEqual(replay.response, revoked.response);
+
+      const humanView = await tenantOneHuman.getMandate({
+        mandateId,
+        requestId: `request-human-revoked-mandate-${RUN_ID}`,
+        correlationId: `correlation-human-revoked-mandate-${RUN_ID}`
+      });
+      assert.equal(humanView.response.mandate.status, "revoked");
+      const agentView = await tenantOneAgent.getSelf({
+        subjectId: tenantOneSubjectId,
+        requestId: `request-agent-revoked-mandate-${RUN_ID}`,
+        correlationId: `correlation-agent-revoked-mandate-${RUN_ID}`
+      });
+      assert.equal(
+        agentView.response.mandates.find((mandate) => mandate.mandateId === mandateId)?.status,
+        "revoked"
+      );
+
+      const durable = await ownerPool.query(
+        `SELECT m.status AS mandate_status,
+                r.status AS resource_status,
+                r.version::int AS resource_version,
+                p.aggregate_version::int AS projection_version,
+                (SELECT count(*)::int
+                   FROM domain_events e
+                  WHERE e.tenant_id = m.tenant_id
+                    AND e.aggregate_type = 'mandate'
+                    AND e.aggregate_id = m.id) AS event_count,
+                (SELECT count(*)::int
+                   FROM projection_snapshots s
+                  WHERE s.tenant_id = m.tenant_id
+                    AND s.entity_type = 'mandate'
+                    AND s.entity_id = m.id) AS snapshot_count
+           FROM mandates m
+           JOIN authorization_resources r
+             ON r.tenant_id = m.tenant_id
+            AND r.resource_type = 'mandate'
+            AND r.resource_id = m.id
+           JOIN projection_registry p
+             ON p.tenant_id = m.tenant_id
+            AND p.entity_type = 'mandate'
+            AND p.entity_id = m.id
+          WHERE m.tenant_id = $1 AND m.id = $2`,
+        [TENANT_ONE, mandateId]
+      );
+      assert.deepEqual(durable.rows, [{
+        mandate_status: "revoked",
+        resource_status: "closed",
+        resource_version: 2,
+        projection_version: 2,
+        event_count: 2,
+        snapshot_count: 2
+      }]);
+
+      await assert.rejects(
+        () => tenantOneHuman.revokeDraftMandate(revokeMandateCommand({
+          mandateId,
+          idempotencyKey: `revoke-mandate-fresh-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      const afterDenied = await ownerPool.query(
+        `SELECT count(*)::int AS count
+           FROM domain_events
+          WHERE tenant_id = $1 AND aggregate_type = 'mandate' AND aggregate_id = $2`,
+        [TENANT_ONE, mandateId]
+      );
+      assert.equal(afterDenied.rows[0].count, 2);
     });
 
     await t.test("cross-Tenant object reads fail closed and commit only bounded denial audit", async () => {
@@ -463,11 +660,14 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.notEqual(denial.rows[0].client_ref_hash, identities.tenantTwoAgent.authenticationContext.clientId);
     });
 
-    await t.test("cross-Tenant, same-Tenant controller, and Agent draft attempts fail closed", async () => {
-      const before = await ownerPool.query(
-        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id IN ($1, $2)",
-        [TENANT_ONE, TENANT_TWO]
+    await t.test("cross-Tenant, same-Tenant controller, and Agent Mandate management fail closed", async () => {
+      const state = () => ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM mandates WHERE tenant_id IN ($1, $2)) AS count,
+           (SELECT status FROM mandates WHERE tenant_id = $1 AND id = $3) AS first_status`,
+        [TENANT_ONE, TENANT_TWO, tenantOneMandateId]
       );
+      const before = await state();
       await assert.rejects(
         () => tenantTwoHuman.createDraftMandate(createMandateCommand({
           subjectId: tenantOneSubjectId,
@@ -483,6 +683,36 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         (error) => error.code === "authorization_denied"
       );
       await assert.rejects(
+        () => tenantTwoHuman.getMandate({
+          mandateId: tenantOneMandateId,
+          requestId: `request-cross-tenant-read-mandate-${RUN_ID}`,
+          correlationId: `correlation-cross-tenant-read-mandate-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneOtherHuman.getMandate({
+          mandateId: tenantOneMandateId,
+          requestId: `request-other-controller-read-mandate-${RUN_ID}`,
+          correlationId: `correlation-other-controller-read-mandate-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantTwoHuman.revokeDraftMandate(revokeMandateCommand({
+          mandateId: tenantOneMandateId,
+          idempotencyKey: `cross-tenant-revoke-mandate-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneOtherHuman.revokeDraftMandate(revokeMandateCommand({
+          mandateId: tenantOneMandateId,
+          idempotencyKey: `other-controller-revoke-mandate-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
         () => runtime.execute({
           authenticationContext: identities.tenantOneAgent.authenticationContext,
           operationId: "pilotCreateDraftMandate",
@@ -494,14 +724,41 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         }),
         (error) => error.code === "authorization_denied"
       );
-      const after = await ownerPool.query(
-        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id IN ($1, $2)",
-        [TENANT_ONE, TENANT_TWO]
+      await assert.rejects(
+        () => runtime.execute({
+          authenticationContext: identities.tenantOneAgent.authenticationContext,
+          operationId: "pilotReadMandate",
+          resource: { resourceType: "mandate", resourceId: tenantOneMandateId },
+          payload: {},
+          requestId: `request-agent-read-mandate-${RUN_ID}`,
+          correlationId: `correlation-agent-read-mandate-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
       );
+      await assert.rejects(
+        () => runtime.execute({
+          authenticationContext: identities.tenantOneAgent.authenticationContext,
+          operationId: "pilotRevokeDraftMandate",
+          resource: { resourceType: "mandate", resourceId: tenantOneMandateId },
+          payload: {},
+          reasonCode: "operator_request",
+          idempotencyKey: `agent-revoke-mandate-${RUN_ID}-0001`,
+          requestId: `request-agent-revoke-mandate-${RUN_ID}`,
+          correlationId: `correlation-agent-revoke-mandate-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      const after = await state();
       assert.deepEqual(after.rows[0], before.rows[0]);
     });
 
     await t.test("Mandate replay is exact, nonce reuse conflicts, and failure releases capacity", async () => {
+      const beforeCapacity = await ownerPool.query(
+        `SELECT used_count::int AS count
+           FROM abuse_capacity_buckets
+          WHERE tenant_id = $1 AND kind = 'mandates'`,
+        [TENANT_ONE]
+      );
       const replay = await tenantOneHuman.createDraftMandate(firstMandateCommand);
       assert.equal(replay.replayed, true);
       assert.equal(replay.response.mandateId, tenantOneMandateId);
@@ -530,7 +787,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           WHERE tenant_id = $1 AND kind = 'mandates'`,
         [TENANT_ONE]
       );
-      assert.equal(capacity.rows[0].count, 1);
+      assert.deepEqual(capacity.rows[0], beforeCapacity.rows[0]);
     });
 
     await t.test("draft creation rejects suspended or closed Subjects and an inactive Principal", async () => {
@@ -597,6 +854,66 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         nextStatus: "active",
         idempotencyKey: `restore-principal-${RUN_ID}-0001`
       });
+    });
+
+    await t.test("protective draft revocation survives suspended Subject and inactive Principal state", async () => {
+      const stateSubject = await tenantOneHuman.createAgentSubject(createCommand({
+        subjectActorId: identities.tenantOneAgent.authenticationContext.actorId,
+        displayName: "Revocation Independence Agent",
+        idempotencyKey: `create-agent-revoke-independent-${RUN_ID}-0001`
+      }));
+      assert.equal(stateSubject.response.principalId, tenantOnePrincipalId);
+      const draft = await tenantOneHuman.createDraftMandate(createMandateCommand({
+        subjectId: stateSubject.response.subjectId,
+        idempotencyKey: `create-mandate-revoke-independent-${RUN_ID}-0001`
+      }));
+      await transitionProjection({
+        pool: appPool,
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        entityType: "subject",
+        entityId: stateSubject.response.subjectId,
+        nextStatus: "suspended",
+        idempotencyKey: `suspend-revoke-independent-subject-${RUN_ID}-0001`
+      });
+      let principalRestricted = false;
+      try {
+        await transitionProjection({
+          pool: appPool,
+          tenantId: TENANT_ONE,
+          actorId: identities.tenantOneHuman.authenticationContext.actorId,
+          entityType: "principal",
+          entityId: tenantOnePrincipalId,
+          nextStatus: "restricted",
+          idempotencyKey: `restrict-revoke-independent-principal-${RUN_ID}-0001`
+        });
+        principalRestricted = true;
+        const revoked = await tenantOneHuman.revokeDraftMandate(revokeMandateCommand({
+          mandateId: draft.response.mandateId,
+          reasonCode: "security_incident",
+          idempotencyKey: `revoke-independent-mandate-${RUN_ID}-0001`
+        }));
+        assert.equal(revoked.response.status, "revoked");
+        assert.equal(revoked.response.reasonCode, "security_incident");
+      } finally {
+        if (principalRestricted) {
+          await transitionProjection({
+            pool: appPool,
+            tenantId: TENANT_ONE,
+            actorId: identities.tenantOneHuman.authenticationContext.actorId,
+            entityType: "principal",
+            entityId: tenantOnePrincipalId,
+            nextStatus: "active",
+            idempotencyKey: `restore-revoke-independent-principal-${RUN_ID}-0001`
+          });
+        }
+      }
+      const view = await tenantOneHuman.getMandate({
+        mandateId: draft.response.mandateId,
+        requestId: `request-read-revoke-independent-${RUN_ID}`,
+        correlationId: `correlation-read-revoke-independent-${RUN_ID}`
+      });
+      assert.equal(view.response.mandate.status, "revoked");
     });
 
     await t.test("concurrent Subject suspension cannot race a draft Mandate into existence", async () => {
@@ -887,6 +1204,75 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         [TENANT_ONE]
       );
       assert.equal(after.rows[0].count, before.rows[0].count + 1);
+    });
+
+    await t.test("concurrent draft revocation commits at most one terminal transition", async () => {
+      const draft = await tenantOneHuman.createDraftMandate(createMandateCommand({
+        subjectId: tenantOneSubjectId,
+        idempotencyKey: `create-mandate-revoke-race-${RUN_ID}-0001`
+      }));
+      const mandateId = draft.response.mandateId;
+      const before = await ownerPool.query(
+        `SELECT count(*)::int AS count
+           FROM domain_events
+          WHERE tenant_id = $1 AND aggregate_type = 'mandate' AND aggregate_id = $2`,
+        [TENANT_ONE, mandateId]
+      );
+      const settled = await Promise.allSettled([
+        tenantOneHuman.revokeDraftMandate(revokeMandateCommand({
+          mandateId,
+          idempotencyKey: `revoke-mandate-race-a-${RUN_ID}-0001`
+        })),
+        tenantOneHuman.revokeDraftMandate(revokeMandateCommand({
+          mandateId,
+          idempotencyKey: `revoke-mandate-race-b-${RUN_ID}-0001`
+        }))
+      ]);
+      const fulfilled = settled.filter(({ status }) => status === "fulfilled");
+      const rejected = settled.filter(({ status }) => status === "rejected");
+      assert.equal(fulfilled.length <= 1, true);
+      assert.equal(rejected.length >= 1, true);
+      for (const rejection of rejected) {
+        assert.equal(
+          [
+            "authorization_denied",
+            "request_admission_unavailable",
+            "stale_aggregate_version"
+          ].includes(rejection.reason?.code),
+          true
+        );
+      }
+      if (fulfilled.length === 0) {
+        const recovery = await tenantOneHuman.revokeDraftMandate(revokeMandateCommand({
+          mandateId,
+          idempotencyKey: `revoke-mandate-race-recovery-${RUN_ID}-0001`
+        }));
+        assert.equal(recovery.response.status, "revoked");
+      } else {
+        assert.equal(fulfilled[0].value.response.status, "revoked");
+      }
+      const after = await ownerPool.query(
+        `SELECT m.status AS mandate_status,
+                r.status AS resource_status,
+                count(e.id)::int AS event_count
+           FROM mandates m
+           JOIN authorization_resources r
+             ON r.tenant_id = m.tenant_id
+            AND r.resource_type = 'mandate'
+            AND r.resource_id = m.id
+           JOIN domain_events e
+             ON e.tenant_id = m.tenant_id
+            AND e.aggregate_type = 'mandate'
+            AND e.aggregate_id = m.id
+          WHERE m.tenant_id = $1 AND m.id = $2
+          GROUP BY m.status, r.status`,
+        [TENANT_ONE, mandateId]
+      );
+      assert.deepEqual(after.rows, [{
+        mandate_status: "revoked",
+        resource_status: "closed",
+        event_count: before.rows[0].count + 1
+      }]);
     });
 
     await t.test("concurrent Agent membership revocation invalidates resource binding atomically", async () => {

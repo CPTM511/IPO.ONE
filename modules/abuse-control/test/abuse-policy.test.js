@@ -52,6 +52,9 @@ test("every authenticated operation has exactly one closed quota classification"
     "pilotAutoRepay",
     "workerAutoRepay"
   ]));
+  const byOperation = new Map(TENANT_ABUSE_OPERATION_POLICIES.map((item) => [item.operationId, item]));
+  assert.equal(byOperation.get("pilotReadMandate").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("pilotRevokeDraftMandate").quotaClass, QuotaClass.MUTATION);
 });
 
 test("all configured values remain within immutable hard ceilings", () => {

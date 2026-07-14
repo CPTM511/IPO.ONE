@@ -169,6 +169,25 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["subject_state"]
   }),
   tenantOperation({
+    operationId: "pilotReadMandate",
+    action: "mandate.read",
+    resourceType: "mandate",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.INTEGRATION_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotRevokeDraftMandate",
+    action: "mandate.draft.revoke",
+    resourceType: "mandate",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.MANDATE_DRAFT_REVOKE,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: ["credential_compromise", "operator_request", "security_incident"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["mandate_state"]
+  }),
+  tenantOperation({
     operationId: "pilotReadAgentSelf",
     action: "subject.read.self",
     resourceType: "subject",

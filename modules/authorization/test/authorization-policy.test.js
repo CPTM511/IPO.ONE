@@ -5,7 +5,10 @@ import {
   ApprovalRequirement,
   AuthorizationPolicyRegistry,
   AuthorizationSurface,
+  PilotCapability,
   PUBLIC_SANDBOX_OPERATION_POLICIES,
+  ROLE_BUNDLE_CAPABILITIES,
+  RoleBundle,
   TENANT_OPERATION_POLICIES,
   assertPolicyTransitionDoesNotBroaden
 } from "../src/index.js";
@@ -48,6 +51,24 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
   assert.deepEqual(
     isolatedRegistry.getAuthenticated("pilotSubmitSpend").liveChecks,
     ["mandate", "spend_policy", "risk", "cap", "freeze"]
+  );
+
+  const mandateRead = registry.getAuthenticated("pilotReadMandate");
+  assert.equal(mandateRead.requiredCapability, PilotCapability.INTEGRATION_READ_OWNED);
+  assert.equal(mandateRead.ownershipRule, "actor");
+  assert.deepEqual(mandateRead.allowedActorTypes, ["human"]);
+  const mandateRevoke = registry.getAuthenticated("pilotRevokeDraftMandate");
+  assert.equal(mandateRevoke.requiredCapability, PilotCapability.MANDATE_DRAFT_REVOKE);
+  assert.equal(mandateRevoke.ownershipRule, "actor");
+  assert.deepEqual(mandateRevoke.liveChecks, ["mandate_state"]);
+  assert.deepEqual(mandateRevoke.reasonPolicy.allowedCodes, [
+    "credential_compromise",
+    "operator_request",
+    "security_incident"
+  ]);
+  assert.equal(
+    ROLE_BUNDLE_CAPABILITIES[RoleBundle.DEVELOPER].includes(PilotCapability.MANDATE_DRAFT_REVOKE),
+    true
   );
 });
 

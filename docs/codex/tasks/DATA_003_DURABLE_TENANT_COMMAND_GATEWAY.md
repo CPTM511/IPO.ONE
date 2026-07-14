@@ -58,21 +58,25 @@ API would turn a safe demo into shared unauthenticated customer state.
   approval command hashes.
 - Human and Agent protocol clients share one closed handler registry. The
   reviewed operations implement `pilotCreateAgentSubject`,
-  `pilotCreateDraftMandate`, and `pilotReadAgentSelf`.
+  `pilotCreateDraftMandate`, `pilotReadMandate`,
+  `pilotRevokeDraftMandate`, and `pilotReadAgentSelf`.
 - Migration `0009_durable_identity_resource_capacity` adds conservative Agent
   Subject and Mandate resource ceilings. Handler baseline loaders reconcile
   durable Tenant counts during pre-lookup admission and again inside the
   business transaction before a new projection commits.
 - Two-Tenant, same-Tenant controller-confusion, concurrent Membership
-  revocation, Subject-state race, Principal nonce race, restart replay,
-  conflicting reuse, persistent-capacity boundary, denial-only audit,
-  append-only tamper, bounded-read, and reconciliation tests pass.
+  revocation, Subject-state race, Principal nonce/revocation races, replay after
+  authorization-resource closure, protective draft revocation under inactive
+  Subject/Principal state, conflicting reuse, persistent-capacity boundary,
+  denial-only audit, append-only tamper, bounded-read, and reconciliation tests
+  pass.
 - ADR-022 records transaction ownership, replay ordering, advisory/row lock,
   and public-sandbox isolation decisions.
 
 ## Remaining Composition
 
-- Signed Mandate activation and verified CAIP-10 binding setup under AUTH-002.
+- Signed Mandate activation, active-Mandate lifecycle, and verified CAIP-10
+  binding setup under AUTH-002.
 - Agent credit request, allowlisted spend, Lockbox revenue capture, automated
   repayment, and associated live-state adapters.
 - Worker, approval, protective risk, audit/export, and reconciliation command
