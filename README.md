@@ -46,10 +46,14 @@ movement, accounting, and risk into one black box.
 > owner-authorized integrity reads, reason-coded terminal draft revocation,
 > domain-anchored resource capacity, bounded Agent self-read, and strong-MFA,
 > reason-coded protective Agent Subject freeze for Risk/Operations Operators.
+> DATA-003D additionally provides Risk Operators and Auditors a recent-MFA,
+> RLS-scoped aggregate Tenant portfolio view over Agent Subjects, CreditLines,
+> Obligations, and at most 50 deterministic asset exposures, with no identity
+> detail or PII.
 > Exact replay remains available after suspension while new commands fail
 > closed. It is not
 > mounted on the public API. API-002 adds a transport-neutral, closed and
-> versioned contract for those six operations: JSON Schema request/result
+> versioned contract for those seven operations: JSON Schema request/result
 > validation, a machine-readable catalog, TypeScript discriminated unions,
 > conformance fixtures, pre-admission request enforcement, and pre-commit result
 > enforcement. Authentication and network trust remain adapter-injected and are
@@ -184,7 +188,7 @@ flowchart TB
 | Authorization | Shared Human/Agent capability policy, Membership/client/controller binding, object ownership, AccessGrants, live checks, MFA, reasons, idempotency, approval, revalidation, and allow/deny audit | Approved local non-funds foundation with private short-lived v2 decisions, PostgreSQL Membership/resource/audit adapters, non-enumerating denials, and exact payload binding; not wired to the public sandbox |
 | Approval | Exact-command proposal, two-role decisions, atomic single execution, and separately gated protective break glass | Durable PostgreSQL local non-funds boundary with forced RLS, immutable/guarded records, Event/Evidence/outbox linkage, restart recovery, and reconciliation; disabled/not wired on the public sandbox |
 | Resource Admission | Versioned Actor/client/Tenant/operation/network/account rates, concurrency, bytes, durable counts, queue/export/time/retry/cost budgets, and resource-blind denial | Approved SEC-D08 local non-funds boundary with deterministic and PostgreSQL atomic stores, restart leases, coarse retry classes, and low-cardinality telemetry; not wired to the public sandbox |
-| Tenant Command Gateway | One authenticated protocol and serializable commit boundary for Human/Operator/Agent operations | PostgreSQL-backed DATA-003 foundation with exact replay identity, row-locked authorization facts, immutable Human-to-Agent controller assignment, atomic audit/Event/Evidence/projection/admission completion, and six reviewed pilot operations including protective Subject freeze; API-002 validates closed versioned requests before admission and results before commit; local in-process non-funds only |
+| Tenant Command Gateway | One authenticated protocol and serializable commit boundary for Human/Operator/Agent operations | PostgreSQL-backed DATA-003 foundation with exact replay identity, row-locked authorization facts, immutable Human-to-Agent controller assignment, atomic audit/Event/Evidence/projection/admission completion, and seven reviewed pilot operations including protective Subject freeze plus aggregate Risk/Auditor portfolio read; API-002 validates closed versioned requests before admission and results before commit; local in-process non-funds only |
 | Mandate | Capability, counterparty, asset, amount, time, nonce, and revocation scope | Process-local demo service plus durable, integrity-checked `mandate.v2` draft creation, Human owner read, and terminal draft revocation; drafts remain unsigned and non-executable |
 | Spend Policy | Provider allowlist, category, transaction, daily, and obligation limits | Enforced before spend and Rail submission |
 | Obligation | Principal, amount, due state, repayment, overdue/default-compatible lifecycle | Versioned local aggregate |
@@ -282,9 +286,13 @@ The separate DATA-003 application protocol is defined by the published
 [`tenant_protocol_result.v1`](schemas/v2/tenant-protocol-result.schema.json),
 and
 [`tenant_protocol_catalog.v1`](api/tenant-protocol/ipo-one.tenant-protocol.v1.json)
-contracts. Its current six operations cover Agent Subject create, draft
+contracts. Its current seven operations cover Agent Subject create, draft
 Mandate create/read/revoke, Agent self-read, and Risk/Operations protective
-Subject freeze. Freeze can only reduce authority; unfreeze remains absent and
+Subject freeze, plus a Risk/Auditor aggregate Tenant portfolio read. The
+portfolio query requires recent phishing-resistant authentication, returns
+complete Agent-only status and amount totals plus at most 50 asset summaries,
+and omits Tenant, Subject, Principal, account, Provider, Event/Evidence, KYC/KYP,
+and PII fields. Freeze can only reduce authority; unfreeze remains absent and
 dual-control gated.
 
 The request body never carries Tenant, Actor, Credential, role, authorization,
@@ -369,7 +377,7 @@ fund-moving adapter.
 | Local pilot AuthZ | Versioned deny-by-default policies, capability intersection, Membership/client binding, Actor/Tenant ownership, exact AccessGrants, live checks, reason/idempotency/approval rules, private short-lived decisions, TOCTOU revalidation, and awaited allow/deny audit; not enabled on the public runtime |
 | Local pilot Approval | Server-prepared exact-command proposals, distinct Risk/Operations approvers, current Credential/Membership/MFA revalidation, serializable single execution, immutable Evidence, forced RLS, and protective-only break glass; local non-funds only and not enabled on the public runtime |
 | Local pilot Admission | Closed `abuse_001.v1` policy over trusted Actor/client/Tenant/network/account context; atomic rates, concurrency, bytes, durable counts, queue/export/retry/cost, replay disposition, restart leases, forced RLS, coarse retry metadata, and low-cardinality telemetry; local non-funds only and not enabled on the public runtime |
-| Local pilot Tenant Gateway | Closed request schema before authentication/admission/object lookup; trusted-context injection outside caller data; schema version bound to replay identity; closed result schema before commit; serializable authorization/Event/Evidence/projection/response/resource transition; immutable controller binding; RLS plus row-locked TOCTOU checks; six operations including one-way protective Subject freeze implemented locally but not enabled publicly |
+| Local pilot Tenant Gateway | Closed request schema before authentication/admission/object lookup; trusted-context injection outside caller data; schema version bound to replay identity; closed result schema before commit; serializable authorization/Event/Evidence/projection/response/resource transition; immutable controller binding; RLS plus row-locked TOCTOU checks; seven operations including one-way protective Subject freeze and aggregate Risk/Auditor portfolio read implemented locally but not enabled publicly |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
 | Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |
@@ -462,7 +470,8 @@ state, projection hashes, Ledger/state reconciliation, durable two-role approval
 and atomic execution, protective break-glass declaration through review, atomic
 multi-adapter admission races, restart-retained rates, economic replay/resource
 rollback, same- and cross-Tenant ownership denial, concurrent Membership
-revocation, durable Gateway replay, drift Evidence, and approval-gated
+revocation, durable Gateway replay, recent-MFA Risk/Auditor portfolio reads,
+exact nonzero exposure aggregation, cross-Tenant risk denial, drift Evidence, and approval-gated
 idempotent repair. GitHub Actions repeats the locked install,
 all repository and adversarial checks, PostgreSQL recovery, isolated demo,
 dependency audit, and live smoke on every push and pull request.

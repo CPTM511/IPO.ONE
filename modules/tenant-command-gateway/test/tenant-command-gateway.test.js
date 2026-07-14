@@ -10,6 +10,7 @@ import {
   AgentTenantCommandClient,
   HumanTenantCommandClient,
   OperatorTenantCommandClient,
+  RiskTenantQueryClient,
   TenantCommandHandlerRegistry,
   createAgentSubjectCommandHandler,
   createDraftMandateCommandHandler,
@@ -18,6 +19,7 @@ import {
   normalizeDraftMandatePayload,
   readAgentSelfQueryHandler,
   readMandateQueryHandler,
+  readTenantRiskPortfolioQueryHandler,
   revokeDraftMandateCommandHandler
 } from "../src/index.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
@@ -63,6 +65,7 @@ test("handler registry is closed, unique, and distinguishes commands from querie
     freezeAgentSubjectCommandHandler(),
     readAgentSelfQueryHandler(),
     readMandateQueryHandler(),
+    readTenantRiskPortfolioQueryHandler(),
     revokeDraftMandateCommandHandler()
   ];
   const registry = new TenantCommandHandlerRegistry(handlers);
@@ -71,6 +74,7 @@ test("handler registry is closed, unique, and distinguishes commands from querie
     "pilotFreezeSubject",
     "pilotReadAgentSelf",
     "pilotReadMandate",
+    "pilotReadTenantRisk",
     "pilotRevokeDraftMandate"
   ]);
   assert.equal(registry.require("pilotCreateAgentSubject").kind, "command");
@@ -93,8 +97,102 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotFreezeSubject",
     "pilotReadAgentSelf",
     "pilotReadMandate",
+    "pilotReadTenantRisk",
     "pilotRevokeDraftMandate"
   ]);
+});
+
+test("Tenant risk query returns only bounded aggregate portfolio data", async () => {
+  const now = new Date("2026-07-14T02:00:00.000Z");
+  const portfolio = {
+    subjects: {
+      totalCount: 1,
+      pendingCount: 1,
+      activeCount: 0,
+      suspendedCount: 0,
+      closedCount: 0
+    },
+    creditLines: {
+      totalCount: 0,
+      requestedCount: 0,
+      approvedCount: 0,
+      rejectedCount: 0,
+      frozenCount: 0,
+      closedCount: 0,
+      limitMinor: "0",
+      utilizedMinor: "0"
+    },
+    obligations: {
+      totalCount: 0,
+      openCount: 0,
+      createdCount: 0,
+      activeCount: 0,
+      partiallyRepaidCount: 0,
+      fullyRepaidCount: 0,
+      overdueCount: 0,
+      defaultedCount: 0,
+      closedCount: 0,
+      principalMinor: "0",
+      outstandingPrincipalMinor: "0",
+      accruedFeesMinor: "0",
+      repaidAmountMinor: "0"
+    },
+    assetExposures: [],
+    hasMoreAssetExposures: false
+  };
+  const calls = [];
+  const coreRepository = {
+    async getTenantRiskPortfolioInTransaction(client, options) {
+      calls.push({ client, options });
+      return portfolio;
+    }
+  };
+  const client = {};
+  const result = await readTenantRiskPortfolioQueryHandler().execute({
+    client,
+    coreRepository,
+    authorizationDecision: {
+      resourceType: "risk_portfolio",
+      resourceId: "risk_portfolio_gateway_test"
+    },
+    payload: {},
+    now
+  });
+  assert.deepEqual(calls, [{ client, options: { assetLimit: 50 } }]);
+  assert.deepEqual(result, {
+    portfolioId: "risk_portfolio_gateway_test",
+    asOf: now.toISOString(),
+    ...portfolio,
+    schemaVersion: "tenant_risk_portfolio_view.v1"
+  });
+  assert.equal(JSON.stringify(result).includes("subjectId"), false);
+
+  await assert.rejects(
+    () => readTenantRiskPortfolioQueryHandler().execute({
+      client,
+      coreRepository,
+      authorizationDecision: {
+        resourceType: "subject",
+        resourceId: "risk_portfolio_gateway_test"
+      },
+      payload: {},
+      now
+    }),
+    (error) => error.code === "tenant_resource_unavailable"
+  );
+  await assert.rejects(
+    () => readTenantRiskPortfolioQueryHandler().execute({
+      client,
+      coreRepository,
+      authorizationDecision: {
+        resourceType: "risk_portfolio",
+        resourceId: "risk_portfolio_gateway_test"
+      },
+      payload: { tenantId: "tenant_attacker" },
+      now
+    }),
+    (error) => error.code === "invalid_tenant_command_payload"
+  );
 });
 
 test("protective Subject freeze plans one reason-coded terminal restriction", async () => {
@@ -453,7 +551,7 @@ test("draft Mandate management reads exact state and plans terminal resource clo
   );
 });
 
-test("Human, Operator, and Agent clients inject only their verified context into one protocol", async () => {
+test("Human, Operator, Risk, and Agent clients inject only their verified context into one protocol", async () => {
   const calls = [];
   let authenticationContextLookups = 0;
   let networkContextLookups = 0;
@@ -466,6 +564,7 @@ test("Human, Operator, and Agent clients inject only their verified context into
   const humanContext = authenticationContext(ActorType.HUMAN, "actor_human_owner");
   const agentContext = authenticationContext(ActorType.AGENT, "actor_agent_alpha");
   const operatorContext = authenticationContext(ActorType.RISK_OPERATOR, "actor_risk_alpha");
+  const auditorContext = authenticationContext(ActorType.AUDITOR, "actor_auditor_alpha");
   const human = new HumanTenantCommandClient({
     gateway,
     authenticationContextProvider: async () => {
@@ -484,6 +583,10 @@ test("Human, Operator, and Agent clients inject only their verified context into
   const operator = new OperatorTenantCommandClient({
     gateway,
     authenticationContextProvider: async () => operatorContext
+  });
+  const risk = new RiskTenantQueryClient({
+    gateway,
+    authenticationContextProvider: async () => auditorContext
   });
 
   await human.createAgentSubject({
@@ -534,6 +637,11 @@ test("Human, Operator, and Agent clients inject only their verified context into
     requestId: "request_agent_001",
     correlationId: "correlation_agent_001"
   });
+  await risk.getPortfolio({
+    portfolioId: "risk_portfolio_alpha",
+    requestId: "request_risk_001",
+    correlationId: "correlation_risk_001"
+  });
 
   assert.equal(calls[0].authenticationContext, humanContext);
   assert.deepEqual(calls[0].networkContext, { source: "trusted_test_adapter" });
@@ -552,6 +660,13 @@ test("Human, Operator, and Agent clients inject only their verified context into
   assert.deepEqual(calls[4].payload, {});
   assert.equal(calls[5].authenticationContext, agentContext);
   assert.equal(calls[5].operationId, "pilotReadAgentSelf");
+  assert.equal(calls[6].authenticationContext, auditorContext);
+  assert.equal(calls[6].operationId, "pilotReadTenantRisk");
+  assert.deepEqual(calls[6].resource, {
+    resourceType: "risk_portfolio",
+    resourceId: "risk_portfolio_alpha"
+  });
+  assert.deepEqual(calls[6].payload, {});
   assert.equal(Object.hasOwn(calls[0], "tenantId"), false);
   assert.equal(Object.hasOwn(calls[5], "actorId"), false);
   assert.equal(calls.every((call) => call.schemaVersion === "tenant_protocol_request.v1"), true);
@@ -571,5 +686,5 @@ test("Human, Operator, and Agent clients inject only their verified context into
     (error) => error.code === "invalid_tenant_protocol_request"
   );
   assert.equal(authenticationContextLookups, lookupsBeforeInvalidRequest);
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 7);
 });

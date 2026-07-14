@@ -27,6 +27,7 @@ import {
   AgentTenantCommandClient,
   HumanTenantCommandClient,
   OperatorTenantCommandClient,
+  RiskTenantQueryClient,
   TenantCommandGateway,
   TenantCommandHandlerRegistry,
   createPostgresTenantLivePolicyAdapter,
@@ -39,6 +40,8 @@ const IDENTITY_NOW = new Date(Date.now() - 60_000);
 const TENANT_ONE = `tenant_gateway_one_${RUN_ID}`;
 const TENANT_TWO = `tenant_gateway_two_${RUN_ID}`;
 const APP_ROLE = `ipo_gateway_${RUN_ID}`;
+const TENANT_ONE_RISK_PORTFOLIO = `risk_portfolio_gateway_one_${RUN_ID}`;
+const TENANT_TWO_RISK_PORTFOLIO = `risk_portfolio_gateway_two_${RUN_ID}`;
 
 async function withTenantTransaction(pool, context, operation) {
   const client = await pool.connect();
@@ -117,6 +120,143 @@ async function seedIdentity(pool, tenantId, identity, { controllerActorId } = {}
   ));
 }
 
+async function seedRiskPortfolioResource(pool, tenantId, actorId, portfolioId) {
+  const context = createTenantSecurityContext({
+    tenantId,
+    actorId,
+    policyVersion: "security_001.v1",
+    source: "local_test"
+  });
+  await withTenantTransaction(pool, context, (client) => client.query(
+    `INSERT INTO authorization_resources(
+       tenant_id, resource_type, resource_id, status, version,
+       created_at, updated_at, schema_version
+     ) VALUES ($1, 'risk_portfolio', $2, 'active', 1, $3, $3, 'authorization_resource.v1')`,
+    [tenantId, portfolioId, IDENTITY_NOW]
+  ));
+}
+
+async function seedRiskPortfolioExposure(pool, {
+  tenantId,
+  actorId,
+  subjectId,
+  principalId
+}) {
+  const ids = {
+    mandateId: `mandate_risk_portfolio_${RUN_ID}`,
+    providerId: `provider_risk_portfolio_${RUN_ID}`,
+    spendPolicyId: `spend_policy_risk_portfolio_${RUN_ID}`,
+    creditLineId: `credit_line_risk_portfolio_${RUN_ID}`,
+    obligationId: `obligation_risk_portfolio_${RUN_ID}`,
+    assetId: "urn:ipo-one:sandbox-asset:risk-usd-cent"
+  };
+  const context = createTenantSecurityContext({
+    tenantId,
+    actorId,
+    policyVersion: "security_001.v1",
+    source: "local_test"
+  });
+  await withTenantTransaction(pool, context, async (client) => {
+    await client.query(
+      `INSERT INTO mandates(
+         tenant_id, id, mandate_hash, principal_id, subject_id, capabilities,
+         allowed_provider_ids, allowed_categories, asset_ids,
+         per_action_limit_minor, aggregate_limit_minor, utilized_minor,
+         valid_from, expires_at, nonce, terms_ref, status,
+         created_at, updated_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, '["request_credit"]'::jsonb,
+         '[]'::jsonb, '[]'::jsonb, $6::jsonb,
+         1000, 1000, 250, $7, $8, $9, $10, 'active', $7, $7, 'mandate.v2'
+       )`,
+      [
+        tenantId,
+        ids.mandateId,
+        `mandate_risk_portfolio_hash_${RUN_ID}`,
+        principalId,
+        subjectId,
+        JSON.stringify([ids.assetId]),
+        IDENTITY_NOW,
+        new Date(IDENTITY_NOW.getTime() + 86_400_000),
+        `risk-portfolio-nonce-${RUN_ID}`,
+        `urn:ipo.one:test:risk-portfolio:${RUN_ID}`
+      ]
+    );
+    await client.query(
+      `INSERT INTO providers(
+         tenant_id, id, provider_hash, name, settlement_account_ref,
+         status, risk_tier, created_at, schema_version
+       ) VALUES ($1, $2, $3, 'Risk Portfolio Fixture', $4, 'active', 'tier_1', $5, 'provider.v1')`,
+      [
+        tenantId,
+        ids.providerId,
+        `provider_risk_portfolio_hash_${RUN_ID}`,
+        `account:fixture:${RUN_ID}`,
+        IDENTITY_NOW
+      ]
+    );
+    await client.query(
+      `INSERT INTO spend_policies(
+         tenant_id, id, policy_hash, subject_id, provider_id, asset_id,
+         per_tx_limit_minor, daily_limit_minor, obligation_cap_minor,
+         status, created_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, 1000, 1000, 1000, 'active', $7)`,
+      [
+        tenantId,
+        ids.spendPolicyId,
+        `spend_policy_risk_portfolio_hash_${RUN_ID}`,
+        subjectId,
+        ids.providerId,
+        ids.assetId,
+        IDENTITY_NOW
+      ]
+    );
+    await client.query(
+      `INSERT INTO credit_lines(
+         tenant_id, id, subject_id, mandate_id, asset_id, limit_minor,
+         utilized_minor, status, risk_snapshot_id, created_at
+       ) VALUES ($1, $2, $3, $4, $5, 1000, 250, 'approved', NULL, $6)`,
+      [tenantId, ids.creditLineId, subjectId, ids.mandateId, ids.assetId, IDENTITY_NOW]
+    );
+    await client.query(
+      `INSERT INTO obligations(
+         tenant_id, id, obligation_hash, subject_id, principal_id, mandate_id,
+         asset_id, amount_minor, outstanding_minor, spend_policy_id,
+         cashflow_route_id, status, due_at, created_at,
+         accrued_fees_minor, repaid_amount_minor
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6,
+         $7, 800, 300, $8,
+         $9, 'overdue', $10, $11, 10, 500
+       )`,
+      [
+        tenantId,
+        ids.obligationId,
+        `obligation_risk_portfolio_hash_${RUN_ID}`,
+        subjectId,
+        principalId,
+        ids.mandateId,
+        ids.assetId,
+        ids.spendPolicyId,
+        `cashflow:fixture:${RUN_ID}`,
+        new Date(IDENTITY_NOW.getTime() - 86_400_000),
+        IDENTITY_NOW
+      ]
+    );
+  });
+  return { context, ids };
+}
+
+async function cleanupRiskPortfolioExposure(pool, { context, ids }) {
+  await withTenantTransaction(pool, context, async (client) => {
+    await client.query("DELETE FROM obligations WHERE id = $1", [ids.obligationId]);
+    await client.query("DELETE FROM credit_lines WHERE id = $1", [ids.creditLineId]);
+    await client.query("DELETE FROM spend_policies WHERE id = $1", [ids.spendPolicyId]);
+    await client.query("DELETE FROM providers WHERE id = $1", [ids.providerId]);
+    await client.query("DELETE FROM mandates WHERE id = $1", [ids.mandateId]);
+  });
+}
+
 function gateway(pool, harness, handlers = createTenantFoundationHandlers()) {
   return new TenantCommandGateway({
     pool,
@@ -144,6 +284,13 @@ function agentClient(runtime, authenticationContext) {
 
 function operatorClient(runtime, authenticationContext) {
   return new OperatorTenantCommandClient({
+    gateway: runtime,
+    authenticationContextProvider: async () => authenticationContext
+  });
+}
+
+function riskQueryClient(runtime, authenticationContext) {
+  return new RiskTenantQueryClient({
     gateway: runtime,
     authenticationContextProvider: async () => authenticationContext
   });
@@ -320,8 +467,24 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_risk_${RUN_ID}`,
         actorType: ActorType.RISK_OPERATOR,
         roleBundle: RoleBundle.RISK_OPERATOR,
-        capabilities: [PilotCapability.RISK_FREEZE],
+        capabilities: [PilotCapability.RISK_FREEZE, PilotCapability.RISK_READ_TENANT],
         now: IDENTITY_NOW
+      }),
+      tenantOneAuditor: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_auditor_${RUN_ID}`,
+        actorType: ActorType.AUDITOR,
+        roleBundle: RoleBundle.AUDITOR,
+        capabilities: [PilotCapability.RISK_READ_TENANT],
+        now: IDENTITY_NOW
+      }),
+      tenantOneStaleRisk: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_stale_risk_${RUN_ID}`,
+        actorType: ActorType.RISK_OPERATOR,
+        roleBundle: RoleBundle.RISK_OPERATOR,
+        capabilities: [PilotCapability.RISK_READ_TENANT],
+        now: new Date(Date.now() - 20 * 60_000)
       }),
       tenantOneOperations: harness.addIdentity({
         tenantId: TENANT_ONE,
@@ -357,7 +520,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_two_risk_${RUN_ID}`,
         actorType: ActorType.RISK_OPERATOR,
         roleBundle: RoleBundle.RISK_OPERATOR,
-        capabilities: [PilotCapability.RISK_FREEZE],
+        capabilities: [PilotCapability.RISK_FREEZE, PilotCapability.RISK_READ_TENANT],
         now: IDENTITY_NOW
       })
     };
@@ -366,6 +529,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneHuman);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneOtherHuman);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneRisk);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneAuditor);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneStaleRisk);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneOperations);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneAgent, {
       controllerActorId: identities.tenantOneHuman.authenticationContext.actorId
@@ -375,6 +540,18 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     await seedIdentity(ownerPool, TENANT_TWO, identities.tenantTwoAgent, {
       controllerActorId: identities.tenantTwoHuman.authenticationContext.actorId
     });
+    await seedRiskPortfolioResource(
+      ownerPool,
+      TENANT_ONE,
+      identities.tenantOneRisk.authenticationContext.actorId,
+      TENANT_ONE_RISK_PORTFOLIO
+    );
+    await seedRiskPortfolioResource(
+      ownerPool,
+      TENANT_TWO,
+      identities.tenantTwoRisk.authenticationContext.actorId,
+      TENANT_TWO_RISK_PORTFOLIO
+    );
 
     await dropRole();
     const password = randomBytes(24).toString("base64url");
@@ -426,6 +603,18 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     const tenantOneOtherHuman = humanClient(runtime, identities.tenantOneOtherHuman.authenticationContext);
     const tenantOneAgent = agentClient(runtime, identities.tenantOneAgent.authenticationContext);
     const tenantOneRisk = operatorClient(runtime, identities.tenantOneRisk.authenticationContext);
+    const tenantOneRiskQuery = riskQueryClient(
+      runtime,
+      identities.tenantOneRisk.authenticationContext
+    );
+    const tenantOneAuditorQuery = riskQueryClient(
+      runtime,
+      identities.tenantOneAuditor.authenticationContext
+    );
+    const tenantOneStaleRiskQuery = riskQueryClient(
+      runtime,
+      identities.tenantOneStaleRisk.authenticationContext
+    );
     const tenantOneOperations = operatorClient(
       runtime,
       identities.tenantOneOperations.authenticationContext
@@ -433,6 +622,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     const tenantTwoHuman = humanClient(runtime, identities.tenantTwoHuman.authenticationContext);
     const tenantTwoAgent = agentClient(runtime, identities.tenantTwoAgent.authenticationContext);
     const tenantTwoRisk = operatorClient(runtime, identities.tenantTwoRisk.authenticationContext);
+    const tenantTwoRiskQuery = riskQueryClient(
+      runtime,
+      identities.tenantTwoRisk.authenticationContext
+    );
     const firstCommand = createCommand({
       subjectActorId: identities.tenantOneAgent.authenticationContext.actorId,
       displayName: "Tenant One Treasury Agent",
@@ -496,6 +689,194 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         [TENANT_ONE]
       );
       assert.deepEqual(counts.rows[0], { events: 2, snapshots: 2, executions: 1, audits: 4 });
+    });
+
+    await t.test("Risk and Auditor read an RLS-isolated aggregate portfolio with recent MFA", async () => {
+      const exposureFixture = await seedRiskPortfolioExposure(ownerPool, {
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        subjectId: tenantOneSubjectId,
+        principalId: tenantOnePrincipalId
+      });
+      try {
+      const businessState = () => ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM domain_events WHERE tenant_id IN ($1, $2)) AS events,
+           (SELECT count(*)::int FROM credit_events WHERE tenant_id IN ($1, $2)) AS credit_events,
+           (SELECT count(*)::int FROM evidence_envelopes WHERE tenant_id IN ($1, $2)) AS evidence,
+           (SELECT count(*)::int FROM projection_snapshots WHERE tenant_id IN ($1, $2)) AS projections,
+           (SELECT count(*)::int FROM tenant_command_executions WHERE tenant_id IN ($1, $2)) AS executions,
+           (SELECT count(*)::int FROM command_idempotency WHERE tenant_id IN ($1, $2)) AS commands`,
+        [TENANT_ONE, TENANT_TWO]
+      );
+      const admissionCounts = () => ownerPool.query(
+        `SELECT tenant_id, count(*)::int AS count
+           FROM abuse_admissions
+          WHERE tenant_id IN ($1, $2) AND operation_id = 'pilotReadTenantRisk'
+          GROUP BY tenant_id
+          ORDER BY tenant_id`,
+        [TENANT_ONE, TENANT_TWO]
+      );
+      const beforeBusiness = await businessState();
+      const beforeAdmissions = new Map(
+        (await admissionCounts()).rows.map((row) => [row.tenant_id, row.count])
+      );
+      const successfulRequestIds = [
+        `request-risk-portfolio-one-${RUN_ID}`,
+        `request-risk-portfolio-auditor-${RUN_ID}`,
+        `request-risk-portfolio-two-${RUN_ID}`
+      ];
+
+      const riskView = await tenantOneRiskQuery.getPortfolio({
+        portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+        requestId: successfulRequestIds[0],
+        correlationId: `correlation-risk-portfolio-one-${RUN_ID}`
+      });
+      assert.equal(riskView.replayed, false);
+      assert.equal(riskView.response.portfolioId, TENANT_ONE_RISK_PORTFOLIO);
+      assert.equal(riskView.response.subjects.totalCount, 1);
+      assert.deepEqual(riskView.response.creditLines, {
+        totalCount: 1,
+        requestedCount: 0,
+        approvedCount: 1,
+        rejectedCount: 0,
+        frozenCount: 0,
+        closedCount: 0,
+        limitMinor: "1000",
+        utilizedMinor: "250"
+      });
+      assert.deepEqual(riskView.response.obligations, {
+        totalCount: 1,
+        openCount: 1,
+        createdCount: 0,
+        activeCount: 0,
+        partiallyRepaidCount: 0,
+        fullyRepaidCount: 0,
+        overdueCount: 1,
+        defaultedCount: 0,
+        closedCount: 0,
+        principalMinor: "800",
+        outstandingPrincipalMinor: "300",
+        accruedFeesMinor: "10",
+        repaidAmountMinor: "500"
+      });
+      assert.deepEqual(riskView.response.assetExposures, [{
+        assetId: exposureFixture.ids.assetId,
+        creditLineCount: 1,
+        approvedCreditLineCount: 1,
+        frozenCreditLineCount: 0,
+        limitMinor: "1000",
+        utilizedMinor: "250",
+        obligationCount: 1,
+        openObligationCount: 1,
+        overdueObligationCount: 1,
+        defaultedObligationCount: 0,
+        outstandingPrincipalMinor: "300"
+      }]);
+      assert.equal(riskView.response.hasMoreAssetExposures, false);
+      assert.equal(riskView.response.schemaVersion, "tenant_risk_portfolio_view.v1");
+      assert.equal(
+        /tenantId|subjectId|displayName|principalId|accountId|providerId|evidence/i.test(
+          JSON.stringify(riskView.response)
+        ),
+        false
+      );
+
+      const auditorView = await tenantOneAuditorQuery.getPortfolio({
+        portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+        requestId: successfulRequestIds[1],
+        correlationId: `correlation-risk-portfolio-auditor-${RUN_ID}`
+      });
+      assert.deepEqual(auditorView.response.subjects, riskView.response.subjects);
+      const tenantTwoView = await tenantTwoRiskQuery.getPortfolio({
+        portfolioId: TENANT_TWO_RISK_PORTFOLIO,
+        requestId: successfulRequestIds[2],
+        correlationId: `correlation-risk-portfolio-two-${RUN_ID}`
+      });
+      assert.equal(tenantTwoView.response.subjects.totalCount, 0);
+
+      await assert.rejects(
+        () => tenantTwoRiskQuery.getPortfolio({
+          portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+          requestId: `request-risk-portfolio-cross-tenant-${RUN_ID}`,
+          correlationId: `correlation-risk-portfolio-cross-tenant-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneStaleRiskQuery.getPortfolio({
+          portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+          requestId: `request-risk-portfolio-stale-mfa-${RUN_ID}`,
+          correlationId: `correlation-risk-portfolio-stale-mfa-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      for (const [identity, label] of [
+        [identities.tenantOneHuman, "developer"],
+        [identities.tenantOneAgent, "agent"],
+        [identities.tenantOneOperations, "operations"]
+      ]) {
+        await assert.rejects(
+          () => runtime.execute({
+            authenticationContext: identity.authenticationContext,
+            operationId: "pilotReadTenantRisk",
+            payload: {},
+            resource: {
+              resourceType: "risk_portfolio",
+              resourceId: TENANT_ONE_RISK_PORTFOLIO
+            },
+            requestId: `request-risk-portfolio-${label}-${RUN_ID}`,
+            correlationId: `correlation-risk-portfolio-${label}-${RUN_ID}`,
+            schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
+          }),
+          (error) => error.code === "authorization_denied"
+        );
+      }
+
+      const afterBusiness = await businessState();
+      assert.deepEqual(afterBusiness.rows, beforeBusiness.rows);
+      const afterAdmissions = new Map(
+        (await admissionCounts()).rows.map((row) => [row.tenant_id, row.count])
+      );
+      assert.equal(
+        afterAdmissions.get(TENANT_ONE) - (beforeAdmissions.get(TENANT_ONE) ?? 0),
+        6
+      );
+      assert.equal(
+        afterAdmissions.get(TENANT_TWO) - (beforeAdmissions.get(TENANT_TWO) ?? 0),
+        2
+      );
+      const successfulAudits = await ownerPool.query(
+        `SELECT request_id,
+                count(*)::int AS count,
+                bool_and(authorization_decision = 'allow') AS all_allowed
+           FROM authorization_audit_events
+          WHERE request_id = ANY($1::text[])
+          GROUP BY request_id
+          ORDER BY request_id`,
+        [successfulRequestIds]
+      );
+      assert.equal(successfulAudits.rowCount, 3);
+      assert.equal(successfulAudits.rows.every((row) => row.count >= 1 && row.all_allowed), true);
+      const admissionOutcomes = await ownerPool.query(
+        `SELECT tenant_id, outcome, count(*)::int AS count
+           FROM abuse_admissions
+          WHERE tenant_id IN ($1, $2) AND operation_id = 'pilotReadTenantRisk'
+          GROUP BY tenant_id, outcome
+          ORDER BY tenant_id, outcome`,
+        [TENANT_ONE, TENANT_TWO]
+      );
+      assert.equal(
+        admissionOutcomes.rows.some((row) => row.tenant_id === TENANT_ONE && row.outcome === "succeeded"),
+        true
+      );
+      assert.equal(
+        admissionOutcomes.rows.some((row) => row.tenant_id === TENANT_TWO && row.outcome === "succeeded"),
+        true
+      );
+      } finally {
+        await cleanupRiskPortfolioExposure(ownerPool, exposureFixture);
+      }
     });
 
     await t.test("invalid handler result rolls back the complete command transaction", async () => {

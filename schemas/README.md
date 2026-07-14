@@ -47,7 +47,7 @@ edge policy and a cross-tenant distributed global store remain deployment
 decisions.
 
 The Tenant protocol request, result, and catalog contracts define the local
-API-002 Human/Operator/Agent application boundary. Each of the six implemented
+API-002 Human/Operator/Agent application boundary. Each of the seven implemented
 operations has one closed request and result branch. Requests carry an explicit
 schema version but no Authentication Context, Tenant, Actor, Credential, role,
 authorization decision, or network-trust field. Results are validated before
@@ -55,4 +55,7 @@ durable commit. The protective Subject-freeze branch permits only reviewed
 Risk/Operations actor types, reasons, and a `suspended` result; no unfreeze
 branch exists. The catalog enables only `local_in_process`; it does not expose
 an authenticated endpoint or authorize activation, credit, Human lending,
-private data, or real funds.
+private data, or real funds. The Tenant risk branch is a recent-MFA,
+Risk/Auditor-only aggregate read with exact minor-unit totals, a 50-asset bound,
+and no Tenant, Subject, Principal, account, Provider, Event/Evidence, KYC/KYP,
+or PII detail.

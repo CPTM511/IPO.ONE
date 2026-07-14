@@ -30,11 +30,17 @@ draft, terminal reason-coded draft revocation, and the Agent's bounded self-read
 query. DATA-003C also composes one strong-MFA, reason-coded protective Agent
 Subject freeze for Risk and Operations Operators. Exact replay succeeds after
 suspension, fresh freeze commands fail closed, and the Agent can still read its
-suspended state. Unfreeze remains absent and dual-control gated. Revocation
+suspended state. DATA-003D adds a recent-MFA `pilotReadTenantRisk` query for
+Risk Operators and Auditors. It reads one serializable, forced-RLS snapshot of
+Agent Subject, CreditLine, and Obligation projections; returns exact aggregate
+minor-unit totals plus at most 50 deterministic asset exposures; and exposes no
+Subject, Principal, account, Provider, Event/Evidence, KYC/KYP, Tenant, or PII
+detail. The query records bounded admission and authorization audit only, never
+a business Event, projection, execution, or idempotency record. Unfreeze remains absent and dual-control gated. Revocation
 atomically closes the authorization resource while retaining
 bindings for historical owner reads. Persistent Agent Subject and Mandate
 admission is anchored to Tenant-scoped durable row counts before object lookup
 and synchronized again inside the business transaction. Human BFF, Operator,
-and Agent clients use the same protocol envelope and have no direct database
+Risk/Auditor, and Agent clients use the same protocol envelope and have no direct database
 access. This module is local non-funds infrastructure only; it does not expose
 a public route, activate a Mandate, or authorize production deployment.

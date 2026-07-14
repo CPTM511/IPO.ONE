@@ -76,8 +76,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 6,
-      "maxItems": 6,
+      "minItems": 7,
+      "maxItems": 7,
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/operation" }
     },
@@ -128,6 +128,7 @@
             "pilotFreezeSubject",
             "pilotReadAgentSelf",
             "pilotReadMandate",
+            "pilotReadTenantRisk",
             "pilotRevokeDraftMandate"
           ]
         },
@@ -138,16 +139,17 @@
           "maxItems": 2,
           "uniqueItems": true,
           "items": {
-            "enum": ["human", "agent", "risk_operator", "operations_operator"]
+            "enum": ["human", "agent", "risk_operator", "operations_operator", "auditor"]
           }
         },
-        "resourceType": { "enum": ["subject", "mandate"] },
+        "resourceType": { "enum": ["subject", "mandate", "risk_portfolio"] },
         "requiredCapability": {
           "enum": [
             "agent.create",
             "integration.read.owned",
             "mandate.draft.create",
             "mandate.draft.revoke",
+            "risk.read.tenant",
             "risk.freeze",
             "subject.read.self"
           ]
@@ -162,6 +164,7 @@
             "tenant_draft_mandate_created.v1",
             "tenant_agent_subject_view.v2",
             "tenant_mandate_view.v1",
+            "tenant_risk_portfolio_view.v1",
             "tenant_draft_mandate_revoked.v1"
           ]
         },
@@ -227,6 +230,18 @@
             "idempotency": { "const": "prohibited" },
             "quotaClass": { "const": "read" },
             "responseSchemaVersion": { "const": "tenant_mandate_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadTenantRisk" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["risk_operator", "auditor"] },
+            "resourceType": { "const": "risk_portfolio" },
+            "requiredCapability": { "const": "risk.read.tenant" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_risk_portfolio_view.v1" }
           }
         },
         {

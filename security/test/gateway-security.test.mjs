@@ -121,6 +121,71 @@ test("durable Subject freeze is protective, reason-coded, and private", async ()
   assert.doesNotMatch(server, /pilotFreezeSubject|subject-risk-handlers|tenant-command-gateway/);
 });
 
+test("Tenant risk portfolio is aggregate-only, bounded, MFA-gated, and private", async () => {
+  const [resultSchemaBody, catalogBody, policy, handler, server] = await Promise.all([
+    source("schemas/v2/tenant-protocol-result.schema.json"),
+    source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json"),
+    source("modules/authorization/src/authorization-policy.js"),
+    source("modules/tenant-command-gateway/src/tenant-risk-query-handlers.js"),
+    source("apps/api/src/server.js")
+  ]);
+  const resultSchema = JSON.parse(resultSchemaBody);
+  const catalog = JSON.parse(catalogBody);
+  const operation = catalog.operations.find(
+    ({ operationId }) => operationId === "pilotReadTenantRisk"
+  );
+  assert.deepEqual(operation.actorTypes, ["risk_operator", "auditor"]);
+  assert.equal(operation.resourceType, "risk_portfolio");
+  assert.equal(operation.requiredCapability, "risk.read.tenant");
+  assert.equal(operation.quotaClass, "read");
+  assert.equal(operation.idempotency, "prohibited");
+  assert.equal(operation.public, false);
+  assert.equal(operation.fundsAuthority, false);
+  assert.match(policy, /requiresRecentMfaActorTypes: \[ActorType\.RISK_OPERATOR, ActorType\.AUDITOR\]/);
+
+  const propertyNames = new Set();
+  const seenDefinitions = new Set();
+  function visit(node) {
+    if (!node || typeof node !== "object") return;
+    if (typeof node.$ref === "string" && node.$ref.startsWith("#/$defs/")) {
+      const definition = node.$ref.slice("#/$defs/".length);
+      if (!seenDefinitions.has(definition)) {
+        seenDefinitions.add(definition);
+        visit(resultSchema.$defs[definition]);
+      }
+    }
+    if (node.properties) {
+      for (const [name, value] of Object.entries(node.properties)) {
+        propertyNames.add(name);
+        visit(value);
+      }
+    }
+    if (node.items) visit(node.items);
+  }
+  visit(resultSchema.$defs.tenantRiskPortfolioView);
+  for (const forbidden of [
+    "tenantId",
+    "subjectId",
+    "displayName",
+    "principalId",
+    "primaryPrincipalId",
+    "accountIdRef",
+    "providerId",
+    "eventId",
+    "evidenceId",
+    "kycRef",
+    "kypRef"
+  ]) {
+    assert.equal(propertyNames.has(forbidden), false, `${forbidden} must not be exposed`);
+  }
+  assert.equal(
+    resultSchema.$defs.tenantRiskPortfolioView.properties.assetExposures.maxItems,
+    50
+  );
+  assert.doesNotMatch(handler, /displayName|principalId|accountIdRef|providerId|evidence|kyc|kyp/i);
+  assert.doesNotMatch(server, /pilotReadTenantRisk|tenant-risk-query-handlers|tenant-command-gateway/);
+});
+
 test("Tenant protocol contracts are closed, non-authoritative, and private", async () => {
   const [requestSchemaBody, resultSchemaBody, catalogBody, gateway, clients, server] = await Promise.all([
     source("schemas/v2/tenant-protocol-request.schema.json"),
