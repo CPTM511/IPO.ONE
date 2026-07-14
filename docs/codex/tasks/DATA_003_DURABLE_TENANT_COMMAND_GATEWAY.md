@@ -3,8 +3,9 @@
 Status: In progress for the SECURITY-001 local non-funds boundary. The durable
 transaction foundation, Human Agent-Subject creation, Human-controlled draft
 Mandate creation, bounded Agent self-read, and protective Agent Subject freeze
-are implemented and verified. Remaining Agent Lockbox, worker, approval,
-unfreeze/limit, and administrative handlers are not yet composed. No public
+plus an aggregate Risk/Auditor Tenant portfolio read are implemented and
+verified. Remaining Agent Lockbox, worker, approval, unfreeze/limit, and
+administrative mutation/detail handlers are not yet composed. No public
 route or deployment is approved.
 
 ## Context
@@ -60,10 +61,11 @@ API would turn a safe demo into shared unauthenticated customer state.
 - Human, Operator, and Agent protocol clients share one closed handler
   registry. The reviewed operations implement `pilotCreateAgentSubject`,
   `pilotCreateDraftMandate`, `pilotReadMandate`,
-  `pilotRevokeDraftMandate`, `pilotReadAgentSelf`, and `pilotFreezeSubject`.
+  `pilotRevokeDraftMandate`, `pilotReadAgentSelf`, `pilotFreezeSubject`, and
+  `pilotReadTenantRisk`.
 - API-002 publishes closed `tenant_protocol_request.v1`,
   `tenant_protocol_result.v1`, and `tenant_protocol_catalog.v1` contracts for
-  exactly those six operations. Caller validation precedes trusted AuthN/
+  exactly those seven operations. Caller validation precedes trusted AuthN/
   network-context injection and admission; result validation precedes command
   commit. The request schema version is part of exact command identity.
 - Repository conformance proves catalog parity with handlers, authorization,
@@ -84,6 +86,13 @@ API would turn a safe demo into shared unauthenticated customer state.
   strong recent MFA, a reviewed protective reason, privileged admission,
   row-locked live state, atomic Event/Evidence/projection/audit completion,
   exact replay, Agent visibility, and concurrent single-transition proof.
+- DATA-003D composes `pilotReadTenantRisk` for Risk Operators and Auditors with
+  recent phishing-resistant authentication, a Tenant-owned authorization
+  resource, serializable forced-RLS aggregation, complete Agent-only totals,
+  a deterministic 50-asset bound, identity/PII minimization, and read-only
+  audit/admission evidence. Real PostgreSQL tests cover nonzero exact amounts,
+  empty and cross-Tenant portfolios, stale MFA, role denial, and cleanup-safe
+  reconciliation.
 - ADR-022 records transaction ownership, replay ordering, advisory/row lock,
   and public-sandbox isolation decisions.
 

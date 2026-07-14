@@ -118,3 +118,134 @@ test("core repository rejects duplicate, oversized, and raw-PII projection write
     (error) => error.code === "projection_too_large"
   );
 });
+
+test("Tenant risk portfolio maps exact aggregate values and bounds per-asset detail", async () => {
+  const repository = new PostgresCoreRepository({
+    pool: { query: async () => ({ rows: [] }) },
+    eventRepository: {}
+  });
+  const assetRows = Array.from({ length: 51 }, (_, index) => ({
+    asset_id: `asset_${String(index + 1).padStart(2, "0")}`,
+    credit_line_count: "2",
+    approved_credit_line_count: "1",
+    frozen_credit_line_count: "1",
+    limit_minor: "1000",
+    utilized_minor: "250",
+    obligation_count: "3",
+    open_obligation_count: "2",
+    overdue_obligation_count: "1",
+    defaulted_obligation_count: "0",
+    outstanding_principal_minor: "400"
+  }));
+  const responses = [
+    {
+      rows: [{
+        total_count: "2",
+        pending_count: "1",
+        active_count: "1",
+        suspended_count: "0",
+        closed_count: "0"
+      }]
+    },
+    {
+      rows: [{
+        total_count: "2",
+        requested_count: "0",
+        approved_count: "1",
+        rejected_count: "0",
+        frozen_count: "1",
+        closed_count: "0",
+        limit_minor: "1000",
+        utilized_minor: "250"
+      }]
+    },
+    {
+      rows: [{
+        total_count: "3",
+        open_count: "2",
+        created_count: "0",
+        active_count: "1",
+        partially_repaid_count: "0",
+        fully_repaid_count: "1",
+        overdue_count: "1",
+        defaulted_count: "0",
+        closed_count: "0",
+        principal_minor: "900",
+        outstanding_principal_minor: "400",
+        accrued_fees_minor: "10",
+        repaid_amount_minor: "500"
+      }]
+    },
+    { rows: assetRows }
+  ];
+  const queries = [];
+  const client = {
+    async query(sql, values) {
+      queries.push({ sql, values });
+      return responses.shift();
+    }
+  };
+
+  const result = await repository.getTenantRiskPortfolioInTransaction(client);
+  assert.equal(queries.length, 4);
+  assert.equal(queries[3].values.at(-1), 51);
+  assert.equal(queries.every(({ sql }) => sql.includes("subject_type")), true);
+  assert.deepEqual(result.subjects, {
+    totalCount: 2,
+    pendingCount: 1,
+    activeCount: 1,
+    suspendedCount: 0,
+    closedCount: 0
+  });
+  assert.deepEqual(result.creditLines, {
+    totalCount: 2,
+    requestedCount: 0,
+    approvedCount: 1,
+    rejectedCount: 0,
+    frozenCount: 1,
+    closedCount: 0,
+    limitMinor: "1000",
+    utilizedMinor: "250"
+  });
+  assert.equal(result.obligations.openCount, 2);
+  assert.equal(result.obligations.outstandingPrincipalMinor, "400");
+  assert.equal(result.assetExposures.length, 50);
+  assert.equal(result.assetExposures[0].assetId, "asset_01");
+  assert.equal(result.assetExposures[49].assetId, "asset_50");
+  assert.equal(result.hasMoreAssetExposures, true);
+});
+
+test("Tenant risk portfolio fails closed on unknown durable states", async () => {
+  const repository = new PostgresCoreRepository({
+    pool: { query: async () => ({ rows: [] }) },
+    eventRepository: {}
+  });
+  const responses = [
+    {
+      rows: [{
+        total_count: "0",
+        pending_count: "0",
+        active_count: "0",
+        suspended_count: "0",
+        closed_count: "0"
+      }]
+    },
+    {
+      rows: [{
+        total_count: "2",
+        requested_count: "0",
+        approved_count: "1",
+        rejected_count: "0",
+        frozen_count: "0",
+        closed_count: "0",
+        limit_minor: "100",
+        utilized_minor: "0"
+      }]
+    }
+  ];
+  const client = { query: async () => responses.shift() };
+  await assert.rejects(
+    () => repository.getTenantRiskPortfolioInTransaction(client),
+    (error) => error.code === "projection_integrity_mismatch"
+  );
+});

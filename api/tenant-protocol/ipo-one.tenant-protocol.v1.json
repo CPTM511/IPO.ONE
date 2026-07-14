@@ -85,6 +85,19 @@
       "fundsAuthority": false
     },
     {
+      "operationId": "pilotReadTenantRisk",
+      "kind": "query",
+      "actorTypes": ["risk_operator", "auditor"],
+      "resourceType": "risk_portfolio",
+      "requiredCapability": "risk.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_portfolio_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
       "operationId": "pilotRevokeDraftMandate",
       "kind": "command",
       "actorTypes": ["human"],

@@ -13,6 +13,7 @@
         "pilotFreezeSubject",
         "pilotReadAgentSelf",
         "pilotReadMandate",
+        "pilotReadTenantRisk",
         "pilotRevokeDraftMandate"
       ]
     },
@@ -53,6 +54,12 @@
     },
     {
       "properties": {
+        "operationId": { "const": "pilotReadTenantRisk" },
+        "response": { "$ref": "#/$defs/tenantRiskPortfolioView" }
+      }
+    },
+    {
+      "properties": {
         "operationId": { "const": "pilotRevokeDraftMandate" },
         "response": { "$ref": "#/$defs/draftMandateRevoked" }
       }
@@ -72,6 +79,17 @@
       "minLength": 1,
       "maxLength": 78,
       "pattern": "^[1-9][0-9]*$"
+    },
+    "canonicalMinorUnits": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 78,
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "nonNegativeSafeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
     },
     "timestamp": { "type": "string", "format": "date-time" },
     "agentSubjectCreated": {
@@ -262,6 +280,140 @@
       "properties": {
         "mandate": { "$ref": "https://schemas.ipo.one/v2/mandate.schema.json" },
         "schemaVersion": { "const": "tenant_mandate_view.v1" }
+      }
+    },
+    "tenantRiskSubjectSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalCount",
+        "pendingCount",
+        "activeCount",
+        "suspendedCount",
+        "closedCount"
+      ],
+      "properties": {
+        "totalCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "pendingCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "activeCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "suspendedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "closedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+      }
+    },
+    "tenantRiskCreditLineSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalCount",
+        "requestedCount",
+        "approvedCount",
+        "rejectedCount",
+        "frozenCount",
+        "closedCount",
+        "limitMinor",
+        "utilizedMinor"
+      ],
+      "properties": {
+        "totalCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "requestedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "approvedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "rejectedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "frozenCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "closedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "limitMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "utilizedMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
+      }
+    },
+    "tenantRiskObligationSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalCount",
+        "openCount",
+        "createdCount",
+        "activeCount",
+        "partiallyRepaidCount",
+        "fullyRepaidCount",
+        "overdueCount",
+        "defaultedCount",
+        "closedCount",
+        "principalMinor",
+        "outstandingPrincipalMinor",
+        "accruedFeesMinor",
+        "repaidAmountMinor"
+      ],
+      "properties": {
+        "totalCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "openCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "createdCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "activeCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "partiallyRepaidCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "fullyRepaidCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "overdueCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "defaultedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "closedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "principalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "accruedFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "repaidAmountMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
+      }
+    },
+    "tenantRiskAssetExposure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId",
+        "creditLineCount",
+        "approvedCreditLineCount",
+        "frozenCreditLineCount",
+        "limitMinor",
+        "utilizedMinor",
+        "obligationCount",
+        "openObligationCount",
+        "overdueObligationCount",
+        "defaultedObligationCount",
+        "outstandingPrincipalMinor"
+      ],
+      "properties": {
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "creditLineCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "approvedCreditLineCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "frozenCreditLineCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "limitMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "utilizedMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "obligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "openObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "overdueObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "defaultedObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
+      }
+    },
+    "tenantRiskPortfolioView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "portfolioId",
+        "asOf",
+        "subjects",
+        "creditLines",
+        "obligations",
+        "assetExposures",
+        "hasMoreAssetExposures",
+        "schemaVersion"
+      ],
+      "properties": {
+        "portfolioId": { "$ref": "#/$defs/identifier" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "subjects": { "$ref": "#/$defs/tenantRiskSubjectSummary" },
+        "creditLines": { "$ref": "#/$defs/tenantRiskCreditLineSummary" },
+        "obligations": { "$ref": "#/$defs/tenantRiskObligationSummary" },
+        "assetExposures": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/tenantRiskAssetExposure" }
+        },
+        "hasMoreAssetExposures": { "type": "boolean" },
+        "schemaVersion": { "const": "tenant_risk_portfolio_view.v1" }
       }
     },
     "draftMandateRevoked": {

@@ -1,5 +1,9 @@
 import {
+  CreditLineStatus,
   DomainError,
+  ObligationStatus,
+  SubjectStatus,
+  SubjectType,
   assertNoRawPiiReference,
   createCreditEvent,
   hashId
@@ -102,6 +106,81 @@ function safeInteger(value, name) {
     throw new DomainError("invalid_core_projection", `${name} is not a safe integer`, { name });
   }
   return normalized;
+}
+
+function portfolioIntegrityError(message) {
+  return new DomainError(
+    "projection_integrity_mismatch",
+    message
+  );
+}
+
+function portfolioCount(value, name) {
+  if (
+    typeof value !== "string" ||
+    value.length < 1 ||
+    value.length > 16 ||
+    !/^(0|[1-9][0-9]*)$/.test(value)
+  ) {
+    throw portfolioIntegrityError(`Tenant risk portfolio ${name} is invalid`);
+  }
+  const normalized = Number(value);
+  if (!Number.isSafeInteger(normalized) || normalized < 0) {
+    throw portfolioIntegrityError(`Tenant risk portfolio ${name} is invalid`);
+  }
+  return normalized;
+}
+
+function minorUnitsBigInt(value) {
+  return BigInt(value);
+}
+
+function assertPortfolioAmountAtMost(value, maximum, name) {
+  if (minorUnitsBigInt(value) > minorUnitsBigInt(maximum)) {
+    throw portfolioIntegrityError(`Tenant risk portfolio ${name} is inconsistent`);
+  }
+}
+
+function assertPortfolioAmountIdentity(total, parts, name) {
+  if (
+    parts.reduce((sum, value) => sum + minorUnitsBigInt(value), 0n) !==
+    minorUnitsBigInt(total)
+  ) {
+    throw portfolioIntegrityError(`Tenant risk portfolio ${name} is inconsistent`);
+  }
+}
+
+function portfolioMinorUnits(value, name) {
+  if (
+    typeof value !== "string" ||
+    value.length < 1 ||
+    value.length > 78 ||
+    !/^(0|[1-9][0-9]*)$/.test(value)
+  ) {
+    throw portfolioIntegrityError(`Tenant risk portfolio ${name} is invalid`);
+  }
+  return value;
+}
+
+function portfolioAssetId(value) {
+  if (
+    typeof value !== "string" ||
+    value.length < 1 ||
+    value.length > 256 ||
+    !/^[A-Za-z0-9][A-Za-z0-9:._/%-]*$/.test(value)
+  ) {
+    throw portfolioIntegrityError("Tenant risk portfolio asset identity is invalid");
+  }
+  return value;
+}
+
+function assertPortfolioStateCoverage(totalCount, stateCounts, name) {
+  if (
+    stateCounts.reduce((sum, count) => sum + BigInt(count), 0n) !==
+    BigInt(totalCount)
+  ) {
+    throw portfolioIntegrityError(`Tenant risk portfolio ${name} states are incomplete`);
+  }
 }
 
 function projectionConflict(entityType, entityId) {
@@ -1277,6 +1356,354 @@ export class PostgresCoreRepository {
     return {
       items: states.slice(0, limit),
       hasMore: states.length > limit
+    };
+  }
+
+  async getTenantRiskPortfolioInTransaction(client, { assetLimit = 50 } = {}) {
+    assertQueryable(client);
+    if (!Number.isSafeInteger(assetLimit) || assetLimit < 1 || assetLimit > 50) {
+      throw new DomainError(
+        "invalid_core_projection",
+        "Tenant risk portfolio asset limit must be between 1 and 50"
+      );
+    }
+
+    const subjectResult = await client.query(
+      `SELECT count(*)::text AS total_count,
+              (count(*) FILTER (WHERE status = $1))::text AS pending_count,
+              (count(*) FILTER (WHERE status = $2))::text AS active_count,
+              (count(*) FILTER (WHERE status = $3))::text AS suspended_count,
+              (count(*) FILTER (WHERE status = $4))::text AS closed_count
+         FROM subjects
+        WHERE subject_type = $5`,
+      [
+        SubjectStatus.PENDING,
+        SubjectStatus.ACTIVE,
+        SubjectStatus.SUSPENDED,
+        SubjectStatus.CLOSED,
+        SubjectType.AGENT
+      ]
+    );
+    const subjectRow = subjectResult.rows[0];
+    if (!subjectRow) {
+      throw portfolioIntegrityError("Tenant risk portfolio Subject summary is unavailable");
+    }
+    const subjects = {
+      totalCount: portfolioCount(subjectRow.total_count, "Subject total"),
+      pendingCount: portfolioCount(subjectRow.pending_count, "pending Subject count"),
+      activeCount: portfolioCount(subjectRow.active_count, "active Subject count"),
+      suspendedCount: portfolioCount(subjectRow.suspended_count, "suspended Subject count"),
+      closedCount: portfolioCount(subjectRow.closed_count, "closed Subject count")
+    };
+    assertPortfolioStateCoverage(subjects.totalCount, [
+      subjects.pendingCount,
+      subjects.activeCount,
+      subjects.suspendedCount,
+      subjects.closedCount
+    ], "Subject");
+
+    const creditLineResult = await client.query(
+      `SELECT count(*)::text AS total_count,
+              (count(*) FILTER (WHERE c.status = $1))::text AS requested_count,
+              (count(*) FILTER (WHERE c.status = $2))::text AS approved_count,
+              (count(*) FILTER (WHERE c.status = $3))::text AS rejected_count,
+              (count(*) FILTER (WHERE c.status = $4))::text AS frozen_count,
+              (count(*) FILTER (WHERE c.status = $5))::text AS closed_count,
+              coalesce(sum(c.limit_minor), 0)::text AS limit_minor,
+              coalesce(sum(c.utilized_minor), 0)::text AS utilized_minor
+         FROM credit_lines c
+         JOIN subjects s
+           ON s.tenant_id = c.tenant_id
+          AND s.id = c.subject_id
+        WHERE s.subject_type = $6`,
+      [
+        CreditLineStatus.REQUESTED,
+        CreditLineStatus.APPROVED,
+        CreditLineStatus.REJECTED,
+        CreditLineStatus.FROZEN,
+        CreditLineStatus.CLOSED,
+        SubjectType.AGENT
+      ]
+    );
+    const creditLineRow = creditLineResult.rows[0];
+    if (!creditLineRow) {
+      throw portfolioIntegrityError("Tenant risk portfolio CreditLine summary is unavailable");
+    }
+    const creditLines = {
+      totalCount: portfolioCount(creditLineRow.total_count, "CreditLine total"),
+      requestedCount: portfolioCount(creditLineRow.requested_count, "requested CreditLine count"),
+      approvedCount: portfolioCount(creditLineRow.approved_count, "approved CreditLine count"),
+      rejectedCount: portfolioCount(creditLineRow.rejected_count, "rejected CreditLine count"),
+      frozenCount: portfolioCount(creditLineRow.frozen_count, "frozen CreditLine count"),
+      closedCount: portfolioCount(creditLineRow.closed_count, "closed CreditLine count"),
+      limitMinor: portfolioMinorUnits(creditLineRow.limit_minor, "CreditLine limit"),
+      utilizedMinor: portfolioMinorUnits(creditLineRow.utilized_minor, "CreditLine utilization")
+    };
+    assertPortfolioStateCoverage(creditLines.totalCount, [
+      creditLines.requestedCount,
+      creditLines.approvedCount,
+      creditLines.rejectedCount,
+      creditLines.frozenCount,
+      creditLines.closedCount
+    ], "CreditLine");
+    assertPortfolioAmountAtMost(
+      creditLines.utilizedMinor,
+      creditLines.limitMinor,
+      "CreditLine utilization"
+    );
+
+    const obligationResult = await client.query(
+      `SELECT count(*)::text AS total_count,
+              (count(*) FILTER (WHERE o.status NOT IN ($1, $2)))::text AS open_count,
+              (count(*) FILTER (WHERE o.status = $3))::text AS created_count,
+              (count(*) FILTER (WHERE o.status = $4))::text AS active_count,
+              (count(*) FILTER (WHERE o.status = $5))::text AS partially_repaid_count,
+              (count(*) FILTER (WHERE o.status = $1))::text AS fully_repaid_count,
+              (count(*) FILTER (WHERE o.status = $6))::text AS overdue_count,
+              (count(*) FILTER (WHERE o.status = $7))::text AS defaulted_count,
+              (count(*) FILTER (WHERE o.status = $2))::text AS closed_count,
+              coalesce(sum(o.amount_minor), 0)::text AS principal_minor,
+              coalesce(sum(o.outstanding_minor), 0)::text AS outstanding_principal_minor,
+              coalesce(sum(o.accrued_fees_minor), 0)::text AS accrued_fees_minor,
+              coalesce(sum(o.repaid_amount_minor), 0)::text AS repaid_amount_minor
+         FROM obligations o
+         JOIN subjects s
+           ON s.tenant_id = o.tenant_id
+          AND s.id = o.subject_id
+        WHERE s.subject_type = $8`,
+      [
+        ObligationStatus.FULLY_REPAID,
+        ObligationStatus.CLOSED,
+        ObligationStatus.CREATED,
+        ObligationStatus.ACTIVE,
+        ObligationStatus.PARTIALLY_REPAID,
+        ObligationStatus.OVERDUE,
+        ObligationStatus.DEFAULTED,
+        SubjectType.AGENT
+      ]
+    );
+    const obligationRow = obligationResult.rows[0];
+    if (!obligationRow) {
+      throw portfolioIntegrityError("Tenant risk portfolio Obligation summary is unavailable");
+    }
+    const obligations = {
+      totalCount: portfolioCount(obligationRow.total_count, "Obligation total"),
+      openCount: portfolioCount(obligationRow.open_count, "open Obligation count"),
+      createdCount: portfolioCount(obligationRow.created_count, "created Obligation count"),
+      activeCount: portfolioCount(obligationRow.active_count, "active Obligation count"),
+      partiallyRepaidCount: portfolioCount(
+        obligationRow.partially_repaid_count,
+        "partially repaid Obligation count"
+      ),
+      fullyRepaidCount: portfolioCount(
+        obligationRow.fully_repaid_count,
+        "fully repaid Obligation count"
+      ),
+      overdueCount: portfolioCount(obligationRow.overdue_count, "overdue Obligation count"),
+      defaultedCount: portfolioCount(obligationRow.defaulted_count, "defaulted Obligation count"),
+      closedCount: portfolioCount(obligationRow.closed_count, "closed Obligation count"),
+      principalMinor: portfolioMinorUnits(obligationRow.principal_minor, "Obligation principal"),
+      outstandingPrincipalMinor: portfolioMinorUnits(
+        obligationRow.outstanding_principal_minor,
+        "outstanding Obligation principal"
+      ),
+      accruedFeesMinor: portfolioMinorUnits(
+        obligationRow.accrued_fees_minor,
+        "Obligation accrued fees"
+      ),
+      repaidAmountMinor: portfolioMinorUnits(
+        obligationRow.repaid_amount_minor,
+        "Obligation repaid amount"
+      )
+    };
+    assertPortfolioStateCoverage(obligations.totalCount, [
+      obligations.createdCount,
+      obligations.activeCount,
+      obligations.partiallyRepaidCount,
+      obligations.fullyRepaidCount,
+      obligations.overdueCount,
+      obligations.defaultedCount,
+      obligations.closedCount
+    ], "Obligation");
+    if (
+      obligations.openCount !==
+      obligations.totalCount - obligations.fullyRepaidCount - obligations.closedCount
+    ) {
+      throw portfolioIntegrityError("Tenant risk portfolio open Obligation count is inconsistent");
+    }
+    assertPortfolioAmountAtMost(
+      obligations.outstandingPrincipalMinor,
+      obligations.principalMinor,
+      "outstanding Obligation principal"
+    );
+    assertPortfolioAmountIdentity(
+      obligations.principalMinor,
+      [obligations.outstandingPrincipalMinor, obligations.repaidAmountMinor],
+      "Obligation principal"
+    );
+
+    const assetResult = await client.query(
+      `WITH credit AS (
+         SELECT c.asset_id,
+                count(*) AS credit_line_count,
+                count(*) FILTER (WHERE c.status = $1) AS approved_credit_line_count,
+                count(*) FILTER (WHERE c.status = $2) AS frozen_credit_line_count,
+                coalesce(sum(c.limit_minor), 0) AS limit_minor,
+                coalesce(sum(c.utilized_minor), 0) AS utilized_minor
+           FROM credit_lines c
+           JOIN subjects s
+             ON s.tenant_id = c.tenant_id
+            AND s.id = c.subject_id
+          WHERE s.subject_type = $3
+          GROUP BY c.asset_id
+       ), debt AS (
+         SELECT o.asset_id,
+                count(*) AS obligation_count,
+                count(*) FILTER (WHERE o.status NOT IN ($4, $5)) AS open_obligation_count,
+                count(*) FILTER (WHERE o.status = $6) AS overdue_obligation_count,
+                count(*) FILTER (WHERE o.status = $7) AS defaulted_obligation_count,
+                coalesce(sum(o.outstanding_minor), 0) AS outstanding_principal_minor
+           FROM obligations o
+           JOIN subjects s
+             ON s.tenant_id = o.tenant_id
+            AND s.id = o.subject_id
+          WHERE s.subject_type = $3
+          GROUP BY o.asset_id
+       ), exposure AS (
+         SELECT coalesce(credit.asset_id, debt.asset_id) AS asset_id,
+                coalesce(credit.credit_line_count, 0) AS credit_line_count,
+                coalesce(credit.approved_credit_line_count, 0) AS approved_credit_line_count,
+                coalesce(credit.frozen_credit_line_count, 0) AS frozen_credit_line_count,
+                coalesce(credit.limit_minor, 0) AS limit_minor,
+                coalesce(credit.utilized_minor, 0) AS utilized_minor,
+                coalesce(debt.obligation_count, 0) AS obligation_count,
+                coalesce(debt.open_obligation_count, 0) AS open_obligation_count,
+                coalesce(debt.overdue_obligation_count, 0) AS overdue_obligation_count,
+                coalesce(debt.defaulted_obligation_count, 0) AS defaulted_obligation_count,
+                coalesce(debt.outstanding_principal_minor, 0) AS outstanding_principal_minor
+           FROM credit
+           FULL OUTER JOIN debt ON debt.asset_id = credit.asset_id
+       )
+       SELECT asset_id,
+              credit_line_count::text,
+              approved_credit_line_count::text,
+              frozen_credit_line_count::text,
+              limit_minor::text,
+              utilized_minor::text,
+              obligation_count::text,
+              open_obligation_count::text,
+              overdue_obligation_count::text,
+              defaulted_obligation_count::text,
+              outstanding_principal_minor::text
+         FROM exposure
+        ORDER BY outstanding_principal_minor DESC, utilized_minor DESC, asset_id
+        LIMIT $8`,
+      [
+        CreditLineStatus.APPROVED,
+        CreditLineStatus.FROZEN,
+        SubjectType.AGENT,
+        ObligationStatus.FULLY_REPAID,
+        ObligationStatus.CLOSED,
+        ObligationStatus.OVERDUE,
+        ObligationStatus.DEFAULTED,
+        assetLimit + 1
+      ]
+    );
+    if (assetResult.rows.length > assetLimit + 1) {
+      throw portfolioIntegrityError("Tenant risk portfolio asset page exceeds its query bound");
+    }
+    const allAssetExposures = assetResult.rows.map((row) => ({
+      assetId: portfolioAssetId(row.asset_id),
+      creditLineCount: portfolioCount(row.credit_line_count, "asset CreditLine count"),
+      approvedCreditLineCount: portfolioCount(
+        row.approved_credit_line_count,
+        "asset approved CreditLine count"
+      ),
+      frozenCreditLineCount: portfolioCount(
+        row.frozen_credit_line_count,
+        "asset frozen CreditLine count"
+      ),
+      limitMinor: portfolioMinorUnits(row.limit_minor, "asset CreditLine limit"),
+      utilizedMinor: portfolioMinorUnits(row.utilized_minor, "asset CreditLine utilization"),
+      obligationCount: portfolioCount(row.obligation_count, "asset Obligation count"),
+      openObligationCount: portfolioCount(
+        row.open_obligation_count,
+        "asset open Obligation count"
+      ),
+      overdueObligationCount: portfolioCount(
+        row.overdue_obligation_count,
+        "asset overdue Obligation count"
+      ),
+      defaultedObligationCount: portfolioCount(
+        row.defaulted_obligation_count,
+        "asset defaulted Obligation count"
+      ),
+      outstandingPrincipalMinor: portfolioMinorUnits(
+        row.outstanding_principal_minor,
+        "asset outstanding Obligation principal"
+      )
+    }));
+    const assetIds = allAssetExposures.map(({ assetId }) => assetId);
+    if (new Set(assetIds).size !== assetIds.length) {
+      throw portfolioIntegrityError("Tenant risk portfolio asset identities are duplicated");
+    }
+    for (const exposure of allAssetExposures) {
+      if (
+        BigInt(exposure.approvedCreditLineCount) + BigInt(exposure.frozenCreditLineCount) >
+          BigInt(exposure.creditLineCount) ||
+        exposure.openObligationCount > exposure.obligationCount ||
+        exposure.overdueObligationCount > exposure.openObligationCount ||
+        exposure.defaultedObligationCount > exposure.openObligationCount ||
+        BigInt(exposure.overdueObligationCount) + BigInt(exposure.defaultedObligationCount) >
+          BigInt(exposure.openObligationCount)
+      ) {
+        throw portfolioIntegrityError("Tenant risk portfolio asset status counts are inconsistent");
+      }
+      assertPortfolioAmountAtMost(
+        exposure.utilizedMinor,
+        exposure.limitMinor,
+        "asset CreditLine utilization"
+      );
+    }
+    if (allAssetExposures.length <= assetLimit) {
+      const countTotal = (field) => allAssetExposures.reduce(
+        (sum, exposure) => sum + BigInt(exposure[field]),
+        0n
+      );
+      const amountTotal = (field) => allAssetExposures.reduce(
+        (sum, exposure) => sum + minorUnitsBigInt(exposure[field]),
+        0n
+      );
+      const exactCounts = [
+        ["creditLineCount", creditLines.totalCount],
+        ["approvedCreditLineCount", creditLines.approvedCount],
+        ["frozenCreditLineCount", creditLines.frozenCount],
+        ["obligationCount", obligations.totalCount],
+        ["openObligationCount", obligations.openCount],
+        ["overdueObligationCount", obligations.overdueCount],
+        ["defaultedObligationCount", obligations.defaultedCount]
+      ];
+      const exactAmounts = [
+        ["limitMinor", creditLines.limitMinor],
+        ["utilizedMinor", creditLines.utilizedMinor],
+        ["outstandingPrincipalMinor", obligations.outstandingPrincipalMinor]
+      ];
+      if (
+        exactCounts.some(([field, total]) => countTotal(field) !== BigInt(total)) ||
+        exactAmounts.some(([field, total]) => amountTotal(field) !== minorUnitsBigInt(total))
+      ) {
+        throw portfolioIntegrityError("Tenant risk portfolio asset and total summaries disagree");
+      }
+    }
+    const hasMoreAssetExposures = allAssetExposures.length > assetLimit;
+    const assetExposures = allAssetExposures.slice(0, assetLimit);
+
+    return {
+      subjects,
+      creditLines,
+      obligations,
+      assetExposures,
+      hasMoreAssetExposures
     };
   }
 

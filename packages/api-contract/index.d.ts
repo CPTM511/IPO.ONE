@@ -4,6 +4,7 @@ export type TenantProtocolOperationId =
   | "pilotFreezeSubject"
   | "pilotReadAgentSelf"
   | "pilotReadMandate"
+  | "pilotReadTenantRisk"
   | "pilotRevokeDraftMandate";
 
 export type TenantProtocolRequestSchemaVersion = "tenant_protocol_request.v1";
@@ -26,7 +27,7 @@ export type ProtectiveReasonCode =
   | "stop_loss_triggered";
 
 export interface TenantProtocolResourceReference {
-  resourceType: "subject" | "mandate";
+  resourceType: "subject" | "mandate" | "risk_portfolio";
   resourceId: string;
 }
 
@@ -83,6 +84,12 @@ export interface ReadMandateRequest extends TenantProtocolRequestBase {
   resource: { resourceType: "mandate"; resourceId: string };
 }
 
+export interface ReadTenantRiskRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadTenantRisk";
+  payload: Record<string, never>;
+  resource: { resourceType: "risk_portfolio"; resourceId: string };
+}
+
 export interface RevokeDraftMandateRequest extends TenantProtocolRequestBase {
   operationId: "pilotRevokeDraftMandate";
   payload: Record<string, never>;
@@ -97,6 +104,7 @@ export type TenantProtocolRequest =
   | FreezeSubjectRequest
   | ReadAgentSelfRequest
   | ReadMandateRequest
+  | ReadTenantRiskRequest
   | RevokeDraftMandateRequest;
 
 export interface AgentSubjectCreatedResponse {
@@ -198,6 +206,66 @@ export interface MandateViewResponse {
   schemaVersion: "tenant_mandate_view.v1";
 }
 
+export interface TenantRiskSubjectSummary {
+  totalCount: number;
+  pendingCount: number;
+  activeCount: number;
+  suspendedCount: number;
+  closedCount: number;
+}
+
+export interface TenantRiskCreditLineSummary {
+  totalCount: number;
+  requestedCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  frozenCount: number;
+  closedCount: number;
+  limitMinor: string;
+  utilizedMinor: string;
+}
+
+export interface TenantRiskObligationSummary {
+  totalCount: number;
+  openCount: number;
+  createdCount: number;
+  activeCount: number;
+  partiallyRepaidCount: number;
+  fullyRepaidCount: number;
+  overdueCount: number;
+  defaultedCount: number;
+  closedCount: number;
+  principalMinor: string;
+  outstandingPrincipalMinor: string;
+  accruedFeesMinor: string;
+  repaidAmountMinor: string;
+}
+
+export interface TenantRiskAssetExposure {
+  assetId: string;
+  creditLineCount: number;
+  approvedCreditLineCount: number;
+  frozenCreditLineCount: number;
+  limitMinor: string;
+  utilizedMinor: string;
+  obligationCount: number;
+  openObligationCount: number;
+  overdueObligationCount: number;
+  defaultedObligationCount: number;
+  outstandingPrincipalMinor: string;
+}
+
+export interface TenantRiskPortfolioViewResponse {
+  portfolioId: string;
+  asOf: string;
+  subjects: TenantRiskSubjectSummary;
+  creditLines: TenantRiskCreditLineSummary;
+  obligations: TenantRiskObligationSummary;
+  assetExposures: TenantRiskAssetExposure[];
+  hasMoreAssetExposures: boolean;
+  schemaVersion: "tenant_risk_portfolio_view.v1";
+}
+
 export interface DraftMandateRevokedResponse {
   mandateId: string;
   mandateHash: string;
@@ -224,6 +292,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotFreezeSubject", AgentSubjectFrozenResponse>
   | TenantProtocolResultBase<"pilotReadAgentSelf", AgentSubjectViewResponse>
   | TenantProtocolResultBase<"pilotReadMandate", MandateViewResponse>
+  | TenantProtocolResultBase<"pilotReadTenantRisk", TenantRiskPortfolioViewResponse>
   | TenantProtocolResultBase<"pilotRevokeDraftMandate", DraftMandateRevokedResponse>;
 
 export type TenantProtocolResultFor<OperationId extends TenantProtocolOperationId> = Extract<
@@ -235,13 +304,14 @@ export type TenantProtocolActorType =
   | "human"
   | "agent"
   | "risk_operator"
-  | "operations_operator";
+  | "operations_operator"
+  | "auditor";
 
 export interface TenantProtocolOperationBase<
   OperationId extends TenantProtocolOperationId,
   Kind extends "command" | "query",
   ActorTypes extends readonly TenantProtocolActorType[],
-  ResourceType extends "subject" | "mandate",
+  ResourceType extends "subject" | "mandate" | "risk_portfolio",
   Capability extends string,
   Idempotency extends "required" | "prohibited",
   QuotaClass extends "read" | "mutation" | "privileged",
@@ -310,6 +380,16 @@ export type TenantProtocolOperation =
       "prohibited",
       "read",
       "tenant_mandate_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadTenantRisk",
+      "query",
+      readonly ["risk_operator", "auditor"],
+      "risk_portfolio",
+      "risk.read.tenant",
+      "prohibited",
+      "read",
+      "tenant_risk_portfolio_view.v1"
     >
   | TenantProtocolOperationBase<
       "pilotRevokeDraftMandate",

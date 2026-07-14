@@ -19,6 +19,7 @@
         "pilotFreezeSubject",
         "pilotReadAgentSelf",
         "pilotReadMandate",
+        "pilotReadTenantRisk",
         "pilotRevokeDraftMandate"
       ]
     },
@@ -122,6 +123,21 @@
       }
     },
     {
+      "title": "Read Tenant Risk Portfolio",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "pilotReadTenantRisk" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/riskPortfolioResourceReference" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["idempotencyKey"] },
+          { "required": ["reasonCode"] }
+        ]
+      }
+    },
+    {
       "title": "Revoke Draft Mandate",
       "required": ["idempotencyKey", "resource", "reasonCode"],
       "properties": {
@@ -152,7 +168,7 @@
       "additionalProperties": false,
       "required": ["resourceType", "resourceId"],
       "properties": {
-        "resourceType": { "enum": ["subject", "mandate"] },
+        "resourceType": { "enum": ["subject", "mandate", "risk_portfolio"] },
         "resourceId": { "$ref": "#/$defs/domainIdentifier" }
       }
     },
@@ -171,6 +187,15 @@
       "required": ["resourceType", "resourceId"],
       "properties": {
         "resourceType": { "const": "mandate" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "riskPortfolioResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "risk_portfolio" },
         "resourceId": { "$ref": "#/$defs/domainIdentifier" }
       }
     },
