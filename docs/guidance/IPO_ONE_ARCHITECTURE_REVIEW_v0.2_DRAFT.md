@@ -487,7 +487,7 @@ MVP 首选：一条执行链 + centralized canonical reservation service + per-c
 | Capability | Current reality |
 | --- | --- |
 | Browser demo | Real local interaction against one Node process. |
-| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID、alpha SDK 及进程级流量/并发边界；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant。本地另有 durable Tenant Command Gateway，已组合 Agent Subject 创建、unsigned draft Mandate 创建和 Agent self-read；尚未成为 public route，也没有 production credential provisioning 或 runtime schema enforcement。 |
+| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID、alpha SDK 及进程级流量/并发边界；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant。本地另有 durable Tenant Command Gateway，已组合 Agent Subject 创建、unsigned draft Mandate create/read/revoke 和 Agent self-read；尚未成为 public route，也没有 production credential provisioning 或 runtime schema enforcement。 |
 | Wallet binding | CAIP-like format plus explicit mock signature; no production cryptographic verification. |
 | Payment | Instruction records only; no funds move. |
 | Lockbox | Public demo uses an in-memory projection; normalized Lockbox/Ledger repositories, immutable snapshots and reconciliation are PostgreSQL-tested but not composed behind the API; no contract or custody. |
@@ -612,8 +612,8 @@ real PostgreSQL.
 Milestone B is still incomplete at the application boundary: the public demo
 orchestrator remains process-local. A separate authenticated Tenant Command
 Gateway now uses these repositories for Agent Subject creation, unsigned draft
-Mandate creation, and Agent self-read, but the Lockbox lifecycle is not yet
-composed. Production identity provisioning, signed account/Mandate proof,
+Mandate create/read/revoke, and Agent self-read, but the Lockbox lifecycle is
+not yet composed. Production identity provisioning, signed account/Mandate proof,
 webhook verification, remote adapter certification, custody, production
 database operations, and real settlement do not exist.
 

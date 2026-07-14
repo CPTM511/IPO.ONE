@@ -99,7 +99,7 @@ pnpm run smoke:api
 
 ## Implementation Evidence
 
-- `abuse_001.v1` covers all 27 current authenticated Tenant operations exactly
+- `abuse_001.v1` covers all 29 current authenticated Tenant operations exactly
   once and preserves every approved SEC-D08 rate.
 - Human/Agent ingress can add only a server-created trusted network context;
   Tenant, Actor, and client always derive from Authentication Context.

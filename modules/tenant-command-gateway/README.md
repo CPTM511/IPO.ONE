@@ -17,8 +17,10 @@ controller's Agent Actor. Existing non-system Memberships migrate with no
 allowed client until explicitly provisioned.
 
 The reviewed DATA-003 operations cover Human-controlled Agent Subject creation,
-Human-only creation of a durable unsigned Mandate draft for that Subject, and
-the Agent's bounded self-read query. Persistent Agent Subject and Mandate
+Human-only creation and integrity-checked reading of a durable unsigned Mandate
+draft, terminal reason-coded draft revocation, and the Agent's bounded self-read
+query. Revocation atomically closes the authorization resource while retaining
+bindings for historical owner reads. Persistent Agent Subject and Mandate
 admission is anchored to Tenant-scoped durable row counts before object lookup
 and synchronized again inside the business transaction. Both Human BFF and
 Agent clients use the same protocol envelope and have no direct database

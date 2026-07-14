@@ -64,12 +64,12 @@ volume fee. It should not depend on high consumer APR, token issuance, or TVL.
 | FR-006 Obligation Registry | Obligation lifecycle, required references, immutable snapshots, drift detection and repair Evidence | Durable repository foundation is complete; canonical authorization/funding state machine still needs ADR and command-gateway composition | ARCH-002, DATA-003 |
 | FR-007 Repayment Router | Partial/full repayment, utilization release, Evidence; durable Ledger/Obligation/Repayment repositories and reconciliation | Persistence controls are proven in isolation; the public API still uses the process-local demo orchestrator | DATA-003, AUTH-002 |
 | FR-008 Risk Engine v0 | Deterministic reason-coded local decision | Demo inputs are partly synthetic; point-in-time evidence features and policy registry remain | RISK-002 |
-| FR-009 Admin Console | Exposure/freeze path, local Human/workload AuthN, deny-by-default Tenant/object AuthZ, exact-command durable dual control, protective-only break glass, and privileged admission limits | The local Gateway composes only Agent Subject, draft Mandate, and Agent self-read operations; administrative handlers, production identity/quota providers and roles, and named break-glass activation remain | DATA-003, OPS-001 |
+| FR-009 Admin Console | Exposure/freeze path, local Human/workload AuthN, deny-by-default Tenant/object AuthZ, exact-command durable dual control, protective-only break glass, and privileged admission limits | The local Gateway composes Agent Subject creation, draft Mandate create/read/revoke, and Agent self-read; administrative handlers, production identity/quota providers and roles, and named break-glass activation remain | DATA-003, OPS-001 |
 | FR-010 Human Prototype | Prototype Human Subject and reserved DPD/restructure states | Consent, KYC/VC reference contract, Originator, and loan-tape simulator are not implemented | HUMAN-001 |
 | FR-011 Event Indexer | Rail event replay, multi-event PostgreSQL runtime, materialized core projections and deterministic reconciliation | Local database replay/reconciliation foundation is complete; no chain indexer, finality/reorg invalidation, or multi-chain exposure service | INDEXER-001 |
 | FR-012 Provider Sandbox | Local allowlist, sandbox Rail, deterministic settlement | No signed remote webhook, provider auth, conformance service, or SLA telemetry | PROVIDER-001 |
 | OpenAPI and SDK | OpenAPI 3.1.2 for all 21 routes; stable Problem Details/request IDs; optional coarse retry class; zero-dependency JavaScript SDK with declarations | API-001 is complete for the demo surface; the durable Gateway is a separate local protocol and is not a public route, while authenticated runtime schema enforcement and compatibility policy remain | DATA-003 |
-| Transactional event runtime | Batch command/event/Evidence/outbox plus normalized core and approval projections, immutable snapshots, approval/execution linkage, reconciliation and approval-gated repair crash-tested on PostgreSQL | The local Gateway composes Agent Subject and draft Mandate writes over this runtime; the remaining Lockbox lifecycle and default public API remain process-local | DATA-003 |
+| Transactional event runtime | Batch command/event/Evidence/outbox plus normalized core and approval projections, immutable snapshots, approval/execution linkage, reconciliation and approval-gated repair crash-tested on PostgreSQL | The local Gateway composes Agent Subject and draft Mandate create/revoke writes plus integrity-checked reads over this runtime; the remaining Lockbox lifecycle and default public API remain process-local | DATA-003 |
 | Public sandbox hosting | Fail-closed runtime, immutable image, load-balancer-only Cloud Run, managed TLS, Cloud Armor, monitoring, and GoDaddy root-A cutover | Public no-funds sandbox is live at `https://ipo.one`; protected-environment evidence, alert recipients, incident ownership, and independent review remain | OPS-001A, OPS-002 |
 | Release governance | Versioned public/closed/real-value profiles, canonical evidence contract, exact release identity, approval age/expiry, complete gate set, protected-environment reference | Public sandbox evidence is executable; closed private and real-value profiles are policy-locked pending gateway composition, production quota/edge selection, and named approvals | OPS-002, DATA-003 |
 
@@ -101,10 +101,12 @@ telemetry. It is a local boundary only and is not exposed by `ipo.one`.
 `DATA-003` now provides a separate local PostgreSQL-backed Tenant Command
 Gateway with one serializable authority and commit boundary. Human and Agent
 clients share a closed protocol for Human-controlled Agent Subject creation,
-Human-only unsigned draft Mandate creation, and bounded Agent self-read. Exact
-replay, row-locked authorization facts, Event/Evidence/outbox/projection/audit
-atomicity, nonce serialization, and domain-anchored Agent Subject/Mandate caps
-are PostgreSQL-tested. This is not a public route, signed authority, or
+Human-only unsigned draft Mandate creation, integrity-checked owner read,
+terminal reason-coded draft revocation, and bounded Agent self-read. Exact
+replay after authorization-resource closure, row-locked authorization facts,
+Event/Evidence/outbox/projection/audit atomicity, nonce/revocation serialization,
+and domain-anchored Agent Subject/Mandate caps are PostgreSQL-tested. This is not
+a public route, signed authority, or
 production deployment; the Lockbox lifecycle and operational handlers remain.
 
 ### V0.3 Hosting Checkpoint (updated 2026-07-13)
@@ -147,10 +149,10 @@ after projection writes, restart replay, concurrent writer exclusion, drift
 detection, and idempotent repair.
 
 This does not make the public API durable or pilot-authorized. `DATA-003` now
-composes only Agent Subject and unsigned draft Mandate operations behind a
-separate local authenticated Gateway; the remaining Lockbox lifecycle is not
-composed. No production database, customer data, scheduled repair, backup/DR,
-or real-value path is enabled.
+composes only Agent Subject creation, unsigned draft Mandate create/read/revoke,
+and Agent self-read behind a separate local authenticated Gateway; the remaining
+Lockbox lifecycle is not composed. No production database, customer data,
+scheduled repair, backup/DR, or real-value path is enabled.
 
 ### V0.3 Approval Control Checkpoint (2026-07-14)
 
@@ -179,7 +181,7 @@ private data, or grant cloud, Provider, KYC/KYP, custody, or fund authority.
 ### V0.3 Resource Admission Checkpoint (2026-07-14)
 
 `ABUSE-001` is implemented and verified for the approved local non-funds
-boundary. All 27 current authenticated Tenant operations are classified once.
+boundary. All 29 current authenticated Tenant operations are classified once.
 The policy preserves 30/minute discovery, 600/3,000 reads, 120/600 mutations,
 30/minute economic and privileged paths, 10 attempts/10 minutes credentials,
 and 6/minute batch defaults, with explicit client, network, operation, service,
@@ -195,8 +197,9 @@ rollback, migration reversal, and forced-RLS coverage.
 This checkpoint does not select a production distributed/global store, tune
 edge limits, cancel arbitrary work, or wire Tenant routes. `DATA-003` now
 composes admission, authorization, completed response replay, business mutation,
-and retained resource accounting for Agent Subject and draft Mandate creation;
-all remaining operations and production deployment require separate review.
+and retained resource accounting for Agent Subject and draft Mandate
+create/read/revoke; all remaining operations and production deployment require
+separate review.
 
 ### V0.3 Launch Governance Checkpoint (2026-07-12)
 
@@ -223,17 +226,17 @@ non-funds sandbox.
    contract tests.
 2. `SECURITY-001` (approved for local non-funds implementation): `TENANT-001`,
    `AUTHN-001`, `AUTHZ-001`, `APPROVAL-001`, and `ABUSE-001` are complete locally.
-3. `DATA-003` (foundation and DATA-003A complete locally; remaining composition
-   in progress): the shared Human/Agent transaction boundary now covers Agent
-   Subject creation, unsigned draft Mandate creation, and Agent self-read while
-   preserving the anonymous public sandbox boundary.
+3. `DATA-003` (foundation, DATA-003A, and DATA-003B complete locally; remaining
+   composition in progress): the shared Human/Agent transaction boundary now
+   covers Agent Subject creation, unsigned draft Mandate create/read/revoke,
+   and Agent self-read while preserving the anonymous public sandbox boundary.
 4. `DATA-002` (complete locally): durable Subject, Principal, Mandate, SpendPolicy, Obligation,
    Lockbox, Ledger, RiskDecision, and Admin repositories using the event/outbox
    transaction model.
 5. `RECON-001` (complete locally): materialized projections, ledger/event/state reconciliation,
    replay jobs, discrepancy Evidence, operator runbook.
-6. `AUTH-002`: signed Mandate/account challenge, nonce persistence, expiry,
-   revocation, key rotation, replay tests.
+6. `AUTH-002`: signed Mandate activation/account challenge, nonce persistence,
+   expiry, active-Mandate suspension/revocation, key rotation, replay tests.
 7. `PROVIDER-001`: out-of-process provider sandbox, signed webhooks, inbox
    dedupe, retries, circuit breaker, conformance fixtures.
 8. `RISK-002`: versioned evidence-derived features and point-in-time policy

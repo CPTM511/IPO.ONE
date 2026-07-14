@@ -9,6 +9,11 @@ import {
 
 const RESOURCE_STATUSES = new Set(["active", "frozen", "closed"]);
 const RESOURCE_RELATIONSHIPS = new Set(["owner", "controller", "subject"]);
+const RESOURCE_TRANSITIONS = Object.freeze({
+  active: Object.freeze(["frozen", "closed"]),
+  frozen: Object.freeze(["active", "closed"]),
+  closed: Object.freeze([])
+});
 
 function assertClient(client) {
   if (!client || typeof client.query !== "function") {
@@ -378,5 +383,71 @@ export class PostgresAuthorizationDirectory {
       updatedAt: occurredAt.toISOString(),
       schemaVersion: "authorization_resource.v1"
     };
+  }
+
+  async transitionResource({
+    resourceType,
+    resourceId,
+    expectedStatus,
+    nextStatus,
+    expectedVersion,
+    now = new Date()
+  }) {
+    const type = assertAuthorizationIdentifier("resourceType", resourceType);
+    const id = assertAuthorizationIdentifier("resourceId", resourceId);
+    const version = safeVersion(expectedVersion, "authorization resource expected version");
+    if (
+      !RESOURCE_STATUSES.has(expectedStatus) ||
+      !RESOURCE_STATUSES.has(nextStatus) ||
+      !RESOURCE_TRANSITIONS[expectedStatus].includes(nextStatus)
+    ) {
+      throw authorizationError(
+        "invalid_authorization_input",
+        "authorization resource transition is invalid"
+      );
+    }
+    const occurredAt = authorizationTimestamp("now", now);
+    await this.client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('authorization_resource:' || $1), hashtext($2))",
+      [type, id]
+    );
+    const result = await this.client.query(
+      `UPDATE authorization_resources
+          SET status = $4,
+              version = version + 1,
+              updated_at = $5
+        WHERE tenant_id = $1
+          AND resource_type = $2
+          AND resource_id = $3
+          AND status = $6
+          AND version = $7
+      RETURNING *`,
+      [
+        this.authenticationContext.tenantId,
+        type,
+        id,
+        nextStatus,
+        occurredAt,
+        expectedStatus,
+        version
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw authorizationError(
+        "authorization_resource_conflict",
+        "authorization resource changed concurrently"
+      );
+    }
+    const row = result.rows[0];
+    return cloneAuthorization({
+      tenantId: row.tenant_id,
+      resourceType: row.resource_type,
+      resourceId: row.resource_id,
+      status: row.status,
+      version: safeVersion(row.version, "authorization resource version"),
+      createdAt: timestamp(row.created_at),
+      updatedAt: timestamp(row.updated_at),
+      schemaVersion: row.schema_version
+    });
   }
 }

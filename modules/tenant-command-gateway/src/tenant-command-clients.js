@@ -70,6 +70,37 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
       ...(networkContext === undefined ? {} : { networkContext })
     });
   }
+
+  async getMandate({ mandateId, requestId, correlationId, networkContext }) {
+    return this.execute({
+      operationId: "pilotReadMandate",
+      payload: {},
+      resource: { resourceType: "mandate", resourceId: mandateId },
+      requestId,
+      correlationId,
+      ...(networkContext === undefined ? {} : { networkContext })
+    });
+  }
+
+  async revokeDraftMandate({
+    mandateId,
+    reasonCode,
+    idempotencyKey,
+    requestId,
+    correlationId,
+    networkContext
+  }) {
+    return this.execute({
+      operationId: "pilotRevokeDraftMandate",
+      payload: {},
+      resource: { resourceType: "mandate", resourceId: mandateId },
+      reasonCode,
+      idempotencyKey,
+      requestId,
+      correlationId,
+      ...(networkContext === undefined ? {} : { networkContext })
+    });
+  }
 }
 
 export class AgentTenantCommandClient extends TenantProtocolClient {

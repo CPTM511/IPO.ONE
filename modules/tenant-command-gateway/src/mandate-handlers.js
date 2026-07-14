@@ -2,11 +2,14 @@ import {
   CreditEventType,
   DomainError,
   MandateCapability,
+  MandateStatus,
+  MandateTransitions,
   PrincipalStatus,
   SubjectStatus,
   SubjectType,
   assertNoRawPiiReference,
   assertPositiveMinorUnits,
+  assertTransition,
   createCreditEvent,
   createMandate,
   enumValues
@@ -32,6 +35,11 @@ const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:._/%-]*$/;
 const FIVE_MINUTES_MS = 5 * 60_000;
 const THIRTY_DAYS_MS = 30 * 86_400_000;
 const MAX_MANDATE_WINDOW_MS = 366 * 86_400_000;
+const DRAFT_REVOCATION_REASON_CODES = new Set([
+  "credential_compromise",
+  "operator_request",
+  "security_incident"
+]);
 
 function invalid(message) {
   throw new DomainError("invalid_tenant_command_payload", message);
@@ -176,6 +184,28 @@ export function normalizeDraftMandatePayload(payload, now) {
   };
   assertNoRawPiiReference(normalized, "draftMandate");
   return normalized;
+}
+
+function normalizeEmptyMandatePayload(payload) {
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    Array.isArray(payload) ||
+    Object.keys(payload).length !== 0
+  ) {
+    invalid("Mandate management payload must be empty");
+  }
+  return payload;
+}
+
+function mandateView(mandate) {
+  return {
+    ...mandate,
+    capabilities: [...mandate.capabilities],
+    allowedProviderIds: [...mandate.allowedProviderIds],
+    allowedCategories: [...mandate.allowedCategories],
+    assetIds: [...mandate.assetIds]
+  };
 }
 
 function requireAgentBinding(bindings, controllerActorId) {
@@ -331,6 +361,124 @@ export function createDraftMandateCommandHandler() {
   });
 }
 
+export function readMandateQueryHandler() {
+  return Object.freeze({
+    operationId: "pilotReadMandate",
+    kind: "query",
+    async execute({ client, coreRepository, resource, payload }) {
+      normalizeEmptyMandatePayload(payload);
+      if (resource?.resourceType !== "mandate") {
+        throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
+      }
+      const mandate = await coreRepository.getProjectionInTransaction(
+        client,
+        CoreProjectionType.MANDATE,
+        resource.resourceId,
+        { lock: false }
+      );
+      if (!mandate || mandate.mandateId !== resource.resourceId) {
+        throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
+      }
+      return {
+        mandate: mandateView(mandate),
+        schemaVersion: "tenant_mandate_view.v1"
+      };
+    }
+  });
+}
+
+export function revokeDraftMandateCommandHandler() {
+  return Object.freeze({
+    operationId: "pilotRevokeDraftMandate",
+    kind: "command",
+    async plan({
+      client,
+      coreRepository,
+      payload,
+      authenticationContext,
+      authorizationDecision,
+      reasonCode,
+      now,
+      requestId,
+      correlationId
+    }) {
+      normalizeEmptyMandatePayload(payload);
+      if (
+        authorizationDecision.resourceType !== "mandate" ||
+        !DRAFT_REVOCATION_REASON_CODES.has(reasonCode)
+      ) {
+        throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
+      }
+      const state = await coreRepository.getProjectionStateInTransaction(
+        client,
+        CoreProjectionType.MANDATE,
+        authorizationDecision.resourceId,
+        { lock: true }
+      );
+      const mandate = state?.value;
+      if (!mandate || mandate.mandateId !== authorizationDecision.resourceId) {
+        throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
+      }
+      assertTransition("Mandate", MandateTransitions, mandate.status, MandateStatus.REVOKED);
+      const revoked = {
+        ...mandate,
+        capabilities: [...mandate.capabilities],
+        allowedProviderIds: [...mandate.allowedProviderIds],
+        allowedCategories: [...mandate.allowedCategories],
+        assetIds: [...mandate.assetIds],
+        status: MandateStatus.REVOKED,
+        updatedAt: now.toISOString()
+      };
+      const event = createCreditEvent({
+        eventType: CreditEventType.MANDATE_STATUS_CHANGED,
+        subjectId: mandate.subjectId,
+        payload: {
+          mandateId: mandate.mandateId,
+          mandateHash: mandate.mandateHash,
+          previousStatus: mandate.status,
+          nextStatus: revoked.status,
+          reasonCode,
+          actorId: authenticationContext.actorId,
+          causationId: requestId,
+          correlationId
+        },
+        now
+      });
+      return {
+        aggregateType: "mandate",
+        aggregateId: mandate.mandateId,
+        events: [{
+          aggregateType: "mandate",
+          aggregateId: mandate.mandateId,
+          expectedVersion: state.aggregateVersion,
+          event
+        }],
+        writes: [{ type: CoreProjectionType.MANDATE, value: revoked, eventId: event.eventId }],
+        response: {
+          mandateId: revoked.mandateId,
+          mandateHash: revoked.mandateHash,
+          subjectId: revoked.subjectId,
+          status: revoked.status,
+          reasonCode,
+          updatedAt: revoked.updatedAt,
+          schemaVersion: "tenant_draft_mandate_revoked.v1"
+        },
+        authorizationResourceTransition: {
+          resourceType: "mandate",
+          resourceId: revoked.mandateId,
+          expectedStatus: "active",
+          nextStatus: "closed",
+          expectedVersion: authorizationDecision.resourceVersion
+        }
+      };
+    }
+  });
+}
+
 export function createMandateHandlers() {
-  return Object.freeze([createDraftMandateCommandHandler()]);
+  return Object.freeze([
+    createDraftMandateCommandHandler(),
+    readMandateQueryHandler(),
+    revokeDraftMandateCommandHandler()
+  ]);
 }

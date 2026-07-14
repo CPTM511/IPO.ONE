@@ -43,6 +43,7 @@ movement, accounting, and risk into one black box.
 > fail-closed Membership/client/controller facts, durable authorization resources,
 > exact-payload audit and command authority, atomic admission completion,
 > Human-controlled Agent Subject creation, durable non-executable Mandate drafts,
+> owner-authorized integrity reads, reason-coded terminal draft revocation,
 > domain-anchored resource capacity, and bounded Agent self-read. It is not
 > mounted on the public
 > API, and the remaining Lockbox credit/spend/revenue/repayment, worker, approval,
@@ -174,8 +175,8 @@ flowchart TB
 | Authorization | Shared Human/Agent capability policy, Membership/client/controller binding, object ownership, AccessGrants, live checks, MFA, reasons, idempotency, approval, revalidation, and allow/deny audit | Approved local non-funds foundation with private short-lived v2 decisions, PostgreSQL Membership/resource/audit adapters, non-enumerating denials, and exact payload binding; not wired to the public sandbox |
 | Approval | Exact-command proposal, two-role decisions, atomic single execution, and separately gated protective break glass | Durable PostgreSQL local non-funds boundary with forced RLS, immutable/guarded records, Event/Evidence/outbox linkage, restart recovery, and reconciliation; disabled/not wired on the public sandbox |
 | Resource Admission | Versioned Actor/client/Tenant/operation/network/account rates, concurrency, bytes, durable counts, queue/export/time/retry/cost budgets, and resource-blind denial | Approved SEC-D08 local non-funds boundary with deterministic and PostgreSQL atomic stores, restart leases, coarse retry classes, and low-cardinality telemetry; not wired to the public sandbox |
-| Tenant Command Gateway | One authenticated protocol and serializable commit boundary for Human/Agent operations | PostgreSQL-backed DATA-003 foundation with exact replay identity, row-locked authorization facts, immutable Human-to-Agent controller assignment, atomic audit/Event/Evidence/projection/admission completion, and three reviewed pilot operations; local non-funds only |
-| Mandate | Capability, counterparty, asset, amount, time, nonce, and revocation scope | Process-local demo service plus durable, integrity-checked `mandate.v2` draft creation; drafts are unsigned and non-executable |
+| Tenant Command Gateway | One authenticated protocol and serializable commit boundary for Human/Agent operations | PostgreSQL-backed DATA-003 foundation with exact replay identity, row-locked authorization facts, immutable Human-to-Agent controller assignment, atomic audit/Event/Evidence/projection/admission completion, and five reviewed pilot operations; local non-funds only |
+| Mandate | Capability, counterparty, asset, amount, time, nonce, and revocation scope | Process-local demo service plus durable, integrity-checked `mandate.v2` draft creation, Human owner read, and terminal draft revocation; drafts remain unsigned and non-executable |
 | Spend Policy | Provider allowlist, category, transaction, daily, and obligation limits | Enforced before spend and Rail submission |
 | Obligation | Principal, amount, due state, repayment, overdue/default-compatible lifecycle | Versioned local aggregate |
 | Lockbox | Revenue capture and repayment source | Projected through balanced Ledger postings |
@@ -335,7 +336,7 @@ fund-moving adapter.
 | Local pilot AuthZ | Versioned deny-by-default policies, capability intersection, Membership/client binding, Actor/Tenant ownership, exact AccessGrants, live checks, reason/idempotency/approval rules, private short-lived decisions, TOCTOU revalidation, and awaited allow/deny audit; not enabled on the public runtime |
 | Local pilot Approval | Server-prepared exact-command proposals, distinct Risk/Operations approvers, current Credential/Membership/MFA revalidation, serializable single execution, immutable Evidence, forced RLS, and protective-only break glass; local non-funds only and not enabled on the public runtime |
 | Local pilot Admission | Closed `abuse_001.v1` policy over trusted Actor/client/Tenant/network/account context; atomic rates, concurrency, bytes, durable counts, queue/export/retry/cost, replay disposition, restart leases, forced RLS, coarse retry metadata, and low-cardinality telemetry; local non-funds only and not enabled on the public runtime |
-| Local pilot Tenant Gateway | Admission before lookup; exact authenticated replay identity; serializable authorization/Event/Evidence/projection/response commit; immutable controller binding; RLS plus row-locked TOCTOU checks; only Agent-Subject create/self-read implemented and not enabled publicly |
+| Local pilot Tenant Gateway | Admission before lookup; exact authenticated replay identity; serializable authorization/Event/Evidence/projection/response/resource-transition commit; immutable controller binding; RLS plus row-locked TOCTOU checks; Agent Subject create, Draft Mandate create/read/revoke, and Agent self-read implemented locally but not enabled publicly |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
 | Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |
@@ -481,8 +482,8 @@ Near-term engineering priorities are:
    revenue, repayment, worker, approval, protective-risk, audit/export, and
    reconciliation handlers; add two-Tenant negative tests for each while the
    public demo remains isolated.
-2. Add cryptographically signed Mandates, nonce/replay protection, key rotation,
-   and wallet/account proof.
+2. Add cryptographically signed Mandate activation, account challenge proof,
+   nonce/replay protection, active-Mandate suspension/revocation, and key rotation.
 3. Certify out-of-process Provider, KYP, payment, on/off-ramp, and chain adapters
    with signed requests, webhook replay protection, revocation, and failure policy.
 4. Complete the remaining public-sandbox governance: protected-environment
