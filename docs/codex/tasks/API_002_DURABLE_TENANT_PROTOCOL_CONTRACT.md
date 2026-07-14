@@ -1,7 +1,8 @@
 # API-002: Durable Tenant Protocol Contract and Conformance
 
 Status: Complete locally under the approved SECURITY-001 non-funds boundary.
-This task is stacked on DATA-003B, was extended additively by DATA-003C, and
+This task is stacked on DATA-003B, was extended additively by DATA-003C and
+DATA-003D, and
 does not expose the authenticated Tenant Gateway on the public sandbox.
 
 ## Context
@@ -9,7 +10,8 @@ does not expose the authenticated Tenant Gateway on the public sandbox.
 DATA-003 provides one durable transaction protocol for Human, Operator, and
 Agent clients. API-002 originally froze five reviewed operations that had been
 represented only by JavaScript handler conventions; DATA-003C subsequently
-extended the same closed contract with one protective operation. The public
+extended the same closed contract with one protective operation and DATA-003D
+added one aggregate Tenant risk query. The public
 OpenAPI describes a different anonymous demo surface. Without a
 language-neutral private-protocol contract, runtime schema enforcement, and
 conformance fixtures, an HTTP, MCP/A2A, CLI, or partner SDK adapter could drift
@@ -25,7 +27,7 @@ authenticated endpoint or granting new business authority.
 
 - Publish closed JSON Schema 2020-12 contracts for the Tenant protocol request,
   result, and operation catalog.
-- Publish a machine-readable catalog for the six implemented operations with
+- Publish a machine-readable catalog for the seven implemented operations with
   Actor type, resource type, capability, idempotency, request/result version,
   transport availability, and safety metadata.
 - Require an explicit request schema version and bind it into durable command
@@ -112,11 +114,11 @@ git diff --check
 
 ## Verification Record
 
-- `pnpm run check`: 162 unit and contract tests pass.
-- `pnpm run test:security`: 20 adversarial tests pass.
-- `pnpm run test:postgres`: 46 PostgreSQL 17 tests pass, including 28 focused
-  Tenant Gateway transaction, isolation, replay, race, freeze, and capacity
-  cases.
+- `pnpm run check`: 165 unit and contract tests pass.
+- `pnpm run test:security`: 21 adversarial tests pass.
+- `pnpm run test:postgres`: 47 PostgreSQL 17 tests pass, including 29 focused
+  Tenant Gateway transaction, isolation, replay, race, freeze, aggregate risk
+  portfolio, and capacity cases.
 - Live API smoke reaches settled transfer and fully repaid obligation state;
   demo Ledger remains balanced.
 - Frozen install passes supply-chain policy; `pnpm audit --prod` reports no

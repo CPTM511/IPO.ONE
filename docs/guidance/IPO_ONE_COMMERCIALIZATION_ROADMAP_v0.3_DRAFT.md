@@ -68,7 +68,7 @@ volume fee. It should not depend on high consumer APR, token issuance, or TVL.
 | FR-010 Human Prototype | Prototype Human Subject and reserved DPD/restructure states | Consent, KYC/VC reference contract, Originator, and loan-tape simulator are not implemented | HUMAN-001 |
 | FR-011 Event Indexer | Rail event replay, multi-event PostgreSQL runtime, materialized core projections and deterministic reconciliation | Local database replay/reconciliation foundation is complete; no chain indexer, finality/reorg invalidation, or multi-chain exposure service | INDEXER-001 |
 | FR-012 Provider Sandbox | Local allowlist, sandbox Rail, deterministic settlement | No signed remote webhook, provider auth, conformance service, or SLA telemetry | PROVIDER-001 |
-| OpenAPI and SDK | OpenAPI 3.1.2 for all 21 demo routes; stable Problem Details/request IDs; optional coarse retry class; zero-dependency JavaScript SDK; closed durable Tenant request/result/catalog schemas, TypeScript unions, and conformance fixtures | API-001 is complete for the public demo. API-002 now enforces the six-operation local Tenant contract before admission and before commit, with trusted auth/network facts outside caller data. No authenticated HTTP/MCP/A2A adapter or production identity is enabled | AUTH-002, DATA-003 |
+| OpenAPI and SDK | OpenAPI 3.1.2 for all 21 demo routes; stable Problem Details/request IDs; optional coarse retry class; zero-dependency JavaScript SDK; closed durable Tenant request/result/catalog schemas, TypeScript unions, and conformance fixtures | API-001 is complete for the public demo. API-002 now enforces the seven-operation local Tenant contract before admission and before commit, with trusted auth/network facts outside caller data. No authenticated HTTP/MCP/A2A adapter or production identity is enabled | AUTH-002, DATA-003 |
 | Transactional event runtime | Batch command/event/Evidence/outbox plus normalized core and approval projections, immutable snapshots, approval/execution linkage, reconciliation and approval-gated repair crash-tested on PostgreSQL | The local Gateway composes Agent Subject create/freeze and draft Mandate create/revoke writes plus integrity-checked reads over this runtime; the remaining Lockbox lifecycle and default public API remain process-local | DATA-003 |
 | Public sandbox hosting | Fail-closed runtime, immutable image, load-balancer-only Cloud Run, managed TLS, Cloud Armor, monitoring, and GoDaddy root-A cutover | Public no-funds sandbox is live at `https://ipo.one`; protected-environment evidence, alert recipients, incident ownership, and independent review remain | OPS-001A, OPS-002 |
 | Release governance | Versioned public/closed/real-value profiles, canonical evidence contract, exact release identity, approval age/expiry, complete gate set, protected-environment reference | Public sandbox evidence is executable; closed private and real-value profiles are policy-locked pending gateway composition, production quota/edge selection, and named approvals | OPS-002, DATA-003 |
@@ -112,7 +112,7 @@ a public route, signed authority, or
 production deployment; the Lockbox lifecycle, unfreeze/limit, and remaining
 operational handlers remain.
 
-`API-002` now freezes that local six-operation application protocol as closed
+`API-002` now freezes that local seven-operation application protocol as closed
 JSON Schema 2020-12 requests, results, and a machine-readable catalog, with
 transport-neutral fixtures and TypeScript discriminated unions. Runtime
 requests fail before authentication/admission/object work, handler results fail
@@ -239,15 +239,17 @@ non-funds sandbox.
    contract tests.
 2. `API-002` (complete locally): closed durable Tenant request/result/catalog
    schemas, TypeScript unions, conformance fixtures, runtime enforcement, and
-   compatibility/drift policy for six reviewed non-funds operations; no
+   compatibility/drift policy for seven reviewed non-funds operations; no
    authenticated network endpoint.
 3. `SECURITY-001` (approved for local non-funds implementation): `TENANT-001`,
    `AUTHN-001`, `AUTHZ-001`, `APPROVAL-001`, and `ABUSE-001` are complete locally.
-4. `DATA-003` (foundation, DATA-003A, DATA-003B, and DATA-003C complete locally;
+4. `DATA-003` (foundation, DATA-003A, DATA-003B, DATA-003C, and DATA-003D complete locally;
    remaining composition in progress): the shared Human/Operator/Agent
    transaction boundary now covers Agent Subject creation, unsigned draft
    Mandate create/read/revoke, Agent self-read, and one-way protective Subject
-   freeze while preserving the anonymous public sandbox boundary.
+   freeze plus a recent-MFA, aggregate Risk/Auditor Tenant portfolio read while
+   preserving the anonymous public sandbox boundary. Detailed risk drill-down,
+   alerts, exports, and every economic lifecycle operation remain separate work.
 5. `DATA-002` (complete locally): durable Subject, Principal, Mandate, SpendPolicy, Obligation,
    Lockbox, Ledger, RiskDecision, and Admin repositories using the event/outbox
    transaction model.

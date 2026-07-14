@@ -17,6 +17,11 @@ const OPERATOR_CLIENT_ACTOR_TYPES = new Set([
   ActorType.OPERATIONS_OPERATOR
 ]);
 
+const RISK_QUERY_CLIENT_ACTOR_TYPES = new Set([
+  ActorType.RISK_OPERATOR,
+  ActorType.AUDITOR
+]);
+
 class TenantProtocolClient {
   #allowedActorTypes;
 
@@ -157,6 +162,22 @@ export class OperatorTenantCommandClient extends TenantProtocolClient {
       resource: { resourceType: "subject", resourceId: subjectId },
       reasonCode,
       idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+}
+
+export class RiskTenantQueryClient extends TenantProtocolClient {
+  constructor(input) {
+    super({ ...input, allowedActorTypes: RISK_QUERY_CLIENT_ACTOR_TYPES });
+  }
+
+  async getPortfolio({ portfolioId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadTenantRisk",
+      payload: {},
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
       requestId,
       correlationId
     });

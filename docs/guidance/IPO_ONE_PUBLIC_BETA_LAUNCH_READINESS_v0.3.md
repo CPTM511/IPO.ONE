@@ -50,8 +50,12 @@ creation, Human owner read, terminal reason-coded draft revocation, and bounded
 Agent self-read with domain-anchored resource caps. DATA-003C adds a strong-MFA,
 reason-coded, idempotent Risk/Operations protective Subject freeze with exact
 replay and concurrent single-transition proof; unfreeze remains absent and
-dual-control gated. API-002 publishes and enforces a closed versioned
-request/result/catalog contract for exactly those six operations. Caller data
+dual-control gated. DATA-003D adds a recent-MFA Risk/Auditor aggregate portfolio
+read over one serializable, forced-RLS view of Agent Subject, CreditLine, and
+Obligation state. It returns complete exact totals plus at most 50 asset rows,
+omits entity identity and PII, and writes only audit/admission evidence. API-002
+publishes and enforces a closed versioned request/result/catalog contract for
+exactly those seven operations. Caller data
 excludes Authentication Context and trusted network facts; malformed requests
 fail before admission and malformed handler results fail before commit.
 These controls are deliberately not deployed over the anonymous public sandbox.

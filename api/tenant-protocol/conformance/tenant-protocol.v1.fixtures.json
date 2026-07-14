@@ -71,6 +71,17 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotReadTenantRisk",
+      "payload": {},
+      "resource": {
+        "resourceType": "risk_portfolio",
+        "resourceId": "risk_portfolio_fixture"
+      },
+      "requestId": "request-fixture-read-tenant-risk",
+      "correlationId": "correlation-fixture-read-tenant-risk",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotRevokeDraftMandate",
       "payload": {},
       "resource": {
@@ -228,6 +239,17 @@
         "correlationId": "correlation-invalid-revoke-reason",
         "schemaVersion": "tenant_protocol_request.v1"
       }
+    },
+    {
+      "name": "Tenant risk query with wrong resource type",
+      "value": {
+        "operationId": "pilotReadTenantRisk",
+        "payload": {},
+        "resource": { "resourceType": "subject", "resourceId": "risk_portfolio_fixture" },
+        "requestId": "request-invalid-risk-resource",
+        "correlationId": "correlation-invalid-risk-resource",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
     }
   ],
   "validResults": [
@@ -346,6 +368,64 @@
       "schemaVersion": "tenant_protocol_result.v1"
     },
     {
+      "operationId": "pilotReadTenantRisk",
+      "replayed": false,
+      "response": {
+        "portfolioId": "risk_portfolio_fixture",
+        "asOf": "2026-07-14T01:00:00.000Z",
+        "subjects": {
+          "totalCount": 2,
+          "pendingCount": 1,
+          "activeCount": 1,
+          "suspendedCount": 0,
+          "closedCount": 0
+        },
+        "creditLines": {
+          "totalCount": 2,
+          "requestedCount": 0,
+          "approvedCount": 1,
+          "rejectedCount": 0,
+          "frozenCount": 1,
+          "closedCount": 0,
+          "limitMinor": "100000",
+          "utilizedMinor": "20000"
+        },
+        "obligations": {
+          "totalCount": 3,
+          "openCount": 2,
+          "createdCount": 0,
+          "activeCount": 1,
+          "partiallyRepaidCount": 0,
+          "fullyRepaidCount": 1,
+          "overdueCount": 1,
+          "defaultedCount": 0,
+          "closedCount": 0,
+          "principalMinor": "100000",
+          "outstandingPrincipalMinor": "30000",
+          "accruedFeesMinor": "100",
+          "repaidAmountMinor": "70000"
+        },
+        "assetExposures": [
+          {
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "creditLineCount": 2,
+            "approvedCreditLineCount": 1,
+            "frozenCreditLineCount": 1,
+            "limitMinor": "100000",
+            "utilizedMinor": "20000",
+            "obligationCount": 3,
+            "openObligationCount": 2,
+            "overdueObligationCount": 1,
+            "defaultedObligationCount": 0,
+            "outstandingPrincipalMinor": "30000"
+          }
+        ],
+        "hasMoreAssetExposures": false,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
       "operationId": "pilotRevokeDraftMandate",
       "replayed": true,
       "response": {
@@ -445,6 +525,54 @@
           "reasonCode": "operator_request",
           "updatedAt": "2026-07-14T01:00:00.000Z",
           "schemaVersion": "tenant_agent_subject_frozen.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "Tenant risk response exposes Subject identity",
+      "value": {
+        "operationId": "pilotReadTenantRisk",
+        "replayed": false,
+        "response": {
+          "portfolioId": "risk_portfolio_fixture",
+          "asOf": "2026-07-14T01:00:00.000Z",
+          "subjectId": "subject_must_not_be_exposed",
+          "subjects": {
+            "totalCount": 0,
+            "pendingCount": 0,
+            "activeCount": 0,
+            "suspendedCount": 0,
+            "closedCount": 0
+          },
+          "creditLines": {
+            "totalCount": 0,
+            "requestedCount": 0,
+            "approvedCount": 0,
+            "rejectedCount": 0,
+            "frozenCount": 0,
+            "closedCount": 0,
+            "limitMinor": "0",
+            "utilizedMinor": "0"
+          },
+          "obligations": {
+            "totalCount": 0,
+            "openCount": 0,
+            "createdCount": 0,
+            "activeCount": 0,
+            "partiallyRepaidCount": 0,
+            "fullyRepaidCount": 0,
+            "overdueCount": 0,
+            "defaultedCount": 0,
+            "closedCount": 0,
+            "principalMinor": "0",
+            "outstandingPrincipalMinor": "0",
+            "accruedFeesMinor": "0",
+            "repaidAmountMinor": "0"
+          },
+          "assetExposures": [],
+          "hasMoreAssetExposures": false,
+          "schemaVersion": "tenant_risk_portfolio_view.v1"
         },
         "schemaVersion": "tenant_protocol_result.v1"
       }
