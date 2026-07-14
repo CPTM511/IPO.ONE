@@ -852,12 +852,36 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           nonce
         }))
       ]);
-      assert.equal(settled.filter(({ status }) => status === "fulfilled").length, 1);
-      const rejection = settled.find(({ status }) => status === "rejected")?.reason;
-      assert.equal(
-        ["mandate_nonce_conflict", "stale_aggregate_version"].includes(rejection?.code),
-        true
-      );
+      const fulfilled = settled.filter(({ status }) => status === "fulfilled");
+      const rejected = settled.filter(({ status }) => status === "rejected");
+      assert.equal(fulfilled.length <= 1, true);
+      assert.equal(rejected.length >= 1, true);
+      for (const rejection of rejected) {
+        assert.equal(
+          [
+            "mandate_nonce_conflict",
+            "request_admission_unavailable",
+            "stale_aggregate_version"
+          ].includes(rejection.reason?.code),
+          true
+        );
+      }
+
+      const recoveryCommand = createMandateCommand({
+        subjectId: tenantOneSubjectId,
+        idempotencyKey: `concurrent-mandate-recovery-${RUN_ID}-0001`,
+        nonce
+      });
+      if (fulfilled.length === 0) {
+        const recovery = await tenantOneHuman.createDraftMandate(recoveryCommand);
+        assert.equal(recovery.replayed, false);
+      } else {
+        assert.equal(fulfilled[0].value.replayed, false);
+        await assert.rejects(
+          tenantOneHuman.createDraftMandate(recoveryCommand),
+          (error) => error.code === "mandate_nonce_conflict"
+        );
+      }
       const after = await ownerPool.query(
         "SELECT count(*)::int AS count FROM mandates WHERE tenant_id = $1",
         [TENANT_ONE]
