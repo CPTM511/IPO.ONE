@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
-import { hashId } from "../../../packages/domain/src/index.js";
+import {
+  CreditEventType,
+  createCreditEvent,
+  hashId
+} from "../../../packages/domain/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
 import {
   PilotCapability,
@@ -23,7 +27,8 @@ import {
   HumanTenantCommandClient,
   TenantCommandGateway,
   TenantCommandHandlerRegistry,
-  createAgentSubjectHandlers
+  createPostgresTenantLivePolicyAdapter,
+  createTenantFoundationHandlers
 } from "../src/index.js";
 
 const CONNECTION_STRING = process.env.DATABASE_URL;
@@ -113,10 +118,11 @@ async function seedIdentity(pool, tenantId, identity, { controllerActorId } = {}
 function gateway(pool, harness) {
   return new TenantCommandGateway({
     pool,
-    handlers: new TenantCommandHandlerRegistry(createAgentSubjectHandlers()),
+    handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers()),
     policyRegistry: harness.policyRegistry,
     credentialRegistry: harness.credentialRegistry,
-    referenceHasher: harness.referenceHasher
+    referenceHasher: harness.referenceHasher,
+    livePolicyAdapterFactory: createPostgresTenantLivePolicyAdapter
   });
 }
 
@@ -143,6 +149,90 @@ function createCommand({ subjectActorId, displayName, idempotencyKey }) {
   };
 }
 
+function createMandateCommand({ subjectId, idempotencyKey, nonce = `${idempotencyKey}-nonce`, overrides = {} }) {
+  const validFrom = new Date(Date.now() - 30_000);
+  const expiresAt = new Date(validFrom.getTime() + 180 * 86_400_000);
+  return {
+    subjectId,
+    payload: {
+      capabilities: ["request_credit", "provider_spend", "capture_revenue", "route_repayment"],
+      allowedProviderIds: ["provider_gateway_compute"],
+      allowedCategories: ["compute"],
+      assetIds: ["urn:ipo-one:sandbox-asset:usd-cent"],
+      perActionLimitMinor: "100000",
+      aggregateLimitMinor: "500000",
+      validFrom: validFrom.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      nonce,
+      termsRef: "urn:ipo.one:test:gateway-mandate:v1",
+      ...overrides
+    },
+    idempotencyKey,
+    requestId: `request_${idempotencyKey}`,
+    correlationId: `correlation_${idempotencyKey}`
+  };
+}
+
+async function transitionProjection({
+  pool,
+  tenantId,
+  actorId,
+  entityType,
+  entityId,
+  nextStatus,
+  idempotencyKey
+}) {
+  const context = createTenantSecurityContext({
+    tenantId,
+    actorId,
+    policyVersion: "security_001.v1",
+    source: "local_test"
+  });
+  const eventRepository = new PostgresEventRepository({ pool, tenantContext: context });
+  const coreRepository = new PostgresCoreRepository({ pool, eventRepository });
+  const projection = entityType === "subject"
+    ? await coreRepository.getSubject(entityId)
+    : await coreRepository.getPrincipal(entityId);
+  const registration = await coreRepository.getProjectionRegistration(entityType, entityId);
+  const now = new Date();
+  const event = createCreditEvent({
+    eventType: entityType === "subject"
+      ? CreditEventType.SUBJECT_STATUS_CHANGED
+      : "principal_status_changed",
+    ...(entityType === "subject" ? { subjectId: entityId } : {}),
+    payload: { entityType, entityId, previousStatus: projection.status, nextStatus },
+    now
+  });
+  return coreRepository.commitCommand({
+    aggregateType: entityType,
+    aggregateId: entityId,
+    idempotencyKey,
+    commandHash: hashId("gateway_test_status_transition", {
+      tenantId,
+      entityType,
+      entityId,
+      nextStatus,
+      idempotencyKey
+    }),
+    events: [{
+      aggregateType: entityType,
+      aggregateId: entityId,
+      expectedVersion: registration.aggregateVersion,
+      event
+    }],
+    writes: [{
+      type: entityType,
+      value: {
+        ...projection,
+        status: nextStatus,
+        ...(entityType === "subject" ? { updatedAt: now.toISOString() } : {})
+      },
+      eventId: event.eventId
+    }],
+    response: { entityType, entityId, status: nextStatus }
+  });
+}
+
 test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { timeout: 90_000 }, async (t) => {
   assert.ok(CONNECTION_STRING, "DATABASE_URL is required");
   const ownerPool = createPostgresPool({
@@ -167,7 +257,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_human_${RUN_ID}`,
         actorType: ActorType.HUMAN,
         roleBundle: RoleBundle.DEVELOPER,
-        capabilities: [PilotCapability.AGENT_CREATE],
+        capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.MANDATE_DRAFT_CREATE],
         now: IDENTITY_NOW
       }),
       tenantOneAgent: harness.addIdentity({
@@ -183,7 +273,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_other_human_${RUN_ID}`,
         actorType: ActorType.HUMAN,
         roleBundle: RoleBundle.DEVELOPER,
-        capabilities: [PilotCapability.AGENT_CREATE],
+        capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.MANDATE_DRAFT_CREATE],
         now: IDENTITY_NOW
       }),
       tenantTwoHuman: harness.addIdentity({
@@ -191,7 +281,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_two_human_${RUN_ID}`,
         actorType: ActorType.HUMAN,
         roleBundle: RoleBundle.DEVELOPER,
-        capabilities: [PilotCapability.AGENT_CREATE],
+        capabilities: [PilotCapability.AGENT_CREATE, PilotCapability.MANDATE_DRAFT_CREATE],
         now: IDENTITY_NOW
       }),
       tenantTwoAgent: harness.addIdentity({
@@ -240,7 +330,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     await ownerPool.query(
       `GRANT INSERT, UPDATE, DELETE ON
          abuse_rate_buckets, abuse_capacity_buckets, abuse_admissions,
-         abuse_command_charges, principals, subjects,
+         abuse_command_charges, principals, subjects, mandates,
          aggregate_stream_heads, domain_events, credit_events,
          evidence_envelopes, outbox_messages, command_idempotency,
          command_events, projection_registry, projection_snapshots,
@@ -269,10 +359,14 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       idempotencyKey: `create-agent-one-${RUN_ID}-0001`
     });
     let tenantOneSubjectId;
+    let tenantOnePrincipalId;
+    let tenantOneMandateId;
+    let firstMandateCommand;
 
     await t.test("Human command and Agent query share one durable protocol", async () => {
       const created = await tenantOneHuman.createAgentSubject(firstCommand);
       tenantOneSubjectId = created.response.subjectId;
+      tenantOnePrincipalId = created.response.principalId;
       assert.equal(created.replayed, false);
       assert.equal(created.response.subjectType, "agent");
 
@@ -293,6 +387,49 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         [TENANT_ONE]
       );
       assert.deepEqual(counts.rows[0], { events: 2, snapshots: 2, executions: 1, audits: 4 });
+    });
+
+    await t.test("Human controller creates one durable draft Mandate and Agent reads a bounded summary", async () => {
+      firstMandateCommand = createMandateCommand({
+        subjectId: tenantOneSubjectId,
+        idempotencyKey: `create-mandate-one-${RUN_ID}-0001`
+      });
+      const created = await tenantOneHuman.createDraftMandate(firstMandateCommand);
+      tenantOneMandateId = created.response.mandateId;
+      assert.equal(created.replayed, false);
+      assert.equal(created.response.status, "draft");
+      assert.equal(created.response.subjectId, tenantOneSubjectId);
+
+      const self = await tenantOneAgent.getSelf({
+        subjectId: tenantOneSubjectId,
+        requestId: `request-agent-self-mandate-${RUN_ID}`,
+        correlationId: `correlation-agent-self-mandate-${RUN_ID}`
+      });
+      assert.equal(self.response.schemaVersion, "tenant_agent_subject_view.v2");
+      assert.equal(self.response.hasMoreMandates, false);
+      assert.equal(self.response.mandates.length, 1);
+      assert.equal(self.response.mandates[0].mandateId, tenantOneMandateId);
+      assert.equal(self.response.mandates[0].status, "draft");
+
+      const durable = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM mandates WHERE tenant_id = $1 AND id = $2) AS mandates,
+           (SELECT count(*)::int FROM domain_events WHERE tenant_id = $1 AND aggregate_type = 'mandate') AS events,
+           (SELECT count(*)::int FROM authorization_resources
+             WHERE tenant_id = $1 AND resource_type = 'mandate' AND resource_id = $2) AS resources,
+           (SELECT used_count::int FROM abuse_capacity_buckets
+             WHERE tenant_id = $1 AND kind = 'agent_subjects') AS agent_subjects,
+           (SELECT used_count::int FROM abuse_capacity_buckets
+             WHERE tenant_id = $1 AND kind = 'mandates') AS mandate_capacity`,
+        [TENANT_ONE, tenantOneMandateId]
+      );
+      assert.deepEqual(durable.rows[0], {
+        mandates: 1,
+        events: 1,
+        resources: 1,
+        agent_subjects: 1,
+        mandate_capacity: 1
+      });
     });
 
     await t.test("cross-Tenant object reads fail closed and commit only bounded denial audit", async () => {
@@ -326,6 +463,223 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.notEqual(denial.rows[0].client_ref_hash, identities.tenantTwoAgent.authenticationContext.clientId);
     });
 
+    await t.test("cross-Tenant, same-Tenant controller, and Agent draft attempts fail closed", async () => {
+      const before = await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id IN ($1, $2)",
+        [TENANT_ONE, TENANT_TWO]
+      );
+      await assert.rejects(
+        () => tenantTwoHuman.createDraftMandate(createMandateCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `cross-tenant-mandate-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneOtherHuman.createDraftMandate(createMandateCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `other-controller-mandate-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => runtime.execute({
+          authenticationContext: identities.tenantOneAgent.authenticationContext,
+          operationId: "pilotCreateDraftMandate",
+          resource: { resourceType: "subject", resourceId: tenantOneSubjectId },
+          payload: firstMandateCommand.payload,
+          idempotencyKey: `agent-created-mandate-${RUN_ID}-0001`,
+          requestId: `request-agent-created-mandate-${RUN_ID}`,
+          correlationId: `correlation-agent-created-mandate-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      const after = await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id IN ($1, $2)",
+        [TENANT_ONE, TENANT_TWO]
+      );
+      assert.deepEqual(after.rows[0], before.rows[0]);
+    });
+
+    await t.test("Mandate replay is exact, nonce reuse conflicts, and failure releases capacity", async () => {
+      const replay = await tenantOneHuman.createDraftMandate(firstMandateCommand);
+      assert.equal(replay.replayed, true);
+      assert.equal(replay.response.mandateId, tenantOneMandateId);
+
+      await assert.rejects(
+        () => tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `mandate-reused-nonce-${RUN_ID}-0001`,
+          nonce: firstMandateCommand.payload.nonce
+        })),
+        (error) => error.code === "mandate_nonce_conflict"
+      );
+      await assert.rejects(
+        () => tenantOneHuman.createDraftMandate({
+          ...createMandateCommand({
+            subjectId: tenantOneSubjectId,
+            idempotencyKey: `mandate-invalid-payload-${RUN_ID}-0001`
+          }),
+          payload: { ...firstMandateCommand.payload, subjectId: "subject_attacker" }
+        }),
+        (error) => error.code === "invalid_tenant_command_payload"
+      );
+      const capacity = await ownerPool.query(
+        `SELECT used_count::int AS count
+           FROM abuse_capacity_buckets
+          WHERE tenant_id = $1 AND kind = 'mandates'`,
+        [TENANT_ONE]
+      );
+      assert.equal(capacity.rows[0].count, 1);
+    });
+
+    await t.test("draft creation rejects suspended or closed Subjects and an inactive Principal", async () => {
+      const stateSubject = await tenantOneHuman.createAgentSubject(createCommand({
+        subjectActorId: identities.tenantOneAgent.authenticationContext.actorId,
+        displayName: "State Guard Treasury Agent",
+        idempotencyKey: `create-agent-state-guard-${RUN_ID}-0001`
+      }));
+      await transitionProjection({
+        pool: appPool,
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        entityType: "subject",
+        entityId: stateSubject.response.subjectId,
+        nextStatus: "suspended",
+        idempotencyKey: `suspend-state-subject-${RUN_ID}-0001`
+      });
+      await assert.rejects(
+        () => tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: stateSubject.response.subjectId,
+          idempotencyKey: `mandate-suspended-subject-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      await transitionProjection({
+        pool: appPool,
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        entityType: "subject",
+        entityId: stateSubject.response.subjectId,
+        nextStatus: "closed",
+        idempotencyKey: `close-state-subject-${RUN_ID}-0001`
+      });
+      await assert.rejects(
+        () => tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: stateSubject.response.subjectId,
+          idempotencyKey: `mandate-closed-subject-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+
+      await transitionProjection({
+        pool: appPool,
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        entityType: "principal",
+        entityId: tenantOnePrincipalId,
+        nextStatus: "restricted",
+        idempotencyKey: `restrict-principal-${RUN_ID}-0001`
+      });
+      await assert.rejects(
+        () => tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `mandate-restricted-principal-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "principal_not_active"
+      );
+      await transitionProjection({
+        pool: appPool,
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        entityType: "principal",
+        entityId: tenantOnePrincipalId,
+        nextStatus: "active",
+        idempotencyKey: `restore-principal-${RUN_ID}-0001`
+      });
+    });
+
+    await t.test("concurrent Subject suspension cannot race a draft Mandate into existence", async () => {
+      const raceSubject = await tenantOneHuman.createAgentSubject(createCommand({
+        subjectActorId: identities.tenantOneAgent.authenticationContext.actorId,
+        displayName: "Concurrent State Guard Agent",
+        idempotencyKey: `create-agent-state-race-${RUN_ID}-0001`
+      }));
+      const context = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      const eventRepository = new PostgresEventRepository({ pool: appPool, tenantContext: context });
+      const coreRepository = new PostgresCoreRepository({ pool: appPool, eventRepository });
+      const subject = await coreRepository.getSubject(raceSubject.response.subjectId);
+      const registration = await coreRepository.getProjectionRegistration(
+        "subject",
+        raceSubject.response.subjectId
+      );
+      const transitionAt = new Date();
+      const event = createCreditEvent({
+        eventType: CreditEventType.SUBJECT_STATUS_CHANGED,
+        subjectId: subject.subjectId,
+        payload: { previousStatus: subject.status, nextStatus: "suspended" },
+        now: transitionAt
+      });
+      const before = await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id = $1",
+        [TENANT_ONE]
+      );
+      const client = await appPool.connect();
+      let committed = false;
+      try {
+        await client.query("BEGIN");
+        await setTenantTransactionContext(client, context);
+        await coreRepository.commitCommandInTransaction(client, {
+          aggregateType: "subject",
+          aggregateId: subject.subjectId,
+          idempotencyKey: `suspend-race-subject-${RUN_ID}-0001`,
+          commandHash: hashId("gateway_test_subject_race", subject.subjectId),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: subject.subjectId,
+            expectedVersion: registration.aggregateVersion,
+            event
+          }],
+          writes: [{
+            type: "subject",
+            value: { ...subject, status: "suspended", updatedAt: transitionAt.toISOString() },
+            eventId: event.eventId
+          }],
+          response: { subjectId: subject.subjectId, status: "suspended" }
+        });
+        const command = tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: subject.subjectId,
+          idempotencyKey: `mandate-state-race-${RUN_ID}-0001`
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        await client.query("COMMIT");
+        committed = true;
+        await assert.rejects(
+          command,
+          (error) => error.code === "stale_aggregate_version"
+        );
+      } finally {
+        if (!committed) {
+          try {
+            await client.query("ROLLBACK");
+          } catch {
+            // Preserve the original failure.
+          }
+        }
+        client.release();
+      }
+      const after = await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id = $1",
+        [TENANT_ONE]
+      );
+      assert.deepEqual(after.rows[0], before.rows[0]);
+    });
+
     await t.test("same-Tenant Human cannot claim an Agent assigned to another controller", async () => {
       const before = await ownerPool.query(
         `SELECT
@@ -351,6 +705,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     });
 
     await t.test("process restart recovers exact response before mutable object revalidation", async () => {
+      const before = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM domain_events WHERE tenant_id = $1) AS events,
+           (SELECT count(*)::int FROM tenant_command_executions WHERE tenant_id = $1) AS executions`,
+        [TENANT_ONE]
+      );
       const restarted = gateway(appPool, harness);
       const replay = await humanClient(
         restarted,
@@ -372,7 +732,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
            (SELECT count(*)::int FROM tenant_command_executions WHERE tenant_id = $1) AS executions`,
         [TENANT_ONE]
       );
-      assert.deepEqual(counts.rows[0], { events: 2, executions: 1 });
+      assert.deepEqual(counts.rows[0], before.rows[0]);
     });
 
     await t.test("Tenant authority derives from context for every implemented object operation", async () => {
@@ -474,6 +834,61 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(replay.replayed, true);
     });
 
+    await t.test("concurrent Principal nonce reuse creates at most one draft Mandate", async () => {
+      const nonce = `concurrent-mandate-nonce-${RUN_ID}`;
+      const before = await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id = $1",
+        [TENANT_ONE]
+      );
+      const settled = await Promise.allSettled([
+        tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `concurrent-mandate-a-${RUN_ID}-0001`,
+          nonce
+        })),
+        tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `concurrent-mandate-b-${RUN_ID}-0001`,
+          nonce
+        }))
+      ]);
+      const fulfilled = settled.filter(({ status }) => status === "fulfilled");
+      const rejected = settled.filter(({ status }) => status === "rejected");
+      assert.equal(fulfilled.length <= 1, true);
+      assert.equal(rejected.length >= 1, true);
+      for (const rejection of rejected) {
+        assert.equal(
+          [
+            "mandate_nonce_conflict",
+            "request_admission_unavailable",
+            "stale_aggregate_version"
+          ].includes(rejection.reason?.code),
+          true
+        );
+      }
+
+      const recoveryCommand = createMandateCommand({
+        subjectId: tenantOneSubjectId,
+        idempotencyKey: `concurrent-mandate-recovery-${RUN_ID}-0001`,
+        nonce
+      });
+      if (fulfilled.length === 0) {
+        const recovery = await tenantOneHuman.createDraftMandate(recoveryCommand);
+        assert.equal(recovery.replayed, false);
+      } else {
+        assert.equal(fulfilled[0].value.replayed, false);
+        await assert.rejects(
+          tenantOneHuman.createDraftMandate(recoveryCommand),
+          (error) => error.code === "mandate_nonce_conflict"
+        );
+      }
+      const after = await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id = $1",
+        [TENANT_ONE]
+      );
+      assert.equal(after.rows[0].count, before.rows[0].count + 1);
+    });
+
     await t.test("concurrent Agent membership revocation invalidates resource binding atomically", async () => {
       const context = createTenantSecurityContext({
         tenantId: TENANT_TWO,
@@ -522,6 +937,78 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         [TENANT_TWO]
       );
       assert.deepEqual(after.rows[0], before.rows[0]);
+    });
+
+    await t.test("Agent self-read caps Mandate summaries and signals continuation", async () => {
+      const existing = Number((await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id = $1 AND subject_id = $2",
+        [TENANT_ONE, tenantOneSubjectId]
+      )).rows[0].count);
+      for (let index = existing; index < 51; index += 1) {
+        await tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `mandate-page-${RUN_ID}-${String(index).padStart(4, "0")}`
+        }));
+      }
+      const self = await tenantOneAgent.getSelf({
+        subjectId: tenantOneSubjectId,
+        requestId: `request-agent-self-page-${RUN_ID}`,
+        correlationId: `correlation-agent-self-page-${RUN_ID}`
+      });
+      assert.equal(self.response.mandates.length, 50);
+      assert.equal(self.response.hasMoreMandates, true);
+      assert.equal(Buffer.byteLength(JSON.stringify(self.response)) < 256 * 1024, true);
+    });
+
+    await t.test("Agent self-read fails closed when normalized Mandate projection evidence is missing", async () => {
+      const context = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      const mandateId = `mandate_missing_projection_${RUN_ID}`;
+      const createdAt = new Date(Date.now() + 60_000);
+      await withTenantTransaction(ownerPool, context, (client) => client.query(
+        `INSERT INTO mandates(
+           tenant_id, id, mandate_hash, principal_id, subject_id, capabilities,
+           allowed_provider_ids, allowed_categories, asset_ids,
+           per_action_limit_minor, aggregate_limit_minor, utilized_minor,
+           valid_from, expires_at, nonce, terms_ref, status,
+           created_at, updated_at, schema_version
+         ) VALUES (
+           $1, $2, $3, $4, $5, '["request_credit"]'::jsonb,
+           '[]'::jsonb, '[]'::jsonb,
+           '["urn:ipo-one:sandbox-asset:usd-cent"]'::jsonb,
+           1, 1, 0, $6, $7, $8, $9, 'draft', $6, $6, 'mandate.v2'
+         )`,
+        [
+          TENANT_ONE,
+          mandateId,
+          `mandate_missing_projection_hash_${RUN_ID}`,
+          tenantOnePrincipalId,
+          tenantOneSubjectId,
+          createdAt,
+          new Date(createdAt.getTime() + 86_400_000),
+          `missing-projection-nonce-${RUN_ID}`,
+          `urn:ipo.one:test:missing-projection:${RUN_ID}`
+        ]
+      ));
+      try {
+        await assert.rejects(
+          () => tenantOneAgent.getSelf({
+            subjectId: tenantOneSubjectId,
+            requestId: `request-agent-self-corrupt-${RUN_ID}`,
+            correlationId: `correlation-agent-self-corrupt-${RUN_ID}`
+          }),
+          (error) => error.code === "projection_integrity_mismatch"
+        );
+      } finally {
+        await withTenantTransaction(ownerPool, context, (client) => client.query(
+          "DELETE FROM mandates WHERE tenant_id = $1 AND id = $2",
+          [TENANT_ONE, mandateId]
+        ));
+      }
     });
 
     await t.test("append-only command authority and audit rows reject tampering", async () => {
@@ -588,6 +1075,110 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         assert.equal(result.status, "passed", JSON.stringify(await reconciliation.getRun(result.runId)));
         assert.equal(result.discrepancyCount, 0);
       }
+    });
+
+    await t.test("durable Mandate baseline reaches the hard cap and blocks before object lookup", async () => {
+      const existing = Number((await ownerPool.query(
+        "SELECT count(*)::int AS count FROM mandates WHERE tenant_id = $1",
+        [TENANT_ONE]
+      )).rows[0].count);
+      const seedCount = 999 - existing;
+      assert.equal(seedCount >= 0, true);
+      if (seedCount > 0) {
+        const context = createTenantSecurityContext({
+          tenantId: TENANT_ONE,
+          actorId: identities.tenantOneHuman.authenticationContext.actorId,
+          policyVersion: "security_001.v1",
+          source: "local_test"
+        });
+        await withTenantTransaction(ownerPool, context, (client) => client.query(
+          `INSERT INTO mandates(
+             tenant_id, id, mandate_hash, principal_id, subject_id, capabilities,
+             allowed_provider_ids, allowed_categories, asset_ids,
+             per_action_limit_minor, aggregate_limit_minor, utilized_minor,
+             valid_from, expires_at, nonce, terms_ref, status,
+             created_at, updated_at, schema_version
+           )
+           SELECT $1,
+                  'mandate_capacity_' || $6 || '_' || sequence,
+                  'mandate_capacity_hash_' || $6 || '_' || sequence,
+                  $2, $3, '["request_credit"]'::jsonb,
+                  '[]'::jsonb, '[]'::jsonb,
+                  '["urn:ipo-one:sandbox-asset:usd-cent"]'::jsonb,
+                  1, 1, 0, $4, $5,
+                  'capacity-nonce-' || $6 || '-' || sequence,
+                  'urn:ipo.one:test:capacity:' || $6 || ':' || sequence,
+                  'draft', $4, $4, 'mandate.v2'
+             FROM generate_series(1, $7::int) AS sequence`,
+          [
+            TENANT_ONE,
+            tenantOnePrincipalId,
+            tenantOneSubjectId,
+            IDENTITY_NOW,
+            new Date(IDENTITY_NOW.getTime() + 365 * 86_400_000),
+            RUN_ID,
+            seedCount
+          ]
+        ));
+      }
+
+      const boundaryCommand = createMandateCommand({
+        subjectId: tenantOneSubjectId,
+        idempotencyKey: `mandate-cap-boundary-${RUN_ID}-0001`
+      });
+      const boundary = await tenantOneHuman.createDraftMandate(boundaryCommand);
+      assert.equal(boundary.response.status, "draft");
+      const counts = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM mandates WHERE tenant_id = $1) AS mandates,
+           (SELECT used_count::int FROM abuse_capacity_buckets
+             WHERE tenant_id = $1 AND kind = 'mandates') AS capacity`,
+        [TENANT_ONE]
+      );
+      assert.deepEqual(counts.rows[0], { mandates: 1_000, capacity: 1_000 });
+
+      const context = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      await withTenantTransaction(ownerPool, context, (client) => client.query(
+        "DELETE FROM abuse_capacity_buckets WHERE tenant_id = $1 AND kind = 'mandates'",
+        [TENANT_ONE]
+      ));
+      const replayAtCap = await tenantOneHuman.createDraftMandate(boundaryCommand);
+      assert.equal(replayAtCap.replayed, true);
+      assert.equal(replayAtCap.response.mandateId, boundary.response.mandateId);
+      const replayState = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM mandates WHERE tenant_id = $1) AS mandates,
+           (SELECT count(*)::int FROM abuse_capacity_buckets
+             WHERE tenant_id = $1 AND kind = 'mandates') AS capacity_rows`,
+        [TENANT_ONE]
+      );
+      assert.deepEqual(replayState.rows[0], { mandates: 1_000, capacity_rows: 0 });
+      const deniedValid = createMandateCommand({
+        subjectId: tenantOneSubjectId,
+        idempotencyKey: `mandate-cap-valid-overflow-${RUN_ID}-0001`
+      });
+      const deniedMissing = createMandateCommand({
+        subjectId: `subject_missing_capacity_${RUN_ID}`,
+        idempotencyKey: `mandate-cap-missing-overflow-${RUN_ID}-0001`
+      });
+      for (const denied of [deniedValid, deniedMissing]) {
+        await assert.rejects(
+          () => tenantOneHuman.createDraftMandate(denied),
+          (error) => error.code === "request_budget_exceeded" && error.details.retryAfterClass === "short"
+        );
+      }
+      const audit = await ownerPool.query(
+        `SELECT count(*)::int AS count
+           FROM authorization_audit_events
+          WHERE tenant_id = $1 AND request_id = ANY($2::text[])`,
+        [TENANT_ONE, [deniedValid.requestId, deniedMissing.requestId]]
+      );
+      assert.equal(audit.rows[0].count, 0);
     });
   } finally {
     if (appPool) await appPool.end();

@@ -782,12 +782,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
         "0007_abuse_control_runtime",
-        "0008_durable_tenant_command_gateway"
+        "0008_durable_tenant_command_gateway",
+        "0009_durable_identity_resource_capacity"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 8 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 9 }), [
+        "0009_durable_identity_resource_capacity",
         "0008_durable_tenant_command_gateway",
         "0007_abuse_control_runtime",
         "0006_approval_runtime",
@@ -805,10 +807,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
         "0007_abuse_control_runtime",
-        "0008_durable_tenant_command_gateway"
+        "0008_durable_tenant_command_gateway",
+        "0009_durable_identity_resource_capacity"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 6 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 7 }), [
+        "0009_durable_identity_resource_capacity",
         "0008_durable_tenant_command_gateway",
         "0007_abuse_control_runtime",
         "0006_approval_runtime",
@@ -835,7 +839,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
         "0007_abuse_control_runtime",
-        "0008_durable_tenant_command_gateway"
+        "0008_durable_tenant_command_gateway",
+        "0009_durable_identity_resource_capacity"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))

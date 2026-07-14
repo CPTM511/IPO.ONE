@@ -174,8 +174,17 @@
     "resourceLimits": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["open_obligations", "providers", "credentials", "access_grants"],
+      "required": [
+        "agent_subjects",
+        "mandates",
+        "open_obligations",
+        "providers",
+        "credentials",
+        "access_grants"
+      ],
       "properties": {
+        "agent_subjects": { "type": "integer", "minimum": 0, "maximum": 500 },
+        "mandates": { "type": "integer", "minimum": 0, "maximum": 1000 },
         "open_obligations": { "type": "integer", "minimum": 0, "maximum": 1000 },
         "providers": { "type": "integer", "minimum": 0, "maximum": 100 },
         "credentials": { "type": "integer", "minimum": 0, "maximum": 50 },

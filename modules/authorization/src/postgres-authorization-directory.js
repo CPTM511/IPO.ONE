@@ -187,6 +187,46 @@ export class PostgresAuthorizationDirectory {
     });
   }
 
+  async listActiveResourceBindings({ resourceType, resourceId, now = new Date() }) {
+    const type = assertAuthorizationIdentifier("resourceType", resourceType);
+    const id = assertAuthorizationIdentifier("resourceId", resourceId);
+    const at = authorizationTimestamp("now", now);
+    await this.client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('authorization_resource:' || $1), hashtext($2))",
+      [type, id]
+    );
+    const result = await this.client.query(
+      `SELECT b.actor_id, b.relationship, b.version,
+              a.actor_type, m.controller_actor_id
+         FROM authorization_resource_bindings b
+         JOIN actors a ON a.id = b.actor_id
+         JOIN memberships m
+           ON m.tenant_id = b.tenant_id AND m.actor_id = b.actor_id
+        WHERE b.tenant_id = $1
+          AND b.resource_type = $2
+          AND b.resource_id = $3
+          AND b.status = 'active'
+          AND a.status = 'active'
+          AND m.status = 'active'
+          AND m.valid_from <= $4
+          AND (m.expires_at IS NULL OR m.expires_at > $4)
+        ORDER BY b.actor_id
+        LIMIT 17
+        FOR SHARE OF b, a, m`,
+      [this.authenticationContext.tenantId, type, id, at]
+    );
+    if (result.rowCount > 16) {
+      throw authorizationError("authorization_directory_corrupt", "resource binding count is invalid");
+    }
+    return result.rows.map((row) => cloneAuthorization({
+      actorId: row.actor_id,
+      actorType: row.actor_type,
+      relationship: row.relationship,
+      controllerActorId: row.controller_actor_id ?? undefined,
+      version: safeVersion(row.version, "resource binding version")
+    }));
+  }
+
   async findActiveAccessGrant({
     tenantId,
     granteeTenantId,

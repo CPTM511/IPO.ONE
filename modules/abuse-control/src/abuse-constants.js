@@ -29,6 +29,8 @@ export const RetryAfterClass = Object.freeze({
 });
 
 export const ResourceKind = Object.freeze({
+  AGENT_SUBJECTS: "agent_subjects",
+  MANDATES: "mandates",
   OPEN_OBLIGATIONS: "open_obligations",
   PROVIDERS: "providers",
   CREDENTIALS: "credentials",

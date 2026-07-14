@@ -1,10 +1,10 @@
 # DATA-003: Durable Tenant Command Gateway
 
 Status: In progress for the SECURITY-001 local non-funds boundary. The durable
-transaction foundation, Human Agent-Subject creation command, and Agent
-self-read query are implemented and verified. Remaining Agent Lockbox,
-worker, approval, and administrative handlers are not yet composed. No public
-route or deployment is approved.
+transaction foundation, Human Agent-Subject creation, Human-controlled draft
+Mandate creation, and bounded Agent self-read are implemented and verified.
+Remaining Agent Lockbox, worker, approval, and administrative handlers are not
+yet composed. No public route or deployment is approved.
 
 ## Context
 
@@ -57,17 +57,22 @@ API would turn a safe demo into shared unauthenticated customer state.
 - Exact payload hashes now bind authorization decisions, revalidation, and
   approval command hashes.
 - Human and Agent protocol clients share one closed handler registry. The
-  first handlers implement `pilotCreateAgentSubject` and
-  `pilotReadAgentSelf`.
+  reviewed operations implement `pilotCreateAgentSubject`,
+  `pilotCreateDraftMandate`, and `pilotReadAgentSelf`.
+- Migration `0009_durable_identity_resource_capacity` adds conservative Agent
+  Subject and Mandate resource ceilings. Handler baseline loaders reconcile
+  durable Tenant counts during pre-lookup admission and again inside the
+  business transaction before a new projection commits.
 - Two-Tenant, same-Tenant controller-confusion, concurrent Membership
-  revocation, restart replay, conflicting reuse, concurrent duplicate,
-  denial-only audit, append-only tamper, and reconciliation tests pass.
+  revocation, Subject-state race, Principal nonce race, restart replay,
+  conflicting reuse, persistent-capacity boundary, denial-only audit,
+  append-only tamper, bounded-read, and reconciliation tests pass.
 - ADR-022 records transaction ownership, replay ordering, advisory/row lock,
   and public-sandbox isolation decisions.
 
 ## Remaining Composition
 
-- Durable draft Mandate and verified CAIP-10 binding setup.
+- Signed Mandate activation and verified CAIP-10 binding setup under AUTH-002.
 - Agent credit request, allowlisted spend, Lockbox revenue capture, automated
   repayment, and associated live-state adapters.
 - Worker, approval, protective risk, audit/export, and reconciliation command

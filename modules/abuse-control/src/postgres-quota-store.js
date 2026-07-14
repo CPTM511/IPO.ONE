@@ -1,13 +1,14 @@
 import {
   abuseError,
   assertAbuseIdentifier,
-  assertPositiveInteger
+  assertPositiveInteger,
+  budgetExceeded
 } from "./abuse-utils.js";
 import {
   assertQuotaStoreRelease,
   assertQuotaStoreRequest
 } from "./quota-store-contract.js";
-import { ABUSE_POLICY_VERSION } from "./abuse-constants.js";
+import { ABUSE_POLICY_VERSION, RetryAfterClass } from "./abuse-constants.js";
 
 const COMMAND_RETENTION_MS = 24 * 60 * 60_000;
 const STATEMENT_TIMEOUT_MS = 2_000;
@@ -26,6 +27,24 @@ function toNumber(value, name) {
   return normalized;
 }
 
+function normalizeResourceBaselines(value, expectedKinds) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw abuseError("invalid_abuse_control_input", "resource baselines are invalid");
+  }
+  const expected = [...expectedKinds].sort();
+  const actual = Object.keys(value).sort();
+  if (
+    actual.length !== expected.length ||
+    actual.some((kind, index) => kind !== expected[index])
+  ) {
+    throw abuseError("invalid_abuse_control_input", "resource baselines do not match reservations");
+  }
+  return Object.fromEntries(actual.map((kind) => [
+    kind,
+    toNumber(value[kind], `resource baseline ${kind}`)
+  ]));
+}
+
 export class PostgresQuotaStore {
   constructor({ eventRepository, statementTimeoutMs = STATEMENT_TIMEOUT_MS }) {
     if (
@@ -42,8 +61,11 @@ export class PostgresQuotaStore {
     this.statementTimeoutMs = statementTimeoutMs;
   }
 
-  async reserve(request) {
+  async reserve(request, { resourceBaselineLoader } = {}) {
     this.#assertRequest(request);
+    if (resourceBaselineLoader !== undefined && typeof resourceBaselineLoader !== "function") {
+      throw abuseError("invalid_abuse_control_input", "resource baseline loader is invalid");
+    }
     return this.eventRepository.withTenantWrite(async (client) => {
       await this.#configureTransaction(client);
       const now = await this.#databaseNow(client);
@@ -146,20 +168,37 @@ export class PostgresQuotaStore {
       if (pending) return { admitted: false, reason: "idempotency" };
 
       const capacities = request.capacityReservations.filter((item) => !item.commandScoped || !replayed);
+      const persistentKinds = capacities
+        .filter((item) => item.release === "on_failure" && item.commandScoped === true)
+        .map((item) => item.kind);
+      const resourceBaselines = persistentKinds.length === 0 || resourceBaselineLoader === undefined
+        ? {}
+        : normalizeResourceBaselines(
+            await resourceBaselineLoader({
+              client,
+              tenantId: this.tenantId,
+              resourceKinds: Object.freeze([...persistentKinds])
+            }),
+            persistentKinds
+          );
       await client.query("SAVEPOINT abuse_capacity_reservation");
       for (const reservation of capacities) {
+        const baseline = resourceBaselines[reservation.kind] ?? 0;
         const result = await client.query(
           `INSERT INTO abuse_capacity_buckets(
              tenant_id, key_hash, kind, used_count, limit_count,
              updated_at, version, schema_version
-           ) VALUES ($1, $2, $3, $4, $5, $6, 1, 'abuse_capacity_bucket.v1')
+           )
+           SELECT $1, $2, $3, $4::bigint + $7::bigint, $5, $6, 1,
+                  'abuse_capacity_bucket.v1'
+            WHERE $4::bigint + $7::bigint <= $5::bigint
            ON CONFLICT (tenant_id, key_hash) DO UPDATE SET
-             used_count = abuse_capacity_buckets.used_count + EXCLUDED.used_count,
+             used_count = GREATEST(abuse_capacity_buckets.used_count, $7::bigint) + $4::bigint,
              limit_count = LEAST(abuse_capacity_buckets.limit_count, EXCLUDED.limit_count),
              updated_at = EXCLUDED.updated_at,
              version = abuse_capacity_buckets.version + 1
            WHERE abuse_capacity_buckets.kind = EXCLUDED.kind
-             AND abuse_capacity_buckets.used_count + EXCLUDED.used_count
+             AND GREATEST(abuse_capacity_buckets.used_count, $7::bigint) + $4::bigint
                  <= LEAST(abuse_capacity_buckets.limit_count, EXCLUDED.limit_count)
            RETURNING used_count`,
           [
@@ -168,7 +207,8 @@ export class PostgresQuotaStore {
             reservation.kind,
             reservation.units,
             reservation.limit,
-            now
+            now,
+            baseline
           ]
         );
         if (result.rowCount === 0) {
@@ -240,6 +280,13 @@ export class PostgresQuotaStore {
         expiresAt: expiresAt.toISOString()
       };
     });
+  }
+
+  async reserveWithResourceBaselines(request, resourceBaselineLoader) {
+    if (typeof resourceBaselineLoader !== "function") {
+      throw abuseError("invalid_abuse_control_input", "resource baseline loader is invalid");
+    }
+    return this.reserve(request, { resourceBaselineLoader });
   }
 
   async finish({ admissionId, tenantId, outcome }) {
@@ -334,6 +381,74 @@ export class PostgresQuotaStore {
     );
     facts.completed = true;
     return result;
+  }
+
+  async synchronizePersistentResourcesInTransaction({ client, lock, resourceBaselines }) {
+    const facts = lock && trustedAdmissionLocks.has(lock) ? admissionLockFacts.get(lock) : undefined;
+    if (!facts || facts.client !== client || facts.completed) {
+      throw abuseError("request_admission_mismatch", "admission transaction lock is invalid");
+    }
+    if (!resourceBaselines || typeof resourceBaselines !== "object" || Array.isArray(resourceBaselines)) {
+      throw abuseError("invalid_abuse_control_input", "resource baselines are invalid");
+    }
+    const entries = Object.entries(resourceBaselines);
+    if (entries.length === 0 || entries.length > 4) {
+      throw abuseError("invalid_abuse_control_input", "resource baselines are invalid");
+    }
+    const admission = await this.#selectAdmissionForUpdate(client, lock.admissionId);
+    if (
+      admission.state !== "pending" ||
+      admission.operation_id !== lock.operationId ||
+      admission.replayed !== lock.replayed
+    ) {
+      throw abuseError("request_admission_consumed", "request admission is unavailable");
+    }
+    const reservations = Array.isArray(admission.capacity_reservations)
+      ? admission.capacity_reservations
+      : JSON.parse(admission.capacity_reservations);
+    const persistentReservations = reservations.filter((reservation) =>
+      reservation.release === "on_failure" && reservation.commandScoped === true
+    );
+    if (persistentReservations.length !== entries.length) {
+      throw abuseError("request_admission_mismatch", "resource baselines do not match admission");
+    }
+    const now = await this.#databaseNow(client);
+    for (const [kind, rawBaseline] of entries) {
+      assertAbuseIdentifier("resource baseline kind", kind);
+      const baseline = toNumber(rawBaseline, `resource baseline ${kind}`);
+      const matching = persistentReservations.filter((reservation) => reservation.kind === kind);
+      if (matching.length !== 1) {
+        throw abuseError("request_admission_mismatch", "resource baseline does not match admission");
+      }
+      const reservation = matching[0];
+      const desired = baseline + reservation.units;
+      if (!Number.isSafeInteger(desired)) {
+        throw abuseError("invalid_abuse_control_input", "resource baseline is too large");
+      }
+      const result = await client.query(
+        `SELECT kind, used_count, limit_count
+           FROM abuse_capacity_buckets
+          WHERE tenant_id = $1 AND key_hash = $2
+          FOR UPDATE`,
+        [this.tenantId, reservation.keyHash]
+      );
+      const current = result.rows[0];
+      if (!current || current.kind !== kind) {
+        throw abuseError("quota_store_corrupt", "persistent resource reservation is unavailable");
+      }
+      const used = toNumber(current.used_count, "used_count");
+      const limit = Math.min(toNumber(current.limit_count, "limit_count"), reservation.limit);
+      const synchronized = Math.max(used, desired);
+      if (synchronized > limit) throw budgetExceeded(RetryAfterClass.MANUAL);
+      await client.query(
+        `UPDATE abuse_capacity_buckets
+            SET used_count = $3, limit_count = $4, updated_at = $5,
+                version = version + 1
+          WHERE tenant_id = $1 AND key_hash = $2`,
+        [this.tenantId, reservation.keyHash, synchronized, limit, now]
+      );
+    }
+    return { synchronized: true };
   }
 
   async release({ tenantId, reservations }) {

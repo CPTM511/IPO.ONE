@@ -115,6 +115,16 @@ function projectionConflict(entityType, entityId) {
 function translateDatabaseError(error, write) {
   if (error instanceof DomainError) return error;
   if (error?.code === "23505") {
+    if (
+      write.type === CoreProjectionType.MANDATE &&
+      typeof error.constraint === "string" &&
+      error.constraint.includes("principal_id_nonce")
+    ) {
+      return new DomainError(
+        "mandate_nonce_conflict",
+        "principal mandate nonce is already in use"
+      );
+    }
     return new DomainError("projection_uniqueness_conflict", "projection violates a unique identity constraint", {
       entityType: write.type,
       constraint: error.constraint
@@ -171,6 +181,42 @@ export function createCoreProjectionHash(entityType, value, options) {
     entityType,
     entity: canonicalCoreProjection(entityType, value, options)
   });
+}
+
+function projectionStateFromRow(entityType, entityId, row) {
+  if (!row?.payload || typeof row.payload !== "object" || Array.isArray(row.payload)) {
+    throw new DomainError("projection_integrity_mismatch", "durable projection payload is unavailable", {
+      entityType,
+      entityId
+    });
+  }
+  const payloadHash = createCoreProjectionHash(entityType, row.payload);
+  if (
+    row.registry_hash !== row.snapshot_hash ||
+    row.snapshot_hash !== payloadHash ||
+    row.registry_root_aggregate_type !== row.root_aggregate_type ||
+    row.registry_root_aggregate_id !== row.root_aggregate_id ||
+    Number(row.registry_aggregate_version) !== Number(row.aggregate_version)
+  ) {
+    throw new DomainError("projection_integrity_mismatch", "durable projection registry and snapshot disagree", {
+      entityType,
+      entityId
+    });
+  }
+  const aggregateVersion = safeInteger(row.registry_aggregate_version, "aggregateVersion");
+  if (aggregateVersion < 1) {
+    throw new DomainError("projection_integrity_mismatch", "durable projection version is invalid", {
+      entityType,
+      entityId
+    });
+  }
+  return {
+    value: clone(row.payload),
+    aggregateVersion,
+    entityHash: row.registry_hash,
+    rootAggregateType: row.registry_root_aggregate_type,
+    rootAggregateId: row.registry_root_aggregate_id
+  };
 }
 
 function mapPrincipal(row, linkedSubjectIds = []) {
@@ -815,6 +861,40 @@ export class PostgresCoreRepository {
     return mapPrincipal(result.rows[0]);
   }
 
+  async countAgentSubjectsForCapacityInTransaction(client) {
+    return this.#lockAndCountPersistentResource(
+      client,
+      "agent_subjects",
+      "SELECT count(*)::bigint AS count FROM subjects WHERE subject_type = 'agent'"
+    );
+  }
+
+  async countMandatesForCapacityInTransaction(client) {
+    return this.#lockAndCountPersistentResource(
+      client,
+      "mandates",
+      "SELECT count(*)::bigint AS count FROM mandates"
+    );
+  }
+
+  async findMandateByPrincipalNonceInTransaction(client, principalId, nonce) {
+    assertQueryable(client);
+    assertString("principalId", principalId);
+    assertString("nonce", nonce);
+    await client.query(
+      `SELECT pg_advisory_xact_lock(
+         hashtext('mandate_nonce:' || $1 || ':' || $2),
+         hashtext($3)
+       )`,
+      [this.eventRepository.tenantContext.tenantId, principalId, nonce]
+    );
+    const result = await client.query(
+      "SELECT * FROM mandates WHERE principal_id = $1 AND nonce = $2 FOR UPDATE",
+      [principalId, nonce]
+    );
+    return mapMandate(result.rows[0]);
+  }
+
   async getSubject(subjectId) {
     assertString("subjectId", subjectId);
     const [subject, bindings] = await this.eventRepository.withTenantRead((client) => Promise.all([
@@ -1103,7 +1183,7 @@ export class PostgresCoreRepository {
     };
   }
 
-  async getProjectionInTransaction(client, entityType, entityId, { lock = false } = {}) {
+  async getProjectionStateInTransaction(client, entityType, entityId, { lock = false } = {}) {
     assertQueryable(client);
     assertString("entityType", entityType);
     assertString("entityId", entityId);
@@ -1124,7 +1204,9 @@ export class PostgresCoreRepository {
          JOIN LATERAL (
            SELECT entity_hash, root_aggregate_type, root_aggregate_id, aggregate_version, payload
              FROM projection_snapshots
-            WHERE entity_type = r.entity_type AND entity_id = r.entity_id
+            WHERE tenant_id = r.tenant_id
+              AND entity_type = r.entity_type
+              AND entity_id = r.entity_id
             ORDER BY write_sequence DESC
             LIMIT 1
          ) s ON TRUE
@@ -1133,21 +1215,69 @@ export class PostgresCoreRepository {
       [entityType, entityId]
     );
     if (result.rowCount === 0) return undefined;
-    const row = result.rows[0];
-    const payloadHash = createCoreProjectionHash(entityType, row.payload);
-    if (
-      row.registry_hash !== row.snapshot_hash ||
-      row.snapshot_hash !== payloadHash ||
-      row.registry_root_aggregate_type !== row.root_aggregate_type ||
-      row.registry_root_aggregate_id !== row.root_aggregate_id ||
-      Number(row.registry_aggregate_version) !== Number(row.aggregate_version)
-    ) {
-      throw new DomainError("projection_integrity_mismatch", "durable projection registry and snapshot disagree", {
-        entityType,
-        entityId
-      });
+    return projectionStateFromRow(entityType, entityId, result.rows[0]);
+  }
+
+  async getProjectionInTransaction(client, entityType, entityId, options) {
+    const state = await this.getProjectionStateInTransaction(client, entityType, entityId, options);
+    return state?.value;
+  }
+
+  async listMandatesForSubjectInTransaction(client, subjectId, { limit = 50 } = {}) {
+    assertQueryable(client);
+    assertString("subjectId", subjectId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 50) {
+      throw new DomainError("invalid_core_projection", "Mandate list limit must be between 1 and 50");
     }
-    return clone(row.payload);
+    const result = await client.query(
+      `SELECT m.id AS entity_id,
+              m.subject_id AS normalized_subject_id,
+              r.entity_hash AS registry_hash,
+              r.root_aggregate_type AS registry_root_aggregate_type,
+              r.root_aggregate_id AS registry_root_aggregate_id,
+              r.aggregate_version AS registry_aggregate_version,
+              s.entity_hash AS snapshot_hash,
+              s.root_aggregate_type,
+              s.root_aggregate_id,
+              s.aggregate_version,
+              s.payload
+         FROM mandates m
+         LEFT JOIN projection_registry r
+           ON r.tenant_id = m.tenant_id
+          AND r.entity_type = $1
+          AND r.entity_id = m.id
+         LEFT JOIN LATERAL (
+           SELECT entity_hash, root_aggregate_type, root_aggregate_id, aggregate_version, payload
+             FROM projection_snapshots
+            WHERE tenant_id = m.tenant_id
+              AND entity_type = $1
+              AND entity_id = m.id
+            ORDER BY write_sequence DESC
+            LIMIT 1
+         ) s ON TRUE
+        WHERE m.subject_id = $2
+        ORDER BY m.created_at DESC, m.id
+        LIMIT $3`,
+      [CoreProjectionType.MANDATE, subjectId, limit + 1]
+    );
+    const states = result.rows.map((row) => {
+      const state = projectionStateFromRow(CoreProjectionType.MANDATE, row.entity_id, row);
+      if (
+        row.normalized_subject_id !== subjectId ||
+        state.value.mandateId !== row.entity_id ||
+        state.value.subjectId !== row.normalized_subject_id
+      ) {
+        throw new DomainError("projection_integrity_mismatch", "Mandate projection identity is invalid", {
+          entityType: CoreProjectionType.MANDATE,
+          entityId: row.entity_id
+        });
+      }
+      return state.value;
+    });
+    return {
+      items: states.slice(0, limit),
+      hasMore: states.length > limit
+    };
   }
 
   async verifyProjection(entityType, entityId) {
@@ -1367,6 +1497,20 @@ export class PostgresCoreRepository {
     assertString(name, id);
     const result = await this.#tenantQuery(statement, [id]);
     return mapper(result.rows[0]);
+  }
+
+  async #lockAndCountPersistentResource(client, kind, statement) {
+    assertQueryable(client);
+    assertString("resourceKind", kind);
+    await client.query(
+      `SELECT pg_advisory_xact_lock(
+         hashtext('tenant_resource_capacity:' || $1),
+         hashtext($2)
+       )`,
+      [this.eventRepository.tenantContext.tenantId, kind]
+    );
+    const result = await client.query(statement);
+    return safeInteger(result.rows[0]?.count, `${kind}Count`);
   }
 
   async #tenantQuery(statement, values = []) {

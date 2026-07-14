@@ -49,7 +49,6 @@ const RESERVED_PAYLOAD_AUTHORITY_KEYS = new Set([
   "credentialId",
   "credentialVersion",
   "policyVersion",
-  "capabilities",
   "roles",
   "authorizationDecision",
   "admissionId"
@@ -73,6 +72,29 @@ function assertPlainObject(name, value) {
     throw new DomainError("invalid_tenant_command", `${name} must be a plain object`);
   }
   return value;
+}
+
+function requireResourceBaselines(plan, resourceDeltas) {
+  const expectedKinds = Object.entries(resourceDeltas)
+    .filter(([, units]) => units > 0)
+    .map(([kind]) => kind)
+    .sort();
+  if (expectedKinds.length === 0) {
+    if (plan.resourceBaselines !== undefined) {
+      throw new DomainError("invalid_tenant_command_plan", "unexpected resource baselines");
+    }
+    return undefined;
+  }
+  const baselines = assertPlainObject("tenant command resource baselines", plan.resourceBaselines);
+  const actualKinds = Object.keys(baselines).sort();
+  if (
+    actualKinds.length !== expectedKinds.length ||
+    actualKinds.some((kind, index) => kind !== expectedKinds[index]) ||
+    Object.values(baselines).some((count) => !Number.isSafeInteger(count) || count < 0)
+  ) {
+    throw new DomainError("invalid_tenant_command_plan", "resource baselines do not match admission deltas");
+  }
+  return baselines;
 }
 
 function normalizeEnvelope(input, handler) {
@@ -311,6 +333,20 @@ export class TenantCommandGateway {
       ...(this.abuseTelemetry === undefined ? {} : { telemetry: this.abuseTelemetry })
     });
     const resourceDeltas = handler.resourceDeltas?.(structuredClone(envelope.payload)) ?? {};
+    const requiresResourceBaseline = Object.values(resourceDeltas).some((units) => units > 0);
+    if (requiresResourceBaseline && typeof handler.loadResourceBaselines !== "function") {
+      throw new DomainError(
+        "invalid_tenant_command_handler",
+        "persistent resource handler requires a baseline loader"
+      );
+    }
+    const resourceBaselineLoader = !requiresResourceBaseline
+      ? undefined
+      : ({ client, resourceKinds }) => handler.loadResourceBaselines({
+          client,
+          coreRepository,
+          resourceKinds
+        });
     const admission = await abuseControl.admitTenant({
       authenticationContext: envelope.authenticationContext,
       operationId: envelope.operationId,
@@ -322,7 +358,7 @@ export class TenantCommandGateway {
       },
       resourceDeltas,
       retryAttempt: envelope.retryAttempt
-    });
+    }, resourceBaselineLoader === undefined ? {} : { resourceBaselineLoader });
 
     let admissionLocked = false;
     let transactionCommitted = false;
@@ -478,6 +514,14 @@ export class TenantCommandGateway {
           correlationId: envelope.correlationId
         });
         assertPlainObject("tenant command plan", plan);
+        const resourceBaselines = requireResourceBaselines(plan, resourceDeltas);
+        if (resourceBaselines !== undefined) {
+          await abuseControl.synchronizePersistentResourcesInTransaction({
+            admission,
+            client,
+            resourceBaselines
+          });
+        }
         const committed = await coreRepository.commitCommandInTransaction(client, {
           aggregateType: plan.aggregateType,
           aggregateId: plan.aggregateId,

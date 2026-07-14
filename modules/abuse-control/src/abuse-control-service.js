@@ -47,6 +47,18 @@ function normalizeBoundedCounters(name, value, allowedNames) {
   ]));
 }
 
+function normalizeResourceBaselines(value) {
+  assertAbuseShape("resourceBaselines", value, { optional: RESOURCE_NAMES });
+  const entries = Object.entries(value);
+  if (entries.length === 0) {
+    throw abuseError("invalid_abuse_control_input", "at least one resource baseline is required");
+  }
+  return Object.fromEntries(entries.map(([kind, count]) => [
+    kind,
+    assertNonNegativeInteger(`resourceBaselines.${kind}`, count)
+  ]));
+}
+
 function idempotencyHash({ tenantId, operationId, idempotencyKey, actorRefHash, clientRefHash }) {
   if (
     typeof idempotencyKey !== "string" ||
@@ -105,7 +117,7 @@ export class AbuseControlService {
     this.clock = clock;
   }
 
-  async admitTenant(input) {
+  async admitTenant(input, { resourceBaselineLoader } = {}) {
     assertAbuseShape("tenant admission request", input, {
       required: ["authenticationContext", "operationId"],
       optional: [
@@ -117,6 +129,9 @@ export class AbuseControlService {
       ]
     });
     const authentication = assertAuthenticationContext(input.authenticationContext);
+    if (resourceBaselineLoader !== undefined && typeof resourceBaselineLoader !== "function") {
+      throw abuseError("invalid_abuse_control_input", "resource baseline loader is invalid");
+    }
     const network = input.networkContext === undefined
       ? undefined
       : assertTrustedNetworkContext(input.networkContext);
@@ -140,6 +155,7 @@ export class AbuseControlService {
       idempotencyKey: input.idempotencyKey,
       requestMetrics: input.requestMetrics,
       resourceDeltas: input.resourceDeltas,
+      resourceBaselineLoader,
       retryAttempt: input.retryAttempt,
       facts: {
         kind: "tenant",
@@ -288,6 +304,24 @@ export class AbuseControlService {
     return result;
   }
 
+  async synchronizePersistentResourcesInTransaction({ admission, client, resourceBaselines }) {
+    const claim = admissionTransactionClaims.get(admission);
+    if (
+      admissionLifecycle.get(admission) !== "claimed" ||
+      !claim ||
+      claim.client !== client ||
+      claim.state !== "locked" ||
+      typeof this.store.synchronizePersistentResourcesInTransaction !== "function"
+    ) {
+      throw abuseError("request_admission_mismatch", "transactional admission claim is invalid");
+    }
+    return this.store.synchronizePersistentResourcesInTransaction({
+      client,
+      lock: claim.lock,
+      resourceBaselines: normalizeResourceBaselines(resourceBaselines)
+    });
+  }
+
   confirmAdmissionTransactionCommit({ admission }) {
     const claim = admissionTransactionClaims.get(admission);
     if (
@@ -407,6 +441,7 @@ export class AbuseControlService {
     idempotencyKey,
     requestMetrics,
     resourceDeltas,
+    resourceBaselineLoader,
     retryAttempt = 0,
     facts
   }) {
@@ -542,9 +577,20 @@ export class AbuseControlService {
       capacityReservations,
       leaseMs: profile.admissionLeaseMs
     };
+    if (
+      resourceBaselineLoader !== undefined &&
+      typeof this.store.reserveWithResourceBaselines !== "function"
+    ) {
+      throw abuseError(
+        "invalid_abuse_control_config",
+        "quota store does not support resource baseline loading"
+      );
+    }
     let result;
     try {
-      result = await this.store.reserve(request);
+      result = resourceBaselineLoader === undefined
+        ? await this.store.reserve(request)
+        : await this.store.reserveWithResourceBaselines(request, resourceBaselineLoader);
     } catch {
       this.telemetry.record({ surface, quotaClass: profile.quotaClass, outcome: "denied", reason: "unavailable" });
       throw admissionUnavailable();

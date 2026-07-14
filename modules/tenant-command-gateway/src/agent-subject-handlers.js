@@ -11,6 +11,7 @@ import {
   hashId
 } from "../../../packages/domain/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
+import { ResourceKind } from "../../abuse-control/src/index.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
 
 function assertBoundedText(name, value, { minimum = 1, maximum = 128, pattern } = {}) {
@@ -51,12 +52,23 @@ function normalizeCreateAgentPayload(payload) {
   return normalized;
 }
 
+async function loadAgentSubjectResourceBaselines({ client, coreRepository }) {
+  return {
+    [ResourceKind.AGENT_SUBJECTS]: await coreRepository.countAgentSubjectsForCapacityInTransaction(client)
+  };
+}
+
 export function createAgentSubjectCommandHandler() {
   return Object.freeze({
     operationId: "pilotCreateAgentSubject",
     kind: "command",
+    resourceDeltas() {
+      return { [ResourceKind.AGENT_SUBJECTS]: 1 };
+    },
+    loadResourceBaselines: loadAgentSubjectResourceBaselines,
     async plan({ client, coreRepository, payload, authenticationContext, now, requestId, correlationId }) {
       const input = normalizeCreateAgentPayload(payload);
+      const resourceBaselines = await loadAgentSubjectResourceBaselines({ client, coreRepository });
       const principalAuthorityRef = hashId("tenant_principal_authority", {
         tenantId: authenticationContext.tenantId,
         actorId: authenticationContext.actorId
@@ -141,6 +153,7 @@ export function createAgentSubjectCommandHandler() {
           status: subject.status,
           schemaVersion: "tenant_agent_subject_created.v1"
         },
+        resourceBaselines,
         authorizationResource: {
           resourceType: "subject",
           resourceId: subject.subjectId,
@@ -177,9 +190,31 @@ export function readAgentSelfQueryHandler() {
       if (!subject || subject.subjectType !== SubjectType.AGENT) {
         throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
       }
+      const mandatePage = await coreRepository.listMandatesForSubjectInTransaction(
+        client,
+        subject.subjectId,
+        { limit: 50 }
+      );
       return {
         subject,
-        schemaVersion: "tenant_agent_subject_view.v1"
+        mandates: mandatePage.items.map((mandate) => ({
+          mandateId: mandate.mandateId,
+          mandateHash: mandate.mandateHash,
+          status: mandate.status,
+          capabilities: mandate.capabilities.slice(0, 8),
+          assetIds: mandate.assetIds.slice(0, 8),
+          providerScopeCount: mandate.allowedProviderIds.length,
+          categoryScopeCount: mandate.allowedCategories.length,
+          perActionLimitMinor: mandate.perActionLimitMinor,
+          aggregateLimitMinor: mandate.aggregateLimitMinor,
+          utilizedMinor: mandate.utilizedMinor,
+          validFrom: mandate.validFrom,
+          expiresAt: mandate.expiresAt,
+          createdAt: mandate.createdAt,
+          updatedAt: mandate.updatedAt
+        })),
+        hasMoreMandates: mandatePage.hasMore,
+        schemaVersion: "tenant_agent_subject_view.v2"
       };
     }
   });

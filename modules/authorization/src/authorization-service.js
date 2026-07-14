@@ -226,7 +226,8 @@ class AuthorizationAuditUnavailable extends Error {}
 async function stage(reasonCode, operation) {
   try {
     return await operation();
-  } catch {
+  } catch (error) {
+    if (error?.code === "40001" || error?.code === "40P01") throw error;
     throw new AuthorizationStageError(reasonCode);
   }
 }
@@ -638,6 +639,7 @@ export class AuthorizationService {
       });
       return decision;
     } catch (error) {
+      if (error?.code === "40001" || error?.code === "40P01") throw error;
       if (error instanceof AuthorizationAuditUnavailable) {
         throw authorizationError("authorization_unavailable", "Authorization is temporarily unavailable.");
       }
