@@ -76,8 +76,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 5,
-      "maxItems": 5,
+      "minItems": 6,
+      "maxItems": 6,
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/operation" }
     },
@@ -125,6 +125,7 @@
           "enum": [
             "pilotCreateAgentSubject",
             "pilotCreateDraftMandate",
+            "pilotFreezeSubject",
             "pilotReadAgentSelf",
             "pilotReadMandate",
             "pilotRevokeDraftMandate"
@@ -134,9 +135,11 @@
         "actorTypes": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 1,
+          "maxItems": 2,
           "uniqueItems": true,
-          "items": { "enum": ["human", "agent"] }
+          "items": {
+            "enum": ["human", "agent", "risk_operator", "operations_operator"]
+          }
         },
         "resourceType": { "enum": ["subject", "mandate"] },
         "requiredCapability": {
@@ -145,15 +148,17 @@
             "integration.read.owned",
             "mandate.draft.create",
             "mandate.draft.revoke",
+            "risk.freeze",
             "subject.read.self"
           ]
         },
         "idempotency": { "enum": ["required", "prohibited"] },
-        "quotaClass": { "enum": ["read", "mutation"] },
+        "quotaClass": { "enum": ["read", "mutation", "privileged"] },
         "requestSchemaVersion": { "const": "tenant_protocol_request.v1" },
         "responseSchemaVersion": {
           "enum": [
             "tenant_agent_subject_created.v1",
+            "tenant_agent_subject_frozen.v1",
             "tenant_draft_mandate_created.v1",
             "tenant_agent_subject_view.v2",
             "tenant_mandate_view.v1",
@@ -186,6 +191,18 @@
             "idempotency": { "const": "required" },
             "quotaClass": { "const": "mutation" },
             "responseSchemaVersion": { "const": "tenant_draft_mandate_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotFreezeSubject" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "risk.freeze" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_agent_subject_frozen.v1" }
           }
         },
         {

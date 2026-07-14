@@ -104,8 +104,8 @@ Those are deployment concerns and must be assessed separately.
 | SQL injection / replay corruption | Parameterized values, serializable transaction, optimistic stream version, idempotency hash, outbox/inbox constraints | PostgreSQL rollback, concurrency, replay, lease, and restart suite |
 | Durable cross-tenant access or key collision | Immutable `tenant_id`, tenant-aware foreign keys and runtime identities, non-owner role verification, transaction-local context, `ENABLE` + `FORCE RLS`, `USING`/`WITH CHECK`, and write guards | Two-tenant least-privilege read/write/FK/key-reuse matrix, pooled context cleanup, and full catalog coverage assertion |
 | Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; durable Agent Subject/Mandate baselines loaded under Tenant-and-kind locks; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, stale/absent-counter recovery, at-cap valid/missing resource-blind denial, bounded eviction, and source leakage assertions |
-| Authenticated command authority drift | One serializable Gateway transaction locks admission and live authorization facts and atomically commits audit, Event, Evidence, outbox, projection, authorization-resource transition, idempotent response, and retained capacity | Two-Tenant and same-Tenant denial, concurrent Membership/Subject mutation, nonce/revocation races, replay after resource closure, protective revocation under inactive Subject/Principal state, bounded Mandate reads, append-only tamper, and reconciliation tests |
-| Tenant protocol/schema drift or mass assignment | Closed per-operation request/result schemas; exact schema versions; trusted auth/network context outside caller JSON; result validation before commit; catalog parity across handlers, AuthZ, ABUSE policy, fixtures, and public-server isolation | Valid/invalid Human+Agent fixtures, mutation-free validator tests, pre-admission rejection with zero audit/admission effects, malicious handler-result rollback, replay validation, and repository conformance gate |
+| Authenticated command authority drift | One serializable Gateway transaction locks admission and live authorization facts and atomically commits audit, Event, Evidence, outbox, projection, authorization-resource transition, idempotent response, and retained capacity | Two-Tenant and same-Tenant denial, concurrent Membership/Subject mutation, nonce/revocation races, replay after resource closure, protective revocation under inactive Subject/Principal state, reason-coded Risk/Operations Subject freeze, exact replay after suspension, concurrent single-transition proof, bounded reads, append-only tamper, and reconciliation tests |
+| Tenant protocol/schema drift or mass assignment | Closed per-operation request/result schemas; exact schema versions; trusted auth/network context outside caller JSON; result validation before commit; catalog parity across handlers, AuthZ, ABUSE policy, fixtures, and public-server isolation | Valid/invalid Human+Operator+Agent fixtures, mutation-free validator tests, pre-admission rejection with zero audit/admission effects, malicious handler-result rollback, replay validation, and repository conformance gate |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
 | Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
 | Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
@@ -128,10 +128,12 @@ The following are known and intentional blockers, not hidden launch claims:
 3. The public sandbox has no AuthN, RBAC, authenticated durable command gateway,
    dual control, break glass, or authenticated resource admission. The separate
    local Gateway currently composes only Agent Subject creation, unsigned draft
-   Mandate create/read/revoke, and Agent self-read operations; it is not
+   Mandate create/read/revoke, Agent self-read, and one-way Risk/Operations
+   protective Subject freeze operations; it is not
    reachable from the anonymous public API. Its API-002 catalog enables only
    local in-process use; no authenticated HTTP/MCP/A2A transport is implied, and
-   it is not a production identity or executable-authority claim.
+   it is not a production identity or executable-authority claim. Unfreeze is
+   intentionally absent and remains dual-control gated.
 4. Public demo state is in memory and is lost on restart. PostgreSQL Rail,
    normalized core, reconciliation, approval/break-glass, admission, and limited
    Tenant Gateway composition have recovery evidence but are not public routes.

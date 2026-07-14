@@ -1,6 +1,7 @@
 export type TenantProtocolOperationId =
   | "pilotCreateAgentSubject"
   | "pilotCreateDraftMandate"
+  | "pilotFreezeSubject"
   | "pilotReadAgentSelf"
   | "pilotReadMandate"
   | "pilotRevokeDraftMandate";
@@ -15,6 +16,14 @@ export type MandateCapability =
   | "route_repayment";
 export type MandateStatus = "draft" | "active" | "suspended" | "revoked" | "expired";
 export type SubjectStatus = "pending" | "active" | "suspended" | "closed";
+export type ProtectiveReasonCode =
+  | "credential_compromise"
+  | "operator_request"
+  | "provider_failure"
+  | "reconciliation_failure"
+  | "risk_limit_breach"
+  | "security_incident"
+  | "stop_loss_triggered";
 
 export interface TenantProtocolResourceReference {
   resourceType: "subject" | "mandate";
@@ -60,6 +69,14 @@ export interface ReadAgentSelfRequest extends TenantProtocolRequestBase {
   resource: { resourceType: "subject"; resourceId: string };
 }
 
+export interface FreezeSubjectRequest extends TenantProtocolRequestBase {
+  operationId: "pilotFreezeSubject";
+  payload: Record<string, never>;
+  resource: { resourceType: "subject"; resourceId: string };
+  reasonCode: ProtectiveReasonCode;
+  idempotencyKey: string;
+}
+
 export interface ReadMandateRequest extends TenantProtocolRequestBase {
   operationId: "pilotReadMandate";
   payload: Record<string, never>;
@@ -77,6 +94,7 @@ export interface RevokeDraftMandateRequest extends TenantProtocolRequestBase {
 export type TenantProtocolRequest =
   | CreateAgentSubjectRequest
   | CreateDraftMandateRequest
+  | FreezeSubjectRequest
   | ReadAgentSelfRequest
   | ReadMandateRequest
   | RevokeDraftMandateRequest;
@@ -102,6 +120,16 @@ export interface DraftMandateCreatedResponse {
   validFrom: string;
   expiresAt: string;
   schemaVersion: "tenant_draft_mandate_created.v1";
+}
+
+export interface AgentSubjectFrozenResponse {
+  subjectId: string;
+  subjectHash: string;
+  previousStatus: "pending" | "active";
+  status: "suspended";
+  reasonCode: ProtectiveReasonCode;
+  updatedAt: string;
+  schemaVersion: "tenant_agent_subject_frozen.v1";
 }
 
 export interface AgentSubjectView {
@@ -193,6 +221,7 @@ export interface TenantProtocolResultBase<
 export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotCreateAgentSubject", AgentSubjectCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateDraftMandate", DraftMandateCreatedResponse>
+  | TenantProtocolResultBase<"pilotFreezeSubject", AgentSubjectFrozenResponse>
   | TenantProtocolResultBase<"pilotReadAgentSelf", AgentSubjectViewResponse>
   | TenantProtocolResultBase<"pilotReadMandate", MandateViewResponse>
   | TenantProtocolResultBase<"pilotRevokeDraftMandate", DraftMandateRevokedResponse>;
@@ -202,19 +231,25 @@ export type TenantProtocolResultFor<OperationId extends TenantProtocolOperationI
   { operationId: OperationId }
 >;
 
+export type TenantProtocolActorType =
+  | "human"
+  | "agent"
+  | "risk_operator"
+  | "operations_operator";
+
 export interface TenantProtocolOperationBase<
   OperationId extends TenantProtocolOperationId,
   Kind extends "command" | "query",
-  ActorType extends "human" | "agent",
+  ActorTypes extends readonly TenantProtocolActorType[],
   ResourceType extends "subject" | "mandate",
   Capability extends string,
   Idempotency extends "required" | "prohibited",
-  QuotaClass extends "read" | "mutation",
+  QuotaClass extends "read" | "mutation" | "privileged",
   ResponseSchemaVersion extends string
 > {
   readonly operationId: OperationId;
   readonly kind: Kind;
-  readonly actorTypes: readonly [ActorType];
+  readonly actorTypes: ActorTypes;
   readonly resourceType: ResourceType;
   readonly requiredCapability: Capability;
   readonly idempotency: Idempotency;
@@ -229,7 +264,7 @@ export type TenantProtocolOperation =
   | TenantProtocolOperationBase<
       "pilotCreateAgentSubject",
       "command",
-      "human",
+      readonly ["human"],
       "subject",
       "agent.create",
       "required",
@@ -239,7 +274,7 @@ export type TenantProtocolOperation =
   | TenantProtocolOperationBase<
       "pilotCreateDraftMandate",
       "command",
-      "human",
+      readonly ["human"],
       "subject",
       "mandate.draft.create",
       "required",
@@ -247,9 +282,19 @@ export type TenantProtocolOperation =
       "tenant_draft_mandate_created.v1"
     >
   | TenantProtocolOperationBase<
+      "pilotFreezeSubject",
+      "command",
+      readonly ["risk_operator", "operations_operator"],
+      "subject",
+      "risk.freeze",
+      "required",
+      "privileged",
+      "tenant_agent_subject_frozen.v1"
+    >
+  | TenantProtocolOperationBase<
       "pilotReadAgentSelf",
       "query",
-      "agent",
+      readonly ["agent"],
       "subject",
       "subject.read.self",
       "prohibited",
@@ -259,7 +304,7 @@ export type TenantProtocolOperation =
   | TenantProtocolOperationBase<
       "pilotReadMandate",
       "query",
-      "human",
+      readonly ["human"],
       "mandate",
       "integration.read.owned",
       "prohibited",
@@ -269,7 +314,7 @@ export type TenantProtocolOperation =
   | TenantProtocolOperationBase<
       "pilotRevokeDraftMandate",
       "command",
-      "human",
+      readonly ["human"],
       "mandate",
       "mandate.draft.revoke",
       "required",
