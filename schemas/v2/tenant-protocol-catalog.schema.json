@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/tenant-protocol-catalog.schema.json",
+  "title": "IPO.ONE Tenant Protocol Catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol",
+    "protocolVersion",
+    "maturity",
+    "availability",
+    "compatibility",
+    "operations",
+    "safety",
+    "schemaVersion"
+  ],
+  "properties": {
+    "protocol": { "const": "IPO.ONE" },
+    "protocolVersion": { "const": "tenant_protocol.v1" },
+    "maturity": { "const": "local_non_funds" },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabledTransports",
+        "publicEndpointEnabled",
+        "authenticatedHttpEnabled",
+        "mcpA2aEnabled",
+        "authenticationContextSource",
+        "networkContextSource"
+      ],
+      "properties": {
+        "enabledTransports": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": { "const": "local_in_process" }
+        },
+        "publicEndpointEnabled": { "const": false },
+        "authenticatedHttpEnabled": { "const": false },
+        "mcpA2aEnabled": { "const": false },
+        "authenticationContextSource": { "const": "trusted_transport_adapter" },
+        "networkContextSource": { "const": "trusted_ingress_adapter" }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptedRequestSchemaVersions",
+        "emittedResultSchemaVersions",
+        "unknownFieldsRejected",
+        "unknownOperationsRejected",
+        "breakingChangeRequiresNewSchemaVersion",
+        "minimumProductionDeprecationDays"
+      ],
+      "properties": {
+        "acceptedRequestSchemaVersions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "tenant_protocol_request.v1" }
+        },
+        "emittedResultSchemaVersions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "tenant_protocol_result.v1" }
+        },
+        "unknownFieldsRejected": { "const": true },
+        "unknownOperationsRejected": { "const": true },
+        "breakingChangeRequiresNewSchemaVersion": { "const": true },
+        "minimumProductionDeprecationDays": { "const": 90 }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "realFundsEnabled",
+        "productionCreditEnabled",
+        "humanCreditEnabled",
+        "mandateActivationEnabled",
+        "productionIdentityEnabled",
+        "rawPiiAllowed"
+      ],
+      "properties": {
+        "realFundsEnabled": { "const": false },
+        "productionCreditEnabled": { "const": false },
+        "humanCreditEnabled": { "const": false },
+        "mandateActivationEnabled": { "const": false },
+        "productionIdentityEnabled": { "const": false },
+        "rawPiiAllowed": { "const": false }
+      }
+    },
+    "schemaVersion": { "const": "tenant_protocol_catalog.v1" }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "kind",
+        "actorTypes",
+        "resourceType",
+        "requiredCapability",
+        "idempotency",
+        "quotaClass",
+        "requestSchemaVersion",
+        "responseSchemaVersion",
+        "public",
+        "fundsAuthority"
+      ],
+      "properties": {
+        "operationId": {
+          "enum": [
+            "pilotCreateAgentSubject",
+            "pilotCreateDraftMandate",
+            "pilotReadAgentSelf",
+            "pilotReadMandate",
+            "pilotRevokeDraftMandate"
+          ]
+        },
+        "kind": { "enum": ["command", "query"] },
+        "actorTypes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["human", "agent"] }
+        },
+        "resourceType": { "enum": ["subject", "mandate"] },
+        "requiredCapability": {
+          "enum": [
+            "agent.create",
+            "integration.read.owned",
+            "mandate.draft.create",
+            "mandate.draft.revoke",
+            "subject.read.self"
+          ]
+        },
+        "idempotency": { "enum": ["required", "prohibited"] },
+        "quotaClass": { "enum": ["read", "mutation"] },
+        "requestSchemaVersion": { "const": "tenant_protocol_request.v1" },
+        "responseSchemaVersion": {
+          "enum": [
+            "tenant_agent_subject_created.v1",
+            "tenant_draft_mandate_created.v1",
+            "tenant_agent_subject_view.v2",
+            "tenant_mandate_view.v1",
+            "tenant_draft_mandate_revoked.v1"
+          ]
+        },
+        "public": { "const": false },
+        "fundsAuthority": { "const": false }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "operationId": { "const": "pilotCreateAgentSubject" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "agent.create" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_agent_subject_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotCreateDraftMandate" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "mandate.draft.create" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_draft_mandate_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadAgentSelf" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "subject.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_agent_subject_view.v2" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadMandate" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "mandate" },
+            "requiredCapability": { "const": "integration.read.owned" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_mandate_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotRevokeDraftMandate" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "mandate" },
+            "requiredCapability": { "const": "mandate.draft.revoke" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_draft_mandate_revoked.v1" }
+          }
+        }
+      ]
+    }
+  }
+}

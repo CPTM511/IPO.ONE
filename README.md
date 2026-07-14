@@ -45,8 +45,14 @@ movement, accounting, and risk into one black box.
 > Human-controlled Agent Subject creation, durable non-executable Mandate drafts,
 > owner-authorized integrity reads, reason-coded terminal draft revocation,
 > domain-anchored resource capacity, and bounded Agent self-read. It is not
-> mounted on the public
-> API, and the remaining Lockbox credit/spend/revenue/repayment, worker, approval,
+> mounted on the public API. API-002 adds a transport-neutral, closed and
+> versioned contract for those five operations: JSON Schema request/result
+> validation, a machine-readable catalog, TypeScript discriminated unions,
+> conformance fixtures, pre-admission request enforcement, and pre-commit result
+> enforcement. Authentication and network trust remain adapter-injected and are
+> absent from the caller contract. This is still local in-process infrastructure,
+> not an authenticated HTTP/MCP/A2A endpoint. The remaining Lockbox
+> credit/spend/revenue/repayment, worker, approval,
 > and administrative handlers are not yet composed. The Human IdP, durable
 > Credential provisioning, production cross-Tenant quota/edge provider,
 > production role assignment, named break-glass custodians/review owner,
@@ -175,7 +181,7 @@ flowchart TB
 | Authorization | Shared Human/Agent capability policy, Membership/client/controller binding, object ownership, AccessGrants, live checks, MFA, reasons, idempotency, approval, revalidation, and allow/deny audit | Approved local non-funds foundation with private short-lived v2 decisions, PostgreSQL Membership/resource/audit adapters, non-enumerating denials, and exact payload binding; not wired to the public sandbox |
 | Approval | Exact-command proposal, two-role decisions, atomic single execution, and separately gated protective break glass | Durable PostgreSQL local non-funds boundary with forced RLS, immutable/guarded records, Event/Evidence/outbox linkage, restart recovery, and reconciliation; disabled/not wired on the public sandbox |
 | Resource Admission | Versioned Actor/client/Tenant/operation/network/account rates, concurrency, bytes, durable counts, queue/export/time/retry/cost budgets, and resource-blind denial | Approved SEC-D08 local non-funds boundary with deterministic and PostgreSQL atomic stores, restart leases, coarse retry classes, and low-cardinality telemetry; not wired to the public sandbox |
-| Tenant Command Gateway | One authenticated protocol and serializable commit boundary for Human/Agent operations | PostgreSQL-backed DATA-003 foundation with exact replay identity, row-locked authorization facts, immutable Human-to-Agent controller assignment, atomic audit/Event/Evidence/projection/admission completion, and five reviewed pilot operations; local non-funds only |
+| Tenant Command Gateway | One authenticated protocol and serializable commit boundary for Human/Agent operations | PostgreSQL-backed DATA-003 foundation with exact replay identity, row-locked authorization facts, immutable Human-to-Agent controller assignment, atomic audit/Event/Evidence/projection/admission completion, and five reviewed pilot operations; API-002 validates closed versioned requests before admission and results before commit; local in-process non-funds only |
 | Mandate | Capability, counterparty, asset, amount, time, nonce, and revocation scope | Process-local demo service plus durable, integrity-checked `mandate.v2` draft creation, Human owner read, and terminal draft revocation; drafts remain unsigned and non-executable |
 | Spend Policy | Provider allowlist, category, transaction, daily, and obligation limits | Enforced before spend and Rail submission |
 | Obligation | Principal, amount, due state, repayment, overdue/default-compatible lifecycle | Versioned local aggregate |
@@ -195,8 +201,9 @@ apps/
   api/                 Node.js API and same-origin static server
   web/                 Responsive Human Operator and Agent Runtime UI
 api/openapi/           OpenAPI 3.1.2 public contract
+api/tenant-protocol/   Private local operation catalog and conformance fixtures
 packages/
-  api-contract/        Request IDs and RFC 9457 Problem Details
+  api-contract/        Public errors plus private Tenant protocol validators/types
   domain/              Shared protocol enums, validators, IDs, and schemas
   mvp-flow/            Vertical-slice composition and demo controller
   sdk/                 Alpha JavaScript client and TypeScript declarations
@@ -264,6 +271,27 @@ state = await ipo.requestCreditLine(agentId);
 
 Sandbox sessions preserve one workflow; they do not authenticate a person,
 workload, organization, wallet, or tenant. Do not place private data in them.
+
+### Durable Tenant Protocol (Local Only)
+
+The separate DATA-003 application protocol is defined by the published
+[`tenant_protocol_request.v1`](schemas/v2/tenant-protocol-request.schema.json),
+[`tenant_protocol_result.v1`](schemas/v2/tenant-protocol-result.schema.json),
+and
+[`tenant_protocol_catalog.v1`](api/tenant-protocol/ipo-one.tenant-protocol.v1.json)
+contracts. Its current five operations cover Agent Subject create, draft
+Mandate create/read/revoke, and Agent self-read.
+
+The request body never carries Tenant, Actor, Credential, role, authorization,
+or network-trust facts. A future reviewed transport adapter must validate the
+request first and then inject verified Authentication Context and trusted
+network context. Only `local_in_process` is enabled today; public access,
+authenticated HTTP, MCP/A2A, production identity, Mandate activation, credit,
+and funds authority are explicitly false. Run its drift and fixture gate with:
+
+```sh
+pnpm run check:tenant-protocol
+```
 
 ## Use the Public Sandbox
 
@@ -336,7 +364,7 @@ fund-moving adapter.
 | Local pilot AuthZ | Versioned deny-by-default policies, capability intersection, Membership/client binding, Actor/Tenant ownership, exact AccessGrants, live checks, reason/idempotency/approval rules, private short-lived decisions, TOCTOU revalidation, and awaited allow/deny audit; not enabled on the public runtime |
 | Local pilot Approval | Server-prepared exact-command proposals, distinct Risk/Operations approvers, current Credential/Membership/MFA revalidation, serializable single execution, immutable Evidence, forced RLS, and protective-only break glass; local non-funds only and not enabled on the public runtime |
 | Local pilot Admission | Closed `abuse_001.v1` policy over trusted Actor/client/Tenant/network/account context; atomic rates, concurrency, bytes, durable counts, queue/export/retry/cost, replay disposition, restart leases, forced RLS, coarse retry metadata, and low-cardinality telemetry; local non-funds only and not enabled on the public runtime |
-| Local pilot Tenant Gateway | Admission before lookup; exact authenticated replay identity; serializable authorization/Event/Evidence/projection/response/resource-transition commit; immutable controller binding; RLS plus row-locked TOCTOU checks; Agent Subject create, Draft Mandate create/read/revoke, and Agent self-read implemented locally but not enabled publicly |
+| Local pilot Tenant Gateway | Closed request schema before authentication/admission/object lookup; trusted-context injection outside caller data; schema version bound to replay identity; closed result schema before commit; serializable authorization/Event/Evidence/projection/response/resource transition; immutable controller binding; RLS plus row-locked TOCTOU checks; five operations implemented locally but not enabled publicly |
 | Availability fallback | 600 requests/process/minute, 64 concurrent requests, 256 connections, bounded header/request/socket/keep-alive timeouts |
 | Public origin | explicit Host allowlist, trusted-proxy HTTPS proof, HSTS, load-balancer-only Cloud Run ingress, disabled default origin |
 | Errors | closed Problem Details and replacement of unsafe request/session identifiers |
@@ -477,7 +505,8 @@ humans and Agents.
 
 Near-term engineering priorities are:
 
-1. Complete `DATA-003` on the implemented durable Agent Subject and Mandate-draft
+1. Build future adapters and handlers against the API-002 conformance catalog;
+   complete `DATA-003` on the implemented durable Agent Subject and Mandate-draft
    foundation: compose verified CAIP-10 binding, credit request, allowlisted spend, Lockbox
    revenue, repayment, worker, approval, protective-risk, audit/export, and
    reconciliation handlers; add two-Tenant negative tests for each while the

@@ -1,0 +1,385 @@
+{
+  "validRequests": [
+    {
+      "operationId": "pilotCreateAgentSubject",
+      "payload": {
+        "subjectActorId": "actor_agent_fixture",
+        "displayName": "Fixture Treasury Agent",
+        "jurisdiction": "US"
+      },
+      "idempotencyKey": "fixture-create-agent-0001",
+      "requestId": "request-fixture-create-agent",
+      "correlationId": "correlation-fixture-create-agent",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotCreateDraftMandate",
+      "payload": {
+        "capabilities": ["request_credit", "provider_spend"],
+        "allowedProviderIds": ["provider_fixture_compute"],
+        "allowedCategories": ["compute"],
+        "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+        "perActionLimitMinor": "10000",
+        "aggregateLimitMinor": "50000",
+        "validFrom": "2026-07-14T00:00:00.000Z",
+        "expiresAt": "2027-01-14T00:00:00.000Z",
+        "nonce": "fixture-mandate-nonce-0001",
+        "termsRef": "urn:ipo.one:terms:fixture-mandate:v1"
+      },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_fixture"
+      },
+      "idempotencyKey": "fixture-create-mandate-0001",
+      "requestId": "request-fixture-create-mandate",
+      "correlationId": "correlation-fixture-create-mandate",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadAgentSelf",
+      "payload": {},
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_fixture"
+      },
+      "requestId": "request-fixture-read-agent",
+      "correlationId": "correlation-fixture-read-agent",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadMandate",
+      "payload": {},
+      "resource": {
+        "resourceType": "mandate",
+        "resourceId": "mandate_fixture"
+      },
+      "requestId": "request-fixture-read-mandate",
+      "correlationId": "correlation-fixture-read-mandate",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotRevokeDraftMandate",
+      "payload": {},
+      "resource": {
+        "resourceType": "mandate",
+        "resourceId": "mandate_fixture"
+      },
+      "reasonCode": "operator_request",
+      "idempotencyKey": "fixture-revoke-mandate-0001",
+      "requestId": "request-fixture-revoke-mandate",
+      "correlationId": "correlation-fixture-revoke-mandate",
+      "schemaVersion": "tenant_protocol_request.v1"
+    }
+  ],
+  "invalidRequests": [
+    {
+      "name": "caller authentication context",
+      "value": {
+        "operationId": "pilotReadMandate",
+        "payload": {},
+        "resource": { "resourceType": "mandate", "resourceId": "mandate_fixture" },
+        "requestId": "request-invalid-auth-context",
+        "correlationId": "correlation-invalid-auth-context",
+        "authenticationContext": {},
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "caller tenant authority",
+      "value": {
+        "operationId": "pilotReadAgentSelf",
+        "payload": {},
+        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "requestId": "request-invalid-tenant",
+        "correlationId": "correlation-invalid-tenant",
+        "tenantId": "tenant_attacker",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "unknown operation",
+      "value": {
+        "operationId": "pilotActivateMandate",
+        "payload": {},
+        "requestId": "request-invalid-operation",
+        "correlationId": "correlation-invalid-operation",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "command without idempotency",
+      "value": {
+        "operationId": "pilotCreateAgentSubject",
+        "payload": {
+          "subjectActorId": "actor_agent_fixture",
+          "displayName": "Fixture Treasury Agent"
+        },
+        "requestId": "request-invalid-idempotency",
+        "correlationId": "correlation-invalid-idempotency",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "query with idempotency",
+      "value": {
+        "operationId": "pilotReadMandate",
+        "payload": {},
+        "resource": { "resourceType": "mandate", "resourceId": "mandate_fixture" },
+        "idempotencyKey": "fixture-query-idempotency-0001",
+        "requestId": "request-invalid-query-idempotency",
+        "correlationId": "correlation-invalid-query-idempotency",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "wrong resource type",
+      "value": {
+        "operationId": "pilotReadMandate",
+        "payload": {},
+        "resource": { "resourceType": "subject", "resourceId": "mandate_fixture" },
+        "requestId": "request-invalid-resource",
+        "correlationId": "correlation-invalid-resource",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "unknown payload field",
+      "value": {
+        "operationId": "pilotCreateAgentSubject",
+        "payload": {
+          "subjectActorId": "actor_agent_fixture",
+          "displayName": "Fixture Treasury Agent",
+          "principalId": "principal_attacker"
+        },
+        "idempotencyKey": "fixture-invalid-payload-0001",
+        "requestId": "request-invalid-payload",
+        "correlationId": "correlation-invalid-payload",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "unknown schema version",
+      "value": {
+        "operationId": "pilotReadAgentSelf",
+        "payload": {},
+        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "requestId": "request-invalid-version",
+        "correlationId": "correlation-invalid-version",
+        "schemaVersion": "tenant_protocol_request.v2"
+      }
+    },
+    {
+      "name": "provider spend without scope",
+      "value": {
+        "operationId": "pilotCreateDraftMandate",
+        "payload": {
+          "capabilities": ["provider_spend"],
+          "allowedProviderIds": [],
+          "allowedCategories": [],
+          "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+          "perActionLimitMinor": "10000",
+          "aggregateLimitMinor": "50000",
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2027-01-14T00:00:00.000Z",
+          "nonce": "fixture-invalid-scope-0001",
+          "termsRef": "urn:ipo.one:terms:fixture-mandate:v1"
+        },
+        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "idempotencyKey": "fixture-invalid-scope-0001",
+        "requestId": "request-invalid-provider-scope",
+        "correlationId": "correlation-invalid-provider-scope",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    }
+  ],
+  "validResults": [
+    {
+      "operationId": "pilotCreateAgentSubject",
+      "replayed": false,
+      "response": {
+        "principalId": "principal_fixture",
+        "subjectId": "subject_fixture",
+        "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "subjectType": "agent",
+        "status": "pending",
+        "schemaVersion": "tenant_agent_subject_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotCreateDraftMandate",
+      "replayed": false,
+      "response": {
+        "mandateId": "mandate_fixture",
+        "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "subjectId": "subject_fixture",
+        "status": "draft",
+        "capabilities": ["request_credit", "provider_spend"],
+        "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+        "perActionLimitMinor": "10000",
+        "aggregateLimitMinor": "50000",
+        "validFrom": "2026-07-14T00:00:00.000Z",
+        "expiresAt": "2027-01-14T00:00:00.000Z",
+        "schemaVersion": "tenant_draft_mandate_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadAgentSelf",
+      "replayed": false,
+      "response": {
+        "subject": {
+          "subjectId": "subject_fixture",
+          "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "subjectType": "agent",
+          "displayName": "Fixture Treasury Agent",
+          "primaryPrincipalId": "principal_fixture",
+          "status": "pending",
+          "riskTier": "unrated",
+          "prototypeOnly": false,
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-14T00:00:00.000Z",
+          "schemaVersion": "subject.v1"
+        },
+        "mandates": [
+          {
+            "mandateId": "mandate_fixture",
+            "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "status": "draft",
+            "capabilities": ["request_credit", "provider_spend"],
+            "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+            "providerScopeCount": 1,
+            "categoryScopeCount": 1,
+            "perActionLimitMinor": "10000",
+            "aggregateLimitMinor": "50000",
+            "utilizedMinor": "0",
+            "validFrom": "2026-07-14T00:00:00.000Z",
+            "expiresAt": "2027-01-14T00:00:00.000Z",
+            "createdAt": "2026-07-14T00:00:00.000Z",
+            "updatedAt": "2026-07-14T00:00:00.000Z"
+          }
+        ],
+        "hasMoreMandates": false,
+        "schemaVersion": "tenant_agent_subject_view.v2"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadMandate",
+      "replayed": false,
+      "response": {
+        "mandate": {
+          "mandateId": "mandate_fixture",
+          "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "principalId": "principal_fixture",
+          "subjectId": "subject_fixture",
+          "capabilities": ["request_credit", "provider_spend"],
+          "allowedProviderIds": ["provider_fixture_compute"],
+          "allowedCategories": ["compute"],
+          "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+          "perActionLimitMinor": "10000",
+          "aggregateLimitMinor": "50000",
+          "utilizedMinor": "0",
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2027-01-14T00:00:00.000Z",
+          "nonce": "fixture-mandate-nonce-0001",
+          "termsRef": "urn:ipo.one:terms:fixture-mandate:v1",
+          "status": "draft",
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-14T00:00:00.000Z",
+          "schemaVersion": "mandate.v2"
+        },
+        "schemaVersion": "tenant_mandate_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotRevokeDraftMandate",
+      "replayed": true,
+      "response": {
+        "mandateId": "mandate_fixture",
+        "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "subjectId": "subject_fixture",
+        "status": "revoked",
+        "reasonCode": "operator_request",
+        "updatedAt": "2026-07-14T01:00:00.000Z",
+        "schemaVersion": "tenant_draft_mandate_revoked.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    }
+  ],
+  "invalidResults": [
+    {
+      "name": "unknown response field",
+      "value": {
+        "operationId": "pilotCreateAgentSubject",
+        "replayed": false,
+        "response": {
+          "principalId": "principal_fixture",
+          "subjectId": "subject_fixture",
+          "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "subjectType": "agent",
+          "status": "pending",
+          "walletSecret": "prohibited",
+          "schemaVersion": "tenant_agent_subject_created.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "wrong response version",
+      "value": {
+        "operationId": "pilotCreateAgentSubject",
+        "replayed": false,
+        "response": {
+          "principalId": "principal_fixture",
+          "subjectId": "subject_fixture",
+          "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "subjectType": "agent",
+          "status": "pending",
+          "schemaVersion": "tenant_agent_subject_created.v2"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "draft response grants active authority",
+      "value": {
+        "operationId": "pilotCreateDraftMandate",
+        "replayed": false,
+        "response": {
+          "mandateId": "mandate_fixture",
+          "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "subjectId": "subject_fixture",
+          "status": "active",
+          "capabilities": ["request_credit"],
+          "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+          "perActionLimitMinor": "10000",
+          "aggregateLimitMinor": "50000",
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2027-01-14T00:00:00.000Z",
+          "schemaVersion": "tenant_draft_mandate_created.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "operation response mismatch",
+      "value": {
+        "operationId": "pilotReadMandate",
+        "replayed": false,
+        "response": {
+          "mandateId": "mandate_fixture",
+          "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "subjectId": "subject_fixture",
+          "status": "revoked",
+          "reasonCode": "operator_request",
+          "updatedAt": "2026-07-14T01:00:00.000Z",
+          "schemaVersion": "tenant_draft_mandate_revoked.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    }
+  ],
+  "schemaVersion": "tenant_protocol_conformance.v1"
+}

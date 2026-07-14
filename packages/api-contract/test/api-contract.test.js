@@ -1,12 +1,66 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import test from "node:test";
 import { DomainError } from "../../domain/src/index.js";
 import {
   ApiBoundaryError,
+  TENANT_PROTOCOL_CATALOG,
+  assertTenantProtocolRequest,
+  assertTenantProtocolResult,
   createProblemDetails,
   createRequestId,
+  isTenantProtocolCatalog,
+  isTenantProtocolRequest,
+  isTenantProtocolResult,
   isValidRequestId
 } from "../src/index.js";
+
+const fixtures = JSON.parse(await readFile(
+  join(process.cwd(), "api", "tenant-protocol", "conformance", "tenant-protocol.v1.fixtures.json"),
+  "utf8"
+));
+
+function isDeeplyFrozen(value) {
+  if (!value || typeof value !== "object") return true;
+  return Object.isFrozen(value) && Object.values(value).every(isDeeplyFrozen);
+}
+
+test("Tenant protocol fixtures enforce every closed request and result branch", () => {
+  for (const request of fixtures.validRequests) assert.equal(isTenantProtocolRequest(request), true);
+  for (const request of fixtures.invalidRequests) assert.equal(isTenantProtocolRequest(request), false);
+  for (const result of fixtures.validResults) assert.equal(isTenantProtocolResult(result), true);
+  for (const result of fixtures.invalidResults) assert.equal(isTenantProtocolResult(result), false);
+  assert.equal(isTenantProtocolCatalog(TENANT_PROTOCOL_CATALOG), true);
+});
+
+test("Tenant protocol validation is mutation-free and errors expose no validator internals", () => {
+  const validRequest = structuredClone(fixtures.validRequests[0]);
+  const requestBefore = structuredClone(validRequest);
+  assertTenantProtocolRequest(validRequest);
+  assert.deepEqual(validRequest, requestBefore);
+
+  const validResult = structuredClone(fixtures.validResults[0]);
+  const resultBefore = structuredClone(validResult);
+  assertTenantProtocolResult(validResult);
+  assert.deepEqual(validResult, resultBefore);
+
+  assert.throws(
+    () => assertTenantProtocolRequest(fixtures.invalidRequests[0]),
+    (error) => {
+      assert.equal(error.code, "invalid_tenant_protocol_request");
+      assert.deepEqual(error.details, {});
+      assert.equal(error.message.includes("instancePath"), false);
+      assert.equal(error.message.includes("must"), false);
+      return true;
+    }
+  );
+  assert.throws(
+    () => assertTenantProtocolResult(fixtures.invalidResults[0]),
+    (error) => error.code === "invalid_tenant_protocol_result" && Object.keys(error.details).length === 0
+  );
+  assert.equal(isDeeplyFrozen(TENANT_PROTOCOL_CATALOG), true);
+});
 
 test("request IDs accept a bounded safe value and replace unsafe input", () => {
   assert.equal(createRequestId({ "x-request-id": "pilot-request-001" }), "pilot-request-001");

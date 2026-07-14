@@ -5,10 +5,18 @@ boundary for IPO.ONE pilot commands. It is intentionally separate from the
 anonymous, process-local public sandbox.
 
 For every supported operation it derives Tenant, Actor, and client authority
-only from a verified Authentication Context, acquires an ABUSE-001 admission
-before object lookup, and composes authorization audit, event append,
+only from a verified Authentication Context. API-002 first validates the
+authority-free `tenant_protocol_request.v1` caller view, then acquires an
+ABUSE-001 admission before object lookup, and composes authorization audit, event append,
 projection writes, durable idempotency, command evidence, and quota completion
 inside one serializable transaction.
+
+The request schema version is bound into durable command identity. Every query,
+planned command, committed command, and replay response must satisfy the closed
+`tenant_protocol_result.v1` operation branch; a malformed handler result aborts
+the transaction before business state can commit. The static catalog is checked
+against handlers, authorization policy, abuse classification, conformance
+fixtures, and the isolated public server in CI.
 
 Authorization facts use advisory locks for deterministic cross-table ordering
 and PostgreSQL row locks for MVCC conflict detection. Agent Memberships carry an
