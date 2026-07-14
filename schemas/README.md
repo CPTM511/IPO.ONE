@@ -45,3 +45,12 @@ profiles. Runtime counters store only tenant scope, low-cardinality policy
 fields, and irreversible Actor/client/network/account references. Production
 edge policy and a cross-tenant distributed global store remain deployment
 decisions.
+
+The Tenant protocol request, result, and catalog contracts define the local
+API-002 Human/Agent application boundary. Each of the five implemented
+operations has one closed request and result branch. Requests carry an explicit
+schema version but no Authentication Context, Tenant, Actor, Credential, role,
+authorization decision, or network-trust field. Results are validated before
+durable commit. The catalog enables only `local_in_process`; it does not expose
+an authenticated endpoint or authorize activation, credit, Human lending,
+private data, or real funds.

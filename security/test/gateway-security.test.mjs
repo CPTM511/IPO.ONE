@@ -91,3 +91,51 @@ test("durable draft Mandate management can only reduce authority", async () => {
   assert.doesNotMatch(handlers, /MandateStatus\.ACTIVE|activateMandate|signature|walletProof/i);
   assert.doesNotMatch(server, /pilotReadMandate|pilotRevokeDraftMandate|tenant-command-gateway/);
 });
+
+test("Tenant protocol contracts are closed, non-authoritative, and private", async () => {
+  const [requestSchemaBody, resultSchemaBody, catalogBody, gateway, clients, server] = await Promise.all([
+    source("schemas/v2/tenant-protocol-request.schema.json"),
+    source("schemas/v2/tenant-protocol-result.schema.json"),
+    source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json"),
+    source("modules/tenant-command-gateway/src/tenant-command-gateway.js"),
+    source("modules/tenant-command-gateway/src/tenant-command-clients.js"),
+    source("apps/api/src/server.js")
+  ]);
+  const requestSchema = JSON.parse(requestSchemaBody);
+  const resultSchema = JSON.parse(resultSchemaBody);
+  const catalog = JSON.parse(catalogBody);
+
+  assert.equal(requestSchema.additionalProperties, false);
+  assert.equal(resultSchema.additionalProperties, false);
+  for (const property of [
+    "authenticationContext",
+    "tenantId",
+    "actorId",
+    "actorType",
+    "clientId",
+    "credentialId",
+    "roles",
+    "authorizationDecision",
+    "networkContext"
+  ]) {
+    assert.equal(Object.hasOwn(requestSchema.properties, property), false);
+  }
+  assert.deepEqual(catalog.availability.enabledTransports, ["local_in_process"]);
+  assert.equal(catalog.availability.publicEndpointEnabled, false);
+  assert.equal(catalog.availability.authenticatedHttpEnabled, false);
+  assert.equal(catalog.availability.mcpA2aEnabled, false);
+  assert.equal(Object.values(catalog.safety).every((value) => value === false), true);
+  assert.equal(catalog.operations.every((operation) => !operation.public && !operation.fundsAuthority), true);
+
+  assert.ok(gateway.indexOf("assertCallerRequest(input)") < gateway.indexOf("abuseControl.admitTenant"));
+  assert.ok(
+    gateway.indexOf("const plannedResult = createProtocolResult") <
+      gateway.indexOf("commitCommandInTransaction")
+  );
+  assert.match(gateway, /assertTenantProtocolResult\(result\)/);
+  assert.ok(
+    clients.indexOf("assertTenantProtocolRequest(request)") <
+      clients.indexOf("authenticationContextProvider\(\)")
+  );
+  assert.doesNotMatch(server, /tenant-protocol|TENANT_PROTOCOL|pilotCreateAgentSubject/);
+});

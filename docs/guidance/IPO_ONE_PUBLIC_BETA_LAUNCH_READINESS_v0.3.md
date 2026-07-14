@@ -47,7 +47,11 @@ state machine plus atomic rate/resource/cost admission are now implemented and
 tested as local non-funds boundaries. A separate durable Tenant Command Gateway
 now composes Agent Subject creation, unsigned non-executable draft Mandate
 creation, Human owner read, terminal reason-coded draft revocation, and bounded
-Agent self-read with domain-anchored resource caps.
+Agent self-read with domain-anchored resource caps. API-002 publishes and
+enforces a closed versioned request/result/catalog contract for exactly those
+five operations. Caller data excludes Authentication Context and trusted
+network facts; malformed requests fail before admission and malformed handler
+results fail before commit.
 These controls are deliberately not deployed over the anonymous public sandbox.
 Human IdP selection, production Credential provisioning and identity adapters,
 remaining DATA-003 lifecycle handlers, a production distributed quota/edge
@@ -112,7 +116,8 @@ must never be treated as identity, authorization, or tenant membership.
 The following remain blockers for any real value or private multi-tenant launch:
 
 - Production Human IdP, Credential provisioning, identity/authorization/audit
-  operations, completion of authenticated Tenant command composition, and a
+  transport adapters, completion of authenticated Tenant command composition,
+  and a
   reviewed production distributed quota/edge provider using ABUSE-001.
 - Production role assignment, named dual-control operators, break-glass
   custodians/review owner/notification delivery, and protected activation.

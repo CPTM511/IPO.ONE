@@ -137,3 +137,5 @@ export function createProblemDetails(error, { requestId }) {
 export function isValidRequestId(value) {
   return typeof value === "string" && REQUEST_ID_PATTERN.test(value);
 }
+
+export * from "./tenant-protocol.js";

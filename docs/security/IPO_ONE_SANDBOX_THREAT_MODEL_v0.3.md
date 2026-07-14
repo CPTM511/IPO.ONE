@@ -4,7 +4,8 @@ Version: v0.3
 Date: 2026-07-12
 Status: Repository, container, local non-funds Tenant/RLS/authentication/
 authorization/approval/resource-admission controls, limited local authenticated
-durable composition, and hosted public-sandbox edge implemented; public Tenant
+durable composition, closed local Tenant protocol conformance, and hosted
+public-sandbox edge implemented; public Tenant
 routing, private data, real value, independent review, and named response
 ownership remain separate security and operations decisions
 
@@ -12,7 +13,8 @@ ownership remain separate security and operations decisions
 
 This model covers the repository's no-real-funds Node.js public sandbox, static
 control plane, OpenAPI contract, JavaScript SDK, in-memory demo state, sandbox
-Rail adapter, and isolated PostgreSQL event-runtime and Tenant Gateway tests.
+Rail adapter, closed local Tenant request/result/catalog contracts, and isolated
+PostgreSQL event-runtime and Tenant Gateway tests.
 
 The claim is deliberately bounded: the sandbox is hardened and adversarially
 tested for its declared demo use. It is not claimed to be invulnerable, formally
@@ -31,6 +33,7 @@ for real funds, credentials, KYC/PII, legal agreements, or financial decisions.
 | Repository and CI | Dependencies must be locked, CI permissions minimal, and third-party actions pinned immutably. |
 | Public origin | Internet traffic must traverse the approved HTTPS edge and cannot select an arbitrary application Host. |
 | Optional durable tenant state | One Tenant cannot read, mutate, reference, or block another Tenant's command, protocol, approval, or admission state. |
+| Durable protocol authority | Caller JSON cannot assert Tenant, Actor, Credential, role, authorization, or trusted network facts; malformed handler output cannot become durable state. |
 
 There are intentionally no production secrets, private keys, raw KYC records,
 custodied assets, or real payment credentials in the supported sandbox surface.
@@ -47,9 +50,11 @@ Untrusted browser / Agent client
   -> in-memory event, Evidence, Ledger, and sandbox Rail state
 
 Optional isolated test database
+  <- closed versioned caller request validated before trusted-context injection
   <- branded transaction-local Tenant Security Context
   <- non-owner application role + forced PostgreSQL RLS
   <- authenticated Tenant Command Gateway for reviewed local operations
+  <- closed operation result validated before durable commit
   <- atomic rate/capacity/admission/command-charge reservations
   <- parameterized repository and checksum-locked migrations
 
@@ -100,6 +105,7 @@ Those are deployment concerns and must be assessed separately.
 | Durable cross-tenant access or key collision | Immutable `tenant_id`, tenant-aware foreign keys and runtime identities, non-owner role verification, transaction-local context, `ENABLE` + `FORCE RLS`, `USING`/`WITH CHECK`, and write guards | Two-tenant least-privilege read/write/FK/key-reuse matrix, pooled context cleanup, and full catalog coverage assertion |
 | Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; durable Agent Subject/Mandate baselines loaded under Tenant-and-kind locks; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, stale/absent-counter recovery, at-cap valid/missing resource-blind denial, bounded eviction, and source leakage assertions |
 | Authenticated command authority drift | One serializable Gateway transaction locks admission and live authorization facts and atomically commits audit, Event, Evidence, outbox, projection, authorization-resource transition, idempotent response, and retained capacity | Two-Tenant and same-Tenant denial, concurrent Membership/Subject mutation, nonce/revocation races, replay after resource closure, protective revocation under inactive Subject/Principal state, bounded Mandate reads, append-only tamper, and reconciliation tests |
+| Tenant protocol/schema drift or mass assignment | Closed per-operation request/result schemas; exact schema versions; trusted auth/network context outside caller JSON; result validation before commit; catalog parity across handlers, AuthZ, ABUSE policy, fixtures, and public-server isolation | Valid/invalid Human+Agent fixtures, mutation-free validator tests, pre-admission rejection with zero audit/admission effects, malicious handler-result rollback, replay validation, and repository conformance gate |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
 | Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
 | Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
@@ -123,8 +129,9 @@ The following are known and intentional blockers, not hidden launch claims:
    dual control, break glass, or authenticated resource admission. The separate
    local Gateway currently composes only Agent Subject creation, unsigned draft
    Mandate create/read/revoke, and Agent self-read operations; it is not
-   reachable from the anonymous public API and is not a production identity or
-   executable-authority claim.
+   reachable from the anonymous public API. Its API-002 catalog enables only
+   local in-process use; no authenticated HTTP/MCP/A2A transport is implied, and
+   it is not a production identity or executable-authority claim.
 4. Public demo state is in memory and is lost on restart. PostgreSQL Rail,
    normalized core, reconciliation, approval/break-glass, admission, and limited
    Tenant Gateway composition have recovery evidence but are not public routes.

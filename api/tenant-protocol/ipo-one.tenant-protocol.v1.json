@@ -1,0 +1,97 @@
+{
+  "protocol": "IPO.ONE",
+  "protocolVersion": "tenant_protocol.v1",
+  "maturity": "local_non_funds",
+  "availability": {
+    "enabledTransports": ["local_in_process"],
+    "publicEndpointEnabled": false,
+    "authenticatedHttpEnabled": false,
+    "mcpA2aEnabled": false,
+    "authenticationContextSource": "trusted_transport_adapter",
+    "networkContextSource": "trusted_ingress_adapter"
+  },
+  "compatibility": {
+    "acceptedRequestSchemaVersions": ["tenant_protocol_request.v1"],
+    "emittedResultSchemaVersions": ["tenant_protocol_result.v1"],
+    "unknownFieldsRejected": true,
+    "unknownOperationsRejected": true,
+    "breakingChangeRequiresNewSchemaVersion": true,
+    "minimumProductionDeprecationDays": 90
+  },
+  "operations": [
+    {
+      "operationId": "pilotCreateAgentSubject",
+      "kind": "command",
+      "actorTypes": ["human"],
+      "resourceType": "subject",
+      "requiredCapability": "agent.create",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateDraftMandate",
+      "kind": "command",
+      "actorTypes": ["human"],
+      "resourceType": "subject",
+      "requiredCapability": "mandate.draft.create",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_draft_mandate_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadAgentSelf",
+      "kind": "query",
+      "actorTypes": ["agent"],
+      "resourceType": "subject",
+      "requiredCapability": "subject.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_view.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadMandate",
+      "kind": "query",
+      "actorTypes": ["human"],
+      "resourceType": "mandate",
+      "requiredCapability": "integration.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_mandate_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRevokeDraftMandate",
+      "kind": "command",
+      "actorTypes": ["human"],
+      "resourceType": "mandate",
+      "requiredCapability": "mandate.draft.revoke",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_draft_mandate_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    }
+  ],
+  "safety": {
+    "realFundsEnabled": false,
+    "productionCreditEnabled": false,
+    "humanCreditEnabled": false,
+    "mandateActivationEnabled": false,
+    "productionIdentityEnabled": false,
+    "rawPiiAllowed": false
+  },
+  "schemaVersion": "tenant_protocol_catalog.v1"
+}

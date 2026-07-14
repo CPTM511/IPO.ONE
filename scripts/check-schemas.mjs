@@ -22,6 +22,9 @@ const requiredFiles = new Set([
   "plugin-manifest.schema.json",
   "rail-descriptor.schema.json",
   "settlement-receipt.schema.json",
+  "tenant-protocol-catalog.schema.json",
+  "tenant-protocol-request.schema.json",
+  "tenant-protocol-result.schema.json",
   "transfer-intent.schema.json",
   "transfer-quote.schema.json"
 ]);
