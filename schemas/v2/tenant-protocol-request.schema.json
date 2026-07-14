@@ -16,6 +16,7 @@
       "enum": [
         "pilotCreateAgentSubject",
         "pilotCreateDraftMandate",
+        "pilotFreezeSubject",
         "pilotReadAgentSelf",
         "pilotReadMandate",
         "pilotRevokeDraftMandate"
@@ -32,7 +33,15 @@
     },
     "resource": { "$ref": "#/$defs/resourceReference" },
     "reasonCode": {
-      "enum": ["credential_compromise", "operator_request", "security_incident"]
+      "enum": [
+        "credential_compromise",
+        "operator_request",
+        "provider_failure",
+        "reconciliation_failure",
+        "risk_limit_breach",
+        "security_incident",
+        "stop_loss_triggered"
+      ]
     },
     "retryAttempt": { "type": "integer", "minimum": 0, "maximum": 16 },
     "schemaVersion": { "const": "tenant_protocol_request.v1" }
@@ -61,6 +70,26 @@
         "resource": { "$ref": "#/$defs/subjectResourceReference" }
       },
       "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Freeze Agent Subject",
+      "required": ["idempotencyKey", "resource", "reasonCode"],
+      "properties": {
+        "operationId": { "const": "pilotFreezeSubject" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" },
+        "reasonCode": {
+          "enum": [
+            "credential_compromise",
+            "operator_request",
+            "provider_failure",
+            "reconciliation_failure",
+            "risk_limit_breach",
+            "security_incident",
+            "stop_loss_triggered"
+          ]
+        }
+      }
     },
     {
       "title": "Read Agent Self",
@@ -98,7 +127,10 @@
       "properties": {
         "operationId": { "const": "pilotRevokeDraftMandate" },
         "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/mandateResourceReference" }
+        "resource": { "$ref": "#/$defs/mandateResourceReference" },
+        "reasonCode": {
+          "enum": ["credential_compromise", "operator_request", "security_incident"]
+        }
       }
     }
   ],

@@ -92,6 +92,35 @@ test("durable draft Mandate management can only reduce authority", async () => {
   assert.doesNotMatch(server, /pilotReadMandate|pilotRevokeDraftMandate|tenant-command-gateway/);
 });
 
+test("durable Subject freeze is protective, reason-coded, and private", async () => {
+  const [handlers, livePolicy, clients, catalogBody, server] = await Promise.all([
+    source("modules/tenant-command-gateway/src/subject-risk-handlers.js"),
+    source("modules/tenant-command-gateway/src/postgres-live-policy-adapter.js"),
+    source("modules/tenant-command-gateway/src/tenant-command-clients.js"),
+    source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json"),
+    source("apps/api/src/server.js")
+  ]);
+  for (const required of [
+    "pilotFreezeSubject",
+    "SubjectStatus.SUSPENDED",
+    "SubjectTransitions",
+    "PROTECTIVE_REASON_CODES",
+    "SUBJECT_STATUS_CHANGED"
+  ]) {
+    assert.match(handlers, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(livePolicy, /\["risk", "freeze"\]/);
+  assert.match(clients, /OperatorTenantCommandClient/);
+  assert.doesNotMatch(handlers, /SubjectStatus\.ACTIVE|unfreeze|approvalArtifact/i);
+  const catalog = JSON.parse(catalogBody);
+  const freeze = catalog.operations.find(({ operationId }) => operationId === "pilotFreezeSubject");
+  assert.deepEqual(freeze.actorTypes, ["risk_operator", "operations_operator"]);
+  assert.equal(freeze.quotaClass, "privileged");
+  assert.equal(freeze.fundsAuthority, false);
+  assert.equal(catalog.operations.some(({ operationId }) => operationId === "pilotUnfreezeSubject"), false);
+  assert.doesNotMatch(server, /pilotFreezeSubject|subject-risk-handlers|tenant-command-gateway/);
+});
+
 test("Tenant protocol contracts are closed, non-authoritative, and private", async () => {
   const [requestSchemaBody, resultSchemaBody, catalogBody, gateway, clients, server] = await Promise.all([
     source("schemas/v2/tenant-protocol-request.schema.json"),

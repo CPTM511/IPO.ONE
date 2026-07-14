@@ -9,10 +9,12 @@ import { createAuthenticationContext } from "../../authentication/src/authentica
 import {
   AgentTenantCommandClient,
   HumanTenantCommandClient,
+  OperatorTenantCommandClient,
   TenantCommandHandlerRegistry,
   createAgentSubjectCommandHandler,
   createDraftMandateCommandHandler,
   createTenantFoundationHandlers,
+  freezeAgentSubjectCommandHandler,
   normalizeDraftMandatePayload,
   readAgentSelfQueryHandler,
   readMandateQueryHandler,
@@ -21,6 +23,12 @@ import {
 import { CoreProjectionType } from "../../persistence/src/index.js";
 
 function authenticationContext(actorType, actorId) {
+  const humanActor = new Set([
+    ActorType.HUMAN,
+    ActorType.RISK_OPERATOR,
+    ActorType.OPERATIONS_OPERATOR,
+    ActorType.AUDITOR
+  ]).has(actorType);
   return createAuthenticationContext({
     tenantId: "tenant_gateway_test",
     actorId,
@@ -32,19 +40,27 @@ function authenticationContext(actorType, actorId) {
     capabilities: [],
     roles: [],
     tokenJtiHash: "token_jti_hash_gateway_test_00000000000000000000",
-    authenticationMethod: actorType === ActorType.HUMAN
+    authenticationMethod: humanActor
       ? ClientAuthenticationMethod.OIDC_PKCE_BFF
       : ClientAuthenticationMethod.PRIVATE_KEY_JWT,
-    senderConstraintMethod: actorType === ActorType.HUMAN
+    senderConstraintMethod: humanActor
       ? SenderConstraintMethod.HOST_SESSION
       : SenderConstraintMethod.MTLS,
-    authenticatedAt: "2026-07-14T00:00:00.000Z"
+    authenticatedAt: "2026-07-14T00:00:00.000Z",
+    ...(humanActor
+      ? {
+          authTime: "2026-07-14T00:00:00.000Z",
+          acr: "urn:ipo-one:local:phishing-resistant",
+          amr: ["webauthn"]
+        }
+      : {})
   });
 }
 
 test("handler registry is closed, unique, and distinguishes commands from queries", () => {
   const handlers = [
     createAgentSubjectCommandHandler(),
+    freezeAgentSubjectCommandHandler(),
     readAgentSelfQueryHandler(),
     readMandateQueryHandler(),
     revokeDraftMandateCommandHandler()
@@ -52,6 +68,7 @@ test("handler registry is closed, unique, and distinguishes commands from querie
   const registry = new TenantCommandHandlerRegistry(handlers);
   assert.deepEqual(registry.listOperationIds(), [
     "pilotCreateAgentSubject",
+    "pilotFreezeSubject",
     "pilotReadAgentSelf",
     "pilotReadMandate",
     "pilotRevokeDraftMandate"
@@ -73,10 +90,85 @@ test("foundation registry exposes only the reviewed durable operations", () => {
   assert.deepEqual(registry.listOperationIds(), [
     "pilotCreateAgentSubject",
     "pilotCreateDraftMandate",
+    "pilotFreezeSubject",
     "pilotReadAgentSelf",
     "pilotReadMandate",
     "pilotRevokeDraftMandate"
   ]);
+});
+
+test("protective Subject freeze plans one reason-coded terminal restriction", async () => {
+  const now = new Date("2026-07-14T02:00:00.000Z");
+  const subject = {
+    subjectId: "subject_freeze_alpha",
+    subjectHash: "0x" + "f".repeat(64),
+    subjectType: "agent",
+    displayName: "Freeze Test Agent",
+    primaryPrincipalId: "principal_freeze_alpha",
+    status: "active",
+    riskTier: "tier_2",
+    metadataRef: undefined,
+    prototypeOnly: false,
+    createdAt: "2026-07-14T00:00:00.000Z",
+    updatedAt: "2026-07-14T00:00:00.000Z",
+    schemaVersion: "subject.v1"
+  };
+  const handler = freezeAgentSubjectCommandHandler();
+  const coreRepository = {
+    async getProjectionStateInTransaction(_client, type, id, options) {
+      assert.equal(type, CoreProjectionType.SUBJECT);
+      assert.equal(id, subject.subjectId);
+      assert.deepEqual(options, { lock: true });
+      return { aggregateVersion: 7, value: subject };
+    }
+  };
+  const plan = await handler.plan({
+    client: {},
+    coreRepository,
+    payload: {},
+    authenticationContext: {
+      tenantId: "tenant_gateway_test",
+      actorId: "actor_risk_operator",
+      actorType: ActorType.RISK_OPERATOR
+    },
+    authorizationDecision: { resourceType: "subject", resourceId: subject.subjectId },
+    reasonCode: "risk_limit_breach",
+    now,
+    requestId: "request_freeze_subject_001",
+    correlationId: "correlation_freeze_subject_001"
+  });
+  assert.equal(plan.aggregateType, "subject");
+  assert.equal(plan.events[0].expectedVersion, 7);
+  assert.equal(plan.events[0].event.eventType, "subject_status_changed");
+  assert.equal(plan.events[0].event.payload.previousStatus, "active");
+  assert.equal(plan.events[0].event.payload.nextStatus, "suspended");
+  assert.equal(plan.events[0].event.payload.reasonCode, "risk_limit_breach");
+  assert.equal(plan.writes[0].value.status, "suspended");
+  assert.deepEqual(plan.response, {
+    subjectId: subject.subjectId,
+    subjectHash: subject.subjectHash,
+    previousStatus: "active",
+    status: "suspended",
+    reasonCode: "risk_limit_breach",
+    updatedAt: now.toISOString(),
+    schemaVersion: "tenant_agent_subject_frozen.v1"
+  });
+  assert.equal(Object.hasOwn(plan, "authorizationResourceTransition"), false);
+
+  await assert.rejects(
+    () => handler.plan({
+      client: {},
+      coreRepository,
+      payload: { unfreeze: true },
+      authenticationContext: { actorId: "actor_risk_operator" },
+      authorizationDecision: { resourceType: "subject", resourceId: subject.subjectId },
+      reasonCode: "operator_request",
+      now,
+      requestId: "request_freeze_subject_002",
+      correlationId: "correlation_freeze_subject_002"
+    }),
+    (error) => error.code === "invalid_tenant_command_payload"
+  );
 });
 
 test("Agent Subject plan binds Human controller and Agent subject without caller Tenant authority", async () => {
@@ -361,7 +453,7 @@ test("draft Mandate management reads exact state and plans terminal resource clo
   );
 });
 
-test("Human and Agent clients inject only their verified context into one protocol", async () => {
+test("Human, Operator, and Agent clients inject only their verified context into one protocol", async () => {
   const calls = [];
   let authenticationContextLookups = 0;
   let networkContextLookups = 0;
@@ -373,6 +465,7 @@ test("Human and Agent clients inject only their verified context into one protoc
   };
   const humanContext = authenticationContext(ActorType.HUMAN, "actor_human_owner");
   const agentContext = authenticationContext(ActorType.AGENT, "actor_agent_alpha");
+  const operatorContext = authenticationContext(ActorType.RISK_OPERATOR, "actor_risk_alpha");
   const human = new HumanTenantCommandClient({
     gateway,
     authenticationContextProvider: async () => {
@@ -387,6 +480,10 @@ test("Human and Agent clients inject only their verified context into one protoc
   const agent = new AgentTenantCommandClient({
     gateway,
     authenticationContextProvider: async () => agentContext
+  });
+  const operator = new OperatorTenantCommandClient({
+    gateway,
+    authenticationContextProvider: async () => operatorContext
   });
 
   await human.createAgentSubject({
@@ -425,6 +522,13 @@ test("Human and Agent clients inject only their verified context into one protoc
     requestId: "request_human_004",
     correlationId: "correlation_human_004"
   });
+  await operator.freezeSubject({
+    subjectId: "subject_alpha",
+    reasonCode: "risk_limit_breach",
+    idempotencyKey: "freeze-subject-alpha-0001",
+    requestId: "request_operator_001",
+    correlationId: "correlation_operator_001"
+  });
   await agent.getSelf({
     subjectId: "subject_alpha",
     requestId: "request_agent_001",
@@ -442,10 +546,14 @@ test("Human and Agent clients inject only their verified context into one protoc
   assert.equal(calls[3].operationId, "pilotRevokeDraftMandate");
   assert.equal(calls[3].reasonCode, "operator_request");
   assert.deepEqual(calls[3].payload, {});
-  assert.equal(calls[4].authenticationContext, agentContext);
-  assert.equal(calls[4].operationId, "pilotReadAgentSelf");
+  assert.equal(calls[4].authenticationContext, operatorContext);
+  assert.equal(calls[4].operationId, "pilotFreezeSubject");
+  assert.equal(calls[4].reasonCode, "risk_limit_breach");
+  assert.deepEqual(calls[4].payload, {});
+  assert.equal(calls[5].authenticationContext, agentContext);
+  assert.equal(calls[5].operationId, "pilotReadAgentSelf");
   assert.equal(Object.hasOwn(calls[0], "tenantId"), false);
-  assert.equal(Object.hasOwn(calls[4], "actorId"), false);
+  assert.equal(Object.hasOwn(calls[5], "actorId"), false);
   assert.equal(calls.every((call) => call.schemaVersion === "tenant_protocol_request.v1"), true);
   assert.equal(authenticationContextLookups, 4);
   assert.equal(networkContextLookups, 4);
@@ -463,5 +571,5 @@ test("Human and Agent clients inject only their verified context into one protoc
     (error) => error.code === "invalid_tenant_protocol_request"
   );
   assert.equal(authenticationContextLookups, lookupsBeforeInvalidRequest);
-  assert.equal(calls.length, 5);
+  assert.equal(calls.length, 6);
 });

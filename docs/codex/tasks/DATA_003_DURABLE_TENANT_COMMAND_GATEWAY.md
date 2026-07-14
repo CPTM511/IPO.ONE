@@ -2,9 +2,10 @@
 
 Status: In progress for the SECURITY-001 local non-funds boundary. The durable
 transaction foundation, Human Agent-Subject creation, Human-controlled draft
-Mandate creation, and bounded Agent self-read are implemented and verified.
-Remaining Agent Lockbox, worker, approval, and administrative handlers are not
-yet composed. No public route or deployment is approved.
+Mandate creation, bounded Agent self-read, and protective Agent Subject freeze
+are implemented and verified. Remaining Agent Lockbox, worker, approval,
+unfreeze/limit, and administrative handlers are not yet composed. No public
+route or deployment is approved.
 
 ## Context
 
@@ -56,13 +57,13 @@ API would turn a safe demo into shared unauthenticated customer state.
   the legacy standalone transaction API remains compatible.
 - Exact payload hashes now bind authorization decisions, revalidation, and
   approval command hashes.
-- Human and Agent protocol clients share one closed handler registry. The
-  reviewed operations implement `pilotCreateAgentSubject`,
+- Human, Operator, and Agent protocol clients share one closed handler
+  registry. The reviewed operations implement `pilotCreateAgentSubject`,
   `pilotCreateDraftMandate`, `pilotReadMandate`,
-  `pilotRevokeDraftMandate`, and `pilotReadAgentSelf`.
+  `pilotRevokeDraftMandate`, `pilotReadAgentSelf`, and `pilotFreezeSubject`.
 - API-002 publishes closed `tenant_protocol_request.v1`,
   `tenant_protocol_result.v1`, and `tenant_protocol_catalog.v1` contracts for
-  exactly those five operations. Caller validation precedes trusted AuthN/
+  exactly those six operations. Caller validation precedes trusted AuthN/
   network-context injection and admission; result validation precedes command
   commit. The request schema version is part of exact command identity.
 - Repository conformance proves catalog parity with handlers, authorization,
@@ -79,6 +80,10 @@ API would turn a safe demo into shared unauthenticated customer state.
   Subject/Principal state, conflicting reuse, persistent-capacity boundary,
   denial-only audit, append-only tamper, bounded-read, and reconciliation tests
   pass.
+- DATA-003C composes `pilotFreezeSubject` for Risk/Operations Operators with
+  strong recent MFA, a reviewed protective reason, privileged admission,
+  row-locked live state, atomic Event/Evidence/projection/audit completion,
+  exact replay, Agent visibility, and concurrent single-transition proof.
 - ADR-022 records transaction ownership, replay ordering, advisory/row lock,
   and public-sandbox isolation decisions.
 
@@ -88,8 +93,8 @@ API would turn a safe demo into shared unauthenticated customer state.
   binding setup under AUTH-002.
 - Agent credit request, allowlisted spend, Lockbox revenue capture, automated
   repayment, and associated live-state adapters.
-- Worker, approval, protective risk, audit/export, and reconciliation command
-  handlers over the same Gateway protocol.
+- Worker, approval, unfreeze/limit risk, audit/export, and reconciliation
+  command handlers over the same Gateway protocol.
 - Complete two-Tenant negative coverage for each newly composed operation.
 - Deployment-specific IdP, Credential persistence/provisioning, least-
   privilege role manifest, retention jobs, alerting, and edge controls.

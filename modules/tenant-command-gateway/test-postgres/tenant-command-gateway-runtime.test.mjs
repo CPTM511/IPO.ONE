@@ -26,6 +26,7 @@ import { migrateUp } from "../../../scripts/migrate.mjs";
 import {
   AgentTenantCommandClient,
   HumanTenantCommandClient,
+  OperatorTenantCommandClient,
   TenantCommandGateway,
   TenantCommandHandlerRegistry,
   createPostgresTenantLivePolicyAdapter,
@@ -141,6 +142,13 @@ function agentClient(runtime, authenticationContext) {
   });
 }
 
+function operatorClient(runtime, authenticationContext) {
+  return new OperatorTenantCommandClient({
+    gateway: runtime,
+    authenticationContextProvider: async () => authenticationContext
+  });
+}
+
 function createCommand({ subjectActorId, displayName, idempotencyKey }) {
   return {
     payload: { subjectActorId, displayName, jurisdiction: "US" },
@@ -177,6 +185,16 @@ function createMandateCommand({ subjectId, idempotencyKey, nonce = `${idempotenc
 function revokeMandateCommand({ mandateId, idempotencyKey, reasonCode = "operator_request" }) {
   return {
     mandateId,
+    reasonCode,
+    idempotencyKey,
+    requestId: `request_${idempotencyKey}`,
+    correlationId: `correlation_${idempotencyKey}`
+  };
+}
+
+function freezeSubjectCommand({ subjectId, idempotencyKey, reasonCode = "risk_limit_breach" }) {
+  return {
+    subjectId,
     reasonCode,
     idempotencyKey,
     requestId: `request_${idempotencyKey}`,
@@ -297,6 +315,22 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         ],
         now: IDENTITY_NOW
       }),
+      tenantOneRisk: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_risk_${RUN_ID}`,
+        actorType: ActorType.RISK_OPERATOR,
+        roleBundle: RoleBundle.RISK_OPERATOR,
+        capabilities: [PilotCapability.RISK_FREEZE],
+        now: IDENTITY_NOW
+      }),
+      tenantOneOperations: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_operations_${RUN_ID}`,
+        actorType: ActorType.OPERATIONS_OPERATOR,
+        roleBundle: RoleBundle.OPERATIONS_OPERATOR,
+        capabilities: [PilotCapability.RISK_FREEZE],
+        now: IDENTITY_NOW
+      }),
       tenantTwoHuman: harness.addIdentity({
         tenantId: TENANT_TWO,
         actorId: `actor_gateway_two_human_${RUN_ID}`,
@@ -317,16 +351,27 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         roleBundle: RoleBundle.AGENT_RUNTIME,
         capabilities: [PilotCapability.SUBJECT_READ_SELF],
         now: IDENTITY_NOW
+      }),
+      tenantTwoRisk: harness.addIdentity({
+        tenantId: TENANT_TWO,
+        actorId: `actor_gateway_two_risk_${RUN_ID}`,
+        actorType: ActorType.RISK_OPERATOR,
+        roleBundle: RoleBundle.RISK_OPERATOR,
+        capabilities: [PilotCapability.RISK_FREEZE],
+        now: IDENTITY_NOW
       })
     };
     await seedTenant(ownerPool, TENANT_ONE);
     await seedTenant(ownerPool, TENANT_TWO);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneHuman);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneOtherHuman);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneRisk);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneOperations);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneAgent, {
       controllerActorId: identities.tenantOneHuman.authenticationContext.actorId
     });
     await seedIdentity(ownerPool, TENANT_TWO, identities.tenantTwoHuman);
+    await seedIdentity(ownerPool, TENANT_TWO, identities.tenantTwoRisk);
     await seedIdentity(ownerPool, TENANT_TWO, identities.tenantTwoAgent, {
       controllerActorId: identities.tenantTwoHuman.authenticationContext.actorId
     });
@@ -380,8 +425,14 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     const tenantOneHuman = humanClient(runtime, identities.tenantOneHuman.authenticationContext);
     const tenantOneOtherHuman = humanClient(runtime, identities.tenantOneOtherHuman.authenticationContext);
     const tenantOneAgent = agentClient(runtime, identities.tenantOneAgent.authenticationContext);
+    const tenantOneRisk = operatorClient(runtime, identities.tenantOneRisk.authenticationContext);
+    const tenantOneOperations = operatorClient(
+      runtime,
+      identities.tenantOneOperations.authenticationContext
+    );
     const tenantTwoHuman = humanClient(runtime, identities.tenantTwoHuman.authenticationContext);
     const tenantTwoAgent = agentClient(runtime, identities.tenantTwoAgent.authenticationContext);
+    const tenantTwoRisk = operatorClient(runtime, identities.tenantTwoRisk.authenticationContext);
     const firstCommand = createCommand({
       subjectActorId: identities.tenantOneAgent.authenticationContext.actorId,
       displayName: "Tenant One Treasury Agent",
@@ -945,6 +996,157 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         nextStatus: "active",
         idempotencyKey: `restore-principal-${RUN_ID}-0001`
       });
+    });
+
+    await t.test("cross-Tenant, Developer, and Agent Subject freeze attempts fail closed", async () => {
+      const state = () => ownerPool.query(
+        "SELECT status FROM subjects WHERE tenant_id = $1 AND id = $2",
+        [TENANT_ONE, tenantOneSubjectId]
+      );
+      const before = await state();
+      await assert.rejects(
+        () => tenantTwoRisk.freezeSubject(freezeSubjectCommand({
+          subjectId: tenantOneSubjectId,
+          idempotencyKey: `cross-tenant-freeze-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      for (const [identity, label] of [
+        [identities.tenantOneHuman, "developer"],
+        [identities.tenantOneAgent, "agent"]
+      ]) {
+        await assert.rejects(
+          () => runtime.execute({
+            authenticationContext: identity.authenticationContext,
+            operationId: "pilotFreezeSubject",
+            payload: {},
+            resource: { resourceType: "subject", resourceId: tenantOneSubjectId },
+            reasonCode: "risk_limit_breach",
+            idempotencyKey: `${label}-freeze-${RUN_ID}-0001`,
+            requestId: `request-${label}-freeze-${RUN_ID}`,
+            correlationId: `correlation-${label}-freeze-${RUN_ID}`,
+            schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
+          }),
+          (error) => error.code === "authorization_denied"
+        );
+      }
+      const after = await state();
+      assert.deepEqual(after.rows, before.rows);
+    });
+
+    await t.test("protective Subject freeze is durable, exactly replayable, and visible to the Agent", async () => {
+      const created = await tenantOneHuman.createAgentSubject(createCommand({
+        subjectActorId: identities.tenantOneAgent.authenticationContext.actorId,
+        displayName: "Protective Freeze Agent",
+        idempotencyKey: `create-agent-protective-freeze-${RUN_ID}-0001`
+      }));
+      const command = freezeSubjectCommand({
+        subjectId: created.response.subjectId,
+        idempotencyKey: `freeze-subject-${RUN_ID}-0001`,
+        reasonCode: "security_incident"
+      });
+      const frozen = await tenantOneRisk.freezeSubject(command);
+      assert.equal(frozen.replayed, false);
+      assert.equal(frozen.response.previousStatus, "pending");
+      assert.equal(frozen.response.status, "suspended");
+      assert.equal(frozen.response.reasonCode, "security_incident");
+
+      const replay = await tenantOneRisk.freezeSubject(command);
+      assert.equal(replay.replayed, true);
+      assert.deepEqual(replay.response, frozen.response);
+
+      const self = await tenantOneAgent.getSelf({
+        subjectId: created.response.subjectId,
+        requestId: `request-agent-read-frozen-${RUN_ID}`,
+        correlationId: `correlation-agent-read-frozen-${RUN_ID}`
+      });
+      assert.equal(self.response.subject.status, "suspended");
+      await assert.rejects(
+        () => tenantOneHuman.createDraftMandate(createMandateCommand({
+          subjectId: created.response.subjectId,
+          idempotencyKey: `mandate-frozen-subject-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneOperations.freezeSubject(freezeSubjectCommand({
+          subjectId: created.response.subjectId,
+          idempotencyKey: `fresh-freeze-subject-${RUN_ID}-0001`
+        })),
+        (error) => error.code === "authorization_denied"
+      );
+
+      const durable = await ownerPool.query(
+        `SELECT
+           (SELECT status FROM subjects WHERE tenant_id = $1 AND id = $2) AS status,
+           (SELECT count(*)::int FROM domain_events
+             WHERE tenant_id = $1 AND aggregate_type = 'subject' AND aggregate_id = $2
+               AND event_type = 'subject_status_changed') AS freeze_events,
+           (SELECT count(*)::int
+              FROM tenant_command_executions t
+              JOIN domain_events e
+                ON e.tenant_id = t.tenant_id
+               AND e.id = t.business_event_id
+             WHERE t.tenant_id = $1 AND t.operation_id = 'pilotFreezeSubject'
+               AND e.aggregate_id = $2) AS executions`,
+        [TENANT_ONE, created.response.subjectId]
+      );
+      assert.deepEqual(durable.rows, [{ status: "suspended", freeze_events: 1, executions: 1 }]);
+      const audits = await ownerPool.query(
+        `SELECT authorization_decision, reason_code
+           FROM authorization_audit_events
+          WHERE tenant_id = $1 AND request_id = $2
+          ORDER BY occurred_at, id`,
+        [TENANT_ONE, command.requestId]
+      );
+      assert.equal(audits.rowCount, 2);
+      assert.equal(audits.rows.every((row) => (
+        row.authorization_decision === "allow" && row.reason_code === "security_incident"
+      )), true);
+    });
+
+    await t.test("concurrent protective freezes commit exactly one Subject transition", async () => {
+      const created = await tenantOneHuman.createAgentSubject(createCommand({
+        subjectActorId: identities.tenantOneAgent.authenticationContext.actorId,
+        displayName: "Concurrent Freeze Agent",
+        idempotencyKey: `create-agent-concurrent-freeze-${RUN_ID}-0001`
+      }));
+      const settled = await Promise.allSettled([
+        tenantOneRisk.freezeSubject(freezeSubjectCommand({
+          subjectId: created.response.subjectId,
+          idempotencyKey: `concurrent-freeze-risk-${RUN_ID}-0001`,
+          reasonCode: "risk_limit_breach"
+        })),
+        tenantOneOperations.freezeSubject(freezeSubjectCommand({
+          subjectId: created.response.subjectId,
+          idempotencyKey: `concurrent-freeze-operations-${RUN_ID}-0001`,
+          reasonCode: "provider_failure"
+        }))
+      ]);
+      const fulfilled = settled.filter(({ status }) => status === "fulfilled");
+      const rejected = settled.filter(({ status }) => status === "rejected");
+      assert.equal(fulfilled.length, 1);
+      assert.equal(fulfilled[0].value.response.status, "suspended");
+      assert.equal(rejected.length, 1);
+      assert.equal([
+        "authorization_denied",
+        "request_admission_unavailable",
+        "stale_aggregate_version"
+      ].includes(rejected[0].reason?.code), true);
+      const state = await ownerPool.query(
+        `SELECT s.status,
+                count(e.id)::int AS freeze_events
+           FROM subjects s
+           JOIN domain_events e
+             ON e.tenant_id = s.tenant_id
+            AND e.aggregate_type = 'subject'
+            AND e.aggregate_id = s.id
+            AND e.event_type = 'subject_status_changed'
+          WHERE s.tenant_id = $1 AND s.id = $2
+          GROUP BY s.status`,
+        [TENANT_ONE, created.response.subjectId]
+      );
+      assert.deepEqual(state.rows, [{ status: "suspended", freeze_events: 1 }]);
     });
 
     await t.test("protective draft revocation survives suspended Subject and inactive Principal state", async () => {
