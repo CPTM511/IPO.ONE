@@ -12,6 +12,11 @@ const HUMAN_CLIENT_ACTOR_TYPES = new Set([
   ActorType.AUDITOR
 ]);
 
+const OPERATOR_CLIENT_ACTOR_TYPES = new Set([
+  ActorType.RISK_OPERATOR,
+  ActorType.OPERATIONS_OPERATOR
+]);
+
 class TenantProtocolClient {
   #allowedActorTypes;
 
@@ -128,6 +133,30 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
       operationId: "pilotReadAgentSelf",
       payload: {},
       resource: { resourceType: "subject", resourceId: subjectId },
+      requestId,
+      correlationId
+    });
+  }
+}
+
+export class OperatorTenantCommandClient extends TenantProtocolClient {
+  constructor(input) {
+    super({ ...input, allowedActorTypes: OPERATOR_CLIENT_ACTOR_TYPES });
+  }
+
+  async freezeSubject({
+    subjectId,
+    reasonCode,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotFreezeSubject",
+      payload: {},
+      resource: { resourceType: "subject", resourceId: subjectId },
+      reasonCode,
+      idempotencyKey,
       requestId,
       correlationId
     });

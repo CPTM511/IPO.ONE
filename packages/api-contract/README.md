@@ -6,11 +6,12 @@ Defines two authority-free API contract layers:
   for the anonymous public sandbox; and
 - the closed, transport-neutral `tenant_protocol_request.v1`,
   `tenant_protocol_result.v1`, and `tenant_protocol_catalog.v1` contracts for
-  the five reviewed local durable Tenant operations.
+  the six reviewed local durable Tenant operations, including the one-way
+  protective Agent Subject freeze.
 
 The Tenant protocol validator uses pinned Ajv with strict schemas, no type
-coercion, defaults, additional-field removal, or remote schema loading. Human
-and Agent clients validate caller data before a trusted adapter injects
+coercion, defaults, additional-field removal, or remote schema loading. Human,
+Operator, and Agent clients validate caller data before a trusted adapter injects
 Authentication Context or network facts. The Gateway validates results before
 a command can commit. The catalog and TypeScript declarations grant no
 authentication, authorization, tenant, billing, deployment, or fund-movement

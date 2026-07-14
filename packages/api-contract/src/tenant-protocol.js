@@ -68,6 +68,19 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotFreezeSubject",
+    kind: "command",
+    actorTypes: ["risk_operator", "operations_operator"],
+    resourceType: "subject",
+    requiredCapability: "risk.freeze",
+    idempotency: "required",
+    quotaClass: "privileged",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_agent_subject_frozen.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
     operationId: "pilotReadAgentSelf",
     kind: "query",
     actorTypes: ["agent"],

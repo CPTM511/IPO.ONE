@@ -36,6 +36,19 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotFreezeSubject",
+      "payload": {},
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_fixture"
+      },
+      "reasonCode": "risk_limit_breach",
+      "idempotencyKey": "fixture-freeze-subject-0001",
+      "requestId": "request-fixture-freeze-subject",
+      "correlationId": "correlation-fixture-freeze-subject",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotReadAgentSelf",
       "payload": {},
       "resource": {
@@ -190,6 +203,31 @@
         "correlationId": "correlation-invalid-provider-scope",
         "schemaVersion": "tenant_protocol_request.v1"
       }
+    },
+    {
+      "name": "freeze without protective reason",
+      "value": {
+        "operationId": "pilotFreezeSubject",
+        "payload": {},
+        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "idempotencyKey": "fixture-invalid-freeze-0001",
+        "requestId": "request-invalid-freeze-reason",
+        "correlationId": "correlation-invalid-freeze-reason",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "draft revocation with freeze-only reason",
+      "value": {
+        "operationId": "pilotRevokeDraftMandate",
+        "payload": {},
+        "resource": { "resourceType": "mandate", "resourceId": "mandate_fixture" },
+        "reasonCode": "risk_limit_breach",
+        "idempotencyKey": "fixture-invalid-revoke-reason-0001",
+        "requestId": "request-invalid-revoke-reason",
+        "correlationId": "correlation-invalid-revoke-reason",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
     }
   ],
   "validResults": [
@@ -221,6 +259,20 @@
         "validFrom": "2026-07-14T00:00:00.000Z",
         "expiresAt": "2027-01-14T00:00:00.000Z",
         "schemaVersion": "tenant_draft_mandate_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotFreezeSubject",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_fixture",
+        "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "previousStatus": "active",
+        "status": "suspended",
+        "reasonCode": "risk_limit_breach",
+        "updatedAt": "2026-07-14T01:00:00.000Z",
+        "schemaVersion": "tenant_agent_subject_frozen.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },
@@ -376,6 +428,23 @@
           "reasonCode": "operator_request",
           "updatedAt": "2026-07-14T01:00:00.000Z",
           "schemaVersion": "tenant_draft_mandate_revoked.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "freeze response grants active authority",
+      "value": {
+        "operationId": "pilotFreezeSubject",
+        "replayed": false,
+        "response": {
+          "subjectId": "subject_fixture",
+          "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "previousStatus": "pending",
+          "status": "active",
+          "reasonCode": "operator_request",
+          "updatedAt": "2026-07-14T01:00:00.000Z",
+          "schemaVersion": "tenant_agent_subject_frozen.v1"
         },
         "schemaVersion": "tenant_protocol_result.v1"
       }

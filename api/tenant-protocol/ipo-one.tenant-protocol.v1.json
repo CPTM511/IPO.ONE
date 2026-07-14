@@ -46,6 +46,19 @@
       "fundsAuthority": false
     },
     {
+      "operationId": "pilotFreezeSubject",
+      "kind": "command",
+      "actorTypes": ["risk_operator", "operations_operator"],
+      "resourceType": "subject",
+      "requiredCapability": "risk.freeze",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_frozen.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
       "operationId": "pilotReadAgentSelf",
       "kind": "query",
       "actorTypes": ["agent"],

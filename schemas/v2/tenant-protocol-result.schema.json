@@ -10,6 +10,7 @@
       "enum": [
         "pilotCreateAgentSubject",
         "pilotCreateDraftMandate",
+        "pilotFreezeSubject",
         "pilotReadAgentSelf",
         "pilotReadMandate",
         "pilotRevokeDraftMandate"
@@ -30,6 +31,12 @@
       "properties": {
         "operationId": { "const": "pilotCreateDraftMandate" },
         "response": { "$ref": "#/$defs/draftMandateCreated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotFreezeSubject" },
+        "response": { "$ref": "#/$defs/agentSubjectFrozen" }
       }
     },
     {
@@ -115,6 +122,38 @@
         "validFrom": { "$ref": "#/$defs/timestamp" },
         "expiresAt": { "$ref": "#/$defs/timestamp" },
         "schemaVersion": { "const": "tenant_draft_mandate_created.v1" }
+      }
+    },
+    "agentSubjectFrozen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectId",
+        "subjectHash",
+        "previousStatus",
+        "status",
+        "reasonCode",
+        "updatedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "previousStatus": { "enum": ["pending", "active"] },
+        "status": { "const": "suspended" },
+        "reasonCode": {
+          "enum": [
+            "credential_compromise",
+            "operator_request",
+            "provider_failure",
+            "reconciliation_failure",
+            "risk_limit_breach",
+            "security_incident",
+            "stop_loss_triggered"
+          ]
+        },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "tenant_agent_subject_frozen.v1" }
       }
     },
     "subject": {

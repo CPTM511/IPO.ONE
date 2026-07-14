@@ -1,6 +1,7 @@
 export * from "./agent-subject-handlers.js";
 export * from "./mandate-handlers.js";
 export * from "./postgres-live-policy-adapter.js";
+export * from "./subject-risk-handlers.js";
 export * from "./tenant-command-clients.js";
 export * from "./tenant-command-execution-store.js";
 export * from "./tenant-foundation-handlers.js";
