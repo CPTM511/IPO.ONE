@@ -30,6 +30,16 @@ Routes are limited to:
 - `GET /tenant/v1/catalog`;
 - `GET /tenant/v1/healthz`.
 
+An embedding application may additionally inject
+`createHumanAccessRouteHandler(...)`. It composes the reviewed Human OIDC/SIWE
+primitives at `/auth/v1/*`: provider discovery, OIDC initiation/callback,
+one-use wallet challenge/verification, and logout. The handler binds every OIDC
+transaction to one configured provider, accepts only fixed same-origin
+redirects, enforces Origin on wallet mutations, and serializes only Secure,
+HttpOnly, host-only cookies. It adds no signup, Tenant/Actor selection, role,
+Mandate, chain, or funds authority. The anonymous public sandbox does not inject
+this handler and continues to advertise authentication as disabled.
+
 For the local Human pilot, a composition may inject
 `createTenantWebAssetHandler()` into `createTenantHttpServer(...)`. This serves
 only the fixed IPO.ONE shell asset allowlist (`/`, `index.html`, JavaScript,

@@ -20,6 +20,40 @@ test("anonymous public sandbox has no durable Tenant Gateway import or database 
   assert.match(server, /createInteractiveDemo/);
 });
 
+test("commercial Human access stays provider-bound, same-origin, cookie-only, and private", async () => {
+  const [publicServer, accessRoutes, tenantTransport, loginStore, humanBff] = await Promise.all([
+    source("apps/api/src/server.js"),
+    source("apps/tenant-api/src/human-access-routes.js"),
+    source("apps/tenant-api/src/tenant-http-adapter.js"),
+    source("modules/authentication/src/login-transaction-store.js"),
+    source("modules/authentication/src/human-bff.js")
+  ]);
+  assert.match(publicServer, /enabled: false/);
+  assert.match(publicServer, /walletAuthentication: false/);
+  assert.doesNotMatch(publicServer, /wallet\/challenge|wallet\/verify|HumanOidcBff|HumanWalletBff/);
+  for (const required of [
+    "csrf_origin_rejected",
+    "parseStrictJson",
+    "TRANSACTION_COOKIE_NAME",
+    "SESSION_COOKIE_NAME",
+    "HttpOnly",
+    "SameSite",
+    "providerId",
+    "Authentication proves presence"
+  ]) {
+    assert.match(accessRoutes, new RegExp(required));
+  }
+  assert.match(accessRoutes, /config\.bff\.providerId !== checkedProviderId/);
+  assert.match(accessRoutes, /cookie\.domain !== undefined/);
+  assert.match(accessRoutes, /cookie\.secure !== true/);
+  assert.doesNotMatch(accessRoutes, /accessToken|refreshToken|clientSecret|localStorage|sessionStorage/);
+  assert.match(loginStore, /providerId: assertSafeIdentifier/);
+  assert.match(loginStore, /transaction\.providerId !== assertSafeIdentifier/);
+  assert.match(humanBff, /this\.providerId = assertSafeIdentifier/);
+  assert.match(tenantTransport, /host !== TENANT_HTTP_HOST/);
+  assert.match(tenantTransport, /environment === "production"/);
+});
+
 test("Gateway derives authority from Authentication Context and binds exact payload", async () => {
   const gateway = await source("modules/tenant-command-gateway/src/tenant-command-gateway.js");
   for (const required of [

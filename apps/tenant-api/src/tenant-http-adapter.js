@@ -94,6 +94,7 @@ export function createTenantHttpServer({
   credentialSource = "local_test",
   requestTimeoutMs = REQUEST_TIMEOUT_MS,
   maximumConcurrency = MAX_CONCURRENCY,
+  serveAuthentication,
   serveWebAsset
 }) {
   assertConfig({ host, trustProxy, environment, credentialSource });
@@ -104,6 +105,7 @@ export function createTenantHttpServer({
     !Number.isSafeInteger(port) || port < 0 || port > 65_535 ||
     !Number.isSafeInteger(requestTimeoutMs) || requestTimeoutMs < 100 || requestTimeoutMs > REQUEST_TIMEOUT_MS ||
     !Number.isSafeInteger(maximumConcurrency) || maximumConcurrency < 1 || maximumConcurrency > MAX_CONCURRENCY ||
+    (serveAuthentication !== undefined && typeof serveAuthentication !== "function") ||
     (serveWebAsset !== undefined && typeof serveWebAsset !== "function")
   ) {
     throw new DomainError("invalid_tenant_transport_config", "Tenant HTTP adapter configuration is invalid");
@@ -127,6 +129,12 @@ export function createTenantHttpServer({
           public: false,
           schemaVersion: "tenant_transport_health.v1"
         }, requestId);
+      }
+      if (
+        serveAuthentication &&
+        await serveAuthentication({ request, response, url, requestId })
+      ) {
+        return;
       }
       if (request.method === "GET" && url.pathname === TENANT_HTTP_ROUTES.catalog) {
         await resolveAuthenticationContext({

@@ -358,6 +358,36 @@ test("login transactions are one-time and reject state, redirect, nonce, and tok
   );
 });
 
+test("login transactions are bound to one configured OIDC provider", async () => {
+  const referenceHasher = createReferenceHasher(randomBytes(32));
+  const transactionStore = new InMemoryLoginTransactionStore({ referenceHasher });
+  const transaction = transactionStore.create({
+    redirectUri: REDIRECT_URI,
+    providerId: "google",
+    now: NOW
+  });
+  assert.throws(
+    () => transactionStore.consume({
+      handle: transaction.cookie.value,
+      state: transaction.state,
+      redirectUri: REDIRECT_URI,
+      providerId: "email",
+      now: NOW
+    }),
+    (error) => error.code === "oidc_transaction_rejected"
+  );
+  assert.throws(
+    () => transactionStore.consume({
+      handle: transaction.cookie.value,
+      state: transaction.state,
+      redirectUri: REDIRECT_URI,
+      providerId: "google",
+      now: NOW
+    }),
+    (error) => error.code === "oidc_transaction_rejected"
+  );
+});
+
 test("OIDC authorization code exchange has a bounded wait", async () => {
   const fixture = await createFixture({ exchangeTimeoutMs: 100, hangExchange: true });
   const flow = await fixture.beginAndIssue();

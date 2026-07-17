@@ -12,6 +12,7 @@ const CONFIG_KEYS = new Set([
   "humanBff",
   "machineAuthenticator",
   "port",
+  "serveAuthentication",
   "sessionHandleProvider"
 ]);
 
@@ -42,6 +43,7 @@ export function createTenantPilotHost(input) {
     createNetworkContext,
     csrfTokenProvider,
     getTrustedMtlsEvidence,
+    serveAuthentication,
     sessionHandleProvider,
     clock,
     port = 0
@@ -70,6 +72,7 @@ export function createTenantPilotHost(input) {
     trustProxy: false,
     environment: "development",
     credentialSource: "local_test",
+    serveAuthentication,
     serveWebAsset: createTenantWebAssetHandler({
       csrfTokenProvider,
       sessionHandleProvider

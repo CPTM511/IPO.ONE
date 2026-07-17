@@ -110,6 +110,7 @@ export class HumanOidcBff {
     sessionStore,
     credentialRegistry,
     referenceHasher,
+    providerId = "oidc",
     idTokenProfile = "ipo_one_claims",
     tenantId,
     allowedAlgorithms = ["ES256"],
@@ -156,6 +157,7 @@ export class HumanOidcBff {
     this.sessionStore = sessionStore;
     this.credentialRegistry = credentialRegistry;
     this.referenceHasher = referenceHasher;
+    this.providerId = assertSafeIdentifier("providerId", providerId);
     if (!ID_TOKEN_PROFILES.has(idTokenProfile)) {
       throw authenticationError("invalid_authentication_configuration", "ID token profile is invalid");
     }
@@ -179,7 +181,11 @@ export class HumanOidcBff {
 
   beginLogin({ redirectUri, now = new Date() }) {
     const normalizedRedirect = this.#redirectUri(redirectUri);
-    const transaction = this.transactionStore.create({ redirectUri: normalizedRedirect, now });
+    const transaction = this.transactionStore.create({
+      redirectUri: normalizedRedirect,
+      providerId: this.providerId,
+      now
+    });
     const authorizationUrl = new URL(this.authorizationEndpoint);
     authorizationUrl.searchParams.set("response_type", "code");
     authorizationUrl.searchParams.set("client_id", this.clientId);
@@ -202,6 +208,7 @@ export class HumanOidcBff {
       handle: transactionHandle,
       state,
       redirectUri: normalizedRedirect,
+      providerId: this.providerId,
       now
     });
     const authorizationCode = assertBoundedString("authorization code", code, { maximum: 4_096 });
