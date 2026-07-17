@@ -41,6 +41,21 @@ const classifications = [
     operationId: "workerExecuteProjectionRepair",
     classification: ApprovalRequirement.DUAL_CONTROL,
     requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]
+  },
+  {
+    operationId: "pilotRestructureSandboxObligation",
+    classification: ApprovalRequirement.DUAL_CONTROL,
+    requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]
+  },
+  {
+    operationId: "pilotRepurchaseSandboxObligation",
+    classification: ApprovalRequirement.DUAL_CONTROL,
+    requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]
+  },
+  {
+    operationId: "pilotWriteOffSandboxObligation",
+    classification: ApprovalRequirement.DUAL_CONTROL,
+    requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]
   }
 ];
 

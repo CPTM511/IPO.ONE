@@ -60,6 +60,30 @@ const REQUIRED_HUMAN_CLAIMS = Object.freeze([
   "acr",
   "amr"
 ]);
+const STANDARD_OIDC_CLAIMS = Object.freeze([
+  "iss",
+  "sub",
+  "aud",
+  "exp",
+  "iat",
+  "nbf",
+  "jti",
+  "nonce",
+  "azp",
+  "at_hash",
+  "auth_time",
+  "acr",
+  "amr"
+]);
+const STANDARD_OIDC_REQUIRED_CLAIMS = Object.freeze([
+  "iss",
+  "sub",
+  "aud",
+  "exp",
+  "iat",
+  "nonce"
+]);
+const ID_TOKEN_PROFILES = new Set(["ipo_one_claims", "standard_oidc"]);
 
 function exactHttpsEndpoint(name, value) {
   let parsed;
@@ -86,6 +110,8 @@ export class HumanOidcBff {
     sessionStore,
     credentialRegistry,
     referenceHasher,
+    idTokenProfile = "ipo_one_claims",
+    tenantId,
     allowedAlgorithms = ["ES256"],
     maximumIdTokenLifetimeSeconds = 600,
     clockToleranceSeconds = 30,
@@ -130,6 +156,13 @@ export class HumanOidcBff {
     this.sessionStore = sessionStore;
     this.credentialRegistry = credentialRegistry;
     this.referenceHasher = referenceHasher;
+    if (!ID_TOKEN_PROFILES.has(idTokenProfile)) {
+      throw authenticationError("invalid_authentication_configuration", "ID token profile is invalid");
+    }
+    this.idTokenProfile = idTokenProfile;
+    this.tenantId = idTokenProfile === "standard_oidc"
+      ? assertSafeIdentifier("tenantId", tenantId)
+      : undefined;
     this.allowedAlgorithms = Object.freeze([...allowedAlgorithms]);
     if (
       resolver.issuer !== issuer ||
@@ -196,6 +229,7 @@ export class HumanOidcBff {
     if (!exchange || typeof exchange !== "object" || Array.isArray(exchange) || Object.keys(exchange).some((key) => key !== "idToken")) {
       throw authenticationError("oidc_token_response_rejected", "OIDC token response is invalid");
     }
+    const standardProfile = this.idTokenProfile === "standard_oidc";
     const verified = await verifyPinnedJwt({
       token: exchange.idToken,
       resolver: this.resolver,
@@ -203,8 +237,10 @@ export class HumanOidcBff {
       audience: this.clientId,
       allowedAlgorithms: this.allowedAlgorithms,
       expectedType: "JWT",
-      allowedClaimFields: HUMAN_ID_TOKEN_CLAIMS,
-      requiredClaims: REQUIRED_HUMAN_CLAIMS,
+      allowedClaimFields: standardProfile ? STANDARD_OIDC_CLAIMS : HUMAN_ID_TOKEN_CLAIMS,
+      requiredClaims: standardProfile ? STANDARD_OIDC_REQUIRED_CLAIMS : REQUIRED_HUMAN_CLAIMS,
+      requiredNumericDateClaims: standardProfile ? ["iat", "exp"] : undefined,
+      requireJti: !standardProfile,
       maximumLifetimeSeconds: this.maximumIdTokenLifetimeSeconds,
       clockToleranceSeconds: this.clockToleranceSeconds,
       now
@@ -213,14 +249,13 @@ export class HumanOidcBff {
     if (!constantTimeEqual(claims.nonce, transaction.nonce)) {
       throw authenticationError("oidc_nonce_rejected", "OIDC nonce validation failed");
     }
-    const actorType = assertSafeIdentifier("actor_type", claims.actor_type);
-    if (!HUMAN_ACTOR_TYPES.has(actorType)) {
-      throw authenticationError("authentication_actor_type_rejected", "Human actor type is not allowed");
-    }
-    const tenantId = assertSafeIdentifier("tenant_id", claims.tenant_id);
-    const clientId = assertSafeIdentifier("client_id", claims.client_id);
-    const policyVersion = assertSafeIdentifier("policy_version", claims.policy_version);
-    if (clientId !== this.clientId) {
+    const tenantId = standardProfile
+      ? this.tenantId
+      : assertSafeIdentifier("tenant_id", claims.tenant_id);
+    const clientId = standardProfile
+      ? this.clientId
+      : assertSafeIdentifier("client_id", claims.client_id);
+    if (!standardProfile && clientId !== this.clientId) {
       throw authenticationError("authentication_binding_rejected", "ID token is not bound to this client");
     }
     const credential = this.credentialRegistry.findBySubject({
@@ -230,6 +265,15 @@ export class HumanOidcBff {
       clientId,
       now
     });
+    const actorType = standardProfile
+      ? credential.actorType
+      : assertSafeIdentifier("actor_type", claims.actor_type);
+    const policyVersion = standardProfile
+      ? credential.policyVersion
+      : assertSafeIdentifier("policy_version", claims.policy_version);
+    if (!HUMAN_ACTOR_TYPES.has(actorType)) {
+      throw authenticationError("authentication_actor_type_rejected", "Human actor type is not allowed");
+    }
     if (
       credential.tenantId !== tenantId ||
       credential.actorType !== actorType ||
@@ -239,14 +283,14 @@ export class HumanOidcBff {
     ) {
       throw authenticationError("authentication_binding_rejected", "ID token is not bound to the active credential");
     }
-    if (claims.roles !== undefined) assertStringList("roles", claims.roles, { maximumItems: 16 });
-    if (claims.capabilities !== undefined) assertStringList("capabilities", claims.capabilities);
-    const authTime = assertNumericDate("auth_time", claims.auth_time);
+    if (!standardProfile && claims.roles !== undefined) assertStringList("roles", claims.roles, { maximumItems: 16 });
+    if (!standardProfile && claims.capabilities !== undefined) assertStringList("capabilities", claims.capabilities);
+    const authTime = assertNumericDate("auth_time", claims.auth_time ?? claims.iat);
     if (authTime > epochSeconds(now) + this.clockToleranceSeconds) {
       throw authenticationError("authentication_lifetime_rejected", "authentication time is not allowed");
     }
-    const acr = assertBoundedString("acr", claims.acr, { maximum: 128 });
-    const amr = assertStringList("amr", claims.amr, {
+    const acr = assertBoundedString("acr", claims.acr ?? "urn:ipo.one:acr:standard-oidc", { maximum: 128 });
+    const amr = assertStringList("amr", claims.amr ?? ["oidc"], {
       maximumItems: 8,
       allowEmpty: false,
       itemPattern: /^[A-Za-z0-9][A-Za-z0-9._:-]+$/
@@ -261,7 +305,8 @@ export class HumanOidcBff {
       policyVersion,
       capabilities: credential.allowedCapabilities,
       roles: credential.roles,
-      tokenJtiHash: this.referenceHasher.hash("token.jti", claims.jti),
+      tokenJtiHash: this.referenceHasher.hash("token.jti", claims.jti ?? exchange.idToken),
+      authenticationMethod: ClientAuthenticationMethod.OIDC_PKCE_BFF,
       authTime: new Date(authTime * 1_000),
       acr,
       amr,

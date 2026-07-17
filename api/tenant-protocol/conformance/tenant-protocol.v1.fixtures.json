@@ -1,6 +1,80 @@
 {
   "validRequests": [
     {
+      "operationId": "pilotAcceptCreditOffer",
+      "payload": {
+        "expectedOfferHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "expectedTermsHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "acknowledgementHash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "resource": {
+        "resourceType": "credit_offer",
+        "resourceId": "credit_offer_acceptance_fixture"
+      },
+      "idempotencyKey": "fixture-accept-credit-offer-0001",
+      "requestId": "request-fixture-accept-credit-offer",
+      "correlationId": "correlation-fixture-accept-credit-offer",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotExecuteSandboxObligation",
+      "payload": {},
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_execution_fixture"
+      },
+      "idempotencyKey": "fixture-execute-sandbox-obligation-0001",
+      "requestId": "request-fixture-execute-obligation",
+      "correlationId": "correlation-fixture-execute-obligation",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotPostSandboxRepayment",
+      "payload": {
+        "amountMinor": "10100",
+        "sourceCode": "synthetic_wallet"
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_repayment_fixture"
+      },
+      "idempotencyKey": "fixture-post-sandbox-repayment-0001",
+      "requestId": "request-fixture-post-repayment",
+      "correlationId": "correlation-fixture-post-repayment",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotCreateAgentAccountChallenge",
+      "payload": {
+        "accountId": "eip155:84532:0x1111111111111111111111111111111111111111",
+        "purpose": "primary"
+      },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_fixture"
+      },
+      "idempotencyKey": "fixture-agent-account-challenge-0001",
+      "requestId": "request-fixture-agent-account-challenge",
+      "correlationId": "correlation-fixture-agent-account-challenge",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotActivateSandboxMandate",
+      "payload": {
+        "expectedMandateHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "acknowledgedTermsHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "acknowledgementCode": "principal_authorizes_sandbox_credit_v1"
+      },
+      "resource": {
+        "resourceType": "mandate",
+        "resourceId": "mandate_activation_fixture"
+      },
+      "idempotencyKey": "fixture-activate-mandate-0001",
+      "requestId": "request-fixture-activate-mandate",
+      "correlationId": "correlation-fixture-activate-mandate",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotCreateAgentSubject",
       "payload": {
         "subjectActorId": "actor_agent_fixture",
@@ -13,12 +87,65 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotCreateHumanSubject",
+      "payload": {},
+      "idempotencyKey": "fixture-create-human-0001",
+      "requestId": "request-fixture-create-human",
+      "correlationId": "correlation-fixture-create-human",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotCreateConsent",
+      "payload": {
+        "purposes": [
+          "credit_application",
+          "identity_reference_use"
+        ],
+        "allowedAssetIds": [
+          "urn:ipo-one:sandbox-asset:usd-cent"
+        ],
+        "allowedCreditPurposeCodes": [
+          "working_capital"
+        ],
+        "allowedRepaymentFrequencies": [
+          "monthly"
+        ],
+        "maxRequestedPrincipalMinor": "25000",
+        "maxRequestedTermDays": 90,
+        "maxInstallmentCount": 3,
+        "termsRef": "urn:ipo.one:terms:human-credit-sandbox:v1",
+        "termsVersion": "human_credit_terms.v1",
+        "dataUsageRef": "urn:ipo.one:data-usage:human-credit-sandbox:v1",
+        "dataUsageVersion": "human_credit_data_usage.v1",
+        "disclosureRef": "urn:ipo.one:disclosure:no-real-funds:v1",
+        "validFrom": "2026-07-14T00:00:00.000Z",
+        "expiresAt": "2026-10-14T00:00:00.000Z"
+      },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      },
+      "idempotencyKey": "fixture-create-consent-0001",
+      "requestId": "request-fixture-create-consent",
+      "correlationId": "correlation-fixture-create-consent",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotCreateDraftMandate",
       "payload": {
-        "capabilities": ["request_credit", "provider_spend"],
-        "allowedProviderIds": ["provider_fixture_compute"],
-        "allowedCategories": ["compute"],
-        "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+        "capabilities": [
+          "request_credit",
+          "provider_spend"
+        ],
+        "allowedProviderIds": [
+          "provider_fixture_compute"
+        ],
+        "allowedCategories": [
+          "compute"
+        ],
+        "assetIds": [
+          "urn:ipo-one:sandbox-asset:usd-cent"
+        ],
         "perActionLimitMinor": "10000",
         "aggregateLimitMinor": "50000",
         "validFrom": "2026-07-14T00:00:00.000Z",
@@ -36,6 +163,18 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotEvaluateCreditApplication",
+      "payload": {},
+      "resource": {
+        "resourceType": "credit_intent",
+        "resourceId": "credit_intent_fixture"
+      },
+      "idempotencyKey": "fixture-evaluate-credit-0001",
+      "requestId": "request-fixture-evaluate-credit",
+      "correlationId": "correlation-fixture-evaluate-credit",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotFreezeSubject",
       "payload": {},
       "resource": {
@@ -49,6 +188,26 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotRequestCredit",
+      "payload": {
+        "authorityId": "consent_human_fixture",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "requestedPrincipalMinor": "12000",
+        "purposeCode": "working_capital",
+        "requestedTermDays": 60,
+        "repaymentFrequency": "monthly",
+        "installmentCount": 2
+      },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      },
+      "idempotencyKey": "fixture-request-credit-0001",
+      "requestId": "request-fixture-request-credit",
+      "correlationId": "correlation-fixture-request-credit",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotReadAgentSelf",
       "payload": {},
       "resource": {
@@ -57,6 +216,68 @@
       },
       "requestId": "request-fixture-read-agent",
       "correlationId": "correlation-fixture-read-agent",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadAgentAccountBinding",
+      "payload": {},
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_fixture"
+      },
+      "requestId": "request-fixture-read-agent-account-binding",
+      "correlationId": "correlation-fixture-read-agent-account-binding",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadCreditApplication",
+      "payload": {},
+      "resource": {
+        "resourceType": "credit_intent",
+        "resourceId": "credit_intent_fixture"
+      },
+      "requestId": "request-fixture-read-credit-application",
+      "correlationId": "correlation-fixture-read-credit-application",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadHumanSelf",
+      "payload": {},
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      },
+      "requestId": "request-fixture-read-human",
+      "correlationId": "correlation-fixture-read-human",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadWorkspaceResume",
+      "payload": {},
+      "requestId": "request-fixture-resume-workspace",
+      "correlationId": "correlation-fixture-resume-workspace",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadConsent",
+      "payload": {},
+      "resource": {
+        "resourceType": "consent",
+        "resourceId": "consent_human_fixture"
+      },
+      "requestId": "request-fixture-read-consent",
+      "correlationId": "correlation-fixture-read-consent",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadIdentityReference",
+      "payload": {},
+      "resource": {
+        "resourceType": "human_identity_reference",
+        "resourceId": "identity_ref_human_fixture"
+      },
+      "requestId": "request-fixture-read-identity-reference",
+      "correlationId": "correlation-fixture-read-identity-reference",
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
@@ -82,6 +303,111 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotReadPilotHealth",
+      "payload": {},
+      "resource": {
+        "resourceType": "risk_portfolio",
+        "resourceId": "risk_portfolio_fixture"
+      },
+      "requestId": "request-fixture-read-pilot-health",
+      "correlationId": "correlation-fixture-read-pilot-health",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadPilotFeedbackSummary",
+      "payload": {},
+      "resource": {
+        "resourceType": "risk_portfolio",
+        "resourceId": "risk_portfolio_fixture"
+      },
+      "requestId": "request-fixture-read-pilot-feedback",
+      "correlationId": "correlation-fixture-read-pilot-feedback",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotSubmitPilotFeedback",
+      "payload": {
+        "surface": "human_application",
+        "lifecycleStage": "application",
+        "sentiment": "easy",
+        "outcome": "completed",
+        "blockerCode": "none",
+        "schemaVersion": "pilot_feedback_record.v1"
+      },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      },
+      "idempotencyKey": "pilot-feedback-fixture-0001",
+      "requestId": "request-fixture-submit-pilot-feedback",
+      "correlationId": "correlation-fixture-submit-pilot-feedback",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadServicingQueue",
+      "payload": {
+        "classifications": ["defaulted", "dpd_61_89"],
+        "limit": 25
+      },
+      "resource": {
+        "resourceType": "servicing_queue",
+        "resourceId": "servicing_queue_fixture"
+      },
+      "requestId": "request-fixture-read-servicing-queue",
+      "correlationId": "correlation-fixture-read-servicing-queue",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadEvidence",
+      "payload": {
+        "limit": 25
+      },
+      "resource": {
+        "resourceType": "evidence",
+        "resourceId": "obligation_evidence_fixture"
+      },
+      "requestId": "request-fixture-read-evidence",
+      "correlationId": "correlation-fixture-read-evidence",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadOwnObligation",
+      "payload": {},
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_owned_view_fixture"
+      },
+      "requestId": "request-fixture-read-owned-obligation",
+      "correlationId": "correlation-fixture-read-owned-obligation",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadOwnObligationEvidence",
+      "payload": {
+        "limit": 25
+      },
+      "resource": {
+        "resourceType": "evidence",
+        "resourceId": "obligation_owned_evidence_fixture"
+      },
+      "requestId": "request-fixture-read-owned-evidence",
+      "correlationId": "correlation-fixture-read-owned-evidence",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotRevokeConsent",
+      "payload": {},
+      "resource": {
+        "resourceType": "consent",
+        "resourceId": "consent_human_fixture"
+      },
+      "reasonCode": "human_withdrawal",
+      "idempotencyKey": "fixture-revoke-consent-0001",
+      "requestId": "request-fixture-revoke-consent",
+      "correlationId": "correlation-fixture-revoke-consent",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotRevokeDraftMandate",
       "payload": {},
       "resource": {
@@ -93,6 +419,151 @@
       "requestId": "request-fixture-revoke-mandate",
       "correlationId": "correlation-fixture-revoke-mandate",
       "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotSubmitAgentAccountProof",
+      "payload": {
+        "challengeId": "agent_account_challenge_11111111-1111-4111-8111-111111111111",
+        "accountId": "eip155:84532:0x1111111111111111111111111111111111111111",
+        "signature": "0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b"
+      },
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_fixture"
+      },
+      "idempotencyKey": "fixture-submit-agent-account-proof-0001",
+      "requestId": "request-fixture-submit-agent-account-proof",
+      "correlationId": "correlation-fixture-submit-agent-account-proof",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "workerAdvanceSandboxServicing",
+      "payload": {},
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_servicing_fixture"
+      },
+      "reasonCode": "servicing_clock_tick",
+      "idempotencyKey": "fixture-advance-servicing-0001",
+      "requestId": "request-fixture-advance-servicing",
+      "correlationId": "correlation-fixture-advance-servicing",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotRestructureSandboxObligation",
+      "payload": {
+        "expectedServicingStateHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "additionalTermDays": 30
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_restructure_fixture"
+      },
+      "reasonCode": "sandbox_hardship_restructure",
+      "approvalArtifact": {
+        "proposalId": "approval_proposal_restructure_fixture",
+        "proposalVersion": 3
+      },
+      "idempotencyKey": "fixture-restructure-obligation-0001",
+      "requestId": "request-fixture-restructure-obligation",
+      "correlationId": "correlation-fixture-restructure-obligation",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotRepurchaseSandboxObligation",
+      "payload": {
+        "expectedServicingStateHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "servicingOwnerCode": "sandbox_originator"
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_repurchase_fixture"
+      },
+      "reasonCode": "sandbox_contractual_repurchase",
+      "approvalArtifact": {
+        "proposalId": "approval_proposal_repurchase_fixture",
+        "proposalVersion": 3
+      },
+      "idempotencyKey": "fixture-repurchase-obligation-0001",
+      "requestId": "request-fixture-repurchase-obligation",
+      "correlationId": "correlation-fixture-repurchase-obligation",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotWriteOffSandboxObligation",
+      "payload": {
+        "expectedServicingStateHash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_writeoff_fixture"
+      },
+      "reasonCode": "sandbox_uncollectible_writeoff",
+      "approvalArtifact": {
+        "proposalId": "approval_proposal_writeoff_fixture",
+        "proposalVersion": 3
+      },
+      "idempotencyKey": "fixture-writeoff-obligation-0001",
+      "requestId": "request-fixture-writeoff-obligation",
+      "correlationId": "correlation-fixture-writeoff-obligation",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadProviderIntent",
+      "payload": {},
+      "resource": {
+        "resourceType": "transfer_intent",
+        "resourceId": "transfer_intent_provider_fixture"
+      },
+      "purpose": "provider_intent_delivery",
+      "requestId": "request-fixture-provider-intent-read",
+      "correlationId": "correlation-fixture-provider-intent-read",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotAcknowledgeProviderIntent",
+      "payload": {
+        "deliveryHash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "resource": {
+        "resourceType": "transfer_intent",
+        "resourceId": "transfer_intent_provider_fixture"
+      },
+      "purpose": "provider_intent_delivery",
+      "idempotencyKey": "fixture-provider-intent-ack-0001",
+      "requestId": "request-fixture-provider-intent-ack",
+      "correlationId": "correlation-fixture-provider-intent-ack",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "workerProcessInbox",
+      "payload": {
+        "callbackId": "provider_callback_fixture_001",
+        "transferIntentId": "transfer_intent_provider_fixture",
+        "providerId": "provider_fixture_001",
+        "deliveryHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "outcome": "accepted",
+        "reasonCode": "provider_accepted",
+        "providerEventRefHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "nonce": "provider_callback_nonce_fixture_001",
+        "issuedAt": "2026-07-17T08:00:00.000Z",
+        "expiresAt": "2026-07-17T08:05:00.000Z",
+        "keyId": "provider_callback_key_fixture_001",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "withdrawable": false,
+        "schemaVersion": "provider_sandbox_callback.v1",
+        "payloadHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "resource": {
+        "resourceType": "inbox_message",
+        "resourceId": "provider_callback_fixture_001"
+      },
+      "idempotencyKey": "fixture-provider-callback-worker-0001",
+      "requestId": "request-fixture-provider-callback-worker",
+      "correlationId": "correlation-fixture-provider-callback-worker",
+      "schemaVersion": "tenant_protocol_request.v1"
     }
   ],
   "invalidRequests": [
@@ -101,7 +572,10 @@
       "value": {
         "operationId": "pilotReadMandate",
         "payload": {},
-        "resource": { "resourceType": "mandate", "resourceId": "mandate_fixture" },
+        "resource": {
+          "resourceType": "mandate",
+          "resourceId": "mandate_fixture"
+        },
         "requestId": "request-invalid-auth-context",
         "correlationId": "correlation-invalid-auth-context",
         "authenticationContext": {},
@@ -113,7 +587,10 @@
       "value": {
         "operationId": "pilotReadAgentSelf",
         "payload": {},
-        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "resource": {
+          "resourceType": "subject",
+          "resourceId": "subject_fixture"
+        },
         "requestId": "request-invalid-tenant",
         "correlationId": "correlation-invalid-tenant",
         "tenantId": "tenant_attacker",
@@ -148,7 +625,10 @@
       "value": {
         "operationId": "pilotReadMandate",
         "payload": {},
-        "resource": { "resourceType": "mandate", "resourceId": "mandate_fixture" },
+        "resource": {
+          "resourceType": "mandate",
+          "resourceId": "mandate_fixture"
+        },
         "idempotencyKey": "fixture-query-idempotency-0001",
         "requestId": "request-invalid-query-idempotency",
         "correlationId": "correlation-invalid-query-idempotency",
@@ -160,7 +640,10 @@
       "value": {
         "operationId": "pilotReadMandate",
         "payload": {},
-        "resource": { "resourceType": "subject", "resourceId": "mandate_fixture" },
+        "resource": {
+          "resourceType": "subject",
+          "resourceId": "mandate_fixture"
+        },
         "requestId": "request-invalid-resource",
         "correlationId": "correlation-invalid-resource",
         "schemaVersion": "tenant_protocol_request.v1"
@@ -186,7 +669,10 @@
       "value": {
         "operationId": "pilotReadAgentSelf",
         "payload": {},
-        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "resource": {
+          "resourceType": "subject",
+          "resourceId": "subject_fixture"
+        },
         "requestId": "request-invalid-version",
         "correlationId": "correlation-invalid-version",
         "schemaVersion": "tenant_protocol_request.v2"
@@ -197,10 +683,14 @@
       "value": {
         "operationId": "pilotCreateDraftMandate",
         "payload": {
-          "capabilities": ["provider_spend"],
+          "capabilities": [
+            "provider_spend"
+          ],
           "allowedProviderIds": [],
           "allowedCategories": [],
-          "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+          "assetIds": [
+            "urn:ipo-one:sandbox-asset:usd-cent"
+          ],
           "perActionLimitMinor": "10000",
           "aggregateLimitMinor": "50000",
           "validFrom": "2026-07-14T00:00:00.000Z",
@@ -208,7 +698,10 @@
           "nonce": "fixture-invalid-scope-0001",
           "termsRef": "urn:ipo.one:terms:fixture-mandate:v1"
         },
-        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "resource": {
+          "resourceType": "subject",
+          "resourceId": "subject_fixture"
+        },
         "idempotencyKey": "fixture-invalid-scope-0001",
         "requestId": "request-invalid-provider-scope",
         "correlationId": "correlation-invalid-provider-scope",
@@ -220,7 +713,10 @@
       "value": {
         "operationId": "pilotFreezeSubject",
         "payload": {},
-        "resource": { "resourceType": "subject", "resourceId": "subject_fixture" },
+        "resource": {
+          "resourceType": "subject",
+          "resourceId": "subject_fixture"
+        },
         "idempotencyKey": "fixture-invalid-freeze-0001",
         "requestId": "request-invalid-freeze-reason",
         "correlationId": "correlation-invalid-freeze-reason",
@@ -232,7 +728,10 @@
       "value": {
         "operationId": "pilotRevokeDraftMandate",
         "payload": {},
-        "resource": { "resourceType": "mandate", "resourceId": "mandate_fixture" },
+        "resource": {
+          "resourceType": "mandate",
+          "resourceId": "mandate_fixture"
+        },
         "reasonCode": "risk_limit_breach",
         "idempotencyKey": "fixture-invalid-revoke-reason-0001",
         "requestId": "request-invalid-revoke-reason",
@@ -245,14 +744,532 @@
       "value": {
         "operationId": "pilotReadTenantRisk",
         "payload": {},
-        "resource": { "resourceType": "subject", "resourceId": "risk_portfolio_fixture" },
+        "resource": {
+          "resourceType": "subject",
+          "resourceId": "risk_portfolio_fixture"
+        },
         "requestId": "request-invalid-risk-resource",
         "correlationId": "correlation-invalid-risk-resource",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "Evidence query with unbounded limit",
+      "value": {
+        "operationId": "pilotReadEvidence",
+        "payload": {
+          "limit": 51
+        },
+        "resource": {
+          "resourceType": "evidence",
+          "resourceId": "obligation_evidence_fixture"
+        },
+        "requestId": "request-invalid-evidence-limit",
+        "correlationId": "correlation-invalid-evidence-limit",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "Provider read attempts dynamic endpoint authority",
+      "value": {
+        "operationId": "pilotReadProviderIntent",
+        "payload": {
+          "endpointUrl": "https://provider.invalid/callback"
+        },
+        "resource": {
+          "resourceType": "transfer_intent",
+          "resourceId": "transfer_intent_provider_fixture"
+        },
+        "purpose": "provider_intent_delivery",
+        "requestId": "request-invalid-provider-endpoint",
+        "correlationId": "correlation-invalid-provider-endpoint",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "Provider read uses an unapproved purpose",
+      "value": {
+        "operationId": "pilotReadProviderIntent",
+        "payload": {},
+        "resource": {
+          "resourceType": "transfer_intent",
+          "resourceId": "transfer_intent_provider_fixture"
+        },
+        "purpose": "production_execution",
+        "requestId": "request-invalid-provider-purpose",
+        "correlationId": "correlation-invalid-provider-purpose",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "Provider callback claims production funds movement",
+      "value": {
+        "operationId": "workerProcessInbox",
+        "payload": {
+          "callbackId": "provider_callback_invalid_funds",
+          "transferIntentId": "transfer_intent_provider_fixture",
+          "providerId": "provider_fixture_001",
+          "deliveryHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "outcome": "accepted",
+          "reasonCode": "provider_accepted",
+          "providerEventRefHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "nonce": "provider_callback_nonce_invalid_funds",
+          "issuedAt": "2026-07-17T08:00:00.000Z",
+          "expiresAt": "2026-07-17T08:05:00.000Z",
+          "keyId": "provider_callback_key_fixture_001",
+          "sandboxOnly": true,
+          "productionFundsMoved": true,
+          "withdrawable": false,
+          "schemaVersion": "provider_sandbox_callback.v1",
+          "payloadHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+          "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        },
+        "resource": {
+          "resourceType": "inbox_message",
+          "resourceId": "provider_callback_invalid_funds"
+        },
+        "idempotencyKey": "fixture-invalid-provider-callback-funds",
+        "requestId": "request-invalid-provider-callback-funds",
+        "correlationId": "correlation-invalid-provider-callback-funds",
         "schemaVersion": "tenant_protocol_request.v1"
       }
     }
   ],
   "validResults": [
+    {
+      "operationId": "pilotAcceptCreditOffer",
+      "replayed": false,
+      "response": {
+        "acceptance": {
+          "creditOfferAcceptanceId": "credit_offer_acceptance_fixture",
+          "acceptanceHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "creditOfferId": "credit_offer_acceptance_fixture",
+          "creditOfferHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "termsHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "creditIntentId": "credit_intent_acceptance_fixture",
+          "riskDecisionId": "risk_decision_acceptance_fixture",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "acknowledgementHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+          "acceptedAt": "2026-07-16T12:01:00.000Z",
+          "sandboxOnly": true,
+          "productionAuthority": false
+        },
+        "obligation": {
+          "obligationId": "obligation_acceptance_fixture",
+          "obligationHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "creditIntentId": "credit_intent_acceptance_fixture",
+          "riskDecisionId": "risk_decision_acceptance_fixture",
+          "creditOfferId": "credit_offer_acceptance_fixture",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "12001",
+          "outstandingPrincipalMinor": "12001",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "monthly",
+          "installmentCount": 2,
+          "firstPaymentAt": "2026-08-15T12:00:00.000Z",
+          "maturityAt": "2026-09-14T12:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_acceptance_fixture_1",
+              "obligationId": "obligation_acceptance_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-08-15T12:00:00.000Z",
+              "scheduledPrincipalMinor": "6000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            },
+            {
+              "installmentId": "obligation_installment_acceptance_fixture_2",
+              "obligationId": "obligation_acceptance_fixture",
+              "installmentNumber": 2,
+              "dueAt": "2026-09-14T12:00:00.000Z",
+              "scheduledPrincipalMinor": "6001",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "pending",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "created",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_acceptance_fixture_1",
+          "servicingEffectiveAt": "2026-07-16T12:01:00.000Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-07-16T12:01:00.000Z",
+          "createdAt": "2026-07-16T12:01:00.000Z",
+          "updatedAt": "2026-07-16T12:01:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "offerStatus": "accepted",
+        "executionCreated": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_credit_offer_accepted.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotExecuteSandboxObligation",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_execution_fixture",
+          "obligationHash": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "creditIntentId": "credit_intent_execution_fixture",
+          "riskDecisionId": "risk_decision_execution_fixture",
+          "creditOfferId": "credit_offer_execution_fixture",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_execution_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "10000",
+          "outstandingPrincipalMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-09-14T12:00:00.000Z",
+          "maturityAt": "2026-09-14T12:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x8888888888888888888888888888888888888888888888888888888888888888",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_execution_fixture_1",
+              "obligationId": "obligation_execution_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-09-14T12:00:00.000Z",
+              "scheduledPrincipalMinor": "10000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "sandboxExecutionReceiptId": "sandbox_execution_receipt_fixture",
+          "executedAt": "2026-07-16T12:02:00.000Z",
+          "lastAccruedAt": "2026-07-16T12:02:00.000Z",
+          "interestAccrualRemainder": "0",
+          "withdrawable": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "active",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_execution_fixture_1",
+          "servicingEffectiveAt": "2026-07-16T12:01:00.000Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-07-16T12:01:00.000Z",
+          "createdAt": "2026-07-16T12:01:00.000Z",
+          "updatedAt": "2026-07-16T12:02:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "executionReceipt": {
+          "sandboxExecutionReceiptId": "sandbox_execution_receipt_fixture",
+          "receiptHash": "0x9999999999999999999999999999999999999999999999999999999999999999",
+          "obligationId": "obligation_execution_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "amountMinor": "10000",
+          "adapterId": "ipo_one_local_signed_sandbox_rail",
+          "adapterVersion": "1.0.0",
+          "adapterKeyId": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "adapterMessageHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "executedAt": "2026-07-16T12:02:00.000Z",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "withdrawable": false,
+          "schemaVersion": "sandbox_execution_receipt.v1"
+        },
+        "principalLedgerTransactionId": "ledger_transaction_execution_fixture",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "withdrawable": false,
+        "schemaVersion": "tenant_sandbox_obligation_executed.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotPostSandboxRepayment",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_repayment_fixture",
+          "obligationHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "creditIntentId": "credit_intent_repayment_fixture",
+          "riskDecisionId": "risk_decision_repayment_fixture",
+          "creditOfferId": "credit_offer_repayment_fixture",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_repayment_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "10000",
+          "outstandingPrincipalMinor": "0",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "10",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "10010",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-09-14T12:00:00.000Z",
+          "maturityAt": "2026-09-14T12:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_repayment_fixture_1",
+              "obligationId": "obligation_repayment_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-09-14T12:00:00.000Z",
+              "scheduledPrincipalMinor": "10000",
+              "scheduledInterestMinor": "10",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "10000",
+              "paidInterestMinor": "10",
+              "paidFeeMinor": "0",
+              "status": "paid",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "sandboxExecutionReceiptId": "sandbox_execution_receipt_repayment_fixture",
+          "executedAt": "2026-07-16T12:02:00.000Z",
+          "lastAccruedAt": "2026-07-17T12:02:00.000Z",
+          "interestAccrualRemainder": "0",
+          "withdrawable": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "fully_repaid",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": null,
+          "servicingEffectiveAt": "2026-07-17T12:02:00.000Z",
+          "servicingReasonCode": "servicing_current",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-07-16T12:01:00.000Z",
+          "createdAt": "2026-07-16T12:01:00.000Z",
+          "updatedAt": "2026-07-17T12:02:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "repayment": {
+          "repaymentId": "repayment_fixture",
+          "repaymentHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "obligationId": "obligation_repayment_fixture",
+          "subjectId": "subject_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "requestedMinor": "10100",
+          "appliedMinor": "10010",
+          "appliedFeeMinor": "0",
+          "appliedInterestMinor": "10",
+          "appliedPrincipalMinor": "10000",
+          "surplusMinor": "90",
+          "remainingPrincipalMinor": "0",
+          "remainingInterestMinor": "0",
+          "remainingFeesMinor": "0",
+          "sourceCode": "synthetic_wallet",
+          "actorHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "accruedInterestMinor": "10",
+          "accrualDays": 1,
+          "ledgerTransactionId": "ledger_transaction_repayment_fixture",
+          "interestLedgerTransactionId": "ledger_transaction_interest_fixture",
+          "occurredAt": "2026-07-17T12:02:00.000Z",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "repayment.v2"
+        },
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "withdrawable": false,
+        "schemaVersion": "tenant_sandbox_repayment_posted.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotCreateAgentAccountChallenge",
+      "replayed": false,
+      "response": {
+        "challengeId": "agent_account_challenge_11111111-1111-4111-8111-111111111111",
+        "subjectId": "subject_fixture",
+        "chainId": "eip155:84532",
+        "accountHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "purpose": "primary",
+        "nonce": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "issuedAt": "2026-07-16T00:00:00.000Z",
+        "expiresAt": "2026-07-16T00:05:00.000Z",
+        "protocolVersion": "1.1",
+        "typedDataHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "typedData": {
+          "domain": {
+            "name": "IPO.ONE Agent Account Binding",
+            "version": "1.1",
+            "chainId": 84532
+          },
+          "types": {
+            "AgentAccountBindingProof": [
+              {
+                "name": "tenantHash",
+                "type": "bytes32"
+              },
+              {
+                "name": "subjectHash",
+                "type": "bytes32"
+              },
+              {
+                "name": "accountHash",
+                "type": "bytes32"
+              },
+              {
+                "name": "purpose",
+                "type": "string"
+              },
+              {
+                "name": "nonce",
+                "type": "bytes32"
+              },
+              {
+                "name": "issuedAt",
+                "type": "uint256"
+              },
+              {
+                "name": "expiresAt",
+                "type": "uint256"
+              },
+              {
+                "name": "protocolVersion",
+                "type": "string"
+              }
+            ]
+          },
+          "primaryType": "AgentAccountBindingProof",
+          "message": {
+            "tenantHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+            "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "accountHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+            "purpose": "primary",
+            "nonce": "0x2222222222222222222222222222222222222222222222222222222222222222",
+            "issuedAt": "1784160000",
+            "expiresAt": "1784160300",
+            "protocolVersion": "1.1"
+          }
+        },
+        "oneUse": true,
+        "schemaVersion": "tenant_agent_account_challenge_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotActivateSandboxMandate",
+      "replayed": false,
+      "response": {
+        "mandate": {
+          "mandateId": "mandate_activation_fixture",
+          "mandateHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "termsHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "principalId": "principal_fixture",
+          "subjectId": "subject_fixture",
+          "capabilities": [
+            "request_credit",
+            "accept_credit_offer",
+            "execute_sandbox_credit"
+          ],
+          "allowedProviderIds": [],
+          "allowedCategories": [],
+          "assetIds": [
+            "urn:ipo-one:sandbox-asset:usd-cent"
+          ],
+          "perActionLimitMinor": "10000",
+          "aggregateLimitMinor": "50000",
+          "utilizedMinor": "0",
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2027-01-14T00:00:00.000Z",
+          "nonce": "fixture-activation-mandate-nonce-0001",
+          "termsRef": "urn:ipo.one:terms:fixture-activation-mandate:v1",
+          "sandboxOnly": true,
+          "productionAuthority": false,
+          "status": "active",
+          "activationAcknowledgement": {
+            "expectedMandateHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "acknowledgedTermsHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "acknowledgementCode": "principal_authorizes_sandbox_credit_v1",
+            "activatedByActorId": "actor_controller_fixture",
+            "activatedAt": "2026-07-15T00:00:00.000Z",
+            "evidenceHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          },
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-15T00:00:00.000Z",
+          "schemaVersion": "mandate.v3"
+        },
+        "activationEvidenceHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "schemaVersion": "tenant_sandbox_mandate_activated.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
     {
       "operationId": "pilotCreateAgentSubject",
       "replayed": false,
@@ -267,6 +1284,56 @@
       "schemaVersion": "tenant_protocol_result.v1"
     },
     {
+      "operationId": "pilotCreateConsent",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_human_fixture",
+        "consent": {
+          "consentId": "consent_human_fixture",
+          "consentHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "termsHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "dataUsageHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "status": "active",
+          "purposes": [
+            "credit_application",
+            "identity_reference_use"
+          ],
+          "allowedAssetIds": [
+            "urn:ipo-one:sandbox-asset:usd-cent"
+          ],
+          "allowedCreditPurposeCodes": [
+            "working_capital"
+          ],
+          "allowedRepaymentFrequencies": [
+            "monthly"
+          ],
+          "maxRequestedPrincipalMinor": "25000",
+          "maxRequestedTermDays": 90,
+          "maxInstallmentCount": 3,
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2026-10-14T00:00:00.000Z",
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-14T00:00:00.000Z"
+        },
+        "schemaVersion": "tenant_consent_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotCreateHumanSubject",
+      "replayed": false,
+      "response": {
+        "principalId": "principal_human_fixture",
+        "subjectId": "subject_human_fixture",
+        "subjectHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "subjectType": "human",
+        "status": "pending",
+        "prototypeOnly": true,
+        "schemaVersion": "tenant_human_subject_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
       "operationId": "pilotCreateDraftMandate",
       "replayed": false,
       "response": {
@@ -274,13 +1341,215 @@
         "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "subjectId": "subject_fixture",
         "status": "draft",
-        "capabilities": ["request_credit", "provider_spend"],
-        "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+        "capabilities": [
+          "request_credit",
+          "provider_spend"
+        ],
+        "assetIds": [
+          "urn:ipo-one:sandbox-asset:usd-cent"
+        ],
         "perActionLimitMinor": "10000",
         "aggregateLimitMinor": "50000",
         "validFrom": "2026-07-14T00:00:00.000Z",
         "expiresAt": "2027-01-14T00:00:00.000Z",
         "schemaVersion": "tenant_draft_mandate_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotEvaluateCreditApplication",
+      "replayed": false,
+      "response": {
+        "creditIntent": {
+          "creditIntentId": "credit_intent_fixture",
+          "creditIntentHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+          "subjectId": "subject_human_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "requestedPrincipalMinor": "12000",
+          "purposeCode": "working_capital",
+          "requestedTermDays": 60,
+          "repaymentFrequency": "monthly",
+          "installmentCount": 2,
+          "sandboxOnly": true,
+          "productionFundsRequested": false,
+          "status": "decided",
+          "createdAt": "2026-07-14T01:00:00.000Z",
+          "updatedAt": "2026-07-14T02:00:00.000Z"
+        },
+        "decision": {
+          "riskDecisionId": "risk_decision_fixture",
+          "decisionHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "creditIntentId": "credit_intent_fixture",
+          "subjectId": "subject_human_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "status": "approved",
+          "policyVersion": "credit-application-rules.v1",
+          "approvedPrincipalMinor": "12000",
+          "reasonCodes": [
+            "authority_scope_current",
+            "principal_and_subject_eligible",
+            "identity_evidence_current",
+            "no_adverse_obligation",
+            "within_sandbox_policy_cap",
+            "sandbox_rules_v1_approved"
+          ],
+          "decisionPassport": {
+            "riskDecisionPassportId": "risk_decision_passport_fixture",
+            "decisionPassportHash": "0x8888888888888888888888888888888888888888888888888888888888888888",
+            "riskFeatureSnapshotId": "risk_feature_snapshot_fixture",
+            "featureSnapshotHash": "0x9999999999999999999999999999999999999999999999999999999999999999",
+            "featureSetVersion": "credit-application-evidence-features.v1",
+            "policyVersion": "credit-application-rules.v1",
+            "policyHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "riskStateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "sourceEvidence": [
+              {
+                "role": "credit_intent",
+                "evidenceHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "entityHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                "aggregateVersion": 1,
+                "sourceFinality": "finalized"
+              },
+              {
+                "role": "subject",
+                "evidenceHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "entityHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                "aggregateVersion": 2,
+                "sourceFinality": "finalized"
+              },
+              {
+                "role": "principal",
+                "evidenceHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+                "entityHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+                "aggregateVersion": 1,
+                "sourceFinality": "finalized"
+              },
+              {
+                "role": "authority",
+                "evidenceHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+                "entityHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+                "aggregateVersion": 1,
+                "sourceFinality": "finalized"
+              },
+              {
+                "role": "human_identity_reference",
+                "evidenceHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+                "entityHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+                "aggregateVersion": 1,
+                "sourceFinality": "finalized"
+              }
+            ],
+            "reasonLineage": [
+              {
+                "reasonCode": "authority_scope_current",
+                "featureKeys": [
+                  "authorityCurrent"
+                ],
+                "sourceRoles": [
+                  "authority"
+                ]
+              },
+              {
+                "reasonCode": "principal_and_subject_eligible",
+                "featureKeys": [
+                  "subjectEligible",
+                  "principalEligible"
+                ],
+                "sourceRoles": [
+                  "subject",
+                  "principal"
+                ]
+              },
+              {
+                "reasonCode": "identity_evidence_current",
+                "featureKeys": [
+                  "identityEvidenceCurrent"
+                ],
+                "sourceRoles": [
+                  "authority",
+                  "human_identity_reference"
+                ]
+              },
+              {
+                "reasonCode": "no_adverse_obligation",
+                "featureKeys": [
+                  "adverseObligationCount",
+                  "frozenCreditLineCount"
+                ],
+                "sourceRoles": [
+                  "risk_state_attestation"
+                ]
+              },
+              {
+                "reasonCode": "within_sandbox_policy_cap",
+                "featureKeys": [
+                  "assetSupported",
+                  "principalWithinCap",
+                  "termWithinCap",
+                  "scheduleValid"
+                ],
+                "sourceRoles": [
+                  "credit_intent"
+                ]
+              },
+              {
+                "reasonCode": "sandbox_rules_v1_approved",
+                "featureKeys": [
+                  "allRequiredFeaturesSatisfied"
+                ],
+                "sourceRoles": [
+                  "credit_intent",
+                  "risk_state_attestation"
+                ]
+              }
+            ],
+            "asOf": "2026-07-14T02:00:00.000Z",
+            "nonAuthorizing": true,
+            "sandboxOnly": true,
+            "productionAuthority": false,
+            "schemaVersion": "risk_decision_passport.v1"
+          },
+          "sandboxOnly": true,
+          "productionAuthority": false,
+          "decidedAt": "2026-07-14T02:00:00.000Z"
+        },
+        "offer": {
+          "creditOfferId": "credit_offer_fixture",
+          "creditOfferHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+          "termsHash": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "creditIntentId": "credit_intent_fixture",
+          "riskDecisionId": "risk_decision_fixture",
+          "subjectId": "subject_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "approvedPrincipalMinor": "12000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "repaymentFrequency": "monthly",
+          "installmentCount": 2,
+          "firstPaymentAt": "2026-08-13T02:00:00.000Z",
+          "maturityAt": "2026-09-12T02:00:00.000Z",
+          "disclosureRef": "urn:ipo.one:sandbox:credit-offer-disclosure:v1",
+          "termsVersion": "credit_terms.v1",
+          "validUntil": "2026-07-15T02:00:00.000Z",
+          "reasonCodes": [
+            "authority_scope_current",
+            "principal_and_subject_eligible",
+            "identity_evidence_current",
+            "no_adverse_obligation",
+            "within_sandbox_policy_cap",
+            "sandbox_rules_v1_approved"
+          ],
+          "sandboxOnly": true,
+          "productionFundsApproved": false,
+          "status": "offered",
+          "createdAt": "2026-07-14T02:00:00.000Z",
+          "updatedAt": "2026-07-14T02:00:00.000Z"
+        },
+        "schemaVersion": "tenant_credit_application_evaluated.v2"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },
@@ -295,6 +1564,32 @@
         "reasonCode": "risk_limit_breach",
         "updatedAt": "2026-07-14T01:00:00.000Z",
         "schemaVersion": "tenant_agent_subject_frozen.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotRequestCredit",
+      "replayed": false,
+      "response": {
+        "creditIntent": {
+          "creditIntentId": "credit_intent_fixture",
+          "creditIntentHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+          "subjectId": "subject_human_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "requestedPrincipalMinor": "12000",
+          "purposeCode": "working_capital",
+          "requestedTermDays": 60,
+          "repaymentFrequency": "monthly",
+          "installmentCount": 2,
+          "sandboxOnly": true,
+          "productionFundsRequested": false,
+          "status": "submitted",
+          "createdAt": "2026-07-14T01:00:00.000Z",
+          "updatedAt": "2026-07-14T01:00:00.000Z"
+        },
+        "schemaVersion": "tenant_credit_intent_created.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },
@@ -320,8 +1615,13 @@
             "mandateId": "mandate_fixture",
             "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             "status": "draft",
-            "capabilities": ["request_credit", "provider_spend"],
-            "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+            "capabilities": [
+              "request_credit",
+              "provider_spend"
+            ],
+            "assetIds": [
+              "urn:ipo-one:sandbox-asset:usd-cent"
+            ],
             "providerScopeCount": 1,
             "categoryScopeCount": 1,
             "perActionLimitMinor": "10000",
@@ -339,18 +1639,189 @@
       "schemaVersion": "tenant_protocol_result.v1"
     },
     {
+      "operationId": "pilotReadAgentAccountBinding",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_fixture",
+        "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "subjectStatus": "active",
+        "accountBinding": {
+          "accountBindingId": "account_binding_fixture",
+          "accountHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "chainId": "eip155:84532",
+          "purpose": "primary",
+          "proofHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "verificationMethod": "eip712_eoa_v1",
+          "status": "active",
+          "boundAt": "2026-07-16T00:01:00.000Z",
+          "protocolVersion": "1.1"
+        },
+        "schemaVersion": "tenant_agent_account_binding_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadCreditApplication",
+      "replayed": false,
+      "response": {
+        "creditIntent": {
+          "creditIntentId": "credit_intent_fixture",
+          "creditIntentHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "subjectId": "subject_fixture",
+          "authorityType": "mandate",
+          "authorityId": "mandate_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "requestedPrincipalMinor": "9000",
+          "purposeCode": "compute",
+          "requestedTermDays": 30,
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "sandboxOnly": true,
+          "productionFundsRequested": false,
+          "status": "submitted",
+          "createdAt": "2026-07-14T01:00:00.000Z",
+          "updatedAt": "2026-07-14T01:00:00.000Z"
+        },
+        "decision": null,
+        "offer": null,
+        "schemaVersion": "tenant_credit_application_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadHumanSelf",
+      "replayed": false,
+      "response": {
+        "subject": {
+          "subjectId": "subject_human_fixture",
+          "subjectHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "subjectType": "human",
+          "displayName": "Human Credit Profile",
+          "primaryPrincipalId": "principal_human_fixture",
+          "status": "pending",
+          "riskTier": "unrated",
+          "prototypeOnly": true,
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-14T00:00:00.000Z",
+          "schemaVersion": "subject.v1"
+        },
+        "consents": [],
+        "identityReferences": [],
+        "hasMoreConsents": false,
+        "hasMoreIdentityReferences": false,
+        "schemaVersion": "tenant_human_subject_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadWorkspaceResume",
+      "replayed": false,
+      "response": {
+        "workspaceKind": "human_borrower",
+        "resources": [
+          {
+            "resourceType": "obligation",
+            "resourceId": "obligation_human_fixture",
+            "relationship": "owner"
+          },
+          {
+            "resourceType": "subject",
+            "resourceId": "subject_human_fixture",
+            "relationship": "owner"
+          }
+        ],
+        "hasMore": false,
+        "serverTruth": true,
+        "schemaVersion": "tenant_workspace_resume_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadConsent",
+      "replayed": false,
+      "response": {
+        "consent": {
+          "consentId": "consent_human_fixture",
+          "consentHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "termsHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "dataUsageHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "status": "active",
+          "purposes": [
+            "credit_application",
+            "identity_reference_use"
+          ],
+          "allowedAssetIds": [
+            "urn:ipo-one:sandbox-asset:usd-cent"
+          ],
+          "allowedCreditPurposeCodes": [
+            "working_capital"
+          ],
+          "allowedRepaymentFrequencies": [
+            "monthly"
+          ],
+          "maxRequestedPrincipalMinor": "25000",
+          "maxRequestedTermDays": 90,
+          "maxInstallmentCount": 3,
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2026-10-14T00:00:00.000Z",
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-14T00:00:00.000Z"
+        },
+        "schemaVersion": "tenant_consent_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadIdentityReference",
+      "replayed": false,
+      "response": {
+        "identityReference": {
+          "identityReferenceId": "identity_ref_human_fixture",
+          "identityReferenceHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "referenceEvidenceHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "consentId": "consent_human_fixture",
+          "consentHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "referenceType": "kyc_reference",
+          "providerVersion": "synthetic_provider.v1",
+          "assuranceLevel": "synthetic_provider_asserted",
+          "purposeCodes": [
+            "identity_reference_use"
+          ],
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2026-10-14T00:00:00.000Z",
+          "syntheticOnly": true,
+          "productionVerified": false,
+          "status": "active",
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-14T00:00:00.000Z"
+        },
+        "schemaVersion": "tenant_human_identity_reference_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
       "operationId": "pilotReadMandate",
       "replayed": false,
       "response": {
         "mandate": {
           "mandateId": "mandate_fixture",
           "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "termsHash": "0x9999999999999999999999999999999999999999999999999999999999999999",
           "principalId": "principal_fixture",
           "subjectId": "subject_fixture",
-          "capabilities": ["request_credit", "provider_spend"],
-          "allowedProviderIds": ["provider_fixture_compute"],
-          "allowedCategories": ["compute"],
-          "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+          "capabilities": [
+            "request_credit",
+            "provider_spend"
+          ],
+          "allowedProviderIds": [
+            "provider_fixture_compute"
+          ],
+          "allowedCategories": [
+            "compute"
+          ],
+          "assetIds": [
+            "urn:ipo-one:sandbox-asset:usd-cent"
+          ],
           "perActionLimitMinor": "10000",
           "aggregateLimitMinor": "50000",
           "utilizedMinor": "0",
@@ -358,10 +1829,12 @@
           "expiresAt": "2027-01-14T00:00:00.000Z",
           "nonce": "fixture-mandate-nonce-0001",
           "termsRef": "urn:ipo.one:terms:fixture-mandate:v1",
+          "sandboxOnly": true,
+          "productionAuthority": false,
           "status": "draft",
           "createdAt": "2026-07-14T00:00:00.000Z",
           "updatedAt": "2026-07-14T00:00:00.000Z",
-          "schemaVersion": "mandate.v2"
+          "schemaVersion": "mandate.v3"
         },
         "schemaVersion": "tenant_mandate_view.v1"
       },
@@ -399,11 +1872,18 @@
           "fullyRepaidCount": 1,
           "overdueCount": 1,
           "defaultedCount": 0,
+          "delinquentCount": 0,
+          "restructuredCount": 0,
+          "repurchasedCount": 0,
+          "writtenOffCount": 0,
           "closedCount": 0,
           "principalMinor": "100000",
           "outstandingPrincipalMinor": "30000",
           "accruedFeesMinor": "100",
-          "repaidAmountMinor": "70000"
+          "repaidAmountMinor": "70000",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0"
         },
         "assetExposures": [
           {
@@ -417,11 +1897,389 @@
             "openObligationCount": 2,
             "overdueObligationCount": 1,
             "defaultedObligationCount": 0,
-            "outstandingPrincipalMinor": "30000"
+            "delinquentObligationCount": 0,
+            "restructuredObligationCount": 0,
+            "repurchasedObligationCount": 0,
+            "writtenOffObligationCount": 0,
+            "outstandingPrincipalMinor": "30000",
+            "writtenOffPrincipalMinor": "0"
           }
         ],
         "hasMoreAssetExposures": false,
         "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadPilotHealth",
+      "replayed": false,
+      "response": {
+        "portfolioId": "risk_portfolio_fixture",
+        "asOf": "2026-07-14T01:00:00.000Z",
+        "entryModes": {
+          "humanIntentCount": 3,
+          "agentIntentCount": 2,
+          "dualNativeObserved": true
+        },
+        "funnel": {
+          "intentCount": 5,
+          "offeredIntentCount": 5,
+          "acceptedIntentCount": 4,
+          "executedIntentCount": 3,
+          "repaidIntentCount": 2,
+          "fullyRepaidIntentCount": 1
+        },
+        "conversionBps": {
+          "offer": 10000,
+          "acceptance": 8000,
+          "execution": 6000,
+          "repayment": 4000,
+          "fullRepayment": 2000
+        },
+        "positions": {
+          "obligationCount": 4,
+          "openPositionCount": 3,
+          "adversePositionCount": 1
+        },
+        "readiness": {
+          "stage": "verified",
+          "dualNativeObserved": true,
+          "fullLifecycleObserved": true
+        },
+        "safety": {
+          "readOnly": true,
+          "piiIncluded": false,
+          "thirdPartyAnalytics": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false
+        },
+        "schemaVersion": "tenant_pilot_health_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadPilotFeedbackSummary",
+      "replayed": false,
+      "response": {
+        "asOf": "2026-07-14T01:00:00.000Z",
+        "totalCount": 3,
+        "entryModes": { "humanCount": 2, "agentCount": 1 },
+        "surfaces": {
+          "humanPortfolioCount": 0,
+          "humanApplicationCount": 1,
+          "humanOfferCount": 0,
+          "humanPaymentsCount": 1,
+          "agentProtocolCount": 1,
+          "agentSdkCount": 0,
+          "agentMcpCount": 0,
+          "evidenceCount": 0,
+          "servicingCount": 0
+        },
+        "lifecycleStages": {
+          "onboardingCount": 0,
+          "applicationCount": 1,
+          "offerCount": 0,
+          "obligationCount": 0,
+          "executionCount": 0,
+          "repaymentCount": 2,
+          "servicingCount": 0,
+          "evidenceCount": 0
+        },
+        "sentiments": {
+          "blockedCount": 1,
+          "difficultCount": 0,
+          "neutralCount": 0,
+          "easyCount": 1,
+          "valuableCount": 1
+        },
+        "outcomes": {
+          "incompleteCount": 1,
+          "completedCount": 2,
+          "needsSupportCount": 0
+        },
+        "blockerCodes": {
+          "noneCount": 2,
+          "unclearCopyCount": 0,
+          "missingCapabilityCount": 0,
+          "authenticationCount": 0,
+          "authoritySetupCount": 0,
+          "identityProofCount": 0,
+          "creditTermsCount": 1,
+          "executionCount": 0,
+          "repaymentCount": 0,
+          "servicingCount": 0,
+          "evidenceCount": 0,
+          "integrationCount": 0,
+          "otherNoTextCount": 0
+        },
+        "safety": {
+          "aggregateOnly": true,
+          "piiIncluded": false,
+          "identifiersIncluded": false,
+          "thirdPartyAnalytics": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false
+        },
+        "schemaVersion": "tenant_pilot_feedback_summary_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotSubmitPilotFeedback",
+      "replayed": false,
+      "response": {
+        "entryMode": "human",
+        "surface": "human_application",
+        "lifecycleStage": "application",
+        "sentiment": "easy",
+        "outcome": "completed",
+        "blockerCode": "none",
+        "recordedAt": "2026-07-14T01:00:00.000Z",
+        "safety": {
+          "categoricalOnly": true,
+          "piiIncluded": false,
+          "thirdPartyAnalytics": false,
+          "sandboxOnly": true,
+          "productionAuthority": false
+        },
+        "schemaVersion": "tenant_pilot_feedback_recorded.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadServicingQueue",
+      "replayed": false,
+      "response": {
+        "queueId": "servicing_queue_fixture",
+        "asOf": "2026-07-14T01:00:00.000Z",
+        "filters": {
+          "classifications": ["defaulted", "dpd_61_89"]
+        },
+        "cases": [
+          {
+            "obligationId": "obligation_defaulted_fixture",
+            "subjectId": "subject_servicing_fixture",
+            "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+            "status": "defaulted",
+            "servicingClassification": "defaulted",
+            "daysPastDue": 94,
+            "priority": "critical",
+            "reviewCode": "default_resolution_review",
+            "outstandingPrincipalMinor": "9000",
+            "outstandingInterestMinor": "220",
+            "outstandingFeesMinor": "0",
+            "outstandingTotalMinor": "9220",
+            "pastDuePrincipalMinor": "3000",
+            "pastDueInterestMinor": "120",
+            "pastDueFeesMinor": "0",
+            "pastDueTotalMinor": "3120",
+            "oldestUnpaidInstallmentId": "installment_defaulted_fixture_1",
+            "oldestDueAt": "2026-04-11T01:00:00.000Z",
+            "servicingEffectiveAt": "2026-07-14T01:00:00.000Z",
+            "scheduleSequence": 1,
+            "servicingOwnerCode": "sandbox_platform",
+            "latestServicingAction": {
+              "servicingActionId": "servicing_action_default_fixture",
+              "actionType": "advance",
+              "nextStatus": "defaulted",
+              "nextClassification": "defaulted",
+              "daysPastDue": 94,
+              "reasonCode": "servicing_default_threshold",
+              "source": "system_worker",
+              "effectiveAt": "2026-07-14T01:00:00.000Z",
+              "schemaVersion": "servicing_queue_action_summary.v1"
+            },
+            "sandboxOnly": true,
+            "productionFundsMoved": false,
+            "withdrawable": false,
+            "schemaVersion": "servicing_queue_case.v1"
+          }
+        ],
+        "page": {
+          "limit": 25,
+          "hasMore": false
+        },
+        "safety": {
+          "readOnly": true,
+          "piiIncluded": false,
+          "dispositionAuthority": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "withdrawable": false
+        },
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadEvidence",
+      "replayed": false,
+      "response": {
+        "obligationId": "obligation_evidence_fixture",
+        "asOf": "2026-07-14T01:00:00.000Z",
+        "items": [
+          {
+            "evidenceId": "event_obligation_created_fixture",
+            "evidenceHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+            "eventType": "obligation_created",
+            "aggregateType": "obligation",
+            "aggregateId": "obligation_evidence_fixture",
+            "aggregateVersion": 1,
+            "obligationId": "obligation_evidence_fixture",
+            "sourceFinality": "finalized",
+            "payloadHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+            "occurredAt": "2026-07-14T00:00:00.000Z",
+            "recordedAt": "2026-07-14T00:00:00.100Z",
+            "schemaVersion": "obligation_evidence_summary.v1"
+          }
+        ],
+        "hasMore": false,
+        "schemaVersion": "tenant_obligation_evidence_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadOwnObligation",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_owned_view_fixture",
+          "obligationHash": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "creditIntentId": "credit_intent_execution_fixture",
+          "riskDecisionId": "risk_decision_execution_fixture",
+          "creditOfferId": "credit_offer_execution_fixture",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_execution_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "10000",
+          "outstandingPrincipalMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-09-14T12:00:00.000Z",
+          "maturityAt": "2026-09-14T12:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x8888888888888888888888888888888888888888888888888888888888888888",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_owned_view_fixture_installment_1",
+              "obligationId": "obligation_owned_view_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-09-14T12:00:00.000Z",
+              "scheduledPrincipalMinor": "10000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "sandboxExecutionReceiptId": "sandbox_execution_receipt_fixture",
+          "executedAt": "2026-07-16T12:02:00.000Z",
+          "lastAccruedAt": "2026-07-16T12:02:00.000Z",
+          "interestAccrualRemainder": "0",
+          "withdrawable": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "active",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_owned_view_fixture_installment_1",
+          "servicingEffectiveAt": "2026-07-16T12:01:00.000Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-07-16T12:01:00.000Z",
+          "createdAt": "2026-07-16T12:01:00.000Z",
+          "updatedAt": "2026-07-16T12:02:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "asOf": "2026-07-17T12:03:00.000Z",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "withdrawable": false,
+        "schemaVersion": "tenant_owned_obligation_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadOwnObligationEvidence",
+      "replayed": false,
+      "response": {
+        "obligationId": "obligation_owned_evidence_fixture",
+        "asOf": "2026-07-14T01:00:00.000Z",
+        "items": [
+          {
+            "evidenceId": "event_owned_obligation_created_fixture",
+            "evidenceHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+            "eventType": "obligation_created",
+            "aggregateType": "obligation",
+            "aggregateId": "obligation_owned_evidence_fixture",
+            "aggregateVersion": 1,
+            "obligationId": "obligation_owned_evidence_fixture",
+            "sourceFinality": "finalized",
+            "payloadHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+            "occurredAt": "2026-07-14T00:00:00.000Z",
+            "recordedAt": "2026-07-14T00:00:00.100Z",
+            "schemaVersion": "obligation_evidence_summary.v1"
+          }
+        ],
+        "hasMore": false,
+        "schemaVersion": "tenant_owned_obligation_evidence_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotRevokeConsent",
+      "replayed": true,
+      "response": {
+        "consent": {
+          "consentId": "consent_human_fixture",
+          "consentHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "termsHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "dataUsageHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "status": "revoked",
+          "purposes": [
+            "credit_application",
+            "identity_reference_use"
+          ],
+          "allowedAssetIds": [
+            "urn:ipo-one:sandbox-asset:usd-cent"
+          ],
+          "allowedCreditPurposeCodes": [
+            "working_capital"
+          ],
+          "allowedRepaymentFrequencies": [
+            "monthly"
+          ],
+          "maxRequestedPrincipalMinor": "25000",
+          "maxRequestedTermDays": 90,
+          "maxInstallmentCount": 3,
+          "validFrom": "2026-07-14T00:00:00.000Z",
+          "expiresAt": "2026-10-14T00:00:00.000Z",
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-14T01:00:00.000Z"
+        },
+        "reasonCode": "human_withdrawal",
+        "schemaVersion": "tenant_consent_revoked.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },
@@ -436,6 +2294,433 @@
         "reasonCode": "operator_request",
         "updatedAt": "2026-07-14T01:00:00.000Z",
         "schemaVersion": "tenant_draft_mandate_revoked.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotSubmitAgentAccountProof",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_fixture",
+        "subjectHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "active",
+        "accountBinding": {
+          "accountBindingId": "account_binding_fixture",
+          "accountHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "chainId": "eip155:84532",
+          "purpose": "primary",
+          "proofHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "verificationMethod": "eip712_eoa_v1",
+          "status": "active",
+          "boundAt": "2026-07-16T00:01:00.000Z",
+          "protocolVersion": "1.1"
+        },
+        "challengeConsumed": true,
+        "productionAuthority": false,
+        "schemaVersion": "tenant_agent_account_proof_verified.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "workerAdvanceSandboxServicing",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_servicing_fixture",
+          "obligationHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "subjectId": "subject_agent_fixture",
+          "principalId": "principal_agent_fixture",
+          "creditIntentId": "credit_intent_servicing_fixture",
+          "riskDecisionId": "risk_decision_servicing_fixture",
+          "creditOfferId": "credit_offer_servicing_fixture",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_servicing_fixture",
+          "authorityType": "mandate",
+          "authorityId": "mandate_servicing_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "10000",
+          "outstandingPrincipalMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-07-15T00:00:00.000Z",
+          "maturityAt": "2026-07-15T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_servicing_fixture_1",
+              "obligationId": "obligation_servicing_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-07-15T00:00:00.000Z",
+              "scheduledPrincipalMinor": "10000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "sandboxExecutionReceiptId": "sandbox_execution_receipt_servicing_fixture",
+          "executedAt": "2026-07-14T00:00:00.000Z",
+          "lastAccruedAt": "2026-07-14T00:00:00.000Z",
+          "interestAccrualRemainder": "0",
+          "withdrawable": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "delinquent",
+          "servicingClassification": "grace_period",
+          "daysPastDue": 1,
+          "oldestUnpaidInstallmentId": "obligation_installment_servicing_fixture_1",
+          "servicingEffectiveAt": "2026-07-16T00:00:00.000Z",
+          "servicingReasonCode": "servicing_grace_period",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-07-14T00:00:00.000Z",
+          "createdAt": "2026-07-14T00:00:00.000Z",
+          "updatedAt": "2026-07-16T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "servicingStateHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "changed": true,
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "tenant_sandbox_servicing_advanced.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotRestructureSandboxObligation",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_restructure_fixture",
+          "obligationHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "creditIntentId": "credit_intent_restructure_fixture",
+          "riskDecisionId": "risk_decision_restructure_fixture",
+          "creditOfferId": "credit_offer_restructure_fixture",
+          "creditOfferAcceptanceId": "acceptance_restructure_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "10000",
+          "outstandingPrincipalMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "100",
+          "outstandingInterestMinor": "100",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-08-15T00:00:00.000Z",
+          "maturityAt": "2026-08-15T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "scheduleSequence": 2,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_restructure_fixture_1",
+              "obligationId": "obligation_restructure_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-08-15T00:00:00.000Z",
+              "scheduledPrincipalMinor": "10000",
+              "scheduledInterestMinor": "100",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 2,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "sandboxExecutionReceiptId": "receipt_restructure_fixture",
+          "executedAt": "2026-07-01T00:00:00.000Z",
+          "lastAccruedAt": "2026-07-16T00:00:00.000Z",
+          "interestAccrualRemainder": "0",
+          "withdrawable": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "restructured",
+          "servicingClassification": "restructured",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_restructure_fixture_1",
+          "servicingEffectiveAt": "2026-07-16T00:00:00.000Z",
+          "servicingReasonCode": "sandbox_hardship_restructure",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "resolutionType": "restructure",
+          "resolutionReasonCode": "sandbox_hardship_restructure",
+          "resolutionAt": "2026-07-16T00:00:00.000Z",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-07-01T00:00:00.000Z",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "updatedAt": "2026-07-16T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "servicingStateHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "approvalExecutionId": "approval_execution_restructure_fixture",
+        "approvalExecutionHash": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "tenant_sandbox_obligation_restructured.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotRepurchaseSandboxObligation",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_repurchase_fixture",
+          "obligationHash": "0x8888888888888888888888888888888888888888888888888888888888888888",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "creditIntentId": "credit_intent_repurchase_fixture",
+          "riskDecisionId": "risk_decision_repurchase_fixture",
+          "creditOfferId": "credit_offer_repurchase_fixture",
+          "creditOfferAcceptanceId": "acceptance_repurchase_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "10000",
+          "outstandingPrincipalMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-07-01T00:00:00.000Z",
+          "maturityAt": "2026-07-01T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x9999999999999999999999999999999999999999999999999999999999999999",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "installment_repurchase_fixture_1",
+              "obligationId": "obligation_repurchase_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-07-01T00:00:00.000Z",
+              "scheduledPrincipalMinor": "10000",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "sandboxExecutionReceiptId": "receipt_repurchase_fixture",
+          "executedAt": "2026-06-01T00:00:00.000Z",
+          "lastAccruedAt": "2026-07-16T00:00:00.000Z",
+          "interestAccrualRemainder": "0",
+          "withdrawable": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "repurchased",
+          "servicingClassification": "repurchased",
+          "daysPastDue": 15,
+          "oldestUnpaidInstallmentId": "installment_repurchase_fixture_1",
+          "servicingEffectiveAt": "2026-07-16T00:00:00.000Z",
+          "servicingReasonCode": "sandbox_contractual_repurchase",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_originator",
+          "resolutionType": "repurchase",
+          "resolutionReasonCode": "sandbox_contractual_repurchase",
+          "resolutionAt": "2026-07-16T00:00:00.000Z",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-06-01T00:00:00.000Z",
+          "createdAt": "2026-06-01T00:00:00.000Z",
+          "updatedAt": "2026-07-16T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "servicingStateHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "approvalExecutionId": "approval_execution_repurchase_fixture",
+        "approvalExecutionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "tenant_sandbox_obligation_repurchased.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotWriteOffSandboxObligation",
+      "replayed": false,
+      "response": {
+        "obligation": {
+          "obligationId": "obligation_writeoff_fixture",
+          "obligationHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "creditIntentId": "credit_intent_writeoff_fixture",
+          "riskDecisionId": "risk_decision_writeoff_fixture",
+          "creditOfferId": "credit_offer_writeoff_fixture",
+          "creditOfferAcceptanceId": "acceptance_writeoff_fixture",
+          "authorityType": "consent",
+          "authorityId": "consent_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "10000",
+          "outstandingPrincipalMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "100",
+          "outstandingInterestMinor": "100",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-04-01T00:00:00.000Z",
+          "maturityAt": "2026-04-01T00:00:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "installment_writeoff_fixture_1",
+              "obligationId": "obligation_writeoff_fixture",
+              "installmentNumber": 1,
+              "dueAt": "2026-04-01T00:00:00.000Z",
+              "scheduledPrincipalMinor": "10000",
+              "scheduledInterestMinor": "100",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "executed",
+          "sandboxExecutionReceiptId": "receipt_writeoff_fixture",
+          "executedAt": "2026-03-01T00:00:00.000Z",
+          "lastAccruedAt": "2026-07-16T00:00:00.000Z",
+          "interestAccrualRemainder": "0",
+          "withdrawable": false,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "written_off",
+          "servicingClassification": "written_off",
+          "daysPastDue": 106,
+          "oldestUnpaidInstallmentId": "installment_writeoff_fixture_1",
+          "servicingEffectiveAt": "2026-07-16T00:00:00.000Z",
+          "servicingReasonCode": "sandbox_uncollectible_writeoff",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "resolutionType": "write_off",
+          "resolutionReasonCode": "sandbox_uncollectible_writeoff",
+          "resolutionAt": "2026-07-16T00:00:00.000Z",
+          "writtenOffPrincipalMinor": "10000",
+          "writtenOffInterestMinor": "100",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-03-01T00:00:00.000Z",
+          "createdAt": "2026-03-01T00:00:00.000Z",
+          "updatedAt": "2026-07-16T00:00:00.000Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "servicingStateHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "writeOffLedgerTransactionId": "ledger_transaction_writeoff_fixture",
+        "approvalExecutionId": "approval_execution_writeoff_fixture",
+        "approvalExecutionHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "tenant_sandbox_obligation_written_off.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadProviderIntent",
+      "replayed": false,
+      "response": {
+        "deliveryId": "provider_delivery_fixture_001",
+        "deliveryHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "transferIntentId": "transfer_intent_provider_fixture",
+        "transferIntentHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "providerId": "provider_fixture_001",
+        "purposeCode": "compute_services",
+        "sourceAssetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "sourceAmountMinor": "12000",
+        "destinationAssetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "status": "pending",
+        "issuedAt": "2026-07-17T08:00:00.000Z",
+        "expiresAt": "2026-07-17T08:05:00.000Z",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "withdrawable": false,
+        "schemaVersion": "provider_intent_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotAcknowledgeProviderIntent",
+      "replayed": false,
+      "response": {
+        "acknowledgementId": "provider_acknowledgement_fixture_001",
+        "deliveryId": "provider_delivery_fixture_001",
+        "deliveryHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "transferIntentId": "transfer_intent_provider_fixture",
+        "providerId": "provider_fixture_001",
+        "acknowledgedAt": "2026-07-17T08:00:01.000Z",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "withdrawable": false,
+        "schemaVersion": "provider_intent_acknowledgement.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "workerProcessInbox",
+      "replayed": false,
+      "response": {
+        "callbackId": "provider_callback_fixture_001",
+        "transferIntentId": "transfer_intent_provider_fixture",
+        "providerId": "provider_fixture_001",
+        "deliveryHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "payloadHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "nonceHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "keyId": "provider_callback_key_fixture_001",
+        "outcome": "accepted",
+        "reasonCode": "provider_accepted",
+        "providerEventRefHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "processedAt": "2026-07-17T08:00:02.000Z",
+        "sandboxOnly": true,
+        "productionFundsMoved": false,
+        "withdrawable": false,
+        "schemaVersion": "provider_sandbox_callback_result.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     }
@@ -484,8 +2769,12 @@
           "mandateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "subjectId": "subject_fixture",
           "status": "active",
-          "capabilities": ["request_credit"],
-          "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+          "capabilities": [
+            "request_credit"
+          ],
+          "assetIds": [
+            "urn:ipo-one:sandbox-asset:usd-cent"
+          ],
           "perActionLimitMinor": "10000",
           "aggregateLimitMinor": "50000",
           "validFrom": "2026-07-14T00:00:00.000Z",
@@ -564,15 +2853,100 @@
             "fullyRepaidCount": 0,
             "overdueCount": 0,
             "defaultedCount": 0,
+            "delinquentCount": 0,
+            "restructuredCount": 0,
+            "repurchasedCount": 0,
+            "writtenOffCount": 0,
             "closedCount": 0,
             "principalMinor": "0",
             "outstandingPrincipalMinor": "0",
             "accruedFeesMinor": "0",
-            "repaidAmountMinor": "0"
+            "repaidAmountMinor": "0",
+            "writtenOffPrincipalMinor": "0",
+            "writtenOffInterestMinor": "0",
+            "writtenOffFeesMinor": "0"
           },
           "assetExposures": [],
           "hasMoreAssetExposures": false,
           "schemaVersion": "tenant_risk_portfolio_view.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "Pilot health response exposes a Subject identifier",
+      "value": {
+        "operationId": "pilotReadPilotHealth",
+        "replayed": false,
+        "response": {
+          "portfolioId": "risk_portfolio_fixture",
+          "asOf": "2026-07-14T01:00:00.000Z",
+          "subjectId": "subject_must_not_be_exposed",
+          "entryModes": {
+            "humanIntentCount": 0,
+            "agentIntentCount": 0,
+            "dualNativeObserved": false
+          },
+          "funnel": {
+            "intentCount": 0,
+            "offeredIntentCount": 0,
+            "acceptedIntentCount": 0,
+            "executedIntentCount": 0,
+            "repaidIntentCount": 0,
+            "fullyRepaidIntentCount": 0
+          },
+          "conversionBps": {
+            "offer": 0,
+            "acceptance": 0,
+            "execution": 0,
+            "repayment": 0,
+            "fullRepayment": 0
+          },
+          "positions": {
+            "obligationCount": 0,
+            "openPositionCount": 0,
+            "adversePositionCount": 0
+          },
+          "readiness": {
+            "stage": "empty",
+            "dualNativeObserved": false,
+            "fullLifecycleObserved": false
+          },
+          "safety": {
+            "readOnly": true,
+            "piiIncluded": false,
+            "thirdPartyAnalytics": false,
+            "sandboxOnly": true,
+            "productionFundsMoved": false
+          },
+          "schemaVersion": "tenant_pilot_health_view.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "Provider callback result leaks signature and raw nonce",
+      "value": {
+        "operationId": "workerProcessInbox",
+        "replayed": false,
+        "response": {
+          "callbackId": "provider_callback_fixture_001",
+          "transferIntentId": "transfer_intent_provider_fixture",
+          "providerId": "provider_fixture_001",
+          "deliveryHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "payloadHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+          "nonceHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "nonce": "raw_nonce_must_not_escape",
+          "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "keyId": "provider_callback_key_fixture_001",
+          "outcome": "accepted",
+          "reasonCode": "provider_accepted",
+          "providerEventRefHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "processedAt": "2026-07-17T08:00:02.000Z",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "withdrawable": false,
+          "schemaVersion": "provider_sandbox_callback_result.v1"
         },
         "schemaVersion": "tenant_protocol_result.v1"
       }

@@ -5,13 +5,14 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-const [dockerfile, dockerignore, service, workflow, packageJson, nodeVersion] = await Promise.all([
+const [dockerfile, dockerignore, service, workflow, packageJson, nodeVersion, nvmVersion] = await Promise.all([
   source("Dockerfile"),
   source(".dockerignore"),
   source("deploy/gcp/cloud-run-service.yaml.tmpl"),
   source(".github/workflows/quality.yml"),
   source("package.json"),
-  source(".node-version")
+  source(".node-version"),
+  source(".nvmrc")
 ]);
 
 assert.match(dockerfile, /node:24\.18\.0-bookworm-slim@sha256:[a-f0-9]{64}/);
@@ -52,5 +53,7 @@ assert.equal(/uses:\s+[^\s]+@v\d/.test(workflow), false, "GitHub Actions must us
 const manifest = JSON.parse(packageJson);
 assert.equal(manifest.engines?.node, ">=24.18.0 <25");
 assert.equal(nodeVersion.trim(), "24.18.0");
+assert.equal(nvmVersion.trim(), nodeVersion.trim());
+assert.match(workflow, /node-version-file:\s*\.node-version/);
 
 console.log("Deployment artifacts satisfy the public-sandbox baseline.");

@@ -1,4 +1,211 @@
+import type {
+  AgentCreditOfferWorkflowReceipt,
+  AgentPilotCapabilityManifest,
+  AgentHandoffManifest,
+  AgentSandboxObligationWorkflowReceipt,
+  ApplicationReadyAgentHandoffManifest,
+  ReadyAgentHandoffManifest,
+  SandboxObligationPortabilityReceipt,
+  TenantProtocolRequest,
+  TenantProtocolResult
+} from "@ipo-one/api-contract";
+
+export type {
+  AgentCreditOfferWorkflowReceipt,
+  AgentPilotCapabilityManifest,
+  AgentHandoffManifest,
+  AgentSandboxObligationWorkflowReceipt,
+  ApplicationReadyAgentHandoffManifest,
+  ReadyAgentHandoffManifest,
+  SandboxObligationPortabilityReceipt
+} from "@ipo-one/api-contract";
+
 export type JsonObject = Record<string, unknown>;
+
+export interface AgentMcpToolOperation {
+  readonly name:
+    | "ipo_one_read_self"
+    | "ipo_one_request_credit"
+    | "ipo_one_read_credit_application"
+    | "ipo_one_evaluate_credit_application"
+    | "ipo_one_submit_account_proof"
+    | "ipo_one_read_account_binding"
+    | "ipo_one_read_obligation"
+    | "ipo_one_read_obligation_evidence"
+    | "ipo_one_accept_credit_offer"
+    | "ipo_one_execute_sandbox_obligation"
+    | "ipo_one_post_sandbox_repayment";
+  readonly operationId:
+    | "pilotReadAgentSelf"
+    | "pilotRequestCredit"
+    | "pilotReadCreditApplication"
+    | "pilotEvaluateCreditApplication"
+    | "pilotSubmitAgentAccountProof"
+    | "pilotReadAgentAccountBinding"
+    | "pilotReadOwnObligation"
+    | "pilotReadOwnObligationEvidence"
+    | "pilotAcceptCreditOffer"
+    | "pilotExecuteSandboxObligation"
+    | "pilotPostSandboxRepayment";
+}
+
+export const AGENT_MCP_CLIENT_TOOLS: readonly AgentMcpToolOperation[];
+
+export interface AgentCreditRequest {
+  assetId: string;
+  installmentCount: number;
+  purposeCode: string;
+  repaymentFrequency: "weekly" | "biweekly" | "monthly" | "end_of_term";
+  requestedPrincipalMinor: string;
+  requestedTermDays: number;
+}
+
+export interface AgentCreditOfferWorkflowInput {
+  creditRequest: AgentCreditRequest;
+  workflowId: string;
+}
+
+export type AgentMcpLocalHandle = (
+  message: JsonObject
+) => Promise<JsonObject>;
+
+export interface IpoOneAgentMcpClientOptions {
+  handle: AgentMcpLocalHandle;
+  manifest: ApplicationReadyAgentHandoffManifest;
+  transportProfile: "mcp_stdio_local";
+}
+
+export class IpoOneAgentSdkError extends Error {
+  constructor(code: string, message: string);
+  readonly code: string;
+}
+
+export class IpoOneAgentMcpClient {
+  constructor(options: IpoOneAgentMcpClientOptions);
+  runCreditOfferWorkflow(
+    input: AgentCreditOfferWorkflowInput
+  ): Promise<AgentCreditOfferWorkflowReceipt>;
+}
+
+export function runAgentCreditOfferWorkflow(
+  input: IpoOneAgentMcpClientOptions & AgentCreditOfferWorkflowInput
+): Promise<AgentCreditOfferWorkflowReceipt>;
+
+export type AgentTenantProtocolExecute = (
+  request: TenantProtocolRequest
+) => Promise<TenantProtocolResult>;
+
+export interface IpoOneAgentEvidenceClientOptions {
+  execute: AgentTenantProtocolExecute;
+  manifest: ReadyAgentHandoffManifest;
+  transportProfile: "local_in_process";
+}
+
+export interface AgentObligationEvidenceQuery {
+  obligationId: string;
+  limit: number;
+  cursor?: string;
+  requestId: string;
+  correlationId: string;
+}
+
+export class IpoOneAgentEvidenceClient {
+  constructor(options: IpoOneAgentEvidenceClientOptions);
+  readObligationEvidence(
+    input: AgentObligationEvidenceQuery
+  ): Promise<import("@ipo-one/api-contract").OwnedObligationEvidenceViewResponse>;
+}
+
+export function readAgentObligationEvidence(
+  input: IpoOneAgentEvidenceClientOptions & AgentObligationEvidenceQuery
+): Promise<import("@ipo-one/api-contract").OwnedObligationEvidenceViewResponse>;
+
+export interface IpoOneAgentFeedbackClientOptions {
+  execute: AgentTenantProtocolExecute;
+  manifest: ReadyAgentHandoffManifest;
+  transportProfile: "local_in_process";
+}
+
+export interface AgentPilotFeedbackInput {
+  subjectId: string;
+  feedback: import("@ipo-one/api-contract").PilotFeedbackPayload;
+  idempotencyKey: string;
+  requestId: string;
+  correlationId: string;
+}
+
+export class IpoOneAgentFeedbackClient {
+  constructor(options: IpoOneAgentFeedbackClientOptions);
+  submitFeedback(
+    input: AgentPilotFeedbackInput
+  ): Promise<import("@ipo-one/api-contract").PilotFeedbackRecordedResponse>;
+}
+
+export function submitAgentPilotFeedback(
+  input: IpoOneAgentFeedbackClientOptions & AgentPilotFeedbackInput
+): Promise<import("@ipo-one/api-contract").PilotFeedbackRecordedResponse>;
+
+export interface IpoOneAgentObligationClientOptions {
+  execute: AgentTenantProtocolExecute;
+  manifest: ReadyAgentHandoffManifest;
+  transportProfile: "local_in_process";
+}
+
+export interface AgentObligationQuery {
+  obligationId: string;
+  requestId: string;
+  correlationId: string;
+}
+
+export class IpoOneAgentObligationClient {
+  constructor(options: IpoOneAgentObligationClientOptions);
+  readObligation(
+    input: AgentObligationQuery
+  ): Promise<import("@ipo-one/api-contract").OwnedObligationViewResponse>;
+}
+
+export function readAgentObligation(
+  input: IpoOneAgentObligationClientOptions & AgentObligationQuery
+): Promise<import("@ipo-one/api-contract").OwnedObligationViewResponse>;
+
+export interface IpoOneAgentSandboxObligationClientOptions {
+  execute: AgentTenantProtocolExecute;
+  manifest: ReadyAgentHandoffManifest;
+  transportProfile: "local_in_process";
+}
+
+export interface AgentSandboxRepaymentInput {
+  amountMinor: string;
+  sourceCode: "synthetic_wallet" | "synthetic_bank" | "synthetic_revenue";
+}
+
+export interface AgentSandboxObligationWorkflowInput {
+  acknowledgementHash: string;
+  offerReceipt: AgentCreditOfferWorkflowReceipt & { status: "offer_ready" };
+  repayment: AgentSandboxRepaymentInput;
+  workflowId: string;
+}
+
+export class IpoOneAgentSandboxObligationClient {
+  constructor(options: IpoOneAgentSandboxObligationClientOptions);
+  runObligationWorkflow(
+    input: AgentSandboxObligationWorkflowInput
+  ): Promise<AgentSandboxObligationWorkflowReceipt>;
+}
+
+export function runAgentSandboxObligationWorkflow(
+  input: IpoOneAgentSandboxObligationClientOptions & AgentSandboxObligationWorkflowInput
+): Promise<AgentSandboxObligationWorkflowReceipt>;
+
+export function runSandboxObligationPortabilityConformance(input: {
+  workflowReceipt:
+    | AgentSandboxObligationWorkflowReceipt
+    | import("@ipo-one/api-contract").HumanSandboxObligationWorkflowReceipt;
+}): Promise<SandboxObligationPortabilityReceipt>;
+
+export function createAgentPilotCapabilityManifest(
+  handoff: AgentHandoffManifest
+): AgentPilotCapabilityManifest;
 
 export interface ProblemDetails {
   type: string;

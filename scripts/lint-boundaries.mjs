@@ -5,6 +5,8 @@ const root = process.cwd();
 const requiredModules = [
   "authentication",
   "authorization",
+  "chain-adapter",
+  "event-indexer",
   "event-audit",
   "identity",
   "ledger",
@@ -19,6 +21,7 @@ const requiredModules = [
   "rail",
   "settlement",
   "admin",
+  "operations-control",
   "tenant-command-gateway"
 ];
 

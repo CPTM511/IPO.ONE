@@ -66,6 +66,45 @@ test("Human and Agent commands use one branded deny-by-default authorization dec
   assert.equal(harness.auditStore.list().at(-1).reasonCode, "route_contract_rejected");
 });
 
+test("the Human Borrower boundary is Human-only and grants credit only when explicitly issued", async () => {
+  const harness = createAuthorizationHarness();
+  const borrower = harness.addIdentity({
+    tenantId: "tenant_human_pilot",
+    actorId: "actor_human_borrower",
+    actorType: ActorType.HUMAN,
+    roleBundle: RoleBundle.HUMAN_BORROWER,
+    capabilities: [PilotCapability.HUMAN_SUBJECT_CREATE_SELF]
+  });
+  const allowed = await harness.service.authorize(authorizationRequest(
+    borrower.authenticationContext,
+    "pilotCreateHumanSubject",
+    { idempotencyKey: "create-human-subject-0001" }
+  ));
+  assert.equal(allowed.authorizationDecision, "allow");
+  assert.equal(allowed.requiredCapability, PilotCapability.HUMAN_SUBJECT_CREATE_SELF);
+
+  await denied(() => harness.service.authorize(authorizationRequest(
+    borrower.authenticationContext,
+    "pilotRequestCredit",
+    {
+      resource: { resourceType: "subject", resourceId: "subject_human_borrower" },
+      idempotencyKey: "human-credit-capability-not-issued"
+    }
+  )));
+  assert.equal(harness.auditStore.list().at(-1).reasonCode, "actor_capability_rejected");
+
+  assert.throws(
+    () => harness.addIdentity({
+      tenantId: "tenant_agent_pilot",
+      actorId: "actor_agent_with_human_role",
+      actorType: ActorType.AGENT,
+      roleBundle: RoleBundle.HUMAN_BORROWER,
+      capabilities: [PilotCapability.HUMAN_SUBJECT_CREATE_SELF]
+    }),
+    (error) => error.code === "invalid_authorization_input"
+  );
+});
+
 test("horizontal, vertical, and missing-object denials share one non-enumerating contract", async () => {
   const harness = createAuthorizationHarness();
   const alpha = harness.addIdentity({

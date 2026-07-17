@@ -1,4 +1,5 @@
 import { ActorType, assertAuthenticationContext } from "../../authentication/src/index.js";
+import { ROLE_BUNDLE_ACTOR_TYPES } from "./authorization-constants.js";
 import {
   assertAuthorizationIdentifier,
   assertAuthorizationShape,
@@ -136,7 +137,11 @@ export class PostgresAuthorizationDirectory {
     if (result.rowCount !== 1) {
       throw authorizationError("authorization_membership_rejected", "membership is not active");
     }
-    return cloneAuthorization(mapMembership(result.rows[0]));
+    const membership = mapMembership(result.rows[0]);
+    if (ROLE_BUNDLE_ACTOR_TYPES[membership.roleBundle] !== membership.actorType) {
+      throw authorizationError("authorization_membership_rejected", "membership role is not valid for the actor");
+    }
+    return cloneAuthorization(membership);
   }
 
   async resolveResource({ resourceType, resourceId, tenantId, actorId }) {

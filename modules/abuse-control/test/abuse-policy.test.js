@@ -46,7 +46,11 @@ test("every authenticated operation has exactly one closed quota classification"
     .filter((item) => item.quotaClass === QuotaClass.ECONOMIC)
     .map((item) => item.operationId));
   assert.deepEqual(economic, new Set([
+    "pilotAcceptCreditOffer",
+    "pilotExecuteSandboxObligation",
+    "pilotPostSandboxRepayment",
     "pilotRequestCredit",
+    "pilotEvaluateCreditApplication",
     "pilotSubmitSpend",
     "pilotCaptureRevenue",
     "pilotAutoRepay",
@@ -60,6 +64,7 @@ test("every authenticated operation has exactly one closed quota classification"
 test("all configured values remain within immutable hard ceilings", () => {
   assert.equal(HARD_CEILINGS.resources[ResourceKind.AGENT_SUBJECTS], 500);
   assert.equal(HARD_CEILINGS.resources[ResourceKind.MANDATES], 1_000);
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.CREDIT_DECISIONS], 1_000);
   for (const profile of Object.values(QUOTA_PROFILES)) {
     assert.ok(profile.windowMs <= HARD_CEILINGS.rate.windowMs);
     for (const [scope, value] of Object.entries(profile.rate)) {

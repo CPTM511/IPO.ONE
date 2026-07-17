@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/dual-native-lifecycle-synthetic-result.schema.json",
+  "title": "IPO.ONE Dual-Native Lifecycle Synthetic Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "syntheticRunId",
+    "tenantRefHash",
+    "checkIdHash",
+    "release",
+    "status",
+    "completedStages",
+    "evidenceRefs",
+    "startedAt",
+    "completedAt",
+    "observedAt",
+    "nonAuthorizing",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "credentialsIncluded",
+    "publicEndpointEnabled",
+    "notificationDelivered",
+    "policyVersion",
+    "resultHash",
+    "schemaVersion"
+  ],
+  "properties": {
+    "syntheticRunId": {
+      "type": "string",
+      "pattern": "^synthetic_run_[0-9a-f]{64}$"
+    },
+    "tenantRefHash": { "$ref": "#/$defs/contentHash" },
+    "checkIdHash": { "$ref": "#/$defs/contentHash" },
+    "release": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "status": { "enum": ["passed", "failed"] },
+    "completedStages": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stage" }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stage", "evidenceHash"],
+        "properties": {
+          "stage": { "$ref": "#/$defs/stage" },
+          "evidenceHash": { "$ref": "#/$defs/contentHash" }
+        }
+      }
+    },
+    "reconciliationSummaryHash": { "$ref": "#/$defs/contentHash" },
+    "failureStage": { "$ref": "#/$defs/stage" },
+    "failureCode": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 96,
+      "pattern": "^[a-z][a-z0-9_]+$"
+    },
+    "startedAt": { "$ref": "#/$defs/timestamp" },
+    "completedAt": { "$ref": "#/$defs/timestamp" },
+    "observedAt": { "$ref": "#/$defs/timestamp" },
+    "nonAuthorizing": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "credentialsIncluded": { "const": false },
+    "publicEndpointEnabled": { "const": false },
+    "notificationDelivered": { "const": false },
+    "policyVersion": { "const": "ops_001c.v1" },
+    "resultHash": { "$ref": "#/$defs/contentHash" },
+    "schemaVersion": { "const": "dual_native_lifecycle_synthetic_result.v1" }
+  },
+  "oneOf": [
+    {
+      "properties": { "status": { "const": "passed" } },
+      "required": ["reconciliationSummaryHash"],
+      "not": {
+        "anyOf": [
+          { "required": ["failureStage"] },
+          { "required": ["failureCode"] }
+        ]
+      }
+    },
+    {
+      "properties": { "status": { "const": "failed" } },
+      "required": ["failureStage", "failureCode"],
+      "not": { "required": ["reconciliationSummaryHash"] }
+    }
+  ],
+  "$defs": {
+    "contentHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "stage": {
+      "enum": [
+        "human_offer",
+        "agent_offer",
+        "offer_parity",
+        "human_obligation",
+        "agent_obligation",
+        "receipt_linkage",
+        "obligation_parity",
+        "reconciliation"
+      ]
+    }
+  }
+}

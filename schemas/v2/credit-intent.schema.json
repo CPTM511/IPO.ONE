@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/credit-intent.schema.json",
+  "title": "IPO.ONE Credit Intent v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "creditIntentId",
+    "creditIntentHash",
+    "subjectId",
+    "principalId",
+    "authorityType",
+    "authorityRef",
+    "assetId",
+    "requestedPrincipalMinor",
+    "purposeCode",
+    "requestedTermDays",
+    "repaymentFrequency",
+    "installmentCount",
+    "sandboxOnly",
+    "productionFundsRequested",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "creditIntentId": { "type": "string", "minLength": 1 },
+    "creditIntentHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "type": "string", "minLength": 1 },
+    "principalId": { "type": "string", "minLength": 1 },
+    "authorityType": { "enum": ["consent", "mandate"] },
+    "authorityRef": { "type": "string", "minLength": 1 },
+    "assetId": { "type": "string", "minLength": 1 },
+    "requestedPrincipalMinor": { "type": "string", "pattern": "^[1-9][0-9]*$", "maxLength": 78 },
+    "purposeCode": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,63}$" },
+    "requestedTermDays": { "type": "integer", "minimum": 1, "maximum": 3660 },
+    "repaymentFrequency": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] },
+    "installmentCount": { "type": "integer", "minimum": 1, "maximum": 520 },
+    "sandboxOnly": { "const": true },
+    "productionFundsRequested": { "const": false },
+    "status": { "enum": ["submitted", "decided", "withdrawn", "expired"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": { "const": "credit_intent.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+  }
+}

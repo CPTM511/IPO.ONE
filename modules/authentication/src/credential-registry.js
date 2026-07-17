@@ -28,13 +28,17 @@ const HUMAN_ACTOR_TYPES = new Set([
 
 function assertCredentialProfile(actorType, clientAuthenticationMethod, senderConstraintMethod) {
   const humanProfile = HUMAN_ACTOR_TYPES.has(actorType);
+  const humanAuthenticationMethod = new Set([
+    ClientAuthenticationMethod.OIDC_PKCE_BFF,
+    ClientAuthenticationMethod.SIWE
+  ]).has(clientAuthenticationMethod);
   if (
     (humanProfile && (
-      clientAuthenticationMethod !== ClientAuthenticationMethod.OIDC_PKCE_BFF ||
+      !humanAuthenticationMethod ||
       senderConstraintMethod !== SenderConstraintMethod.HOST_SESSION
     )) ||
     (!humanProfile && (
-      clientAuthenticationMethod === ClientAuthenticationMethod.OIDC_PKCE_BFF ||
+      humanAuthenticationMethod ||
       senderConstraintMethod === SenderConstraintMethod.HOST_SESSION
     ))
   ) {

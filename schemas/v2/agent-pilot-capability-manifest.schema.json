@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/agent-pilot-capability-manifest.schema.json",
+  "title": "IPO.ONE Agent Pilot Capability Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "nextAgentAction",
+    "handoff",
+    "mcp",
+    "workflows",
+    "nonAuthorizing",
+    "sandboxOnly",
+    "productionFundsApproved",
+    "productionFundsMoved",
+    "withdrawable",
+    "fundsAuthority",
+    "credentialsIncluded",
+    "publicEndpointEnabled",
+    "remoteMcpEnabled",
+    "economicMcpToolsEnabled",
+    "liveChainExecution"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "agent_pilot_capability_manifest.v1" },
+    "status": { "enum": ["waiting", "application_ready", "runtime_ready"] },
+    "nextAgentAction": {
+      "enum": [
+        "await_principal_handoff",
+        "run_credit_offer_workflow",
+        "run_sandbox_obligation_workflow",
+        "request_principal_scope_review"
+      ]
+    },
+    "handoff": {
+      "$ref": "https://schemas.ipo.one/v2/agent-handoff-manifest.schema.json"
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registryVersion",
+        "transportProfile",
+        "toolCount",
+        "tools",
+        "economicLifecycleToolsIncluded"
+      ],
+      "properties": {
+        "registryVersion": { "const": "agent_mcp_registry.v2" },
+        "transportProfile": { "const": "mcp_stdio_local" },
+        "toolCount": { "const": 11 },
+        "tools": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "prefixItems": [
+            { "$ref": "#/$defs/readSelfTool" },
+            { "$ref": "#/$defs/requestCreditTool" },
+            { "$ref": "#/$defs/readCreditApplicationTool" },
+            { "$ref": "#/$defs/evaluateCreditApplicationTool" },
+            { "$ref": "#/$defs/submitAccountProofTool" },
+            { "$ref": "#/$defs/readAccountBindingTool" },
+            { "$ref": "#/$defs/readObligationTool" },
+            { "$ref": "#/$defs/readObligationEvidenceTool" },
+            { "$ref": "#/$defs/acceptCreditOfferTool" },
+            { "$ref": "#/$defs/executeSandboxObligationTool" },
+            { "$ref": "#/$defs/postSandboxRepaymentTool" }
+          ],
+          "items": false
+        },
+        "economicLifecycleToolsIncluded": { "const": true }
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        { "$ref": "#/$defs/creditOfferWorkflow" },
+        { "$ref": "#/$defs/sandboxObligationWorkflow" },
+        { "$ref": "#/$defs/portabilityWorkflow" }
+      ],
+      "items": false
+    },
+    "nonAuthorizing": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionFundsApproved": { "const": false },
+    "productionFundsMoved": { "const": false },
+    "withdrawable": { "const": false },
+    "fundsAuthority": { "const": false },
+    "credentialsIncluded": { "const": false },
+    "publicEndpointEnabled": { "const": false },
+    "remoteMcpEnabled": { "const": false },
+    "economicMcpToolsEnabled": { "const": true },
+    "liveChainExecution": { "const": false }
+  },
+  "$defs": {
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "type": "string" },
+        "operationId": { "type": "string" }
+      }
+    },
+    "readSelfTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_read_self" }, "operationId": { "const": "pilotReadAgentSelf" } } }
+      ]
+    },
+    "requestCreditTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_request_credit" }, "operationId": { "const": "pilotRequestCredit" } } }
+      ]
+    },
+    "readCreditApplicationTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_read_credit_application" }, "operationId": { "const": "pilotReadCreditApplication" } } }
+      ]
+    },
+    "evaluateCreditApplicationTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_evaluate_credit_application" }, "operationId": { "const": "pilotEvaluateCreditApplication" } } }
+      ]
+    },
+    "submitAccountProofTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_submit_account_proof" }, "operationId": { "const": "pilotSubmitAgentAccountProof" } } }
+      ]
+    },
+    "readAccountBindingTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_read_account_binding" }, "operationId": { "const": "pilotReadAgentAccountBinding" } } }
+      ]
+    },
+    "readObligationEvidenceTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_read_obligation_evidence" }, "operationId": { "const": "pilotReadOwnObligationEvidence" } } }
+      ]
+    },
+    "readObligationTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_read_obligation" }, "operationId": { "const": "pilotReadOwnObligation" } } }
+      ]
+    },
+    "acceptCreditOfferTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_accept_credit_offer" }, "operationId": { "const": "pilotAcceptCreditOffer" } } }
+      ]
+    },
+    "executeSandboxObligationTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_execute_sandbox_obligation" }, "operationId": { "const": "pilotExecuteSandboxObligation" } } }
+      ]
+    },
+    "postSandboxRepaymentTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_post_sandbox_repayment" }, "operationId": { "const": "pilotPostSandboxRepayment" } } }
+      ]
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "workflowId",
+        "entryPoint",
+        "interface",
+        "requiredHandoffStatus",
+        "requiredCapabilities",
+        "inputSchemaVersion",
+        "outputSchemaVersion",
+        "availability"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "workflowId": { "enum": ["credit_offer", "sandbox_obligation", "obligation_portability"] },
+        "entryPoint": {
+          "enum": [
+            "runAgentCreditOfferWorkflow",
+            "runAgentSandboxObligationWorkflow",
+            "runSandboxObligationPortabilityConformance"
+          ]
+        },
+        "interface": {
+          "enum": ["sdk_mcp_stdio_local", "sdk_tenant_protocol_local", "sdk_local_conformance"]
+        },
+        "requiredHandoffStatus": { "enum": ["application_ready", "ready", "none"] },
+        "requiredCapabilities": {
+          "type": "array",
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "request_credit",
+              "accept_credit_offer",
+              "execute_sandbox_credit",
+              "route_repayment"
+            ]
+          }
+        },
+        "inputSchemaVersion": {
+          "enum": [
+            "tenant_protocol_request.v1",
+            "agent_credit_offer_workflow_receipt.v1",
+            "agent_sandbox_obligation_workflow_receipt.v1"
+          ]
+        },
+        "outputSchemaVersion": {
+          "enum": [
+            "agent_credit_offer_workflow_receipt.v1",
+            "agent_sandbox_obligation_workflow_receipt.v1",
+            "sandbox_obligation_portability_receipt.v1"
+          ]
+        },
+        "availability": { "enum": ["enabled", "locked", "input_required"] },
+        "blockedReason": {
+          "enum": [
+            "awaiting_application_handoff",
+            "application_handoff_only",
+            "active_mandate_required",
+            "required_mandate_capabilities_missing",
+            "prior_receipt_required"
+          ]
+        }
+      }
+    },
+    "creditOfferWorkflow": {
+      "allOf": [
+        { "$ref": "#/$defs/workflow" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 1 },
+            "workflowId": { "const": "credit_offer" },
+            "entryPoint": { "const": "runAgentCreditOfferWorkflow" },
+            "interface": { "const": "sdk_mcp_stdio_local" },
+            "requiredHandoffStatus": { "const": "application_ready" },
+            "requiredCapabilities": {
+              "type": "array",
+              "prefixItems": [{ "const": "request_credit" }],
+              "items": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            "inputSchemaVersion": { "const": "tenant_protocol_request.v1" },
+            "outputSchemaVersion": { "const": "agent_credit_offer_workflow_receipt.v1" }
+          }
+        }
+      ]
+    },
+    "sandboxObligationWorkflow": {
+      "allOf": [
+        { "$ref": "#/$defs/workflow" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 2 },
+            "workflowId": { "const": "sandbox_obligation" },
+            "entryPoint": { "const": "runAgentSandboxObligationWorkflow" },
+            "interface": { "const": "sdk_tenant_protocol_local" },
+            "requiredHandoffStatus": { "const": "ready" },
+            "requiredCapabilities": {
+              "type": "array",
+              "prefixItems": [
+                { "const": "accept_credit_offer" },
+                { "const": "execute_sandbox_credit" },
+                { "const": "route_repayment" }
+              ],
+              "items": false,
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "inputSchemaVersion": { "const": "agent_credit_offer_workflow_receipt.v1" },
+            "outputSchemaVersion": { "const": "agent_sandbox_obligation_workflow_receipt.v1" }
+          }
+        }
+      ]
+    },
+    "portabilityWorkflow": {
+      "allOf": [
+        { "$ref": "#/$defs/workflow" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 3 },
+            "workflowId": { "const": "obligation_portability" },
+            "entryPoint": { "const": "runSandboxObligationPortabilityConformance" },
+            "interface": { "const": "sdk_local_conformance" },
+            "requiredHandoffStatus": { "const": "none" },
+            "requiredCapabilities": { "type": "array", "maxItems": 0 },
+            "inputSchemaVersion": { "const": "agent_sandbox_obligation_workflow_receipt.v1" },
+            "outputSchemaVersion": { "const": "sandbox_obligation_portability_receipt.v1" },
+            "availability": { "const": "input_required" },
+            "blockedReason": { "const": "prior_receipt_required" }
+          },
+          "required": ["blockedReason"]
+        }
+      ]
+    }
+  }
+}

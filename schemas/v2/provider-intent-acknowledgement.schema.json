@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/provider-intent-acknowledgement.schema.json",
+  "title": "IPO.ONE Provider Intent Acknowledgement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "acknowledgementId", "deliveryId", "deliveryHash", "transferIntentId",
+    "providerId", "acknowledgedAt", "sandboxOnly", "productionFundsMoved",
+    "withdrawable", "schemaVersion"
+  ],
+  "properties": {
+    "acknowledgementId": { "$ref": "#/$defs/identifier" },
+    "deliveryId": { "$ref": "#/$defs/identifier" },
+    "deliveryHash": { "$ref": "#/$defs/hash" },
+    "transferIntentId": { "$ref": "#/$defs/identifier" },
+    "providerId": { "$ref": "#/$defs/identifier" },
+    "acknowledgedAt": { "type": "string", "format": "date-time" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "withdrawable": { "const": false },
+    "schemaVersion": { "const": "provider_intent_acknowledgement.v1" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+  }
+}

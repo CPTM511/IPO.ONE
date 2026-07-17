@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/agent-handoff-manifest.schema.json",
+  "title": "IPO.ONE Agent Handoff Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "nonAuthorizing",
+    "credentialDelivery",
+    "credentialsIncluded",
+    "publicEndpointEnabled",
+    "remoteMcpEnabled",
+    "fundsAuthority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "agent_handoff_manifest.v1" },
+    "status": { "enum": ["awaiting_active_mandate", "application_ready", "ready"] },
+    "nonAuthorizing": { "const": true },
+    "requiredState": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "active Agent Subject" },
+        { "const": "active sandbox Mandate" }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "mandateId": { "$ref": "#/$defs/identifier" },
+    "mandateHash": { "$ref": "#/$defs/hash" },
+    "termsHash": { "$ref": "#/$defs/hash" },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "capabilities",
+        "assetIds",
+        "perActionLimitMinor",
+        "aggregateLimitMinor",
+        "expiresAt"
+      ],
+      "properties": {
+        "status": { "enum": ["draft", "active"] },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "request_credit",
+              "accept_credit_offer",
+              "execute_sandbox_credit",
+              "provider_spend",
+              "capture_revenue",
+              "route_repayment"
+            ]
+          }
+        },
+        "assetIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "perActionLimitMinor": { "$ref": "#/$defs/positiveMinor" },
+        "aggregateLimitMinor": { "$ref": "#/$defs/positiveMinor" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestSchemaVersion", "transportProfile", "nextTool", "tools"],
+      "properties": {
+        "requestSchemaVersion": { "const": "tenant_protocol_request.v1" },
+        "transportProfile": { "const": "mcp_stdio_local" },
+        "nextTool": { "const": "ipo_one_read_self" },
+        "tools": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/readSelfTool" },
+            { "$ref": "#/$defs/requestCreditTool" },
+            { "$ref": "#/$defs/readCreditApplicationTool" },
+            { "$ref": "#/$defs/evaluateCreditApplicationTool" },
+            { "$ref": "#/$defs/submitAccountProofTool" },
+            { "$ref": "#/$defs/readAccountBindingTool" },
+            { "$ref": "#/$defs/readObligationTool" },
+            { "$ref": "#/$defs/readObligationEvidenceTool" },
+            { "$ref": "#/$defs/acceptCreditOfferTool" },
+            { "$ref": "#/$defs/executeSandboxObligationTool" },
+            { "$ref": "#/$defs/postSandboxRepaymentTool" }
+          ],
+          "items": false,
+          "minItems": 11,
+          "maxItems": 11
+        }
+      }
+    },
+    "credentialDelivery": { "const": "out_of_band" },
+    "credentialsIncluded": { "const": false },
+    "publicEndpointEnabled": { "const": false },
+    "remoteMcpEnabled": { "const": false },
+    "fundsAuthority": { "const": false }
+  },
+  "oneOf": [
+    {
+      "properties": { "status": { "const": "awaiting_active_mandate" } },
+      "required": ["requiredState"]
+    },
+    {
+      "properties": {
+        "status": { "const": "application_ready" },
+        "authority": {
+          "type": "object",
+          "properties": { "status": { "const": "draft" } },
+          "required": ["status"]
+        }
+      },
+      "required": [
+        "subjectId",
+        "mandateId",
+        "mandateHash",
+        "termsHash",
+        "authority",
+        "protocol"
+      ]
+    },
+    {
+      "properties": {
+        "status": { "const": "ready" },
+        "authority": {
+          "type": "object",
+          "properties": { "status": { "const": "active" } },
+          "required": ["status"]
+        }
+      },
+      "required": [
+        "subjectId",
+        "mandateId",
+        "mandateHash",
+        "termsHash",
+        "authority",
+        "protocol"
+      ]
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "positiveMinor": { "type": "string", "pattern": "^[1-9][0-9]*$", "maxLength": 78 },
+    "readSelfTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_read_self" },
+        "operationId": { "const": "pilotReadAgentSelf" }
+      }
+    },
+    "requestCreditTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_request_credit" },
+        "operationId": { "const": "pilotRequestCredit" }
+      }
+    },
+    "readCreditApplicationTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_read_credit_application" },
+        "operationId": { "const": "pilotReadCreditApplication" }
+      }
+    },
+    "evaluateCreditApplicationTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_evaluate_credit_application" },
+        "operationId": { "const": "pilotEvaluateCreditApplication" }
+      }
+    },
+    "submitAccountProofTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_submit_account_proof" },
+        "operationId": { "const": "pilotSubmitAgentAccountProof" }
+      }
+    },
+    "readAccountBindingTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_read_account_binding" },
+        "operationId": { "const": "pilotReadAgentAccountBinding" }
+      }
+    },
+    "readObligationEvidenceTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_read_obligation_evidence" },
+        "operationId": { "const": "pilotReadOwnObligationEvidence" }
+      }
+    },
+    "readObligationTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_read_obligation" },
+        "operationId": { "const": "pilotReadOwnObligation" }
+      }
+    },
+    "acceptCreditOfferTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_accept_credit_offer" },
+        "operationId": { "const": "pilotAcceptCreditOffer" }
+      }
+    },
+    "executeSandboxObligationTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_execute_sandbox_obligation" },
+        "operationId": { "const": "pilotExecuteSandboxObligation" }
+      }
+    },
+    "postSandboxRepaymentTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_post_sandbox_repayment" },
+        "operationId": { "const": "pilotPostSandboxRepayment" }
+      }
+    }
+  }
+}

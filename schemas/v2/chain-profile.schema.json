@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/chain-profile.schema.json",
+  "title": "IPO.ONE Chain Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profileId",
+    "displayName",
+    "role",
+    "chainId",
+    "chainFamily",
+    "adapterVersion",
+    "capabilities",
+    "providerSlots",
+    "finalityPolicy",
+    "requestPolicy",
+    "caps",
+    "sandboxOnly",
+    "productionApproved",
+    "fundsMode",
+    "profileHash",
+    "schemaVersion"
+  ],
+  "properties": {
+    "profileId": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "role": { "enum": ["primary_execution_test", "portability_conformance"] },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "chainFamily": { "const": "evm" },
+    "adapterVersion": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "providerSlots": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "finalityPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "includedConfirmations", "safeConfirmations", "finalizedConfirmations", "maxReorgDepth"],
+      "properties": {
+        "model": { "const": "sandbox_confirmations" },
+        "includedConfirmations": { "type": "integer", "minimum": 1 },
+        "safeConfirmations": { "type": "integer", "minimum": 1 },
+        "finalizedConfirmations": { "type": "integer", "minimum": 1 },
+        "maxReorgDepth": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "requestPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeoutMs", "maxProviderAttempts", "rateLimit"],
+      "properties": {
+        "timeoutMs": { "type": "integer", "minimum": 1 },
+        "maxProviderAttempts": { "type": "integer", "minimum": 1 },
+        "rateLimit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxRequests", "windowMs"],
+          "properties": {
+            "maxRequests": { "type": "integer", "minimum": 1 },
+            "windowMs": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
+    "caps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxExecutionMinor", "maxExposureMinor", "maxPendingTransactions"],
+      "properties": {
+        "maxExecutionMinor": { "$ref": "#/$defs/minor" },
+        "maxExposureMinor": { "$ref": "#/$defs/minor" },
+        "maxPendingTransactions": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "sandboxOnly": { "const": true },
+    "productionApproved": { "const": false },
+    "fundsMode": { "const": "synthetic_only" },
+    "profileHash": { "$ref": "#/$defs/hash" },
+    "schemaVersion": { "const": "chain_profile.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "minor": { "type": "string", "pattern": "^[1-9][0-9]*$" }
+  }
+}

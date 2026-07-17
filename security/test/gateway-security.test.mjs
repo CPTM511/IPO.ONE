@@ -186,18 +186,159 @@ test("Tenant risk portfolio is aggregate-only, bounded, MFA-gated, and private",
   assert.doesNotMatch(server, /pilotReadTenantRisk|tenant-risk-query-handlers|tenant-command-gateway/);
 });
 
+test("Pilot health analytics are aggregate-only, MFA-gated, tracker-free, and private", async () => {
+  const [resultSchemaBody, catalogBody, policy, handler, server] = await Promise.all([
+    source("schemas/v2/tenant-protocol-result.schema.json"),
+    source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json"),
+    source("modules/authorization/src/authorization-policy.js"),
+    source("modules/tenant-command-gateway/src/pilot-health-query-handlers.js"),
+    source("apps/api/src/server.js")
+  ]);
+  const resultSchema = JSON.parse(resultSchemaBody);
+  const catalog = JSON.parse(catalogBody);
+  const operation = catalog.operations.find(
+    ({ operationId }) => operationId === "pilotReadPilotHealth"
+  );
+  assert.deepEqual(operation.actorTypes, ["risk_operator", "operations_operator", "auditor"]);
+  assert.equal(operation.resourceType, "risk_portfolio");
+  assert.equal(operation.requiredCapability, "pilot.health.read");
+  assert.equal(operation.quotaClass, "read");
+  assert.equal(operation.idempotency, "prohibited");
+  assert.equal(operation.public, false);
+  assert.equal(operation.fundsAuthority, false);
+  assert.match(policy, /operationId: "pilotReadPilotHealth"[\s\S]*?requiresRecentMfaActorTypes/);
+
+  const serialized = JSON.stringify(resultSchema.$defs.tenantPilotHealthView);
+  for (const forbidden of ["subjectId", "principalId", "actorId", "authorityRef", "kycRef", "email"]) {
+    assert.doesNotMatch(serialized, new RegExp(forbidden, "i"));
+  }
+  assert.match(serialized, /"piiIncluded":\{"const":false\}/);
+  assert.match(serialized, /"thirdPartyAnalytics":\{"const":false\}/);
+  assert.match(handler, /COUNT\(/);
+  assert.doesNotMatch(handler, /fetch\(|https?:\/\//);
+  assert.doesNotMatch(server, /pilotReadPilotHealth|pilot-health-query-handlers|tenant-command-gateway/);
+});
+
+test("Servicing Operations queue is bounded, PII-free, MFA-gated, and private", async () => {
+  const [resultSchemaBody, catalogBody, policy, handler, protocolGate, server] = await Promise.all([
+    source("schemas/v2/tenant-protocol-result.schema.json"),
+    source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json"),
+    source("modules/authorization/src/authorization-policy.js"),
+    source("modules/tenant-command-gateway/src/servicing-queue-query-handlers.js"),
+    source("scripts/check-tenant-protocol.mjs"),
+    source("apps/api/src/server.js")
+  ]);
+  const resultSchema = JSON.parse(resultSchemaBody);
+  const catalog = JSON.parse(catalogBody);
+  const operation = catalog.operations.find(
+    ({ operationId }) => operationId === "pilotReadServicingQueue"
+  );
+  assert.deepEqual(operation.actorTypes, ["risk_operator", "operations_operator"]);
+  assert.equal(operation.resourceType, "servicing_queue");
+  assert.equal(operation.requiredCapability, "servicing.queue.read");
+  assert.equal(operation.quotaClass, "read");
+  assert.equal(operation.idempotency, "prohibited");
+  assert.equal(operation.public, false);
+  assert.equal(operation.fundsAuthority, false);
+  assert.match(
+    policy,
+    /requiresRecentMfaActorTypes: \[ActorType\.RISK_OPERATOR, ActorType\.OPERATIONS_OPERATOR\]/
+  );
+
+  const propertyNames = new Set();
+  const seenDefinitions = new Set();
+  function visit(node) {
+    if (!node || typeof node !== "object") return;
+    if (typeof node.$ref === "string" && node.$ref.startsWith("#/$defs/")) {
+      const definition = node.$ref.slice("#/$defs/".length);
+      if (!seenDefinitions.has(definition)) {
+        seenDefinitions.add(definition);
+        visit(resultSchema.$defs[definition]);
+      }
+    }
+    if (node.properties) {
+      for (const [name, value] of Object.entries(node.properties)) {
+        propertyNames.add(name);
+        visit(value);
+      }
+    }
+    if (node.items) visit(node.items);
+  }
+  visit(resultSchema.$defs.tenantServicingQueueView);
+  for (const forbidden of [
+    "displayName",
+    "principalId",
+    "accountIdRef",
+    "providerId",
+    "kycRef",
+    "kypRef",
+    "email",
+    "phone"
+  ]) {
+    assert.equal(propertyNames.has(forbidden), false, `${forbidden} must not be exposed`);
+  }
+  assert.equal(resultSchema.$defs.tenantServicingQueueView.properties.cases.maxItems, 50);
+  assert.doesNotMatch(handler, /displayName|principalId|accountIdRef|providerId|kyc|kyp|email|phone/i);
+  assert.match(protocolGate, /pilotReadServicingQueue/);
+  assert.match(protocolGate, /Agent MCP exposed a forbidden operation/);
+  assert.doesNotMatch(server, /pilotReadServicingQueue|servicing-queue-query-handlers|tenant-command-gateway/);
+});
+
 test("Tenant protocol contracts are closed, non-authoritative, and private", async () => {
-  const [requestSchemaBody, resultSchemaBody, catalogBody, gateway, clients, server] = await Promise.all([
+  const [
+    requestSchemaBody,
+    resultSchemaBody,
+    catalogBody,
+    gateway,
+    clients,
+    server,
+    webApp,
+    webHandoff,
+    webCapabilityManifest,
+    webHtml,
+    handoffSchemaBody,
+    handoffPlan,
+    handoffCli,
+    mcpHost,
+    agentPilotHost,
+    mcpWorkflow,
+    agentSdkWorkflow,
+    humanWorkflow,
+    dualNativeParity,
+    humanWorkflowSchemaBody,
+    tenantPilotHost,
+    tenantWebAssets,
+    ownedObligationHandler
+  ] = await Promise.all([
     source("schemas/v2/tenant-protocol-request.schema.json"),
     source("schemas/v2/tenant-protocol-result.schema.json"),
     source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json"),
     source("modules/tenant-command-gateway/src/tenant-command-gateway.js"),
     source("modules/tenant-command-gateway/src/tenant-command-clients.js"),
-    source("apps/api/src/server.js")
+    source("apps/api/src/server.js"),
+    source("apps/web/src/app.js"),
+    source("apps/web/src/agent-handoff-manifest.js"),
+    source("apps/web/src/agent-pilot-capability-manifest.js"),
+    source("apps/web/src/index.html"),
+    source("schemas/v2/agent-handoff-manifest.schema.json"),
+    source("apps/agent-mcp/src/agent-handoff-plan.js"),
+    source("apps/agent-mcp/src/handoff-cli.js"),
+    source("apps/agent-mcp/src/agent-mcp-host.js"),
+    source("apps/agent-mcp/src/agent-pilot-host.js"),
+    source("apps/agent-mcp/src/agent-credit-offer-workflow.js"),
+    source("packages/sdk/src/agent-mcp-client.js"),
+    source("apps/web/src/human-credit-offer-workflow-receipt.js"),
+    source("packages/api-contract/src/dual-native-credit-offer-parity.js"),
+    source("schemas/v2/human-credit-offer-workflow-receipt.schema.json"),
+    source("apps/tenant-api/src/tenant-pilot-host.js"),
+    source("apps/tenant-api/src/tenant-web-assets.js"),
+    source("modules/tenant-command-gateway/src/owned-obligation-query-handlers.js")
   ]);
   const requestSchema = JSON.parse(requestSchemaBody);
   const resultSchema = JSON.parse(resultSchemaBody);
   const catalog = JSON.parse(catalogBody);
+  const handoffSchema = JSON.parse(handoffSchemaBody);
+  const humanWorkflowSchema = JSON.parse(humanWorkflowSchemaBody);
 
   assert.equal(requestSchema.additionalProperties, false);
   assert.equal(resultSchema.additionalProperties, false);
@@ -214,12 +355,62 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
   ]) {
     assert.equal(Object.hasOwn(requestSchema.properties, property), false);
   }
-  assert.deepEqual(catalog.availability.enabledTransports, ["local_in_process"]);
+  assert.deepEqual(catalog.availability.enabledTransports, [
+    "local_in_process",
+    "authenticated_http_loopback",
+    "mcp_stdio_local"
+  ]);
   assert.equal(catalog.availability.publicEndpointEnabled, false);
-  assert.equal(catalog.availability.authenticatedHttpEnabled, false);
+  assert.equal(catalog.availability.authenticatedHttpEnabled, true);
+  assert.equal(catalog.availability.authenticatedHttpProfile, "loopback_test_only");
+  assert.equal(catalog.availability.mcpStdioLocalEnabled, true);
   assert.equal(catalog.availability.mcpA2aEnabled, false);
-  assert.equal(Object.values(catalog.safety).every((value) => value === false), true);
+  assert.equal(catalog.availability.authenticationContextSource, "trusted_transport_adapter");
+  assert.equal(catalog.availability.networkContextSource, "trusted_ingress_adapter");
+  assert.deepEqual(catalog.safety, {
+    realFundsEnabled: false,
+    productionCreditEnabled: false,
+    humanCreditEnabled: false,
+    humanCreditIntentEnabled: true,
+    agentCreditIntentEnabled: true,
+    humanCreditDecisionEnabled: true,
+    agentCreditDecisionEnabled: true,
+    offerAcceptanceEnabled: true,
+    sandboxExecutionEnabled: true,
+    sandboxRepaymentEnabled: true,
+    sandboxServicingEnabled: true,
+    sandboxResolutionEnabled: true,
+    agentAccountProofEnabled: true,
+    mandateActivationEnabled: true,
+    providerSandboxEnabled: true,
+    productionIdentityEnabled: false,
+    rawPiiAllowed: false
+  });
   assert.equal(catalog.operations.every((operation) => !operation.public && !operation.fundsAuthority), true);
+  const ownedObligationRead = catalog.operations.find(
+    (operation) => operation.operationId === "pilotReadOwnObligation"
+  );
+  assert.deepEqual(ownedObligationRead, {
+    operationId: "pilotReadOwnObligation",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "obligation",
+    requiredCapability: "obligation.read.owned",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: "tenant_protocol_request.v1",
+    responseSchemaVersion: "tenant_owned_obligation_view.v1",
+    public: false,
+    fundsAuthority: false
+  });
+  assert.equal(resultSchema.$defs.ownedObligationView.additionalProperties, false);
+  assert.match(ownedObligationHandler, /resource\.resourceId/);
+  assert.match(ownedObligationHandler, /getObligationInTransaction/);
+  assert.match(ownedObligationHandler, /productionFundsMoved !== false/);
+  assert.doesNotMatch(
+    ownedObligationHandler,
+    /tenantId|actorId|authenticationContext|listOwned|searchObligation/
+  );
 
   assert.ok(gateway.indexOf("assertCallerRequest(input)") < gateway.indexOf("abuseControl.admitTenant"));
   assert.ok(
@@ -232,4 +423,114 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
       clients.indexOf("authenticationContextProvider\(\)")
   );
   assert.doesNotMatch(server, /tenant-protocol|TENANT_PROTOCOL|pilotCreateAgentSubject/);
+  assert.match(webApp, /from "\.\/agent-handoff-manifest\.js"/);
+  assert.match(webApp, /from "\.\/agent-pilot-capability-manifest\.js"/);
+  for (const required of [
+    'AGENT_HANDOFF_MANIFEST_SCHEMA_VERSION = "agent_handoff_manifest.v1"',
+    'credentialDelivery: "out_of_band"',
+    "credentialsIncluded: false",
+    "publicEndpointEnabled: false",
+    "remoteMcpEnabled: false",
+    "fundsAuthority: false"
+  ]) {
+    assert.match(webHandoff, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.equal(handoffSchema.additionalProperties, false);
+  for (const required of [
+    "agent_pilot_capability_manifest.v1",
+    "economicMcpToolsEnabled: true",
+    "liveChainExecution: false",
+    "productionFundsApproved: false",
+    "fundsAuthority: false"
+  ]) {
+    assert.match(
+      webCapabilityManifest,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(webCapabilityManifest, /accessToken|privateKey|authenticationContext/);
+  assert.equal(handoffSchema.properties.nonAuthorizing.const, true);
+  assert.equal(handoffSchema.properties.credentialsIncluded.const, false);
+  assert.equal(handoffSchema.properties.publicEndpointEnabled.const, false);
+  assert.equal(handoffSchema.properties.remoteMcpEnabled.const, false);
+  assert.equal(handoffSchema.properties.fundsAuthority.const, false);
+  assert.match(webHtml, /Non-authorizing manifest/);
+  assert.match(webHtml, /Local stdio only/);
+  assert.doesNotMatch(webApp, /accessToken|privateKey|authenticationContext/);
+  assert.doesNotMatch(webHandoff, /accessToken|privateKey|authenticationContext/);
+  assert.doesNotMatch(webHtml, /access token|private key|authentication context/i);
+  assert.match(handoffPlan, /hostCompositionRequired: true/);
+  assert.match(handoffPlan, /credentialDelivery: "out_of_band"/);
+  assert.match(handoffPlan, /remoteMcpEnabled: false/);
+  assert.match(handoffPlan, /fundsAuthority: false/);
+  assert.doesNotMatch(handoffPlan, /process\.env|node:fs|fetch\(|node:http|node:https|listen\(/);
+  assert.doesNotMatch(handoffCli, /process\.env|node:fs|fetch\(|node:http|node:https|listen\(/);
+  assert.match(mcpHost, /HOST_CONFIG_KEYS = new Set\(\["client", "manifest"\]\)/);
+  assert.match(mcpHost, /mcp_subject_scope_denied/);
+  assert.match(mcpHost, /mcp_mandate_scope_denied/);
+  assert.match(mcpHost, /mcp_application_handoff_required/);
+  assert.doesNotMatch(
+    mcpHost,
+    /accessToken|authenticationContext|tenantId|roles|process\.env|node:fs|fetch\(|node:http|node:https|listen\(/
+  );
+  assert.match(agentPilotHost, /CONFIG_KEYS = new Set\(\[/);
+  assert.match(agentPilotHost, /AgentTenantCommandClient/);
+  assert.match(agentPilotHost, /context\.actorType !== ActorType\.AGENT/);
+  assert.match(agentPilotHost, /verifyAgentSubjectBinding\(\{/);
+  assert.match(agentPilotHost, /subjectId: manifest\.subjectId/);
+  assert.match(agentPilotHost, /agent_pilot_host_identity_mismatch/);
+  assert.doesNotMatch(
+    agentPilotHost,
+    /accessToken|privateKey|tenantId|roles|process\.env|node:fs|fetch\(|node:http|node:https|listen\(/
+  );
+  assert.match(mcpWorkflow, /WORKFLOW_CONFIG_KEYS = Object\.freeze\(\[/);
+  assert.match(mcpWorkflow, /runSdkAgentCreditOfferWorkflow/);
+  assert.doesNotMatch(
+    mcpWorkflow,
+    /accessToken|authenticationContext|tenantId|roles|privateKey|process\.env|node:fs|fetch\(|node:http|node:https|listen\(/
+  );
+  assert.match(agentSdkWorkflow, /transportProfile !== "mcp_stdio_local"/);
+  assert.match(agentSdkWorkflow, /authorityId: manifest\.mandateId/);
+  assert.match(agentSdkWorkflow, /nonAuthorizing: true/);
+  assert.match(agentSdkWorkflow, /fundsAuthority: false/);
+  assert.doesNotMatch(
+    agentSdkWorkflow,
+    /accessToken|authenticationContext|tenantId|roles|privateKey|process\.env|node:fs|fetch\(|node:http|node:https|listen\(/
+  );
+  assert.equal(humanWorkflowSchema.additionalProperties, false);
+  assert.equal(humanWorkflowSchema.properties.nonAuthorizing.const, true);
+  assert.equal(humanWorkflowSchema.properties.credentialsIncluded.const, false);
+  assert.equal(humanWorkflowSchema.properties.publicEndpointEnabled.const, false);
+  assert.equal(humanWorkflowSchema.properties.remoteMcpEnabled.const, false);
+  assert.equal(humanWorkflowSchema.properties.fundsAuthority.const, false);
+  assert.match(humanWorkflow, /REQUIRED_CONSENT_PURPOSES/);
+  assert.match(humanWorkflow, /item\.syntheticOnly === true/);
+  assert.match(humanWorkflow, /item\.productionVerified === false/);
+  assert.match(humanWorkflow, /nonAuthorizing: true/);
+  assert.match(humanWorkflow, /fundsAuthority: false/);
+  assert.doesNotMatch(
+    humanWorkflow,
+    /accessToken|authenticationContext|tenantId|roles|privateKey|csrfToken|cookie|process\.env|node:fs|fetch\(|node:http|node:https|listen\(/
+  );
+  assert.match(dualNativeParity, /DUAL_NATIVE_OFFER_ECONOMICS_SCHEMA_VERSION/);
+  assert.match(dualNativeParity, /firstPaymentOffsetMs/);
+  assert.match(dualNativeParity, /maturityOffsetMs/);
+  assert.match(dualNativeParity, /validityOffsetMs/);
+  assert.match(dualNativeParity, /nonAuthorizing: true/);
+  assert.match(dualNativeParity, /fundsAuthority: false/);
+  assert.doesNotMatch(
+    dualNativeParity,
+    /subjectId|principalId|consentId|mandateId|creditIntentId|riskDecisionId|creditOfferId|decisionHash|termsHash|reasonCodes|accessToken|privateKey|tenantId|roles|process\.env|node:fs|fetch\(|node:http|node:https|listen\(/
+  );
+  assert.match(tenantPilotHost, /CONFIG_KEYS = new Set\(\[/);
+  assert.match(tenantPilotHost, /host: "127\.0\.0\.1"/);
+  assert.match(tenantPilotHost, /trustProxy: false/);
+  assert.match(tenantPilotHost, /environment: "development"/);
+  assert.match(tenantPilotHost, /credentialSource: "local_test"/);
+  assert.doesNotMatch(
+    tenantPilotHost,
+    /accessToken|privateKey|tenantId|actorId|roles|process\.env|node:fs|node:http|node:https|fetch\(|listen\(/
+  );
+  assert.match(tenantWebAssets, /"\/human-credit-offer-workflow-receipt\.js"/);
+  assert.doesNotMatch(tenantWebAssets, /request\.url|pathname\s*\)|join\(|resolve\(/);
 });

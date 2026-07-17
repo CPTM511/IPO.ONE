@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/human-credit-offer-workflow-receipt.schema.json",
+  "title": "IPO.ONE Human Credit Offer Workflow Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "transportProfile",
+    "nonAuthorizing",
+    "sandboxOnly",
+    "productionFundsApproved",
+    "fundsAuthority",
+    "credentialsIncluded",
+    "publicEndpointEnabled",
+    "remoteMcpEnabled",
+    "workflowId",
+    "correlationId",
+    "subjectId",
+    "consentId",
+    "identityReferenceId",
+    "creditIntent",
+    "decision",
+    "offer",
+    "steps"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "human_credit_offer_workflow_receipt.v1" },
+    "status": { "enum": ["decision_complete", "offer_ready"] },
+    "transportProfile": { "const": "authenticated_http_loopback" },
+    "nonAuthorizing": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionFundsApproved": { "const": false },
+    "fundsAuthority": { "const": false },
+    "credentialsIncluded": { "const": false },
+    "publicEndpointEnabled": { "const": false },
+    "remoteMcpEnabled": { "const": false },
+    "workflowId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,71}$"
+    },
+    "correlationId": { "$ref": "#/$defs/requestIdentifier" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "consentId": { "$ref": "#/$defs/identifier" },
+    "identityReferenceId": { "$ref": "#/$defs/identifier" },
+    "creditIntent": { "$ref": "#/$defs/humanCreditIntent" },
+    "decision": { "$ref": "#/$defs/humanDecision" },
+    "offer": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/offer" }
+      ]
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        { "$ref": "#/$defs/readSelfStep" },
+        { "$ref": "#/$defs/requestCreditStep" },
+        { "$ref": "#/$defs/readApplicationStep" },
+        { "$ref": "#/$defs/evaluateApplicationStep" }
+      ],
+      "items": false
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "status": { "const": "offer_ready" },
+        "decision": {
+          "allOf": [
+            { "$ref": "#/$defs/humanDecision" },
+            {
+              "type": "object",
+              "properties": { "status": { "const": "approved" } }
+            }
+          ]
+        },
+        "offer": { "$ref": "#/$defs/offer" }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "status": { "const": "decision_complete" },
+        "decision": {
+          "allOf": [
+            { "$ref": "#/$defs/humanDecision" },
+            {
+              "type": "object",
+              "properties": { "status": { "enum": ["rejected", "frozen"] } }
+            }
+          ]
+        },
+        "offer": { "type": "null" }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"
+    },
+    "requestIdentifier": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
+    },
+    "humanCreditIntent": {
+      "allOf": [
+        {
+          "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/creditIntentSummary"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "authorityType": { "const": "consent" }
+          }
+        }
+      ]
+    },
+    "humanDecision": {
+      "allOf": [
+        {
+          "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/creditDecisionSummary"
+        },
+        {
+          "type": "object",
+          "required": ["decisionPassport"],
+          "properties": {
+            "authorityType": { "const": "consent" }
+          }
+        }
+      ]
+    },
+    "offer": {
+      "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/creditOfferSummary"
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "operationId",
+        "requestId",
+        "replayed",
+        "responseSchemaVersion"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "operationId": {
+          "enum": [
+            "pilotReadHumanSelf",
+            "pilotRequestCredit",
+            "pilotReadCreditApplication",
+            "pilotEvaluateCreditApplication"
+          ]
+        },
+        "requestId": { "$ref": "#/$defs/requestIdentifier" },
+        "replayed": { "type": "boolean" },
+        "responseSchemaVersion": {
+          "enum": [
+            "tenant_human_subject_view.v1",
+            "tenant_credit_intent_created.v1",
+            "tenant_credit_application_view.v1",
+            "tenant_credit_application_evaluated.v2"
+          ]
+        }
+      }
+    },
+    "readSelfStep": {
+      "allOf": [
+        { "$ref": "#/$defs/step" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 1 },
+            "operationId": { "const": "pilotReadHumanSelf" },
+            "responseSchemaVersion": { "const": "tenant_human_subject_view.v1" }
+          }
+        }
+      ]
+    },
+    "requestCreditStep": {
+      "allOf": [
+        { "$ref": "#/$defs/step" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 2 },
+            "operationId": { "const": "pilotRequestCredit" },
+            "responseSchemaVersion": { "const": "tenant_credit_intent_created.v1" }
+          }
+        }
+      ]
+    },
+    "readApplicationStep": {
+      "allOf": [
+        { "$ref": "#/$defs/step" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 3 },
+            "operationId": { "const": "pilotReadCreditApplication" },
+            "responseSchemaVersion": { "const": "tenant_credit_application_view.v1" }
+          }
+        }
+      ]
+    },
+    "evaluateApplicationStep": {
+      "allOf": [
+        { "$ref": "#/$defs/step" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 4 },
+            "operationId": { "const": "pilotEvaluateCreditApplication" },
+            "responseSchemaVersion": { "const": "tenant_credit_application_evaluated.v2" }
+          }
+        }
+      ]
+    }
+  }
+}

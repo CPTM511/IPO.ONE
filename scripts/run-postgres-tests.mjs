@@ -18,11 +18,17 @@ if (!/(^|[_-])test($|[_-])/.test(databaseName) && process.env.IPO_ONE_ALLOW_DB_R
 const testFiles = [
   ...readdirSync("modules/persistence/test-postgres")
     .filter((file) => file.endsWith(".test.mjs"))
+    .sort()
     .map((file) => `modules/persistence/test-postgres/${file}`),
   ...readdirSync("modules/tenant-command-gateway/test-postgres")
     .filter((file) => file.endsWith(".test.mjs"))
-    .map((file) => `modules/tenant-command-gateway/test-postgres/${file}`)
-].sort();
+    .sort()
+    .map((file) => `modules/tenant-command-gateway/test-postgres/${file}`),
+  ...readdirSync("modules/operations-control/test-postgres")
+    .filter((file) => file.endsWith(".test.mjs"))
+    .sort()
+    .map((file) => `modules/operations-control/test-postgres/${file}`)
+];
 
 const result = spawnSync(
   process.execPath,

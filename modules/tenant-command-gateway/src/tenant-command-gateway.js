@@ -378,6 +378,13 @@ export class TenantCommandGateway {
     if (envelope.operationId !== handler.operationId) {
       throw new DomainError("tenant_operation_unavailable", "The requested operation is not available.");
     }
+    if (handler.preflight) {
+      await handler.preflight({
+        payload: structuredClone(envelope.payload),
+        resource: envelope.resource,
+        operationId: envelope.operationId
+      });
+    }
     const identity = createCommandIdentity(envelope, this.referenceHasher);
     const tenantContext = createTenantSecurityContextFromAuthentication(envelope.authenticationContext);
     const eventRepository = new PostgresEventRepository({
@@ -495,7 +502,8 @@ export class TenantCommandGateway {
           client,
           coreRepository,
           authenticationContext: envelope.authenticationContext,
-          handler
+          handler,
+          payload: structuredClone(envelope.payload)
         });
         const authorizationService = new AuthorizationService({
           policyRegistry: this.policyRegistry,
@@ -586,12 +594,24 @@ export class TenantCommandGateway {
         });
         assertPlainObject("tenant command plan", plan);
         if (
-          plan.authorizationResource !== undefined &&
+          plan.additionalAuthorizationResources !== undefined &&
+          (!Array.isArray(plan.additionalAuthorizationResources) ||
+            plan.additionalAuthorizationResources.length < 1 ||
+            plan.additionalAuthorizationResources.length > 8)
+        ) {
+          throw new DomainError(
+            "invalid_tenant_command_plan",
+            "additional authorization resources must be a bounded non-empty list"
+          );
+        }
+        if (
+          (plan.authorizationResource !== undefined ||
+            plan.additionalAuthorizationResources !== undefined) &&
           plan.authorizationResourceTransition !== undefined
         ) {
           throw new DomainError(
             "invalid_tenant_command_plan",
-            "tenant command cannot register and transition one authorization resource"
+            "tenant command cannot register and transition authorization resources"
           );
         }
         if (plan.authorizationResourceTransition !== undefined) {
@@ -635,6 +655,12 @@ export class TenantCommandGateway {
         if (plan.authorizationResource !== undefined) {
           await directory.registerResource({
             ...plan.authorizationResource,
+            now: transactionNow
+          });
+        }
+        for (const resource of plan.additionalAuthorizationResources ?? []) {
+          await directory.registerResource({
+            ...assertPlainObject("additional authorization resource", resource),
             now: transactionNow
           });
         }

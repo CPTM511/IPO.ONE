@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/human-identity-reference.schema.json",
+  "title": "IPO.ONE Human Identity Reference v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identityReferenceId",
+    "identityReferenceHash",
+    "referenceEvidenceHash",
+    "subjectId",
+    "principalId",
+    "consentId",
+    "consentHash",
+    "referenceType",
+    "providerRef",
+    "providerVersion",
+    "referenceRef",
+    "assuranceLevel",
+    "purposeCodes",
+    "validFrom",
+    "expiresAt",
+    "syntheticOnly",
+    "productionVerified",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "identityReferenceId": { "$ref": "#/$defs/identifier" },
+    "identityReferenceHash": { "$ref": "#/$defs/hash" },
+    "referenceEvidenceHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "principalId": { "$ref": "#/$defs/identifier" },
+    "consentId": { "$ref": "#/$defs/identifier" },
+    "consentHash": { "$ref": "#/$defs/hash" },
+    "referenceType": {
+      "enum": ["kyc_reference", "verifiable_credential_reference"]
+    },
+    "providerRef": { "$ref": "#/$defs/reference" },
+    "providerVersion": { "$ref": "#/$defs/version" },
+    "referenceRef": { "$ref": "#/$defs/reference" },
+    "assuranceLevel": {
+      "enum": ["synthetic_self_asserted", "synthetic_provider_asserted"]
+    },
+    "purposeCodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "contains": { "const": "identity_reference_use" },
+      "items": {
+        "enum": [
+          "credit_application",
+          "credit_decision",
+          "credit_offer_acceptance",
+          "identity_reference_use",
+          "obligation_servicing",
+          "evidence_sharing"
+        ]
+      }
+    },
+    "validFrom": { "$ref": "#/$defs/timestamp" },
+    "expiresAt": { "$ref": "#/$defs/timestamp" },
+    "syntheticOnly": { "const": true },
+    "productionVerified": { "const": false },
+    "status": { "enum": ["active", "revoked", "expired"] },
+    "revokedAt": { "$ref": "#/$defs/timestamp" },
+    "revocationReasonCode": { "$ref": "#/$defs/code" },
+    "revocationEvidenceRef": { "$ref": "#/$defs/reference" },
+    "expiredAt": { "$ref": "#/$defs/timestamp" },
+    "createdAt": { "$ref": "#/$defs/timestamp" },
+    "updatedAt": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "human_identity_reference.v1" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "active" } } },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["revokedAt"] },
+            { "required": ["revocationReasonCode"] },
+            { "required": ["revocationEvidenceRef"] },
+            { "required": ["expiredAt"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "revoked" } } },
+      "then": {
+        "required": ["revokedAt", "revocationReasonCode", "revocationEvidenceRef"],
+        "not": { "required": ["expiredAt"] }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "expired" } } },
+      "then": {
+        "required": ["expiredAt"],
+        "not": {
+          "anyOf": [
+            { "required": ["revokedAt"] },
+            { "required": ["revocationReasonCode"] },
+            { "required": ["revocationEvidenceRef"] }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "code": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,95}$" },
+    "version": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{0,95}\\.v[1-9][0-9]*$" },
+    "reference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^(https://|ipfs:|urn:)[^\\s?#]+$"
+    },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

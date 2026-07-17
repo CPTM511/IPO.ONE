@@ -1,4 +1,4 @@
-import { AuthenticationEventType } from "./constants.js";
+import { AuthenticationEventType, ClientAuthenticationMethod } from "./constants.js";
 import { createAuthenticationContext } from "./authentication-context.js";
 import {
   assertBoundedString,
@@ -10,6 +10,10 @@ import {
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const SESSION_COOKIE_NAME = "__Host-ipo_one_session";
+const HUMAN_AUTHENTICATION_METHODS = new Set([
+  ClientAuthenticationMethod.OIDC_PKCE_BFF,
+  ClientAuthenticationMethod.SIWE
+]);
 
 function exactOrigin(value) {
   let parsed;
@@ -111,6 +115,7 @@ export class InMemoryHumanSessionStore {
       actorId: assertSafeIdentifier("actorId", input.actorId),
       actorType: assertSafeIdentifier("actorType", input.actorType),
       clientId: assertSafeIdentifier("clientId", input.clientId),
+      authenticationMethod: input.authenticationMethod ?? ClientAuthenticationMethod.OIDC_PKCE_BFF,
       credentialId: assertSafeIdentifier("credentialId", input.credentialId),
       credentialVersion: input.credentialVersion,
       policyVersion: assertSafeIdentifier("policyVersion", input.policyVersion),
@@ -128,6 +133,9 @@ export class InMemoryHumanSessionStore {
     };
     if (!Number.isSafeInteger(session.credentialVersion) || session.credentialVersion < 1) {
       throw authenticationError("invalid_authentication_input", "credentialVersion is invalid");
+    }
+    if (!HUMAN_AUTHENTICATION_METHODS.has(session.authenticationMethod)) {
+      throw authenticationError("invalid_authentication_input", "Human authentication method is invalid");
     }
     this.#event(AuthenticationEventType.SESSION_CREATED, session, "human_login", now);
     this.#sessions.set(sessionRefHash, session);
@@ -238,7 +246,7 @@ export class InMemoryHumanSessionStore {
       capabilities: session.capabilities,
       roles: session.roles,
       tokenJtiHash: session.tokenJtiHash,
-      authenticationMethod: "oidc_pkce_bff",
+      authenticationMethod: session.authenticationMethod,
       senderConstraintMethod: "host_session",
       authenticatedAt: now,
       authTime: session.authTime,

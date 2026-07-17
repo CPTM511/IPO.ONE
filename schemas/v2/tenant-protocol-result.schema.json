@@ -8,13 +8,44 @@
   "properties": {
     "operationId": {
       "enum": [
+        "pilotAcceptCreditOffer",
+        "pilotActivateSandboxMandate",
+        "pilotCreateAgentAccountChallenge",
         "pilotCreateAgentSubject",
+        "pilotCreateConsent",
+        "pilotCreateHumanSubject",
         "pilotCreateDraftMandate",
+        "pilotEvaluateCreditApplication",
+        "pilotExecuteSandboxObligation",
         "pilotFreezeSubject",
+        "pilotPostSandboxRepayment",
+        "pilotRepurchaseSandboxObligation",
+        "pilotRestructureSandboxObligation",
+        "pilotRequestCredit",
         "pilotReadAgentSelf",
+        "pilotReadAgentAccountBinding",
+        "pilotReadCreditApplication",
+        "pilotReadConsent",
+        "pilotReadHumanSelf",
+        "pilotReadWorkspaceResume",
+        "pilotReadIdentityReference",
         "pilotReadMandate",
         "pilotReadTenantRisk",
-        "pilotRevokeDraftMandate"
+        "pilotReadPilotHealth",
+        "pilotReadPilotFeedbackSummary",
+        "pilotReadServicingQueue",
+        "pilotReadEvidence",
+        "pilotReadOwnObligation",
+        "pilotReadOwnObligationEvidence",
+        "pilotRevokeConsent",
+        "pilotRevokeDraftMandate",
+        "pilotSubmitAgentAccountProof",
+        "pilotSubmitPilotFeedback",
+        "pilotWriteOffSandboxObligation",
+        "workerAdvanceSandboxServicing",
+        "pilotReadProviderIntent",
+        "pilotAcknowledgeProviderIntent",
+        "workerProcessInbox"
       ]
     },
     "replayed": { "type": "boolean" },
@@ -24,14 +55,136 @@
   "oneOf": [
     {
       "properties": {
+        "operationId": { "const": "pilotAcceptCreditOffer" },
+        "response": { "$ref": "#/$defs/creditOfferAccepted" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotExecuteSandboxObligation" },
+        "response": { "$ref": "#/$defs/sandboxObligationExecuted" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotPostSandboxRepayment" },
+        "response": { "$ref": "#/$defs/sandboxRepaymentPosted" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotRestructureSandboxObligation" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/sandboxServicingResult" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_sandbox_obligation_restructured.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotRepurchaseSandboxObligation" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/sandboxServicingResult" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_sandbox_obligation_repurchased.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotWriteOffSandboxObligation" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/sandboxServicingResult" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_sandbox_obligation_written_off.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "workerAdvanceSandboxServicing" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/sandboxServicingResult" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_sandbox_servicing_advanced.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotCreateAgentAccountChallenge" },
+        "response": { "$ref": "#/$defs/agentAccountChallengeCreated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotActivateSandboxMandate" },
+        "response": { "$ref": "#/$defs/sandboxMandateActivated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotEvaluateCreditApplication" },
+        "response": { "$ref": "#/$defs/creditApplicationEvaluated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotRequestCredit" },
+        "response": { "$ref": "#/$defs/creditIntentCreated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadCreditApplication" },
+        "response": { "$ref": "#/$defs/creditApplicationView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotCreateConsent" },
+        "response": { "$ref": "#/$defs/humanConsentCreated" }
+      }
+    },
+    {
+      "properties": {
         "operationId": { "const": "pilotCreateAgentSubject" },
         "response": { "$ref": "#/$defs/agentSubjectCreated" }
       }
     },
     {
       "properties": {
+        "operationId": { "const": "pilotReadConsent" },
+        "response": { "$ref": "#/$defs/humanConsentView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotCreateHumanSubject" },
+        "response": { "$ref": "#/$defs/humanSubjectCreated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadIdentityReference" },
+        "response": { "$ref": "#/$defs/humanIdentityReferenceView" }
+      }
+    },
+    {
+      "properties": {
         "operationId": { "const": "pilotCreateDraftMandate" },
         "response": { "$ref": "#/$defs/draftMandateCreated" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotRevokeConsent" },
+        "response": { "$ref": "#/$defs/humanConsentRevoked" }
       }
     },
     {
@@ -48,6 +201,24 @@
     },
     {
       "properties": {
+        "operationId": { "const": "pilotReadAgentAccountBinding" },
+        "response": { "$ref": "#/$defs/agentAccountBindingView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadHumanSelf" },
+        "response": { "$ref": "#/$defs/humanSubjectView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadWorkspaceResume" },
+        "response": { "$ref": "#/$defs/workspaceResumeView" }
+      }
+    },
+    {
+      "properties": {
         "operationId": { "const": "pilotReadMandate" },
         "response": { "$ref": "#/$defs/mandateView" }
       }
@@ -60,8 +231,74 @@
     },
     {
       "properties": {
+        "operationId": { "const": "pilotReadPilotHealth" },
+        "response": { "$ref": "#/$defs/tenantPilotHealthView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadPilotFeedbackSummary" },
+        "response": { "$ref": "#/$defs/tenantPilotFeedbackSummaryView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotSubmitPilotFeedback" },
+        "response": { "$ref": "#/$defs/pilotFeedbackRecorded" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadServicingQueue" },
+        "response": { "$ref": "#/$defs/tenantServicingQueueView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadEvidence" },
+        "response": { "$ref": "#/$defs/obligationEvidenceView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadOwnObligation" },
+        "response": { "$ref": "#/$defs/ownedObligationView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadOwnObligationEvidence" },
+        "response": { "$ref": "#/$defs/ownedObligationEvidenceView" }
+      }
+    },
+    {
+      "properties": {
         "operationId": { "const": "pilotRevokeDraftMandate" },
         "response": { "$ref": "#/$defs/draftMandateRevoked" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotSubmitAgentAccountProof" },
+        "response": { "$ref": "#/$defs/agentAccountProofVerified" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadProviderIntent" },
+        "response": { "$ref": "https://schemas.ipo.one/v2/provider-intent-view.schema.json" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotAcknowledgeProviderIntent" },
+        "response": { "$ref": "https://schemas.ipo.one/v2/provider-intent-acknowledgement.schema.json" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "workerProcessInbox" },
+        "response": { "$ref": "#/$defs/providerSandboxCallbackResult" }
       }
     }
   ],
@@ -92,6 +329,765 @@
       "maximum": 9007199254740991
     },
     "timestamp": { "type": "string", "format": "date-time" },
+    "creditOfferAcceptanceSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditOfferAcceptanceId", "acceptanceHash", "creditOfferId",
+        "creditOfferHash", "termsHash", "creditIntentId", "riskDecisionId",
+        "subjectId", "principalId", "authorityType", "authorityId",
+        "acknowledgementHash", "acceptedAt", "sandboxOnly", "productionAuthority"
+      ],
+      "properties": {
+        "creditOfferAcceptanceId": { "$ref": "#/$defs/identifier" },
+        "acceptanceHash": { "$ref": "#/$defs/hash" },
+        "creditOfferId": { "$ref": "#/$defs/identifier" },
+        "creditOfferHash": { "$ref": "#/$defs/hash" },
+        "termsHash": { "$ref": "#/$defs/hash" },
+        "creditIntentId": { "$ref": "#/$defs/identifier" },
+        "riskDecisionId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "principalId": { "$ref": "#/$defs/identifier" },
+        "authorityType": { "enum": ["consent", "mandate"] },
+        "authorityId": { "$ref": "#/$defs/identifier" },
+        "acknowledgementHash": { "$ref": "#/$defs/hash" },
+        "acceptedAt": { "$ref": "#/$defs/timestamp" },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false }
+      }
+    },
+    "obligationInstallment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "installmentId", "obligationId", "installmentNumber", "dueAt",
+        "scheduledPrincipalMinor", "scheduledInterestMinor", "scheduledFeeMinor",
+        "paidPrincipalMinor", "paidInterestMinor", "paidFeeMinor", "status",
+        "scheduleVersion", "scheduleSequence", "schemaVersion"
+      ],
+      "properties": {
+        "installmentId": { "$ref": "#/$defs/identifier" },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "installmentNumber": { "type": "integer", "minimum": 1, "maximum": 520 },
+        "dueAt": { "$ref": "#/$defs/timestamp" },
+        "scheduledPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "scheduledInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "scheduledFeeMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "paidPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "paidInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "paidFeeMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "status": { "enum": ["scheduled", "partial", "paid"] },
+        "scheduleVersion": { "const": "obligation_schedule.v1" },
+        "scheduleSequence": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "schemaVersion": { "const": "obligation_installment.v1" }
+      }
+    },
+    "sharedObligation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligationId", "obligationHash", "subjectId", "principalId",
+        "creditIntentId", "riskDecisionId", "creditOfferId",
+        "creditOfferAcceptanceId", "authorityType", "authorityId", "assetId",
+        "originalPrincipalMinor", "outstandingPrincipalMinor", "annualRateBps",
+        "originationFeeMinor", "accruedInterestMinor", "outstandingInterestMinor",
+        "accruedFeesMinor", "outstandingFeesMinor", "totalRepaidMinor",
+        "repaymentFrequency", "installmentCount", "firstPaymentAt", "maturityAt",
+        "scheduleVersion", "scheduleHash", "scheduleSequence", "installments", "executionStatus",
+        "sandboxOnly", "productionFundsMoved", "status", "servicingClassification",
+        "daysPastDue", "oldestUnpaidInstallmentId", "servicingEffectiveAt",
+        "servicingReasonCode", "servicingPolicyVersion", "servicingOwnerCode",
+        "writtenOffPrincipalMinor", "writtenOffInterestMinor", "writtenOffFeesMinor", "acceptedAt",
+        "createdAt", "updatedAt", "schemaVersion"
+      ],
+      "properties": {
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "obligationHash": { "$ref": "#/$defs/hash" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "principalId": { "$ref": "#/$defs/identifier" },
+        "creditIntentId": { "$ref": "#/$defs/identifier" },
+        "riskDecisionId": { "$ref": "#/$defs/identifier" },
+        "creditOfferId": { "$ref": "#/$defs/identifier" },
+        "creditOfferAcceptanceId": { "$ref": "#/$defs/identifier" },
+        "authorityType": { "enum": ["consent", "mandate"] },
+        "authorityId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "originalPrincipalMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "annualRateBps": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "originationFeeMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "accruedInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "accruedFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "totalRepaidMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "repaymentFrequency": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] },
+        "installmentCount": { "type": "integer", "minimum": 1, "maximum": 520 },
+        "firstPaymentAt": { "$ref": "#/$defs/timestamp" },
+        "maturityAt": { "$ref": "#/$defs/timestamp" },
+        "scheduleVersion": { "const": "obligation_schedule.v1" },
+        "scheduleHash": { "$ref": "#/$defs/hash" },
+        "scheduleSequence": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "installments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 520,
+          "items": { "$ref": "#/$defs/obligationInstallment" }
+        },
+        "executionStatus": { "enum": ["pending", "executed"] },
+        "sandboxExecutionReceiptId": { "$ref": "#/$defs/identifier" },
+        "executedAt": { "$ref": "#/$defs/timestamp" },
+        "lastAccruedAt": { "$ref": "#/$defs/timestamp" },
+        "interestAccrualRemainder": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "withdrawable": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "status": {
+          "enum": [
+            "created", "active", "partially_repaid", "fully_repaid", "delinquent",
+            "defaulted", "restructured", "repurchased", "written_off"
+          ]
+        },
+        "servicingClassification": {
+          "enum": [
+            "current", "grace_period", "dpd_1_30", "dpd_31_60", "dpd_61_89",
+            "defaulted", "cured", "restructured", "repurchased", "written_off"
+          ]
+        },
+        "daysPastDue": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "oldestUnpaidInstallmentId": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/identifier" }
+          ]
+        },
+        "servicingEffectiveAt": { "$ref": "#/$defs/timestamp" },
+        "servicingReasonCode": { "$ref": "#/$defs/code" },
+        "servicingPolicyVersion": { "const": "sandbox-servicing-policy.v1" },
+        "servicingOwnerCode": { "enum": ["sandbox_platform", "sandbox_originator"] },
+        "resolutionType": { "enum": ["restructure", "repurchase", "write_off"] },
+        "resolutionReasonCode": { "$ref": "#/$defs/code" },
+        "resolutionAt": { "$ref": "#/$defs/timestamp" },
+        "writtenOffPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "writtenOffInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "writtenOffFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "acceptedAt": { "$ref": "#/$defs/timestamp" },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "obligation.v2" }
+      }
+    },
+    "creditOfferAccepted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptance", "obligation", "offerStatus", "executionCreated",
+        "fundsAuthority", "schemaVersion"
+      ],
+      "properties": {
+        "acceptance": { "$ref": "#/$defs/creditOfferAcceptanceSummary" },
+        "obligation": { "$ref": "#/$defs/sharedObligation" },
+        "offerStatus": { "const": "accepted" },
+        "executionCreated": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_credit_offer_accepted.v1" }
+      }
+    },
+    "sandboxExecutionReceiptSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sandboxExecutionReceiptId", "receiptHash", "obligationId", "assetId",
+        "amountMinor", "adapterId", "adapterVersion", "adapterKeyId",
+        "adapterMessageHash", "executedAt", "sandboxOnly",
+        "productionFundsMoved", "withdrawable", "schemaVersion"
+      ],
+      "properties": {
+        "sandboxExecutionReceiptId": { "$ref": "#/$defs/identifier" },
+        "receiptHash": { "$ref": "#/$defs/hash" },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "amountMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "adapterId": { "$ref": "#/$defs/identifier" },
+        "adapterVersion": { "$ref": "#/$defs/identifier" },
+        "adapterKeyId": { "$ref": "#/$defs/hash" },
+        "adapterMessageHash": { "$ref": "#/$defs/hash" },
+        "executedAt": { "$ref": "#/$defs/timestamp" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "withdrawable": { "const": false },
+        "schemaVersion": { "const": "sandbox_execution_receipt.v1" }
+      }
+    },
+    "sandboxObligationExecuted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligation", "executionReceipt", "principalLedgerTransactionId",
+        "sandboxOnly", "productionFundsMoved", "withdrawable", "schemaVersion"
+      ],
+      "properties": {
+        "obligation": { "$ref": "#/$defs/sharedObligation" },
+        "executionReceipt": { "$ref": "#/$defs/sandboxExecutionReceiptSummary" },
+        "principalLedgerTransactionId": { "$ref": "#/$defs/identifier" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "withdrawable": { "const": false },
+        "schemaVersion": { "const": "tenant_sandbox_obligation_executed.v1" }
+      }
+    },
+    "sandboxRepaymentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repaymentId", "repaymentHash", "obligationId", "subjectId", "assetId",
+        "requestedMinor", "appliedMinor", "appliedFeeMinor", "appliedInterestMinor",
+        "appliedPrincipalMinor", "surplusMinor", "remainingPrincipalMinor",
+        "remainingInterestMinor", "remainingFeesMinor", "sourceCode", "actorHash",
+        "accruedInterestMinor", "accrualDays", "ledgerTransactionId", "occurredAt",
+        "sandboxOnly", "productionFundsMoved", "schemaVersion"
+      ],
+      "properties": {
+        "repaymentId": { "$ref": "#/$defs/identifier" },
+        "repaymentHash": { "$ref": "#/$defs/hash" },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "requestedMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "appliedMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "appliedFeeMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "appliedInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "appliedPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "surplusMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "remainingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "remainingInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "remainingFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "sourceCode": { "enum": ["synthetic_wallet", "synthetic_bank", "synthetic_revenue"] },
+        "actorHash": { "$ref": "#/$defs/hash" },
+        "accruedInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "accrualDays": { "type": "integer", "minimum": 0, "maximum": 36600 },
+        "ledgerTransactionId": { "$ref": "#/$defs/identifier" },
+        "interestLedgerTransactionId": { "$ref": "#/$defs/identifier" },
+        "occurredAt": { "$ref": "#/$defs/timestamp" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "schemaVersion": { "const": "repayment.v2" }
+      }
+    },
+    "sandboxRepaymentPosted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligation", "repayment", "sandboxOnly", "productionFundsMoved",
+        "withdrawable", "schemaVersion"
+      ],
+      "properties": {
+        "obligation": { "$ref": "#/$defs/sharedObligation" },
+        "repayment": { "$ref": "#/$defs/sandboxRepaymentSummary" },
+        "servicingAction": { "$ref": "#/$defs/sandboxServicingActionSummary" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "withdrawable": { "const": false },
+        "schemaVersion": { "const": "tenant_sandbox_repayment_posted.v1" }
+      }
+    },
+    "sandboxServicingBalances": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outstandingPrincipalMinor", "outstandingInterestMinor",
+        "outstandingFeesMinor", "totalRepaidMinor"
+      ],
+      "properties": {
+        "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "totalRepaidMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
+      }
+    },
+    "sandboxServicingActionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "servicingActionId", "servicingActionHash", "obligationId", "subjectId",
+        "actionType", "previousStatus", "nextStatus", "previousClassification",
+        "nextClassification", "daysPastDue", "oldestUnpaidInstallmentId",
+        "reasonCode", "source", "policyVersion", "scheduleSequenceBefore",
+        "scheduleSequenceAfter", "balancesBefore", "balancesAfter", "effectiveAt",
+        "sandboxOnly", "productionFundsMoved", "schemaVersion"
+      ],
+      "properties": {
+        "servicingActionId": { "$ref": "#/$defs/identifier" },
+        "servicingActionHash": { "$ref": "#/$defs/hash" },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "actionType": { "enum": ["advance", "cure", "restructure", "repurchase", "write_off"] },
+        "previousStatus": { "$ref": "#/$defs/code" },
+        "nextStatus": { "$ref": "#/$defs/code" },
+        "previousClassification": { "$ref": "#/$defs/code" },
+        "nextClassification": { "$ref": "#/$defs/code" },
+        "daysPastDue": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "oldestUnpaidInstallmentId": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/identifier" }
+          ]
+        },
+        "reasonCode": { "$ref": "#/$defs/code" },
+        "source": { "enum": ["system_worker", "repayment", "dual_control"] },
+        "policyVersion": { "const": "sandbox-servicing-policy.v1" },
+        "scheduleSequenceBefore": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "scheduleSequenceAfter": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "balancesBefore": { "$ref": "#/$defs/sandboxServicingBalances" },
+        "balancesAfter": { "$ref": "#/$defs/sandboxServicingBalances" },
+        "approvalProposalId": { "$ref": "#/$defs/identifier" },
+        "approvalExecutionId": { "$ref": "#/$defs/identifier" },
+        "effectiveAt": { "$ref": "#/$defs/timestamp" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "schemaVersion": { "const": "sandbox_servicing_action.v1" }
+      }
+    },
+    "sandboxServicingResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligation", "servicingStateHash", "sandboxOnly",
+        "productionFundsMoved", "schemaVersion"
+      ],
+      "properties": {
+        "obligation": { "$ref": "#/$defs/sharedObligation" },
+        "servicingStateHash": { "$ref": "#/$defs/hash" },
+        "servicingAction": { "$ref": "#/$defs/sandboxServicingActionSummary" },
+        "writeOffLedgerTransactionId": { "$ref": "#/$defs/identifier" },
+        "approvalExecutionId": { "$ref": "#/$defs/identifier" },
+        "approvalExecutionHash": { "$ref": "#/$defs/hash" },
+        "changed": { "type": "boolean" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "schemaVersion": {
+          "enum": [
+            "tenant_sandbox_obligation_restructured.v1",
+            "tenant_sandbox_obligation_repurchased.v1",
+            "tenant_sandbox_obligation_written_off.v1",
+            "tenant_sandbox_servicing_advanced.v1"
+          ]
+        }
+      }
+    },
+    "creditIntentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditIntentId",
+        "creditIntentHash",
+        "subjectId",
+        "authorityType",
+        "authorityId",
+        "assetId",
+        "requestedPrincipalMinor",
+        "purposeCode",
+        "requestedTermDays",
+        "repaymentFrequency",
+        "installmentCount",
+        "sandboxOnly",
+        "productionFundsRequested",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "creditIntentId": { "$ref": "#/$defs/identifier" },
+        "creditIntentHash": { "$ref": "#/$defs/hash" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "authorityType": { "enum": ["consent", "mandate"] },
+        "authorityId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "requestedPrincipalMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "purposeCode": { "$ref": "#/$defs/code" },
+        "requestedTermDays": { "type": "integer", "minimum": 1, "maximum": 3660 },
+        "repaymentFrequency": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] },
+        "installmentCount": { "type": "integer", "minimum": 1, "maximum": 520 },
+        "sandboxOnly": { "const": true },
+        "productionFundsRequested": { "const": false },
+        "status": { "enum": ["submitted", "decided", "withdrawn", "expired"] },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "creditIntentCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["creditIntent", "schemaVersion"],
+      "properties": {
+        "creditIntent": { "$ref": "#/$defs/creditIntentSummary" },
+        "schemaVersion": { "const": "tenant_credit_intent_created.v1" }
+      }
+    },
+    "creditApplicationView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["creditIntent", "decision", "offer", "schemaVersion"],
+      "properties": {
+        "creditIntent": { "$ref": "#/$defs/creditIntentSummary" },
+        "decision": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/creditDecisionSummary" }
+          ]
+        },
+        "offer": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/creditOfferSummary" }
+          ]
+        },
+        "schemaVersion": { "const": "tenant_credit_application_view.v1" }
+      }
+    },
+    "creditDecisionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskDecisionId", "decisionHash", "creditIntentId", "subjectId",
+        "authorityType", "authorityId", "assetId", "status", "policyVersion",
+        "approvedPrincipalMinor", "reasonCodes", "sandboxOnly",
+        "productionAuthority", "decidedAt"
+      ],
+      "properties": {
+        "riskDecisionId": { "$ref": "#/$defs/identifier" },
+        "decisionHash": { "$ref": "#/$defs/hash" },
+        "creditIntentId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "authorityType": { "enum": ["consent", "mandate"] },
+        "authorityId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["approved", "rejected", "frozen"] },
+        "policyVersion": { "const": "credit-application-rules.v1" },
+        "approvedPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "reasonCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/code" }
+        },
+        "decisionPassport": { "$ref": "#/$defs/decisionPassportSummary" },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "decidedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "decisionPassportSourceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "evidenceHash", "entityHash", "aggregateVersion", "sourceFinality"],
+      "properties": {
+        "role": {
+          "enum": [
+            "credit_intent",
+            "subject",
+            "principal",
+            "authority",
+            "human_identity_reference"
+          ]
+        },
+        "evidenceHash": { "$ref": "#/$defs/hash" },
+        "entityHash": { "$ref": "#/$defs/hash" },
+        "aggregateVersion": { "type": "integer", "minimum": 1 },
+        "sourceFinality": { "const": "finalized" }
+      }
+    },
+    "decisionReasonLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reasonCode", "featureKeys", "sourceRoles"],
+      "properties": {
+        "reasonCode": { "$ref": "#/$defs/code" },
+        "featureKeys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 13,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "assetSupported",
+              "principalWithinCap",
+              "termWithinCap",
+              "scheduleValid",
+              "subjectEligible",
+              "subjectSuspended",
+              "principalEligible",
+              "authorityCurrent",
+              "identityEvidenceCurrent",
+              "principalBindingCurrent",
+              "adverseObligationCount",
+              "frozenCreditLineCount",
+              "allRequiredFeaturesSatisfied"
+            ]
+          }
+        },
+        "sourceRoles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/code" }
+        }
+      }
+    },
+    "decisionPassportSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskDecisionPassportId",
+        "decisionPassportHash",
+        "riskFeatureSnapshotId",
+        "featureSnapshotHash",
+        "featureSetVersion",
+        "policyVersion",
+        "policyHash",
+        "riskStateHash",
+        "sourceEvidence",
+        "reasonLineage",
+        "asOf",
+        "nonAuthorizing",
+        "sandboxOnly",
+        "productionAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "riskDecisionPassportId": { "$ref": "#/$defs/identifier" },
+        "decisionPassportHash": { "$ref": "#/$defs/hash" },
+        "riskFeatureSnapshotId": { "$ref": "#/$defs/identifier" },
+        "featureSnapshotHash": { "$ref": "#/$defs/hash" },
+        "featureSetVersion": { "const": "credit-application-evidence-features.v1" },
+        "policyVersion": { "const": "credit-application-rules.v1" },
+        "policyHash": { "$ref": "#/$defs/hash" },
+        "riskStateHash": { "$ref": "#/$defs/hash" },
+        "sourceEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/decisionPassportSourceEvidence" }
+        },
+        "reasonLineage": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/decisionReasonLineage" }
+        },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "nonAuthorizing": { "const": true },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "schemaVersion": { "const": "risk_decision_passport.v1" }
+      }
+    },
+    "creditOfferSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditOfferId", "creditOfferHash", "termsHash", "creditIntentId",
+        "riskDecisionId", "subjectId", "assetId", "approvedPrincipalMinor",
+        "annualRateBps", "originationFeeMinor", "repaymentFrequency",
+        "installmentCount", "firstPaymentAt", "maturityAt", "disclosureRef",
+        "termsVersion", "validUntil", "reasonCodes", "sandboxOnly",
+        "productionFundsApproved", "status", "createdAt", "updatedAt"
+      ],
+      "properties": {
+        "creditOfferId": { "$ref": "#/$defs/identifier" },
+        "creditOfferHash": { "$ref": "#/$defs/hash" },
+        "termsHash": { "$ref": "#/$defs/hash" },
+        "creditIntentId": { "$ref": "#/$defs/identifier" },
+        "riskDecisionId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "approvedPrincipalMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "annualRateBps": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "originationFeeMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "repaymentFrequency": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] },
+        "installmentCount": { "type": "integer", "minimum": 1, "maximum": 520 },
+        "firstPaymentAt": { "$ref": "#/$defs/timestamp" },
+        "maturityAt": { "$ref": "#/$defs/timestamp" },
+        "disclosureRef": { "$ref": "#/$defs/identifier" },
+        "termsVersion": { "const": "credit_terms.v1" },
+        "validUntil": { "$ref": "#/$defs/timestamp" },
+        "reasonCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/code" }
+        },
+        "sandboxOnly": { "const": true },
+        "productionFundsApproved": { "const": false },
+        "status": { "enum": ["offered", "accepted", "declined", "expired", "superseded"] },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "creditApplicationEvaluated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["creditIntent", "decision", "offer", "schemaVersion"],
+      "properties": {
+        "creditIntent": { "$ref": "#/$defs/creditIntentSummary" },
+        "decision": {
+          "allOf": [
+            { "$ref": "#/$defs/creditDecisionSummary" },
+            { "type": "object", "required": ["decisionPassport"] }
+          ]
+        },
+        "offer": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/creditOfferSummary" }
+          ]
+        },
+        "schemaVersion": { "const": "tenant_credit_application_evaluated.v2" }
+      }
+    },
+    "sandboxMandateActivated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mandate", "activationEvidenceHash", "schemaVersion"],
+      "properties": {
+        "mandate": { "$ref": "https://schemas.ipo.one/v2/mandate.schema.json" },
+        "activationEvidenceHash": { "$ref": "#/$defs/hash" },
+        "schemaVersion": { "const": "tenant_sandbox_mandate_activated.v1" }
+      }
+    },
+    "agentAccountBindingSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accountBindingId", "accountHash", "chainId", "purpose", "proofHash",
+        "verificationMethod", "status", "boundAt", "protocolVersion"
+      ],
+      "properties": {
+        "accountBindingId": { "$ref": "#/$defs/identifier" },
+        "accountHash": { "$ref": "#/$defs/hash" },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "purpose": { "enum": ["primary", "revenue", "repayment", "treasury", "execution"] },
+        "proofHash": { "$ref": "#/$defs/hash" },
+        "verificationMethod": { "const": "eip712_eoa_v1" },
+        "status": { "const": "active" },
+        "boundAt": { "$ref": "#/$defs/timestamp" },
+        "protocolVersion": { "const": "1.1" }
+      }
+    },
+    "agentAccountChallengeCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "challengeId", "subjectId", "chainId", "accountHash", "purpose", "nonce",
+        "issuedAt", "expiresAt", "protocolVersion", "typedDataHash", "typedData",
+        "oneUse", "schemaVersion"
+      ],
+      "properties": {
+        "challengeId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "accountHash": { "$ref": "#/$defs/hash" },
+        "purpose": { "enum": ["primary", "revenue", "repayment", "treasury", "execution"] },
+        "nonce": { "$ref": "#/$defs/hash" },
+        "issuedAt": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "protocolVersion": { "const": "1.1" },
+        "typedDataHash": { "$ref": "#/$defs/hash" },
+        "typedData": { "$ref": "#/$defs/agentAccountTypedData" },
+        "oneUse": { "const": true },
+        "schemaVersion": { "const": "tenant_agent_account_challenge_created.v1" }
+      }
+    },
+    "agentAccountTypedData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "types", "primaryType", "message"],
+      "properties": {
+        "domain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version", "chainId"],
+          "properties": {
+            "name": { "const": "IPO.ONE Agent Account Binding" },
+            "version": { "const": "1.1" },
+            "chainId": { "enum": [84532, 1952] }
+          }
+        },
+        "types": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["AgentAccountBindingProof"],
+          "properties": {
+            "AgentAccountBindingProof": {
+              "type": "array",
+              "minItems": 8,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "type"],
+                "properties": {
+                  "name": {
+                    "enum": ["tenantHash", "subjectHash", "accountHash", "purpose", "nonce", "issuedAt", "expiresAt", "protocolVersion"]
+                  },
+                  "type": { "enum": ["bytes32", "string", "uint256"] }
+                }
+              }
+            }
+          }
+        },
+        "primaryType": { "const": "AgentAccountBindingProof" },
+        "message": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tenantHash", "subjectHash", "accountHash", "purpose", "nonce", "issuedAt", "expiresAt", "protocolVersion"],
+          "properties": {
+            "tenantHash": { "$ref": "#/$defs/hash" },
+            "subjectHash": { "$ref": "#/$defs/hash" },
+            "accountHash": { "$ref": "#/$defs/hash" },
+            "purpose": { "enum": ["primary", "revenue", "repayment", "treasury", "execution"] },
+            "nonce": { "$ref": "#/$defs/hash" },
+            "issuedAt": { "type": "string", "pattern": "^[0-9]+$" },
+            "expiresAt": { "type": "string", "pattern": "^[0-9]+$" },
+            "protocolVersion": { "const": "1.1" }
+          }
+        }
+      }
+    },
+    "agentAccountProofVerified": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectId", "subjectHash", "status", "accountBinding", "challengeConsumed", "productionAuthority", "schemaVersion"],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "status": { "const": "active" },
+        "accountBinding": { "$ref": "#/$defs/agentAccountBindingSummary" },
+        "challengeConsumed": { "const": true },
+        "productionAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_agent_account_proof_verified.v1" }
+      }
+    },
+    "agentAccountBindingView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectId", "subjectHash", "subjectStatus", "accountBinding", "schemaVersion"],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "subjectStatus": { "enum": ["pending", "active", "suspended", "closed"] },
+        "accountBinding": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/agentAccountBindingSummary" }
+          ]
+        },
+        "schemaVersion": { "const": "tenant_agent_account_binding_view.v1" }
+      }
+    },
     "agentSubjectCreated": {
       "type": "object",
       "additionalProperties": false,
@@ -110,6 +1106,28 @@
         "subjectType": { "const": "agent" },
         "status": { "enum": ["pending", "active", "suspended", "closed"] },
         "schemaVersion": { "const": "tenant_agent_subject_created.v1" }
+      }
+    },
+    "humanSubjectCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principalId",
+        "subjectId",
+        "subjectHash",
+        "subjectType",
+        "status",
+        "prototypeOnly",
+        "schemaVersion"
+      ],
+      "properties": {
+        "principalId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "subjectType": { "const": "human" },
+        "status": { "enum": ["pending", "active", "suspended", "closed"] },
+        "prototypeOnly": { "const": true },
+        "schemaVersion": { "const": "tenant_human_subject_created.v1" }
       }
     },
     "draftMandateCreated": {
@@ -235,6 +1253,8 @@
           "items": {
             "enum": [
               "request_credit",
+              "accept_credit_offer",
+              "execute_sandbox_credit",
               "provider_spend",
               "capture_revenue",
               "route_repayment"
@@ -271,6 +1291,191 @@
         },
         "hasMoreMandates": { "type": "boolean" },
         "schemaVersion": { "const": "tenant_agent_subject_view.v2" }
+      }
+    },
+    "humanSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectId",
+        "subjectHash",
+        "subjectType",
+        "displayName",
+        "primaryPrincipalId",
+        "status",
+        "riskTier",
+        "prototypeOnly",
+        "createdAt",
+        "updatedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "subjectType": { "const": "human" },
+        "displayName": { "const": "Human Credit Profile" },
+        "primaryPrincipalId": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["pending", "active", "suspended", "closed"] },
+        "riskTier": { "enum": ["unrated", "tier_1", "tier_2", "tier_3", "tier_4"] },
+        "metadataRef": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "prototypeOnly": { "const": true },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "subject.v1" }
+      }
+    },
+    "consentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consentId", "consentHash", "termsHash", "dataUsageHash", "status",
+        "purposes", "allowedAssetIds", "allowedCreditPurposeCodes",
+        "allowedRepaymentFrequencies", "maxRequestedPrincipalMinor",
+        "maxRequestedTermDays", "maxInstallmentCount", "validFrom", "expiresAt",
+        "createdAt", "updatedAt"
+      ],
+      "properties": {
+        "consentId": { "$ref": "#/$defs/identifier" },
+        "consentHash": { "$ref": "#/$defs/hash" },
+        "termsHash": { "$ref": "#/$defs/hash" },
+        "dataUsageHash": { "$ref": "#/$defs/hash" },
+        "status": { "enum": ["active", "revoked", "expired"] },
+        "purposes": {
+          "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+          "items": { "enum": ["credit_application", "credit_decision", "credit_offer_acceptance", "identity_reference_use", "obligation_servicing", "evidence_sharing"] }
+        },
+        "allowedAssetIds": {
+          "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "allowedCreditPurposeCodes": {
+          "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/code" }
+        },
+        "allowedRepaymentFrequencies": {
+          "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+          "items": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] }
+        },
+        "maxRequestedPrincipalMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "maxRequestedTermDays": { "type": "integer", "minimum": 1, "maximum": 3660 },
+        "maxInstallmentCount": { "type": "integer", "minimum": 1, "maximum": 520 },
+        "validFrom": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "humanIdentityReferenceSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identityReferenceId", "identityReferenceHash", "referenceEvidenceHash",
+        "consentId", "consentHash", "referenceType", "providerVersion",
+        "assuranceLevel", "purposeCodes", "validFrom", "expiresAt",
+        "syntheticOnly", "productionVerified", "status", "createdAt", "updatedAt"
+      ],
+      "properties": {
+        "identityReferenceId": { "$ref": "#/$defs/identifier" },
+        "identityReferenceHash": { "$ref": "#/$defs/hash" },
+        "referenceEvidenceHash": { "$ref": "#/$defs/hash" },
+        "consentId": { "$ref": "#/$defs/identifier" },
+        "consentHash": { "$ref": "#/$defs/hash" },
+        "referenceType": { "enum": ["kyc_reference", "verifiable_credential_reference"] },
+        "providerVersion": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{0,95}\\.v[1-9][0-9]*$" },
+        "assuranceLevel": { "enum": ["synthetic_self_asserted", "synthetic_provider_asserted"] },
+        "purposeCodes": {
+          "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+          "items": { "enum": ["credit_application", "credit_decision", "credit_offer_acceptance", "identity_reference_use", "obligation_servicing", "evidence_sharing"] }
+        },
+        "validFrom": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "syntheticOnly": { "const": true },
+        "productionVerified": { "const": false },
+        "status": { "enum": ["active", "revoked", "expired"] },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "humanSubjectView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject", "consents", "identityReferences", "hasMoreConsents",
+        "hasMoreIdentityReferences", "schemaVersion"
+      ],
+      "properties": {
+        "subject": { "$ref": "#/$defs/humanSubject" },
+        "consents": { "type": "array", "maxItems": 50, "items": { "$ref": "#/$defs/consentSummary" } },
+        "identityReferences": { "type": "array", "maxItems": 50, "items": { "$ref": "#/$defs/humanIdentityReferenceSummary" } },
+        "hasMoreConsents": { "type": "boolean" },
+        "hasMoreIdentityReferences": { "type": "boolean" },
+        "schemaVersion": { "const": "tenant_human_subject_view.v1" }
+      }
+    },
+    "workspaceResumeResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceType", "resourceId", "relationship"],
+      "properties": {
+        "resourceType": {
+          "enum": ["subject", "consent", "credit_intent", "mandate", "obligation"]
+        },
+        "resourceId": { "$ref": "#/$defs/identifier" },
+        "relationship": { "enum": ["owner", "controller", "subject"] }
+      }
+    },
+    "workspaceResumeView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceKind", "resources", "hasMore", "serverTruth", "schemaVersion"],
+      "properties": {
+        "workspaceKind": { "enum": ["human_borrower", "principal_controller"] },
+        "resources": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/workspaceResumeResource" }
+        },
+        "hasMore": { "type": "boolean" },
+        "serverTruth": { "const": true },
+        "schemaVersion": { "const": "tenant_workspace_resume_view.v1" }
+      }
+    },
+    "humanConsentCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectId", "consent", "schemaVersion"],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "consent": { "$ref": "#/$defs/consentSummary" },
+        "schemaVersion": { "const": "tenant_consent_created.v1" }
+      }
+    },
+    "humanConsentView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consent", "schemaVersion"],
+      "properties": {
+        "consent": { "$ref": "#/$defs/consentSummary" },
+        "schemaVersion": { "const": "tenant_consent_view.v1" }
+      }
+    },
+    "humanConsentRevoked": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consent", "reasonCode", "schemaVersion"],
+      "properties": {
+        "consent": { "$ref": "#/$defs/consentSummary" },
+        "reasonCode": { "const": "human_withdrawal" },
+        "schemaVersion": { "const": "tenant_consent_revoked.v1" }
+      }
+    },
+    "humanIdentityReferenceView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identityReference", "schemaVersion"],
+      "properties": {
+        "identityReference": { "$ref": "#/$defs/humanIdentityReferenceSummary" },
+        "schemaVersion": { "const": "tenant_human_identity_reference_view.v1" }
       }
     },
     "mandateView": {
@@ -336,11 +1541,18 @@
         "fullyRepaidCount",
         "overdueCount",
         "defaultedCount",
+        "delinquentCount",
+        "restructuredCount",
+        "repurchasedCount",
+        "writtenOffCount",
         "closedCount",
         "principalMinor",
         "outstandingPrincipalMinor",
         "accruedFeesMinor",
-        "repaidAmountMinor"
+        "repaidAmountMinor",
+        "writtenOffPrincipalMinor",
+        "writtenOffInterestMinor",
+        "writtenOffFeesMinor"
       ],
       "properties": {
         "totalCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
@@ -351,11 +1563,18 @@
         "fullyRepaidCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
         "overdueCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
         "defaultedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "delinquentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "restructuredCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "repurchasedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "writtenOffCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
         "closedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
         "principalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
         "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
         "accruedFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
-        "repaidAmountMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
+        "repaidAmountMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "writtenOffPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "writtenOffInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "writtenOffFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
       }
     },
     "tenantRiskAssetExposure": {
@@ -372,7 +1591,12 @@
         "openObligationCount",
         "overdueObligationCount",
         "defaultedObligationCount",
-        "outstandingPrincipalMinor"
+        "delinquentObligationCount",
+        "restructuredObligationCount",
+        "repurchasedObligationCount",
+        "writtenOffObligationCount",
+        "outstandingPrincipalMinor",
+        "writtenOffPrincipalMinor"
       ],
       "properties": {
         "assetId": { "$ref": "#/$defs/identifier" },
@@ -385,7 +1609,12 @@
         "openObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
         "overdueObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
         "defaultedObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
-        "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
+        "delinquentObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "restructuredObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "repurchasedObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "writtenOffObligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "writtenOffPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" }
       }
     },
     "tenantRiskPortfolioView": {
@@ -416,6 +1645,489 @@
         "schemaVersion": { "const": "tenant_risk_portfolio_view.v1" }
       }
     },
+    "tenantPilotHealthView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "portfolioId", "asOf", "entryModes", "funnel", "conversionBps",
+        "positions", "readiness", "safety", "schemaVersion"
+      ],
+      "properties": {
+        "portfolioId": { "$ref": "#/$defs/identifier" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "entryModes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["humanIntentCount", "agentIntentCount", "dualNativeObserved"],
+          "properties": {
+            "humanIntentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "agentIntentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "dualNativeObserved": { "type": "boolean" }
+          }
+        },
+        "funnel": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intentCount", "offeredIntentCount", "acceptedIntentCount",
+            "executedIntentCount", "repaidIntentCount", "fullyRepaidIntentCount"
+          ],
+          "properties": {
+            "intentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "offeredIntentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "acceptedIntentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "executedIntentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "repaidIntentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "fullyRepaidIntentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "conversionBps": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["offer", "acceptance", "execution", "repayment", "fullRepayment"],
+          "properties": {
+            "offer": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "acceptance": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "execution": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "repayment": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "fullRepayment": { "type": "integer", "minimum": 0, "maximum": 10000 }
+          }
+        },
+        "positions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["obligationCount", "openPositionCount", "adversePositionCount"],
+          "properties": {
+            "obligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "openPositionCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "adversePositionCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "readiness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["stage", "dualNativeObserved", "fullLifecycleObserved"],
+          "properties": {
+            "stage": { "enum": ["empty", "application", "obligation", "execution", "repayment", "verified"] },
+            "dualNativeObserved": { "type": "boolean" },
+            "fullLifecycleObserved": { "type": "boolean" }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "readOnly", "piiIncluded", "thirdPartyAnalytics", "sandboxOnly",
+            "productionFundsMoved"
+          ],
+          "properties": {
+            "readOnly": { "const": true },
+            "piiIncluded": { "const": false },
+            "thirdPartyAnalytics": { "const": false },
+            "sandboxOnly": { "const": true },
+            "productionFundsMoved": { "const": false }
+          }
+        },
+        "schemaVersion": { "const": "tenant_pilot_health_view.v1" }
+      }
+    },
+    "pilotFeedbackRecorded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entryMode", "surface", "lifecycleStage", "sentiment", "outcome",
+        "blockerCode", "recordedAt", "safety", "schemaVersion"
+      ],
+      "properties": {
+        "entryMode": { "enum": ["human", "agent"] },
+        "surface": {
+          "enum": [
+            "human_portfolio", "human_application", "human_offer", "human_payments",
+            "agent_protocol", "agent_sdk", "agent_mcp", "evidence", "servicing"
+          ]
+        },
+        "lifecycleStage": {
+          "enum": [
+            "onboarding", "application", "offer", "obligation", "execution",
+            "repayment", "servicing", "evidence"
+          ]
+        },
+        "sentiment": { "enum": ["blocked", "difficult", "neutral", "easy", "valuable"] },
+        "outcome": { "enum": ["incomplete", "completed", "needs_support"] },
+        "blockerCode": {
+          "enum": [
+            "none", "unclear_copy", "missing_capability", "authentication",
+            "authority_setup", "identity_proof", "credit_terms", "execution",
+            "repayment", "servicing", "evidence", "integration", "other_no_text"
+          ]
+        },
+        "recordedAt": { "$ref": "#/$defs/timestamp" },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "categoricalOnly", "piiIncluded", "thirdPartyAnalytics", "sandboxOnly",
+            "productionAuthority"
+          ],
+          "properties": {
+            "categoricalOnly": { "const": true },
+            "piiIncluded": { "const": false },
+            "thirdPartyAnalytics": { "const": false },
+            "sandboxOnly": { "const": true },
+            "productionAuthority": { "const": false }
+          }
+        },
+        "schemaVersion": { "const": "tenant_pilot_feedback_recorded.v1" }
+      }
+    },
+    "tenantPilotFeedbackSummaryView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asOf", "totalCount", "entryModes", "surfaces", "lifecycleStages",
+        "sentiments", "outcomes", "blockerCodes", "safety", "schemaVersion"
+      ],
+      "properties": {
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "totalCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "entryModes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["humanCount", "agentCount"],
+          "properties": {
+            "humanCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "agentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "surfaces": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "humanPortfolioCount", "humanApplicationCount", "humanOfferCount",
+            "humanPaymentsCount", "agentProtocolCount", "agentSdkCount",
+            "agentMcpCount", "evidenceCount", "servicingCount"
+          ],
+          "properties": {
+            "humanPortfolioCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "humanApplicationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "humanOfferCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "humanPaymentsCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "agentProtocolCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "agentSdkCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "agentMcpCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "evidenceCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "servicingCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "lifecycleStages": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "onboardingCount", "applicationCount", "offerCount", "obligationCount",
+            "executionCount", "repaymentCount", "servicingCount", "evidenceCount"
+          ],
+          "properties": {
+            "onboardingCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "applicationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "offerCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "obligationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "executionCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "repaymentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "servicingCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "evidenceCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "sentiments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["blockedCount", "difficultCount", "neutralCount", "easyCount", "valuableCount"],
+          "properties": {
+            "blockedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "difficultCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "neutralCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "easyCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "valuableCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "outcomes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["incompleteCount", "completedCount", "needsSupportCount"],
+          "properties": {
+            "incompleteCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "completedCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "needsSupportCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "blockerCodes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "noneCount", "unclearCopyCount", "missingCapabilityCount",
+            "authenticationCount", "authoritySetupCount", "identityProofCount",
+            "creditTermsCount", "executionCount", "repaymentCount", "servicingCount",
+            "evidenceCount", "integrationCount", "otherNoTextCount"
+          ],
+          "properties": {
+            "noneCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "unclearCopyCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "missingCapabilityCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "authenticationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "authoritySetupCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "identityProofCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "creditTermsCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "executionCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "repaymentCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "servicingCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "evidenceCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "integrationCount": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "otherNoTextCount": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "aggregateOnly", "piiIncluded", "identifiersIncluded",
+            "thirdPartyAnalytics", "sandboxOnly", "productionFundsMoved"
+          ],
+          "properties": {
+            "aggregateOnly": { "const": true },
+            "piiIncluded": { "const": false },
+            "identifiersIncluded": { "const": false },
+            "thirdPartyAnalytics": { "const": false },
+            "sandboxOnly": { "const": true },
+            "productionFundsMoved": { "const": false }
+          }
+        },
+        "schemaVersion": { "const": "tenant_pilot_feedback_summary_view.v1" }
+      }
+    },
+    "servicingQueueActionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "servicingActionId", "actionType", "nextStatus", "nextClassification",
+        "daysPastDue", "reasonCode", "source", "effectiveAt", "schemaVersion"
+      ],
+      "properties": {
+        "servicingActionId": { "$ref": "#/$defs/identifier" },
+        "actionType": { "enum": ["advance", "cure", "restructure", "repurchase", "write_off"] },
+        "nextStatus": { "$ref": "#/$defs/code" },
+        "nextClassification": { "$ref": "#/$defs/code" },
+        "daysPastDue": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "reasonCode": { "$ref": "#/$defs/code" },
+        "source": { "enum": ["system_worker", "repayment", "dual_control"] },
+        "effectiveAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "servicing_queue_action_summary.v1" }
+      }
+    },
+    "servicingQueueCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligationId", "subjectId", "assetId", "status",
+        "servicingClassification", "daysPastDue", "priority", "reviewCode",
+        "outstandingPrincipalMinor", "outstandingInterestMinor", "outstandingFeesMinor",
+        "outstandingTotalMinor", "pastDuePrincipalMinor", "pastDueInterestMinor",
+        "pastDueFeesMinor", "pastDueTotalMinor", "oldestUnpaidInstallmentId",
+        "oldestDueAt", "servicingEffectiveAt", "scheduleSequence",
+        "servicingOwnerCode", "sandboxOnly", "productionFundsMoved", "withdrawable",
+        "schemaVersion"
+      ],
+      "properties": {
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["delinquent", "defaulted"] },
+        "servicingClassification": {
+          "enum": ["defaulted", "dpd_61_89", "dpd_31_60", "dpd_1_30", "grace_period"]
+        },
+        "daysPastDue": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "priority": { "enum": ["critical", "high", "elevated", "watch", "monitor"] },
+        "reviewCode": {
+          "enum": [
+            "default_resolution_review", "pre_default_review", "late_stage_review",
+            "early_delinquency_review", "grace_monitor"
+          ]
+        },
+        "outstandingPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "outstandingTotalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "pastDuePrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "pastDueInterestMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "pastDueFeesMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "pastDueTotalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "oldestUnpaidInstallmentId": { "$ref": "#/$defs/identifier" },
+        "oldestDueAt": { "$ref": "#/$defs/timestamp" },
+        "servicingEffectiveAt": { "$ref": "#/$defs/timestamp" },
+        "scheduleSequence": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "servicingOwnerCode": { "enum": ["sandbox_platform", "sandbox_originator"] },
+        "latestServicingAction": { "$ref": "#/$defs/servicingQueueActionSummary" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "withdrawable": { "const": false },
+        "schemaVersion": { "const": "servicing_queue_case.v1" }
+      }
+    },
+    "tenantServicingQueueView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["queueId", "asOf", "filters", "cases", "page", "safety", "schemaVersion"],
+      "properties": {
+        "queueId": { "$ref": "#/$defs/identifier" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["classifications"],
+          "properties": {
+            "classifications": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 5,
+              "uniqueItems": true,
+              "items": {
+                "enum": ["defaulted", "dpd_61_89", "dpd_31_60", "dpd_1_30", "grace_period"]
+              }
+            }
+          }
+        },
+        "cases": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/servicingQueueCase" }
+        },
+        "page": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["limit", "hasMore"],
+          "properties": {
+            "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+            "hasMore": { "type": "boolean" },
+            "nextCursor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 768,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "readOnly", "piiIncluded", "dispositionAuthority", "sandboxOnly",
+            "productionFundsMoved", "withdrawable"
+          ],
+          "properties": {
+            "readOnly": { "const": true },
+            "piiIncluded": { "const": false },
+            "dispositionAuthority": { "const": false },
+            "sandboxOnly": { "const": true },
+            "productionFundsMoved": { "const": false },
+            "withdrawable": { "const": false }
+          }
+        },
+        "schemaVersion": { "const": "tenant_servicing_queue_view.v1" }
+      }
+    },
+    "obligationEvidenceSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceId",
+        "evidenceHash",
+        "eventType",
+        "aggregateType",
+        "aggregateId",
+        "aggregateVersion",
+        "obligationId",
+        "sourceFinality",
+        "payloadHash",
+        "occurredAt",
+        "recordedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "evidenceId": { "$ref": "#/$defs/identifier" },
+        "evidenceHash": { "$ref": "#/$defs/hash" },
+        "eventType": { "$ref": "#/$defs/identifier" },
+        "aggregateType": { "$ref": "#/$defs/identifier" },
+        "aggregateId": { "$ref": "#/$defs/identifier" },
+        "aggregateVersion": { "type": "integer", "minimum": 1 },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "sourceFinality": {
+          "enum": ["pending", "confirmed", "finalized", "reorged", "invalidated"]
+        },
+        "payloadHash": { "$ref": "#/$defs/hash" },
+        "occurredAt": { "$ref": "#/$defs/timestamp" },
+        "recordedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "obligation_evidence_summary.v1" }
+      }
+    },
+    "obligationEvidenceView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["obligationId", "asOf", "items", "hasMore", "schemaVersion"],
+      "properties": {
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/obligationEvidenceSummary" }
+        },
+        "hasMore": { "type": "boolean" },
+        "nextCursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "schemaVersion": { "const": "tenant_obligation_evidence_view.v1" }
+      }
+    },
+    "ownedObligationEvidenceView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["obligationId", "asOf", "items", "hasMore", "schemaVersion"],
+      "properties": {
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/obligationEvidenceSummary" }
+        },
+        "hasMore": { "type": "boolean" },
+        "nextCursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "schemaVersion": { "const": "tenant_owned_obligation_evidence_view.v1" }
+      }
+    },
+    "ownedObligationView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligation", "asOf", "sandboxOnly", "productionFundsMoved",
+        "withdrawable", "schemaVersion"
+      ],
+      "properties": {
+        "obligation": { "$ref": "#/$defs/sharedObligation" },
+        "latestServicingAction": { "$ref": "#/$defs/sandboxServicingActionSummary" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "withdrawable": { "const": false },
+        "schemaVersion": { "const": "tenant_owned_obligation_view.v1" }
+      }
+    },
     "draftMandateRevoked": {
       "type": "object",
       "additionalProperties": false,
@@ -440,14 +2152,42 @@
         "schemaVersion": { "const": "tenant_draft_mandate_revoked.v1" }
       }
     },
+    "providerSandboxCallbackResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "callbackId", "transferIntentId", "providerId", "deliveryHash", "payloadHash",
+        "nonceHash", "keyId", "outcome", "reasonCode", "providerEventRefHash",
+        "processedAt", "sandboxOnly", "productionFundsMoved", "withdrawable", "schemaVersion"
+      ],
+      "properties": {
+        "callbackId": { "$ref": "#/$defs/identifier" },
+        "transferIntentId": { "$ref": "#/$defs/identifier" },
+        "providerId": { "$ref": "#/$defs/identifier" },
+        "deliveryHash": { "$ref": "#/$defs/hash" },
+        "payloadHash": { "$ref": "#/$defs/hash" },
+        "nonceHash": { "$ref": "#/$defs/hash" },
+        "keyId": { "$ref": "#/$defs/identifier" },
+        "outcome": { "enum": ["accepted", "rejected"] },
+        "reasonCode": { "enum": ["provider_accepted", "provider_policy_rejected"] },
+        "providerEventRefHash": { "$ref": "#/$defs/hash" },
+        "processedAt": { "$ref": "#/$defs/timestamp" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "withdrawable": { "const": false },
+        "schemaVersion": { "const": "provider_sandbox_callback_result.v1" }
+      }
+    },
     "mandateCapabilities": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 4,
+      "maxItems": 6,
       "uniqueItems": true,
       "items": {
         "enum": [
           "request_credit",
+          "accept_credit_offer",
+          "execute_sandbox_credit",
           "provider_spend",
           "capture_revenue",
           "route_repayment"
@@ -460,6 +2200,10 @@
       "maxItems": 16,
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/identifier" }
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
     }
   }
 }

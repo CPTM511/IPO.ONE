@@ -112,9 +112,7 @@ export function createMandate({
   termsRef,
   now = new Date()
 }) {
-  const mandateHash = hashId("mandate", {
-    principalId,
-    subjectId,
+  const termsCore = {
     capabilities,
     allowedProviderIds,
     allowedCategories,
@@ -124,11 +122,19 @@ export function createMandate({
     validFrom,
     expiresAt,
     nonce,
-    termsRef: termsRef ?? null
+    termsRef: termsRef ?? null,
+    sandboxOnly: true,
+    productionAuthority: false
+  };
+  const mandateHash = hashId("mandate", {
+    principalId,
+    subjectId,
+    ...termsCore
   });
   return {
     mandateId: createOperationalId("mandate"),
     mandateHash,
+    termsHash: hashId("mandate_terms", termsCore),
     principalId,
     subjectId,
     capabilities: [...capabilities],
@@ -142,10 +148,12 @@ export function createMandate({
     expiresAt,
     nonce,
     termsRef,
+    sandboxOnly: true,
+    productionAuthority: false,
     status: MandateStatus.DRAFT,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
-    schemaVersion: "mandate.v2"
+    schemaVersion: "mandate.v3"
   };
 }
 

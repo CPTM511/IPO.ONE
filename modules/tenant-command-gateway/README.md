@@ -36,11 +36,35 @@ Agent Subject, CreditLine, and Obligation projections; returns exact aggregate
 minor-unit totals plus at most 50 deterministic asset exposures; and exposes no
 Subject, Principal, account, Provider, Event/Evidence, KYC/KYP, Tenant, or PII
 detail. The query records bounded admission and authorization audit only, never
-a business Event, projection, execution, or idempotency record. Unfreeze remains absent and dual-control gated. Revocation
+a business Event, projection, execution, or idempotency record.
+
+The later Human, Identity, Credit, Servicing, Evidence, and Pilot slices expand
+the same closed boundary to 38 operations: Human Consent/identity references,
+CAIP-10 Agent account proof, active sandbox Mandate acknowledgement, shared
+Intent/Decision/Offer/Obligation, signed non-redeemable execution, balanced
+repayment, deterministic DPD/cure/default, dual-controlled sandbox resolutions,
+bounded Auditor plus exact owner/controller Evidence reads, exact owned current
+Obligation read, the private Servicing Operations queue, and bounded Actor-bound
+Human/Principal workspace recovery from durable server truth, an aggregate
+Pilot Health funnel, and categorical Human/Agent design-partner feedback with an
+aggregate-only Risk summary and no identifiers, free text, PII, or third-party analytics. The Auditor query
+uses the existing recent-MFA capability, while owner/controller access is bound
+to the exact Obligation. The queue separately requires recent phishing-resistant
+MFA from Risk or Operations, returns bounded adverse sandbox cases without PII,
+and grants no assignment, resolution, disposition, funds, or Agent MCP authority.
+
+`RISK-002A` upgrades new authenticated evaluations to `risk_decision.v3`. One
+server-derived point-in-time feature snapshot binds finalized source Evidence,
+the Tenant-bound live risk-state query, and the exact checked-in policy hash;
+one immutable Decision Passport exposes bounded reason lineage to Human and
+Agent clients. The cap, term, rate, fee, permissions, and no-funds boundary are
+unchanged, and the older educational score remains outside product truth.
+
+Unfreeze remains absent and dual-control gated. Revocation
 atomically closes the authorization resource while retaining
 bindings for historical owner reads. Persistent Agent Subject and Mandate
 admission is anchored to Tenant-scoped durable row counts before object lookup
 and synchronized again inside the business transaction. Human BFF, Operator,
 Risk/Auditor, and Agent clients use the same protocol envelope and have no direct database
 access. This module is local non-funds infrastructure only; it does not expose
-a public route, activate a Mandate, or authorize production deployment.
+a public/private production route or authorize production deployment or funds.

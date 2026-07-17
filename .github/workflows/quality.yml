@@ -63,6 +63,9 @@ jobs:
       - name: Run adversarial HTTP security suite
         run: pnpm run test:security
 
+      - name: Run authenticated transport conformance suite
+        run: pnpm run test:transport
+
       - name: Run PostgreSQL recovery suite
         run: pnpm run test:postgres
 

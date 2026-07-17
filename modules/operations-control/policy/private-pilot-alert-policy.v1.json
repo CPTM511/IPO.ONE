@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "operational_alert_policy.v1",
+  "policyVersion": "ops_001b.v1",
+  "environment": "closed-pilot",
+  "mode": "no-real-funds",
+  "delivery": {
+    "notificationTargetStatus": "unconfigured",
+    "namedOwnerStatus": "unconfigured"
+  },
+  "safetyBoundary": {
+    "automaticActionsEnabled": false,
+    "realFundsActionsEnabled": false,
+    "productionReleaseAuthority": false
+  },
+  "rules": [
+    {
+      "signalType": "reconciliation_failed",
+      "alertType": "data_integrity_incident",
+      "severity": "critical",
+      "route": "page",
+      "ownerRole": "Operations/Data",
+      "readinessEffect": "fail_closed",
+      "runbookRef": "OPS-RUNBOOK-RECONCILIATION",
+      "actionCodes": [
+        "preserve_evidence",
+        "stop_affected_writes",
+        "open_incident",
+        "run_reconciliation"
+      ]
+    },
+    {
+      "signalType": "chain_payment_invalidated",
+      "alertType": "chain_finality_incident",
+      "severity": "critical",
+      "route": "page",
+      "ownerRole": "Operations/Engineering",
+      "readinessEffect": "fail_closed",
+      "runbookRef": "OPS-RUNBOOK-CHAIN-FINALITY",
+      "actionCodes": [
+        "preserve_evidence",
+        "stop_affected_writes",
+        "open_incident",
+        "verify_chain_finality"
+      ]
+    },
+    {
+      "signalType": "break_glass_activated",
+      "alertType": "break_glass_incident",
+      "severity": "critical",
+      "route": "page",
+      "ownerRole": "Security/Operations",
+      "readinessEffect": "fail_closed",
+      "runbookRef": "OPS-RUNBOOK-BREAK-GLASS",
+      "actionCodes": [
+        "preserve_evidence",
+        "open_incident",
+        "review_break_glass_scope"
+      ]
+    },
+    {
+      "signalType": "admission_control_unavailable",
+      "alertType": "admission_control_incident",
+      "severity": "high",
+      "route": "page",
+      "ownerRole": "Operations/Engineering",
+      "readinessEffect": "fail_closed",
+      "runbookRef": "OPS-RUNBOOK-ADMISSION",
+      "actionCodes": [
+        "preserve_evidence",
+        "open_incident",
+        "review_admission_store"
+      ]
+    },
+    {
+      "signalType": "synthetic_lifecycle_failed",
+      "alertType": "lifecycle_availability_incident",
+      "severity": "high",
+      "route": "page",
+      "ownerRole": "Operations/Product",
+      "readinessEffect": "fail_closed",
+      "runbookRef": "OPS-RUNBOOK-SYNTHETIC-LIFECYCLE",
+      "actionCodes": [
+        "preserve_evidence",
+        "open_incident",
+        "run_synthetic_diagnostics"
+      ]
+    },
+    {
+      "signalType": "servicing_defaulted",
+      "alertType": "servicing_default_case",
+      "severity": "high",
+      "route": "risk_queue",
+      "ownerRole": "Operations/Risk",
+      "readinessEffect": "review_required",
+      "runbookRef": "OPS-RUNBOOK-SERVICING-DEFAULT",
+      "actionCodes": [
+        "preserve_evidence",
+        "open_servicing_case",
+        "review_servicing_options"
+      ]
+    },
+    {
+      "signalType": "servicing_written_off",
+      "alertType": "servicing_writeoff_review",
+      "severity": "medium",
+      "route": "risk_queue",
+      "ownerRole": "Operations/Risk",
+      "readinessEffect": "review_required",
+      "runbookRef": "OPS-RUNBOOK-SERVICING-WRITEOFF",
+      "actionCodes": [
+        "preserve_evidence",
+        "open_servicing_case",
+        "confirm_dual_control_evidence"
+      ]
+    }
+  ]
+}

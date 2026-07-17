@@ -135,7 +135,12 @@ test("Tenant risk portfolio maps exact aggregate values and bounds per-asset det
     open_obligation_count: "2",
     overdue_obligation_count: "1",
     defaulted_obligation_count: "0",
-    outstanding_principal_minor: "400"
+    delinquent_obligation_count: "0",
+    restructured_obligation_count: "0",
+    repurchased_obligation_count: "0",
+    written_off_obligation_count: "0",
+    outstanding_principal_minor: "400",
+    written_off_principal_minor: "0"
   }));
   const responses = [
     {
@@ -169,11 +174,18 @@ test("Tenant risk portfolio maps exact aggregate values and bounds per-asset det
         fully_repaid_count: "1",
         overdue_count: "1",
         defaulted_count: "0",
+        delinquent_count: "0",
+        restructured_count: "0",
+        repurchased_count: "0",
+        written_off_count: "0",
         closed_count: "0",
         principal_minor: "900",
         outstanding_principal_minor: "400",
         accrued_fees_minor: "10",
-        repaid_amount_minor: "500"
+        repaid_amount_minor: "500",
+        written_off_principal_minor: "0",
+        written_off_interest_minor: "0",
+        written_off_fees_minor: "0"
       }]
     },
     { rows: assetRows }
@@ -189,7 +201,8 @@ test("Tenant risk portfolio maps exact aggregate values and bounds per-asset det
   const result = await repository.getTenantRiskPortfolioInTransaction(client);
   assert.equal(queries.length, 4);
   assert.equal(queries[3].values.at(-1), 51);
-  assert.equal(queries.every(({ sql }) => sql.includes("subject_type")), true);
+  assert.equal(queries[1].sql.includes("subject_type"), true);
+  assert.equal(queries[3].sql.includes("subject_type"), true);
   assert.deepEqual(result.subjects, {
     totalCount: 2,
     pendingCount: 1,
@@ -246,6 +259,148 @@ test("Tenant risk portfolio fails closed on unknown durable states", async () =>
   const client = { query: async () => responses.shift() };
   await assert.rejects(
     () => repository.getTenantRiskPortfolioInTransaction(client),
+    (error) => error.code === "projection_integrity_mismatch"
+  );
+});
+
+test("Servicing Operations queue uses one bounded parameterized adverse projection", async () => {
+  const repository = new PostgresCoreRepository({
+    pool: { query: async () => ({ rows: [] }) },
+    eventRepository: {}
+  });
+  const queries = [];
+  const client = {
+    async query(sql, values) {
+      queries.push({ sql, values });
+      return {
+        rows: [{
+          obligation_id: "obligation_queue_boundary_001",
+          subject_id: "subject_queue_boundary_001",
+          asset_id: "urn:ipo-one:sandbox-asset:usd-cent",
+          status: "defaulted",
+          servicing_classification: "defaulted",
+          days_past_due: 96,
+          priority_rank: 1,
+          outstanding_principal_minor: "9000",
+          outstanding_interest_minor: "220",
+          outstanding_fees_minor: "0",
+          past_due_principal_minor: "3000",
+          past_due_interest_minor: "120",
+          past_due_fees_minor: "0",
+          oldest_unpaid_installment_id: "installment_queue_boundary_001",
+          oldest_due_at: new Date("2026-04-11T01:00:00.000Z"),
+          servicing_effective_at: new Date("2026-07-16T01:00:00.000Z"),
+          schedule_sequence: 1,
+          servicing_owner_code: "sandbox_platform",
+          latest_action_id: "servicing_action_boundary_001",
+          latest_action_type: "advance",
+          latest_next_status: "defaulted",
+          latest_next_classification: "defaulted",
+          latest_days_past_due: 96,
+          latest_reason_code: "servicing_default_threshold",
+          latest_source: "system_worker",
+          latest_effective_at: new Date("2026-07-16T01:00:00.000Z")
+        }]
+      };
+    }
+  };
+
+  const result = await repository.getServicingOperationsQueueInTransaction(client, {
+    classifications: ["defaulted", "dpd_61_89"],
+    limit: 26,
+    afterPriorityRank: 1,
+    afterDaysPastDue: 97,
+    afterOldestDueAt: "2026-04-10T01:00:00.000Z",
+    afterObligationId: "obligation_queue_boundary_000"
+  });
+  assert.equal(queries.length, 1);
+  assert.deepEqual(queries[0].values, [
+    ["defaulted", "dpd_61_89"],
+    26,
+    1,
+    97,
+    "2026-04-10T01:00:00.000Z",
+    "obligation_queue_boundary_000"
+  ]);
+  assert.match(queries[0].sql, /o\.schema_version = 'obligation\.v2'/);
+  assert.match(queries[0].sql, /o\.sandbox_only = TRUE/);
+  assert.match(queries[0].sql, /o\.production_funds_moved = FALSE/);
+  assert.match(queries[0].sql, /o\.withdrawable = FALSE/);
+  assert.match(queries[0].sql, /o\.servicing_classification = ANY\(\$1::text\[\]\)/);
+  assert.equal(queries[0].sql.includes("obligation_queue_boundary_000"), false);
+  assert.deepEqual(result, [{
+    obligationId: "obligation_queue_boundary_001",
+    subjectId: "subject_queue_boundary_001",
+    assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+    status: "defaulted",
+    servicingClassification: "defaulted",
+    daysPastDue: 96,
+    priorityRank: 1,
+    outstandingPrincipalMinor: "9000",
+    outstandingInterestMinor: "220",
+    outstandingFeesMinor: "0",
+    outstandingTotalMinor: "9220",
+    pastDuePrincipalMinor: "3000",
+    pastDueInterestMinor: "120",
+    pastDueFeesMinor: "0",
+    pastDueTotalMinor: "3120",
+    oldestUnpaidInstallmentId: "installment_queue_boundary_001",
+    oldestDueAt: "2026-04-11T01:00:00.000Z",
+    servicingEffectiveAt: "2026-07-16T01:00:00.000Z",
+    scheduleSequence: 1,
+    servicingOwnerCode: "sandbox_platform",
+    latestServicingAction: {
+      servicingActionId: "servicing_action_boundary_001",
+      actionType: "advance",
+      nextStatus: "defaulted",
+      nextClassification: "defaulted",
+      daysPastDue: 96,
+      reasonCode: "servicing_default_threshold",
+      source: "system_worker",
+      effectiveAt: "2026-07-16T01:00:00.000Z",
+      schemaVersion: "servicing_queue_action_summary.v1"
+    }
+  }]);
+});
+
+test("Servicing Operations queue rejects unsafe filters and inconsistent projections", async () => {
+  const repository = new PostgresCoreRepository({
+    pool: { query: async () => ({ rows: [] }) },
+    eventRepository: {}
+  });
+  await assert.rejects(
+    () => repository.getServicingOperationsQueueInTransaction(
+      { query: async () => { throw new Error("must not query"); } },
+      { classifications: ["current"], limit: 25 }
+    ),
+    (error) => error.code === "invalid_core_projection"
+  );
+  await assert.rejects(
+    () => repository.getServicingOperationsQueueInTransaction({
+      async query() {
+        return { rows: [{
+          obligation_id: "obligation_inconsistent",
+          subject_id: "subject_inconsistent",
+          asset_id: "asset_inconsistent",
+          status: "delinquent",
+          servicing_classification: "defaulted",
+          days_past_due: 12,
+          priority_rank: 1,
+          outstanding_principal_minor: "100",
+          outstanding_interest_minor: "0",
+          outstanding_fees_minor: "0",
+          past_due_principal_minor: "100",
+          past_due_interest_minor: "0",
+          past_due_fees_minor: "0",
+          oldest_unpaid_installment_id: "installment_inconsistent",
+          oldest_due_at: new Date("2026-07-01T00:00:00.000Z"),
+          servicing_effective_at: new Date("2026-07-17T00:00:00.000Z"),
+          schedule_sequence: 1,
+          servicing_owner_code: "sandbox_platform",
+          latest_action_id: null
+        }] };
+      }
+    }, { classifications: ["defaulted"], limit: 25 }),
     (error) => error.code === "projection_integrity_mismatch"
   );
 });

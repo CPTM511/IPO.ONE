@@ -11,4 +11,5 @@ output/playwright/
 .env
 .env.*
 !.env.example
+.ipo-one/
 deploy/approvals/*.local.json

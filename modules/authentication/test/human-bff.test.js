@@ -157,7 +157,15 @@ async function createFixture({
     credential,
     credentialRegistry,
     eventStore,
-    exchanges
+    exchanges,
+    issuer,
+    providerAdapter,
+    referenceHasher,
+    sessionStore,
+    transactionStore,
+    setTokenResponse(value) {
+      tokenResponse = value;
+    }
   };
 }
 
@@ -189,6 +197,55 @@ test("Human OIDC BFF uses PKCE and issues only a rotated host session plus CSRF 
   assert.equal(serializedEvents.includes(flow.idToken), false);
   assert.equal(serializedEvents.includes("one-time-authorization-code"), false);
   assert.equal(serializedEvents.includes(issued.cookie.value), false);
+});
+
+test("standard OIDC maps provider subject through the internal credential instead of external authority claims", async () => {
+  const fixture = await createFixture();
+  const standardBff = new HumanOidcBff({
+    issuer: ISSUER,
+    authorizationEndpoint: `${ISSUER}/authorize`,
+    clientId: CLIENT_ID,
+    redirectUris: [REDIRECT_URI],
+    resolver: fixture.bff.resolver,
+    providerAdapter: fixture.providerAdapter,
+    transactionStore: fixture.transactionStore,
+    sessionStore: fixture.sessionStore,
+    credentialRegistry: fixture.credentialRegistry,
+    referenceHasher: fixture.referenceHasher,
+    idTokenProfile: "standard_oidc",
+    tenantId: "tenant_alpha"
+  });
+  const login = standardBff.beginLogin({ redirectUri: REDIRECT_URI, now: NOW });
+  const authorizationUrl = new URL(login.authorizationUrl);
+  const idToken = await fixture.issuer.sign({
+    audience: CLIENT_ID,
+    subject: "human-operator-alpha",
+    jti: "standard-oidc-token-0001",
+    issuedAt: NOW_SECONDS,
+    notBefore: NOW_SECONDS,
+    expiresAt: NOW_SECONDS + 600,
+    typ: "JWT",
+    claims: {
+      nonce: authorizationUrl.searchParams.get("nonce"),
+      azp: CLIENT_ID,
+      at_hash: "provider-access-token-hash"
+    }
+  });
+  fixture.setTokenResponse({ idToken });
+  const issued = await standardBff.completeLogin({
+    transactionHandle: login.transactionCookie.value,
+    state: authorizationUrl.searchParams.get("state"),
+    code: "standard-provider-code",
+    redirectUri: REDIRECT_URI,
+    now: NOW
+  });
+  assert.equal(issued.session.tenantId, "tenant_alpha");
+  assert.equal(issued.session.actorId, "actor_human_alpha");
+  assert.equal(issued.session.policyVersion, "security_001.v1");
+  assert.equal(issued.session.acr, "urn:ipo.one:acr:standard-oidc");
+  assert.deepEqual(issued.session.amr, ["oidc"]);
+  assert.deepEqual(issued.session.roles, ["tenant_owner"]);
+  assert.deepEqual(issued.session.capabilities, ["subject.read", "integration.manage"]);
 });
 
 test("Human session enforces origin and CSRF on mutations, rotates, logs out, and rejects fixation", async () => {

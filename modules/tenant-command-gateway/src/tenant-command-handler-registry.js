@@ -33,6 +33,7 @@ export class TenantCommandHandlerRegistry {
       if (
         (handler.kind === "command" && typeof handler.plan !== "function") ||
         (handler.kind === "query" && typeof handler.execute !== "function") ||
+        (handler.preflight !== undefined && typeof handler.preflight !== "function") ||
         (handler.resourceDeltas !== undefined && typeof handler.resourceDeltas !== "function") ||
         (handler.loadResourceBaselines !== undefined && typeof handler.loadResourceBaselines !== "function") ||
         this.#handlers.has(operationId)
