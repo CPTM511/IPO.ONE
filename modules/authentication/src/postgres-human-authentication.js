@@ -785,7 +785,8 @@ function credentialFromRow(row) {
     clientAuthenticationMethod: row.client_authentication_method,
     senderConstraint: Object.freeze({
       method: row.sender_constraint_method,
-      thumbprint: row.sender_constraint_ref_hash
+      thumbprint: row.sender_constraint_ref_hash,
+      referenceProtected: true
     }),
     roles: jsonList(row.roles, "credential roles", { maximumItems: 16 }),
     allowedCapabilities: jsonList(row.allowed_capabilities, "credential capabilities"),

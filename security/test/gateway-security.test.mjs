@@ -491,10 +491,16 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
   assert.equal(handoffSchema.properties.remoteMcpEnabled.const, false);
   assert.equal(handoffSchema.properties.fundsAuthority.const, false);
   assert.match(webHtml, /Non-authorizing manifest/);
-  assert.match(webHtml, /Local stdio only/);
+  assert.match(webHtml, /authenticated Tenant HTTPS · closed_non_funds_pilot/);
+  assert.match(webHtml, /JWT ≤300s bound to mTLS certificate/);
+  assert.doesNotMatch(webHtml, /Local stdio only|Remote endpoint\s*Disabled|no remote MCP/i);
   assert.doesNotMatch(webApp, /accessToken|privateKey|authenticationContext/);
   assert.doesNotMatch(webHandoff, /accessToken|privateKey|authenticationContext/);
-  assert.doesNotMatch(webHtml, /access token|private key|authentication context/i);
+  assert.match(webHtml, /credentials, mTLS keys, and funds authority never enter the packet/i);
+  assert.doesNotMatch(
+    webHtml,
+    /(?:name|id)=["'][^"']*(?:access.?token|private.?key|authentication.?context)/i
+  );
   assert.match(handoffPlan, /hostCompositionRequired: true/);
   assert.match(handoffPlan, /credentialDelivery: "out_of_band"/);
   assert.match(handoffPlan, /remoteMcpEnabled: false/);

@@ -255,3 +255,5 @@ export async function createPrivatePilotGateway(ownerConnectionString, { profile
     pool
   });
 }
+
+export { createProductionClosedPilotRuntime } from "./production-runtime.js";

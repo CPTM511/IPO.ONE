@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("public beta control plane includes required workflows and launch safeguards", async () => {
+test("closed-pilot product includes authenticated Human and Agent workflows", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const handoff = await readFile(new URL("../src/agent-handoff-manifest.js", import.meta.url), "utf8");
@@ -15,14 +15,13 @@ test("public beta control plane includes required workflows and launch safeguard
   const manifest = JSON.parse(await readFile(new URL("../src/manifest.webmanifest", import.meta.url), "utf8"));
 
   for (const label of [
-    "Agent Setup",
-    "Lockbox",
-    "Credit Line",
-    "Provider Spend",
-    "Settlement finality",
-    "Revenue Capture & Repayment",
-    "Credit Learning Dashboard",
-    "Admin Dashboard"
+    "Verifying secure session",
+    "Application & Obligation",
+    "Identity & bounded authority",
+    "Borrow with the exact Offer in view.",
+    "Repay with the schedule in view.",
+    "Verify the lifecycle, not a screenshot.",
+    "Portfolio risk, with <em>protective action.</em>"
   ]) {
     assert.ok(html.includes(label), `${label} screen missing`);
   }
@@ -40,8 +39,11 @@ test("public beta control plane includes required workflows and launch safeguard
     "/v1/demo/state",
     "/v1/demo/reset"
   ]) {
-    assert.ok(js.includes(route), `${route} call missing`);
+    assert.equal(js.includes(route), false, `${route} must not ship in the closed-pilot browser`);
   }
+  assert.equal(html.includes("data-legacy-demo-surface"), false);
+  assert.equal(html.includes("Run Agent lifecycle"), false);
+  assert.equal(html.includes("Reset Sandbox"), false);
   assert.ok(
     js.includes("private-agent-subject-") && js.includes("pilotReadAgentAccountBinding"),
     "Agent Subject creation must be replay-safe and reload its durable binding"
@@ -54,7 +56,7 @@ test("public beta control plane includes required workflows and launch safeguard
     "Agent API",
     "Your integration path",
     "The Principal approves. The Agent executes only that scope.",
-    "View handoff packet, 11 MCP tools, SDK, and request log",
+    "View handoff packet, 11 Agent operations, OpenAPI, and request log",
     "Authorize once. <em>Keep every limit visible.</em>",
     "From approval to action. <em>No hidden authority.</em>",
     "Your guided path",
@@ -66,27 +68,23 @@ test("public beta control plane includes required workflows and launch safeguard
     "Request and price no-funds credit",
     "Principal-controlled Agent setup",
     "Create, review, and activate Agent authority",
-    "Agent MCP handoff",
-    "Agent SDK quick start",
+    "Agent API handoff",
+    "Authenticated HTTPS quick start",
     "Load an eligible draft Mandate to create the application packet",
     "Principal → Agent capability packet",
-    "Approved local MCP tools",
-    "Approved local workflows",
+    "Approved Tenant operations",
+    "Approved authenticated workflows",
     "Decision &amp; Offer",
     "Obligation &amp; repayment",
     "Servicing Case",
     "pilotReadOwnObligation + repayment + Evidence",
     "Dual-chain conformance",
-    "3 local workflows",
-    "Local stdio only",
-    "Out of band",
+    "3 authenticated workflows",
+    "authenticated Tenant HTTPS · closed_non_funds_pilot",
+    "JWT ≤300s bound to mTLS certificate",
     "Execution, repayment & servicing",
     "Signed sandbox rail + shared ledger",
-    "Sandbox servicing policy v1",
-    "3 complete UTC days",
-    "Operations + Risk approval",
     "Obligation created",
-    "21 operations",
     "38 Tenant operations",
     "My positions",
     "Authenticated server truth",
@@ -107,7 +105,6 @@ test("public beta control plane includes required workflows and launch safeguard
     "Protective-only command",
     "Closed permissions by design",
     "Catalog presence does not grant access",
-    "Run Agent lifecycle",
     "Access IPO.ONE",
     "Sign in. Connect. <em>Stay in control.</em>",
     "Continue with Google",
@@ -117,17 +114,12 @@ test("public beta control plane includes required workflows and launch safeguard
     "Connect an approved network",
     "Base Sepolia",
     "X Layer Testnet",
-    "Mandate scope",
-    "Ledger integrity",
-    "Plugin Contracts",
-    "Evidence Stream",
     "Obligation Evidence",
     "Your immutable Obligation timeline",
     "EVIDENCE-001B · owner only",
     "Durable audit timeline",
     "Auditor access",
-    "Rail Contracts",
-    "Event replay"
+    "Authenticated request telemetry"
   ]) {
     assert.ok(html.includes(label), `${label} boundary or surface missing`);
   }
@@ -137,7 +129,10 @@ test("public beta control plane includes required workflows and launch safeguard
   }
 
   for (const control of [
-    "runFullFlowBtn",
+    "authenticatedRuntimeGate",
+    "authenticatedRuntimeGateStatus",
+    "authenticatedRuntimeGateCopy",
+    "authenticatedRuntimeGateAction",
     "accessBtn",
     "accessLayer",
     "accessCloseBtn",
@@ -210,15 +205,6 @@ test("public beta control plane includes required workflows and launch safeguard
     "returnToAgentAuthorityBtn",
     "createAgentBtn",
     "createAgentBtnLabel",
-    "walletInputLabel",
-    "bindWalletBtn",
-    "createLockboxBtn",
-    "requestCreditBtn",
-    "submitSpendBtn",
-    "recordSettlementBtn",
-    "captureRevenueBtn",
-    "autoRepayBtn",
-    "resetBtn",
     "privatePortfolioSurface",
     "privatePortfolioPrimaryBtn",
     "privatePortfolioSecondaryBtn",
@@ -294,10 +280,6 @@ test("public beta control plane includes required workflows and launch safeguard
     "same-portfolio authenticated aggregate reads must remain sequential"
   );
 
-  for (const id of ["railName", "transferStatus", "settlementFinality", "railReplayStatus", "railList"]) {
-    assert.ok(js.includes(`el("${id}")`), `${id} renderer missing`);
-  }
-
   assert.ok(html.includes("class=\"skip-link\""));
   assert.ok(html.includes("aria-controls=\"sidebar\""));
   assert.ok(html.includes("aria-expanded=\"false\""));
@@ -350,8 +332,6 @@ test("public beta control plane includes required workflows and launch safeguard
   ]) {
     assert.ok(js.includes(value), `${value} access boundary missing`);
   }
-  assert.ok(js.includes("Human Principal -> Agent Subject"));
-  assert.ok(js.includes("legacyWalletControls"));
   assert.ok(js.includes("Principal setup required"));
   assert.ok(html.includes("Configure Agent authority"));
   assert.ok(html.includes("One Obligation. <em>Two first-class entry modes.</em>"));
@@ -361,7 +341,7 @@ test("public beta control plane includes required workflows and launch safeguard
   assert.ok(html.includes("Capability status only — this Obligation has no Provider execution"));
   assert.ok(html.includes("public or remote Provider access remains disabled"));
   assert.equal((html.match(/data-private-session-surface/g) ?? []).length, 5);
-  assert.equal((html.match(/data-legacy-demo-surface/g) ?? []).length, 13);
+  assert.equal((html.match(/data-legacy-demo-surface/g) ?? []).length, 0);
   assert.ok(js.includes("renderPrivateProductSurfaces"));
   assert.ok(js.includes("renderHumanGuide"));
   assert.ok(js.includes("humanGuidePresentation"));
@@ -411,7 +391,7 @@ test("public beta control plane includes required workflows and launch safeguard
   assert.ok(js.includes('reducedMotion.matches ? "auto" : "smooth"'));
   assert.ok(js.includes("mainShell\").toggleAttribute(\"inert\""));
   assert.ok(js.includes("event.key === \"Escape\""));
-  assert.ok(js.includes("x-ipo-one-sandbox-session"));
+  assert.equal(js.includes("x-ipo-one-sandbox-session"), false);
   assert.ok(js.includes("credentials: \"same-origin\""));
   assert.ok(html.includes('meta name="ipo-one-csrf-token" content=""'));
   assert.ok(js.includes('meta[name="ipo-one-csrf-token"]'));
@@ -520,14 +500,57 @@ test("public beta control plane includes required workflows and launch safeguard
   assert.ok(css.includes("grid-column: 1 / -1"));
   assert.ok(css.includes(".obligation-card-layout"));
   assert.ok(js.includes("sessionStorage.getItem"));
-  assert.ok(js.includes('IpoOneAgentMcpClient,\n  IpoOneAgentSandboxObligationClient,'));
-  assert.ok(js.includes("IpoOneAgentSandboxObligationClient"));
-  assert.ok(js.includes("runSandboxObligationPortabilityConformance"));
-  assert.ok(js.includes("handle: localMcpHost.handle"));
-  assert.ok(js.includes('transportProfile: "mcp_stdio_local"'));
-  assert.ok(js.includes("runCreditOfferWorkflow"));
+  assert.ok(js.includes("getCertificateBoundJwt"));
+  assert.ok(js.includes("maxTtlSeconds: 300"));
+  assert.ok(js.includes("dispatcher: mtlsDispatcher"));
+  assert.ok(js.includes('new URL("/tenant/v1/operations", IPO_ONE_ORIGIN)'));
+  assert.ok(js.includes('operationId: "pilotReadAgentSelf"'));
+  assert.ok(html.includes('href="/openapi.json"'));
+  assert.equal(/\bDPoP\b/.test(`${html}\n${js}`), false, "DPoP is not a production capability");
   assert.equal(html.includes("baseUrl: \"http://127.0.0.1:3000\""), false);
   assert.equal(js.includes(".innerHTML"), false, "API-controlled values must use text-safe DOM rendering");
+});
+
+test("closed-pilot browser has no demo route, reset control, or hidden fallback", async () => {
+  const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+
+  for (const retiredRoute of [
+    "/v1/demo/",
+    "/v1/agents",
+    "/v1/spend-requests",
+    "/v1/settlements",
+    "/v1/revenue-capture",
+    "/v1/repayments/auto",
+    "/v1/credit-learning/evaluate"
+  ]) {
+    assert.equal(js.includes(retiredRoute), false, `${retiredRoute} must not be callable by the product browser`);
+  }
+  for (const retiredControl of [
+    "runFullFlowBtn",
+    "healthyCycleBtn",
+    "riskyCycleBtn",
+    "recoveryCycleBtn",
+    "resetBtn",
+    "data-legacy-demo-surface"
+  ]) {
+    assert.equal(html.includes(retiredControl), false, `${retiredControl} must not remain in shipped markup`);
+  }
+  for (const surfaceId of [
+    "privatePortfolioSurface",
+    "privateCreditSurface",
+    "privatePaymentsSurface",
+    "privateEvidenceSurface",
+    "privateRiskSurface"
+  ]) {
+    const openingTag = html.match(new RegExp(`<[^>]+id="${surfaceId}"[^>]*>`))?.[0];
+    assert.ok(openingTag, `${surfaceId} missing`);
+    assert.equal(/\shidden(?:\s|>)/.test(openingTag), false, `${surfaceId} must render a truthful locked state before sign-in`);
+  }
+  assert.ok(js.includes('fetch("/tenant/v1/catalog"'));
+  assert.ok(js.includes('fetch("/tenant/v1/operations"'));
+  assert.ok(js.includes("setConnection(tenantPilot.connected)"));
+  assert.ok(js.includes("No product data is available without an authenticated session."));
 });
 
 test("public beta launch configuration is bounded and supply-chain pinned", async () => {

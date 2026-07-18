@@ -874,6 +874,64 @@ body.access-open {
   color: #ebe8ff;
 }
 
+.authenticated-runtime-gate {
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: -8px 0 24px;
+  border: 1px solid #d7d2df;
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: #fbfafc;
+}
+
+.authenticated-runtime-gate > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.authenticated-runtime-gate svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: var(--brand-strong);
+}
+
+.authenticated-runtime-gate strong,
+.authenticated-runtime-gate small {
+  display: block;
+}
+
+.authenticated-runtime-gate strong {
+  font-size: 0.78rem;
+}
+
+.authenticated-runtime-gate small {
+  max-width: 860px;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.67rem;
+  line-height: 1.45;
+}
+
+.authenticated-runtime-gate.blocked {
+  border-color: #e5c6b0;
+  background: #fffaf5;
+}
+
+.authenticated-runtime-gate.connected {
+  border-color: #b8dfce;
+  background: #f6fcf9;
+}
+
+.authenticated-runtime-gate.connected svg {
+  color: var(--success);
+}
+
 .view {
   display: none;
   min-width: 0;
@@ -6331,6 +6389,7 @@ body.access-open {
   }
 
   .safety-banner,
+  .authenticated-runtime-gate,
   .view-heading,
   .panel-heading.stacked-mobile {
     align-items: stretch;
@@ -6339,6 +6398,10 @@ body.access-open {
 
   .safety-banner {
     gap: 9px;
+  }
+
+  .authenticated-runtime-gate > button {
+    width: 100%;
   }
 
   .safety-items {

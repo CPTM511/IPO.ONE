@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "ipo.one.closed-pilot-stack/v1",
+  "projectId": "ipo-one-public-sandbox-cptm511",
+  "projectNumber": "94790935766",
+  "region": "asia-southeast1",
+  "publicOrigin": "https://ipo.one",
+  "releaseProfile": "closed_non_funds_pilot",
+  "capabilities": {
+    "realFundsEnabled": false,
+    "humanCreditEnabled": false,
+    "privateTenantDataEnabled": true,
+    "externalProviderExecutionEnabled": false
+  },
+  "cloudRun": {
+    "service": "ipo-one-closed-pilot",
+    "runtimeServiceAccount": "ipo-one-closed-pilot-runtime@ipo-one-public-sandbox-cptm511.iam.gserviceaccount.com",
+    "migrationJob": "ipo-one-closed-pilot-migrate",
+    "migrationServiceAccount": "ipo-one-closed-pilot-migrator@ipo-one-public-sandbox-cptm511.iam.gserviceaccount.com",
+    "ingress": "internal-and-cloud-load-balancing",
+    "defaultUrlDisabled": true,
+    "minimumInstances": 1,
+    "maximumInstances": 5,
+    "containerConcurrency": 10,
+    "timeoutSeconds": 30,
+    "startupPath": "/readyz",
+    "livenessPath": "/livez",
+    "entrypoint": "apps/private-pilot/src/start-production.js"
+  },
+  "cloudSql": {
+    "instance": "ipo-one-closed-pilot-db",
+    "connectionName": "ipo-one-public-sandbox-cptm511:asia-southeast1:ipo-one-closed-pilot-db",
+    "databaseVersion": "POSTGRES_17",
+    "availabilityType": "REGIONAL",
+    "tier": "db-custom-1-3840",
+    "diskType": "PD_SSD",
+    "minimumDiskGb": 20,
+    "deletionProtection": true,
+    "connectorEnforcement": "REQUIRED",
+    "publicIpv4Enabled": true,
+    "sslMode": "ENCRYPTED_ONLY",
+    "automatedBackups": true,
+    "retainedBackups": 14,
+    "pointInTimeRecovery": true,
+    "transactionLogRetentionDays": 7,
+    "restoreDrillMaximumAgeHours": 168
+  },
+  "secrets": [
+    "ipo-one-gateway-database-url",
+    "ipo-one-auth-database-url",
+    "ipo-one-migration-database-url",
+    "ipo-one-auth-reference-hash-key",
+    "ipo-one-auth-encryption-key",
+    "ipo-one-google-oidc-client-secret",
+    "ipo-one-identity-config",
+    "ipo-one-agent-mtls-config",
+    "ipo-one-edge-assertion-key"
+  ],
+  "edge": {
+    "securityPolicy": "ipo-one-closed-pilot-edge-policy",
+    "backendService": "ipo-one-closed-pilot-backend",
+    "serverlessNeg": "ipo-one-closed-pilot-neg",
+    "edgeAssertionHeader": "x-ipo-one-edge-assertion",
+    "clientCertificateHeader": "x-ipo-one-client-cert-sha256",
+    "allowedHosts": [
+      "ipo.one",
+      "www.ipo.one"
+    ],
+    "generalRequestsPerMinutePerIp": 300,
+    "authenticationStartsPerTenMinutesPerIp": 20,
+    "authenticationCompletionsPerTenMinutesPerIp": 10,
+    "sqliWafPreview": false,
+    "xssWafPreview": false
+  },
+  "operations": {
+    "minimumLogRetentionDays": 30,
+    "requireNotificationChannel": true,
+    "requireNamedIncidentOwner": true,
+    "requireBackupRestoreReceipt": true,
+    "requireRollbackRevision": true,
+    "requireIndependentPentest": true
+  }
+}

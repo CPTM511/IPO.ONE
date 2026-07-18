@@ -234,8 +234,9 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(page, /Request and price no-funds credit/);
     assert.match(page, /Create, review, and activate Agent authority/);
     assert.match(page, /Principal → Agent capability packet/);
-    assert.match(page, /Approved local MCP tools/);
-    assert.match(page, /Approved local workflows/);
+    assert.match(page, /Approved Tenant operations/);
+    assert.match(page, /Approved authenticated workflows/);
+    assert.match(page, /authenticated Tenant HTTPS · closed_non_funds_pilot/);
     assert.match(page, /Obligation Evidence/);
     assert.match(page, /Durable audit timeline/);
     assert.match(page, /New Subjects remain pending/);

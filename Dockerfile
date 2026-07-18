@@ -14,8 +14,8 @@ RUN corepack enable \
 
 FROM ${RUNTIME_IMAGE} AS runtime
 ARG BUILD_REVISION=unknown
-LABEL org.opencontainers.image.title="IPO.ONE Public Sandbox" \
-      org.opencontainers.image.description="Machine-readable credit obligation protocol public sandbox" \
+LABEL org.opencontainers.image.title="IPO.ONE Closed No-Funds Pilot" \
+      org.opencontainers.image.description="Durable Human and Agent credit obligation protocol runtime" \
       org.opencontainers.image.source="https://github.com/CPTM511/IPO.ONE" \
       org.opencontainers.image.revision="${BUILD_REVISION}"
 
@@ -30,4 +30,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:' + process.env.PORT + '/livez').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))"]
 ENTRYPOINT ["/nodejs/bin/node"]
-CMD ["apps/api/src/server.js"]
+CMD ["apps/private-pilot/src/start-production.js"]

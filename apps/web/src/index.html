@@ -124,8 +124,19 @@
             </div>
           </section>
 
-          <section class="view active" data-view-panel="overview" aria-labelledby="overviewTitle">
-            <section id="privatePortfolioSurface" class="private-product-surface" aria-labelledby="privatePortfolioTitle" hidden data-private-session-surface>
+          <section id="authenticatedRuntimeGate" class="authenticated-runtime-gate" aria-labelledby="authenticatedRuntimeGateStatus" aria-live="polite">
+            <div>
+              <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+              <span>
+                <strong id="authenticatedRuntimeGateStatus">Verifying secure session</strong>
+                <small id="authenticatedRuntimeGateCopy">Checking the authenticated Tenant catalog and browser session. No product operation is available until verification completes.</small>
+              </span>
+            </div>
+            <button id="authenticatedRuntimeGateAction" class="primary" type="button">Sign in to continue</button>
+          </section>
+
+          <section class="view active" data-view-panel="overview" aria-labelledby="privatePortfolioTitle">
+            <section id="privatePortfolioSurface" class="private-product-surface" aria-labelledby="privatePortfolioTitle" data-private-session-surface>
               <section class="private-product-hero">
                 <div class="private-product-heading">
                   <span class="protocol-badge"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span id="privatePortfolioMode">Human entry</span></span>
@@ -172,103 +183,8 @@
               </section>
             </section>
 
-            <section class="workspace-hero" aria-label="Agent portfolio summary" data-legacy-demo-surface>
-              <div class="view-heading">
-                <div>
-                  <p class="eyebrow">Agent credit workspace</p>
-                  <h2 id="overviewTitle">Programmable credit for <em>verified outcomes.</em></h2>
-                  <p>Move from scoped authority to provider spend, repayment, and evidence in one no-funds workspace.</p>
-                </div>
-                <div class="heading-actions">
-                  <button class="secondary icon-text" id="refreshBtn" type="button">
-                    <svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>
-                    Refresh state
-                  </button>
-                  <button class="primary icon-text" id="runFullFlowBtn" type="button">
-                    <svg aria-hidden="true"><use href="/icons.svg#play"></use></svg>
-                    Run Agent lifecycle
-                  </button>
-                </div>
-              </div>
 
-              <section class="position-band" aria-label="Current protocol position">
-                <div class="position-head">
-                  <div>
-                    <span class="position-kicker">AGENT PILOT / USD SANDBOX</span>
-                    <strong id="positionName">No active Agent</strong>
-                  </div>
-                  <span class="state-pill" id="positionState">Setup required</span>
-                </div>
-                <div class="position-metrics">
-                  <div><span>Available capacity</span><strong id="overviewAvailable">$0.00</strong></div>
-                  <div><span>Outstanding</span><strong id="outstandingStatus">$0.00</strong></div>
-                  <div><span>Lockbox</span><strong id="overviewLockbox">$0.00</strong></div>
-                  <div><span>Evidence score</span><strong id="scoreStatus">500</strong></div>
-                  <div><span>Risk tier</span><strong id="riskTierStatus">Watch</strong></div>
-                </div>
-              </section>
-            </section>
 
-            <div class="overview-grid" data-legacy-demo-surface>
-              <section class="panel workflow-panel" aria-labelledby="workflowTitle">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Launch sequence</p>
-                    <h3 id="workflowTitle">Verified obligation lifecycle</h3>
-                  </div>
-                  <span id="workflowProgress">0 of 6 complete</span>
-                </div>
-                <div class="workflow-list" id="workflowList">
-                  <button type="button" data-go-view="agent" data-workflow="agent">
-                    <span class="step-index">01</span><span><strong>Create Agent</strong><small>Subject, Principal, Mandate</small></span><span class="step-state">Next</span>
-                  </button>
-                  <button type="button" data-go-view="agent" data-workflow="lockbox">
-                    <span class="step-index">02</span><span><strong>Open Lockbox</strong><small>Revenue capture route</small></span><span class="step-state">Waiting</span>
-                  </button>
-                  <button type="button" data-go-view="credit" data-workflow="credit">
-                    <span class="step-index">03</span><span><strong>Approve Credit Line</strong><small>Explainable policy decision</small></span><span class="step-state">Waiting</span>
-                  </button>
-                  <button type="button" data-go-view="transfers" data-workflow="spend">
-                    <span class="step-index">04</span><span><strong>Authorize Provider Spend</strong><small>Allowlist and Mandate checks</small></span><span class="step-state">Waiting</span>
-                  </button>
-                  <button type="button" data-go-view="transfers" data-workflow="settlement">
-                    <span class="step-index">05</span><span><strong>Finalize Settlement</strong><small>Rail receipt and replay proof</small></span><span class="step-state">Waiting</span>
-                  </button>
-                  <button type="button" data-go-view="transfers" data-workflow="repayment">
-                    <span class="step-index">06</span><span><strong>Route Repayment</strong><small>Ledger and Evidence closure</small></span><span class="step-state">Waiting</span>
-                  </button>
-                </div>
-              </section>
-
-              <section class="panel posture-panel" aria-labelledby="postureTitle">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Protocol posture</p>
-                    <h3 id="postureTitle">Controls and integrity</h3>
-                  </div>
-                  <span class="health-label" id="postureHealth">Ready</span>
-                </div>
-                <div class="posture-list">
-                  <div><span>Agent</span><strong id="agentStatus">Not created</strong></div>
-                  <div><span>Lockbox</span><strong id="lockboxStatus">Not created</strong></div>
-                  <div><span>Mandate</span><strong id="mandateStatus">Not created</strong></div>
-                  <div><span>Ledger integrity</span><strong id="overviewLedger">Balanced</strong></div>
-                  <div><span>Event replay</span><strong id="overviewReplay">Waiting</strong></div>
-                  <div><span>Evidence envelopes</span><strong id="overviewEvidence">0</strong></div>
-                </div>
-              </section>
-            </div>
-
-            <section class="panel activity-panel" aria-labelledby="activityTitle" data-legacy-demo-surface>
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">Latest activity</p>
-                  <h3 id="activityTitle">Protocol events</h3>
-                </div>
-                <button class="text-button" type="button" data-go-view="evidence">View Evidence <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></button>
-              </div>
-              <div class="activity-table" id="overviewTimeline"></div>
-            </section>
           </section>
 
           <section class="view human-view" data-view-panel="human" aria-labelledby="humanViewTitle">
@@ -606,7 +522,7 @@
                 <div>
                   <p class="eyebrow">Principal-controlled Agent setup</p>
                   <h3 id="agentAuthorityTitle">Create, review, and activate Agent authority</h3>
-                  <p>The authenticated Human Principal defines a bounded Mandate. The Agent receives IDs for MCP handoff, never permission to change or activate its own authority.</p>
+                  <p>The authenticated Human Principal defines a bounded Mandate. The Agent receives IDs for the Agent API handoff, never permission to change or activate its own authority.</p>
                 </div>
                 <span class="state-pill neutral" id="agentAuthorityStatus">Not started</span>
               </div>
@@ -648,7 +564,7 @@
 
                   <div class="workbench-step account-proof-step">
                     <span>02</span>
-                    <div><strong>Prove the Agent account</strong><small>Create and download a five-minute EIP-712 request. The local Agent bootstrap signer verifies and submits it before any Mandate or MCP handoff exists; this Human screen never receives a credential.</small></div>
+                    <div><strong>Prove the Agent account</strong><small>Create and download a five-minute EIP-712 request. The registered Agent workload submits it through authenticated Tenant HTTPS; this Human screen never receives a credential.</small></div>
                   </div>
                   <div class="account-proof-card">
                     <div class="form-grid three">
@@ -748,7 +664,7 @@
                     <div><dt>Evidence</dt><dd id="agentAuthorityEvidenceHash">—</dd></div>
                   </dl>
                   <div class="agent-handoff">
-                    <span id="agentHandoffPhase">Agent MCP handoff</span>
+                    <span id="agentHandoffPhase">Agent API handoff</span>
                     <strong id="agentHandoffScope">Subject ID + Mandate ID</strong>
                     <p id="agentHandoffDescription">Load an eligible draft Mandate to create the application packet. Acceptance, sandbox execution, and repayment are available through the authenticated Tenant client.</p>
                   </div>
@@ -799,41 +715,11 @@
               </div>
             </section>
 
-            <section class="panel" aria-labelledby="agentSetupTitle">
-              <div class="panel-heading"><div><p class="eyebrow">Subject registry</p><h3 id="agentSetupTitle">Agent Setup</h3></div><span class="state-pill neutral" id="agentLifecycleStatus">Not created</span></div>
-              <div class="two-column-detail">
-                <dl class="detail-list">
-                  <div><dt>Subject</dt><dd id="agentId">-</dd></div>
-                  <div><dt>Principal</dt><dd id="principalId">-</dd></div>
-                  <div><dt>Principal binding</dt><dd id="principalBinding">-</dd></div>
-                  <div><dt>Mandate</dt><dd id="mandateId">-</dd></div>
-                  <div><dt>Mandate scope</dt><dd id="mandateScope">-</dd></div>
-                  <div><dt>Mandate utilization</dt><dd id="mandateUtilization">-</dd></div>
-                </dl>
-                <form class="action-panel" id="walletBindingForm">
-                  <div class="action-title"><svg aria-hidden="true"><use href="/icons.svg#link"></use></svg><div><strong>Account binding</strong><span>CAIP-10 sandbox proof</span></div></div>
-                  <label id="walletInputLabel" for="walletInput">Mock CAIP-10 account</label>
-                  <input id="walletInput" value="eip155:8453:0x1111111111111111111111111111111111111111" autocomplete="off" spellcheck="false" />
-                  <button id="bindWalletBtn" class="secondary" type="submit">Bind Mock Wallet</button>
-                  <p id="walletBindingText" class="helper">Awaiting Agent creation.</p>
-                </form>
-              </div>
-            </section>
 
-            <section class="panel" aria-labelledby="lockboxTitle">
-              <div class="panel-heading"><div><p class="eyebrow">Cashflow control</p><h3 id="lockboxTitle">Lockbox</h3></div><button id="createLockboxBtn" class="secondary" type="button">Create Lockbox</button></div>
-              <div class="data-strip four">
-                <div><span>Balance</span><strong id="lockboxBalance">$0.00</strong></div>
-                <div><span>Revenue captured</span><strong id="revenueCaptured">$0.00</strong></div>
-                <div><span>Journal entries</span><strong id="ledgerJournalCount">0</strong></div>
-                <div><span>Ledger integrity</span><strong id="ledgerIntegrity">Balanced</strong></div>
-              </div>
-              <p class="policy-note"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>Active obligations are repaid from Lockbox revenue before surplus release.</p>
-            </section>
           </section>
 
-          <section class="view" data-view-panel="credit" aria-labelledby="creditViewTitle">
-            <section id="privateCreditSurface" class="private-product-surface private-page-surface" aria-labelledby="privateCreditTitle" hidden data-private-session-surface>
+          <section class="view" data-view-panel="credit" aria-labelledby="privateCreditTitle">
+            <section id="privateCreditSurface" class="private-product-surface private-page-surface" aria-labelledby="privateCreditTitle" data-private-session-surface>
               <div class="private-page-heading">
                 <div><p class="eyebrow" id="privateCreditEyebrow">Human credit</p><h2 id="privateCreditTitle">Borrow with the exact Offer in view.</h2><p id="privateCreditCopy">The private Human session carries deterministic pricing into one accepted Obligation.</p></div>
                 <button id="privateCreditPrimaryBtn" class="primary" type="button">Open Human application</button>
@@ -854,57 +740,12 @@
               </section>
             </section>
 
-            <div class="view-heading" data-legacy-demo-surface>
-              <div><p class="eyebrow">Deterministic risk policy</p><h2 id="creditViewTitle">Borrow & Credit</h2><p>Evidence-derived recommendations remain subordinate to hard policy, caps, and explicit authority.</p></div>
-              <button id="requestCreditBtn" class="primary" type="button">Evaluate Agent Credit</button>
-            </div>
 
-            <section class="panel" aria-labelledby="creditLineTitle" data-legacy-demo-surface>
-              <div class="panel-heading"><div><p class="eyebrow">Current position</p><h3 id="creditLineTitle">Credit Line</h3></div><span class="state-pill neutral" id="obligationStatus">None</span></div>
-              <div class="data-strip four">
-                <div><span>Approved amount</span><strong id="creditLimit">$0.00</strong></div>
-                <div><span>Utilization</span><strong id="creditUtilization">$0.00</strong></div>
-                <div><span>Demo interest rate</span><strong id="demoRate">-</strong></div>
-                <div><span>Outstanding</span><strong id="repaymentOutstanding">$0.00</strong></div>
-              </div>
-              <p id="creditDecisionReasons" class="decision-reason">Risk decision reasons will appear after approval.</p>
-            </section>
 
-            <section class="panel learning-panel" aria-labelledby="learningTitle" data-legacy-demo-surface>
-              <div class="panel-heading stacked-mobile">
-                <div><p class="eyebrow">Evidence-derived profile</p><h3 id="learningTitle">Credit Learning Dashboard</h3></div>
-                <div class="button-row compact">
-                  <button id="evaluateLearningBtn" type="button">Evaluate</button>
-                  <button id="healthyCycleBtn" type="button">Healthy cycle</button>
-                  <button id="riskyCycleBtn" type="button">Risky cycle</button>
-                  <button id="recoveryCycleBtn" type="button">Recovery cycle</button>
-                </div>
-              </div>
-              <div class="learning-layout">
-                <div class="score-panel">
-                  <div class="score-ring" id="scoreRing"><span id="scoreValue">500</span></div>
-                  <div><span class="field-label">Current risk tier</span><strong id="profileTier">Watch</strong><p id="learningSummary">Initial profile</p></div>
-                </div>
-                <div class="learning-stats">
-                  <div><span>Current limit</span><strong id="profileLimit">$0.00</strong></div>
-                  <div><span>Next limit</span><strong id="nextLimit">$0.00</strong></div>
-                  <div><span>Next demo rate</span><strong id="nextRate">-</strong></div>
-                </div>
-              </div>
-              <div class="behavior-grid">
-                <div><span>Repayment performance</span><strong id="repaymentMetric">0%</strong><div class="meter"><i id="repaymentMeter"></i></div></div>
-                <div><span>Utilization behavior</span><strong id="utilizationMetric">0%</strong><div class="meter"><i id="utilizationMeter"></i></div></div>
-                <div><span>Revenue consistency</span><strong id="revenueMetric">0%</strong><div class="meter"><i id="revenueMeter"></i></div></div>
-              </div>
-              <div class="two-column-detail learning-detail">
-                <div><h4>Recent Reputation Signals</h4><div id="signalList" class="compact-list"></div></div>
-                <div><h4>Score History</h4><div id="scoreHistory" class="history-bars"></div></div>
-              </div>
-            </section>
           </section>
 
-          <section class="view" data-view-panel="transfers" aria-labelledby="transfersViewTitle">
-            <section id="privatePaymentsSurface" class="private-product-surface private-page-surface" aria-labelledby="privatePaymentsTitle" hidden data-private-session-surface>
+          <section class="view" data-view-panel="transfers" aria-labelledby="privatePaymentsTitle">
+            <section id="privatePaymentsSurface" class="private-product-surface private-page-surface" aria-labelledby="privatePaymentsTitle" data-private-session-surface>
               <div class="private-page-heading">
                 <div><p class="eyebrow" id="privatePaymentsEyebrow">Human repayment</p><h2 id="privatePaymentsTitle">Repay with the schedule in view.</h2><p id="privatePaymentsCopy">Post synthetic repayment against the exact shared Obligation and inspect deterministic allocation.</p></div>
                 <button id="privatePaymentsPrimaryBtn" class="primary" type="button">Open repayment controls</button>
@@ -992,50 +833,12 @@
               </section>
             </section>
 
-            <div class="view-heading" data-legacy-demo-surface><div><p class="eyebrow">Execution and settlement</p><h2 id="transfersViewTitle">Transfers</h2><p>Every provider payment is policy-bound, replayable, and sandbox-only.</p></div></div>
 
-            <div class="split-layout" data-legacy-demo-surface>
-              <section class="panel" aria-labelledby="providerSpendTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Spend policy</p><h3 id="providerSpendTitle">Provider Spend</h3></div><span class="state-pill neutral" id="spendResult">No request</span></div>
-                <form class="action-panel inline-form" id="spendForm">
-                  <div><label for="providerSelect">Allowlisted provider</label><select id="providerSelect"></select></div>
-                  <div><label for="spendAmount">Amount (USD demo)</label><input id="spendAmount" type="number" min="1" step="1" value="500" inputmode="decimal" /></div>
-                  <button id="submitSpendBtn" class="primary" type="submit">Submit Spend</button>
-                </form>
-                <p id="spendReason" class="decision-reason">No policy decision recorded.</p>
-                <div class="button-row">
-                  <button id="recordSettlementBtn" class="secondary" type="button">Record Settlement</button>
-                  <button id="rejectSpendBtn" class="danger-text" type="button">Test policy rejection</button>
-                </div>
-                <div id="spendList" class="compact-list"></div>
-              </section>
 
-              <section class="panel" aria-labelledby="railTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Rail state</p><h3 id="railTitle">Settlement</h3></div><span id="railName">Sandbox ready</span></div>
-                <div class="key-value-list">
-                  <div><span>Transfer Intent</span><strong id="transferStatus">None</strong></div>
-                  <div><span>Settlement finality</span><strong id="settlementFinality">None</strong></div>
-                  <div><span>Event replay</span><strong id="railReplayStatus">Waiting</strong></div>
-                </div>
-                <p class="policy-note"><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>Transfer state is rebuilt from append-only events. No production funds move.</p>
-              </section>
-            </div>
-
-            <section class="panel" aria-labelledby="repaymentTitle" data-legacy-demo-surface>
-              <div class="panel-heading stacked-mobile">
-                <div><p class="eyebrow">Cashflow waterfall</p><h3 id="repaymentTitle">Revenue Capture & Repayment</h3></div>
-                <div class="button-row"><button id="captureRevenueBtn" class="primary" type="button">Capture Revenue</button><button id="autoRepayBtn" type="button">Auto Repay</button></div>
-              </div>
-              <div class="repayment-layout">
-                <div><label for="revenueAmount">Revenue amount (USD demo)</label><input id="revenueAmount" type="number" min="1" step="1" value="650" inputmode="decimal" /></div>
-                <div><span>Repayments</span><strong id="repaymentCount">0</strong></div>
-                <div><span>Repayment state</span><strong id="repaymentState">Waiting</strong></div>
-              </div>
-            </section>
           </section>
 
-          <section class="view" data-view-panel="evidence" aria-labelledby="evidenceViewTitle">
-            <section id="privateEvidenceSurface" class="private-product-surface private-page-surface" aria-labelledby="privateEvidenceTitle" hidden data-private-session-surface>
+          <section class="view" data-view-panel="evidence" aria-labelledby="privateEvidenceTitle">
+            <section id="privateEvidenceSurface" class="private-product-surface private-page-surface" aria-labelledby="privateEvidenceTitle" data-private-session-surface>
               <div class="private-page-heading">
                 <div><p class="eyebrow" id="privateEvidenceEyebrow">Owner Evidence</p><h2 id="privateEvidenceTitle">Verify the lifecycle, not a screenshot.</h2><p id="privateEvidenceCopy">Load redacted immutable events for the exact Obligation owned by this authenticated Human session.</p></div>
                 <button id="privateEvidencePrimaryBtn" class="primary" type="button">Open owner timeline</button>
@@ -1053,7 +856,6 @@
               </section>
             </section>
 
-            <div class="view-heading" data-legacy-demo-surface><div><p class="eyebrow">Canonical audit surface</p><h2 id="evidenceViewTitle">Evidence</h2><p>Versioned protocol events connect decisions, transfers, settlement, and repayment.</p></div></div>
 
             <section id="auditorEvidenceConsole" class="auditor-evidence-console" aria-labelledby="auditorEvidenceTitle" hidden>
               <div class="auditor-evidence-hero">
@@ -1108,22 +910,10 @@
               </section>
             </section>
 
-            <div class="data-strip six evidence-summary" data-legacy-demo-surface>
-              <div><span>Timeline events</span><strong id="adminEvents">0</strong></div>
-              <div><span>Evidence envelopes</span><strong id="adminEvidence">0</strong></div>
-              <div><span>Active plugins</span><strong id="adminPlugins">0</strong></div>
-              <div><span>Credit lines</span><strong id="adminCreditLines">0</strong></div>
-              <div><span>Obligations</span><strong id="adminObligations">0</strong></div>
-              <div><span>Exposure</span><strong id="adminOutstanding">$0.00</strong></div>
-            </div>
-            <div class="split-layout evidence-layout" data-legacy-demo-surface>
-              <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Append-only feed</p><h3>Evidence Stream</h3></div></div><div id="evidenceList" class="compact-list evidence-list"></div></section>
-              <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Event and audit</p><h3>Timeline</h3></div></div><div id="timeline" class="timeline"></div></section>
-            </div>
           </section>
 
-          <section class="view" data-view-panel="risk" aria-labelledby="riskViewTitle">
-            <section id="privateRiskSurface" class="private-product-surface private-page-surface private-risk-surface" aria-labelledby="privateRiskTitle" hidden data-private-session-surface>
+          <section class="view" data-view-panel="risk" aria-labelledby="privateRiskTitle">
+            <section id="privateRiskSurface" class="private-product-surface private-page-surface private-risk-surface" aria-labelledby="privateRiskTitle" data-private-session-surface>
               <header class="private-page-heading risk-page-heading">
                 <div>
                   <p class="eyebrow">Permissioned control plane · WEB-008</p>
@@ -1295,33 +1085,6 @@
               </div>
             </section>
 
-            <div class="legacy-risk-surface" data-legacy-demo-surface>
-              <div class="view-heading">
-                <div><p class="eyebrow">Human-controlled safety plane</p><h2 id="riskViewTitle">Risk Operations</h2><p>Inspect protocol contracts and state without bypassing policy or Evidence.</p></div>
-                <button id="resetBtn" class="secondary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#rotate-ccw"></use></svg>Reset Sandbox</button>
-              </div>
-              <section class="panel" aria-labelledby="adminTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Control status</p><h3 id="adminTitle">Admin Dashboard</h3></div><span class="state-pill">Sandbox</span></div>
-                <div class="contract-grid">
-                  <div><h4>Plugin Contracts</h4><div id="pluginList" class="compact-list"></div></div>
-                  <div><h4>Rail Contracts</h4><div id="railList" class="compact-list"></div></div>
-                </div>
-              </section>
-              <section class="panel" aria-labelledby="servicingPolicyTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Shared servicing kernel</p><h3 id="servicingPolicyTitle">Sandbox servicing policy v1</h3></div><span class="state-pill">No real funds</span></div>
-                <div class="offer-preview" aria-label="Sandbox servicing controls">
-                  <div><span>Grace</span><strong>3 complete UTC days</strong></div>
-                  <div><span>Default</span><strong>DPD 90+</strong></div>
-                  <div><span>Cure</span><strong>All past-due components</strong></div>
-                  <div><span>Disposition</span><strong>Operations + Risk approval</strong></div>
-                </div>
-                <p class="policy-note"><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>Restructure, repurchase, and write-off bind the exact Obligation state and preserve immutable Evidence. Borrower and Agent runtimes cannot invoke them.</p>
-              </section>
-              <section class="panel inspector-panel" aria-labelledby="inspectorTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Protocol state</p><h3 id="inspectorTitle">Object inspector</h3></div></div>
-                <pre id="objectInspector" class="inspector"></pre>
-              </section>
-            </div>
           </section>
 
           <section class="view" data-view-panel="developer" aria-labelledby="developerViewTitle">
@@ -1329,16 +1092,16 @@
               <div class="human-entry-copy">
                 <p class="eyebrow">Agent integration</p>
                 <h2 id="developerViewTitle">From approval to action. <em>No hidden authority.</em></h2>
-                <p id="agentRuntimeHeroCopy">Use one Principal-approved handoff to enter local MCP workflows. Credentials, remote access, and real funds never travel in the packet.</p>
+                <p id="agentRuntimeHeroCopy">Use one Principal-approved handoff with the authenticated Tenant HTTPS API. Workload credentials, mTLS private keys, and real funds never travel in the packet.</p>
                 <div class="heading-actions">
                   <button class="primary" id="agentRuntimePrimaryBtn" type="button" data-agent-guide-action="principal-setup">Authorize Agent</button>
-                  <button class="secondary" id="agentRuntimeSecondaryBtn" type="button" data-agent-guide-action="view-protocol">View MCP &amp; SDK</button>
+                  <button class="secondary" id="agentRuntimeSecondaryBtn" type="button" data-agent-guide-action="view-protocol">View Agent API &amp; SDK</button>
                 </div>
               </div>
               <div class="human-entry-stats" aria-label="Agent integration status">
                 <div><span>Identity</span><strong id="agentRuntimeIdentity">Principal setup required</strong></div>
                 <div><span>Handoff</span><strong id="agentRuntimeAuthority">Awaiting Mandate</strong></div>
-                <div><span>Transport</span><strong>Local stdio only</strong></div>
+                <div><span>Transport</span><strong>authenticated Tenant HTTPS · closed_non_funds_pilot</strong></div>
               </div>
             </section>
 
@@ -1354,7 +1117,7 @@
                 <p class="human-guide-copy" id="agentIntegrationGuideCopy">A Human Principal creates the Agent Subject and sets exact sandbox limits before any machine workflow is available.</p>
                 <div class="human-guide-actions">
                   <button class="primary" id="agentIntegrationPrimaryBtn" type="button" data-agent-guide-action="principal-setup">Authorize Agent</button>
-                  <button class="secondary" id="agentIntegrationSecondaryBtn" type="button" data-agent-guide-action="view-protocol">View MCP &amp; SDK details</button>
+                  <button class="secondary" id="agentIntegrationSecondaryBtn" type="button" data-agent-guide-action="view-protocol">View Agent API details</button>
                 </div>
                 <ol class="human-journey agent-integration-journey" id="agentIntegrationJourney" aria-label="Agent integration progress">
                   <li data-agent-stage="authority"><span>1</span><div><strong>Authorize</strong><small>Principal + bounded Mandate</small></div></li>
@@ -1368,8 +1131,8 @@
                 <h4 id="agentIntegrationAssuranceTitle">The Principal approves. The Agent executes only that scope.</h4>
                 <ul>
                   <li><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>Principal keeps control</strong><small>Identity, limits, and activation remain Human-approved.</small></span></li>
-                  <li><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><strong>Packet carries no credential</strong><small>Authentication is out of band and the manifest is non-authorizing.</small></span></li>
-                  <li><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>Sandbox economics only</strong><small>No remote MCP, withdrawals, or real funds are enabled.</small></span></li>
+                  <li><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><strong>Packet carries no credential</strong><small>The Gateway verifies a short-lived workload JWT bound to the mTLS certificate; the manifest remains non-authorizing.</small></span></li>
+                  <li><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>No-funds economics only</strong><small>Authenticated remote operations remain Tenant-, Mandate-, and policy-bound. Withdrawals and real funds are disabled.</small></span></li>
                 </ul>
                 <details id="agentIntegrationDetails">
                   <summary>Who does what?</summary>
@@ -1380,16 +1143,16 @@
 
             <section class="runtime-band" aria-label="Agent runtime status">
               <div><span>Public base</span><strong id="runtimeBaseUrl">Current origin</strong></div>
-              <div><span>Public OpenAPI</span><strong>21 operations / demo</strong></div>
-              <div><span>Agent SDK</span><strong>3 local workflows</strong></div>
+              <div><span>Tenant protocol</span><strong>38 authenticated operations</strong></div>
+              <div><span>Agent SDK</span><strong>3 authenticated workflows</strong></div>
               <div><span>Private protocol</span><strong>38 Tenant operations</strong></div>
-              <div><span>Agent MCP</span><strong>11 local tools</strong></div>
+              <div><span>Agent API</span><strong>11 Tenant operations</strong></div>
               <div><span>Handoff</span><strong id="runtimeHandoffStatus">Awaiting Mandate</strong></div>
             </section>
 
             <details class="panel agent-protocol-disclosure" id="agentProtocolDetails" tabindex="-1">
               <summary>
-                <span><small>Machine-readable integration</small><strong>View handoff packet, 11 MCP tools, SDK, and request log</strong></span>
+                <span><small>Machine-readable integration</small><strong>View handoff packet, 11 Agent operations, OpenAPI, and request log</strong></span>
                 <span class="state-pill neutral" id="agentProtocolDisclosureStatus">Waiting for authority</span>
               </summary>
               <div class="agent-protocol-content">
@@ -1404,11 +1167,11 @@
                   </div>
                 </div>
                 <pre><code id="mcpHandoffPacket"></code></pre>
-                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises eleven local MCP tools and three staged SDK workflows. It contains no credentials, endpoint, funds authority, or live-chain execution.</p>
+                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises eleven Agent operations and three staged workflows. The production host and schemas come from OpenAPI; credentials, mTLS keys, and funds authority never enter the packet.</p>
               </section>
 
               <section class="panel" aria-labelledby="mcpToolTitle">
-                <div class="panel-heading"><div><p class="eyebrow">TRANSPORT-001</p><h3 id="mcpToolTitle">Approved local MCP tools</h3></div><span class="state-pill neutral" id="mcpToolReadiness">Waiting</span></div>
+                <div class="panel-heading"><div><p class="eyebrow">Authenticated Agent API</p><h3 id="mcpToolTitle">Approved Tenant operations</h3></div><span class="state-pill neutral" id="mcpToolReadiness">Waiting</span></div>
                 <div class="mcp-tool-list">
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_read_self</strong><small>pilotReadAgentSelf</small></span><em data-mcp-tool-status="runtime">Waiting</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_request_credit</strong><small>pilotRequestCredit</small></span><em data-mcp-tool-status="application">Waiting</em></div>
@@ -1423,9 +1186,9 @@
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_post_sandbox_repayment</strong><small>pilotPostSandboxRepayment</small></span><em data-mcp-tool-status="economic">Waiting</em></div>
                 </div>
                 <div class="mcp-transport-boundary">
-                  <div><span>Transport</span><strong>Local stdio only</strong></div>
-                  <div><span>Authentication</span><strong>Out of band</strong></div>
-                  <div><span>Remote endpoint</span><strong>Disabled</strong></div>
+                  <div><span>Transport</span><strong>authenticated Tenant HTTPS · closed_non_funds_pilot</strong></div>
+                  <div><span>Authentication</span><strong>JWT ≤300s bound to mTLS certificate</strong></div>
+                  <div><span>API contract</span><strong>Production host OpenAPI</strong></div>
                   <div><span>Funds authority</span><strong>None</strong></div>
                 </div>
                 <button class="secondary mcp-return-button" id="returnToAgentAuthorityBtn" type="button">Return to Principal setup</button>
@@ -1434,15 +1197,15 @@
 
             <div class="developer-grid">
               <section class="panel code-panel" aria-labelledby="sdkTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Local Agent MCP client</p><h3 id="sdkTitle">Agent SDK quick start</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy Agent SDK example" title="Copy Agent SDK example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
+                <div class="panel-heading"><div><p class="eyebrow">Production Agent client</p><h3 id="sdkTitle">Authenticated HTTPS quick start</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy Agent API example" title="Copy Agent API example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
                 <pre><code id="sdkSnippet"></code></pre>
               </section>
               <section class="panel" aria-labelledby="capabilityTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Agent SDK contract</p><h3 id="capabilityTitle">Approved local workflows</h3></div><span class="state-pill">3 stages</span></div>
+                <div class="panel-heading"><div><p class="eyebrow">Agent API contract</p><h3 id="capabilityTitle">Approved authenticated workflows</h3></div><span class="state-pill">3 stages</span></div>
                 <div class="capability-list workflow-capability-list">
-                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Decision &amp; Offer</strong><small>Deterministic local MCP composition</small></span><em data-agent-workflow-status="credit_offer">Locked</em></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Decision &amp; Offer</strong><small>Authenticated Tenant HTTPS composition</small></span><em data-agent-workflow-status="credit_offer">Locked</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>Decision Passport</strong><small>risk_decision_passport.v1 · policy + finalized Evidence lineage</small></span><em data-agent-workflow-status="credit_offer">Returned</em></div>
-                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Obligation &amp; repayment</strong><small>Authenticated local MCP + Tenant SDK</small></span><em data-agent-workflow-status="sandbox_obligation">Locked</em></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Obligation &amp; repayment</strong><small>mTLS-bound workload identity + Tenant protocol</small></span><em data-agent-workflow-status="sandbox_obligation">Locked</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><strong>Servicing Case</strong><small>pilotReadOwnObligation + repayment + Evidence</small></span><em data-agent-workflow-status="sandbox_obligation">Same state</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Dual-chain conformance</strong><small>Local receipt verification, no RPC</small></span><em data-agent-workflow-status="obligation_portability">Receipt input</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>Structured pilot feedback</strong><small>pilotSubmitPilotFeedback · closed categories · no PII</small></span><em>Tenant SDK</em></div>
@@ -1451,7 +1214,7 @@
             </div>
 
             <section class="panel request-panel" aria-labelledby="requestLogTitle">
-              <div class="panel-heading request-log-heading"><div><p class="eyebrow">Public session telemetry</p><h3 id="requestLogTitle">Request log</h3></div><div class="request-log-meta"><span>Session <strong id="runtimeSessionId">Starting</strong></span><span>Last <strong id="lastRequestId">None</strong></span><span id="requestLogCount">0 requests</span></div></div>
+              <div class="panel-heading request-log-heading"><div><p class="eyebrow">Authenticated request telemetry</p><h3 id="requestLogTitle">Request log</h3></div><div class="request-log-meta"><span>Session <strong id="runtimeSessionId">Verifying</strong></span><span>Last <strong id="lastRequestId">None</strong></span><span id="requestLogCount">0 requests</span></div></div>
               <div class="request-log" id="requestLog"></div>
             </section>
               </div>
