@@ -65,6 +65,12 @@ can return a denial while an uncancelled datastore reservation commits later.
     autoscaling limits, and notification ownership remain deployment gates.
 12. No public route, production store, cloud policy, private data, external
     Provider, KYC/KYP, custody, credit, or funds are activated by this ADR.
+13. DATA-003A extends persistent admission with required handler-owned baseline
+    loaders for Agent Subjects and Mandates. The PostgreSQL quota transaction
+    takes a Tenant-and-kind advisory lock, counts durable rows under RLS, and
+    reserves only when `max(counter, baseline) + delta` is within the immutable
+    ceiling, all before object resolution. The business transaction repeats
+    the locked count and synchronizes the retained counter before commit.
 
 ## Consequences
 
@@ -72,14 +78,15 @@ can return a denial while an uncancelled datastore reservation commits later.
   model without embedding product-specific checks in HTTP middleware.
 - Current process and edge limits remain independent layers instead of being
   mislabeled as authenticated customer quotas.
-- `DATA-003` can compose admission before authorization/resource lookup and use
-  the durable command repository for completed-response replay. It must bind
-  actual execution/upstream deadlines and coordinate successful quota state
-  with the business transaction; the current module deliberately makes no
-  production atomic-composition claim.
-- Resource counters need lifecycle release and reconciliation against durable
-  domain truth. They do not replace Obligation, Provider, Credential, or
-  AccessGrant repositories.
+- ADR-022 and the DATA-003 foundation now compose admission before
+  authorization/resource lookup and coordinate admission completion with the
+  local non-funds business transaction. Production deadline cancellation,
+  cross-Tenant global limits, and deployment atomicity remain unapproved.
+- Resource counters remain secondary controls rather than domain truth. The
+  current append-retained Agent Subject and Mandate counters are reconciled
+  from durable rows on every creation; other resource kinds still require
+  explicit lifecycle release and reconciliation. Counters do not replace
+  Obligation, Provider, Credential, or AccessGrant repositories.
 - Capacity values are conservative pilot defaults, not production sizing or an
   SLA. Load tests, false-positive review, provider selection, multi-region
   behavior, alerting, and independent security review remain required.
@@ -95,5 +102,6 @@ can return a denial while an uncancelled datastore reservation commits later.
 The tests prove closed classification, approved defaults, hard ceilings,
 trusted-context derivation, resource-blind denial, low-cardinality telemetry,
 bounded eviction, failure rollback, idempotent replay, shared-store atomic
-concurrency, migration up/down/up, forced RLS, restart persistence, and
+concurrency, domain-baseline recovery from absent or stale counters, pre-lookup
+capacity denial, migration up/down/up, forced RLS, restart persistence, and
 PostgreSQL multi-adapter races.

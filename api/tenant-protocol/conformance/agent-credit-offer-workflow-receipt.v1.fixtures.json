@@ -1,0 +1,194 @@
+{
+  "schemaVersion": "agent_credit_offer_workflow_receipt_conformance.v1",
+  "valid": [
+    {
+      "schemaVersion": "agent_credit_offer_workflow_receipt.v1",
+      "status": "offer_ready",
+      "transportProfile": "mcp_stdio_local",
+      "nonAuthorizing": true,
+      "sandboxOnly": true,
+      "productionFundsApproved": false,
+      "fundsAuthority": false,
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "workflowId": "agent-credit-offer-contract-fixture-0001",
+      "correlationId": "correlation_agent_offer:agent-credit-offer-contract-fixture-0001:credit",
+      "subjectId": "subject_agent_contract_fixture",
+      "mandateId": "mandate_agent_contract_fixture",
+      "creditIntent": {
+        "creditIntentId": "credit_intent_agent_contract_fixture",
+        "creditIntentHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "subjectId": "subject_agent_contract_fixture",
+        "authorityType": "mandate",
+        "authorityId": "mandate_agent_contract_fixture",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "requestedPrincipalMinor": "12000",
+        "purposeCode": "working_capital",
+        "requestedTermDays": 60,
+        "repaymentFrequency": "monthly",
+        "installmentCount": 2,
+        "sandboxOnly": true,
+        "productionFundsRequested": false,
+        "status": "decided",
+        "createdAt": "2026-07-15T01:00:00.000Z",
+        "updatedAt": "2026-07-15T02:00:00.000Z"
+      },
+      "decision": {
+        "riskDecisionId": "risk_decision_agent_contract_fixture",
+        "decisionHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+        "creditIntentId": "credit_intent_agent_contract_fixture",
+        "subjectId": "subject_agent_contract_fixture",
+        "authorityType": "mandate",
+        "authorityId": "mandate_agent_contract_fixture",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "status": "approved",
+        "policyVersion": "credit-application-rules.v1",
+        "approvedPrincipalMinor": "12000",
+        "reasonCodes": [
+          "authority_scope_current",
+          "principal_and_subject_eligible",
+          "principal_binding_current",
+          "no_adverse_obligation",
+          "within_sandbox_policy_cap",
+          "sandbox_rules_v1_approved"
+        ],
+        "decisionPassport": {
+          "riskDecisionPassportId": "risk_decision_passport_agent_contract_fixture",
+          "decisionPassportHash": "0x8888888888888888888888888888888888888888888888888888888888888888",
+          "riskFeatureSnapshotId": "risk_feature_snapshot_agent_contract_fixture",
+          "featureSnapshotHash": "0x9999999999999999999999999999999999999999999999999999999999999999",
+          "featureSetVersion": "credit-application-evidence-features.v1",
+          "policyVersion": "credit-application-rules.v1",
+          "policyHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "riskStateHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceEvidence": [
+            { "role": "credit_intent", "evidenceHash": "0x1111111111111111111111111111111111111111111111111111111111111111", "entityHash": "0x2111111111111111111111111111111111111111111111111111111111111111", "aggregateVersion": 1, "sourceFinality": "finalized" },
+            { "role": "subject", "evidenceHash": "0x3222222222222222222222222222222222222222222222222222222222222222", "entityHash": "0x4222222222222222222222222222222222222222222222222222222222222222", "aggregateVersion": 2, "sourceFinality": "finalized" },
+            { "role": "principal", "evidenceHash": "0x5333333333333333333333333333333333333333333333333333333333333333", "entityHash": "0x6333333333333333333333333333333333333333333333333333333333333333", "aggregateVersion": 1, "sourceFinality": "finalized" },
+            { "role": "authority", "evidenceHash": "0x7444444444444444444444444444444444444444444444444444444444444444", "entityHash": "0x8444444444444444444444444444444444444444444444444444444444444444", "aggregateVersion": 1, "sourceFinality": "finalized" }
+          ],
+          "reasonLineage": [
+            { "reasonCode": "authority_scope_current", "featureKeys": ["authorityCurrent"], "sourceRoles": ["authority"] },
+            { "reasonCode": "principal_and_subject_eligible", "featureKeys": ["subjectEligible", "principalEligible"], "sourceRoles": ["subject", "principal"] },
+            { "reasonCode": "principal_binding_current", "featureKeys": ["principalBindingCurrent"], "sourceRoles": ["subject", "principal", "authority"] },
+            { "reasonCode": "no_adverse_obligation", "featureKeys": ["adverseObligationCount", "frozenCreditLineCount"], "sourceRoles": ["risk_state_attestation"] },
+            { "reasonCode": "within_sandbox_policy_cap", "featureKeys": ["assetSupported", "principalWithinCap", "termWithinCap", "scheduleValid"], "sourceRoles": ["credit_intent"] },
+            { "reasonCode": "sandbox_rules_v1_approved", "featureKeys": ["allRequiredFeaturesSatisfied"], "sourceRoles": ["credit_intent", "risk_state_attestation"] }
+          ],
+          "asOf": "2026-07-15T02:00:00.000Z",
+          "nonAuthorizing": true,
+          "sandboxOnly": true,
+          "productionAuthority": false,
+          "schemaVersion": "risk_decision_passport.v1"
+        },
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "decidedAt": "2026-07-15T02:00:00.000Z"
+      },
+      "offer": {
+        "creditOfferId": "credit_offer_agent_contract_fixture",
+        "creditOfferHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "termsHash": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "creditIntentId": "credit_intent_agent_contract_fixture",
+        "riskDecisionId": "risk_decision_agent_contract_fixture",
+        "subjectId": "subject_agent_contract_fixture",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "approvedPrincipalMinor": "12000",
+        "annualRateBps": 900,
+        "originationFeeMinor": "0",
+        "repaymentFrequency": "monthly",
+        "installmentCount": 2,
+        "firstPaymentAt": "2026-08-14T02:00:00.000Z",
+        "maturityAt": "2026-09-13T02:00:00.000Z",
+        "disclosureRef": "urn:ipo.one:sandbox:credit-offer-disclosure:v1",
+        "termsVersion": "credit_terms.v1",
+        "validUntil": "2026-07-16T02:00:00.000Z",
+        "reasonCodes": [
+          "authority_scope_current",
+          "principal_and_subject_eligible",
+          "principal_binding_current",
+          "no_adverse_obligation",
+          "within_sandbox_policy_cap",
+          "sandbox_rules_v1_approved"
+        ],
+        "sandboxOnly": true,
+        "productionFundsApproved": false,
+        "status": "offered",
+        "createdAt": "2026-07-15T02:00:00.000Z",
+        "updatedAt": "2026-07-15T02:00:00.000Z"
+      },
+      "steps": [
+        {
+          "sequence": 1,
+          "tool": "ipo_one_read_self",
+          "operationId": "pilotReadAgentSelf",
+          "requestId": "request_agent_offer:agent-credit-offer-contract-fixture-0001:01",
+          "replayed": false,
+          "responseSchemaVersion": "tenant_agent_subject_view.v2"
+        },
+        {
+          "sequence": 2,
+          "tool": "ipo_one_request_credit",
+          "operationId": "pilotRequestCredit",
+          "requestId": "request_agent_offer:agent-credit-offer-contract-fixture-0001:02",
+          "replayed": false,
+          "responseSchemaVersion": "tenant_credit_intent_created.v1"
+        },
+        {
+          "sequence": 3,
+          "tool": "ipo_one_read_credit_application",
+          "operationId": "pilotReadCreditApplication",
+          "requestId": "request_agent_offer:agent-credit-offer-contract-fixture-0001:03",
+          "replayed": false,
+          "responseSchemaVersion": "tenant_credit_application_view.v1"
+        },
+        {
+          "sequence": 4,
+          "tool": "ipo_one_evaluate_credit_application",
+          "operationId": "pilotEvaluateCreditApplication",
+          "requestId": "request_agent_offer:agent-credit-offer-contract-fixture-0001:04",
+          "replayed": false,
+          "responseSchemaVersion": "tenant_credit_application_evaluated.v2"
+        }
+      ]
+    }
+  ],
+  "invalidMutations": [
+    {
+      "name": "funds authority cannot be enabled",
+      "path": ["fundsAuthority"],
+      "value": true
+    },
+    {
+      "name": "credentials cannot be included",
+      "path": ["credentialsIncluded"],
+      "value": true
+    },
+    {
+      "name": "remote MCP cannot be enabled",
+      "path": ["remoteMcpEnabled"],
+      "value": true
+    },
+    {
+      "name": "caller authority cannot become consent",
+      "path": ["creditIntent", "authorityType"],
+      "value": "consent"
+    },
+    {
+      "name": "tool order cannot drift",
+      "path": ["steps", 1, "tool"],
+      "value": "ipo_one_read_self"
+    },
+    {
+      "name": "offer-ready requires an Offer",
+      "path": ["offer"],
+      "value": null
+    },
+    {
+      "name": "unknown output fields are rejected",
+      "path": ["credential"],
+      "value": "forbidden"
+    }
+  ]
+}

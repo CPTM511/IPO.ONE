@@ -14,7 +14,8 @@ output
 *.db-wal
 docs
 security
-scripts
+scripts/*
+!scripts/migrate.mjs
 **/test
 **/tests
 **/*.test.js

@@ -5,6 +5,7 @@ import {
   AccessGrantCapability,
   AccessGrantStatus,
   MembershipStatus,
+  ROLE_BUNDLE_ACTOR_TYPES,
   ROLE_BUNDLE_CAPABILITIES
 } from "./authorization-constants.js";
 import {
@@ -107,7 +108,7 @@ export class InMemoryAuthorizationDirectory {
       throw authorizationError("invalid_authorization_input", "actorType is invalid");
     }
     const roleCapabilities = ROLE_BUNDLE_CAPABILITIES[input.roleBundle];
-    if (!roleCapabilities) {
+    if (!roleCapabilities || ROLE_BUNDLE_ACTOR_TYPES[input.roleBundle] !== input.actorType) {
       throw authorizationError("invalid_authorization_input", "roleBundle is invalid");
     }
     const capabilities = assertAuthorizationList("capabilities", input.capabilities, { allowEmpty: false });

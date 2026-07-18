@@ -1,0 +1,181 @@
+{
+  "valid": [
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "awaiting_active_mandate",
+      "nonAuthorizing": true,
+      "requiredState": ["active Agent Subject", "active sandbox Mandate"],
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "fundsAuthority": false
+    },
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "application_ready",
+      "nonAuthorizing": true,
+      "subjectId": "subject_agent_application_fixture_001",
+      "mandateId": "mandate_application_fixture_001",
+      "mandateHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "termsHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "authority": {
+        "status": "draft",
+        "capabilities": ["request_credit", "accept_credit_offer", "execute_sandbox_credit", "route_repayment"],
+        "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+        "perActionLimitMinor": "25000",
+        "aggregateLimitMinor": "100000",
+        "expiresAt": "2027-07-15T00:00:00.000Z"
+      },
+      "protocol": {
+        "requestSchemaVersion": "tenant_protocol_request.v1",
+        "transportProfile": "mcp_stdio_local",
+        "nextTool": "ipo_one_read_self",
+        "tools": [
+          { "name": "ipo_one_read_self", "operationId": "pilotReadAgentSelf" },
+          { "name": "ipo_one_request_credit", "operationId": "pilotRequestCredit" },
+          { "name": "ipo_one_read_credit_application", "operationId": "pilotReadCreditApplication" },
+          { "name": "ipo_one_evaluate_credit_application", "operationId": "pilotEvaluateCreditApplication" },
+          { "name": "ipo_one_submit_account_proof", "operationId": "pilotSubmitAgentAccountProof" },
+          { "name": "ipo_one_read_account_binding", "operationId": "pilotReadAgentAccountBinding" },
+          { "name": "ipo_one_read_obligation", "operationId": "pilotReadOwnObligation" },
+          { "name": "ipo_one_read_obligation_evidence", "operationId": "pilotReadOwnObligationEvidence" },
+          { "name": "ipo_one_accept_credit_offer", "operationId": "pilotAcceptCreditOffer" },
+          { "name": "ipo_one_execute_sandbox_obligation", "operationId": "pilotExecuteSandboxObligation" },
+          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" }
+        ]
+      },
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "fundsAuthority": false
+    },
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "ready",
+      "nonAuthorizing": true,
+      "subjectId": "subject_agent_fixture_001",
+      "mandateId": "mandate_fixture_001",
+      "mandateHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "termsHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "authority": {
+        "status": "active",
+        "capabilities": ["request_credit", "accept_credit_offer", "execute_sandbox_credit", "route_repayment"],
+        "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+        "perActionLimitMinor": "25000",
+        "aggregateLimitMinor": "100000",
+        "expiresAt": "2027-07-15T00:00:00.000Z"
+      },
+      "protocol": {
+        "requestSchemaVersion": "tenant_protocol_request.v1",
+        "transportProfile": "mcp_stdio_local",
+        "nextTool": "ipo_one_read_self",
+        "tools": [
+          { "name": "ipo_one_read_self", "operationId": "pilotReadAgentSelf" },
+          { "name": "ipo_one_request_credit", "operationId": "pilotRequestCredit" },
+          { "name": "ipo_one_read_credit_application", "operationId": "pilotReadCreditApplication" },
+          { "name": "ipo_one_evaluate_credit_application", "operationId": "pilotEvaluateCreditApplication" },
+          { "name": "ipo_one_submit_account_proof", "operationId": "pilotSubmitAgentAccountProof" },
+          { "name": "ipo_one_read_account_binding", "operationId": "pilotReadAgentAccountBinding" },
+          { "name": "ipo_one_read_obligation", "operationId": "pilotReadOwnObligation" },
+          { "name": "ipo_one_read_obligation_evidence", "operationId": "pilotReadOwnObligationEvidence" },
+          { "name": "ipo_one_accept_credit_offer", "operationId": "pilotAcceptCreditOffer" },
+          { "name": "ipo_one_execute_sandbox_obligation", "operationId": "pilotExecuteSandboxObligation" },
+          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" }
+        ]
+      },
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "fundsAuthority": false
+    }
+  ],
+  "invalid": [
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "awaiting_active_mandate",
+      "nonAuthorizing": true,
+      "requiredState": ["active Agent Subject", "active sandbox Mandate"],
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": true,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "fundsAuthority": false
+    },
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "awaiting_active_mandate",
+      "nonAuthorizing": true,
+      "requiredState": ["active Agent Subject", "active sandbox Mandate"],
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": true,
+      "fundsAuthority": false
+    },
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "awaiting_active_mandate",
+      "nonAuthorizing": true,
+      "requiredState": ["active Agent Subject", "active sandbox Mandate"],
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "fundsAuthority": true
+    },
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "awaiting_active_mandate",
+      "nonAuthorizing": true,
+      "requiredState": ["active Agent Subject", "active sandbox Mandate"],
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "fundsAuthority": false,
+      "tenantId": "prohibited"
+    },
+    {
+      "schemaVersion": "agent_handoff_manifest.v1",
+      "status": "application_ready",
+      "nonAuthorizing": true,
+      "subjectId": "subject_agent_application_fixture_unsafe",
+      "mandateId": "mandate_application_fixture_unsafe",
+      "mandateHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "termsHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "authority": {
+        "status": "active",
+        "capabilities": ["request_credit"],
+        "assetIds": ["urn:ipo-one:sandbox-asset:usd-cent"],
+        "perActionLimitMinor": "25000",
+        "aggregateLimitMinor": "100000",
+        "expiresAt": "2027-07-15T00:00:00.000Z"
+      },
+      "protocol": {
+        "requestSchemaVersion": "tenant_protocol_request.v1",
+        "transportProfile": "mcp_stdio_local",
+        "nextTool": "ipo_one_read_self",
+        "tools": [
+          { "name": "ipo_one_read_self", "operationId": "pilotReadAgentSelf" },
+          { "name": "ipo_one_request_credit", "operationId": "pilotRequestCredit" },
+          { "name": "ipo_one_read_credit_application", "operationId": "pilotReadCreditApplication" },
+          { "name": "ipo_one_evaluate_credit_application", "operationId": "pilotEvaluateCreditApplication" },
+          { "name": "ipo_one_submit_account_proof", "operationId": "pilotSubmitAgentAccountProof" },
+          { "name": "ipo_one_read_account_binding", "operationId": "pilotReadAgentAccountBinding" },
+          { "name": "ipo_one_read_obligation_evidence", "operationId": "pilotReadOwnObligationEvidence" },
+          { "name": "ipo_one_accept_credit_offer", "operationId": "pilotAcceptCreditOffer" },
+          { "name": "ipo_one_execute_sandbox_obligation", "operationId": "pilotExecuteSandboxObligation" },
+          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" }
+        ]
+      },
+      "credentialDelivery": "out_of_band",
+      "credentialsIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "fundsAuthority": false
+    }
+  ]
+}

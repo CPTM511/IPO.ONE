@@ -4,6 +4,12 @@
 It must fail release verification and must never be edited to claim that an
 external control exists.
 
+`closed-non-funds-pilot.pending.json` is the equivalent fail-closed contract
+for the private pilot. It enumerates every policy gate, but the profile remains
+locked and every external approval remains pending. Copy it only to an ignored
+`*.local.json` path after the exact release, immutable cloud observations, and
+real approvers exist; never convert placeholders into invented evidence.
+
 Actual release evidence belongs in a `*.local.json` file, which Git ignores, or
 in an approved private change-control system. It may contain approver handles
 and immutable evidence URLs, but never tokens, credentials, private keys,

@@ -49,14 +49,22 @@ export const ObligationTransitions = machine({
   [ObligationStatus.ACTIVE]: [
     ObligationStatus.PARTIALLY_REPAID,
     ObligationStatus.FULLY_REPAID,
+    ObligationStatus.DELINQUENT,
     ObligationStatus.OVERDUE,
     ObligationStatus.DEFAULTED,
+    ObligationStatus.RESTRUCTURED,
+    ObligationStatus.REPURCHASED,
+    ObligationStatus.WRITTEN_OFF,
     ObligationStatus.CLOSED
   ],
   [ObligationStatus.PARTIALLY_REPAID]: [
     ObligationStatus.FULLY_REPAID,
+    ObligationStatus.DELINQUENT,
     ObligationStatus.OVERDUE,
     ObligationStatus.DEFAULTED,
+    ObligationStatus.RESTRUCTURED,
+    ObligationStatus.REPURCHASED,
+    ObligationStatus.WRITTEN_OFF,
     ObligationStatus.CLOSED
   ],
   [ObligationStatus.FULLY_REPAID]: [ObligationStatus.CLOSED],
@@ -66,7 +74,44 @@ export const ObligationTransitions = machine({
     ObligationStatus.DEFAULTED,
     ObligationStatus.CLOSED
   ],
-  [ObligationStatus.DEFAULTED]: [ObligationStatus.CLOSED],
+  [ObligationStatus.DELINQUENT]: [
+    ObligationStatus.ACTIVE,
+    ObligationStatus.PARTIALLY_REPAID,
+    ObligationStatus.FULLY_REPAID,
+    ObligationStatus.DEFAULTED,
+    ObligationStatus.RESTRUCTURED,
+    ObligationStatus.REPURCHASED,
+    ObligationStatus.WRITTEN_OFF,
+    ObligationStatus.CLOSED
+  ],
+  [ObligationStatus.DEFAULTED]: [
+    ObligationStatus.ACTIVE,
+    ObligationStatus.PARTIALLY_REPAID,
+    ObligationStatus.FULLY_REPAID,
+    ObligationStatus.RESTRUCTURED,
+    ObligationStatus.REPURCHASED,
+    ObligationStatus.WRITTEN_OFF,
+    ObligationStatus.CLOSED
+  ],
+  [ObligationStatus.RESTRUCTURED]: [
+    ObligationStatus.PARTIALLY_REPAID,
+    ObligationStatus.FULLY_REPAID,
+    ObligationStatus.DELINQUENT,
+    ObligationStatus.DEFAULTED,
+    ObligationStatus.REPURCHASED,
+    ObligationStatus.WRITTEN_OFF,
+    ObligationStatus.CLOSED
+  ],
+  [ObligationStatus.REPURCHASED]: [
+    ObligationStatus.PARTIALLY_REPAID,
+    ObligationStatus.FULLY_REPAID,
+    ObligationStatus.DELINQUENT,
+    ObligationStatus.DEFAULTED,
+    ObligationStatus.RESTRUCTURED,
+    ObligationStatus.WRITTEN_OFF,
+    ObligationStatus.CLOSED
+  ],
+  [ObligationStatus.WRITTEN_OFF]: [ObligationStatus.CLOSED],
   [ObligationStatus.CLOSED]: []
 });
 

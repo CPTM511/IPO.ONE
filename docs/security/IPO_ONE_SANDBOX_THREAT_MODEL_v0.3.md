@@ -3,16 +3,18 @@
 Version: v0.3
 Date: 2026-07-12
 Status: Repository, container, local non-funds Tenant/RLS/authentication/
-authorization/approval/resource-admission controls, and hosted public-sandbox
-edge implemented; authenticated durable composition, private
-data, real value, independent review, and named response ownership remain
-separate security and operations decisions
+authorization/approval/resource-admission controls, limited local authenticated
+durable composition, closed local Tenant protocol conformance, and hosted
+public-sandbox edge implemented; public Tenant
+routing, private data, real value, independent review, and named response
+ownership remain separate security and operations decisions
 
 ## Scope and Security Claim
 
 This model covers the repository's no-real-funds Node.js public sandbox, static
 control plane, OpenAPI contract, JavaScript SDK, in-memory demo state, sandbox
-Rail adapter, and optional PostgreSQL event-runtime tests.
+Rail adapter, closed local Tenant request/result/catalog contracts, and isolated
+PostgreSQL event-runtime and Tenant Gateway tests.
 
 The claim is deliberately bounded: the sandbox is hardened and adversarially
 tested for its declared demo use. It is not claimed to be invulnerable, formally
@@ -31,6 +33,7 @@ for real funds, credentials, KYC/PII, legal agreements, or financial decisions.
 | Repository and CI | Dependencies must be locked, CI permissions minimal, and third-party actions pinned immutably. |
 | Public origin | Internet traffic must traverse the approved HTTPS edge and cannot select an arbitrary application Host. |
 | Optional durable tenant state | One Tenant cannot read, mutate, reference, or block another Tenant's command, protocol, approval, or admission state. |
+| Durable protocol authority | Caller JSON cannot assert Tenant, Actor, Credential, role, authorization, or trusted network facts; malformed handler output cannot become durable state. |
 
 There are intentionally no production secrets, private keys, raw KYC records,
 custodied assets, or real payment credentials in the supported sandbox surface.
@@ -47,8 +50,11 @@ Untrusted browser / Agent client
   -> in-memory event, Evidence, Ledger, and sandbox Rail state
 
 Optional isolated test database
+  <- closed versioned caller request validated before trusted-context injection
   <- branded transaction-local Tenant Security Context
   <- non-owner application role + forced PostgreSQL RLS
+  <- authenticated Tenant Command Gateway for reviewed local operations
+  <- closed operation result validated before durable commit
   <- atomic rate/capacity/admission/command-charge reservations
   <- parameterized repository and checksum-locked migrations
 
@@ -97,7 +103,10 @@ Those are deployment concerns and must be assessed separately.
 | Error information disclosure | RFC 9457 Problem Details, stable codes, generic unexpected-error detail | unit and live malformed-input tests |
 | SQL injection / replay corruption | Parameterized values, serializable transaction, optimistic stream version, idempotency hash, outbox/inbox constraints | PostgreSQL rollback, concurrency, replay, lease, and restart suite |
 | Durable cross-tenant access or key collision | Immutable `tenant_id`, tenant-aware foreign keys and runtime identities, non-owner role verification, transaction-local context, `ENABLE` + `FORCE RLS`, `USING`/`WITH CHECK`, and write guards | Two-tenant least-privilege read/write/FK/key-reuse matrix, pooled context cleanup, and full catalog coverage assertion |
-| Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, valid/missing cross-Tenant resource-blind denial, bounded eviction, and source leakage assertions |
+| Authenticated resource abuse / enumeration | Closed versioned operation classes; trusted hashed Actor/client/network/account dimensions; atomic rate/capacity reservations before object lookup; durable Agent Subject/Mandate baselines loaded under Tenant-and-kind locks; generic coarse retry metadata; bounded low-cardinality telemetry | Policy drift gate, shared-store and PostgreSQL race/restart/replay/rollback tests, stale/absent-counter recovery, at-cap valid/missing resource-blind denial, bounded eviction, and source leakage assertions |
+| Authenticated command authority drift | One serializable Gateway transaction locks admission and live authorization facts and atomically commits audit, Event, Evidence, outbox, projection, authorization-resource transition, idempotent response, and retained capacity | Two-Tenant and same-Tenant denial, concurrent Membership/Subject mutation, nonce/revocation races, replay after resource closure, protective revocation under inactive Subject/Principal state, reason-coded Risk/Operations Subject freeze, exact replay after suspension, concurrent single-transition proof, bounded reads, append-only tamper, and reconciliation tests |
+| Authenticated portfolio disclosure or aggregate drift | Recent phishing-resistant MFA, `risk.read.tenant`, active Tenant-owned `risk_portfolio`, serializable transaction-local Tenant context, forced RLS, Agent-only joins, exact canonical minor-unit strings, complete status coverage checks, 50-asset detail bound, closed aggregate-only result schema | Real nonzero and empty PostgreSQL aggregation, Risk/Auditor allow, stale-MFA/role/cross-Tenant denial, no-business-write assertion, unknown-state fail-closed unit test, identity-field schema rejection, public-route isolation, and post-fixture reconciliation |
+| Tenant protocol/schema drift or mass assignment | Closed per-operation request/result schemas; exact schema versions; trusted auth/network context outside caller JSON; result validation before commit; catalog parity across handlers, AuthZ, ABUSE policy, fixtures, and public-server isolation | Valid/invalid Human+Operator+Agent fixtures, mutation-free validator tests, pre-admission rejection with zero audit/admission effects, malicious handler-result rollback, replay validation, and repository conformance gate |
 | Supply-chain substitution | `pnpm-lock.yaml`, frozen install, production audit, minimal workflow permissions, full-SHA actions | CI workflow assertions and `pnpm audit --prod` |
 | Container privilege/write abuse | Signed digest-pinned shell-free distroless runtime, UID/GID 65532, no package manager, read-only/no-capability/no-new-privileges CI invocation | deployment static gate and production container smoke |
 | Application log data leakage | Fixed route categories; no body, query, sandbox session, raw IP, stack, or unexpected message fields | source review and bounded structured logger |
@@ -118,12 +127,19 @@ The following are known and intentional blockers, not hidden launch claims:
    DNS rollback are deployed. Quota/load testing, false-positive review,
    notification recipients, and a named incident/takedown owner remain open.
 3. The public sandbox has no AuthN, RBAC, authenticated durable command gateway,
-   dual control, break glass, or authenticated resource admission. Those local
-   foundations enforce trusted context and forced RLS but are not reachable
-   from the anonymous public API and are not a production identity claim.
-4. Public demo state is in memory and is lost on restart. Optional PostgreSQL
-   Rail, normalized core, reconciliation, approval/break-glass, and admission
-   repositories have recovery evidence but are not composed into public routes.
+   dual control, break glass, or authenticated resource admission. The separate
+   local Gateway currently composes only Agent Subject creation, unsigned draft
+   Mandate create/read/revoke, Agent self-read, and one-way Risk/Operations
+   protective Subject freeze plus an aggregate Risk/Auditor Tenant portfolio
+   read. The portfolio is identity-minimized and read-only; it is not a complete
+   Admin Console, alert engine, export surface, or economic authority. The Gateway is not
+   reachable from the anonymous public API. Its API-002 catalog enables only
+   local in-process use; no authenticated HTTP/MCP/A2A transport is implied, and
+   it is not a production identity or executable-authority claim. Unfreeze is
+   intentionally absent and remains dual-control gated.
+4. Public demo state is in memory and is lost on restart. PostgreSQL Rail,
+   normalized core, reconciliation, approval/break-glass, admission, and limited
+   Tenant Gateway composition have recovery evidence but are not public routes.
 5. Wallet binding signatures are demo fixtures. No production key proof,
    nonce store, rotation, revocation, or credential lifecycle is implemented.
 6. Dependency audit detects published advisories; it is not proof that a
@@ -134,7 +150,8 @@ The following are known and intentional blockers, not hidden launch claims:
 
 Any real-value, private multi-tenant, regulated, or externally integrated use
 is prohibited until the remaining SECURITY-001 deployment owners, identity
-provider, authenticated gateway, and production launch gates are approved.
+provider, full authenticated Gateway composition, and production launch gates
+are approved.
 
 ## Verification Commands
 

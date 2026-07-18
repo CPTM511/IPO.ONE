@@ -487,14 +487,14 @@ MVP 首选：一条执行链 + centralized canonical reservation service + per-c
 | Capability | Current reality |
 | --- | --- |
 | Browser demo | Real local interaction against one Node process. |
-| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID、alpha SDK 及进程级流量/并发边界；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant；仍无 tenant credential quota、runtime schema enforcement 或 durable command gateway。 |
+| API | 21 个 demo operation 已有 OpenAPI 3.1.2、stable Problem Details、request ID、alpha SDK 及进程级流量/并发边界；有界 sandbox session 只做公开演示隔离，不是 AuthN/RBAC/tenant。本地另有 durable Tenant Command Gateway，已组合 Agent Subject 创建、unsigned draft Mandate create/read/revoke、Agent self-read、Risk/Operations protective Subject freeze，以及 recent-MFA Risk/Auditor aggregate Tenant portfolio read。API-002 已为这 7 个 operation 增加 closed request/result/catalog JSON Schema、TypeScript discriminated union、conformance fixtures，以及 pre-admission request / pre-commit result runtime enforcement；portfolio read 只返回 Agent-only totals 和最多 50 个 asset exposure，不返回 entity identity/PII；freeze 只能转为 `suspended`，unfreeze 仍是未实现的 dual-control gate。它仍不是 public route，也没有 production credential provisioning 或 authenticated HTTP/MCP/A2A transport。 |
 | Wallet binding | CAIP-like format plus explicit mock signature; no production cryptographic verification. |
 | Payment | Instruction records only; no funds move. |
 | Lockbox | Public demo uses an in-memory projection; normalized Lockbox/Ledger repositories, immutable snapshots and reconciliation are PostgreSQL-tested but not composed behind the API; no contract or custody. |
 | Credit line | Deterministic demo rules over supplied inputs; no verified revenue adapter. |
 | Credit learning | Rule-based demo; event-derived primary evaluation after hardening; scripted cycles remain synthetic. |
 | Events | Public demo services use append-only in-memory Evidence; Rail and the core repository foundation support PostgreSQL batch events, replay, Evidence, outbox/inbox, normalized projections and discrepancy Evidence. |
-| Database | Four reversible migration pairs are validated. Rail plus Principal/Subject/Mandate/Provider/Spend/Lockbox/Ledger/Obligation/Repayment/Risk/Admin repositories, immutable snapshots, reconciliation and approval-gated repair are PostgreSQL-tested; the public command path remains process-local. |
+| Database | Nine reversible migration pairs are validated. Rail plus Principal/Subject/Mandate/Provider/Spend/Lockbox/Ledger/Obligation/Repayment/Risk/Admin repositories, immutable snapshots, reconciliation, approval-gated repair, Tenant command authority, and domain-anchored identity-resource caps are PostgreSQL-tested; the public command path remains process-local. |
 | Smart contracts | Not present. |
 | Multi-chain | Identifier shape only; no chain registry/indexer/finality/cap enforcement. |
 | Human compatibility | Partial enums/prototype guard; no complete consent/originator/loan-tape runtime. |
@@ -610,9 +610,16 @@ repair. Crash/retry/restart, drift, concurrency, and repair tests run against
 real PostgreSQL.
 
 Milestone B is still incomplete at the application boundary: the public demo
-orchestrator remains process-local, and no authenticated tenant command gateway
-uses these repositories. AuthN/RBAC/tenant isolation, signed account/Mandate
-proof, webhook verification, remote adapter certification, custody, production
+orchestrator remains process-local. A separate authenticated Tenant Command
+Gateway now uses these repositories for Agent Subject creation, unsigned draft
+Mandate create/read/revoke, Agent self-read, and strong-MFA Risk/Operations
+protective Subject freeze plus a recent-MFA Risk/Auditor aggregate Tenant
+portfolio read, but the Lockbox lifecycle is not yet composed. Its
+seven-operation local application protocol now has closed
+versioned request/result/catalog schemas, fixtures, typed declarations, runtime
+validation, and repository drift checks; the catalog enables only in-process
+non-funds use. Production identity provisioning, signed account/Mandate proof,
+webhook verification, remote adapter certification, custody, production
 database operations, and real settlement do not exist.
 
 ## 14. Final Recommendation

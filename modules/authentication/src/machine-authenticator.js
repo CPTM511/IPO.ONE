@@ -159,7 +159,7 @@ export class MachineAuthenticator {
         itemPattern: /^[A-Za-z0-9][A-Za-z0-9._:-]+$/
       });
     }
-    const credential = this.credentialRegistry.findBySubject({
+    const credential = await this.credentialRegistry.findBySubject({
       issuer: claims.iss,
       tenantId,
       externalSubject: subject,
@@ -186,7 +186,10 @@ export class MachineAuthenticator {
     }
 
     const confirmation = confirmationClaim(claims.cnf, credential.senderConstraint.method);
-    if (!constantTimeEqual(confirmation, credential.senderConstraint.thumbprint)) {
+    const expectedConfirmation = credential.senderConstraint.referenceProtected === true
+      ? this.referenceHasher.hash("sender.constraint", confirmation)
+      : confirmation;
+    if (!constantTimeEqual(expectedConfirmation, credential.senderConstraint.thumbprint)) {
       throw authenticationError("authentication_sender_rejected", "JWT sender constraint is not trusted");
     }
     let sender;

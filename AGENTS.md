@@ -3,6 +3,9 @@
 Before making product, architecture, or implementation decisions in this repo,
 read the project guidance source:
 
+- Canonical Product Charter: `docs/guidance/IPO_ONE_PRODUCT_CHARTER_v1.1.md`
+- Founding Edition source archive:
+  `docs/guidance/IPO_ONE_Product_Charter_v1.1_Founding_Edition.docx`
 - `docs/guidance/IPO_one_Product_Description_and_PRD_v1.md`
 - Original source archive: `docs/guidance/IPO_one_Product_Description_and_PRD_v1.docx`
 - `docs/guidance/IPO_ONE_MVP_Build_PRD_Technical_Architecture_Codex_Task_Spec_v0.1_FINAL.md`
@@ -11,6 +14,8 @@ read the project guidance source:
 - Commercialization roadmap proposal: `docs/guidance/IPO_ONE_COMMERCIALIZATION_ROADMAP_v0.3_DRAFT.md`
 - Public beta launch gate: `docs/guidance/IPO_ONE_PUBLIC_BETA_LAUNCH_READINESS_v0.3.md`
 - Public sandbox threat model: `docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md`
+- CHAIN-001B live-testnet runbook:
+  `docs/security/IPO_ONE_CHAIN_001B_TESTNET_RUNBOOK_v0.1.md`
 
 Treat the guidance as versioned project context. It may evolve, so prefer
 updating the guidance document rather than scattering product decisions across
@@ -18,8 +23,10 @@ untracked notes.
 
 Guidance hierarchy:
 
-- Product Charter / Product Description v1.0 sets the long-term product thesis,
-  protocol boundaries, and business/technical direction.
+- Product Charter v1.1 is the canonical long-term product and governance source.
+  It ratifies one shared obligation kernel with Human and Agent as parallel,
+  first-class entry modes. Product Description v1.0 remains a historical source
+  and is superseded where it conflicts with v1.1.
 - MVP Build Spec v0.1 governs first implementation work, repository scaffolding,
   issue decomposition, architecture defaults, launch gates, and Codex operating
   rules.
@@ -36,14 +43,17 @@ Current core constraints:
 - IPO.one is a machine-readable credit obligation protocol layer, not a simple
   lending app.
 - Product primitive: `Identity + Payment + Obligation`.
-- MVP direction: Agent-first through Agent Lockbox.
-- Must remain human-compatible from day 1 through schema support for Human
-  Subject, Consent, KYC/VC references, Originator, Loan Tape, DPD/default,
-  restructure, repurchase, and write-off.
+- Product direction: dual-native through one shared kernel. Agent and Human
+  pilots progress in parallel; Agent implementation may land first, but neither
+  entry mode may fork the obligation, ledger, risk, event, or Evidence model.
+- The no-real-funds product must provide an operable Human pilot, including
+  Human Subject, Consent, KYC/VC references, Credit Intent, explainable Offer,
+  Obligation, repayment schedule, DPD/default, restructure, repurchase,
+  write-off, and Evidence using synthetic or redacted data only.
 - Must remain multi-chain-ready from day 1 using CAIP-2, CAIP-10,
   chain-agnostic obligation IDs, event indexing, per-chain caps, and adapter
   boundaries.
-- Do not build early human cash loans, public LP vaults, tokens/DAO governance,
+- Do not enable real Human cash loans, public LP vaults, tokens/DAO governance,
   arbitrary withdrawals, or black-box credit scoring before real repayment
   events exist.
 - Sensitive human data and raw KYC/PII should stay offchain by default; use
@@ -55,13 +65,20 @@ Current core constraints:
 
 MVP build rules:
 
-- Implement the first production-limited vertical slice as `Agent Lockbox Credit
-  Primitive`: Agent Subject creation, Principal binding, CAIP-10 account
-  binding, allowlisted provider spend, Lockbox revenue capture, automated
-  repayment routing, Repayment Events, and Admin/Risk visibility.
-- MVP production credit is Agent-only. Human features are schema/prototype/mock
-  only: Human Subject, Consent, KYC/VC references, Originator mock, loan tape
-  simulator, and reserved obligation states.
+- Implement the first shared vertical slice as a no-real-funds credit lifecycle:
+  Subject and Principal binding, Consent/Mandate, Credit Intent, deterministic
+  decision and Offer, accepted Obligation, controlled execution, repayment,
+  servicing/default transitions, Evidence, and Admin/Risk visibility. Reuse it
+  for both Human and Agent entry modes.
+- Agent Lockbox remains the first production-limited credit candidate. Human
+  credit may be fully functional only in synthetic/private pilot modes until
+  legal, KYC/privacy, risk, capital, servicing, and production permissions are
+  separately approved.
+- Human-facing UI and machine-facing OpenAPI/SDK/MCP surfaces are co-equal
+  product interfaces over the same versioned application protocol.
+- Multi-chain tests use Base Sepolia (`eip155:84532`) as the first execution
+  profile and X Layer Testnet (`eip155:1952`) as the portability profile. This
+  is a reversible test configuration, not a mainnet or capital commitment.
 - Codex work must be issue-based. Each task needs context, scope, non-goals,
   likely files, acceptance criteria, test command, and security checklist.
 - Do not ask Codex to implement the whole MVP in one pass. Start with foundation

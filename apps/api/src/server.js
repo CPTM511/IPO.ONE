@@ -48,6 +48,7 @@ const DISCOVERY_PATHS = new Set([
   "/.well-known/security.txt",
   "/robots.txt"
 ]);
+const PUBLIC_AUTH_PATHS = new Set(["/auth/v1/options"]);
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -432,9 +433,32 @@ function routeCategory(pathname) {
   if (OPERATIONAL_PATHS.has(pathname)) return `operational:${pathname.slice(1)}`;
   if (DISCOVERY_PATHS.has(pathname)) return "discovery";
   if (pathname === "/openapi.json") return "openapi";
+  if (PUBLIC_AUTH_PATHS.has(pathname)) return "authentication:discovery";
   if (pathname.startsWith("/v1/")) return "api:v1";
   if (pathname === "/" || contentTypes[extname(pathname)] || pathname === "/favicon.ico") return "web";
   return "other";
+}
+
+function handlePublicAuthenticationDiscovery(request, response, pathname) {
+  if (!PUBLIC_AUTH_PATHS.has(pathname)) return false;
+  if (!new Set(["GET", "HEAD"]).has(request.method)) {
+    throw new ApiBoundaryError("method_not_allowed", "Only GET and HEAD are available for this resource.", {
+      status: 405,
+      headers: { allow: "GET, HEAD" }
+    });
+  }
+  response.ipoOneHeadOnly = request.method === "HEAD";
+  sendJson(response, 200, {
+    schemaVersion: "ipo_one_authentication_options.v1",
+    profile: "public_sandbox",
+    enabled: false,
+    sessionActive: false,
+    oidcProviders: [],
+    walletAuthentication: false,
+    supportedChains: ["eip155:84532", "eip155:1952"],
+    boundary: "Account sign-in is available only in an approved closed-pilot deployment."
+  });
+  return true;
 }
 
 function discoveryDocument() {
@@ -713,6 +737,10 @@ const server = createServer({
 
     if (OPERATIONAL_PATHS.has(url.pathname) || DISCOVERY_PATHS.has(url.pathname)) {
       handleSystemResource(request, response, url.pathname);
+      return;
+    }
+    if (PUBLIC_AUTH_PATHS.has(url.pathname)) {
+      handlePublicAuthenticationDiscovery(request, response, url.pathname);
       return;
     }
 

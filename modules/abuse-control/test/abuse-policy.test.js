@@ -8,6 +8,7 @@ import {
   QUOTA_PROFILES,
   QuotaClass,
   RequestMetric,
+  ResourceKind,
   TENANT_ABUSE_OPERATION_POLICIES
 } from "../src/index.js";
 
@@ -45,15 +46,25 @@ test("every authenticated operation has exactly one closed quota classification"
     .filter((item) => item.quotaClass === QuotaClass.ECONOMIC)
     .map((item) => item.operationId));
   assert.deepEqual(economic, new Set([
+    "pilotAcceptCreditOffer",
+    "pilotExecuteSandboxObligation",
+    "pilotPostSandboxRepayment",
     "pilotRequestCredit",
+    "pilotEvaluateCreditApplication",
     "pilotSubmitSpend",
     "pilotCaptureRevenue",
     "pilotAutoRepay",
     "workerAutoRepay"
   ]));
+  const byOperation = new Map(TENANT_ABUSE_OPERATION_POLICIES.map((item) => [item.operationId, item]));
+  assert.equal(byOperation.get("pilotReadMandate").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("pilotRevokeDraftMandate").quotaClass, QuotaClass.MUTATION);
 });
 
 test("all configured values remain within immutable hard ceilings", () => {
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.AGENT_SUBJECTS], 500);
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.MANDATES], 1_000);
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.CREDIT_DECISIONS], 1_000);
   for (const profile of Object.values(QUOTA_PROFILES)) {
     assert.ok(profile.windowMs <= HARD_CEILINGS.rate.windowMs);
     for (const [scope, value] of Object.entries(profile.rate)) {
@@ -64,6 +75,9 @@ test("all configured values remain within immutable hard ceilings", () => {
     }
     for (const [metric, value] of Object.entries(profile.metrics)) {
       assert.ok(value <= HARD_CEILINGS.metrics[metric], `${profile.quotaClass}.${metric}`);
+    }
+    for (const [kind, value] of Object.entries(profile.resources)) {
+      assert.ok(value <= HARD_CEILINGS.resources[kind], `${profile.quotaClass}.${kind}`);
     }
     assert.ok(profile.admissionLeaseMs <= HARD_CEILINGS.admissionLeaseMs);
     assert.ok(profile.maxAutomaticRetries <= HARD_CEILINGS.automaticRetries);

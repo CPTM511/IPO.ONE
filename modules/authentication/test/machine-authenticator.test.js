@@ -131,6 +131,7 @@ async function createFixture({ senderMethod = SenderConstraintMethod.DPOP } = {}
     dpop,
     issuer,
     proof,
+    referenceHasher,
     resolver,
     setClock(value) { clock = value; },
     setKeySourceFailure(value) { keySourceFailure = value; },
@@ -157,6 +158,37 @@ test("Agent authentication binds token, internal credential, DPoP sender, and no
   assert.equal(context.roles.includes("external_admin_role_is_ignored"), false);
   assert.equal(context.authorizationDecision, "not_evaluated");
   assert.equal(context.senderConstraintMethod, "dpop");
+});
+
+test("Agent authentication awaits a durable asynchronous Credential registry", async () => {
+  const fixture = await createFixture();
+  const findBySubject = fixture.credentialRegistry.findBySubject.bind(fixture.credentialRegistry);
+  fixture.authenticator.credentialRegistry = {
+    async findBySubject(input) {
+      await Promise.resolve();
+      const credential = findBySubject(input);
+      return {
+        ...credential,
+        senderConstraint: {
+          ...credential.senderConstraint,
+          thumbprint: fixture.referenceHasher.hash(
+            "sender.constraint",
+            credential.senderConstraint.thumbprint
+          ),
+          referenceProtected: true
+        }
+      };
+    }
+  };
+  const token = await fixture.accessToken();
+  const context = await fixture.authenticator.authenticate({
+    accessToken: token,
+    dpopProof: await fixture.proof(token),
+    requestMethod: "POST",
+    requestUrl: REQUEST_URL,
+    now: NOW
+  });
+  assert.equal(context.actorId, "actor_agent_alpha");
 });
 
 test("closed machine claims reject unknown fields, wrong audience, type, lifetime, tenant, policy, and capability", async () => {

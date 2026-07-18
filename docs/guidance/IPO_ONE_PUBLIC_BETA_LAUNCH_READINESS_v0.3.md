@@ -44,12 +44,61 @@ resource identifiers, test evidence, scanner results, and rollback state are in
 Tenant/RLS, provider-neutral AuthN, deny-by-default object AuthZ, durable
 exact-command dual control, and a disabled-by-default protective break-glass
 state machine plus atomic rate/resource/cost admission are now implemented and
-tested as local non-funds boundaries.
-They are deliberately not composed into or deployed over the anonymous public
-sandbox. Human IdP selection, durable identity/authorization/audit adapters,
-DATA-003, a production distributed quota/edge provider, production roles,
-named break-glass owners/notifications,
-private-data approval, and any real-value authority remain open gates.
+tested as local non-funds boundaries. A separate durable Tenant Command Gateway
+now composes Agent Subject creation, unsigned non-executable draft Mandate
+creation, Human owner read, terminal reason-coded draft revocation, and bounded
+Agent self-read with domain-anchored resource caps. DATA-003C adds a strong-MFA,
+reason-coded, idempotent Risk/Operations protective Subject freeze with exact
+replay and concurrent single-transition proof; unfreeze remains absent and
+dual-control gated. DATA-003D adds a recent-MFA Risk/Auditor aggregate portfolio
+read over one serializable, forced-RLS view of Agent Subject, CreditLine, and
+Obligation state. It returns complete exact totals plus at most 50 asset rows,
+omits entity identity and PII, and writes only audit/admission evidence. API-002
+publishes and enforces a closed versioned request/result/catalog contract for
+exactly those seven operations. Caller data
+excludes Authentication Context and trusted network facts; malformed requests
+fail before admission and malformed handler results fail before commit.
+These controls are deliberately not deployed over the anonymous public sandbox.
+Human IdP selection, production Credential provisioning and identity adapters,
+remaining DATA-003 lifecycle handlers, a production distributed quota/edge
+provider, production roles, named break-glass owners/notifications, private-data
+approval, and any real-value authority remain open gates.
+
+`WEB-008` now composes the approved DATA-003C/D controls into a formal local
+private Risk Operations UI. Authorized Risk/Auditor actors can query one exact
+PII-free aggregate portfolio; Risk/Operations actors can submit one exact
+reason-coded protective Agent Subject freeze after explicit acknowledgement.
+Denied and unavailable resources share one non-enumerating state. When the
+authenticated Host is connected, the historical DEMO reset, Admin Dashboard,
+plugin/rail fixtures, and object inspector are hidden from product truth. This
+is local private-pilot evidence only and does not update the hosted public
+release or approve unfreeze, limit increases, alerts, incident ownership,
+private deployment, or real funds.
+
+`SERVICING-002B` extends that private commercial control plane with one
+separately authorized `pilotReadServicingQueue` query for recent-MFA Risk and
+Operations actors. It lists only adverse, open, no-funds `obligation.v2`
+projections through closed filters and opaque keyset pagination, omits Human
+PII and raw Evidence, and grants no assignment, resolution, disposition,
+withdrawal or funds authority. Its contract, authorization, deterministic SQL
+mapping, unit/security tests and responsive UI source pass locally. The
+PostgreSQL RLS integration and browser/loopback capture remain explicit pending
+gates because the current Codex execution environment cannot allocate the
+temporary PostgreSQL shared-memory slot or listen on `127.0.0.1`.
+
+`OPS-001B/001C` now add a local machine-verifiable alert and durable occurrence
+baseline for failed reconciliation, invalidated chain payment Evidence,
+break-glass activation, admission unavailability, failed full-lifecycle
+synthetics, servicing default, and write-off review. Exact duplicate events are
+idempotent; repeated scope occurrences aggregate durably through Tenant-RLS
+Event/Evidence/Outbox transactions; only bounded source/scope hashes leave the
+adapter. The exact-release synthetic runner requires Human/Agent Offer and
+Obligation/repayment parity plus full zero-difference reconciliation. The policy
+explicitly disables notification delivery, automatic actions, funds actions,
+and release authority. This closes local classification, persistence, and a
+callable check only. It does not configure protected scheduling, named
+recipients/owners, acknowledgement/resolution permissions, an escalation rota,
+numeric SLOs, or a hosted private-pilot monitoring boundary.
 
 ## Launch Definition
 
@@ -74,13 +123,16 @@ two audiences over one state model:
 | Visitor isolation | High-entropy sandbox partitions use a 30-minute TTL, 128-entry LRU, serialized operations, and a 32-mutation budget; SDK/browser clients retain one partition per session. |
 | Adversarial HTTP boundary | Strict methods/media types, 64 KiB bodies, bounded JSON/amounts/targets, parser and path hardening, timeouts, connection/concurrency/request limits, and redacted problems pass a live attack suite. |
 | Local Tenant resource admission | SEC-D08 Actor/client/Tenant/operation/network/account limits, bounded resources/cost, resource-blind problems, atomic PostgreSQL races, restart leases, and forced RLS pass local tests; this is not deployed on the anonymous sandbox. |
+| Local Tenant Gateway | The closed 38-operation private catalog covers the shared Human/Agent no-funds lifecycle, exact owner/Evidence reads, aggregate Risk/Auditor portfolio, protective freeze, Provider sandbox boundary, a separate Risk/Operations servicing queue, Actor-bound Human/Principal workspace recovery, privacy-safe Pilot Health, and immutable categorical design-partner feedback from authenticated PostgreSQL truth. `private_pilot_tenant_profile.v1` makes synthetic design-partner Tenant/Actor provisioning repeatable while keeping roles/capabilities in reviewed code and remote access/real funds disabled. The Human product renders multiple recovered Obligations as stable selectable positions and starts another application without losing the current one. Human and Agent entry modes can submit only closed categories for their exact Subject; Risk/Operations can verify entry, funnel conversion, positions, full repayment and experience signals using aggregate counts only. Reads are recent-MFA, PII-free, tracker-free, sandbox-only and carry no funds or underwriting authority. No public route, free text, unfreeze, limit increase, executable servicing disposition, or real funds are enabled. |
 | Protocol correctness | Schema, boundary, migration, domain, Ledger, Mandate, Rail, Evidence, risk, and vertical-slice checks pass. |
+| Local Decision provenance | `RISK-002A` upgrades authenticated Human/Agent evaluation to immutable `risk_decision.v3` with one point-in-time Evidence feature snapshot, checked-in policy hash, Tenant-bound current-risk attestation and bounded Decision Passport. This is local no-funds provenance only; production underwriting, risk limits/pricing, legal notices, evidence providers, KYC/identity, overrides and deployment remain closed. |
 | Durable Rail proof | PostgreSQL migration, rollback, idempotency, concurrency, outbox/inbox, and restart replay suite passes. |
 | Supply chain | Locked pnpm install, production audit, and a GitHub Actions quality gate are present. |
 | Production runtime | Invalid public mode, origin, Host, HTTPS proxy, HSTS, release, or no-real-funds configuration fails closed. |
 | Container boundary | Digest-pinned Node 24 LTS image, non-root runtime, health check, and CI read-only/no-capability smoke are defined. |
 | Machine discovery | Human/Agent endpoints and disabled real-funds/Human-credit capabilities are explicit at `/.well-known/ipo-one.json`. |
 | Launch governance | Versioned profiles require canonical fresh evidence, exact commit and image digest, complete named gates, and protected-environment authorization; private-data and real-value profiles are policy-locked. |
+| Local operational alerts | `OPS-001C` durably maps seven reviewed signals into Tenant-RLS alert state and immutable occurrences with Event/Evidence/Outbox linkage; the exact-release dual-native check requires Human/Agent lifecycle parity and clean reconciliation. Notification targets, named owners, protected scheduling, acknowledgement/resolution permissions, deployment, and automatic actions remain absent. |
 
 Sandbox session IDs are isolation hints, not credentials. Knowledge of an ID
 must never be treated as identity, authorization, or tenant membership.
@@ -98,7 +150,10 @@ must never be treated as identity, authorization, or tenant membership.
 - [x] Application logs retain request IDs but exclude request bodies, queries,
   sandbox session IDs, raw IPs, secrets, and raw PII.
 - [ ] Hosted edge and cloud log fields/30-day default retention are formally reviewed and approved.
-- [ ] Continuous monitoring covers readiness; a one-time full smoke passed, but a scheduled full synthetic lifecycle is not yet configured.
+- [ ] Continuous monitoring covers readiness; the callable full dual-native
+  lifecycle result and durable alert store pass locally, but protected
+  scheduling, notification delivery, acknowledgement/resolution permissions,
+  and named response ownership are not configured.
 - [x] Public copy states no real lending, no real funds, no financial advice, and demo score only.
 - [x] Analytics remains disabled unless privacy review explicitly approves it.
 - [ ] Incident contact and takedown procedure are documented before sharing broadly.
@@ -107,13 +162,14 @@ must never be treated as identity, authorization, or tenant membership.
 
 The following remain blockers for any real value or private multi-tenant launch:
 
-- Production Human IdP plus durable identity, authorization, and audit stores;
-  authenticated Tenant command composition and a reviewed production
-  distributed quota/edge provider using the completed ABUSE-001 contract.
+- Production Human IdP, Credential provisioning, identity/authorization/audit
+  transport adapters, completion of authenticated Tenant command composition,
+  and a
+  reviewed production distributed quota/edge provider using ABUSE-001.
 - Production role assignment, named dual-control operators, break-glass
   custodians/review owner/notification delivery, and protected activation.
-- Authenticated tenant-scoped durable command composition, production database
-  backup/restore, scheduled reconciliation, and authorized operator replay.
+- Production database backup/restore, scheduled reconciliation, authorized
+  operator replay, and reviewed deployment of the durable Tenant Gateway.
 - Signed Mandates, nonce/key rotation, wallet verification, and remote attestations.
 - Certified Provider workers, signed webhooks, custody/fund-path review, and caps.
 - Legal, risk, security, privacy, and jurisdiction approval.

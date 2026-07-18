@@ -1,0 +1,31 @@
+{
+  "createdAt": "2026-07-17T01:07:08.000Z",
+  "lastCheckedAt": "2026-07-17T01:43:16.000Z",
+  "deployers": [
+    {
+      "chainId": "eip155:84532",
+      "network": "Base Sepolia",
+      "address": "0x4f0C60aFa12Ca58eE6219B8A9CdC4B3625413274",
+      "observedBalanceWei": "0",
+      "maximumApprovedFaucetBalanceWei": "100000000000000000",
+      "faucetStatus": "pending"
+    },
+    {
+      "chainId": "eip155:1952",
+      "network": "X Layer Testnet",
+      "address": "0x5173334519b7621D0E5a36A0D609f68F0902631b",
+      "observedBalanceWei": "0",
+      "maximumApprovedFaucetBalanceWei": "200000000000000000",
+      "faucetStatus": "pending"
+    }
+  ],
+  "officialFaucetReferences": {
+    "baseSepolia": "https://docs.base.org/base-chain/network-information/network-faucets",
+    "xLayerTestnet": "https://web3.okx.com/xlayer/faucet"
+  },
+  "privateKeyIncluded": false,
+  "faucetGasOnly": true,
+  "sandboxOnly": true,
+  "productionFundsMoved": false,
+  "schemaVersion": "live_testnet_faucet_handoff.v1"
+}

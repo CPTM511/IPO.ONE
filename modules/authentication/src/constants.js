@@ -17,6 +17,7 @@ export const CredentialStatus = Object.freeze({
 
 export const ClientAuthenticationMethod = Object.freeze({
   OIDC_PKCE_BFF: "oidc_pkce_bff",
+  SIWE: "siwe",
   PRIVATE_KEY_JWT: "private_key_jwt",
   MTLS: "mtls"
 });

@@ -3,7 +3,16 @@ import { randomBytes } from "node:crypto";
 import test from "node:test";
 import {
   AccountPurpose,
+  ConsentPurpose,
+  ConsentStatus,
+  CreditAuthorityType,
+  CreditEventType,
+  CreditIntentStatus,
   CreditLineStatus,
+  CreditOfferStatus,
+  HumanIdentityAssurance,
+  HumanIdentityReferenceStatus,
+  HumanIdentityReferenceType,
   LedgerAccountType,
   LedgerEntryDirection,
   LedgerNormalSide,
@@ -12,6 +21,7 @@ import {
   MandateStatus,
   ObligationStatus,
   PrincipalType,
+  RepaymentFrequency,
   RiskAction,
   SettlementFinality,
   SettlementOutcome,
@@ -20,8 +30,12 @@ import {
   TransferDirection,
   createAccountBinding,
   createAdminAction,
+  createConsentRecord,
+  createCreditIntent,
   createCreditLine,
   createCreditEvent,
+  createCreditOffer,
+  createHumanIdentityReference,
   createLedgerAccount,
   createLedgerEntry,
   createLedgerTransaction,
@@ -35,7 +49,9 @@ import {
   createSpendRequest,
   createSubject,
   createWalletAccount,
-  hashId
+  hashId,
+  revokeConsentRecord,
+  revokeHumanIdentityReference
 } from "../../../packages/domain/src/index.js";
 import {
   ActorType,
@@ -69,6 +85,14 @@ import {
   createBreakGlassRuntimeConfig
 } from "../../approval/src/index.js";
 import { RailService, SandboxRailAdapter } from "../../rail/src/index.js";
+import {
+  BASE_SEPOLIA_PROFILE,
+  SandboxChainAdapter
+} from "../../chain-adapter/src/index.js";
+import {
+  LiveChainIndexer,
+  PostgresChainObservationStore
+} from "../../event-indexer/src/index.js";
 import { migrateDown, migrateUp, migrationStatus } from "../../../scripts/migrate.mjs";
 import {
   CoreProjectionType,
@@ -107,47 +131,76 @@ const TENANT_OWNED_TABLES = [
   "access_grants",
   "account_bindings",
   "admin_actions",
+  "agent_account_challenges",
+  "agent_account_proof_attempts",
   "aggregate_stream_heads",
   "approval_decisions",
   "approval_executions",
   "approval_proposals",
+  "authentication_credentials",
+  "authentication_events",
+  "authentication_oidc_transactions",
+  "authentication_sessions",
+  "authentication_wallet_transactions",
+  "authorization_audit_events",
+  "authorization_resource_bindings",
+  "authorization_resources",
   "behavioral_metrics",
   "break_glass_custodian_decisions",
   "break_glass_incidents",
   "break_glass_reviews",
   "command_events",
   "command_idempotency",
+  "consent_records",
   "credit_events",
+  "credit_intents",
   "credit_learning_events",
   "credit_lines",
+  "credit_offer_acceptances",
+  "credit_offers",
   "credit_profiles",
   "domain_events",
   "evidence_envelopes",
+  "human_identity_references",
   "inbox_messages",
   "ledger_accounts",
   "ledger_entries",
   "ledger_transactions",
+  "live_chain_indexer_snapshots",
+  "live_chain_observations",
+  "live_chain_outbox_messages",
   "lockboxes",
   "mandate_releases",
   "mandate_reservations",
   "mandates",
   "memberships",
+  "obligation_installments",
   "obligations",
+  "operational_alert_occurrences",
+  "operational_alerts",
+  "operational_synthetic_runs",
   "outbox_messages",
+  "pilot_feedback_records",
   "principals",
   "projection_registry",
   "projection_replay_jobs",
   "projection_snapshots",
+  "provider_callback_inbox",
+  "provider_intent_acknowledgements",
+  "provider_intent_deliveries",
   "providers",
   "reconciliation_discrepancies",
   "reconciliation_runs",
   "repayment_events",
   "reputation_signals",
   "risk_decisions",
+  "sandbox_execution_receipts",
+  "sandbox_servicing_actions",
   "settlement_receipts",
   "spend_policies",
   "spend_requests",
   "subjects",
+  "tenant_command_executions",
   "transfer_intents",
   "transfer_quotes"
 ];
@@ -218,6 +271,13 @@ async function resetCoreRuntime(pool) {
       projection_registry,
       projection_snapshots,
       command_events,
+      human_identity_references,
+      consent_records,
+      agent_account_proof_attempts,
+      obligation_installments,
+      credit_offer_acceptances,
+      credit_offers,
+      credit_intents,
       risk_decisions,
       admin_actions,
       repayment_events,
@@ -231,6 +291,7 @@ async function resetCoreRuntime(pool) {
       spend_policies,
       providers,
       account_bindings,
+      agent_account_challenges,
       mandates,
       subjects,
       principals,
@@ -336,6 +397,19 @@ function buildCoreFixture() {
     }),
     status: MandateStatus.ACTIVE
   };
+  const creditIntent = createCreditIntent({
+    subjectId: subject.subjectId,
+    principalId: principal.principalId,
+    authorityType: CreditAuthorityType.MANDATE,
+    authorityRef: mandate.mandateId,
+    assetId: ASSET.assetId,
+    requestedPrincipalMinor: "250000",
+    purposeCode: "provider_working_capital",
+    requestedTermDays: 90,
+    repaymentFrequency: RepaymentFrequency.MONTHLY,
+    installmentCount: 3,
+    now
+  });
   const spendPolicy = createSpendPolicy({
     subjectId: subject.subjectId,
     providerId: provider.providerId,
@@ -458,6 +532,23 @@ function buildCoreFixture() {
     reasons: [{ code: "approved_by_rules_v0", message: "test fixture" }],
     now
   });
+  const creditOffer = createCreditOffer({
+    creditIntentId: creditIntent.creditIntentId,
+    subjectId: subject.subjectId,
+    riskDecisionId: riskDecision.riskDecisionId,
+    assetId: ASSET.assetId,
+    approvedPrincipalMinor: "250000",
+    annualRateBps: 1800,
+    originationFeeMinor: "2500",
+    repaymentFrequency: RepaymentFrequency.MONTHLY,
+    installmentCount: 3,
+    firstPaymentAt: new Date(now.getTime() + 30 * 86400_000).toISOString(),
+    maturityAt: new Date(now.getTime() + 90 * 86400_000).toISOString(),
+    validUntil: new Date(now.getTime() + 86400_000).toISOString(),
+    reasonCodes: ["sandbox_policy_approved", "capacity_available"],
+    disclosureRef: "urn:ipo.one:sandbox:credit-terms:v1",
+    now
+  });
   const creditLine = createCreditLine({
     subjectId: subject.subjectId,
     mandateId: mandate.mandateId,
@@ -532,6 +623,7 @@ function buildCoreFixture() {
     { type: CoreProjectionType.ACCOUNT_BINDING, value: accountBinding, eventId: sourceEventId },
     { type: CoreProjectionType.PROVIDER, value: provider, eventId: sourceEventId },
     { type: CoreProjectionType.MANDATE, value: mandate, eventId: sourceEventId },
+    { type: CoreProjectionType.CREDIT_INTENT, value: creditIntent, eventId: sourceEventId },
     { type: CoreProjectionType.MANDATE_RESERVATION, value: reservation, eventId: sourceEventId },
     { type: CoreProjectionType.SPEND_POLICY, value: spendPolicy, eventId: sourceEventId },
     { type: CoreProjectionType.SPEND_REQUEST, value: spendRequest, eventId: sourceEventId },
@@ -541,6 +633,7 @@ function buildCoreFixture() {
     { type: CoreProjectionType.LOCKBOX, value: lockbox, eventId: sourceEventId },
     { type: CoreProjectionType.LEDGER_TRANSACTION, value: ledgerTransaction, eventId: sourceEventId },
     { type: CoreProjectionType.RISK_DECISION, value: riskDecision, eventId: sourceEventId },
+    { type: CoreProjectionType.CREDIT_OFFER, value: creditOffer, eventId: sourceEventId },
     { type: CoreProjectionType.CREDIT_LINE, value: creditLine, eventId: sourceEventId },
     { type: CoreProjectionType.OBLIGATION, value: obligation, eventId: sourceEventId },
     { type: CoreProjectionType.ADMIN_ACTION, value: adminAction, eventId: sourceEventId }
@@ -551,12 +644,14 @@ function buildCoreFixture() {
     accountBinding,
     provider,
     mandate,
+    creditIntent,
     reservation,
     spendPolicy,
     spendRequest,
     lockbox,
     ledgerTransaction,
     riskDecision,
+    creditOffer,
     creditLine,
     obligation,
     adminAction,
@@ -666,8 +761,12 @@ async function seedApprovalIdentity(pool, identity) {
   await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
     `INSERT INTO memberships(
        id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
-       status, valid_from, created_at, updated_at, schema_version
-     ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $7, $7, 'membership.v1')
+       client_ids, policy_version, status, valid_from, created_at, updated_at,
+       version, schema_version
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6, $7, $8,
+       'active', $9, $9, $9, 1, 'membership.v1'
+     )
      ON CONFLICT (id) DO NOTHING`,
     [
       membership.membershipId,
@@ -676,6 +775,8 @@ async function seedApprovalIdentity(pool, identity) {
       context.actorId,
       membership.roleBundle,
       JSON.stringify(membership.capabilities),
+      JSON.stringify(membership.clientIds),
+      membership.policyVersion,
       AUTHORIZATION_FIXED_NOW.toISOString()
     ]
   ));
@@ -771,12 +872,48 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
-        "0007_abuse_control_runtime"
+        "0007_abuse_control_runtime",
+        "0008_durable_tenant_command_gateway",
+        "0009_durable_identity_resource_capacity",
+        "0010_durable_credit_application_projections",
+        "0011_durable_human_credit_consent",
+        "0012_durable_human_identity_reference",
+        "0013_durable_credit_intent_resource_capacity",
+        "0014_shared_credit_decision_offer",
+        "0015_sandbox_mandate_activation",
+        "0016_agent_account_proof_activation",
+        "0017_shared_offer_acceptance_obligation_v2",
+        "0018_sandbox_execution_accounting",
+        "0019_shared_sandbox_servicing",
+        "0020_live_testnet_chain_observations",
+        "0021_signed_provider_sandbox",
+        "0022_durable_operational_alerts",
+        "0023_evidence_derived_risk_decisions",
+        "0024_privacy_safe_pilot_feedback",
+        "0025_durable_human_authentication"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 7 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 25 }), [
+        "0025_durable_human_authentication",
+        "0024_privacy_safe_pilot_feedback",
+        "0023_evidence_derived_risk_decisions",
+        "0022_durable_operational_alerts",
+        "0021_signed_provider_sandbox",
+        "0020_live_testnet_chain_observations",
+        "0019_shared_sandbox_servicing",
+        "0018_sandbox_execution_accounting",
+        "0017_shared_offer_acceptance_obligation_v2",
+        "0016_agent_account_proof_activation",
+        "0015_sandbox_mandate_activation",
+        "0014_shared_credit_decision_offer",
+        "0013_durable_credit_intent_resource_capacity",
+        "0012_durable_human_identity_reference",
+        "0011_durable_human_credit_consent",
+        "0010_durable_credit_application_projections",
+        "0009_durable_identity_resource_capacity",
+        "0008_durable_tenant_command_gateway",
         "0007_abuse_control_runtime",
         "0006_approval_runtime",
         "0005_tenant_isolation_rls",
@@ -792,10 +929,46 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
-        "0007_abuse_control_runtime"
+        "0007_abuse_control_runtime",
+        "0008_durable_tenant_command_gateway",
+        "0009_durable_identity_resource_capacity",
+        "0010_durable_credit_application_projections",
+        "0011_durable_human_credit_consent",
+        "0012_durable_human_identity_reference",
+        "0013_durable_credit_intent_resource_capacity",
+        "0014_shared_credit_decision_offer",
+        "0015_sandbox_mandate_activation",
+        "0016_agent_account_proof_activation",
+        "0017_shared_offer_acceptance_obligation_v2",
+        "0018_sandbox_execution_accounting",
+        "0019_shared_sandbox_servicing",
+        "0020_live_testnet_chain_observations",
+        "0021_signed_provider_sandbox",
+        "0022_durable_operational_alerts",
+        "0023_evidence_derived_risk_decisions",
+        "0024_privacy_safe_pilot_feedback",
+        "0025_durable_human_authentication"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 5 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 23 }), [
+        "0025_durable_human_authentication",
+        "0024_privacy_safe_pilot_feedback",
+        "0023_evidence_derived_risk_decisions",
+        "0022_durable_operational_alerts",
+        "0021_signed_provider_sandbox",
+        "0020_live_testnet_chain_observations",
+        "0019_shared_sandbox_servicing",
+        "0018_sandbox_execution_accounting",
+        "0017_shared_offer_acceptance_obligation_v2",
+        "0016_agent_account_proof_activation",
+        "0015_sandbox_mandate_activation",
+        "0014_shared_credit_decision_offer",
+        "0013_durable_credit_intent_resource_capacity",
+        "0012_durable_human_identity_reference",
+        "0011_durable_human_credit_consent",
+        "0010_durable_credit_application_projections",
+        "0009_durable_identity_resource_capacity",
+        "0008_durable_tenant_command_gateway",
         "0007_abuse_control_runtime",
         "0006_approval_runtime",
         "0005_tenant_isolation_rls",
@@ -820,7 +993,25 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0004_reconciliation_runtime",
         "0005_tenant_isolation_rls",
         "0006_approval_runtime",
-        "0007_abuse_control_runtime"
+        "0007_abuse_control_runtime",
+        "0008_durable_tenant_command_gateway",
+        "0009_durable_identity_resource_capacity",
+        "0010_durable_credit_application_projections",
+        "0011_durable_human_credit_consent",
+        "0012_durable_human_identity_reference",
+        "0013_durable_credit_intent_resource_capacity",
+        "0014_shared_credit_decision_offer",
+        "0015_sandbox_mandate_activation",
+        "0016_agent_account_proof_activation",
+        "0017_shared_offer_acceptance_obligation_v2",
+        "0018_sandbox_execution_accounting",
+        "0019_shared_sandbox_servicing",
+        "0020_live_testnet_chain_observations",
+        "0021_signed_provider_sandbox",
+        "0022_durable_operational_alerts",
+        "0023_evidence_derived_risk_decisions",
+        "0024_privacy_safe_pilot_feedback",
+        "0025_durable_human_authentication"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -1049,16 +1240,17 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
           [FIXED_NOW.toISOString()]
         );
         await withTenantTransaction(pool, TENANT_TWO_CONTEXT, (client) => client.query(
-          `INSERT INTO memberships(
-             id, membership_hash, tenant_id, actor_id, role_bundle,
-             capabilities, status, valid_from, created_at, updated_at,
-             schema_version
-           ) VALUES (
-             'membership_tenant_two_system', 'membership_hash_tenant_two_system',
-             'tenant_ipo_one_test_two', 'actor_tenant_two_system',
-             'system_worker', '["local_non_funds_repository"]'::jsonb,
-             'active', $1, $1, $1, 'membership.v1'
-           ) ON CONFLICT (id) DO NOTHING`,
+           `INSERT INTO memberships(
+              id, membership_hash, tenant_id, actor_id, role_bundle,
+              capabilities, client_ids, policy_version, status, valid_from,
+              created_at, updated_at, version, schema_version
+            ) VALUES (
+              'membership_tenant_two_system', 'membership_hash_tenant_two_system',
+              'tenant_ipo_one_test_two', 'actor_tenant_two_system',
+              'system_worker', '["local_non_funds_repository"]'::jsonb,
+              '["client_actor_tenant_two_system"]'::jsonb, 'security_001.v1',
+              'active', $1, $1, $1, 1, 'membership.v1'
+            ) ON CONFLICT (id) DO NOTHING`,
           [FIXED_NOW.toISOString()]
         ));
 
@@ -1661,6 +1853,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         SELECT
           (SELECT count(*)::int FROM principals) AS principals,
           (SELECT count(*)::int FROM subjects) AS subjects,
+          (SELECT count(*)::int FROM credit_intents) AS credit_intents,
+          (SELECT count(*)::int FROM credit_offers) AS credit_offers,
           (SELECT count(*)::int FROM ledger_transactions) AS ledger_transactions,
           (SELECT count(*)::int FROM domain_events) AS events,
           (SELECT count(*)::int FROM outbox_messages) AS outbox,
@@ -1671,6 +1865,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.deepEqual(rolledBack.rows[0], {
         principals: 0,
         subjects: 0,
+        credit_intents: 0,
+        credit_offers: 0,
         ledger_transactions: 0,
         events: 0,
         outbox: 0,
@@ -1704,12 +1900,26 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.deepEqual(committed.response, command.response);
 
       const restartedRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
-      const [principal, subject, accountBinding, mandate, lockbox, ledgerTransaction, obligation, riskDecision, adminAction] =
+      const [
+        principal,
+        subject,
+        accountBinding,
+        mandate,
+        creditIntent,
+        creditOffer,
+        lockbox,
+        ledgerTransaction,
+        obligation,
+        riskDecision,
+        adminAction
+      ] =
         await Promise.all([
           restartedRepository.getPrincipal(fixture.principal.principalId),
           restartedRepository.getSubject(fixture.subject.subjectId),
           restartedRepository.getAccountBinding(fixture.accountBinding.accountBindingId),
           restartedRepository.getMandate(fixture.mandate.mandateId),
+          restartedRepository.getCreditIntent(fixture.creditIntent.creditIntentId),
+          restartedRepository.getCreditOffer(fixture.creditOffer.creditOfferId),
           restartedRepository.getLockbox(fixture.lockbox.lockboxId),
           restartedRepository.getLedgerTransaction(fixture.ledgerTransaction.ledgerTransactionId),
           restartedRepository.getObligation(fixture.obligation.obligationId),
@@ -1721,6 +1931,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.deepEqual(subject.linkedAccountIds, [fixture.accountBinding.accountBindingId]);
       assert.equal(accountBinding.verificationMethod, "verified_signature");
       assert.equal(mandate.status, MandateStatus.ACTIVE);
+      assert.deepEqual(creditIntent, fixture.creditIntent);
+      assert.deepEqual(creditOffer, fixture.creditOffer);
       assert.equal(lockbox.balanceMinor, "10000");
       assert.equal(lockbox.capturedRevenueMinor, "10000");
       assert.equal(ledgerTransaction.entries.length, 2);
@@ -1741,6 +1953,20 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         fixture.obligation.obligationId
       );
       assert.equal(projectionProof.matches, true);
+      assert.equal(
+        (await restartedRepository.verifyProjection(
+          CoreProjectionType.CREDIT_INTENT,
+          fixture.creditIntent.creditIntentId
+        )).matches,
+        true
+      );
+      assert.equal(
+        (await restartedRepository.verifyProjection(
+          CoreProjectionType.CREDIT_OFFER,
+          fixture.creditOffer.creditOfferId
+        )).matches,
+        true
+      );
 
       const replay = await restartedRepository.commitCommand(command);
       assert.equal(replay.replayed, true);
@@ -1812,6 +2038,911 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (await restartedRepository.getAccountBinding(fixture.accountBinding.accountBindingId)).purpose,
         AccountPurpose.EXECUTION
       );
+    });
+
+    await t.test("Human Consent and Agent Mandate credit applications share one durable kernel", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const repository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "credit-application-agent-seed-0001",
+        commandHash: hashId("core_command", { creditApplication: "agent_seed" }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { creditIntentId: fixture.creditIntent.creditIntentId }
+      });
+
+      const humanPrincipal = createPrincipal({
+        principalType: PrincipalType.HUMAN_SELF,
+        jurisdiction: "US",
+        now: FIXED_NOW
+      });
+      const humanSubject = {
+        ...createSubject({
+          subjectType: SubjectType.HUMAN,
+          primaryPrincipalId: humanPrincipal.principalId,
+          displayName: "Human Sandbox Borrower",
+          prototypeOnly: true,
+          now: FIXED_NOW
+        }),
+        status: SubjectStatus.ACTIVE
+      };
+      const humanConsent = createConsentRecord({
+        subjectId: humanSubject.subjectId,
+        principalId: humanPrincipal.principalId,
+        purposes: [
+          ConsentPurpose.CREDIT_APPLICATION,
+          ConsentPurpose.CREDIT_DECISION,
+          ConsentPurpose.IDENTITY_REFERENCE_USE
+        ],
+        allowedAssetIds: [ASSET.assetId],
+        allowedCreditPurposeCodes: ["human_sandbox_credit"],
+        allowedRepaymentFrequencies: [RepaymentFrequency.MONTHLY],
+        maxRequestedPrincipalMinor: "100000",
+        maxRequestedTermDays: 90,
+        maxInstallmentCount: 3,
+        termsRef: "urn:ipo.one:sandbox:consent-terms:v1",
+        termsVersion: "credit_consent_terms.v1",
+        dataUsageRef: "urn:ipo.one:sandbox:data-usage:v1",
+        dataUsageVersion: "credit_data_usage.v1",
+        disclosureRef: "urn:ipo.one:sandbox:human-disclosure:v1",
+        validFrom: FIXED_NOW.toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 90 * 86400_000).toISOString(),
+        now: FIXED_NOW
+      });
+      const humanIntent = createCreditIntent({
+        subjectId: humanSubject.subjectId,
+        principalId: humanPrincipal.principalId,
+        authorityType: CreditAuthorityType.CONSENT,
+        authorityRef: humanConsent.consentId,
+        assetId: ASSET.assetId,
+        requestedPrincipalMinor: "75000",
+        purposeCode: "human_sandbox_credit",
+        requestedTermDays: 60,
+        repaymentFrequency: RepaymentFrequency.MONTHLY,
+        installmentCount: 2,
+        now: FIXED_NOW
+      });
+      const humanEvents = [
+        {
+          aggregateType: "principal",
+          aggregateId: humanPrincipal.principalId,
+          expectedVersion: 0,
+          event: createTestEvent({
+            eventType: "principal_created",
+            payload: { principalId: humanPrincipal.principalId },
+            now: FIXED_NOW
+          })
+        },
+        {
+          aggregateType: "subject",
+          aggregateId: humanSubject.subjectId,
+          expectedVersion: 0,
+          event: createTestEvent({
+            eventType: "subject_created",
+            subjectId: humanSubject.subjectId,
+            payload: { subjectId: humanSubject.subjectId, principalId: humanPrincipal.principalId },
+            now: FIXED_NOW
+          })
+        },
+        {
+          aggregateType: "subject",
+          aggregateId: humanSubject.subjectId,
+          expectedVersion: 1,
+          event: createTestEvent({
+            eventType: "consent_recorded",
+            subjectId: humanSubject.subjectId,
+            payload: { consentId: humanConsent.consentId },
+            now: FIXED_NOW
+          })
+        },
+        {
+          aggregateType: "subject",
+          aggregateId: humanSubject.subjectId,
+          expectedVersion: 2,
+          event: createTestEvent({
+            eventType: "credit_intent_submitted",
+            subjectId: humanSubject.subjectId,
+            payload: { creditIntentId: humanIntent.creditIntentId },
+            now: FIXED_NOW
+          })
+        }
+      ];
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: humanSubject.subjectId,
+        idempotencyKey: "credit-application-human-seed-0001",
+        commandHash: hashId("core_command", { creditApplication: "human_seed" }),
+        events: humanEvents,
+        writes: [
+          {
+            type: CoreProjectionType.PRINCIPAL,
+            value: humanPrincipal,
+            eventId: humanEvents[0].event.eventId
+          },
+          {
+            type: CoreProjectionType.SUBJECT,
+            value: humanSubject,
+            eventId: humanEvents[1].event.eventId
+          },
+          {
+            type: CoreProjectionType.CONSENT_RECORD,
+            value: humanConsent,
+            eventId: humanEvents[2].event.eventId
+          },
+          {
+            type: CoreProjectionType.CREDIT_INTENT,
+            value: humanIntent,
+            eventId: humanEvents[3].event.eventId
+          }
+        ],
+        response: {
+          consentId: humanConsent.consentId,
+          creditIntentId: humanIntent.creditIntentId
+        }
+      });
+
+      const restartedHumanRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      const storedAgentIntent = await restartedHumanRepository.getCreditIntent(fixture.creditIntent.creditIntentId);
+      const storedHumanIntent = await restartedHumanRepository.getCreditIntent(humanIntent.creditIntentId);
+      const storedHumanConsent = await restartedHumanRepository.getConsentRecord(humanConsent.consentId);
+      assert.equal(storedAgentIntent.authorityType, CreditAuthorityType.MANDATE);
+      assert.equal(storedHumanIntent.authorityType, CreditAuthorityType.CONSENT);
+      assert.deepEqual(storedHumanConsent, humanConsent);
+      assert.equal(storedHumanIntent.sandboxOnly, true);
+      assert.equal(storedHumanIntent.productionFundsRequested, false);
+      assert.equal(
+        (await restartedHumanRepository.verifyProjection(
+          CoreProjectionType.CONSENT_RECORD,
+          humanConsent.consentId
+        )).matches,
+        true
+      );
+
+      const consentRevokedAt = new Date(FIXED_NOW.getTime() + 86400_000);
+      const revokedConsent = revokeConsentRecord(humanConsent, {
+        reasonCode: "human_withdrawal",
+        evidenceRef: "urn:ipo.one:evidence:consent-revocation:postgres-test",
+        now: consentRevokedAt
+      });
+      const consentRevokedEvent = createTestEvent({
+        eventType: "consent_status_changed",
+        subjectId: humanSubject.subjectId,
+        payload: {
+          consentId: humanConsent.consentId,
+          fromStatus: ConsentStatus.ACTIVE,
+          toStatus: ConsentStatus.REVOKED,
+          reasonCode: revokedConsent.revocationReasonCode
+        },
+        now: consentRevokedAt
+      });
+      await restartedHumanRepository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: humanSubject.subjectId,
+        idempotencyKey: "human-consent-revoke-0001",
+        commandHash: hashId("core_command", { humanConsent: "revoke" }),
+        events: [{
+          aggregateType: "subject",
+          aggregateId: humanSubject.subjectId,
+          expectedVersion: 3,
+          event: consentRevokedEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.CONSENT_RECORD,
+          value: revokedConsent,
+          eventId: consentRevokedEvent.eventId
+        }],
+        response: { consentId: humanConsent.consentId, status: ConsentStatus.REVOKED }
+      });
+      assert.deepEqual(
+        await restartedHumanRepository.getConsentRecord(humanConsent.consentId),
+        revokedConsent
+      );
+      assert.deepEqual(
+        await restartedHumanRepository.getCreditIntent(humanIntent.creditIntentId),
+        humanIntent
+      );
+
+      const {
+        revokedAt: _revokedAt,
+        revocationReasonCode: _revocationReasonCode,
+        revocationEvidenceRef: _revocationEvidenceRef,
+        ...consentWithoutRevocation
+      } = revokedConsent;
+      const consentReverseEvent = createTestEvent({
+        eventType: "consent_status_changed",
+        subjectId: humanSubject.subjectId,
+        payload: { consentId: humanConsent.consentId, attemptedStatus: ConsentStatus.ACTIVE },
+        now: new Date(FIXED_NOW.getTime() + 2 * 86400_000)
+      });
+      await assert.rejects(
+        () => restartedHumanRepository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: humanSubject.subjectId,
+          idempotencyKey: "human-consent-reverse-0001",
+          commandHash: hashId("core_command", { humanConsent: "reverse" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: humanSubject.subjectId,
+            expectedVersion: 4,
+            event: consentReverseEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.CONSENT_RECORD,
+            value: {
+              ...consentWithoutRevocation,
+              status: ConsentStatus.ACTIVE,
+              updatedAt: new Date(FIXED_NOW.getTime() + 2 * 86400_000).toISOString()
+            },
+            eventId: consentReverseEvent.eventId
+          }],
+          response: { restored: true }
+        }),
+        (error) => error.code === "projection_invariant_violation"
+      );
+
+      const consentMutationEvent = createTestEvent({
+        eventType: "consent_scope_mutation_rejected",
+        subjectId: humanSubject.subjectId,
+        payload: { consentId: humanConsent.consentId },
+        now: new Date(FIXED_NOW.getTime() + 3 * 86400_000)
+      });
+      await assert.rejects(
+        () => restartedHumanRepository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: humanSubject.subjectId,
+          idempotencyKey: "human-consent-mutate-scope-0001",
+          commandHash: hashId("core_command", { humanConsent: "mutate_scope" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: humanSubject.subjectId,
+            expectedVersion: 4,
+            event: consentMutationEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.CONSENT_RECORD,
+            value: { ...revokedConsent, maxRequestedPrincipalMinor: "100001" },
+            eventId: consentMutationEvent.eventId
+          }],
+          response: { mutated: true }
+        }),
+        (error) => error.code === "projection_identity_conflict"
+      );
+      assert.equal(
+        await restartedHumanRepository.eventRepository.getStreamVersion({
+          aggregateType: "subject",
+          aggregateId: humanSubject.subjectId
+        }),
+        4
+      );
+
+      const transitionAt = new Date(FIXED_NOW.getTime() + 1000).toISOString();
+      const transitionEvent = createTestEvent({
+        eventType: "credit_offer_declined",
+        subjectId: fixture.subject.subjectId,
+        payload: {
+          creditIntentId: fixture.creditIntent.creditIntentId,
+          creditOfferId: fixture.creditOffer.creditOfferId
+        },
+        now: new Date(transitionAt)
+      });
+      const decidedIntent = {
+        ...fixture.creditIntent,
+        status: CreditIntentStatus.DECIDED,
+        updatedAt: transitionAt
+      };
+      const declinedOffer = {
+        ...fixture.creditOffer,
+        status: CreditOfferStatus.DECLINED,
+        updatedAt: transitionAt
+      };
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "credit-application-accept-0001",
+        commandHash: hashId("core_command", { creditApplication: "accept" }),
+        events: [{
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId,
+          expectedVersion: 2,
+          event: transitionEvent
+        }],
+        writes: [
+          { type: CoreProjectionType.CREDIT_INTENT, value: decidedIntent, eventId: transitionEvent.eventId },
+          { type: CoreProjectionType.CREDIT_OFFER, value: declinedOffer, eventId: transitionEvent.eventId }
+        ],
+        response: { accepted: true }
+      });
+      assert.equal(
+        (await repository.getCreditIntent(fixture.creditIntent.creditIntentId)).status,
+        CreditIntentStatus.DECIDED
+      );
+      assert.equal(
+        (await repository.getCreditOffer(fixture.creditOffer.creditOfferId)).status,
+        CreditOfferStatus.DECLINED
+      );
+
+      const invalidTransitionEvent = createTestEvent({
+        eventType: "credit_application_transition_rejected",
+        subjectId: fixture.subject.subjectId,
+        payload: { reason: "terminal_state" },
+        now: new Date(FIXED_NOW.getTime() + 2000)
+      });
+      await assert.rejects(
+        () => repository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId,
+          idempotencyKey: "credit-application-reverse-0001",
+          commandHash: hashId("core_command", { creditApplication: "reverse" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: fixture.subject.subjectId,
+            expectedVersion: 3,
+            event: invalidTransitionEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.CREDIT_INTENT,
+            value: {
+              ...decidedIntent,
+              status: CreditIntentStatus.SUBMITTED,
+              updatedAt: new Date(FIXED_NOW.getTime() + 2000).toISOString()
+            },
+            eventId: invalidTransitionEvent.eventId
+          }],
+          response: { accepted: false }
+        }),
+        (error) => error.code === "projection_invariant_violation"
+      );
+
+      const immutableTermsEvent = createTestEvent({
+        eventType: "credit_application_terms_rejected",
+        subjectId: fixture.subject.subjectId,
+        payload: { reason: "immutable_terms" },
+        now: new Date(FIXED_NOW.getTime() + 3000)
+      });
+      await assert.rejects(
+        () => repository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId,
+          idempotencyKey: "credit-application-mutate-terms-0001",
+          commandHash: hashId("core_command", { creditApplication: "mutate_terms" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: fixture.subject.subjectId,
+            expectedVersion: 3,
+            event: immutableTermsEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.CREDIT_INTENT,
+            value: { ...decidedIntent, requestedPrincipalMinor: "250001" },
+            eventId: immutableTermsEvent.eventId
+          }],
+          response: { mutated: true }
+        }),
+        (error) => error.code === "projection_identity_conflict"
+      );
+      assert.equal(
+        await repository.eventRepository.getStreamVersion({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId
+        }),
+        3
+      );
+
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+          "DELETE FROM consent_records WHERE id = $1",
+          [humanConsent.consentId]
+        )),
+        /Consent projections cannot be deleted/
+      );
+
+      const reconciliation = new PostgresReconciliationService({
+        pool,
+        coreRepository: restartedHumanRepository,
+        eventRepository: restartedHumanRepository.eventRepository,
+        release: "postgres-human-consent-test",
+        clock: () => new Date(FIXED_NOW.getTime() + 4 * 86400_000)
+      });
+      const reconciled = await reconciliation.run({
+        initiatedBy: "system:test-human-consent-reconciliation",
+        idempotencyKey: "human-consent-reconciliation-clean-0001"
+      });
+      assert.equal(reconciled.status, "passed", JSON.stringify(await reconciliation.getRun(reconciled.runId)));
+      assert.equal(reconciled.discrepancyCount, 0);
+
+      const tenantTwoRepository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_TWO_CONTEXT
+      });
+      assert.equal(await tenantTwoRepository.getConsentRecord(humanConsent.consentId), undefined);
+      assert.equal(await tenantTwoRepository.getCreditIntent(humanIntent.creditIntentId), undefined);
+      assert.equal(await tenantTwoRepository.getCreditOffer(fixture.creditOffer.creditOfferId), undefined);
+
+      const agentConsent = createConsentRecord({
+        subjectId: fixture.subject.subjectId,
+        principalId: fixture.principal.principalId,
+        purposes: [ConsentPurpose.CREDIT_APPLICATION],
+        allowedAssetIds: [ASSET.assetId],
+        allowedCreditPurposeCodes: ["agent_consent_rejected"],
+        allowedRepaymentFrequencies: [RepaymentFrequency.END_OF_TERM],
+        maxRequestedPrincipalMinor: "50000",
+        maxRequestedTermDays: 30,
+        maxInstallmentCount: 1,
+        termsRef: "urn:ipo.one:sandbox:consent-terms:agent-rejected",
+        termsVersion: "credit_consent_terms.v1",
+        dataUsageRef: "urn:ipo.one:sandbox:data-usage:v1",
+        dataUsageVersion: "credit_data_usage.v1",
+        disclosureRef: "urn:ipo.one:sandbox:human-disclosure:v1",
+        validFrom: FIXED_NOW.toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 30 * 86400_000).toISOString(),
+        now: FIXED_NOW
+      });
+      const agentConsentEvent = createTestEvent({
+        eventType: "consent_recorded",
+        subjectId: fixture.subject.subjectId,
+        payload: { consentId: agentConsent.consentId },
+        now: new Date(FIXED_NOW.getTime() + 3500)
+      });
+      await assert.rejects(
+        () => repository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId,
+          idempotencyKey: "human-consent-agent-subject-rejected-0001",
+          commandHash: hashId("core_command", { humanConsent: "agent_subject_rejected" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: fixture.subject.subjectId,
+            expectedVersion: 3,
+            event: agentConsentEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.CONSENT_RECORD,
+            value: agentConsent,
+            eventId: agentConsentEvent.eventId
+          }],
+          response: { created: true }
+        }),
+        (error) => error.code === "projection_reference_missing"
+      );
+
+      const tenantTwoPrincipal = createPrincipal({
+        principalType: PrincipalType.HUMAN_SELF,
+        jurisdiction: "GB",
+        now: FIXED_NOW
+      });
+      const tenantTwoSubject = {
+        ...createSubject({
+          subjectType: SubjectType.HUMAN,
+          primaryPrincipalId: tenantTwoPrincipal.principalId,
+          displayName: "Tenant Two Sandbox Borrower",
+          prototypeOnly: true,
+          now: FIXED_NOW
+        }),
+        status: SubjectStatus.ACTIVE
+      };
+      const tenantTwoEvents = [
+        {
+          aggregateType: "principal",
+          aggregateId: tenantTwoPrincipal.principalId,
+          expectedVersion: 0,
+          event: createTestEvent({
+            eventType: "principal_created",
+            payload: { principalId: tenantTwoPrincipal.principalId },
+            now: FIXED_NOW
+          })
+        },
+        {
+          aggregateType: "subject",
+          aggregateId: tenantTwoSubject.subjectId,
+          expectedVersion: 0,
+          event: createTestEvent({
+            eventType: "subject_created",
+            subjectId: tenantTwoSubject.subjectId,
+            payload: {
+              subjectId: tenantTwoSubject.subjectId,
+              principalId: tenantTwoPrincipal.principalId
+            },
+            now: FIXED_NOW
+          })
+        }
+      ];
+      await tenantTwoRepository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: tenantTwoSubject.subjectId,
+        idempotencyKey: "credit-application-tenant-two-seed-0001",
+        commandHash: hashId("core_command", { creditApplication: "tenant_two_seed" }),
+        events: tenantTwoEvents,
+        writes: [
+          {
+            type: CoreProjectionType.PRINCIPAL,
+            value: tenantTwoPrincipal,
+            eventId: tenantTwoEvents[0].event.eventId
+          },
+          {
+            type: CoreProjectionType.SUBJECT,
+            value: tenantTwoSubject,
+            eventId: tenantTwoEvents[1].event.eventId
+          }
+        ],
+        response: { subjectId: tenantTwoSubject.subjectId }
+      });
+
+      const crossTenantConsent = createConsentRecord({
+        subjectId: tenantTwoSubject.subjectId,
+        principalId: tenantTwoPrincipal.principalId,
+        purposes: [ConsentPurpose.CREDIT_APPLICATION],
+        allowedAssetIds: [ASSET.assetId],
+        allowedCreditPurposeCodes: ["cross_tenant_rejected"],
+        allowedRepaymentFrequencies: [RepaymentFrequency.END_OF_TERM],
+        maxRequestedPrincipalMinor: "50000",
+        maxRequestedTermDays: 30,
+        maxInstallmentCount: 1,
+        termsRef: "urn:ipo.one:sandbox:consent-terms:cross-tenant-test",
+        termsVersion: "credit_consent_terms.v1",
+        dataUsageRef: "urn:ipo.one:sandbox:data-usage:v1",
+        dataUsageVersion: "credit_data_usage.v1",
+        disclosureRef: "urn:ipo.one:sandbox:human-disclosure:v1",
+        validFrom: FIXED_NOW.toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 30 * 86400_000).toISOString(),
+        now: FIXED_NOW
+      });
+      const crossTenantConsentEvent = createTestEvent({
+        eventType: "consent_recorded",
+        subjectId: fixture.subject.subjectId,
+        payload: { consentId: crossTenantConsent.consentId },
+        now: new Date(FIXED_NOW.getTime() + 3750)
+      });
+      await assert.rejects(
+        () => repository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId,
+          idempotencyKey: "human-consent-cross-tenant-reference-0001",
+          commandHash: hashId("core_command", { humanConsent: "cross_tenant_reference" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: fixture.subject.subjectId,
+            expectedVersion: 3,
+            event: crossTenantConsentEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.CONSENT_RECORD,
+            value: crossTenantConsent,
+            eventId: crossTenantConsentEvent.eventId
+          }],
+          response: { created: true }
+        }),
+        (error) => error.code === "projection_reference_missing"
+      );
+
+      const crossTenantIntent = createCreditIntent({
+        subjectId: tenantTwoSubject.subjectId,
+        principalId: tenantTwoPrincipal.principalId,
+        authorityType: CreditAuthorityType.CONSENT,
+        authorityRef: "urn:ipo.one:sandbox:consent:cross-tenant-test",
+        assetId: ASSET.assetId,
+        requestedPrincipalMinor: "50000",
+        purposeCode: "cross_tenant_rejected",
+        requestedTermDays: 30,
+        repaymentFrequency: RepaymentFrequency.END_OF_TERM,
+        installmentCount: 1,
+        now: FIXED_NOW
+      });
+      const crossTenantEvent = createTestEvent({
+        eventType: "credit_intent_submitted",
+        subjectId: fixture.subject.subjectId,
+        payload: { creditIntentId: crossTenantIntent.creditIntentId },
+        now: new Date(FIXED_NOW.getTime() + 4000)
+      });
+      await assert.rejects(
+        () => repository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId,
+          idempotencyKey: "credit-application-cross-tenant-reference-0001",
+          commandHash: hashId("core_command", { creditApplication: "cross_tenant_reference" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: fixture.subject.subjectId,
+            expectedVersion: 3,
+            event: crossTenantEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.CREDIT_INTENT,
+            value: crossTenantIntent,
+            eventId: crossTenantEvent.eventId
+          }],
+          response: { created: true }
+        }),
+        (error) => error.code === "projection_reference_missing"
+      );
+      assert.equal(
+        await repository.eventRepository.getStreamVersion({
+          aggregateType: "subject",
+          aggregateId: fixture.subject.subjectId
+        }),
+        3
+      );
+    });
+
+    await t.test("synthetic Human identity references require durable Consent and remain auditable", async () => {
+      await resetCoreRuntime(pool);
+      const repository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      const principal = createPrincipal({
+        principalType: PrincipalType.HUMAN_SELF,
+        jurisdiction: "US",
+        now: FIXED_NOW
+      });
+      const subject = {
+        ...createSubject({
+          subjectType: SubjectType.HUMAN,
+          primaryPrincipalId: principal.principalId,
+          displayName: "Synthetic Identity Reference Borrower",
+          prototypeOnly: true,
+          now: FIXED_NOW
+        }),
+        status: SubjectStatus.ACTIVE
+      };
+      const consent = createConsentRecord({
+        subjectId: subject.subjectId,
+        principalId: principal.principalId,
+        purposes: [
+          ConsentPurpose.CREDIT_APPLICATION,
+          ConsentPurpose.CREDIT_DECISION,
+          ConsentPurpose.IDENTITY_REFERENCE_USE
+        ],
+        allowedAssetIds: [ASSET.assetId],
+        allowedCreditPurposeCodes: ["human_sandbox_credit"],
+        allowedRepaymentFrequencies: [RepaymentFrequency.MONTHLY],
+        maxRequestedPrincipalMinor: "100000",
+        maxRequestedTermDays: 90,
+        maxInstallmentCount: 3,
+        termsRef: "urn:ipo.one:sandbox:consent-terms:identity-reference:v1",
+        termsVersion: "credit_consent_terms.v1",
+        dataUsageRef: "urn:ipo.one:sandbox:data-usage:identity-reference:v1",
+        dataUsageVersion: "credit_data_usage.v1",
+        disclosureRef: "urn:ipo.one:sandbox:human-disclosure:identity-reference:v1",
+        validFrom: FIXED_NOW.toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 90 * 86400_000).toISOString(),
+        now: FIXED_NOW
+      });
+      const identityReference = createHumanIdentityReference({
+        subjectId: subject.subjectId,
+        principalId: principal.principalId,
+        consent,
+        referenceType: HumanIdentityReferenceType.VERIFIABLE_CREDENTIAL_REFERENCE,
+        providerRef: "urn:ipo.one:mock:identity-provider:postgres:v1",
+        providerVersion: "mock_identity_provider.v1",
+        referenceRef: "urn:ipo.one:mock:identity-evidence:postgres-human:v1",
+        assuranceLevel: HumanIdentityAssurance.SYNTHETIC_PROVIDER_ASSERTED,
+        purposeCodes: [ConsentPurpose.IDENTITY_REFERENCE_USE, ConsentPurpose.CREDIT_DECISION],
+        validFrom: FIXED_NOW.toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 60 * 86400_000).toISOString(),
+        now: FIXED_NOW
+      });
+      const events = [
+        {
+          aggregateType: "principal",
+          aggregateId: principal.principalId,
+          expectedVersion: 0,
+          event: createTestEvent({
+            eventType: CreditEventType.PRINCIPAL_CREATED,
+            payload: { principalId: principal.principalId },
+            now: FIXED_NOW
+          })
+        },
+        {
+          aggregateType: "subject",
+          aggregateId: subject.subjectId,
+          expectedVersion: 0,
+          event: createTestEvent({
+            eventType: CreditEventType.SUBJECT_CREATED,
+            subjectId: subject.subjectId,
+            payload: { subjectId: subject.subjectId, principalId: principal.principalId },
+            now: FIXED_NOW
+          })
+        },
+        {
+          aggregateType: "subject",
+          aggregateId: subject.subjectId,
+          expectedVersion: 1,
+          event: createTestEvent({
+            eventType: CreditEventType.CONSENT_RECORDED,
+            subjectId: subject.subjectId,
+            payload: { consentId: consent.consentId },
+            now: FIXED_NOW
+          })
+        },
+        {
+          aggregateType: "subject",
+          aggregateId: subject.subjectId,
+          expectedVersion: 2,
+          event: createTestEvent({
+            eventType: CreditEventType.IDENTITY_REFERENCE_RECORDED,
+            subjectId: subject.subjectId,
+            payload: { identityReferenceId: identityReference.identityReferenceId },
+            now: FIXED_NOW
+          })
+        }
+      ];
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: subject.subjectId,
+        idempotencyKey: "human-identity-reference-seed-0001",
+        commandHash: hashId("core_command", { humanIdentityReference: "seed" }),
+        events,
+        writes: [
+          { type: CoreProjectionType.PRINCIPAL, value: principal, eventId: events[0].event.eventId },
+          { type: CoreProjectionType.SUBJECT, value: subject, eventId: events[1].event.eventId },
+          { type: CoreProjectionType.CONSENT_RECORD, value: consent, eventId: events[2].event.eventId },
+          {
+            type: CoreProjectionType.HUMAN_IDENTITY_REFERENCE,
+            value: identityReference,
+            eventId: events[3].event.eventId
+          }
+        ],
+        response: {
+          consentId: consent.consentId,
+          identityReferenceId: identityReference.identityReferenceId
+        }
+      });
+
+      const restartedRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      assert.deepEqual(
+        await restartedRepository.getHumanIdentityReference(identityReference.identityReferenceId),
+        identityReference
+      );
+      assert.equal(
+        (await restartedRepository.verifyProjection(
+          CoreProjectionType.HUMAN_IDENTITY_REFERENCE,
+          identityReference.identityReferenceId
+        )).matches,
+        true
+      );
+      assert.equal(
+        await new PostgresCoreRepository({ pool, tenantContext: TENANT_TWO_CONTEXT })
+          .getHumanIdentityReference(identityReference.identityReferenceId),
+        undefined
+      );
+
+      const revokedAt = new Date(FIXED_NOW.getTime() + 86400_000);
+      const revokedReference = revokeHumanIdentityReference(identityReference, {
+        reasonCode: "provider_withdrawal",
+        evidenceRef: "urn:ipo.one:evidence:identity-reference-revocation:postgres-test",
+        now: revokedAt
+      });
+      const revokedEvent = createTestEvent({
+        eventType: CreditEventType.IDENTITY_REFERENCE_STATUS_CHANGED,
+        subjectId: subject.subjectId,
+        payload: {
+          identityReferenceId: identityReference.identityReferenceId,
+          fromStatus: HumanIdentityReferenceStatus.ACTIVE,
+          toStatus: HumanIdentityReferenceStatus.REVOKED,
+          reasonCode: revokedReference.revocationReasonCode
+        },
+        now: revokedAt
+      });
+      await restartedRepository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: subject.subjectId,
+        idempotencyKey: "human-identity-reference-revoke-0001",
+        commandHash: hashId("core_command", { humanIdentityReference: "revoke" }),
+        events: [{
+          aggregateType: "subject",
+          aggregateId: subject.subjectId,
+          expectedVersion: 3,
+          event: revokedEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.HUMAN_IDENTITY_REFERENCE,
+          value: revokedReference,
+          eventId: revokedEvent.eventId
+        }],
+        response: {
+          identityReferenceId: identityReference.identityReferenceId,
+          status: HumanIdentityReferenceStatus.REVOKED
+        }
+      });
+      assert.deepEqual(
+        await restartedRepository.getHumanIdentityReference(identityReference.identityReferenceId),
+        revokedReference
+      );
+      assert.deepEqual(await restartedRepository.getConsentRecord(consent.consentId), consent);
+
+      const mutationEvent = createTestEvent({
+        eventType: "identity_reference_mutation_rejected",
+        subjectId: subject.subjectId,
+        payload: { identityReferenceId: identityReference.identityReferenceId },
+        now: new Date(FIXED_NOW.getTime() + 2 * 86400_000)
+      });
+      await assert.rejects(
+        () => restartedRepository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: subject.subjectId,
+          idempotencyKey: "human-identity-reference-mutate-0001",
+          commandHash: hashId("core_command", { humanIdentityReference: "mutate" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: subject.subjectId,
+            expectedVersion: 4,
+            event: mutationEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.HUMAN_IDENTITY_REFERENCE,
+            value: { ...revokedReference, providerRef: "urn:ipo.one:mock:other-provider:v1" },
+            eventId: mutationEvent.eventId
+          }],
+          response: { mutated: true }
+        }),
+        (error) => error.code === "projection_identity_conflict"
+      );
+
+      const {
+        revokedAt: _revokedAt,
+        revocationReasonCode: _revocationReasonCode,
+        revocationEvidenceRef: _revocationEvidenceRef,
+        ...referenceWithoutRevocation
+      } = revokedReference;
+      const reverseEvent = createTestEvent({
+        eventType: "identity_reference_transition_rejected",
+        subjectId: subject.subjectId,
+        payload: { identityReferenceId: identityReference.identityReferenceId },
+        now: new Date(FIXED_NOW.getTime() + 3 * 86400_000)
+      });
+      await assert.rejects(
+        () => restartedRepository.commitCommand({
+          aggregateType: "subject",
+          aggregateId: subject.subjectId,
+          idempotencyKey: "human-identity-reference-reverse-0001",
+          commandHash: hashId("core_command", { humanIdentityReference: "reverse" }),
+          events: [{
+            aggregateType: "subject",
+            aggregateId: subject.subjectId,
+            expectedVersion: 4,
+            event: reverseEvent
+          }],
+          writes: [{
+            type: CoreProjectionType.HUMAN_IDENTITY_REFERENCE,
+            value: {
+              ...referenceWithoutRevocation,
+              status: HumanIdentityReferenceStatus.ACTIVE,
+              updatedAt: new Date(FIXED_NOW.getTime() + 3 * 86400_000).toISOString()
+            },
+            eventId: reverseEvent.eventId
+          }],
+          response: { restored: true }
+        }),
+        (error) => error.code === "projection_invariant_violation"
+      );
+      assert.equal(
+        await restartedRepository.eventRepository.getStreamVersion({
+          aggregateType: "subject",
+          aggregateId: subject.subjectId
+        }),
+        4
+      );
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+          "DELETE FROM human_identity_references WHERE id = $1",
+          [identityReference.identityReferenceId]
+        )),
+        /Human identity-reference projections cannot be deleted/
+      );
+
+      const reconciliation = new PostgresReconciliationService({
+        pool,
+        coreRepository: restartedRepository,
+        eventRepository: restartedRepository.eventRepository,
+        release: "postgres-human-identity-reference-test",
+        clock: () => new Date(FIXED_NOW.getTime() + 4 * 86400_000)
+      });
+      const reconciled = await reconciliation.run({
+        initiatedBy: "system:test-human-identity-reference-reconciliation",
+        idempotencyKey: "human-identity-reference-reconciliation-clean-0001"
+      });
+      assert.equal(reconciled.status, "passed", JSON.stringify(await reconciliation.getRun(reconciled.runId)));
+      assert.equal(reconciled.discrepancyCount, 0);
     });
 
     await t.test("core stream races produce one projection winner", async () => {
@@ -2361,6 +3492,116 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       const finalRun = await reconciliation.run({ initiatedBy: "system:test-reconciliation" });
       assert.equal(finalRun.status, "passed");
       assert.equal(finalRun.discrepancyCount, 0);
+    });
+
+    await t.test("live testnet observations persist, isolate, outbox, and reconcile without raw RPC state", async () => {
+      const appRole = "ipo_one_live_chain_test";
+      const dropAppRole = async () => {
+        const exists = await pool.query("SELECT 1 FROM pg_roles WHERE rolname = $1", [appRole]);
+        if (exists.rowCount === 0) return;
+        await pool.query(`DROP OWNED BY ${appRole}`);
+        await pool.query(`DROP ROLE ${appRole}`);
+      };
+      await dropAppRole();
+      const appRolePassword = randomBytes(24).toString("base64url");
+      const quotedPassword = (
+        await pool.query("SELECT quote_literal($1) AS value", [appRolePassword])
+      ).rows[0].value;
+      await pool.query(
+        `CREATE ROLE ${appRole} LOGIN PASSWORD ${quotedPassword} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+      );
+      await pool.query(`GRANT USAGE ON SCHEMA public TO ${appRole}`);
+      await pool.query(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON
+           live_chain_observations, live_chain_indexer_snapshots,
+           live_chain_outbox_messages
+         TO ${appRole}`
+      );
+      const appConnection = new URL(CONNECTION_STRING);
+      appConnection.username = appRole;
+      appConnection.password = appRolePassword;
+      const appPool = createPostgresPool({
+        connectionString: appConnection.toString(),
+        max: 4,
+        applicationName: "ipo-one-live-chain-test"
+      });
+      const adapter = new SandboxChainAdapter({ profile: BASE_SEPOLIA_PROFILE });
+      const observation = {
+        chainId: BASE_SEPOLIA_PROFILE.chainId,
+        transactionHash: hashId("pg_live_chain_tx", "one"),
+        eventOrdinal: 0,
+        blockNumber: "44240000",
+        blockHash: hashId("pg_live_chain_block", "44240000"),
+        obligationId: "obligation_pg_live_chain_001",
+        paymentId: "payment_pg_live_chain_001",
+        assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+        amountMinor: "100",
+        observationStatus: "included",
+        confirmations: 1,
+        observedAt: "2026-07-16T04:00:00.000Z"
+      };
+      const proof = adapter.normalizeObservation(observation);
+      const live = {
+        observation,
+        proof,
+        evidence: adapter.createPaymentEvidence(proof),
+        eventBinding: {
+          evidenceHash: hashId("pg_live_source_evidence", "one"),
+          obligationHash: hashId("testnet_obligation_reference", { obligationId: observation.obligationId }),
+          paymentHash: hashId("testnet_payment_reference", { paymentId: observation.paymentId }),
+          runIdHash: hashId("testnet_run_id", { runId: "pg-live-chain-run-0001" }),
+          sequence: 1
+        },
+        providerSlot: "primary",
+        networkCallsMade: 4,
+        readOnly: true,
+        liveTestnetObservation: true,
+        productionFundsMoved: false,
+        rawProviderPayloadPersisted: false,
+        schemaVersion: "live_testnet_evidence_observation.v1"
+      };
+      try {
+        await assertTenantDatabaseRole(appPool);
+        const store = new PostgresChainObservationStore({
+          pool: appPool,
+          tenantContext: TENANT_CONTEXT,
+          clock: () => new Date("2026-07-16T04:00:01.000Z")
+        });
+        const indexer = new LiveChainIndexer({ profile: BASE_SEPOLIA_PROFILE, store });
+        const first = await indexer.ingest(live);
+        const duplicate = await indexer.ingest(live);
+        assert.equal(first.persisted.replayed, false);
+        assert.equal(duplicate.persisted.replayed, true);
+        assert.equal((await store.listPendingOutbox(BASE_SEPOLIA_PROFILE.chainId)).length, 1);
+        const reconciliation = await store.reconcile({
+          chainId: BASE_SEPOLIA_PROFILE.chainId,
+          adapter
+        });
+        assert.equal(reconciliation.consistent, true);
+        assert.equal(reconciliation.observationCount, 1);
+
+        const otherTenantStore = new PostgresChainObservationStore({
+          pool: appPool,
+          tenantContext: TENANT_TWO_CONTEXT,
+          clock: () => new Date("2026-07-16T04:00:02.000Z")
+        });
+        assert.deepEqual(await otherTenantStore.listReplayInputs(BASE_SEPOLIA_PROFILE.chainId), []);
+        const durable = await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+          "SELECT observation_input, finality_proof, evidence_envelope FROM live_chain_observations"
+        ));
+        assert.equal(durable.rowCount, 1);
+        assert.equal(JSON.stringify(durable.rows).includes("rpcUrl"), false);
+        assert.equal(JSON.stringify(durable.rows).includes("sepolia.base.org"), false);
+        await assert.rejects(
+          () => withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+            "UPDATE live_chain_observations SET finality_proof = '{}'::jsonb"
+          )),
+          /append-only|immutable/
+        );
+      } finally {
+        await appPool.end();
+        await dropAppRole();
+      }
     });
 
     await t.test("a fresh Rail Service reconstructs state and idempotency from PostgreSQL", async () => {

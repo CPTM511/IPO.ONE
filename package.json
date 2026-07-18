@@ -8,9 +8,22 @@
     "node": ">=24.18.0 <25"
   },
   "scripts": {
+    "check:runtime": "node scripts/check-runtime.mjs",
     "test": "node scripts/run-tests.mjs",
-    "test:security": "node --test security/test/server-security.test.mjs security/test/approval-security.test.mjs security/test/abuse-security.test.mjs",
+    "test:security": "node --test security/test/server-security.test.mjs security/test/approval-security.test.mjs security/test/abuse-security.test.mjs security/test/gateway-security.test.mjs",
     "test:postgres": "node scripts/run-postgres-tests.mjs",
+    "test:transport": "node --test apps/tenant-api/test/*.test.mjs apps/agent-mcp/test/*.test.mjs packages/sdk/test/*.test.js",
+    "test:provider": "node --test apps/provider-sandbox/test/*.test.mjs modules/provider-sandbox/test/*.test.js",
+    "agent:handoff:plan": "node apps/agent-mcp/src/handoff-cli.js",
+    "agent:production:call": "node apps/agent-mcp/src/production-quickstart.js",
+    "test:chain:conformance": "node --test modules/chain-adapter/test/chain-conformance.test.js",
+    "test:indexer:reorg": "node --test modules/chain-adapter/test/chain-indexer.test.js",
+    "test:chain:live-unit": "node --test contracts/test/sandbox-evidence-emitter.test.js deploy/testnet/test/ephemeral-key.test.js modules/event-indexer/test/live-testnet-observer.test.js",
+    "testnet:observe:heads": "node deploy/testnet/observe-heads.mjs",
+    "testnet:key:provision": "node deploy/testnet/provision-key.mjs",
+    "testnet:key:destroy": "node deploy/testnet/destroy-key.mjs",
+    "testnet:emergency:retire": "node deploy/testnet/emergency-retire.mjs",
+    "testnet:run:once": "node deploy/testnet/run-emitter-once.mjs",
     "lint:boundaries": "node scripts/lint-boundaries.mjs",
     "check:schemas": "node scripts/check-schemas.mjs",
     "check:openapi": "node scripts/check-openapi.mjs",
@@ -19,19 +32,31 @@
     "check:launch-policy": "node scripts/check-launch-policy.mjs",
     "check:approval-policy": "node scripts/check-approval-policy.mjs",
     "check:abuse-policy": "node scripts/check-abuse-policy.mjs",
+    "check:operations-policy": "node scripts/check-operations-policy.mjs",
+    "check:tenant-protocol": "node scripts/check-tenant-protocol.mjs",
     "launch:verify": "node scripts/verify-launch-evidence.mjs",
     "db:migrate": "node scripts/migrate.mjs up",
     "db:rollback": "node scripts/migrate.mjs down",
     "db:status": "node scripts/migrate.mjs status",
     "smoke:api": "node scripts/smoke-api.mjs",
-    "check": "pnpm run lint:boundaries && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm run check:deploy && pnpm run check:launch-policy && pnpm run check:approval-policy && pnpm run check:abuse-policy && pnpm test",
+    "check": "pnpm run check:runtime && pnpm run lint:boundaries && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm run check:deploy && pnpm run check:launch-policy && pnpm run check:approval-policy && pnpm run check:abuse-policy && pnpm run check:operations-policy && pnpm run check:tenant-protocol && pnpm test",
     "dev": "node apps/api/src/server.js",
     "dev:api": "node apps/api/src/server.js",
+    "pilot:start": "node apps/private-pilot/src/start.js",
+    "pilot:start:production": "node apps/private-pilot/src/start-production.js",
+    "pilot:bootstrap:production": "node apps/private-pilot/src/bootstrap-production.js",
+    "pilot:profile:check": "node apps/private-pilot/src/profile-check.js",
+    "pilot:agent:prove": "node apps/private-pilot/src/agent-account-proof.js",
+    "pilot:agent": "node apps/private-pilot/src/agent-stdio.js",
     "demo": "node packages/mvp-flow/src/run-vertical-slice.js",
     "demo:vertical-slice": "node packages/mvp-flow/src/run-vertical-slice.js"
   },
   "dependencies": {
     "jose": "6.2.3",
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "viem": "2.55.0"
+  },
+  "devDependencies": {
+    "solc": "0.8.30"
   }
 }

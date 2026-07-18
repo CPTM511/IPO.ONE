@@ -39,6 +39,8 @@
       "enum": [
         "tenant_owner",
         "developer",
+        "principal_controller",
+        "human_borrower",
         "agent_runtime",
         "risk_operator",
         "operations_operator",

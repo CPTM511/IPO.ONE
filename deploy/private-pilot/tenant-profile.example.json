@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "private_pilot_tenant_profile.v1",
+  "mode": "local_no_funds",
+  "tenantId": "tenant_design_partner_sandbox_01",
+  "syntheticDataOnly": true,
+  "realFundsEnabled": false,
+  "remoteAccessEnabled": false,
+  "riskPortfolioId": "risk_portfolio_design_partner_sandbox_01",
+  "servicingQueueId": "servicing_queue_design_partner_sandbox_01",
+  "identities": {
+    "borrower": {
+      "actorId": "actor_dp01_human_borrower"
+    },
+    "controller": {
+      "actorId": "actor_dp01_principal_controller"
+    },
+    "agent": {
+      "actorId": "actor_dp01_agent_runtime"
+    },
+    "risk": {
+      "actorId": "actor_dp01_risk_operations"
+    }
+  }
+}

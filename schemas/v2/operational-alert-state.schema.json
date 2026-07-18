@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/operational-alert-state.schema.json",
+  "title": "IPO.ONE Durable Operational Alert State v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "alertId", "alertFingerprint", "alertType", "signalType", "severity",
+    "route", "ownerRole", "readinessEffect", "runbookRef", "actionCodes",
+    "scopeRefHash", "occurrenceCount", "firstObservedAt", "lastObservedAt",
+    "evidenceRefHashes", "evidenceTruncated", "status", "deliveryStatus",
+    "requiresNamedOwner", "automaticActionTaken", "productionReleaseAuthority",
+    "environment", "sandboxOnly", "productionFundsMoved", "policyVersion",
+    "version", "createdAt", "updatedAt", "schemaVersion"
+  ],
+  "properties": {
+    "alertId": { "type": "string", "pattern": "^operational_alert_[0-9a-f]{64}$" },
+    "alertFingerprint": { "$ref": "#/$defs/contentHash" },
+    "alertType": {
+      "enum": [
+        "data_integrity_incident", "chain_finality_incident", "break_glass_incident",
+        "admission_control_incident", "lifecycle_availability_incident",
+        "servicing_default_case", "servicing_writeoff_review"
+      ]
+    },
+    "signalType": {
+      "enum": [
+        "reconciliation_failed", "chain_payment_invalidated", "break_glass_activated",
+        "admission_control_unavailable", "synthetic_lifecycle_failed",
+        "servicing_defaulted", "servicing_written_off"
+      ]
+    },
+    "severity": { "enum": ["critical", "high", "medium", "low"] },
+    "route": { "enum": ["page", "operations_queue", "risk_queue"] },
+    "ownerRole": { "type": "string", "minLength": 2, "maxLength": 96 },
+    "readinessEffect": { "enum": ["fail_closed", "review_required", "observe"] },
+    "runbookRef": { "type": "string", "pattern": "^OPS-RUNBOOK-[A-Z0-9-]{3,80}$" },
+    "actionCodes": {
+      "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+      "items": {
+        "enum": [
+          "preserve_evidence", "stop_affected_writes", "open_incident",
+          "run_reconciliation", "verify_chain_finality", "review_break_glass_scope",
+          "review_admission_store", "run_synthetic_diagnostics", "open_servicing_case",
+          "review_servicing_options", "confirm_dual_control_evidence"
+        ]
+      }
+    },
+    "scopeRefHash": { "$ref": "#/$defs/contentHash" },
+    "occurrenceCount": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "firstObservedAt": { "$ref": "#/$defs/timestamp" },
+    "lastObservedAt": { "$ref": "#/$defs/timestamp" },
+    "evidenceRefHashes": {
+      "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true,
+      "items": { "$ref": "#/$defs/contentHash" }
+    },
+    "evidenceTruncated": { "type": "boolean" },
+    "status": { "enum": ["open", "acknowledged", "resolved"] },
+    "acknowledgedAt": { "$ref": "#/$defs/timestamp" },
+    "acknowledgedByRefHash": { "$ref": "#/$defs/contentHash" },
+    "resolvedAt": { "$ref": "#/$defs/timestamp" },
+    "resolvedByRefHash": { "$ref": "#/$defs/contentHash" },
+    "resolutionCode": {
+      "type": "string", "minLength": 2, "maxLength": 96,
+      "pattern": "^[a-z][a-z0-9_]+$"
+    },
+    "deliveryStatus": { "const": "unconfigured" },
+    "requiresNamedOwner": { "const": true },
+    "automaticActionTaken": { "const": false },
+    "productionReleaseAuthority": { "const": false },
+    "environment": { "const": "closed-pilot" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "policyVersion": { "const": "ops_001b.v1" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "createdAt": { "$ref": "#/$defs/timestamp" },
+    "updatedAt": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "operational_alert_state.v1" }
+  },
+  "oneOf": [
+    {
+      "properties": { "status": { "const": "open" } },
+      "not": {
+        "anyOf": [
+          { "required": ["acknowledgedAt"] },
+          { "required": ["acknowledgedByRefHash"] },
+          { "required": ["resolvedAt"] },
+          { "required": ["resolvedByRefHash"] },
+          { "required": ["resolutionCode"] }
+        ]
+      }
+    },
+    {
+      "properties": { "status": { "const": "acknowledged" } },
+      "required": ["acknowledgedAt", "acknowledgedByRefHash"],
+      "not": {
+        "anyOf": [
+          { "required": ["resolvedAt"] },
+          { "required": ["resolvedByRefHash"] },
+          { "required": ["resolutionCode"] }
+        ]
+      }
+    },
+    {
+      "properties": { "status": { "const": "resolved" } },
+      "required": [
+        "acknowledgedAt", "acknowledgedByRefHash", "resolvedAt",
+        "resolvedByRefHash", "resolutionCode"
+      ]
+    }
+  ],
+  "$defs": {
+    "contentHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

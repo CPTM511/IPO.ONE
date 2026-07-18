@@ -229,6 +229,7 @@ export function createApprovalDecision({ proposal, context, membership, decision
 export function createApprovalExecution({
   proposal,
   authorizationDecision,
+  approvalExecutionId: requestedApprovalExecutionId,
   idempotencyKeyHash,
   businessEventIds,
   resultHash,
@@ -243,7 +244,9 @@ export function createApprovalExecution({
   ) {
     throw approvalError("approved_execution_rejected", "execution authority does not match proposal");
   }
-  const approvalExecutionId = createOperationalId("approval_execution");
+  const approvalExecutionId = requestedApprovalExecutionId === undefined
+    ? createOperationalId("approval_execution")
+    : assertApprovalIdentifier("approvalExecutionId", requestedApprovalExecutionId);
   const immutable = {
     approvalExecutionId,
     tenantId: proposal.tenantId,

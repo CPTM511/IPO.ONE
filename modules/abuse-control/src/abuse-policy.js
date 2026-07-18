@@ -39,10 +39,15 @@ export const HARD_CEILINGS = deepFreezeAbuse({
     [RequestMetric.UPSTREAM_COST_UNITS]: 100
   },
   resources: {
+    [ResourceKind.AGENT_SUBJECTS]: 500,
+    [ResourceKind.MANDATES]: 1_000,
+    [ResourceKind.CREDIT_INTENTS]: 1_000,
+    [ResourceKind.CREDIT_DECISIONS]: 1_000,
     [ResourceKind.OPEN_OBLIGATIONS]: 1_000,
     [ResourceKind.PROVIDERS]: 100,
     [ResourceKind.CREDENTIALS]: 50,
-    [ResourceKind.ACCESS_GRANTS]: 500
+    [ResourceKind.ACCESS_GRANTS]: 500,
+    [ResourceKind.PILOT_FEEDBACK_RECORDS]: 10_000
   },
   upstreamCostUnitsPerMinute: 1_000,
   admissionLeaseMs: 60_000,
@@ -133,8 +138,16 @@ export const QUOTA_PROFILES = deepFreezeAbuse({
   [QuotaClass.CREDENTIAL]: profile({
     quotaClass: QuotaClass.CREDENTIAL,
     windowMs: 10 * MINUTE,
-    rate: { network: 10, account: 10, service: 1_000 },
-    concurrency: { service: 32 },
+    rate: {
+      actor: 10,
+      client: 10,
+      tenant: 50,
+      operation: 50,
+      service: 1_000,
+      network: 10,
+      account: 10
+    },
+    concurrency: { actor: 2, tenant: 16, service: 32 },
     metrics: { [RequestMetric.EXECUTION_MS]: 10_000 },
     admissionLeaseMs: 12_000
   }),
@@ -171,18 +184,44 @@ export const QUOTA_PROFILES = deepFreezeAbuse({
 const CLASSIFIED_OPERATIONS = Object.freeze({
   [QuotaClass.READ]: [
     "pilotReadApproval",
+    "pilotReadAgentAccountBinding",
     "pilotReadAgentSelf",
+    "pilotReadHumanSelf",
+    "pilotReadWorkspaceResume",
+    "pilotReadConsent",
+    "pilotReadIdentityReference",
+    "pilotReadMandate",
+    "pilotReadCreditApplication",
     "pilotReadTenantRisk",
+    "pilotReadPilotHealth",
+    "pilotReadPilotFeedbackSummary",
+    "pilotReadServicingQueue",
     "pilotReadProviderIntent",
-    "pilotReadEvidence"
+    "pilotReadEvidence",
+    "pilotReadOwnObligation",
+    "pilotReadOwnObligationEvidence"
   ],
   [QuotaClass.MUTATION]: [
     "pilotCreateAgentSubject",
+    "pilotCreateHumanSubject",
+    "pilotCreateConsent",
+    "pilotRevokeConsent",
     "pilotCreateDraftMandate",
-    "pilotAcknowledgeProviderIntent"
+    "pilotActivateSandboxMandate",
+    "pilotRevokeDraftMandate",
+    "pilotAcknowledgeProviderIntent",
+    "pilotSubmitPilotFeedback"
+  ],
+  [QuotaClass.CREDENTIAL]: [
+    "pilotCreateAgentAccountChallenge",
+    "pilotSubmitAgentAccountProof"
   ],
   [QuotaClass.ECONOMIC]: [
+    "pilotAcceptCreditOffer",
+    "pilotExecuteSandboxObligation",
+    "pilotPostSandboxRepayment",
     "pilotRequestCredit",
+    "pilotEvaluateCreditApplication",
     "pilotSubmitSpend",
     "pilotCaptureRevenue",
     "pilotAutoRepay",
@@ -196,11 +235,19 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotReduceCreditLimit",
     "pilotIncreaseCreditLimit",
     "pilotUnfreezeSubject",
+    "pilotRestructureSandboxObligation",
+    "pilotRepurchaseSandboxObligation",
+    "pilotWriteOffSandboxObligation",
     "workerPlanProjectionRepair",
     "workerExecuteProjectionRepair"
   ],
   [QuotaClass.BATCH]: ["pilotExportAudit", "workerRunReconciliation"],
-  [QuotaClass.WORKER]: ["workerPublishOutbox", "workerExpireApproval", "workerProcessInbox"]
+  [QuotaClass.WORKER]: [
+    "workerPublishOutbox",
+    "workerExpireApproval",
+    "workerProcessInbox",
+    "workerAdvanceSandboxServicing"
+  ]
 });
 
 const authorizationPolicies = new Map(TENANT_OPERATION_POLICIES.map((item) => [item.operationId, item]));

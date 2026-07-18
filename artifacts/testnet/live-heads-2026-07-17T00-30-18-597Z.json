@@ -1,0 +1,34 @@
+{
+  "observedAt": "2026-07-17T00:30:18.597Z",
+  "observations": [
+    {
+      "chainId": "eip155:1952",
+      "providerSlot": "primary",
+      "blockNumber": "35789380",
+      "blockHash": "0x86821a1bad7ed94fe7478cde4d6018fc26e61af5a5abff17715c271d35dbf8e0",
+      "blockTimestamp": "2026-07-17T00:30:17.000Z",
+      "observedAt": "2026-07-17T00:30:17.350Z",
+      "networkCallsMade": 2,
+      "readOnly": true,
+      "liveTestnetObservation": true,
+      "productionFundsMoved": false,
+      "schemaVersion": "live_testnet_head_observation.v1"
+    },
+    {
+      "chainId": "eip155:84532",
+      "providerSlot": "primary",
+      "blockNumber": "44239965",
+      "blockHash": "0xafcc60e2d5789253cb02cb659550ff17cacaa7d65c4cf14ccb7ca9d493ee51db",
+      "blockTimestamp": "2026-07-17T00:30:18.000Z",
+      "observedAt": "2026-07-17T00:30:18.597Z",
+      "networkCallsMade": 2,
+      "readOnly": true,
+      "liveTestnetObservation": true,
+      "productionFundsMoved": false,
+      "schemaVersion": "live_testnet_head_observation.v1"
+    }
+  ],
+  "allReadOnly": true,
+  "productionFundsMoved": false,
+  "schemaVersion": "live_testnet_head_observation_set.v1"
+}

@@ -1,4 +1,4 @@
-import { AuthenticationEventType } from "./constants.js";
+import { AuthenticationEventType, ClientAuthenticationMethod } from "./constants.js";
 import { createAuthenticationContext } from "./authentication-context.js";
 import {
   assertBoundedString,
@@ -10,6 +10,11 @@ import {
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const SESSION_COOKIE_NAME = "__Host-ipo_one_session";
+const CSRF_BOOTSTRAP_COOKIE_NAME = "__Host-ipo_one_csrf_bootstrap";
+const HUMAN_AUTHENTICATION_METHODS = new Set([
+  ClientAuthenticationMethod.OIDC_PKCE_BFF,
+  ClientAuthenticationMethod.SIWE
+]);
 
 function exactOrigin(value) {
   let parsed;
@@ -51,9 +56,41 @@ function cookie(value, expiresAt) {
   });
 }
 
+export function csrfBootstrapCookie(value, expiresAt) {
+  const token = assertBoundedString("csrfToken", value, {
+    minimum: 32,
+    maximum: 128,
+    pattern: /^[A-Za-z0-9_-]+$/
+  });
+  return Object.freeze({
+    name: CSRF_BOOTSTRAP_COOKIE_NAME,
+    value: token,
+    secure: true,
+    httpOnly: true,
+    sameSite: "Strict",
+    path: "/",
+    domain: undefined,
+    expiresAt
+  });
+}
+
 export function expiredSessionCookie() {
   return Object.freeze({
     name: SESSION_COOKIE_NAME,
+    value: "",
+    secure: true,
+    httpOnly: true,
+    sameSite: "Strict",
+    path: "/",
+    domain: undefined,
+    maxAge: 0,
+    expiresAt: "1970-01-01T00:00:00.000Z"
+  });
+}
+
+export function expiredCsrfBootstrapCookie() {
+  return Object.freeze({
+    name: CSRF_BOOTSTRAP_COOKIE_NAME,
     value: "",
     secure: true,
     httpOnly: true,
@@ -111,6 +148,7 @@ export class InMemoryHumanSessionStore {
       actorId: assertSafeIdentifier("actorId", input.actorId),
       actorType: assertSafeIdentifier("actorType", input.actorType),
       clientId: assertSafeIdentifier("clientId", input.clientId),
+      authenticationMethod: input.authenticationMethod ?? ClientAuthenticationMethod.OIDC_PKCE_BFF,
       credentialId: assertSafeIdentifier("credentialId", input.credentialId),
       credentialVersion: input.credentialVersion,
       policyVersion: assertSafeIdentifier("policyVersion", input.policyVersion),
@@ -128,6 +166,9 @@ export class InMemoryHumanSessionStore {
     };
     if (!Number.isSafeInteger(session.credentialVersion) || session.credentialVersion < 1) {
       throw authenticationError("invalid_authentication_input", "credentialVersion is invalid");
+    }
+    if (!HUMAN_AUTHENTICATION_METHODS.has(session.authenticationMethod)) {
+      throw authenticationError("invalid_authentication_input", "Human authentication method is invalid");
     }
     this.#event(AuthenticationEventType.SESSION_CREATED, session, "human_login", now);
     this.#sessions.set(sessionRefHash, session);
@@ -238,7 +279,7 @@ export class InMemoryHumanSessionStore {
       capabilities: session.capabilities,
       roles: session.roles,
       tokenJtiHash: session.tokenJtiHash,
-      authenticationMethod: "oidc_pkce_bff",
+      authenticationMethod: session.authenticationMethod,
       senderConstraintMethod: "host_session",
       authenticatedAt: now,
       authTime: session.authTime,
@@ -285,4 +326,4 @@ export class InMemoryHumanSessionStore {
   }
 }
 
-export { SESSION_COOKIE_NAME };
+export { CSRF_BOOTSTRAP_COOKIE_NAME, SESSION_COOKIE_NAME };

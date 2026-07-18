@@ -9,6 +9,10 @@ import {
 } from "./postgres-tenant-context.js";
 
 const RETRYABLE_TRANSACTION_CODES = new Set(["40001", "40P01"]);
+const WRITE_ISOLATION_LEVELS = Object.freeze({
+  serializable: "SERIALIZABLE",
+  read_committed: "READ COMMITTED"
+});
 const MAX_REPOSITORY_STRING_LENGTH = 2048;
 const MAX_EVENT_PAYLOAD_BYTES = 64 * 1024;
 const MAX_COMMAND_PAYLOAD_BYTES = 1024 * 1024;
@@ -21,6 +25,12 @@ function clone(value) {
 function assertString(name, value) {
   if (typeof value !== "string" || value.length === 0 || value.length > MAX_REPOSITORY_STRING_LENGTH) {
     throw new DomainError("invalid_repository_input", `${name} must be a non-empty string`, { name });
+  }
+}
+
+function assertQueryable(queryable) {
+  if (!queryable || typeof queryable.query !== "function") {
+    throw new DomainError("postgres_client_required", "an active pg-compatible transaction client is required");
   }
 }
 
@@ -133,6 +143,7 @@ export class PostgresEventRepository {
     sourceSystem = "ipo.one.postgres",
     outboxTopic = "ipo.one.domain-events.v1",
     transactionRetries = 3,
+    writeIsolation = "serializable",
     maxOutboxAttempts = 12,
     clock = () => new Date(),
     faultInjector
@@ -145,6 +156,9 @@ export class PostgresEventRepository {
     if (!Number.isSafeInteger(transactionRetries) || transactionRetries < 0 || transactionRetries > 10) {
       throw new DomainError("invalid_transaction_retries", "transactionRetries must be an integer from 0 through 10");
     }
+    if (!Object.hasOwn(WRITE_ISOLATION_LEVELS, writeIsolation)) {
+      throw new DomainError("invalid_transaction_isolation", "writeIsolation must be a supported closed value");
+    }
     if (!Number.isSafeInteger(maxOutboxAttempts) || maxOutboxAttempts < 1) {
       throw new DomainError("invalid_outbox_attempts", "maxOutboxAttempts must be a positive safe integer");
     }
@@ -153,6 +167,7 @@ export class PostgresEventRepository {
     this.sourceSystem = sourceSystem;
     this.outboxTopic = outboxTopic;
     this.transactionRetries = transactionRetries;
+    this.writeIsolation = WRITE_ISOLATION_LEVELS[writeIsolation];
     this.maxOutboxAttempts = maxOutboxAttempts;
     this.clock = clock;
     this.faultInjector = faultInjector;
@@ -162,6 +177,30 @@ export class PostgresEventRepository {
     assertString("idempotencyKey", idempotencyKey);
     assertString("commandHash", commandHash);
     return this.withTenantRead((client) => this.#findCommand(client, { idempotencyKey, commandHash }));
+  }
+
+  async findCommandInTransaction(client, {
+    idempotencyKey,
+    commandHash,
+    expectedAggregateType,
+    expectedAggregateId,
+    lock = false
+  }) {
+    assertQueryable(client);
+    assertString("idempotencyKey", idempotencyKey);
+    assertString("commandHash", commandHash);
+    if (expectedAggregateType !== undefined) assertString("expectedAggregateType", expectedAggregateType);
+    if (expectedAggregateId !== undefined) assertString("expectedAggregateId", expectedAggregateId);
+    if (typeof lock !== "boolean") {
+      throw new DomainError("invalid_repository_input", "lock must be a boolean", { name: "lock" });
+    }
+    return this.#findCommand(client, {
+      idempotencyKey,
+      commandHash,
+      expectedAggregateType,
+      expectedAggregateId,
+      lock
+    });
   }
 
   async withTenantRead(operation) {
@@ -222,7 +261,16 @@ export class PostgresEventRepository {
     };
   }
 
-  async appendCommandBatch({
+  async appendCommandBatch(input) {
+    return this.#appendCommandBatch(input);
+  }
+
+  async appendCommandBatchInTransaction(client, input) {
+    assertQueryable(client);
+    return this.#appendCommandBatch(input, client);
+  }
+
+  async #appendCommandBatch({
     aggregateType,
     aggregateId,
     idempotencyKey,
@@ -230,7 +278,7 @@ export class PostgresEventRepository {
     events,
     response,
     applyProjection
-  }) {
+  }, transactionClient) {
     for (const [name, value] of Object.entries({ aggregateType, aggregateId, idempotencyKey, commandHash })) {
       assertString(name, value);
     }
@@ -294,7 +342,7 @@ export class PostgresEventRepository {
       throw new DomainError("duplicate_command_event", "a command cannot contain duplicate event ids");
     }
 
-    return this.#withSerializableTransaction(async (client) => {
+    const operation = async (client) => {
       const insertedCommand = await client.query(
         `INSERT INTO command_idempotency(
            idempotency_key, command_hash, aggregate_type, aggregate_id, status
@@ -596,7 +644,10 @@ export class PostgresEventRepository {
         response: clone(storedResponse),
         replayed: false
       };
-    });
+    };
+    return transactionClient
+      ? operation(transactionClient)
+      : this.#withSerializableTransaction(operation);
   }
 
   async #findCommand(
@@ -736,6 +787,23 @@ export class PostgresEventRepository {
         WHERE aggregate_type = $1 AND aggregate_id = $2`,
       [aggregateType, aggregateId]
     ));
+    return result.rowCount === 0 ? 0 : toSafeVersion(result.rows[0].current_version);
+  }
+
+  async getStreamVersionInTransaction(client, { aggregateType, aggregateId, lock = false }) {
+    assertQueryable(client);
+    assertString("aggregateType", aggregateType);
+    assertString("aggregateId", aggregateId);
+    if (typeof lock !== "boolean") {
+      throw new DomainError("invalid_repository_input", "lock must be a boolean", { name: "lock" });
+    }
+    const result = await client.query(
+      `SELECT current_version
+         FROM aggregate_stream_heads
+        WHERE aggregate_type = $1 AND aggregate_id = $2
+        ${lock ? "FOR UPDATE" : ""}`,
+      [aggregateType, aggregateId]
+    );
     return result.rowCount === 0 ? 0 : toSafeVersion(result.rows[0].current_version);
   }
 
@@ -930,7 +998,7 @@ export class PostgresEventRepository {
       const client = await this.pool.connect();
       let retry = false;
       try {
-        await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+        await client.query(`BEGIN ISOLATION LEVEL ${this.writeIsolation}`);
         await setTenantTransactionContext(client, this.tenantContext);
         const result = await operation(client);
         await client.query("COMMIT");

@@ -634,20 +634,33 @@ export class PostgresReconciliationService {
         SELECT 'principal', id FROM principals
         UNION ALL SELECT 'subject', id FROM subjects
         UNION ALL SELECT 'account_binding', id FROM account_bindings
+        UNION ALL SELECT 'agent_account_challenge', id FROM agent_account_challenges
+        UNION ALL SELECT 'agent_account_proof_attempt', id FROM agent_account_proof_attempts
         UNION ALL SELECT 'mandate', id FROM mandates
         UNION ALL SELECT 'mandate_reservation', id FROM mandate_reservations
         UNION ALL SELECT 'mandate_release', id FROM mandate_releases
         UNION ALL SELECT 'provider', id FROM providers
+        UNION ALL SELECT 'provider_intent_delivery', id FROM provider_intent_deliveries
+        UNION ALL SELECT 'provider_intent_acknowledgement', id FROM provider_intent_acknowledgements
+        UNION ALL SELECT 'provider_callback_inbox', callback_id FROM provider_callback_inbox
         UNION ALL SELECT 'spend_policy', id FROM spend_policies
         UNION ALL SELECT 'spend_request', id FROM spend_requests
         UNION ALL SELECT 'ledger_account', id FROM ledger_accounts
         UNION ALL SELECT 'ledger_transaction', id FROM ledger_transactions
         UNION ALL SELECT 'lockbox', id FROM lockboxes
         UNION ALL SELECT 'obligation', id FROM obligations
+        UNION ALL SELECT 'sandbox_execution_receipt', id FROM sandbox_execution_receipts
+        UNION ALL SELECT 'sandbox_servicing_action', id FROM sandbox_servicing_actions
         UNION ALL SELECT 'repayment', id FROM repayment_events
+        UNION ALL SELECT 'consent_record', id FROM consent_records
+        UNION ALL SELECT 'human_identity_reference', id FROM human_identity_references
+        UNION ALL SELECT 'credit_intent', id FROM credit_intents
+        UNION ALL SELECT 'credit_offer', id FROM credit_offers
+        UNION ALL SELECT 'credit_offer_acceptance', id FROM credit_offer_acceptances
         UNION ALL SELECT 'credit_line', id FROM credit_lines
         UNION ALL SELECT 'risk_decision', id FROM risk_decisions
         UNION ALL SELECT 'admin_action', id FROM admin_actions
+        UNION ALL SELECT 'pilot_feedback_record', id FROM pilot_feedback_records
         UNION ALL SELECT 'approval_proposal', id FROM approval_proposals
         UNION ALL SELECT 'approval_decision', id FROM approval_decisions
         UNION ALL SELECT 'approval_execution', id FROM approval_executions
@@ -820,14 +833,40 @@ export class PostgresReconciliationService {
 
   async #checkObligations(add) {
     const stateResult = await this.#read(`
-      SELECT id, status, amount_minor::text, outstanding_minor::text,
-             repaid_amount_minor::text, accrued_fees_minor::text
+      SELECT id, schema_version, status, amount_minor::text, outstanding_minor::text,
+             repaid_amount_minor::text, accrued_fees_minor::text,
+             accrued_interest_minor::text, outstanding_interest_minor::text,
+             outstanding_fees_minor::text, total_repaid_minor::text
         FROM obligations
        WHERE amount_minor <> outstanding_minor + repaid_amount_minor
           OR outstanding_minor < 0
           OR repaid_amount_minor < 0
-          OR (status = 'fully_repaid' AND outstanding_minor <> 0)
-          OR (status IN ('active', 'partially_repaid', 'overdue', 'defaulted') AND outstanding_minor <= 0)
+          OR (
+            schema_version = 'obligation.v1'
+            AND (
+              (status = 'fully_repaid' AND outstanding_minor <> 0)
+              OR (status IN ('active', 'partially_repaid', 'overdue', 'defaulted') AND outstanding_minor <= 0)
+            )
+          )
+          OR (
+            schema_version = 'obligation.v2'
+            AND (
+              accrued_interest_minor < outstanding_interest_minor
+              OR accrued_fees_minor < outstanding_fees_minor
+              OR total_repaid_minor < repaid_amount_minor
+              OR (
+                status = 'fully_repaid'
+                AND outstanding_minor + outstanding_interest_minor + outstanding_fees_minor <> 0
+              )
+              OR (
+                status IN (
+                  'active', 'partially_repaid', 'overdue', 'delinquent', 'defaulted',
+                  'restructured', 'repurchased', 'written_off'
+                )
+                AND outstanding_minor + outstanding_interest_minor + outstanding_fees_minor <= 0
+              )
+            )
+          )
        ORDER BY id
        LIMIT $1
     `, [this.maxDiscrepancies]);
@@ -841,7 +880,11 @@ export class PostgresReconciliationService {
           principalAmountMinor: row.amount_minor,
           outstandingMinor: row.outstanding_minor,
           repaidMinor: row.repaid_amount_minor,
-          accruedFeesMinor: row.accrued_fees_minor
+          accruedFeesMinor: row.accrued_fees_minor,
+          accruedInterestMinor: row.accrued_interest_minor,
+          outstandingInterestMinor: row.outstanding_interest_minor,
+          outstandingFeesMinor: row.outstanding_fees_minor,
+          totalRepaidMinor: row.total_repaid_minor
         }
       });
     }
@@ -850,7 +893,8 @@ export class PostgresReconciliationService {
       SELECT o.id, o.repaid_amount_minor::text AS obligation_repaid_minor,
              COALESCE(SUM(r.amount_minor), 0)::text AS repayment_event_minor
         FROM obligations o
-        LEFT JOIN repayment_events r ON r.obligation_id = o.id
+        LEFT JOIN repayment_events r ON r.obligation_id = o.id AND r.schema_version = 'repayment.v1'
+       WHERE o.schema_version = 'obligation.v1'
        GROUP BY o.id
       HAVING o.repaid_amount_minor <> COALESCE(SUM(r.amount_minor), 0)
        ORDER BY o.id
@@ -867,6 +911,36 @@ export class PostgresReconciliationService {
         }
       });
     }
+
+    const sharedRepaymentResult = await this.#read(`
+      SELECT o.id,
+             o.repaid_amount_minor::text AS obligation_principal_repaid_minor,
+             o.total_repaid_minor::text AS obligation_total_repaid_minor,
+             COALESCE(SUM(r.applied_principal_minor), 0)::text AS event_principal_repaid_minor,
+             COALESCE(SUM(r.applied_minor), 0)::text AS event_total_repaid_minor
+        FROM obligations o
+        LEFT JOIN repayment_events r
+          ON r.obligation_id = o.id AND r.schema_version = 'repayment.v2'
+       WHERE o.schema_version = 'obligation.v2'
+       GROUP BY o.id
+      HAVING o.repaid_amount_minor <> COALESCE(SUM(r.applied_principal_minor), 0)
+          OR o.total_repaid_minor <> COALESCE(SUM(r.applied_minor), 0)
+       ORDER BY o.id
+       LIMIT $1
+    `, [this.maxDiscrepancies]);
+    for (const row of sharedRepaymentResult.rows) {
+      add({
+        checkCode: "shared_obligation_repayment_mismatch",
+        entityType: "obligation",
+        entityId: row.id,
+        details: {
+          obligationPrincipalRepaidMinor: row.obligation_principal_repaid_minor,
+          obligationTotalRepaidMinor: row.obligation_total_repaid_minor,
+          eventPrincipalRepaidMinor: row.event_principal_repaid_minor,
+          eventTotalRepaidMinor: row.event_total_repaid_minor
+        }
+      });
+    }
   }
 
   async #checkCreditExposure(add) {
@@ -875,7 +949,11 @@ export class PostgresReconciliationService {
         SELECT o.subject_id, o.asset_id, SUM(o.outstanding_minor) AS outstanding_minor
           FROM obligations o
           JOIN subjects s ON s.id = o.subject_id AND s.subject_type = 'agent'
-         WHERE o.status IN ('created', 'active', 'partially_repaid', 'overdue', 'defaulted')
+         WHERE o.status IN (
+           'created', 'active', 'partially_repaid', 'overdue', 'delinquent', 'defaulted',
+           'restructured', 'repurchased', 'written_off'
+         )
+           AND (o.schema_version = 'obligation.v1' OR o.execution_status = 'executed')
          GROUP BY o.subject_id, o.asset_id
       )
       SELECT

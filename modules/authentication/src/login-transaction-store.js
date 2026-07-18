@@ -1,4 +1,11 @@
-import { sha256Base64Url, assertBoundedString, authenticationError, constantTimeEqual, randomOpaqueValue } from "./security-utils.js";
+import {
+  sha256Base64Url,
+  assertBoundedString,
+  assertSafeIdentifier,
+  authenticationError,
+  constantTimeEqual,
+  randomOpaqueValue
+} from "./security-utils.js";
 
 const TRANSACTION_COOKIE_NAME = "__Host-ipo_one_login";
 
@@ -9,7 +16,13 @@ function exactRedirectUri(value) {
   } catch {
     throw authenticationError("oidc_redirect_rejected", "OIDC redirect URI is invalid");
   }
-  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash) {
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.hash ||
+    parsed.search.length > 2_048
+  ) {
     throw authenticationError("oidc_redirect_rejected", "OIDC redirect URI is invalid");
   }
   return parsed.href;
@@ -33,7 +46,7 @@ export class InMemoryLoginTransactionStore {
     this.maximumTransactions = maximumTransactions;
   }
 
-  create({ redirectUri, now = new Date() }) {
+  create({ redirectUri, providerId = "oidc", now = new Date() }) {
     this.#prune(now);
     if (this.#transactions.size >= this.maximumTransactions) {
       throw authenticationError("oidc_transaction_capacity_exceeded", "login transaction capacity is exhausted");
@@ -44,6 +57,7 @@ export class InMemoryLoginTransactionStore {
     const codeVerifier = randomOpaqueValue(48);
     const reference = this.referenceHasher.hash("oidc.transaction", handle);
     this.#transactions.set(reference, {
+      providerId: assertSafeIdentifier("providerId", providerId),
       stateRefHash: this.referenceHasher.hash("oidc.state", state),
       nonce,
       codeVerifier,
@@ -69,26 +83,30 @@ export class InMemoryLoginTransactionStore {
     });
   }
 
-  consume({ handle, state, redirectUri, now = new Date() }) {
+  consume({ handle, state, redirectUri, providerId = "oidc", now = new Date() }) {
     const reference = this.referenceHasher.hash(
       "oidc.transaction",
       assertBoundedString("transaction handle", handle, { minimum: 32, maximum: 128 })
     );
-    const transaction = this.#transactions.get(reference);
-    this.#transactions.delete(reference);
-    if (!transaction || new Date(transaction.expiresAt) <= now) {
-      throw authenticationError("oidc_transaction_rejected", "login transaction is not active");
-    }
     const suppliedState = this.referenceHasher.hash(
       "oidc.state",
       assertBoundedString("state", state, { minimum: 32, maximum: 128 })
     );
+    const checkedProvider = assertSafeIdentifier("providerId", providerId);
+    const checkedRedirect = exactRedirectUri(redirectUri);
+    const transaction = this.#transactions.get(reference);
+    if (!transaction || new Date(transaction.expiresAt) <= now) {
+      if (transaction) this.#transactions.delete(reference);
+      throw authenticationError("oidc_transaction_rejected", "login transaction is not active");
+    }
     if (
+      transaction.providerId !== checkedProvider ||
       !constantTimeEqual(suppliedState, transaction.stateRefHash) ||
-      exactRedirectUri(redirectUri) !== transaction.redirectUri
+      checkedRedirect !== transaction.redirectUri
     ) {
       throw authenticationError("oidc_transaction_rejected", "login transaction validation failed");
     }
+    this.#transactions.delete(reference);
     return Object.freeze({ ...transaction });
   }
 

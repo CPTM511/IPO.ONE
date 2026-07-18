@@ -1,0 +1,754 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/tenant-protocol-catalog.schema.json",
+  "title": "IPO.ONE Tenant Protocol Catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol",
+    "protocolVersion",
+    "maturity",
+    "availability",
+    "compatibility",
+    "operations",
+    "safety",
+    "schemaVersion"
+  ],
+  "properties": {
+    "protocol": { "const": "IPO.ONE" },
+    "protocolVersion": { "const": "tenant_protocol.v1" },
+    "maturity": { "const": "local_non_funds" },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabledTransports",
+        "publicEndpointEnabled",
+        "authenticatedHttpEnabled",
+        "authenticatedHttpProfile",
+        "mcpStdioLocalEnabled",
+        "mcpA2aEnabled",
+        "authenticationContextSource",
+        "networkContextSource"
+      ],
+      "properties": {
+        "enabledTransports": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["local_in_process", "authenticated_http_loopback", "mcp_stdio_local"]
+          }
+        },
+        "publicEndpointEnabled": { "const": false },
+        "authenticatedHttpEnabled": { "const": true },
+        "authenticatedHttpProfile": { "const": "loopback_test_only" },
+        "mcpStdioLocalEnabled": { "const": true },
+        "mcpA2aEnabled": { "const": false },
+        "authenticationContextSource": { "const": "trusted_transport_adapter" },
+        "networkContextSource": { "const": "trusted_ingress_adapter" }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptedRequestSchemaVersions",
+        "emittedResultSchemaVersions",
+        "unknownFieldsRejected",
+        "unknownOperationsRejected",
+        "breakingChangeRequiresNewSchemaVersion",
+        "minimumProductionDeprecationDays"
+      ],
+      "properties": {
+        "acceptedRequestSchemaVersions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "tenant_protocol_request.v1" }
+        },
+        "emittedResultSchemaVersions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "tenant_protocol_result.v1" }
+        },
+        "unknownFieldsRejected": { "const": true },
+        "unknownOperationsRejected": { "const": true },
+        "breakingChangeRequiresNewSchemaVersion": { "const": true },
+        "minimumProductionDeprecationDays": { "const": 90 }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 38,
+      "maxItems": 38,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "realFundsEnabled",
+        "productionCreditEnabled",
+        "humanCreditEnabled",
+        "humanCreditIntentEnabled",
+        "agentCreditIntentEnabled",
+        "humanCreditDecisionEnabled",
+        "agentCreditDecisionEnabled",
+        "offerAcceptanceEnabled",
+        "sandboxExecutionEnabled",
+        "sandboxRepaymentEnabled",
+        "sandboxServicingEnabled",
+        "sandboxResolutionEnabled",
+        "agentAccountProofEnabled",
+        "mandateActivationEnabled",
+        "providerSandboxEnabled",
+        "productionIdentityEnabled",
+        "rawPiiAllowed"
+      ],
+      "properties": {
+        "realFundsEnabled": { "const": false },
+        "productionCreditEnabled": { "const": false },
+        "humanCreditEnabled": { "const": false },
+        "humanCreditIntentEnabled": { "const": true },
+        "agentCreditIntentEnabled": { "const": true },
+        "humanCreditDecisionEnabled": { "const": true },
+        "agentCreditDecisionEnabled": { "const": true },
+        "offerAcceptanceEnabled": { "const": true },
+        "sandboxExecutionEnabled": { "const": true },
+        "sandboxRepaymentEnabled": { "const": true },
+        "sandboxServicingEnabled": { "const": true },
+        "sandboxResolutionEnabled": { "const": true },
+        "agentAccountProofEnabled": { "const": true },
+        "mandateActivationEnabled": { "const": true },
+        "providerSandboxEnabled": { "const": true },
+        "productionIdentityEnabled": { "const": false },
+        "rawPiiAllowed": { "const": false }
+      }
+    },
+    "schemaVersion": { "const": "tenant_protocol_catalog.v1" }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "kind",
+        "actorTypes",
+        "resourceType",
+        "requiredCapability",
+        "idempotency",
+        "quotaClass",
+        "requestSchemaVersion",
+        "responseSchemaVersion",
+        "public",
+        "fundsAuthority"
+      ],
+      "properties": {
+        "operationId": {
+          "enum": [
+            "pilotAcceptCreditOffer",
+            "pilotActivateSandboxMandate",
+            "pilotCreateAgentAccountChallenge",
+            "pilotCreateAgentSubject",
+            "pilotCreateConsent",
+            "pilotCreateHumanSubject",
+            "pilotCreateDraftMandate",
+            "pilotEvaluateCreditApplication",
+            "pilotExecuteSandboxObligation",
+            "pilotFreezeSubject",
+            "pilotPostSandboxRepayment",
+            "pilotRepurchaseSandboxObligation",
+            "pilotRestructureSandboxObligation",
+            "pilotRequestCredit",
+            "pilotReadAgentSelf",
+            "pilotReadAgentAccountBinding",
+            "pilotReadCreditApplication",
+            "pilotReadConsent",
+            "pilotReadHumanSelf",
+            "pilotReadWorkspaceResume",
+            "pilotReadIdentityReference",
+            "pilotReadMandate",
+            "pilotReadTenantRisk",
+            "pilotReadPilotHealth",
+            "pilotReadPilotFeedbackSummary",
+            "pilotReadServicingQueue",
+            "pilotReadEvidence",
+            "pilotReadOwnObligation",
+            "pilotReadOwnObligationEvidence",
+            "pilotRevokeConsent",
+            "pilotRevokeDraftMandate",
+            "pilotSubmitAgentAccountProof",
+            "pilotSubmitPilotFeedback",
+            "pilotWriteOffSandboxObligation",
+            "workerAdvanceSandboxServicing",
+            "pilotReadProviderIntent",
+            "pilotAcknowledgeProviderIntent",
+            "workerProcessInbox"
+          ]
+        },
+        "kind": { "enum": ["command", "query"] },
+        "actorTypes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["human", "agent", "risk_operator", "operations_operator", "auditor", "provider", "system_worker"]
+          }
+        },
+        "resourceType": { "enum": ["subject", "consent", "credit_intent", "credit_offer", "evidence", "human_identity_reference", "mandate", "obligation", "risk_portfolio", "servicing_queue", "transfer_intent", "inbox_message", "workspace"] },
+        "requiredCapability": {
+          "enum": [
+            "agent.create",
+            "agent_account.binding.read.self",
+            "agent_account.challenge.create.owned",
+            "agent_account.proof.submit.self",
+            "consent.create.self",
+            "consent.read.self",
+            "consent.revoke.self",
+            "credit.read.self",
+            "credit.evaluate.self",
+            "credit.offer.accept.self",
+            "credit.execute.sandbox.self",
+            "credit.request",
+            "evidence.read",
+            "evidence.read.owned",
+            "obligation.read.owned",
+            "human_subject.create.self",
+            "identity_reference.read.self",
+            "integration.read.owned",
+            "mandate.draft.create",
+            "mandate.draft.revoke",
+            "mandate.activate.owned",
+            "risk.read.tenant",
+            "pilot.health.read",
+            "pilot.feedback.read.tenant",
+            "pilot.feedback.submit.self",
+            "risk.freeze",
+            "repayment.post.sandbox.self",
+            "servicing.queue.read",
+            "servicing.advance.sandbox",
+            "servicing.repurchase.sandbox",
+            "servicing.restructure.sandbox",
+            "servicing.writeoff.sandbox",
+            "subject.read.self",
+            "provider.intent.read",
+            "provider.intent.acknowledge",
+            "worker.inbox.process",
+            "workspace.resume.self"
+          ]
+        },
+        "idempotency": { "enum": ["required", "prohibited"] },
+        "quotaClass": { "enum": ["read", "mutation", "economic", "credential", "privileged", "worker"] },
+        "requestSchemaVersion": { "const": "tenant_protocol_request.v1" },
+        "responseSchemaVersion": {
+          "enum": [
+            "tenant_credit_offer_accepted.v1",
+            "tenant_sandbox_obligation_executed.v1",
+            "tenant_sandbox_repayment_posted.v1",
+            "tenant_sandbox_obligation_restructured.v1",
+            "tenant_sandbox_obligation_repurchased.v1",
+            "tenant_sandbox_obligation_written_off.v1",
+            "tenant_sandbox_servicing_advanced.v1",
+            "tenant_sandbox_mandate_activated.v1",
+            "tenant_agent_subject_created.v1",
+            "tenant_agent_account_challenge_created.v1",
+            "tenant_agent_account_proof_verified.v1",
+            "tenant_agent_account_binding_view.v1",
+            "tenant_consent_created.v1",
+            "tenant_consent_view.v1",
+            "tenant_consent_revoked.v1",
+            "tenant_human_subject_created.v1",
+            "tenant_credit_intent_created.v1",
+            "tenant_credit_application_evaluated.v2",
+            "tenant_credit_application_view.v1",
+            "tenant_human_identity_reference_view.v1",
+            "tenant_agent_subject_frozen.v1",
+            "tenant_draft_mandate_created.v1",
+            "tenant_agent_subject_view.v2",
+            "tenant_human_subject_view.v1",
+            "tenant_mandate_view.v1",
+            "tenant_risk_portfolio_view.v1",
+            "tenant_pilot_health_view.v1",
+            "tenant_pilot_feedback_summary_view.v1",
+            "tenant_pilot_feedback_recorded.v1",
+            "tenant_servicing_queue_view.v1",
+            "tenant_obligation_evidence_view.v1",
+            "tenant_owned_obligation_evidence_view.v1",
+            "tenant_owned_obligation_view.v1",
+            "tenant_draft_mandate_revoked.v1",
+            "provider_intent_view.v1",
+            "provider_intent_acknowledgement.v1",
+            "provider_sandbox_callback_result.v1",
+            "tenant_workspace_resume_view.v1"
+          ]
+        },
+        "public": { "const": false },
+        "fundsAuthority": { "const": false }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "operationId": { "const": "pilotAcceptCreditOffer" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "credit_offer" },
+            "requiredCapability": { "const": "credit.offer.accept.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" },
+            "responseSchemaVersion": { "const": "tenant_credit_offer_accepted.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotExecuteSandboxObligation" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "obligation" },
+            "requiredCapability": { "const": "credit.execute.sandbox.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_obligation_executed.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotPostSandboxRepayment" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "obligation" },
+            "requiredCapability": { "const": "repayment.post.sandbox.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_repayment_posted.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotCreateAgentAccountChallenge" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "agent_account.challenge.create.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "credential" },
+            "responseSchemaVersion": { "const": "tenant_agent_account_challenge_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotActivateSandboxMandate" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "mandate" },
+            "requiredCapability": { "const": "mandate.activate.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_mandate_activated.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotEvaluateCreditApplication" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "credit_intent" },
+            "requiredCapability": { "const": "credit.evaluate.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" },
+            "responseSchemaVersion": { "const": "tenant_credit_application_evaluated.v2" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotRequestCredit" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "credit.request" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" },
+            "responseSchemaVersion": { "const": "tenant_credit_intent_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadCreditApplication" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "credit_intent" },
+            "requiredCapability": { "const": "credit.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_credit_application_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotCreateConsent" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "consent.create.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_consent_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotCreateAgentSubject" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "agent.create" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_agent_subject_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadConsent" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "consent" },
+            "requiredCapability": { "const": "consent.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_consent_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotCreateHumanSubject" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "human_subject.create.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_human_subject_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadIdentityReference" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "human_identity_reference" },
+            "requiredCapability": { "const": "identity_reference.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_human_identity_reference_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotCreateDraftMandate" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "mandate.draft.create" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_draft_mandate_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotRevokeConsent" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "consent" },
+            "requiredCapability": { "const": "consent.revoke.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_consent_revoked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotFreezeSubject" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "risk.freeze" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_agent_subject_frozen.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadAgentSelf" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "subject.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_agent_subject_view.v2" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadAgentAccountBinding" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "agent_account.binding.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_agent_account_binding_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadHumanSelf" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "subject.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_human_subject_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadWorkspaceResume" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "workspace" },
+            "requiredCapability": { "const": "workspace.resume.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_workspace_resume_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadMandate" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "mandate" },
+            "requiredCapability": { "const": "integration.read.owned" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_mandate_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadTenantRisk" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["risk_operator", "auditor"] },
+            "resourceType": { "const": "risk_portfolio" },
+            "requiredCapability": { "const": "risk.read.tenant" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_risk_portfolio_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadPilotHealth" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator", "auditor"] },
+            "resourceType": { "const": "risk_portfolio" },
+            "requiredCapability": { "const": "pilot.health.read" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_pilot_health_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadPilotFeedbackSummary" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator", "auditor"] },
+            "resourceType": { "const": "risk_portfolio" },
+            "requiredCapability": { "const": "pilot.feedback.read.tenant" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_pilot_feedback_summary_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotSubmitPilotFeedback" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "pilot.feedback.submit.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_pilot_feedback_recorded.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadServicingQueue" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator"] },
+            "resourceType": { "const": "servicing_queue" },
+            "requiredCapability": { "const": "servicing.queue.read" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_servicing_queue_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadEvidence" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["auditor"] },
+            "resourceType": { "const": "evidence" },
+            "requiredCapability": { "const": "evidence.read" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_obligation_evidence_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadOwnObligation" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "obligation" },
+            "requiredCapability": { "const": "obligation.read.owned" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_owned_obligation_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadOwnObligationEvidence" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "evidence" },
+            "requiredCapability": { "const": "evidence.read.owned" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_owned_obligation_evidence_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotRevokeDraftMandate" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "mandate" },
+            "requiredCapability": { "const": "mandate.draft.revoke" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_draft_mandate_revoked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotSubmitAgentAccountProof" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "agent_account.proof.submit.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "credential" },
+            "responseSchemaVersion": { "const": "tenant_agent_account_proof_verified.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotRestructureSandboxObligation" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["operations_operator"] },
+            "resourceType": { "const": "obligation" },
+            "requiredCapability": { "const": "servicing.restructure.sandbox" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_obligation_restructured.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotRepurchaseSandboxObligation" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["operations_operator"] },
+            "resourceType": { "const": "obligation" },
+            "requiredCapability": { "const": "servicing.repurchase.sandbox" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_obligation_repurchased.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotWriteOffSandboxObligation" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["operations_operator"] },
+            "resourceType": { "const": "obligation" },
+            "requiredCapability": { "const": "servicing.writeoff.sandbox" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_obligation_written_off.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "workerAdvanceSandboxServicing" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["system_worker"] },
+            "resourceType": { "const": "obligation" },
+            "requiredCapability": { "const": "servicing.advance.sandbox" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "worker" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_servicing_advanced.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadProviderIntent" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["provider"] },
+            "resourceType": { "const": "transfer_intent" },
+            "requiredCapability": { "const": "provider.intent.read" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "provider_intent_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotAcknowledgeProviderIntent" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["provider"] },
+            "resourceType": { "const": "transfer_intent" },
+            "requiredCapability": { "const": "provider.intent.acknowledge" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "provider_intent_acknowledgement.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "workerProcessInbox" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["system_worker"] },
+            "resourceType": { "const": "inbox_message" },
+            "requiredCapability": { "const": "worker.inbox.process" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "worker" },
+            "responseSchemaVersion": { "const": "provider_sandbox_callback_result.v1" }
+          }
+        }
+      ]
+    }
+  }
+}

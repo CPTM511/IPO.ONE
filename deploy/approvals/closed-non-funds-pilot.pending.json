@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "ipo.one.launch-evidence/v1",
+  "policyVersion": "1.0.0",
+  "profile": "closed_non_funds_pilot",
+  "release": {
+    "repository": "CPTM511/IPO.ONE",
+    "commitSha": "[EXACT_GREEN_COMMIT_SHA]",
+    "ciRunUrl": "[IMMUTABLE_GITHUB_ACTIONS_RUN_URL]",
+    "imageUri": "[IMMUTABLE_ARTIFACT_REGISTRY_IMAGE_DIGEST]",
+    "builtAt": "[ISO_8601_UTC_TIMESTAMP]"
+  },
+  "capabilities": {
+    "realFundsEnabled": false,
+    "humanCreditEnabled": false,
+    "privateTenantDataEnabled": true,
+    "externalProviderExecutionEnabled": false
+  },
+  "externalAuthorization": {
+    "system": "protected_environment",
+    "environment": "closed-pilot",
+    "approvalUrl": "[PROTECTED_ENVIRONMENT_APPROVAL_URL]",
+    "approvedAt": "[ISO_8601_UTC_TIMESTAMP]"
+  },
+  "gates": [
+    {
+      "id": "security_001_approval",
+      "status": "pending",
+      "ownerRole": "Founder/CTO/Security",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "tenant_authn_authz_tests",
+      "status": "pending",
+      "ownerRole": "Security/Engineering",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "durable_data_restore",
+      "status": "pending",
+      "ownerRole": "Backend/DevOps",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "reconciliation_operations",
+      "status": "pending",
+      "ownerRole": "Operations/Risk",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "independent_pentest",
+      "status": "pending",
+      "ownerRole": "Independent Security",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "privacy_legal_terms",
+      "status": "pending",
+      "ownerRole": "Legal/Privacy",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "support_slo_oncall",
+      "status": "pending",
+      "ownerRole": "Operations/Product",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    },
+    {
+      "id": "pilot_participant_approval",
+      "status": "pending",
+      "ownerRole": "Founder/Product",
+      "approvedBy": "[APPROVER]",
+      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
+      "evidenceUrl": "[EVIDENCE_URL]"
+    }
+  ]
+}

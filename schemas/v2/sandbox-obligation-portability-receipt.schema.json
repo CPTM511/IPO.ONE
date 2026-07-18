@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/sandbox-obligation-portability-receipt.schema.json",
+  "title": "IPO.ONE Sandbox Obligation Portability Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "entryMode",
+    "sourceReceiptSchemaVersion",
+    "obligationId",
+    "paymentId",
+    "assetId",
+    "amountMinor",
+    "principalLedgerTransactionId",
+    "paymentLedgerTransactionId",
+    "canonicalPaymentRef",
+    "kernelInvariantHash",
+    "profiles",
+    "invariants",
+    "nonAuthorizing",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "withdrawable",
+    "fundsAuthority",
+    "networkCallsMade",
+    "liveTestnetExecution",
+    "credentialsIncluded",
+    "privateKeysIncluded",
+    "publicEndpointEnabled",
+    "remoteMcpEnabled",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "sandbox_obligation_portability_receipt.v1" },
+    "status": { "const": "conformant" },
+    "entryMode": { "enum": ["human", "agent"] },
+    "sourceReceiptSchemaVersion": {
+      "enum": [
+        "human_sandbox_obligation_workflow_receipt.v1",
+        "agent_sandbox_obligation_workflow_receipt.v1"
+      ]
+    },
+    "obligationId": { "$ref": "#/$defs/identifier" },
+    "paymentId": { "$ref": "#/$defs/identifier" },
+    "assetId": { "$ref": "#/$defs/identifier" },
+    "amountMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+    "principalLedgerTransactionId": { "$ref": "#/$defs/identifier" },
+    "paymentLedgerTransactionId": { "$ref": "#/$defs/identifier" },
+    "canonicalPaymentRef": { "$ref": "#/$defs/hash" },
+    "kernelInvariantHash": { "$ref": "#/$defs/hash" },
+    "profiles": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/profileResult" },
+            {
+              "type": "object",
+              "properties": {
+                "profileId": { "const": "base_sepolia_execution_test_v1" },
+                "displayName": { "const": "Base Sepolia" },
+                "role": { "const": "primary_execution_test" },
+                "chainId": { "const": "eip155:84532" }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/profileResult" },
+            {
+              "type": "object",
+              "properties": {
+                "profileId": { "const": "x_layer_testnet_portability_v1" },
+                "displayName": { "const": "X Layer Testnet" },
+                "role": { "const": "portability_conformance" },
+                "chainId": { "const": "eip155:1952" }
+              }
+            }
+          ]
+        }
+      ],
+      "items": false
+    },
+    "invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalPaymentChainNeutral",
+        "obligationKernelUnchanged",
+        "ledgerReferencesBound",
+        "explicitFinality",
+        "deterministicReplay",
+        "reorgInvalidation",
+        "providerFailover",
+        "executionCapFailsClosed"
+      ],
+      "properties": {
+        "canonicalPaymentChainNeutral": { "const": true },
+        "obligationKernelUnchanged": { "const": true },
+        "ledgerReferencesBound": { "const": true },
+        "explicitFinality": { "const": true },
+        "deterministicReplay": { "const": true },
+        "reorgInvalidation": { "const": true },
+        "providerFailover": { "const": true },
+        "executionCapFailsClosed": { "const": true }
+      }
+    },
+    "nonAuthorizing": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "withdrawable": { "const": false },
+    "fundsAuthority": { "const": false },
+    "networkCallsMade": { "const": false },
+    "liveTestnetExecution": { "const": false },
+    "credentialsIncluded": { "const": false },
+    "privateKeysIncluded": { "const": false },
+    "publicEndpointEnabled": { "const": false },
+    "remoteMcpEnabled": { "const": false },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "entryMode": { "const": "human" } } },
+      "then": {
+        "properties": {
+          "sourceReceiptSchemaVersion": {
+            "const": "human_sandbox_obligation_workflow_receipt.v1"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "sourceReceiptSchemaVersion": {
+            "const": "agent_sandbox_obligation_workflow_receipt.v1"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "profileResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profileId",
+        "displayName",
+        "role",
+        "chainId",
+        "adapterVersion",
+        "profileHash",
+        "canonicalPaymentRef",
+        "finalityProofHash",
+        "evidenceHash",
+        "sourceFinality",
+        "selectedProviderSlot",
+        "duplicateDisposition",
+        "deterministicReplay",
+        "reorgInvalidation",
+        "providerFailover",
+        "executionCapFailsClosed",
+        "sandboxOnly",
+        "productionFundsMoved",
+        "networkCallsMade"
+      ],
+      "properties": {
+        "profileId": {
+          "enum": ["base_sepolia_execution_test_v1", "x_layer_testnet_portability_v1"]
+        },
+        "displayName": { "enum": ["Base Sepolia", "X Layer Testnet"] },
+        "role": { "enum": ["primary_execution_test", "portability_conformance"] },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "adapterVersion": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+        "profileHash": { "$ref": "#/$defs/hash" },
+        "canonicalPaymentRef": { "$ref": "#/$defs/hash" },
+        "finalityProofHash": { "$ref": "#/$defs/hash" },
+        "evidenceHash": { "$ref": "#/$defs/hash" },
+        "sourceFinality": { "const": "finalized" },
+        "selectedProviderSlot": { "const": "secondary" },
+        "duplicateDisposition": { "const": "duplicate" },
+        "deterministicReplay": { "const": true },
+        "reorgInvalidation": { "const": true },
+        "providerFailover": { "const": true },
+        "executionCapFailsClosed": { "const": true },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "networkCallsMade": { "const": false }
+      }
+    }
+  }
+}

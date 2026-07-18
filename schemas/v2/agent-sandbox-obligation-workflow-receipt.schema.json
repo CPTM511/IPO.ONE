@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/agent-sandbox-obligation-workflow-receipt.schema.json",
+  "title": "IPO.ONE Agent Sandbox Obligation Workflow Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "transportProfile",
+    "nonAuthorizing",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "withdrawable",
+    "fundsAuthority",
+    "credentialsIncluded",
+    "publicEndpointEnabled",
+    "remoteMcpEnabled",
+    "workflowId",
+    "correlationId",
+    "subjectId",
+    "mandateId",
+    "creditIntentId",
+    "creditOfferId",
+    "acceptance",
+    "obligation",
+    "executionReceipt",
+    "principalLedgerTransactionId",
+    "repayment",
+    "steps"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "agent_sandbox_obligation_workflow_receipt.v1" },
+    "status": { "const": "repayment_posted" },
+    "transportProfile": { "const": "local_in_process" },
+    "nonAuthorizing": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "withdrawable": { "const": false },
+    "fundsAuthority": { "const": false },
+    "credentialsIncluded": { "const": false },
+    "publicEndpointEnabled": { "const": false },
+    "remoteMcpEnabled": { "const": false },
+    "workflowId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,71}$"
+    },
+    "correlationId": { "$ref": "#/$defs/requestIdentifier" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "mandateId": { "$ref": "#/$defs/identifier" },
+    "creditIntentId": { "$ref": "#/$defs/identifier" },
+    "creditOfferId": { "$ref": "#/$defs/identifier" },
+    "acceptance": {
+      "allOf": [
+        {
+          "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/creditOfferAcceptanceSummary"
+        },
+        {
+          "type": "object",
+          "properties": { "authorityType": { "const": "mandate" } }
+        }
+      ]
+    },
+    "obligation": {
+      "allOf": [
+        {
+          "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/sharedObligation"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "authorityType": { "const": "mandate" },
+            "executionStatus": { "const": "executed" },
+            "status": { "enum": ["partially_repaid", "fully_repaid"] },
+            "withdrawable": { "const": false }
+          },
+          "required": ["withdrawable"]
+        }
+      ]
+    },
+    "executionReceipt": {
+      "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/sandboxExecutionReceiptSummary"
+    },
+    "principalLedgerTransactionId": { "$ref": "#/$defs/identifier" },
+    "repayment": {
+      "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/sandboxRepaymentSummary"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        { "$ref": "#/$defs/acceptStep" },
+        { "$ref": "#/$defs/executeStep" },
+        { "$ref": "#/$defs/repayStep" }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"
+    },
+    "requestIdentifier": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "operationId",
+        "requestId",
+        "replayed",
+        "responseSchemaVersion"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "operationId": {
+          "enum": [
+            "pilotAcceptCreditOffer",
+            "pilotExecuteSandboxObligation",
+            "pilotPostSandboxRepayment"
+          ]
+        },
+        "requestId": { "$ref": "#/$defs/requestIdentifier" },
+        "replayed": { "type": "boolean" },
+        "responseSchemaVersion": {
+          "enum": [
+            "tenant_credit_offer_accepted.v1",
+            "tenant_sandbox_obligation_executed.v1",
+            "tenant_sandbox_repayment_posted.v1"
+          ]
+        }
+      }
+    },
+    "acceptStep": {
+      "allOf": [
+        { "$ref": "#/$defs/step" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 1 },
+            "operationId": { "const": "pilotAcceptCreditOffer" },
+            "responseSchemaVersion": { "const": "tenant_credit_offer_accepted.v1" }
+          }
+        }
+      ]
+    },
+    "executeStep": {
+      "allOf": [
+        { "$ref": "#/$defs/step" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 2 },
+            "operationId": { "const": "pilotExecuteSandboxObligation" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_obligation_executed.v1" }
+          }
+        }
+      ]
+    },
+    "repayStep": {
+      "allOf": [
+        { "$ref": "#/$defs/step" },
+        {
+          "type": "object",
+          "properties": {
+            "sequence": { "const": 3 },
+            "operationId": { "const": "pilotPostSandboxRepayment" },
+            "responseSchemaVersion": { "const": "tenant_sandbox_repayment_posted.v1" }
+          }
+        }
+      ]
+    }
+  }
+}
