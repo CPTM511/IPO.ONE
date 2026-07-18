@@ -9,6 +9,10 @@ import {
 } from "./postgres-tenant-context.js";
 
 const RETRYABLE_TRANSACTION_CODES = new Set(["40001", "40P01"]);
+const WRITE_ISOLATION_LEVELS = Object.freeze({
+  serializable: "SERIALIZABLE",
+  read_committed: "READ COMMITTED"
+});
 const MAX_REPOSITORY_STRING_LENGTH = 2048;
 const MAX_EVENT_PAYLOAD_BYTES = 64 * 1024;
 const MAX_COMMAND_PAYLOAD_BYTES = 1024 * 1024;
@@ -139,6 +143,7 @@ export class PostgresEventRepository {
     sourceSystem = "ipo.one.postgres",
     outboxTopic = "ipo.one.domain-events.v1",
     transactionRetries = 3,
+    writeIsolation = "serializable",
     maxOutboxAttempts = 12,
     clock = () => new Date(),
     faultInjector
@@ -151,6 +156,9 @@ export class PostgresEventRepository {
     if (!Number.isSafeInteger(transactionRetries) || transactionRetries < 0 || transactionRetries > 10) {
       throw new DomainError("invalid_transaction_retries", "transactionRetries must be an integer from 0 through 10");
     }
+    if (!Object.hasOwn(WRITE_ISOLATION_LEVELS, writeIsolation)) {
+      throw new DomainError("invalid_transaction_isolation", "writeIsolation must be a supported closed value");
+    }
     if (!Number.isSafeInteger(maxOutboxAttempts) || maxOutboxAttempts < 1) {
       throw new DomainError("invalid_outbox_attempts", "maxOutboxAttempts must be a positive safe integer");
     }
@@ -159,6 +167,7 @@ export class PostgresEventRepository {
     this.sourceSystem = sourceSystem;
     this.outboxTopic = outboxTopic;
     this.transactionRetries = transactionRetries;
+    this.writeIsolation = WRITE_ISOLATION_LEVELS[writeIsolation];
     this.maxOutboxAttempts = maxOutboxAttempts;
     this.clock = clock;
     this.faultInjector = faultInjector;
@@ -989,7 +998,7 @@ export class PostgresEventRepository {
       const client = await this.pool.connect();
       let retry = false;
       try {
-        await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+        await client.query(`BEGIN ISOLATION LEVEL ${this.writeIsolation}`);
         await setTenantTransactionContext(client, this.tenantContext);
         const result = await operation(client);
         await client.query("COMMIT");

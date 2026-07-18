@@ -2359,7 +2359,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         committed = true;
         await assert.rejects(
           command,
-          (error) => error.code === "stale_aggregate_version"
+          (error) => ["authorization_denied", "stale_aggregate_version"].includes(error.code)
         );
       } finally {
         if (!committed) {
@@ -2687,7 +2687,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         }));
         await new Promise((resolve) => setTimeout(resolve, 50));
         await client.query("COMMIT");
-        await assert.rejects(command, (error) => error.code === "stale_aggregate_version");
+        await assert.rejects(
+          command,
+          (error) => ["authorization_resource_rejected", "stale_aggregate_version"].includes(error.code)
+        );
       } catch (error) {
         try {
           await client.query("ROLLBACK");

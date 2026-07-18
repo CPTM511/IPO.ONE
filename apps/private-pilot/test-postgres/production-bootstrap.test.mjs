@@ -88,8 +88,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   const suffix = randomBytes(6).toString("hex");
   const input = {
     schemaVersion: "ipo_one_production_bootstrap.v1",
-    gatewayRole: "ipo_one_gateway_test",
-    authenticationRole: "ipo_one_authentication_test",
+    gatewayRole: `ipo_gateway_${suffix}`,
+    authenticationRole: `ipo_auth_${suffix}`,
     tenant: {
       tenantId: `tenant_bootstrap_${suffix}`,
       organizationRef: `urn:ipo.one:organization:bootstrap-${suffix}`,

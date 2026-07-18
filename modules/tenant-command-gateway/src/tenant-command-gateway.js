@@ -390,7 +390,11 @@ export class TenantCommandGateway {
     const eventRepository = new PostgresEventRepository({
       pool: this.pool,
       tenantContext,
-      transactionRetries: 0
+      transactionRetries: 0,
+      // The gateway already uses stream-head row locks and expected versions.
+      // READ COMMITTED guarantees one protective contender can commit while
+      // the other observes the new version and fails closed.
+      writeIsolation: "read_committed"
     });
     const coreRepository = new PostgresCoreRepository({
       pool: this.pool,

@@ -240,18 +240,26 @@ async function quoteLiteral(pool, value) {
 async function configureRole(client, { roleName, password, authenticationOnly }) {
   const role = `"${roleName}"`;
   const passwordLiteral = await quoteLiteral(client, password);
-  const exists = await client.query("SELECT 1 FROM pg_roles WHERE rolname = $1", [roleName]);
+  const exists = await client.query(
+    `SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolinherit, rolreplication, rolbypassrls, rolconfig
+       FROM pg_roles WHERE rolname = $1`,
+    [roleName]
+  );
   if (exists.rowCount === 0) {
     await client.query(`CREATE ROLE ${role} LOGIN PASSWORD ${passwordLiteral} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
+    await client.query(`ALTER ROLE ${role} SET search_path TO public`);
   } else {
+    const configured = exists.rows[0];
+    const settings = configured.rolconfig ?? [];
+    if (!configured.rolcanlogin || configured.rolsuper || configured.rolcreatedb || configured.rolcreaterole || configured.rolinherit || configured.rolreplication || configured.rolbypassrls || !settings.includes("search_path=public")) {
+      throw fail(`${roleName} does not match the required closed runtime role`);
+    }
     const membership = await client.query(
       "SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member WHERE r.rolname = $1",
       [roleName]
     );
     if (membership.rowCount > 0) throw fail(`${roleName} cannot inherit another database role`);
-    await client.query(`ALTER ROLE ${role} WITH LOGIN PASSWORD ${passwordLiteral} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
   }
-  await client.query(`ALTER ROLE ${role} SET search_path TO public`);
   const database = (await client.query("SELECT quote_ident(current_database()) AS value")).rows[0].value;
   await client.query(`REVOKE CREATE ON DATABASE ${database} FROM PUBLIC`);
   await client.query(`REVOKE CREATE ON DATABASE ${database} FROM ${role}`);
