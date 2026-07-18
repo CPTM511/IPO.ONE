@@ -371,6 +371,13 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
   return insertedCredentials;
 }
 
+async function setBootstrapIdentityRls(client, enabled) {
+  for (const table of ["tenants", "actors"]) {
+    await client.query(`ALTER TABLE ${table} ${enabled ? "ENABLE" : "DISABLE"} ROW LEVEL SECURITY`);
+    if (enabled) await client.query(`ALTER TABLE ${table} FORCE ROW LEVEL SECURITY`);
+  }
+}
+
 export async function bootstrapProductionDatabase({
   adminConnectionString,
   config,
@@ -403,7 +410,9 @@ export async function bootstrapProductionDatabase({
       await configureRole(client, { roleName: checked.gatewayRole, password: gatewayPassword, authenticationOnly: false });
       await configureRole(client, { roleName: checked.authenticationRole, password: authenticationPassword, authenticationOnly: true });
       await setTenantTransactionContext(client, bootstrapContext);
+      await setBootstrapIdentityRls(client, false);
       insertedCredentials = await seedTenantAndIdentity(client, checked, referenceHasher);
+      await setBootstrapIdentityRls(client, true);
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});

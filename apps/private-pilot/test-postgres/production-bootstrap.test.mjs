@@ -13,6 +13,8 @@ const { Pool } = pg;
 test("fresh migrations succeed for a non-superuser database owner under forced RLS", async () => {
   const suffix = randomBytes(5).toString("hex");
   const role = `ipo_migration_${suffix}`;
+  const gatewayRole = `ipo_gateway_${suffix}`;
+  const authenticationRole = `ipo_auth_${suffix}`;
   const database = `ipo_migration_test_${suffix}`;
   const password = randomBytes(24).toString("hex");
   const adminUrl = new URL(process.env.DATABASE_URL);
@@ -21,7 +23,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
   let target;
   try {
     await admin.query(
-      `CREATE ROLE "${role}" LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+      `CREATE ROLE "${role}" LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB CREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
     );
     await admin.query(`CREATE DATABASE "${database}" OWNER "${role}"`);
     const targetUrl = new URL(adminUrl);
@@ -32,9 +34,51 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(applied.at(-1), "0025_durable_human_authentication");
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
+    const bootstrap = await bootstrapProductionDatabase({
+      adminConnectionString: targetUrl.toString(),
+      config: assertProductionBootstrapConfig({
+        schemaVersion: "ipo_one_production_bootstrap.v1",
+        gatewayRole,
+        authenticationRole,
+        tenant: {
+          tenantId: `tenant_cloud_owner_${suffix}`,
+          organizationRef: `urn:ipo.one:organization:cloud-owner-${suffix}`,
+          displayName: `Cloud Owner ${suffix}`,
+          pilotJurisdiction: "PRIVATE_NO_FUNDS",
+          retentionOwnerRef: `urn:ipo.one:retention:cloud-owner-${suffix}`
+        },
+        systemActor: {
+          actorId: `actor_system_${suffix}`,
+          clientId: `client_system_${suffix}`
+        },
+        policyVersion: "security_001.v1",
+        credentials: [{
+          kind: "human_wallet",
+          profile: "human_borrower",
+          actorId: `actor_human_${suffix}`,
+          clientId: "ipo_one_wallet",
+          issuer: "https://ipo.one",
+          externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111"
+        }]
+      }),
+      gatewayPassword: randomBytes(32).toString("base64url"),
+      authenticationPassword: randomBytes(32).toString("base64url"),
+      referenceHashKey: randomBytes(32)
+    });
+    assert.equal(bootstrap.insertedCredentials, 1);
+    const rls = await target.query(
+      "SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relname = ANY($1::text[]) ORDER BY relname",
+      [["actors", "tenants"]]
+    );
+    assert.deepEqual(rls.rows, [
+      { relname: "actors", relrowsecurity: true, relforcerowsecurity: true },
+      { relname: "tenants", relrowsecurity: true, relforcerowsecurity: true }
+    ]);
   } finally {
     await target?.end().catch(() => {});
     await admin.query(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`).catch(() => {});
+    await admin.query(`DROP ROLE IF EXISTS "${gatewayRole}"`).catch(() => {});
+    await admin.query(`DROP ROLE IF EXISTS "${authenticationRole}"`).catch(() => {});
     await admin.query(`DROP ROLE IF EXISTS "${role}"`).catch(() => {});
     await admin.end();
   }
