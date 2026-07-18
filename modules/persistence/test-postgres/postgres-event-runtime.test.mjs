@@ -137,6 +137,11 @@ const TENANT_OWNED_TABLES = [
   "approval_decisions",
   "approval_executions",
   "approval_proposals",
+  "authentication_credentials",
+  "authentication_events",
+  "authentication_oidc_transactions",
+  "authentication_sessions",
+  "authentication_wallet_transactions",
   "authorization_audit_events",
   "authorization_resource_bindings",
   "authorization_resources",
@@ -884,12 +889,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0021_signed_provider_sandbox",
         "0022_durable_operational_alerts",
         "0023_evidence_derived_risk_decisions",
-        "0024_privacy_safe_pilot_feedback"
+        "0024_privacy_safe_pilot_feedback",
+        "0025_durable_human_authentication"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 24 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 25 }), [
+        "0025_durable_human_authentication",
         "0024_privacy_safe_pilot_feedback",
         "0023_evidence_derived_risk_decisions",
         "0022_durable_operational_alerts",
@@ -939,10 +946,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0021_signed_provider_sandbox",
         "0022_durable_operational_alerts",
         "0023_evidence_derived_risk_decisions",
-        "0024_privacy_safe_pilot_feedback"
+        "0024_privacy_safe_pilot_feedback",
+        "0025_durable_human_authentication"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 22 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 23 }), [
+        "0025_durable_human_authentication",
         "0024_privacy_safe_pilot_feedback",
         "0023_evidence_derived_risk_decisions",
         "0022_durable_operational_alerts",
@@ -1001,7 +1010,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0021_signed_provider_sandbox",
         "0022_durable_operational_alerts",
         "0023_evidence_derived_risk_decisions",
-        "0024_privacy_safe_pilot_feedback"
+        "0024_privacy_safe_pilot_feedback",
+        "0025_durable_human_authentication"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))

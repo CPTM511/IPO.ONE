@@ -16,7 +16,13 @@ function exactRedirectUri(value) {
   } catch {
     throw authenticationError("oidc_redirect_rejected", "OIDC redirect URI is invalid");
   }
-  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.search || parsed.hash) {
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.hash ||
+    parsed.search.length > 2_048
+  ) {
     throw authenticationError("oidc_redirect_rejected", "OIDC redirect URI is invalid");
   }
   return parsed.href;
@@ -82,22 +88,25 @@ export class InMemoryLoginTransactionStore {
       "oidc.transaction",
       assertBoundedString("transaction handle", handle, { minimum: 32, maximum: 128 })
     );
-    const transaction = this.#transactions.get(reference);
-    this.#transactions.delete(reference);
-    if (!transaction || new Date(transaction.expiresAt) <= now) {
-      throw authenticationError("oidc_transaction_rejected", "login transaction is not active");
-    }
     const suppliedState = this.referenceHasher.hash(
       "oidc.state",
       assertBoundedString("state", state, { minimum: 32, maximum: 128 })
     );
+    const checkedProvider = assertSafeIdentifier("providerId", providerId);
+    const checkedRedirect = exactRedirectUri(redirectUri);
+    const transaction = this.#transactions.get(reference);
+    if (!transaction || new Date(transaction.expiresAt) <= now) {
+      if (transaction) this.#transactions.delete(reference);
+      throw authenticationError("oidc_transaction_rejected", "login transaction is not active");
+    }
     if (
-      transaction.providerId !== assertSafeIdentifier("providerId", providerId) ||
+      transaction.providerId !== checkedProvider ||
       !constantTimeEqual(suppliedState, transaction.stateRefHash) ||
-      exactRedirectUri(redirectUri) !== transaction.redirectUri
+      checkedRedirect !== transaction.redirectUri
     ) {
       throw authenticationError("oidc_transaction_rejected", "login transaction validation failed");
     }
+    this.#transactions.delete(reference);
     return Object.freeze({ ...transaction });
   }
 

@@ -1,6 +1,13 @@
 import { authenticationError } from "./security-utils.js";
 
 const AUTHENTICATION_MODES = new Set(["disabled", "local_test", "closed_pilot"]);
+const trustedRuntimeConfigs = new WeakSet();
+
+function trustedConfig(value) {
+  const config = Object.freeze(value);
+  trustedRuntimeConfigs.add(config);
+  return config;
+}
 
 export function loadAuthenticationRuntimeConfig(environment = process.env) {
   const mode = environment.IPO_ONE_AUTHENTICATION_MODE ?? "disabled";
@@ -21,7 +28,8 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
     for (const name of [
       "IPO_ONE_IDP_CONFIGURATION_REF",
       "IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF",
-      "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF"
+      "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+      "IPO_ONE_AUTH_ENCRYPTION_KEY_REF"
     ]) {
       const value = environment[name];
       if (
@@ -41,9 +49,29 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
       "local test authentication cannot run in production"
     );
   }
-  return Object.freeze({
+  return trustedConfig({
     enabled: mode !== "disabled",
     mode,
-    deploymentGateSatisfied: mode === "closed_pilot"
+    deploymentGateSatisfied: mode === "closed_pilot",
+    ...(mode === "closed_pilot"
+      ? {
+          vendorId: environment.IPO_ONE_IDP_VENDOR_ID,
+          approvalSha: environment.IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA,
+          idpConfigurationRef: environment.IPO_ONE_IDP_CONFIGURATION_REF,
+          oidcClientCredentialRef: environment.IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF,
+          referenceHashKeyRef: environment.IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF,
+          encryptionKeyRef: environment.IPO_ONE_AUTH_ENCRYPTION_KEY_REF
+        }
+      : {})
   });
+}
+
+export function assertAuthenticationRuntimeConfig(value) {
+  if (!value || typeof value !== "object" || !trustedRuntimeConfigs.has(value)) {
+    throw authenticationError(
+      "authentication_deployment_gate_closed",
+      "authentication runtime configuration must come from the reviewed loader"
+    );
+  }
+  return value;
 }

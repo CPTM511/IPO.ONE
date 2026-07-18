@@ -69,4 +69,7 @@ pnpm run check
 - [x] No account, signature, token, or authority is persisted in browser storage.
 - [x] Same-origin, credentialed calls are used for authentication endpoints.
 - [x] No external runtime script or analytics dependency was added.
-- [ ] Closed-pilot IdP, durable session store, independent review, and release evidence are deployed.
+- [x] Durable PostgreSQL Credential/session/transaction stores and the closed
+  startup composition are implemented and locally verified.
+- [ ] Named closed-pilot IdP, protected deployment, independent review, and
+  exact-release evidence are complete.

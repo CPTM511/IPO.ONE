@@ -145,7 +145,8 @@ export async function setTenantTransactionContext(client, context) {
     `SELECT
        set_config('app.tenant_id', $1, true),
        set_config('app.actor_id', $2, true),
-       set_config('app.policy_version', $3, true)`,
+       set_config('app.policy_version', $3, true),
+       set_config('search_path', 'pg_catalog, public, pg_temp', true)`,
     [trusted.tenantId, trusted.actorId, trusted.policyVersion]
   );
 }

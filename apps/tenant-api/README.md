@@ -40,6 +40,24 @@ HttpOnly, host-only cookies. It adds no signup, Tenant/Actor selection, role,
 Mandate, chain, or funds authority. The anonymous public sandbox does not inject
 this handler and continues to advertise authentication as disabled.
 
+For a closed PostgreSQL-backed pilot, use
+`createPostgresHumanAccessComposition(...)`. The async factory verifies the
+dedicated authentication-only database role and active Tenant-bound system
+identity before constructing durable Credential, one-use transaction, session,
+event, OIDC, SIWE, and route adapters. It accepts only reviewed provider objects,
+numeric immutable Secret Manager version references, and pre-provisioned
+Credentials. The factory also requires the branded result of
+`loadAuthenticationRuntimeConfig(...)`; a caller-created lookalike cannot open
+the deployment gate. It never reads secret values from ambient environment
+variables, selects a Tenant from an HTTP request, enables signup, or grants
+Mandate/funds authority.
+
+The closed composition is not approved for hosted activation until its edge
+binds OIDC initiation/callback and SIWE challenge/verification to the durable
+credential-attempt admission profile plus reviewed WAF limits. Store capacity
+is defense in depth, not a rate limiter; deploying these anonymous entry routes
+without Tenant, Provider/account, and trusted-source limits is a release gate.
+
 For the local Human pilot, a composition may inject
 `createTenantWebAssetHandler()` into `createTenantHttpServer(...)`. This serves
 only the fixed IPO.ONE shell asset allowlist (`/`, `index.html`, JavaScript,

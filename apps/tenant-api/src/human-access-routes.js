@@ -1,8 +1,10 @@
 import {
   SESSION_COOKIE_NAME,
+  CSRF_BOOTSTRAP_COOKIE_NAME,
   TRANSACTION_COOKIE_NAME,
   assertBoundedString,
-  assertSafeIdentifier
+  assertSafeIdentifier,
+  csrfBootstrapCookie
 } from "../../../modules/authentication/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
 import { ApiBoundaryError } from "../../../packages/api-contract/src/index.js";
@@ -131,6 +133,13 @@ function parseCookies(header) {
   return cookies;
 }
 
+export function readHumanAccessCookie(header, name) {
+  if (![SESSION_COOKIE_NAME, CSRF_BOOTSTRAP_COOKIE_NAME, TRANSACTION_COOKIE_NAME].includes(name)) {
+    throw new DomainError("invalid_human_access_config", "Human access cookie name is invalid");
+  }
+  return parseCookies(header).get(name);
+}
+
 function oneHeader(headers, name, { required = false, maximum = 2_048 } = {}) {
   const value = headers[name];
   if (
@@ -216,7 +225,7 @@ function serializeCookie(cookie) {
     !cookie ||
     typeof cookie !== "object" ||
     Array.isArray(cookie) ||
-    !new Set([SESSION_COOKIE_NAME, TRANSACTION_COOKIE_NAME]).has(cookie.name) ||
+    !new Set([SESSION_COOKIE_NAME, CSRF_BOOTSTRAP_COOKIE_NAME, TRANSACTION_COOKIE_NAME]).has(cookie.name) ||
     typeof cookie.value !== "string" ||
     cookie.value.length > 4_096 ||
     /[;\r\n\0]/.test(cookie.value) ||
@@ -225,7 +234,7 @@ function serializeCookie(cookie) {
     cookie.secure !== true ||
     cookie.httpOnly !== true ||
     (
-      (cookie.name === SESSION_COOKIE_NAME && cookie.sameSite !== "Strict") ||
+      ([SESSION_COOKIE_NAME, CSRF_BOOTSTRAP_COOKIE_NAME].includes(cookie.name) && cookie.sameSite !== "Strict") ||
       (cookie.name === TRANSACTION_COOKIE_NAME && cookie.sameSite !== "Lax")
     )
   ) {
@@ -389,7 +398,7 @@ export function createHumanAccessRouteHandler(input) {
       if (!config) {
         throw new ApiBoundaryError("authentication_provider_rejected", "authentication provider is not available");
       }
-      const login = config.bff.beginLogin({ redirectUri: config.redirectUri, now });
+      const login = await config.bff.beginLogin({ redirectUri: config.redirectUri, now });
       redirect(response, login.authorizationUrl, requestId, [login.transactionCookie]);
       return true;
     }
@@ -411,7 +420,11 @@ export function createHumanAccessRouteHandler(input) {
         redirectUri: config.redirectUri,
         now
       });
-      redirect(response, successPath, requestId, [issued.cookie, issued.clearTransactionCookie]);
+      redirect(response, successPath, requestId, [
+        issued.cookie,
+        csrfBootstrapCookie(issued.csrfToken, issued.cookie.expiresAt),
+        issued.clearTransactionCookie
+      ]);
       return true;
     }
 
@@ -450,7 +463,12 @@ export function createHumanAccessRouteHandler(input) {
         schemaVersion: "ipo_one_authentication_result.v1",
         status: "authenticated",
         authenticationMethod: "siwe"
-      }, requestId, { "set-cookie": serializeCookie(issued.cookie) });
+      }, requestId, {
+        "set-cookie": [
+          serializeCookie(issued.cookie),
+          serializeCookie(csrfBootstrapCookie(issued.csrfToken, issued.cookie.expiresAt))
+        ]
+      });
       return true;
     }
 
@@ -471,11 +489,16 @@ export function createHumanAccessRouteHandler(input) {
         csrfToken: oneHeader(request.headers, "x-csrf-token", { required: true, maximum: 256 }),
         now
       });
-      const result = humanSessionBff.logout({ sessionHandle, now });
+      const result = await humanSessionBff.logout({ sessionHandle, now });
       sendJson(response, 200, {
         schemaVersion: "ipo_one_logout_result.v1",
         status: result.revoked ? "logged_out" : "already_inactive"
-      }, requestId, { "set-cookie": serializeCookie(result.clearSessionCookie) });
+      }, requestId, {
+        "set-cookie": [
+          serializeCookie(result.clearSessionCookie),
+          serializeCookie(result.clearCsrfBootstrapCookie)
+        ]
+      });
       return true;
     }
 

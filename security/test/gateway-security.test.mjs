@@ -48,7 +48,9 @@ test("commercial Human access stays provider-bound, same-origin, cookie-only, an
   assert.match(accessRoutes, /cookie\.secure !== true/);
   assert.doesNotMatch(accessRoutes, /accessToken|refreshToken|clientSecret|localStorage|sessionStorage/);
   assert.match(loginStore, /providerId: assertSafeIdentifier/);
-  assert.match(loginStore, /transaction\.providerId !== assertSafeIdentifier/);
+  assert.match(loginStore, /const checkedProvider = assertSafeIdentifier/);
+  assert.match(loginStore, /transaction\.providerId !== checkedProvider/);
+  assert.match(loginStore, /this\.#transactions\.delete\(reference\);\s+return Object\.freeze/);
   assert.match(humanBff, /this\.providerId = assertSafeIdentifier/);
   assert.match(tenantTransport, /host !== TENANT_HTTP_HOST/);
   assert.match(tenantTransport, /environment === "production"/);

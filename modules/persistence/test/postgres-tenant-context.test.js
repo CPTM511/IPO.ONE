@@ -177,6 +177,7 @@ test("transaction context uses parameterized transaction-local settings", async 
   assert.match(calls[0].text, /set_config\('app\.tenant_id', \$1, true\)/);
   assert.match(calls[0].text, /set_config\('app\.actor_id', \$2, true\)/);
   assert.match(calls[0].text, /set_config\('app\.policy_version', \$3, true\)/);
+  assert.match(calls[0].text, /set_config\('search_path', 'pg_catalog, public, pg_temp', true\)/);
   assert.deepEqual(calls[0].values, [
     VALID_CONTEXT.tenantId,
     VALID_CONTEXT.actorId,

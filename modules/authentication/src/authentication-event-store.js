@@ -49,22 +49,39 @@ export class InMemoryAuthenticationEventStore {
   }
 
   append(input) {
-    assertExactObjectKeys("authentication event", input, {
+    if (this.#events.length >= this.maximumEvents) {
+      throw authenticationError("authentication_event_capacity_exceeded", "authentication event capacity is exhausted");
+    }
+    const event = createAuthenticationEvent(input);
+    if (this.#eventIds.has(event.eventId)) {
+      throw authenticationError("duplicate_authentication_event", "authentication event id is not unique");
+    }
+    this.#eventIds.add(event.eventId);
+    this.#events.push(event);
+    return structuredClone(event);
+  }
+
+  list(filter = {}) {
+    return this.#events
+      .filter((event) => Object.entries(filter).every(([key, value]) => value === undefined || event[key] === value))
+      .map((event) => structuredClone(event));
+  }
+}
+
+export function createAuthenticationEvent(input) {
+  assertExactObjectKeys("authentication event", input, {
       required: ["eventType", "tenantId", "actorId", "credentialId", "reasonCode", "occurredAt"],
       optional: ["payload"]
     });
     if (!EVENT_TYPES.has(input.eventType)) {
       throw authenticationError("invalid_authentication_event", "authentication event type is invalid");
     }
-    if (this.#events.length >= this.maximumEvents) {
-      throw authenticationError("authentication_event_capacity_exceeded", "authentication event capacity is exhausted");
-    }
     const payload = input.payload ?? {};
     assertCredentialFree(payload);
     assertExactObjectKeys("authentication event payload", payload, {
       optional: EVENT_PAYLOAD_FIELDS.get(input.eventType) ?? []
     });
-    const event = {
+    const event = deepFreeze({
       eventId: createOperationalId("auth_event"),
       eventType: input.eventType,
       tenantId: assertSafeIdentifier("tenantId", input.tenantId),
@@ -77,19 +94,7 @@ export class InMemoryAuthenticationEventStore {
       occurredAt: new Date(input.occurredAt).toISOString(),
       payload: structuredClone(payload),
       schemaVersion: "authentication_event.v1"
-    };
+    });
     assertCredentialFree(event);
-    if (this.#eventIds.has(event.eventId)) {
-      throw authenticationError("duplicate_authentication_event", "authentication event id is not unique");
-    }
-    this.#eventIds.add(event.eventId);
-    this.#events.push(deepFreeze(event));
-    return structuredClone(event);
-  }
-
-  list(filter = {}) {
-    return this.#events
-      .filter((event) => Object.entries(filter).every(([key, value]) => value === undefined || event[key] === value))
-      .map((event) => structuredClone(event));
-  }
+    return event;
 }

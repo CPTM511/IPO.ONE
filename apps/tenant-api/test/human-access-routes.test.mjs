@@ -1,14 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  CSRF_BOOTSTRAP_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   TRANSACTION_COOKIE_NAME,
+  expiredCsrfBootstrapCookie,
   expiredSessionCookie,
-  expiredTransactionCookie
+  expiredTransactionCookie,
+  loadAuthenticationRuntimeConfig
 } from "../../../modules/authentication/src/index.js";
 import {
   HUMAN_ACCESS_ROUTES,
   createHumanAccessRouteHandler,
+  createPostgresHumanAccessComposition,
   createTenantHttpServer
 } from "../src/index.js";
 
@@ -59,7 +63,11 @@ function createAccessFixture() {
     },
     logout({ sessionHandle }) {
       const revoked = sessions.delete(sessionHandle);
-      return Object.freeze({ revoked, clearSessionCookie: expiredSessionCookie() });
+      return Object.freeze({
+        revoked,
+        clearSessionCookie: expiredSessionCookie(),
+        clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
+      });
     }
   };
   const oidcBff = {
@@ -77,7 +85,7 @@ function createAccessFixture() {
       return Object.freeze({
         cookie: activeSessionCookie("session-from-oidc-000000000000000000000000001"),
         clearTransactionCookie: expiredTransactionCookie(),
-        csrfToken: "must-never-enter-the-http-response"
+        csrfToken: "c".repeat(43)
       });
     }
   };
@@ -96,7 +104,7 @@ function createAccessFixture() {
       calls.push({ method: "completeWallet", input: structuredClone(input) });
       return Object.freeze({
         cookie: activeSessionCookie("session-from-wallet-0000000000000000000000001"),
-        csrfToken: "must-never-enter-the-http-response"
+        csrfToken: "c".repeat(43)
       });
     }
   };
@@ -168,10 +176,11 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
     assert.equal(callback.status, 303);
     assert.equal(callback.headers.get("location"), "/#human");
     const callbackCookies = callback.headers.getSetCookie();
-    assert.equal(callbackCookies.length, 2);
+    assert.equal(callbackCookies.length, 3);
     assert.match(callbackCookies[0], /^__Host-ipo_one_session=/);
-    assert.match(callbackCookies[1], /^__Host-ipo_one_login=;/);
-    assert.equal(callbackCookies.join("\n").includes("must-never"), false);
+    assert.match(callbackCookies[1], new RegExp(`^${CSRF_BOOTSTRAP_COOKIE_NAME}=${"c".repeat(43)}`));
+    assert.match(callbackCookies[1], /Secure; HttpOnly; SameSite=Strict/);
+    assert.match(callbackCookies[2], /^__Host-ipo_one_login=;/);
 
     const challenge = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.walletChallenge}`, {
       method: "POST",
@@ -196,7 +205,10 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       })
     });
     assert.equal(verify.status, 200);
-    assert.match(verify.headers.get("set-cookie"), /^__Host-ipo_one_session=/);
+    const verifyCookies = verify.headers.getSetCookie();
+    assert.equal(verifyCookies.length, 2);
+    assert.match(verifyCookies[0], /^__Host-ipo_one_session=/);
+    assert.match(verifyCookies[1], new RegExp(`^${CSRF_BOOTSTRAP_COOKIE_NAME}=`));
     const verifyText = await verify.text();
     assert.equal(verifyText.includes("signature"), false);
     assert.equal(verifyText.includes("must-never"), false);
@@ -215,7 +227,10 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       }
     });
     assert.equal(logout.status, 200);
-    assert.match(logout.headers.get("set-cookie"), /^__Host-ipo_one_session=;/);
+    const logoutCookies = logout.headers.getSetCookie();
+    assert.equal(logoutCookies.length, 2);
+    assert.match(logoutCookies[0], /^__Host-ipo_one_session=;/);
+    assert.match(logoutCookies[1], new RegExp(`^${CSRF_BOOTSTRAP_COOKIE_NAME}=;`));
     assert.equal((await logout.json()).status, "logged_out");
 
     const oidcCall = fixture.calls.find((call) => call.method === "completeOidc");
@@ -290,5 +305,53 @@ test("Tenant HTTP rejects an unreviewed Human access adapter type", () => {
       serveAuthentication: "caller-route"
     }),
     (error) => error.code === "invalid_tenant_transport_config"
+  );
+});
+
+test("PostgreSQL Human access composition closes unversioned secrets and empty provider sets", async () => {
+  const runtimeConfig = loadAuthenticationRuntimeConfig({
+    IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
+    IPO_ONE_IDP_VENDOR_ID: "synthetic_test_idp",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "a".repeat(40),
+    IPO_ONE_IDP_CONFIGURATION_REF: "projects/ipo-one-pilot/secrets/idp-issuer/versions/1",
+    IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF: "projects/ipo-one-pilot/secrets/oidc-client/versions/2",
+    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3",
+    IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
+  });
+  const base = {
+    pool: { query: async () => { throw new Error("database must not be reached"); } },
+    runtimeConfig,
+    tenantId: "tenant_pilot",
+    systemActorId: "actor_system_worker",
+    policyVersion: "security_001.v1",
+    browserOrigin: BROWSER_ORIGIN,
+    referenceHashKey: Buffer.alloc(32, 1),
+    referenceHashKeyRef: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3",
+    encryptionKey: Buffer.alloc(32, 2),
+    encryptionKeyRef: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4",
+    oidcProviders: []
+  };
+  await assert.rejects(
+    () => createPostgresHumanAccessComposition({
+      ...base,
+      referenceHashKeyRef: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/latest"
+    }),
+    (error) => error.code === "authentication_deployment_gate_closed"
+  );
+  await assert.rejects(
+    () => createPostgresHumanAccessComposition(base),
+    (error) => error.code === "authentication_deployment_gate_closed"
+  );
+  await assert.rejects(
+    () => createPostgresHumanAccessComposition({
+      ...base,
+      runtimeConfig: {
+        enabled: true,
+        mode: "closed_pilot",
+        deploymentGateSatisfied: true
+      }
+    }),
+    (error) => error.code === "authentication_deployment_gate_closed"
   );
 });

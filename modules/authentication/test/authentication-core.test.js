@@ -9,6 +9,7 @@ import {
   InMemoryCredentialRegistry,
   SenderConstraintMethod,
   assertAuthenticationContext,
+  assertPostgresAuthenticationRole,
   createReferenceHasher,
   loadAuthenticationRuntimeConfig
 } from "../src/index.js";
@@ -272,7 +273,65 @@ test("production authentication fails closed without IdP approval and secret-man
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "a".repeat(40),
     IPO_ONE_IDP_CONFIGURATION_REF: "projects/ipo-one-pilot/secrets/idp-issuer/versions/1",
     IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF: "projects/ipo-one-pilot/secrets/oidc-client/versions/2",
-    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3"
+    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3",
+    IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
   });
   assert.equal(approved.deploymentGateSatisfied, true);
+});
+
+test("authentication database role rejects a privilege vector with the right booleans in wrong slots", async () => {
+  const tablePrivileges = new Map([
+    ["public.tenants", [true, false, false, false, false, false, false]],
+    ["public.actors", [true, false, false, false, false, false, false]],
+    ["public.memberships", [true, false, false, false, false, false, false]],
+    ["public.authentication_credentials", [true, true, false, true, false, false, false]]
+  ]);
+  const queryable = {
+    async query(sql, parameters = []) {
+      if (sql.includes("FROM pg_catalog.pg_roles")) {
+        return {
+          rows: [{
+            rolname: "ipo_auth_test",
+            rolsuper: false,
+            rolbypassrls: false,
+            rolcreatedb: false,
+            rolcreaterole: false,
+            rolreplication: false,
+            rolinherit: false,
+            rolcanlogin: true,
+            is_session_role: true,
+            has_role_membership: false,
+            owns_rls_table: false
+          }]
+        };
+      }
+      if (sql.includes("has_schema_privilege")) {
+        return {
+          rows: [{ schema_usage: true, schema_create: false, database_create: false }]
+        };
+      }
+      if (sql.includes("current_schemas")) {
+        return { rows: [{ schemas: ["public"] }] };
+      }
+      const privileges = tablePrivileges.get(parameters[0]);
+      if (privileges) {
+        return {
+          rows: [{
+            can_select: privileges[0],
+            can_insert: privileges[1],
+            can_update: privileges[2],
+            can_delete: privileges[3],
+            can_truncate: privileges[4],
+            can_reference: privileges[5],
+            can_trigger: privileges[6]
+          }]
+        };
+      }
+      throw new Error("unexpected role assertion query");
+    }
+  };
+  await assert.rejects(
+    () => assertPostgresAuthenticationRole(queryable),
+    (error) => error.code === "unsafe_postgres_authentication_role"
+  );
 });

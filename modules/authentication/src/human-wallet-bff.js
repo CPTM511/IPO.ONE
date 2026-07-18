@@ -67,12 +67,12 @@ export class HumanWalletBff {
     this.signatureVerifier = signatureVerifier;
   }
 
-  beginLogin(input) {
+  async beginLogin(input) {
     return this.transactionStore.create(input);
   }
 
   async completeLogin({ transactionHandle, signature, now = new Date() }) {
-    const transaction = this.transactionStore.consume({ handle: transactionHandle, now });
+    const transaction = await this.transactionStore.consume({ handle: transactionHandle, now });
     const checkedSignature = assertBoundedString("wallet signature", signature, {
       minimum: 132,
       maximum: 4_096,
@@ -92,7 +92,7 @@ export class HumanWalletBff {
     if (verified !== true) {
       throw authenticationError("wallet_signature_rejected", "wallet signature verification failed");
     }
-    const credential = this.credentialRegistry.findBySubject({
+    const credential = await this.credentialRegistry.findBySubject({
       issuer: this.issuer,
       tenantId: this.tenantId,
       externalSubject: `eip155:${transaction.chainId}:${transaction.address.toLowerCase()}`,

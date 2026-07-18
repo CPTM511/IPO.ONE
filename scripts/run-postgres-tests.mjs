@@ -16,6 +16,10 @@ if (!/(^|[_-])test($|[_-])/.test(databaseName) && process.env.IPO_ONE_ALLOW_DB_R
 }
 
 const testFiles = [
+  ...readdirSync("modules/authentication/test-postgres")
+    .filter((file) => file.endsWith(".test.mjs"))
+    .sort()
+    .map((file) => `modules/authentication/test-postgres/${file}`),
   ...readdirSync("modules/persistence/test-postgres")
     .filter((file) => file.endsWith(".test.mjs"))
     .sort()

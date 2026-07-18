@@ -80,7 +80,7 @@ function createFixture() {
 
 test("SIWE creates a one-use host session only for a pre-provisioned wallet credential", async () => {
   const fixture = createFixture();
-  const login = fixture.bff.beginLogin({
+  const login = await fixture.bff.beginLogin({
     address: fixture.account.address,
     chainId: 84532,
     now: NOW
@@ -115,13 +115,13 @@ test("SIWE creates a one-use host session only for a pre-provisioned wallet cred
 
 test("SIWE rejects unapproved chains, invalid signatures, and unprovisioned wallets", async () => {
   const fixture = createFixture();
-  assert.throws(
+  await assert.rejects(
     () => fixture.bff.beginLogin({ address: fixture.account.address, chainId: 1, now: NOW }),
     (error) => error.code === "wallet_chain_rejected"
   );
 
   const wrongAccount = privateKeyToAccount(generatePrivateKey());
-  const wrongSignatureLogin = fixture.bff.beginLogin({
+  const wrongSignatureLogin = await fixture.bff.beginLogin({
     address: fixture.account.address,
     chainId: 84532,
     now: NOW
@@ -136,7 +136,7 @@ test("SIWE rejects unapproved chains, invalid signatures, and unprovisioned wall
     (error) => error.code === "wallet_signature_rejected"
   );
 
-  const unprovisionedLogin = fixture.bff.beginLogin({
+  const unprovisionedLogin = await fixture.bff.beginLogin({
     address: wrongAccount.address,
     chainId: 84532,
     now: NOW

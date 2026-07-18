@@ -16,6 +16,18 @@ with DPoP or trusted mTLS sender binding. Open wallet self-signup, shared
 steady-state client secrets, bearer-only workload access, external-role
 authorization, raw credential persistence, and protocol mutation are excluded.
 
-This module is not connected to the public sandbox runtime. A production Human
-IdP, client registration, secret-manager references, and deployment approval
-remain explicit launch gates.
+AUTHN-004 adds restart-safe PostgreSQL Credentials, one-use OIDC/SIWE
+transactions, host sessions, atomic Credential/session deprovisioning, immutable
+events, forced RLS, and a least-privilege authentication-only database role.
+Recoverable transaction values use AES-256-GCM envelopes; external subjects,
+wallet addresses, cookie/CSRF values, and token identifiers are keyed references.
+
+`createPostgresHumanAccessComposition(...)` in `apps/tenant-api` is the closed
+deployment composition. It requires a fixed Tenant and system identity, a
+reviewed provider set, and immutable Secret Manager version references before it
+will expose routes. It does not provision users or grant business authority.
+
+This module is not connected to the public sandbox runtime. A named production
+Human IdP, client registration, managed secret values, protected HTTPS
+deployment, independent review, and exact-release approval remain explicit
+launch gates.

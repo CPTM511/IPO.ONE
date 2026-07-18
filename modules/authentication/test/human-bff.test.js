@@ -108,7 +108,7 @@ async function createFixture({
     extraClaims = {},
     responseExtras = {}
   } = {}) {
-    const login = bff.beginLogin({ redirectUri: REDIRECT_URI, now });
+    const login = await bff.beginLogin({ redirectUri: REDIRECT_URI, now });
     const authorizationUrl = new URL(login.authorizationUrl);
     const state = authorizationUrl.searchParams.get("state");
     const expectedNonce = authorizationUrl.searchParams.get("nonce");
@@ -215,7 +215,7 @@ test("standard OIDC maps provider subject through the internal credential instea
     idTokenProfile: "standard_oidc",
     tenantId: "tenant_alpha"
   });
-  const login = standardBff.beginLogin({ redirectUri: REDIRECT_URI, now: NOW });
+  const login = await standardBff.beginLogin({ redirectUri: REDIRECT_URI, now: NOW });
   const authorizationUrl = new URL(login.authorizationUrl);
   const idToken = await fixture.issuer.sign({
     audience: CLIENT_ID,
@@ -251,13 +251,13 @@ test("standard OIDC maps provider subject through the internal credential instea
 test("Human session enforces origin and CSRF on mutations, rotates, logs out, and rejects fixation", async () => {
   const fixture = await createFixture();
   const issued = await (await fixture.beginAndIssue()).complete();
-  const readContext = fixture.bff.authenticateSession({
+  const readContext = await fixture.bff.authenticateSession({
     sessionHandle: issued.cookie.value,
     requestMethod: "GET",
     now: NOW
   });
   assert.equal(readContext.actorId, "actor_human_alpha");
-  assert.throws(
+  await assert.rejects(
     () => fixture.bff.authenticateSession({
       sessionHandle: issued.cookie.value,
       requestMethod: "POST",
@@ -267,7 +267,7 @@ test("Human session enforces origin and CSRF on mutations, rotates, logs out, an
     }),
     (error) => error.code === "csrf_origin_rejected"
   );
-  assert.throws(
+  await assert.rejects(
     () => fixture.bff.authenticateSession({
       sessionHandle: issued.cookie.value,
       requestMethod: "POST",
@@ -277,21 +277,21 @@ test("Human session enforces origin and CSRF on mutations, rotates, logs out, an
     }),
     (error) => error.code === "csrf_token_rejected"
   );
-  assert.equal(fixture.bff.authenticateSession({
+  assert.equal((await fixture.bff.authenticateSession({
     sessionHandle: issued.cookie.value,
     requestMethod: "POST",
     requestOrigin: ORIGIN,
     csrfToken: issued.csrfToken,
     now: NOW
-  }).tenantId, "tenant_alpha");
+  })).tenantId, "tenant_alpha");
 
-  const rotated = fixture.bff.rotateSession({
+  const rotated = await fixture.bff.rotateSession({
     sessionHandle: issued.cookie.value,
     now: new Date(NOW.getTime() + 1_000)
   });
   assert.notEqual(rotated.cookie.value, issued.cookie.value);
   assert.notEqual(rotated.csrfToken, issued.csrfToken);
-  assert.throws(
+  await assert.rejects(
     () => fixture.bff.authenticateSession({
       sessionHandle: issued.cookie.value,
       requestMethod: "GET",
@@ -299,11 +299,13 @@ test("Human session enforces origin and CSRF on mutations, rotates, logs out, an
     }),
     (error) => error.code === "authentication_session_rejected"
   );
-  const logout = fixture.bff.logout({ sessionHandle: rotated.cookie.value, now: NOW });
+  const logout = await fixture.bff.logout({ sessionHandle: rotated.cookie.value, now: NOW });
   assert.equal(logout.revoked, true);
   assert.equal(logout.clearSessionCookie.name, "__Host-ipo_one_session");
   assert.equal(logout.clearSessionCookie.maxAge, 0);
-  assert.equal(fixture.bff.logout({ sessionHandle: rotated.cookie.value, now: NOW }).revoked, false);
+  assert.equal(logout.clearCsrfBootstrapCookie.name, "__Host-ipo_one_csrf_bootstrap");
+  assert.equal(logout.clearCsrfBootstrapCookie.maxAge, 0);
+  assert.equal((await fixture.bff.logout({ sessionHandle: rotated.cookie.value, now: NOW })).revoked, false);
 });
 
 test("Human sessions fail closed immediately after credential rotation", async () => {
@@ -319,7 +321,7 @@ test("Human sessions fail closed immediately after credential rotation", async (
     reasonCode: "credential_key_rotation",
     now: new Date(NOW.getTime() + 1_000)
   });
-  assert.throws(
+  await assert.rejects(
     () => fixture.bff.authenticateSession({
       sessionHandle: issued.cookie.value,
       requestMethod: "GET",
@@ -342,6 +344,8 @@ test("login transactions are one-time and reject state, redirect, nonce, and tok
     }),
     (error) => error.code === "oidc_transaction_rejected"
   );
+  const recovered = await wrongStateFlow.complete();
+  assert.equal(recovered.session.actorId, "actor_human_alpha");
   await assert.rejects(() => wrongStateFlow.complete(), (error) => error.code === "oidc_transaction_rejected");
 
   const wrongNonceFlow = await fixture.beginAndIssue({ nonce: "n".repeat(43) });
@@ -352,7 +356,7 @@ test("login transactions are one-time and reject state, redirect, nonce, and tok
     () => confusedResponse.complete(),
     (error) => error.code === "oidc_token_response_rejected"
   );
-  assert.throws(
+  await assert.rejects(
     () => fixture.bff.beginLogin({ redirectUri: "https://evil.example/callback", now: NOW }),
     (error) => error.code === "oidc_redirect_rejected"
   );
@@ -376,6 +380,14 @@ test("login transactions are bound to one configured OIDC provider", async () =>
     }),
     (error) => error.code === "oidc_transaction_rejected"
   );
+  const recovered = transactionStore.consume({
+      handle: transaction.cookie.value,
+      state: transaction.state,
+      redirectUri: REDIRECT_URI,
+      providerId: "google",
+      now: NOW
+    });
+  assert.equal(recovered.providerId, "google");
   assert.throws(
     () => transactionStore.consume({
       handle: transaction.cookie.value,
@@ -400,7 +412,7 @@ test("OIDC authorization code exchange has a bounded wait", async () => {
 test("sessions enforce inactivity, absolute expiry, credential revocation, and deprovisioning", async () => {
   const idleFixture = await createFixture({ idleTimeoutMs: 60_000, absoluteTimeoutMs: 120_000 });
   const idleSession = await (await idleFixture.beginAndIssue()).complete();
-  assert.throws(
+  await assert.rejects(
     () => idleFixture.bff.authenticateSession({
       sessionHandle: idleSession.cookie.value,
       requestMethod: "GET",
@@ -415,12 +427,12 @@ test("sessions enforce inactivity, absolute expiry, credential revocation, and d
     absoluteTimeoutMs: 120_000
   });
   const absoluteSession = await (await absoluteFixture.beginAndIssue()).complete();
-  absoluteFixture.bff.authenticateSession({
+  await absoluteFixture.bff.authenticateSession({
     sessionHandle: absoluteSession.cookie.value,
     requestMethod: "GET",
     now: new Date(NOW.getTime() + 60_000)
   });
-  assert.throws(
+  await assert.rejects(
     () => absoluteFixture.bff.authenticateSession({
       sessionHandle: absoluteSession.cookie.value,
       requestMethod: "GET",
@@ -431,14 +443,14 @@ test("sessions enforce inactivity, absolute expiry, credential revocation, and d
 
   const revokeFixture = await createFixture();
   const active = await (await revokeFixture.beginAndIssue()).complete();
-  const result = revokeFixture.bff.deprovisionCredential({
+  const result = await revokeFixture.bff.deprovisionCredential({
     credentialId: revokeFixture.credential.credentialId,
     performedByActorId: "actor_security_admin",
     reasonCode: "operator_deprovisioned",
     now: NOW
   });
   assert.equal(result.revokedSessions, 1);
-  assert.throws(
+  await assert.rejects(
     () => revokeFixture.bff.authenticateSession({
       sessionHandle: active.cookie.value,
       requestMethod: "GET",

@@ -6,7 +6,10 @@ import {
 } from "./constants.js";
 import { assertAuthenticationContext } from "./authentication-context.js";
 import { verifyPinnedJwt } from "./jwt-verifier.js";
-import { expiredSessionCookie } from "./human-session-store.js";
+import {
+  expiredCsrfBootstrapCookie,
+  expiredSessionCookie
+} from "./human-session-store.js";
 import { expiredTransactionCookie } from "./login-transaction-store.js";
 import {
   assertBoundedString,
@@ -98,6 +101,25 @@ function exactHttpsEndpoint(name, value) {
   return parsed.href;
 }
 
+function exactHttpsRedirectUri(value) {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw authenticationError("oidc_redirect_rejected", "OIDC redirect URI is invalid");
+  }
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.hash ||
+    parsed.search.length > 2_048
+  ) {
+    throw authenticationError("oidc_redirect_rejected", "OIDC redirect URI is invalid");
+  }
+  return parsed.href;
+}
+
 export class HumanOidcBff {
   constructor({
     issuer,
@@ -147,7 +169,7 @@ export class HumanOidcBff {
     this.issuer = issuer;
     this.authorizationEndpoint = exactHttpsEndpoint("authorizationEndpoint", authorizationEndpoint);
     this.clientId = assertSafeIdentifier("clientId", clientId);
-    this.redirectUris = Object.freeze(redirectUris.map((uri) => exactHttpsEndpoint("redirectUri", uri)));
+    this.redirectUris = Object.freeze(redirectUris.map((uri) => exactHttpsRedirectUri(uri)));
     if (new Set(this.redirectUris).size !== this.redirectUris.length) {
       throw authenticationError("invalid_authentication_configuration", "redirectUris contains duplicates");
     }
@@ -179,9 +201,9 @@ export class HumanOidcBff {
     this.exchangeTimeoutMs = exchangeTimeoutMs;
   }
 
-  beginLogin({ redirectUri, now = new Date() }) {
+  async beginLogin({ redirectUri, now = new Date() }) {
     const normalizedRedirect = this.#redirectUri(redirectUri);
-    const transaction = this.transactionStore.create({
+    const transaction = await this.transactionStore.create({
       redirectUri: normalizedRedirect,
       providerId: this.providerId,
       now
@@ -204,7 +226,7 @@ export class HumanOidcBff {
 
   async completeLogin({ transactionHandle, state, code, redirectUri, now = new Date() }) {
     const normalizedRedirect = this.#redirectUri(redirectUri);
-    const transaction = this.transactionStore.consume({
+    const transaction = await this.transactionStore.consume({
       handle: transactionHandle,
       state,
       redirectUri: normalizedRedirect,
@@ -265,7 +287,7 @@ export class HumanOidcBff {
     if (!standardProfile && clientId !== this.clientId) {
       throw authenticationError("authentication_binding_rejected", "ID token is not bound to this client");
     }
-    const credential = this.credentialRegistry.findBySubject({
+    const credential = await this.credentialRegistry.findBySubject({
       issuer: claims.iss,
       tenantId,
       externalSubject: assertBoundedString("sub", claims.sub, { maximum: 512 }),
@@ -302,7 +324,7 @@ export class HumanOidcBff {
       allowEmpty: false,
       itemPattern: /^[A-Za-z0-9][A-Za-z0-9._:-]+$/
     });
-    const issued = this.sessionStore.create({
+    const issued = await this.sessionStore.create({
       tenantId,
       actorId: credential.actorId,
       actorType,
@@ -325,34 +347,43 @@ export class HumanOidcBff {
     });
   }
 
-  authenticateSession(input) {
+  async authenticateSession(input) {
     return this.sessionStore.authenticate(input);
   }
 
-  rotateSession(input) {
+  async rotateSession(input) {
     return this.sessionStore.rotate(input);
   }
 
-  logout(input) {
+  async logout(input) {
     return Object.freeze({
-      revoked: this.sessionStore.revoke(input),
-      clearSessionCookie: expiredSessionCookie()
+      revoked: await this.sessionStore.revoke(input),
+      clearSessionCookie: expiredSessionCookie(),
+      clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
     });
   }
 
-  deprovisionCredential({ credentialId, performedByActorId, reasonCode, now = new Date() }) {
-    const credential = this.credentialRegistry.revoke({
+  async deprovisionCredential({ credentialId, performedByActorId, reasonCode, now = new Date() }) {
+    if (typeof this.credentialRegistry.deprovision === "function") {
+      return this.credentialRegistry.deprovision({
+        credentialId,
+        performedByActorId,
+        reasonCode,
+        now
+      });
+    }
+    const credential = await this.credentialRegistry.revoke({
       credentialId,
       performedByActorId,
       reasonCode,
       now
     });
-    const revokedSessions = this.sessionStore.revokeByCredential({ credentialId, reasonCode, now });
+    const revokedSessions = await this.sessionStore.revokeByCredential({ credentialId, reasonCode, now });
     return Object.freeze({ credential, revokedSessions });
   }
 
   #redirectUri(value) {
-    const normalized = exactHttpsEndpoint("redirectUri", value);
+    const normalized = exactHttpsRedirectUri(value);
     if (!this.redirectUris.includes(normalized)) {
       throw authenticationError("oidc_redirect_rejected", "OIDC redirect URI is not registered");
     }
