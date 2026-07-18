@@ -123,6 +123,7 @@ assert.doesNotMatch(closedPilotService, /versions\/(?:latest|0)(?:\b|\})/);
 assert.doesNotMatch(closedPilotService, /run\.googleapis\.com\/(?:network-interfaces|vpc-access-egress)/);
 assert.doesNotMatch(closedPilotService, /IPO_ONE_OIDC_PROVIDER_CONFIG_FILE/);
 assert.doesNotMatch(closedPilotService, /httpHeaders:/);
+assert.doesNotMatch(closedPilotService, /- name: PORT\b/);
 assert.match(closedPilotService, /secretName: ipo-one-identity-config/);
 assert.match(closedPilotService, /secretName: ipo-one-edge-assertion-key/);
 assert.equal(closedPilotStack.edge.edgeAssertionHeader, "x-ipo-one-edge-assertion");
