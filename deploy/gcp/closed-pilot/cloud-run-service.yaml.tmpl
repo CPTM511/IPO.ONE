@@ -72,12 +72,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: ipo-one-gateway-database-url
-                  key: ${GATEWAY_DATABASE_URL_VERSION}
+                  key: "${GATEWAY_DATABASE_URL_VERSION}"
             - name: IPO_ONE_AUTH_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: ipo-one-auth-database-url
-                  key: ${AUTH_DATABASE_URL_VERSION}
+                  key: "${AUTH_DATABASE_URL_VERSION}"
             - name: IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE
               value: /var/run/secrets/ipo-one/auth-reference-hash-key/key
             - name: IPO_ONE_AUTH_ENCRYPTION_KEY_FILE
@@ -120,25 +120,25 @@ spec:
           secret:
             secretName: ipo-one-auth-reference-hash-key
             items:
-              - key: ${AUTH_REFERENCE_HASH_KEY_VERSION}
+              - key: "${AUTH_REFERENCE_HASH_KEY_VERSION}"
                 path: key
         - name: auth-encryption-key
           secret:
             secretName: ipo-one-auth-encryption-key
             items:
-              - key: ${AUTH_ENCRYPTION_KEY_VERSION}
+              - key: "${AUTH_ENCRYPTION_KEY_VERSION}"
                 path: key
         - name: identity-config
           secret:
             secretName: ipo-one-identity-config
             items:
-              - key: ${IDENTITY_CONFIG_VERSION}
+              - key: "${IDENTITY_CONFIG_VERSION}"
                 path: config.json
         - name: edge-assertion-key
           secret:
             secretName: ipo-one-edge-assertion-key
             items:
-              - key: ${EDGE_ASSERTION_KEY_VERSION}
+              - key: "${EDGE_ASSERTION_KEY_VERSION}"
                 path: key
   traffic:
     - percent: 100

@@ -1,10 +1,44 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
+import pg from "pg";
+import { migrateUp } from "../../../scripts/migrate.mjs";
 import {
   assertProductionBootstrapConfig,
   bootstrapProductionDatabase
 } from "../src/production-bootstrap.js";
+
+const { Pool } = pg;
+
+test("fresh migrations succeed for a non-superuser database owner under forced RLS", async () => {
+  const suffix = randomBytes(5).toString("hex");
+  const role = `ipo_migration_${suffix}`;
+  const database = `ipo_migration_test_${suffix}`;
+  const password = randomBytes(24).toString("hex");
+  const adminUrl = new URL(process.env.DATABASE_URL);
+  adminUrl.pathname = "/postgres";
+  const admin = new Pool({ connectionString: adminUrl.toString(), max: 1 });
+  let target;
+  try {
+    await admin.query(
+      `CREATE ROLE "${role}" LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+    );
+    await admin.query(`CREATE DATABASE "${database}" OWNER "${role}"`);
+    const targetUrl = new URL(adminUrl);
+    targetUrl.username = role;
+    targetUrl.password = password;
+    targetUrl.pathname = `/${database}`;
+    target = new Pool({ connectionString: targetUrl.toString(), max: 1 });
+    const applied = await migrateUp({ pool: target });
+    assert.equal(applied.at(-1), "0025_durable_human_authentication");
+    assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
+  } finally {
+    await target?.end().catch(() => {});
+    await admin.query(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`).catch(() => {});
+    await admin.query(`DROP ROLE IF EXISTS "${role}"`).catch(() => {});
+    await admin.end();
+  }
+});
 
 test("production bootstrap creates closed roles, seeds identity, and is idempotent", async () => {
   const suffix = randomBytes(6).toString("hex");

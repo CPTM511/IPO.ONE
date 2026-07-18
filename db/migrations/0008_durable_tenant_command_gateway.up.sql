@@ -5,6 +5,7 @@ ALTER TABLE memberships
   ADD COLUMN controller_actor_id TEXT;
 
 ALTER TABLE memberships DISABLE TRIGGER tenant_context_guard_memberships;
+ALTER TABLE memberships DISABLE ROW LEVEL SECURITY;
 
 UPDATE memberships
    SET client_ids = CASE
@@ -15,6 +16,8 @@ UPDATE memberships
        version = 1;
 
 ALTER TABLE memberships ENABLE TRIGGER tenant_context_guard_memberships;
+ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE memberships FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE memberships
   ALTER COLUMN client_ids SET NOT NULL,

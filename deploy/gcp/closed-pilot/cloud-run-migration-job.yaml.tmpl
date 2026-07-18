@@ -33,7 +33,7 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       name: ipo-one-migration-database-url
-                      key: ${MIGRATION_DATABASE_URL_VERSION}
+                      key: "${MIGRATION_DATABASE_URL_VERSION}"
                 - name: IPO_ONE_BOOTSTRAP_CONFIG_FILE
                   value: /var/run/secrets/ipo-one/bootstrap-config/config.json
                 - name: IPO_ONE_GATEWAY_DATABASE_PASSWORD_FILE
@@ -56,23 +56,23 @@ spec:
               secret:
                 secretName: ipo-one-bootstrap-config
                 items:
-                  - key: ${BOOTSTRAP_CONFIG_VERSION}
+                  - key: "${BOOTSTRAP_CONFIG_VERSION}"
                     path: config.json
             - name: gateway-database-password
               secret:
                 secretName: ipo-one-gateway-database-password
                 items:
-                  - key: ${GATEWAY_DATABASE_PASSWORD_VERSION}
+                  - key: "${GATEWAY_DATABASE_PASSWORD_VERSION}"
                     path: value
             - name: auth-database-password
               secret:
                 secretName: ipo-one-auth-database-password
                 items:
-                  - key: ${AUTH_DATABASE_PASSWORD_VERSION}
+                  - key: "${AUTH_DATABASE_PASSWORD_VERSION}"
                     path: value
             - name: auth-reference-hash-key
               secret:
                 secretName: ipo-one-auth-reference-hash-key
                 items:
-                  - key: ${AUTH_REFERENCE_HASH_KEY_VERSION}
+                  - key: "${AUTH_REFERENCE_HASH_KEY_VERSION}"
                     path: key
