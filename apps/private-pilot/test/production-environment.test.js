@@ -4,7 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { loadProductionClosedPilotEnvironment } from "../src/production-environment.js";
-import { loadProductionBootstrapConfig } from "../src/production-bootstrap.js";
+import {
+  assertProductionBootstrapConfig,
+  loadProductionBootstrapConfig
+} from "../src/production-bootstrap.js";
 import { createProductionClosedPilotRuntime } from "../src/production-runtime.js";
 
 const SECRET_REF = "projects/ipo-one-prod/secrets/example/versions/1";
@@ -52,7 +55,6 @@ test("production environment supports reviewed wallet-only access without an OID
     IPO_ONE_IDP_VENDOR_ID: "wallet_only",
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "b".repeat(40),
     IPO_ONE_IDP_CONFIGURATION_REF: SECRET_REF,
-    IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF: SECRET_REF,
     IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: SECRET_REF,
     IPO_ONE_AUTH_ENCRYPTION_KEY_REF: SECRET_REF,
     IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE: referenceKey,
@@ -117,6 +119,7 @@ test("production bootstrap config derives closed roles and rejects permission in
     }]
   }));
   const config = await loadProductionBootstrapConfig(path);
+  assert.equal(assertProductionBootstrapConfig(config), config);
   assert.equal(config.credentials[0].profile.roleBundle, "principal_controller");
   assert.equal(config.credentials[1].profile.roleBundle, "agent_runtime");
   assert.equal(Object.hasOwn(config.credentials[0], "capabilities"), false);

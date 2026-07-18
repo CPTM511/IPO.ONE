@@ -277,6 +277,29 @@ test("production authentication fails closed without IdP approval and secret-man
     IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
   });
   assert.equal(approved.deploymentGateSatisfied, true);
+  const walletOnly = loadAuthenticationRuntimeConfig({
+    IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
+    IPO_ONE_IDP_VENDOR_ID: "wallet_only",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "a".repeat(40),
+    IPO_ONE_IDP_CONFIGURATION_REF: "projects/ipo-one-pilot/secrets/idp-issuer/versions/1",
+    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3",
+    IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
+  });
+  assert.equal(walletOnly.deploymentGateSatisfied, true);
+  assert.equal(Object.hasOwn(walletOnly, "oidcClientCredentialRef"), false);
+  assert.throws(
+    () => loadAuthenticationRuntimeConfig({
+      IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+      IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
+      IPO_ONE_IDP_VENDOR_ID: "google_oidc",
+      IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "a".repeat(40),
+      IPO_ONE_IDP_CONFIGURATION_REF: "projects/ipo-one-pilot/secrets/idp-issuer/versions/1",
+      IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3",
+      IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
+    }),
+    (error) => error.code === "authentication_deployment_gate_closed"
+  );
 });
 
 test("authentication database role rejects a privilege vector with the right booleans in wrong slots", async () => {

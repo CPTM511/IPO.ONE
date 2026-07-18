@@ -48,11 +48,12 @@
     "ipo-one-gateway-database-url",
     "ipo-one-auth-database-url",
     "ipo-one-migration-database-url",
+    "ipo-one-gateway-database-password",
+    "ipo-one-auth-database-password",
+    "ipo-one-bootstrap-config",
     "ipo-one-auth-reference-hash-key",
     "ipo-one-auth-encryption-key",
-    "ipo-one-google-oidc-client-secret",
     "ipo-one-identity-config",
-    "ipo-one-agent-mtls-config",
     "ipo-one-edge-assertion-key"
   ],
   "edge": {

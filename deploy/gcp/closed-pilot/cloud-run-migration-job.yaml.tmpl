@@ -20,18 +20,59 @@ spec:
           timeoutSeconds: "900"
           serviceAccountName: ${MIGRATION_SERVICE_ACCOUNT_EMAIL}
           containers:
-            - name: migrate
+            - name: bootstrap
               image: ${IMAGE_URI}
               command:
                 - /nodejs/bin/node
               args:
-                - scripts/migrate.mjs
-                - up
+                - apps/private-pilot/src/bootstrap-production.js
               env:
                 - name: NODE_ENV
                   value: production
-                - name: DATABASE_URL
+                - name: IPO_ONE_ADMIN_DATABASE_URL
                   valueFrom:
                     secretKeyRef:
                       name: ipo-one-migration-database-url
                       key: ${MIGRATION_DATABASE_URL_VERSION}
+                - name: IPO_ONE_BOOTSTRAP_CONFIG_FILE
+                  value: /var/run/secrets/ipo-one/bootstrap-config/config.json
+                - name: IPO_ONE_GATEWAY_DATABASE_PASSWORD_FILE
+                  value: /var/run/secrets/ipo-one/gateway-database-password/value
+                - name: IPO_ONE_AUTH_DATABASE_PASSWORD_FILE
+                  value: /var/run/secrets/ipo-one/auth-database-password/value
+                - name: IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE
+                  value: /var/run/secrets/ipo-one/auth-reference-hash-key/key
+              volumeMounts:
+                - name: bootstrap-config
+                  mountPath: /var/run/secrets/ipo-one/bootstrap-config
+                - name: gateway-database-password
+                  mountPath: /var/run/secrets/ipo-one/gateway-database-password
+                - name: auth-database-password
+                  mountPath: /var/run/secrets/ipo-one/auth-database-password
+                - name: auth-reference-hash-key
+                  mountPath: /var/run/secrets/ipo-one/auth-reference-hash-key
+          volumes:
+            - name: bootstrap-config
+              secret:
+                secretName: ipo-one-bootstrap-config
+                items:
+                  - key: ${BOOTSTRAP_CONFIG_VERSION}
+                    path: config.json
+            - name: gateway-database-password
+              secret:
+                secretName: ipo-one-gateway-database-password
+                items:
+                  - key: ${GATEWAY_DATABASE_PASSWORD_VERSION}
+                    path: value
+            - name: auth-database-password
+              secret:
+                secretName: ipo-one-auth-database-password
+                items:
+                  - key: ${AUTH_DATABASE_PASSWORD_VERSION}
+                    path: value
+            - name: auth-reference-hash-key
+              secret:
+                secretName: ipo-one-auth-reference-hash-key
+                items:
+                  - key: ${AUTH_REFERENCE_HASH_KEY_VERSION}
+                    path: key

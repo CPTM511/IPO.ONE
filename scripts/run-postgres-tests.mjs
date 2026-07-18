@@ -31,7 +31,11 @@ const testFiles = [
   ...readdirSync("modules/operations-control/test-postgres")
     .filter((file) => file.endsWith(".test.mjs"))
     .sort()
-    .map((file) => `modules/operations-control/test-postgres/${file}`)
+    .map((file) => `modules/operations-control/test-postgres/${file}`),
+  ...readdirSync("apps/private-pilot/test-postgres")
+    .filter((file) => file.endsWith(".test.mjs"))
+    .sort()
+    .map((file) => `apps/private-pilot/test-postgres/${file}`)
 ];
 
 const result = spawnSync(

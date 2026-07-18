@@ -111,9 +111,7 @@ for (const requiredSetting of [
   "IPO_ONE_AUTH_DATABASE_URL",
   "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE",
   "IPO_ONE_AUTH_ENCRYPTION_KEY_FILE",
-  "IPO_ONE_OIDC_CLIENT_SECRET_FILE",
   "IPO_ONE_IDENTITY_CONFIG_FILE",
-  "IPO_ONE_AGENT_MTLS_CONFIG_FILE",
   "IPO_ONE_EDGE_ASSERTION_KEY_FILE",
   "path: /readyz",
   "path: /livez"
@@ -131,6 +129,15 @@ assert.equal(closedPilotStack.edge.edgeAssertionHeader, "x-ipo-one-edge-assertio
 assert.equal(closedPilotStack.edge.clientCertificateHeader, "x-ipo-one-client-cert-sha256");
 assert.match(closedPilotMigrationJob, /serviceAccountName: \$\{MIGRATION_SERVICE_ACCOUNT_EMAIL\}/);
 assert.match(closedPilotMigrationJob, /name: ipo-one-migration-database-url/);
+assert.match(closedPilotMigrationJob, /apps\/private-pilot\/src\/bootstrap-production\.js/);
+for (const secret of [
+  "ipo-one-bootstrap-config",
+  "ipo-one-gateway-database-password",
+  "ipo-one-auth-database-password",
+  "ipo-one-auth-reference-hash-key"
+]) {
+  assert.match(closedPilotMigrationJob, new RegExp(`secretName: ${secret}`));
+}
 assert.match(closedPilotMigrationJob, /maxRetries: 0/);
 assert.doesNotMatch(closedPilotMigrationJob, /RUNTIME_SERVICE_ACCOUNT_EMAIL/);
 for (const priority of [100, 150, 160, 200, 300, 310, 2147483647]) {

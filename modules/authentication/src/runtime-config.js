@@ -25,12 +25,15 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
         "closed-pilot authentication requires an external IdP deployment approval"
       );
     }
-    for (const name of [
+    const requiredSecretReferences = [
       "IPO_ONE_IDP_CONFIGURATION_REF",
-      "IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF",
       "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
       "IPO_ONE_AUTH_ENCRYPTION_KEY_REF"
-    ]) {
+    ];
+    if (environment.IPO_ONE_IDP_VENDOR_ID !== "wallet_only") {
+      requiredSecretReferences.push("IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF");
+    }
+    for (const name of requiredSecretReferences) {
       const value = environment[name];
       if (
         typeof value !== "string" ||
@@ -58,7 +61,9 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
           vendorId: environment.IPO_ONE_IDP_VENDOR_ID,
           approvalSha: environment.IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA,
           idpConfigurationRef: environment.IPO_ONE_IDP_CONFIGURATION_REF,
-          oidcClientCredentialRef: environment.IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF,
+          ...(environment.IPO_ONE_IDP_VENDOR_ID === "wallet_only"
+            ? {}
+            : { oidcClientCredentialRef: environment.IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF }),
           referenceHashKeyRef: environment.IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF,
           encryptionKeyRef: environment.IPO_ONE_AUTH_ENCRYPTION_KEY_REF
         }

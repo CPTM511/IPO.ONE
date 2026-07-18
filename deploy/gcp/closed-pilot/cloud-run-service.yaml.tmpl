@@ -64,8 +64,6 @@ spec:
               value: ${IDP_DEPLOYMENT_APPROVAL_SHA}
             - name: IPO_ONE_IDP_CONFIGURATION_REF
               value: projects/${PROJECT_ID}/secrets/ipo-one-identity-config/versions/${IDENTITY_CONFIG_VERSION}
-            - name: IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF
-              value: projects/${PROJECT_ID}/secrets/ipo-one-google-oidc-client-secret/versions/${OIDC_CLIENT_SECRET_VERSION}
             - name: IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF
               value: projects/${PROJECT_ID}/secrets/ipo-one-auth-reference-hash-key/versions/${AUTH_REFERENCE_HASH_KEY_VERSION}
             - name: IPO_ONE_AUTH_ENCRYPTION_KEY_REF
@@ -84,12 +82,8 @@ spec:
               value: /var/run/secrets/ipo-one/auth-reference-hash-key/key
             - name: IPO_ONE_AUTH_ENCRYPTION_KEY_FILE
               value: /var/run/secrets/ipo-one/auth-encryption-key/key
-            - name: IPO_ONE_OIDC_CLIENT_SECRET_FILE
-              value: /var/run/secrets/ipo-one/google-oidc-client-secret/value
             - name: IPO_ONE_IDENTITY_CONFIG_FILE
               value: /var/run/secrets/ipo-one/identity-config/config.json
-            - name: IPO_ONE_AGENT_MTLS_CONFIG_FILE
-              value: /var/run/secrets/ipo-one/agent-mtls-config/config.json
             - name: IPO_ONE_EDGE_ASSERTION_KEY_FILE
               value: /var/run/secrets/ipo-one/edge-assertion-key/key
           resources:
@@ -117,12 +111,8 @@ spec:
               mountPath: /var/run/secrets/ipo-one/auth-reference-hash-key
             - name: auth-encryption-key
               mountPath: /var/run/secrets/ipo-one/auth-encryption-key
-            - name: google-oidc-client-secret
-              mountPath: /var/run/secrets/ipo-one/google-oidc-client-secret
             - name: identity-config
               mountPath: /var/run/secrets/ipo-one/identity-config
-            - name: agent-mtls-config
-              mountPath: /var/run/secrets/ipo-one/agent-mtls-config
             - name: edge-assertion-key
               mountPath: /var/run/secrets/ipo-one/edge-assertion-key
       volumes:
@@ -138,23 +128,11 @@ spec:
             items:
               - key: ${AUTH_ENCRYPTION_KEY_VERSION}
                 path: key
-        - name: google-oidc-client-secret
-          secret:
-            secretName: ipo-one-google-oidc-client-secret
-            items:
-              - key: ${OIDC_CLIENT_SECRET_VERSION}
-                path: value
         - name: identity-config
           secret:
             secretName: ipo-one-identity-config
             items:
               - key: ${IDENTITY_CONFIG_VERSION}
-                path: config.json
-        - name: agent-mtls-config
-          secret:
-            secretName: ipo-one-agent-mtls-config
-            items:
-              - key: ${AGENT_MTLS_CONFIG_VERSION}
                 path: config.json
         - name: edge-assertion-key
           secret:

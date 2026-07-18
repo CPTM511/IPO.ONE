@@ -39,23 +39,26 @@ change ticket. Commands below intentionally omit secret values.
    Secret Accessor on each exact secret, never at project scope. Runtime cannot
    read `ipo-one-migration-database-url`; migrator cannot read Human/Agent
    authentication secrets.
-3. Create the nine secrets named in `stack.v1.json` with user-managed
+3. Create the ten secrets named in `stack.v1.json` with user-managed
    `asia-southeast1` replication. Add values through the approved secret-entry
    path and pin every Cloud Run reference to a numeric enabled version.
    `ipo-one-identity-config` is mounted through
    `IPO_ONE_IDENTITY_CONFIG_FILE`; `ipo-one-edge-assertion-key` is mounted
    through `IPO_ONE_EDGE_ASSERTION_KEY_FILE`.
-4. Register the Google/OIDC client with the sole production redirect
-   `https://ipo.one/auth/v1/callback?provider=google`. Record the immutable IdP
-   approval SHA and pre-provision the exact Tenant Credentials; email claims do
-   not create authority.
+4. Start the candidate with the reviewed wallet-only identity configuration.
+   SIWE accounts are pre-provisioned by exact CAIP-10 identifier and wallet
+   claims do not create authority. Google/OIDC can be added only after its client
+   is registered with the sole production redirect
+   `https://ipo.one/auth/v1/callback?provider=google`, its numeric secret version
+   is mounted, and the immutable IdP approval SHA is updated.
 5. Build from the exact green commit, scan, and resolve the Artifact Registry
    image to `@sha256:...`. Render both templates with only reviewed values and
    reject any unresolved `${...}` placeholder.
 6. Ensure all three database DSNs use
    `postgresql://USER:PASSWORD@/DATABASE?host=/cloudsql/ipo-one-public-sandbox-cptm511:asia-southeast1:ipo-one-closed-pilot-db`,
-   with distinct least-privilege users. Replace and execute the migration Job
-   once. Runtime startup must verify both
+   with distinct least-privilege users. Execute the idempotent bootstrap Job;
+   it applies migrations, creates the closed roles, seeds the reviewed Tenant
+   and Credentials, then verifies both roles. Runtime startup must verify both
    least-privilege database roles and the exact migration head; runtime never
    migrates or seeds.
 7. Import `cloud-armor-policy.yaml`, create the separate NEG/backend, attach

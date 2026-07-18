@@ -13,7 +13,9 @@ import {
 } from "../../../modules/authorization/src/index.js";
 import {
   assertTenantDatabaseRole,
-  createPostgresPool
+  createPostgresPool,
+  createTenantSecurityContext,
+  setTenantTransactionContext
 } from "../../../modules/persistence/src/index.js";
 import {
   createOperationalId,
@@ -25,6 +27,7 @@ import { migrateUp } from "../../../scripts/migrate.mjs";
 const ROLE_NAME = /^[a-z][a-z0-9_]{2,62}$/;
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
+const trustedBootstrapConfigs = new WeakSet();
 
 const PROFILES = Object.freeze({
   human_borrower: Object.freeze({
@@ -139,6 +142,7 @@ function httpsOrigin(name, value) {
 }
 
 function normalizeConfig(value) {
+  if (value && typeof value === "object" && trustedBootstrapConfigs.has(value)) return value;
   exactObject("bootstrap config", value, [
     "schemaVersion", "gatewayRole", "authenticationRole", "tenant",
     "systemActor", "policyVersion", "credentials"
@@ -194,7 +198,7 @@ function normalizeConfig(value) {
       }
     }
   }
-  return Object.freeze({
+  const normalized = Object.freeze({
     gatewayRole: id("gatewayRole", value.gatewayRole, ROLE_NAME),
     authenticationRole: id("authenticationRole", value.authenticationRole, ROLE_NAME),
     tenant: Object.freeze({
@@ -211,12 +215,18 @@ function normalizeConfig(value) {
     policyVersion: id("policyVersion", value.policyVersion),
     credentials: Object.freeze(credentials)
   });
+  trustedBootstrapConfigs.add(normalized);
+  return normalized;
+}
+
+export function assertProductionBootstrapConfig(value) {
+  return normalizeConfig(value);
 }
 
 export async function loadProductionBootstrapConfig(path) {
   const bytes = await readFile(path);
   if (bytes.length < 1 || bytes.length > 64 * 1024 || bytes.includes(0)) throw fail("bootstrap config file is invalid");
-  return normalizeConfig(parseStrictJson(bytes.toString("utf8"), {
+  return assertProductionBootstrapConfig(parseStrictJson(bytes.toString("utf8"), {
     maximumBytes: 64 * 1024,
     maximumDepth: 8,
     maximumKeys: 512
@@ -368,11 +378,17 @@ export async function bootstrapProductionDatabase({
   authenticationPassword,
   referenceHashKey
 }) {
-  const checked = normalizeConfig(config);
+  const checked = assertProductionBootstrapConfig(config);
   for (const [name, password] of [["gateway password", gatewayPassword], ["authentication password", authenticationPassword]]) {
     if (typeof password !== "string" || password.length < 32 || password.length > 128 || /[\0\r\n]/.test(password)) throw fail(`${name} is invalid`);
   }
   const referenceHasher = createReferenceHasher(referenceHashKey);
+  const bootstrapContext = createTenantSecurityContext({
+    tenantId: checked.tenant.tenantId,
+    actorId: checked.systemActor.actorId,
+    policyVersion: checked.policyVersion,
+    source: "system_worker"
+  });
   const adminPool = createPostgresPool({ connectionString: adminConnectionString, max: 2, applicationName: "ipo-one-production-bootstrap" });
   let insertedCredentials;
   try {
@@ -386,6 +402,7 @@ export async function bootstrapProductionDatabase({
       await client.query("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC");
       await configureRole(client, { roleName: checked.gatewayRole, password: gatewayPassword, authenticationOnly: false });
       await configureRole(client, { roleName: checked.authenticationRole, password: authenticationPassword, authenticationOnly: true });
+      await setTenantTransactionContext(client, bootstrapContext);
       insertedCredentials = await seedTenantAndIdentity(client, checked, referenceHasher);
       await client.query("COMMIT");
     } catch (error) {
