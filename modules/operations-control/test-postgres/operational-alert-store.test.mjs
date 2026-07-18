@@ -134,9 +134,14 @@ test("durable operational alerts are replay-safe, Tenant-isolated, and Evidence-
     await migrateUp({ pool });
     await seedTenant(pool, TENANT_ONE);
     await seedTenant(pool, TENANT_TWO);
+    const appRolePassword = randomBytes(24).toString("base64url");
+    const quotedPassword = (
+      await pool.query("SELECT quote_literal($1) AS value", [appRolePassword])
+    ).rows[0].value;
     await pool.query(
       `CREATE ROLE ${APP_ROLE}
-       LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+       LOGIN PASSWORD ${quotedPassword}
+       NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
     );
     await pool.query(`GRANT USAGE ON SCHEMA public TO ${APP_ROLE}`);
     await pool.query(
@@ -145,6 +150,7 @@ test("durable operational alerts are replay-safe, Tenant-isolated, and Evidence-
     await pool.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_ROLE}`);
     const appConnection = new URL(CONNECTION_STRING);
     appConnection.username = APP_ROLE;
+    appConnection.password = appRolePassword;
     appPool = createPostgresPool({
       connectionString: appConnection.toString(),
       max: 6,
