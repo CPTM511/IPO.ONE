@@ -12,6 +12,7 @@ import {
   PostgresCredentialRegistry,
   PostgresHumanSessionStore,
   PostgresLoginTransactionStore,
+  PostgresReplayCache,
   PostgresWalletLoginTransactionStore,
   SenderConstraintMethod,
   assertPostgresAuthenticationRole,
@@ -139,6 +140,8 @@ async function createApplicationPool(ownerPool) {
        authentication_oidc_transactions,
        authentication_wallet_transactions,
        authentication_sessions,
+       authentication_session_invalidations,
+       authentication_replay_entries,
        authentication_events
      TO ${APP_ROLE}`
   );
@@ -146,10 +149,12 @@ async function createApplicationPool(ownerPool) {
   await ownerPool.query(
     `GRANT INSERT, DELETE ON
        authentication_oidc_transactions,
-       authentication_wallet_transactions
+       authentication_wallet_transactions,
+       authentication_replay_entries
      TO ${APP_ROLE}`
   );
   await ownerPool.query(`GRANT INSERT, UPDATE ON authentication_sessions TO ${APP_ROLE}`);
+  await ownerPool.query(`GRANT INSERT ON authentication_session_invalidations TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT INSERT ON authentication_events TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT UPDATE (id) ON actors, memberships TO ${APP_ROLE}`);
   const connection = new URL(CONNECTION_STRING);
@@ -386,6 +391,7 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
     assert.equal(composition.deploymentBoundary.credentialProvisioning, "pre_provisioned_only");
     assert.equal(composition.deploymentBoundary.realFundsEnabled, false);
     assert.equal(typeof composition.serveAuthentication, "function");
+    assert.ok(composition.machineReplayCache instanceof PostgresReplayCache);
     const registry = new PostgresCredentialRegistry({
       eventRepository: repository,
       tenantId: TENANT_ID,
@@ -430,6 +436,76 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       reasonCode: "wallet_credential_provisioned",
       now: NOW
     });
+
+    await t.test(
+      "DPoP replay entries survive cache restart and remain Tenant-isolated",
+      async () => {
+        const replayNow = new Date();
+        const replayInput = {
+          namespace: "dpop",
+          value: `thumbprint-${RUN_ID}\0jti-${RUN_ID}-00000001`,
+          expiresAt: Math.floor(replayNow.getTime() / 1_000) + 66,
+          now: replayNow
+        };
+        const reference = await composition.machineReplayCache.consume(
+          replayInput
+        );
+        assert.match(reference, /^[A-Za-z0-9_-]{43}$/);
+        const restarted = new PostgresReplayCache({
+          eventRepository: repository,
+          tenantId: TENANT_ID,
+          referenceHasher
+        });
+        await assert.rejects(
+          () => restarted.consume(replayInput),
+          (error) => error.code === "authentication_replay_rejected"
+        );
+        assert.equal(
+          await repository.withTenantRead(async (client) => (
+            await client.query(
+              `SELECT count(*)::int AS count
+                 FROM authentication_replay_entries`
+            )
+          ).rows[0].count),
+          1
+        );
+        assert.equal(
+          await otherRepository.withTenantRead(async (client) => (
+            await client.query(
+              `SELECT count(*)::int AS count
+                 FROM authentication_replay_entries`
+            )
+          ).rows[0].count),
+          0
+        );
+
+        const concurrentInput = {
+          ...replayInput,
+          value: `thumbprint-${RUN_ID}\0jti-${RUN_ID}-concurrent`
+        };
+        const competingCache = new PostgresReplayCache({
+          eventRepository: repository,
+          tenantId: TENANT_ID,
+          referenceHasher
+        });
+        const concurrentResults = await Promise.allSettled([
+          restarted.consume(concurrentInput),
+          competingCache.consume(concurrentInput)
+        ]);
+        assert.equal(
+          concurrentResults.filter((result) => result.status === "fulfilled").length,
+          1
+        );
+        assert.equal(
+          concurrentResults.filter(
+            (result) =>
+              result.status === "rejected" &&
+              result.reason?.code === "authentication_replay_rejected"
+          ).length,
+          1
+        );
+      }
+    );
 
     await t.test("database validation rejects typed-list and session-lifetime corruption", async () => {
       const validation = await repository.withTenantRead((client) => client.query(
@@ -690,6 +766,64 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
         now: new Date(NOW.getTime() + 5_000)
       }), false);
 
+      const walletSession = await restarted.create(
+        sessionInput(oidcCredential, new Date(NOW.getTime() + 5_100))
+      );
+      const invalidationKey = "wallet-postgres-invalidation-0000000000000001";
+      const invalidated = await restarted.invalidate({
+        sessionHandle: walletSession.cookie.value,
+        requestOrigin: ORIGIN,
+        csrfToken: walletSession.csrfToken,
+        idempotencyKey: invalidationKey,
+        reasonCode: "wallet_chain_changed",
+        now: new Date(NOW.getTime() + 5_200)
+      });
+      assert.deepEqual(invalidated, {
+        schemaVersion: "wallet_session_invalidation_result.v1",
+        status: "invalidated",
+        reauthenticationRequired: true,
+        authorityAvailable: false,
+        credentialsIncluded: false,
+        fundsAuthority: false
+      });
+      await assert.rejects(
+        () => restarted.authenticate({
+          sessionHandle: walletSession.cookie.value,
+          requestMethod: "GET",
+          now: new Date(NOW.getTime() + 5_300)
+        }),
+        (error) => error.code === "authentication_session_rejected"
+      );
+
+      const afterInvalidationRestart = createStore();
+      assert.deepEqual(await afterInvalidationRestart.invalidate({
+        sessionHandle: undefined,
+        requestOrigin: ORIGIN,
+        csrfToken: walletSession.csrfToken,
+        idempotencyKey: invalidationKey,
+        reasonCode: "wallet_chain_changed",
+        now: new Date(NOW.getTime() + 5_400)
+      }), invalidated);
+      const invalidationRows = await repository.withTenantRead((client) => client.query(
+        `SELECT * FROM authentication_session_invalidations
+          WHERE tenant_id = $1 AND reason_code = 'wallet_chain_changed'`,
+        [TENANT_ID]
+      ));
+      assert.equal(invalidationRows.rowCount, 1);
+      const serializedInvalidation = JSON.stringify(invalidationRows.rows);
+      assert.equal(serializedInvalidation.includes(walletSession.cookie.value), false);
+      assert.equal(serializedInvalidation.includes(walletSession.csrfToken), false);
+      assert.equal(serializedInvalidation.includes(invalidationKey), false);
+      const walletRevokeEvents = await repository.withTenantRead((client) => client.query(
+        `SELECT count(*)::int AS count
+           FROM authentication_events
+          WHERE tenant_id = $1
+            AND event_type = 'session_revoked'
+            AND reason_code = 'wallet_chain_changed'`,
+        [TENANT_ID]
+      ));
+      assert.equal(walletRevokeEvents.rows[0].count, 1);
+
       const stale = await restarted.create(sessionInput(oidcCredential, new Date(NOW.getTime() + 6_000)));
       await registry.rotate({
         credentialId: oidcCredential.credentialId,
@@ -825,6 +959,8 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
         await ownerPool.query(
           `TRUNCATE TABLE
              authentication_events,
+             authentication_replay_entries,
+             authentication_session_invalidations,
              authentication_sessions,
              authentication_oidc_transactions,
              authentication_wallet_transactions,

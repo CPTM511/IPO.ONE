@@ -566,8 +566,10 @@ export class TenantCommandGateway {
           const response = await handler.execute({
             client,
             coreRepository,
+            directory,
             authenticationContext: envelope.authenticationContext,
             authorizationDecision,
+            referenceHasher: this.referenceHasher,
             payload: structuredClone(envelope.payload),
             resource: envelope.resource,
             now: transactionNow,
@@ -590,6 +592,7 @@ export class TenantCommandGateway {
           directory,
           authenticationContext: envelope.authenticationContext,
           authorizationDecision,
+          referenceHasher: this.referenceHasher,
           payload: structuredClone(envelope.payload),
           reasonCode: envelope.reasonCode,
           now: transactionNow,

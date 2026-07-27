@@ -35,38 +35,62 @@
           </div>
         </div>
 
-        <nav class="nav-list" aria-label="Workspace views">
+        <nav class="nav-list" aria-label="V9 workspace destinations">
           <button class="nav-item active" type="button" data-view="overview" aria-current="page">
             <svg aria-hidden="true"><use href="/icons.svg#layout-dashboard"></use></svg>
-            <span>Portfolio</span>
+            <span><strong>Overview</strong><small data-v9-maturity="overview">Checking server</small></span>
           </button>
-          <button class="nav-item" type="button" data-view="human">
-            <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
-            <span>My Credit</span>
-          </button>
-          <button class="nav-item" type="button" data-view="agent">
-            <svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg>
-            <span>Agent Workspace</span>
-          </button>
-          <button class="nav-item" type="button" data-view="credit">
+          <button class="nav-item" type="button" data-view="request-credit">
             <svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg>
-            <span>Borrow & Credit</span>
+            <span><strong>Request Credit</strong><small data-v9-maturity="request-credit">Checking server</small></span>
           </button>
-          <button class="nav-item" type="button" data-view="transfers">
+          <button class="nav-item" type="button" data-view="repay-settle">
             <svg aria-hidden="true"><use href="/icons.svg#arrow-left-right"></use></svg>
-            <span>Payments</span>
+            <span><strong>Repay &amp; Settle</strong><small data-v9-maturity="repay-settle">Checking server</small></span>
           </button>
-          <button class="nav-item" type="button" data-view="evidence">
+          <button class="nav-item" type="button" data-view="credit-passport">
             <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
-            <span>Evidence</span>
+            <span><strong>Credit Passport</strong><small data-v9-maturity="credit-passport">Checking server</small></span>
           </button>
-          <button class="nav-item" type="button" data-view="risk">
+          <button class="nav-item" type="button" data-view="obligations">
+            <svg aria-hidden="true"><use href="/icons.svg#book-open"></use></svg>
+            <span><strong>Obligations</strong><small data-v9-maturity="obligations">Checking server</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="agent-console">
+            <svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg>
+            <span><strong>Agent Console</strong><small data-v9-maturity="agent-console">Checking server</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="capital-network">
+            <svg aria-hidden="true"><use href="/icons.svg#server"></use></svg>
+            <span><strong>Capital Network</strong><small data-v9-maturity="capital-network">Checking server</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="trading-capital">
+            <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
+            <span><strong>Trading Capital</strong><small id="tradingCapitalNavState">Checking 25 operations</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="wallet-permissions">
+            <svg aria-hidden="true"><use href="/icons.svg#link"></use></svg>
+            <span><strong>Wallet &amp; Permissions</strong><small data-v9-maturity="wallet-permissions">Checking server</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="activity-proofs">
+            <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
+            <span><strong>Activity &amp; Proofs</strong><small data-v9-maturity="activity-proofs">Checking server</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="credit-track-record">
+            <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
+            <span><strong>Credit Track Record</strong><small data-v9-maturity="credit-track-record">Checking server</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="reports-exports">
+            <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
+            <span><strong>Reports &amp; Exports</strong><small data-v9-maturity="reports-exports">Checking server</small></span>
+          </button>
+          <button class="nav-item" type="button" data-view="risk-operations">
             <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
-            <span>Risk Operations</span>
+            <span><strong>Risk &amp; Operations</strong><small data-v9-maturity="risk-operations">Checking server</small></span>
           </button>
-          <button class="nav-item" type="button" data-view="developer">
+          <button class="nav-item" type="button" data-view="architecture">
             <svg aria-hidden="true"><use href="/icons.svg#code"></use></svg>
-            <span>Agent API</span>
+            <span><strong>Architecture</strong><small data-v9-maturity="architecture">Checking server</small></span>
           </button>
         </nav>
 
@@ -139,7 +163,10 @@
             <section id="privatePortfolioSurface" class="private-product-surface" aria-labelledby="privatePortfolioTitle" data-private-session-surface>
               <section class="private-product-hero">
                 <div class="private-product-heading">
-                  <span class="protocol-badge"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span id="privatePortfolioMode">Human entry</span></span>
+                  <div class="v9-heading-badges">
+                    <span class="protocol-badge"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span id="privatePortfolioMode">Human entry</span></span>
+                    <span class="v9-maturity-badge checking" data-v9-maturity="overview">Checking server</span>
+                  </div>
                   <p class="eyebrow">Shared obligation kernel</p>
                   <h2 id="privatePortfolioTitle">One Obligation. <em>Two first-class entry modes.</em></h2>
                   <p id="privatePortfolioCopy">Continue the Human no-funds lifecycle without leaving the authenticated private session.</p>
@@ -150,10 +177,19 @@
                 </div>
                 <div class="private-hero-metrics" aria-label="Shared portfolio status">
                   <div><span>Lifecycle</span><strong id="privatePortfolioLifecycle">Not started</strong></div>
-                  <div><span>Outstanding</span><strong id="privatePortfolioOutstanding">$0.00</strong></div>
+                  <div><span>Selected outstanding</span><strong id="privatePortfolioOutstanding">Unavailable</strong></div>
                   <div><span>Next payment</span><strong id="privatePortfolioNextPayment">—</strong></div>
+                  <div><span>Available credit</span><strong id="privatePortfolioAvailableCredit">Unavailable</strong></div>
                   <div><span>Evidence</span><strong id="privatePortfolioEvidence">Not loaded</strong></div>
                 </div>
+              </section>
+
+              <section class="v9-runtime-state loading" id="v9OverviewState" aria-labelledby="v9OverviewStateTitle" role="status" aria-live="polite">
+                <svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>
+                <span>
+                  <strong id="v9OverviewStateTitle">Loading authenticated server truth</strong>
+                  <small id="v9OverviewStateCopy">Workspace recovery and owned reads are still pending. No amount is inferred in the browser.</small>
+                </span>
               </section>
 
               <div class="private-product-grid">
@@ -187,7 +223,8 @@
 
           </section>
 
-          <section class="view human-view" data-view-panel="human" aria-labelledby="humanViewTitle">
+          <section class="view human-view" data-view-panel="request-credit" aria-label="Request Credit">
+            <div class="request-credit-mode request-credit-human">
             <section class="human-entry" aria-label="Human credit pilot entry">
               <div class="human-entry-copy">
                 <p class="eyebrow">Human credit</p>
@@ -349,18 +386,36 @@
                   <h4 id="humanOfferTitle">Your Offer</h4>
                   <div class="offer-amount">
                     <span>Approved principal</span>
-                    <strong id="humanOfferPrincipal">$0.00</strong>
+                    <strong id="humanOfferPrincipal">—</strong>
                   </div>
                   <dl class="offer-terms">
                     <div><dt>Decision</dt><dd id="humanDecisionStatus">Pending</dd></div>
                     <div><dt>Annual rate</dt><dd id="humanOfferRate">—</dd></div>
+                    <div><dt>Origination fee</dt><dd id="humanOfferFee">—</dd></div>
+                    <div><dt>Repayment</dt><dd id="humanOfferRepayment">—</dd></div>
                     <div><dt>Maturity</dt><dd id="humanOfferMaturity">—</dd></div>
+                    <div><dt>Offer valid until</dt><dd id="humanOfferValidUntil">—</dd></div>
                   </dl>
                   <details class="offer-reference-details">
                     <summary>Protocol reference</summary>
-                    <dl class="offer-terms"><div><dt>Intent ID</dt><dd id="humanIntentId">—</dd></div></dl>
+                    <dl class="offer-terms">
+                      <div><dt>Intent ID</dt><dd id="humanIntentId">—</dd></div>
+                      <div><dt>Disclosure</dt><dd id="humanOfferDisclosure">—</dd></div>
+                    </dl>
                   </details>
                   <p class="offer-reasons" id="humanDecisionReasons">Policy reason codes will appear here after evaluation.</p>
+                  <section class="exact-offer-binding" aria-labelledby="humanOfferBindingTitle">
+                    <div class="exact-offer-binding-heading">
+                      <div><span>Acceptance binding</span><strong id="humanOfferBindingTitle">Exact server Offer</strong></div>
+                      <span class="state-pill neutral">In-memory review</span>
+                    </div>
+                    <dl>
+                      <div><dt>Authority</dt><dd id="humanOfferAuthority">—</dd></div>
+                      <div><dt>Offer hash</dt><dd id="humanOfferHash">—</dd></div>
+                      <div><dt>Terms hash</dt><dd id="humanOfferTermsHash">—</dd></div>
+                    </dl>
+                    <p id="humanOfferReviewState" role="status" aria-live="polite">Submit an authenticated no-funds request to receive an exact Offer review.</p>
+                  </section>
                   <section class="decision-passport-card" id="humanDecisionPassport" aria-labelledby="humanDecisionPassportTitle" hidden>
                     <div class="decision-passport-heading">
                       <div class="decision-passport-title">
@@ -488,6 +543,20 @@
                     </div>
                   </section>
                 </section>
+                <section class="request-credit-receipts" aria-labelledby="humanServerReceiptsTitle">
+                  <div class="request-credit-receipts-heading">
+                    <span>Authenticated protocol results</span>
+                    <strong id="humanServerReceiptsTitle">One server receipt per completed step</strong>
+                  </div>
+                  <ol>
+                    <li><span>01</span><div><strong>Authority preflight</strong><small>pilotReadHumanSelf</small></div><em id="humanReceiptPreflight">Waiting for server</em></li>
+                    <li><span>02</span><div><strong>Credit Intent</strong><small>pilotRequestCredit</small></div><em id="humanReceiptIntent">Waiting for server</em></li>
+                    <li><span>03</span><div><strong>Application read</strong><small>pilotReadCreditApplication</small></div><em id="humanReceiptApplication">Waiting for server</em></li>
+                    <li><span>04</span><div><strong>Decision &amp; Offer</strong><small>pilotEvaluateCreditApplication</small></div><em id="humanReceiptDecision">Waiting for server</em></li>
+                    <li><span>05</span><div><strong>Exact acceptance</strong><small>pilotAcceptCreditOffer</small></div><em id="humanReceiptAcceptance">Waiting for server</em></li>
+                    <li><span>06</span><div><strong>No-funds execution</strong><small>pilotExecuteSandboxObligation</small></div><em id="humanReceiptExecution">Waiting for server</em></li>
+                  </ol>
+                </section>
               </div>
             </section>
 
@@ -564,7 +633,7 @@
 
                   <div class="workbench-step account-proof-step">
                     <span>02</span>
-                    <div><strong>Prove the Agent account</strong><small>Create and download a five-minute EIP-712 request. The registered Agent workload submits it through authenticated Tenant HTTPS; this Human screen never receives a credential.</small></div>
+                    <div><strong>Prove the Agent account</strong><small>Create and download a five-minute EIP-712 request. The registered local Agent Host submits it; this Human screen never receives a credential.</small></div>
                   </div>
                   <div class="account-proof-card">
                     <div class="form-grid three">
@@ -668,7 +737,7 @@
                     <strong id="agentHandoffScope">Subject ID + Mandate ID</strong>
                     <p id="agentHandoffDescription">Load an eligible draft Mandate to create the application packet. Acceptance, sandbox execution, and repayment are available through the authenticated Tenant client.</p>
                   </div>
-                  <button class="authority-handoff-button" id="openAgentApiBtn" type="button" data-go-view="developer" disabled>Open Agent API handoff</button>
+                  <button class="authority-handoff-button" id="openAgentApiBtn" type="button" data-go-view="architecture" disabled>Open Agent API handoff</button>
                   <p class="offer-boundary">Sandbox only · raw account and signature redacted · no credential creation or delivery · no public exposure · no funds authority.</p>
                 </aside>
               </div>
@@ -695,9 +764,161 @@
                 </div>
               </section>
             </div>
+            </div>
+
+            <section class="request-credit-mode request-credit-agent" aria-labelledby="agentRequestCreditTitle">
+              <section class="human-entry agent-request-entry" aria-label="Agent credit request entry">
+                <div class="human-entry-copy">
+                  <p class="eyebrow">Agent credit · Principal controlled</p>
+                  <h2 id="agentRequestCreditTitle">Same economics. <em>Bounded machine authority.</em></h2>
+                  <p id="agentRequestCreditCopy">A Human Principal must bind the Agent Subject and exact Consent-equivalent Mandate scope before the Agent application tools become available.</p>
+                  <div class="heading-actions">
+                    <button class="primary" type="button" data-agent-guide-action="principal-setup">Open Principal setup</button>
+                    <button class="secondary" type="button" data-agent-guide-action="view-protocol">Inspect Agent API</button>
+                  </div>
+                </div>
+                <div class="human-entry-stats" aria-label="Agent request status">
+                  <div><span>Entry authority</span><strong id="agentRequestCreditAuthority">No eligible handoff</strong></div>
+                  <div><span>Economic kernel</span><strong>Same deterministic policy</strong></div>
+                  <div><span>Funds mode</span><strong>No real funds</strong></div>
+                </div>
+              </section>
+
+              <section class="panel agent-request-journey" aria-labelledby="agentRequestJourneyTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Authenticated machine journey</p><h3 id="agentRequestJourneyTitle">Intent → Decision → Offer → Acceptance → Execution</h3></div>
+                  <span class="state-pill neutral" id="agentRequestCreditStatus">Authenticated session required</span>
+                </div>
+                <div class="agent-request-stage-grid">
+                  <div><span>01</span><strong>Credit Intent</strong><small id="agentRequestCreditIntent">Locked pending bounded handoff</small></div>
+                  <div><span>02</span><strong>Decision &amp; Offer</strong><small id="agentRequestCreditDecision">Locked pending bounded handoff</small></div>
+                  <div><span>03</span><strong>Exact acceptance</strong><small id="agentRequestCreditAcceptance">Locked pending active Mandate</small></div>
+                  <div><span>04</span><strong>No-funds execution</strong><small id="agentRequestCreditExecution">Locked pending active Mandate</small></div>
+                </div>
+              </section>
+
+              <div class="human-detail-grid agent-request-detail-grid">
+                <section class="panel" aria-labelledby="agentRequestReceiptsTitle">
+                  <div class="panel-heading"><div><p class="eyebrow">Server workflow receipts</p><h3 id="agentRequestReceiptsTitle">Machine-verifiable handoff result</h3></div><span class="state-pill">Versioned</span></div>
+                  <dl class="private-detail-list agent-request-receipts">
+                    <div><dt>Decision &amp; Offer</dt><dd id="agentRequestCreditOfferReceipt">Returned only after Agent workflow</dd></div>
+                    <div><dt>Obligation lifecycle</dt><dd id="agentRequestCreditObligationReceipt">Returned only after active runtime workflow</dd></div>
+                  </dl>
+                  <p class="offer-boundary">Receipts return to the authenticated Agent runtime. They contain no credential, private key, reusable signature, or funds authority.</p>
+                </section>
+                <section class="panel" aria-labelledby="agentRequestParityTitle">
+                  <div class="panel-heading"><div><p class="eyebrow">Dual-native parity</p><h3 id="agentRequestParityTitle">Different authority. One economic truth.</h3></div><span class="state-pill">Shared kernel</span></div>
+                  <div class="posture-list">
+                    <div><span>Human entry</span><strong>Consent + HTTPS receipt</strong></div>
+                    <div><span>Agent entry</span><strong>Mandate + Agent receipt</strong></div>
+                    <div><span>Compared exactly</span><strong>Principal, term, APR, fee, schedule</strong></div>
+                    <div><span>Excluded from parity</span><strong>Identity, authority IDs, transport</strong></div>
+                  </div>
+                </section>
+              </div>
+
+              <section class="v9-runtime-state unavailable agent-request-boundary" aria-label="Agent credit boundary">
+                <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+                <span><strong>No lender or facility is live</strong><small>No capital provider, real disbursement, withdrawable balance, mainnet action, or production underwriting is enabled by this journey.</small></span>
+              </section>
+            </section>
           </section>
 
-          <section class="view" data-view-panel="agent" aria-labelledby="agentViewTitle">
+          <section class="view" data-view-panel="credit-passport" aria-labelledby="creditPassportViewTitle">
+            <section class="v9-capability-page" aria-labelledby="creditPassportViewTitle">
+              <div class="private-page-heading">
+                <div>
+                  <div class="v9-heading-badges"><p class="eyebrow">Private point-in-time Evidence</p><span class="v9-maturity-badge checking" data-v9-maturity="credit-passport">Checking server</span></div>
+                  <h2 id="creditPassportViewTitle">Credit Passport</h2>
+                  <p>Issue one temporary, same-Tenant proof to one exact verifier. It is non-authorizing, online-only, and derived from canonical Decision Evidence.</p>
+                </div>
+                <button class="primary" type="button" data-go-view="request-credit">Open Decision Passport</button>
+              </div>
+              <section class="panel v9-capability-state" aria-labelledby="creditPassportStateTitle">
+                <div><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><p class="eyebrow">Server-derived state</p><h3 id="creditPassportStateTitle">No Decision Passport loaded</h3></span></div>
+                <p id="creditPassportStateCopy">Complete or restore an authenticated credit application. This view will not manufacture a score, Decision, or shareable proof.</p>
+              </section>
+              <div class="credit-passport-workspace">
+                <section class="panel credit-passport-issue-card" aria-labelledby="creditPassportIssueTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Owner / controller only</p><h3 id="creditPassportIssueTitle">Issue a bounded proof</h3></div>
+                    <span class="state-pill">No score</span>
+                  </div>
+                  <form id="creditPassportIssueForm" class="credit-passport-form">
+                    <div class="form-grid two">
+                      <label>Exact Subject ID<input id="creditPassportSubjectId" autocomplete="off" maxlength="256" placeholder="subject_…" /></label>
+                      <label>Exact Credit Intent ID<input id="creditPassportIntentId" autocomplete="off" maxlength="256" placeholder="credit_intent_…" /></label>
+                      <label>Exact verifier Actor ID<input id="creditPassportVerifierActorId" autocomplete="off" maxlength="256" placeholder="actor_…" /></label>
+                      <label>Lifetime<select id="creditPassportLifetime"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="21600">6 hours</option><option value="86400">24 hours maximum</option></select></label>
+                    </div>
+                    <fieldset class="credit-passport-claims">
+                      <legend>Selective disclosure</legend>
+                      <label><input type="checkbox" name="creditPassportClaim" value="decision_outcome" checked />Decision outcome</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="factor_authority" checked />Authority factor</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="factor_subject_principal" />Subject &amp; principal factor</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="factor_identity_or_principal_binding" />Identity / principal binding</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="factor_adverse_obligation" />Adverse Obligation factor</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="factor_sandbox_policy_fit" checked />Sandbox policy factor</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="canonical_reason_codes" checked />Canonical reason codes</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="reason_to_feature_lineage" />Reason-to-feature lineage</label>
+                      <label><input type="checkbox" name="creditPassportClaim" value="source_evidence_lineage" />Source Evidence lineage</label>
+                    </fieldset>
+                    <button id="issueCreditPassportBtn" class="primary" type="submit">Issue private proof</button>
+                  </form>
+                  <p id="creditPassportIssueHelper" class="risk-helper" role="status" aria-live="polite">Enter exact server-known IDs. The verifier is not discovered or suggested by the browser.</p>
+                </section>
+
+                <section class="panel credit-passport-artifact-card" aria-labelledby="creditPassportArtifactTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Online server truth</p><h3 id="creditPassportArtifactTitle">Artifact state</h3></div>
+                    <span id="creditPassportArtifactStatus" class="state-pill neutral">Not loaded</span>
+                  </div>
+                  <form id="creditPassportReadForm" class="credit-passport-inline-form">
+                    <label>Exact Artifact ID<input id="creditPassportArtifactId" autocomplete="off" maxlength="256" placeholder="credit_passport_artifact_…" /></label>
+                    <button id="readCreditPassportBtn" class="secondary" type="submit">Read owned proof</button>
+                  </form>
+                  <dl class="credit-passport-facts">
+                    <div><dt>Artifact</dt><dd id="creditPassportArtifactIdentity">—</dd></div>
+                    <div><dt>Issuer</dt><dd id="creditPassportArtifactIssuer">—</dd></div>
+                    <div><dt>Purpose</dt><dd>private_credit_review</dd></div>
+                    <div><dt>Lifetime</dt><dd id="creditPassportArtifactLifetime">—</dd></div>
+                    <div><dt>Source Passport</dt><dd id="creditPassportSourceHash">—</dd></div>
+                    <div><dt>Artifact hash</dt><dd id="creditPassportArtifactHash">—</dd></div>
+                  </dl>
+                  <div id="creditPassportDisclosureRows" class="credit-passport-disclosures">
+                    <p class="empty-row">Issue or read an authorized artifact to inspect its selected, evidenced disclosures.</p>
+                  </div>
+                  <div class="credit-passport-revoke">
+                    <label>Closed revocation reason<select id="creditPassportRevocationReason"><option value="owner_withdrawal">Owner withdrawal</option><option value="verifier_access_no_longer_required">Verifier access no longer required</option><option value="source_disclosure_error">Source disclosure error</option><option value="security_concern">Security concern</option></select></label>
+                    <button id="revokeCreditPassportBtn" class="secondary danger-action" type="button">Revoke active proof</button>
+                  </div>
+                  <p id="creditPassportArtifactHelper" class="risk-helper" role="status" aria-live="polite">No artifact is trusted until an authenticated server read succeeds.</p>
+                </section>
+              </div>
+
+              <section class="panel credit-passport-verify-card" aria-labelledby="creditPassportVerifyTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Exact bound verifier only</p><h3 id="creditPassportVerifyTitle">Online verification</h3></div>
+                  <span id="creditPassportVerificationStatus" class="state-pill neutral">Not verified</span>
+                </div>
+                <form id="creditPassportVerifyForm" class="form-grid three">
+                  <label>Artifact ID<input id="creditPassportVerifyArtifactId" autocomplete="off" maxlength="256" /></label>
+                  <label>Artifact hash<input id="creditPassportVerifyHash" autocomplete="off" maxlength="66" /></label>
+                  <label>Artifact version<input id="creditPassportVerifyVersion" type="number" min="1" step="1" /></label>
+                  <button id="verifyCreditPassportBtn" class="primary" type="submit">Verify online</button>
+                </form>
+                <p id="creditPassportVerificationHelper" class="risk-helper" role="status" aria-live="polite">Verification requires the exact authenticated verifier, current same-Tenant Membership, purpose, hash, version, source, and trusted server time.</p>
+              </section>
+
+              <div class="v9-maturity-grid">
+                <section class="panel"><span class="state-pill">Real local</span><h3>Private proof lifecycle</h3><p>Four authenticated operations create, read, verify, and terminally revoke a versioned artifact.</p></section>
+                <section class="panel"><span class="state-pill">Safety invariant</span><h3>Evidence, not a score</h3><p>Only selected factor grades, canonical reason codes, and exact Evidence lineage can be disclosed.</p></section>
+                <section class="panel"><span class="state-pill warning">Prohibited</span><h3>No bearer sharing</h3><p>No public link, QR, download, credential, signature, cross-Tenant verifier, or production authority exists.</p></section>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="agent-console" aria-labelledby="agentViewTitle">
             <section class="human-entry agent-workspace-entry" aria-label="Agent authority entry">
               <div class="human-entry-copy">
                 <p class="eyebrow">Principal-controlled Agent credit</p>
@@ -715,28 +936,427 @@
               </div>
             </section>
 
+            <section class="panel agent-console-contract" id="agentConsoleContract" tabindex="-1" aria-labelledby="agentConsoleContractTitle">
+              <div class="agent-console-contract-heading">
+                <div>
+                  <p class="eyebrow">Versioned integration truth</p>
+                  <h3 id="agentConsoleContractTitle">One manifest. Eleven local tools. No ambient authority.</h3>
+                  <p>The browser presents the exact local registry and authenticated server state. It cannot execute an Agent workflow, mint a credential, or expand a Mandate.</p>
+                </div>
+                <div class="agent-console-contract-actions">
+                  <span class="state-pill neutral" id="agentConsoleContractStatus">Checking contract</span>
+                  <button class="secondary" id="agentConsoleCopyManifestBtn" type="button" disabled>Copy manifest</button>
+                  <button class="secondary" id="agentConsoleDownloadHandoffBtn" type="button" disabled>Download handoff</button>
+                </div>
+              </div>
+              <div class="agent-console-contract-metrics" aria-label="Agent integration contract status">
+                <div><span>Manifest</span><strong id="agentConsoleManifestVersion">—</strong></div>
+                <div><span>Registry parity</span><strong id="agentConsoleCatalogParity">—</strong></div>
+                <div><span>Transport</span><strong id="agentConsoleTransport">—</strong></div>
+                <div><span>Workflows</span><strong id="agentConsoleWorkflowCount">—</strong></div>
+              </div>
+              <p class="agent-console-helper" id="agentConsoleHelper" role="status" aria-live="polite">Waiting for authenticated catalog and Principal state.</p>
+            </section>
+
+            <div class="agent-console-authority-grid">
+              <section class="panel agent-console-authority-card" aria-labelledby="agentConsolePrincipalTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Human-controlled authority</p><h3 id="agentConsolePrincipalTitle">Principal binding</h3></div><span class="state-pill neutral" id="agentConsolePrincipalStatus">Waiting</span></div>
+                <dl>
+                  <div><dt>Principal</dt><dd id="agentConsolePrincipalId">—</dd></div>
+                  <div><dt>Agent Subject</dt><dd id="agentConsoleSubjectId">—</dd></div>
+                  <div><dt>Subject state</dt><dd id="agentConsoleSubjectStatus">—</dd></div>
+                  <div><dt>Control</dt><dd>Principal only</dd></div>
+                </dl>
+                <button class="secondary" type="button" data-agent-guide-action="principal-setup">Review Principal setup</button>
+              </section>
+
+              <section class="panel agent-console-authority-card" aria-labelledby="agentConsoleBindingTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Hash-only CAIP proof</p><h3 id="agentConsoleBindingTitle">Account proof</h3></div><span class="state-pill neutral" id="agentConsoleBindingStatus">Waiting</span></div>
+                <dl>
+                  <div><dt>Chain</dt><dd id="agentConsoleBindingChain">—</dd></div>
+                  <div><dt>Purpose</dt><dd id="agentConsoleBindingPurpose">—</dd></div>
+                  <div><dt>Verification</dt><dd id="agentConsoleBindingMethod">—</dd></div>
+                  <div><dt>Proof hash</dt><dd id="agentConsoleBindingProof">—</dd></div>
+                </dl>
+                <p>Raw accounts, signatures and reusable proofs never enter this presentation.</p>
+              </section>
+
+              <section class="panel agent-console-authority-card" aria-labelledby="agentConsoleMandateTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Exact sandbox scope</p><h3 id="agentConsoleMandateTitle">Mandate</h3></div><span class="state-pill neutral" id="agentConsoleMandateStatus">Waiting</span></div>
+                <dl>
+                  <div><dt>Mandate</dt><dd id="agentConsoleMandateId">—</dd></div>
+                  <div><dt>Capabilities</dt><dd id="agentConsoleMandateCapabilities">—</dd></div>
+                  <div><dt>Limit</dt><dd id="agentConsoleMandateLimits">—</dd></div>
+                  <div><dt>Expires</dt><dd id="agentConsoleMandateExpiry">—</dd></div>
+                </dl>
+                <p id="agentConsoleMandateBoundary">Active Mandates cannot be edited in place.</p>
+              </section>
+            </div>
+
+            <div class="agent-console-runtime-grid">
+              <section class="panel agent-console-registry" id="agentConsoleProtocol" tabindex="-1" aria-labelledby="agentConsoleRegistryTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">agent_mcp_registry.v2</p><h3 id="agentConsoleRegistryTitle">Approved local stdio MCP tools</h3></div>
+                  <span class="state-pill neutral" id="agentConsoleRegistryStatus">Checking</span>
+                </div>
+                <div id="agentConsoleToolRows" class="agent-console-tool-rows" role="list" aria-label="Approved Agent MCP tools"></div>
+                <p>Catalog presence is not authorization. The Host rechecks Subject, Mandate, admission and policy on every call.</p>
+              </section>
+
+              <section class="panel agent-console-workflows" aria-labelledby="agentConsoleWorkflowsTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Typed SDK compositions</p><h3 id="agentConsoleWorkflowsTitle">Three staged workflows</h3></div>
+                  <span class="state-pill neutral">Local only</span>
+                </div>
+                <div id="agentConsoleWorkflowRows" class="agent-console-workflow-rows"></div>
+                <div class="agent-console-proof-grid">
+                  <div><span>Idempotency</span><strong>Stable workflow + command IDs</strong></div>
+                  <div><span>Errors</span><strong>Problem Details + stable MCP codes</strong></div>
+                  <div><span>Evidence</span><strong>Owned hash-only immutable reads</strong></div>
+                  <div><span>Conformance</span><strong>Registry · SDK · browser parity</strong></div>
+                </div>
+              </section>
+            </div>
+
+            <div class="agent-console-example-grid">
+              <section class="panel code-panel" aria-labelledby="agentConsoleSdkTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Executable local example</p><h3 id="agentConsoleSdkTitle">Typed SDK + local MCP Host</h3></div>
+                  <button class="icon-button copy-button" id="agentConsoleCopySdkBtn" type="button" aria-label="Copy local Agent SDK example" title="Copy local Agent SDK example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button>
+                </div>
+                <pre><code id="agentConsoleSdkSnippet"></code></pre>
+                <p>The Host supplies authenticated context out of band. The SDK accepts no token, endpoint, Tenant, role or secret.</p>
+              </section>
+
+              <section class="panel code-panel" aria-labelledby="agentConsoleOpenApiTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Versioned local contract</p><h3 id="agentConsoleOpenApiTitle">OpenAPI discovery</h3></div>
+                  <a class="secondary" id="agentConsoleOpenApiLink" href="/openapi.json" target="_blank" rel="noreferrer">Open contract</a>
+                </div>
+                <pre><code id="agentConsoleOpenApiSnippet"></code></pre>
+                <p>The document describes authentication requirements but contains no credential or production endpoint.</p>
+              </section>
+            </div>
+
+            <section class="panel agent-console-unavailable" aria-labelledby="agentConsoleUnavailableTitle">
+              <div class="panel-heading"><div><p class="eyebrow">Exact unavailable capabilities</p><h3 id="agentConsoleUnavailableTitle">Not hidden. Not implied. Not enabled.</h3></div><span class="state-pill warning">Disabled</span></div>
+              <div id="agentConsoleUnavailableRows" class="agent-console-unavailable-rows"></div>
+            </section>
 
           </section>
 
-          <section class="view" data-view-panel="credit" aria-labelledby="privateCreditTitle">
+          <section class="view" data-view-panel="capital-network" aria-labelledby="capitalNetworkViewTitle">
+            <section class="v9-capability-page capital-network-page" aria-labelledby="capitalNetworkViewTitle">
+              <div class="private-page-heading">
+                <div>
+                  <div class="v9-heading-badges"><p class="eyebrow">Provider workspace · no funds</p><span class="v9-maturity-badge checking" data-v9-maturity="capital-network">Checking server</span></div>
+                  <h2 id="capitalNetworkViewTitle">Capital Network</h2>
+                  <p>Inspect one assigned sandbox intent from the authenticated Provider boundary. Exposure, delivery, and reconciliation remain server-derived, nonwithdrawable, and explicitly not deployed capital.</p>
+                </div>
+                <div class="capital-network-heading-status">
+                  <span class="state-pill warning" id="capitalNetworkContractStatus">Verifying contract</span>
+                  <small id="capitalNetworkContractVersion">capital_network_presentation.v1</small>
+                </div>
+              </div>
+
+              <section class="panel capital-network-query" aria-labelledby="capitalNetworkQueryTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Exact assignment only</p><h3 id="capitalNetworkQueryTitle">Load your assigned TransferIntent</h3></div>
+                  <span class="state-pill">Provider AccessGrant</span>
+                </div>
+                <form id="capitalNetworkQueryForm">
+                  <div>
+                    <label for="capitalNetworkTransferIntentId">TransferIntent ID</label>
+                    <input id="capitalNetworkTransferIntentId" name="transferIntentId" autocomplete="off" maxlength="256" placeholder="transfer_intent_…" />
+                  </div>
+                  <button class="primary" id="capitalNetworkLoadBtn" type="submit">Load assigned intent</button>
+                </form>
+                <p class="capital-network-helper" id="capitalNetworkHelper" role="status" aria-live="polite">Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.</p>
+              </section>
+
+              <section class="panel capital-network-state" aria-labelledby="capitalNetworkStateTitle">
+                <div>
+                  <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+                  <span><p class="eyebrow">Current server state</p><h3 id="capitalNetworkStateTitle">No Provider intent loaded</h3></span>
+                </div>
+                <p id="capitalNetworkStateCopy">The browser does not infer Provider exposure, facility state, earnings, or reconciliation from prototype data.</p>
+              </section>
+
+              <div class="capital-network-contract-grid">
+                <section class="panel capital-network-mandate" aria-labelledby="capitalNetworkMandateTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Mandate-bound assignment</p><h3 id="capitalNetworkMandateTitle">Provider mandate</h3></div>
+                    <span class="state-pill warning" id="capitalNetworkMandateStatus">Not loaded</span>
+                  </div>
+                  <dl>
+                    <div><dt>Provider</dt><dd id="capitalNetworkProviderId">Server required</dd></div>
+                    <div><dt>Purpose</dt><dd id="capitalNetworkPurpose">Server required</dd></div>
+                    <div><dt>TransferIntent</dt><dd id="capitalNetworkIntent">Server required</dd></div>
+                    <div><dt>Funding authority</dt><dd>No · presentation only</dd></div>
+                  </dl>
+                </section>
+
+                <section class="panel capital-network-facility" aria-labelledby="capitalNetworkFacilityTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Assigned no-funds exposure</p><h3 id="capitalNetworkFacilityTitle">Facility presentation</h3></div>
+                    <span class="state-pill warning">Not deployed capital</span>
+                  </div>
+                  <strong class="capital-network-amount" id="capitalNetworkExposure">No server amount</strong>
+                  <p id="capitalNetworkAsset">Asset unavailable until an exact intent is loaded.</p>
+                  <div class="capital-network-boundary-row">
+                    <span>Simulation only</span><span>Nonwithdrawable</span><span>No Provider funding</span>
+                  </div>
+                </section>
+              </div>
+
+              <section class="panel capital-network-delivery" aria-labelledby="capitalNetworkDeliveryTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Signed fixed-loopback delivery</p><h3 id="capitalNetworkDeliveryTitle">Delivery &amp; reconciliation</h3></div>
+                  <span class="state-pill warning" id="capitalNetworkDeliveryStatus">Waiting for server</span>
+                </div>
+                <div class="capital-network-stage-grid" id="capitalNetworkStageGrid" role="list" aria-label="Provider delivery stages">
+                  <div role="listitem"><i>1</i><strong>Assigned</strong><small>Exact Provider intent</small></div>
+                  <div role="listitem"><i>2</i><strong>Acknowledged</strong><small>Idempotent receipt</small></div>
+                  <div role="listitem"><i>3</i><strong>Reconciled</strong><small>Signed callback processed</small></div>
+                </div>
+                <div class="capital-network-receipt-grid">
+                  <div><span>Allocation receipt</span><strong id="capitalNetworkAllocationReceipt">Not loaded</strong><small id="capitalNetworkAllocationCopy">Server TransferIntent hash required</small></div>
+                  <div><span>Reconciliation receipt</span><strong id="capitalNetworkReconciliationReceipt">Not loaded</strong><small id="capitalNetworkReconciliationCopy">Not a settlement or funds receipt</small></div>
+                  <div><span>Delivery integrity</span><strong id="capitalNetworkDeliveryReceipt">Not loaded</strong><small id="capitalNetworkDeliveryCopy">Signed local boundary only</small></div>
+                </div>
+                <div class="capital-network-delivery-action">
+                  <button class="primary" id="capitalNetworkAcknowledgeBtn" type="button" disabled>Acknowledge exact assignment</button>
+                  <p id="capitalNetworkAcknowledgeCopy">Acknowledgement is not funding, settlement, custody, or withdrawal authority. Exact retries reuse one idempotency key.</p>
+                </div>
+              </section>
+
+              <div class="capital-network-lower-grid">
+                <section class="panel capital-network-earnings" aria-labelledby="capitalNetworkEarningsTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Historical example only · unapproved</p><h3 id="capitalNetworkEarningsTitle">Earnings simulation</h3></div>
+                    <span class="state-pill warning">Not pricing policy</span>
+                  </div>
+                  <strong id="capitalNetworkEarnings">No simulation amount</strong>
+                  <p id="capitalNetworkEarningsCopy">Example rate: 1.25% of an exact loaded sandbox amount. It is nonbinding, unapproved, and cannot create Ledger, Evidence, or Provider entitlement.</p>
+                </section>
+
+                <section class="panel capital-network-disabled" aria-labelledby="capitalNetworkDisabledTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Explicitly unavailable</p><h3 id="capitalNetworkDisabledTitle">Capital actions remain disabled</h3></div>
+                    <span class="state-pill warning">Human gate required</span>
+                  </div>
+                  <div>
+                    <button type="button" disabled>Join public pool</button>
+                    <button type="button" disabled>Fund facility</button>
+                    <button type="button" disabled>Withdraw</button>
+                    <button type="button" disabled>Set production pricing</button>
+                  </div>
+                  <p>No TVL, public LP, remote Provider, mainnet, real capital, custody, or withdrawable balance is enabled.</p>
+                </section>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="trading-capital" aria-labelledby="tradingCapitalViewTitle">
+            <section class="v9-capability-page trading-capital-page" aria-labelledby="tradingCapitalViewTitle">
+              <div class="private-page-heading">
+                <div>
+                  <div class="v9-heading-badges">
+                    <p class="eyebrow">Shared Facility · local no-funds</p>
+                    <span class="v9-maturity-badge checking" id="tradingCapitalCatalogStatus">Checking contract</span>
+                  </div>
+                  <h2 id="tradingCapitalViewTitle">Trading Capital</h2>
+                  <p>Eight product views over one authenticated Facility, one canonical Obligation, and 25 closed local operations. No redeemable settlement, external execution, or remote MCP is implied.</p>
+                </div>
+                <div class="trading-capital-heading-status">
+                  <strong id="tradingCapitalOperationCount">0 / 25</strong>
+                  <small>catalog parity</small>
+                </div>
+              </div>
+
+              <section class="panel trading-capital-query" aria-labelledby="tradingCapitalQueryTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Exact bound resource only</p><h3 id="tradingCapitalQueryTitle">Load one synthetic Facility</h3></div>
+                  <span class="state-pill warning" id="tradingCapitalFacilityState">Not loaded</span>
+                </div>
+                <form id="tradingCapitalQueryForm">
+                  <div>
+                    <label for="tradingCapitalFacilityId">Facility ID</label>
+                    <input id="tradingCapitalFacilityId" name="tradingFacilityId" autocomplete="off" maxlength="256" placeholder="trading_facility_…" />
+                  </div>
+                  <div class="trading-capital-query-actions">
+                    <button class="primary" id="tradingCapitalLoadStateBtn" type="submit">Load state</button>
+                    <button class="secondary" id="tradingCapitalLoadEvidenceBtn" type="button">Load Evidence</button>
+                  </div>
+                </form>
+                <p id="tradingCapitalHelper" role="status" aria-live="polite">Enter one exact bound ID. Denied, missing, and cross-Tenant resources remain non-enumerating.</p>
+              </section>
+
+              <div class="trading-capital-tabs" role="tablist" aria-label="Trading Capital product views">
+                <button id="tradingCapitalTabOverview" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="true" tabindex="0" data-trading-capital-view="overview">Overview</button>
+                <button id="tradingCapitalTabProfile" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="profile">Profile</button>
+                <button id="tradingCapitalTabMarketplace" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="marketplace">Marketplace</button>
+                <button id="tradingCapitalTabSetup" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="setup">Setup</button>
+                <button id="tradingCapitalTabLive" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="live">Live</button>
+                <button id="tradingCapitalTabRisk" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="risk">Risk</button>
+                <button id="tradingCapitalTabSettle" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="settle">Settle</button>
+                <button id="tradingCapitalTabProof" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="proof">Proof</button>
+              </div>
+
+              <section class="panel trading-capital-contract" id="tradingCapitalContract" role="tabpanel" tabindex="0" aria-labelledby="tradingCapitalTabOverview tradingCapitalContractTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow" id="tradingCapitalActiveEyebrow">Overview</p><h3 id="tradingCapitalContractTitle">Server contract availability</h3></div>
+                  <span class="state-pill" id="tradingCapitalViewStatus">Catalog required</span>
+                </div>
+                <div class="trading-capital-summary" id="tradingCapitalSummary">
+                  <div><span>Facility</span><strong>Unavailable</strong></div>
+                  <div><span>Canonical Obligation</span><strong>Unavailable</strong></div>
+                  <div><span>Settlement</span><strong>Unavailable</strong></div>
+                  <div><span>Performance Proof</span><strong>Unavailable</strong></div>
+                </div>
+                <div class="trading-capital-operation-list" id="tradingCapitalOperationList" role="list" aria-label="Operations in selected Trading Capital view"></div>
+              </section>
+
+              <section class="panel trading-capital-actions" aria-labelledby="tradingCapitalActionsTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Deterministic close path</p><h3 id="tradingCapitalActionsTitle">Settle &amp; prove</h3></div>
+                  <span class="state-pill warning">Synthetic only</span>
+                </div>
+                <div>
+                  <button class="primary" id="tradingCapitalRequestCloseBtn" type="button" disabled>Request close</button>
+                  <button class="secondary" id="tradingCapitalIssueProofBtn" type="button" disabled>Issue Performance Proof</button>
+                  <button type="button" disabled>Run settlement · worker only</button>
+                  <button type="button" disabled>Withdraw · unavailable</button>
+                </div>
+                <p>The settlement worker accepts no caller-supplied PnL, fee, cost, or price. It conserves synthetic contributions, creates no second Ledger, and cannot move production funds.</p>
+              </section>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="wallet-permissions" aria-labelledby="walletPermissionsViewTitle">
+            <section class="v9-capability-page" aria-labelledby="walletPermissionsViewTitle">
+              <div class="private-page-heading">
+                <div>
+                  <div class="v9-heading-badges"><p class="eyebrow">Authentication only</p><span class="v9-maturity-badge checking" data-v9-maturity="wallet-permissions">Checking server</span></div>
+                  <h2 id="walletPermissionsViewTitle">Wallet &amp; Permissions</h2>
+                  <p>Wallet connection proves account control for an authenticated session. It never grants credit, allowance, withdrawal, or arbitrary signing authority.</p>
+                </div>
+                <button class="primary" id="walletPermissionsAccessBtn" type="button">Review sign-in</button>
+              </div>
+              <section class="panel v9-capability-state" aria-labelledby="walletPermissionsStateTitle">
+                <div><svg aria-hidden="true"><use href="/icons.svg#link"></use></svg><span><p class="eyebrow">Current server session</p><h3 id="walletPermissionsStateTitle">Checking authentication</h3></span></div>
+                <p id="walletPermissionsStateCopy">No wallet or server-session authority is assumed before verification.</p>
+              </section>
+              <section class="panel wallet-permission-matrix" aria-labelledby="walletPermissionMatrixTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Server authority matrix</p><h3 id="walletPermissionMatrixTitle">Effective wallet permissions</h3></div>
+                  <span id="walletPermissionMatrixStatus" class="state-pill neutral">Checking</span>
+                </div>
+                <dl class="credit-passport-facts">
+                  <div><dt>Selected Provider</dt><dd id="walletPermissionProvider">None selected</dd></div>
+                  <div><dt>Wallet account</dt><dd id="walletPermissionAccount">Not bound</dd></div>
+                  <div><dt>Network</dt><dd id="walletPermissionNetwork">Not bound</dd></div>
+                  <div><dt>Authority lifecycle</dt><dd id="walletPermissionAuthority">Unknown</dd></div>
+                </dl>
+                <div class="wallet-permission-table" role="table" aria-label="Effective wallet authority">
+                  <div class="wallet-permission-row wallet-permission-head" role="row">
+                    <span role="columnheader">Capability</span>
+                    <span role="columnheader">Effective state</span>
+                    <span role="columnheader">Enabled</span>
+                  </div>
+                  <div id="walletPermissionRows" role="rowgroup"></div>
+                </div>
+                <p id="walletPermissionBoundary">Only a current server session can authenticate a wallet. No catalog entry grants token approval, arbitrary transaction, withdrawal, or funds authority.</p>
+              </section>
+              <div class="v9-maturity-grid">
+                <section class="panel"><span class="state-pill">Real local</span><h3>Human wallet authentication</h3><p>One-use SIWE, explicit Provider selection, approved Testnets, and server-side verification.</p></section>
+                <section class="panel"><span class="state-pill">Real local</span><h3>Authority invalidation</h3><p>Account, chain, Provider replacement, and disconnect changes quarantine every tab and invalidate server authority.</p></section>
+                <section class="panel"><span class="state-pill warning">Specified disabled</span><h3>Mobile / QR runtime</h3><p>The reviewed connector remains disabled pending its separate owner-managed runtime and release gate.</p></section>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="obligations" aria-labelledby="privateCreditTitle">
             <section id="privateCreditSurface" class="private-product-surface private-page-surface" aria-labelledby="privateCreditTitle" data-private-session-surface>
               <div class="private-page-heading">
-                <div><p class="eyebrow" id="privateCreditEyebrow">Human credit</p><h2 id="privateCreditTitle">Borrow with the exact Offer in view.</h2><p id="privateCreditCopy">The private Human session carries deterministic pricing into one accepted Obligation.</p></div>
-                <button id="privateCreditPrimaryBtn" class="primary" type="button">Open Human application</button>
+                <div><p class="eyebrow" id="privateCreditEyebrow">Owned obligations</p><h2 id="privateCreditTitle">Every position, reconciled to server truth.</h2><p id="privateCreditCopy">Review bounded owned references, exact current state, schedule, authority, sandbox rail, and immutable Evidence.</p></div>
+                <button id="privateCreditPrimaryBtn" class="primary" type="button">Refresh owned positions</button>
               </div>
               <section class="panel private-position-card" aria-labelledby="privateCreditPositionTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Shared credit position</p><h3 id="privateCreditPositionTitle">Offer & Obligation</h3></div><span class="state-pill neutral" id="privateCreditStatus">Not started</span></div>
+                <div class="panel-heading"><div><p class="eyebrow">Selected shared position</p><h3 id="privateCreditPositionTitle">Obligation status</h3></div><span class="state-pill neutral" id="privateCreditStatus">Not loaded</span></div>
                 <div class="data-strip four">
-                  <div><span>Approved principal</span><strong id="privateCreditPrincipal">$0.00</strong></div>
+                  <div><span>Original principal</span><strong id="privateCreditPrincipal">—</strong></div>
                   <div><span>Annual rate</span><strong id="privateCreditRate">—</strong></div>
                   <div><span>Maturity</span><strong id="privateCreditMaturity">—</strong></div>
-                  <div><span>Outstanding</span><strong id="privateCreditOutstanding">$0.00</strong></div>
+                  <div><span>Outstanding total</span><strong id="privateCreditOutstanding">—</strong></div>
                 </div>
-                <p class="decision-reason" id="privateCreditReasons">Create a Human Credit Intent or configure Principal-controlled Agent authority to continue.</p>
+                <p class="decision-reason" id="privateCreditReasons">Refresh exact owner-authorized server state before relying on an amount or status.</p>
+              </section>
+              <section class="panel obligation-portfolio" aria-labelledby="obligationPortfolioTitle">
+                <div class="obligation-portfolio-heading">
+                  <div><p class="eyebrow">Bounded owned-resource composition</p><h3 id="obligationPortfolioTitle">My obligations</h3></div>
+                  <div class="obligation-portfolio-controls">
+                    <span class="state-pill neutral" id="obligationPortfolioCoverage">Not loaded</span>
+                    <button class="secondary" id="obligationPortfolioRefreshBtn" type="button">Refresh server state</button>
+                  </div>
+                </div>
+                <div class="obligation-portfolio-metrics" aria-label="Reconciled obligation portfolio">
+                  <div><span>Current positions</span><strong id="obligationPortfolioCount">0/0</strong></div>
+                  <div><span>Outstanding</span><strong id="obligationPortfolioOutstanding">Hidden</strong></div>
+                  <div><span>Past due</span><strong id="obligationPortfolioPastDue">Hidden</strong></div>
+                  <div><span>Total repaid</span><strong id="obligationPortfolioRepaid">Hidden</strong></div>
+                </div>
+                <p id="obligationPortfolioHelper" class="obligation-portfolio-helper" role="status" aria-live="polite">Sign in to recover bounded Actor-owned Obligation references.</p>
+                <div class="obligation-portfolio-workspace">
+                  <section class="obligation-portfolio-list-panel" aria-labelledby="obligationPortfolioListTitle">
+                    <div class="obligation-portfolio-subheading"><span>Exact authorized references</span><h4 id="obligationPortfolioListTitle">Positions</h4></div>
+                    <div id="obligationPortfolioList" class="obligation-portfolio-list" role="list" aria-label="Owned obligations"></div>
+                    <p id="obligationPortfolioBoundary">Unrefreshed or denied references reveal no financial values.</p>
+                  </section>
+                  <section class="obligation-detail-panel" id="obligationDetailPanel" aria-labelledby="obligationDetailTitle" tabindex="-1">
+                    <div class="obligation-detail-empty" id="obligationDetailEmpty">
+                      <span class="obligation-detail-icon"><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg></span>
+                      <h4 id="obligationDetailTitle">Select a current position</h4>
+                      <p id="obligationDetailEmptyCopy">Refresh server state, then select one exact Obligation. Browser state is never financial truth.</p>
+                    </div>
+                    <div class="obligation-detail-content" id="obligationDetailContent" hidden>
+                      <div class="obligation-detail-heading">
+                        <div><p class="eyebrow">Shared obligation.v2</p><h4 id="obligationDetailIdentifier">—</h4></div>
+                        <span class="state-pill neutral" id="obligationDetailStatus">—</span>
+                      </div>
+                      <div class="obligation-detail-facts">
+                        <div><span>Entry authority</span><strong id="obligationDetailAuthority">—</strong><small id="obligationDetailAuthorityId">—</small></div>
+                        <div><span>Execution rail</span><strong id="obligationDetailRail">—</strong><small id="obligationDetailRailRef">—</small></div>
+                        <div><span>State version</span><strong id="obligationDetailVersion">—</strong><small id="obligationDetailAsOf">—</small></div>
+                        <div><span>Servicing</span><strong id="obligationDetailServicing">—</strong><small id="obligationDetailReason">—</small></div>
+                      </div>
+                      <div class="obligation-detail-amounts">
+                        <div><span>Outstanding principal</span><strong id="obligationDetailPrincipal">—</strong></div>
+                        <div><span>Interest + fees</span><strong id="obligationDetailCharges">—</strong></div>
+                        <div><span>Past due</span><strong id="obligationDetailPastDue">—</strong></div>
+                        <div><span>Total repaid</span><strong id="obligationDetailRepaid">—</strong></div>
+                      </div>
+                      <section class="obligation-detail-section" aria-labelledby="obligationDetailScheduleTitle">
+                        <div class="obligation-portfolio-subheading"><span>Canonical schedule</span><h5 id="obligationDetailScheduleTitle">Payment plan</h5></div>
+                        <div id="obligationDetailSchedule" class="obligation-detail-schedule"></div>
+                      </section>
+                      <section class="obligation-detail-section" aria-labelledby="obligationDetailHistoryTitle">
+                        <div class="obligation-portfolio-subheading"><span>Append-only Evidence</span><h5 id="obligationDetailHistoryTitle">Version history &amp; corrections</h5></div>
+                        <div id="obligationDetailHistory" class="obligation-detail-history"></div>
+                        <p id="obligationDetailHistoryState">Load Evidence to verify immutable state changes.</p>
+                      </section>
+                      <div class="obligation-detail-actions">
+                        <button class="secondary" id="obligationDetailRefreshBtn" type="button">Refresh selected</button>
+                        <button class="secondary" id="obligationDetailEvidenceBtn" type="button">Load Evidence</button>
+                        <button class="primary" id="obligationDetailRepayBtn" type="button">Open repayment</button>
+                      </div>
+                    </div>
+                  </section>
+                </div>
               </section>
               <section class="panel private-boundary-card" aria-labelledby="privateCreditBoundaryTitle">
-                <div><p class="eyebrow">Authority boundary</p><h3 id="privateCreditBoundaryTitle">One deterministic policy, mode-specific authority</h3></div>
-                <p id="privateCreditBoundary">Human Consent or an active Agent Mandate authorizes the same Intent, Offer, and Obligation shapes. This page adds no protocol operation.</p>
+                <div><p class="eyebrow">Read boundary</p><h3 id="privateCreditBoundaryTitle">One state machine, exact owner reads</h3></div>
+                <p id="privateCreditBoundary">Human Consent and Agent Mandate change entry presentation only. List references come from the bounded authenticated workspace and every value is reauthorized by exact Obligation ID.</p>
               </section>
             </section>
 
@@ -744,7 +1364,7 @@
 
           </section>
 
-          <section class="view" data-view-panel="transfers" aria-labelledby="privatePaymentsTitle">
+          <section class="view" data-view-panel="repay-settle" aria-labelledby="privatePaymentsTitle">
             <section id="privatePaymentsSurface" class="private-product-surface private-page-surface" aria-labelledby="privatePaymentsTitle" data-private-session-surface>
               <div class="private-page-heading">
                 <div><p class="eyebrow" id="privatePaymentsEyebrow">Human repayment</p><h2 id="privatePaymentsTitle">Repay with the schedule in view.</h2><p id="privatePaymentsCopy">Post synthetic repayment against the exact shared Obligation and inspect deterministic allocation.</p></div>
@@ -758,9 +1378,13 @@
                 <section class="owned-position-picker" id="ownedPositionPicker" aria-labelledby="ownedPositionPickerTitle" hidden>
                   <div class="owned-position-heading">
                     <div><p class="eyebrow">Authenticated server truth</p><h4 id="ownedPositionPickerTitle">My positions</h4></div>
-                    <strong id="ownedPositionCount">0 positions</strong>
+                    <div class="owned-position-controls">
+                      <strong id="ownedPositionCount">0/0 current</strong>
+                      <button id="refreshOwnedPositionsBtn" class="secondary" type="button">Refresh current positions</button>
+                    </div>
                   </div>
                   <div class="owned-position-list" id="ownedPositionList" role="list" aria-label="Owned Obligation positions"></div>
+                  <p id="ownedPositionRefreshState" role="status" aria-live="polite">Refresh to load current balances and trusted-time servicing state for these authorized references.</p>
                   <p id="ownedPositionBoundary">Only Actor-bound opaque references are shown. Select one position to load its exact authorized state.</p>
                 </section>
                 <form class="owned-obligation-restore" id="ownedObligationRestore">
@@ -837,7 +1461,7 @@
 
           </section>
 
-          <section class="view" data-view-panel="evidence" aria-labelledby="privateEvidenceTitle">
+          <section class="view" data-view-panel="activity-proofs" aria-labelledby="privateEvidenceTitle">
             <section id="privateEvidenceSurface" class="private-product-surface private-page-surface" aria-labelledby="privateEvidenceTitle" data-private-session-surface>
               <div class="private-page-heading">
                 <div><p class="eyebrow" id="privateEvidenceEyebrow">Owner Evidence</p><h2 id="privateEvidenceTitle">Verify the lifecycle, not a screenshot.</h2><p id="privateEvidenceCopy">Load redacted immutable events for the exact Obligation owned by this authenticated Human session.</p></div>
@@ -912,7 +1536,100 @@
 
           </section>
 
-          <section class="view" data-view-panel="risk" aria-labelledby="privateRiskTitle">
+          <section class="view" data-view-panel="credit-track-record" aria-labelledby="creditTrackRecordViewTitle">
+            <section class="v9-capability-page" aria-labelledby="creditTrackRecordViewTitle">
+              <div class="private-page-heading">
+                <div>
+                  <div class="v9-heading-badges"><p class="eyebrow">Evidence-derived only</p><span class="v9-maturity-badge checking" data-v9-maturity="credit-track-record">Checking server</span></div>
+                  <h2 id="creditTrackRecordViewTitle">Credit Track Record</h2>
+                  <p>Summarize only the authenticated Decision and Obligation Evidence already available to this session. Browser history is not credit truth.</p>
+                </div>
+                <button class="primary" type="button" data-go-view="activity-proofs">Open verified Evidence</button>
+              </div>
+              <section class="panel v9-capability-state" aria-labelledby="creditTrackRecordStateTitle">
+                <div><svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg><span><p class="eyebrow">Current record</p><h3 id="creditTrackRecordStateTitle">No verified lifecycle loaded</h3></span></div>
+                <p id="creditTrackRecordStateCopy">Restore an owned Obligation and load its Evidence. No positive history is inferred from an empty browser state.</p>
+              </section>
+              <section class="panel credit-track-record-summary" aria-labelledby="creditTrackRecordSummaryTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Canonical inputs only</p><h3 id="creditTrackRecordSummaryTitle">Current Evidence summary</h3></div><span id="creditTrackRecordFinality" class="state-pill neutral">Not loaded</span></div>
+                <dl class="credit-passport-facts">
+                  <div><dt>Decision Passport</dt><dd id="creditTrackRecordDecision">Not loaded</dd></div>
+                  <div><dt>Owned Evidence</dt><dd id="creditTrackRecordEvidenceCount">0 events</dd></div>
+                  <div><dt>Finalized</dt><dd id="creditTrackRecordFinalizedCount">0</dd></div>
+                  <div><dt>Non-final / invalidated</dt><dd id="creditTrackRecordNonFinalCount">0</dd></div>
+                </dl>
+              </section>
+              <div class="v9-maturity-grid">
+                <section class="panel"><span class="state-pill">Server-backed</span><h3>Evidence-derived record</h3><p>Decision and owned Obligation Evidence are the only permitted inputs.</p></section>
+                <section class="panel"><span class="state-pill warning">Simulation only</span><h3>Wallet history and impact</h3><p>Wallet-history import and impact simulation are not authoritative product actions.</p></section>
+                <section class="panel"><span class="state-pill">Server-backed</span><h3>Generated report</h3><p>Create a bounded JSON or formula-safe CSV artifact from the exact owned Obligation and its persisted Evidence.</p></section>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="reports-exports" aria-labelledby="reportsExportsViewTitle">
+            <section class="v9-capability-page" aria-labelledby="reportsExportsViewTitle">
+              <div class="private-page-heading">
+                <div>
+                  <div class="v9-heading-badges"><p class="eyebrow">Server-generated artifacts</p><span class="v9-maturity-badge checking" data-v9-maturity="reports-exports">Checking server</span></div>
+                  <h2 id="reportsExportsViewTitle">Reports &amp; Exports</h2>
+                  <p>Create, inspect, retrieve, and revoke a bounded report derived from the current owned Obligation and its persisted Evidence. The browser transports exact verified bytes; it does not author official content.</p>
+                </div>
+                <button class="primary" type="button" data-go-view="activity-proofs">Open Evidence</button>
+              </div>
+              <section class="panel v9-capability-state" aria-labelledby="reportsExportsStateTitle">
+                <div><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><p class="eyebrow">Current artifact</p><h3 id="reportsExportsStateTitle">No official report loaded</h3></span></div>
+                <p id="reportsExportsStateCopy">Load an owned Obligation first. Report content is generated and hashed by the server from bounded, redacted Evidence.</p>
+              </section>
+              <div class="report-workspace-grid">
+                <section class="panel" aria-labelledby="officialReportCreateTitle">
+                  <div class="panel-heading"><div><p class="eyebrow">Authenticated command</p><h3 id="officialReportCreateTitle">Create official activity report</h3></div><span class="state-pill">No funds</span></div>
+                  <form id="officialReportCreateForm" class="report-form">
+                    <label for="officialReportFormat">Format</label>
+                    <select id="officialReportFormat" name="format">
+                      <option value="json">JSON · canonical</option>
+                      <option value="csv">CSV · formula-safe</option>
+                    </select>
+                    <label for="officialReportLifetime">Object lifetime</label>
+                    <select id="officialReportLifetime" name="lifetimeSeconds">
+                      <option value="900">15 minutes</option>
+                      <option value="1800">30 minutes</option>
+                      <option value="3600">60 minutes maximum</option>
+                    </select>
+                    <button id="createOfficialReportBtn" class="primary" type="submit">Create from current Obligation</button>
+                  </form>
+                  <p id="officialReportCreateHelper" class="risk-helper" role="status" aria-live="polite">The server reauthorizes the exact owned Obligation and limits the source to 50 redacted Evidence events.</p>
+                </section>
+                <section class="panel" aria-labelledby="officialReportAccessTitle">
+                  <div class="panel-heading"><div><p class="eyebrow">Authorization rechecked</p><h3 id="officialReportAccessTitle">Read or retrieve exact artifact</h3></div><span id="officialReportAccessStatus" class="state-pill neutral">Not loaded</span></div>
+                  <form id="officialReportAccessForm" class="report-form">
+                    <label for="officialReportId">Exact report ID</label>
+                    <input id="officialReportId" name="officialReportId" autocomplete="off" maxlength="256" placeholder="official_report_…" />
+                    <div class="report-action-row">
+                      <button id="readOfficialReportBtn" class="secondary" type="submit">Read metadata</button>
+                      <button id="retrieveOfficialReportBtn" class="primary" type="button">Verify &amp; download</button>
+                      <button id="revokeOfficialReportBtn" class="danger-action" type="button">Revoke</button>
+                    </div>
+                  </form>
+                  <p id="officialReportAccessHelper" class="risk-helper" role="status" aria-live="polite">Every read and retrieval revalidates active same-Tenant ownership. Expired or revoked artifacts are unavailable.</p>
+                </section>
+              </div>
+              <section class="panel" aria-labelledby="officialReportMetadataTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Server metadata only</p><h3 id="officialReportMetadataTitle">Artifact integrity</h3></div><span id="officialReportEffectiveStatus" class="state-pill neutral">Not loaded</span></div>
+                <dl class="credit-passport-facts">
+                  <div><dt>Content SHA-256</dt><dd id="officialReportSha256">—</dd></div>
+                  <div><dt>Artifact hash</dt><dd id="officialReportArtifactHash">—</dd></div>
+                  <div><dt>Evidence source</dt><dd id="officialReportEvidenceCount">—</dd></div>
+                  <div><dt>Expires</dt><dd id="officialReportExpiresAt">—</dd></div>
+                  <div><dt>Authorization</dt><dd id="officialReportAuthorization">Rechecked on access</dd></div>
+                  <div><dt>Production fee policy</dt><dd id="officialReportFeePolicy">Unavailable · principal and unrealized PnL excluded as fee bases</dd></div>
+                </dl>
+                <p class="risk-helper">No HTML export, public link, bearer grant, PII, secret, raw transaction, signed URL, production fee calculation, mainnet authority, or real-funds authority is created.</p>
+              </section>
+            </section>
+          </section>
+
+          <section class="view" data-view-panel="risk-operations" aria-labelledby="privateRiskTitle">
             <section id="privateRiskSurface" class="private-product-surface private-page-surface private-risk-surface" aria-labelledby="privateRiskTitle" data-private-session-surface>
               <header class="private-page-heading risk-page-heading">
                 <div>
@@ -1059,6 +1776,74 @@
                 <p class="servicing-queue-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>Read-only · PII excluded · no disposition authority · synthetic obligations only · no real funds.</p>
               </section>
 
+              <section class="panel operations-assurance-card" aria-labelledby="operationsAssuranceTitle">
+                <div class="panel-heading operations-assurance-heading stacked-mobile">
+                  <div>
+                    <p class="eyebrow">V9-008 · checked-in control evidence</p>
+                    <h3 id="operationsAssuranceTitle">Operational assurance, without invented runtime state</h3>
+                    <p>Policy and runbook facts are separated from live Tenant reads. A checked-in control never becomes a current alert, reconciliation result, incident, or approval merely because it is rendered here.</p>
+                  </div>
+                  <span id="operationsAssuranceStatus" class="state-pill neutral">Checking catalog</span>
+                </div>
+
+                <div class="operations-assurance-grid">
+                  <article>
+                    <span class="operations-assurance-kicker">Alerts</span>
+                    <strong id="operationsAlertEvidenceStatus">Unavailable</strong>
+                    <p id="operationsAlertEvidenceCopy">No operator alert read has been verified.</p>
+                    <small id="operationsAlertEvidenceMeta">Policy evidence only</small>
+                  </article>
+                  <article>
+                    <span class="operations-assurance-kicker">Reconciliation</span>
+                    <strong id="operationsReconciliationEvidenceStatus">Unavailable</strong>
+                    <p id="operationsReconciliationEvidenceCopy">No current reconciliation run has been loaded.</p>
+                    <small id="operationsReconciliationEvidenceMeta">Worker evidence only</small>
+                  </article>
+                  <article>
+                    <span class="operations-assurance-kicker">Incidents</span>
+                    <strong id="operationsIncidentEvidenceStatus">Unconfigured</strong>
+                    <p id="operationsIncidentEvidenceCopy">No incident acknowledgement or resolution authority is exposed.</p>
+                    <small id="operationsIncidentEvidenceMeta">Runbook baseline only</small>
+                  </article>
+                  <article>
+                    <span class="operations-assurance-kicker">Dual control</span>
+                    <strong id="operationsApprovalEvidenceStatus">Unavailable</strong>
+                    <p id="operationsApprovalEvidenceCopy">A proposal locator is never approval authority.</p>
+                    <small id="operationsApprovalEvidenceMeta">Exact command required</small>
+                  </article>
+                </div>
+
+                <div class="operations-evidence-boundary">
+                  <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
+                  <div>
+                    <strong>Configuration evidence is not live state</strong>
+                    <span id="operationsEvidenceBoundaryCopy">Loading the versioned control boundary…</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel risk-authority-card" aria-labelledby="riskAuthorityTitle">
+                <div class="panel-heading stacked-mobile">
+                  <div>
+                    <p class="eyebrow">Policy ceilings · Gateway still decides</p>
+                    <h3 id="riskAuthorityTitle">Borrower, Risk, Operations, and Auditor remain separate</h3>
+                    <p>These rows describe checked-in maximum authority when the matching operation exists. They do not describe the current session and cannot bypass Membership, capability, recent MFA, resource ownership, live state, admission, or audit.</p>
+                  </div>
+                  <span class="state-pill warning">Recent MFA</span>
+                </div>
+                <div class="risk-authority-table" role="table" aria-label="Risk Operations policy ceilings">
+                  <div class="risk-authority-row risk-authority-head" role="row">
+                    <span role="columnheader">Actor</span>
+                    <span role="columnheader">Portfolio</span>
+                    <span role="columnheader">Queue</span>
+                    <span role="columnheader">Freeze</span>
+                    <span role="columnheader">Resolution</span>
+                  </div>
+                  <div id="riskAuthorityRows" role="rowgroup"></div>
+                </div>
+                <p class="risk-authority-note">Health and aggregate feedback use their own recent-MFA capabilities. Catalog discovery never grants either read.</p>
+              </section>
+
               <div class="risk-control-grid">
                 <section class="panel protective-control-card" aria-labelledby="riskFreezeTitle">
                   <div class="panel-heading"><div><p class="eyebrow">Protective-only command</p><h3 id="riskFreezeTitle">Freeze Agent Subject</h3></div><span class="state-pill warning">Step-up control</span></div>
@@ -1074,12 +1859,14 @@
                 </section>
 
                 <section class="panel risk-boundary-card" aria-labelledby="riskBoundaryTitle">
-                  <div class="panel-heading"><div><p class="eyebrow">Commercial boundary</p><h3 id="riskBoundaryTitle">Closed permissions by design</h3></div><svg class="panel-icon" aria-hidden="true"><use href="/icons.svg#file-check"></use></svg></div>
+                  <div class="panel-heading"><div><p class="eyebrow">Explicitly unavailable</p><h3 id="riskBoundaryTitle">Closed permissions by design</h3></div><svg class="panel-icon" aria-hidden="true"><use href="/icons.svg#file-check"></use></svg></div>
                   <div class="risk-boundary-list">
                     <div><strong>Portfolio read</strong><span>Point-in-time aggregates, no raw KYC or PII.</span></div>
                     <div><strong>Freeze</strong><span>Protective-only, reason-bound, idempotent, and evidenced.</span></div>
-                    <div><strong>Absent here</strong><span>Unfreeze, limit increase, withdrawals, and production funds.</span></div>
-                    <div><strong>Authority</strong><span>Risk, Operations, and Auditor permissions remain distinct.</span></div>
+                    <div><strong>No inverse control</strong><span>Unfreeze, limit increase, and generic emergency mutation remain unavailable.</span></div>
+                    <div><strong>No automatic action</strong><span>Alerts and runbooks cannot repair state, resolve an incident, or move funds.</span></div>
+                    <div><strong>No demo reset</strong><span>Historical prototype reset behavior is not an authenticated product control.</span></div>
+                    <div><strong>Break glass</strong><span>Protective-only, disabled by default, and unavailable in this browser.</span></div>
                   </div>
                 </section>
               </div>
@@ -1087,12 +1874,12 @@
 
           </section>
 
-          <section class="view" data-view-panel="developer" aria-labelledby="developerViewTitle">
+          <section class="view" data-view-panel="architecture" aria-labelledby="developerViewTitle">
             <section class="human-entry agent-runtime-entry" aria-label="Agent integration entry">
               <div class="human-entry-copy">
                 <p class="eyebrow">Agent integration</p>
                 <h2 id="developerViewTitle">From approval to action. <em>No hidden authority.</em></h2>
-                <p id="agentRuntimeHeroCopy">Use one Principal-approved handoff with the authenticated Tenant HTTPS API. Workload credentials, mTLS private keys, and real funds never travel in the packet.</p>
+                <p id="agentRuntimeHeroCopy">Use one Principal-approved handoff with the approved local Agent Host. Credentials and real funds never travel in the packet.</p>
                 <div class="heading-actions">
                   <button class="primary" id="agentRuntimePrimaryBtn" type="button" data-agent-guide-action="principal-setup">Authorize Agent</button>
                   <button class="secondary" id="agentRuntimeSecondaryBtn" type="button" data-agent-guide-action="view-protocol">View Agent API &amp; SDK</button>
@@ -1101,7 +1888,7 @@
               <div class="human-entry-stats" aria-label="Agent integration status">
                 <div><span>Identity</span><strong id="agentRuntimeIdentity">Principal setup required</strong></div>
                 <div><span>Handoff</span><strong id="agentRuntimeAuthority">Awaiting Mandate</strong></div>
-                <div><span>Transport</span><strong>authenticated Tenant HTTPS · closed_non_funds_pilot</strong></div>
+                <div><span>Transport</span><strong>local stdio MCP · closed_non_funds_pilot</strong></div>
               </div>
             </section>
 
@@ -1131,8 +1918,8 @@
                 <h4 id="agentIntegrationAssuranceTitle">The Principal approves. The Agent executes only that scope.</h4>
                 <ul>
                   <li><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>Principal keeps control</strong><small>Identity, limits, and activation remain Human-approved.</small></span></li>
-                  <li><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><strong>Packet carries no credential</strong><small>The Gateway verifies a short-lived workload JWT bound to the mTLS certificate; the manifest remains non-authorizing.</small></span></li>
-                  <li><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>No-funds economics only</strong><small>Authenticated remote operations remain Tenant-, Mandate-, and policy-bound. Withdrawals and real funds are disabled.</small></span></li>
+                  <li><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><strong>Packet carries no credential</strong><small>The reviewed local Host injects authenticated context out of band; the manifest remains non-authorizing.</small></span></li>
+                  <li><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>No-funds economics only</strong><small>Local operations remain Tenant-, Mandate-, and policy-bound. Withdrawals and real funds are disabled.</small></span></li>
                 </ul>
                 <details id="agentIntegrationDetails">
                   <summary>Who does what?</summary>
@@ -1142,12 +1929,34 @@
             </section>
 
             <section class="runtime-band" aria-label="Agent runtime status">
-              <div><span>Public base</span><strong id="runtimeBaseUrl">Current origin</strong></div>
-              <div><span>Tenant protocol</span><strong>38 authenticated operations</strong></div>
-              <div><span>Agent SDK</span><strong>3 authenticated workflows</strong></div>
-              <div><span>Private protocol</span><strong>38 Tenant operations</strong></div>
-              <div><span>Agent API</span><strong>11 Tenant operations</strong></div>
+              <div><span>Local base</span><strong id="runtimeBaseUrl">Current loopback origin</strong></div>
+              <div><span>Tenant protocol</span><strong id="runtimeTenantOperationCount">Checking catalog</strong></div>
+              <div><span>Agent SDK</span><strong id="runtimeAgentWorkflowCount">Checking manifest</strong></div>
+              <div><span>Protocol version</span><strong id="runtimeProtocolVersion">Checking catalog</strong></div>
+              <div><span>Agent MCP</span><strong id="runtimeAgentToolCount">Checking manifest</strong></div>
               <div><span>Handoff</span><strong id="runtimeHandoffStatus">Awaiting Mandate</strong></div>
+            </section>
+
+            <section class="panel architecture-contract-card" aria-labelledby="architectureContractTitle">
+              <div class="panel-heading">
+                <div><p class="eyebrow">Checked-in catalog + runtime response</p><h3 id="architectureContractTitle">V9 capability contract</h3></div>
+                <span id="architectureCatalogStatus" class="state-pill neutral">Checking</span>
+              </div>
+              <dl class="credit-passport-facts">
+                <div><dt>Catalog maturity</dt><dd id="architectureCatalogMaturity">Checking</dd></div>
+                <div><dt>Enabled transports</dt><dd id="architectureCatalogTransports">Checking</dd></div>
+                <div><dt>V9 destinations</dt><dd id="architectureDestinationCoverage">0/13 verified</dd></div>
+                <div><dt>Safety</dt><dd id="architectureSafety">Real funds disabled</dd></div>
+              </dl>
+              <div class="architecture-capability-table" role="table" aria-label="V9 destination capability mapping">
+                <div class="architecture-capability-row architecture-capability-head" role="row">
+                  <span role="columnheader">Destination</span>
+                  <span role="columnheader">Required server operations</span>
+                  <span role="columnheader">Catalog</span>
+                </div>
+                <div id="architectureCapabilityRows" role="rowgroup"></div>
+              </div>
+              <p>No diagram, prototype export, marketing label, or browser counter can add a capability absent from the authenticated catalog.</p>
             </section>
 
             <details class="panel agent-protocol-disclosure" id="agentProtocolDetails" tabindex="-1">
@@ -1167,11 +1976,11 @@
                   </div>
                 </div>
                 <pre><code id="mcpHandoffPacket"></code></pre>
-                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises eleven Agent operations and three staged workflows. The production host and schemas come from OpenAPI; credentials, mTLS keys, and funds authority never enter the packet.</p>
+                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises eleven local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority never enter the packet.</p>
               </section>
 
               <section class="panel" aria-labelledby="mcpToolTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Authenticated Agent API</p><h3 id="mcpToolTitle">Approved Tenant operations</h3></div><span class="state-pill neutral" id="mcpToolReadiness">Waiting</span></div>
+                <div class="panel-heading"><div><p class="eyebrow">Local Agent MCP</p><h3 id="mcpToolTitle">Approved Host operations</h3></div><span class="state-pill neutral" id="mcpToolReadiness">Waiting</span></div>
                 <div class="mcp-tool-list">
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_read_self</strong><small>pilotReadAgentSelf</small></span><em data-mcp-tool-status="runtime">Waiting</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_request_credit</strong><small>pilotRequestCredit</small></span><em data-mcp-tool-status="application">Waiting</em></div>
@@ -1186,9 +1995,9 @@
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_post_sandbox_repayment</strong><small>pilotPostSandboxRepayment</small></span><em data-mcp-tool-status="economic">Waiting</em></div>
                 </div>
                 <div class="mcp-transport-boundary">
-                  <div><span>Transport</span><strong>authenticated Tenant HTTPS · closed_non_funds_pilot</strong></div>
-                  <div><span>Authentication</span><strong>JWT ≤300s bound to mTLS certificate</strong></div>
-                  <div><span>API contract</span><strong>Production host OpenAPI</strong></div>
+                  <div><span>Transport</span><strong>local stdio MCP · closed_non_funds_pilot</strong></div>
+                  <div><span>Authentication</span><strong>Host context injected out of band</strong></div>
+                  <div><span>API contract</span><strong>Loopback OpenAPI + local MCP registry</strong></div>
                   <div><span>Funds authority</span><strong>None</strong></div>
                 </div>
                 <button class="secondary mcp-return-button" id="returnToAgentAuthorityBtn" type="button">Return to Principal setup</button>
@@ -1197,15 +2006,15 @@
 
             <div class="developer-grid">
               <section class="panel code-panel" aria-labelledby="sdkTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Production Agent client</p><h3 id="sdkTitle">Authenticated HTTPS quick start</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy Agent API example" title="Copy Agent API example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
+                <div class="panel-heading"><div><p class="eyebrow">Local no-funds Agent client</p><h3 id="sdkTitle">Local stdio SDK quick start</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy Agent API example" title="Copy Agent API example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
                 <pre><code id="sdkSnippet"></code></pre>
               </section>
               <section class="panel" aria-labelledby="capabilityTitle">
                 <div class="panel-heading"><div><p class="eyebrow">Agent API contract</p><h3 id="capabilityTitle">Approved authenticated workflows</h3></div><span class="state-pill">3 stages</span></div>
                 <div class="capability-list workflow-capability-list">
-                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Decision &amp; Offer</strong><small>Authenticated Tenant HTTPS composition</small></span><em data-agent-workflow-status="credit_offer">Locked</em></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Decision &amp; Offer</strong><small>Typed local MCP composition</small></span><em data-agent-workflow-status="credit_offer">Locked</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>Decision Passport</strong><small>risk_decision_passport.v1 · policy + finalized Evidence lineage</small></span><em data-agent-workflow-status="credit_offer">Returned</em></div>
-                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Obligation &amp; repayment</strong><small>mTLS-bound workload identity + Tenant protocol</small></span><em data-agent-workflow-status="sandbox_obligation">Locked</em></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Obligation &amp; repayment</strong><small>Local Host identity + Tenant protocol</small></span><em data-agent-workflow-status="sandbox_obligation">Locked</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><strong>Servicing Case</strong><small>pilotReadOwnObligation + repayment + Evidence</small></span><em data-agent-workflow-status="sandbox_obligation">Same state</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>Dual-chain conformance</strong><small>Local receipt verification, no RPC</small></span><em data-agent-workflow-status="obligation_portability">Receipt input</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span><strong>Structured pilot feedback</strong><small>pilotSubmitPilotFeedback · closed categories · no PII</small></span><em>Tenant SDK</em></div>
@@ -1254,11 +2063,19 @@
                 <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg>
               </button>
               <button class="access-method-button wallet-method" id="walletSignInBtn" type="button">
-                <span><strong>Connect &amp; sign in with wallet</strong><small>One-use SIWE signature · no transaction or fee</small></span>
+                <span><strong>Connect &amp; sign in with wallet</strong><small>Select one wallet below · one-use SIWE signature · no transaction or fee</small></span>
                 <svg aria-hidden="true"><use href="/icons.svg#link"></use></svg>
               </button>
             </div>
             <p class="access-status" id="accessAuthStatus" role="status">Checking available sign-in methods…</p>
+            <div class="wallet-provider-picker" aria-labelledby="walletProviderTitle">
+              <div>
+                <h3 id="walletProviderTitle">Available browser wallets</h3>
+                <p id="walletProviderStatus" role="status" aria-live="polite">Discovering browser wallets…</p>
+              </div>
+              <div class="wallet-provider-list" id="walletProviderList" role="group" aria-label="Discovered wallet Providers"></div>
+              <p>Wallet names and icons are untrusted display metadata. Selection stays in memory and never requests an account, network, or signature by itself. Account, network, Provider, or disconnect changes invalidate the previous host session before protected work can continue.</p>
+            </div>
             <div class="access-boundary-note">
               <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
               <p><strong>Authentication is not credit authority.</strong> A wallet address or Google account cannot create a Mandate, approve an Offer, or move funds.</p>
@@ -1300,6 +2117,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="operationStatus" class="sr-only" role="status" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=web013"></script>
+    <script type="module" src="/app.js?v=web015"></script>
   </body>
 </html>

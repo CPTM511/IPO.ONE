@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-capital-request.schema.json",
+  "title": "IPO.ONE No-Funds Trading Capital Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tradingCapitalRequestId",
+    "requestHash",
+    "subjectId",
+    "principalId",
+    "subjectType",
+    "operatorType",
+    "tradingCreditProfileId",
+    "evidenceEligibility",
+    "requestedByActorHash",
+    "templateType",
+    "strategyClass",
+    "assetId",
+    "requestedAmountMinor",
+    "durationDays",
+    "termsBlueprint",
+    "status",
+    "version",
+    "createdAt",
+    "expiresAt",
+    "riskClassCallerSupplied",
+    "autoMatch",
+    "autoAccept",
+    "sandboxOnly",
+    "syntheticOnly",
+    "productionAuthority",
+    "fundsAuthority",
+    "realPricing",
+    "realFunding",
+    "externalSystemQueried",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "tradingCapitalRequestId": { "$ref": "#/$defs/identifier" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "principalId": { "$ref": "#/$defs/identifier" },
+    "subjectType": { "enum": ["human", "agent"] },
+    "operatorType": { "enum": ["human_trader", "agent_operator"] },
+    "tradingCreditProfileId": { "$ref": "#/$defs/identifier" },
+    "evidenceEligibility": { "$ref": "#/$defs/evidenceEligibility" },
+    "requestedByActorHash": { "$ref": "#/$defs/hash" },
+    "templateType": { "$ref": "#/$defs/templateType" },
+    "strategyClass": { "$ref": "#/$defs/strategyClass" },
+    "assetId": { "const": "urn:ipo-one:sandbox-asset:usd-cent" },
+    "requestedAmountMinor": { "$ref": "#/$defs/positiveMinor" },
+    "durationDays": { "type": "integer", "minimum": 7, "maximum": 365 },
+    "termsBlueprint": { "$ref": "#/$defs/terms" },
+    "status": { "const": "open" },
+    "version": { "const": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "riskClassCallerSupplied": { "const": false },
+    "autoMatch": { "const": false },
+    "autoAccept": { "const": false },
+    "sandboxOnly": { "const": true },
+    "syntheticOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realPricing": { "const": false },
+    "realFunding": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "trading_capital_request.v1" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "positiveMinor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 78,
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "templateType": {
+      "enum": ["credit", "performance_participation", "hybrid"]
+    },
+    "strategyClass": {
+      "enum": ["market_neutral", "directional", "liquidity_provision"]
+    },
+    "factorAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factorId", "assessment"],
+      "properties": {
+        "factorId": {
+          "enum": [
+            "alpha_quality",
+            "risk_reliability",
+            "strategy_capacity",
+            "mandate_compliance",
+            "evidence_confidence"
+          ]
+        },
+        "assessment": { "enum": ["sufficient", "limited", "insufficient"] }
+      }
+    },
+    "evidenceEligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligibilityClass",
+        "evidenceSnapshotHash",
+        "factorScorecardHash",
+        "factorAssessments",
+        "freshness",
+        "selfDeclaredRiskClassAccepted",
+        "authorizing",
+        "reasonCodes",
+        "schemaVersion"
+      ],
+      "properties": {
+        "eligibilityClass": { "const": "synthetic_restricted" },
+        "evidenceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "factorScorecardHash": { "$ref": "#/$defs/hash" },
+        "factorAssessments": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/factorAssessment" }
+        },
+        "freshness": { "const": "unknown" },
+        "selfDeclaredRiskClassAccepted": { "const": false },
+        "authorizing": { "const": false },
+        "reasonCodes": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "finalized_point_in_time_evidence",
+              "synthetic_evidence_only",
+              "external_freshness_unknown",
+              "new_risk_authority_disabled"
+            ]
+          }
+        },
+        "schemaVersion": {
+          "const": "trading_matching_evidence_eligibility.v1"
+        }
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateType",
+        "syntheticPrincipalMinor",
+        "assetId",
+        "durationDays",
+        "repaymentMode",
+        "fixedReturnBps",
+        "performanceParticipationBps",
+        "economicPolicyVersion",
+        "termsHash",
+        "illustrativeOnly",
+        "immutable",
+        "realPrice",
+        "fundsAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "templateType": { "$ref": "#/$defs/templateType" },
+        "syntheticPrincipalMinor": { "$ref": "#/$defs/positiveMinor" },
+        "assetId": { "const": "urn:ipo-one:sandbox-asset:usd-cent" },
+        "durationDays": { "type": "integer", "minimum": 7, "maximum": 365 },
+        "repaymentMode": {
+          "enum": [
+            "synthetic_fixed_credit",
+            "synthetic_performance_participation",
+            "synthetic_hybrid"
+          ]
+        },
+        "fixedReturnBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "performanceParticipationBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "economicPolicyVersion": {
+          "const": "trading_no_funds_template_policy.v1"
+        },
+        "termsHash": { "$ref": "#/$defs/hash" },
+        "illustrativeOnly": { "const": true },
+        "immutable": { "const": true },
+        "realPrice": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "trading_no_funds_template_terms.v1" }
+      }
+    }
+  }
+}

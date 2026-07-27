@@ -12,7 +12,9 @@
     "schemaVersion"
   ],
   "properties": {
-    "policyVersion": { "const": "abuse_001.v1" },
+    "policyVersion": {
+      "const": "abuse_001.v1"
+    },
     "hardCeilings": {
       "type": "object",
       "additionalProperties": false,
@@ -26,22 +28,49 @@
         "automaticRetries"
       ],
       "properties": {
-        "rate": { "$ref": "#/$defs/rateLimits" },
-        "concurrency": { "$ref": "#/$defs/concurrencyLimits" },
-        "metrics": { "$ref": "#/$defs/metricLimits" },
-        "resources": { "$ref": "#/$defs/resourceLimits" },
-        "upstreamCostUnitsPerMinute": { "type": "integer", "minimum": 0, "maximum": 1000 },
-        "admissionLeaseMs": { "type": "integer", "minimum": 1, "maximum": 60000 },
-        "automaticRetries": { "type": "integer", "minimum": 0, "maximum": 3 }
+        "rate": {
+          "$ref": "#/$defs/rateLimits"
+        },
+        "concurrency": {
+          "$ref": "#/$defs/concurrencyLimits"
+        },
+        "metrics": {
+          "$ref": "#/$defs/metricLimits"
+        },
+        "resources": {
+          "$ref": "#/$defs/resourceLimits"
+        },
+        "upstreamCostUnitsPerMinute": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "admissionLeaseMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60000
+        },
+        "automaticRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
       }
     },
     "publicProfiles": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["public.discovery", "authentication.credential"],
+      "required": [
+        "public.discovery",
+        "authentication.credential"
+      ],
       "properties": {
-        "public.discovery": { "const": "discovery" },
-        "authentication.credential": { "const": "credential" }
+        "public.discovery": {
+          "const": "discovery"
+        },
+        "authentication.credential": {
+          "const": "credential"
+        }
       }
     },
     "operations": {
@@ -84,6 +113,14 @@
         "pilotReadPilotHealth",
         "pilotReadPilotFeedbackSummary",
         "pilotSubmitPilotFeedback",
+        "pilotCreateCreditPassportArtifact",
+        "pilotReadOwnCreditPassportArtifact",
+        "pilotVerifyCreditPassportArtifact",
+        "pilotRevokeCreditPassportArtifact",
+        "pilotCreateOfficialReport",
+        "pilotReadOfficialReport",
+        "pilotRetrieveOfficialReport",
+        "pilotRevokeOfficialReport",
         "pilotReadServicingQueue",
         "pilotFreezeSubject",
         "pilotReduceCreditLimit",
@@ -102,67 +139,303 @@
         "workerAutoRepay",
         "workerRunReconciliation",
         "workerPlanProjectionRepair",
-        "workerExecuteProjectionRepair"
+        "workerExecuteProjectionRepair",
+        "tradingCreateAccountBindingChallenge",
+        "tradingImportHyperliquidHistory",
+        "tradingFinalizeEvidenceSnapshot",
+        "tradingReadCreditProfile",
+        "tradingCreateCapitalRequest",
+        "tradingCreateProviderMandate",
+        "tradingListCompatibleMandates",
+        "tradingCreateMatchProposal",
+        "tradingAcceptMatchAsProvider",
+        "tradingAcceptMatchAsSubject",
+        "tradingCreateFacility",
+        "tradingContributeSubjectCollateral",
+        "tradingRecordProviderFunding",
+        "tradingActivateFacility",
+        "tradingSubmitOrderIntent",
+        "tradingCancelOrderIntent",
+        "tradingReadFacilityState",
+        "tradingEvaluateRisk",
+        "tradingPauseNewRisk",
+        "tradingFlattenFacility",
+        "tradingRequestClose",
+        "tradingRunSettlement",
+        "tradingReadSettlement",
+        "tradingIssuePerformanceProof",
+        "tradingReadFacilityEvidence"
       ],
       "properties": {
-        "pilotAcceptCreditOffer": { "const": "economic" },
-        "pilotExecuteSandboxObligation": { "const": "economic" },
-        "pilotPostSandboxRepayment": { "const": "economic" },
-        "pilotRestructureSandboxObligation": { "const": "privileged" },
-        "pilotRepurchaseSandboxObligation": { "const": "privileged" },
-        "pilotWriteOffSandboxObligation": { "const": "privileged" },
-        "pilotProposeApproval": { "const": "privileged" },
-        "pilotReadApproval": { "const": "read" },
-        "pilotDecideApproval": { "const": "privileged" },
-        "pilotCancelApproval": { "const": "privileged" },
-        "pilotCreateAgentSubject": { "const": "mutation" },
-        "pilotCreateAgentAccountChallenge": { "const": "credential" },
-        "pilotCreateHumanSubject": { "const": "mutation" },
-        "pilotReadHumanSelf": { "const": "read" },
-        "pilotReadWorkspaceResume": { "const": "read" },
-        "pilotCreateConsent": { "const": "mutation" },
-        "pilotReadConsent": { "const": "read" },
-        "pilotRevokeConsent": { "const": "mutation" },
-        "pilotReadIdentityReference": { "const": "read" },
-        "pilotCreateDraftMandate": { "const": "mutation" },
-        "pilotActivateSandboxMandate": { "const": "mutation" },
-        "pilotReadMandate": { "const": "read" },
-        "pilotReadCreditApplication": { "const": "read" },
-        "pilotEvaluateCreditApplication": { "const": "economic" },
-        "pilotRevokeDraftMandate": { "const": "mutation" },
-        "pilotReadAgentSelf": { "const": "read" },
-        "pilotReadAgentAccountBinding": { "const": "read" },
-        "pilotRequestCredit": { "const": "economic" },
-        "pilotSubmitAgentAccountProof": { "const": "credential" },
-        "pilotSubmitSpend": { "const": "economic" },
-        "pilotCaptureRevenue": { "const": "economic" },
-        "pilotAutoRepay": { "const": "economic" },
-        "pilotReadTenantRisk": { "const": "read" },
-        "pilotReadPilotHealth": { "const": "read" },
-        "pilotReadPilotFeedbackSummary": { "const": "read" },
-        "pilotSubmitPilotFeedback": { "const": "mutation" },
-        "pilotReadServicingQueue": { "const": "read" },
-        "pilotFreezeSubject": { "const": "privileged" },
-        "pilotReduceCreditLimit": { "const": "privileged" },
-        "pilotIncreaseCreditLimit": { "const": "privileged" },
-        "pilotUnfreezeSubject": { "const": "privileged" },
-        "pilotReadProviderIntent": { "const": "read" },
-        "pilotAcknowledgeProviderIntent": { "const": "mutation" },
-        "pilotReadEvidence": { "const": "read" },
-        "pilotReadOwnObligation": { "const": "read" },
-        "pilotReadOwnObligationEvidence": { "const": "read" },
-        "pilotExportAudit": { "const": "batch" },
-        "workerPublishOutbox": { "const": "worker" },
-        "workerExpireApproval": { "const": "worker" },
-        "workerProcessInbox": { "const": "worker" },
-        "workerAdvanceSandboxServicing": { "const": "worker" },
-        "workerAutoRepay": { "const": "economic" },
-        "workerRunReconciliation": { "const": "batch" },
-        "workerPlanProjectionRepair": { "const": "privileged" },
-        "workerExecuteProjectionRepair": { "const": "privileged" }
+        "pilotAcceptCreditOffer": {
+          "const": "economic"
+        },
+        "pilotExecuteSandboxObligation": {
+          "const": "economic"
+        },
+        "pilotPostSandboxRepayment": {
+          "const": "economic"
+        },
+        "pilotRestructureSandboxObligation": {
+          "const": "privileged"
+        },
+        "pilotRepurchaseSandboxObligation": {
+          "const": "privileged"
+        },
+        "pilotWriteOffSandboxObligation": {
+          "const": "privileged"
+        },
+        "pilotProposeApproval": {
+          "const": "privileged"
+        },
+        "pilotReadApproval": {
+          "const": "read"
+        },
+        "pilotDecideApproval": {
+          "const": "privileged"
+        },
+        "pilotCancelApproval": {
+          "const": "privileged"
+        },
+        "pilotCreateAgentSubject": {
+          "const": "mutation"
+        },
+        "pilotCreateAgentAccountChallenge": {
+          "const": "credential"
+        },
+        "pilotCreateHumanSubject": {
+          "const": "mutation"
+        },
+        "pilotReadHumanSelf": {
+          "const": "read"
+        },
+        "pilotReadWorkspaceResume": {
+          "const": "read"
+        },
+        "pilotCreateConsent": {
+          "const": "mutation"
+        },
+        "pilotReadConsent": {
+          "const": "read"
+        },
+        "pilotRevokeConsent": {
+          "const": "mutation"
+        },
+        "pilotReadIdentityReference": {
+          "const": "read"
+        },
+        "pilotCreateDraftMandate": {
+          "const": "mutation"
+        },
+        "pilotActivateSandboxMandate": {
+          "const": "mutation"
+        },
+        "pilotReadMandate": {
+          "const": "read"
+        },
+        "pilotReadCreditApplication": {
+          "const": "read"
+        },
+        "pilotEvaluateCreditApplication": {
+          "const": "economic"
+        },
+        "pilotRevokeDraftMandate": {
+          "const": "mutation"
+        },
+        "pilotReadAgentSelf": {
+          "const": "read"
+        },
+        "pilotReadAgentAccountBinding": {
+          "const": "read"
+        },
+        "pilotRequestCredit": {
+          "const": "economic"
+        },
+        "pilotSubmitAgentAccountProof": {
+          "const": "credential"
+        },
+        "pilotSubmitSpend": {
+          "const": "economic"
+        },
+        "pilotCaptureRevenue": {
+          "const": "economic"
+        },
+        "pilotAutoRepay": {
+          "const": "economic"
+        },
+        "pilotReadTenantRisk": {
+          "const": "read"
+        },
+        "pilotReadPilotHealth": {
+          "const": "read"
+        },
+        "pilotReadPilotFeedbackSummary": {
+          "const": "read"
+        },
+        "pilotSubmitPilotFeedback": {
+          "const": "mutation"
+        },
+        "pilotCreateCreditPassportArtifact": {
+          "const": "mutation"
+        },
+        "pilotReadOwnCreditPassportArtifact": {
+          "const": "read"
+        },
+        "pilotVerifyCreditPassportArtifact": {
+          "const": "read"
+        },
+        "pilotRevokeCreditPassportArtifact": {
+          "const": "mutation"
+        },
+        "pilotCreateOfficialReport": {
+          "const": "mutation"
+        },
+        "pilotReadOfficialReport": {
+          "const": "read"
+        },
+        "pilotRetrieveOfficialReport": {
+          "const": "read"
+        },
+        "pilotRevokeOfficialReport": {
+          "const": "mutation"
+        },
+        "tradingCreateAccountBindingChallenge": {
+          "const": "mutation"
+        },
+        "tradingImportHyperliquidHistory": {
+          "const": "mutation"
+        },
+        "tradingFinalizeEvidenceSnapshot": {
+          "const": "mutation"
+        },
+        "tradingReadCreditProfile": {
+          "const": "read"
+        },
+        "tradingCreateCapitalRequest": {
+          "const": "mutation"
+        },
+        "tradingCreateProviderMandate": {
+          "const": "mutation"
+        },
+        "tradingListCompatibleMandates": {
+          "const": "read"
+        },
+        "tradingCreateMatchProposal": {
+          "const": "mutation"
+        },
+        "tradingAcceptMatchAsProvider": {
+          "const": "mutation"
+        },
+        "tradingAcceptMatchAsSubject": {
+          "const": "mutation"
+        },
+        "pilotReadServicingQueue": {
+          "const": "read"
+        },
+        "pilotFreezeSubject": {
+          "const": "privileged"
+        },
+        "pilotReduceCreditLimit": {
+          "const": "privileged"
+        },
+        "pilotIncreaseCreditLimit": {
+          "const": "privileged"
+        },
+        "pilotUnfreezeSubject": {
+          "const": "privileged"
+        },
+        "pilotReadProviderIntent": {
+          "const": "read"
+        },
+        "pilotAcknowledgeProviderIntent": {
+          "const": "mutation"
+        },
+        "pilotReadEvidence": {
+          "const": "read"
+        },
+        "pilotReadOwnObligation": {
+          "const": "read"
+        },
+        "pilotReadOwnObligationEvidence": {
+          "const": "read"
+        },
+        "pilotExportAudit": {
+          "const": "batch"
+        },
+        "workerPublishOutbox": {
+          "const": "worker"
+        },
+        "workerExpireApproval": {
+          "const": "worker"
+        },
+        "workerProcessInbox": {
+          "const": "worker"
+        },
+        "workerAdvanceSandboxServicing": {
+          "const": "worker"
+        },
+        "workerAutoRepay": {
+          "const": "economic"
+        },
+        "workerRunReconciliation": {
+          "const": "batch"
+        },
+        "workerPlanProjectionRepair": {
+          "const": "privileged"
+        },
+        "workerExecuteProjectionRepair": {
+          "const": "privileged"
+        },
+        "tradingCreateFacility": {
+          "const": "mutation"
+        },
+        "tradingContributeSubjectCollateral": {
+          "const": "mutation"
+        },
+        "tradingRecordProviderFunding": {
+          "const": "mutation"
+        },
+        "tradingActivateFacility": {
+          "const": "mutation"
+        },
+        "tradingSubmitOrderIntent": {
+          "const": "mutation"
+        },
+        "tradingCancelOrderIntent": {
+          "const": "mutation"
+        },
+        "tradingReadFacilityState": {
+          "const": "read"
+        },
+        "tradingEvaluateRisk": {
+          "const": "privileged"
+        },
+        "tradingPauseNewRisk": {
+          "const": "privileged"
+        },
+        "tradingFlattenFacility": {
+          "const": "privileged"
+        },
+        "tradingRequestClose": {
+          "const": "mutation"
+        },
+        "tradingRunSettlement": {
+          "const": "worker"
+        },
+        "tradingReadSettlement": {
+          "const": "read"
+        },
+        "tradingIssuePerformanceProof": {
+          "const": "mutation"
+        },
+        "tradingReadFacilityEvidence": {
+          "const": "read"
+        }
       }
     },
-    "schemaVersion": { "const": "abuse_control_policy.v1" }
+    "schemaVersion": {
+      "const": "abuse_control_policy.v1"
+    }
   },
   "$defs": {
     "rateLimits": {
@@ -179,24 +452,72 @@
         "account"
       ],
       "properties": {
-        "windowMs": { "type": "integer", "minimum": 1000, "maximum": 600000 },
-        "actor": { "type": "integer", "minimum": 0, "maximum": 2000 },
-        "client": { "type": "integer", "minimum": 0, "maximum": 5000 },
-        "tenant": { "type": "integer", "minimum": 0, "maximum": 10000 },
-        "operation": { "type": "integer", "minimum": 0, "maximum": 5000 },
-        "service": { "type": "integer", "minimum": 0, "maximum": 25000 },
-        "network": { "type": "integer", "minimum": 0, "maximum": 5000 },
-        "account": { "type": "integer", "minimum": 0, "maximum": 100 }
+        "windowMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 600000
+        },
+        "actor": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "client": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "tenant": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "operation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "service": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 25000
+        },
+        "network": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "account": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
       }
     },
     "concurrencyLimits": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["actor", "tenant", "service"],
+      "required": [
+        "actor",
+        "tenant",
+        "service"
+      ],
       "properties": {
-        "actor": { "type": "integer", "minimum": 0, "maximum": 16 },
-        "tenant": { "type": "integer", "minimum": 0, "maximum": 64 },
-        "service": { "type": "integer", "minimum": 0, "maximum": 256 }
+        "actor": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "tenant": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "service": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        }
       }
     },
     "metricLimits": {
@@ -215,16 +536,56 @@
         "upstreamCostUnits"
       ],
       "properties": {
-        "bodyBytes": { "type": "integer", "minimum": 0, "maximum": 65536 },
-        "commandBytes": { "type": "integer", "minimum": 0, "maximum": 1048576 },
-        "eventBytes": { "type": "integer", "minimum": 0, "maximum": 65536 },
-        "projectionBytes": { "type": "integer", "minimum": 0, "maximum": 131072 },
-        "projectionWriteSetBytes": { "type": "integer", "minimum": 0, "maximum": 2097152 },
-        "responseBytes": { "type": "integer", "minimum": 0, "maximum": 262144 },
-        "exportRows": { "type": "integer", "minimum": 0, "maximum": 10000 },
-        "queueUnits": { "type": "integer", "minimum": 0, "maximum": 16 },
-        "executionMs": { "type": "integer", "minimum": 0, "maximum": 30000 },
-        "upstreamCostUnits": { "type": "integer", "minimum": 0, "maximum": 100 }
+        "bodyBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "commandBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "eventBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "projectionBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 131072
+        },
+        "projectionWriteSetBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2097152
+        },
+        "responseBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 262144
+        },
+        "exportRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "queueUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "executionMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30000
+        },
+        "upstreamCostUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
       }
     },
     "resourceLimits": {
@@ -238,17 +599,67 @@
         "open_obligations",
         "providers",
         "credentials",
-        "access_grants"
+        "access_grants",
+        "pilot_feedback_records",
+        "credit_passport_artifacts",
+        "official_report_artifacts"
       ],
       "properties": {
-        "agent_subjects": { "type": "integer", "minimum": 0, "maximum": 500 },
-        "mandates": { "type": "integer", "minimum": 0, "maximum": 1000 },
-        "credit_intents": { "type": "integer", "minimum": 0, "maximum": 1000 },
-        "credit_decisions": { "type": "integer", "minimum": 0, "maximum": 1000 },
-        "open_obligations": { "type": "integer", "minimum": 0, "maximum": 1000 },
-        "providers": { "type": "integer", "minimum": 0, "maximum": 100 },
-        "credentials": { "type": "integer", "minimum": 0, "maximum": 50 },
-        "access_grants": { "type": "integer", "minimum": 0, "maximum": 500 }
+        "agent_subjects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500
+        },
+        "mandates": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "credit_intents": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "credit_decisions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "open_obligations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "providers": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "credentials": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50
+        },
+        "access_grants": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500
+        },
+        "pilot_feedback_records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "credit_passport_artifacts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "official_report_artifacts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
       }
     }
   }

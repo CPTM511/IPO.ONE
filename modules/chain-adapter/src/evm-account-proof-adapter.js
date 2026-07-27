@@ -43,7 +43,7 @@ function unixSeconds(name, value) {
   if (!Number.isFinite(milliseconds) || milliseconds % 1000 !== 0) {
     throw new DomainError("invalid_account_proof_challenge", `${name} must be a whole-second timestamp`);
   }
-  return BigInt(milliseconds / 1000);
+  return String(milliseconds / 1000);
 }
 
 function assertBytes32(name, value) {
@@ -143,7 +143,7 @@ export function createAgentAccountBindingTypedData({
 }
 
 export class EvmAccountProofAdapter {
-  constructor({ profile }) {
+  constructor({ profile, signatureVerifier } = {}) {
     const { profileHash, schemaVersion, ...profileInput } = profile ?? {};
     this.profile = createChainProfile(profileInput);
     if (profileHash !== undefined && profileHash !== this.profile.profileHash) {
@@ -152,6 +152,16 @@ export class EvmAccountProofAdapter {
     if (schemaVersion !== undefined && schemaVersion !== this.profile.schemaVersion) {
       throw new DomainError("invalid_chain_profile", "account proof profile schema version is not supported");
     }
+    if (
+      signatureVerifier !== undefined &&
+      typeof signatureVerifier?.verifyTypedData !== "function"
+    ) {
+      throw new DomainError(
+        "invalid_account_proof_configuration",
+        "contract-wallet signature verifier is invalid"
+      );
+    }
+    this.signatureVerifier = signatureVerifier;
     Object.freeze(this);
   }
 
@@ -159,8 +169,9 @@ export class EvmAccountProofAdapter {
     return Object.freeze({
       profileId: this.profile.profileId,
       chainId: this.profile.chainId,
-      adapterVersion: "1.0.0",
+      adapterVersion: this.signatureVerifier === undefined ? "1.0.0" : "1.1.0",
       proofStandard: "EIP-712",
+      contractWalletSupport: this.signatureVerifier !== undefined,
       sandboxOnly: true,
       productionApproved: false,
       schemaVersion: "account_proof_adapter.v1"
@@ -182,23 +193,52 @@ export class EvmAccountProofAdapter {
     if (new Date(challenge.expiresAt).getTime() <= now.getTime()) {
       throw new DomainError("account_proof_challenge_expired", "account proof challenge has expired");
     }
-    assertLowS(signature);
     const prepared = this.createTypedData(challenge);
     if (prepared.typedDataHash !== challenge.typedDataHash) {
       throw new DomainError("account_proof_challenge_mismatch", "typed-data challenge hash does not match durable state");
     }
-    let valid = false;
-    try {
-      valid = await verifyTypedData({
+    let verificationMethod = "eip712_eoa_v1";
+    if (this.signatureVerifier === undefined) {
+      assertLowS(signature);
+      let valid = false;
+      try {
+        valid = await verifyTypedData({
+          address: normalized.address,
+          ...prepared.typedData,
+          signature
+        });
+      } catch {
+        valid = false;
+      }
+      if (!valid) {
+        throw new DomainError("account_proof_verification_failed", "EIP-712 account ownership proof is invalid");
+      }
+    } else {
+      const verification = await this.signatureVerifier.verifyTypedData({
         address: normalized.address,
-        ...prepared.typedData,
-        signature
+        chainId: normalized.chainId,
+        digest: prepared.typedDataHash,
+        signature,
+        typedData: prepared.typedData
       });
-    } catch {
-      valid = false;
-    }
-    if (!valid) {
-      throw new DomainError("account_proof_verification_failed", "EIP-712 account ownership proof is invalid");
+      if (
+        verification?.schemaVersion !== "wallet_signature_verification.v1" ||
+        verification.chainId !== normalized.chainId ||
+        !new Set([
+          "eip712_eoa_v1",
+          "eip1271_eip712_v1"
+        ]).has(verification.verificationMethod) ||
+        verification.authenticationEligible !== true ||
+        verification.rawSignaturePersisted !== false ||
+        verification.credentialsIncluded !== false ||
+        verification.productionFundsMoved !== false
+      ) {
+        throw new DomainError(
+          "account_proof_verification_failed",
+          "EIP-712 account ownership proof result is not eligible"
+        );
+      }
+      verificationMethod = verification.verificationMethod;
     }
     return Object.freeze({
       accountId: normalized.accountId,
@@ -208,7 +248,7 @@ export class EvmAccountProofAdapter {
         typedDataHash: prepared.typedDataHash,
         signatureHash: hashId("signature", signature)
       }),
-      verificationMethod: "eip712_eoa_v1",
+      verificationMethod,
       schemaVersion: "agent_account_proof_result.v1"
     });
   }

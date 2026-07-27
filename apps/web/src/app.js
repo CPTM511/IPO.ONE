@@ -4,27 +4,67 @@ import {
   createReadyAgentHandoffManifest
 } from "./agent-handoff-manifest.js";
 import { createAgentPilotCapabilityManifest } from "./agent-pilot-capability-manifest.js";
+import { createAgentConsolePresentation } from "./agent-console-presentation.js";
+import { createCapitalNetworkPresentation } from "./capital-network-presentation.js";
+import {
+  TRADING_CAPITAL_OPERATION_IDS,
+  TRADING_CAPITAL_VIEW_DEFINITIONS,
+  createTradingCapitalProductPresentation
+} from "./trading-capital-product-presentation.js";
 import {
   compactDecisionProofHash,
   createHumanDecisionPassportPresentation,
   hasVerifiedHumanDecisionPassport
 } from "./decision-passport-presentation.js";
+import {
+  createCreditPassportPresentation,
+  selectedCreditPassportClaims
+} from "./credit-passport-presentation.js";
 import { createHumanCreditOfferWorkflowReceipt } from "./human-credit-offer-workflow-receipt.js";
 import { createHumanSandboxObligationWorkflowReceipt } from "./human-sandbox-obligation-workflow-receipt.js";
+import {
+  assertRequestCreditReviewCurrent,
+  createRequestCreditReviewBinding,
+  evaluateRequestCreditReviewBinding
+} from "./request-credit-review-binding.js";
+import { createRiskOperationsPresentation } from "./risk-operations-presentation.js";
 import { createServicingCasePresentation } from "./servicing-case-presentation.js";
+import {
+  SERVICING_POSITION_INDEX_LIMIT,
+  acceptServicingPositionRefresh,
+  createServicingPositionIndex
+} from "./servicing-position-index.js";
+import { createObligationPortfolioPresentation } from "./obligation-portfolio-presentation.js";
+import { createWalletAuthorityLifecycle } from "./wallet-authority-lifecycle.js";
+import { createWalletProviderRegistry } from "./wallet-provider-registry.js";
+import {
+  V9_DESTINATION_OPERATION_MAP,
+  createArchitectureCapabilityPresentation,
+  createWalletPermissionPresentation
+} from "./v9-trust-surfaces.js";
+import {
+  downloadVerifiedOfficialReport,
+  verifyOfficialReportRetrieval
+} from "./official-report-download.js";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const percent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
 const VIEW_META = {
-  overview: { eyebrow: "Agent workspace", title: "Portfolio" },
-  human: { eyebrow: "Your no-funds workspace", title: "My Credit" },
-  agent: { eyebrow: "Agent workspace", title: "Identity & Mandate" },
-  credit: { eyebrow: "Credit workspace", title: "Borrow & Credit" },
-  transfers: { eyebrow: "Obligation workspace", title: "Payments" },
-  evidence: { eyebrow: "Protocol evidence", title: "Obligation Evidence" },
-  risk: { eyebrow: "Permissioned controls", title: "Risk Operations" },
-  developer: { eyebrow: "Machine interface", title: "Agent API" }
+  overview: { eyebrow: "Authenticated workspace", title: "Overview" },
+  "request-credit": { eyebrow: "Human entry · shared kernel", title: "Request Credit" },
+  "repay-settle": { eyebrow: "Obligation workspace", title: "Repay & Settle" },
+  "credit-passport": { eyebrow: "Explainable Decision Evidence", title: "Credit Passport" },
+  obligations: { eyebrow: "Shared obligation kernel", title: "Obligations" },
+  "agent-console": { eyebrow: "Principal-controlled workspace", title: "Agent Console" },
+  "capital-network": { eyebrow: "Provider sandbox boundary", title: "Capital Network" },
+  "trading-capital": { eyebrow: "Shared Facility · local no-funds", title: "Trading Capital" },
+  "wallet-permissions": { eyebrow: "Authentication boundary", title: "Wallet & Permissions" },
+  "activity-proofs": { eyebrow: "Protocol Evidence", title: "Activity & Proofs" },
+  "credit-track-record": { eyebrow: "Evidence-derived record", title: "Credit Track Record" },
+  "reports-exports": { eyebrow: "Artifact maturity", title: "Reports & Exports" },
+  "risk-operations": { eyebrow: "Permissioned controls", title: "Risk & Operations" },
+  architecture: { eyebrow: "Machine-readable protocol", title: "Architecture" }
 };
 
 let currentView = "overview";
@@ -32,6 +72,8 @@ let interactionMode = "human";
 let humanNewApplicationMode = false;
 let requestLog = [];
 let lastRequestId;
+let serverCatalogOperations = new Set();
+let serverCatalogSnapshot = null;
 const tenantPilot = {
   checked: false,
   connected: false,
@@ -42,6 +84,7 @@ const tenantPilot = {
   decision: null,
   offer: null,
   receipt: null,
+  offerReview: null,
   obligationReceipt: null,
   obligationWorkflowId: null,
   obligationCorrelationId: null,
@@ -60,8 +103,37 @@ const tenantPilot = {
   obligationHydrationHelper: "Enter an exact Obligation ID or create one in Human Pilot.",
   obligationHydrationError: false,
   workspaceKind: null,
+  workspaceResume: null,
   workspaceObligations: [],
-  workspaceRecoveryHasMore: false
+  workspacePositionViews: new Map(),
+  workspacePositionRefreshBusy: false,
+  workspacePositionRefreshHelper:
+    "Refresh to load current balances and trusted-time servicing state for these authorized references.",
+  workspaceRecoveryHasMore: false,
+  workspaceRecoveryState: "loading",
+  workspaceRecoveryResourceCount: 0,
+  workspaceRecoveryErrorCode: null
+};
+const capitalNetworkPilot = {
+  busy: false,
+  providerView: null,
+  acknowledgement: null,
+  presentation: null,
+  helper:
+    "Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.",
+  error: false
+};
+const tradingCapitalPilot = {
+  activeView: "overview",
+  busy: false,
+  error: false,
+  facility: null,
+  closeRequest: null,
+  settlement: null,
+  performanceProof: null,
+  evidence: null,
+  helper:
+    "Enter one exact bound ID. Denied, missing, and cross-Tenant resources remain non-enumerating."
 };
 const pilotFeedback = {
   catalogAvailable: false,
@@ -99,8 +171,38 @@ const ownedEvidence = {
   items: [],
   nextCursor: null,
   hasMore: false,
+  capped: false,
   asOf: null,
   helper: "Load the redacted immutable Evidence for this exact Obligation.",
+  error: false
+};
+const officialReportPilot = {
+  createAvailable: false,
+  readAvailable: false,
+  retrieveAvailable: false,
+  revokeAvailable: false,
+  busy: false,
+  report: null,
+  retrievedAt: null,
+  helper:
+    "Load an owned Obligation first. Report content is generated and hashed by the server.",
+  error: false
+};
+const OWNED_EVIDENCE_DISPLAY_LIMIT = 50;
+const creditPassportPilot = {
+  createAvailable: false,
+  readAvailable: false,
+  verifyAvailable: false,
+  revokeAvailable: false,
+  busy: false,
+  artifact: null,
+  presentation: null,
+  verification: null,
+  issueHelper:
+    "Enter exact server-known IDs. The verifier is not discovered or suggested by the browser.",
+  artifactHelper: "No artifact is trusted until an authenticated server read succeeds.",
+  verificationHelper:
+    "Verification requires the exact authenticated verifier, current same-Tenant Membership, purpose, hash, version, source, and trusted server time.",
   error: false
 };
 const riskOperations = {
@@ -161,7 +263,7 @@ const SUPPORTED_WALLET_CHAINS = Object.freeze({
     caip2: "eip155:84532",
     name: "Base Sepolia",
     nativeCurrency: Object.freeze({ name: "Ether", symbol: "ETH", decimals: 18 }),
-    rpcUrls: Object.freeze(["https://sepolia.base.org"]),
+    rpcUrls: Object.freeze(["https://sepolia.base.org/"]),
     blockExplorerUrls: Object.freeze(["https://sepolia-explorer.base.org"])
   }),
   1952: Object.freeze({
@@ -183,10 +285,94 @@ const accessState = {
   selectedChainId: 84532,
   connectedChainId: null,
   walletAddress: null,
+  walletProviderStatus: "discovering",
+  walletProviders: [],
+  selectedWalletProviderId: null,
   busy: false,
   lastFocused: null,
   helper: "Checking available sign-in methods…"
 };
+let walletProviderEventCleanup = () => {};
+let walletAuthoritySnapshot;
+
+function walletAuthorityBroadcastChannel() {
+  if (typeof globalThis.BroadcastChannel !== "function") return undefined;
+  try {
+    return new globalThis.BroadcastChannel("ipo-one-wallet-authority-v1");
+  } catch {
+    return undefined;
+  }
+}
+
+function walletServerAuthorityActive() {
+  return (
+    accessState.sessionActive === true ||
+    tenantPilot.connected === true ||
+    tenantCsrfToken() !== undefined
+  );
+}
+
+async function invalidateWalletServerSession({ reasonCode, idempotencyKey }) {
+  const csrfToken = tenantCsrfToken();
+  if (!csrfToken) {
+    throw Object.assign(
+      new Error("The wallet session cannot be invalidated without its CSRF binding."),
+      { code: "wallet_invalidation_csrf_unavailable" }
+    );
+  }
+  return authJson("/auth/v1/wallet/invalidate", {
+    method: "POST",
+    headers: {
+      "idempotency-key": idempotencyKey,
+      "x-csrf-token": csrfToken
+    },
+    body: {
+      schemaVersion: "wallet_session_invalidation_request.v1",
+      reasonCode
+    }
+  });
+}
+
+function applyWalletAuthoritySnapshot(snapshot) {
+  walletAuthoritySnapshot = snapshot;
+  if (snapshot.status === "available") return;
+  accessState.sessionActive = false;
+  tenantPilot.connected = false;
+  tenantPilot.connectionLabel = snapshot.status === "pending"
+    ? "Wallet authority invalidation pending"
+    : snapshot.status === "invalidated"
+      ? "Fresh wallet sign-in required"
+      : "Wallet authority unavailable";
+  accessState.helper = snapshot.status === "pending"
+    ? "Wallet context changed. Protected actions are blocked while the server session is invalidated."
+    : snapshot.status === "invalidated"
+      ? "The previous server session is invalid. Start a fresh wallet sign-in to continue."
+      : "The server session could not be confirmed invalid. Protected actions remain blocked until invalidation can be retried.";
+  if (document.readyState !== "loading") {
+    setConnection(false);
+    renderAccess();
+    renderTenantPilot();
+  }
+}
+
+const walletAuthorityLifecycle = createWalletAuthorityLifecycle({
+  invalidateSession: invalidateWalletServerSession,
+  broadcastChannel: walletAuthorityBroadcastChannel(),
+  onChange: applyWalletAuthoritySnapshot
+});
+
+function handleMaterialWalletContextChange(reasonCode) {
+  accessState.walletAddress = null;
+  accessState.connectedChainId = null;
+  const invalidation = walletAuthorityLifecycle.handleContextChange(reasonCode, {
+    serverAuthorityActive: walletServerAuthorityActive()
+  });
+  invalidation.catch(() => {
+    // The lifecycle remains quarantined and retries only the same idempotency key.
+  });
+  renderAccess();
+  return invalidation;
+}
 
 function rememberedOpaqueId(key) {
   try {
@@ -214,15 +400,69 @@ function shortWalletAddress(address) {
     : "Not connected";
 }
 
+function renderWalletProviders() {
+  const list = el("walletProviderList");
+  const selectedProviderId = accessState.selectedWalletProviderId;
+  list.replaceChildren(
+    ...accessState.walletProviders.map((provider) => {
+      const button = document.createElement("button");
+      const identity = document.createElement("span");
+      const name = document.createElement("strong");
+      const detail = document.createElement("small");
+      const state = document.createElement("em");
+      button.type = "button";
+      button.className = "wallet-provider-choice";
+      button.dataset.walletProviderId = provider.providerId;
+      button.disabled = accessState.busy;
+      button.setAttribute("aria-pressed", String(provider.providerId === selectedProviderId));
+      if (provider.iconDataUri) {
+        const icon = document.createElement("img");
+        icon.alt = "";
+        icon.decoding = "async";
+        icon.referrerPolicy = "no-referrer";
+        icon.src = provider.iconDataUri;
+        button.append(icon);
+      } else {
+        const fallback = document.createElement("span");
+        fallback.className = "wallet-provider-fallback";
+        fallback.setAttribute("aria-hidden", "true");
+        fallback.textContent = "W";
+        button.append(fallback);
+      }
+      name.textContent = provider.name;
+      detail.textContent = provider.source === "legacy_eip1193"
+        ? "Legacy EIP-1193 fallback"
+        : provider.source === "mobile_walletconnect"
+          ? "Mobile / QR · memory-only session"
+          : provider.rdns ?? "EIP-6963 wallet";
+      state.textContent = provider.providerId === selectedProviderId ? "Selected" : "Select";
+      identity.append(name, detail);
+      button.append(identity, state);
+      return button;
+    })
+  );
+  el("walletProviderStatus").textContent = accessState.walletProviderStatus === "discovering"
+    ? "Discovering browser wallets…"
+    : accessState.walletProviders.length === 0
+      ? "No compatible browser wallet announced itself."
+      : selectedProviderId
+        ? "One wallet is explicitly selected for this page session."
+        : `${accessState.walletProviders.length} wallet${accessState.walletProviders.length === 1 ? "" : "s"} found. Select one before connecting.`;
+}
+
 function renderAccess() {
   const selected = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
   const connected = SUPPORTED_WALLET_CHAINS[accessState.connectedChainId];
+  const walletAuthority = walletAuthoritySnapshot ?? walletAuthorityLifecycle.getSnapshot();
   const googleEnabled = accessState.authEnabled && accessState.providers.has("google");
   const emailEnabled = accessState.authEnabled && accessState.providers.has("email");
   el("googleSignInBtn").disabled = accessState.busy || !googleEnabled;
   el("emailSignInBtn").disabled = accessState.busy || !emailEnabled;
-  el("walletSignInBtn").disabled = accessState.busy;
-  el("connectNetworkBtn").disabled = accessState.busy;
+  el("walletSignInBtn").disabled =
+    accessState.busy ||
+    !accessState.selectedWalletProviderId ||
+    walletAuthority.canStartAuthentication !== true;
+  el("connectNetworkBtn").disabled = accessState.busy || !accessState.selectedWalletProviderId;
   el("accessAuthStatus").textContent = accessState.helper;
   el("walletAddressStatus").textContent = shortWalletAddress(accessState.walletAddress);
   el("walletNetworkStatus").textContent = connected
@@ -236,6 +476,7 @@ function renderAccess() {
     : accessState.walletAddress
       ? shortWalletAddress(accessState.walletAddress)
       : "Sign in";
+  renderWalletProviders();
   for (const button of document.querySelectorAll("[data-wallet-chain]")) {
     const chainId = Number(button.dataset.walletChain);
     button.classList.toggle("active", chainId === accessState.selectedChainId);
@@ -248,6 +489,77 @@ function renderAccess() {
           : "Select";
     }
   }
+  if (document.readyState !== "loading") renderV9ShellStates();
+}
+
+function clearWalletProviderEvents() {
+  walletProviderEventCleanup();
+  walletProviderEventCleanup = () => {};
+}
+
+function bindSelectedWalletProviderEvents() {
+  clearWalletProviderEvents();
+  const provider = walletProviderRegistry.getSelectedProvider();
+  if (!provider || typeof provider.on !== "function") return;
+  const accountsChanged = () => {
+    handleMaterialWalletContextChange("wallet_account_changed");
+  };
+  const chainChanged = () => {
+    handleMaterialWalletContextChange("wallet_chain_changed");
+  };
+  const disconnected = () => {
+    handleMaterialWalletContextChange("wallet_provider_disconnected");
+  };
+  provider.on("accountsChanged", accountsChanged);
+  provider.on("chainChanged", chainChanged);
+  provider.on("disconnect", disconnected);
+  walletProviderEventCleanup = () => {
+    const remove = typeof provider.removeListener === "function"
+      ? provider.removeListener.bind(provider)
+      : typeof provider.off === "function"
+        ? provider.off.bind(provider)
+        : null;
+    remove?.("accountsChanged", accountsChanged);
+    remove?.("chainChanged", chainChanged);
+    remove?.("disconnect", disconnected);
+  };
+}
+
+const walletProviderRegistry = createWalletProviderRegistry({
+  eventTarget: window,
+  legacyProvider: globalThis.ethereum,
+  onChange(snapshot) {
+    const previousProviderId = accessState.selectedWalletProviderId;
+    accessState.walletProviderStatus = snapshot.status;
+    accessState.walletProviders = snapshot.providers;
+    accessState.selectedWalletProviderId = snapshot.selectedProviderId ?? null;
+    if (previousProviderId !== accessState.selectedWalletProviderId) {
+      accessState.walletAddress = null;
+      accessState.connectedChainId = null;
+      bindSelectedWalletProviderEvents();
+      if (previousProviderId !== null) {
+        handleMaterialWalletContextChange(
+          accessState.selectedWalletProviderId === null
+            ? "wallet_provider_disconnected"
+            : "wallet_provider_changed"
+        );
+      }
+    }
+    renderAccess();
+  }
+});
+
+function selectWalletProvider(providerId) {
+  const provider = accessState.walletProviders.find((item) => item.providerId === providerId);
+  if (!provider || !walletProviderRegistry.selectProvider(providerId)) return;
+  accessState.helper = `${provider.name} selected. No account, network, or signature was requested.`;
+  renderAccess();
+}
+
+function disposeWalletProviders() {
+  clearWalletProviderEvents();
+  walletAuthorityLifecycle.dispose();
+  walletProviderRegistry.dispose();
 }
 
 function openAccess() {
@@ -288,13 +600,14 @@ function handleAccessKeys(event) {
   }
 }
 
-async function authJson(path, { method = "GET", body } = {}) {
+async function authJson(path, { method = "GET", body, headers = {} } = {}) {
   const response = await fetch(path, {
     method,
     credentials: "same-origin",
     headers: {
       accept: "application/json, application/problem+json",
-      ...(body === undefined ? {} : { "content-type": "application/json" })
+      ...(body === undefined ? {} : { "content-type": "application/json" }),
+      ...headers
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) })
   });
@@ -317,30 +630,33 @@ async function authJson(path, { method = "GET", body } = {}) {
 async function probeAccessOptions() {
   try {
     const options = await authJson("/auth/v1/options");
+    const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
     accessState.authEnabled = options?.enabled === true;
     accessState.providers = new Set(Array.isArray(options?.oidcProviders) ? options.oidcProviders : []);
     accessState.walletAuthenticationEnabled = options?.walletAuthentication === true;
-    accessState.sessionActive = options?.sessionActive === true || tenantPilot.connected;
-    accessState.helper = accessState.sessionActive
-      ? "Secure session active. You can connect either approved test network."
-      : accessState.authEnabled
-        ? "Choose Google, email, or a pre-provisioned wallet credential."
-        : "Closed-pilot access is not enabled on this deployment. No product data is available without an authenticated session.";
+    accessState.sessionActive =
+      authorityAvailable &&
+      (options?.sessionActive === true || tenantPilot.connected);
+    if (authorityAvailable) {
+      accessState.helper = accessState.sessionActive
+        ? "Secure session active. You can connect either approved test network."
+        : accessState.authEnabled
+          ? "Choose Google, email, or a pre-provisioned wallet credential."
+          : "Closed-pilot access is not enabled on this deployment. No product data is available without an authenticated session.";
+    }
   } catch {
     accessState.authEnabled = false;
-    accessState.sessionActive = tenantPilot.connected;
-    accessState.helper = tenantPilot.connected
-      ? "Private pilot session active. Connect an approved test network when needed."
-      : "The authenticated closed-pilot gateway is unavailable. Contact your pilot administrator for access.";
+    const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
+    accessState.sessionActive = authorityAvailable && tenantPilot.connected;
+    if (authorityAvailable) {
+      accessState.helper = tenantPilot.connected
+        ? "Private pilot session active. Connect an approved test network when needed."
+        : "The authenticated closed-pilot gateway is unavailable. Contact your pilot administrator for access.";
+    }
   } finally {
     accessState.checked = true;
     renderAccess();
   }
-}
-
-function eip1193Provider() {
-  const provider = globalThis.ethereum;
-  return provider && typeof provider.request === "function" ? provider : null;
 }
 
 async function switchWalletChain(provider, chain) {
@@ -366,9 +682,20 @@ async function switchWalletChain(provider, chain) {
 
 async function connectApprovedNetwork({ authenticate = false } = {}) {
   if (accessState.busy) return;
-  const provider = eip1193Provider();
+  if (
+    authenticate &&
+    walletAuthorityLifecycle.getSnapshot().canStartAuthentication !== true
+  ) {
+    accessState.helper =
+      "The previous wallet authority has not been safely invalidated. Protected sign-in remains blocked.";
+    renderAccess();
+    return;
+  }
+  const provider = walletProviderRegistry.getSelectedProvider();
   if (!provider) {
-    accessState.helper = "No compatible EVM wallet was found. Install or open a browser wallet, then try again.";
+    accessState.helper = accessState.walletProviders.length > 0
+      ? "Select one discovered wallet before requesting an account or network."
+      : "No compatible EVM wallet was found. Install or open a browser wallet, then try again.";
     renderAccess();
     return;
   }
@@ -397,20 +724,25 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
         accessState.helper = `${chain.name} connected. Wallet session sign-in awaits closed-pilot credential provisioning.`;
         return;
       }
+      const walletChallengeEpoch =
+        walletAuthorityLifecycle.getSnapshot().contextEpoch;
       accessState.helper = "Preparing one-use wallet sign-in…";
       renderAccess();
       const challenge = await authJson("/auth/v1/wallet/challenge", {
         method: "POST",
         body: { address, chainId: connectedChainId }
       });
+      walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       const signature = await provider.request({
         method: "personal_sign",
         params: [challenge.message, address]
       });
+      walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       await authJson("/auth/v1/wallet/verify", {
         method: "POST",
         body: { transactionHandle: challenge.handle, signature }
       });
+      walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       accessState.sessionActive = true;
       accessState.helper = "Wallet sign-in complete. Your internal roles and Mandates remain server-controlled.";
       window.location.reload();
@@ -434,22 +766,6 @@ function beginOidcSignIn(provider) {
   window.location.assign(`/auth/v1/login?provider=${encodeURIComponent(provider)}`);
 }
 
-function bindWalletProviderEvents() {
-  const provider = eip1193Provider();
-  if (!provider || typeof provider.on !== "function") return;
-  provider.on("accountsChanged", (accounts) => {
-    accessState.walletAddress = Array.isArray(accounts) && /^0x[0-9a-fA-F]{40}$/.test(accounts[0] ?? "")
-      ? accounts[0]
-      : null;
-    renderAccess();
-  });
-  provider.on("chainChanged", (chainId) => {
-    const parsed = Number.parseInt(String(chainId), 16);
-    accessState.connectedChainId = SUPPORTED_WALLET_CHAINS[parsed] ? parsed : null;
-    renderAccess();
-  });
-}
-
 function asBigInt(value) {
   try {
     return BigInt(value ?? "0");
@@ -467,6 +783,21 @@ function titleize(value) {
   return String(value ?? "-")
     .replace(/_/g, " ")
     .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function servicingClassificationLabel(value) {
+  const normalized = String(value ?? "");
+  if (normalized.startsWith("servicing_")) {
+    return `Servicing ${servicingClassificationLabel(normalized.slice(10))}`;
+  }
+  return {
+    current: "Current",
+    grace_period: "Grace period",
+    dpd_1_30: "DPD 1–30",
+    dpd_31_60: "DPD 31–60",
+    dpd_61_89: "DPD 61–89",
+    defaulted: "Defaulted"
+  }[normalized] ?? titleize(normalized);
 }
 
 function decisionReasonItem(reason) {
@@ -640,6 +971,7 @@ function tenantCsrfToken() {
 async function tenantApi(operationId, {
   resource,
   payload = {},
+  purpose,
   reasonCode,
   idempotent = true,
   correlationId = tenantRequestToken("web_tenant_correlation"),
@@ -647,6 +979,7 @@ async function tenantApi(operationId, {
   idempotencyKey,
   includeTransportMeta = false
 } = {}) {
+  walletAuthorityLifecycle.assertProtectedAvailable();
   const csrfToken = tenantCsrfToken();
   if (!csrfToken) throw new Error("The authenticated Human session is missing its CSRF bootstrap token.");
   const protocolRequest = {
@@ -657,6 +990,7 @@ async function tenantApi(operationId, {
     schemaVersion: "tenant_protocol_request.v1"
   };
   if (resource) protocolRequest.resource = resource;
+  if (purpose) protocolRequest.purpose = purpose;
   if (reasonCode) protocolRequest.reasonCode = reasonCode;
   if (idempotent) {
     protocolRequest.idempotencyKey = idempotencyKey ?? tenantRequestToken("web_tenant_idempotency");
@@ -700,6 +1034,7 @@ async function tenantApi(operationId, {
     error.requestId = result?.requestId ?? responseRequestId;
     throw error;
   }
+  walletAuthorityLifecycle.assertProtectedAvailable();
   return includeTransportMeta
     ? Object.freeze({ correlationId, requestId: responseRequestId, result })
     : result;
@@ -766,6 +1101,7 @@ function resetHumanObligationWorkflow() {
   ownedEvidence.items = [];
   ownedEvidence.nextCursor = null;
   ownedEvidence.hasMore = false;
+  ownedEvidence.capped = false;
   ownedEvidence.asOf = null;
   ownedEvidence.helper = "Load the redacted immutable Evidence for this exact Obligation.";
   ownedEvidence.error = false;
@@ -792,6 +1128,98 @@ function requestedCreditTerms() {
     repaymentFrequency: el("humanRepaymentFrequency").value,
     installmentCount
   };
+}
+
+function currentHumanCreditReviewInput() {
+  return {
+    authorityId: tenantInputValue("humanConsentId"),
+    creditRequest: requestedCreditTerms(),
+    entryMode: "human",
+    subjectId: tenantInputValue("humanSubjectId")
+  };
+}
+
+function humanCreditReviewState() {
+  if (!tenantPilot.offerReview) {
+    return Object.freeze({
+      current: false,
+      reasonCode: tenantPilot.offer ? "review_binding_invalid" : "offer_unavailable"
+    });
+  }
+  try {
+    return evaluateRequestCreditReviewBinding(
+      tenantPilot.offerReview,
+      currentHumanCreditReviewInput()
+    );
+  } catch {
+    return Object.freeze({
+      current: false,
+      reasonCode: "request_economics_changed"
+    });
+  }
+}
+
+function humanCreditReviewMessage(reviewState) {
+  if (reviewState.current) {
+    return "Exact Subject, Consent, request economics, Offer hash, and terms hash match this review.";
+  }
+  const messages = {
+    offer_unavailable: "Submit an authenticated no-funds request to receive an exact Offer review.",
+    entry_mode_changed: "Return to Human mode and request a fresh Offer before acceptance.",
+    subject_changed: "The visible Subject changed. Request a fresh Offer before acceptance.",
+    authority_changed: "The visible Consent changed. Request a fresh Offer before acceptance.",
+    request_economics_changed:
+      "The visible amount, term, purpose, frequency, or installments changed. Request a fresh Offer before acceptance.",
+    review_binding_invalid:
+      "The exact server review binding is unavailable. Request a fresh Offer before acceptance."
+  };
+  return messages[reviewState.reasonCode] ?? messages.review_binding_invalid;
+}
+
+function normalizedServerReceipt(step) {
+  if (!step) return null;
+  if (step.operationId && step.responseSchemaVersion) return step;
+  const result = step.result;
+  if (!result?.operationId || !result.response?.schemaVersion) return null;
+  return {
+    operationId: result.operationId,
+    replayed: result.replayed,
+    requestId: step.requestId,
+    responseSchemaVersion: result.response.schemaVersion
+  };
+}
+
+function setServerReceiptStatus(id, step) {
+  const target = el(id);
+  const receipt = normalizedServerReceipt(step);
+  target.classList.toggle("ready", Boolean(receipt));
+  target.textContent = receipt
+    ? `${receipt.responseSchemaVersion} · ${receipt.replayed ? "replayed" : "committed"}`
+    : "Waiting for server";
+  target.title = receipt
+    ? `${receipt.operationId} · request ${receipt.requestId}`
+    : "No server result has been returned for this step.";
+}
+
+function renderHumanRequestCreditReceipts() {
+  const steps = new Map(
+    (tenantPilot.offerReview?.serverReceipts ?? []).map((step) => [
+      step.operationId,
+      step
+    ])
+  );
+  setServerReceiptStatus("humanReceiptPreflight", steps.get("pilotReadHumanSelf"));
+  setServerReceiptStatus("humanReceiptIntent", steps.get("pilotRequestCredit"));
+  setServerReceiptStatus(
+    "humanReceiptApplication",
+    steps.get("pilotReadCreditApplication")
+  );
+  setServerReceiptStatus(
+    "humanReceiptDecision",
+    steps.get("pilotEvaluateCreditApplication")
+  );
+  setServerReceiptStatus("humanReceiptAcceptance", tenantPilot.acceptanceStep);
+  setServerReceiptStatus("humanReceiptExecution", tenantPilot.executionStep);
 }
 
 function requestedAgentMandateTerms() {
@@ -853,6 +1281,307 @@ function currentAgentPilotCapabilityPacket() {
   return createAgentPilotCapabilityManifest(handoff);
 }
 
+function currentAgentConsolePresentation() {
+  const accountBindingView = agentAuthorityPilot.accountBinding;
+  const accountBinding = accountBindingView?.accountBinding ?? null;
+  const mandate = agentAuthorityPilot.mandate;
+  const subjectId = agentAuthorityPilot.subject?.subjectId ??
+    accountBindingView?.subjectId ??
+    mandate?.subjectId ??
+    null;
+  const subjectStatus = accountBindingView?.subjectStatus ??
+    agentAuthorityPilot.subject?.status ??
+    null;
+  const principalId = mandate?.principalId ??
+    agentAuthorityPilot.subject?.principalId ??
+    null;
+  const subject = subjectId && subjectStatus
+    ? {
+        subjectId,
+        principalId,
+        status: subjectStatus,
+        schemaVersion: "agent_console_subject_snapshot.v1"
+      }
+    : null;
+  const binding = accountBinding && accountBindingView?.subjectId
+    ? {
+        subjectId: accountBindingView.subjectId,
+        status: accountBinding.status,
+        chainId: accountBinding.chainId,
+        purpose: accountBinding.purpose,
+        accountHash: accountBinding.accountHash,
+        proofHash: accountBinding.proofHash,
+        verificationMethod: accountBinding.verificationMethod,
+        boundAt: accountBinding.boundAt,
+        schemaVersion: "agent_console_account_binding_snapshot.v1"
+      }
+    : null;
+  const mandateSnapshot = mandate
+    ? {
+        mandateId: mandate.mandateId,
+        subjectId: mandate.subjectId,
+        principalId: mandate.principalId,
+        status: mandate.status,
+        capabilities: [...mandate.capabilities],
+        assetIds: [...mandate.assetIds],
+        perActionLimitMinor: mandate.perActionLimitMinor,
+        aggregateLimitMinor: mandate.aggregateLimitMinor,
+        utilizedMinor: mandate.utilizedMinor,
+        expiresAt: mandate.expiresAt,
+        mandateHash: mandate.mandateHash,
+        termsHash: mandate.termsHash,
+        sandboxOnly: mandate.sandboxOnly,
+        productionAuthority: mandate.productionAuthority,
+        schemaVersion: "agent_console_mandate_snapshot.v1"
+      }
+    : null;
+  return createAgentConsolePresentation({
+    manifest: currentAgentPilotCapabilityPacket(),
+    catalogOperationIds: [...serverCatalogOperations].sort(),
+    subject,
+    accountBinding: binding,
+    mandate: mandateSnapshot
+  });
+}
+
+function agentConsoleToolRow(tool) {
+  const row = document.createElement("div");
+  const copy = document.createElement("div");
+  const name = document.createElement("strong");
+  const detail = document.createElement("small");
+  const status = document.createElement("em");
+  row.className = "agent-console-tool-row";
+  row.setAttribute("role", "listitem");
+  name.textContent = tool.name;
+  detail.textContent = `${tool.operationId} · ${titleize(tool.group)}`;
+  status.textContent = {
+    eligible_for_gateway_check: "Gateway check",
+    handoff_required: "Handoff required",
+    application_handoff_required: "Draft only",
+    active_mandate_required: "Active Mandate",
+    catalog_unavailable: "Catalog unavailable"
+  }[tool.availability];
+  row.classList.toggle("ready", tool.availability === "eligible_for_gateway_check");
+  row.classList.toggle("unavailable", tool.availability === "catalog_unavailable");
+  copy.append(name, detail);
+  row.append(copy, status);
+  return row;
+}
+
+function agentConsoleWorkflowRow(workflow) {
+  const row = document.createElement("div");
+  const copy = document.createElement("div");
+  const title = document.createElement("strong");
+  const detail = document.createElement("small");
+  const status = document.createElement("em");
+  row.className = "agent-console-workflow-row";
+  title.textContent = {
+    credit_offer: "Decision & Offer",
+    sandbox_obligation: "Obligation & repayment",
+    obligation_portability: "Dual-chain portability conformance"
+  }[workflow.workflowId];
+  detail.textContent =
+    `${workflow.entryPoint} · ${workflow.interface} · ${workflow.outputSchemaVersion}`;
+  status.textContent = {
+    enabled: "Ready",
+    locked: "Locked",
+    input_required: "Receipt input"
+  }[workflow.availability];
+  row.classList.toggle("ready", workflow.availability === "enabled");
+  row.classList.toggle("locked", workflow.availability === "locked");
+  copy.append(title, detail);
+  row.append(copy, status);
+  return row;
+}
+
+function agentConsoleUnavailableRow(capability) {
+  const labels = {
+    remote_mcp: ["Remote MCP", "No HTTP, SSE, WebSocket or public MCP listener"],
+    a2a: ["A2A", "No Agent-to-Agent transport or delegation surface"],
+    production_workload_credentials: [
+      "Production workload credentials",
+      "No token, client certificate or private key is issued here"
+    ],
+    public_agent_endpoint: [
+      "Public Agent endpoint",
+      "The approved Host remains local and non-public"
+    ],
+    real_provider_execution: [
+      "Real Provider execution",
+      "Only the separately bounded local Provider sandbox exists"
+    ],
+    real_funds: ["Real funds", "No redeemable value, withdrawal or production credit"],
+    active_mandate_edit: [
+      "Active Mandate edit",
+      "Create/review/revoke draft and activate exact scope only"
+    ]
+  };
+  const row = document.createElement("div");
+  const copy = document.createElement("div");
+  const title = document.createElement("strong");
+  const detail = document.createElement("small");
+  const status = document.createElement("em");
+  row.className = "agent-console-unavailable-row";
+  [title.textContent, detail.textContent] = labels[capability];
+  status.textContent = "Unavailable";
+  copy.append(title, detail);
+  row.append(copy, status);
+  return row;
+}
+
+function renderAgentConsole() {
+  const presentation = currentAgentConsolePresentation();
+  const status = el("agentConsoleContractStatus");
+  if (!presentation) {
+    status.textContent = "Verification failed";
+    status.className = "state-pill warning";
+    el("agentConsoleManifestVersion").textContent = "Hidden";
+    el("agentConsoleCatalogParity").textContent = "Hidden";
+    el("agentConsoleTransport").textContent = "Hidden";
+    el("agentConsoleWorkflowCount").textContent = "Hidden";
+    el("agentConsoleHelper").textContent =
+      "Agent integration state failed its closed presentation contract. No capability is implied.";
+    el("agentConsoleHelper").classList.add("error");
+    el("agentConsoleToolRows").replaceChildren(
+      emptyRow("Registry unavailable until exact contract verification succeeds.")
+    );
+    el("agentConsoleWorkflowRows").replaceChildren(
+      emptyRow("Workflow state unavailable.")
+    );
+    el("agentConsoleCopyManifestBtn").disabled = true;
+    el("agentConsoleDownloadHandoffBtn").disabled = true;
+    return;
+  }
+
+  const readyHandoff = presentation.status !== "waiting";
+  status.textContent = {
+    waiting: "Awaiting Principal",
+    application_ready: "Application handoff",
+    runtime_ready: "Runtime handoff"
+  }[presentation.status];
+  status.className = `state-pill ${
+    presentation.registry.catalogParity && readyHandoff ? "" : "neutral"
+  }`;
+  el("agentConsoleManifestVersion").textContent = presentation.schemaVersion;
+  el("agentConsoleCatalogParity").textContent =
+    `${presentation.registry.catalogBoundCount}/${presentation.registry.toolCount} tools`;
+  el("agentConsoleTransport").textContent = "Local stdio MCP";
+  el("agentConsoleWorkflowCount").textContent =
+    `${presentation.workflows.length} staged`;
+  el("agentConsoleHelper").classList.remove("error");
+  el("agentConsoleHelper").textContent = !presentation.registry.catalogParity
+    ? "Manifest and authenticated server catalog differ. Tool use remains fail-closed."
+    : presentation.status === "runtime_ready"
+      ? "Active Principal-approved sandbox authority is loaded. Every Agent call still requires fresh Host authentication, admission and Gateway authorization."
+      : presentation.status === "application_ready"
+        ? "Draft application authority is loaded. Runtime economic and Evidence tools remain locked until exact Principal activation."
+        : "Create or restore the exact Agent Subject, AccountBinding and Mandate before a handoff becomes available.";
+
+  const canExport = readyHandoff && presentation.registry.catalogParity;
+  el("agentConsoleCopyManifestBtn").disabled = !canExport;
+  el("agentConsoleDownloadHandoffBtn").disabled = !canExport;
+
+  el("agentConsolePrincipalStatus").textContent =
+    presentation.principal.bound ? "Bound" : "Waiting";
+  el("agentConsolePrincipalStatus").className =
+    `state-pill ${presentation.principal.bound ? "" : "neutral"}`;
+  el("agentConsolePrincipalId").textContent =
+    presentation.principal.principalId
+      ? compactOpaqueId(presentation.principal.principalId)
+      : "Not loaded";
+  el("agentConsolePrincipalId").title =
+    presentation.principal.principalId ?? "";
+  el("agentConsoleSubjectId").textContent =
+    presentation.identity.subjectId
+      ? compactOpaqueId(presentation.identity.subjectId)
+      : "Not loaded";
+  el("agentConsoleSubjectId").title = presentation.identity.subjectId ?? "";
+  el("agentConsoleSubjectStatus").textContent =
+    presentation.identity.subjectStatus
+      ? titleize(presentation.identity.subjectStatus)
+      : "Not loaded";
+
+  const binding = presentation.identity.accountBinding;
+  el("agentConsoleBindingStatus").textContent = binding ? "Verified" : "Waiting";
+  el("agentConsoleBindingStatus").className =
+    `state-pill ${binding ? "" : "neutral"}`;
+  el("agentConsoleBindingChain").textContent = binding?.chainId ?? "Not loaded";
+  el("agentConsoleBindingPurpose").textContent =
+    binding ? titleize(binding.purpose) : "Not loaded";
+  el("agentConsoleBindingMethod").textContent =
+    binding ? titleize(binding.verificationMethod) : "Not loaded";
+  el("agentConsoleBindingProof").textContent =
+    binding ? compactOpaqueId(binding.proofHash) : "Not loaded";
+  el("agentConsoleBindingProof").title = binding?.proofHash ?? "";
+
+  const mandate = presentation.mandate;
+  el("agentConsoleMandateStatus").textContent =
+    mandate ? titleize(mandate.status) : "Waiting";
+  el("agentConsoleMandateStatus").className =
+    `state-pill ${mandate?.status === "active" ? "" : "neutral"}`;
+  el("agentConsoleMandateId").textContent =
+    mandate ? compactOpaqueId(mandate.mandateId) : "Not loaded";
+  el("agentConsoleMandateId").title = mandate?.mandateId ?? "";
+  el("agentConsoleMandateCapabilities").textContent = mandate
+    ? mandate.capabilities.map(titleize).join(" · ")
+    : "Not loaded";
+  el("agentConsoleMandateLimits").textContent = mandate
+    ? `${usdMinorToMoney(mandate.perActionLimitMinor)} / ${usdMinorToMoney(
+        mandate.aggregateLimitMinor
+      )} · ${usdMinorToMoney(mandate.utilizedMinor)} used`
+    : "Not loaded";
+  el("agentConsoleMandateExpiry").textContent =
+    mandate ? privateDate(mandate.expiresAt) : "Not loaded";
+  el("agentConsoleMandateBoundary").textContent = mandate
+    ? `Hash ${compactOpaqueId(mandate.mandateHash)} · terms ${compactOpaqueId(
+        mandate.termsHash
+      )} · sandbox only · active scope cannot be edited in place.`
+    : "Create or load an exact server Mandate. Active scope cannot be edited in place.";
+
+  el("agentConsoleRegistryStatus").textContent =
+    presentation.registry.catalogParity ? "11/11 parity" : "Drift blocked";
+  el("agentConsoleRegistryStatus").className =
+    `state-pill ${presentation.registry.catalogParity ? "" : "warning"}`;
+  el("agentConsoleToolRows").replaceChildren(
+    ...presentation.registry.tools.map(agentConsoleToolRow)
+  );
+  el("agentConsoleWorkflowRows").replaceChildren(
+    ...presentation.workflows.map(agentConsoleWorkflowRow)
+  );
+  el("agentConsoleUnavailableRows").replaceChildren(
+    ...presentation.unavailableCapabilities.map(agentConsoleUnavailableRow)
+  );
+
+  el("agentConsoleSdkSnippet").textContent = `import { IpoOneAgentMcpClient } from "@ipo-one/sdk";
+
+const agent = new IpoOneAgentMcpClient({
+  handle: localMcpHost.handle,
+  manifest: applicationHandoff,
+  transportProfile: "mcp_stdio_local"
+});
+
+const receipt = await agent.runCreditOfferWorkflow({
+  creditRequest: {
+    assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+    requestedPrincipalMinor: "9000",
+    purposeCode: "compute",
+    requestedTermDays: 30,
+    repaymentFrequency: "end_of_term",
+    installmentCount: 1
+  },
+  workflowId: "design-partner-application-0001"
+});`;
+  el("agentConsoleOpenApiSnippet").textContent =
+`const response = await fetch(
+  new URL("/openapi.json", globalThis.location.origin),
+  { headers: { accept: "application/json" } }
+);
+
+if (!response.ok) throw new Error("local_openapi_unavailable");
+const contract = await response.json();
+console.log(contract.info.title, contract.info.version);`;
+}
+
 function agentIntegrationPresentation() {
   const subject = agentAuthorityPilot.subject;
   const accountBound = Boolean(
@@ -877,7 +1606,7 @@ function agentIntegrationPresentation() {
     return {
       currentIndex: 1,
       title: "Prove the Agent controls its account",
-      copy: "Create one short-lived signing request. The registered Agent workload submits proof through authenticated Tenant HTTPS; this browser receives only the verified AccountBinding state.",
+      copy: "Create one short-lived signing request. The registered local Agent Host submits proof; this browser receives only the verified AccountBinding state.",
       primaryLabel: "Complete account proof",
       primaryAction: "principal-setup",
       identity: "Account proof required",
@@ -946,6 +1675,63 @@ function renderAgentIntegrationGuide() {
   }
 }
 
+function renderAgentRequestCreditJourney() {
+  const handoff = currentAgentMcpHandoffPacket();
+  const applicationHandoff = handoff?.status === "application_ready";
+  const runtimeHandoff = handoff?.status === "ready";
+  const applicationOperationsAvailable = [
+    "pilotRequestCredit",
+    "pilotReadCreditApplication",
+    "pilotEvaluateCreditApplication"
+  ].every((operationId) => serverCatalogOperations.has(operationId));
+  const economicOperationsAvailable = [
+    "pilotAcceptCreditOffer",
+    "pilotExecuteSandboxObligation"
+  ].every((operationId) => serverCatalogOperations.has(operationId));
+  const applicationReady = Boolean(handoff) && applicationOperationsAvailable;
+  const runtimeReady = runtimeHandoff &&
+    applicationOperationsAvailable &&
+    economicOperationsAvailable;
+
+  el("agentRequestCreditStatus").textContent = runtimeReady
+    ? "Runtime journey ready"
+    : applicationReady
+      ? "Application journey ready"
+      : tenantPilot.connected
+        ? "Principal setup required"
+        : "Authenticated session required";
+  el("agentRequestCreditStatus").classList.toggle(
+    "neutral",
+    !applicationReady && !runtimeReady
+  );
+  el("agentRequestCreditAuthority").textContent = runtimeHandoff
+    ? "Active Principal-approved Mandate"
+    : applicationHandoff
+      ? "Draft application Mandate"
+      : "No eligible handoff";
+  el("agentRequestCreditIntent").textContent = applicationReady
+    ? "Ready · pilotRequestCredit"
+    : "Locked pending bounded handoff";
+  el("agentRequestCreditDecision").textContent = applicationReady
+    ? "Ready · deterministic policy + Passport"
+    : "Locked pending bounded handoff";
+  el("agentRequestCreditAcceptance").textContent = runtimeReady
+    ? "Ready · exact Offer and terms hashes"
+    : "Locked pending active Mandate";
+  el("agentRequestCreditExecution").textContent = runtimeReady
+    ? "Ready · signed non-withdrawable receipt"
+    : "Locked pending active Mandate";
+  el("agentRequestCreditOfferReceipt").textContent = applicationReady
+    ? "agent_credit_offer_workflow_receipt.v1"
+    : "Returned only after Agent workflow";
+  el("agentRequestCreditObligationReceipt").textContent = runtimeReady
+    ? "agent_sandbox_obligation_workflow_receipt.v1"
+    : "Returned only after active runtime workflow";
+  el("agentRequestCreditCopy").textContent = applicationReady
+    ? "The Agent can submit the same bounded request economics and receive the same deterministic policy, Offer terms, and Evidence-derived Decision Passport. The handoff contains no credential."
+    : "A Human Principal must bind the Agent Subject and exact Consent-equivalent Mandate scope before the Agent application tools become available.";
+}
+
 function renderAgentMcpHandoff() {
   const handoff = currentAgentMcpHandoffPacket();
   const packet = currentAgentPilotCapabilityPacket();
@@ -982,8 +1768,8 @@ function renderAgentMcpHandoff() {
   el("mcpHandoffBoundaryNote").textContent = applicationReady
     ? "Application tools are Ready. Evidence and the three sandbox economic tools stay Locked until Principal activation; credentials and authority are never carried in this packet."
     : runtimeReady
-      ? "Eleven Agent operations are Ready, including exact owned Obligation state, Evidence, and three no-funds economic commands. Every HTTPS call remains workload-, Tenant-, and Mandate-bound."
-      : "This non-authorizing packet advertises eleven Agent operations and three staged workflows. Production connection details come from OpenAPI; credentials, mTLS keys, and funds authority remain outside the packet.";
+      ? "Eleven local Agent operations are Ready, including exact owned Obligation state, Evidence, and three no-funds economic commands. Every call remains Host-, Tenant-, and Mandate-bound."
+      : "This non-authorizing packet advertises eleven local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority remain outside the packet.";
   el("agentHandoffPhase").textContent = applicationReady
     ? "Application handoff"
     : runtimeReady
@@ -1027,6 +1813,8 @@ function renderAgentMcpHandoff() {
     status.classList.toggle("warning", workflow.availability === "locked");
   }
   renderAgentIntegrationGuide();
+  renderAgentRequestCreditJourney();
+  renderAgentConsole();
 }
 
 function renderAgentAuthorityPilot() {
@@ -1355,7 +2143,7 @@ function runHumanGuideAction(action) {
     return focusJumpTarget(el("humanObligationCard"));
   }
   if (action === "verify-evidence") {
-    showView("evidence");
+    showView("activity-proofs");
     return;
   }
   if (action === "start-new") {
@@ -1466,21 +2254,61 @@ function rememberWorkspaceObligation(resourceId, relationship = "owner") {
   ];
 }
 
+function currentServicingPositionIndex() {
+  if (!tenantPilot.workspaceResume) return null;
+  const referenceIds = new Set(
+    tenantPilot.workspaceObligations
+      .slice(0, SERVICING_POSITION_INDEX_LIMIT)
+      .map(({ resourceId }) => resourceId)
+  );
+  const selectedObligationId = tenantPilot.obligation?.obligationId;
+  return createServicingPositionIndex({
+    workspace: tenantPilot.workspaceResume,
+    views: [...tenantPilot.workspacePositionViews]
+      .filter(([obligationId]) => referenceIds.has(obligationId))
+      .map(([obligationId, view]) => ({ obligationId, view })),
+    ...(referenceIds.has(selectedObligationId) ? { selectedObligationId } : {})
+  });
+}
+
 function renderOwnedPositionPicker({ humanMode }) {
   const picker = el("ownedPositionPicker");
   const list = el("ownedPositionList");
-  const positions = tenantPilot.workspaceObligations;
-  const visible = humanMode && tenantPilot.workspaceKind === "human_borrower" && positions.length > 0;
+  const index = currentServicingPositionIndex();
+  const positions = index?.positions ?? [];
+  const visible = humanMode &&
+    tenantPilot.connected &&
+    tenantPilot.workspaceKind === "human_borrower" &&
+    tenantPilot.workspaceObligations.length > 0;
+  const refresh = el("refreshOwnedPositionsBtn");
   picker.hidden = !visible;
   list.replaceChildren();
-  el("ownedPositionCount").textContent = `${positions.length} ${positions.length === 1 ? "position" : "positions"}`;
-  el("ownedPositionBoundary").textContent = tenantPilot.workspaceRecoveryHasMore
-    ? "Showing Obligation references found in the first 32 Actor-bound workspace resources. Select one to load its exact authorized state."
-    : "Only Actor-bound opaque references are shown. Select one position to load its exact authorized state.";
+  refresh.disabled = !visible ||
+    !tenantPilot.connected ||
+    !tenantPilot.obligationReadAvailable ||
+    tenantPilot.workspacePositionRefreshBusy ||
+    tenantPilot.obligationHydrationBusy;
+  refresh.toggleAttribute("aria-busy", tenantPilot.workspacePositionRefreshBusy);
+  refresh.textContent = tenantPilot.workspacePositionRefreshBusy
+    ? "Refreshing server state…"
+    : "Refresh current positions";
+  el("ownedPositionCount").textContent = index
+    ? `${index.reviewedCount}/${index.referenceCount} current`
+    : "Verification unavailable";
+  el("ownedPositionRefreshState").textContent = index
+    ? tenantPilot.workspacePositionRefreshHelper
+    : "Position references failed the closed servicing index contract. Financial values are hidden.";
+  el("ownedPositionRefreshState").classList.toggle("error", visible && !index);
+  el("ownedPositionBoundary").textContent = index?.hasMoreReferences
+    ? `Showing at most ${SERVICING_POSITION_INDEX_LIMIT} exact Actor-bound Obligation references. Additional references require a separately bounded server page.`
+    : index?.coverage === "complete"
+      ? "Every visible value was refreshed through an exact owner-authorized server read. Browser state is not financial truth."
+      : "Unrefreshed references show no balance or status. Select one or refresh all to load exact authorized server state.";
   if (!visible) return;
+  if (!index) return;
 
   positions.forEach((position, index) => {
-    const selected = tenantPilot.obligation?.obligationId === position.resourceId;
+    const selected = tenantPilot.obligation?.obligationId === position.obligationId;
     const item = document.createElement("div");
     const button = document.createElement("button");
     const label = document.createElement("span");
@@ -1490,23 +2318,287 @@ function renderOwnedPositionPicker({ humanMode }) {
     item.setAttribute("role", "listitem");
     button.type = "button";
     button.className = "owned-position-button";
-    button.dataset.obligationId = position.resourceId;
-    button.disabled = tenantPilot.obligationHydrationBusy;
+    button.dataset.obligationId = position.obligationId;
+    button.dataset.positionAvailability = position.availability;
+    button.disabled = tenantPilot.obligationHydrationBusy ||
+      tenantPilot.workspacePositionRefreshBusy;
     button.setAttribute("aria-pressed", String(selected));
     if (selected) button.setAttribute("aria-current", "true");
     label.textContent = `Position ${String(index + 1).padStart(2, "0")}`;
-    identifier.textContent = compactOpaqueId(position.resourceId);
-    identifier.title = position.resourceId;
-    detail.textContent = selected && tenantPilot.obligation
-      ? `${titleize(tenantPilot.obligation.status)} · ${usdMinorToMoney(tenantPilot.obligation.outstandingPrincipalMinor)} outstanding`
+    identifier.textContent = compactOpaqueId(position.obligationId);
+    identifier.title = position.obligationId;
+    detail.textContent = position.availability === "server_current"
+      ? `${servicingClassificationLabel(position.servicingClassification)} · ${usdMinorToMoney(position.outstandingMinor)} outstanding · DPD ${position.daysPastDue} · server ${privateDate(position.asOf, { month: "short", day: "numeric", timeZone: "UTC" })}`
       : position.relationship === "controller"
-        ? "Controller-authorized position"
-        : "Borrower-owned position";
+        ? "Controller-authorized reference · server state not loaded"
+        : "Borrower-owned reference · server state not loaded";
     action.textContent = selected ? "Selected" : "View position";
     button.append(label, identifier, detail, action);
     item.append(button);
     list.append(item);
   });
+}
+
+function ownedEvidencePresentationPage(obligationId) {
+  if (
+    !ownedEvidence.queried ||
+    ownedEvidence.obligationId !== obligationId ||
+    !ownedEvidence.asOf
+  ) return null;
+  return {
+    obligationId,
+    asOf: ownedEvidence.asOf,
+    items: ownedEvidence.items,
+    hasMore: ownedEvidence.hasMore,
+    ...(ownedEvidence.hasMore && ownedEvidence.nextCursor
+      ? { nextCursor: ownedEvidence.nextCursor }
+      : {}),
+    schemaVersion: "tenant_owned_obligation_evidence_view.v1"
+  };
+}
+
+function currentObligationPortfolioPresentation() {
+  const obligationId = tenantPilot.obligation?.obligationId;
+  if (!obligationId) return { presentation: null, evidenceStale: false };
+  const view = tenantPilot.workspacePositionViews.get(obligationId);
+  const relationship = tenantPilot.workspaceObligations.find(
+    (reference) => reference.resourceId === obligationId
+  )?.relationship;
+  if (!view || !new Set(["owner", "controller"]).has(relationship)) {
+    return { presentation: null, evidenceStale: false };
+  }
+  const evidence = ownedEvidencePresentationPage(obligationId);
+  const input = {
+    view,
+    relationship,
+    entryMode: interactionMode,
+    evidence
+  };
+  const presentation = createObligationPortfolioPresentation(input);
+  if (presentation || evidence === null) {
+    return { presentation, evidenceStale: false };
+  }
+  return {
+    presentation: createObligationPortfolioPresentation({
+      ...input,
+      evidence: null
+    }),
+    evidenceStale: true
+  };
+}
+
+function obligationPortfolioPosition(position, index) {
+  const selected = tenantPilot.obligation?.obligationId === position.obligationId;
+  const item = document.createElement("button");
+  const sequence = document.createElement("span");
+  const body = document.createElement("span");
+  const identifier = document.createElement("strong");
+  const detail = document.createElement("small");
+  const status = document.createElement("em");
+  item.type = "button";
+  item.className = "obligation-portfolio-position";
+  item.dataset.obligationId = position.obligationId;
+  item.dataset.positionAvailability = position.availability;
+  item.disabled = tenantPilot.obligationHydrationBusy ||
+    tenantPilot.workspacePositionRefreshBusy;
+  item.setAttribute("role", "listitem");
+  item.setAttribute("aria-pressed", String(selected));
+  if (selected) item.setAttribute("aria-current", "true");
+  sequence.textContent = String(index + 1).padStart(2, "0");
+  body.className = "obligation-portfolio-position-copy";
+  identifier.textContent = compactOpaqueId(position.obligationId);
+  identifier.title = position.obligationId;
+  if (position.availability === "server_current") {
+    detail.textContent =
+      `${servicingClassificationLabel(position.servicingClassification)} · DPD ${position.daysPastDue} · ${privateDate(position.nextDueAt, { month: "short", day: "numeric", timeZone: "UTC" })}`;
+    status.textContent = usdMinorToMoney(position.outstandingMinor);
+  } else {
+    detail.textContent = position.relationship === "controller"
+      ? "Controller-bound reference · exact state not loaded"
+      : "Owner-bound reference · exact state not loaded";
+    status.textContent = "Values hidden";
+  }
+  body.append(identifier, detail);
+  item.append(sequence, body, status);
+  return item;
+}
+
+function obligationSchedulePresentationRow(row) {
+  const item = document.createElement("div");
+  const marker = document.createElement("span");
+  const copy = document.createElement("div");
+  const title = document.createElement("strong");
+  const detail = document.createElement("small");
+  const amount = document.createElement("em");
+  item.className = "obligation-detail-schedule-row";
+  item.dataset.installmentStatus = row.status;
+  marker.textContent = String(row.installmentNumber).padStart(2, "0");
+  title.textContent = `${titleize(row.status)} · ${privateDate(row.dueAt, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  })}`;
+  detail.textContent =
+    `${usdMinorToMoney(row.paidMinor)} paid of ${usdMinorToMoney(row.scheduledMinor)} · schedule v${row.scheduleSequence}`;
+  amount.textContent = `${usdMinorToMoney(row.outstandingMinor)} due`;
+  copy.append(title, detail);
+  item.append(marker, copy, amount);
+  return item;
+}
+
+function obligationHistoryPresentationRow(item) {
+  const row = document.createElement("div");
+  const marker = document.createElement("span");
+  const copy = document.createElement("div");
+  const title = document.createElement("strong");
+  const detail = document.createElement("small");
+  const badge = document.createElement("em");
+  row.className = `obligation-detail-history-row ${item.historyKind}`;
+  marker.setAttribute("aria-hidden", "true");
+  title.textContent = titleize(item.eventType);
+  detail.textContent =
+    `${titleize(item.aggregateType)} v${item.aggregateVersion} · ${formatEvidenceTime(item.recordedAt, { short: true })} · ${compactDecisionProofHash(item.evidenceHash)}`;
+  badge.textContent = item.historyKind === "explicit_correction"
+    ? "Correction"
+    : item.historyKind === "explicit_resolution"
+      ? "Resolution"
+      : item.historyKind === "invalidated_observation"
+        ? titleize(item.sourceFinality)
+        : titleize(item.sourceFinality);
+  copy.append(title, detail);
+  row.append(marker, copy, badge);
+  return row;
+}
+
+function renderObligationPortfolio() {
+  const index = currentServicingPositionIndex();
+  const positions = index?.positions ?? [];
+  const { presentation, evidenceStale } = currentObligationPortfolioPresentation();
+  const connected = tenantPilot.connected;
+  const refresh = el("obligationPortfolioRefreshBtn");
+  refresh.disabled = !connected ||
+    !tenantPilot.obligationReadAvailable ||
+    positions.length === 0 ||
+    tenantPilot.workspacePositionRefreshBusy ||
+    tenantPilot.obligationHydrationBusy;
+  refresh.toggleAttribute("aria-busy", tenantPilot.workspacePositionRefreshBusy);
+  refresh.textContent = tenantPilot.workspacePositionRefreshBusy
+    ? "Refreshing exact reads…"
+    : "Refresh server state";
+
+  el("obligationPortfolioList").replaceChildren(...(positions.length
+    ? positions.map(obligationPortfolioPosition)
+    : [emptyRow(connected
+      ? "No Actor-bound Obligation reference was returned by the authenticated workspace."
+      : "Sign in to recover bounded owned references.")]));
+  el("obligationPortfolioCount").textContent = index
+    ? `${index.reviewedCount}/${index.referenceCount}`
+    : "0/0";
+  el("obligationPortfolioCoverage").textContent = !index
+    ? "Unavailable"
+    : index.coverage === "complete"
+      ? "Complete server coverage"
+      : "Partial coverage";
+  el("obligationPortfolioCoverage").className =
+    `state-pill ${index?.coverage === "complete" ? "neutral" : "warning"}`;
+  el("obligationPortfolioOutstanding").textContent = index?.aggregate
+    ? usdMinorToMoney(index.aggregate.outstandingMinor)
+    : "Hidden";
+  el("obligationPortfolioPastDue").textContent = index?.aggregate
+    ? usdMinorToMoney(index.aggregate.pastDueMinor)
+    : "Hidden";
+  el("obligationPortfolioRepaid").textContent = index?.aggregate
+    ? usdMinorToMoney(index.aggregate.totalRepaidMinor)
+    : "Hidden";
+  el("obligationPortfolioHelper").textContent = !connected
+    ? "Sign in to recover bounded Actor-owned Obligation references."
+    : index
+      ? tenantPilot.workspacePositionRefreshHelper
+      : "Workspace references failed the closed portfolio contract. Financial values are hidden.";
+  el("obligationPortfolioHelper").classList.toggle("error", connected && !index);
+  el("obligationPortfolioBoundary").textContent = index?.hasMoreReferences
+    ? `This view is capped at ${SERVICING_POSITION_INDEX_LIMIT} exact references. Additional resources are not enumerated.`
+    : index?.coverage === "complete"
+      ? "Every visible amount reconciles to the exact canonical Obligation schedule. Browser aggregation is read-only."
+      : "Unrefreshed or denied references reveal no amount or lifecycle status.";
+
+  const detailEmpty = el("obligationDetailEmpty");
+  const detailContent = el("obligationDetailContent");
+  if (!presentation) {
+    detailEmpty.hidden = false;
+    detailContent.hidden = true;
+    el("obligationDetailEmptyCopy").textContent = tenantPilot.obligation
+      ? "The selected state failed the closed amount, schedule, authority, rail, or Evidence contract. Refresh the exact server read."
+      : "Refresh server state, then select one exact Obligation. Browser state is never financial truth.";
+    return null;
+  }
+
+  detailEmpty.hidden = true;
+  detailContent.hidden = false;
+  el("obligationDetailIdentifier").textContent = compactOpaqueId(presentation.obligationId);
+  el("obligationDetailIdentifier").title = presentation.obligationId;
+  el("obligationDetailStatus").textContent =
+    `${titleize(presentation.lifecycle.status)} · ${servicingClassificationLabel(presentation.lifecycle.servicingClassification)}`;
+  el("obligationDetailStatus").className =
+    `state-pill ${presentation.lifecycle.daysPastDue > 0 ? "warning" : "neutral"}`;
+  el("obligationDetailAuthority").textContent =
+    `${presentation.authority.label} · ${titleize(presentation.relationship)}`;
+  el("obligationDetailAuthorityId").textContent = compactOpaqueId(presentation.authority.id);
+  el("obligationDetailAuthorityId").title = presentation.authority.id;
+  el("obligationDetailRail").textContent = presentation.executionRail.label;
+  el("obligationDetailRailRef").textContent =
+    presentation.executionRail.receiptReferenceId
+      ? compactOpaqueId(presentation.executionRail.receiptReferenceId)
+      : "No execution receipt";
+  el("obligationDetailRailRef").title =
+    presentation.executionRail.receiptReferenceId ?? "";
+  const evidenceVersion = presentation.stateVersion.loadedEvidenceAggregateVersion;
+  el("obligationDetailVersion").textContent =
+    `Schedule v${presentation.stateVersion.scheduleSequence}${evidenceVersion
+      ? ` · Evidence v${evidenceVersion}`
+      : ""}`;
+  el("obligationDetailAsOf").textContent =
+    `Server ${formatEvidenceTime(presentation.stateVersion.trustedAsOf, { short: true })}`;
+  el("obligationDetailServicing").textContent =
+    `${servicingClassificationLabel(presentation.lifecycle.servicingClassification)} · DPD ${presentation.lifecycle.daysPastDue}`;
+  el("obligationDetailReason").textContent =
+    servicingClassificationLabel(presentation.lifecycle.reasonCode);
+  el("obligationDetailPrincipal").textContent =
+    usdMinorToMoney(presentation.amounts.outstandingPrincipalMinor);
+  el("obligationDetailCharges").textContent = usdMinorToMoney(
+    String(
+      BigInt(presentation.amounts.outstandingInterestMinor) +
+      BigInt(presentation.amounts.outstandingFeesMinor)
+    )
+  );
+  el("obligationDetailPastDue").textContent =
+    usdMinorToMoney(presentation.amounts.pastDueMinor);
+  el("obligationDetailRepaid").textContent =
+    usdMinorToMoney(presentation.amounts.totalRepaidMinor);
+  el("obligationDetailSchedule").replaceChildren(
+    ...presentation.schedule.map(obligationSchedulePresentationRow)
+  );
+  el("obligationDetailHistory").replaceChildren(...(presentation.history.items.length
+    ? [...presentation.history.items].reverse().map(obligationHistoryPresentationRow)
+    : [emptyRow(evidenceStale
+      ? "Loaded Evidence predates the current server read. Reload it before verifying history."
+      : "Load exact owner/controller Evidence to verify versioned state changes.")]));
+  el("obligationDetailHistoryState").textContent = evidenceStale
+    ? "Evidence is stale relative to current state and is not shown."
+    : presentation.history.queried
+      ? `${presentation.history.items.length} hash-only event${presentation.history.items.length === 1 ? "" : "s"} loaded${ownedEvidence.capped ? "; the 50-event browser display cap has been reached." : presentation.history.hasMore ? "; additional events remain behind the bounded cursor." : "."} Corrections and resolutions are explicit append-only events.`
+      : "Evidence has not been queried. No history is inferred from browser state.";
+  const detailBusy = tenantPilot.obligationHydrationBusy ||
+    tenantPilot.workspacePositionRefreshBusy;
+  el("obligationDetailRefreshBtn").disabled = detailBusy;
+  el("obligationDetailEvidenceBtn").disabled =
+    detailBusy || ownedEvidence.busy || !ownedEvidence.catalogAvailable;
+  el("obligationDetailEvidenceBtn").toggleAttribute("aria-busy", ownedEvidence.busy);
+  el("obligationDetailRepayBtn").disabled =
+    interactionMode !== "human" || !presentation.lifecycle ||
+    presentation.executionRail.status !== "executed";
+  return presentation;
 }
 
 function validServicingRepaymentInput() {
@@ -1649,10 +2741,329 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
 }
 
 function syncPrivateViewMeta() {
-  if (!["overview", "credit", "transfers", "evidence", "risk"].includes(currentView)) return;
+  if (![
+    "overview",
+    "obligations",
+    "repay-settle",
+    "activity-proofs",
+    "risk-operations"
+  ].includes(currentView)) return;
   el("viewEyebrow").textContent = interactionMode === "human"
     ? "Human entry · shared kernel"
     : "Agent entry · shared kernel";
+}
+
+function v9DestinationMaturity(destination) {
+  if (!tenantPilot.checked) {
+    return { state: "checking", label: "Checking server" };
+  }
+  if (destination === "wallet-permissions") {
+    if (!accessState.checked) return { state: "checking", label: "Checking auth server" };
+    const operationsAvailable = V9_DESTINATION_OPERATION_MAP[destination]
+      .every((operationId) => serverCatalogOperations.has(operationId));
+    return (accessState.authEnabled || accessState.walletAuthenticationEnabled) &&
+      operationsAvailable
+      ? { state: "available", label: "Server sign-in available" }
+      : { state: "unavailable", label: "Unavailable in this runtime" };
+  }
+  if (destination === "architecture") {
+    return createArchitectureCapabilityPresentation(serverCatalogSnapshot).available
+      ? { state: "available", label: "Catalog contract verified" }
+      : { state: "unavailable", label: "Catalog unavailable" };
+  }
+  if (!tenantPilot.connected) {
+    return { state: "denied", label: "Sign-in or role required" };
+  }
+  const required = V9_DESTINATION_OPERATION_MAP[destination] ?? [];
+  const available = required.length > 0 &&
+    required.every((operationId) => serverCatalogOperations.has(operationId));
+  return available
+    ? { state: "available", label: "Server operation available" }
+    : { state: "unavailable", label: "Unavailable in this session" };
+}
+
+function trustSurfaceRow([name, state, enabled]) {
+  const row = document.createElement("div");
+  const capability = document.createElement("strong");
+  const effective = document.createElement("span");
+  const availability = document.createElement("span");
+  row.className = "wallet-permission-row";
+  row.setAttribute("role", "row");
+  capability.setAttribute("role", "cell");
+  effective.setAttribute("role", "cell");
+  availability.setAttribute("role", "cell");
+  capability.textContent = name;
+  effective.textContent = state;
+  availability.textContent = enabled ? "Yes" : "No";
+  availability.className = enabled ? "status-ok" : "status-error";
+  row.append(capability, effective, availability);
+  return row;
+}
+
+function renderWalletPermissionMatrix() {
+  const selectedProvider = accessState.walletProviders.find(
+    ({ providerId }) => providerId === accessState.selectedWalletProviderId
+  );
+  const authority = walletAuthoritySnapshot ?? walletAuthorityLifecycle.getSnapshot();
+  const presentation = createWalletPermissionPresentation({
+    accessChecked: accessState.checked,
+    sessionActive: accessState.sessionActive,
+    tenantConnected: tenantPilot.connected,
+    walletAddress: accessState.walletAddress,
+    connectedChainId: accessState.connectedChainId,
+    selectedProviderName: selectedProvider?.name,
+    authorityState: authority.status,
+    catalog: serverCatalogSnapshot
+  });
+  el("walletPermissionMatrixStatus").textContent = !presentation.checked
+    ? "Checking"
+    : presentation.serverSessionActive
+      ? "Server session active"
+      : "No active session";
+  el("walletPermissionMatrixStatus").className =
+    `state-pill ${presentation.serverSessionActive ? "" : "neutral"}`.trim();
+  el("walletPermissionProvider").textContent = presentation.selectedProviderName;
+  el("walletPermissionAccount").textContent = presentation.walletAddress
+    ? shortWalletAddress(presentation.walletAddress)
+    : "Not bound";
+  el("walletPermissionAccount").title = presentation.walletAddress ?? "";
+  el("walletPermissionNetwork").textContent = presentation.connectedChainId
+    ? SUPPORTED_WALLET_CHAINS[presentation.connectedChainId]?.name ??
+      `Chain ${presentation.connectedChainId}`
+    : "Not bound";
+  el("walletPermissionAuthority").textContent = titleize(presentation.authorityState);
+  el("walletPermissionRows").replaceChildren(
+    ...presentation.powers.map(trustSurfaceRow)
+  );
+  el("walletPermissionBoundary").textContent =
+    `Consent controls ${presentation.consentOperationsAvailable ? "available" : "unavailable"}; Mandate controls ${presentation.mandateOperationsAvailable ? "available" : "unavailable"}. No catalog entry grants token approval, arbitrary transaction, withdrawal, or funds authority.`;
+}
+
+function architectureCapabilityRow(destination) {
+  const row = document.createElement("div");
+  const name = document.createElement("strong");
+  const operations = document.createElement("code");
+  const state = document.createElement("span");
+  row.className = "architecture-capability-row";
+  row.setAttribute("role", "row");
+  name.setAttribute("role", "cell");
+  operations.setAttribute("role", "cell");
+  state.setAttribute("role", "cell");
+  name.textContent = VIEW_META[destination.destinationId]?.title ??
+    destination.destinationId;
+  operations.textContent = destination.requiredOperationIds.length > 0
+    ? destination.requiredOperationIds.join(" · ")
+    : "Checked-in catalog contract";
+  state.textContent = destination.catalogBacked ? "Verified" : "Unavailable";
+  state.className = destination.catalogBacked ? "status-ok" : "status-error";
+  row.append(name, operations, state);
+  return row;
+}
+
+function renderArchitectureContract() {
+  const presentation = createArchitectureCapabilityPresentation(serverCatalogSnapshot);
+  const verified = presentation.destinations.filter(
+    ({ catalogBacked }) => catalogBacked
+  ).length;
+  el("architectureCatalogStatus").textContent = presentation.available
+    ? "Catalog verified"
+    : "Unavailable";
+  el("architectureCatalogStatus").className =
+    `state-pill ${presentation.available ? "" : "warning"}`.trim();
+  el("architectureCatalogMaturity").textContent = presentation.maturity;
+  el("architectureCatalogTransports").textContent = presentation.transports.length > 0
+    ? presentation.transports.join(" · ")
+    : "Unavailable";
+  el("architectureDestinationCoverage").textContent =
+    `${verified}/${presentation.destinationCount} verified`;
+  el("architectureSafety").textContent = presentation.available
+    ? `Real funds ${presentation.safety.realFundsEnabled ? "enabled" : "disabled"} · production credit ${presentation.safety.productionCreditEnabled ? "enabled" : "disabled"} · raw PII ${presentation.safety.rawPiiAllowed ? "allowed" : "prohibited"}`
+    : "No capability inferred";
+  el("architectureCapabilityRows").replaceChildren(
+    ...presentation.destinations.map(architectureCapabilityRow)
+  );
+}
+
+function renderOfficialReportPilot() {
+  const report = officialReportPilot.report;
+  const reportId = tenantInputValue("officialReportId");
+  const exactReportId = exactResourceId(reportId);
+  const createEnabled = Boolean(
+    tenantPilot.connected &&
+    tenantPilot.obligation?.obligationId &&
+    officialReportPilot.createAvailable
+  );
+  el("createOfficialReportBtn").disabled =
+    officialReportPilot.busy || !createEnabled;
+  el("readOfficialReportBtn").disabled =
+    officialReportPilot.busy || !officialReportPilot.readAvailable || !exactReportId;
+  el("retrieveOfficialReportBtn").disabled =
+    officialReportPilot.busy ||
+    !officialReportPilot.retrieveAvailable ||
+    !exactReportId ||
+    report?.effectiveStatus !== "active";
+  el("revokeOfficialReportBtn").disabled =
+    officialReportPilot.busy ||
+    !officialReportPilot.revokeAvailable ||
+    !exactReportId ||
+    report?.effectiveStatus !== "active";
+  for (const id of [
+    "createOfficialReportBtn",
+    "readOfficialReportBtn",
+    "retrieveOfficialReportBtn",
+    "revokeOfficialReportBtn"
+  ]) {
+    el(id).toggleAttribute("aria-busy", officialReportPilot.busy);
+  }
+  el("officialReportCreateHelper").textContent = createEnabled
+    ? "Ready: the server will reauthorize this exact owned Obligation and bound the source to 50 redacted Evidence events."
+    : tenantPilot.obligation
+      ? "The official report operations are unavailable in this authenticated catalog."
+      : "Load an owned Obligation before creating an official report.";
+  el("officialReportAccessHelper").textContent = officialReportPilot.helper;
+  el("officialReportAccessHelper").classList.toggle("error", officialReportPilot.error);
+  el("officialReportAccessStatus").textContent = report
+    ? titleize(report.effectiveStatus)
+    : "Not loaded";
+  el("officialReportAccessStatus").className =
+    `state-pill ${report?.effectiveStatus === "active" ? "" : "neutral"}`.trim();
+  el("reportsExportsStateTitle").textContent = report
+    ? `${titleize(report.effectiveStatus)} official report`
+    : "No official report loaded";
+  el("reportsExportsStateCopy").textContent = report
+    ? `${report.format.toUpperCase()} metadata was returned by the authenticated server. Retrieval will recheck authorization and verify the exact SHA-256 before download.`
+    : officialReportPilot.helper;
+  el("officialReportEffectiveStatus").textContent = report
+    ? titleize(report.effectiveStatus)
+    : "Not loaded";
+  el("officialReportEffectiveStatus").className =
+    `state-pill ${report?.effectiveStatus === "active" ? "" : "neutral"}`.trim();
+  el("officialReportSha256").textContent = report?.contentSha256 ?? "—";
+  el("officialReportSha256").title = report?.contentSha256 ?? "";
+  el("officialReportArtifactHash").textContent = report?.artifactHash ?? "—";
+  el("officialReportArtifactHash").title = report?.artifactHash ?? "";
+  el("officialReportEvidenceCount").textContent = report
+    ? `${report.sourceEvidenceCount} persisted events`
+    : "—";
+  el("officialReportExpiresAt").textContent = report
+    ? formatEvidenceTime(report.expiresAt, { short: true })
+    : "—";
+  el("officialReportAuthorization").textContent = officialReportPilot.retrievedAt
+    ? `Revalidated ${formatEvidenceTime(officialReportPilot.retrievedAt, { short: true })}`
+    : "Rechecked on every access";
+  el("officialReportFeePolicy").textContent =
+    report?.feeAuditPolicy?.availability === "unavailable" &&
+      report.feeAuditPolicy.principalAsFeeBaseAllowed === false &&
+      report.feeAuditPolicy.unrealizedPnlAsFeeBaseAllowed === false
+      ? "Unavailable · principal and unrealized PnL excluded as fee bases"
+      : "Unavailable · no production fee authority";
+}
+
+function setV9RuntimeState(state, title, copy) {
+  const container = el("v9OverviewState");
+  container.className = `v9-runtime-state ${state}`;
+  el("v9OverviewStateTitle").textContent = title;
+  el("v9OverviewStateCopy").textContent = copy;
+}
+
+function renderV9ShellStates() {
+  for (const destination of Object.keys(VIEW_META)) {
+    const maturity = v9DestinationMaturity(destination);
+    for (const badge of document.querySelectorAll(`[data-v9-maturity="${destination}"]`)) {
+      badge.classList.remove("checking", "available", "denied", "unavailable");
+      badge.classList.add(maturity.state);
+      badge.textContent = maturity.label;
+    }
+  }
+
+  if (!tenantPilot.checked) {
+    setV9RuntimeState(
+      "loading",
+      "Loading authenticated server truth",
+      "Workspace recovery and owned reads are still pending. No amount is inferred in the browser."
+    );
+  } else if (!tenantPilot.connected) {
+    setV9RuntimeState(
+      "denied",
+      "Authenticated workspace unavailable",
+      "Sign in with an eligible role to load Actor-bound resources. Missing and denied resources are not enumerated."
+    );
+  } else if (tenantPilot.workspaceRecoveryState === "loading") {
+    setV9RuntimeState(
+      "loading",
+      "Loading authenticated server truth",
+      "Workspace recovery and owned reads are still pending. No amount is inferred in the browser."
+    );
+  } else if (tenantPilot.workspaceRecoveryState === "denied") {
+    setV9RuntimeState(
+      "denied",
+      "Workspace recovery unavailable",
+      "The authenticated Gateway did not expose an eligible workspace. No resource existence is disclosed."
+    );
+  } else if (tenantPilot.workspaceRecoveryState === "error") {
+    setV9RuntimeState(
+      "unavailable",
+      "Workspace recovery could not complete",
+      "Retry the authenticated server read. Browser state is not substituted for durable truth."
+    );
+  } else if (tenantPilot.workspaceRecoveryResourceCount === 0) {
+    setV9RuntimeState(
+      "empty",
+      "Authenticated workspace is empty",
+      "No Actor-bound Subject, Consent, Mandate, or Obligation was returned. Start an eligible no-funds lifecycle to continue."
+    );
+  } else {
+    setV9RuntimeState(
+      "restart",
+      "Workspace recovered from durable server state",
+      `${tenantPilot.workspaceRecoveryResourceCount} Actor-bound resource reference${tenantPilot.workspaceRecoveryResourceCount === 1 ? "" : "s"} restored after session verification.`
+    );
+  }
+
+  if (tenantPilot.decision) {
+    el("creditPassportStateTitle").textContent = "Verified Decision Passport ready";
+    el("creditPassportStateCopy").textContent =
+      "The current authenticated application returned a deterministic Decision, policy version, reason codes, and Evidence references.";
+  } else {
+    el("creditPassportStateTitle").textContent = "No Decision Passport loaded";
+    el("creditPassportStateCopy").textContent = tenantPilot.connected
+      ? "Complete or restore an authenticated credit application. This view will not manufacture a score, Decision, or shareable proof."
+      : "Sign in to read an eligible application. Denied and missing applications are not enumerated.";
+  }
+
+  if (tenantPilot.obligation && ownedEvidence.queried) {
+    el("creditTrackRecordStateTitle").textContent = "Verified lifecycle loaded";
+    el("creditTrackRecordStateCopy").textContent =
+      `${ownedEvidence.items.length} redacted Evidence event${ownedEvidence.items.length === 1 ? "" : "s"} loaded for the selected owned Obligation.`;
+  } else if (tenantPilot.obligation) {
+    el("creditTrackRecordStateTitle").textContent = "Owned Obligation loaded";
+    el("creditTrackRecordStateCopy").textContent =
+      "Load its authenticated Evidence before treating the lifecycle as a verified track record.";
+  } else {
+    el("creditTrackRecordStateTitle").textContent = "No verified lifecycle loaded";
+    el("creditTrackRecordStateCopy").textContent = tenantPilot.connected
+      ? "Restore an owned Obligation and load its Evidence. No positive history is inferred from an empty browser state."
+      : "Sign in to load an eligible owned Obligation. Missing resources remain non-enumerating.";
+  }
+
+  if (accessState.sessionActive || tenantPilot.connected) {
+    el("walletPermissionsStateTitle").textContent = "Authenticated server session active";
+    el("walletPermissionsStateCopy").textContent = accessState.walletAddress
+      ? `${shortWalletAddress(accessState.walletAddress)} is bound only to the current approved authentication context.`
+      : "The current server session is active. No wallet identity or signing authority is inferred when the session uses another approved method.";
+  } else if (!accessState.checked) {
+    el("walletPermissionsStateTitle").textContent = "Checking authentication";
+    el("walletPermissionsStateCopy").textContent =
+      "No wallet or server-session authority is assumed before verification.";
+  } else {
+    el("walletPermissionsStateTitle").textContent = "No authenticated session";
+    el("walletPermissionsStateCopy").textContent =
+      "Choose an approved sign-in method. Connecting a wallet alone does not grant a server session or product authority.";
+  }
+  renderWalletPermissionMatrix();
+  renderArchitectureContract();
+  renderOfficialReportPilot();
+  renderTradingCapital();
 }
 
 function setPrivateAction(button, action, label) {
@@ -1664,10 +3075,10 @@ function renderPrivateProductSurfaces() {
   const privateConnected = tenantPilot.connected;
   const privateViewLabels = {
     overview: "privatePortfolioTitle",
-    credit: "privateCreditTitle",
-    transfers: "privatePaymentsTitle",
-    evidence: "privateEvidenceTitle",
-    risk: "privateRiskTitle"
+    obligations: "privateCreditTitle",
+    "repay-settle": "privatePaymentsTitle",
+    "activity-proofs": "privateEvidenceTitle",
+    "risk-operations": "privateRiskTitle"
   };
   for (const [view, privateLabel] of Object.entries(privateViewLabels)) {
     document.querySelector(`[data-view-panel="${view}"]`)?.setAttribute(
@@ -1699,14 +3110,19 @@ function renderPrivateProductSurfaces() {
   el("privatePortfolioMode").textContent = humanMode ? "Human entry" : "Agent entry";
   el("privatePortfolioCopy").textContent = humanMode
     ? "Continue the Human no-funds lifecycle without leaving the authenticated private session."
-    : "Carry Principal-approved identity and bounded authority into the same Obligation kernel through the authenticated Tenant HTTPS API.";
+    : "Carry Principal-approved identity and bounded authority into the same Obligation kernel through the approved local Agent Host.";
   el("privatePortfolioLifecycle").textContent = humanMode ? humanStatus : agentStatus;
   el("privatePortfolioOutstanding").textContent = obligation
     ? usdMinorToMoney(obligation.outstandingPrincipalMinor)
-    : "$0.00";
+    : tenantPilot.connected
+      ? "No selected Obligation"
+      : "Unavailable";
   el("privatePortfolioNextPayment").textContent = nextInstallment
     ? `${usdMinorToMoney(privateInstallmentAmount(nextInstallment))} · ${privateDate(nextInstallment.dueAt, { month: "short", day: "numeric" })}`
     : "—";
+  el("privatePortfolioAvailableCredit").textContent = "Unavailable";
+  el("privatePortfolioAvailableCredit").title =
+    "No authenticated server operation currently returns available credit.";
   el("privatePortfolioEvidence").textContent = ownedEvidence.queried
     ? `${ownedEvidence.items.length} loaded`
     : obligation
@@ -1733,7 +3149,7 @@ function renderPrivateProductSurfaces() {
     ? titleize(obligation.status)
     : "Not created";
   el("privateHumanServicingStatus").textContent = obligation
-    ? `${titleize(obligation.servicingClassification ?? "current")} · DPD ${obligation.daysPastDue ?? 0}`
+    ? `${servicingClassificationLabel(obligation.servicingClassification ?? "current")} · DPD ${obligation.daysPastDue ?? 0}`
     : "Not started";
   el("privateAgentEntryStatus").textContent = agentStatus;
   el("privateAgentSubjectStatus").textContent = agentAuthorityPilot.subject
@@ -1761,34 +3177,59 @@ function renderPrivateProductSurfaces() {
     })
   ));
 
-  el("privateCreditEyebrow").textContent = humanMode ? "Human credit" : "Agent credit";
+  const obligationPortfolio = renderObligationPortfolio();
+  el("privateCreditEyebrow").textContent = humanMode
+    ? "Human-owned obligations"
+    : "Principal-controlled Agent obligations";
   el("privateCreditTitle").textContent = humanMode
-    ? "Borrow with the exact Offer in view."
-    : "Request credit within bounded Agent authority.";
+    ? "Every position, reconciled to server truth."
+    : "Agent entry, one shared obligation kernel.";
   el("privateCreditCopy").textContent = humanMode
-    ? "The private Human session carries deterministic pricing into one accepted Obligation."
-    : "Authenticated Tenant HTTPS workflows use the same deterministic Intent, Offer, and Obligation contracts.";
-  el("privateCreditStatus").textContent = humanMode ? humanStatus : agentStatus;
-  el("privateCreditPrincipal").textContent = offer ? usdMinorToMoney(offer.approvedPrincipalMinor) : "$0.00";
-  el("privateCreditRate").textContent = offer ? bpsToPercent(offer.annualRateBps) : "—";
-  el("privateCreditMaturity").textContent = offer ? privateDate(offer.maturityAt) : "—";
-  el("privateCreditOutstanding").textContent = obligation
-    ? usdMinorToMoney(obligation.outstandingPrincipalMinor)
-    : "$0.00";
-  el("privateCreditReasons").textContent = decision?.reasonCodes?.length
-    ? decision.reasonCodes.map(titleize).join(" · ")
-    : humanMode
-      ? "Create a Human Credit Intent to receive deterministic reason codes and an exact Offer."
-      : mandate?.status === "active"
-        ? "The active Mandate may be handed to the registered Agent workload; it cannot change its own authority."
-        : "The Human Principal must bind Agent identity and activate a scoped Mandate before runtime use.";
+    ? "Bounded workspace references are reauthorized one exact Obligation at a time before any amount or state appears."
+    : "The Principal view labels Mandate entry without forking schedule, servicing, Ledger, Event, or Evidence truth.";
+  el("privateCreditStatus").textContent = obligationPortfolio
+    ? `${titleize(obligationPortfolio.lifecycle.status)} · ${servicingClassificationLabel(obligationPortfolio.lifecycle.servicingClassification)}`
+    : tenantPilot.obligation
+      ? "Verification failed"
+      : "Not loaded";
+  el("privateCreditStatus").className =
+    `state-pill ${obligationPortfolio?.lifecycle.daysPastDue > 0 ? "warning" : "neutral"}`;
+  el("privateCreditPrincipal").textContent = obligationPortfolio
+    ? usdMinorToMoney(obligationPortfolio.amounts.originalPrincipalMinor)
+    : "—";
+  el("privateCreditRate").textContent = obligationPortfolio
+    ? bpsToPercent(obligationPortfolio.terms.annualRateBps)
+    : "—";
+  el("privateCreditMaturity").textContent = obligationPortfolio
+    ? privateDate(obligationPortfolio.terms.maturityAt)
+    : "—";
+  el("privateCreditOutstanding").textContent = obligationPortfolio
+    ? usdMinorToMoney(obligationPortfolio.amounts.outstandingTotalMinor)
+    : "—";
+  el("privateCreditReasons").textContent = obligationPortfolio
+    ? `${obligationPortfolio.authority.label} · ${titleize(obligationPortfolio.relationship)} · ${servicingClassificationLabel(obligationPortfolio.lifecycle.reasonCode)} · ${obligationPortfolio.executionRail.label}`
+    : tenantPilot.connected
+      ? "Refresh exact owner-authorized server state before relying on an amount, status, authority, or rail."
+      : "Sign in to recover bounded owned references. Missing and denied resources remain non-enumerating.";
   el("privateCreditBoundary").textContent = humanMode
-    ? "Active Human Consent authorizes the same Intent, Offer, and Obligation shapes used by Agent workflows. This page adds no protocol operation."
-    : "An active Principal-approved Mandate bounds the same deterministic credit kernel. No credential, signature, or funds authority is rendered here.";
+    ? "Human Consent is the entry authority; all state remains canonical obligation.v2 with immutable Evidence. This page adds no operation or browser Ledger."
+    : "Agent Mandate changes authority presentation only. The same exact reads, amounts, schedule, servicing state, and Evidence contract are used.";
   setPrivateAction(
     el("privateCreditPrimaryBtn"),
-    humanMode ? "human-credit" : mandate?.status === "active" ? "agent-api" : "principal-authority",
-    humanMode ? obligation ? "Open Obligation" : "Open Human application" : mandate?.status === "active" ? "Open Agent API" : "Configure Agent authority"
+    tenantPilot.workspaceObligations.length > 0
+      ? "refresh-obligations"
+      : humanMode
+        ? "human-credit"
+        : mandate?.status === "active"
+          ? "agent-api"
+          : "principal-authority",
+    tenantPilot.workspaceObligations.length > 0
+      ? "Refresh owned positions"
+      : humanMode
+        ? "Create first Obligation"
+        : mandate?.status === "active"
+          ? "Open Agent API"
+          : "Configure Agent authority"
   );
 
   el("privatePaymentsEyebrow").textContent = humanMode ? "Human repayment" : "Agent repayment";
@@ -1855,6 +3296,7 @@ function renderPrivateProductSurfaces() {
       setPrivateAction(button, "open-access", "Sign in to continue");
     }
   }
+  renderV9ShellStates();
 }
 
 function normalizePilotFeedbackControls({ changed } = {}) {
@@ -1957,6 +3399,730 @@ async function submitPilotFeedback() {
   }
 }
 
+function creditPassportDisclosureRow(disclosure) {
+  const row = document.createElement("div");
+  const label = document.createElement("strong");
+  const grade = document.createElement("span");
+  const lineage = document.createElement("small");
+  row.className = "credit-passport-disclosure";
+  label.textContent = disclosure.claimLabel;
+  grade.className = `state-pill ${disclosure.grade === "verified" ? "" : "neutral"}`;
+  grade.textContent = disclosure.gradeLabel;
+  lineage.textContent =
+    `${disclosure.reasonCodes.length} canonical reason code${disclosure.reasonCodes.length === 1 ? "" : "s"} · ` +
+    `${disclosure.evidenceCount} finalized Evidence reference${disclosure.evidenceCount === 1 ? "" : "s"}`;
+  row.append(label, grade, lineage);
+  return row;
+}
+
+function renderCreditPassportPilot() {
+  const presentation = creditPassportPilot.presentation;
+  const artifact = creditPassportPilot.artifact;
+  const busy = creditPassportPilot.busy;
+  const connected = tenantPilot.connected;
+  const subjectInput = el("creditPassportSubjectId");
+  const intentInput = el("creditPassportIntentId");
+  if (!subjectInput.value && tenantPilot.decision?.subjectId) {
+    subjectInput.value = tenantPilot.decision.subjectId;
+  }
+  if (!intentInput.value && tenantPilot.intent?.creditIntentId) {
+    intentInput.value = tenantPilot.intent.creditIntentId;
+  }
+
+  el("creditPassportIssueHelper").textContent = creditPassportPilot.issueHelper;
+  el("creditPassportIssueHelper").classList.toggle("error", creditPassportPilot.error);
+  el("creditPassportArtifactHelper").textContent = creditPassportPilot.artifactHelper;
+  el("creditPassportArtifactHelper").classList.toggle("error", creditPassportPilot.error);
+  el("creditPassportVerificationHelper").textContent =
+    creditPassportPilot.verificationHelper;
+  el("creditPassportVerificationHelper").classList.toggle(
+    "error",
+    creditPassportPilot.error
+  );
+
+  const exactIssueInput =
+    exactResourceId(tenantInputValue("creditPassportSubjectId")) &&
+    exactResourceId(tenantInputValue("creditPassportIntentId")) &&
+    exactResourceId(tenantInputValue("creditPassportVerifierActorId"));
+  el("issueCreditPassportBtn").disabled =
+    busy || !connected || !creditPassportPilot.createAvailable || !exactIssueInput;
+  el("readCreditPassportBtn").disabled =
+    busy ||
+    !connected ||
+    !creditPassportPilot.readAvailable ||
+    !exactResourceId(tenantInputValue("creditPassportArtifactId"));
+
+  const status = el("creditPassportArtifactStatus");
+  status.classList.toggle("neutral", !presentation);
+  status.classList.toggle(
+    "warning",
+    Boolean(presentation && presentation.statusTone === "warning")
+  );
+  status.textContent = presentation?.statusLabel ?? "Not loaded";
+  el("creditPassportArtifactIdentity").textContent = presentation?.artifactLabel ?? "—";
+  el("creditPassportArtifactIssuer").textContent = presentation?.issuerLabel ?? "—";
+  el("creditPassportArtifactLifetime").textContent = presentation?.lifetimeLabel ?? "—";
+  el("creditPassportSourceHash").textContent = artifact?.sourceDecisionPassportHash ?? "—";
+  el("creditPassportArtifactHash").textContent = artifact?.artifactHash ?? "—";
+  el("creditPassportDisclosureRows").replaceChildren(
+    ...(presentation
+      ? presentation.disclosures.map(creditPassportDisclosureRow)
+      : [emptyRow("Issue or read an authorized artifact to inspect its selected, evidenced disclosures.")])
+  );
+  el("revokeCreditPassportBtn").disabled =
+    busy ||
+    !connected ||
+    !creditPassportPilot.revokeAvailable ||
+    artifact?.effectiveStatus !== "active";
+
+  const verifyId = tenantInputValue("creditPassportVerifyArtifactId");
+  const verifyHash = tenantInputValue("creditPassportVerifyHash");
+  const verifyVersion = Number(el("creditPassportVerifyVersion").value);
+  el("verifyCreditPassportBtn").disabled =
+    busy ||
+    !connected ||
+    !creditPassportPilot.verifyAvailable ||
+    !exactResourceId(verifyId) ||
+    !/^0x[0-9a-f]{64}$/.test(verifyHash) ||
+    !Number.isSafeInteger(verifyVersion) ||
+    verifyVersion < 1;
+  const verificationStatus = el("creditPassportVerificationStatus");
+  verificationStatus.classList.toggle("neutral", !creditPassportPilot.verification);
+  verificationStatus.classList.toggle(
+    "warning",
+    Boolean(
+      creditPassportPilot.verification &&
+      !creditPassportPilot.verification.verified
+    )
+  );
+  verificationStatus.textContent = creditPassportPilot.verification
+    ? creditPassportPilot.verification.verified
+      ? "Verified active"
+      : titleize(creditPassportPilot.verification.status)
+    : "Not verified";
+
+  const finalized = ownedEvidence.items.filter(
+    ({ sourceFinality }) => sourceFinality === "finalized"
+  ).length;
+  const nonFinal = ownedEvidence.items.length - finalized;
+  el("creditTrackRecordDecision").textContent = tenantPilot.decision?.decisionPassport
+    ? `${titleize(tenantPilot.decision.status)} · ${compactDecisionProofHash(
+        tenantPilot.decision.decisionPassport.decisionPassportHash
+      )}`
+    : "Not loaded";
+  el("creditTrackRecordEvidenceCount").textContent =
+    `${ownedEvidence.items.length} event${ownedEvidence.items.length === 1 ? "" : "s"}`;
+  el("creditTrackRecordFinalizedCount").textContent = String(finalized);
+  el("creditTrackRecordNonFinalCount").textContent = String(nonFinal);
+  const finality = el("creditTrackRecordFinality");
+  finality.classList.toggle("neutral", !ownedEvidence.queried);
+  finality.classList.toggle("warning", ownedEvidence.queried && nonFinal > 0);
+  finality.textContent = !ownedEvidence.queried
+    ? "Not loaded"
+    : nonFinal > 0
+      ? "Mixed finality"
+      : "Finalized only";
+}
+
+function capitalNetworkAmount(assetId, minor) {
+  if (
+    assetId === "urn:ipo-one:sandbox-asset:usd-cent" &&
+    /^(?:0|[1-9][0-9]{0,77})$/.test(minor ?? "")
+  ) {
+    const value = BigInt(minor);
+    return `$${(value / 100n).toLocaleString("en-US")}.${String(value % 100n).padStart(2, "0")}`;
+  }
+  return `${minor ?? "—"} minor units`;
+}
+
+function currentCapitalNetworkPresentation() {
+  return createCapitalNetworkPresentation({
+    catalogOperationIds: [...serverCatalogOperations],
+    providerView: capitalNetworkPilot.providerView,
+    acknowledgement: capitalNetworkPilot.acknowledgement
+  });
+}
+
+function renderCapitalNetwork() {
+  if (!el("capitalNetworkQueryForm")) return;
+  const presentation = currentCapitalNetworkPresentation();
+  capitalNetworkPilot.presentation = presentation;
+  const contractStatus = el("capitalNetworkContractStatus");
+  contractStatus.classList.remove("neutral", "warning");
+  if (!presentation) {
+    contractStatus.textContent = "Contract rejected";
+    contractStatus.classList.add("warning");
+  } else if (presentation.status === "unavailable") {
+    contractStatus.textContent = "Operations unavailable";
+    contractStatus.classList.add("warning");
+  } else if (presentation.status === "empty") {
+    contractStatus.textContent = "No-funds contract ready";
+    contractStatus.classList.add("neutral");
+  } else {
+    contractStatus.textContent = "Server contract verified";
+  }
+
+  const readAvailable = Boolean(
+    presentation?.availability.read &&
+    tenantPilot.connected
+  );
+  const input = el("capitalNetworkTransferIntentId");
+  const load = el("capitalNetworkLoadBtn");
+  input.disabled = capitalNetworkPilot.busy || !readAvailable;
+  load.disabled =
+    capitalNetworkPilot.busy ||
+    !readAvailable ||
+    !exactResourceId(input.value.trim());
+  load.toggleAttribute("aria-busy", capitalNetworkPilot.busy);
+  load.textContent = capitalNetworkPilot.busy
+    ? "Verifying assignment…"
+    : "Load assigned intent";
+  const helper = el("capitalNetworkHelper");
+  helper.textContent = capitalNetworkPilot.helper;
+  helper.classList.toggle("error", capitalNetworkPilot.error);
+
+  const loaded = presentation?.mandate ? presentation : null;
+  const stateTitle = el("capitalNetworkStateTitle");
+  const stateCopy = el("capitalNetworkStateCopy");
+  if (!presentation) {
+    stateTitle.textContent = "Provider presentation rejected";
+    stateCopy.textContent =
+      "The exact server response failed the closed presentation contract. No Provider state or amount is displayed.";
+  } else if (!readAvailable) {
+    stateTitle.textContent = "Provider workspace unavailable";
+    stateCopy.textContent =
+      "An authenticated Provider role and the exact catalogued read are required. Catalog presence alone does not grant access.";
+  } else if (!loaded) {
+    stateTitle.textContent = "No Provider intent loaded";
+    stateCopy.textContent =
+      "The browser does not infer Provider exposure, facility state, earnings, or reconciliation from prototype data.";
+  } else {
+    const stateLabels = {
+      assigned: "Exact sandbox assignment loaded",
+      acknowledged: "Acknowledgement recorded",
+      reconciled: "Signed callback processed"
+    };
+    stateTitle.textContent = stateLabels[loaded.status];
+    stateCopy.textContent =
+      `${titleize(loaded.delivery.status)} · server-derived Provider delivery · no production funds moved · nonwithdrawable.`;
+  }
+
+  const mandate = loaded?.mandate;
+  const facility = loaded?.facility;
+  const allocation = loaded?.allocation;
+  const delivery = loaded?.delivery;
+  const reconciliation = loaded?.reconciliation;
+  const earnings = loaded?.earningsSimulation;
+  const mandateStatus = el("capitalNetworkMandateStatus");
+  mandateStatus.classList.toggle("warning", !mandate);
+  mandateStatus.textContent = mandate ? "Assigned · no funds" : "Not loaded";
+  for (const [id, value] of [
+    ["capitalNetworkProviderId", mandate?.providerId],
+    ["capitalNetworkPurpose", mandate ? titleize(mandate.purposeCode) : null],
+    ["capitalNetworkIntent", mandate?.transferIntentId]
+  ]) {
+    const target = el(id);
+    target.textContent = value ? compactOpaqueId(value) : "Server required";
+    target.title = value ?? "";
+  }
+  el("capitalNetworkExposure").textContent = facility
+    ? `${capitalNetworkAmount(facility.sourceAssetId, facility.sourceAmountMinor)} sandbox`
+    : "No server amount";
+  el("capitalNetworkAsset").textContent = facility
+    ? `${facility.sourceAssetId} → ${facility.destinationAssetId}. Simulation only; not deployed capital.`
+    : "Asset unavailable until an exact intent is loaded.";
+
+  const deliveryStatus = el("capitalNetworkDeliveryStatus");
+  deliveryStatus.classList.toggle("warning", !delivery || loaded.status !== "reconciled");
+  deliveryStatus.textContent = delivery
+    ? titleize(reconciliation.status)
+    : "Waiting for server";
+  const stageRank = {
+    assigned: 0,
+    acknowledged: 1,
+    reconciled: 2
+  }[loaded?.status] ?? -1;
+  for (const [index, stage] of [
+    ...el("capitalNetworkStageGrid").children
+  ].entries()) {
+    stage.classList.toggle("complete", index <= stageRank);
+    stage.classList.toggle("current", index === stageRank);
+  }
+
+  const allocationReceipt = el("capitalNetworkAllocationReceipt");
+  allocationReceipt.textContent = allocation
+    ? compactDecisionProofHash(allocation.allocationReceiptRef)
+    : "Not loaded";
+  allocationReceipt.title = allocation?.allocationReceiptRef ?? "";
+  el("capitalNetworkAllocationCopy").textContent = allocation
+    ? `${allocation.allocatedMinor} sandbox minor units · server TransferIntent hash`
+    : "Server TransferIntent hash required";
+  const reconciliationReceipt = el("capitalNetworkReconciliationReceipt");
+  reconciliationReceipt.textContent = reconciliation
+    ? reconciliation.receiptId
+      ? compactOpaqueId(reconciliation.receiptId)
+      : compactDecisionProofHash(reconciliation.receiptRef)
+    : "Not loaded";
+  reconciliationReceipt.title =
+    reconciliation?.receiptId ?? reconciliation?.receiptRef ?? "";
+  el("capitalNetworkReconciliationCopy").textContent = reconciliation
+    ? `${titleize(reconciliation.status)} · not a settlement or funds receipt`
+    : "Not a settlement or funds receipt";
+  const deliveryReceipt = el("capitalNetworkDeliveryReceipt");
+  deliveryReceipt.textContent = delivery
+    ? compactDecisionProofHash(delivery.deliveryHash)
+    : "Not loaded";
+  deliveryReceipt.title = delivery?.deliveryHash ?? "";
+  el("capitalNetworkDeliveryCopy").textContent = delivery
+    ? `Fixed loopback · expires ${privateDate(delivery.expiresAt, {
+        dateStyle: "medium",
+        timeStyle: "short"
+      })}`
+    : "Signed local boundary only";
+
+  const acknowledge = el("capitalNetworkAcknowledgeBtn");
+  const canAcknowledge = Boolean(
+    loaded?.status === "assigned" &&
+    loaded.availability.acknowledge &&
+    tenantPilot.connected
+  );
+  acknowledge.disabled = capitalNetworkPilot.busy || !canAcknowledge;
+  acknowledge.textContent = loaded?.status === "reconciled"
+    ? "Signed callback processed"
+    : loaded?.status === "acknowledged"
+      ? "Assignment acknowledged"
+      : capitalNetworkPilot.busy
+        ? "Recording acknowledgement…"
+        : "Acknowledge exact assignment";
+  el("capitalNetworkAcknowledgeCopy").textContent = reconciliation
+    ? `${titleize(reconciliation.status)}. Acknowledgement is not funding, settlement, custody, or withdrawal authority; exact retries cannot duplicate canonical state.`
+    : "Acknowledgement is not funding, settlement, custody, or withdrawal authority. Exact retries reuse one idempotency key.";
+
+  el("capitalNetworkEarnings").textContent = earnings
+    ? `${capitalNetworkAmount(earnings.assetId, earnings.earningsMinor)} simulated`
+    : "No simulation amount";
+  el("capitalNetworkEarningsCopy").textContent = earnings
+    ? `Historical example: ${Number(earnings.rateBasisPoints) / 100}% of the exact loaded sandbox amount. Unapproved, nonbinding, and not a pricing policy or Provider entitlement.`
+    : "Example rate: 1.25% of an exact loaded sandbox amount. It is nonbinding, unapproved, and cannot create Ledger, Evidence, or Provider entitlement.";
+}
+
+function providerResourceUnavailable(error) {
+  return (
+    error.status === 401 ||
+    error.status === 403 ||
+    error.status === 404 ||
+    new Set([
+      "authorization_denied",
+      "tenant_resource_unavailable",
+      "resource_not_found",
+      "provider_intent_unavailable"
+    ]).has(error.code)
+  );
+}
+
+async function loadCapitalNetworkIntent({ quiet = false } = {}) {
+  if (capitalNetworkPilot.busy) return null;
+  const transferIntentId = tenantInputValue("capitalNetworkTransferIntentId");
+  if (!exactResourceId(transferIntentId)) {
+    capitalNetworkPilot.error = true;
+    capitalNetworkPilot.helper =
+      "Enter one exact TransferIntent ID with no spaces.";
+    renderCapitalNetwork();
+    return null;
+  }
+  capitalNetworkPilot.busy = true;
+  capitalNetworkPilot.error = false;
+  capitalNetworkPilot.helper =
+    "Verifying Provider identity, exact AccessGrant, purpose, and current server state…";
+  capitalNetworkPilot.providerView = null;
+  capitalNetworkPilot.acknowledgement = null;
+  renderCapitalNetwork();
+  try {
+    const result = await tenantApi("pilotReadProviderIntent", {
+      resource: {
+        resourceType: "transfer_intent",
+        resourceId: transferIntentId
+      },
+      payload: {},
+      purpose: "provider_intent_delivery",
+      idempotent: false
+    });
+    capitalNetworkPilot.providerView = result.response;
+    const presentation = currentCapitalNetworkPresentation();
+    if (!presentation?.mandate) {
+      throw new Error("provider_presentation_contract_rejected");
+    }
+    capitalNetworkPilot.helper =
+      "Exact assigned intent loaded from the authenticated Provider Gateway. No browser state was substituted.";
+    if (!quiet) {
+      toast("Provider assignment loaded");
+      announce(capitalNetworkPilot.helper);
+    }
+    return presentation;
+  } catch (error) {
+    capitalNetworkPilot.providerView = null;
+    capitalNetworkPilot.acknowledgement = null;
+    capitalNetworkPilot.error = true;
+    capitalNetworkPilot.helper = providerResourceUnavailable(error)
+      ? "Provider access is required, or the exact assignment is unavailable."
+      : `Provider read failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    if (!quiet) {
+      toast(capitalNetworkPilot.helper, "error");
+      announce(capitalNetworkPilot.helper);
+    }
+    return null;
+  } finally {
+    capitalNetworkPilot.busy = false;
+    renderCapitalNetwork();
+  }
+}
+
+async function acknowledgeCapitalNetworkIntent() {
+  if (capitalNetworkPilot.busy) return;
+  const presentation = currentCapitalNetworkPresentation();
+  if (
+    presentation?.status !== "assigned" ||
+    !presentation.availability.acknowledge
+  ) return;
+  capitalNetworkPilot.busy = true;
+  capitalNetworkPilot.error = false;
+  capitalNetworkPilot.helper =
+    "Recording one exact, replay-safe no-funds acknowledgement…";
+  renderCapitalNetwork();
+  try {
+    const transferIntentId = presentation.delivery.transferIntentId;
+    const deliveryHash = presentation.delivery.deliveryHash;
+    const acknowledgementResult = await tenantApi(
+      "pilotAcknowledgeProviderIntent",
+      {
+        resource: {
+          resourceType: "transfer_intent",
+          resourceId: transferIntentId
+        },
+        payload: { deliveryHash },
+        purpose: "provider_intent_delivery",
+        idempotent: true,
+        idempotencyKey:
+          `capital_network_ack_${deliveryHash.slice(2, 42)}`
+      }
+    );
+    const refreshed = await tenantApi("pilotReadProviderIntent", {
+      resource: {
+        resourceType: "transfer_intent",
+        resourceId: transferIntentId
+      },
+      payload: {},
+      purpose: "provider_intent_delivery",
+      idempotent: false
+    });
+    capitalNetworkPilot.providerView = refreshed.response;
+    capitalNetworkPilot.acknowledgement = acknowledgementResult.response;
+    const accepted = currentCapitalNetworkPresentation();
+    if (!accepted || accepted.status === "assigned") {
+      throw new Error("provider_acknowledgement_contract_rejected");
+    }
+    capitalNetworkPilot.helper =
+      "Idempotent acknowledgement and refreshed server state verified. This is not settlement or funding.";
+    toast("Provider assignment acknowledged");
+    announce(capitalNetworkPilot.helper);
+  } catch (error) {
+    capitalNetworkPilot.providerView = null;
+    capitalNetworkPilot.acknowledgement = null;
+    capitalNetworkPilot.error = true;
+    capitalNetworkPilot.helper = providerResourceUnavailable(error)
+      ? "Provider access is required, or the exact assignment is unavailable."
+      : `Acknowledgement could not be re-verified from server truth. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(capitalNetworkPilot.helper, "error");
+    announce(capitalNetworkPilot.helper);
+  } finally {
+    capitalNetworkPilot.busy = false;
+    renderCapitalNetwork();
+  }
+}
+
+function currentTradingCapitalPresentation() {
+  if (!tradingCapitalPilot.facility) return null;
+  return createTradingCapitalProductPresentation({
+    entryMode: interactionMode,
+    facility: tradingCapitalPilot.facility,
+    closeRequest: tradingCapitalPilot.closeRequest,
+    settlement: tradingCapitalPilot.settlement,
+    performanceProof: tradingCapitalPilot.performanceProof,
+    evidence: tradingCapitalPilot.evidence
+  });
+}
+
+function tradingCapitalResourceUnavailable(error) {
+  return (
+    error.status === 401 ||
+    error.status === 403 ||
+    error.status === 404 ||
+    new Set([
+      "authorization_denied",
+      "tenant_resource_unavailable",
+      "resource_not_found",
+      "trading_settlement_unavailable"
+    ]).has(error.code)
+  );
+}
+
+function tradingCapitalSummaryItem(label, value) {
+  const item = document.createElement("div");
+  const name = document.createElement("span");
+  const detail = document.createElement("strong");
+  name.textContent = label;
+  detail.textContent = value ?? "Unavailable";
+  item.append(name, detail);
+  return item;
+}
+
+function renderTradingCapital() {
+  if (!el("tradingCapitalOperationCount")) return;
+  const catalogCount = TRADING_CAPITAL_OPERATION_IDS.filter((operationId) =>
+    serverCatalogOperations.has(operationId)
+  ).length;
+  const parity = catalogCount === TRADING_CAPITAL_OPERATION_IDS.length;
+  const presentation = currentTradingCapitalPresentation();
+  const view =
+    TRADING_CAPITAL_VIEW_DEFINITIONS.find(
+      ({ id }) => id === tradingCapitalPilot.activeView
+    ) ?? TRADING_CAPITAL_VIEW_DEFINITIONS[0];
+
+  el("tradingCapitalOperationCount").textContent =
+    `${catalogCount} / ${TRADING_CAPITAL_OPERATION_IDS.length}`;
+  el("tradingCapitalNavState").textContent = parity
+    ? "25 local operations"
+    : `${catalogCount} / 25 available`;
+  el("tradingCapitalCatalogStatus").textContent = parity
+    ? "Local contract verified"
+    : "Contract unavailable";
+  el("tradingCapitalCatalogStatus").classList.toggle("checking", !tenantPilot.checked);
+  el("tradingCapitalCatalogStatus").classList.toggle("available", parity);
+  el("tradingCapitalCatalogStatus").classList.toggle(
+    "unavailable",
+    tenantPilot.checked && !parity
+  );
+  el("tradingCapitalFacilityState").textContent = presentation
+    ? `${presentation.lifecycleStatus} · ${presentation.riskState}`
+    : tradingCapitalPilot.busy
+      ? "Loading"
+      : "Not loaded";
+  el("tradingCapitalHelper").textContent = tradingCapitalPilot.helper;
+  el("tradingCapitalHelper").classList.toggle("error", tradingCapitalPilot.error);
+  el("tradingCapitalActiveEyebrow").textContent = view.label;
+  el("tradingCapitalViewStatus").textContent = parity
+    ? "Authenticated local contract"
+    : "Catalog required";
+
+  for (const button of document.querySelectorAll("[data-trading-capital-view]")) {
+    const selected = button.dataset.tradingCapitalView === view.id;
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+    if (selected) {
+      el("tradingCapitalContract").setAttribute(
+        "aria-labelledby",
+        `${button.id} tradingCapitalContractTitle`
+      );
+    }
+  }
+
+  el("tradingCapitalSummary").replaceChildren(
+    tradingCapitalSummaryItem("Facility", presentation?.facilityId),
+    tradingCapitalSummaryItem(
+      "Canonical Obligation",
+      presentation?.obligationId
+    ),
+    tradingCapitalSummaryItem("Settlement", presentation?.settlementId),
+    tradingCapitalSummaryItem(
+      "Performance Proof",
+      presentation?.performanceProofId
+    )
+  );
+
+  el("tradingCapitalOperationList").replaceChildren(
+    ...view.operationIds.map((operationId) => {
+      const row = document.createElement("div");
+      const name = document.createElement("strong");
+      const status = document.createElement("small");
+      const available = serverCatalogOperations.has(operationId);
+      row.setAttribute("role", "listitem");
+      row.classList.toggle("unavailable", !available);
+      name.textContent = operationId;
+      status.textContent = available
+        ? "Catalogued · local no-funds"
+        : "Unavailable in authenticated catalog";
+      row.append(name, status);
+      return row;
+    })
+  );
+
+  const blocked =
+    tradingCapitalPilot.busy || !tenantPilot.connected || !parity;
+  el("tradingCapitalLoadStateBtn").disabled = blocked;
+  el("tradingCapitalLoadEvidenceBtn").disabled = blocked;
+  el("tradingCapitalRequestCloseBtn").disabled =
+    blocked || presentation?.actions.requestCloseAvailable !== true;
+  el("tradingCapitalIssueProofBtn").disabled =
+    blocked ||
+    presentation?.actions.issuePerformanceProofAvailable !== true;
+}
+
+async function loadTradingCapitalFacility({ evidence = false } = {}) {
+  if (tradingCapitalPilot.busy) return;
+  const facilityId = tenantInputValue("tradingCapitalFacilityId");
+  if (!exactResourceId(facilityId)) {
+    tradingCapitalPilot.error = true;
+    tradingCapitalPilot.helper =
+      "Enter one exact Facility ID with no spaces.";
+    renderTradingCapital();
+    return;
+  }
+  tradingCapitalPilot.busy = true;
+  tradingCapitalPilot.error = false;
+  tradingCapitalPilot.helper = evidence
+    ? "Loading the bounded Facility Evidence view from the authenticated Gateway…"
+    : "Loading exact Facility state from the authenticated Gateway…";
+  renderTradingCapital();
+  try {
+    const result = await tenantApi(
+      evidence ? "tradingReadFacilityEvidence" : "tradingReadFacilityState",
+      {
+        resource: {
+          resourceType: "trading_facility",
+          resourceId: facilityId
+        },
+        payload: {},
+        idempotent: false
+      }
+    );
+    if (evidence) {
+      const value = result.response;
+      tradingCapitalPilot.facility = value.facility;
+      tradingCapitalPilot.closeRequest = value.closeRequest;
+      tradingCapitalPilot.settlement = value.settlement;
+      tradingCapitalPilot.performanceProof = value.performanceProof;
+      tradingCapitalPilot.evidence = value;
+    } else {
+      tradingCapitalPilot.facility = result.response.facility;
+      tradingCapitalPilot.closeRequest = null;
+      tradingCapitalPilot.settlement = null;
+      tradingCapitalPilot.performanceProof = null;
+      tradingCapitalPilot.evidence = null;
+    }
+    if (!currentTradingCapitalPresentation()) {
+      throw new Error("trading_capital_presentation_contract_rejected");
+    }
+    tradingCapitalPilot.helper = evidence
+      ? "Facility, settlement, proof, and bounded Evidence reconciled to one server Facility."
+      : "Current Facility state loaded. Settlement and proof remain unavailable until Evidence is loaded.";
+    toast(evidence ? "Trading Facility Evidence loaded" : "Trading Facility state loaded");
+    announce(tradingCapitalPilot.helper);
+  } catch (error) {
+    tradingCapitalPilot.facility = null;
+    tradingCapitalPilot.closeRequest = null;
+    tradingCapitalPilot.settlement = null;
+    tradingCapitalPilot.performanceProof = null;
+    tradingCapitalPilot.evidence = null;
+    tradingCapitalPilot.error = true;
+    tradingCapitalPilot.helper = tradingCapitalResourceUnavailable(error)
+      ? "Bound access is required, or the exact Facility is unavailable."
+      : `Trading Capital read failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(tradingCapitalPilot.helper, "error");
+    announce(tradingCapitalPilot.helper);
+  } finally {
+    tradingCapitalPilot.busy = false;
+    renderTradingCapital();
+  }
+}
+
+async function requestTradingCapitalClose() {
+  const presentation = currentTradingCapitalPresentation();
+  if (
+    tradingCapitalPilot.busy ||
+    presentation?.actions.requestCloseAvailable !== true
+  ) return;
+  tradingCapitalPilot.busy = true;
+  tradingCapitalPilot.error = false;
+  tradingCapitalPilot.helper =
+    "Recording one exact close request against the current Facility hash and version…";
+  renderTradingCapital();
+  try {
+    const result = await tenantApi("tradingRequestClose", {
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: presentation.facilityId
+      },
+      payload: {
+        expectedStateHash: presentation.facilityStateHash,
+        expectedVersion: presentation.facilityVersion
+      },
+      idempotent: true
+    });
+    tradingCapitalPilot.closeRequest = result.response.closeRequest;
+    tradingCapitalPilot.evidence = null;
+    if (!currentTradingCapitalPresentation()) {
+      throw new Error("trading_close_presentation_contract_rejected");
+    }
+    tradingCapitalPilot.helper =
+      "Close requested. Deterministic settlement remains a System Worker operation and accepts no browser-supplied economics.";
+    toast("Synthetic Facility close requested");
+    announce(tradingCapitalPilot.helper);
+  } catch (error) {
+    tradingCapitalPilot.error = true;
+    tradingCapitalPilot.helper = tradingCapitalResourceUnavailable(error)
+      ? "Close authority is required, the state changed, or the Facility is unavailable."
+      : `Close request failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(tradingCapitalPilot.helper, "error");
+  } finally {
+    tradingCapitalPilot.busy = false;
+    renderTradingCapital();
+  }
+}
+
+async function issueTradingCapitalProof() {
+  const presentation = currentTradingCapitalPresentation();
+  if (
+    tradingCapitalPilot.busy ||
+    presentation?.actions.issuePerformanceProofAvailable !== true
+  ) return;
+  tradingCapitalPilot.busy = true;
+  tradingCapitalPilot.error = false;
+  tradingCapitalPilot.helper =
+    "Issuing one bounded, revocable synthetic Performance Proof…";
+  renderTradingCapital();
+  try {
+    const result = await tenantApi("tradingIssuePerformanceProof", {
+      resource: {
+        resourceType: "trading_settlement",
+        resourceId: presentation.settlementId
+      },
+      payload: {
+        expectedSettlementHash:
+          tradingCapitalPilot.settlement.settlementHash
+      },
+      idempotent: true
+    });
+    tradingCapitalPilot.performanceProof = result.response.performanceProof;
+    tradingCapitalPilot.evidence = null;
+    if (!currentTradingCapitalPresentation()) {
+      throw new Error("trading_proof_presentation_contract_rejected");
+    }
+    tradingCapitalPilot.helper =
+      "Performance Proof issued. It is not an official report, universal score, or external verification.";
+    toast("Synthetic Performance Proof issued");
+    announce(tradingCapitalPilot.helper);
+  } catch (error) {
+    tradingCapitalPilot.error = true;
+    tradingCapitalPilot.helper = tradingCapitalResourceUnavailable(error)
+      ? "Bound proof authority is required, or the Settlement is unavailable."
+      : `Performance Proof failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(tradingCapitalPilot.helper, "error");
+  } finally {
+    tradingCapitalPilot.busy = false;
+    renderTradingCapital();
+  }
+}
+
 function renderTenantPilot() {
   const connection = el("tenantPilotConnection");
   if (!connection) return;
@@ -1967,9 +4133,14 @@ function renderTenantPilot() {
   const subjectId = tenantInputValue("humanSubjectId");
   const consentId = tenantInputValue("humanConsentId");
   const privateBusy = tenantPilot.busy || agentAuthorityPilot.busy;
+  const reviewState = humanCreditReviewState();
   el("createHumanSubjectBtn").disabled = privateBusy || !tenantPilot.connected;
   el("createHumanConsentBtn").disabled = privateBusy || !tenantPilot.connected || !subjectId;
-  el("submitHumanCreditBtn").disabled = privateBusy || !tenantPilot.connected || !subjectId || !consentId || Boolean(tenantPilot.offer);
+  el("submitHumanCreditBtn").disabled = privateBusy || !tenantPilot.connected ||
+    !subjectId || !consentId || Boolean(tenantPilot.offer && reviewState.current);
+  el("submitHumanCreditBtn").textContent = tenantPilot.offer && !reviewState.current
+    ? "Request fresh Offer"
+    : "Request & evaluate credit";
   el("newHumanApplicationBtn").hidden = !tenantPilot.offer || !tenantPilot.obligation;
   el("newHumanApplicationBtn").disabled = privateBusy;
   el("humanApplicationHelper").textContent = tenantPilot.helper;
@@ -1983,6 +4154,7 @@ function renderTenantPilot() {
   const obligationExecuted = obligation?.executionStatus === "executed";
   const obligationRepaid = obligation?.status === "fully_repaid";
   const passportVerified = renderDecisionPassport(decision);
+  if (offer && !reviewState.current) el("humanOfferAcknowledge").checked = false;
   el("humanApplicationStatus").textContent = offerAccepted
     ? "Obligation created"
     : offer
@@ -1993,11 +4165,40 @@ function renderTenantPilot() {
         ? "Intent submitted"
         : "Not started";
   el("humanDecisionStatus").textContent = decision ? titleize(decision.status) : "Pending";
-  el("humanOfferPrincipal").textContent = offer ? usdMinorToMoney(offer.approvedPrincipalMinor) : "$0.00";
+  el("humanOfferPrincipal").textContent = offer ? usdMinorToMoney(offer.approvedPrincipalMinor) : "—";
   el("humanOfferRate").textContent = offer ? bpsToPercent(offer.annualRateBps) : "—";
+  el("humanOfferFee").textContent = offer
+    ? usdMinorToMoney(offer.originationFeeMinor)
+    : "—";
+  el("humanOfferRepayment").textContent = offer
+    ? `${titleize(offer.repaymentFrequency)} · ${offer.installmentCount} installment${offer.installmentCount === 1 ? "" : "s"}`
+    : "—";
   el("humanOfferMaturity").textContent = offer
     ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(offer.maturityAt))
     : "—";
+  el("humanOfferValidUntil").textContent = offer
+    ? formatEvidenceTime(offer.validUntil, { short: true })
+    : "—";
+  el("humanOfferDisclosure").textContent = offer?.disclosureRef ?? "—";
+  el("humanOfferDisclosure").title = offer?.disclosureRef ?? "";
+  el("humanOfferAuthority").textContent = tenantPilot.offerReview
+    ? `Consent · ${compactOpaqueId(tenantPilot.offerReview.authorityId)}`
+    : "—";
+  el("humanOfferAuthority").title = tenantPilot.offerReview?.authorityId ?? "";
+  el("humanOfferHash").textContent = offer
+    ? compactDecisionProofHash(offer.creditOfferHash)
+    : "—";
+  el("humanOfferHash").title = offer?.creditOfferHash ?? "";
+  el("humanOfferTermsHash").textContent = offer
+    ? compactDecisionProofHash(offer.termsHash)
+    : "—";
+  el("humanOfferTermsHash").title = offer?.termsHash ?? "";
+  el("humanOfferReviewState").textContent = humanCreditReviewMessage(reviewState);
+  el("humanOfferReviewState").classList.toggle("ready", reviewState.current);
+  el("humanOfferReviewState").classList.toggle(
+    "warning",
+    Boolean(offer) && !reviewState.current
+  );
   el("humanIntentId").textContent = intent?.creditIntentId ?? "—";
   el("humanIntentId").title = intent?.creditIntentId ?? "";
   el("humanDecisionReasons").textContent = passportVerified
@@ -2016,10 +4217,12 @@ function renderTenantPilot() {
     : "Copy receipt";
   const acknowledgement = el("humanOfferAcknowledge");
   acknowledgement.disabled =
-    privateBusy || !offer || offerAccepted || offer.status !== "offered" || !passportVerified;
+    privateBusy || !offer || offerAccepted || offer.status !== "offered" ||
+    !passportVerified || !reviewState.current;
   el("acceptHumanOfferBtn").disabled =
     privateBusy || !tenantPilot.connected || !offer || offerAccepted ||
-    offer.status !== "offered" || !passportVerified || !acknowledgement.checked;
+    offer.status !== "offered" || !passportVerified || !reviewState.current ||
+    !acknowledgement.checked;
   el("acceptHumanOfferBtn").textContent = offerAccepted
     ? "Offer accepted"
     : tenantPilot.busy
@@ -2033,7 +4236,7 @@ function renderTenantPilot() {
     : "Pending execution";
   el("humanObligationStatus").textContent = obligation ? titleize(obligation.status) : "Created";
   el("humanObligationServicing").textContent = obligation
-    ? titleize(obligation.servicingClassification ?? "current")
+    ? servicingClassificationLabel(obligation.servicingClassification ?? "current")
     : "Current";
   el("humanObligationDpd").textContent = String(obligation?.daysPastDue ?? 0);
   el("humanObligationScheduleVersion").textContent = obligation
@@ -2090,13 +4293,18 @@ function renderTenantPilot() {
     ? obligationExecuted
       ? "Signed sandbox receipt verified · balanced ledger posted · withdrawable balance remains disabled · no production funds moved."
       : "Obligation recorded · execute through the signed non-redeemable sandbox rail when ready. No production funds can move."
-    : "Acceptance creates one auditable Obligation and deterministic schedule. No production funds can move.";
+    : offer && !reviewState.current
+      ? "Acceptance blocked: visible authority or request terms no longer match the exact server Offer. Request a fresh evaluation."
+      : "Acceptance creates one auditable Obligation and deterministic schedule. No production funds can move.";
+  renderHumanRequestCreditReceipts();
   renderOwnedEvidence();
   renderHumanGuide();
   renderAgentAuthorityPilot();
+  renderCreditPassportPilot();
   renderPrivateProductSurfaces();
   renderRuntimeGate();
   renderPilotFeedback();
+  renderCapitalNetwork();
 }
 
 async function runTenantAction(button, operation, successMessage) {
@@ -2121,6 +4329,284 @@ async function runTenantAction(button, operation, successMessage) {
     button?.removeAttribute("aria-busy");
     renderTenantPilot();
   }
+}
+
+function acceptCreditPassportArtifact(artifact) {
+  const presentation = createCreditPassportPresentation(artifact);
+  creditPassportPilot.artifact = artifact;
+  creditPassportPilot.presentation = presentation;
+  el("creditPassportArtifactId").value = artifact.creditPassportArtifactId;
+  el("creditPassportVerifyArtifactId").value = artifact.creditPassportArtifactId;
+  el("creditPassportVerifyHash").value = artifact.artifactHash;
+  el("creditPassportVerifyVersion").value = String(artifact.version);
+  return presentation;
+}
+
+function creditPassportDenied(error) {
+  return (
+    error.status === 401 ||
+    error.status === 403 ||
+    error.status === 404 ||
+    new Set([
+      "authorization_denied",
+      "tenant_resource_unavailable",
+      "resource_not_found"
+    ]).has(error.code)
+  );
+}
+
+async function runCreditPassportAction(button, operation) {
+  if (creditPassportPilot.busy) return;
+  creditPassportPilot.busy = true;
+  creditPassportPilot.error = false;
+  button?.setAttribute("aria-busy", "true");
+  renderCreditPassportPilot();
+  try {
+    const message = await operation();
+    toast(message);
+    announce(message);
+  } catch (error) {
+    creditPassportPilot.error = true;
+    const message = creditPassportDenied(error)
+      ? "The artifact or exact Actor authority is unavailable."
+      : `Credit Passport operation failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    creditPassportPilot.issueHelper = message;
+    creditPassportPilot.artifactHelper = message;
+    creditPassportPilot.verificationHelper = message;
+    toast(message, "error");
+    announce(message);
+  } finally {
+    creditPassportPilot.busy = false;
+    button?.removeAttribute("aria-busy");
+    renderCreditPassportPilot();
+  }
+}
+
+async function issueCreditPassportArtifact() {
+  const button = el("issueCreditPassportBtn");
+  await runCreditPassportAction(button, async () => {
+    const subjectId = tenantInputValue("creditPassportSubjectId");
+    const creditIntentId = tenantInputValue("creditPassportIntentId");
+    const verifierActorId = tenantInputValue("creditPassportVerifierActorId");
+    if (
+      !exactResourceId(subjectId) ||
+      !exactResourceId(creditIntentId) ||
+      !exactResourceId(verifierActorId)
+    ) {
+      throw new TypeError("Exact Subject, Credit Intent, and verifier Actor IDs are required.");
+    }
+    const lifetimeSeconds = Number(el("creditPassportLifetime").value);
+    const claimSelectors = selectedCreditPassportClaims(el("creditPassportIssueForm"));
+    const result = await tenantApi("pilotCreateCreditPassportArtifact", {
+      resource: { resourceType: "subject", resourceId: subjectId },
+      payload: {
+        creditIntentId,
+        verifierActorId,
+        claimSelectors,
+        lifetimeSeconds,
+        schemaVersion: "credit_passport_artifact_create.v1"
+      }
+    });
+    const presentation = acceptCreditPassportArtifact(result.response.artifact);
+    creditPassportPilot.verification = null;
+    creditPassportPilot.issueHelper = result.response.replaced
+      ? `Replacement issued as v${presentation.artifact.version}; the prior hash is superseded.`
+      : "Private proof issued from locked server Decision Evidence.";
+    creditPassportPilot.artifactHelper =
+      `${presentation.disclosures.length} selected disclosure${presentation.disclosures.length === 1 ? "" : "s"} · online verification required.`;
+    creditPassportPilot.verificationHelper =
+      "Authenticate as the exact bound verifier and verify the current hash and version online.";
+    return result.response.replaced
+      ? "Credit Passport replacement issued"
+      : "Private Credit Passport issued";
+  });
+}
+
+async function readOwnedCreditPassportArtifact() {
+  const button = el("readCreditPassportBtn");
+  await runCreditPassportAction(button, async () => {
+    const artifactId = tenantInputValue("creditPassportArtifactId");
+    if (!exactResourceId(artifactId)) throw new TypeError("Enter one exact Artifact ID.");
+    const result = await tenantApi("pilotReadOwnCreditPassportArtifact", {
+      resource: {
+        resourceType: "credit_passport_artifact",
+        resourceId: artifactId
+      },
+      payload: {},
+      idempotent: false
+    });
+    const presentation = acceptCreditPassportArtifact(result.response.artifact);
+    creditPassportPilot.artifactHelper =
+      `${presentation.statusLabel} server state loaded at ${result.response.artifact.asOf}.`;
+    return "Owned Credit Passport state loaded";
+  });
+}
+
+async function verifyBoundCreditPassportArtifact() {
+  const button = el("verifyCreditPassportBtn");
+  await runCreditPassportAction(button, async () => {
+    const artifactId = tenantInputValue("creditPassportVerifyArtifactId");
+    const artifactHash = tenantInputValue("creditPassportVerifyHash");
+    const artifactVersion = Number(el("creditPassportVerifyVersion").value);
+    if (
+      !exactResourceId(artifactId) ||
+      !/^0x[0-9a-f]{64}$/.test(artifactHash) ||
+      !Number.isSafeInteger(artifactVersion) ||
+      artifactVersion < 1
+    ) {
+      throw new TypeError("Exact Artifact ID, hash, and version are required.");
+    }
+    const result = await tenantApi("pilotVerifyCreditPassportArtifact", {
+      resource: {
+        resourceType: "credit_passport_artifact",
+        resourceId: artifactId
+      },
+      purpose: "private_credit_review",
+      payload: {
+        artifactHash,
+        artifactVersion,
+        purpose: "private_credit_review",
+        schemaVersion: "credit_passport_verification_request.v1"
+      },
+      idempotent: false
+    });
+    creditPassportPilot.verification = result.response.verification;
+    if (result.response.artifact) acceptCreditPassportArtifact(result.response.artifact);
+    creditPassportPilot.verificationHelper =
+      result.response.verification.verified
+        ? `Verified against current source and server time at ${result.response.verification.checkedAt}.`
+        : `Verification closed with ${result.response.verification.status}.`;
+    return result.response.verification.verified
+      ? "Credit Passport verified online"
+      : "Credit Passport is not active";
+  });
+}
+
+async function revokeOwnedCreditPassportArtifact() {
+  const button = el("revokeCreditPassportBtn");
+  await runCreditPassportAction(button, async () => {
+    const artifactId = creditPassportPilot.artifact?.creditPassportArtifactId;
+    if (!artifactId || creditPassportPilot.artifact.effectiveStatus !== "active") {
+      throw new TypeError("Load one active owned artifact before revocation.");
+    }
+    const reasonCode = el("creditPassportRevocationReason").value;
+    const result = await tenantApi("pilotRevokeCreditPassportArtifact", {
+      resource: {
+        resourceType: "credit_passport_artifact",
+        resourceId: artifactId
+      },
+      payload: {},
+      reasonCode
+    });
+    acceptCreditPassportArtifact(result.response.artifact);
+    creditPassportPilot.verification = null;
+    creditPassportPilot.artifactHelper =
+      `Terminally revoked by the authenticated owner/controller with reason ${reasonCode}.`;
+    creditPassportPilot.verificationHelper =
+      "The revoked artifact cannot be verified or reactivated.";
+    return "Credit Passport revoked";
+  });
+}
+
+function officialReportUnavailable(error) {
+  return error.status === 401 ||
+    error.status === 403 ||
+    error.status === 404 ||
+    new Set([
+      "authorization_denied",
+      "tenant_resource_unavailable",
+      "resource_not_found"
+    ]).has(error.code);
+}
+
+async function runOfficialReportAction(action, successMessage) {
+  if (officialReportPilot.busy) return;
+  officialReportPilot.busy = true;
+  officialReportPilot.error = false;
+  officialReportPilot.helper = "Revalidating exact server authority…";
+  renderOfficialReportPilot();
+  try {
+    await action();
+    officialReportPilot.helper = successMessage;
+    toast(successMessage);
+    announce(successMessage);
+  } catch (error) {
+    officialReportPilot.error = true;
+    officialReportPilot.helper = officialReportUnavailable(error)
+      ? "Owner or controller access is required, or the report is unavailable."
+      : `Official report operation failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(officialReportPilot.helper, "error");
+    announce(officialReportPilot.helper);
+  } finally {
+    officialReportPilot.busy = false;
+    renderOfficialReportPilot();
+  }
+}
+
+async function createOfficialReport() {
+  const obligationId = tenantPilot.obligation?.obligationId;
+  if (!obligationId) return;
+  await runOfficialReportAction(async () => {
+    const format = el("officialReportFormat").value;
+    const lifetimeSeconds = Number(el("officialReportLifetime").value);
+    const result = await tenantApi("pilotCreateOfficialReport", {
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      payload: {
+        format,
+        lifetimeSeconds,
+        schemaVersion: "official_report_create.v1"
+      },
+      idempotent: true
+    });
+    officialReportPilot.report = result.response.report;
+    officialReportPilot.retrievedAt = null;
+    el("officialReportId").value = result.response.report.officialReportId;
+  }, "Official report created from bounded server Evidence");
+}
+
+async function readOfficialReport() {
+  const officialReportId = tenantInputValue("officialReportId");
+  if (!exactResourceId(officialReportId)) return;
+  await runOfficialReportAction(async () => {
+    const result = await tenantApi("pilotReadOfficialReport", {
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      payload: {},
+      idempotent: false
+    });
+    officialReportPilot.report = result.response.report;
+    officialReportPilot.retrievedAt = null;
+  }, "Official report metadata loaded after authorization recheck");
+}
+
+async function retrieveOfficialReport() {
+  const officialReportId = tenantInputValue("officialReportId");
+  if (!exactResourceId(officialReportId)) return;
+  await runOfficialReportAction(async () => {
+    const result = await tenantApi("pilotRetrieveOfficialReport", {
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      payload: {},
+      idempotent: false
+    });
+    const verified = await verifyOfficialReportRetrieval(result.response);
+    officialReportPilot.report = result.response.report;
+    officialReportPilot.retrievedAt = result.response.authorizationRevalidatedAt;
+    downloadVerifiedOfficialReport({ verified });
+  }, "Authorization rechecked; exact server bytes verified and downloaded");
+}
+
+async function revokeOfficialReport() {
+  const officialReportId = tenantInputValue("officialReportId");
+  if (!exactResourceId(officialReportId)) return;
+  await runOfficialReportAction(async () => {
+    const result = await tenantApi("pilotRevokeOfficialReport", {
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      payload: {},
+      reasonCode: "owner_withdrawal",
+      idempotent: true
+    });
+    officialReportPilot.report = result.response.report;
+    officialReportPilot.retrievedAt = null;
+  }, "Official report revoked and access closed");
 }
 
 async function runAgentAuthorityAction(button, operation, successMessage) {
@@ -2148,6 +4634,27 @@ async function runAgentAuthorityAction(button, operation, successMessage) {
   }
 }
 
+async function readOwnedObligationView(obligationId) {
+  const result = await tenantApi("pilotReadOwnObligation", {
+    resource: { resourceType: "obligation", resourceId: obligationId },
+    payload: {},
+    idempotent: false
+  });
+  return result.response;
+}
+
+function cacheOwnedObligationView(obligationId, view) {
+  const accepted = acceptServicingPositionRefresh(
+    tenantPilot.workspacePositionViews.get(obligationId),
+    view
+  );
+  if (!accepted || accepted.obligation.obligationId !== obligationId) {
+    throw new Error("Current position failed trusted-time and servicing-state verification.");
+  }
+  tenantPilot.workspacePositionViews.set(obligationId, accepted);
+  return accepted;
+}
+
 async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
   if (tenantPilot.obligationHydrationBusy) return;
   const exactObligationId = (obligationId ?? tenantInputValue("ownedObligationId")).trim();
@@ -2162,14 +4669,11 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
   tenantPilot.obligationHydrationHelper = "Verifying ownership and loading current server state…";
   renderTenantPilot();
   try {
-    const result = await tenantApi("pilotReadOwnObligation", {
-      resource: { resourceType: "obligation", resourceId: exactObligationId },
-      payload: {},
-      idempotent: false
-    });
+    const response = await readOwnedObligationView(exactObligationId);
     const sameObligation = tenantPilot.obligation?.obligationId === exactObligationId;
     if (!sameObligation) {
       tenantPilot.receipt = null;
+      tenantPilot.offerReview = null;
       tenantPilot.obligationReceipt = null;
       tenantPilot.obligationWorkflowId = null;
       tenantPilot.obligationCorrelationId = null;
@@ -2188,11 +4692,15 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
       ownedEvidence.items = [];
       ownedEvidence.nextCursor = null;
       ownedEvidence.hasMore = false;
+      ownedEvidence.capped = false;
       ownedEvidence.asOf = null;
     }
-    tenantPilot.obligation = result.response.obligation;
-    tenantPilot.servicingAction = result.response.latestServicingAction ?? null;
-    tenantPilot.obligationHydrationAsOf = result.response.asOf;
+    tenantPilot.obligation = response.obligation;
+    tenantPilot.servicingAction = response.latestServicingAction ?? null;
+    tenantPilot.obligationHydrationAsOf = response.asOf;
+    cacheOwnedObligationView(exactObligationId, response);
+    tenantPilot.workspacePositionRefreshHelper =
+      "Selected position refreshed from the authenticated server. Refresh all to update every visible position.";
     tenantPilot.obligationHydrationHelper =
       "Current server state loaded. This browser retains only the opaque ID for reload navigation.";
     el("ownedObligationId").value = exactObligationId;
@@ -2211,6 +4719,7 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
     tenantPilot.obligationHydrationHelper = nonEnumerating
       ? "Owner access is required or the Obligation is unavailable."
       : `Obligation read failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    tenantPilot.workspacePositionViews.delete(exactObligationId);
     if (quiet) forgetOwnedObligationId();
     if (!quiet) {
       toast(tenantPilot.obligationHydrationHelper, "error");
@@ -2222,6 +4731,47 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
   }
 }
 
+async function refreshOwnedPositionIndex() {
+  if (
+    tenantPilot.workspacePositionRefreshBusy ||
+    tenantPilot.obligationHydrationBusy ||
+    !tenantPilot.connected ||
+    !tenantPilot.obligationReadAvailable
+  ) return;
+  const references = tenantPilot.workspaceObligations.slice(
+    0,
+    SERVICING_POSITION_INDEX_LIMIT
+  );
+  if (references.length === 0) return;
+
+  tenantPilot.workspacePositionRefreshBusy = true;
+  tenantPilot.workspacePositionRefreshHelper =
+    "Reauthorizing each exact position and loading current server state…";
+  renderTenantPilot();
+  let refreshed = 0;
+  let unavailable = 0;
+  try {
+    for (const { resourceId } of references) {
+      try {
+        const view = await readOwnedObligationView(resourceId);
+        cacheOwnedObligationView(resourceId, view);
+        refreshed += 1;
+      } catch {
+        tenantPilot.workspacePositionViews.delete(resourceId);
+        unavailable += 1;
+      }
+    }
+    tenantPilot.workspacePositionRefreshHelper = unavailable === 0
+      ? `${refreshed} current ${refreshed === 1 ? "position was" : "positions were"} loaded from exact owner-authorized server reads.`
+      : `${refreshed} current ${refreshed === 1 ? "position" : "positions"} loaded; ${unavailable} unavailable reference${unavailable === 1 ? "" : "s"} reveal no financial state.`;
+    toast(unavailable === 0 ? "Current positions refreshed" : "Position refresh completed with unavailable references");
+    announce(tenantPilot.workspacePositionRefreshHelper);
+  } finally {
+    tenantPilot.workspacePositionRefreshBusy = false;
+    renderTenantPilot();
+  }
+}
+
 function recoveredResource(resources, resourceType) {
   return resources.find((item) =>
     item?.resourceType === resourceType && exactResourceId(item.resourceId)
@@ -2229,6 +4779,8 @@ function recoveredResource(resources, resourceType) {
 }
 
 async function recoverAuthenticatedWorkspace() {
+  tenantPilot.workspaceRecoveryState = "loading";
+  tenantPilot.workspaceRecoveryErrorCode = null;
   const result = await tenantApi("pilotReadWorkspaceResume", {
     payload: {},
     idempotent: false
@@ -2241,8 +4793,22 @@ async function recoverAuthenticatedWorkspace() {
   const mandate = recoveredResource(resources, "mandate");
   const workspaceObligations = workspaceObligationResources(resources);
   tenantPilot.workspaceKind = recovery.workspaceKind;
+  tenantPilot.workspaceResume = recovery;
   tenantPilot.workspaceObligations = workspaceObligations;
+  const recoveredObligationIds = new Set(
+    workspaceObligations.map(({ resourceId }) => resourceId)
+  );
+  for (const obligationId of tenantPilot.workspacePositionViews.keys()) {
+    if (!recoveredObligationIds.has(obligationId)) {
+      tenantPilot.workspacePositionViews.delete(obligationId);
+    }
+  }
+  tenantPilot.workspacePositionRefreshHelper = workspaceObligations.length > 0
+    ? "Refresh to load current balances and trusted-time servicing state for these authorized references."
+    : "No Actor-bound Obligation reference was returned by the authenticated workspace.";
   tenantPilot.workspaceRecoveryHasMore = recovery.hasMore === true;
+  tenantPilot.workspaceRecoveryResourceCount = resources.length;
+  tenantPilot.workspaceRecoveryState = resources.length > 0 ? "restored" : "empty";
 
   if (recovery.workspaceKind === "human_borrower") {
     if (subject) {
@@ -2290,18 +4856,35 @@ async function recoverAuthenticatedWorkspace() {
 }
 
 async function probeTenantPilot() {
+  if (accessState.checked && !accessState.authEnabled) {
+    tenantPilot.connectionLabel = "Private access not enabled";
+    tenantPilot.workspaceRecoveryState = "unavailable";
+    tenantPilot.workspaceRecoveryErrorCode = "authentication_unavailable";
+    tenantPilot.checked = true;
+    serverCatalogOperations = new Set();
+    serverCatalogSnapshot = null;
+    renderTenantPilot();
+    renderAuditorEvidence();
+    renderRiskOperations();
+    return;
+  }
   try {
+    walletAuthorityLifecycle.assertProtectedAvailable();
     const response = await fetch("/tenant/v1/catalog", {
       credentials: "same-origin",
       headers: { accept: "application/json, application/problem+json" }
     });
     if (!response.ok) {
+      serverCatalogSnapshot = null;
+      serverCatalogOperations = new Set();
       tenantPilot.connectionLabel = response.status === 401 || response.status === 403
         ? "Authenticated session required"
         : "Private gateway unavailable";
       return;
     }
     const catalog = await response.json();
+    walletAuthorityLifecycle.assertProtectedAvailable();
+    serverCatalogSnapshot = catalog;
     const requiredOperations = new Set([
       "pilotCreateHumanSubject",
       "pilotCreateConsent",
@@ -2322,8 +4905,25 @@ async function probeTenantPilot() {
       "pilotActivateSandboxMandate"
     ]);
     const available = new Set((catalog.operations ?? []).map((operation) => operation.operationId));
+    serverCatalogOperations = available;
     auditorEvidence.catalogAvailable = available.has("pilotReadEvidence");
     ownedEvidence.catalogAvailable = available.has("pilotReadOwnObligationEvidence");
+    creditPassportPilot.createAvailable =
+      available.has("pilotCreateCreditPassportArtifact");
+    creditPassportPilot.readAvailable =
+      available.has("pilotReadOwnCreditPassportArtifact");
+    creditPassportPilot.verifyAvailable =
+      available.has("pilotVerifyCreditPassportArtifact");
+    creditPassportPilot.revokeAvailable =
+      available.has("pilotRevokeCreditPassportArtifact");
+    officialReportPilot.createAvailable =
+      available.has("pilotCreateOfficialReport");
+    officialReportPilot.readAvailable =
+      available.has("pilotReadOfficialReport");
+    officialReportPilot.retrieveAvailable =
+      available.has("pilotRetrieveOfficialReport");
+    officialReportPilot.revokeAvailable =
+      available.has("pilotRevokeOfficialReport");
     tenantPilot.obligationReadAvailable = available.has("pilotReadOwnObligation");
     pilotFeedback.catalogAvailable = available.has("pilotSubmitPilotFeedback");
     riskOperations.readCatalogAvailable = available.has("pilotReadTenantRisk");
@@ -2349,7 +4949,7 @@ async function probeTenantPilot() {
       : operationsAvailable
         ? "Complete the local Human BFF session bootstrap before submitting a private mutation."
         : "The private catalog does not expose the approved Agent Subject and Mandate operations.";
-    if (tenantPilot.connected && currentView !== "risk") {
+    if (tenantPilot.connected && currentView !== "risk-operations") {
       try {
         await recoverAuthenticatedWorkspace();
       } catch (error) {
@@ -2358,6 +4958,8 @@ async function probeTenantPilot() {
           "workspace_recovery_unavailable",
           "tenant_resource_unavailable"
         ]).has(error.code);
+        tenantPilot.workspaceRecoveryState = denied ? "denied" : "error";
+        tenantPilot.workspaceRecoveryErrorCode = denied ? "workspace_unavailable" : "recovery_failed";
         if (!denied) throw error;
       }
     }
@@ -2380,6 +4982,10 @@ async function probeTenantPilot() {
     }
   } catch {
     tenantPilot.connectionLabel = "Private gateway unavailable";
+    tenantPilot.workspaceRecoveryState = "error";
+    tenantPilot.workspaceRecoveryErrorCode = "gateway_unavailable";
+    serverCatalogOperations = new Set();
+    serverCatalogSnapshot = null;
     auditorEvidence.catalogAvailable = false;
     ownedEvidence.catalogAvailable = false;
     tenantPilot.obligationReadAvailable = false;
@@ -2389,6 +4995,10 @@ async function probeTenantPilot() {
     riskOperations.feedbackCatalogAvailable = false;
     riskOperations.queueCatalogAvailable = false;
     riskOperations.freezeCatalogAvailable = false;
+    officialReportPilot.createAvailable = false;
+    officialReportPilot.readAvailable = false;
+    officialReportPilot.retrieveAvailable = false;
+    officialReportPilot.revokeAvailable = false;
   } finally {
     tenantPilot.checked = true;
     renderTenantPilot();
@@ -2408,6 +5018,7 @@ async function createHumanSubject() {
       tenantPilot.decision = null;
       tenantPilot.offer = null;
       tenantPilot.receipt = null;
+      tenantPilot.offerReview = null;
       pilotFeedback.submitted = null;
       pilotFeedback.error = false;
       pilotFeedback.helper = "Ready to record one immutable categorical receipt for this Human Subject.";
@@ -2457,6 +5068,7 @@ async function createHumanConsent() {
       tenantPilot.decision = null;
       tenantPilot.offer = null;
       tenantPilot.receipt = null;
+      tenantPilot.offerReview = null;
       resetHumanObligationWorkflow();
       el("humanOfferAcknowledge").checked = false;
     },
@@ -2471,6 +5083,7 @@ function startAnotherHumanApplication() {
   tenantPilot.decision = null;
   tenantPilot.offer = null;
   tenantPilot.receipt = null;
+  tenantPilot.offerReview = null;
   tenantPilot.obligationReceipt = null;
   tenantPilot.obligationWorkflowId = null;
   tenantPilot.obligationCorrelationId = null;
@@ -2495,6 +5108,7 @@ async function requestAndEvaluateHumanCredit() {
       const workflowId = tenantRequestToken("human_credit_offer_workflow");
       const correlationId = tenantRequestToken("web_tenant_human_credit");
       tenantPilot.receipt = null;
+      tenantPilot.offerReview = null;
       resetHumanObligationWorkflow();
       el("humanOfferAcknowledge").checked = false;
       const selfStep = await tenantApi("pilotReadHumanSelf", {
@@ -2540,6 +5154,12 @@ async function requestAndEvaluateHumanCredit() {
         subjectId,
         workflowId
       });
+      tenantPilot.offerReview = tenantPilot.receipt.status === "offer_ready"
+        ? createRequestCreditReviewBinding({
+            entryMode: "human",
+            receipt: tenantPilot.receipt
+          })
+        : null;
       tenantPilot.intent = evaluationResult.result.response.creditIntent;
       tenantPilot.decision = evaluationResult.result.response.decision;
       tenantPilot.offer = evaluationResult.result.response.offer;
@@ -2556,6 +5176,14 @@ async function acceptHumanCreditOffer() {
       if (!offer || offer.status !== "offered") {
         throw new Error("Complete a current deterministic Offer before acceptance.");
       }
+      const reviewState = humanCreditReviewState();
+      if (!reviewState.current) {
+        throw new Error(humanCreditReviewMessage(reviewState));
+      }
+      assertRequestCreditReviewCurrent(
+        tenantPilot.offerReview,
+        currentHumanCreditReviewInput()
+      );
       if (!el("humanOfferAcknowledge").checked) {
         throw new Error("Review and acknowledge the exact sandbox Offer terms first.");
       }
@@ -2609,6 +5237,7 @@ async function acceptHumanCreditOffer() {
         acceptedAt: result.response.acceptance.acceptedAt,
         updatedAt: result.response.acceptance.acceptedAt
       };
+      await recoverAuthenticatedWorkspace();
     },
     "Offer accepted. One shared sandbox Obligation and deterministic schedule were created; signed sandbox execution is ready."
   );
@@ -2646,6 +5275,10 @@ async function executeHumanSandboxObligation() {
       tenantPilot.repaymentSequence = 0;
       tenantPilot.repayment = null;
       tenantPilot.servicingAction = null;
+      await loadOwnedObligation({
+        obligationId: result.response.obligation.obligationId,
+        quiet: true
+      });
     },
     "Signed sandbox execution completed. The principal ledger entry is balanced and no withdrawable funds were created."
   );
@@ -2710,6 +5343,10 @@ async function postHumanSandboxRepayment({
             workflowId
           })
         : null;
+      await loadOwnedObligation({
+        obligationId: result.response.obligation.obligationId,
+        quiet: true
+      });
     },
     "Sandbox repayment posted through the deterministic fee, interest, and principal waterfall."
   );
@@ -2795,7 +5432,7 @@ async function refreshAgentAccountBinding() {
     },
     () => agentAuthorityPilot.accountBinding?.accountBinding
       ? "Verified CAIP-10 AccountBinding loaded. The Agent Subject is active."
-      : "No verified AccountBinding yet. The registered Agent workload must submit its signature through authenticated Tenant HTTPS."
+      : "No verified AccountBinding yet. The registered local Agent Host must submit the one-use signature proof."
   );
 }
 
@@ -2889,6 +5526,11 @@ function setMode(mode) {
   el("operatorModeBtn").setAttribute("aria-pressed", String(!agentMode));
   el("agentModeBtn").classList.toggle("active", agentMode);
   el("agentModeBtn").setAttribute("aria-pressed", String(agentMode));
+  if (currentView === "request-credit") {
+    el("viewEyebrow").textContent = agentMode
+      ? "Agent entry · shared kernel"
+      : "Human entry · shared kernel";
+  }
   renderPrivateProductSurfaces();
 }
 
@@ -2944,10 +5586,11 @@ function showView(viewName, { focus = true, updateHash = true } = {}) {
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   }
-  el("viewEyebrow").textContent = VIEW_META[nextView].eyebrow;
+  el("viewEyebrow").textContent = nextView === "request-credit"
+    ? `${interactionMode === "agent" ? "Agent" : "Human"} entry · shared kernel`
+    : VIEW_META[nextView].eyebrow;
   el("viewTitle").textContent = VIEW_META[nextView].title;
-  if (nextView === "human") setMode("human");
-  else if (["agent", "developer"].includes(nextView)) setMode("agent");
+  if (["agent-console", "architecture"].includes(nextView)) setMode("agent");
   else renderPrivateProductSurfaces();
   setNavigationOpen(false, { moveFocus: false });
   if (updateHash) history.replaceState(null, "", `#${nextView}`);
@@ -2965,7 +5608,8 @@ function focusJumpTarget(target) {
 }
 
 function openPrincipalAgentAuthority() {
-  showView("human");
+  setMode("human");
+  showView("request-credit");
   el("agentAuthorityDisclosure").open = true;
   requestAnimationFrame(() => focusJumpTarget(el("agentAuthority")));
   announce("Human Principal authority configuration opened");
@@ -2973,10 +5617,9 @@ function openPrincipalAgentAuthority() {
 
 function openAgentProtocolDetails({ targetId = "agentProtocolDetails" } = {}) {
   setMode("agent");
-  showView("developer");
-  el("agentProtocolDetails").open = true;
+  showView("agent-console");
   requestAnimationFrame(() => focusJumpTarget(el(targetId)));
-  announce("Authenticated Agent API integration details opened");
+  announce("Local Agent integration contract opened");
 }
 
 function runAgentGuideAction(action) {
@@ -2985,15 +5628,14 @@ function runAgentGuideAction(action) {
     return;
   }
   if (action === "open-agent-api") {
-    setMode("agent");
-    showView("developer");
+    openAgentProtocolDetails({ targetId: "agentConsoleProtocol" });
     return;
   }
   if (action === "open-handoff") {
-    openAgentProtocolDetails({ targetId: "mcpHandoffPanel" });
+    openAgentProtocolDetails({ targetId: "agentConsoleContract" });
     return;
   }
-  openAgentProtocolDetails();
+  openAgentProtocolDetails({ targetId: "agentConsoleProtocol" });
 }
 
 function openPrivateProductAction(action) {
@@ -3002,22 +5644,27 @@ function openPrivateProductAction(action) {
     announce("Authenticated pilot access required");
     return;
   }
+  if (action === "refresh-obligations") {
+    refreshOwnedPositionIndex();
+    return;
+  }
   if (action === "principal-authority") {
     openPrincipalAgentAuthority();
     return;
   }
   if (action === "agent-api") {
     setMode("agent");
-    showView("developer");
+    showView("architecture");
     return;
   }
   if (action === "servicing-cure") {
-    showView("transfers");
+    showView("repay-settle");
     requestAnimationFrame(() => focusJumpTarget(el("servicingCureCard")));
     announce("Human Servicing Case repayment controls opened");
     return;
   }
-  showView("human");
+  setMode("human");
+  showView("request-credit");
   const target = action === "human-evidence"
     ? el("ownedEvidencePanel")
     : action === "human-obligation"
@@ -3163,6 +5810,7 @@ async function loadOwnedEvidence({ append = false } = {}) {
     ownedEvidence.items = [];
     ownedEvidence.nextCursor = null;
     ownedEvidence.hasMore = false;
+    ownedEvidence.capped = false;
     ownedEvidence.asOf = null;
   }
   renderOwnedEvidence();
@@ -3178,16 +5826,25 @@ async function loadOwnedEvidence({ append = false } = {}) {
     const response = result.response;
     const existing = append ? ownedEvidence.items : [];
     const seen = new Set(existing.map((item) => item.evidenceId));
-    ownedEvidence.items = [
+    const mergedItems = [
       ...existing,
       ...response.items.filter((item) => !seen.has(item.evidenceId))
     ];
+    ownedEvidence.capped =
+      mergedItems.length > OWNED_EVIDENCE_DISPLAY_LIMIT ||
+      (mergedItems.length >= OWNED_EVIDENCE_DISPLAY_LIMIT && response.hasMore);
+    ownedEvidence.items = mergedItems.slice(0, OWNED_EVIDENCE_DISPLAY_LIMIT);
     ownedEvidence.obligationId = response.obligationId;
-    ownedEvidence.nextCursor = response.nextCursor ?? null;
-    ownedEvidence.hasMore = Boolean(response.hasMore && response.nextCursor);
+    ownedEvidence.nextCursor = ownedEvidence.capped
+      ? null
+      : response.nextCursor ?? null;
+    ownedEvidence.hasMore = !ownedEvidence.capped &&
+      Boolean(response.hasMore && response.nextCursor);
     ownedEvidence.asOf = response.asOf;
     ownedEvidence.queried = true;
-    ownedEvidence.helper = `${response.items.length} redacted Evidence event${response.items.length === 1 ? "" : "s"} loaded from the shared immutable timeline.`;
+    ownedEvidence.helper = ownedEvidence.capped
+      ? `${ownedEvidence.items.length} redacted Evidence events loaded; the bounded browser display cap has been reached.`
+      : `${response.items.length} redacted Evidence event${response.items.length === 1 ? "" : "s"} loaded from the shared immutable timeline.`;
     toast(append ? "Next owner Evidence page loaded" : "Your Obligation Evidence loaded");
     announce(ownedEvidence.helper);
   } catch (error) {
@@ -3201,7 +5858,7 @@ async function loadOwnedEvidence({ append = false } = {}) {
     announce(ownedEvidence.helper);
   } finally {
     ownedEvidence.busy = false;
-    renderOwnedEvidence();
+    renderTenantPilot();
   }
 }
 
@@ -3422,8 +6079,114 @@ function pilotFeedbackTopBlocker(summary) {
   return `${label.replace(/^./, (character) => character.toUpperCase())} · ${count}`;
 }
 
+const RISK_AUTHORITY_LABELS = Object.freeze({
+  borrower: "Borrower",
+  risk_operator: "Risk",
+  operations_operator: "Operations",
+  auditor: "Auditor"
+});
+
+function riskAuthorityCell(allowed, allowedLabel) {
+  const cell = document.createElement("span");
+  cell.setAttribute("role", "cell");
+  const indicator = document.createElement("strong");
+  const detail = document.createElement("small");
+  indicator.textContent = allowed ? "Eligible" : "—";
+  detail.textContent = allowed ? allowedLabel : "Not allowed";
+  cell.classList.toggle("eligible", allowed);
+  cell.append(indicator, detail);
+  return cell;
+}
+
+function riskAuthorityRow(authority) {
+  const row = document.createElement("div");
+  row.className = "risk-authority-row";
+  row.setAttribute("role", "row");
+
+  const actor = document.createElement("span");
+  actor.setAttribute("role", "rowheader");
+  const actorLabel = document.createElement("strong");
+  actorLabel.textContent =
+    RISK_AUTHORITY_LABELS[authority.actorType] ?? authority.actorType;
+  const actorType = document.createElement("small");
+  actorType.textContent = authority.actorType;
+  actor.append(actorLabel, actorType);
+
+  row.append(
+    actor,
+    riskAuthorityCell(authority.portfolio, "Aggregate"),
+    riskAuthorityCell(authority.servicingQueue, "PII-free"),
+    riskAuthorityCell(authority.freeze, "Protective"),
+    riskAuthorityCell(authority.servicingResolution, "Dual control")
+  );
+  return row;
+}
+
+function renderRiskOperationsAssurance() {
+  const presentation = createRiskOperationsPresentation({
+    catalogOperationIds: [...serverCatalogOperations].sort()
+  });
+  if (!presentation) {
+    const assuranceStatus = el("operationsAssuranceStatus");
+    assuranceStatus.textContent = "Unavailable";
+    assuranceStatus.classList.add("warning");
+    el("operationsEvidenceBoundaryCopy").textContent =
+      "The closed presentation contract rejected the catalog. No control state is inferred.";
+    el("riskAuthorityRows").replaceChildren(
+      emptyRow("Authority ceilings are unavailable until the catalog passes validation.")
+    );
+    return;
+  }
+
+  const { alerts, reconciliation, incidents, approvals, launch } =
+    presentation.operationalEvidence;
+  const assuranceStatus = el("operationsAssuranceStatus");
+  assuranceStatus.classList.remove("neutral", "warning");
+  assuranceStatus.textContent = "Checked-in evidence";
+
+  el("operationsAlertEvidenceStatus").textContent =
+    "Internal durable · not exposed";
+  el("operationsAlertEvidenceCopy").textContent =
+    `${alerts.ruleCount} closed rules are checked in; no live alert list was loaded.`;
+  el("operationsAlertEvidenceMeta").textContent =
+    `${alerts.policyVersion} · delivery ${alerts.notificationTargetStatus}`;
+
+  el("operationsReconciliationEvidenceStatus").textContent =
+    "Worker-only · not loaded";
+  el("operationsReconciliationEvidenceCopy").textContent =
+    "Full reconciliation is restart-tested internally; this browser has no summary read operation.";
+  el("operationsReconciliationEvidenceMeta").textContent =
+    `${reconciliation.schemaVersion} · automatic repair off`;
+
+  el("operationsIncidentEvidenceStatus").textContent =
+    "Runbook only · unconfigured";
+  el("operationsIncidentEvidenceCopy").textContent =
+    "Named owner, notification, acknowledgement, and resolution remain outside this surface.";
+  el("operationsIncidentEvidenceMeta").textContent =
+    `owner ${incidents.namedOwnerStatus} · notify ${incidents.notificationTargetStatus}`;
+
+  el("operationsApprovalEvidenceStatus").textContent =
+    approvals.state === "exact_external_artifact_required"
+      ? "Exact artifact required"
+      : "Operation unavailable";
+  el("operationsApprovalEvidenceCopy").textContent =
+    approvals.state === "exact_external_artifact_required"
+      ? "Sandbox servicing resolutions require the exact command, current state hash, and distinct Risk + Operations approvals."
+      : "The complete dual-controlled servicing operation set is not present in the catalog.";
+  el("operationsApprovalEvidenceMeta").textContent =
+    "Proposal ID + version are locators, not bearer authority";
+
+  el("operationsEvidenceBoundaryCopy").textContent =
+    `${alerts.policyVersion} and launch policy ${launch.policyVersion} are checked-in evidence only. ` +
+    "No live alert, reconciliation, incident, approval, release, or funds authority is inferred.";
+  el("riskAuthorityRows").replaceChildren(
+    ...presentation.actorPolicyCeilings.map(riskAuthorityRow)
+  );
+}
+
 function renderRiskOperations() {
   if (!el("privateRiskSurface")) return;
+  renderRiskOperationsAssurance();
   const portfolio = riskOperations.portfolio;
   const status = el("privateRiskStatus");
   const catalogReady = riskOperations.readCatalogAvailable;
@@ -3902,37 +6665,30 @@ async function freezeRiskSubject() {
 
 function renderRuntime() {
   if (!el("requestLog")) return;
+  const architecture = createArchitectureCapabilityPresentation(serverCatalogSnapshot);
+  const agentManifest = currentAgentPilotCapabilityPacket();
   el("runtimeBaseUrl").textContent = window.location.origin;
-  el("sdkSnippet").textContent = `// Use the production origin published with /openapi.json.
-// Configure the mTLS certificate and private key in the workload transport,
-// never in this file, a browser bundle, or the Agent handoff packet.
-const IPO_ONE_ORIGIN = process.env.IPO_ONE_ORIGIN;
-const workloadJwt = await workloadIdentity.getCertificateBoundJwt({
-  audience: IPO_ONE_ORIGIN,
-  maxTtlSeconds: 300
+  el("runtimeTenantOperationCount").textContent =
+    architecture.available
+      ? `${architecture.operationCount} catalogued operations`
+      : "Catalog unavailable";
+  el("runtimeProtocolVersion").textContent = architecture.protocolVersion;
+  el("runtimeAgentWorkflowCount").textContent =
+    `${agentManifest.workflows.length} checked-in workflows`;
+  el("runtimeAgentToolCount").textContent =
+    `${agentManifest.mcp.toolCount} checked-in stdio tools`;
+  el("sdkSnippet").textContent = `import { IpoOneAgentMcpClient } from "@ipo-one/sdk";
+
+const agent = new IpoOneAgentMcpClient({
+  handle: localMcpHost.handle,
+  manifest: applicationHandoff,
+  transportProfile: "mcp_stdio_local"
 });
 
-const requestId = crypto.randomUUID();
-const response = await fetch(new URL("/tenant/v1/operations", IPO_ONE_ORIGIN), {
-  method: "POST",
-  dispatcher: mtlsDispatcher,
-  headers: {
-    accept: "application/json, application/problem+json",
-    authorization: \`Bearer \${workloadJwt}\`,
-    "content-type": "application/json",
-    "x-request-id": requestId
-  },
-  body: JSON.stringify({
-    schemaVersion: "tenant_protocol_request.v1",
-    operationId: "pilotReadAgentSelf",
-    requestId,
-    correlationId: crypto.randomUUID(),
-    payload: {}
-  })
-});
-
-if (!response.ok) throw await response.json();
-const result = await response.json();`;
+const receipt = await agent.runCreditOfferWorkflow({
+  creditRequest,
+  workflowId: "design-partner-application-0001"
+});`;
   el("runtimeSessionId").textContent = tenantPilot.connected
     ? "Authenticated"
     : "No active session";
@@ -3966,18 +6722,24 @@ const result = await response.json();`;
 function render() {
   renderAuditorEvidence();
   renderRiskOperations();
+  renderTradingCapital();
   renderRuntime();
   renderTenantPilot();
 }
 
 function bindActions() {
   el("accessBtn").addEventListener("click", openAccess);
+  el("walletPermissionsAccessBtn").addEventListener("click", openAccess);
   el("accessCloseBtn").addEventListener("click", closeAccess);
   el("accessScrim").addEventListener("click", closeAccess);
   el("googleSignInBtn").addEventListener("click", () => beginOidcSignIn("google"));
   el("emailSignInBtn").addEventListener("click", () => beginOidcSignIn("email"));
   el("walletSignInBtn").addEventListener("click", () => connectApprovedNetwork({ authenticate: true }));
   el("connectNetworkBtn").addEventListener("click", () => connectApprovedNetwork());
+  el("walletProviderList").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-wallet-provider-id]");
+    if (button) selectWalletProvider(button.dataset.walletProviderId);
+  });
   for (const button of document.querySelectorAll("[data-wallet-chain]")) {
     button.addEventListener("click", () => {
       accessState.selectedChainId = Number(button.dataset.walletChain);
@@ -3985,7 +6747,13 @@ function bindActions() {
     });
   }
   document.addEventListener("keydown", handleAccessKeys);
-  bindWalletProviderEvents();
+  window.addEventListener("online", () => {
+    walletAuthorityLifecycle.retryInvalidation().catch(() => {
+      // Network recovery never restores authority; the lifecycle remains quarantined.
+    });
+  });
+  window.addEventListener("pagehide", disposeWalletProviders, { once: true });
+  walletProviderRegistry.start();
   for (const button of document.querySelectorAll(".nav-item")) {
     button.addEventListener("click", () => showView(button.dataset.view));
   }
@@ -4008,7 +6776,10 @@ function bindActions() {
   el("mobileMenuBtn").addEventListener("click", () => setNavigationOpen(true));
   el("sidebarCloseBtn").addEventListener("click", () => setNavigationOpen(false));
   el("sidebarScrim").addEventListener("click", () => setNavigationOpen(false));
-  el("operatorModeBtn").addEventListener("click", () => showView("human"));
+  el("operatorModeBtn").addEventListener("click", () => {
+    setMode("human");
+    showView("request-credit");
+  });
   el("agentModeBtn").addEventListener("click", () => {
     setMode("agent");
     showView("overview");
@@ -4023,6 +6794,89 @@ function bindActions() {
     button.addEventListener("click", () => openPrivateProductAction(button.dataset.privateAction));
   }
   el("authenticatedRuntimeGateAction").addEventListener("click", openAccess);
+  el("capitalNetworkQueryForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    loadCapitalNetworkIntent();
+  });
+  el("capitalNetworkAcknowledgeBtn").addEventListener(
+    "click",
+    acknowledgeCapitalNetworkIntent
+  );
+  el("tradingCapitalQueryForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    loadTradingCapitalFacility();
+  });
+  el("tradingCapitalLoadEvidenceBtn").addEventListener("click", () =>
+    loadTradingCapitalFacility({ evidence: true })
+  );
+  el("tradingCapitalRequestCloseBtn").addEventListener(
+    "click",
+    requestTradingCapitalClose
+  );
+  el("tradingCapitalIssueProofBtn").addEventListener(
+    "click",
+    issueTradingCapitalProof
+  );
+  const tradingCapitalTabs = [
+    ...document.querySelectorAll("[data-trading-capital-view]")
+  ];
+  const selectTradingCapitalTab = (button, { focus = false } = {}) => {
+      tradingCapitalPilot.activeView = button.dataset.tradingCapitalView;
+      renderTradingCapital();
+      if (focus) button.focus();
+      announce(`${button.textContent} Trading Capital view selected`);
+  };
+  for (const [index, button] of tradingCapitalTabs.entries()) {
+    button.addEventListener("click", () => selectTradingCapitalTab(button));
+    button.addEventListener("keydown", (event) => {
+      let nextIndex;
+      if (event.key === "ArrowRight") {
+        nextIndex = (index + 1) % tradingCapitalTabs.length;
+      } else if (event.key === "ArrowLeft") {
+        nextIndex =
+          (index - 1 + tradingCapitalTabs.length) %
+          tradingCapitalTabs.length;
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = tradingCapitalTabs.length - 1;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      selectTradingCapitalTab(tradingCapitalTabs[nextIndex], { focus: true });
+    });
+  }
+  el("tradingCapitalFacilityId").addEventListener("input", () => {
+    if (
+      tradingCapitalPilot.facility?.tradingFacilityId ===
+      tenantInputValue("tradingCapitalFacilityId")
+    ) {
+      return;
+    }
+    tradingCapitalPilot.facility = null;
+    tradingCapitalPilot.closeRequest = null;
+    tradingCapitalPilot.settlement = null;
+    tradingCapitalPilot.performanceProof = null;
+    tradingCapitalPilot.evidence = null;
+    tradingCapitalPilot.error = false;
+    tradingCapitalPilot.helper =
+      "Enter one exact bound ID. Denied, missing, and cross-Tenant resources remain non-enumerating.";
+    renderTradingCapital();
+  });
+  el("capitalNetworkTransferIntentId").addEventListener("input", () => {
+    const loadedId = capitalNetworkPilot.providerView?.transferIntentId;
+    if (loadedId === tenantInputValue("capitalNetworkTransferIntentId")) {
+      renderCapitalNetwork();
+      return;
+    }
+    capitalNetworkPilot.providerView = null;
+    capitalNetworkPilot.acknowledgement = null;
+    capitalNetworkPilot.error = false;
+    capitalNetworkPilot.helper =
+      "Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.";
+    renderCapitalNetwork();
+  });
   el("createHumanSubjectBtn").addEventListener("click", createHumanSubject);
   el("createHumanConsentBtn").addEventListener("click", createHumanConsent);
   el("humanCreditForm").addEventListener("submit", (event) => {
@@ -4033,6 +6887,57 @@ function bindActions() {
     event.preventDefault();
     submitPilotFeedback();
   });
+  el("officialReportCreateForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    createOfficialReport();
+  });
+  el("officialReportAccessForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    readOfficialReport();
+  });
+  el("retrieveOfficialReportBtn").addEventListener("click", retrieveOfficialReport);
+  el("revokeOfficialReportBtn").addEventListener("click", revokeOfficialReport);
+  el("officialReportId").addEventListener("input", () => {
+    if (
+      officialReportPilot.report?.officialReportId !==
+      tenantInputValue("officialReportId")
+    ) {
+      officialReportPilot.report = null;
+      officialReportPilot.retrievedAt = null;
+      officialReportPilot.error = false;
+      officialReportPilot.helper =
+        "Every read and retrieval revalidates active same-Tenant ownership. Expired or revoked artifacts are unavailable.";
+    }
+    renderOfficialReportPilot();
+  });
+  el("creditPassportIssueForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    issueCreditPassportArtifact();
+  });
+  el("creditPassportReadForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    readOwnedCreditPassportArtifact();
+  });
+  el("creditPassportVerifyForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    verifyBoundCreditPassportArtifact();
+  });
+  el("revokeCreditPassportBtn").addEventListener(
+    "click",
+    revokeOwnedCreditPassportArtifact
+  );
+  for (const control of el("creditPassportIssueForm").querySelectorAll("input, select")) {
+    control.addEventListener("input", renderCreditPassportPilot);
+    control.addEventListener("change", renderCreditPassportPilot);
+  }
+  for (const control of [
+    el("creditPassportArtifactId"),
+    el("creditPassportVerifyArtifactId"),
+    el("creditPassportVerifyHash"),
+    el("creditPassportVerifyVersion")
+  ]) {
+    control.addEventListener("input", renderCreditPassportPilot);
+  }
   for (const control of el("pilotFeedbackForm").querySelectorAll("select")) {
     control.addEventListener("change", () => {
       normalizePilotFeedbackControls({
@@ -4062,6 +6967,11 @@ function bindActions() {
     event.preventDefault();
     loadOwnedObligation();
   });
+  el("refreshOwnedPositionsBtn").addEventListener("click", refreshOwnedPositionIndex);
+  el("obligationPortfolioRefreshBtn").addEventListener(
+    "click",
+    refreshOwnedPositionIndex
+  );
   el("ownedPositionList").addEventListener("click", (event) => {
     const button = event.target instanceof Element
       ? event.target.closest("button[data-obligation-id]")
@@ -4071,6 +6981,28 @@ function bindActions() {
     if (!exactResourceId(obligationId)) return;
     el("ownedObligationId").value = obligationId;
     loadOwnedObligation({ obligationId });
+  });
+  el("obligationPortfolioList").addEventListener("click", (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest("button[data-obligation-id]")
+      : null;
+    if (!button || !el("obligationPortfolioList").contains(button)) return;
+    const obligationId = button.dataset.obligationId ?? "";
+    if (!exactResourceId(obligationId)) return;
+    el("ownedObligationId").value = obligationId;
+    loadOwnedObligation({ obligationId });
+  });
+  el("obligationDetailRefreshBtn").addEventListener("click", () => {
+    const obligationId = tenantPilot.obligation?.obligationId;
+    if (obligationId) loadOwnedObligation({ obligationId });
+  });
+  el("obligationDetailEvidenceBtn").addEventListener("click", () => {
+    loadOwnedEvidence();
+  });
+  el("obligationDetailRepayBtn").addEventListener("click", () => {
+    showView("repay-settle");
+    requestAnimationFrame(() => focusJumpTarget(el("servicingCasePanel")));
+    announce("Selected Obligation repayment workspace opened");
   });
   el("ownedObligationId").addEventListener("input", renderTenantPilot);
   el("servicingRepaymentAmount").addEventListener("input", () => {
@@ -4190,10 +7122,23 @@ function bindActions() {
       tenantPilot.decision = null;
       tenantPilot.offer = null;
       tenantPilot.receipt = null;
+      tenantPilot.offerReview = null;
       resetHumanObligationWorkflow();
       el("humanOfferAcknowledge").checked = false;
       renderTenantPilot();
     });
+  }
+  for (const control of [
+    el("humanCreditAmount"),
+    el("humanCreditTerm"),
+    el("humanInstallments"),
+    el("humanCreditPurpose"),
+    el("humanRepaymentFrequency")
+  ]) {
+    control.addEventListener(
+      control instanceof HTMLSelectElement ? "change" : "input",
+      renderTenantPilot
+    );
   }
   el("copyHumanReceiptBtn").addEventListener("click", async () => {
     if (!tenantPilot.receipt) return toast("Complete a verified Human credit workflow first.", "error");
@@ -4254,7 +7199,7 @@ function bindActions() {
     link.remove();
     URL.revokeObjectURL(url);
     toast("Agent proof request downloaded");
-    announce("Submit the downloaded request with the mTLS-authenticated Agent workload");
+    announce("Submit the downloaded request with the registered local Agent Host");
   });
   el("createDraftMandateBtn").addEventListener("click", createDraftAgentMandate);
   el("loadMandateBtn").addEventListener("click", loadAgentMandate);
@@ -4327,7 +7272,50 @@ function bindActions() {
     link.remove();
     URL.revokeObjectURL(url);
     toast(`${handoff.status === "application_ready" ? "Application" : "Runtime"} handoff downloaded`);
-    announce("Credential-free Agent handoff downloaded for the authenticated HTTPS runtime");
+    announce("Credential-free Agent handoff downloaded for the local no-funds runtime");
+  });
+  el("agentConsoleCopyManifestBtn").addEventListener("click", async () => {
+    const presentation = currentAgentConsolePresentation();
+    if (!presentation?.registry.catalogParity || presentation.status === "waiting") {
+      return toast("Load an eligible exact handoff with 11/11 catalog parity first.", "error");
+    }
+    try {
+      await navigator.clipboard.writeText(
+        JSON.stringify(currentAgentPilotCapabilityPacket(), null, 2)
+      );
+      toast("Agent capability manifest copied");
+      announce("Non-authorizing Agent capability manifest copied");
+    } catch {
+      toast("Clipboard access is unavailable in this browser.", "error");
+    }
+  });
+  el("agentConsoleDownloadHandoffBtn").addEventListener("click", () => {
+    const presentation = currentAgentConsolePresentation();
+    const handoff = currentAgentMcpHandoffPacket();
+    if (!handoff || !presentation?.registry.catalogParity) {
+      return toast("Load an eligible exact handoff with 11/11 catalog parity first.", "error");
+    }
+    const body = JSON.stringify(handoff, null, 2);
+    const url = URL.createObjectURL(new Blob([body], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = handoff.status === "application_ready"
+      ? "ipo-one-agent-application-handoff.json"
+      : "ipo-one-agent-runtime-handoff.json";
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast("Credential-free Agent handoff downloaded");
+  });
+  el("agentConsoleCopySdkBtn").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(el("agentConsoleSdkSnippet").textContent);
+      toast("Local Agent SDK example copied");
+    } catch {
+      toast("Clipboard access is unavailable in this browser.", "error");
+    }
   });
   el("returnToAgentAuthorityBtn").addEventListener("click", openPrincipalAgentAuthority);
   window.addEventListener("hashchange", () => showView(location.hash.slice(1), { updateHash: false }));
@@ -4343,12 +7331,12 @@ async function boot() {
   bindActions();
   renderAccess();
   el("runtimeBaseUrl").textContent = window.location.origin;
-  showView(location.hash.slice(1) || "human", { focus: false, updateHash: false });
+  showView(location.hash.slice(1) || "overview", { focus: false, updateHash: false });
   renderTenantPilot();
   renderAuditorEvidence();
   renderRiskOperations();
-  await probeTenantPilot();
   await probeAccessOptions();
+  await probeTenantPilot();
   setConnection(tenantPilot.connected);
   render();
   announce(tenantPilot.connected

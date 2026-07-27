@@ -19,6 +19,7 @@ import {
   activateSandboxMandateCommandHandler,
   HumanTenantCommandClient,
   OperatorTenantCommandClient,
+  ProviderTenantCommandClient,
   RiskTenantQueryClient,
   TenantCommandHandlerRegistry,
   createAgentSubjectCommandHandler,
@@ -150,8 +151,10 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotCreateAgentAccountChallenge",
     "pilotCreateAgentSubject",
     "pilotCreateConsent",
+    "pilotCreateCreditPassportArtifact",
     "pilotCreateDraftMandate",
     "pilotCreateHumanSubject",
+    "pilotCreateOfficialReport",
     "pilotEvaluateCreditApplication",
     "pilotExecuteSandboxObligation",
     "pilotFreezeSubject",
@@ -164,6 +167,8 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotReadHumanSelf",
     "pilotReadIdentityReference",
     "pilotReadMandate",
+    "pilotReadOfficialReport",
+    "pilotReadOwnCreditPassportArtifact",
     "pilotReadOwnObligation",
     "pilotReadOwnObligationEvidence",
     "pilotReadPilotFeedbackSummary",
@@ -175,11 +180,40 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotRepurchaseSandboxObligation",
     "pilotRequestCredit",
     "pilotRestructureSandboxObligation",
+    "pilotRetrieveOfficialReport",
     "pilotRevokeConsent",
+    "pilotRevokeCreditPassportArtifact",
     "pilotRevokeDraftMandate",
+    "pilotRevokeOfficialReport",
     "pilotSubmitAgentAccountProof",
     "pilotSubmitPilotFeedback",
+    "pilotVerifyCreditPassportArtifact",
     "pilotWriteOffSandboxObligation",
+    "tradingAcceptMatchAsProvider",
+    "tradingAcceptMatchAsSubject",
+    "tradingActivateFacility",
+    "tradingCancelOrderIntent",
+    "tradingContributeSubjectCollateral",
+    "tradingCreateAccountBindingChallenge",
+    "tradingCreateCapitalRequest",
+    "tradingCreateFacility",
+    "tradingCreateMatchProposal",
+    "tradingCreateProviderMandate",
+    "tradingEvaluateRisk",
+    "tradingFinalizeEvidenceSnapshot",
+    "tradingFlattenFacility",
+    "tradingImportHyperliquidHistory",
+    "tradingIssuePerformanceProof",
+    "tradingListCompatibleMandates",
+    "tradingPauseNewRisk",
+    "tradingReadCreditProfile",
+    "tradingReadFacilityEvidence",
+    "tradingReadFacilityState",
+    "tradingReadSettlement",
+    "tradingRecordProviderFunding",
+    "tradingRequestClose",
+    "tradingRunSettlement",
+    "tradingSubmitOrderIntent",
     "workerAdvanceSandboxServicing",
     "workerProcessInbox"
   ]);
@@ -1710,4 +1744,111 @@ test("Human and Agent clients emit the same closed credit application protocol",
   assert.deepEqual(calls[2].resource, { resourceType: "credit_intent", resourceId: "credit_intent_human" });
   assert.deepEqual(calls[3].resource, { resourceType: "credit_intent", resourceId: "credit_intent_agent" });
   assert.equal(calls.every((call) => Object.hasOwn(call, "actorId") === false), true);
+});
+
+test("TC-102 Human, Agent, and Provider clients expose only the six reviewed matching operations", async () => {
+  const calls = [];
+  const gateway = {
+    async execute(command) {
+      calls.push(command);
+      return { response: { accepted: true } };
+    }
+  };
+  const human = new HumanTenantCommandClient({
+    gateway,
+    authenticationContextProvider: async () =>
+      authenticationContext(ActorType.HUMAN, "actor_tc102_human")
+  });
+  const agent = new AgentTenantCommandClient({
+    gateway,
+    authenticationContextProvider: async () =>
+      authenticationContext(ActorType.AGENT, "actor_tc102_agent")
+  });
+  const provider = new ProviderTenantCommandClient({
+    gateway,
+    authenticationContextProvider: async () =>
+      authenticationContext(ActorType.PROVIDER, "actor_tc102_provider")
+  });
+  const requestPayload = {
+    templateType: "hybrid",
+    strategyClass: "market_neutral",
+    assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+    requestedAmountMinor: "1000000",
+    durationDays: 90
+  };
+  await human.createTradingCapitalRequest({
+    tradingCreditProfileId: "trading_credit_profile_human",
+    payload: requestPayload,
+    idempotencyKey: "tc102-human-request-0001",
+    requestId: "request_tc102_human_001",
+    correlationId: "correlation_tc102"
+  });
+  await agent.createTradingCapitalRequest({
+    tradingCreditProfileId: "trading_credit_profile_agent",
+    payload: requestPayload,
+    idempotencyKey: "tc102-agent-request-0001",
+    requestId: "request_tc102_agent_001",
+    correlationId: "correlation_tc102"
+  });
+  await provider.createTradingProviderMandate({
+    providerId: "provider_tc102",
+    payload: {
+      supportedTemplateTypes: ["credit", "hybrid"],
+      allowedSubjectTypes: ["human", "agent"],
+      allowedStrategyClasses: ["market_neutral", "directional"],
+      assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+      minAmountMinor: "500000",
+      maxAmountMinor: "2000000",
+      minDurationDays: 30,
+      maxDurationDays: 180
+    },
+    idempotencyKey: "tc102-provider-mandate-0001",
+    requestId: "request_tc102_provider_001",
+    correlationId: "correlation_tc102"
+  });
+  await human.listCompatibleTradingMandates({
+    tradingCapitalRequestId: "trading_capital_request_human",
+    requestId: "request_tc102_human_002",
+    correlationId: "correlation_tc102"
+  });
+  await agent.createTradingMatchProposal({
+    tradingCapitalRequestId: "trading_capital_request_agent",
+    payload: {
+      providerMandateId: "trading_provider_mandate_tc102",
+      requestHash: `0x${"1".repeat(64)}`,
+      mandateHash: `0x${"2".repeat(64)}`
+    },
+    idempotencyKey: "tc102-agent-proposal-0001",
+    requestId: "request_tc102_agent_002",
+    correlationId: "correlation_tc102"
+  });
+  const acceptancePayload = {
+    proposalHash: `0x${"3".repeat(64)}`,
+    termsHash: `0x${"4".repeat(64)}`
+  };
+  await provider.acceptTradingMatchAsProvider({
+    tradingMatchProposalId: "trading_match_proposal_tc102",
+    payload: acceptancePayload,
+    idempotencyKey: "tc102-provider-accept-0001",
+    requestId: "request_tc102_provider_002",
+    correlationId: "correlation_tc102"
+  });
+  await human.acceptTradingMatchAsSubject({
+    tradingMatchProposalId: "trading_match_proposal_tc102",
+    payload: acceptancePayload,
+    idempotencyKey: "tc102-subject-accept-0001",
+    requestId: "request_tc102_human_003",
+    correlationId: "correlation_tc102"
+  });
+  assert.deepEqual(calls.map(({ operationId }) => operationId), [
+    "tradingCreateCapitalRequest",
+    "tradingCreateCapitalRequest",
+    "tradingCreateProviderMandate",
+    "tradingListCompatibleMandates",
+    "tradingCreateMatchProposal",
+    "tradingAcceptMatchAsProvider",
+    "tradingAcceptMatchAsSubject"
+  ]);
+  assert.equal(calls.every((call) => Object.hasOwn(call, "actorId") === false), true);
+  assert.equal(calls.every((call) => Object.hasOwn(call, "tenantId") === false), true);
 });

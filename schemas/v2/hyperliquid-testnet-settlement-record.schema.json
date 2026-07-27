@@ -1,0 +1,537 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hyperliquid-testnet-settlement-record.schema.json",
+  "title": "IPO.ONE Hyperliquid Testnet Settlement Record v1",
+  "description": "Closed simulation-only finality, waterfall, canonical Ledger, and revocable Performance Evidence contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "settlementId",
+    "settlementHash",
+    "requestHash",
+    "idempotencyKeyHash",
+    "authorizationDecisionHash",
+    "admissionDecisionHash",
+    "facilityId",
+    "facilityHash",
+    "facilityStateHashBefore",
+    "facilityVersionBefore",
+    "fundingId",
+    "fundingHash",
+    "closeRequestId",
+    "closeRequestHash",
+    "obligationId",
+    "obligationHash",
+    "subjectId",
+    "assetId",
+    "templateType",
+    "termsHash",
+    "fixedReturnBps",
+    "performanceParticipationBps",
+    "durationDays",
+    "subjectContributionMinor",
+    "providerContributionMinor",
+    "finalReconciliationHash",
+    "feePolicyId",
+    "feePolicyHash",
+    "feeApprovalEvidenceHash",
+    "ipoOneFeeBps",
+    "canonicalLedgerStateHashBefore",
+    "ledgerTransactionCountBefore",
+    "processedObservationCount",
+    "finalObservationHash",
+    "finalSourceEvidenceHash",
+    "realizedPnlMinor",
+    "venueCostMinor",
+    "closingCostMinor",
+    "finalEquityMinor",
+    "waterfall",
+    "ledgerTransactionId",
+    "ledgerTransactionHash",
+    "facilityStateHashAfter",
+    "facilityVersionAfter",
+    "currentPerformanceEvidence",
+    "performanceEvidenceVersion",
+    "incidentReasonCodes",
+    "status",
+    "version",
+    "stateHash",
+    "createdAt",
+    "updatedAt",
+    "settledAt",
+    "economicTermsImmutable",
+    "feePolicyVersioned",
+    "finalReconciliationRequired",
+    "noPayoutBeforeFinality",
+    "canonicalLedgerTransactionCreated",
+    "performanceEvidenceRevocable",
+    "environment",
+    "testnetOnly",
+    "simulationOnly",
+    "protectedTestnetE2EOnly",
+    "nonRedeemable",
+    "payoutExecuted",
+    "withdrawalExecuted",
+    "transferExecuted",
+    "externalSystemQueried",
+    "externalCloseSubmitted",
+    "liveTransportApproved",
+    "liveAccountsApproved",
+    "apiWalletApproved",
+    "rawAddressPersisted",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "canonicalFacility",
+    "canonicalObligation",
+    "canonicalLedger",
+    "secondFacilityCreated",
+    "secondObligationCreated",
+    "secondLedgerCreated",
+    "principalGuaranteeCreated",
+    "syntheticReceivableCreated",
+    "dynamicRepricingApplied",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "realFunds",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "settlementId": { "$ref": "#/$defs/identifier" },
+    "settlementHash": { "$ref": "#/$defs/hash" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/hash" },
+    "authorizationDecisionHash": { "$ref": "#/$defs/hash" },
+    "admissionDecisionHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "facilityStateHashBefore": { "$ref": "#/$defs/hash" },
+    "facilityVersionBefore": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "fundingId": { "$ref": "#/$defs/identifier" },
+    "fundingHash": { "$ref": "#/$defs/hash" },
+    "closeRequestId": { "$ref": "#/$defs/identifier" },
+    "closeRequestHash": { "$ref": "#/$defs/hash" },
+    "obligationId": { "$ref": "#/$defs/identifier" },
+    "obligationHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "assetId": { "$ref": "#/$defs/identifier" },
+    "templateType": {
+      "enum": ["credit", "performance_participation", "hybrid"]
+    },
+    "termsHash": { "$ref": "#/$defs/hash" },
+    "fixedReturnBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "performanceParticipationBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "durationDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3650
+    },
+    "subjectContributionMinor": { "$ref": "#/$defs/positiveMinor" },
+    "providerContributionMinor": { "$ref": "#/$defs/positiveMinor" },
+    "finalReconciliationHash": { "$ref": "#/$defs/hash" },
+    "feePolicyId": { "$ref": "#/$defs/identifier" },
+    "feePolicyHash": { "$ref": "#/$defs/hash" },
+    "feeApprovalEvidenceHash": { "$ref": "#/$defs/hash" },
+    "ipoOneFeeBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "canonicalLedgerStateHashBefore": { "$ref": "#/$defs/hash" },
+    "ledgerTransactionCountBefore": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "processedObservationCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "finalObservationHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "finalSourceEvidenceHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "realizedPnlMinor": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/signedMinor" }
+      ]
+    },
+    "venueCostMinor": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/minor" }
+      ]
+    },
+    "closingCostMinor": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/minor" }
+      ]
+    },
+    "finalEquityMinor": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/minor" }
+      ]
+    },
+    "waterfall": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/waterfall" }
+      ]
+    },
+    "ledgerTransactionId": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/identifier" }
+      ]
+    },
+    "ledgerTransactionHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "facilityStateHashAfter": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "facilityVersionAfter": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 1000001
+        }
+      ]
+    },
+    "currentPerformanceEvidence": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/performanceEvidence" }
+      ]
+    },
+    "performanceEvidenceVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "incidentReasonCodes": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "$ref": "#/$defs/code" }
+    },
+    "status": {
+      "enum": [
+        "AWAITING_FINALITY",
+        "READY_TO_SETTLE",
+        "SETTLED",
+        "EVIDENCE_ACTIVE",
+        "EVIDENCE_REVOKED",
+        "INCIDENT"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "stateHash": { "$ref": "#/$defs/hash" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "settledAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "economicTermsImmutable": { "const": true },
+    "feePolicyVersioned": { "const": true },
+    "finalReconciliationRequired": { "const": true },
+    "noPayoutBeforeFinality": { "const": true },
+    "canonicalLedgerTransactionCreated": { "type": "boolean" },
+    "performanceEvidenceRevocable": { "const": true },
+    "environment": { "const": "hyperliquid_testnet" },
+    "testnetOnly": { "const": true },
+    "simulationOnly": { "const": true },
+    "protectedTestnetE2EOnly": { "const": true },
+    "nonRedeemable": { "const": true },
+    "payoutExecuted": { "const": false },
+    "withdrawalExecuted": { "const": false },
+    "transferExecuted": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "externalCloseSubmitted": { "const": false },
+    "liveTransportApproved": { "const": false },
+    "liveAccountsApproved": { "const": false },
+    "apiWalletApproved": { "const": false },
+    "rawAddressPersisted": { "const": false },
+    "rawResponsePersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "canonicalFacility": { "const": true },
+    "canonicalObligation": { "const": true },
+    "canonicalLedger": { "const": true },
+    "secondFacilityCreated": { "const": false },
+    "secondObligationCreated": { "const": false },
+    "secondLedgerCreated": { "const": false },
+    "principalGuaranteeCreated": { "const": false },
+    "syntheticReceivableCreated": { "const": false },
+    "dynamicRepricingApplied": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realFunds": { "const": false },
+    "productionFundsMoved": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "hyperliquid_testnet_simulated_settlement.v1"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96,
+      "pattern": "^[a-z0-9][a-z0-9_]*$"
+    },
+    "minor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "positiveMinor": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,77}$"
+    },
+    "signedMinor": {
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]{0,77})$"
+    },
+    "waterfall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateType",
+        "totalCapitalMinor",
+        "providerContributionMinor",
+        "subjectContributionMinor",
+        "realizedPnlMinor",
+        "venueCostMinor",
+        "closingCostMinor",
+        "finalEquityMinor",
+        "providerPrincipalReturnMinor",
+        "providerPrincipalShortfallMinor",
+        "subjectContributionReturnMinor",
+        "subjectFirstLossMinor",
+        "realizedFinancialIncomeMinor",
+        "fixedReturnTargetMinor",
+        "providerFixedReturnGrossMinor",
+        "providerPerformanceParticipationGrossMinor",
+        "providerGrossIncomeMinor",
+        "ipoOneFeeBasisMinor",
+        "ipoOneFeeMinor",
+        "providerFixedReturnNetMinor",
+        "providerPerformanceParticipationNetMinor",
+        "providerNetIncomeMinor",
+        "providerTotalAllocationMinor",
+        "subjectProfitMinor",
+        "subjectTotalAllocationMinor",
+        "totalAllocatedMinor",
+        "principalFeeApplied",
+        "unrealizedPnlFeeApplied",
+        "providerPrincipalGuaranteed",
+        "roundingMode",
+        "waterfallBalanced",
+        "schemaVersion"
+      ],
+      "properties": {
+        "templateType": {
+          "enum": ["credit", "performance_participation", "hybrid"]
+        },
+        "totalCapitalMinor": { "$ref": "#/$defs/positiveMinor" },
+        "providerContributionMinor": { "$ref": "#/$defs/positiveMinor" },
+        "subjectContributionMinor": { "$ref": "#/$defs/positiveMinor" },
+        "realizedPnlMinor": { "$ref": "#/$defs/signedMinor" },
+        "venueCostMinor": { "$ref": "#/$defs/minor" },
+        "closingCostMinor": { "$ref": "#/$defs/minor" },
+        "finalEquityMinor": { "$ref": "#/$defs/minor" },
+        "providerPrincipalReturnMinor": { "$ref": "#/$defs/minor" },
+        "providerPrincipalShortfallMinor": { "$ref": "#/$defs/minor" },
+        "subjectContributionReturnMinor": { "$ref": "#/$defs/minor" },
+        "subjectFirstLossMinor": { "$ref": "#/$defs/minor" },
+        "realizedFinancialIncomeMinor": { "$ref": "#/$defs/minor" },
+        "fixedReturnTargetMinor": { "$ref": "#/$defs/minor" },
+        "providerFixedReturnGrossMinor": { "$ref": "#/$defs/minor" },
+        "providerPerformanceParticipationGrossMinor": { "$ref": "#/$defs/minor" },
+        "providerGrossIncomeMinor": { "$ref": "#/$defs/minor" },
+        "ipoOneFeeBasisMinor": { "$ref": "#/$defs/minor" },
+        "ipoOneFeeMinor": { "$ref": "#/$defs/minor" },
+        "providerFixedReturnNetMinor": { "$ref": "#/$defs/minor" },
+        "providerPerformanceParticipationNetMinor": { "$ref": "#/$defs/minor" },
+        "providerNetIncomeMinor": { "$ref": "#/$defs/minor" },
+        "providerTotalAllocationMinor": { "$ref": "#/$defs/minor" },
+        "subjectProfitMinor": { "$ref": "#/$defs/minor" },
+        "subjectTotalAllocationMinor": { "$ref": "#/$defs/minor" },
+        "totalAllocatedMinor": { "$ref": "#/$defs/minor" },
+        "principalFeeApplied": { "const": false },
+        "unrealizedPnlFeeApplied": { "const": false },
+        "providerPrincipalGuaranteed": { "const": false },
+        "roundingMode": { "const": "floor_minor_units_subject_residual" },
+        "waterfallBalanced": { "const": true },
+        "schemaVersion": { "const": "hyperliquid_testnet_waterfall.v1" }
+      }
+    },
+    "performanceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "performanceEvidenceId",
+        "performanceEvidenceHash",
+        "settlementId",
+        "settlementHash",
+        "facilityId",
+        "facilityHash",
+        "obligationId",
+        "obligationHash",
+        "ledgerTransactionHash",
+        "claims",
+        "status",
+        "reasonCode",
+        "previousEvidenceHash",
+        "evidenceVersion",
+        "issuedByActorHash",
+        "issuedAt",
+        "expiresAt",
+        "revocable",
+        "externalVerificationAvailable",
+        "officialReport",
+        "universalScore",
+        "strategyDataIncluded",
+        "rawHistoryIncluded",
+        "piiIncluded",
+        "secretsIncluded",
+        "productionAuthority",
+        "fundsAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "performanceEvidenceId": { "$ref": "#/$defs/identifier" },
+        "performanceEvidenceHash": { "$ref": "#/$defs/hash" },
+        "settlementId": { "$ref": "#/$defs/identifier" },
+        "settlementHash": { "$ref": "#/$defs/hash" },
+        "facilityId": { "$ref": "#/$defs/identifier" },
+        "facilityHash": { "$ref": "#/$defs/hash" },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "obligationHash": { "$ref": "#/$defs/hash" },
+        "ledgerTransactionHash": { "$ref": "#/$defs/hash" },
+        "claims": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "finalReconciliation",
+            "zeroExposure",
+            "waterfallBalanced",
+            "canonicalFacilitySettled",
+            "canonicalObligationLinked",
+            "canonicalLedgerPosted",
+            "principalGuaranteed",
+            "principalFeeApplied",
+            "unrealizedPnlFeeApplied",
+            "payoutExecuted",
+            "finalEquityMinor",
+            "providerPrincipalReturnMinor",
+            "providerPrincipalShortfallMinor",
+            "subjectFirstLossMinor",
+            "providerNetIncomeMinor",
+            "subjectProfitMinor",
+            "ipoOneFeeMinor"
+          ],
+          "properties": {
+            "finalReconciliation": { "const": true },
+            "zeroExposure": { "const": true },
+            "waterfallBalanced": { "const": true },
+            "canonicalFacilitySettled": { "const": true },
+            "canonicalObligationLinked": { "const": true },
+            "canonicalLedgerPosted": { "const": true },
+            "principalGuaranteed": { "const": false },
+            "principalFeeApplied": { "const": false },
+            "unrealizedPnlFeeApplied": { "const": false },
+            "payoutExecuted": { "const": false },
+            "finalEquityMinor": { "$ref": "#/$defs/minor" },
+            "providerPrincipalReturnMinor": { "$ref": "#/$defs/minor" },
+            "providerPrincipalShortfallMinor": { "$ref": "#/$defs/minor" },
+            "subjectFirstLossMinor": { "$ref": "#/$defs/minor" },
+            "providerNetIncomeMinor": { "$ref": "#/$defs/minor" },
+            "subjectProfitMinor": { "$ref": "#/$defs/minor" },
+            "ipoOneFeeMinor": { "$ref": "#/$defs/minor" }
+          }
+        },
+        "status": { "enum": ["active", "revoked"] },
+        "reasonCode": { "$ref": "#/$defs/code" },
+        "previousEvidenceHash": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "evidenceVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "issuedByActorHash": { "$ref": "#/$defs/hash" },
+        "issuedAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "revocable": { "const": true },
+        "externalVerificationAvailable": { "const": false },
+        "officialReport": { "const": false },
+        "universalScore": { "const": false },
+        "strategyDataIncluded": { "const": false },
+        "rawHistoryIncluded": { "const": false },
+        "piiIncluded": { "const": false },
+        "secretsIncluded": { "const": false },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_simulated_performance_evidence.v1"
+        }
+      }
+    }
+  }
+}

@@ -7,6 +7,8 @@ export type TenantProtocolOperationId =
   | "pilotCreateConsent"
   | "pilotCreateHumanSubject"
   | "pilotCreateDraftMandate"
+  | "pilotCreateCreditPassportArtifact"
+  | "pilotCreateOfficialReport"
   | "pilotEvaluateCreditApplication"
   | "pilotExecuteSandboxObligation"
   | "pilotFreezeSubject"
@@ -17,6 +19,10 @@ export type TenantProtocolOperationId =
   | "pilotReadAgentSelf"
   | "pilotReadAgentAccountBinding"
   | "pilotReadCreditApplication"
+  | "pilotReadOwnCreditPassportArtifact"
+  | "pilotReadOfficialReport"
+  | "pilotRetrieveOfficialReport"
+  | "pilotVerifyCreditPassportArtifact"
   | "pilotReadConsent"
   | "pilotReadHumanSelf"
   | "pilotReadWorkspaceResume"
@@ -32,11 +38,38 @@ export type TenantProtocolOperationId =
   | "pilotReadProviderIntent"
   | "pilotRevokeConsent"
   | "pilotRevokeDraftMandate"
+  | "pilotRevokeCreditPassportArtifact"
+  | "pilotRevokeOfficialReport"
   | "pilotSubmitAgentAccountProof"
   | "pilotSubmitPilotFeedback"
   | "pilotWriteOffSandboxObligation"
   | "workerAdvanceSandboxServicing"
-  | "workerProcessInbox";
+  | "workerProcessInbox"
+  | "tradingCreateAccountBindingChallenge"
+  | "tradingImportHyperliquidHistory"
+  | "tradingFinalizeEvidenceSnapshot"
+  | "tradingReadCreditProfile"
+  | "tradingCreateCapitalRequest"
+  | "tradingCreateProviderMandate"
+  | "tradingListCompatibleMandates"
+  | "tradingCreateMatchProposal"
+  | "tradingAcceptMatchAsProvider"
+  | "tradingAcceptMatchAsSubject"
+  | "tradingCreateFacility"
+  | "tradingContributeSubjectCollateral"
+  | "tradingRecordProviderFunding"
+  | "tradingActivateFacility"
+  | "tradingSubmitOrderIntent"
+  | "tradingCancelOrderIntent"
+  | "tradingReadFacilityState"
+  | "tradingEvaluateRisk"
+  | "tradingPauseNewRisk"
+  | "tradingFlattenFacility"
+  | "tradingRequestClose"
+  | "tradingRunSettlement"
+  | "tradingReadSettlement"
+  | "tradingIssuePerformanceProof"
+  | "tradingReadFacilityEvidence";
 
 export type TenantProtocolRequestSchemaVersion = "tenant_protocol_request.v1";
 export type TenantProtocolResultSchemaVersion = "tenant_protocol_result.v1";
@@ -769,7 +802,7 @@ export function assertDualNativeSandboxObligationParity(input: {
 }): DualNativeObligationEconomicParity;
 
 export interface TenantProtocolResourceReference {
-  resourceType: "subject" | "consent" | "credit_intent" | "credit_offer" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "risk_portfolio" | "servicing_queue" | "transfer_intent";
+  resourceType: "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "risk_portfolio" | "servicing_queue" | "trading_facility" | "trading_order_intent" | "trading_match_proposal" | "transfer_intent";
   resourceId: string;
 }
 
@@ -1150,6 +1183,321 @@ export interface ProcessProviderInboxRequest extends TenantProtocolRequestBase {
   idempotencyKey: string;
 }
 
+export interface CreateTradingAccountBindingChallengeRequest extends TenantProtocolRequestBase {
+  operationId: "tradingCreateAccountBindingChallenge";
+  payload: {
+    environment: "hyperliquid_testnet";
+    masterAccountAddress: `0x${string}`;
+    subaccountAddress: `0x${string}`;
+  };
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ImportTradingHistoryRequest extends TenantProtocolRequestBase {
+  operationId: "tradingImportHyperliquidHistory";
+  payload: {
+    masterAccountAddress: `0x${string}`;
+    subaccountAddress: `0x${string}`;
+    signature: `0x${string}`;
+  };
+  resource: { resourceType: "trading_credit_profile"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface FinalizeTradingEvidenceSnapshotRequest extends TenantProtocolRequestBase {
+  operationId: "tradingFinalizeEvidenceSnapshot";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_credit_profile"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ReadTradingCreditProfileRequest extends TenantProtocolRequestBase {
+  operationId: "tradingReadCreditProfile";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_credit_profile"; resourceId: string };
+}
+
+export type TradingCapitalTemplateType =
+  | "credit"
+  | "performance_participation"
+  | "hybrid";
+export type TradingStrategyClass =
+  | "market_neutral"
+  | "directional"
+  | "liquidity_provision";
+
+export interface CreateTradingCapitalRequestRequest extends TenantProtocolRequestBase {
+  operationId: "tradingCreateCapitalRequest";
+  payload: {
+    templateType: TradingCapitalTemplateType;
+    strategyClass: TradingStrategyClass;
+    assetId: "urn:ipo-one:sandbox-asset:usd-cent";
+    requestedAmountMinor: string;
+    durationDays: number;
+  };
+  resource: { resourceType: "trading_credit_profile"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface CreateTradingProviderMandateRequest extends TenantProtocolRequestBase {
+  operationId: "tradingCreateProviderMandate";
+  payload: {
+    supportedTemplateTypes: TradingCapitalTemplateType[];
+    allowedSubjectTypes: ("human" | "agent")[];
+    allowedStrategyClasses: TradingStrategyClass[];
+    assetId: "urn:ipo-one:sandbox-asset:usd-cent";
+    minAmountMinor: string;
+    maxAmountMinor: string;
+    minDurationDays: number;
+    maxDurationDays: number;
+  };
+  resource: { resourceType: "provider"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ListCompatibleTradingMandatesRequest extends TenantProtocolRequestBase {
+  operationId: "tradingListCompatibleMandates";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_capital_request"; resourceId: string };
+}
+
+export interface CreateTradingMatchProposalRequest extends TenantProtocolRequestBase {
+  operationId: "tradingCreateMatchProposal";
+  payload: {
+    providerMandateId: string;
+    requestHash: string;
+    mandateHash: string;
+  };
+  resource: { resourceType: "trading_capital_request"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface AcceptTradingMatchAsProviderRequest extends TenantProtocolRequestBase {
+  operationId: "tradingAcceptMatchAsProvider";
+  payload: { proposalHash: string; termsHash: string };
+  resource: { resourceType: "trading_match_proposal"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface AcceptTradingMatchAsSubjectRequest extends TenantProtocolRequestBase {
+  operationId: "tradingAcceptMatchAsSubject";
+  payload: { proposalHash: string; termsHash: string };
+  resource: { resourceType: "trading_match_proposal"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface TradingExpectedFacilityState {
+  expectedStateHash: string;
+  expectedVersion: number;
+}
+
+export interface CreateTradingFacilityRequest extends TenantProtocolRequestBase {
+  operationId: "tradingCreateFacility";
+  payload: { obligationId: string; proposalHash: string };
+  resource: { resourceType: "trading_match_proposal"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ContributeTradingSubjectCollateralRequest extends TenantProtocolRequestBase {
+  operationId: "tradingContributeSubjectCollateral";
+  payload: TradingExpectedFacilityState & { amountMinor: string };
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface RecordTradingProviderFundingRequest extends TenantProtocolRequestBase {
+  operationId: "tradingRecordProviderFunding";
+  payload: TradingExpectedFacilityState & { amountMinor: string };
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ActivateTradingFacilityRequest extends TenantProtocolRequestBase {
+  operationId: "tradingActivateFacility";
+  payload: TradingExpectedFacilityState;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface SubmitTradingOrderIntentRequest extends TenantProtocolRequestBase {
+  operationId: "tradingSubmitOrderIntent";
+  payload: TradingExpectedFacilityState & {
+    direction: "long" | "short";
+    syntheticNotionalMinor: string;
+  };
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface CancelTradingOrderIntentRequest extends TenantProtocolRequestBase {
+  operationId: "tradingCancelOrderIntent";
+  payload: {
+    expectedFacilityStateHash: string;
+    expectedFacilityVersion: number;
+    expectedOrderIntentHash: string;
+    expectedOrderVersion: 1 | 2;
+  };
+  resource: { resourceType: "trading_order_intent"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ReadTradingFacilityStateRequest extends TenantProtocolRequestBase {
+  operationId: "tradingReadFacilityState";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+}
+
+export interface EvaluateTradingFacilityRiskRequest extends TenantProtocolRequestBase {
+  operationId: "tradingEvaluateRisk";
+  payload: TradingExpectedFacilityState;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface PauseTradingFacilityNewRiskRequest extends TenantProtocolRequestBase {
+  operationId: "tradingPauseNewRisk";
+  payload: TradingExpectedFacilityState;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  reasonCode: string;
+  approvalArtifact: { proposalId: string; proposalVersion: number };
+  idempotencyKey: string;
+}
+
+export interface FlattenTradingFacilityRequest extends TenantProtocolRequestBase {
+  operationId: "tradingFlattenFacility";
+  payload: TradingExpectedFacilityState;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  reasonCode: string;
+  approvalArtifact: { proposalId: string; proposalVersion: number };
+  idempotencyKey: string;
+}
+
+export interface RequestTradingFacilityCloseRequest extends TenantProtocolRequestBase {
+  operationId: "tradingRequestClose";
+  payload: TradingExpectedFacilityState;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface RunTradingSettlementRequest extends TenantProtocolRequestBase {
+  operationId: "tradingRunSettlement";
+  payload: {
+    expectedCloseRequestHash: string;
+    expectedFacilityStateHash: string;
+    expectedFacilityVersion: number;
+  };
+  resource: {
+    resourceType: "trading_facility_close_request";
+    resourceId: string;
+  };
+  idempotencyKey: string;
+}
+
+export interface ReadTradingSettlementRequest extends TenantProtocolRequestBase {
+  operationId: "tradingReadSettlement";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_settlement"; resourceId: string };
+}
+
+export interface IssueTradingPerformanceProofRequest extends TenantProtocolRequestBase {
+  operationId: "tradingIssuePerformanceProof";
+  payload: { expectedSettlementHash: string };
+  resource: { resourceType: "trading_settlement"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ReadTradingFacilityEvidenceRequest extends TenantProtocolRequestBase {
+  operationId: "tradingReadFacilityEvidence";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+}
+
+export type CreditPassportClaim =
+  | "decision_outcome"
+  | "factor_authority"
+  | "factor_subject_principal"
+  | "factor_identity_or_principal_binding"
+  | "factor_adverse_obligation"
+  | "factor_sandbox_policy_fit"
+  | "canonical_reason_codes"
+  | "reason_to_feature_lineage"
+  | "source_evidence_lineage";
+
+export interface CreateCreditPassportArtifactRequest extends TenantProtocolRequestBase {
+  operationId: "pilotCreateCreditPassportArtifact";
+  payload: {
+    creditIntentId: string;
+    verifierActorId: string;
+    claimSelectors: CreditPassportClaim[];
+    lifetimeSeconds: number;
+    schemaVersion: "credit_passport_artifact_create.v1";
+  };
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ReadOwnCreditPassportArtifactRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadOwnCreditPassportArtifact";
+  payload: Record<string, never>;
+  resource: { resourceType: "credit_passport_artifact"; resourceId: string };
+}
+
+export interface VerifyCreditPassportArtifactRequest extends TenantProtocolRequestBase {
+  operationId: "pilotVerifyCreditPassportArtifact";
+  payload: {
+    artifactHash: string;
+    artifactVersion: number;
+    purpose: "private_credit_review";
+    schemaVersion: "credit_passport_verification_request.v1";
+  };
+  resource: { resourceType: "credit_passport_artifact"; resourceId: string };
+  purpose: "private_credit_review";
+}
+
+export interface RevokeCreditPassportArtifactRequest extends TenantProtocolRequestBase {
+  operationId: "pilotRevokeCreditPassportArtifact";
+  payload: Record<string, never>;
+  resource: { resourceType: "credit_passport_artifact"; resourceId: string };
+  reasonCode:
+    | "owner_withdrawal"
+    | "verifier_access_no_longer_required"
+    | "source_disclosure_error"
+    | "security_concern";
+  idempotencyKey: string;
+}
+
+export interface CreateOfficialReportRequest extends TenantProtocolRequestBase {
+  operationId: "pilotCreateOfficialReport";
+  payload: {
+    format: "json" | "csv";
+    lifetimeSeconds: number;
+    schemaVersion: "official_report_create.v1";
+  };
+  resource: { resourceType: "obligation"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ReadOfficialReportRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadOfficialReport";
+  payload: Record<string, never>;
+  resource: { resourceType: "official_report"; resourceId: string };
+}
+
+export interface RetrieveOfficialReportRequest extends TenantProtocolRequestBase {
+  operationId: "pilotRetrieveOfficialReport";
+  payload: Record<string, never>;
+  resource: { resourceType: "official_report"; resourceId: string };
+}
+
+export interface RevokeOfficialReportRequest extends TenantProtocolRequestBase {
+  operationId: "pilotRevokeOfficialReport";
+  payload: Record<string, never>;
+  resource: { resourceType: "official_report"; resourceId: string };
+  reasonCode: "owner_withdrawal" | "source_disclosure_error" | "security_concern";
+  idempotencyKey: string;
+}
+
 export type TenantProtocolRequest =
   | AcceptCreditOfferRequest
   | AcknowledgeProviderIntentRequest
@@ -1159,6 +1507,8 @@ export type TenantProtocolRequest =
   | CreateConsentRequest
   | CreateHumanSubjectRequest
   | CreateDraftMandateRequest
+  | CreateCreditPassportArtifactRequest
+  | CreateOfficialReportRequest
   | EvaluateCreditApplicationRequest
   | ExecuteSandboxObligationRequest
   | FreezeSubjectRequest
@@ -1171,6 +1521,10 @@ export type TenantProtocolRequest =
   | ReadAgentSelfRequest
   | ReadAgentAccountBindingRequest
   | ReadCreditApplicationRequest
+  | ReadOwnCreditPassportArtifactRequest
+  | ReadOfficialReportRequest
+  | RetrieveOfficialReportRequest
+  | VerifyCreditPassportArtifactRequest
   | ReadConsentRequest
   | ReadHumanSelfRequest
   | ReadWorkspaceResumeRequest
@@ -1186,9 +1540,36 @@ export type TenantProtocolRequest =
   | ReadProviderIntentRequest
   | RevokeConsentRequest
   | RevokeDraftMandateRequest
+  | RevokeCreditPassportArtifactRequest
+  | RevokeOfficialReportRequest
   | SubmitAgentAccountProofRequest
   | SubmitPilotFeedbackRequest
-  | ProcessProviderInboxRequest;
+  | ProcessProviderInboxRequest
+  | CreateTradingAccountBindingChallengeRequest
+  | ImportTradingHistoryRequest
+  | FinalizeTradingEvidenceSnapshotRequest
+  | ReadTradingCreditProfileRequest
+  | CreateTradingCapitalRequestRequest
+  | CreateTradingProviderMandateRequest
+  | ListCompatibleTradingMandatesRequest
+  | CreateTradingMatchProposalRequest
+  | AcceptTradingMatchAsProviderRequest
+  | AcceptTradingMatchAsSubjectRequest
+  | CreateTradingFacilityRequest
+  | ContributeTradingSubjectCollateralRequest
+  | RecordTradingProviderFundingRequest
+  | ActivateTradingFacilityRequest
+  | SubmitTradingOrderIntentRequest
+  | CancelTradingOrderIntentRequest
+  | ReadTradingFacilityStateRequest
+  | EvaluateTradingFacilityRiskRequest
+  | PauseTradingFacilityNewRiskRequest
+  | FlattenTradingFacilityRequest
+  | RequestTradingFacilityCloseRequest
+  | RunTradingSettlementRequest
+  | ReadTradingSettlementRequest
+  | IssueTradingPerformanceProofRequest
+  | ReadTradingFacilityEvidenceRequest;
 
 export interface AgentAccountBindingSummary {
   accountBindingId: string;
@@ -2167,6 +2548,1016 @@ export interface ProviderSandboxCallbackResultResponse {
   schemaVersion: "provider_sandbox_callback_result.v1";
 }
 
+export interface CreditPassportReasonLineage {
+  reasonCode: string;
+  featureKeys: string[];
+  sourceRoles: string[];
+}
+
+export interface CreditPassportEvidenceLineage {
+  kind: "evidence" | "risk_state_attestation";
+  role: string;
+  evidenceHash: string;
+  entityHash: string;
+  aggregateVersion: number;
+  sourceFinality: "finalized";
+}
+
+export interface CreditPassportDisclosure {
+  claim: CreditPassportClaim;
+  grade: "verified" | "not_verified" | "not_applicable" | "not_disclosed";
+  value:
+    | null
+    | string
+    | string[]
+    | CreditPassportReasonLineage[]
+    | CreditPassportEvidenceLineage[];
+  reasonCodes: string[];
+  reasonLineage: CreditPassportReasonLineage[];
+  evidenceLineage: CreditPassportEvidenceLineage[];
+}
+
+export interface CreditPassportArtifact {
+  creditPassportArtifactId: string;
+  artifactHash: string;
+  sourceRiskDecisionId: string;
+  sourceRiskDecisionPassportId: string;
+  sourceDecisionHash: string;
+  sourceDecisionPassportHash: string;
+  sourceFeatureSnapshotHash: string;
+  subjectId: string;
+  authorityType: "consent" | "mandate";
+  controllerActorRefHash: string;
+  verifierActorRefHash: string;
+  purpose: "private_credit_review";
+  selectedClaims: CreditPassportClaim[];
+  disclosures: CreditPassportDisclosure[];
+  claimManifestHash: string;
+  issuer: {
+    type: "ipo_one_tenant_gateway";
+    version: "ipo-one-credit-passport-local-no-funds.v1";
+  };
+  issuedAt: string;
+  expiresAt: string;
+  status: "active" | "revoked";
+  effectiveStatus: "active" | "revoked" | "expired" | "superseded";
+  version: number;
+  supersedesArtifactHash?: string;
+  supersedesVersion?: number;
+  revokedAt?: string;
+  revocationReasonCode?:
+    | "owner_withdrawal"
+    | "verifier_access_no_longer_required"
+    | "source_disclosure_error"
+    | "security_concern";
+  onlineVerificationRequired: true;
+  sameTenantOnly: true;
+  pointInTime: true;
+  nonAuthorizing: true;
+  sandboxOnly: true;
+  productionAuthority: false;
+  piiIncluded: false;
+  rawTransactionDataIncluded: false;
+  scoreAuthoritative: false;
+  asOf: string;
+  schemaVersion: "credit_passport_artifact.v1";
+}
+
+export interface CreditPassportArtifactCreatedResponse {
+  artifact: CreditPassportArtifact;
+  replaced: boolean;
+  schemaVersion: "tenant_credit_passport_artifact_created.v1";
+}
+
+export interface OwnedCreditPassportArtifactViewResponse {
+  artifact: CreditPassportArtifact;
+  schemaVersion: "tenant_owned_credit_passport_artifact_view.v1";
+}
+
+export interface CreditPassportVerificationResultResponse {
+  verification: {
+    verified: boolean;
+    status: "active" | "revoked" | "expired" | "superseded";
+    sourceCurrent: boolean;
+    checkedAt: string;
+    artifactHash: string;
+    artifactVersion: number;
+    onlineVerificationRequired: true;
+    schemaVersion: "credit_passport_verification.v1";
+  };
+  artifact?: CreditPassportArtifact;
+  schemaVersion: "tenant_credit_passport_verification_result.v1";
+}
+
+export interface CreditPassportArtifactRevokedResponse {
+  artifact: CreditPassportArtifact;
+  schemaVersion: "tenant_credit_passport_artifact_revoked.v1";
+}
+
+export interface OfficialReportArtifact {
+  officialReportId: string;
+  reportKind: "obligation_activity";
+  format: "json" | "csv";
+  contentType: "application/json" | "text/csv; charset=utf-8";
+  fileName: string;
+  contentSha256: string;
+  artifactHash: string;
+  sourceObligationId: string;
+  sourceEvidenceCount: number;
+  sourceEvidenceHeadHash: string;
+  sourceEvidenceTailHash: string;
+  controllerActorRefHash: string;
+  generatedAt: string;
+  expiresAt: string;
+  status: "active" | "revoked";
+  effectiveStatus: "active" | "expired" | "revoked";
+  version: 1 | 2;
+  revokedAt?: string;
+  revocationReasonCode?: "owner_withdrawal" | "source_disclosure_error" | "security_concern";
+  authorizationRevalidationRequired: true;
+  objectAccessExpires: true;
+  signedUrlIssued: false;
+  sameTenantOnly: true;
+  sandboxOnly: true;
+  productionAuthority: false;
+  piiIncluded: false;
+  secretsIncluded: false;
+  rawTransactionDataIncluded: false;
+  browserAuthored: false;
+  feeAuditPolicy: {
+    schemaVersion: "fee_audit_policy.v1";
+    availability: "unavailable";
+    productionPolicyAvailable: false;
+    feeCalculationAuthorized: false;
+    principalAsFeeBaseAllowed: false;
+    unrealizedPnlAsFeeBaseAllowed: false;
+    reasonCode: "production_fee_policy_not_approved";
+  };
+  asOf: string;
+  schemaVersion: "official_report_artifact.v1";
+}
+
+export interface OfficialReportCreatedResponse {
+  report: OfficialReportArtifact;
+  schemaVersion: "tenant_official_report_created.v1";
+}
+
+export interface OfficialReportViewResponse {
+  report: OfficialReportArtifact;
+  schemaVersion: "tenant_official_report_view.v1";
+}
+
+export interface OfficialReportRetrievalResponse {
+  report: OfficialReportArtifact;
+  contentBase64: string;
+  integrityVerified: true;
+  authorizationRevalidatedAt: string;
+  schemaVersion: "tenant_official_report_retrieval.v1";
+}
+
+export interface OfficialReportRevokedResponse {
+  report: OfficialReportArtifact;
+  schemaVersion: "tenant_official_report_revoked.v1";
+}
+
+export interface TradingCreditProfile {
+  tradingCreditProfileId: string;
+  subjectId: string;
+  principalId: string;
+  subjectType: "human" | "agent";
+  operatorType: "human_trader" | "agent_operator";
+  requestedByActorHash: string;
+  accountReferenceHash: string;
+  stage: "challenge_pending" | "history_imported" | "finalized";
+  bindingChallenge: {
+    challengeId: string;
+    challengeHash: string;
+    nonceHash: string;
+    issuedAt: string;
+    expiresAt: string;
+    status: "pending" | "consumed";
+    consumedAt?: string;
+    oneUse: true;
+    bindingMethod: "synthetic_no_funds_fixture";
+    accountOwnershipVerified: false;
+    reusableSignatureIncluded: false;
+  };
+  historyImport?: {
+    historyImportId: string;
+    historyHash: string;
+    sourceType: "synthetic_fixture";
+    fixtureId: "tc_synthetic_human_history_v1" | "tc_synthetic_agent_history_v1";
+    dataQuality: {
+      completeness: "complete";
+      confidence: "synthetic_only";
+      freshness: "unknown";
+      stalenessReason: "external_venue_not_queried";
+      sourceFinality: "synthetic_final";
+      selfReportedSignalsAccepted: false;
+    };
+    importedAt: string;
+  };
+  evidenceSnapshot?: {
+    evidenceSnapshotId: string;
+    snapshotHash: string;
+    sourceProjectionHash: string;
+    sourceEventIds: readonly [string, string];
+    sourceEvidenceHashes: readonly [string, string];
+    sourceFinality: "finalized";
+    pointInTime: true;
+    finalizedAt: string;
+  };
+  factorScorecard?: {
+    scorecardId: string;
+    scorecardHash: string;
+    factors: readonly unknown[];
+    compositeScore: { available: false; reasonCode: "universal_score_prohibited" };
+    creditDecision: { performed: false; reasonCode: "credit_approval_out_of_scope" };
+    recommendedLimit: { available: false; reasonCode: "risk_limit_not_approved" };
+    pricing: { available: false; reasonCode: "pricing_not_approved" };
+    newRiskAuthority: false;
+    fundsAuthority: false;
+  };
+  version: 1 | 2 | 3;
+  createdAt: string;
+  updatedAt: string;
+  sandboxOnly: true;
+  syntheticOnly: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+  creditApproval: false;
+  universalScoreAvailable: false;
+  externalSystemQueried: false;
+  rawStrategyIncluded: false;
+  rawTransactionsIncluded: false;
+  piiIncluded: false;
+  secretsIncluded: false;
+  schemaVersion: "trading_credit_profile.v1";
+}
+
+export interface TradingCreditProfileResponse {
+  profile: TradingCreditProfile;
+  schemaVersion:
+    | "tenant_trading_account_binding_challenge_created.v1"
+    | "tenant_trading_history_imported.v1"
+    | "tenant_trading_evidence_snapshot_finalized.v1"
+    | "tenant_trading_credit_profile_view.v1";
+}
+
+export interface TradingRealShadowRiskFeature {
+  featureId:
+    | "net_realized_pnl"
+    | "net_return_on_traded_notional"
+    | "positive_realized_fill_rate"
+    | "fee_to_traded_notional"
+    | "market_count"
+    | "traded_notional"
+    | "current_withdrawable_ratio"
+    | "current_position_count"
+    | "current_open_order_count"
+    | "risk_adjusted_return"
+    | "maximum_drawdown"
+    | "tail_loss"
+    | "current_leverage"
+    | "liquidation_discipline"
+    | "strategy_capacity"
+    | "regime_stability";
+  state: "observed" | "insufficient" | "unknown" | "stale";
+  value?: string;
+  unit?: "venue_quote_asset" | "ratio" | "count";
+  reasonCodes: readonly string[];
+  authorizing: false;
+  definitionVersion: `trading_shadow_feature.${string}.v1`;
+}
+
+export interface TradingRealShadowRiskProfile {
+  shadowRiskProfileId: string;
+  shadowRiskProfileHash: `0x${string}`;
+  policyVersion: "trading_real_shadow_risk_policy.v1";
+  featureDefinitionsVersion: "trading_shadow_feature_definitions.v1";
+  historyHash: `0x${string}`;
+  evidenceSnapshotHash: `0x${string}`;
+  pointInTime: {
+    observedStartsAt: string;
+    observedEndsAt: string;
+    generatedAt: string;
+    sourceFreshness: "fresh" | "stale";
+    temporalState: "unknown" | "stale";
+    maxAgePolicyApproved: false;
+    antiLeakagePassed: true;
+    reasonCodes: readonly string[];
+    schemaVersion: "trading_shadow_point_in_time.v1";
+  };
+  features: readonly TradingRealShadowRiskFeature[];
+  stressWindows: readonly {
+    windowId: "observed_history" | "out_of_time" | "tail_stress";
+    state: "observed" | "insufficient";
+    startsAt: string | null;
+    endsAt: string | null;
+    reasonCodes: readonly string[];
+  }[];
+  driftMonitor: {
+    state: "insufficient";
+    priorSnapshotAvailable: false;
+    approvedBaselineAvailable: false;
+    reasonCodes: readonly string[];
+    authorizing: false;
+    schemaVersion: "trading_shadow_drift_monitor.v1";
+  };
+  modelOutput: false;
+  recommendationOnly: true;
+  authorizing: false;
+  economicStateMutation: false;
+  newRiskAuthority: false;
+  fundsAuthority: false;
+  schemaVersion: "trading_real_shadow_risk_profile.v1";
+}
+
+export interface TradingRealFactorScorecardV2 {
+  scorecardId: string;
+  scorecardHash: `0x${string}`;
+  policyVersion: "trading_real_shadow_risk_policy.v1";
+  factors: readonly {
+    factorId:
+      | "alpha_quality"
+      | "risk_reliability"
+      | "strategy_capacity"
+      | "mandate_compliance"
+      | "evidence_confidence";
+    assessment: "limited" | "insufficient";
+    reasonCodes: readonly string[];
+    inputMetricIds: readonly string[];
+    numericScoreAvailable: false;
+    authorizing: false;
+    schemaVersion: "trading_factor_assessment.v1";
+  }[];
+  shadowRisk: TradingRealShadowRiskProfile;
+  compositeScore: {
+    available: false;
+    reasonCode: "universal_score_prohibited";
+  };
+  creditDecision: {
+    performed: false;
+    reasonCode: "single_snapshot_capital_decision_prohibited";
+  };
+  recommendedLimit: {
+    available: false;
+    reasonCode: "risk_limit_not_approved";
+  };
+  pricing: { available: false; reasonCode: "pricing_not_approved" };
+  newRiskAuthority: false;
+  fundsAuthority: false;
+  generatedAt: string;
+  schemaVersion: "trading_real_factor_scorecard.v2";
+}
+
+export interface TradingRealCreditProfile {
+  tradingCreditProfileId: string;
+  subjectId: string;
+  principalId: string;
+  subjectType: "human" | "agent";
+  operatorType: "human_trader" | "agent_operator";
+  requestedByActorHash: `0x${string}`;
+  accountReferenceHash: `0x${string}`;
+  bindingEpoch: number;
+  stage: "challenge_pending" | "history_imported" | "finalized";
+  bindingChallenge: {
+    challengeId: string;
+    challengeHash: `0x${string}`;
+    nonceHash: `0x${string}`;
+    typedDataHash: `0x${string}`;
+    tenantHash: `0x${string}`;
+    subjectHash: `0x${string}`;
+    principalHash: `0x${string}`;
+    masterAddressHash: `0x${string}`;
+    subaccountAddressHash: `0x${string}`;
+    chainId: "eip155:998";
+    environment: "hyperliquid_testnet";
+    infoProfileId: "hyperliquid_testnet_info.v1";
+    bindingEpoch: number;
+    issuedAt: string;
+    expiresAt: string;
+    status: "pending" | "consumed";
+    consumedAt?: string;
+    oneUse: true;
+    bindingMethod: "eip712_eoa_master_v1";
+    accountOwnershipVerified: boolean;
+    relationshipVerified: boolean;
+    reusableSignatureIncluded: false;
+    rawSignaturePersisted: false;
+    schemaVersion: "trading_real_binding_challenge.v1";
+  };
+  accountBinding?: Readonly<Record<string, unknown>>;
+  historyImport?: Readonly<Record<string, unknown>>;
+  evidenceSnapshot?: Readonly<Record<string, unknown>>;
+  factorScorecard?:
+    | Readonly<Record<string, unknown>>
+    | TradingRealFactorScorecardV2;
+  evidenceAuthority: {
+    bindingEpoch: number;
+    active: boolean;
+    authorizing: false;
+    scope?: "read_only_evidence_reference";
+    evidenceSnapshotHash?: `0x${string}`;
+    activatedAt?: string;
+    reasonCode: string;
+    schemaVersion: "trading_evidence_authority.v1";
+  };
+  priorEvidenceInvalidation?: Readonly<Record<string, unknown>>;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  sandboxOnly: true;
+  syntheticOnly: false;
+  testnetOnly: true;
+  realFunds: false;
+  productionAuthority: false;
+  fundsAuthority: false;
+  creditApproval: false;
+  universalScoreAvailable: false;
+  externalSystemQueried: boolean;
+  rawStrategyIncluded: false;
+  rawTransactionsIncluded: false;
+  piiIncluded: false;
+  secretsIncluded: false;
+  schemaVersion: "trading_credit_profile.v2";
+}
+
+export interface HyperliquidBindingRequest {
+  typedData: Readonly<{
+    domain: Readonly<{
+      name: "IPO.ONE Hyperliquid Account Binding";
+      version: "1";
+      chainId: 998;
+    }>;
+    types: Readonly<Record<string, readonly Readonly<{
+      name: string;
+      type: string;
+    }>[]>>;
+    primaryType: "HyperliquidAccountBindingProof";
+    message: Readonly<Record<string, string>>;
+  }>;
+  typedDataHash: `0x${string}`;
+  chainId: "eip155:998";
+  environment: "hyperliquid_testnet";
+  expiresAt: string;
+  reusableSignature: false;
+  schemaVersion: "hyperliquid_binding_typed_data.v1";
+}
+
+export interface TradingRealBindingChallengeResponse {
+  profile: TradingRealCreditProfile;
+  bindingRequest: HyperliquidBindingRequest;
+  schemaVersion: "tenant_trading_account_binding_challenge_created.v2";
+}
+
+export interface TradingRealCreditProfileResponse {
+  profile: TradingRealCreditProfile;
+  schemaVersion:
+    | "tenant_trading_history_imported.v2"
+    | "tenant_trading_evidence_snapshot_finalized.v2"
+    | "tenant_trading_credit_profile_view.v2";
+}
+
+export interface TradingNoFundsTerms {
+  templateType: TradingCapitalTemplateType;
+  syntheticPrincipalMinor: string;
+  assetId: "urn:ipo-one:sandbox-asset:usd-cent";
+  durationDays: number;
+  repaymentMode:
+    | "synthetic_fixed_credit"
+    | "synthetic_performance_participation"
+    | "synthetic_hybrid";
+  fixedReturnBps: number;
+  performanceParticipationBps: number;
+  economicPolicyVersion: "trading_no_funds_template_policy.v1";
+  termsHash: string;
+  illustrativeOnly: true;
+  immutable: true;
+  realPrice: false;
+  fundsAuthority: false;
+  schemaVersion: "trading_no_funds_template_terms.v1";
+}
+
+export interface TradingCapitalRequest {
+  tradingCapitalRequestId: string;
+  requestHash: string;
+  subjectId: string;
+  principalId: string;
+  subjectType: "human" | "agent";
+  operatorType: "human_trader" | "agent_operator";
+  tradingCreditProfileId: string;
+  evidenceEligibility: Record<string, unknown>;
+  requestedByActorHash: string;
+  templateType: TradingCapitalTemplateType;
+  strategyClass: TradingStrategyClass;
+  assetId: "urn:ipo-one:sandbox-asset:usd-cent";
+  requestedAmountMinor: string;
+  durationDays: number;
+  termsBlueprint: TradingNoFundsTerms;
+  status: "open";
+  version: 1;
+  createdAt: string;
+  expiresAt: string;
+  riskClassCallerSupplied: false;
+  autoMatch: false;
+  autoAccept: false;
+  sandboxOnly: true;
+  syntheticOnly: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+  realPricing: false;
+  realFunding: false;
+  externalSystemQueried: false;
+  piiIncluded: false;
+  secretsIncluded: false;
+  schemaVersion: "trading_capital_request.v1";
+}
+
+export interface TradingProviderMandate {
+  tradingProviderMandateId: string;
+  mandateHash: string;
+  providerId: string;
+  providerHash: string;
+  providerActorHash: string;
+  supportedTemplateTypes: TradingCapitalTemplateType[];
+  allowedSubjectTypes: ("human" | "agent")[];
+  allowedStrategyClasses: TradingStrategyClass[];
+  assetId: "urn:ipo-one:sandbox-asset:usd-cent";
+  minAmountMinor: string;
+  maxAmountMinor: string;
+  minDurationDays: number;
+  maxDurationDays: number;
+  evidenceEligibilityClass: "synthetic_restricted";
+  createdAt: string;
+  expiresAt: string;
+  policyVersion: "trading_matching_policy.v1";
+  status: "open";
+  version: 1;
+  hardFiltersOnly: true;
+  selfDeclaredRiskClassAccepted: false;
+  providerRankingAuthority: false;
+  autoAccept: false;
+  sandboxOnly: true;
+  syntheticOnly: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+  realPricing: false;
+  realFunding: false;
+  externalSystemQueried: false;
+  piiIncluded: false;
+  secretsIncluded: false;
+  schemaVersion: "trading_provider_mandate.v1";
+}
+
+export interface TradingMatchAcceptance {
+  acceptanceId: string;
+  actorHash: string;
+  proposalHash: string;
+  termsHash: string;
+  acceptedAt: string;
+  exactTerms: true;
+  automatic: false;
+  fundsAuthority: false;
+  schemaVersion:
+    | "trading_match_provider_acceptance.v1"
+    | "trading_match_subject_acceptance.v1";
+}
+
+export interface TradingMatchProposal {
+  tradingMatchProposalId: string;
+  proposalHash: string;
+  capitalRequestId: string;
+  requestHash: string;
+  requestVersion: 1;
+  providerMandateId: string;
+  mandateHash: string;
+  mandateVersion: 1;
+  subjectId: string;
+  principalId: string;
+  subjectType: "human" | "agent";
+  providerId: string;
+  subjectActorHash: string;
+  providerActorHash: string;
+  compatibilityHash: string;
+  termsHash: string;
+  createdAt: string;
+  expiresAt: string;
+  matchingPolicyVersion: "trading_matching_policy.v1";
+  terms: TradingNoFundsTerms;
+  hardFilterReasonCodes: string[];
+  status:
+    | "proposed"
+    | "provider_accepted"
+    | "subject_accepted"
+    | "bilaterally_accepted";
+  providerAcceptance: TradingMatchAcceptance | null;
+  subjectAcceptance: TradingMatchAcceptance | null;
+  version: 1 | 2 | 3;
+  updatedAt: string;
+  immutableTerms: true;
+  autoAccepted: false;
+  bilateralAcceptanceRequired: true;
+  requestAndMandateRevalidationRequired: true;
+  sandboxOnly: true;
+  syntheticOnly: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+  realPricing: false;
+  realFunding: false;
+  externalSystemQueried: false;
+  piiIncluded: false;
+  secretsIncluded: false;
+  schemaVersion: "trading_match_proposal.v1";
+}
+
+export interface TradingCompatibleMandate {
+  providerMandateId: string;
+  mandateHash: string;
+  mandateVersion: 1;
+  providerReferenceHash: string;
+  compatibilityHash: string;
+  hardFilterReasonCodes: string[];
+  rank: number;
+  rankReason: "hard_filters_then_created_at_mandate_hash_and_id";
+  termsPreview: TradingNoFundsTerms;
+  autoAccepted: false;
+  fundsAuthority: false;
+  schemaVersion: "trading_compatible_mandate.v1";
+}
+
+export interface TradingCapitalRequestCreatedResponse {
+  capitalRequest: TradingCapitalRequest;
+  schemaVersion: "tenant_trading_capital_request_created.v1";
+}
+
+export interface TradingProviderMandateCreatedResponse {
+  providerMandate: TradingProviderMandate;
+  schemaVersion: "tenant_trading_provider_mandate_created.v1";
+}
+
+export interface TradingCompatibleMandateListResponse {
+  tradingCapitalRequestId: string;
+  requestHash: string;
+  requestVersion: 1;
+  evaluatedCandidateCount: number;
+  compatibleMandateCount: number;
+  matches: TradingCompatibleMandate[];
+  hardFiltersAppliedBeforeRanking: true;
+  rankingAuthorizing: false;
+  providerIdentityEnumerated: false;
+  crossTenantDiscovery: false;
+  asOf: string;
+  sandboxOnly: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+  schemaVersion: "trading_compatible_mandate_list.v1";
+}
+
+export interface TradingMatchProposalResponse {
+  matchProposal: TradingMatchProposal;
+  schemaVersion:
+    | "tenant_trading_match_proposal_created.v1"
+    | "tenant_trading_match_provider_accepted.v1"
+    | "tenant_trading_match_subject_accepted.v1";
+}
+
+export interface TradingFacilitySafety {
+  sandboxOnly: true;
+  syntheticOnly: true;
+  nonRedeemable: true;
+  withdrawable: false;
+  transferable: false;
+  externalSystemQueried: false;
+  externalOrderSubmitted: false;
+  productionAuthority: false;
+  fundsAuthority: false;
+  realCollateral: false;
+  realFunding: false;
+  realEquity: false;
+  realPricing: false;
+  productionFundsMoved: false;
+  piiIncluded: false;
+  secretsIncluded: false;
+}
+
+export type TradingFacilityLifecycleStatus =
+  | "awaiting_contributions"
+  | "awaiting_subject_collateral"
+  | "awaiting_provider_funding"
+  | "ready_for_activation"
+  | "active"
+  | "flattened";
+
+export type TradingFacilityRiskState =
+  | "NORMAL"
+  | "WARNING"
+  | "REDUCE_ONLY"
+  | "FLATTEN"
+  | "SETTLEMENT";
+
+export interface TradingFacility extends TradingFacilitySafety {
+  tradingFacilityId: string;
+  facilityHash: string;
+  stateHash: string;
+  matchProposalId: string;
+  proposalHash: string;
+  proposalVersion: 3;
+  obligationId: string;
+  obligationHash: string;
+  subjectId: string;
+  principalId: string;
+  providerId: string;
+  subjectActorHash: string;
+  providerActorHash: string;
+  templateType: TradingCapitalTemplateType;
+  termsHash: string;
+  assetId: "urn:ipo-one:sandbox-asset:usd-cent";
+  syntheticPrincipalMinor: string;
+  requiredSubjectCollateralMinor: string;
+  requiredProviderFundingMinor: string;
+  subjectCollateralMinor: string;
+  providerFundingMinor: string;
+  syntheticCapitalMinor: string;
+  syntheticExposureMinor: string;
+  syntheticEquityMinor: string;
+  openOrderCount: number;
+  subjectCollateralRecorded: boolean;
+  providerFundingRecorded: boolean;
+  lifecycleStatus: TradingFacilityLifecycleStatus;
+  riskState: TradingFacilityRiskState;
+  riskReasonCodes: string[];
+  latestRiskEvaluationId: string | null;
+  latestRiskEvaluationHash: string | null;
+  riskObservation: Record<string, unknown>;
+  activationDeadlineAt: string;
+  maturityAt: string;
+  activatedAt: string | null;
+  flattenedAt: string | null;
+  linkedCanonicalObligation: true;
+  secondLedgerCreated: false;
+  callerEquityAccepted: false;
+  createdByActorHash: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+  facilityPolicyVersion: "trading_no_funds_facility_policy.v1";
+  riskPolicyVersion: "trading_shadow_risk_policy.v1";
+  schemaVersion: "trading_facility.v1";
+}
+
+export interface TradingOrderIntent extends TradingFacilitySafety {
+  tradingOrderIntentId: string;
+  orderIntentHash: string;
+  orderStateHash: string;
+  facilityId: string;
+  facilityHash: string;
+  subjectId: string;
+  principalId: string;
+  submittedByActorHash: string;
+  direction: "long" | "short";
+  syntheticNotionalMinor: string;
+  createdAt: string;
+  orderPolicyVersion: "trading_no_funds_facility_policy.v1";
+  status: "open" | "canceled" | "flattened";
+  cancelReasonCode: string | null;
+  canceledAt: string | null;
+  flattenedAt: string | null;
+  version: 1 | 2;
+  updatedAt: string;
+  serverRiskEvaluated: true;
+  rawVenueActionAccepted: false;
+  schemaVersion: "trading_order_intent.v1";
+}
+
+export interface TradingFacilityRiskEvaluation extends TradingFacilitySafety {
+  tradingFacilityRiskEvaluationId: string;
+  evaluationHash: string;
+  facilityId: string;
+  facilityHash: string;
+  facilityVersionBefore: number;
+  facilityStateHashBefore: string;
+  observationHash: string;
+  previousRiskState: TradingFacilityRiskState;
+  evaluatedRiskState: TradingFacilityRiskState;
+  freshness: "fresh" | "stale" | "unknown";
+  reasonCodes: string[];
+  syntheticCapitalMinor: string;
+  syntheticExposureMinor: string;
+  syntheticEquityMinor: string;
+  utilizationBps: number;
+  evaluatorActorHash: string;
+  evaluatedAt: string;
+  riskPolicyVersion: "trading_shadow_risk_policy.v1";
+  monotonicProtection: true;
+  authorizing: false;
+  callerEquityAccepted: false;
+  automaticRecovery: false;
+  schemaVersion: "trading_facility_risk_evaluation.v1";
+}
+
+export interface TradingFacilityResponse {
+  facility: TradingFacility;
+  schemaVersion:
+    | "tenant_trading_facility_created.v1"
+    | "tenant_trading_subject_collateral_recorded.v1"
+    | "tenant_trading_provider_funding_recorded.v1"
+    | "tenant_trading_facility_activated.v1"
+    | "tenant_trading_facility_new_risk_paused.v1";
+}
+
+export interface TradingFacilityOrderResponse {
+  facility: TradingFacility;
+  orderIntent: TradingOrderIntent;
+  schemaVersion:
+    | "tenant_trading_order_intent_submitted.v1"
+    | "tenant_trading_order_intent_canceled.v1";
+}
+
+export interface TradingFacilityStateResponse {
+  facility: TradingFacility;
+  orderIntents: TradingOrderIntent[];
+  page: { count: number; limit: 20; truncated: false };
+  schemaVersion: "trading_facility_state.v1";
+}
+
+export interface TradingFacilityRiskResponse {
+  facility: TradingFacility;
+  riskEvaluation: TradingFacilityRiskEvaluation;
+  schemaVersion: "tenant_trading_facility_risk_evaluated.v1";
+}
+
+export interface TradingFacilityFlattenResponse {
+  facility: TradingFacility;
+  flattenedOrderIntents: TradingOrderIntent[];
+  schemaVersion: "tenant_trading_facility_flattened.v1";
+}
+
+export interface TradingFacilityCloseRequest extends TradingFacilitySafety {
+  tradingFacilityCloseRequestId: string;
+  requestHash: string;
+  facilityId: string;
+  facilityHash: string;
+  facilityStateHash: string;
+  facilityVersion: number;
+  obligationId: string;
+  obligationHash: string;
+  subjectId: string;
+  principalId: string;
+  providerId: string;
+  subjectActorHash: string;
+  providerActorHash: string;
+  requestedByActorHash: string;
+  reasonCode: "operator_request";
+  status: "requested";
+  immutable: true;
+  requestedAt: string;
+  version: 1;
+  closePolicyVersion: "trading_no_funds_conservation_settlement_policy.v1";
+  schemaVersion: "trading_facility_close_request.v1";
+}
+
+export interface TradingSettlement extends TradingFacilitySafety {
+  tradingSettlementId: string;
+  settlementHash: string;
+  closeRequestId: string;
+  closeRequestHash: string;
+  facilityId: string;
+  facilityHash: string;
+  facilityStateHashBefore: string;
+  facilityVersionBefore: number;
+  facilityStateHashAfter: string;
+  facilityVersionAfter: number;
+  obligationId: string;
+  obligationHash: string;
+  subjectId: string;
+  principalId: string;
+  providerId: string;
+  assetId: "urn:ipo-one:sandbox-asset:usd-cent";
+  finalSyntheticEquityMinor: string;
+  subjectContributionMinor: string;
+  providerContributionMinor: string;
+  subjectReturnMinor: string;
+  providerPrincipalReturnMinor: string;
+  realizedPnlMinor: "0";
+  venueCostMinor: "0";
+  closingCostMinor: "0";
+  fixedReturnMinor: "0";
+  performanceParticipationMinor: "0";
+  ipoOneFeeMinor: "0";
+  totalAllocatedMinor: string;
+  waterfallBalanced: true;
+  zeroExposureVerified: true;
+  canonicalObligationUnchanged: true;
+  canonicalLedgerMutationCreated: false;
+  secondLedgerCreated: false;
+  officialSettlement: false;
+  status: "finalized";
+  version: 1;
+  settledByActorHash: string;
+  settledAt: string;
+  settlementPolicyVersion: "trading_no_funds_conservation_settlement_policy.v1";
+  schemaVersion: "trading_settlement.v1";
+}
+
+export interface TradingPerformanceProofClaims {
+  facilityFinalized: true;
+  zeroExposure: true;
+  contributionConservation: true;
+  canonicalObligationLinked: true;
+  realProfitClaimed: false;
+  finalSyntheticEquityMinor: string;
+  subjectReturnMinor: string;
+  providerPrincipalReturnMinor: string;
+  realizedPnlMinor: "0";
+  ipoOneFeeMinor: "0";
+}
+
+export interface TradingPerformanceProof extends TradingFacilitySafety {
+  tradingPerformanceProofId: string;
+  proofHash: string;
+  settlementId: string;
+  settlementHash: string;
+  facilityId: string;
+  facilityHash: string;
+  obligationId: string;
+  obligationHash: string;
+  subjectId: string;
+  principalId: string;
+  providerId: string;
+  claims: TradingPerformanceProofClaims;
+  claimSetHash: string;
+  status: "active";
+  proofVersion: 1;
+  revocable: true;
+  revoked: false;
+  externalVerificationAvailable: false;
+  officialReport: false;
+  universalScore: false;
+  strategyDataIncluded: false;
+  rawHistoryIncluded: false;
+  issuedByActorHash: string;
+  issuedAt: string;
+  expiresAt: string;
+  proofPolicyVersion: "trading_performance_proof_policy.v1";
+  schemaVersion: "trading_performance_proof.v1";
+}
+
+export interface TradingFacilityCloseResponse {
+  closeRequest: TradingFacilityCloseRequest;
+  schemaVersion: "tenant_trading_facility_close_requested.v1";
+}
+
+export interface TradingSettlementFinalizedResponse {
+  facility: TradingFacility;
+  settlement: TradingSettlement;
+  schemaVersion: "tenant_trading_settlement_finalized.v1";
+}
+
+export interface TradingSettlementViewResponse {
+  settlement: TradingSettlement;
+  schemaVersion: "trading_settlement_view.v1";
+}
+
+export interface TradingPerformanceProofResponse {
+  performanceProof: TradingPerformanceProof;
+  schemaVersion: "tenant_trading_performance_proof_issued.v1";
+}
+
+export interface TradingFacilityEvidenceSummary {
+  evidenceId: string;
+  evidenceHash: string;
+  eventType: string;
+  aggregateType: string;
+  aggregateId: string;
+  aggregateVersion: number;
+  obligationId: string;
+  sourceFinality: "pending" | "confirmed" | "finalized" | "reorged" | "invalidated";
+  payloadHash: string;
+  occurredAt: string;
+  recordedAt: string;
+  schemaVersion: "trading_facility_evidence_summary.v1";
+}
+
+export interface TradingFacilityEvidenceResponse {
+  facility: TradingFacility;
+  closeRequest: TradingFacilityCloseRequest | null;
+  settlement: TradingSettlement | null;
+  performanceProof: TradingPerformanceProof | null;
+  items: TradingFacilityEvidenceSummary[];
+  page: { count: number; limit: 50; truncated: false };
+  asOf: string;
+  strategyDataIncluded: false;
+  rawHistoryIncluded: false;
+  piiIncluded: false;
+  sandboxOnly: true;
+  syntheticOnly: true;
+  nonRedeemable: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+  schemaVersion: "trading_facility_evidence.v1";
+}
+
 export interface TenantProtocolResultBase<
   OperationId extends TenantProtocolOperationId,
   Response
@@ -2192,12 +3583,18 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotCreateConsent", HumanConsentCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateHumanSubject", HumanSubjectCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateDraftMandate", DraftMandateCreatedResponse>
+  | TenantProtocolResultBase<"pilotCreateCreditPassportArtifact", CreditPassportArtifactCreatedResponse>
+  | TenantProtocolResultBase<"pilotCreateOfficialReport", OfficialReportCreatedResponse>
   | TenantProtocolResultBase<"pilotEvaluateCreditApplication", CreditApplicationEvaluatedResponse>
   | TenantProtocolResultBase<"pilotFreezeSubject", AgentSubjectFrozenResponse>
   | TenantProtocolResultBase<"pilotRequestCredit", CreditIntentCreatedResponse>
   | TenantProtocolResultBase<"pilotReadAgentSelf", AgentSubjectViewResponse>
   | TenantProtocolResultBase<"pilotReadAgentAccountBinding", AgentAccountBindingViewResponse>
   | TenantProtocolResultBase<"pilotReadCreditApplication", CreditApplicationViewResponse>
+  | TenantProtocolResultBase<"pilotReadOwnCreditPassportArtifact", OwnedCreditPassportArtifactViewResponse>
+  | TenantProtocolResultBase<"pilotReadOfficialReport", OfficialReportViewResponse>
+  | TenantProtocolResultBase<"pilotRetrieveOfficialReport", OfficialReportRetrievalResponse>
+  | TenantProtocolResultBase<"pilotVerifyCreditPassportArtifact", CreditPassportVerificationResultResponse>
   | TenantProtocolResultBase<"pilotReadConsent", HumanConsentViewResponse>
   | TenantProtocolResultBase<"pilotReadHumanSelf", HumanSubjectViewResponse>
   | TenantProtocolResultBase<"pilotReadWorkspaceResume", WorkspaceResumeViewResponse>
@@ -2213,9 +3610,36 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotReadProviderIntent", ProviderIntentViewResponse>
   | TenantProtocolResultBase<"pilotRevokeConsent", HumanConsentRevokedResponse>
   | TenantProtocolResultBase<"pilotRevokeDraftMandate", DraftMandateRevokedResponse>
+  | TenantProtocolResultBase<"pilotRevokeCreditPassportArtifact", CreditPassportArtifactRevokedResponse>
+  | TenantProtocolResultBase<"pilotRevokeOfficialReport", OfficialReportRevokedResponse>
   | TenantProtocolResultBase<"pilotSubmitAgentAccountProof", AgentAccountProofVerifiedResponse>
   | TenantProtocolResultBase<"pilotSubmitPilotFeedback", PilotFeedbackRecordedResponse>
-  | TenantProtocolResultBase<"workerProcessInbox", ProviderSandboxCallbackResultResponse>;
+  | TenantProtocolResultBase<"workerProcessInbox", ProviderSandboxCallbackResultResponse>
+  | TenantProtocolResultBase<"tradingCreateAccountBindingChallenge", TradingRealBindingChallengeResponse>
+  | TenantProtocolResultBase<"tradingImportHyperliquidHistory", TradingRealCreditProfileResponse>
+  | TenantProtocolResultBase<"tradingFinalizeEvidenceSnapshot", TradingRealCreditProfileResponse>
+  | TenantProtocolResultBase<"tradingReadCreditProfile", TradingRealCreditProfileResponse>
+  | TenantProtocolResultBase<"tradingCreateCapitalRequest", TradingCapitalRequestCreatedResponse>
+  | TenantProtocolResultBase<"tradingCreateProviderMandate", TradingProviderMandateCreatedResponse>
+  | TenantProtocolResultBase<"tradingListCompatibleMandates", TradingCompatibleMandateListResponse>
+  | TenantProtocolResultBase<"tradingCreateMatchProposal", TradingMatchProposalResponse>
+  | TenantProtocolResultBase<"tradingAcceptMatchAsProvider", TradingMatchProposalResponse>
+  | TenantProtocolResultBase<"tradingAcceptMatchAsSubject", TradingMatchProposalResponse>
+  | TenantProtocolResultBase<"tradingCreateFacility", TradingFacilityResponse>
+  | TenantProtocolResultBase<"tradingContributeSubjectCollateral", TradingFacilityResponse>
+  | TenantProtocolResultBase<"tradingRecordProviderFunding", TradingFacilityResponse>
+  | TenantProtocolResultBase<"tradingActivateFacility", TradingFacilityResponse>
+  | TenantProtocolResultBase<"tradingSubmitOrderIntent", TradingFacilityOrderResponse>
+  | TenantProtocolResultBase<"tradingCancelOrderIntent", TradingFacilityOrderResponse>
+  | TenantProtocolResultBase<"tradingReadFacilityState", TradingFacilityStateResponse>
+  | TenantProtocolResultBase<"tradingEvaluateRisk", TradingFacilityRiskResponse>
+  | TenantProtocolResultBase<"tradingPauseNewRisk", TradingFacilityResponse>
+  | TenantProtocolResultBase<"tradingFlattenFacility", TradingFacilityFlattenResponse>
+  | TenantProtocolResultBase<"tradingRequestClose", TradingFacilityCloseResponse>
+  | TenantProtocolResultBase<"tradingRunSettlement", TradingSettlementFinalizedResponse>
+  | TenantProtocolResultBase<"tradingReadSettlement", TradingSettlementViewResponse>
+  | TenantProtocolResultBase<"tradingIssuePerformanceProof", TradingPerformanceProofResponse>
+  | TenantProtocolResultBase<"tradingReadFacilityEvidence", TradingFacilityEvidenceResponse>;
 
 export type TenantProtocolResultFor<OperationId extends TenantProtocolOperationId> = Extract<
   TenantProtocolResult,
@@ -2235,7 +3659,7 @@ export interface TenantProtocolOperationBase<
   OperationId extends TenantProtocolOperationId,
   Kind extends "command" | "query",
   ActorTypes extends readonly TenantProtocolActorType[],
-  ResourceType extends "subject" | "consent" | "credit_intent" | "credit_offer" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "risk_portfolio" | "servicing_queue" | "transfer_intent" | "workspace",
+  ResourceType extends "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "official_report" | "provider" | "risk_portfolio" | "servicing_queue" | "trading_capital_request" | "trading_credit_profile" | "trading_facility" | "trading_facility_close_request" | "trading_order_intent" | "trading_match_proposal" | "trading_settlement" | "transfer_intent" | "workspace",
   Capability extends string,
   Idempotency extends "required" | "prohibited",
   QuotaClass extends "read" | "mutation" | "economic" | "credential" | "privileged" | "worker",
@@ -2255,6 +3679,256 @@ export interface TenantProtocolOperationBase<
 }
 
 export type TenantProtocolOperation =
+  | TenantProtocolOperationBase<
+      "tradingCreateAccountBindingChallenge",
+      "command",
+      readonly ["human", "agent"],
+      "subject",
+      "trading.account_challenge.create.self",
+      "required",
+      "mutation",
+      "tenant_trading_account_binding_challenge_created.v2"
+    >
+  | TenantProtocolOperationBase<
+      "tradingImportHyperliquidHistory",
+      "command",
+      readonly ["human", "agent"],
+      "trading_credit_profile",
+      "trading.history_import.self",
+      "required",
+      "mutation",
+      "tenant_trading_history_imported.v2"
+    >
+  | TenantProtocolOperationBase<
+      "tradingFinalizeEvidenceSnapshot",
+      "command",
+      readonly ["human", "agent"],
+      "trading_credit_profile",
+      "trading.evidence_finalize.self",
+      "required",
+      "mutation",
+      "tenant_trading_evidence_snapshot_finalized.v2"
+    >
+  | TenantProtocolOperationBase<
+      "tradingReadCreditProfile",
+      "query",
+      readonly ["human", "agent"],
+      "trading_credit_profile",
+      "trading.credit_profile.read.self",
+      "prohibited",
+      "read",
+      "tenant_trading_credit_profile_view.v2"
+    >
+  | TenantProtocolOperationBase<
+      "tradingCreateCapitalRequest",
+      "command",
+      readonly ["human", "agent"],
+      "trading_credit_profile",
+      "trading.capital_request.create.self",
+      "required",
+      "mutation",
+      "tenant_trading_capital_request_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingCreateProviderMandate",
+      "command",
+      readonly ["provider"],
+      "provider",
+      "trading.provider_mandate.create.owned",
+      "required",
+      "mutation",
+      "tenant_trading_provider_mandate_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingListCompatibleMandates",
+      "query",
+      readonly ["human", "agent"],
+      "trading_capital_request",
+      "trading.compatible_mandate.list.self",
+      "prohibited",
+      "read",
+      "trading_compatible_mandate_list.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingCreateMatchProposal",
+      "command",
+      readonly ["human", "agent"],
+      "trading_capital_request",
+      "trading.match_proposal.create.self",
+      "required",
+      "mutation",
+      "tenant_trading_match_proposal_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingAcceptMatchAsProvider",
+      "command",
+      readonly ["provider"],
+      "trading_match_proposal",
+      "trading.match.accept.provider",
+      "required",
+      "mutation",
+      "tenant_trading_match_provider_accepted.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingAcceptMatchAsSubject",
+      "command",
+      readonly ["human", "agent"],
+      "trading_match_proposal",
+      "trading.match.accept.subject",
+      "required",
+      "mutation",
+      "tenant_trading_match_subject_accepted.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingCreateFacility",
+      "command",
+      readonly ["human", "agent"],
+      "trading_match_proposal",
+      "trading.facility.create.self",
+      "required",
+      "mutation",
+      "tenant_trading_facility_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingContributeSubjectCollateral",
+      "command",
+      readonly ["human", "agent"],
+      "trading_facility",
+      "trading.facility.collateral.record.self",
+      "required",
+      "mutation",
+      "tenant_trading_subject_collateral_recorded.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingRecordProviderFunding",
+      "command",
+      readonly ["provider"],
+      "trading_facility",
+      "trading.facility.funding.record.provider",
+      "required",
+      "mutation",
+      "tenant_trading_provider_funding_recorded.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingActivateFacility",
+      "command",
+      readonly ["human", "agent"],
+      "trading_facility",
+      "trading.facility.activate.self",
+      "required",
+      "mutation",
+      "tenant_trading_facility_activated.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingSubmitOrderIntent",
+      "command",
+      readonly ["human", "agent"],
+      "trading_facility",
+      "trading.order_intent.submit.self",
+      "required",
+      "mutation",
+      "tenant_trading_order_intent_submitted.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingCancelOrderIntent",
+      "command",
+      readonly ["human", "agent"],
+      "trading_order_intent",
+      "trading.order_intent.cancel.self",
+      "required",
+      "mutation",
+      "tenant_trading_order_intent_canceled.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingReadFacilityState",
+      "query",
+      readonly ["human", "agent", "provider"],
+      "trading_facility",
+      "trading.facility.read.bound",
+      "prohibited",
+      "read",
+      "trading_facility_state.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingEvaluateRisk",
+      "command",
+      readonly ["risk_operator", "operations_operator"],
+      "trading_facility",
+      "trading.facility.risk.evaluate.tenant",
+      "required",
+      "privileged",
+      "tenant_trading_facility_risk_evaluated.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingPauseNewRisk",
+      "command",
+      readonly ["risk_operator", "operations_operator"],
+      "trading_facility",
+      "trading.facility.pause.tenant",
+      "required",
+      "privileged",
+      "tenant_trading_facility_new_risk_paused.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingFlattenFacility",
+      "command",
+      readonly ["risk_operator", "operations_operator"],
+      "trading_facility",
+      "trading.facility.flatten.tenant",
+      "required",
+      "privileged",
+      "tenant_trading_facility_flattened.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingRequestClose",
+      "command",
+      readonly ["human", "agent"],
+      "trading_facility",
+      "trading.facility.close_request.self",
+      "required",
+      "mutation",
+      "tenant_trading_facility_close_requested.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingRunSettlement",
+      "command",
+      readonly ["system_worker"],
+      "trading_facility_close_request",
+      "trading.settlement.run.worker",
+      "required",
+      "worker",
+      "tenant_trading_settlement_finalized.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingReadSettlement",
+      "query",
+      readonly ["human", "agent", "provider"],
+      "trading_settlement",
+      "trading.settlement.read.bound",
+      "prohibited",
+      "read",
+      "trading_settlement_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingIssuePerformanceProof",
+      "command",
+      readonly ["human", "agent", "provider"],
+      "trading_settlement",
+      "trading.performance_proof.issue.bound",
+      "required",
+      "mutation",
+      "tenant_trading_performance_proof_issued.v1"
+    >
+  | TenantProtocolOperationBase<
+      "tradingReadFacilityEvidence",
+      "query",
+      readonly ["human", "agent", "provider"],
+      "trading_facility",
+      "trading.facility.evidence.read.bound",
+      "prohibited",
+      "read",
+      "trading_facility_evidence.v1"
+    >
   | TenantProtocolOperationBase<
       "pilotAcceptCreditOffer",
       "command",
@@ -2586,6 +4260,86 @@ export type TenantProtocolOperation =
       "tenant_consent_revoked.v1"
     >
   | TenantProtocolOperationBase<
+      "pilotCreateCreditPassportArtifact",
+      "command",
+      readonly ["human"],
+      "subject",
+      "credit_passport.create.self",
+      "required",
+      "mutation",
+      "tenant_credit_passport_artifact_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadOwnCreditPassportArtifact",
+      "query",
+      readonly ["human", "agent"],
+      "credit_passport_artifact",
+      "credit_passport.read.self",
+      "prohibited",
+      "read",
+      "tenant_owned_credit_passport_artifact_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotVerifyCreditPassportArtifact",
+      "query",
+      readonly ["human", "agent", "risk_operator", "operations_operator", "auditor"],
+      "credit_passport_artifact",
+      "credit_passport.verify.bound",
+      "prohibited",
+      "read",
+      "tenant_credit_passport_verification_result.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotRevokeCreditPassportArtifact",
+      "command",
+      readonly ["human"],
+      "credit_passport_artifact",
+      "credit_passport.revoke.self",
+      "required",
+      "mutation",
+      "tenant_credit_passport_artifact_revoked.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotCreateOfficialReport",
+      "command",
+      readonly ["human", "agent"],
+      "obligation",
+      "official_report.create.owned",
+      "required",
+      "mutation",
+      "tenant_official_report_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadOfficialReport",
+      "query",
+      readonly ["human", "agent"],
+      "official_report",
+      "official_report.read.owned",
+      "prohibited",
+      "read",
+      "tenant_official_report_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotRetrieveOfficialReport",
+      "query",
+      readonly ["human", "agent"],
+      "official_report",
+      "official_report.retrieve.owned",
+      "prohibited",
+      "read",
+      "tenant_official_report_retrieval.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotRevokeOfficialReport",
+      "command",
+      readonly ["human", "agent"],
+      "official_report",
+      "official_report.revoke.owned",
+      "required",
+      "mutation",
+      "tenant_official_report_revoked.v1"
+    >
+  | TenantProtocolOperationBase<
       "pilotRevokeDraftMandate",
       "command",
       readonly ["human"],
@@ -2675,6 +4429,11 @@ export interface TenantProtocolCatalog {
     agentAccountProofEnabled: true;
     mandateActivationEnabled: true;
     providerSandboxEnabled: true;
+    creditPassportArtifactsEnabled: true;
+    officialReportArtifactsEnabled: true;
+    tradingCapitalNoFundsEvidenceEnabled: true;
+    tradingCapitalNoFundsMatchingEnabled: true;
+    tradingCapitalNoFundsSettlementEnabled: true;
     productionIdentityEnabled: false;
     rawPiiAllowed: false;
   };

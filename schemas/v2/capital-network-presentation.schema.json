@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/capital-network-presentation.schema.json",
+  "title": "IPO.ONE Capital Network Presentation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "profile",
+    "availability",
+    "mandate",
+    "facility",
+    "allocation",
+    "delivery",
+    "reconciliation",
+    "earningsSimulation",
+    "disabledCapabilities",
+    "serverDerived",
+    "nonAuthorizing",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "withdrawable"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "capital_network_presentation.v1" },
+    "status": {
+      "enum": ["unavailable", "empty", "assigned", "acknowledged", "reconciled"]
+    },
+    "profile": { "const": "signed_fixed_loopback_provider_sandbox" },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read", "acknowledge"],
+      "properties": {
+        "read": { "type": "boolean" },
+        "acknowledge": { "type": "boolean" }
+      }
+    },
+    "mandate": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "providerId", "transferIntentId", "purposeCode", "status",
+            "contractVersion", "fundingAuthority", "schemaVersion"
+          ],
+          "properties": {
+            "providerId": { "$ref": "#/$defs/identifier" },
+            "transferIntentId": { "$ref": "#/$defs/identifier" },
+            "purposeCode": { "$ref": "#/$defs/identifier" },
+            "status": { "const": "assigned_no_funds" },
+            "contractVersion": { "const": "provider_intent_view.v1" },
+            "fundingAuthority": { "const": false },
+            "schemaVersion": { "const": "capital_network_mandate_presentation.v1" }
+          }
+        }
+      ]
+    },
+    "facility": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "facilityType", "sourceAssetId", "sourceAmountMinor",
+            "destinationAssetId", "simulatedAmount", "deployedCapital",
+            "withdrawable", "schemaVersion"
+          ],
+          "properties": {
+            "facilityType": { "const": "assigned_no_funds_sandbox_exposure" },
+            "sourceAssetId": { "$ref": "#/$defs/identifier" },
+            "sourceAmountMinor": { "$ref": "#/$defs/positiveMinor" },
+            "destinationAssetId": { "$ref": "#/$defs/identifier" },
+            "simulatedAmount": { "const": true },
+            "deployedCapital": { "const": false },
+            "withdrawable": { "const": false },
+            "schemaVersion": { "const": "capital_network_facility_presentation.v1" }
+          }
+        }
+      ]
+    },
+    "allocation": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "allocationType", "transferIntentId", "allocatedMinor", "assetId",
+            "allocationReceiptRef", "serverDerived", "deployedCapital",
+            "schemaVersion"
+          ],
+          "properties": {
+            "allocationType": { "const": "assigned_sandbox_exposure" },
+            "transferIntentId": { "$ref": "#/$defs/identifier" },
+            "allocatedMinor": { "$ref": "#/$defs/positiveMinor" },
+            "assetId": { "$ref": "#/$defs/identifier" },
+            "allocationReceiptRef": { "$ref": "#/$defs/hash" },
+            "serverDerived": { "const": true },
+            "deployedCapital": { "const": false },
+            "schemaVersion": { "const": "capital_network_allocation_receipt.v1" }
+          }
+        }
+      ]
+    },
+    "delivery": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deliveryId", "deliveryHash", "transferIntentId", "status",
+            "issuedAt", "expiresAt", "signedBoundary", "fixedLoopback",
+            "schemaVersion"
+          ],
+          "properties": {
+            "deliveryId": { "$ref": "#/$defs/identifier" },
+            "deliveryHash": { "$ref": "#/$defs/hash" },
+            "transferIntentId": { "$ref": "#/$defs/identifier" },
+            "status": { "enum": ["pending", "acknowledged", "callback_completed"] },
+            "issuedAt": { "type": "string", "format": "date-time" },
+            "expiresAt": { "type": "string", "format": "date-time" },
+            "signedBoundary": { "const": true },
+            "fixedLoopback": { "const": true },
+            "schemaVersion": { "const": "capital_network_delivery_presentation.v1" }
+          }
+        }
+      ]
+    },
+    "reconciliation": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status", "providerViewStatus", "receiptId", "receiptRef",
+            "settlement", "duplicateCanonicalStateAllowed", "serverDerived",
+            "schemaVersion"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "pending_provider_acknowledgement",
+                "acknowledgement_recorded",
+                "signed_callback_processed"
+              ]
+            },
+            "providerViewStatus": {
+              "enum": ["pending", "acknowledged", "callback_completed"]
+            },
+            "receiptId": {
+              "anyOf": [
+                { "type": "null" },
+                { "$ref": "#/$defs/identifier" }
+              ]
+            },
+            "receiptRef": { "$ref": "#/$defs/hash" },
+            "settlement": { "const": false },
+            "duplicateCanonicalStateAllowed": { "const": false },
+            "serverDerived": { "const": true },
+            "schemaVersion": { "const": "capital_network_reconciliation_receipt.v1" }
+          }
+        }
+      ]
+    },
+    "earningsSimulation": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rateBasisPoints", "earningsMinor", "assetId", "label", "source",
+            "approved", "pricingPolicy", "nonBinding", "schemaVersion"
+          ],
+          "properties": {
+            "rateBasisPoints": { "const": "125" },
+            "earningsMinor": { "$ref": "#/$defs/minor" },
+            "assetId": { "$ref": "#/$defs/identifier" },
+            "label": { "const": "Historical example only · unapproved" },
+            "source": { "const": "historical_example_only" },
+            "approved": { "const": false },
+            "pricingPolicy": { "const": false },
+            "nonBinding": { "const": true },
+            "schemaVersion": { "const": "capital_network_earnings_simulation.v1" }
+          }
+        }
+      ]
+    },
+    "disabledCapabilities": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "provider_funding" },
+        { "const": "withdrawal" },
+        { "const": "public_pool" },
+        { "const": "tvl" },
+        { "const": "production_pricing" },
+        { "const": "remote_provider" },
+        { "const": "mainnet" },
+        { "const": "real_capital" }
+      ],
+      "items": false,
+      "minItems": 8,
+      "maxItems": 8
+    },
+    "serverDerived": { "const": true },
+    "nonAuthorizing": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "withdrawable": { "const": false }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "positiveMinor": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" },
+    "minor": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,77})$" }
+  }
+}

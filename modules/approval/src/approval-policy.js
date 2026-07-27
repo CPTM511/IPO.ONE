@@ -23,6 +23,16 @@ const classifications = [
     requiredApproverRoleBundles: []
   },
   {
+    operationId: "tradingPauseNewRisk",
+    classification: ApprovalRequirement.PROTECTIVE,
+    requiredApproverRoleBundles: []
+  },
+  {
+    operationId: "tradingFlattenFacility",
+    classification: ApprovalRequirement.PROTECTIVE,
+    requiredApproverRoleBundles: []
+  },
+  {
     operationId: "pilotIncreaseCreditLimit",
     classification: ApprovalRequirement.DUAL_CONTROL,
     requiredApproverRoleBundles: [RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR]

@@ -8,12 +8,14 @@ import {
 } from "../../../packages/api-contract/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
+import { createTenantOpenApiDocument } from "./tenant-openapi.js";
 
 export const TENANT_HTTP_HOST = "127.0.0.1";
 export const TENANT_HTTP_ROUTES = Object.freeze({
   operations: "/tenant/v1/operations",
   catalog: "/tenant/v1/catalog",
-  health: "/tenant/v1/healthz"
+  health: "/tenant/v1/healthz",
+  openapi: "/openapi.json"
 });
 
 const MAX_BODY_BYTES = 64 * 1024;
@@ -129,6 +131,14 @@ export function createTenantHttpServer({
           public: false,
           schemaVersion: "tenant_transport_health.v1"
         }, requestId);
+      }
+      if (request.method === "GET" && url.pathname === TENANT_HTTP_ROUTES.openapi) {
+        return json(
+          response,
+          200,
+          createTenantOpenApiDocument(url),
+          requestId
+        );
       }
       if (
         serveAuthentication &&

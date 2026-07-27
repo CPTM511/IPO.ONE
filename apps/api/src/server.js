@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { extname, isAbsolute, join, normalize, relative, sep } from "node:path";
+import { extname, isAbsolute, join, normalize, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ApiBoundaryError,
@@ -30,7 +30,9 @@ try {
   process.exit(78);
 }
 
-const rootDir = fileURLToPath(new URL("../../..", import.meta.url));
+const rootDir = runtimeConfig.managedVercel
+  ? process.cwd()
+  : fileURLToPath(new URL("../../..", import.meta.url));
 const webDir = join(rootDir, "apps", "web", "src");
 const openApiPath = join(rootDir, "api", "openapi", "ipo-one.v1.json");
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -832,19 +834,33 @@ function shutdown(signal) {
   setTimeout(() => process.exit(1), 5_000).unref();
 }
 
-process.once("SIGINT", () => shutdown("SIGINT"));
-process.once("SIGTERM", () => shutdown("SIGTERM"));
-
 server.on("error", (error) => {
   logEvent("fatal", "server_error", { errorName: error?.name ?? "Error", errorCode: error?.code });
   process.exitCode = 1;
 });
 
-server.listen(runtimeConfig.port, runtimeConfig.host, () => {
-  logEvent("info", "server_started", {
-    host: runtimeConfig.host,
-    port: runtimeConfig.port,
-    mode: runtimeConfig.deploymentMode,
-    nodeEnvironment: runtimeConfig.nodeEnvironment
+const directlyExecuted =
+  typeof process.argv[1] === "string" &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (directlyExecuted) {
+  process.once("SIGINT", () => shutdown("SIGINT"));
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  server.listen(runtimeConfig.port, runtimeConfig.host, () => {
+    logEvent("info", "server_started", {
+      host: runtimeConfig.host,
+      port: runtimeConfig.port,
+      mode: runtimeConfig.deploymentMode,
+      nodeEnvironment: runtimeConfig.nodeEnvironment
+    });
   });
-});
+}
+
+export function handleIpoOneRequest(request, response) {
+  return new Promise((resolveRequest) => {
+    const complete = () => resolveRequest();
+    response.once("finish", complete);
+    response.once("close", complete);
+    server.emit("request", request, response);
+  });
+}

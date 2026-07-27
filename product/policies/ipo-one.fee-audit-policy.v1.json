@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "fee_audit_policy.v1",
+  "availability": "unavailable",
+  "productionPolicyAvailable": false,
+  "feeCalculationAuthorized": false,
+  "principalAsFeeBaseAllowed": false,
+  "unrealizedPnlAsFeeBaseAllowed": false,
+  "reasonCode": "production_fee_policy_not_approved"
+}

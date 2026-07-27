@@ -308,6 +308,72 @@ test("Human session enforces origin and CSRF on mutations, rotates, logs out, an
   assert.equal((await fixture.bff.logout({ sessionHandle: rotated.cookie.value, now: NOW })).revoked, false);
 });
 
+test("wallet context invalidation is CSRF-bound, idempotent, audited once, and replayable", async () => {
+  const fixture = await createFixture();
+  const issued = await (await fixture.beginAndIssue()).complete();
+  const idempotencyKey = "wallet-invalidation-unit-000000000000000001";
+  const input = {
+    sessionHandle: issued.cookie.value,
+    requestOrigin: ORIGIN,
+    csrfToken: issued.csrfToken,
+    idempotencyKey,
+    reasonCode: "wallet_provider_changed",
+    now: NOW
+  };
+  const invalidated = await fixture.bff.invalidateBrowserSession(input);
+  assert.deepEqual(invalidated.result, {
+    schemaVersion: "wallet_session_invalidation_result.v1",
+    status: "invalidated",
+    reauthenticationRequired: true,
+    authorityAvailable: false,
+    credentialsIncluded: false,
+    fundsAuthority: false
+  });
+  assert.equal(invalidated.clearSessionCookie.maxAge, 0);
+  assert.equal(invalidated.clearCsrfBootstrapCookie.maxAge, 0);
+  await assert.rejects(
+    () => fixture.bff.authenticateSession({
+      sessionHandle: issued.cookie.value,
+      requestMethod: "GET",
+      now: NOW
+    }),
+    (error) => error.code === "authentication_session_rejected"
+  );
+
+  const replay = await fixture.bff.invalidateBrowserSession({
+    ...input,
+    sessionHandle: undefined,
+    now: new Date(NOW.getTime() + 1_000)
+  });
+  assert.deepEqual(replay.result, invalidated.result);
+  const revokeEvents = fixture.eventStore.list().filter(
+    (event) =>
+      event.eventType === "session_revoked" &&
+      event.reasonCode === "wallet_provider_changed"
+  );
+  assert.equal(revokeEvents.length, 1);
+  assert.equal(JSON.stringify(revokeEvents).includes(issued.cookie.value), false);
+  assert.equal(JSON.stringify(revokeEvents).includes(issued.csrfToken), false);
+  assert.equal(JSON.stringify(revokeEvents).includes(idempotencyKey), false);
+
+  await assert.rejects(
+    () => fixture.bff.invalidateBrowserSession({
+      ...input,
+      sessionHandle: undefined,
+      reasonCode: "wallet_chain_changed"
+    }),
+    (error) => error.code === "authentication_session_rejected"
+  );
+  await assert.rejects(
+    () => fixture.bff.invalidateBrowserSession({
+      ...input,
+      sessionHandle: undefined,
+      csrfToken: "x".repeat(43)
+    }),
+    (error) => error.code === "authentication_session_rejected"
+  );
+});
+
 test("Human sessions fail closed immediately after credential rotation", async () => {
   const fixture = await createFixture();
   const issued = await (await fixture.beginAndIssue()).complete();

@@ -40,6 +40,18 @@ export const CoreProjectionType = Object.freeze({
   CREDIT_OFFER_ACCEPTANCE: "credit_offer_acceptance",
   CREDIT_LINE: "credit_line",
   RISK_DECISION: "risk_decision",
+  CREDIT_PASSPORT_ARTIFACT: "credit_passport_artifact",
+  OFFICIAL_REPORT_ARTIFACT: "official_report_artifact",
+  TRADING_CREDIT_PROFILE: "trading_credit_profile",
+  TRADING_CAPITAL_REQUEST: "trading_capital_request",
+  TRADING_PROVIDER_MANDATE: "trading_provider_mandate",
+  TRADING_MATCH_PROPOSAL: "trading_match_proposal",
+  TRADING_FACILITY: "trading_facility",
+  TRADING_ORDER_INTENT: "trading_order_intent",
+  TRADING_FACILITY_RISK_EVALUATION: "trading_facility_risk_evaluation",
+  TRADING_FACILITY_CLOSE_REQUEST: "trading_facility_close_request",
+  TRADING_SETTLEMENT: "trading_settlement",
+  TRADING_PERFORMANCE_PROOF: "trading_performance_proof",
   ADMIN_ACTION: "admin_action",
   PILOT_FEEDBACK_RECORD: "pilot_feedback_record",
   ...ApprovalProjectionType
@@ -74,6 +86,21 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.CREDIT_OFFER_ACCEPTANCE]: "creditOfferAcceptanceId",
   [CoreProjectionType.CREDIT_LINE]: "creditLineId",
   [CoreProjectionType.RISK_DECISION]: "riskDecisionId",
+  [CoreProjectionType.CREDIT_PASSPORT_ARTIFACT]: "creditPassportArtifactId",
+  [CoreProjectionType.OFFICIAL_REPORT_ARTIFACT]: "officialReportId",
+  [CoreProjectionType.TRADING_CREDIT_PROFILE]: "tradingCreditProfileId",
+  [CoreProjectionType.TRADING_CAPITAL_REQUEST]: "tradingCapitalRequestId",
+  [CoreProjectionType.TRADING_PROVIDER_MANDATE]: "tradingProviderMandateId",
+  [CoreProjectionType.TRADING_MATCH_PROPOSAL]: "tradingMatchProposalId",
+  [CoreProjectionType.TRADING_FACILITY]: "tradingFacilityId",
+  [CoreProjectionType.TRADING_ORDER_INTENT]: "tradingOrderIntentId",
+  [CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION]:
+    "tradingFacilityRiskEvaluationId",
+  [CoreProjectionType.TRADING_FACILITY_CLOSE_REQUEST]:
+    "tradingFacilityCloseRequestId",
+  [CoreProjectionType.TRADING_SETTLEMENT]: "tradingSettlementId",
+  [CoreProjectionType.TRADING_PERFORMANCE_PROOF]:
+    "tradingPerformanceProofId",
   [CoreProjectionType.ADMIN_ACTION]: "adminActionId",
   [CoreProjectionType.PILOT_FEEDBACK_RECORD]: "pilotFeedbackId",
   [CoreProjectionType.APPROVAL_PROPOSAL]: "approvalProposalId",
@@ -1041,6 +1068,9 @@ function mapCreditOfferAcceptance(row) {
     acceptedAt: timestamp(row.accepted_at),
     sandboxOnly: row.sandbox_only,
     productionAuthority: row.production_authority,
+    piiIncluded: row.pii_included,
+    rawTransactionDataIncluded: row.raw_transaction_data_included,
+    scoreAuthoritative: row.score_authoritative,
     schemaVersion: row.schema_version
   };
 }
@@ -1111,6 +1141,135 @@ function mapRiskDecision(row) {
     riskFeatureSnapshot: row.risk_feature_snapshot,
     decisionPassport: row.decision_passport
   };
+}
+
+function mapCreditPassportArtifact(row) {
+  if (!row) return undefined;
+  return {
+    creditPassportArtifactId: row.id,
+    artifactHash: row.artifact_hash,
+    sourceRiskDecisionId: row.source_risk_decision_id,
+    sourceRiskDecisionPassportId: row.source_risk_decision_passport_id,
+    sourceDecisionHash: row.source_decision_hash,
+    sourceDecisionPassportHash: row.source_decision_passport_hash,
+    sourceFeatureSnapshotHash: row.source_feature_snapshot_hash,
+    subjectId: row.subject_id,
+    authorityType: row.authority_type,
+    controllerActorRefHash: row.controller_actor_ref_hash,
+    verifierActorRefHash: row.verifier_actor_ref_hash,
+    purpose: row.purpose,
+    selectedClaims: row.selected_claims,
+    disclosures: row.disclosures,
+    claimManifestHash: row.claim_manifest_hash,
+    issuer: row.issuer,
+    issuedAt: timestamp(row.issued_at),
+    expiresAt: timestamp(row.expires_at),
+    status: row.status,
+    version: safeInteger(row.version, "version"),
+    ...(row.supersedes_artifact_hash
+      ? {
+          supersedesArtifactHash: row.supersedes_artifact_hash,
+          supersedesVersion: safeInteger(row.supersedes_version, "supersedesVersion")
+        }
+      : {}),
+    ...(row.revoked_at
+      ? {
+          revokedAt: timestamp(row.revoked_at),
+          revocationReasonCode: row.revocation_reason_code
+        }
+      : {}),
+    onlineVerificationRequired: row.online_verification_required,
+    sameTenantOnly: row.same_tenant_only,
+    pointInTime: row.point_in_time,
+    nonAuthorizing: row.non_authorizing,
+    sandboxOnly: row.sandbox_only,
+    productionAuthority: row.production_authority,
+    piiIncluded: row.pii_included,
+    rawTransactionDataIncluded: row.raw_transaction_data_included,
+    scoreAuthoritative: row.score_authoritative,
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapOfficialReportArtifact(row) {
+  if (!row) return undefined;
+  return {
+    officialReportId: row.id,
+    reportKind: row.report_kind,
+    format: row.format,
+    contentType: row.content_type,
+    fileName: row.file_name,
+    contentBase64: row.content_base64,
+    contentSha256: row.content_sha256,
+    artifactHash: row.artifact_hash,
+    sourceObligationId: row.source_obligation_id,
+    sourceEvidenceCount: safeInteger(row.source_evidence_count, "sourceEvidenceCount"),
+    sourceEvidenceHeadHash: row.source_evidence_head_hash,
+    sourceEvidenceTailHash: row.source_evidence_tail_hash,
+    controllerActorRefHash: row.controller_actor_ref_hash,
+    generatedAt: timestamp(row.generated_at),
+    expiresAt: timestamp(row.expires_at),
+    status: row.status,
+    version: safeInteger(row.version, "version"),
+    ...(row.revoked_at
+      ? {
+          revokedAt: timestamp(row.revoked_at),
+          revocationReasonCode: row.revocation_reason_code
+        }
+      : {}),
+    authorizationRevalidationRequired: row.authorization_revalidation_required,
+    objectAccessExpires: row.object_access_expires,
+    signedUrlIssued: row.signed_url_issued,
+    sameTenantOnly: row.same_tenant_only,
+    sandboxOnly: row.sandbox_only,
+    productionAuthority: row.production_authority,
+    piiIncluded: row.pii_included,
+    secretsIncluded: row.secrets_included,
+    rawTransactionDataIncluded: row.raw_transaction_data_included,
+    browserAuthored: row.browser_authored,
+    feeAuditPolicy: row.fee_audit_policy,
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapTradingCreditProfile(row) {
+  return row?.profile ? clone(row.profile) : undefined;
+}
+
+function mapTradingCapitalRequest(row) {
+  return row?.request ? clone(row.request) : undefined;
+}
+
+function mapTradingProviderMandate(row) {
+  return row?.mandate ? clone(row.mandate) : undefined;
+}
+
+function mapTradingMatchProposal(row) {
+  return row?.proposal ? clone(row.proposal) : undefined;
+}
+
+function mapTradingFacility(row) {
+  return row?.facility ? clone(row.facility) : undefined;
+}
+
+function mapTradingOrderIntent(row) {
+  return row?.order_intent ? clone(row.order_intent) : undefined;
+}
+
+function mapTradingFacilityRiskEvaluation(row) {
+  return row?.evaluation ? clone(row.evaluation) : undefined;
+}
+
+function mapTradingFacilityCloseRequest(row) {
+  return row?.close_request ? clone(row.close_request) : undefined;
+}
+
+function mapTradingSettlement(row) {
+  return row?.settlement ? clone(row.settlement) : undefined;
+}
+
+function mapTradingPerformanceProof(row) {
+  return row?.proof ? clone(row.proof) : undefined;
 }
 
 function mapAdminAction(row) {
@@ -1536,6 +1695,22 @@ export class PostgresCoreRepository {
       client,
       "pilot_feedback_records",
       "SELECT count(*)::bigint AS count FROM pilot_feedback_records"
+    );
+  }
+
+  async countCreditPassportArtifactsForCapacityInTransaction(client) {
+    return this.#lockAndCountPersistentResource(
+      client,
+      "credit_passport_artifacts",
+      "SELECT count(*)::bigint AS count FROM credit_passport_artifacts"
+    );
+  }
+
+  async countOfficialReportArtifactsForCapacityInTransaction(client) {
+    return this.#lockAndCountPersistentResource(
+      client,
+      "official_report_artifacts",
+      "SELECT count(*)::bigint AS count FROM official_report_artifacts"
     );
   }
 
@@ -3378,6 +3553,167 @@ export class PostgresCoreRepository {
     );
   }
 
+  async getCreditPassportArtifact(creditPassportArtifactId) {
+    return this.#getOne(
+      "creditPassportArtifactId",
+      creditPassportArtifactId,
+      "SELECT * FROM credit_passport_artifacts WHERE id = $1",
+      mapCreditPassportArtifact
+    );
+  }
+
+  async getOfficialReportArtifact(officialReportId) {
+    return this.#getOne(
+      "officialReportId",
+      officialReportId,
+      "SELECT * FROM official_report_artifacts WHERE id = $1",
+      mapOfficialReportArtifact
+    );
+  }
+
+  async getTradingCreditProfile(tradingCreditProfileId) {
+    return this.#getOne(
+      "tradingCreditProfileId",
+      tradingCreditProfileId,
+      "SELECT profile FROM trading_credit_profiles WHERE id = $1",
+      mapTradingCreditProfile
+    );
+  }
+
+  async getTradingCapitalRequest(tradingCapitalRequestId) {
+    return this.#getOne(
+      "tradingCapitalRequestId",
+      tradingCapitalRequestId,
+      "SELECT request FROM trading_capital_requests WHERE id = $1",
+      mapTradingCapitalRequest
+    );
+  }
+
+  async getTradingProviderMandate(tradingProviderMandateId) {
+    return this.#getOne(
+      "tradingProviderMandateId",
+      tradingProviderMandateId,
+      "SELECT mandate FROM trading_provider_mandates WHERE id = $1",
+      mapTradingProviderMandate
+    );
+  }
+
+  async listTradingProviderMandatesInTransaction(
+    client,
+    { limit = 100 } = {}
+  ) {
+    assertQueryable(client);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+      throw new DomainError(
+        "invalid_list_limit",
+        "Trading Provider Mandate limit must be between 1 and 100"
+      );
+    }
+    const result = await client.query(
+      `SELECT mandate
+         FROM trading_provider_mandates
+        WHERE status = 'open'
+        ORDER BY created_at, mandate_hash, id
+        LIMIT $1`,
+      [limit]
+    );
+    return result.rows.map(mapTradingProviderMandate);
+  }
+
+  async getTradingMatchProposal(tradingMatchProposalId) {
+    return this.#getOne(
+      "tradingMatchProposalId",
+      tradingMatchProposalId,
+      "SELECT proposal FROM trading_match_proposals WHERE id = $1",
+      mapTradingMatchProposal
+    );
+  }
+
+  async getTradingFacility(tradingFacilityId) {
+    return this.#getOne(
+      "tradingFacilityId",
+      tradingFacilityId,
+      "SELECT facility FROM trading_facilities WHERE id = $1",
+      mapTradingFacility
+    );
+  }
+
+  async getTradingOrderIntent(tradingOrderIntentId) {
+    return this.#getOne(
+      "tradingOrderIntentId",
+      tradingOrderIntentId,
+      "SELECT order_intent FROM trading_order_intents WHERE id = $1",
+      mapTradingOrderIntent
+    );
+  }
+
+  async getTradingFacilityRiskEvaluation(tradingFacilityRiskEvaluationId) {
+    return this.#getOne(
+      "tradingFacilityRiskEvaluationId",
+      tradingFacilityRiskEvaluationId,
+      "SELECT evaluation FROM trading_facility_risk_evaluations WHERE id = $1",
+      mapTradingFacilityRiskEvaluation
+    );
+  }
+
+  async getTradingFacilityCloseRequest(tradingFacilityCloseRequestId) {
+    return this.#getOne(
+      "tradingFacilityCloseRequestId",
+      tradingFacilityCloseRequestId,
+      "SELECT close_request FROM trading_facility_close_requests WHERE id = $1",
+      mapTradingFacilityCloseRequest
+    );
+  }
+
+  async getTradingSettlement(tradingSettlementId) {
+    return this.#getOne(
+      "tradingSettlementId",
+      tradingSettlementId,
+      "SELECT settlement FROM trading_settlements WHERE id = $1",
+      mapTradingSettlement
+    );
+  }
+
+  async getTradingPerformanceProof(tradingPerformanceProofId) {
+    return this.#getOne(
+      "tradingPerformanceProofId",
+      tradingPerformanceProofId,
+      "SELECT proof FROM trading_performance_proofs WHERE id = $1",
+      mapTradingPerformanceProof
+    );
+  }
+
+  async listTradingOrderIntentsInTransaction(
+    client,
+    { facilityId, status, limit = 20 } = {}
+  ) {
+    assertQueryable(client);
+    assertString("facilityId", facilityId);
+    if (
+      (status !== undefined &&
+        !["open", "canceled", "flattened"].includes(status)) ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 20
+    ) {
+      throw new DomainError(
+        "invalid_list_limit",
+        "Trading Order Intent query is invalid"
+      );
+    }
+    const values = [facilityId, limit];
+    const result = await client.query(
+      `SELECT order_intent
+         FROM trading_order_intents
+        WHERE facility_id = $1
+          ${status === undefined ? "" : "AND status = $3"}
+        ORDER BY created_at, id
+        LIMIT $2`,
+      status === undefined ? values : [...values, status]
+    );
+    return result.rows.map(mapTradingOrderIntent);
+  }
+
   async getCanonicalProjection(entityType, entityId) {
     let value;
     switch (entityType) {
@@ -3464,6 +3800,42 @@ export class PostgresCoreRepository {
         break;
       case CoreProjectionType.RISK_DECISION:
         value = await this.getRiskDecision(entityId);
+        break;
+      case CoreProjectionType.CREDIT_PASSPORT_ARTIFACT:
+        value = await this.getCreditPassportArtifact(entityId);
+        break;
+      case CoreProjectionType.OFFICIAL_REPORT_ARTIFACT:
+        value = await this.getOfficialReportArtifact(entityId);
+        break;
+      case CoreProjectionType.TRADING_CREDIT_PROFILE:
+        value = await this.getTradingCreditProfile(entityId);
+        break;
+      case CoreProjectionType.TRADING_CAPITAL_REQUEST:
+        value = await this.getTradingCapitalRequest(entityId);
+        break;
+      case CoreProjectionType.TRADING_PROVIDER_MANDATE:
+        value = await this.getTradingProviderMandate(entityId);
+        break;
+      case CoreProjectionType.TRADING_MATCH_PROPOSAL:
+        value = await this.getTradingMatchProposal(entityId);
+        break;
+      case CoreProjectionType.TRADING_FACILITY:
+        value = await this.getTradingFacility(entityId);
+        break;
+      case CoreProjectionType.TRADING_ORDER_INTENT:
+        value = await this.getTradingOrderIntent(entityId);
+        break;
+      case CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION:
+        value = await this.getTradingFacilityRiskEvaluation(entityId);
+        break;
+      case CoreProjectionType.TRADING_FACILITY_CLOSE_REQUEST:
+        value = await this.getTradingFacilityCloseRequest(entityId);
+        break;
+      case CoreProjectionType.TRADING_SETTLEMENT:
+        value = await this.getTradingSettlement(entityId);
+        break;
+      case CoreProjectionType.TRADING_PERFORMANCE_PROOF:
+        value = await this.getTradingPerformanceProof(entityId);
         break;
       case CoreProjectionType.ADMIN_ACTION:
         value = await this.getAdminAction(entityId);
@@ -3599,6 +3971,30 @@ export class PostgresCoreRepository {
         return this.#writeCreditLine(client, value, occurredAt);
       case CoreProjectionType.RISK_DECISION:
         return this.#writeRiskDecision(client, value);
+      case CoreProjectionType.CREDIT_PASSPORT_ARTIFACT:
+        return this.#writeCreditPassportArtifact(client, value);
+      case CoreProjectionType.OFFICIAL_REPORT_ARTIFACT:
+        return this.#writeOfficialReportArtifact(client, value);
+      case CoreProjectionType.TRADING_CREDIT_PROFILE:
+        return this.#writeTradingCreditProfile(client, value);
+      case CoreProjectionType.TRADING_CAPITAL_REQUEST:
+        return this.#writeTradingCapitalRequest(client, value);
+      case CoreProjectionType.TRADING_PROVIDER_MANDATE:
+        return this.#writeTradingProviderMandate(client, value);
+      case CoreProjectionType.TRADING_MATCH_PROPOSAL:
+        return this.#writeTradingMatchProposal(client, value);
+      case CoreProjectionType.TRADING_FACILITY:
+        return this.#writeTradingFacility(client, value);
+      case CoreProjectionType.TRADING_ORDER_INTENT:
+        return this.#writeTradingOrderIntent(client, value);
+      case CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION:
+        return this.#writeTradingFacilityRiskEvaluation(client, value);
+      case CoreProjectionType.TRADING_FACILITY_CLOSE_REQUEST:
+        return this.#writeTradingFacilityCloseRequest(client, value);
+      case CoreProjectionType.TRADING_SETTLEMENT:
+        return this.#writeTradingSettlement(client, value);
+      case CoreProjectionType.TRADING_PERFORMANCE_PROOF:
+        return this.#writeTradingPerformanceProof(client, value);
       case CoreProjectionType.ADMIN_ACTION:
         return this.#writeAdminAction(client, value);
       case CoreProjectionType.PILOT_FEEDBACK_RECORD:
@@ -5147,6 +5543,665 @@ export class PostgresCoreRepository {
     const existing = await client.query("SELECT * FROM risk_decisions WHERE id = $1", [value.riskDecisionId]);
     if (hashId("projection_compare", mapRiskDecision(existing.rows[0])) !== hashId("projection_compare", value)) {
       throw projectionConflict(CoreProjectionType.RISK_DECISION, value.riskDecisionId);
+    }
+  }
+
+  async #writeCreditPassportArtifact(client, value) {
+    const result = await client.query(
+      `INSERT INTO credit_passport_artifacts(
+         id, artifact_hash, source_risk_decision_id, source_decision_hash,
+         source_risk_decision_passport_id, source_decision_passport_hash,
+         source_feature_snapshot_hash, subject_id, authority_type,
+         controller_actor_ref_hash, verifier_actor_ref_hash, purpose,
+         selected_claims, disclosures, claim_manifest_hash, issuer,
+         issued_at, expires_at, status, version, supersedes_artifact_hash,
+         supersedes_version, revoked_at, revocation_reason_code,
+         online_verification_required, same_tenant_only, point_in_time,
+         non_authorizing, sandbox_only, production_authority, pii_included,
+         raw_transaction_data_included, score_authoritative, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+         $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
+         $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
+       )
+       ON CONFLICT (id) DO UPDATE SET
+         artifact_hash = EXCLUDED.artifact_hash,
+         selected_claims = EXCLUDED.selected_claims,
+         disclosures = EXCLUDED.disclosures,
+         claim_manifest_hash = EXCLUDED.claim_manifest_hash,
+         issued_at = EXCLUDED.issued_at,
+         expires_at = EXCLUDED.expires_at,
+         status = EXCLUDED.status,
+         version = EXCLUDED.version,
+         supersedes_artifact_hash = EXCLUDED.supersedes_artifact_hash,
+         supersedes_version = EXCLUDED.supersedes_version,
+         revoked_at = EXCLUDED.revoked_at,
+         revocation_reason_code = EXCLUDED.revocation_reason_code
+       RETURNING id`,
+      [
+        value.creditPassportArtifactId,
+        value.artifactHash,
+        value.sourceRiskDecisionId,
+        value.sourceDecisionHash,
+        value.sourceRiskDecisionPassportId,
+        value.sourceDecisionPassportHash,
+        value.sourceFeatureSnapshotHash,
+        value.subjectId,
+        value.authorityType,
+        value.controllerActorRefHash,
+        value.verifierActorRefHash,
+        value.purpose,
+        json(value.selectedClaims),
+        json(value.disclosures),
+        value.claimManifestHash,
+        json(value.issuer),
+        value.issuedAt,
+        value.expiresAt,
+        value.status,
+        value.version,
+        value.supersedesArtifactHash ?? null,
+        value.supersedesVersion ?? null,
+        value.revokedAt ?? null,
+        value.revocationReasonCode ?? null,
+        value.onlineVerificationRequired,
+        value.sameTenantOnly,
+        value.pointInTime,
+        value.nonAuthorizing,
+        value.sandboxOnly,
+        value.productionAuthority,
+        value.piiIncluded,
+        value.rawTransactionDataIncluded,
+        value.scoreAuthoritative,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.CREDIT_PASSPORT_ARTIFACT,
+        value.creditPassportArtifactId
+      );
+    }
+  }
+
+  async #writeOfficialReportArtifact(client, value) {
+    const result = await client.query(
+      `INSERT INTO official_report_artifacts(
+         id, report_kind, format, content_type, file_name, content_base64,
+         content_sha256, artifact_hash, source_obligation_id,
+         source_evidence_count, source_evidence_head_hash,
+         source_evidence_tail_hash, controller_actor_ref_hash,
+         generated_at, expires_at, status, version, revoked_at,
+         revocation_reason_code, authorization_revalidation_required,
+         object_access_expires, signed_url_issued, same_tenant_only,
+         sandbox_only, production_authority, pii_included, secrets_included,
+         raw_transaction_data_included, browser_authored, fee_audit_policy,
+         schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6,
+         $7, $8, $9,
+         $10, $11,
+         $12, $13,
+         $14, $15, $16, $17, $18,
+         $19, $20,
+         $21, $22, $23,
+         $24, $25, $26, $27,
+         $28, $29, $30,
+         $31
+       )
+       ON CONFLICT (id) DO UPDATE SET
+         status = EXCLUDED.status,
+         version = EXCLUDED.version,
+         revoked_at = EXCLUDED.revoked_at,
+         revocation_reason_code = EXCLUDED.revocation_reason_code
+       RETURNING id`,
+      [
+        value.officialReportId,
+        value.reportKind,
+        value.format,
+        value.contentType,
+        value.fileName,
+        value.contentBase64,
+        value.contentSha256,
+        value.artifactHash,
+        value.sourceObligationId,
+        value.sourceEvidenceCount,
+        value.sourceEvidenceHeadHash,
+        value.sourceEvidenceTailHash,
+        value.controllerActorRefHash,
+        value.generatedAt,
+        value.expiresAt,
+        value.status,
+        value.version,
+        value.revokedAt ?? null,
+        value.revocationReasonCode ?? null,
+        value.authorizationRevalidationRequired,
+        value.objectAccessExpires,
+        value.signedUrlIssued,
+        value.sameTenantOnly,
+        value.sandboxOnly,
+        value.productionAuthority,
+        value.piiIncluded,
+        value.secretsIncluded,
+        value.rawTransactionDataIncluded,
+        value.browserAuthored,
+        json(value.feeAuditPolicy),
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.OFFICIAL_REPORT_ARTIFACT,
+        value.officialReportId
+      );
+    }
+  }
+
+  async #writeTradingCreditProfile(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_credit_profiles(
+         id, subject_id, principal_id, subject_type, operator_type,
+         account_reference_hash, requested_by_actor_hash, stage, profile, version,
+         created_at, updated_at, sandbox_only, synthetic_only, production_authority,
+         funds_authority, credit_approval, universal_score_available,
+         external_system_queried, raw_strategy_included, raw_transactions_included,
+         pii_included, secrets_included, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+         $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+       )
+       ON CONFLICT (id) DO UPDATE SET
+         stage = EXCLUDED.stage,
+         profile = EXCLUDED.profile,
+         version = EXCLUDED.version,
+         updated_at = EXCLUDED.updated_at,
+         external_system_queried = EXCLUDED.external_system_queried
+       RETURNING id`,
+      [
+        value.tradingCreditProfileId,
+        value.subjectId,
+        value.principalId,
+        value.subjectType,
+        value.operatorType,
+        value.accountReferenceHash,
+        value.requestedByActorHash,
+        value.stage,
+        value,
+        value.version,
+        value.createdAt,
+        value.updatedAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.creditApproval,
+        value.universalScoreAvailable,
+        value.externalSystemQueried,
+        value.rawStrategyIncluded,
+        value.rawTransactionsIncluded,
+        value.piiIncluded,
+        value.secretsIncluded,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_CREDIT_PROFILE,
+        value.tradingCreditProfileId
+      );
+    }
+  }
+
+  async #writeTradingCapitalRequest(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_capital_requests(
+         id, request_hash, subject_id, principal_id, trading_credit_profile_id,
+         requested_by_actor_hash, template_type, strategy_class, asset_id,
+         requested_amount_minor, duration_days, status, version, request,
+         created_at, expires_at, sandbox_only, synthetic_only,
+         production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19, $20, $21
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.tradingCapitalRequestId,
+        value.requestHash,
+        value.subjectId,
+        value.principalId,
+        value.tradingCreditProfileId,
+        value.requestedByActorHash,
+        value.templateType,
+        value.strategyClass,
+        value.assetId,
+        value.requestedAmountMinor,
+        value.durationDays,
+        value.status,
+        value.version,
+        value,
+        value.createdAt,
+        value.expiresAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_CAPITAL_REQUEST,
+        value.tradingCapitalRequestId
+      );
+    }
+  }
+
+  async #writeTradingProviderMandate(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_provider_mandates(
+         id, mandate_hash, provider_id, provider_actor_hash, asset_id,
+         min_amount_minor, max_amount_minor, min_duration_days,
+         max_duration_days, status, version, mandate, created_at, expires_at,
+         sandbox_only, synthetic_only, production_authority, funds_authority,
+         schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.tradingProviderMandateId,
+        value.mandateHash,
+        value.providerId,
+        value.providerActorHash,
+        value.assetId,
+        value.minAmountMinor,
+        value.maxAmountMinor,
+        value.minDurationDays,
+        value.maxDurationDays,
+        value.status,
+        value.version,
+        value,
+        value.createdAt,
+        value.expiresAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_PROVIDER_MANDATE,
+        value.tradingProviderMandateId
+      );
+    }
+  }
+
+  async #writeTradingMatchProposal(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_match_proposals(
+         id, proposal_hash, capital_request_id, request_hash, request_version,
+         provider_mandate_id, mandate_hash, mandate_version, subject_id,
+         principal_id, provider_id, subject_actor_hash, provider_actor_hash,
+         compatibility_hash, terms_hash, status, version, proposal,
+         created_at, updated_at, expires_at, sandbox_only, synthetic_only,
+         production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
+       )
+       ON CONFLICT (id) DO UPDATE SET
+         status = EXCLUDED.status,
+         version = EXCLUDED.version,
+         proposal = EXCLUDED.proposal,
+         updated_at = EXCLUDED.updated_at
+       RETURNING id`,
+      [
+        value.tradingMatchProposalId,
+        value.proposalHash,
+        value.capitalRequestId,
+        value.requestHash,
+        value.requestVersion,
+        value.providerMandateId,
+        value.mandateHash,
+        value.mandateVersion,
+        value.subjectId,
+        value.principalId,
+        value.providerId,
+        value.subjectActorHash,
+        value.providerActorHash,
+        value.compatibilityHash,
+        value.termsHash,
+        value.status,
+        value.version,
+        value,
+        value.createdAt,
+        value.updatedAt,
+        value.expiresAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_MATCH_PROPOSAL,
+        value.tradingMatchProposalId
+      );
+    }
+  }
+
+  async #writeTradingFacility(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_facilities(
+         id, facility_hash, state_hash, match_proposal_id, proposal_hash,
+         obligation_id, obligation_hash, subject_id, principal_id, provider_id,
+         asset_id, lifecycle_status, risk_state, subject_collateral_minor,
+         provider_funding_minor, synthetic_capital_minor,
+         synthetic_exposure_minor, synthetic_equity_minor, open_order_count,
+         version, facility, created_at, updated_at, activation_deadline_at,
+         maturity_at, sandbox_only, synthetic_only, non_redeemable,
+         withdrawable, transferable, production_authority, funds_authority,
+         schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
+         $27, $28, $29, $30, $31, $32, $33
+       )
+       ON CONFLICT (id) DO UPDATE SET
+         state_hash = EXCLUDED.state_hash,
+         lifecycle_status = EXCLUDED.lifecycle_status,
+         risk_state = EXCLUDED.risk_state,
+         subject_collateral_minor = EXCLUDED.subject_collateral_minor,
+         provider_funding_minor = EXCLUDED.provider_funding_minor,
+         synthetic_capital_minor = EXCLUDED.synthetic_capital_minor,
+         synthetic_exposure_minor = EXCLUDED.synthetic_exposure_minor,
+         synthetic_equity_minor = EXCLUDED.synthetic_equity_minor,
+         open_order_count = EXCLUDED.open_order_count,
+         version = EXCLUDED.version,
+         facility = EXCLUDED.facility,
+         updated_at = EXCLUDED.updated_at
+       RETURNING id`,
+      [
+        value.tradingFacilityId,
+        value.facilityHash,
+        value.stateHash,
+        value.matchProposalId,
+        value.proposalHash,
+        value.obligationId,
+        value.obligationHash,
+        value.subjectId,
+        value.principalId,
+        value.providerId,
+        value.assetId,
+        value.lifecycleStatus,
+        value.riskState,
+        value.subjectCollateralMinor,
+        value.providerFundingMinor,
+        value.syntheticCapitalMinor,
+        value.syntheticExposureMinor,
+        value.syntheticEquityMinor,
+        value.openOrderCount,
+        value.version,
+        value,
+        value.createdAt,
+        value.updatedAt,
+        value.activationDeadlineAt,
+        value.maturityAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.nonRedeemable,
+        value.withdrawable,
+        value.transferable,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_FACILITY,
+        value.tradingFacilityId
+      );
+    }
+  }
+
+  async #writeTradingOrderIntent(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_order_intents(
+         id, order_intent_hash, order_state_hash, facility_id, facility_hash,
+         subject_id, principal_id, direction, synthetic_notional_minor, status,
+         version, order_intent, created_at, updated_at, sandbox_only,
+         synthetic_only, non_redeemable, withdrawable, transferable,
+         production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19, $20, $21, $22
+       )
+       ON CONFLICT (id) DO UPDATE SET
+         order_state_hash = EXCLUDED.order_state_hash,
+         status = EXCLUDED.status,
+         version = EXCLUDED.version,
+         order_intent = EXCLUDED.order_intent,
+         updated_at = EXCLUDED.updated_at
+       RETURNING id`,
+      [
+        value.tradingOrderIntentId,
+        value.orderIntentHash,
+        value.orderStateHash,
+        value.facilityId,
+        value.facilityHash,
+        value.subjectId,
+        value.principalId,
+        value.direction,
+        value.syntheticNotionalMinor,
+        value.status,
+        value.version,
+        value,
+        value.createdAt,
+        value.updatedAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.nonRedeemable,
+        value.withdrawable,
+        value.transferable,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_ORDER_INTENT,
+        value.tradingOrderIntentId
+      );
+    }
+  }
+
+  async #writeTradingFacilityRiskEvaluation(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_facility_risk_evaluations(
+         id, evaluation_hash, facility_id, facility_hash,
+         facility_version_before, previous_risk_state, evaluated_risk_state,
+         freshness, evaluation, evaluated_at, sandbox_only, synthetic_only,
+         non_redeemable, production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.tradingFacilityRiskEvaluationId,
+        value.evaluationHash,
+        value.facilityId,
+        value.facilityHash,
+        value.facilityVersionBefore,
+        value.previousRiskState,
+        value.evaluatedRiskState,
+        value.freshness,
+        value,
+        value.evaluatedAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.nonRedeemable,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION,
+        value.tradingFacilityRiskEvaluationId
+      );
+    }
+  }
+
+  async #writeTradingFacilityCloseRequest(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_facility_close_requests(
+         id, request_hash, facility_id, facility_hash, facility_state_hash,
+         facility_version, obligation_id, obligation_hash, subject_id,
+         principal_id, provider_id, status, close_request, requested_at,
+         sandbox_only, synthetic_only, non_redeemable, production_authority,
+         funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19, $20
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.tradingFacilityCloseRequestId,
+        value.requestHash,
+        value.facilityId,
+        value.facilityHash,
+        value.facilityStateHash,
+        value.facilityVersion,
+        value.obligationId,
+        value.obligationHash,
+        value.subjectId,
+        value.principalId,
+        value.providerId,
+        value.status,
+        value,
+        value.requestedAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.nonRedeemable,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_FACILITY_CLOSE_REQUEST,
+        value.tradingFacilityCloseRequestId
+      );
+    }
+  }
+
+  async #writeTradingSettlement(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_settlements(
+         id, settlement_hash, close_request_id, close_request_hash,
+         facility_id, facility_hash, obligation_id, obligation_hash,
+         subject_id, principal_id, provider_id, asset_id,
+         final_synthetic_equity_minor, total_allocated_minor, status,
+         settlement, settled_at, sandbox_only, synthetic_only, non_redeemable,
+         production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19, $20, $21, $22, $23
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.tradingSettlementId,
+        value.settlementHash,
+        value.closeRequestId,
+        value.closeRequestHash,
+        value.facilityId,
+        value.facilityHash,
+        value.obligationId,
+        value.obligationHash,
+        value.subjectId,
+        value.principalId,
+        value.providerId,
+        value.assetId,
+        value.finalSyntheticEquityMinor,
+        value.totalAllocatedMinor,
+        value.status,
+        value,
+        value.settledAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.nonRedeemable,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_SETTLEMENT,
+        value.tradingSettlementId
+      );
+    }
+  }
+
+  async #writeTradingPerformanceProof(client, value) {
+    const result = await client.query(
+      `INSERT INTO trading_performance_proofs(
+         id, proof_hash, settlement_id, settlement_hash, facility_id,
+         facility_hash, obligation_id, obligation_hash, subject_id,
+         principal_id, provider_id, claim_set_hash, status, proof,
+         issued_at, expires_at, sandbox_only, synthetic_only, non_redeemable,
+         production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19, $20, $21, $22
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.tradingPerformanceProofId,
+        value.proofHash,
+        value.settlementId,
+        value.settlementHash,
+        value.facilityId,
+        value.facilityHash,
+        value.obligationId,
+        value.obligationHash,
+        value.subjectId,
+        value.principalId,
+        value.providerId,
+        value.claimSetHash,
+        value.status,
+        value,
+        value.issuedAt,
+        value.expiresAt,
+        value.sandboxOnly,
+        value.syntheticOnly,
+        value.nonRedeemable,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.TRADING_PERFORMANCE_PROOF,
+        value.tradingPerformanceProofId
+      );
     }
   }
 

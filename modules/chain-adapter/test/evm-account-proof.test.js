@@ -36,6 +36,9 @@ for (const profile of [BASE_SEPOLIA_PROFILE, X_LAYER_TESTNET_PROFILE]) {
     const accountId = `${profile.chainId}:${account.address}`;
     const durableChallenge = challenge(adapter, accountId);
     const prepared = adapter.createTypedData(durableChallenge);
+    assert.equal(typeof prepared.typedData.message.issuedAt, "string");
+    assert.equal(typeof prepared.typedData.message.expiresAt, "string");
+    assert.doesNotThrow(() => JSON.stringify(prepared.typedData));
     const signature = await account.signTypedData(prepared.typedData);
     const result = await adapter.verify({ accountId, signature, challenge: durableChallenge, now: NOW });
 
@@ -96,5 +99,77 @@ test("account proof fails closed for wrong chain, account, expiry, challenge mut
   await assert.rejects(
     adapter.verify({ accountId, signature: malleable, challenge: durableChallenge, now: NOW }),
     /high-s/
+  );
+});
+
+test("account proof accepts only an eligible explicit ERC-1271 EIP-712 result", async () => {
+  const calls = [];
+  const signatureVerifier = {
+    async verifyTypedData(input) {
+      calls.push(input);
+      return Object.freeze({
+        schemaVersion: "wallet_signature_verification.v1",
+        chainId: input.chainId,
+        walletType: "contract",
+        verificationMethod: "eip1271_eip712_v1",
+        authenticationEligible: true,
+        rawSignaturePersisted: false,
+        credentialsIncluded: false,
+        productionFundsMoved: false
+      });
+    }
+  };
+  const adapter = new EvmAccountProofAdapter({
+    profile: BASE_SEPOLIA_PROFILE,
+    signatureVerifier
+  });
+  const account = privateKeyToAccount(PRIVATE_KEY);
+  const accountId = `${BASE_SEPOLIA_PROFILE.chainId}:${account.address}`;
+  const durableChallenge = challenge(adapter, accountId);
+  const signature = `0x${"44".repeat(96)}`;
+  const result = await adapter.verify({
+    accountId,
+    signature,
+    challenge: durableChallenge,
+    now: NOW
+  });
+
+  assert.equal(adapter.descriptor().contractWalletSupport, true);
+  assert.equal(adapter.descriptor().adapterVersion, "1.1.0");
+  assert.equal(result.verificationMethod, "eip1271_eip712_v1");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].digest, durableChallenge.typedDataHash);
+  assert.equal(calls[0].signature, signature);
+});
+
+test("account proof rejects contract-wallet evidence that is not authentication-eligible", async () => {
+  const adapter = new EvmAccountProofAdapter({
+    profile: X_LAYER_TESTNET_PROFILE,
+    signatureVerifier: {
+      async verifyTypedData(input) {
+        return Object.freeze({
+          schemaVersion: "wallet_signature_verification.v1",
+          chainId: input.chainId,
+          walletType: "contract",
+          verificationMethod: "eip1271_eip712_v1",
+          authenticationEligible: false,
+          rawSignaturePersisted: false,
+          credentialsIncluded: false,
+          productionFundsMoved: false
+        });
+      }
+    }
+  });
+  const account = privateKeyToAccount(PRIVATE_KEY);
+  const accountId = `${X_LAYER_TESTNET_PROFILE.chainId}:${account.address}`;
+  const durableChallenge = challenge(adapter, accountId);
+  await assert.rejects(
+    adapter.verify({
+      accountId,
+      signature: `0x${"55".repeat(65)}`,
+      challenge: durableChallenge,
+      now: NOW
+    }),
+    /account_proof_verification_failed/
   );
 });

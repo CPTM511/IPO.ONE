@@ -10,6 +10,10 @@ import {
   createPostgresTenantLivePolicyAdapter,
   createTenantFoundationHandlers
 } from "../../../modules/tenant-command-gateway/src/index.js";
+import {
+  HyperliquidBindingProofVerifier,
+  HyperliquidTestnetInfoAdapter
+} from "../../../modules/hyperliquid-info/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 import { readMigrationSet } from "../../../scripts/migrate.mjs";
 import {
@@ -32,6 +36,7 @@ const CONFIG_KEYS = new Set([
   "oidcProviders",
   "policyVersion",
   "port",
+  "proofAdapters",
   "referenceHashKey",
   "referenceHashKeyRef",
   "releaseId",
@@ -79,17 +84,6 @@ async function assertExactMigrationSet(pool) {
   }
 }
 
-function rejectingDpopReplayCache() {
-  return Object.freeze({
-    consume() {
-      throw new DomainError(
-        "production_dpop_disabled",
-        "Production DPoP is disabled until multi-instance durable replay protection is deployed"
-      );
-    }
-  });
-}
-
 async function composeProductionClosedPilotRuntime(input) {
   assertClosedConfig(input);
   if (
@@ -127,7 +121,12 @@ async function composeProductionClosedPilotRuntime(input) {
   });
   const gateway = new TenantCommandGateway({
     pool: input.gatewayPool,
-    handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers()),
+    handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
+      proofAdapters: input.proofAdapters,
+      hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
+      hyperliquidBindingProofVerifier:
+        new HyperliquidBindingProofVerifier()
+    })),
     policyRegistry,
     credentialRegistry: humanAccess.credentialRegistry,
     referenceHasher,
@@ -138,7 +137,7 @@ async function composeProductionClosedPilotRuntime(input) {
     audience: input.machineAudience,
     resolver: input.machineResolver,
     credentialRegistry: humanAccess.credentialRegistry,
-    replayCache: rejectingDpopReplayCache(),
+    replayCache: humanAccess.machineReplayCache,
     referenceHasher,
     allowedAlgorithms: input.machineResolver.allowedAlgorithms
   });

@@ -47,7 +47,9 @@ export const HARD_CEILINGS = deepFreezeAbuse({
     [ResourceKind.PROVIDERS]: 100,
     [ResourceKind.CREDENTIALS]: 50,
     [ResourceKind.ACCESS_GRANTS]: 500,
-    [ResourceKind.PILOT_FEEDBACK_RECORDS]: 10_000
+    [ResourceKind.PILOT_FEEDBACK_RECORDS]: 10_000,
+    [ResourceKind.CREDIT_PASSPORT_ARTIFACTS]: 10_000,
+    [ResourceKind.OFFICIAL_REPORT_ARTIFACTS]: 10_000
   },
   upstreamCostUnitsPerMinute: 1_000,
   admissionLeaseMs: 60_000,
@@ -199,7 +201,16 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotReadProviderIntent",
     "pilotReadEvidence",
     "pilotReadOwnObligation",
-    "pilotReadOwnObligationEvidence"
+    "pilotReadOwnObligationEvidence",
+    "pilotReadOwnCreditPassportArtifact",
+    "pilotVerifyCreditPassportArtifact",
+    "pilotReadOfficialReport",
+    "pilotRetrieveOfficialReport",
+    "tradingReadCreditProfile",
+    "tradingListCompatibleMandates",
+    "tradingReadFacilityState",
+    "tradingReadSettlement",
+    "tradingReadFacilityEvidence"
   ],
   [QuotaClass.MUTATION]: [
     "pilotCreateAgentSubject",
@@ -210,7 +221,27 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotActivateSandboxMandate",
     "pilotRevokeDraftMandate",
     "pilotAcknowledgeProviderIntent",
-    "pilotSubmitPilotFeedback"
+    "pilotSubmitPilotFeedback",
+    "pilotCreateCreditPassportArtifact",
+    "pilotRevokeCreditPassportArtifact",
+    "pilotCreateOfficialReport",
+    "pilotRevokeOfficialReport",
+    "tradingCreateAccountBindingChallenge",
+    "tradingImportHyperliquidHistory",
+    "tradingFinalizeEvidenceSnapshot",
+    "tradingCreateCapitalRequest",
+    "tradingCreateProviderMandate",
+    "tradingCreateMatchProposal",
+    "tradingAcceptMatchAsProvider",
+    "tradingAcceptMatchAsSubject",
+    "tradingCreateFacility",
+    "tradingContributeSubjectCollateral",
+    "tradingRecordProviderFunding",
+    "tradingActivateFacility",
+    "tradingSubmitOrderIntent",
+    "tradingCancelOrderIntent",
+    "tradingRequestClose",
+    "tradingIssuePerformanceProof"
   ],
   [QuotaClass.CREDENTIAL]: [
     "pilotCreateAgentAccountChallenge",
@@ -238,6 +269,9 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotRestructureSandboxObligation",
     "pilotRepurchaseSandboxObligation",
     "pilotWriteOffSandboxObligation",
+    "tradingEvaluateRisk",
+    "tradingPauseNewRisk",
+    "tradingFlattenFacility",
     "workerPlanProjectionRepair",
     "workerExecuteProjectionRepair"
   ],
@@ -246,7 +280,8 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "workerPublishOutbox",
     "workerExpireApproval",
     "workerProcessInbox",
-    "workerAdvanceSandboxServicing"
+    "workerAdvanceSandboxServicing",
+    "tradingRunSettlement"
   ]
 });
 

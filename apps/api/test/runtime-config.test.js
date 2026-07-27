@@ -44,6 +44,28 @@ test("production runtime accepts only the acknowledged HTTPS public sandbox cont
   assert.equal(requestUsesHttps({ "x-forwarded-proto": "https, http" }, config), false);
 });
 
+test("Vercel production derives only exact platform hostnames and the no-funds origin", () => {
+  const config = loadRuntimeConfig({
+    NODE_ENV: "production",
+    VERCEL: "1",
+    VERCEL_URL: "ipo-one-git-internal-cptm-111-s-projects.vercel.app",
+    VERCEL_PROJECT_PRODUCTION_URL: "ipo-one-internal.vercel.app",
+    VERCEL_GIT_COMMIT_SHA: "",
+    VERCEL_DEPLOYMENT_ID: "dpl_safeDeployment123",
+    IPO_ONE_DEPLOYMENT_MODE: undefined,
+    IPO_ONE_PUBLIC_SANDBOX_ACK: undefined
+  });
+  assert.equal(config.managedVercel, true);
+  assert.equal(config.publicOrigin, "https://ipo-one-internal.vercel.app");
+  assert.equal(config.release, "dpl_safeDeployment123");
+  assert.equal(config.trustProxy, true);
+  assert.equal(config.hstsMaxAge, 86_400);
+  assert.deepEqual(config.allowedHosts, [
+    "ipo-one-git-internal-cptm-111-s-projects.vercel.app",
+    "ipo-one-internal.vercel.app"
+  ]);
+});
+
 test("production runtime fails closed for unsafe or ambiguous configuration", () => {
   for (const override of [
     { IPO_ONE_PUBLIC_SANDBOX_ACK: undefined },
@@ -60,6 +82,13 @@ test("production runtime fails closed for unsafe or ambiguous configuration", ()
       name: "RuntimeConfigurationError"
     });
   }
+  assert.throws(() => loadRuntimeConfig({
+    ...productionEnvironment,
+    VERCEL: "1",
+    VERCEL_URL: "attacker.invalid/path"
+  }), {
+    name: "RuntimeConfigurationError"
+  });
 });
 
 test("request host and proxy parsing reject malformed or mixed values", () => {

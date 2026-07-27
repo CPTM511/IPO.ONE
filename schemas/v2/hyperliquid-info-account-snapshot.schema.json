@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hyperliquid-info-account-snapshot.schema.json",
+  "title": "IPO.ONE Hyperliquid Testnet Info Account Snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profileId",
+    "environment",
+    "origin",
+    "path",
+    "method",
+    "queryTypes",
+    "accountRole",
+    "accountAddressHash",
+    "verifiedMasterAddressHash",
+    "accountRoleVerified",
+    "actualAccountAddressQueried",
+    "apiWalletAddressAccepted",
+    "observedAt",
+    "venueTime",
+    "freshness",
+    "staleAfterMs",
+    "sourceResponseHashes",
+    "sourceBundleHash",
+    "snapshotHash",
+    "equity",
+    "positions",
+    "openOrders",
+    "fills",
+    "subaccounts",
+    "counts",
+    "partialResponse",
+    "readOnly",
+    "testnetOnly",
+    "testnetData",
+    "realFunds",
+    "authorizing",
+    "signerAvailable",
+    "exchangeEndpointAvailable",
+    "credentialsUsed",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "productionAuthority",
+    "fundsAuthority",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "profileId": { "const": "hyperliquid_testnet_info.v1" },
+    "environment": { "const": "testnet" },
+    "origin": { "const": "https://api.hyperliquid-testnet.xyz" },
+    "path": { "const": "/info" },
+    "method": { "const": "POST" },
+    "queryTypes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "userRole",
+          "clearinghouseState",
+          "frontendOpenOrders",
+          "userFillsByTime",
+          "subAccounts"
+        ]
+      }
+    },
+    "accountRole": { "enum": ["master", "subaccount"] },
+    "accountAddressHash": { "$ref": "#/$defs/hash" },
+    "verifiedMasterAddressHash": { "$ref": "#/$defs/hash" },
+    "accountRoleVerified": { "const": true },
+    "actualAccountAddressQueried": { "const": true },
+    "apiWalletAddressAccepted": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "venueTime": { "type": "string", "format": "date-time" },
+    "freshness": { "enum": ["fresh", "stale"] },
+    "staleAfterMs": { "const": 15000 },
+    "sourceResponseHashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "userRole",
+        "clearinghouseState",
+        "frontendOpenOrders",
+        "userFillsByTime",
+        "subAccounts"
+      ],
+      "properties": {
+        "userRole": { "$ref": "#/$defs/hash" },
+        "clearinghouseState": { "$ref": "#/$defs/hash" },
+        "frontendOpenOrders": { "$ref": "#/$defs/hash" },
+        "userFillsByTime": { "$ref": "#/$defs/hash" },
+        "subAccounts": {
+          "oneOf": [
+            { "$ref": "#/$defs/hash" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "sourceBundleHash": { "$ref": "#/$defs/hash" },
+    "snapshotHash": { "$ref": "#/$defs/hash" },
+    "equity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accountValue",
+        "withdrawable",
+        "totalNotionalPosition",
+        "totalRawUsd",
+        "totalMarginUsed",
+        "crossMaintenanceMarginUsed"
+      ],
+      "properties": {
+        "accountValue": { "$ref": "#/$defs/decimal" },
+        "withdrawable": { "$ref": "#/$defs/decimal" },
+        "totalNotionalPosition": { "$ref": "#/$defs/decimal" },
+        "totalRawUsd": { "$ref": "#/$defs/decimal" },
+        "totalMarginUsed": { "$ref": "#/$defs/decimal" },
+        "crossMaintenanceMarginUsed": { "$ref": "#/$defs/decimal" }
+      }
+    },
+    "positions": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/position" }
+    },
+    "openOrders": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/order" }
+    },
+    "fills": {
+      "type": "array",
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/fill" }
+    },
+    "subaccounts": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/subaccount" }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["positions", "openOrders", "fills", "subaccounts"],
+      "properties": {
+        "positions": { "type": "integer", "minimum": 0, "maximum": 200 },
+        "openOrders": { "type": "integer", "minimum": 0, "maximum": 200 },
+        "fills": { "type": "integer", "minimum": 0, "maximum": 500 },
+        "subaccounts": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "partialResponse": { "const": false },
+    "readOnly": { "const": true },
+    "testnetOnly": { "const": true },
+    "testnetData": { "const": true },
+    "realFunds": { "const": false },
+    "authorizing": { "const": false },
+    "signerAvailable": { "const": false },
+    "exchangeEndpointAvailable": { "const": false },
+    "credentialsUsed": { "const": false },
+    "externalSystemQueried": { "const": true },
+    "externalOrderSubmitted": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "hyperliquid_info_account_snapshot.v1"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "decimal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^-?(?:0|[1-9][0-9]{0,77})(?:\\.[0-9]{1,18})?$"
+    },
+    "coin": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9@:_./-]+$"
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coin",
+        "size",
+        "entryPrice",
+        "positionValue",
+        "unrealizedPnl",
+        "liquidationPrice",
+        "marginUsed",
+        "returnOnEquity",
+        "leverageType",
+        "leverageValue"
+      ],
+      "properties": {
+        "coin": { "$ref": "#/$defs/coin" },
+        "size": { "$ref": "#/$defs/decimal" },
+        "entryPrice": { "$ref": "#/$defs/decimal" },
+        "positionValue": { "$ref": "#/$defs/decimal" },
+        "unrealizedPnl": { "$ref": "#/$defs/decimal" },
+        "liquidationPrice": {
+          "oneOf": [
+            { "$ref": "#/$defs/decimal" },
+            { "type": "null" }
+          ]
+        },
+        "marginUsed": { "$ref": "#/$defs/decimal" },
+        "returnOnEquity": { "$ref": "#/$defs/decimal" },
+        "leverageType": { "enum": ["cross", "isolated"] },
+        "leverageValue": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      }
+    },
+    "order": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coin",
+        "side",
+        "limitPrice",
+        "size",
+        "originalSize",
+        "orderId",
+        "orderType",
+        "reduceOnly",
+        "isTrigger",
+        "timestamp"
+      ],
+      "properties": {
+        "coin": { "$ref": "#/$defs/coin" },
+        "side": { "enum": ["buy", "sell"] },
+        "limitPrice": { "$ref": "#/$defs/decimal" },
+        "size": { "$ref": "#/$defs/decimal" },
+        "originalSize": { "$ref": "#/$defs/decimal" },
+        "orderId": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,30})$"
+        },
+        "orderType": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9 _./:-]+$"
+        },
+        "reduceOnly": { "type": "boolean" },
+        "isTrigger": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "fill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coin",
+        "side",
+        "price",
+        "size",
+        "startPosition",
+        "closedPnl",
+        "fee",
+        "feeToken",
+        "orderId",
+        "tradeId",
+        "transactionHash",
+        "direction",
+        "crossed",
+        "timestamp"
+      ],
+      "properties": {
+        "coin": { "$ref": "#/$defs/coin" },
+        "side": { "enum": ["buy", "sell"] },
+        "price": { "$ref": "#/$defs/decimal" },
+        "size": { "$ref": "#/$defs/decimal" },
+        "startPosition": { "$ref": "#/$defs/decimal" },
+        "closedPnl": { "$ref": "#/$defs/decimal" },
+        "fee": { "$ref": "#/$defs/decimal" },
+        "feeToken": { "$ref": "#/$defs/coin" },
+        "orderId": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,30})$"
+        },
+        "tradeId": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,30})$"
+        },
+        "transactionHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "direction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9 _./:-]+$"
+        },
+        "crossed": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "subaccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nameHash",
+        "subaccountAddressHash",
+        "masterAddressHash",
+        "accountValue",
+        "positionCount"
+      ],
+      "properties": {
+        "nameHash": { "$ref": "#/$defs/hash" },
+        "subaccountAddressHash": { "$ref": "#/$defs/hash" },
+        "masterAddressHash": { "$ref": "#/$defs/hash" },
+        "accountValue": { "$ref": "#/$defs/decimal" },
+        "positionCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        }
+      }
+    }
+  }
+}

@@ -300,6 +300,29 @@ test("Agent Obligation SDK rejects caller authority and response drift", async (
   );
   assert.equal(runtime.calls.length, 0);
 
+  const wrongMandate = workflowInput("agent-sandbox-obligation-sdk-workflow-0004");
+  wrongMandate.offerReceipt.mandateId = "mandate_other_review";
+  await assert.rejects(
+    () => client.runObligationWorkflow(wrongMandate),
+    (error) => error.code === "agent_obligation_workflow_scope_denied"
+  );
+  assert.equal(runtime.calls.length, 0);
+
+  const boundedManifest = structuredClone(readyHandoff);
+  boundedManifest.authority.perActionLimitMinor = "1";
+  const boundedClient = new IpoOneAgentSandboxObligationClient({
+    execute: runtime.execute,
+    manifest: boundedManifest,
+    transportProfile: "local_in_process"
+  });
+  await assert.rejects(
+    () => boundedClient.runObligationWorkflow(
+      workflowInput("agent-sandbox-obligation-sdk-workflow-0005")
+    ),
+    (error) => error.code === "agent_obligation_workflow_scope_denied"
+  );
+  assert.equal(runtime.calls.length, 0);
+
   const drifted = workflowRuntime({ driftOperation: true });
   const driftedClient = new IpoOneAgentSandboxObligationClient({
     execute: drifted.execute,
@@ -308,7 +331,7 @@ test("Agent Obligation SDK rejects caller authority and response drift", async (
   });
   await assert.rejects(
     () => driftedClient.runObligationWorkflow(
-      workflowInput("agent-sandbox-obligation-sdk-workflow-0004")
+      workflowInput("agent-sandbox-obligation-sdk-workflow-0006")
     ),
     (error) => error.code === "agent_obligation_workflow_drift"
   );
@@ -321,14 +344,14 @@ test("Agent Obligation functional SDK entry preserves the same closed contract",
     execute: runtime.execute,
     manifest: readyHandoff,
     transportProfile: "local_in_process",
-    ...workflowInput("agent-sandbox-obligation-sdk-workflow-0005")
+    ...workflowInput("agent-sandbox-obligation-sdk-workflow-0007")
   });
   assert.equal(receipt.steps.length, 3);
   const symbolInput = {
     execute: runtime.execute,
     manifest: readyHandoff,
     transportProfile: "local_in_process",
-    ...workflowInput("agent-sandbox-obligation-sdk-workflow-0006")
+    ...workflowInput("agent-sandbox-obligation-sdk-workflow-0008")
   };
   symbolInput[Symbol("credential")] = "prohibited";
   assert.throws(

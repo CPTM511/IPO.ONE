@@ -5,6 +5,7 @@ export * from "./agent-evidence-client.js";
 export * from "./agent-feedback-client.js";
 export * from "./agent-obligation-client.js";
 export * from "./agent-sandbox-obligation-client.js";
+export * from "./trading-capital-client.js";
 export { runSandboxObligationPortabilityConformance } from "@ipo-one/chain-adapter";
 export { createAgentPilotCapabilityManifest } from "@ipo-one/api-contract";
 

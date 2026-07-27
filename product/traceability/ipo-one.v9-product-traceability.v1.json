@@ -1,0 +1,3167 @@
+{
+  "schemaVersion": "v9_product_traceability.v1",
+  "product": "IPO.ONE",
+  "productVersion": "V9",
+  "status": "IMPLEMENTED_UNVERIFIED",
+  "sourceCommit": "de5e72d5a912d2d55c2ce86570408f37c07d4a4f",
+  "prototypeAuthority": false,
+  "classifications": [
+    "REAL_LOCAL",
+    "REAL_TESTNET_READ",
+    "SIMULATION_ONLY",
+    "SPECIFIED_DISABLED",
+    "ABSENT"
+  ],
+  "releaseMaturity": {
+    "tenantProtocolMaturity": "local_non_funds",
+    "enabledReleaseProfile": "public_sandbox",
+    "closedPilotReleaseEnabled": false,
+    "controlledCreditReleaseEnabled": false,
+    "realFundsEnabled": false,
+    "productionCreditEnabled": false
+  },
+  "sharedContracts": {
+    "tenantCatalog": "api/tenant-protocol/ipo-one.tenant-protocol.v1.json",
+    "requestSchema": "schemas/v2/tenant-protocol-request.schema.json",
+    "resultSchema": "schemas/v2/tenant-protocol-result.schema.json",
+    "handlerRegistry": "modules/tenant-command-gateway/src/tenant-foundation-handlers.js",
+    "authorizationPolicy": "modules/authorization/src/authorization-policy.js",
+    "admissionPolicy": "modules/abuse-control/src/abuse-policy.js",
+    "persistenceComposition": "modules/persistence/src/postgres-core-repository.js",
+    "eventOutboxRepository": "modules/persistence/src/postgres-event-repository.js",
+    "reconciliationService": "modules/persistence/src/postgres-reconciliation-service.js",
+    "launchPolicy": "deploy/launch-policy.v1.json"
+  },
+  "operationBindings": [
+    {
+      "operationId": "tradingCreateAccountBindingChallenge",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_account_binding_challenge_created.v2",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-evidence-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-real-evidence.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-evidence-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingImportHyperliquidHistory",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_history_imported.v2",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-evidence-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-real-evidence.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-evidence-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingFinalizeEvidenceSnapshot",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_evidence_snapshot_finalized.v2",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-evidence-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-real-evidence.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-evidence-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingReadCreditProfile",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_credit_profile_view.v2",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-evidence-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-real-evidence.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-evidence-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingCreateCapitalRequest",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_capital_request_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-matching-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-matching-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-matching.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js",
+        "apps/web/test/trading-capital-matching-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingCreateProviderMandate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_provider_mandate_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-matching-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-matching.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingListCompatibleMandates",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_compatible_mandate_list.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-matching-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-matching-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-matching.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js",
+        "apps/web/test/trading-capital-matching-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingCreateMatchProposal",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_match_proposal_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-matching-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-matching-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-matching.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingAcceptMatchAsProvider",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_match_provider_accepted.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-matching-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-matching.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingAcceptMatchAsSubject",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_match_subject_accepted.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-matching-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-matching-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-matching.test.js",
+        "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js",
+        "apps/web/test/trading-capital-matching-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotCreateOfficialReport",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/official-report-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/official-report-handlers.test.js",
+        "apps/web/test/official-report-download.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadOfficialReport",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/official-report-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/official-report-handlers.test.js",
+        "apps/web/test/official-report-download.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotRetrieveOfficialReport",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_retrieval.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/official-report-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/official-report-handlers.test.js",
+        "apps/web/test/official-report-download.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotRevokeOfficialReport",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_revoked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/official-report-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/official-report-handlers.test.js",
+        "apps/web/test/official-report-download.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotAcceptCreditOffer",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_offer_accepted.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-acceptance-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/credit-acceptance-handlers.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotExecuteSandboxObligation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_executed.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/credit-execution-handlers.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotPostSandboxRepayment",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_repayment_posted.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/credit-execution-handlers.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotRestructureSandboxObligation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_restructured.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/servicing-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotRepurchaseSandboxObligation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_repurchased.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/servicing-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotWriteOffSandboxObligation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_written_off.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/servicing-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "workerAdvanceSandboxServicing",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_servicing_advanced.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/servicing-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCreateAgentAccountChallenge",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_account_challenge_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-account-proof-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/agent-account-proof-handlers.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotActivateSandboxMandate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_mandate_activated.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/mandate-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCreateAgentSubject",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-subject-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCreateConsent",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_consent_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-consent-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCreateHumanSubject",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_human_subject_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-subject-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCreateDraftMandate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_draft_mandate_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/mandate-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotEvaluateCreditApplication",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_application_evaluated.v2",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-decision-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotFreezeSubject",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_frozen.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/subject-risk-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotRequestCredit",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_intent_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-intent-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadAgentSelf",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_view.v2",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-subject-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/agent-mcp/test/agent-mcp.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadAgentAccountBinding",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_account_binding_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-account-proof-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/agent-account-proof-handlers.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadCreditApplication",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_application_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-intent-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotCreateCreditPassportArtifact",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_passport_artifact_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-passport-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/credit-passport-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/credit-passport-artifact.test.js",
+        "apps/web/test/credit-passport-presentation.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadOwnCreditPassportArtifact",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_credit_passport_artifact_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-passport-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/credit-passport-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/credit-passport-artifact.test.js",
+        "apps/web/test/credit-passport-presentation.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotVerifyCreditPassportArtifact",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_passport_verification_result.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-passport-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/credit-passport-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/credit-passport-artifact.test.js",
+        "apps/web/test/credit-passport-presentation.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotRevokeCreditPassportArtifact",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_passport_artifact_revoked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-passport-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/credit-passport-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/credit-passport-artifact.test.js",
+        "apps/web/test/credit-passport-presentation.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadConsent",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_consent_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-consent-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadHumanSelf",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_human_subject_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-subject-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadWorkspaceResume",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_workspace_resume_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/workspace-resume-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/workspace-resume-handlers.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadIdentityReference",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_human_identity_reference_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-consent-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadMandate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_mandate_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/mandate-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadTenantRisk",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_portfolio_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/tenant-risk-query-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadPilotHealth",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_health_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/pilot-health-query-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/pilot-health-query-handlers.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadPilotFeedbackSummary",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_feedback_summary_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/pilot-feedback-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/pilot-feedback-handlers.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadServicingQueue",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_servicing_queue_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/servicing-queue-query-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/servicing-queue-query-handlers.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadEvidence",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_obligation_evidence_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/evidence-query-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadOwnObligationEvidence",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_obligation_evidence_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/evidence-query-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/owned-obligation-query-handlers.test.js",
+        "packages/sdk/test/agent-evidence-client.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadOwnObligation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_obligation_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/owned-obligation-query-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/owned-obligation-query-handlers.test.js",
+        "packages/sdk/test/agent-obligation-client.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotRevokeConsent",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_consent_revoked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-consent-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotSubmitPilotFeedback",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_feedback_recorded.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/pilot-feedback-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/pilot-feedback-handlers.test.js",
+        "packages/sdk/test/agent-feedback-client.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotRevokeDraftMandate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_draft_mandate_revoked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/mandate-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotSubmitAgentAccountProof",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_account_proof_verified.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-account-proof-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/agent-account-proof-handlers.test.js",
+        "apps/tenant-api/test/transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReadProviderIntent",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "provider_intent_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/provider-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/provider-handlers.test.js",
+        "apps/provider-sandbox/test/provider-sandbox-process.test.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotAcknowledgeProviderIntent",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "provider_intent_acknowledgement.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/provider-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/provider-handlers.test.js",
+        "apps/provider-sandbox/test/provider-sandbox-process.test.mjs"
+      ]
+    },
+    {
+      "operationId": "workerProcessInbox",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "provider_sandbox_callback_result.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/provider-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/provider-handlers.test.js",
+        "modules/provider-sandbox/test/provider-sandbox-client.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingCreateFacility",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingContributeSubjectCollateral",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_subject_collateral_recorded.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingRecordProviderFunding",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_provider_funding_recorded.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingActivateFacility",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_activated.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingSubmitOrderIntent",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_order_intent_submitted.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingCancelOrderIntent",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_order_intent_canceled.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingReadFacilityState",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_facility_state.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingEvaluateRisk",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_risk_evaluated.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingPauseNewRisk",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_new_risk_paused.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingFlattenFacility",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_flattened.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-facility-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-facility-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingRequestClose",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_close_requested.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-settlement-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-product-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingRunSettlement",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_settlement_finalized.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-settlement-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-product-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingReadSettlement",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_settlement_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-settlement-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-product-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingIssuePerformanceProof",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_performance_proof_issued.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-settlement-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-product-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "tradingReadFacilityEvidence",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_facility_evidence.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/trading-capital-settlement-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/trading-capital-product-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/trading-capital-facility.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js"
+      ]
+    }
+  ],
+  "destinations": [
+    {
+      "destinationId": "overview",
+      "label": "Overview",
+      "order": 1,
+      "actions": [
+        {
+          "actionId": "overview.resume_owned_workspace",
+          "label": "Load the authenticated Human workspace and owned Subject summary",
+          "prototypeLabels": [
+            "View all",
+            "Manage"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadWorkspaceResume",
+            "pilotReadHumanSelf"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/workspace-resume-handlers.test.js"
+          ],
+          "truthBoundary": "Only server-returned, tenant-scoped resources are authoritative; prototype balances, scores, and availability cards are excluded.",
+          "nextTaskIds": [
+            "V9-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "overview.submit_feedback",
+          "label": "Submit bounded pilot feedback",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotSubmitPilotFeedback"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "packages/sdk/src/agent-feedback-client.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/pilot-feedback-handlers.test.js"
+          ],
+          "truthBoundary": "Feedback is a persisted pilot record, not a credit, risk, balance, or release decision.",
+          "nextTaskIds": [
+            "V9-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "overview.portfolio_totals_and_available_credit",
+          "label": "Display aggregate portfolio totals, score, and available credit",
+          "prototypeLabels": [
+            "Available credit",
+            "Credit score",
+            "Outstanding",
+            "Next payment"
+          ],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The reference prototype hard-codes these values and no borrower portfolio aggregate operation currently exists.",
+          "nextTaskIds": [
+            "V9-001"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "request_credit",
+      "label": "Request Credit",
+      "order": 2,
+      "actions": [
+        {
+          "actionId": "request_credit.establish_human_subject_and_consent",
+          "label": "Create and read the Human Subject, Consent, and offchain identity reference",
+          "prototypeLabels": [
+            "Continue to evidence"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotCreateHumanSubject",
+            "pilotCreateConsent",
+            "pilotReadConsent",
+            "pilotReadIdentityReference"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "apps/tenant-api/test/human-access-routes.test.mjs"
+          ],
+          "truthBoundary": "Raw KYC or PII is not accepted; only bounded offchain references, hashes, and Consent state may become server truth.",
+          "nextTaskIds": [
+            "V9-002"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "request_credit.intent_decision_offer",
+          "label": "Create, read, and deterministically evaluate a no-funds credit intent",
+          "prototypeLabels": [
+            "Business software",
+            "Equipment",
+            "Working capital",
+            "USDC on Base"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotRequestCredit",
+            "pilotReadCreditApplication",
+            "pilotEvaluateCreditApplication"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "apps/web/test/human-credit-offer-workflow-receipt.test.js",
+            "apps/agent-mcp/test/agent-mcp.test.mjs"
+          ],
+          "truthBoundary": "Only the deterministic server result and Decision Passport are authoritative; prototype approval copy is not.",
+          "nextTaskIds": [
+            "V9-002"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "request_credit.accept_and_execute_sandbox_offer",
+          "label": "Accept an eligible offer and execute the shared no-real-funds obligation",
+          "prototypeLabels": [
+            "Request credit"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotAcceptCreditOffer",
+            "pilotExecuteSandboxObligation"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/credit-acceptance-handlers.test.js",
+            "modules/tenant-command-gateway/test/credit-execution-handlers.test.js"
+          ],
+          "truthBoundary": "Execution creates a sandbox obligation only and carries no authority to move real funds.",
+          "nextTaskIds": [
+            "V9-002"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "request_credit.bank_transfer_rail",
+          "label": "Execute a bank-transfer credit rail",
+          "prototypeLabels": [
+            "Bank transfer"
+          ],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Real bank transfer execution is outside the no-funds product and has no approved provider or funds authority.",
+          "nextTaskIds": [
+            "V9-002",
+            "REALVALUE-001"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "request_credit.best_available_router",
+          "label": "Route a request to a best-available lender or capital source",
+          "prototypeLabels": [
+            "Best available",
+            "Optimize"
+          ],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "No lender marketplace, capital router, quote comparison, or provider selection operation exists.",
+          "nextTaskIds": [
+            "V9-002"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "request_credit.open_official_fee_policy",
+          "label": "Inspect the versioned production fee-policy boundary",
+          "prototypeLabels": [
+            "Open fee policy"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "checked_in_contract",
+          "operationIds": [],
+          "authorityReferences": [
+            "product/policies/ipo-one.fee-audit-policy.v1.json",
+            "schemas/v2/fee-audit-policy.schema.json"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/official-report-artifact.test.js"
+          ],
+          "truthBoundary": "The versioned policy explicitly records production pricing and fee calculation as unavailable. Principal and unrealized PnL are prohibited fee bases; prototype fee copy cannot establish commercial terms.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "repay_settle",
+      "label": "Repay & Settle",
+      "order": 3,
+      "actions": [
+        {
+          "actionId": "repay_settle.read_owned_obligation",
+          "label": "Read the current owned obligation, schedule, and server-calculated amounts",
+          "prototypeLabels": [
+            "Open ledger",
+            "Review payoff quote"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadOwnObligation"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "packages/sdk/src/agent-obligation-client.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/owned-obligation-query-handlers.test.js"
+          ],
+          "truthBoundary": "The obligation projection and ledger-derived server response are authoritative; the browser must not recompute financial truth.",
+          "nextTaskIds": [
+            "V9-003"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "repay_settle.post_sandbox_repayment",
+          "label": "Post a due, custom, or full sandbox repayment amount",
+          "prototypeLabels": [
+            "Pay amount due",
+            "Pay now",
+            "Pay custom amount",
+            "Extra principal",
+            "Pay off early"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotPostSandboxRepayment"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/credit-execution-handlers.test.js"
+          ],
+          "truthBoundary": "Repayment is a persisted sandbox ledger event; the amount must be accepted and allocated by the server.",
+          "nextTaskIds": [
+            "V9-003"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "repay_settle.advance_servicing_clock",
+          "label": "Advance sandbox DPD and default state through the servicing worker",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "workerAdvanceSandboxServicing"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/tenant-command-gateway.test.js"
+          ],
+          "truthBoundary": "This is an internal worker action, not a borrower control and not a browser timer.",
+          "nextTaskIds": [
+            "V9-003"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "repay_settle.payoff_quote",
+          "label": "Request a durable server payoff quote",
+          "prototypeLabels": [
+            "Get early payoff quote",
+            "Review payoff quote"
+          ],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The server can accept a repayment amount but has no versioned payoff-quote operation or quote expiry contract.",
+          "nextTaskIds": [
+            "V9-003"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "repay_settle.schedule_future_payment",
+          "label": "Schedule a future payment or automatic sweep",
+          "prototypeLabels": [
+            "Schedule for due date",
+            "Run next auto-sweep"
+          ],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "No scheduler, payment mandate execution, or automatic sweep operation is in the closed Tenant catalog.",
+          "nextTaskIds": [
+            "V9-003",
+            "V9-006"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "repay_settle.browser_receipt_exports",
+          "label": "Export repayment receipts and CSV from prototype state",
+          "prototypeLabels": [
+            "Export receipts",
+            "Download CSV",
+            "View track record"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Existing prototype downloads are browser-generated and are not signed, persisted, server-reproducible audit artifacts.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "repay_settle.trading_facility_settlement",
+          "label": "Request, run, and read deterministic synthetic Facility settlement",
+          "prototypeLabels": [
+            "Settle"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "tradingRequestClose",
+            "tradingRunSettlement",
+            "tradingReadSettlement"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/trading-capital-product-presentation.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/trading-capital-facility.test.js",
+            "apps/web/test/trading-capital-product-presentation.test.js"
+          ],
+          "truthBoundary": "Settlement conserves synthetic contributions with zero caller-supplied PnL, costs, returns, fees, or prices. The worker creates no second Ledger and cannot move funds.",
+          "nextTaskIds": [
+            "TC-104"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "credit_passport",
+      "label": "Credit Passport",
+      "order": 4,
+      "actions": [
+        {
+          "actionId": "credit_passport.read_decision_passport",
+          "label": "Read the evidence-derived Decision Passport attached to a credit application",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadCreditApplication"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-033-evidence-derived-risk-decision-passport.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/decision-passport-presentation.js"
+          ],
+          "testFiles": [
+            "apps/web/test/decision-passport-presentation.test.js"
+          ],
+          "truthBoundary": "Only the server-issued deterministic decision result and its Evidence references are authoritative.",
+          "nextTaskIds": [
+            "V9-004"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "credit_passport.private_artifact_lifecycle",
+          "label": "Create, read, verify, and revoke one private same-Tenant credit proof",
+          "prototypeLabels": [
+            "Create proof"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotCreateCreditPassportArtifact",
+            "pilotReadOwnCreditPassportArtifact",
+            "pilotVerifyCreditPassportArtifact",
+            "pilotRevokeCreditPassportArtifact"
+          ],
+          "authorityReferences": [
+            "docs/security/V9_004_CREDIT_PASSPORT_PRIVACY_APPROVAL_001.md",
+            "docs/security/V9_004_CREDIT_PASSPORT_PRIVACY_DECISION_PACK_v0.1.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/credit-passport-presentation.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/credit-passport-artifact.test.js",
+            "apps/web/test/credit-passport-presentation.test.js"
+          ],
+          "truthBoundary": "The proof is private, temporary, same-Tenant, exact-verifier, online-only, non-authorizing, no-funds, and limited to selected Evidence-derived claims. Public links, downloads, signatures, credentials, scores, and cross-Tenant verification remain prohibited.",
+          "nextTaskIds": [
+            "V9-004"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "credit_passport.trading_no_funds_evidence",
+          "label": "Authorize and persist a hash-only Testnet Evidence profile with non-authorizing Shadow Risk",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "tradingCreateAccountBindingChallenge",
+            "tradingImportHyperliquidHistory",
+            "tradingFinalizeEvidenceSnapshot",
+            "tradingReadCreditProfile"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-034-trading-capital-shared-facility-and-maturity-gates.md",
+            "docs/architecture/ADR-035-hyperliquid-adapter-signer-custody-action-and-nonce-boundary.md",
+            "docs/architecture/ADR-036-trading-capital-evidence-factor-risk-staleness-and-state-machine.md",
+            "docs/architecture/ADR-037-trading-capital-settlement-incident-ownership-and-recovery.md"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/trading-capital-real-evidence.test.js",
+            "modules/tenant-command-gateway/test/trading-capital-evidence-handlers.test.js",
+            "modules/persistence/test-postgres/postgres-event-runtime.test.mjs"
+          ],
+          "truthBoundary": "The server may query only the approved read-only Hyperliquid Testnet Info surface after one-use master ownership and master/subaccount relationship verification. Finalized output is hash-linked, partial, point-in-time Shadow Risk with explicit missing, stress, staleness and drift states. Founder-controlled non-empty account E2E remains unverified; no universal score, credit decision, Facility mutation, funds, pricing, risk-limit, signer or Exchange authority exists.",
+          "nextTaskIds": [
+            "TC-301"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "credit_passport.hyperliquid_testnet_info_read",
+          "label": "Read bounded account Evidence from the approved Hyperliquid Testnet Info surface",
+          "prototypeLabels": [],
+          "classification": "REAL_TESTNET_READ",
+          "authorityType": "testnet_read_adapter",
+          "operationIds": [],
+          "authorityReferences": [
+            "modules/hyperliquid-info/src/index.js",
+            "modules/hyperliquid-info/src/binding-proof.js",
+            "docs/architecture/ADR-035-hyperliquid-adapter-signer-custody-action-and-nonce-boundary.md",
+            "docs/security/IPO_ONE_TRADING_CAPITAL_THREAT_MODEL_v0.1_PROPOSED.md"
+          ],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The adapter is fixed to the approved Hyperliquid Testnet /info origin, read query allowlist, bounds, role checks and one-use ownership proof. It returns normalized hash-linked Evidence only. Founder-controlled non-empty account E2E remains unverified; no API wallet, signer, Exchange endpoint, order, transfer, mainnet, production or funds authority exists.",
+          "nextTaskIds": [
+            "TC-301"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "credit_passport.improvement_plan",
+          "label": "Generate a personalized credit improvement plan",
+          "prototypeLabels": [
+            "View improvement plan"
+          ],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "No explainable recommendation policy or server operation exists, and black-box credit advice is prohibited.",
+          "nextTaskIds": [
+            "V9-004"
+          ],
+          "humanGateRequired": true
+        }
+      ]
+    },
+    {
+      "destinationId": "obligations",
+      "label": "Obligations",
+      "order": 5,
+      "actions": [
+        {
+          "actionId": "obligations.inspect_owned_obligation_and_evidence",
+          "label": "Inspect an owned obligation and its Evidence chain",
+          "prototypeLabels": [
+            "Inspect",
+            "Open center",
+            "Repay",
+            "Make a payment",
+            "Pay"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadWorkspaceResume",
+            "pilotReadOwnObligation",
+            "pilotReadOwnObligationEvidence"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-019-deny-by-default-object-authorization.md",
+            "docs/architecture/ADR-025-durable-tenant-protocol-contract.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/servicing-position-index.js",
+            "apps/web/src/obligation-portfolio-presentation.js",
+            "packages/sdk/src/agent-evidence-client.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/owned-obligation-query-handlers.test.js",
+            "apps/web/test/servicing-position-index.test.js",
+            "apps/web/test/obligation-portfolio-presentation.test.js"
+          ],
+          "truthBoundary": "The authenticated workspace supplies at most 32 Actor-bound opaque references; the page composes at most 8 and reauthorizes each exact Obligation before showing state or amounts. Aggregate values require complete server-current coverage. Evidence remains hash-only, bounded and append-only; navigation and browser aggregation are never Ledger or authority.",
+          "nextTaskIds": [
+            "V9-005"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "obligations.list_all_owned_obligations",
+          "label": "List and paginate all obligations owned by the authenticated Subject",
+          "prototypeLabels": [],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Only bounded resume resources and ID-addressed reads exist; there is no paginated owned-obligation list operation.",
+          "nextTaskIds": [
+            "V9-005"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "obligations.export_audit_receipt",
+          "label": "Export a browser-generated obligation audit receipt",
+          "prototypeLabels": [
+            "Export audit receipt"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The prototype export is not a server-generated, signed, versioned, or reproducible audit receipt.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "agent_console",
+      "label": "Agent Console",
+      "order": 6,
+      "actions": [
+        {
+          "actionId": "agent_console.create_and_bind_agent",
+          "label": "Create an Agent Subject and bind a proved CAIP account",
+          "prototypeLabels": [
+            "Bind Agent",
+            "Copy payload"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotCreateAgentSubject",
+            "pilotCreateAgentAccountChallenge",
+            "pilotSubmitAgentAccountProof",
+            "pilotReadAgentAccountBinding",
+            "pilotReadAgentSelf"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/agent-console-presentation.js",
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "apps/web/test/agent-console-presentation.test.js",
+            "apps/web/test/static-ui.test.js",
+            "modules/tenant-command-gateway/test/agent-account-proof-handlers.test.js"
+          ],
+          "truthBoundary": "The binding is authoritative only after server challenge verification and persistence; simulated Agent selection is excluded.",
+          "nextTaskIds": [
+            "V9-006",
+            "WALLET-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "agent_console.manage_sandbox_mandate",
+          "label": "Create, read, activate, or revoke a sandbox Agent mandate",
+          "prototypeLabels": [
+            "Edit mandate"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotCreateDraftMandate",
+            "pilotReadMandate",
+            "pilotActivateSandboxMandate",
+            "pilotRevokeDraftMandate"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/agent-console-presentation.js",
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "apps/web/test/agent-console-presentation.test.js",
+            "apps/web/test/static-ui.test.js",
+            "apps/agent-mcp/test/agent-mcp.test.mjs"
+          ],
+          "truthBoundary": "Only closed-schema sandbox mandates are supported; activation grants no real-funds authority.",
+          "nextTaskIds": [
+            "V9-006"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "agent_console.shared_credit_lifecycle",
+          "label": "Run the Agent through the same request, decision, obligation, repayment, Evidence, and feedback kernel",
+          "prototypeLabels": [
+            "Execute demo",
+            "Authorize & execute",
+            "Pay due",
+            "Pay off early",
+            "Manual repayment",
+            "Repay Agent obligation",
+            "Repay",
+            "Inspect"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotRequestCredit",
+            "pilotReadCreditApplication",
+            "pilotEvaluateCreditApplication",
+            "pilotAcceptCreditOffer",
+            "pilotExecuteSandboxObligation",
+            "pilotPostSandboxRepayment",
+            "pilotReadOwnObligation",
+            "pilotReadOwnObligationEvidence",
+            "pilotSubmitPilotFeedback"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/agent-console-presentation.js",
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js",
+            "packages/sdk/src/agent-mcp-client.js"
+          ],
+          "testFiles": [
+            "apps/web/test/agent-console-presentation.test.js",
+            "apps/web/test/static-ui.test.js",
+            "apps/agent-mcp/test/agent-mcp.test.mjs",
+            "packages/sdk/test/agent-mcp-client.test.js"
+          ],
+          "truthBoundary": "Agent and Human use the same server operations and obligation kernel; the Agent path does not create a second ledger.",
+          "nextTaskIds": [
+            "V9-006"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "agent_console.x402_credit_demo",
+          "label": "Execute the prototype x402 credit demo",
+          "prototypeLabels": [
+            "Run x402 credit demo"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The clickable demo has no x402 Provider operation, signed payment protocol, or durable external execution authority.",
+          "nextTaskIds": [
+            "V9-006",
+            "V9-007"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "agent_console.edit_active_mandate",
+          "label": "Edit an already active mandate in place",
+          "prototypeLabels": [
+            "Edit mandate"
+          ],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The catalog supports draft creation, draft revocation, read, and sandbox activation, but no active-mandate mutation.",
+          "nextTaskIds": [
+            "V9-006"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "agent_console.remote_mcp_a2a",
+          "label": "Expose the Agent protocol through remote MCP or A2A",
+          "prototypeLabels": [],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Only local stdio MCP is approved; remote MCP and A2A are explicitly disabled in the protocol catalog.",
+          "nextTaskIds": [
+            "V9-006"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "agent_console.export_events",
+          "label": "Export Agent events or CSV from prototype state",
+          "prototypeLabels": [
+            "Export events",
+            "Download CSV",
+            "View track record"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Prototype exports are not server-created audit artifacts and may not be presented as protocol Evidence.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "capital_network",
+      "label": "Capital Network",
+      "order": 7,
+      "actions": [
+        {
+          "actionId": "capital_network.provider_sandbox_loop",
+          "label": "Read, acknowledge, and process a fixed no-funds Provider sandbox intent",
+          "prototypeLabels": [
+            "Open facilities",
+            "Inspect"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadProviderIntent",
+            "pilotAcknowledgeProviderIntent",
+            "workerProcessInbox"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/provider-sandbox/src/server.mjs",
+            "apps/tenant-api/src/tenant-http-adapter.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/provider-handlers.test.js",
+            "apps/provider-sandbox/test/provider-sandbox-process.test.mjs"
+          ],
+          "truthBoundary": "This is a signed loopback Provider sandbox with no external settlement or funds authority.",
+          "nextTaskIds": [
+            "V9-007"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "capital_network.matching_demo",
+          "label": "Create and bilaterally accept a closed no-funds Trading Capital match",
+          "prototypeLabels": [
+            "Run matching demo",
+            "Matching & allocation"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "tradingCreateCapitalRequest",
+            "tradingCreateProviderMandate",
+            "tradingListCompatibleMandates",
+            "tradingCreateMatchProposal",
+            "tradingAcceptMatchAsProvider",
+            "tradingAcceptMatchAsSubject"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-034-trading-capital-shared-facility-and-maturity-gates.md",
+            "docs/architecture/ADR-036-trading-capital-evidence-factor-risk-staleness-and-state-machine.md",
+            "docs/security/IPO_ONE_TRADING_CAPITAL_THREAT_MODEL_v0.1_PROPOSED.md"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js",
+            "apps/web/src/trading-capital-matching-presentation.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/trading-capital-matching.test.js",
+            "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js",
+            "apps/web/test/trading-capital-matching-presentation.test.js"
+          ],
+          "truthBoundary": "Matching is Tenant-local, synthetic, non-authorizing, and no-funds. Server Evidence hard filters run before deterministic ranking; both parties must accept the exact immutable terms. It creates no facility, allocation, pricing, execution, or funds authority.",
+          "nextTaskIds": [
+            "TC-102"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "capital_network.synthetic_facility",
+          "label": "Operate one canonical no-funds Facility and local synthetic Order Intents",
+          "prototypeLabels": [
+            "Facility",
+            "Synthetic capital",
+            "Order intents"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "tradingCreateFacility",
+            "tradingContributeSubjectCollateral",
+            "tradingRecordProviderFunding",
+            "tradingActivateFacility",
+            "tradingSubmitOrderIntent",
+            "tradingCancelOrderIntent",
+            "tradingReadFacilityState"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-034-trading-capital-shared-facility-and-maturity-gates.md",
+            "docs/architecture/ADR-036-trading-capital-evidence-factor-risk-staleness-and-state-machine.md",
+            "docs/security/IPO_ONE_TRADING_CAPITAL_THREAT_MODEL_v0.1_PROPOSED.md"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js",
+            "apps/web/src/trading-capital-facility-presentation.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/trading-capital-facility.test.js",
+            "apps/web/test/trading-capital-facility-presentation.test.js"
+          ],
+          "truthBoundary": "Facility capital, collateral, funding, equity, and Order Intents are Tenant-local synthetic records. They are non-redeemable, non-transferable, non-withdrawable, and never reach an external venue or signer.",
+          "nextTaskIds": [
+            "TC-103"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "capital_network.join_and_fund_network",
+          "label": "Join or fund a public capital network",
+          "prototypeLabels": [
+            "Join capital network",
+            "Facilities & mandates",
+            "Connect & API"
+          ],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Public LP, capital onboarding, real funding, and arbitrary Provider connections are explicitly outside the approved product.",
+          "nextTaskIds": [
+            "V9-007",
+            "REALVALUE-001"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "capital_network.earnings_waterfall",
+          "label": "Calculate Provider earnings, fee splits, and waterfall reports",
+          "prototypeLabels": [
+            "Earnings & fees",
+            "Waterfall & reporting"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Prototype economics are illustrative and have no approved pricing, capital source, loss bearer, or ledger operation.",
+          "nextTaskIds": [
+            "V9-007",
+            "V9-009"
+          ],
+          "humanGateRequired": true
+        }
+      ]
+    },
+    {
+      "destinationId": "wallet_permissions",
+      "label": "Wallet & Permissions",
+      "order": 8,
+      "actions": [
+        {
+          "actionId": "wallet_permissions.human_wallet_authentication",
+          "label": "Authenticate one Human wallet through the reviewed server session transport",
+          "prototypeLabels": [
+            "View login message",
+            "Verify signature",
+            "Refresh session",
+            "Disconnect"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "transport_authentication",
+          "operationIds": [],
+          "authorityReferences": [
+            "modules/authentication/src/human-wallet-bff.js",
+            "apps/tenant-api/src/human-access-routes.js"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "apps/tenant-api/test/human-access-routes.test.mjs"
+          ],
+          "truthBoundary": "The current wallet login is a bounded authentication path, not a token allowance, asset permission, or funds authority.",
+          "nextTaskIds": [
+            "WALLET-001",
+            "WALLET-002"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "wallet_permissions.consent_controls",
+          "label": "Read and revoke Human Consent",
+          "prototypeLabels": [
+            "Modify",
+            "Revoke"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadConsent",
+            "pilotRevokeConsent"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "apps/tenant-api/test/transport-conformance.test.mjs"
+          ],
+          "truthBoundary": "Consent state is server-persisted and tenant-scoped; it does not imply wallet spending permission.",
+          "nextTaskIds": [
+            "WALLET-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "wallet_permissions.agent_binding_and_mandate_state",
+          "label": "Read Agent account binding and mandate state, or revoke a draft mandate",
+          "prototypeLabels": [
+            "Inspect",
+            "Revoke"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadAgentAccountBinding",
+            "pilotReadMandate",
+            "pilotRevokeDraftMandate"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/agent-account-proof-handlers.test.js"
+          ],
+          "truthBoundary": "Binding and mandate records are server truth; they do not grant arbitrary signing, withdrawal, or token approval authority.",
+          "nextTaskIds": [
+            "WALLET-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "wallet_permissions.asset_and_session_key_grants",
+          "label": "Grant token asset permissions or create a browser session key",
+          "prototypeLabels": [
+            "Grant asset permission",
+            "Sign protocol authorization",
+            "Revoke session key",
+            "Edit permissions"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The prototype mutates browser state only; no allowlisted onchain permission or session-key server operation exists.",
+          "nextTaskIds": [
+            "WALLET-001",
+            "WALLET-003"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "wallet_permissions.eip6963_multiwallet_discovery",
+          "label": "Discover, display, and explicitly select an injected EIP-6963 Provider",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "checked_in_contract",
+          "operationIds": [],
+          "authorityReferences": [
+            "schemas/v2/wallet-provider-registry.schema.json",
+            "apps/web/src/wallet-provider-registry.js"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "apps/web/test/wallet-provider-registry.test.js",
+            "apps/web/test/static-ui.test.js"
+          ],
+          "truthBoundary": "The bounded in-memory registry discovers Providers and records one explicit page-session selection. Discovery and selection request no account, network, signature, allowance, transaction, credit, or funds authority.",
+          "nextTaskIds": [
+            "WALLET-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "wallet_permissions.mobile_qr_contract_wallet",
+          "label": "Use approved mobile or QR connectors, or ERC-1271 contract wallets",
+          "prototypeLabels": [],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The bounded ERC-1271 server adapter and fixed mobile connector boundary are implemented for review, but the connector dependency is not installed, no Project ID or contract address is configured, no deployment is authorized, and no real wallet E2E exists. The action remains disabled and grants no transaction or funds authority.",
+          "nextTaskIds": [
+            "WALLET-003"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "wallet_permissions.invalidate_session_on_provider_change",
+          "label": "Invalidate the server session on wallet account, network, or Provider change",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "transport_authentication",
+          "operationIds": [],
+          "authorityReferences": [
+            "schemas/v2/wallet-session-invalidation.schema.json",
+            "modules/authentication/src/human-session-bff.js",
+            "modules/authentication/src/postgres-human-authentication.js",
+            "db/migrations/0026_idempotent_wallet_session_invalidation.up.sql"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/human-access-routes.js",
+            "apps/web/src/app.js",
+            "apps/web/src/wallet-authority-lifecycle.js"
+          ],
+          "testFiles": [
+            "apps/tenant-api/test/human-access-invalidation.test.mjs",
+            "apps/tenant-api/test/human-access-routes.test.mjs",
+            "apps/web/test/wallet-authority-lifecycle.test.js",
+            "modules/authentication/test/human-bff.test.js",
+            "modules/authentication/test-postgres/durable-human-authentication.test.mjs"
+          ],
+          "truthBoundary": "Material wallet context changes quarantine every browser tab before one CSRF-bound idempotent durable session revocation. Only a new user-initiated authentication can restore a host session; Provider events grant no account, chain, protocol, or funds authority.",
+          "nextTaskIds": [
+            "WALLET-002"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "activity_proofs",
+      "label": "Activity & Proofs",
+      "order": 9,
+      "actions": [
+        {
+          "actionId": "activity_proofs.read_and_verify_evidence",
+          "label": "Read owned or auditor-scoped Evidence and verify the persisted proof chain",
+          "prototypeLabels": [
+            "Verify proof chain",
+            "Open latest event"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadOwnObligationEvidence",
+            "pilotReadEvidence"
+          ],
+          "authorityReferences": [
+            "schemas/v2/evidence-event.schema.json"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "packages/sdk/src/agent-evidence-client.js"
+          ],
+          "testFiles": [
+            "packages/sdk/test/agent-evidence-client.test.js"
+          ],
+          "truthBoundary": "Only persisted event envelopes, hashes, finality metadata, and access-scoped server results constitute Evidence.",
+          "nextTaskIds": [
+            "V9-005"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "activity_proofs.testnet_chain_observation",
+          "label": "Expose live Testnet observation as a V9 proof action",
+          "prototypeLabels": [
+            "On-chain",
+            "Evidence anchors"
+          ],
+          "classification": "ABSENT",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Read-only chain observer code exists, but no catalogued, access-controlled V9 action exposes its live output.",
+          "nextTaskIds": [
+            "V9-005"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "activity_proofs.browser_activity_export",
+          "label": "Download a prototype activity report",
+          "prototypeLabels": [
+            "Download activity report"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The browser report is not a server-generated, signed, Evidence-complete export.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "activity_proofs.trading_facility_proof",
+          "label": "Issue bounded Performance Proof and read Facility Evidence",
+          "prototypeLabels": [
+            "Proof"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "tradingIssuePerformanceProof",
+            "tradingReadFacilityEvidence"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/trading-capital-product-presentation.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/trading-capital-facility.test.js",
+            "apps/web/test/trading-capital-product-presentation.test.js"
+          ],
+          "truthBoundary": "Performance Proof is revocable, seven-day, privacy-safe, synthetic, and non-authorizing; it is not an official report, universal score, or external verification.",
+          "nextTaskIds": [
+            "TC-104"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "credit_track_record",
+      "label": "Credit Track Record",
+      "order": 10,
+      "actions": [
+        {
+          "actionId": "credit_track_record.read_evidence_derived_record",
+          "label": "Read the owned obligation Evidence and deterministic decision record",
+          "prototypeLabels": [
+            "Human record",
+            "Agent record",
+            "Open Repay & Settle"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadOwnObligationEvidence",
+            "pilotReadCreditApplication"
+          ],
+          "authorityReferences": [
+            "docs/security/V9_004_CREDIT_PASSPORT_PRIVACY_APPROVAL_001.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/decision-passport-presentation.js",
+            "apps/web/src/credit-passport-presentation.js"
+          ],
+          "testFiles": [
+            "apps/web/test/decision-passport-presentation.test.js",
+            "apps/web/test/credit-passport-presentation.test.js"
+          ],
+          "truthBoundary": "The current record is limited to server Evidence and decisions; no independent external credit history is claimed.",
+          "nextTaskIds": [
+            "V9-004"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "credit_track_record.import_wallet_history",
+          "label": "Import external wallet transaction history",
+          "prototypeLabels": [
+            "Import wallet history"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The prototype does not verify chain provenance, account ownership, reorg state, or an ingestion policy.",
+          "nextTaskIds": [
+            "V9-004",
+            "WALLET-003"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "credit_track_record.simulate_impact",
+          "label": "Simulate future credit score or limit impact",
+          "prototypeLabels": [
+            "Simulate impact"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "There is no approved scoring model or server simulation contract, and prototype projections cannot alter credit authority.",
+          "nextTaskIds": [
+            "V9-004"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "credit_track_record.generate_report",
+          "label": "Generate an official track-record report",
+          "prototypeLabels": [
+            "Generate track record report"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotCreateOfficialReport",
+            "pilotReadOfficialReport",
+            "pilotRetrieveOfficialReport",
+            "pilotRevokeOfficialReport"
+          ],
+          "authorityReferences": [
+            "schemas/v2/official-report-artifact.schema.json",
+            "product/policies/ipo-one.fee-audit-policy.v1.json"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/official-report-download.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/official-report-handlers.test.js",
+            "apps/web/test/official-report-download.test.js"
+          ],
+          "truthBoundary": "The server creates bounded JSON or formula-safe CSV from one exact owned Obligation and up to 50 persisted Evidence events. Retrieval reauthorizes access and verifies the exact content SHA-256; the browser only transports verified bytes.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "reports_exports",
+      "label": "Reports & Exports",
+      "order": 11,
+      "actions": [
+        {
+          "actionId": "reports_exports.generate_official_artifact",
+          "label": "Generate a versioned official report artifact",
+          "prototypeLabels": [
+            "Generate",
+            "Generate track record report"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotCreateOfficialReport",
+            "pilotReadOfficialReport",
+            "pilotRetrieveOfficialReport",
+            "pilotRevokeOfficialReport"
+          ],
+          "authorityReferences": [
+            "schemas/v2/official-report-artifact.schema.json",
+            "db/migrations/0028_official_report_artifacts.up.sql",
+            "product/policies/ipo-one.fee-audit-policy.v1.json"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/official-report-download.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/official-report-artifact.test.js",
+            "modules/tenant-command-gateway/test/official-report-handlers.test.js",
+            "apps/web/test/official-report-download.test.js"
+          ],
+          "truthBoundary": "The authenticated server creates, persists, hashes, expires, retrieves, and terminally revokes a same-Tenant no-funds report. Content excludes PII, secrets, raw transactions, HTML, signed URLs, public grants, and production fee authority.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "reports_exports.prototype_downloads",
+          "label": "Download JSON, CSV, or HTML generated in the prototype browser",
+          "prototypeLabels": [
+            "Download JSON",
+            "Download CSV",
+            "Download HTML",
+            "Shareable proof"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Prototype downloads are not server-persisted, signed, access-controlled, or independently reproducible.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "reports_exports.verify_calculation",
+          "label": "Verify report integrity and fee-policy availability",
+          "prototypeLabels": [
+            "Verify calculation"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadOfficialReport",
+            "pilotRetrieveOfficialReport"
+          ],
+          "authorityReferences": [
+            "product/policies/ipo-one.fee-audit-policy.v1.json"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/official-report-download.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/official-report-artifact.test.js",
+            "apps/web/test/official-report-download.test.js"
+          ],
+          "truthBoundary": "Retrieval reauthorizes same-Tenant ownership and verifies the exact server-stored SHA-256 before browser transport. No separate production fee calculation is claimed: the versioned fee policy is explicitly unavailable and excludes principal and unrealized PnL as fee bases.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    },
+    {
+      "destinationId": "risk_operations",
+      "label": "Risk & Operations",
+      "order": 12,
+      "actions": [
+        {
+          "actionId": "risk_operations.read_portfolio_health_feedback_and_queue",
+          "label": "Read tenant risk, pilot health, feedback summary, and servicing queue",
+          "prototypeLabels": [
+            "Inspect versioned policy"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadTenantRisk",
+            "pilotReadPilotHealth",
+            "pilotReadPilotFeedbackSummary",
+            "pilotReadServicingQueue"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/risk-operations-presentation.js"
+          ],
+          "testFiles": [
+            "apps/web/test/risk-operations-presentation.test.js",
+            "modules/tenant-command-gateway/test/pilot-health-query-handlers.test.js",
+            "modules/tenant-command-gateway/test/servicing-queue-query-handlers.test.js"
+          ],
+          "truthBoundary": "Only tenant-scoped server projections and persisted operational signals are authoritative.",
+          "nextTaskIds": [
+            "V9-008"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "risk_operations.freeze_subject",
+          "label": "Freeze a Subject through the privileged risk control",
+          "prototypeLabels": [
+            "Emergency controls"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotFreezeSubject"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/risk-operations-presentation.js"
+          ],
+          "testFiles": [
+            "apps/web/test/risk-operations-presentation.test.js",
+            "apps/web/test/static-ui.test.js"
+          ],
+          "truthBoundary": "Freeze is capability-gated, admitted, persisted, and fail-closed; it grants no inverse unfreeze or limit-increase authority.",
+          "nextTaskIds": [
+            "V9-008"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "risk_operations.resolve_sandbox_servicing",
+          "label": "Restructure, repurchase, or write off a sandbox obligation",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotRestructureSandboxObligation",
+            "pilotRepurchaseSandboxObligation",
+            "pilotWriteOffSandboxObligation"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js",
+            "apps/web/src/risk-operations-presentation.js"
+          ],
+          "testFiles": [
+            "apps/web/test/risk-operations-presentation.test.js",
+            "modules/tenant-command-gateway/test/tenant-command-gateway.test.js"
+          ],
+          "truthBoundary": "These are privileged no-funds servicing resolutions with approval controls, never borrower or browser-only actions.",
+          "nextTaskIds": [
+            "V9-008"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "risk_operations.trading_shadow_protection",
+          "label": "Evaluate, pause, and flatten one synthetic Trading Facility",
+          "prototypeLabels": [
+            "Shadow Risk",
+            "Reduce only",
+            "Flatten"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "tradingEvaluateRisk",
+            "tradingPauseNewRisk",
+            "tradingFlattenFacility"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-036-trading-capital-evidence-factor-risk-staleness-and-state-machine.md",
+            "docs/security/IPO_ONE_TRADING_CAPITAL_THREAT_MODEL_v0.1_PROPOSED.md"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js",
+            "apps/web/src/trading-capital-facility-presentation.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/trading-capital-facility.test.js",
+            "apps/web/test/trading-capital-facility-presentation.test.js",
+            "modules/authorization/test/authorization-policy.test.js"
+          ],
+          "truthBoundary": "Shadow Risk reads only the persisted local synthetic Facility observation and can only tighten protection. Pause and flatten require privileged, reason-coded approval and cannot withdraw, transfer, settle, or restore risk.",
+          "nextTaskIds": [
+            "TC-103"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "risk_operations.inspect_checked_in_policy",
+          "label": "Inspect the checked-in versioned policy and launch gates",
+          "prototypeLabels": [
+            "Inspect versioned policy"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "checked_in_contract",
+          "operationIds": [],
+          "authorityReferences": [
+            "deploy/launch-policy.v1.json",
+            "docs/guidance/IPO_ONE_DUAL_NATIVE_EXECUTION_PLAN_v0.1.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/risk-operations-presentation.js"
+          ],
+          "testFiles": [
+            "apps/web/test/risk-operations-presentation.test.js",
+            "scripts/check-launch-policy.mjs"
+          ],
+          "truthBoundary": "The checked-in policy is authoritative for configured gates; the prototype cannot unlock or revise it.",
+          "nextTaskIds": [
+            "V9-008"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "risk_operations.generic_emergency_mutations",
+          "label": "Unfreeze, raise limits, or bypass approval through generic emergency controls",
+          "prototypeLabels": [
+            "Emergency controls"
+          ],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "No generic emergency mutation, unfreeze, approval bypass, or limit-increase operation is approved.",
+          "nextTaskIds": [
+            "V9-008"
+          ],
+          "humanGateRequired": true
+        }
+      ]
+    },
+    {
+      "destinationId": "architecture",
+      "label": "Architecture",
+      "order": 13,
+      "actions": [
+        {
+          "actionId": "architecture.inspect_machine_contracts",
+          "label": "Inspect checked-in catalog, schemas, policies, adapters, and source-of-truth ADRs",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "checked_in_contract",
+          "operationIds": [],
+          "authorityReferences": [
+            "api/tenant-protocol/ipo-one.tenant-protocol.v1.json",
+            "schemas/v2/tenant-protocol-request.schema.json",
+            "schemas/v2/tenant-protocol-result.schema.json",
+            "docs/architecture/ADR-010-ledger-source-of-truth.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "scripts/check-tenant-protocol.mjs"
+          ],
+          "truthBoundary": "The checked-in machine contracts and reviewed ADRs are authoritative; diagrams and marketing labels are explanatory only.",
+          "nextTaskIds": [
+            "V9-008"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "architecture.export_prototype_map",
+          "label": "Export the prototype architecture map",
+          "prototypeLabels": [
+            "Export map"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "The browser export is not a machine-validated inventory and may drift from runtime contracts.",
+          "nextTaskIds": [
+            "V9-008"
+          ],
+          "humanGateRequired": false
+        }
+      ]
+    }
+  ],
+  "crossCuttingAreas": [
+    {
+      "areaId": "fee_revenue",
+      "label": "Fee and revenue boundaries",
+      "actions": [
+        {
+          "actionId": "fee_revenue.read_sandbox_economics",
+          "label": "Read deterministic no-funds offer economics and repayment allocation",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadCreditApplication",
+            "pilotReadOwnObligation",
+            "pilotPostSandboxRepayment"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/credit-execution-handlers.test.js"
+          ],
+          "truthBoundary": "Sandbox offer terms and ledger allocation are server truth but do not approve production pricing, revenue, or capital economics.",
+          "nextTaskIds": [
+            "V9-009"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "fee_revenue.production_fee_policy",
+          "label": "Publish or apply production protocol fees",
+          "prototypeLabels": [
+            "Open fee policy"
+          ],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Production pricing, fee basis, tax treatment, revenue ownership, and customer disclosure require named human approval.",
+          "nextTaskIds": [
+            "V9-009",
+            "REALVALUE-001"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "fee_revenue.provider_share_and_waterfall",
+          "label": "Calculate Provider revenue share and capital waterfall",
+          "prototypeLabels": [
+            "Earnings & fees",
+            "Waterfall & reporting"
+          ],
+          "classification": "SIMULATION_ONLY",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "No approved Provider contract, capital source, loss bearer, fee ledger, or waterfall operation exists.",
+          "nextTaskIds": [
+            "V9-007",
+            "V9-009"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "fee_revenue.pnl_percentage_fee",
+          "label": "Charge a fee based on principal movement or unrealized trading PnL",
+          "prototypeLabels": [],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "Principal movement and unrealized PnL are not approved revenue events and cannot become fees through a prototype or UI rule.",
+          "nextTaskIds": [
+            "V9-009",
+            "REALVALUE-001"
+          ],
+          "humanGateRequired": true
+        }
+      ]
+    }
+  ]
+}

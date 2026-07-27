@@ -15,6 +15,10 @@ const HUMAN_ACTOR_TYPES = new Set([
   ActorType.OPERATIONS_OPERATOR,
   ActorType.AUDITOR
 ]);
+const EIP191_VERIFICATION_METHODS = new Set([
+  "eip191_eoa_v1",
+  "eip1271_eip191_v1"
+]);
 
 function exactHttpsOrigin(name, value) {
   let parsed;
@@ -34,6 +38,36 @@ function exactHttpsOrigin(name, value) {
     throw authenticationError("invalid_authentication_configuration", `${name} is invalid`);
   }
   return parsed.origin;
+}
+
+function acceptedWalletVerification(value, transaction) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    value.schemaVersion !== "wallet_signature_verification.v1" ||
+    value.chainId !== `eip155:${transaction.chainId}` ||
+    !new Set(["eoa", "contract"]).has(value.walletType) ||
+    !EIP191_VERIFICATION_METHODS.has(value.verificationMethod) ||
+    (
+      value.walletType === "eoa" &&
+      value.verificationMethod !== "eip191_eoa_v1"
+    ) ||
+    (
+      value.walletType === "contract" &&
+      value.verificationMethod !== "eip1271_eip191_v1"
+    ) ||
+    value.authenticationEligible !== true ||
+    value.rawSignaturePersisted !== false ||
+    value.credentialsIncluded !== false ||
+    value.productionFundsMoved !== false
+  ) {
+    throw authenticationError(
+      "wallet_signature_rejected",
+      "wallet signature verification result is not eligible for authentication"
+    );
+  }
+  return value;
 }
 
 export class HumanWalletBff {
@@ -75,21 +109,24 @@ export class HumanWalletBff {
     const transaction = await this.transactionStore.consume({ handle: transactionHandle, now });
     const checkedSignature = assertBoundedString("wallet signature", signature, {
       minimum: 132,
-      maximum: 4_096,
-      pattern: /^0x[0-9a-fA-F]+$/
+      maximum: 8_194,
+      pattern: /^0x(?:[0-9a-fA-F]{2}){65,4096}$/
     });
-    let verified = false;
+    let verification;
     try {
-      verified = await this.signatureVerifier.verify({
-        address: transaction.address,
-        chainId: transaction.chainId,
-        message: transaction.message,
-        signature: checkedSignature
-      });
+      verification = acceptedWalletVerification(
+        await this.signatureVerifier.verify({
+          address: transaction.address,
+          chainId: transaction.chainId,
+          message: transaction.message,
+          signature: checkedSignature
+        }),
+        transaction
+      );
     } catch {
-      verified = false;
+      verification = undefined;
     }
-    if (verified !== true) {
+    if (verification === undefined) {
       throw authenticationError("wallet_signature_rejected", "wallet signature verification failed");
     }
     const credential = await this.credentialRegistry.findBySubject({
@@ -120,7 +157,7 @@ export class HumanWalletBff {
       authenticationMethod: ClientAuthenticationMethod.SIWE,
       authTime: now,
       acr: "urn:ipo.one:acr:wallet",
-      amr: ["wallet", "siwe"],
+      amr: ["wallet", "siwe", verification.verificationMethod],
       now
     });
   }

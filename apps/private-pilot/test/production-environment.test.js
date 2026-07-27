@@ -71,6 +71,15 @@ test("production environment supports reviewed wallet-only access without an OID
   assert.equal(configuration.wallet.clientId, "ipo_one_wallet");
   assert.equal(configuration.browserOrigin, "https://ipo.one");
   assert.equal(Object.hasOwn(environment, "IPO_ONE_OIDC_CLIENT_SECRET_FILE"), false);
+  const network = configuration.createNetworkContext({
+    request: {
+      headers: {
+        "x-forwarded-for": "203.0.113.8"
+      }
+    }
+  });
+  assert.match(network.referenceHash, /^0x[0-9a-f]{64}$/);
+  assert.equal(JSON.stringify(network).includes("203.0.113.8"), false);
 });
 
 test("production environment has no disabled or local-test identity fallback", async () => {

@@ -10,6 +10,7 @@ export class HumanSessionBff {
       !sessionStore?.authenticate ||
       !sessionStore?.rotate ||
       !sessionStore?.revoke ||
+      !sessionStore?.invalidate ||
       !sessionStore?.revokeByCredential ||
       !credentialRegistry?.revoke
     ) {
@@ -34,6 +35,14 @@ export class HumanSessionBff {
   async logout(input) {
     return Object.freeze({
       revoked: await this.sessionStore.revoke(input),
+      clearSessionCookie: expiredSessionCookie(),
+      clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
+    });
+  }
+
+  async invalidateBrowserSession(input) {
+    return Object.freeze({
+      result: await this.sessionStore.invalidate(input),
       clearSessionCookie: expiredSessionCookie(),
       clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
     });

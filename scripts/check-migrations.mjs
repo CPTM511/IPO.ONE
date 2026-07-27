@@ -33,7 +33,7 @@ for (const upFile of upFiles) {
     }
   }
   for (const fn of [...up.matchAll(/CREATE FUNCTION ([a-z_]+)/g)].map((match) => match[1])) {
-    if (!down.includes(`DROP FUNCTION IF EXISTS ${fn}();`)) {
+    if (!down.includes(`DROP FUNCTION IF EXISTS ${fn}(`)) {
       failures.push(`${downFile} does not drop function ${fn}`);
     }
   }
@@ -93,6 +93,15 @@ for (const required of [
   "CREATE TABLE operational_alerts",
   "CREATE TABLE operational_alert_occurrences",
   "CREATE TABLE operational_synthetic_runs",
+  "CREATE TABLE authentication_replay_entries",
+  "CREATE TABLE trading_execution_nonce_heads",
+  "CREATE TABLE trading_testnet_execution_records",
+  "CREATE TABLE trading_testnet_execution_transitions",
+  "CREATE TABLE trading_testnet_protective_controls",
+  "CREATE TABLE trading_testnet_protective_transitions",
+  "CREATE TABLE trading_testnet_reconciliation_runs",
+  "CREATE TABLE trading_testnet_facility_funding_controls",
+  "CREATE TABLE trading_testnet_settlement_runs",
   "memberships_controller_fk",
   "controller_actor_id",
   "DEFERRABLE INITIALLY DEFERRED",
@@ -133,6 +142,15 @@ for (const required of [
   "operational_alerts_transition_guard",
   "operational_alert_occurrences_immutable",
   "operational_synthetic_runs_immutable",
+  "authentication_replay_entries_guard",
+  "trading_execution_nonce_heads_transition_guard",
+  "trading_testnet_execution_records_transition_guard",
+  "trading_testnet_execution_transitions_immutable_guard",
+  "trading_testnet_protective_controls_transition_guard",
+  "trading_testnet_protective_transitions_immutable_guard",
+  "trading_testnet_reconciliation_runs_transition_guard",
+  "trading_testnet_facility_funding_controls_transition_guard",
+  "trading_testnet_settlement_runs_transition_guard",
   "credit_intents_projection_guard",
   "credit_offers_projection_guard",
   "consent_records_projection_guard",

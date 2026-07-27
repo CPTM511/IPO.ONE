@@ -10,6 +10,10 @@ import {
   createPostgresTenantLivePolicyAdapter,
   createTenantFoundationHandlers
 } from "../../../modules/tenant-command-gateway/src/index.js";
+import {
+  HyperliquidBindingProofVerifier,
+  HyperliquidTestnetInfoAdapter
+} from "../../../modules/hyperliquid-info/src/index.js";
 import { createTenantPilotHost } from "../../tenant-api/src/index.js";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
 import { createLocalPilotIdentities } from "./local-pilot-identities.js";
@@ -62,7 +66,13 @@ function createLocalHumanSession({ identity, port, sessionHandle, csrfToken }) {
 function createGateway(pool, authentication) {
   const durableGateway = new TenantCommandGateway({
     pool,
-    handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers()),
+    handlers: new TenantCommandHandlerRegistry(
+      createTenantFoundationHandlers({
+        hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
+        hyperliquidBindingProofVerifier:
+          new HyperliquidBindingProofVerifier()
+      })
+    ),
     policyRegistry: authentication.policyRegistry,
     credentialRegistry: authentication.credentialRegistry,
     referenceHasher: authentication.referenceHasher,

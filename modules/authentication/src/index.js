@@ -10,6 +10,7 @@ export * from "./human-wallet-bff.js";
 export * from "./jwks-resolver.js";
 export * from "./login-transaction-store.js";
 export * from "./wallet-login-transaction-store.js";
+export * from "./wallet-session-invalidation.js";
 export * from "./machine-authenticator.js";
 export * from "./oidc-code-exchange-adapter.js";
 export * from "./postgres-human-authentication.js";

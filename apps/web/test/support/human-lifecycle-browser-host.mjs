@@ -12,7 +12,12 @@ import {
   createTenantHttpServer,
   createTenantWebAssetHandler
 } from "../../../tenant-api/src/index.js";
-import { DomainError } from "../../../../packages/domain/src/errors.js";
+import {
+  DomainError,
+  createOfficialReportArtifact,
+  officialReportEffectiveStatus,
+  revokeOfficialReportArtifact
+} from "../../../../packages/domain/src/index.js";
 
 const csrfToken = "human_lifecycle_browser_qa_csrf_token_00000001";
 const offerReceipt = JSON.parse(await readFile(
@@ -29,6 +34,19 @@ const lifecycleReceipt = JSON.parse(await readFile(
   ),
   "utf8"
 )).valid[0];
+const tenantProtocolFixtures = JSON.parse(await readFile(
+  new URL(
+    "../../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json",
+    import.meta.url
+  ),
+  "utf8"
+));
+const creditPassportCreateFixture = tenantProtocolFixtures.validResults.find(
+  ({ operationId }) => operationId === "pilotCreateCreditPassportArtifact"
+);
+const creditPassportRevokeFixture = tenantProtocolFixtures.validResults.find(
+  ({ operationId }) => operationId === "pilotRevokeCreditPassportArtifact"
+);
 
 const consent = Object.freeze({
   consentId: offerReceipt.consentId,
@@ -131,9 +149,42 @@ function obligationAt(stage) {
   return obligation;
 }
 
-function curedObligation() {
-  const obligation = obligationAt("executed");
+const secondaryObligationId = `${lifecycleReceipt.obligation.obligationId}_secondary`;
+let currentCreditPassportArtifact;
+
+function reidentifyObligation(obligation, obligationId) {
+  obligation.obligationId = obligationId;
+  obligation.installments.forEach((installment, index) => {
+    installment.obligationId = obligationId;
+    installment.installmentId = `${obligationId}_installment_${index + 1}`;
+  });
+  obligation.oldestUnpaidInstallmentId =
+    obligation.installments.find((installment) => installment.status !== "paid")?.installmentId ?? null;
+  return obligation;
+}
+
+function secondaryDelinquentObligation() {
+  const obligation = reidentifyObligation(obligationAt("executed"), secondaryObligationId);
+  const oldest = obligation.installments[0];
+  obligation.status = "delinquent";
+  obligation.servicingClassification = "dpd_1_30";
+  obligation.daysPastDue = 12;
+  obligation.oldestUnpaidInstallmentId = oldest.installmentId;
+  obligation.servicingEffectiveAt = new Date(
+    new Date(oldest.dueAt).getTime() + 12 * 86_400_000
+  ).toISOString();
+  obligation.servicingReasonCode = "servicing_dpd_1_30";
+  obligation.updatedAt = obligation.servicingEffectiveAt;
+  return obligation;
+}
+
+function curedObligation(source = obligationAt("executed")) {
+  const obligation = structuredClone(source);
   const [first, second] = obligation.installments;
+  const effectiveAt = new Date(Math.max(
+    new Date("2026-08-16T12:00:00.000Z").getTime(),
+    new Date(obligation.servicingEffectiveAt).getTime() + 1_000
+  )).toISOString();
   first.paidPrincipalMinor = first.scheduledPrincipalMinor;
   first.paidInterestMinor = first.scheduledInterestMinor;
   first.paidFeeMinor = first.scheduledFeeMinor;
@@ -146,7 +197,7 @@ function curedObligation() {
   obligation.servicingClassification = "cured";
   obligation.daysPastDue = 0;
   obligation.oldestUnpaidInstallmentId = second.installmentId;
-  obligation.servicingEffectiveAt = "2026-08-16T12:00:00.000Z";
+  obligation.servicingEffectiveAt = effectiveAt;
   obligation.servicingReasonCode = "servicing_cured_by_repayment";
   obligation.lastAccruedAt = obligation.servicingEffectiveAt;
   obligation.updatedAt = obligation.servicingEffectiveAt;
@@ -156,6 +207,8 @@ function curedObligation() {
 function curedRepayment(obligation) {
   return {
     ...structuredClone(lifecycleReceipt.repayment),
+    obligationId: obligation.obligationId,
+    subjectId: obligation.subjectId,
     repaymentId: "repayment_human_browser_cure_001",
     repaymentHash: "0xacacacacacacacacacacacacacacacacacacacacacacacacacacacacacacacac",
     requestedMinor: "6000",
@@ -207,14 +260,95 @@ function cureAction(obligation) {
   };
 }
 
-let currentObligation;
+let currentObligation = obligationAt("executed");
 let currentServicingAction;
+let secondaryCurrentObligation = secondaryDelinquentObligation();
+let secondaryServicingAction;
+let currentSubjectCreated = true;
+let currentConsentCreated = true;
+let currentOfficialReport;
 
-function resultFor(operationId) {
+function obligationEvidence(obligationId, evidenceObligation) {
+  const eventTypes = [
+    "credit_offer_accepted",
+    "obligation_created",
+    "sandbox_obligation_executed",
+    "sandbox_repayment_posted",
+    "servicing_cured"
+  ];
+  const occurredAt = [
+    "2026-07-15T00:04:00.000Z",
+    "2026-07-15T00:04:00.100Z",
+    "2026-07-15T00:05:00.000Z",
+    "2026-08-16T12:00:00.000Z",
+    "2026-08-16T12:00:00.100Z"
+  ];
+  return {
+    obligationId,
+    asOf: new Date(
+      Math.max(
+        new Date("2026-08-16T12:00:01.000Z").getTime(),
+        new Date(evidenceObligation.servicingEffectiveAt).getTime() + 2_000
+      )
+    ).toISOString(),
+    items: eventTypes.map((eventType, index) => ({
+      evidenceId: `event_browser_qa_${eventType}`,
+      evidenceHash: `0x${String(index + 5).repeat(64)}`,
+      eventType,
+      aggregateType: index === 0 ? "credit_offer" : "obligation",
+      aggregateId: index === 0 ? lifecycleReceipt.acceptance.creditOfferId : obligationId,
+      aggregateVersion: index + 1,
+      obligationId,
+      sourceFinality: "finalized",
+      payloadHash: `0x${String(index + 1).repeat(64)}`,
+      occurredAt: occurredAt[index],
+      recordedAt: new Date(new Date(occurredAt[index]).getTime() + 100).toISOString(),
+      schemaVersion: "obligation_evidence_summary.v1"
+    })),
+    hasMore: false,
+    schemaVersion: "tenant_owned_obligation_evidence_view.v1"
+  };
+}
+
+function pagedObligationEvidence(obligationId, evidenceObligation, cursor) {
+  const complete = obligationEvidence(obligationId, evidenceObligation);
+  if (cursor === "browser_qa_evidence_page_2") {
+    return {
+      ...complete,
+      items: complete.items.slice(3),
+      hasMore: false
+    };
+  }
+  if (cursor !== undefined) {
+    throw new DomainError(
+      "tenant_resource_unavailable",
+      "The requested resource is not available."
+    );
+  }
+  return {
+    ...complete,
+    items: complete.items.slice(0, 3),
+    hasMore: true,
+    nextCursor: "browser_qa_evidence_page_2"
+  };
+}
+
+function officialReportView(report, now = new Date()) {
+  const { contentBase64: _contentBase64, ...metadata } = report;
+  return {
+    ...metadata,
+    effectiveStatus: officialReportEffectiveStatus(report, now),
+    asOf: now.toISOString()
+  };
+}
+
+function resultFor(command) {
+  const { operationId } = command;
   if (operationId === "pilotReadTenantRisk" || operationId === "pilotFreezeSubject") {
     throw new DomainError("authorization_denied", "The requested operation is not available.");
   }
   if (operationId === "pilotCreateHumanSubject") {
+    currentSubjectCreated = true;
     return protocolResult(operationId, {
       principalId: subject.primaryPrincipalId,
       subjectId: subject.subjectId,
@@ -226,6 +360,8 @@ function resultFor(operationId) {
     });
   }
   if (operationId === "pilotCreateConsent") {
+    currentSubjectCreated = true;
+    currentConsentCreated = true;
     return protocolResult(operationId, {
       subjectId: subject.subjectId,
       consent,
@@ -240,6 +376,42 @@ function resultFor(operationId) {
       hasMoreConsents: false,
       hasMoreIdentityReferences: false,
       schemaVersion: "tenant_human_subject_view.v1"
+    });
+  }
+  if (operationId === "pilotReadWorkspaceResume") {
+    const resources = [];
+    if (currentObligation) {
+      resources.push({
+        resourceType: "obligation",
+        resourceId: currentObligation.obligationId,
+        relationship: "owner"
+      });
+    }
+    resources.push({
+      resourceType: "obligation",
+      resourceId: secondaryCurrentObligation.obligationId,
+      relationship: "owner"
+    });
+    if (currentConsentCreated) {
+      resources.push({
+        resourceType: "consent",
+        resourceId: consent.consentId,
+        relationship: "owner"
+      });
+    }
+    if (currentSubjectCreated) {
+      resources.push({
+        resourceType: "subject",
+        resourceId: subject.subjectId,
+        relationship: "owner"
+      });
+    }
+    return protocolResult(operationId, {
+      workspaceKind: "human_borrower",
+      resources,
+      hasMore: false,
+      serverTruth: true,
+      schemaVersion: "tenant_workspace_resume_view.v1"
     });
   }
   if (operationId === "pilotRequestCredit") {
@@ -262,6 +434,81 @@ function resultFor(operationId) {
       decision: offerReceipt.decision,
       offer: offerReceipt.offer,
       schemaVersion: "tenant_credit_application_evaluated.v2"
+    });
+  }
+  if (operationId === "pilotCreateCreditPassportArtifact") {
+    currentCreditPassportArtifact = structuredClone(
+      creditPassportCreateFixture.response.artifact
+    );
+    currentCreditPassportArtifact.subjectId = command.resource.resourceId;
+    currentCreditPassportArtifact.asOf = "2026-07-24T10:00:00.000Z";
+    return protocolResult(operationId, {
+      artifact: currentCreditPassportArtifact,
+      replaced: false,
+      schemaVersion: "tenant_credit_passport_artifact_created.v1"
+    });
+  }
+  if (operationId === "pilotReadOwnCreditPassportArtifact") {
+    if (
+      !currentCreditPassportArtifact ||
+      command.resource?.resourceId !==
+        currentCreditPassportArtifact.creditPassportArtifactId
+    ) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    return protocolResult(operationId, {
+      artifact: currentCreditPassportArtifact,
+      schemaVersion: "tenant_owned_credit_passport_artifact_view.v1"
+    });
+  }
+  if (operationId === "pilotVerifyCreditPassportArtifact") {
+    const verified =
+      currentCreditPassportArtifact?.effectiveStatus === "active" &&
+      command.resource?.resourceId ===
+        currentCreditPassportArtifact.creditPassportArtifactId &&
+      command.payload?.artifactHash === currentCreditPassportArtifact.artifactHash &&
+      command.payload?.artifactVersion === currentCreditPassportArtifact.version;
+    if (!verified) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    return protocolResult(operationId, {
+      verification: {
+        verified: true,
+        status: "active",
+        sourceCurrent: true,
+        checkedAt: "2026-07-24T10:01:00.000Z",
+        artifactHash: currentCreditPassportArtifact.artifactHash,
+        artifactVersion: currentCreditPassportArtifact.version,
+        onlineVerificationRequired: true,
+        schemaVersion: "credit_passport_verification.v1"
+      },
+      artifact: currentCreditPassportArtifact,
+      schemaVersion: "tenant_credit_passport_verification_result.v1"
+    });
+  }
+  if (operationId === "pilotRevokeCreditPassportArtifact") {
+    if (
+      !currentCreditPassportArtifact ||
+      command.resource?.resourceId !==
+        currentCreditPassportArtifact.creditPassportArtifactId
+    ) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    currentCreditPassportArtifact = structuredClone(
+      creditPassportRevokeFixture.response.artifact
+    );
+    return protocolResult(operationId, {
+      artifact: currentCreditPassportArtifact,
+      schemaVersion: "tenant_credit_passport_artifact_revoked.v1"
     });
   }
   if (operationId === "pilotAcceptCreditOffer") {
@@ -289,13 +536,22 @@ function resultFor(operationId) {
     });
   }
   if (operationId === "pilotPostSandboxRepayment") {
-    const obligation = curedObligation();
-    currentObligation = obligation;
-    currentServicingAction = cureAction(obligation);
+    const secondary = command.resource?.resourceId === secondaryObligationId;
+    const obligation = curedObligation(
+      secondary ? secondaryCurrentObligation : obligationAt("executed")
+    );
+    const servicingAction = cureAction(obligation);
+    if (secondary) {
+      secondaryCurrentObligation = obligation;
+      secondaryServicingAction = servicingAction;
+    } else {
+      currentObligation = obligation;
+      currentServicingAction = servicingAction;
+    }
     return protocolResult(operationId, {
       obligation,
       repayment: curedRepayment(obligation),
-      servicingAction: currentServicingAction,
+      servicingAction,
       sandboxOnly: true,
       productionFundsMoved: false,
       withdrawable: false,
@@ -303,13 +559,27 @@ function resultFor(operationId) {
     });
   }
   if (operationId === "pilotReadOwnObligation") {
-    if (!currentObligation) {
+    const obligationId = command.resource?.resourceId;
+    const obligation = obligationId === secondaryObligationId
+      ? secondaryCurrentObligation
+      : obligationId === currentObligation?.obligationId
+        ? currentObligation
+        : null;
+    const latestServicingAction = obligationId === secondaryObligationId
+      ? secondaryServicingAction
+      : currentServicingAction;
+    if (!obligation) {
       throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
     }
     return protocolResult(operationId, {
-      obligation: currentObligation,
-      ...(currentServicingAction ? { latestServicingAction: currentServicingAction } : {}),
-      asOf: "2026-08-16T12:00:01.000Z",
+      obligation,
+      ...(latestServicingAction ? { latestServicingAction } : {}),
+      asOf: new Date(
+        Math.max(
+          new Date("2026-08-16T12:00:01.000Z").getTime(),
+          new Date(obligation.servicingEffectiveAt).getTime() + 1_000
+        )
+      ).toISOString(),
       sandboxOnly: true,
       productionFundsMoved: false,
       withdrawable: false,
@@ -317,40 +587,94 @@ function resultFor(operationId) {
     });
   }
   if (operationId === "pilotReadOwnObligationEvidence") {
-    const obligationId = lifecycleReceipt.obligation.obligationId;
-    const eventTypes = [
-      "credit_offer_accepted",
-      "obligation_created",
-      "sandbox_obligation_executed",
-      "sandbox_repayment_posted",
-      "servicing_cured"
-    ];
-    const occurredAt = [
-      "2026-07-15T00:04:00.000Z",
-      "2026-07-15T00:04:00.100Z",
-      "2026-07-15T00:05:00.000Z",
-      "2026-08-16T12:00:00.000Z",
-      "2026-08-16T12:00:00.100Z"
-    ];
-    return protocolResult(operationId, {
-      obligationId,
-      asOf: "2026-08-16T12:00:01.000Z",
-      items: eventTypes.map((eventType, index) => ({
-        evidenceId: `event_browser_qa_${eventType}`,
-        evidenceHash: `0x${String(index + 5).repeat(64)}`,
-        eventType,
-        aggregateType: index === 0 ? "credit_offer" : "obligation",
-        aggregateId: index === 0 ? lifecycleReceipt.acceptance.creditOfferId : obligationId,
-        aggregateVersion: index + 1,
+    const obligationId = command.resource?.resourceId;
+    const evidenceObligation = obligationId === secondaryObligationId
+      ? secondaryCurrentObligation
+      : currentObligation;
+    if (
+      obligationId !== secondaryObligationId &&
+      obligationId !== currentObligation?.obligationId
+    ) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    return protocolResult(
+      operationId,
+      pagedObligationEvidence(
         obligationId,
-        sourceFinality: "finalized",
-        payloadHash: `0x${String(index + 1).repeat(64)}`,
-        occurredAt: occurredAt[index],
-        recordedAt: new Date(new Date(occurredAt[index]).getTime() + 100).toISOString(),
-        schemaVersion: "obligation_evidence_summary.v1"
-      })),
-      hasMore: false,
-      schemaVersion: "tenant_owned_obligation_evidence_view.v1"
+        evidenceObligation,
+        command.payload?.cursor
+      )
+    );
+  }
+  if (operationId === "pilotCreateOfficialReport") {
+    const obligationId = command.resource?.resourceId;
+    if (obligationId !== currentObligation?.obligationId) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    const evidence = obligationEvidence(obligationId, currentObligation).items;
+    currentOfficialReport = createOfficialReportArtifact({
+      reportId: "official_report_human_browser_qa_001",
+      format: command.payload.format,
+      obligation: currentObligation,
+      evidence,
+      controllerActorRefHash: `0x${"a".repeat(64)}`,
+      lifetimeSeconds: command.payload.lifetimeSeconds,
+      now: new Date()
+    });
+    return protocolResult(operationId, {
+      report: officialReportView(currentOfficialReport),
+      schemaVersion: "tenant_official_report_created.v1"
+    });
+  }
+  if (
+    operationId === "pilotReadOfficialReport" ||
+    operationId === "pilotRetrieveOfficialReport" ||
+    operationId === "pilotRevokeOfficialReport"
+  ) {
+    if (
+      !currentOfficialReport ||
+      command.resource?.resourceId !== currentOfficialReport.officialReportId
+    ) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    if (operationId === "pilotReadOfficialReport") {
+      return protocolResult(operationId, {
+        report: officialReportView(currentOfficialReport),
+        schemaVersion: "tenant_official_report_view.v1"
+      });
+    }
+    if (operationId === "pilotRetrieveOfficialReport") {
+      if (officialReportEffectiveStatus(currentOfficialReport) !== "active") {
+        throw new DomainError(
+          "tenant_resource_unavailable",
+          "The requested resource is not available."
+        );
+      }
+      return protocolResult(operationId, {
+        report: officialReportView(currentOfficialReport),
+        contentBase64: currentOfficialReport.contentBase64,
+        integrityVerified: true,
+        authorizationRevalidatedAt: new Date().toISOString(),
+        schemaVersion: "tenant_official_report_retrieval.v1"
+      });
+    }
+    currentOfficialReport = revokeOfficialReportArtifact({
+      artifact: currentOfficialReport,
+      reasonCode: command.reasonCode,
+      now: new Date()
+    });
+    return protocolResult(operationId, {
+      report: officialReportView(currentOfficialReport),
+      schemaVersion: "tenant_official_report_revoked.v1"
     });
   }
   throw new Error(`unsupported_browser_qa_operation:${operationId}`);
@@ -377,10 +701,34 @@ const authenticationContext = createAuthenticationContext({
   amr: ["webauthn"]
 });
 
+async function serveAuthentication({ request, response, url, requestId }) {
+  if (request.method !== "GET" || url.pathname !== "/auth/v1/options") return false;
+  const body = JSON.stringify({
+    schemaVersion: "ipo_one_authentication_options.v1",
+    profile: "closed_non_funds_pilot",
+    enabled: true,
+    sessionActive: true,
+    oidcProviders: [],
+    walletAuthentication: false,
+    supportedChains: ["eip155:84532", "eip155:1952"],
+    boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
+  });
+  response.writeHead(200, {
+    "cache-control": "no-store",
+    "content-security-policy": "default-src 'none'",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": Buffer.byteLength(body),
+    "x-content-type-options": "nosniff",
+    "x-request-id": requestId
+  });
+  response.end(body);
+  return true;
+}
+
 const host = createTenantHttpServer({
   environment: "development",
   credentialSource: "local_test",
-  gateway: { async execute(command) { return resultFor(command.operationId); } },
+  gateway: { async execute(command) { return resultFor(command); } },
   resolveAuthenticationContext: async ({ request }) => {
     if (request.method === "POST" && request.headers["x-csrf-token"] !== csrfToken) {
       throw new Error("invalid_browser_qa_csrf");
@@ -388,11 +736,12 @@ const host = createTenantHttpServer({
     return authenticationContext;
   },
   createNetworkContext: async () => ({ source: "human_lifecycle_browser_qa" }),
+  serveAuthentication,
   serveWebAsset: createTenantWebAssetHandler({ csrfTokenProvider: async () => csrfToken })
 });
 
 const address = await host.listen();
-console.log(`HUMAN_LIFECYCLE_BROWSER_QA_URL=http://${address.host}:${address.port}/#human`);
+console.log(`HUMAN_LIFECYCLE_BROWSER_QA_URL=http://${address.host}:${address.port}/#request-credit`);
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, async () => {

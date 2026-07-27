@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
 import {
@@ -28,13 +29,22 @@ import {
   SubjectStatus,
   SubjectType,
   TransferDirection,
+  TradingOrderDirection,
+  acceptCreditOffer,
+  acceptTradingMatchAsProvider,
+  acceptTradingMatchAsSubject,
+  activateTradingFacility,
+  contributeTradingSubjectCollateral,
   createAccountBinding,
+  createAcceptedOfferObligation,
   createAdminAction,
   createConsentRecord,
+  createCreditOfferAcceptance,
   createCreditIntent,
   createCreditLine,
   createCreditEvent,
   createCreditOffer,
+  createDeterministicCreditDecisionOutcome,
   createHumanIdentityReference,
   createLedgerAccount,
   createLedgerEntry,
@@ -44,14 +54,32 @@ import {
   createObligation,
   createPrincipal,
   createProvider,
+  createRealTradingAccountBindingChallenge,
   createRiskDecision,
   createSpendPolicy,
   createSpendRequest,
   createSubject,
+  createTradingAccountBindingChallenge,
+  createTradingCapitalRequest,
+  createTradingFacility,
+  createTradingMatchProposal,
+  createTradingProviderMandate,
+  evaluateTradingFacilityRisk,
+  executeSandboxObligation,
+  finalizeTradingEvidenceSnapshot,
+  finalizeRealTradingEvidenceSnapshot,
+  flattenTradingFacility,
+  importSyntheticTradingHistory,
+  importRealTradingHistory,
+  listCompatibleTradingProviderMandates,
+  pauseTradingFacilityNewRisk,
+  recordTradingProviderFunding,
+  requestTradingFacilityClose,
   createWalletAccount,
   hashId,
   revokeConsentRecord,
-  revokeHumanIdentityReference
+  revokeHumanIdentityReference,
+  submitTradingOrderIntent
 } from "../../../packages/domain/src/index.js";
 import {
   ActorType,
@@ -93,6 +121,49 @@ import {
   LiveChainIndexer,
   PostgresChainObservationStore
 } from "../../event-indexer/src/index.js";
+import {
+  HyperliquidTestnetExecutionGateway,
+  PostgresHyperliquidExecutionRepository,
+  SimulatedHyperliquidExchangeTransport,
+  SimulatedIsolatedHyperliquidSigner
+} from "../../hyperliquid-execution/src/index.js";
+import {
+  HYPERLIQUID_TESTNET_RISK_POLICY_VERSION,
+  HyperliquidTestnetRiskGuardian,
+  PostgresHyperliquidRiskGuardianRepository,
+  SimulatedHyperliquidProtectiveExecutor,
+  createHyperliquidTestnetRiskSnapshot,
+  createHyperliquidTestnetVenueState
+} from "../../hyperliquid-risk-guardian/src/index.js";
+import {
+  HyperliquidTestnetReconciliationService,
+  HyperliquidVenueOrderStatus,
+  PostgresHyperliquidReconciliationRepository,
+  ScriptedHyperliquidVenueObservationAdapter,
+  SimulatedHyperliquidReconciliationCommandGuard,
+  SimulatedHyperliquidReconciliationKernelResolver,
+  createSimulatedHyperliquidVenueObservation
+} from "../../hyperliquid-reconciliation/src/index.js";
+import {
+  HyperliquidTestnetContributionReceiptKind,
+  HyperliquidTestnetContributionRole,
+  HyperliquidTestnetFacilityFundingService,
+  PostgresHyperliquidFacilityFundingRepository,
+  ScriptedHyperliquidContributionReceiptAdapter,
+  SimulatedHyperliquidFacilityFundingCommandGuard,
+  SimulatedHyperliquidFacilityFundingKernelResolver,
+  createSimulatedTestnetContributionReceipt
+} from "../../hyperliquid-facility-funding/src/index.js";
+import {
+  HyperliquidTestnetSettlementService,
+  PostgresHyperliquidSettlementRepository,
+  ScriptedHyperliquidFeePolicyAdapter,
+  ScriptedHyperliquidFinalityObservationAdapter,
+  SimulatedHyperliquidSettlementCommandGuard,
+  SimulatedHyperliquidSettlementKernelResolver,
+  createSimulatedTestnetFeePolicy,
+  createSimulatedTestnetFinalityObservation
+} from "../../hyperliquid-settlement/src/index.js";
 import { migrateDown, migrateUp, migrationStatus } from "../../../scripts/migrate.mjs";
 import {
   CoreProjectionType,
@@ -140,6 +211,8 @@ const TENANT_OWNED_TABLES = [
   "authentication_credentials",
   "authentication_events",
   "authentication_oidc_transactions",
+  "authentication_replay_entries",
+  "authentication_session_invalidations",
   "authentication_sessions",
   "authentication_wallet_transactions",
   "authorization_audit_events",
@@ -158,6 +231,7 @@ const TENANT_OWNED_TABLES = [
   "credit_lines",
   "credit_offer_acceptances",
   "credit_offers",
+  "credit_passport_artifacts",
   "credit_profiles",
   "domain_events",
   "evidence_envelopes",
@@ -176,6 +250,7 @@ const TENANT_OWNED_TABLES = [
   "memberships",
   "obligation_installments",
   "obligations",
+  "official_report_artifacts",
   "operational_alert_occurrences",
   "operational_alerts",
   "operational_synthetic_runs",
@@ -201,6 +276,24 @@ const TENANT_OWNED_TABLES = [
   "spend_requests",
   "subjects",
   "tenant_command_executions",
+  "trading_capital_requests",
+  "trading_credit_profiles",
+  "trading_execution_nonce_heads",
+  "trading_facilities",
+  "trading_facility_close_requests",
+  "trading_facility_risk_evaluations",
+  "trading_match_proposals",
+  "trading_order_intents",
+  "trading_performance_proofs",
+  "trading_provider_mandates",
+  "trading_settlements",
+  "trading_testnet_execution_records",
+  "trading_testnet_execution_transitions",
+  "trading_testnet_facility_funding_controls",
+  "trading_testnet_protective_controls",
+  "trading_testnet_protective_transitions",
+  "trading_testnet_reconciliation_runs",
+  "trading_testnet_settlement_runs",
   "transfer_intents",
   "transfer_quotes"
 ];
@@ -890,12 +983,40 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0022_durable_operational_alerts",
         "0023_evidence_derived_risk_decisions",
         "0024_privacy_safe_pilot_feedback",
-        "0025_durable_human_authentication"
+        "0025_durable_human_authentication",
+        "0026_idempotent_wallet_session_invalidation",
+        "0027_credit_passport_artifacts",
+        "0028_official_report_artifacts",
+        "0029_trading_credit_profiles",
+        "0030_trading_capital_matching",
+        "0031_trading_capital_facilities",
+        "0032_trading_capital_settlement",
+        "0033_trading_real_evidence_binding",
+        "0034_trading_testnet_execution",
+        "0035_trading_testnet_risk_guardian",
+        "0036_trading_testnet_reconciliation_recovery",
+        "0037_trading_testnet_facility_funding",
+        "0038_trading_testnet_settlement",
+        "0039_durable_authentication_replay"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 25 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 39 }), [
+        "0039_durable_authentication_replay",
+        "0038_trading_testnet_settlement",
+        "0037_trading_testnet_facility_funding",
+        "0036_trading_testnet_reconciliation_recovery",
+        "0035_trading_testnet_risk_guardian",
+        "0034_trading_testnet_execution",
+        "0033_trading_real_evidence_binding",
+        "0032_trading_capital_settlement",
+        "0031_trading_capital_facilities",
+        "0030_trading_capital_matching",
+        "0029_trading_credit_profiles",
+        "0028_official_report_artifacts",
+        "0027_credit_passport_artifacts",
+        "0026_idempotent_wallet_session_invalidation",
         "0025_durable_human_authentication",
         "0024_privacy_safe_pilot_feedback",
         "0023_evidence_derived_risk_decisions",
@@ -947,10 +1068,38 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0022_durable_operational_alerts",
         "0023_evidence_derived_risk_decisions",
         "0024_privacy_safe_pilot_feedback",
-        "0025_durable_human_authentication"
+        "0025_durable_human_authentication",
+        "0026_idempotent_wallet_session_invalidation",
+        "0027_credit_passport_artifacts",
+        "0028_official_report_artifacts",
+        "0029_trading_credit_profiles",
+        "0030_trading_capital_matching",
+        "0031_trading_capital_facilities",
+        "0032_trading_capital_settlement",
+        "0033_trading_real_evidence_binding",
+        "0034_trading_testnet_execution",
+        "0035_trading_testnet_risk_guardian",
+        "0036_trading_testnet_reconciliation_recovery",
+        "0037_trading_testnet_facility_funding",
+        "0038_trading_testnet_settlement",
+        "0039_durable_authentication_replay"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 23 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 37 }), [
+        "0039_durable_authentication_replay",
+        "0038_trading_testnet_settlement",
+        "0037_trading_testnet_facility_funding",
+        "0036_trading_testnet_reconciliation_recovery",
+        "0035_trading_testnet_risk_guardian",
+        "0034_trading_testnet_execution",
+        "0033_trading_real_evidence_binding",
+        "0032_trading_capital_settlement",
+        "0031_trading_capital_facilities",
+        "0030_trading_capital_matching",
+        "0029_trading_credit_profiles",
+        "0028_official_report_artifacts",
+        "0027_credit_passport_artifacts",
+        "0026_idempotent_wallet_session_invalidation",
         "0025_durable_human_authentication",
         "0024_privacy_safe_pilot_feedback",
         "0023_evidence_derived_risk_decisions",
@@ -1011,7 +1160,21 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0022_durable_operational_alerts",
         "0023_evidence_derived_risk_decisions",
         "0024_privacy_safe_pilot_feedback",
-        "0025_durable_human_authentication"
+        "0025_durable_human_authentication",
+        "0026_idempotent_wallet_session_invalidation",
+        "0027_credit_passport_artifacts",
+        "0028_official_report_artifacts",
+        "0029_trading_credit_profiles",
+        "0030_trading_capital_matching",
+        "0031_trading_capital_facilities",
+        "0032_trading_capital_settlement",
+        "0033_trading_real_evidence_binding",
+        "0034_trading_testnet_execution",
+        "0035_trading_testnet_risk_guardian",
+        "0036_trading_testnet_reconciliation_recovery",
+        "0037_trading_testnet_facility_funding",
+        "0038_trading_testnet_settlement",
+        "0039_durable_authentication_replay"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -2038,6 +2201,3552 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (await restartedRepository.getAccountBinding(fixture.accountBinding.accountBindingId)).purpose,
         AccountPurpose.EXECUTION
       );
+    });
+
+    await t.test("TC-101 Trading Capital Evidence is atomic, RLS-isolated, restart-safe, and replayable", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const repository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "tc-101-foundation-fixture",
+        commandHash: hashId("tc_101_foundation", { subjectId: fixture.subject.subjectId }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { created: true }
+      });
+      const baseline = await runtimeCounts(pool);
+      const challenge = createTradingAccountBindingChallenge({
+        tenantId: TENANT_CONTEXT.tenantId,
+        subject: fixture.subject,
+        principal: fixture.principal,
+        requestedByActorId: "actor_tc_101",
+        challengeNonce: `0x${"1".repeat(64)}`,
+        now: new Date("2026-07-25T00:00:00.000Z")
+      });
+      const challengeEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_ACCOUNT_BINDING_CHALLENGE_CREATED,
+        subjectId: challenge.subjectId,
+        payload: {
+          tradingCreditProfileId: challenge.tradingCreditProfileId,
+          challengeHash: challenge.bindingChallenge.challengeHash,
+          sandboxOnly: true,
+          syntheticOnly: true,
+          fundsAuthority: false,
+          externalSystemQueried: false
+        },
+        now: new Date(challenge.createdAt)
+      });
+      const challengeCommand = {
+        aggregateType: "trading_credit_profile",
+        aggregateId: challenge.tradingCreditProfileId,
+        idempotencyKey: "tc-101-challenge-command",
+        commandHash: hashId("tc_101_challenge", {
+          profileId: challenge.tradingCreditProfileId,
+          challengeHash: challenge.bindingChallenge.challengeHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: challenge.tradingCreditProfileId,
+          expectedVersion: 0,
+          event: challengeEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: challenge,
+          eventId: challengeEvent.eventId
+        }],
+        response: { profileId: challenge.tradingCreditProfileId, stage: challenge.stage }
+      };
+      const challengeCommit = await repository.commitCommand(challengeCommand);
+      assert.equal(challengeCommit.replayed, false);
+
+      const challengeState = await repository.eventRepository.withTenantRead((client) =>
+        repository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.TRADING_CREDIT_PROFILE,
+          challenge.tradingCreditProfileId
+        )
+      );
+      const imported = importSyntheticTradingHistory({
+        profile: challengeState.value,
+        requestedByActorId: "actor_tc_101",
+        challengeEventId: challengeState.sourceEventId,
+        challengeEvidenceHash: challengeState.sourceEvidenceHash,
+        now: new Date("2026-07-25T00:01:00.000Z")
+      });
+      const importEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_SYNTHETIC_HISTORY_IMPORTED,
+        subjectId: imported.subjectId,
+        payload: {
+          tradingCreditProfileId: imported.tradingCreditProfileId,
+          historyHash: imported.historyImport.historyHash,
+          dataQuality: imported.historyImport.dataQuality,
+          sandboxOnly: true,
+          syntheticOnly: true,
+          fundsAuthority: false,
+          externalSystemQueried: false
+        },
+        now: new Date(imported.updatedAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_credit_profile",
+        aggregateId: imported.tradingCreditProfileId,
+        idempotencyKey: "tc-101-import-command",
+        commandHash: hashId("tc_101_import", {
+          profileId: imported.tradingCreditProfileId,
+          historyHash: imported.historyImport.historyHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: imported.tradingCreditProfileId,
+          expectedVersion: challengeState.aggregateVersion,
+          event: importEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: imported,
+          eventId: importEvent.eventId
+        }],
+        response: { profileId: imported.tradingCreditProfileId, stage: imported.stage }
+      });
+
+      const importState = await repository.eventRepository.withTenantRead((client) =>
+        repository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.TRADING_CREDIT_PROFILE,
+          imported.tradingCreditProfileId
+        )
+      );
+      const finalized = finalizeTradingEvidenceSnapshot({
+        profile: importState.value,
+        sourceProjectionHash: importState.entityHash,
+        historyImportEventId: importState.sourceEventId,
+        historyImportEvidenceHash: importState.sourceEvidenceHash,
+        sourceFinality: importState.sourceFinality,
+        now: new Date("2026-07-25T00:02:00.000Z")
+      });
+      const finalizeEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_EVIDENCE_SNAPSHOT_FINALIZED,
+        subjectId: finalized.subjectId,
+        payload: {
+          tradingCreditProfileId: finalized.tradingCreditProfileId,
+          evidenceSnapshotHash: finalized.evidenceSnapshot.snapshotHash,
+          scorecardHash: finalized.factorScorecard.scorecardHash,
+          factorCount: 5,
+          pointInTime: true,
+          sandboxOnly: true,
+          syntheticOnly: true,
+          fundsAuthority: false,
+          creditApproval: false,
+          externalSystemQueried: false
+        },
+        now: new Date(finalized.updatedAt)
+      });
+      const finalizeCommand = {
+        aggregateType: "trading_credit_profile",
+        aggregateId: finalized.tradingCreditProfileId,
+        idempotencyKey: "tc-101-finalize-command",
+        commandHash: hashId("tc_101_finalize", {
+          profileId: finalized.tradingCreditProfileId,
+          snapshotHash: finalized.evidenceSnapshot.snapshotHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: finalized.tradingCreditProfileId,
+          expectedVersion: importState.aggregateVersion,
+          event: finalizeEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: finalized,
+          eventId: finalizeEvent.eventId
+        }],
+        response: {
+          profileId: finalized.tradingCreditProfileId,
+          stage: finalized.stage,
+          snapshotHash: finalized.evidenceSnapshot.snapshotHash
+        }
+      };
+      const finalizedCommit = await repository.commitCommand(finalizeCommand);
+      assert.equal(finalizedCommit.replayed, false);
+
+      const restarted = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      assert.deepEqual(
+        await restarted.getTradingCreditProfile(finalized.tradingCreditProfileId),
+        finalized
+      );
+      assert.equal(
+        (await restarted.verifyProjection(
+          CoreProjectionType.TRADING_CREDIT_PROFILE,
+          finalized.tradingCreditProfileId
+        )).matches,
+        true
+      );
+      const replay = await restarted.commitCommand(finalizeCommand);
+      assert.equal(replay.replayed, true);
+      assert.deepEqual(replay.response, finalizeCommand.response);
+      const after = await runtimeCounts(pool);
+      assert.equal(after.events - baseline.events, 3);
+      assert.equal(after.evidence - baseline.evidence, 3);
+      assert.equal(after.outbox - baseline.outbox, 3);
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              "UPDATE trading_credit_profiles SET stage = 'challenge_pending', version = 1 WHERE id = $1",
+              [finalized.tradingCreditProfileId]
+            )
+          ),
+        (error) => error.code === "23514"
+      );
+    });
+
+    await t.test("TC-202/203 real Evidence and non-authorizing Shadow Risk survive restart, replay, and rebinding", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const repository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "tc-202-foundation-fixture",
+        commandHash: hashId("tc_202_foundation", {
+          subjectId: fixture.subject.subjectId
+        }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { created: true }
+      });
+      const baseline = await runtimeCounts(pool);
+      const masterAddressHash = hashId(
+        "hyperliquid_account_address",
+        "0x1111111111111111111111111111111111111111"
+      );
+      const subaccountAddressHash = hashId(
+        "hyperliquid_account_address",
+        "0x2222222222222222222222222222222222222222"
+      );
+      const descriptor = ({
+        challengeId,
+        challengeHash,
+        nonceHash,
+        typedDataHash,
+        issuedAt,
+        expiresAt
+      }) => ({
+        challengeId,
+        challengeHash,
+        nonceHash,
+        typedDataHash,
+        masterAddressHash,
+        subaccountAddressHash,
+        chainId: "eip155:998",
+        environment: "hyperliquid_testnet",
+        infoProfileId: "hyperliquid_testnet_info.v1",
+        issuedAt,
+        expiresAt
+      });
+      const challenge = createRealTradingAccountBindingChallenge({
+        tenantId: TENANT_CONTEXT.tenantId,
+        subject: fixture.subject,
+        principal: fixture.principal,
+        requestedByActorId: "actor_tc_202",
+        bindingDescriptor: descriptor({
+          challengeId: "tc_202_binding_challenge_1",
+          challengeHash: `0x${"1".repeat(64)}`,
+          nonceHash: `0x${"2".repeat(64)}`,
+          typedDataHash: `0x${"3".repeat(64)}`,
+          issuedAt: "2026-07-25T01:00:00.000Z",
+          expiresAt: "2026-07-25T01:05:00.000Z"
+        }),
+        now: new Date("2026-07-25T01:00:00.000Z")
+      });
+      const challengeEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_ACCOUNT_BINDING_CHALLENGE_CREATED,
+        subjectId: challenge.subjectId,
+        payload: {
+          tradingCreditProfileId: challenge.tradingCreditProfileId,
+          bindingChallengeHash: challenge.bindingChallenge.challengeHash,
+          bindingEpoch: challenge.bindingEpoch,
+          sandboxOnly: true,
+          syntheticOnly: false,
+          testnetOnly: true,
+          rawSignaturePersisted: false,
+          fundsAuthority: false,
+          externalSystemQueried: false
+        },
+        now: new Date(challenge.createdAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_credit_profile",
+        aggregateId: challenge.tradingCreditProfileId,
+        idempotencyKey: "tc-202-challenge-command",
+        commandHash: hashId("tc_202_challenge", {
+          challengeHash: challenge.bindingChallenge.challengeHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: challenge.tradingCreditProfileId,
+          expectedVersion: 0,
+          event: challengeEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: challenge,
+          eventId: challengeEvent.eventId
+        }],
+        response: { stage: challenge.stage }
+      });
+      const challengeState = await repository.eventRepository.withTenantRead(
+        (client) =>
+          repository.getProjectionStateInTransaction(
+            client,
+            CoreProjectionType.TRADING_CREDIT_PROFILE,
+            challenge.tradingCreditProfileId
+          )
+      );
+      const imported = importRealTradingHistory({
+        profile: challengeState.value,
+        requestedByActorId: "actor_tc_202",
+        bindingProof: {
+          masterAddressHash,
+          typedDataHash: challenge.bindingChallenge.typedDataHash,
+          proofHash: `0x${"4".repeat(64)}`,
+          verificationMethod: "eip712_eoa_master_v1",
+          rawSignaturePersisted: false,
+          reusableSignature: false,
+          chainId: "eip155:998",
+          environment: "hyperliquid_testnet",
+          schemaVersion: "hyperliquid_binding_proof_result.v1"
+        },
+        relationship: {
+          profileId: "hyperliquid_testnet_info.v1",
+          environment: "testnet",
+          masterAddressHash,
+          subaccountAddressHash,
+          sourceResponseHashes: {
+            masterUserRole: `0x${"5".repeat(64)}`,
+            subaccountUserRole: `0x${"6".repeat(64)}`,
+            subAccounts: `0x${"7".repeat(64)}`
+          },
+          observedAt: "2026-07-25T01:01:00.000Z",
+          relationshipHash: `0x${"8".repeat(64)}`,
+          masterRole: "user",
+          subaccountRole: "subAccount",
+          relationshipVerified: true,
+          actualAccountAddressesQueried: true,
+          apiWalletAddressAccepted: false,
+          readOnly: true,
+          testnetOnly: true,
+          externalOrderSubmitted: false,
+          signerAvailable: false,
+          credentialsUsed: false,
+          productionAuthority: false,
+          fundsAuthority: false,
+          schemaVersion: "hyperliquid_account_relationship.v1"
+        },
+        history: {
+          profileId: "hyperliquid_testnet_info.v1",
+          environment: "testnet",
+          accountAddressHash: subaccountAddressHash,
+          windowStartsAt: "2026-06-25T01:01:00.000Z",
+          windowEndsAt: "2026-07-25T01:01:00.000Z",
+          sourceRoleHash: `0x${"9".repeat(64)}`,
+          pageHashes: [`0x${"a".repeat(64)}`],
+          eventHashes: [],
+          paginationComplete: true,
+          paginationStalled: false,
+          pageLimitReached: false,
+          sourceRetentionLimitReached: false,
+          historyManifestHash: `0x${"b".repeat(64)}`,
+          events: [],
+          counts: {
+            pageCount: 1,
+            totalReturnedCount: 0,
+            uniqueEventCount: 0,
+            duplicateCount: 0
+          },
+          sourceLimits: {
+            maximumPages: 5,
+            maximumFillsPerPage: 2000,
+            venueMostRecentFillLimit: 10000,
+            maximumWindowMs: 2592000000
+          },
+          dataGapCodes: [
+            "venue_exposes_only_10000_most_recent_fills"
+          ],
+          observedAt: "2026-07-25T01:01:00.000Z",
+          readOnly: true,
+          testnetOnly: true,
+          externalOrderSubmitted: false,
+          signerAvailable: false,
+          credentialsUsed: false,
+          productionAuthority: false,
+          fundsAuthority: false,
+          schemaVersion: "hyperliquid_fill_history.v1"
+        },
+        currentSnapshot: {
+          profileId: "hyperliquid_testnet_info.v1",
+          environment: "testnet",
+          accountRole: "subaccount",
+          accountAddressHash: subaccountAddressHash,
+          verifiedMasterAddressHash: masterAddressHash,
+          accountRoleVerified: true,
+          equity: {
+            accountValue: "1000",
+            withdrawable: "1000"
+          },
+          counts: {
+            positions: 0,
+            openOrders: 0
+          },
+          sourceBundleHash: `0x${"c".repeat(64)}`,
+          snapshotHash: `0x${"d".repeat(64)}`,
+          observedAt: "2026-07-25T01:01:30.000Z",
+          venueTime: "2026-07-25T01:01:29.000Z",
+          freshness: "fresh",
+          readOnly: true,
+          testnetOnly: true,
+          externalOrderSubmitted: false,
+          signerAvailable: false,
+          credentialsUsed: false,
+          productionAuthority: false,
+          fundsAuthority: false,
+          schemaVersion: "hyperliquid_info_account_snapshot.v1"
+        },
+        challengeEventId: challengeState.sourceEventId,
+        challengeEvidenceHash: challengeState.sourceEvidenceHash,
+        now: new Date("2026-07-25T01:02:00.000Z")
+      });
+      const importEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_HYPERLIQUID_HISTORY_IMPORTED,
+        subjectId: imported.subjectId,
+        payload: {
+          tradingCreditProfileId: imported.tradingCreditProfileId,
+          historyHash: imported.historyImport.historyHash,
+          relationshipHash: imported.accountBinding.relationshipHash,
+          bindingEpoch: imported.bindingEpoch,
+          rawEventsPersisted: false,
+          rawSignaturePersisted: false,
+          fundsAuthority: false
+        },
+        now: new Date(imported.updatedAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_credit_profile",
+        aggregateId: imported.tradingCreditProfileId,
+        idempotencyKey: "tc-202-import-command",
+        commandHash: hashId("tc_202_import", {
+          historyHash: imported.historyImport.historyHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: imported.tradingCreditProfileId,
+          expectedVersion: challengeState.aggregateVersion,
+          event: importEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: imported,
+          eventId: importEvent.eventId
+        }],
+        response: { stage: imported.stage }
+      });
+      const importState = await repository.eventRepository.withTenantRead(
+        (client) =>
+          repository.getProjectionStateInTransaction(
+            client,
+            CoreProjectionType.TRADING_CREDIT_PROFILE,
+            imported.tradingCreditProfileId
+          )
+      );
+      const finalized = finalizeRealTradingEvidenceSnapshot({
+        profile: importState.value,
+        sourceProjectionHash: importState.entityHash,
+        historyImportEventId: importState.sourceEventId,
+        historyImportEvidenceHash: importState.sourceEvidenceHash,
+        sourceFinality: importState.sourceFinality,
+        now: new Date("2026-07-25T01:03:00.000Z")
+      });
+      const finalizedEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_EVIDENCE_SNAPSHOT_FINALIZED,
+        subjectId: finalized.subjectId,
+        payload: {
+          tradingCreditProfileId: finalized.tradingCreditProfileId,
+          evidenceSnapshotHash: finalized.evidenceSnapshot.snapshotHash,
+          authorizing: false,
+          fundsAuthority: false
+        },
+        now: new Date(finalized.updatedAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_credit_profile",
+        aggregateId: finalized.tradingCreditProfileId,
+        idempotencyKey: "tc-202-finalize-command",
+        commandHash: hashId("tc_202_finalize", {
+          snapshotHash: finalized.evidenceSnapshot.snapshotHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: finalized.tradingCreditProfileId,
+          expectedVersion: importState.aggregateVersion,
+          event: finalizedEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: finalized,
+          eventId: finalizedEvent.eventId
+        }],
+        response: { stage: finalized.stage }
+      });
+
+      const restarted = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const durableFinalized = await restarted.getTradingCreditProfile(
+        finalized.tradingCreditProfileId
+      );
+      assert.deepEqual(durableFinalized, finalized);
+      assert.equal(
+        durableFinalized.factorScorecard.schemaVersion,
+        "trading_real_factor_scorecard.v2"
+      );
+      assert.equal(
+        durableFinalized.factorScorecard.shadowRisk.features.length,
+        16
+      );
+      assert.equal(
+        durableFinalized.factorScorecard.shadowRisk.authorizing,
+        false
+      );
+      assert.equal(
+        durableFinalized.factorScorecard.shadowRisk.economicStateMutation,
+        false
+      );
+      assert.deepEqual(
+        durableFinalized.factorScorecard.shadowRisk.stressWindows.map(
+          ({ windowId, state }) => [windowId, state]
+        ),
+        [
+          ["observed_history", "observed"],
+          ["out_of_time", "insufficient"],
+          ["tail_stress", "insufficient"]
+        ]
+      );
+      const finalizedState = await restarted.eventRepository.withTenantRead(
+        (client) =>
+          restarted.getProjectionStateInTransaction(
+            client,
+            CoreProjectionType.TRADING_CREDIT_PROFILE,
+            finalized.tradingCreditProfileId
+          )
+      );
+      const rebound = createRealTradingAccountBindingChallenge({
+        tenantId: TENANT_CONTEXT.tenantId,
+        subject: fixture.subject,
+        principal: fixture.principal,
+        requestedByActorId: "actor_tc_202",
+        bindingDescriptor: descriptor({
+          challengeId: "tc_202_binding_challenge_2",
+          challengeHash: `0x${"e".repeat(64)}`,
+          nonceHash: `0x${"f".repeat(64)}`,
+          typedDataHash: `0x${"1".repeat(64)}`,
+          issuedAt: "2026-07-25T01:04:00.000Z",
+          expiresAt: "2026-07-25T01:09:00.000Z"
+        }),
+        existingProfile: finalizedState.value,
+        now: new Date("2026-07-25T01:04:00.000Z")
+      });
+      const reboundEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_ACCOUNT_BINDING_CHALLENGE_CREATED,
+        subjectId: rebound.subjectId,
+        payload: {
+          tradingCreditProfileId: rebound.tradingCreditProfileId,
+          bindingEpoch: rebound.bindingEpoch,
+          priorEvidenceSnapshotHash:
+            rebound.priorEvidenceInvalidation.evidenceSnapshotHash,
+          priorEvidenceActive: false,
+          fundsAuthority: false
+        },
+        now: new Date(rebound.updatedAt)
+      });
+      const reboundCommand = {
+        aggregateType: "trading_credit_profile",
+        aggregateId: rebound.tradingCreditProfileId,
+        idempotencyKey: "tc-202-rebind-command",
+        commandHash: hashId("tc_202_rebind", {
+          challengeHash: rebound.bindingChallenge.challengeHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: rebound.tradingCreditProfileId,
+          expectedVersion: finalizedState.aggregateVersion,
+          event: reboundEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: rebound,
+          eventId: reboundEvent.eventId
+        }],
+        response: {
+          stage: rebound.stage,
+          bindingEpoch: rebound.bindingEpoch
+        }
+      };
+      const reboundCommit = await restarted.commitCommand(reboundCommand);
+      assert.equal(reboundCommit.replayed, false);
+      const afterRestart = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const durableRebound = await afterRestart.getTradingCreditProfile(
+        rebound.tradingCreditProfileId
+      );
+      assert.equal(durableRebound.bindingEpoch, 2);
+      assert.equal(durableRebound.evidenceAuthority.active, false);
+      assert.equal(durableRebound.priorEvidenceInvalidation.active, false);
+      assert.equal(durableRebound.externalSystemQueried, true);
+      assert.equal(
+        JSON.stringify(durableRebound).includes("masterAccountAddress"),
+        false
+      );
+      assert.equal(
+        JSON.stringify(durableRebound).includes("signature"),
+        false
+      );
+      const replay = await afterRestart.commitCommand(reboundCommand);
+      assert.equal(replay.replayed, true);
+      assert.deepEqual(replay.response, reboundCommand.response);
+      const after = await runtimeCounts(pool);
+      assert.equal(after.events - baseline.events, 4);
+      assert.equal(after.evidence - baseline.evidence, 4);
+      assert.equal(after.outbox - baseline.outbox, 4);
+    });
+
+    let tc103Seed;
+    let tc104Seed;
+    await t.test("TC-102 no-funds matching is durable, race-safe, RLS-isolated, and restart-recoverable", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const repository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        transactionRetries: 10
+      });
+      await repository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "tc-102-foundation-fixture",
+        commandHash: hashId("tc_102_foundation", {
+          subjectId: fixture.subject.subjectId
+        }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { created: true }
+      });
+
+      const challenge = createTradingAccountBindingChallenge({
+        tenantId: TENANT_CONTEXT.tenantId,
+        subject: fixture.subject,
+        principal: fixture.principal,
+        requestedByActorId: "actor_tc_102_subject",
+        challengeNonce: `0x${"1".repeat(64)}`,
+        now: new Date("2026-07-25T01:00:00.000Z")
+      });
+      const imported = importSyntheticTradingHistory({
+        profile: challenge,
+        requestedByActorId: "actor_tc_102_subject",
+        challengeEventId: "event_tc_102_challenge",
+        challengeEvidenceHash: `0x${"2".repeat(64)}`,
+        now: new Date("2026-07-25T01:01:00.000Z")
+      });
+      const profile = finalizeTradingEvidenceSnapshot({
+        profile: imported,
+        sourceProjectionHash: `0x${"3".repeat(64)}`,
+        historyImportEventId: "event_tc_102_import",
+        historyImportEvidenceHash: `0x${"4".repeat(64)}`,
+        sourceFinality: "finalized",
+        now: new Date("2026-07-25T01:02:00.000Z")
+      });
+      const profileEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_EVIDENCE_SNAPSHOT_FINALIZED,
+        subjectId: profile.subjectId,
+        payload: {
+          tradingCreditProfileId: profile.tradingCreditProfileId,
+          evidenceSnapshotHash: profile.evidenceSnapshot.snapshotHash,
+          syntheticOnly: true,
+          productionAuthority: false,
+          fundsAuthority: false
+        },
+        now: new Date(profile.updatedAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_credit_profile",
+        aggregateId: profile.tradingCreditProfileId,
+        idempotencyKey: "tc-102-finalized-profile",
+        commandHash: hashId("tc_102_finalized_profile", {
+          profileId: profile.tradingCreditProfileId,
+          snapshotHash: profile.evidenceSnapshot.snapshotHash
+        }),
+        events: [{
+          aggregateType: "trading_credit_profile",
+          aggregateId: profile.tradingCreditProfileId,
+          expectedVersion: 0,
+          event: profileEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CREDIT_PROFILE,
+          value: profile,
+          eventId: profileEvent.eventId
+        }],
+        response: { profileId: profile.tradingCreditProfileId }
+      });
+
+      const capitalRequest = createTradingCapitalRequest({
+        tradingCreditProfile: profile,
+        requestedByActorId: "actor_tc_102_subject",
+        templateType: "hybrid",
+        strategyClass: "market_neutral",
+        assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+        requestedAmountMinor: "500000",
+        durationDays: 90,
+        now: new Date("2026-07-25T01:03:00.000Z")
+      });
+      const requestEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_CAPITAL_REQUEST_CREATED,
+        subjectId: capitalRequest.subjectId,
+        payload: {
+          tradingCapitalRequestId: capitalRequest.tradingCapitalRequestId,
+          requestHash: capitalRequest.requestHash,
+          riskClassCallerSupplied: false,
+          autoMatch: false,
+          fundsAuthority: false
+        },
+        now: new Date(capitalRequest.createdAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_capital_request",
+        aggregateId: capitalRequest.tradingCapitalRequestId,
+        idempotencyKey: "tc-102-capital-request",
+        commandHash: hashId("tc_102_capital_request", {
+          requestHash: capitalRequest.requestHash
+        }),
+        events: [{
+          aggregateType: "trading_capital_request",
+          aggregateId: capitalRequest.tradingCapitalRequestId,
+          expectedVersion: 0,
+          event: requestEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_CAPITAL_REQUEST,
+          value: capitalRequest,
+          eventId: requestEvent.eventId
+        }],
+        response: {
+          tradingCapitalRequestId: capitalRequest.tradingCapitalRequestId
+        }
+      });
+
+      const providerMandate = createTradingProviderMandate({
+        provider: fixture.provider,
+        providerActorId: "actor_tc_102_provider",
+        supportedTemplateTypes: ["credit", "hybrid"],
+        allowedSubjectTypes: ["human", "agent"],
+        allowedStrategyClasses: ["market_neutral", "directional"],
+        assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+        minAmountMinor: "500000",
+        maxAmountMinor: "2000000",
+        minDurationDays: 30,
+        maxDurationDays: 180,
+        now: new Date("2026-07-25T01:04:00.000Z")
+      });
+      const mandateEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_PROVIDER_MANDATE_CREATED,
+        payload: {
+          tradingProviderMandateId:
+            providerMandate.tradingProviderMandateId,
+          mandateHash: providerMandate.mandateHash,
+          providerId: providerMandate.providerId,
+          selfDeclaredRiskClassAccepted: false,
+          fundsAuthority: false
+        },
+        now: new Date(providerMandate.createdAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_provider_mandate",
+        aggregateId: providerMandate.tradingProviderMandateId,
+        idempotencyKey: "tc-102-provider-mandate",
+        commandHash: hashId("tc_102_provider_mandate", {
+          mandateHash: providerMandate.mandateHash
+        }),
+        events: [{
+          aggregateType: "trading_provider_mandate",
+          aggregateId: providerMandate.tradingProviderMandateId,
+          expectedVersion: 0,
+          event: mandateEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_PROVIDER_MANDATE,
+          value: providerMandate,
+          eventId: mandateEvent.eventId
+        }],
+        response: {
+          tradingProviderMandateId:
+            providerMandate.tradingProviderMandateId
+        }
+      });
+
+      const compatible = listCompatibleTradingProviderMandates({
+        capitalRequest,
+        providerMandates: [providerMandate],
+        now: new Date("2026-07-25T01:05:00.000Z")
+      });
+      assert.equal(compatible.compatibleMandateCount, 1);
+      assert.equal(compatible.hardFiltersAppliedBeforeRanking, true);
+      assert.equal(compatible.matches[0].rank, 1);
+      const proposal = createTradingMatchProposal({
+        capitalRequest,
+        providerMandate,
+        requestedRequestHash: capitalRequest.requestHash,
+        requestedMandateHash: providerMandate.mandateHash,
+        now: new Date("2026-07-25T01:05:00.000Z")
+      });
+      const proposalEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_MATCH_PROPOSAL_CREATED,
+        subjectId: proposal.subjectId,
+        payload: {
+          tradingMatchProposalId: proposal.tradingMatchProposalId,
+          proposalHash: proposal.proposalHash,
+          termsHash: proposal.termsHash,
+          autoAccepted: false,
+          fundsAuthority: false
+        },
+        now: new Date(proposal.createdAt)
+      });
+      await repository.commitCommand({
+        aggregateType: "trading_match_proposal",
+        aggregateId: proposal.tradingMatchProposalId,
+        idempotencyKey: "tc-102-match-proposal",
+        commandHash: hashId("tc_102_match_proposal", {
+          proposalHash: proposal.proposalHash
+        }),
+        events: [{
+          aggregateType: "trading_match_proposal",
+          aggregateId: proposal.tradingMatchProposalId,
+          expectedVersion: 0,
+          event: proposalEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_MATCH_PROPOSAL,
+          value: proposal,
+          eventId: proposalEvent.eventId
+        }],
+        response: { proposalId: proposal.tradingMatchProposalId }
+      });
+
+      const providerAccepted = acceptTradingMatchAsProvider({
+        proposal,
+        capitalRequest,
+        providerMandate,
+        acceptedByActorId: "actor_tc_102_provider",
+        acceptedProposalHash: proposal.proposalHash,
+        acceptedTermsHash: proposal.termsHash,
+        now: new Date("2026-07-25T01:06:00.000Z")
+      });
+      const subjectAccepted = acceptTradingMatchAsSubject({
+        proposal,
+        capitalRequest,
+        providerMandate,
+        acceptedByActorId: "actor_tc_102_subject",
+        acceptedProposalHash: proposal.proposalHash,
+        acceptedTermsHash: proposal.termsHash,
+        now: new Date("2026-07-25T01:06:00.001Z")
+      });
+      const acceptanceCommand = ({
+        value,
+        side,
+        eventType
+      }) => {
+        const event = createCreditEvent({
+          eventType,
+          subjectId: value.subjectId,
+          payload: {
+            tradingMatchProposalId: value.tradingMatchProposalId,
+            proposalHash: value.proposalHash,
+            termsHash: value.termsHash,
+            side,
+            exactTerms: true,
+            fundsAuthority: false
+          },
+          now: new Date(value.updatedAt)
+        });
+        return {
+          aggregateType: "trading_match_proposal",
+          aggregateId: value.tradingMatchProposalId,
+          idempotencyKey: `tc-102-${side}-acceptance-race`,
+          commandHash: hashId("tc_102_acceptance", {
+            side,
+            proposalHash: value.proposalHash,
+            termsHash: value.termsHash
+          }),
+          events: [{
+            aggregateType: "trading_match_proposal",
+            aggregateId: value.tradingMatchProposalId,
+            expectedVersion: 1,
+            event
+          }],
+          writes: [{
+            type: CoreProjectionType.TRADING_MATCH_PROPOSAL,
+            value,
+            eventId: event.eventId
+          }],
+          response: { side, status: value.status }
+        };
+      };
+      const providerRaceCommand = acceptanceCommand({
+        value: providerAccepted,
+        side: "provider",
+        eventType: CreditEventType.TRADING_MATCH_PROVIDER_ACCEPTED
+      });
+      const subjectRaceCommand = acceptanceCommand({
+        value: subjectAccepted,
+        side: "subject",
+        eventType: CreditEventType.TRADING_MATCH_SUBJECT_ACCEPTED
+      });
+      const racingRepository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        transactionRetries: 10
+      });
+      const race = await Promise.allSettled([
+        repository.commitCommand(providerRaceCommand),
+        racingRepository.commitCommand(subjectRaceCommand)
+      ]);
+      assert.equal(
+        race.filter(({ status }) => status === "fulfilled").length,
+        1
+      );
+      assert.equal(
+        race.filter(({ status }) => status === "rejected").length,
+        1
+      );
+
+      const partialState = await repository.eventRepository.withTenantRead(
+        (client) => repository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.TRADING_MATCH_PROPOSAL,
+          proposal.tradingMatchProposalId
+        )
+      );
+      assert.equal(
+        ["provider_accepted", "subject_accepted"].includes(
+          partialState.value.status
+        ),
+        true
+      );
+      const missingSide =
+        partialState.value.status === "provider_accepted"
+          ? "subject"
+          : "provider";
+      const finalProposal =
+        missingSide === "subject"
+          ? acceptTradingMatchAsSubject({
+              proposal: partialState.value,
+              capitalRequest,
+              providerMandate,
+              acceptedByActorId: "actor_tc_102_subject",
+              acceptedProposalHash: proposal.proposalHash,
+              acceptedTermsHash: proposal.termsHash,
+              now: new Date("2026-07-25T01:07:00.000Z")
+            })
+          : acceptTradingMatchAsProvider({
+              proposal: partialState.value,
+              capitalRequest,
+              providerMandate,
+              acceptedByActorId: "actor_tc_102_provider",
+              acceptedProposalHash: proposal.proposalHash,
+              acceptedTermsHash: proposal.termsHash,
+              now: new Date("2026-07-25T01:07:00.000Z")
+            });
+      const finalEvent = createCreditEvent({
+        eventType:
+          missingSide === "subject"
+            ? CreditEventType.TRADING_MATCH_SUBJECT_ACCEPTED
+            : CreditEventType.TRADING_MATCH_PROVIDER_ACCEPTED,
+        subjectId: finalProposal.subjectId,
+        payload: {
+          tradingMatchProposalId: finalProposal.tradingMatchProposalId,
+          proposalHash: finalProposal.proposalHash,
+          termsHash: finalProposal.termsHash,
+          side: missingSide,
+          exactTerms: true,
+          bilaterallyAccepted: true,
+          fundsAuthority: false
+        },
+        now: new Date(finalProposal.updatedAt)
+      });
+      const finalCommand = {
+        aggregateType: "trading_match_proposal",
+        aggregateId: finalProposal.tradingMatchProposalId,
+        idempotencyKey: `tc-102-${missingSide}-acceptance-retry`,
+        commandHash: hashId("tc_102_acceptance_retry", {
+          side: missingSide,
+          proposalHash: finalProposal.proposalHash,
+          termsHash: finalProposal.termsHash
+        }),
+        events: [{
+          aggregateType: "trading_match_proposal",
+          aggregateId: finalProposal.tradingMatchProposalId,
+          expectedVersion: partialState.aggregateVersion,
+          event: finalEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_MATCH_PROPOSAL,
+          value: finalProposal,
+          eventId: finalEvent.eventId
+        }],
+        response: {
+          status: finalProposal.status,
+          version: finalProposal.version
+        }
+      };
+      await repository.commitCommand(finalCommand);
+
+      const restarted = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const durable = await restarted.getTradingMatchProposal(
+        proposal.tradingMatchProposalId
+      );
+      assert.equal(durable.status, "bilaterally_accepted");
+      assert.equal(durable.version, 3);
+      assert.equal(durable.termsHash, proposal.termsHash);
+      assert.equal(durable.providerAcceptance.exactTerms, true);
+      assert.equal(durable.subjectAcceptance.exactTerms, true);
+      assert.equal(durable.fundsAuthority, false);
+      assert.equal(
+        (await restarted.verifyProjection(
+          CoreProjectionType.TRADING_MATCH_PROPOSAL,
+          proposal.tradingMatchProposalId
+        )).matches,
+        true
+      );
+      assert.equal((await restarted.commitCommand(finalCommand)).replayed, true);
+
+      const rlsRole =
+        `ipo_one_tc102_rls_${randomBytes(6).toString("hex")}`;
+      await pool.query(
+        `CREATE ROLE ${rlsRole}
+         NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+         NOINHERIT NOREPLICATION NOBYPASSRLS`
+      );
+      try {
+        await pool.query(`GRANT USAGE ON SCHEMA public TO ${rlsRole}`);
+        await pool.query(
+          `GRANT SELECT ON
+             trading_capital_requests,
+             trading_provider_mandates,
+             trading_match_proposals
+           TO ${rlsRole}`
+        );
+        const hidden = await (async () => {
+          const client = await pool.connect();
+          try {
+            await client.query("BEGIN");
+            await client.query(`SET LOCAL ROLE ${rlsRole}`);
+            await setTenantTransactionContext(client, TENANT_TWO_CONTEXT);
+            const result = await client.query(
+              `SELECT
+                 (SELECT count(*)::int FROM trading_capital_requests
+                   WHERE id = $1) AS requests,
+                 (SELECT count(*)::int FROM trading_provider_mandates
+                   WHERE id = $2) AS mandates,
+                 (SELECT count(*)::int FROM trading_match_proposals
+                   WHERE id = $3) AS proposals`,
+              [
+                capitalRequest.tradingCapitalRequestId,
+                providerMandate.tradingProviderMandateId,
+                proposal.tradingMatchProposalId
+              ]
+            );
+            await client.query("COMMIT");
+            return result.rows[0];
+          } catch (error) {
+            try {
+              await client.query("ROLLBACK");
+            } catch {
+              // Preserve the original test failure.
+            }
+            throw error;
+          } finally {
+            client.release();
+          }
+        })();
+        assert.deepEqual(hidden, {
+          requests: 0,
+          mandates: 0,
+          proposals: 0
+        });
+      } finally {
+        await pool.query(`DROP OWNED BY ${rlsRole}`);
+        await pool.query(`DROP ROLE ${rlsRole}`);
+      }
+
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+          client.query(
+            "UPDATE trading_capital_requests SET requested_amount_minor = 1 WHERE id = $1",
+            [capitalRequest.tradingCapitalRequestId]
+          )
+        ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+          client.query(
+            "UPDATE trading_match_proposals SET terms_hash = $2 WHERE id = $1",
+            [
+              proposal.tradingMatchProposalId,
+              `0x${"f".repeat(64)}`
+            ]
+          )
+        ),
+        (error) => error.code === "23514"
+      );
+
+      const reconciliation = new PostgresReconciliationService({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        coreRepository: restarted,
+        eventRepository: restarted.eventRepository,
+        approvalService: {
+          assertApproved() {
+            throw new Error("repair is not authorized in the clean path");
+          }
+        }
+      });
+      const reconciled = await reconciliation.run({
+        initiatedBy: "system:test-tc-102-reconciliation",
+        idempotencyKey: "tc-102-reconciliation-clean-0001"
+      });
+      assert.equal(
+        reconciled.status,
+        "passed",
+        JSON.stringify(await reconciliation.getRun(reconciled.runId))
+      );
+      tc103Seed = { fixture, finalProposal };
+    });
+
+    await t.test("TC-103 synthetic Facility is durable, race-safe, monotonic, RLS-isolated, and restart-recoverable", async () => {
+      assert.ok(tc103Seed, "TC-102 accepted-match foundation must be durable");
+      const { fixture, finalProposal } = tc103Seed;
+      const repository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        transactionRetries: 10
+      });
+      const setupAt = new Date("2026-07-25T01:10:00.000Z");
+      const facilityMandate = {
+        ...createMandate({
+          principalId: fixture.principal.principalId,
+          subjectId: fixture.subject.subjectId,
+          capabilities: Object.values(MandateCapability),
+          allowedProviderIds: [fixture.provider.providerId],
+          allowedCategories: ["trading_capital_synthetic"],
+          assetIds: ["urn:ipo-one:sandbox-asset:usd-cent"],
+          perActionLimitMinor: "2000000",
+          aggregateLimitMinor: "2000000",
+          validFrom: setupAt.toISOString(),
+          expiresAt: new Date(setupAt.getTime() + 180 * 86400_000).toISOString(),
+          nonce: "tc-103-canonical-obligation-mandate",
+          termsRef: "urn:ipo.one:tc-103:canonical-obligation:v1",
+          now: setupAt
+        }),
+        status: MandateStatus.ACTIVE
+      };
+      const submittedIntent = createCreditIntent({
+        subjectId: fixture.subject.subjectId,
+        principalId: fixture.principal.principalId,
+        authorityType: CreditAuthorityType.MANDATE,
+        authorityRef: facilityMandate.mandateId,
+        assetId: finalProposal.terms.assetId,
+        requestedPrincipalMinor: finalProposal.terms.syntheticPrincipalMinor,
+        purposeCode: "trading_capital_synthetic",
+        requestedTermDays: 90,
+        repaymentFrequency: RepaymentFrequency.MONTHLY,
+        installmentCount: 3,
+        now: setupAt
+      });
+      const outcome = createDeterministicCreditDecisionOutcome({
+        intent: submittedIntent,
+        now: setupAt
+      });
+      const decidedIntent = {
+        ...submittedIntent,
+        status: CreditIntentStatus.DECIDED,
+        updatedAt: setupAt.toISOString()
+      };
+      const acceptance = createCreditOfferAcceptance({
+        offer: outcome.offer,
+        intent: decidedIntent,
+        decision: outcome.decision,
+        authorityType: CreditAuthorityType.MANDATE,
+        authorityRef: facilityMandate.mandateId,
+        acknowledgementHash: `0x${"5".repeat(64)}`,
+        acceptedByActorId: "actor_tc_102_subject",
+        now: setupAt
+      });
+      const acceptedOffer = acceptCreditOffer(outcome.offer, {
+        expectedOfferHash: outcome.offer.creditOfferHash,
+        expectedTermsHash: outcome.offer.termsHash,
+        acceptanceId: acceptance.creditOfferAcceptanceId,
+        now: setupAt
+      });
+      const pendingObligation = createAcceptedOfferObligation({
+        offer: acceptedOffer,
+        intent: decidedIntent,
+        decision: outcome.decision,
+        acceptance,
+        now: setupAt
+      });
+      const facilityCreditLine = createCreditLine({
+        subjectId: pendingObligation.subjectId,
+        mandateId: facilityMandate.mandateId,
+        assetId: pendingObligation.assetId,
+        limitMinor: pendingObligation.originalPrincipalMinor,
+        utilizedMinor: pendingObligation.originalPrincipalMinor,
+        riskSnapshotId: outcome.decision.riskDecisionId,
+        now: setupAt
+      });
+      const decisionEvent = createCreditEvent({
+        eventType: "tc_103_canonical_offer_decided",
+        subjectId: decidedIntent.subjectId,
+        payload: {
+          creditIntentId: decidedIntent.creditIntentId,
+          creditOfferId: outcome.offer.creditOfferId,
+          matchProposalId: finalProposal.tradingMatchProposalId,
+          sandboxOnly: true,
+          productionFundsMoved: false
+        },
+        now: setupAt
+      });
+      await repository.commitCommand({
+        aggregateType: "credit_intent",
+        aggregateId: decidedIntent.creditIntentId,
+        idempotencyKey: "tc-103-canonical-offer-decision",
+        commandHash: hashId("tc_103_offer_decision", {
+          decisionHash: outcome.decision.decisionHash,
+          offerHash: outcome.offer.creditOfferHash
+        }),
+        events: [{
+          aggregateType: "credit_intent",
+          aggregateId: decidedIntent.creditIntentId,
+          expectedVersion: 0,
+          event: decisionEvent
+        }],
+        writes: [
+          {
+            type: CoreProjectionType.MANDATE,
+            value: facilityMandate,
+            eventId: decisionEvent.eventId
+          },
+          {
+            type: CoreProjectionType.CREDIT_INTENT,
+            value: decidedIntent,
+            eventId: decisionEvent.eventId
+          },
+          {
+            type: CoreProjectionType.RISK_DECISION,
+            value: outcome.decision,
+            eventId: decisionEvent.eventId
+          },
+          {
+            type: CoreProjectionType.CREDIT_OFFER,
+            value: outcome.offer,
+            eventId: decisionEvent.eventId
+          }
+        ],
+        response: { creditOfferId: outcome.offer.creditOfferId }
+      });
+      const acceptanceEvent = createCreditEvent({
+        eventType: "tc_103_canonical_obligation_created",
+        subjectId: pendingObligation.subjectId,
+        obligationId: pendingObligation.obligationId,
+        payload: {
+          obligationId: pendingObligation.obligationId,
+          creditOfferAcceptanceId: acceptance.creditOfferAcceptanceId,
+          matchProposalId: finalProposal.tradingMatchProposalId,
+          sandboxOnly: true,
+          productionFundsMoved: false
+        },
+        now: setupAt
+      });
+      await repository.commitCommand({
+        aggregateType: "obligation",
+        aggregateId: pendingObligation.obligationId,
+        idempotencyKey: "tc-103-canonical-obligation-setup",
+        commandHash: hashId("tc_103_obligation_setup", {
+          obligationHash: pendingObligation.obligationHash
+        }),
+        events: [{
+          aggregateType: "obligation",
+          aggregateId: pendingObligation.obligationId,
+          expectedVersion: 0,
+          event: acceptanceEvent
+        }],
+        writes: [
+          {
+            type: CoreProjectionType.CREDIT_OFFER_ACCEPTANCE,
+            value: acceptance,
+            eventId: acceptanceEvent.eventId
+          },
+          {
+            type: CoreProjectionType.CREDIT_OFFER,
+            value: acceptedOffer,
+            eventId: acceptanceEvent.eventId
+          },
+          {
+            type: CoreProjectionType.OBLIGATION,
+            value: pendingObligation,
+            eventId: acceptanceEvent.eventId
+          }
+        ],
+        response: { obligationId: pendingObligation.obligationId }
+      });
+
+      const executionAt = new Date("2026-07-25T01:11:00.000Z");
+      const execution = executeSandboxObligation(pendingObligation, {
+        adapterReceipt: {
+          obligationId: pendingObligation.obligationId,
+          assetId: pendingObligation.assetId,
+          amountMinor: pendingObligation.originalPrincipalMinor,
+          adapterId: "sandbox_rail_tc_103",
+          adapterVersion: "1.0.0",
+          adapterKeyId: `0x${"7".repeat(64)}`,
+          messageHash: `0x${"6".repeat(64)}`,
+          signature: `ed25519:${"8".repeat(64)}`,
+          issuedAt: executionAt.toISOString(),
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          withdrawable: false
+        },
+        now: executionAt
+      });
+      const executionEvent = createCreditEvent({
+        eventType: CreditEventType.OBLIGATION_SANDBOX_EXECUTED,
+        subjectId: execution.obligation.subjectId,
+        obligationId: execution.obligation.obligationId,
+        payload: {
+          obligationId: execution.obligation.obligationId,
+          sandboxExecutionReceiptId:
+            execution.receipt.sandboxExecutionReceiptId,
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          withdrawable: false
+        },
+        now: executionAt
+      });
+      await repository.commitCommand({
+        aggregateType: "obligation",
+        aggregateId: execution.obligation.obligationId,
+        idempotencyKey: "tc-103-canonical-obligation-execution",
+        commandHash: hashId("tc_103_obligation_execution", {
+          receiptHash: execution.receipt.receiptHash
+        }),
+        events: [{
+          aggregateType: "obligation",
+          aggregateId: execution.obligation.obligationId,
+          expectedVersion: 1,
+          event: executionEvent
+        }],
+        writes: [
+          ...Object.values(execution.accounts).map((value) => ({
+            type: CoreProjectionType.LEDGER_ACCOUNT,
+            value,
+            eventId: executionEvent.eventId
+          })),
+          {
+            type: CoreProjectionType.LEDGER_TRANSACTION,
+            value: execution.ledgerTransaction,
+            eventId: executionEvent.eventId
+          },
+          {
+            type: CoreProjectionType.SANDBOX_EXECUTION_RECEIPT,
+            value: execution.receipt,
+            eventId: executionEvent.eventId
+          },
+          {
+            type: CoreProjectionType.OBLIGATION,
+            value: execution.obligation,
+            eventId: executionEvent.eventId
+          },
+          {
+            type: CoreProjectionType.CREDIT_LINE,
+            value: facilityCreditLine,
+            eventId: executionEvent.eventId
+          }
+        ],
+        response: { obligationId: execution.obligation.obligationId }
+      });
+
+      const facility = createTradingFacility({
+        matchProposal: finalProposal,
+        obligation: execution.obligation,
+        createdByActorId: "actor_tc_102_subject",
+        now: new Date("2026-07-25T01:12:00.000Z")
+      });
+      const facilityEvent = (eventType, value, now) => createCreditEvent({
+        eventType,
+        subjectId: value.subjectId,
+        obligationId: value.obligationId,
+        payload: {
+          tradingFacilityId: value.tradingFacilityId,
+          stateHash: value.stateHash,
+          lifecycleStatus: value.lifecycleStatus,
+          riskState: value.riskState,
+          syntheticOnly: true,
+          productionAuthority: false,
+          fundsAuthority: false
+        },
+        now
+      });
+      const facilityCommand = ({
+        value,
+        eventType,
+        idempotencyKey,
+        expectedVersion,
+        now
+      }) => {
+        const event = facilityEvent(eventType, value, now);
+        return {
+          aggregateType: "trading_facility",
+          aggregateId: value.tradingFacilityId,
+          idempotencyKey,
+          commandHash: hashId("tc_103_facility_command", {
+            idempotencyKey,
+            stateHash: value.stateHash
+          }),
+          events: [{
+            aggregateType: "trading_facility",
+            aggregateId: value.tradingFacilityId,
+            expectedVersion,
+            event
+          }],
+          writes: [{
+            type: CoreProjectionType.TRADING_FACILITY,
+            value,
+            eventId: event.eventId
+          }],
+          response: {
+            tradingFacilityId: value.tradingFacilityId,
+            stateHash: value.stateHash,
+            version: value.version
+          }
+        };
+      };
+      await repository.commitCommand(facilityCommand({
+        value: facility,
+        eventType: CreditEventType.TRADING_FACILITY_CREATED,
+        idempotencyKey: "tc-103-facility-created",
+        expectedVersion: 0,
+        now: new Date(facility.createdAt)
+      }));
+
+      const subjectContribution = contributeTradingSubjectCollateral(
+        facility,
+        {
+          contributedByActorId: "actor_tc_102_subject",
+          amountMinor: facility.requiredSubjectCollateralMinor,
+          expectedStateHash: facility.stateHash,
+          expectedVersion: facility.version,
+          now: new Date("2026-07-25T01:13:00.000Z")
+        }
+      );
+      const providerFunding = recordTradingProviderFunding(facility, {
+        fundedByActorId: "actor_tc_102_provider",
+        amountMinor: facility.requiredProviderFundingMinor,
+        expectedStateHash: facility.stateHash,
+        expectedVersion: facility.version,
+        now: new Date("2026-07-25T01:13:00.001Z")
+      });
+      const contributionCommand = facilityCommand({
+        value: subjectContribution,
+        eventType:
+          CreditEventType.TRADING_FACILITY_SUBJECT_COLLATERAL_RECORDED,
+        idempotencyKey: "tc-103-subject-contribution-race",
+        expectedVersion: 1,
+        now: new Date(subjectContribution.updatedAt)
+      });
+      const fundingCommand = facilityCommand({
+        value: providerFunding,
+        eventType:
+          CreditEventType.TRADING_FACILITY_PROVIDER_FUNDING_RECORDED,
+        idempotencyKey: "tc-103-provider-funding-race",
+        expectedVersion: 1,
+        now: new Date(providerFunding.updatedAt)
+      });
+      const race = await Promise.allSettled([
+        repository.commitCommand(contributionCommand),
+        new PostgresCoreRepository({
+          pool,
+          tenantContext: TENANT_CONTEXT,
+          transactionRetries: 10
+        }).commitCommand(fundingCommand)
+      ]);
+      assert.equal(
+        race.filter(({ status }) => status === "fulfilled").length,
+        1
+      );
+      assert.equal(
+        race.filter(({ status }) => status === "rejected").length,
+        1
+      );
+      const afterRace = await repository.getTradingFacility(
+        facility.tradingFacilityId
+      );
+      const ready =
+        afterRace.subjectCollateralRecorded
+          ? recordTradingProviderFunding(afterRace, {
+              fundedByActorId: "actor_tc_102_provider",
+              amountMinor: afterRace.requiredProviderFundingMinor,
+              expectedStateHash: afterRace.stateHash,
+              expectedVersion: afterRace.version,
+              now: new Date("2026-07-25T01:14:00.000Z")
+            })
+          : contributeTradingSubjectCollateral(afterRace, {
+              contributedByActorId: "actor_tc_102_subject",
+              amountMinor: afterRace.requiredSubjectCollateralMinor,
+              expectedStateHash: afterRace.stateHash,
+              expectedVersion: afterRace.version,
+              now: new Date("2026-07-25T01:14:00.000Z")
+            });
+      await repository.commitCommand(facilityCommand({
+        value: ready,
+        eventType: afterRace.subjectCollateralRecorded
+          ? CreditEventType.TRADING_FACILITY_PROVIDER_FUNDING_RECORDED
+          : CreditEventType.TRADING_FACILITY_SUBJECT_COLLATERAL_RECORDED,
+        idempotencyKey: "tc-103-contribution-race-recovery",
+        expectedVersion: 2,
+        now: new Date(ready.updatedAt)
+      }));
+      const tc401PreparedAt =
+        new Date("2026-07-25T01:14:10.000Z").getTime();
+      const tc401ActivationAt =
+        new Date("2026-07-25T01:15:00.000Z").getTime();
+      const tc401KernelSnapshot = {
+        facility: ready,
+        matchProposal: finalProposal,
+        obligation: execution.obligation,
+        subjectActorId: "actor_tc_102_subject",
+        facilityId: ready.tradingFacilityId,
+        facilityHash: ready.facilityHash,
+        facilityStateHash: ready.stateHash,
+        facilityVersion: ready.version,
+        facilityLifecycleStatus: ready.lifecycleStatus,
+        obligationId: ready.obligationId,
+        subjectId: ready.subjectId,
+        bilateralTermsHash: ready.termsHash,
+        assetId: ready.assetId,
+        requiredSubjectContributionMinor:
+          ready.requiredSubjectCollateralMinor,
+        requiredProviderContributionMinor:
+          ready.requiredProviderFundingMinor,
+        maximumFacilityCapMinor: ready.syntheticCapitalMinor,
+        facilityDestinationHash: hashId(
+          "tc_401_postgres_segregated_facility_destination",
+          { facilityId: ready.tradingFacilityId }
+        ),
+        accountBindingHash: hashId(
+          "tc_401_postgres_account_binding",
+          { facilityId: ready.tradingFacilityId }
+        ),
+        masterAccountHash: hashId(
+          "tc_401_postgres_master_account",
+          { facilityId: ready.tradingFacilityId }
+        ),
+        withdrawalAuthorityHash: hashId(
+          "tc_401_postgres_withdrawal_authority",
+          { facilityId: ready.tradingFacilityId }
+        ),
+        executionSignerReferenceHash: hashId(
+          "tc_401_postgres_execution_signer",
+          { facilityId: ready.tradingFacilityId }
+        ),
+        canonicalLedgerStateHash: hashId(
+          "tc_401_postgres_canonical_ledger",
+          {
+            facilityId: ready.tradingFacilityId,
+            obligationId: ready.obligationId
+          }
+        ),
+        ledgerTransactionCount: 1,
+        riskSnapshotHash: hashId(
+          "tc_401_postgres_fresh_normal_risk",
+          { facilityId: ready.tradingFacilityId }
+        ),
+        riskState: "NORMAL",
+        riskFreshness: "FRESH",
+        riskObservedAt: new Date(
+          tc401ActivationAt - 1_000
+        ).toISOString(),
+        riskMaximumAgeMs: 60_000,
+        simulationOnly: true,
+        canonicalFacility: true,
+        secondFacilityCreated: false,
+        canonicalLedger: true,
+        secondLedgerCreated: false,
+        liveAccountsApproved: false,
+        capturedAt: new Date(tc401PreparedAt).toISOString(),
+        schemaVersion:
+          "hyperliquid_testnet_facility_funding_kernel_snapshot.v1"
+      };
+      const tc401PlaceholderReceipt =
+        createSimulatedTestnetContributionReceipt(
+          {
+            fundingHash: `0x${"4".repeat(64)}`,
+            facilityHash: ready.facilityHash,
+            contributorRole:
+              HyperliquidTestnetContributionRole.SUBJECT_FIRST_LOSS,
+            kind:
+              HyperliquidTestnetContributionReceiptKind
+                .FINALIZED_CONTRIBUTION,
+            assetId: ready.assetId,
+            amountMinor: ready.requiredSubjectCollateralMinor,
+            destinationHash:
+              tc401KernelSnapshot.facilityDestinationHash,
+            transactionReferenceHash: `0x${"5".repeat(64)}`,
+            blockReferenceHash: `0x${"6".repeat(64)}`,
+            relatedReceiptHash: null,
+            freshness: "FRESH",
+            complete: true,
+            finalized: true
+          },
+          { clock: () => tc401PreparedAt }
+        );
+      const createTc401Service = (
+        core,
+        receipts,
+        nowMs
+      ) =>
+        new HyperliquidTestnetFacilityFundingService({
+          repository:
+            new PostgresHyperliquidFacilityFundingRepository({
+              coreRepository: core
+            }),
+          commandGuard:
+            new SimulatedHyperliquidFacilityFundingCommandGuard(),
+          kernelResolver:
+            new SimulatedHyperliquidFacilityFundingKernelResolver({
+              snapshots: [tc401KernelSnapshot]
+            }),
+          receiptAdapter:
+            new ScriptedHyperliquidContributionReceiptAdapter({
+              receipts
+            }),
+          clock: () => nowMs
+        });
+      const tc401Prepared = await createTc401Service(
+        repository,
+        [tc401PlaceholderReceipt],
+        tc401PreparedAt
+      ).prepare({
+        facilityId: ready.tradingFacilityId,
+        facilityHash: ready.facilityHash,
+        idempotencyKey: "tc401-postgres-prepare-0001"
+      });
+      const tc401Receipt = ({
+        role,
+        kind =
+          HyperliquidTestnetContributionReceiptKind
+            .FINALIZED_CONTRIBUTION,
+        relatedReceiptHash = null,
+        suffix,
+        nowMs
+      }) =>
+        createSimulatedTestnetContributionReceipt(
+          {
+            fundingHash: tc401Prepared.fundingHash,
+            facilityHash: ready.facilityHash,
+            contributorRole: role,
+            kind,
+            assetId: ready.assetId,
+            amountMinor: role ===
+              HyperliquidTestnetContributionRole.SUBJECT_FIRST_LOSS
+              ? ready.requiredSubjectCollateralMinor
+              : ready.requiredProviderFundingMinor,
+            destinationHash:
+              tc401KernelSnapshot.facilityDestinationHash,
+            transactionReferenceHash: hashId(
+              "tc_401_postgres_contribution_transaction",
+              { suffix }
+            ),
+            blockReferenceHash: hashId(
+              "tc_401_postgres_contribution_block",
+              { suffix }
+            ),
+            relatedReceiptHash,
+            freshness: "FRESH",
+            complete: true,
+            finalized: kind ===
+              HyperliquidTestnetContributionReceiptKind
+                .FINALIZED_CONTRIBUTION
+          },
+          { clock: () => nowMs }
+        );
+      const tc401SubjectReceipt = tc401Receipt({
+        role: HyperliquidTestnetContributionRole.SUBJECT_FIRST_LOSS,
+        suffix: "subject",
+        nowMs: tc401PreparedAt + 1_000
+      });
+      const tc401ProviderReceipt = tc401Receipt({
+        role: HyperliquidTestnetContributionRole.PROVIDER_PRINCIPAL,
+        suffix: "provider-original",
+        nowMs: tc401PreparedAt + 2_000
+      });
+      const tc401InitialReceipts = createTc401Service(
+        repository,
+        [tc401SubjectReceipt, tc401ProviderReceipt],
+        tc401PreparedAt + 3_000
+      );
+      await tc401InitialReceipts.reconcileNext({
+        fundingId: tc401Prepared.fundingId
+      });
+      const tc401InitiallyReady =
+        await tc401InitialReceipts.reconcileNext({
+          fundingId: tc401Prepared.fundingId
+        });
+      assert.equal(tc401InitiallyReady.status, "READY");
+      assert.equal(
+        tc401InitiallyReady.reconciledTotalMinor,
+        ready.syntheticCapitalMinor
+      );
+      const tc401ReorgReceipt = tc401Receipt({
+        role: HyperliquidTestnetContributionRole.PROVIDER_PRINCIPAL,
+        kind:
+          HyperliquidTestnetContributionReceiptKind.REORG_INVALIDATION,
+        relatedReceiptHash: tc401ProviderReceipt.receiptHash,
+        suffix: "provider-reorg",
+        nowMs: tc401PreparedAt + 4_000
+      });
+      const tc401AfterReorg = await createTc401Service(
+        repository,
+        [tc401ReorgReceipt],
+        tc401PreparedAt + 5_000
+      ).reconcileNext({ fundingId: tc401Prepared.fundingId });
+      assert.equal(tc401AfterReorg.status, "AWAITING_PROVIDER");
+      assert.equal(tc401AfterReorg.providerReceiptHash, null);
+
+      const tc401RestartedCore = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const tc401ReplacementReceipt = tc401Receipt({
+        role: HyperliquidTestnetContributionRole.PROVIDER_PRINCIPAL,
+        suffix: "provider-replacement",
+        nowMs: tc401PreparedAt + 6_000
+      });
+      const tc401Recovered = await createTc401Service(
+        tc401RestartedCore,
+        [tc401ReplacementReceipt],
+        tc401PreparedAt + 7_000
+      ).reconcileNext({ fundingId: tc401Prepared.fundingId });
+      assert.equal(tc401Recovered.status, "READY");
+      assert.notEqual(
+        tc401Recovered.providerReceiptHash,
+        tc401ProviderReceipt.receiptHash
+      );
+      const tc401Activation = await createTc401Service(
+        tc401RestartedCore,
+        [tc401PlaceholderReceipt],
+        tc401ActivationAt
+      ).activate({
+        fundingId: tc401Prepared.fundingId,
+        idempotencyKey: "tc401-postgres-activate-0001"
+      });
+      const active = tc401Activation.facility;
+      assert.equal(tc401Activation.record.status, "ACTIVE");
+      assert.equal(active.lifecycleStatus, "active");
+      assert.equal(
+        tc401Activation.record.canonicalFacilityMutationCreated,
+        true
+      );
+      assert.equal(tc401Activation.record.secondFacilityCreated, false);
+      assert.equal(tc401Activation.record.ledgerMutationCreated, false);
+      assert.equal(tc401Activation.record.secondLedgerCreated, false);
+      const tc401ReplayAdapter =
+        new ScriptedHyperliquidContributionReceiptAdapter({
+          receipts: [tc401PlaceholderReceipt]
+        });
+      const tc401Replay = await new HyperliquidTestnetFacilityFundingService({
+        repository:
+          new PostgresHyperliquidFacilityFundingRepository({
+            coreRepository: new PostgresCoreRepository({
+              pool,
+              tenantContext: TENANT_CONTEXT
+            })
+          }),
+        commandGuard:
+          new SimulatedHyperliquidFacilityFundingCommandGuard(),
+        kernelResolver:
+          new SimulatedHyperliquidFacilityFundingKernelResolver({
+            snapshots: [tc401KernelSnapshot]
+          }),
+        receiptAdapter: tc401ReplayAdapter,
+        clock: () => tc401ActivationAt + 1_000
+      }).activate({
+        fundingId: tc401Prepared.fundingId,
+        idempotencyKey: "tc401-postgres-activate-0001"
+      });
+      assert.equal(tc401Replay.replayed, true);
+      assert.deepEqual(tc401Replay.record, tc401Activation.record);
+      assert.deepEqual(tc401Replay.facility, active);
+      assert.equal(tc401ReplayAdapter.callCount, 0);
+      const tc401Audit = await withTenantTransaction(
+        pool,
+        TENANT_CONTEXT,
+        (client) =>
+          client.query(
+            `SELECT
+               (SELECT count(*)::int
+                  FROM trading_testnet_facility_funding_controls
+                 WHERE facility_id = $1) AS controls,
+               (SELECT count(*)::int
+                  FROM domain_events
+                 WHERE aggregate_type =
+                   'trading_testnet_facility_funding') AS events,
+               (SELECT count(*)::int
+                  FROM evidence_envelopes
+                 WHERE aggregate_type =
+                   'trading_testnet_facility_funding') AS evidence,
+               (SELECT count(*)::int
+                  FROM outbox_messages o
+                  JOIN domain_events e ON e.id = o.event_id
+                 WHERE e.aggregate_type =
+                   'trading_testnet_facility_funding') AS outbox,
+               (SELECT count(*)::int
+                  FROM inbox_messages
+                 WHERE consumer_name =
+                   'ipo.one.trading-testnet-facility-funding-receipts.v1')
+                 AS inbox`,
+            [ready.tradingFacilityId]
+          )
+      );
+      assert.deepEqual(tc401Audit.rows[0], {
+        controls: 1,
+        events: 6,
+        evidence: 6,
+        outbox: 6,
+        inbox: 4
+      });
+
+      const submitOrder = (current, now) =>
+        submitTradingOrderIntent(current, {
+          submittedByActorId: "actor_tc_102_subject",
+          direction: TradingOrderDirection.LONG,
+          syntheticNotionalMinor: "450000",
+          expectedStateHash: current.stateHash,
+          expectedVersion: current.version,
+          now
+        });
+      const orderCommand = (result, idempotencyKey, expectedVersion) => {
+        const payload = {
+          tradingFacilityId: result.facility.tradingFacilityId,
+          tradingOrderIntentId: result.orderIntent.tradingOrderIntentId,
+          syntheticNotionalMinor: result.orderIntent.syntheticNotionalMinor,
+          rawVenueActionAccepted: false,
+          fundsAuthority: false
+        };
+        const eventInput = {
+          eventType: CreditEventType.TRADING_ORDER_INTENT_SUBMITTED,
+          subjectId: result.facility.subjectId,
+          obligationId: result.facility.obligationId,
+          payload,
+          now: new Date(result.facility.updatedAt)
+        };
+        const facilityOrderEvent = createCreditEvent(eventInput);
+        const orderProjectionEvent = createCreditEvent(eventInput);
+        return {
+          aggregateType: "trading_facility",
+          aggregateId: result.facility.tradingFacilityId,
+          idempotencyKey,
+          commandHash: hashId("tc_103_order_submit", {
+            orderIntentHash: result.orderIntent.orderIntentHash
+          }),
+          events: [
+            {
+              aggregateType: "trading_facility",
+              aggregateId: result.facility.tradingFacilityId,
+              expectedVersion,
+              event: facilityOrderEvent
+            },
+            {
+              aggregateType: "trading_order_intent",
+              aggregateId: result.orderIntent.tradingOrderIntentId,
+              expectedVersion: 0,
+              event: orderProjectionEvent
+            }
+          ],
+          writes: [
+            {
+              type: CoreProjectionType.TRADING_FACILITY,
+              value: result.facility,
+              eventId: facilityOrderEvent.eventId
+            },
+            {
+              type: CoreProjectionType.TRADING_ORDER_INTENT,
+              value: result.orderIntent,
+              eventId: orderProjectionEvent.eventId
+            }
+          ],
+          response: {
+            tradingOrderIntentId: result.orderIntent.tradingOrderIntentId
+          }
+        };
+      };
+      const evaluateRisk = (current, now) =>
+        evaluateTradingFacilityRisk(current, {
+          evaluatedByActorId: "actor_tc_103_risk",
+          expectedStateHash: current.stateHash,
+          expectedVersion: current.version,
+          now
+        });
+      const riskCommand = (result, idempotencyKey, expectedVersion) => {
+        const riskEvent = facilityEvent(
+          CreditEventType.TRADING_FACILITY_RISK_EVALUATED,
+          result.facility,
+          new Date(result.facility.updatedAt)
+        );
+        return {
+          aggregateType: "trading_facility",
+          aggregateId: result.facility.tradingFacilityId,
+          idempotencyKey,
+          commandHash: hashId("tc_103_risk_evaluation", {
+            evaluationHash: result.riskEvaluation.evaluationHash
+          }),
+          events: [{
+            aggregateType: "trading_facility",
+            aggregateId: result.facility.tradingFacilityId,
+            expectedVersion,
+            event: riskEvent
+          }],
+          writes: [
+            {
+              type: CoreProjectionType.TRADING_FACILITY,
+              value: result.facility,
+              eventId: riskEvent.eventId
+            },
+            {
+              type:
+                CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION,
+              value: result.riskEvaluation,
+              eventId: riskEvent.eventId
+            }
+          ],
+          response: {
+            evaluationHash: result.riskEvaluation.evaluationHash,
+            riskState: result.facility.riskState
+          }
+        };
+      };
+      const orderCandidate = submitOrder(
+        active,
+        new Date("2026-07-25T01:16:00.000Z")
+      );
+      const riskCandidate = evaluateRisk(
+        active,
+        new Date("2026-07-25T01:16:00.001Z")
+      );
+      const orderRiskRace = await Promise.allSettled([
+        repository.commitCommand(orderCommand(
+          orderCandidate,
+          "tc-103-order-risk-race-order",
+          active.version
+        )),
+        new PostgresCoreRepository({
+          pool,
+          tenantContext: TENANT_CONTEXT,
+          transactionRetries: 10
+        }).commitCommand(riskCommand(
+          riskCandidate,
+          "tc-103-order-risk-race-evaluation",
+          active.version
+        ))
+      ]);
+      assert.equal(
+        orderRiskRace.filter(({ status }) => status === "fulfilled").length,
+        1
+      );
+      assert.equal(
+        orderRiskRace.filter(({ status }) => status === "rejected").length,
+        1
+      );
+      let submitted;
+      let evaluated;
+      const afterOrderRiskRace = await repository.getTradingFacility(
+        active.tradingFacilityId
+      );
+      if (orderRiskRace[0].status === "fulfilled") {
+        submitted = orderCandidate;
+        evaluated = evaluateRisk(
+          afterOrderRiskRace,
+          new Date("2026-07-25T01:16:02.000Z")
+        );
+        await repository.commitCommand(riskCommand(
+          evaluated,
+          "tc-103-risk-after-order-race",
+          afterOrderRiskRace.version
+        ));
+      } else {
+        submitted = submitOrder(
+          afterOrderRiskRace,
+          new Date("2026-07-25T01:16:01.000Z")
+        );
+        await repository.commitCommand(orderCommand(
+          submitted,
+          "tc-103-order-after-risk-race",
+          afterOrderRiskRace.version
+        ));
+        evaluated = evaluateRisk(
+          submitted.facility,
+          new Date("2026-07-25T01:16:02.000Z")
+        );
+        await repository.commitCommand(riskCommand(
+          evaluated,
+          "tc-103-risk-after-order-recovery",
+          submitted.facility.version
+        ));
+      }
+      assert.equal(evaluated.facility.riskState, "REDUCE_ONLY");
+      const paused = pauseTradingFacilityNewRisk(evaluated.facility, {
+        pausedByActorId: "actor_tc_103_risk",
+        reasonCode: "postgres_protective_pause",
+        expectedStateHash: evaluated.facility.stateHash,
+        expectedVersion: evaluated.facility.version,
+        now: new Date("2026-07-25T01:17:00.000Z")
+      });
+      await repository.commitCommand(facilityCommand({
+        value: paused,
+        eventType: CreditEventType.TRADING_FACILITY_NEW_RISK_PAUSED,
+        idempotencyKey: "tc-103-protective-pause",
+        expectedVersion: evaluated.facility.version,
+        now: new Date(paused.updatedAt)
+      }));
+      const flattened = flattenTradingFacility(
+        paused,
+        [submitted.orderIntent],
+        {
+          flattenedByActorId: "actor_tc_103_risk",
+          reasonCode: "postgres_protective_flatten",
+          expectedStateHash: paused.stateHash,
+          expectedVersion: paused.version,
+          now: new Date("2026-07-25T01:18:00.000Z")
+        }
+      );
+      const flattenEvent = facilityEvent(
+        CreditEventType.TRADING_FACILITY_FLATTENED,
+        flattened.facility,
+        new Date(flattened.facility.updatedAt)
+      );
+      const flattenOrderEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_FACILITY_FLATTENED,
+        subjectId: flattened.facility.subjectId,
+        obligationId: flattened.facility.obligationId,
+        payload: {
+          tradingFacilityId: flattened.facility.tradingFacilityId,
+          tradingOrderIntentId:
+            flattened.orderIntents[0].tradingOrderIntentId,
+          orderStateHash: flattened.orderIntents[0].orderStateHash,
+          syntheticOnly: true,
+          productionAuthority: false,
+          fundsAuthority: false
+        },
+        now: new Date(flattened.facility.updatedAt)
+      });
+      const flattenCommand = {
+        aggregateType: "trading_facility",
+        aggregateId: active.tradingFacilityId,
+        idempotencyKey: "tc-103-protective-flatten",
+        commandHash: hashId("tc_103_protective_flatten", {
+          stateHash: flattened.facility.stateHash,
+          orderStateHash: flattened.orderIntents[0].orderStateHash
+        }),
+        events: [
+          {
+            aggregateType: "trading_facility",
+            aggregateId: active.tradingFacilityId,
+            expectedVersion: paused.version,
+            event: flattenEvent
+          },
+          {
+            aggregateType: "trading_order_intent",
+            aggregateId: submitted.orderIntent.tradingOrderIntentId,
+            expectedVersion: 1,
+            event: flattenOrderEvent
+          }
+        ],
+        writes: [
+          {
+            type: CoreProjectionType.TRADING_FACILITY,
+            value: flattened.facility,
+            eventId: flattenEvent.eventId
+          },
+          {
+            type: CoreProjectionType.TRADING_ORDER_INTENT,
+            value: flattened.orderIntents[0],
+            eventId: flattenOrderEvent.eventId
+          }
+        ],
+        response: {
+          tradingFacilityId: flattened.facility.tradingFacilityId,
+          lifecycleStatus: flattened.facility.lifecycleStatus,
+          riskState: flattened.facility.riskState,
+          stateHash: flattened.facility.stateHash
+        }
+      };
+      await repository.commitCommand(flattenCommand);
+
+      const restarted = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const durableFacility = await restarted.getTradingFacility(
+        active.tradingFacilityId
+      );
+      const durableOrder = await restarted.getTradingOrderIntent(
+        submitted.orderIntent.tradingOrderIntentId
+      );
+      assert.equal(durableFacility.lifecycleStatus, "flattened");
+      assert.equal(durableFacility.riskState, "FLATTEN");
+      assert.equal(durableFacility.syntheticExposureMinor, "0");
+      assert.equal(durableFacility.openOrderCount, 0);
+      assert.equal(durableFacility.withdrawable, false);
+      assert.equal(durableFacility.productionAuthority, false);
+      assert.equal(durableFacility.fundsAuthority, false);
+      assert.equal(durableOrder.status, "flattened");
+      assert.equal(durableOrder.externalOrderSubmitted, false);
+      assert.equal((await restarted.commitCommand(flattenCommand)).replayed, true);
+      assert.equal(
+        (await restarted.verifyProjection(
+          CoreProjectionType.TRADING_FACILITY,
+          active.tradingFacilityId
+        )).matches,
+        true
+      );
+      assert.equal(
+        (await restarted.verifyProjection(
+          CoreProjectionType.TRADING_ORDER_INTENT,
+          submitted.orderIntent.tradingOrderIntentId
+        )).matches,
+        true
+      );
+      assert.equal(
+        (await restarted.verifyProjection(
+          CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION,
+          evaluated.riskEvaluation.tradingFacilityRiskEvaluationId
+        )).matches,
+        true
+      );
+
+      const executionClockMs = new Date(
+        "2026-07-25T02:00:00.000Z"
+      ).getTime();
+      const executionBindingHash = hashId("tc_301_account_binding", {
+        facilityId: durableFacility.tradingFacilityId
+      });
+      const executionSignerReferenceHash = hashId(
+        "tc_301_simulated_signer_reference",
+        { facilityId: durableFacility.tradingFacilityId }
+      );
+      const createExecutionGateway = (core, transport) =>
+        new HyperliquidTestnetExecutionGateway({
+          repository: new PostgresHyperliquidExecutionRepository({
+            eventRepository: core.eventRepository
+          }),
+          bindingResolver: {
+            async resolve({ facilityId, facilityHash }) {
+              return {
+                facilityId,
+                facilityHash,
+                accountBindingHash: executionBindingHash,
+                signerReferenceHash: executionSignerReferenceHash,
+                simulationOnly: true,
+                liveSignerAvailable: false,
+                apiWalletApproved: false,
+                keyExportable: false
+              };
+            }
+          },
+          policyEvaluator: {
+            async evaluate(input) {
+              return {
+                approved: true,
+                policyDecisionHash: hashId(
+                  "tc_301_simulated_policy_decision",
+                  input
+                ),
+                actionKind: input.actionKind,
+                serverReduceOnlyProven:
+                  input.actionKind === "reduceOnlyOrder",
+                killSwitchOpen: true,
+                simulationOnly: true
+              };
+            }
+          },
+          signer: new SimulatedIsolatedHyperliquidSigner(),
+          transport,
+          clock: () => executionClockMs
+        });
+      const executionInput = (suffix) => ({
+        facilityId: durableFacility.tradingFacilityId,
+        facilityHash: durableFacility.facilityHash,
+        facilityVersion: durableFacility.version,
+        orderIntentId: durableOrder.tradingOrderIntentId,
+        orderIntentHash: durableOrder.orderIntentHash,
+        orderIntentVersion: durableOrder.version,
+        idempotencyKey: `tc301-postgres-${suffix}`,
+        action: {
+          kind: "reduceOnlyOrder",
+          assetIndex: 1,
+          side: "sell",
+          limitPx: "2500",
+          size: "0.001",
+          timeInForce: "Ioc"
+        }
+      });
+      const firstExecutionTransport =
+        new SimulatedHyperliquidExchangeTransport();
+      const firstExecution = await createExecutionGateway(
+        restarted,
+        firstExecutionTransport
+      ).execute(executionInput("first"));
+      assert.equal(firstExecution.nonceState, "CONFIRMED");
+      assert.equal(firstExecution.externalSystemQueried, false);
+      assert.equal(firstExecution.externalOrderSubmitted, false);
+      assert.equal(firstExecution.secretsIncluded, false);
+      assert.equal(firstExecutionTransport.submissionHashes.length, 1);
+
+      const executionRestart = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const replayTransport = new SimulatedHyperliquidExchangeTransport();
+      const replayedExecution = await createExecutionGateway(
+        executionRestart,
+        replayTransport
+      ).execute(executionInput("first"));
+      assert.deepEqual(replayedExecution, firstExecution);
+      assert.equal(replayTransport.submissionHashes.length, 0);
+
+      const concurrentExecutions = await Promise.all(
+        Array.from({ length: 20 }, (_, index) =>
+          createExecutionGateway(
+            new PostgresCoreRepository({
+              pool,
+              tenantContext: TENANT_CONTEXT,
+              transactionRetries: 10
+            }),
+            new SimulatedHyperliquidExchangeTransport()
+          ).execute(executionInput(`concurrent-${index}`))
+        )
+      );
+      const durableNonces = [
+        firstExecution,
+        ...concurrentExecutions
+      ].map(({ nonce }) => nonce);
+      assert.equal(new Set(durableNonces).size, durableNonces.length);
+      assert.deepEqual(
+        [...durableNonces].sort((left, right) => left - right),
+        Array.from(
+          { length: durableNonces.length },
+          (_, index) => executionClockMs + index
+        )
+      );
+      const executionAudit = await withTenantTransaction(
+        pool,
+        TENANT_CONTEXT,
+        (client) =>
+          client.query(
+            `SELECT
+               (SELECT count(*)::int
+                  FROM trading_testnet_execution_records
+                 WHERE facility_id = $1) AS records,
+               (SELECT count(*)::int
+                  FROM trading_testnet_execution_transitions t
+                  JOIN trading_testnet_execution_records r
+                    ON r.tenant_id = t.tenant_id
+                   AND r.id = t.execution_id
+                 WHERE r.facility_id = $1) AS transitions,
+               (SELECT count(*)::int
+                  FROM trading_execution_nonce_heads
+                 WHERE facility_id = $1) AS nonce_heads`,
+            [durableFacility.tradingFacilityId]
+          )
+      );
+      assert.deepEqual(executionAudit.rows[0], {
+        records: 21,
+        transitions: 63,
+        nonce_heads: 1
+      });
+
+      const guardianClockMs = executionClockMs + 10_000;
+      const protectiveVenueState = createHyperliquidTestnetVenueState(
+        {
+          facilityId: durableFacility.tradingFacilityId,
+          facilityHash: durableFacility.facilityHash,
+          sourceInfoSnapshotHash: hashId(
+            "tc_302_simulated_info_snapshot",
+            { facilityId: durableFacility.tradingFacilityId }
+          ),
+          observedAtMs: guardianClockMs,
+          maximumAgeMs: 60_000,
+          openOrders: [
+            {
+              assetIndex: 1,
+              orderId: 302001,
+              cloid: "0x30203020302030203020302030203020",
+              riskIncreasing: true
+            }
+          ],
+          positions: [
+            {
+              assetIndex: 1,
+              side: "long",
+              size: "0.001",
+              protectiveLimitPx: "2500"
+            }
+          ],
+          simulationFixtureOnly: true,
+          productionPolicyApproved: false
+        },
+        { clock: () => guardianClockMs }
+      );
+      const protectiveRiskSnapshot =
+        createHyperliquidTestnetRiskSnapshot(
+          {
+            facilityId: durableFacility.tradingFacilityId,
+            facilityHash: durableFacility.facilityHash,
+            facilityVersion: durableFacility.version,
+            venueState: protectiveVenueState,
+            evaluatedRiskState: "FLATTEN",
+            riskPolicyVersion:
+              HYPERLIQUID_TESTNET_RISK_POLICY_VERSION,
+            riskPolicyHash: hashId(
+              "tc_302_simulation_policy",
+              { version: HYPERLIQUID_TESTNET_RISK_POLICY_VERSION }
+            ),
+            reasonCodes: ["simulation_fixture_liquidation_buffer"],
+            riskIncreasingKillSwitchOpen: true,
+            externalWriteState: "RECONCILED",
+            simulationFixtureOnly: true,
+            productionPolicyApproved: false
+          },
+          { clock: () => guardianClockMs }
+        );
+      const protectiveExecutor =
+        new SimulatedHyperliquidProtectiveExecutor({
+          venueState: protectiveVenueState,
+          clock: () => guardianClockMs
+        });
+      const protectiveRepository =
+        new PostgresHyperliquidRiskGuardianRepository({
+          eventRepository: restarted.eventRepository
+        });
+      const riskGuardian = new HyperliquidTestnetRiskGuardian({
+        repository: protectiveRepository,
+        executor: protectiveExecutor,
+        clock: () => guardianClockMs
+      });
+      const protectiveInput = {
+        riskSnapshot: protectiveRiskSnapshot,
+        venueState: protectiveVenueState,
+        idempotencyKey: "tc302-postgres-flatten-0001"
+      };
+      const [protectiveControl, concurrentProtectiveReplay] =
+        await Promise.all([
+          riskGuardian.enforce(protectiveInput),
+          riskGuardian.enforce(protectiveInput)
+        ]);
+      assert.deepEqual(concurrentProtectiveReplay, protectiveControl);
+      assert.equal(protectiveControl.status, "VERIFIED");
+      assert.equal(protectiveControl.targetRiskState, "FLATTEN");
+      assert.deepEqual(
+        protectiveControl.actions.map(({ kind }) => kind),
+        ["cancel", "reduceOnlyClose"]
+      );
+      assert.equal(
+        protectiveControl.actions[1].reduceOnly,
+        true
+      );
+      assert.equal(protectiveControl.verification.openOrderCount, 0);
+      assert.equal(protectiveControl.verification.positionCount, 0);
+      assert.equal(protectiveControl.withdrawalAuthority, false);
+      assert.equal(protectiveControl.transferAuthority, false);
+      assert.equal(protectiveControl.automaticRecovery, false);
+      assert.equal(protectiveExecutor.executionCount, 2);
+      assert.deepEqual(
+        (
+          await protectiveRepository.transitionHistory(
+            protectiveControl.controlId
+          )
+        ).map(({ nextStatus }) => nextStatus),
+        ["PLANNED", "EXECUTING", "VERIFIED"]
+      );
+
+      const guardianRestart = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const guardianReplayExecutor =
+        new SimulatedHyperliquidProtectiveExecutor({
+          venueState: protectiveVenueState,
+          clock: () => guardianClockMs
+        });
+      const durableProtectiveReplay =
+        await new HyperliquidTestnetRiskGuardian({
+          repository: new PostgresHyperliquidRiskGuardianRepository({
+            eventRepository: guardianRestart.eventRepository
+          }),
+          executor: guardianReplayExecutor,
+          clock: () => guardianClockMs
+        }).enforce(protectiveInput);
+      assert.deepEqual(durableProtectiveReplay, protectiveControl);
+      assert.equal(guardianReplayExecutor.executionCount, 0);
+      const protectiveAudit = await withTenantTransaction(
+        pool,
+        TENANT_CONTEXT,
+        (client) =>
+          client.query(
+            `SELECT
+               (SELECT count(*)::int
+                  FROM trading_testnet_protective_controls
+                 WHERE facility_id = $1) AS controls,
+               (SELECT count(*)::int
+                  FROM trading_testnet_protective_transitions t
+                  JOIN trading_testnet_protective_controls c
+                    ON c.tenant_id = t.tenant_id
+                   AND c.id = t.control_id
+                 WHERE c.facility_id = $1) AS transitions`,
+            [durableFacility.tradingFacilityId]
+          )
+      );
+      assert.deepEqual(protectiveAudit.rows[0], {
+        controls: 1,
+        transitions: 3
+      });
+
+      const reconciliationClockMs = guardianClockMs + 1_000;
+      const canonicalLedgerSnapshot = await withTenantTransaction(
+        pool,
+        TENANT_CONTEXT,
+        async (client) => {
+          const result = await client.query(
+            `SELECT
+               count(*)::int AS transaction_count,
+               COALESCE(
+                 string_agg(transaction_hash, ',' ORDER BY transaction_hash),
+                 ''
+               ) AS transaction_hashes
+               FROM ledger_transactions`
+          );
+          return {
+            transactionCount: result.rows[0].transaction_count,
+            stateHash: hashId("tc_303_canonical_ledger_snapshot", {
+              transactionCount: result.rows[0].transaction_count,
+              transactionHashes: result.rows[0].transaction_hashes
+            })
+          };
+        }
+      );
+      const reconciliationKernelSnapshot = {
+        executionId: firstExecution.executionId,
+        executionHash: firstExecution.executionHash,
+        executionNonceState: firstExecution.nonceState,
+        nonce: firstExecution.nonce,
+        actionKind: firstExecution.actionKind,
+        actionHash: firstExecution.actionHash,
+        cloid: firstExecution.cloid,
+        facilityId: durableFacility.tradingFacilityId,
+        facilityHash: durableFacility.facilityHash,
+        facilityStateHash: durableFacility.stateHash,
+        facilityVersion: durableFacility.version,
+        orderIntentId: durableOrder.tradingOrderIntentId,
+        orderIntentHash: durableOrder.orderIntentHash,
+        orderIntentStateHash: durableOrder.orderStateHash,
+        orderIntentVersion: durableOrder.version,
+        subjectId: durableFacility.subjectId,
+        obligationId: durableFacility.obligationId,
+        accountBindingHash: firstExecution.accountBindingHash,
+        signerReferenceHash: firstExecution.signerReferenceHash,
+        requestedSize: firstExecution.action.size,
+        requestedNotionalMinor: "250",
+        canonicalLedgerStateHash: canonicalLedgerSnapshot.stateHash,
+        ledgerTransactionCount:
+          canonicalLedgerSnapshot.transactionCount,
+        riskSnapshotHash: protectiveRiskSnapshot.riskSnapshotHash,
+        riskState: "FLATTEN",
+        simulationOnly: true,
+        externalOrderSubmitted: false,
+        canonicalLedger: true,
+        secondLedgerCreated: false,
+        capturedAt: new Date(reconciliationClockMs).toISOString(),
+        schemaVersion:
+          "hyperliquid_testnet_reconciliation_kernel_snapshot.v1"
+      };
+      const reconciledVenueObservation =
+        createSimulatedHyperliquidVenueObservation(
+          {
+            executionHash: firstExecution.executionHash,
+            facilityHash: durableFacility.facilityHash,
+            actionHash: firstExecution.actionHash,
+            cloid: firstExecution.cloid,
+            kind: "NORMALIZED_STATE",
+            venueStatus: HyperliquidVenueOrderStatus.FILLED,
+            cumulativeFilledSize: firstExecution.action.size,
+            cumulativeFillNotionalMinor: "250",
+            venueOrderReferenceHash: hashId(
+              "tc_303_simulated_venue_order",
+              { executionHash: firstExecution.executionHash }
+            ),
+            orderStateHash: hashId(
+              "tc_303_simulated_venue_order_state",
+              { executionHash: firstExecution.executionHash }
+            ),
+            positionStateHash: hashId(
+              "tc_303_simulated_venue_position_state",
+              { executionHash: firstExecution.executionHash }
+            ),
+            accountStateHash: hashId(
+              "tc_303_simulated_venue_account_state",
+              { executionHash: firstExecution.executionHash }
+            ),
+            freshness: "FRESH",
+            complete: true,
+            reasonCode: "protected_simulation_e2e"
+          },
+          { clock: () => reconciliationClockMs }
+        );
+      const reconciliationRepository =
+        new PostgresHyperliquidReconciliationRepository({
+          eventRepository: restarted.eventRepository
+        });
+      const createReconciliationService = (
+        core,
+        observationAdapter,
+        {
+          snapshot = reconciliationKernelSnapshot,
+          maxPollAttempts = 2,
+          circuitBreakerFailureThreshold = 2
+        } = {}
+      ) =>
+        new HyperliquidTestnetReconciliationService({
+          repository:
+            new PostgresHyperliquidReconciliationRepository({
+              eventRepository: core.eventRepository
+            }),
+          commandGuard:
+            new SimulatedHyperliquidReconciliationCommandGuard(),
+          kernelResolver:
+            new SimulatedHyperliquidReconciliationKernelResolver({
+              snapshots: [snapshot]
+            }),
+          observationAdapter,
+          maxPollAttempts,
+          circuitBreakerFailureThreshold,
+          clock: () => reconciliationClockMs
+        });
+      const reconciliationInput = {
+        executionId: firstExecution.executionId,
+        executionHash: firstExecution.executionHash,
+        idempotencyKey: "tc303-postgres-reconciliation-0001"
+      };
+      const firstReconciliationAdapter =
+        new ScriptedHyperliquidVenueObservationAdapter({
+          steps: [reconciledVenueObservation]
+        });
+      const firstReconciliation =
+        await createReconciliationService(
+          restarted,
+          firstReconciliationAdapter
+        ).reconcile(reconciliationInput);
+      assert.equal(firstReconciliation.status, "RECONCILED");
+      assert.equal(firstReconciliation.outcome, "confirmed");
+      assert.equal(firstReconciliation.executionNonceState, "CONFIRMED");
+      assert.equal(firstReconciliation.cumulativeFilledSize, "0.001");
+      assert.equal(
+        firstReconciliation.cumulativeFillNotionalMinor,
+        "250"
+      );
+      assert.equal(firstReconciliation.ledgerMutationCreated, false);
+      assert.equal(firstReconciliation.facilityMutationCreated, false);
+      assert.equal(firstReconciliation.secondLedgerCreated, false);
+      assert.equal(firstReconciliation.externalSystemQueried, false);
+      assert.equal(firstReconciliation.externalOrderSubmitted, false);
+      assert.equal(firstReconciliationAdapter.callCount, 1);
+
+      const reconciliationRestart = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const replayReconciliationAdapter =
+        new ScriptedHyperliquidVenueObservationAdapter({
+          steps: [reconciledVenueObservation]
+        });
+      const replayedReconciliation =
+        await createReconciliationService(
+          reconciliationRestart,
+          replayReconciliationAdapter
+        ).reconcile(reconciliationInput);
+      assert.deepEqual(replayedReconciliation, firstReconciliation);
+      assert.equal(replayReconciliationAdapter.callCount, 0);
+      assert.equal(
+        (
+          await reconciliationRepository.history(
+            firstReconciliation.reconciliationId
+          )
+        ).length,
+        2
+      );
+
+      const unknownExecutionTransport =
+        new SimulatedHyperliquidExchangeTransport({
+          disposition: "unknown"
+        });
+      const unknownExecution = await createExecutionGateway(
+        reconciliationRestart,
+        unknownExecutionTransport
+      ).execute(executionInput("unknown-recovery"));
+      assert.equal(unknownExecution.nonceState, "UNKNOWN");
+      assert.equal(unknownExecutionTransport.submissionHashes.length, 1);
+      const unknownKernelSnapshot = {
+        ...reconciliationKernelSnapshot,
+        executionId: unknownExecution.executionId,
+        executionHash: unknownExecution.executionHash,
+        executionNonceState: unknownExecution.nonceState,
+        nonce: unknownExecution.nonce,
+        actionKind: unknownExecution.actionKind,
+        actionHash: unknownExecution.actionHash,
+        cloid: unknownExecution.cloid,
+        accountBindingHash: unknownExecution.accountBindingHash,
+        signerReferenceHash: unknownExecution.signerReferenceHash
+      };
+      const unknownReconciliationInput = {
+        executionId: unknownExecution.executionId,
+        executionHash: unknownExecution.executionHash,
+        idempotencyKey: "tc303-postgres-unknown-recovery-0001"
+      };
+      const outageAdapter =
+        new ScriptedHyperliquidVenueObservationAdapter({
+          steps: [{ errorCode: "simulated_adapter_timeout" }]
+        });
+      const unknownReconciliation =
+        await createReconciliationService(
+          reconciliationRestart,
+          outageAdapter,
+          {
+            snapshot: unknownKernelSnapshot,
+            maxPollAttempts: 1,
+            circuitBreakerFailureThreshold: 3
+          }
+        ).reconcile(unknownReconciliationInput);
+      assert.equal(unknownReconciliation.status, "UNKNOWN");
+      assert.equal(unknownReconciliation.reconciled, false);
+      assert.equal(unknownReconciliation.newRiskBlocked, true);
+      assert.equal(unknownReconciliation.executionNonceState, "UNKNOWN");
+      assert.equal(outageAdapter.callCount, 1);
+
+      const recoveredObservation =
+        createSimulatedHyperliquidVenueObservation(
+          {
+            executionHash: unknownExecution.executionHash,
+            facilityHash: durableFacility.facilityHash,
+            actionHash: unknownExecution.actionHash,
+            cloid: unknownExecution.cloid,
+            kind: "NORMALIZED_STATE",
+            venueStatus: HyperliquidVenueOrderStatus.FILLED,
+            cumulativeFilledSize: unknownExecution.action.size,
+            cumulativeFillNotionalMinor: "250",
+            venueOrderReferenceHash: hashId(
+              "tc_303_simulated_recovered_venue_order",
+              { executionHash: unknownExecution.executionHash }
+            ),
+            orderStateHash: hashId(
+              "tc_303_simulated_recovered_order_state",
+              { executionHash: unknownExecution.executionHash }
+            ),
+            positionStateHash: hashId(
+              "tc_303_simulated_recovered_position_state",
+              { executionHash: unknownExecution.executionHash }
+            ),
+            accountStateHash: hashId(
+              "tc_303_simulated_recovered_account_state",
+              { executionHash: unknownExecution.executionHash }
+            ),
+            freshness: "FRESH",
+            complete: true,
+            reasonCode: "restart_unknown_recovered"
+          },
+          { clock: () => reconciliationClockMs }
+        );
+      const recoveredAdapter =
+        new ScriptedHyperliquidVenueObservationAdapter({
+          steps: [recoveredObservation]
+        });
+      const recoveredCore = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const recoveredReconciliation =
+        await createReconciliationService(
+          recoveredCore,
+          recoveredAdapter,
+          {
+            snapshot: unknownKernelSnapshot,
+            maxPollAttempts: 1,
+            circuitBreakerFailureThreshold: 3
+          }
+        ).reconcile(unknownReconciliationInput);
+      assert.equal(recoveredReconciliation.status, "RECONCILED");
+      assert.equal(recoveredReconciliation.outcome, "confirmed");
+      assert.equal(
+        recoveredReconciliation.executionNonceState,
+        "UNKNOWN"
+      );
+      assert.equal(
+        recoveredReconciliation.nonce,
+        unknownReconciliation.nonce
+      );
+      assert.equal(
+        recoveredReconciliation.reconciliationHash,
+        unknownReconciliation.reconciliationHash
+      );
+      assert.equal(recoveredAdapter.callCount, 1);
+      assert.equal(
+        (
+          await new PostgresHyperliquidReconciliationRepository({
+            eventRepository: recoveredCore.eventRepository
+          }).history(recoveredReconciliation.reconciliationId)
+        ).length,
+        4
+      );
+      const reconciliationAudit = await withTenantTransaction(
+        pool,
+        TENANT_CONTEXT,
+        (client) =>
+          client.query(
+            `SELECT
+               (SELECT count(*)::int
+                  FROM trading_testnet_reconciliation_runs
+                 WHERE facility_id = $1) AS runs,
+               (SELECT count(*)::int
+                  FROM domain_events
+                 WHERE aggregate_type =
+                   'trading_execution_reconciliation') AS events,
+               (SELECT count(*)::int
+                  FROM evidence_envelopes
+                 WHERE aggregate_type =
+                   'trading_execution_reconciliation') AS evidence,
+               (SELECT count(*)::int
+                  FROM outbox_messages o
+                  JOIN domain_events e ON e.id = o.event_id
+                 WHERE e.aggregate_type =
+                   'trading_execution_reconciliation') AS outbox,
+               (SELECT count(*)::int
+                  FROM inbox_messages
+                 WHERE consumer_name =
+                   'ipo.one.hyperliquid-testnet-reconciliation.v1') AS inbox`,
+            [durableFacility.tradingFacilityId]
+          )
+      );
+      assert.deepEqual(reconciliationAudit.rows[0], {
+        runs: 2,
+        events: 6,
+        evidence: 6,
+        outbox: 6,
+        inbox: 4
+      });
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              `UPDATE trading_testnet_execution_records
+                  SET nonce = nonce + 1
+                WHERE id = $1`,
+              [firstExecution.executionId]
+            )
+          ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              `UPDATE trading_testnet_reconciliation_runs
+                  SET nonce = nonce + 1
+                WHERE id = $1`,
+              [firstReconciliation.reconciliationId]
+            )
+          ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              `DELETE FROM trading_testnet_execution_transitions
+                WHERE execution_id = $1`,
+              [firstExecution.executionId]
+            )
+          ),
+        (error) => error.code === "23514"
+      );
+
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+          client.query(
+            `UPDATE trading_facilities
+             SET risk_state = 'normal',
+                 lifecycle_status = 'active',
+                 version = version + 1
+             WHERE id = $1`,
+            [active.tradingFacilityId]
+          )
+        ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              `UPDATE trading_testnet_protective_controls
+                  SET target_risk_state = 'NORMAL'
+                WHERE id = $1`,
+              [protectiveControl.controlId]
+            )
+          ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              `DELETE FROM trading_testnet_protective_transitions
+                WHERE control_id = $1`,
+              [protectiveControl.controlId]
+            )
+        ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              `UPDATE trading_testnet_facility_funding_controls
+                  SET facility_destination_hash = $2
+                WHERE id = $1`,
+              [
+                tc401Prepared.fundingId,
+                hashId("tc_401_forbidden_destination_mutation", {
+                  fundingId: tc401Prepared.fundingId
+                })
+              ]
+            )
+          ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () =>
+          withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+            client.query(
+              `DELETE FROM trading_testnet_facility_funding_controls
+                WHERE id = $1`,
+              [tc401Prepared.fundingId]
+            )
+          ),
+        (error) => error.code === "23514"
+      );
+      const rlsRole =
+        `ipo_one_tc103_rls_${randomBytes(6).toString("hex")}`;
+      await pool.query(
+        `CREATE ROLE ${rlsRole}
+         NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+         NOINHERIT NOREPLICATION NOBYPASSRLS`
+      );
+      try {
+        await pool.query(`GRANT USAGE ON SCHEMA public TO ${rlsRole}`);
+        await pool.query(
+          `GRANT SELECT ON
+             trading_facilities,
+             trading_order_intents,
+             trading_facility_risk_evaluations,
+             trading_execution_nonce_heads,
+             trading_testnet_execution_records,
+             trading_testnet_execution_transitions,
+             trading_testnet_protective_controls,
+             trading_testnet_protective_transitions,
+             trading_testnet_reconciliation_runs,
+             trading_testnet_facility_funding_controls
+           TO ${rlsRole}`
+        );
+        const hidden = await (async () => {
+          const client = await pool.connect();
+          try {
+            await client.query("BEGIN");
+            await client.query(`SET LOCAL ROLE ${rlsRole}`);
+            await setTenantTransactionContext(client, TENANT_TWO_CONTEXT);
+            const result = await client.query(
+              `SELECT
+                 (SELECT count(*)::int FROM trading_facilities
+                   WHERE id = $1) AS facilities,
+                 (SELECT count(*)::int FROM trading_order_intents
+                   WHERE id = $2) AS orders,
+                 (SELECT count(*)::int FROM trading_facility_risk_evaluations
+                   WHERE id = $3) AS evaluations,
+                 (SELECT count(*)::int FROM trading_execution_nonce_heads
+                   WHERE facility_id = $1) AS nonce_heads,
+                 (SELECT count(*)::int FROM trading_testnet_execution_records
+                   WHERE facility_id = $1) AS executions,
+                 (SELECT count(*)::int
+                    FROM trading_testnet_execution_transitions
+                   WHERE execution_id = $4) AS execution_transitions,
+                 (SELECT count(*)::int
+                    FROM trading_testnet_protective_controls
+                   WHERE facility_id = $1) AS protective_controls,
+                 (SELECT count(*)::int
+                    FROM trading_testnet_protective_transitions
+                   WHERE control_id = $5) AS protective_transitions,
+                 (SELECT count(*)::int
+                    FROM trading_testnet_reconciliation_runs
+                   WHERE id = $6) AS reconciliation_runs,
+                 (SELECT count(*)::int
+                    FROM trading_testnet_facility_funding_controls
+                   WHERE id = $7) AS facility_funding_controls`,
+              [
+                active.tradingFacilityId,
+                submitted.orderIntent.tradingOrderIntentId,
+                evaluated.riskEvaluation.tradingFacilityRiskEvaluationId,
+                firstExecution.executionId,
+                protectiveControl.controlId,
+                firstReconciliation.reconciliationId,
+                tc401Prepared.fundingId
+              ]
+            );
+            await client.query("COMMIT");
+            return result.rows[0];
+          } catch (error) {
+            try {
+              await client.query("ROLLBACK");
+            } catch {
+              // Preserve the original test failure.
+            }
+            throw error;
+          } finally {
+            client.release();
+          }
+        })();
+        assert.deepEqual(hidden, {
+          facilities: 0,
+          orders: 0,
+          evaluations: 0,
+          nonce_heads: 0,
+          executions: 0,
+          execution_transitions: 0,
+          protective_controls: 0,
+          protective_transitions: 0,
+          reconciliation_runs: 0,
+          facility_funding_controls: 0
+        });
+      } finally {
+        await pool.query(`DROP OWNED BY ${rlsRole}`);
+        await pool.query(`DROP ROLE ${rlsRole}`);
+      }
+
+      const reconciliation = new PostgresReconciliationService({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        coreRepository: restarted,
+        eventRepository: restarted.eventRepository,
+        approvalService: {
+          assertApproved() {
+            throw new Error("repair is not authorized in the clean path");
+          }
+        }
+      });
+      const reconciled = await reconciliation.run({
+        initiatedBy: "system:test-tc-103-reconciliation",
+        idempotencyKey: "tc-103-reconciliation-clean-0001"
+      });
+      assert.equal(
+        reconciled.status,
+        "passed",
+        JSON.stringify(await reconciliation.getRun(reconciled.runId))
+      );
+      tc104Seed = {
+        facility: durableFacility,
+        obligation: execution.obligation,
+        proposal: finalProposal,
+        funding: tc401Activation.record,
+        finalReconciliationHash:
+          recoveredReconciliation.reconciliationHash
+      };
+    });
+
+    await t.test("TC-104 close plus TC-402 final settlement and revocable Evidence are durable, balanced, isolated, and restart-recoverable", async () => {
+      assert.ok(tc104Seed, "TC-103 flattened Facility must be durable");
+      const repository = new PostgresCoreRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        transactionRetries: 10
+      });
+      const { facility, obligation } = tc104Seed;
+      const ledgerBefore = await withTenantTransaction(
+        pool,
+        TENANT_CONTEXT,
+        async (client) => {
+          const result = await client.query(
+            "SELECT count(*)::int AS transactions FROM ledger_transactions"
+          );
+          return result.rows[0].transactions;
+        }
+      );
+      const closeRequest = requestTradingFacilityClose({
+        facility,
+        requestedByActorId: "actor_tc_102_subject",
+        expectedStateHash: facility.stateHash,
+        expectedVersion: facility.version,
+        now: new Date("2026-07-25T01:19:00.000Z")
+      });
+      const closeEvent = createCreditEvent({
+        eventType: CreditEventType.TRADING_FACILITY_CLOSE_REQUESTED,
+        subjectId: facility.subjectId,
+        obligationId: facility.obligationId,
+        payload: {
+          tradingFacilityId: facility.tradingFacilityId,
+          tradingFacilityCloseRequestId:
+            closeRequest.tradingFacilityCloseRequestId,
+          requestHash: closeRequest.requestHash,
+          syntheticOnly: true,
+          nonRedeemable: true,
+          fundsAuthority: false,
+          productionFundsMoved: false
+        },
+        now: new Date(closeRequest.requestedAt)
+      });
+      const closeCommand = {
+        aggregateType: "trading_facility_close_request",
+        aggregateId: closeRequest.tradingFacilityCloseRequestId,
+        idempotencyKey: "tc-104-close-request-0001",
+        commandHash: hashId("tc_104_close_request", {
+          requestHash: closeRequest.requestHash
+        }),
+        events: [{
+          aggregateType: "trading_facility_close_request",
+          aggregateId: closeRequest.tradingFacilityCloseRequestId,
+          expectedVersion: 0,
+          event: closeEvent
+        }],
+        writes: [{
+          type: CoreProjectionType.TRADING_FACILITY_CLOSE_REQUEST,
+          value: closeRequest,
+          eventId: closeEvent.eventId
+        }],
+        response: {
+          tradingFacilityCloseRequestId:
+            closeRequest.tradingFacilityCloseRequestId
+        }
+      };
+      await repository.commitCommand(closeCommand);
+      assert.equal((await repository.commitCommand(closeCommand)).replayed, true);
+
+      {
+        const {
+          proposal,
+          funding,
+          finalReconciliationHash
+        } = tc104Seed;
+        const settlementNow =
+          new Date("2026-07-25T01:20:00.000Z").getTime();
+        const canonicalLedgerState = await withTenantTransaction(
+          pool,
+          TENANT_CONTEXT,
+          async (client) => {
+            const result = await client.query(
+              `SELECT count(*)::int AS transaction_count,
+                      coalesce(
+                        jsonb_agg(transaction_hash ORDER BY id),
+                        '[]'::jsonb
+                      ) AS transaction_hashes
+                 FROM ledger_transactions`
+            );
+            return {
+              count: result.rows[0].transaction_count,
+              stateHash: hashId("tc_402_canonical_ledger_snapshot", {
+                transactionHashes: result.rows[0].transaction_hashes
+              })
+            };
+          }
+        );
+        const snapshot = {
+          facility,
+          proposal,
+          obligation,
+          facilityId: facility.tradingFacilityId,
+          facilityHash: facility.facilityHash,
+          facilityStateHash: facility.stateHash,
+          facilityVersion: facility.version,
+          facilityLifecycleStatus: facility.lifecycleStatus,
+          facilityRiskState: "FLATTEN",
+          openOrderCount: 0,
+          exposureMinor: "0",
+          newRiskAdmissionOpen: false,
+          closeAdmissionFrozen: true,
+          fundingId: funding.fundingId,
+          fundingHash: funding.fundingHash,
+          fundingStatus: funding.status,
+          closeRequestId:
+            closeRequest.tradingFacilityCloseRequestId,
+          closeRequestHash: closeRequest.requestHash,
+          closeRequestStatus: closeRequest.status,
+          obligationId: obligation.obligationId,
+          obligationHash: obligation.obligationHash,
+          obligationExecutionStatus: obligation.executionStatus,
+          obligationWithdrawable: obligation.withdrawable,
+          subjectId: facility.subjectId,
+          assetId: facility.assetId,
+          templateType: proposal.terms.templateType,
+          termsHash: facility.termsHash,
+          fixedReturnBps: proposal.terms.fixedReturnBps,
+          performanceParticipationBps:
+            proposal.terms.performanceParticipationBps,
+          durationDays: proposal.terms.durationDays,
+          subjectContributionMinor:
+            facility.subjectCollateralMinor,
+          providerContributionMinor:
+            facility.providerFundingMinor,
+          finalReconciliationHash,
+          reconciliationStatus: "RECONCILED",
+          unknownExecutionCount: 0,
+          canonicalLedgerStateHash:
+            canonicalLedgerState.stateHash,
+          ledgerTransactionCount:
+            canonicalLedgerState.count,
+          canonicalFacility: true,
+          canonicalObligation: true,
+          canonicalLedger: true,
+          secondFacilityCreated: false,
+          secondObligationCreated: false,
+          secondLedgerCreated: false,
+          simulationOnly: true,
+          externalSystemQueried: false,
+          liveAccountsApproved: false,
+          capturedAt: new Date(settlementNow).toISOString(),
+          schemaVersion:
+            "hyperliquid_testnet_settlement_kernel_snapshot.v1"
+        };
+        const policy = createSimulatedTestnetFeePolicy({
+          policyId: "tc402_postgres_simulation_fee_policy_v1",
+          approvalEvidenceHash: hashId(
+            "tc_402_postgres_fee_policy_decision",
+            { scope: "simulation_only" }
+          ),
+          approvedByActorHash: hashId(
+            "actor",
+            "IPO.ONE Founder"
+          ),
+          ipoOneFeeBps: 200,
+          validFrom: new Date(settlementNow - 60_000).toISOString(),
+          validUntil: new Date(
+            settlementNow + 86_400_000
+          ).toISOString()
+        }, { clock: () => settlementNow });
+        const placeholder =
+          createSimulatedTestnetFinalityObservation({
+            settlementHash: hashId(
+              "tc_402_postgres_placeholder",
+              { facilityId: facility.tradingFacilityId }
+            ),
+            facilityHash: facility.facilityHash,
+            fundingHash: funding.fundingHash,
+            assetId: facility.assetId,
+            sourceEvidenceHash: hashId(
+              "tc_402_postgres_placeholder_evidence",
+              { facilityId: facility.tradingFacilityId }
+            ),
+            finalityStatus: "UNKNOWN",
+            reconciliationStatus: "UNKNOWN",
+            openOrderCount: 0,
+            exposureMinor: "0",
+            unknownExecutionCount: 1,
+            positionsFinal: false,
+            unrealizedPnlMinor: "0",
+            realizedPnlMinor: "0",
+            venueCostMinor: "0",
+            closingCostMinor: "0",
+            finalEquityMinor: "0",
+            complete: false,
+            economicValuesAuthoritative: false,
+            reasonCode: "prepare_only"
+          }, { clock: () => settlementNow });
+        const createSettlementService = (
+          core,
+          observations,
+          nowMs
+        ) =>
+          new HyperliquidTestnetSettlementService({
+            repository:
+              new PostgresHyperliquidSettlementRepository({
+                coreRepository: core
+              }),
+            commandGuard:
+              new SimulatedHyperliquidSettlementCommandGuard(),
+            kernelResolver:
+              new SimulatedHyperliquidSettlementKernelResolver({
+                snapshots: [snapshot]
+              }),
+            observationAdapter:
+              new ScriptedHyperliquidFinalityObservationAdapter({
+                observations
+              }),
+            feePolicyAdapter:
+              new ScriptedHyperliquidFeePolicyAdapter({ policy }),
+            clock: () => nowMs
+          });
+        const prepared = await createSettlementService(
+          repository,
+          [placeholder],
+          settlementNow
+        ).prepare({
+          facilityId: facility.tradingFacilityId,
+          facilityHash: facility.facilityHash,
+          idempotencyKey: "tc402-postgres-prepare-0001"
+        });
+        assert.equal(prepared.record.status, "AWAITING_FINALITY");
+        const capital =
+          BigInt(facility.subjectCollateralMinor) +
+          BigInt(facility.providerFundingMinor);
+        const realizedPnl = 120_000n;
+        const venueCost = 15_000n;
+        const closingCost = 5_000n;
+        const finalEquity =
+          capital + realizedPnl - venueCost - closingCost;
+        const finalObservation =
+          createSimulatedTestnetFinalityObservation({
+            settlementHash: prepared.record.settlementHash,
+            facilityHash: facility.facilityHash,
+            fundingHash: funding.fundingHash,
+            assetId: facility.assetId,
+            sourceEvidenceHash: hashId(
+              "tc_402_postgres_final_source_evidence",
+              { settlementHash: prepared.record.settlementHash }
+            ),
+            finalityStatus: "FINAL",
+            reconciliationStatus: "RECONCILED",
+            openOrderCount: 0,
+            exposureMinor: "0",
+            unknownExecutionCount: 0,
+            positionsFinal: true,
+            unrealizedPnlMinor: "0",
+            realizedPnlMinor: realizedPnl.toString(),
+            venueCostMinor: venueCost.toString(),
+            closingCostMinor: closingCost.toString(),
+            finalEquityMinor: finalEquity.toString(),
+            complete: true,
+            economicValuesAuthoritative: true,
+            reasonCode: "final_reconciled"
+          }, { clock: () => settlementNow + 1_000 });
+        const activeService = createSettlementService(
+          repository,
+          [finalObservation],
+          settlementNow + 1_000
+        );
+        const ready = await activeService.reconcileFinality({
+          settlementId: prepared.record.settlementId
+        });
+        assert.equal(ready.record.status, "READY_TO_SETTLE");
+        const settled402 = await activeService.settle({
+          settlementId: prepared.record.settlementId,
+          idempotencyKey: "tc402-postgres-settle-0001"
+        });
+        assert.equal(settled402.record.status, "SETTLED");
+        assert.equal(settled402.facility.riskState, "SETTLEMENT");
+        assert.equal(
+          settled402.ledger.transaction.debitTotalMinor,
+          settled402.ledger.transaction.creditTotalMinor
+        );
+        assert.equal(
+          settled402.record.waterfall.totalAllocatedMinor,
+          finalEquity.toString()
+        );
+        assert.equal(
+          settled402.record.waterfall.principalFeeApplied,
+          false
+        );
+        assert.equal(
+          settled402.record.waterfall.unrealizedPnlFeeApplied,
+          false
+        );
+        const settledReplay = await activeService.settle({
+          settlementId: prepared.record.settlementId,
+          idempotencyKey: "tc402-postgres-settle-0001"
+        });
+        assert.equal(settledReplay.replayed, true);
+        assert.deepEqual(
+          settledReplay.record,
+          settled402.record
+        );
+        const issued = await activeService.issuePerformanceEvidence({
+          settlementId: prepared.record.settlementId,
+          idempotencyKey: "tc402-postgres-evidence-v1"
+        });
+        assert.equal(issued.record.status, "EVIDENCE_ACTIVE");
+        const firstEvidenceHash =
+          issued.record.currentPerformanceEvidence
+            .performanceEvidenceHash;
+        const revoked =
+          await activeService.revokePerformanceEvidence({
+            settlementId: prepared.record.settlementId,
+            idempotencyKey:
+              "tc402-postgres-evidence-revoke-v2",
+            reasonCode: "source_evidence_invalidated"
+          });
+        assert.equal(revoked.record.status, "EVIDENCE_REVOKED");
+        assert.equal(
+          revoked.record.currentPerformanceEvidence
+            .previousEvidenceHash,
+          firstEvidenceHash
+        );
+        const restartedCore = new PostgresCoreRepository({
+          pool,
+          tenantContext: TENANT_CONTEXT
+        });
+        const restartedService = createSettlementService(
+          restartedCore,
+          [finalObservation],
+          settlementNow + 2_000
+        );
+        const reissued =
+          await restartedService.issuePerformanceEvidence({
+            settlementId: prepared.record.settlementId,
+            idempotencyKey: "tc402-postgres-evidence-v3"
+          });
+        assert.equal(reissued.record.status, "EVIDENCE_ACTIVE");
+        assert.equal(reissued.record.performanceEvidenceVersion, 3);
+        assert.equal(
+          reissued.record.currentPerformanceEvidence
+            .previousEvidenceHash,
+          revoked.record.currentPerformanceEvidence
+            .performanceEvidenceHash
+        );
+        const reissueReplay =
+          await restartedService.issuePerformanceEvidence({
+            settlementId: prepared.record.settlementId,
+            idempotencyKey: "tc402-postgres-evidence-v3"
+          });
+        assert.equal(reissueReplay.replayed, true);
+        assert.deepEqual(reissueReplay.record, reissued.record);
+        const durable =
+          await new PostgresHyperliquidSettlementRepository({
+            coreRepository: restartedCore
+          }).findById(prepared.record.settlementId);
+        assert.deepEqual(durable, reissued.record);
+        assert.equal(
+          (
+            await new PostgresHyperliquidSettlementRepository({
+              coreRepository: restartedCore
+            }).history(prepared.record.settlementId)
+          ).length,
+          6
+        );
+        const ledgerAfter402 = await withTenantTransaction(
+          pool,
+          TENANT_CONTEXT,
+          async (client) => {
+            const result = await client.query(
+              `SELECT
+                 (SELECT count(*)::int
+                    FROM ledger_transactions) AS transactions,
+                 (SELECT count(*)::int
+                    FROM trading_testnet_settlement_runs
+                   WHERE id = $1) AS runs,
+                 (SELECT count(*)::int
+                    FROM domain_events
+                   WHERE aggregate_type =
+                     'trading_testnet_settlement') AS events,
+                 (SELECT count(*)::int
+                    FROM evidence_envelopes
+                   WHERE aggregate_type =
+                     'trading_testnet_settlement') AS evidence,
+                 (SELECT count(*)::int
+                    FROM outbox_messages o
+                    JOIN domain_events e ON e.id = o.event_id
+                   WHERE e.aggregate_type =
+                     'trading_testnet_settlement') AS outbox,
+                 (SELECT count(*)::int
+                    FROM inbox_messages
+                   WHERE consumer_name =
+                     'ipo.one.hyperliquid-testnet-finality-observations.v1')
+                   AS inbox`
+              ,
+              [prepared.record.settlementId]
+            );
+            return result.rows[0];
+          }
+        );
+        assert.deepEqual(ledgerAfter402, {
+          transactions: ledgerBefore + 1,
+          runs: 1,
+          events: 6,
+          evidence: 6,
+          outbox: 6,
+          inbox: 1
+        });
+        assert.equal(
+          (
+            await restartedCore.verifyProjection(
+              CoreProjectionType.TRADING_FACILITY,
+              facility.tradingFacilityId
+            )
+          ).matches,
+          true
+        );
+        assert.equal(
+          (
+            await restartedCore.verifyProjection(
+              CoreProjectionType.LEDGER_TRANSACTION,
+              settled402.ledger.transaction
+                .ledgerTransactionId
+            )
+          ).matches,
+          true
+        );
+        await assert.rejects(
+          () =>
+            withTenantTransaction(
+              pool,
+              TENANT_CONTEXT,
+              (client) => client.query(
+                `UPDATE trading_testnet_settlement_runs
+                    SET ipo_one_fee_bps = ipo_one_fee_bps + 1
+                  WHERE id = $1`,
+                [prepared.record.settlementId]
+              )
+            ),
+          (error) => error.code === "23514"
+        );
+        await assert.rejects(
+          () =>
+            withTenantTransaction(
+              pool,
+              TENANT_CONTEXT,
+              (client) => client.query(
+                `DELETE FROM trading_testnet_settlement_runs
+                  WHERE id = $1`,
+                [prepared.record.settlementId]
+              )
+            ),
+          (error) => error.code === "23514"
+        );
+        const rlsRole =
+          `ipo_one_tc402_rls_${randomBytes(6).toString("hex")}`;
+        await pool.query(
+          `CREATE ROLE ${rlsRole}
+           NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+           NOINHERIT NOREPLICATION NOBYPASSRLS`
+        );
+        try {
+          await pool.query(
+            `GRANT USAGE ON SCHEMA public TO ${rlsRole}`
+          );
+          await pool.query(
+            `GRANT SELECT ON
+               trading_facility_close_requests,
+               trading_testnet_settlement_runs
+             TO ${rlsRole}`
+          );
+          const hidden = await (async () => {
+            const client = await pool.connect();
+            try {
+              await client.query("BEGIN");
+              await client.query(`SET LOCAL ROLE ${rlsRole}`);
+              await setTenantTransactionContext(
+                client,
+                TENANT_TWO_CONTEXT
+              );
+              const result = await client.query(
+                `SELECT
+                   (SELECT count(*)::int
+                      FROM trading_facility_close_requests
+                     WHERE id = $1) AS close_requests,
+                   (SELECT count(*)::int
+                      FROM trading_testnet_settlement_runs
+                     WHERE id = $2) AS settlement_runs`,
+                [
+                  closeRequest.tradingFacilityCloseRequestId,
+                  prepared.record.settlementId
+                ]
+              );
+              await client.query("COMMIT");
+              return result.rows[0];
+            } catch (error) {
+              await client.query("ROLLBACK");
+              throw error;
+            } finally {
+              client.release();
+            }
+          })();
+          assert.deepEqual(hidden, {
+            close_requests: 0,
+            settlement_runs: 0
+          });
+        } finally {
+          await pool.query(`DROP OWNED BY ${rlsRole}`);
+          await pool.query(`DROP ROLE ${rlsRole}`);
+        }
+        if (process.env.IPO_ONE_TC403_DRILL_APPROVAL === "TC-403") {
+          const drill = spawnSync(
+            process.execPath,
+            ["scripts/run-tc403-disaster-recovery-drill.mjs"],
+            {
+              cwd: process.cwd(),
+              env: process.env,
+              encoding: "utf8",
+              maxBuffer: 16 * 1024 * 1024
+            }
+          );
+          assert.equal(
+            drill.status,
+            0,
+            drill.stderr || drill.stdout || "TC-403 DR drill failed"
+          );
+          const evidence = JSON.parse(drill.stdout);
+          assert.equal(evidence.status, "EXACT_MATCH");
+          assert.equal(evidence.exactMatch, true);
+          assert.equal(evidence.sourceCounts.facility, 1);
+          assert.ok(evidence.sourceCounts.ledgerTransactions > 0);
+          assert.ok(evidence.sourceCounts.ledgerEntries > 0);
+          assert.ok(evidence.sourceCounts.evidence > 0);
+          assert.equal(evidence.sourceCounts.settlements, 1);
+          assert.equal(evidence.sourceDatabaseMutated, false);
+          assert.equal(evidence.restoreDatabaseRetained, false);
+          assert.equal(evidence.backupArtifactRetained, false);
+          assert.equal(evidence.externalSystemQueried, false);
+          assert.equal(evidence.exchangeWriteSubmitted, false);
+          assert.equal(evidence.credentialOperationPerformed, false);
+          assert.equal(evidence.productionFundsMoved, false);
+          if (
+            process.env.IPO_ONE_TC403_DRILL_PRINT_EVIDENCE === "TC-403"
+          ) {
+            process.stdout.write(
+              `[TC403_DR_EVIDENCE]${JSON.stringify(evidence)}\n`
+            );
+          }
+        }
+      }
     });
 
     await t.test("Human Consent and Agent Mandate credit applications share one durable kernel", async () => {

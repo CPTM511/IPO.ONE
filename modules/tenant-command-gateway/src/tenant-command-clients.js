@@ -266,12 +266,468 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async createOfficialReport({
+    obligationId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotCreateOfficialReport",
+      payload,
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getOfficialReport({ officialReportId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadOfficialReport",
+      payload: {},
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async retrieveOfficialReport({ officialReportId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotRetrieveOfficialReport",
+      payload: {},
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async revokeOfficialReport({
+    officialReportId,
+    reasonCode,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotRevokeOfficialReport",
+      payload: {},
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      reasonCode,
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async createCreditPassportArtifact({
+    subjectId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotCreateCreditPassportArtifact",
+      payload,
+      resource: { resourceType: "subject", resourceId: subjectId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getOwnCreditPassportArtifact({ artifactId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadOwnCreditPassportArtifact",
+      payload: {},
+      resource: { resourceType: "credit_passport_artifact", resourceId: artifactId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async verifyCreditPassportArtifact({
+    artifactId,
+    payload,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotVerifyCreditPassportArtifact",
+      payload,
+      resource: { resourceType: "credit_passport_artifact", resourceId: artifactId },
+      purpose: "private_credit_review",
+      requestId,
+      correlationId
+    });
+  }
+
+  async revokeCreditPassportArtifact({
+    artifactId,
+    reasonCode,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotRevokeCreditPassportArtifact",
+      payload: {},
+      resource: { resourceType: "credit_passport_artifact", resourceId: artifactId },
+      reasonCode,
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
   async submitPilotFeedback({ subjectId, payload, idempotencyKey, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotSubmitPilotFeedback",
       payload,
       resource: { resourceType: "subject", resourceId: subjectId },
       idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingAccountBindingChallenge({
+    subjectId,
+    masterAccountAddress,
+    subaccountAddress,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateAccountBindingChallenge",
+      payload: {
+        environment: "hyperliquid_testnet",
+        masterAccountAddress,
+        subaccountAddress
+      },
+      resource: { resourceType: "subject", resourceId: subjectId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async importTradingHistory({
+    tradingCreditProfileId,
+    masterAccountAddress,
+    subaccountAddress,
+    signature,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingImportHyperliquidHistory",
+      payload: {
+        masterAccountAddress,
+        subaccountAddress,
+        signature
+      },
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async finalizeTradingEvidence({
+    tradingCreditProfileId,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingFinalizeEvidenceSnapshot",
+      payload: {},
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingCreditProfile({
+    tradingCreditProfileId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadCreditProfile",
+      payload: {},
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingCapitalRequest({
+    tradingCreditProfileId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateCapitalRequest",
+      payload,
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async listCompatibleTradingMandates({
+    tradingCapitalRequestId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingListCompatibleMandates",
+      payload: {},
+      resource: {
+        resourceType: "trading_capital_request",
+        resourceId: tradingCapitalRequestId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingMatchProposal({
+    tradingCapitalRequestId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateMatchProposal",
+      payload,
+      resource: {
+        resourceType: "trading_capital_request",
+        resourceId: tradingCapitalRequestId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async acceptTradingMatchAsSubject({
+    tradingMatchProposalId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingAcceptMatchAsSubject",
+      payload,
+      resource: {
+        resourceType: "trading_match_proposal",
+        resourceId: tradingMatchProposalId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingFacility({
+    tradingMatchProposalId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateFacility",
+      payload,
+      resource: {
+        resourceType: "trading_match_proposal",
+        resourceId: tradingMatchProposalId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async contributeTradingSubjectCollateral({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingContributeSubjectCollateral",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async activateTradingFacility({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingActivateFacility",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async submitTradingOrderIntent({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingSubmitOrderIntent",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async cancelTradingOrderIntent({
+    tradingOrderIntentId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCancelOrderIntent",
+      payload,
+      resource: {
+        resourceType: "trading_order_intent",
+        resourceId: tradingOrderIntentId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingFacility({
+    tradingFacilityId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadFacilityState",
+      payload: {},
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async requestTradingFacilityClose({
+    tradingFacilityId, payload, idempotencyKey, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingRequestClose",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingSettlement({
+    tradingSettlementId, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadSettlement",
+      payload: {},
+      resource: {
+        resourceType: "trading_settlement",
+        resourceId: tradingSettlementId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async issueTradingPerformanceProof({
+    tradingSettlementId, payload, idempotencyKey, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingIssuePerformanceProof",
+      payload,
+      resource: {
+        resourceType: "trading_settlement",
+        resourceId: tradingSettlementId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingFacilityEvidence({
+    tradingFacilityId, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadFacilityEvidence",
+      payload: {},
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
       requestId,
       correlationId
     });
@@ -464,12 +920,433 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async createOfficialReport({
+    obligationId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotCreateOfficialReport",
+      payload,
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getOfficialReport({ officialReportId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadOfficialReport",
+      payload: {},
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async retrieveOfficialReport({ officialReportId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotRetrieveOfficialReport",
+      payload: {},
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async revokeOfficialReport({
+    officialReportId,
+    reasonCode,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotRevokeOfficialReport",
+      payload: {},
+      resource: { resourceType: "official_report", resourceId: officialReportId },
+      reasonCode,
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getOwnCreditPassportArtifact({ artifactId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadOwnCreditPassportArtifact",
+      payload: {},
+      resource: { resourceType: "credit_passport_artifact", resourceId: artifactId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async verifyCreditPassportArtifact({
+    artifactId,
+    payload,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotVerifyCreditPassportArtifact",
+      payload,
+      resource: { resourceType: "credit_passport_artifact", resourceId: artifactId },
+      purpose: "private_credit_review",
+      requestId,
+      correlationId
+    });
+  }
+
   async submitPilotFeedback({ subjectId, payload, idempotencyKey, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotSubmitPilotFeedback",
       payload,
       resource: { resourceType: "subject", resourceId: subjectId },
       idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingAccountBindingChallenge({
+    subjectId,
+    masterAccountAddress,
+    subaccountAddress,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateAccountBindingChallenge",
+      payload: {
+        environment: "hyperliquid_testnet",
+        masterAccountAddress,
+        subaccountAddress
+      },
+      resource: { resourceType: "subject", resourceId: subjectId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async importTradingHistory({
+    tradingCreditProfileId,
+    masterAccountAddress,
+    subaccountAddress,
+    signature,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingImportHyperliquidHistory",
+      payload: {
+        masterAccountAddress,
+        subaccountAddress,
+        signature
+      },
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async finalizeTradingEvidence({
+    tradingCreditProfileId,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingFinalizeEvidenceSnapshot",
+      payload: {},
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingCreditProfile({
+    tradingCreditProfileId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadCreditProfile",
+      payload: {},
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingCapitalRequest({
+    tradingCreditProfileId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateCapitalRequest",
+      payload,
+      resource: {
+        resourceType: "trading_credit_profile",
+        resourceId: tradingCreditProfileId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async listCompatibleTradingMandates({
+    tradingCapitalRequestId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingListCompatibleMandates",
+      payload: {},
+      resource: {
+        resourceType: "trading_capital_request",
+        resourceId: tradingCapitalRequestId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingMatchProposal({
+    tradingCapitalRequestId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateMatchProposal",
+      payload,
+      resource: {
+        resourceType: "trading_capital_request",
+        resourceId: tradingCapitalRequestId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async acceptTradingMatchAsSubject({
+    tradingMatchProposalId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingAcceptMatchAsSubject",
+      payload,
+      resource: {
+        resourceType: "trading_match_proposal",
+        resourceId: tradingMatchProposalId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingFacility({
+    tradingMatchProposalId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateFacility",
+      payload,
+      resource: {
+        resourceType: "trading_match_proposal",
+        resourceId: tradingMatchProposalId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async contributeTradingSubjectCollateral({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingContributeSubjectCollateral",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async activateTradingFacility({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingActivateFacility",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async submitTradingOrderIntent({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingSubmitOrderIntent",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async cancelTradingOrderIntent({
+    tradingOrderIntentId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCancelOrderIntent",
+      payload,
+      resource: {
+        resourceType: "trading_order_intent",
+        resourceId: tradingOrderIntentId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingFacility({
+    tradingFacilityId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadFacilityState",
+      payload: {},
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async requestTradingFacilityClose({
+    tradingFacilityId, payload, idempotencyKey, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingRequestClose",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingSettlement({
+    tradingSettlementId, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadSettlement",
+      payload: {},
+      resource: {
+        resourceType: "trading_settlement",
+        resourceId: tradingSettlementId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async issueTradingPerformanceProof({
+    tradingSettlementId, payload, idempotencyKey, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingIssuePerformanceProof",
+      payload,
+      resource: {
+        resourceType: "trading_settlement",
+        resourceId: tradingSettlementId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingFacilityEvidence({
+    tradingFacilityId, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadFacilityEvidence",
+      payload: {},
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
       requestId,
       correlationId
     });
@@ -579,6 +1456,74 @@ export class OperatorTenantCommandClient extends TenantProtocolClient {
       correlationId
     });
   }
+
+  async evaluateTradingFacilityRisk({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingEvaluateRisk",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async pauseTradingFacilityNewRisk({
+    tradingFacilityId,
+    payload,
+    reasonCode,
+    approvalArtifact,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingPauseNewRisk",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      reasonCode,
+      approvalArtifact,
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async flattenTradingFacility({
+    tradingFacilityId,
+    payload,
+    reasonCode,
+    approvalArtifact,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingFlattenFacility",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      reasonCode,
+      approvalArtifact,
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
 }
 
 export class SystemWorkerTenantCommandClient extends TenantProtocolClient {
@@ -603,6 +1548,26 @@ export class SystemWorkerTenantCommandClient extends TenantProtocolClient {
       operationId: "workerProcessInbox",
       payload: callback,
       resource: { resourceType: "inbox_message", resourceId: callback.callbackId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async runTradingSettlement({
+    tradingFacilityCloseRequestId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingRunSettlement",
+      payload,
+      resource: {
+        resourceType: "trading_facility_close_request",
+        resourceId: tradingFacilityCloseRequestId
+      },
       idempotencyKey,
       requestId,
       correlationId
@@ -639,6 +1604,126 @@ export class ProviderTenantCommandClient extends TenantProtocolClient {
       resource: { resourceType: "transfer_intent", resourceId: transferIntentId },
       purpose: "provider_intent_delivery",
       idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async createTradingProviderMandate({
+    providerId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingCreateProviderMandate",
+      payload,
+      resource: { resourceType: "provider", resourceId: providerId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async acceptTradingMatchAsProvider({
+    tradingMatchProposalId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingAcceptMatchAsProvider",
+      payload,
+      resource: {
+        resourceType: "trading_match_proposal",
+        resourceId: tradingMatchProposalId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async recordTradingProviderFunding({
+    tradingFacilityId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingRecordProviderFunding",
+      payload,
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingFacility({
+    tradingFacilityId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadFacilityState",
+      payload: {},
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingSettlement({
+    tradingSettlementId, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadSettlement",
+      payload: {},
+      resource: {
+        resourceType: "trading_settlement",
+        resourceId: tradingSettlementId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async issueTradingPerformanceProof({
+    tradingSettlementId, payload, idempotencyKey, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingIssuePerformanceProof",
+      payload,
+      resource: {
+        resourceType: "trading_settlement",
+        resourceId: tradingSettlementId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getTradingFacilityEvidence({
+    tradingFacilityId, requestId, correlationId
+  }) {
+    return this.execute({
+      operationId: "tradingReadFacilityEvidence",
+      payload: {},
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: tradingFacilityId
+      },
       requestId,
       correlationId
     });

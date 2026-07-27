@@ -145,6 +145,10 @@ export class HumanOidcBff {
       typeof providerAdapter?.exchangeAuthorizationCode !== "function" ||
       !transactionStore?.create ||
       !sessionStore?.create ||
+      !sessionStore?.authenticate ||
+      !sessionStore?.rotate ||
+      !sessionStore?.revoke ||
+      !sessionStore?.invalidate ||
       !credentialRegistry?.findBySubject ||
       !referenceHasher?.hash
     ) {
@@ -358,6 +362,14 @@ export class HumanOidcBff {
   async logout(input) {
     return Object.freeze({
       revoked: await this.sessionStore.revoke(input),
+      clearSessionCookie: expiredSessionCookie(),
+      clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
+    });
+  }
+
+  async invalidateBrowserSession(input) {
+    return Object.freeze({
+      result: await this.sessionStore.invalidate(input),
       clearSessionCookie: expiredSessionCookie(),
       clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
     });

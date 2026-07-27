@@ -1,0 +1,346 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/real-value-pilot-decision-package.schema.json",
+  "title": "IPO.ONE real-value pilot human decision package v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packageId",
+    "taskId",
+    "preparedAt",
+    "packageStatus",
+    "sourceRelease",
+    "safetyBoundary",
+    "decisions",
+    "overallGate"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "real_value_pilot_decision_package.v1"
+    },
+    "packageId": {
+      "const": "REALVALUE-001-DECISION-PACKAGE-001"
+    },
+    "taskId": {
+      "const": "REALVALUE-001"
+    },
+    "preparedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "packageStatus": {
+      "const": "COMPLETE_FOR_HUMAN_DECISION_LAUNCH_REJECTED_LOCKED"
+    },
+    "sourceRelease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "baselineCommit",
+        "candidateArtifactSetHash",
+        "acceptanceMatrixSha256",
+        "openP0Count",
+        "openP1Count",
+        "openP2FindingIds",
+        "unverifiedClaimsPreserved"
+      ],
+      "properties": {
+        "status": {
+          "const": "IMPLEMENTED_UNVERIFIED"
+        },
+        "baselineCommit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidateArtifactSetHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "acceptanceMatrixSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "openP0Count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "openP1Count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "openP2FindingIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        },
+        "unverifiedClaimsPreserved": {
+          "const": true
+        }
+      }
+    },
+    "safetyBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decisionPackageOnly",
+        "codexApprovalAuthority",
+        "launchPolicyRevisionAuthorized",
+        "realFundsAuthorized",
+        "mainnetAuthorized",
+        "productionSignerAuthorized",
+        "exchangeWriteAuthorized",
+        "deploymentAuthorized",
+        "withdrawalsOrTransfersAuthorized",
+        "capitalMovementAuthorized"
+      ],
+      "properties": {
+        "decisionPackageOnly": {
+          "const": true
+        },
+        "codexApprovalAuthority": {
+          "const": "NONE"
+        },
+        "launchPolicyRevisionAuthorized": {
+          "const": false
+        },
+        "realFundsAuthorized": {
+          "const": false
+        },
+        "mainnetAuthorized": {
+          "const": false
+        },
+        "productionSignerAuthorized": {
+          "const": false
+        },
+        "exchangeWriteAuthorized": {
+          "const": false
+        },
+        "deploymentAuthorized": {
+          "const": false
+        },
+        "withdrawalsOrTransfersAuthorized": {
+          "const": false
+        },
+        "capitalMovementAuthorized": {
+          "const": false
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    "overallGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "launchDecision",
+        "launchAllowed",
+        "allP0Approved",
+        "unresolvedP0Count",
+        "verifiedP0Count",
+        "policyRevisionRequired",
+        "blockingReasons"
+      ],
+      "properties": {
+        "launchDecision": {
+          "const": "REJECT_LOCKED"
+        },
+        "launchAllowed": {
+          "const": false
+        },
+        "allP0Approved": {
+          "const": false
+        },
+        "unresolvedP0Count": {
+          "const": 16
+        },
+        "verifiedP0Count": {
+          "const": 0
+        },
+        "policyRevisionRequired": {
+          "const": true
+        },
+        "blockingReasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/text"
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 512
+    },
+    "approver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "assignee",
+        "assignmentStatus",
+        "approvalStatus"
+      ],
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/text"
+        },
+        "assignee": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/text"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignmentStatus": {
+          "enum": [
+            "ASSIGNED",
+            "UNASSIGNED"
+          ]
+        },
+        "approvalStatus": {
+          "enum": [
+            "PENDING",
+            "APPROVE",
+            "REJECT"
+          ]
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decisionId",
+        "domain",
+        "title",
+        "severity",
+        "accountableOwner",
+        "requiredApprovers",
+        "decisionStatus",
+        "approveRejectPrompt",
+        "evidenceRequirements",
+        "evidenceStatus",
+        "evidenceRefs",
+        "residualRisks",
+        "approvalRecord",
+        "blockedCapabilities"
+      ],
+      "properties": {
+        "decisionId": {
+          "type": "string",
+          "pattern": "^RV-P0-(?:0[1-9]|1[0-6])$"
+        },
+        "domain": {
+          "enum": [
+            "capital_source",
+            "loss_bearer",
+            "legal_jurisdiction",
+            "custody_fund_path",
+            "signer_governance",
+            "chain_asset_accounts",
+            "participants_providers",
+            "exposure_caps",
+            "collateral_waterfall",
+            "risk_stop_loss",
+            "pricing_accounting",
+            "operations_incident",
+            "independent_security",
+            "rollback_wind_down",
+            "production_infrastructure",
+            "final_launch_authorization"
+          ]
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "severity": {
+          "const": "P0"
+        },
+        "accountableOwner": {
+          "const": "IPO.ONE Founder"
+        },
+        "requiredApprovers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/approver"
+          }
+        },
+        "decisionStatus": {
+          "const": "REJECT_LOCKED"
+        },
+        "approveRejectPrompt": {
+          "$ref": "#/$defs/text"
+        },
+        "evidenceRequirements": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/text"
+          },
+          "uniqueItems": true
+        },
+        "evidenceStatus": {
+          "enum": [
+            "MISSING",
+            "PARTIAL",
+            "UNVERIFIED"
+          ]
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/text"
+          },
+          "uniqueItems": true
+        },
+        "residualRisks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/text"
+          },
+          "uniqueItems": true
+        },
+        "approvalRecord": {
+          "type": "null"
+        },
+        "blockedCapabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

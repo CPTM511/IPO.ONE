@@ -22,7 +22,7 @@ const ORIGIN = "https://ipo.one";
 const CLIENT_ID = "ipo_one_wallet_console";
 const TENANT_ID = "tenant_alpha";
 
-function createFixture() {
+function createFixture({ signatureVerifier } = {}) {
   const account = privateKeyToAccount(generatePrivateKey());
   const referenceHasher = createReferenceHasher(randomBytes(32));
   const eventStore = new InMemoryAuthenticationEventStore();
@@ -71,8 +71,20 @@ function createFixture() {
     sessionStore,
     credentialRegistry,
     referenceHasher,
-    signatureVerifier: {
-      verify: (input) => verifyMessage(input)
+    signatureVerifier: signatureVerifier ?? {
+      async verify(input) {
+        if (await verifyMessage(input) !== true) return undefined;
+        return Object.freeze({
+          schemaVersion: "wallet_signature_verification.v1",
+          chainId: `eip155:${input.chainId}`,
+          walletType: "eoa",
+          verificationMethod: "eip191_eoa_v1",
+          authenticationEligible: true,
+          rawSignaturePersisted: false,
+          credentialsIncluded: false,
+          productionFundsMoved: false
+        });
+      }
     }
   });
   return { account, bff, credential, eventStore };
@@ -98,6 +110,11 @@ test("SIWE creates a one-use host session only for a pre-provisioned wallet cred
   assert.equal(issued.session.authenticationMethod, ClientAuthenticationMethod.SIWE);
   assert.equal(issued.session.senderConstraintMethod, SenderConstraintMethod.HOST_SESSION);
   assert.equal(issued.session.actorId, "actor_human_wallet");
+  assert.deepEqual(issued.session.amr, [
+    "wallet",
+    "siwe",
+    "eip191_eoa_v1"
+  ]);
   assert.deepEqual(issued.session.roles, ["tenant_owner"]);
   assert.deepEqual(issued.session.capabilities, ["subject.read", "integration.manage"]);
   assert.throws(
@@ -149,5 +166,57 @@ test("SIWE rejects unapproved chains, invalid signatures, and unprovisioned wall
       now: NOW
     }),
     (error) => error.code === "authentication_credential_rejected"
+  );
+});
+
+test("SIWE records an eligible ERC-1271 method and rejects inclusion-only evidence", async () => {
+  const result = (input, authenticationEligible) => Object.freeze({
+    schemaVersion: "wallet_signature_verification.v1",
+    chainId: `eip155:${input.chainId}`,
+    walletType: "contract",
+    verificationMethod: "eip1271_eip191_v1",
+    authenticationEligible,
+    rawSignaturePersisted: false,
+    credentialsIncluded: false,
+    productionFundsMoved: false
+  });
+  const eligible = createFixture({
+    signatureVerifier: {
+      verify: async (input) => result(input, true)
+    }
+  });
+  const challenge = await eligible.bff.beginLogin({
+    address: eligible.account.address,
+    chainId: 84532,
+    now: NOW
+  });
+  const issued = await eligible.bff.completeLogin({
+    transactionHandle: challenge.handle,
+    signature: `0x${"11".repeat(65)}`,
+    now: NOW
+  });
+  assert.deepEqual(issued.session.amr, [
+    "wallet",
+    "siwe",
+    "eip1271_eip191_v1"
+  ]);
+
+  const ineligible = createFixture({
+    signatureVerifier: {
+      verify: async (input) => result(input, false)
+    }
+  });
+  const rejected = await ineligible.bff.beginLogin({
+    address: ineligible.account.address,
+    chainId: 1952,
+    now: NOW
+  });
+  await assert.rejects(
+    ineligible.bff.completeLogin({
+      transactionHandle: rejected.handle,
+      signature: `0x${"22".repeat(65)}`,
+      now: NOW
+    }),
+    (error) => error.code === "wallet_signature_rejected"
   );
 });

@@ -195,6 +195,102 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
       }
 
       if (
+        handler.operationId === "pilotCreateCreditPassportArtifact" &&
+        hasExactChecks(policy, ["credit_passport_source_state"]) &&
+        resource?.resourceType === "subject" &&
+        typeof payload?.creditIntentId === "string"
+      ) {
+        const subjectState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.SUBJECT,
+          resource.resourceId,
+          { lock: true }
+        );
+        const decision = await coreRepository.findRiskDecisionByCreditIntentInTransaction(
+          client,
+          payload.creditIntentId,
+          { lock: true }
+        );
+        if (
+          !subjectState ||
+          !decision ||
+          decision.subjectId !== resource.resourceId ||
+          decision.schemaVersion !== "risk_decision.v3" ||
+          decision.sandboxOnly !== true ||
+          decision.productionAuthority !== false ||
+          decision.decisionPassport?.schemaVersion !== "risk_decision_passport.v1"
+        ) {
+          throw new DomainError(
+            "authorization_live_policy_rejected",
+            "live Credit Passport source state rejected the operation"
+          );
+        }
+        return Object.freeze({
+          liveStateVersion: subjectState.aggregateVersion + 1,
+          evaluatedChecks: Object.freeze(["credit_passport_source_state"])
+        });
+      }
+
+      if (
+        handler.operationId === "pilotVerifyCreditPassportArtifact" &&
+        hasExactChecks(policy, ["credit_passport_verification_state"]) &&
+        resource?.resourceType === "credit_passport_artifact"
+      ) {
+        const state = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.CREDIT_PASSPORT_ARTIFACT,
+          resource.resourceId,
+          { lock: false }
+        );
+        if (
+          !state ||
+          state.value.schemaVersion !== "credit_passport_artifact.v1" ||
+          state.value.status !== "active" ||
+          resource.status !== "active" ||
+          state.value.sandboxOnly !== true ||
+          state.value.productionAuthority !== false
+        ) {
+          throw new DomainError(
+            "authorization_live_policy_rejected",
+            "live Credit Passport verification state rejected the operation"
+          );
+        }
+        return Object.freeze({
+          liveStateVersion: state.aggregateVersion,
+          evaluatedChecks: Object.freeze(["credit_passport_verification_state"])
+        });
+      }
+
+      if (
+        handler.operationId === "pilotRevokeCreditPassportArtifact" &&
+        hasExactChecks(policy, ["credit_passport_revocation_state"]) &&
+        resource?.resourceType === "credit_passport_artifact"
+      ) {
+        const state = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.CREDIT_PASSPORT_ARTIFACT,
+          resource.resourceId,
+          { lock: true }
+        );
+        if (
+          !state ||
+          state.value.schemaVersion !== "credit_passport_artifact.v1" ||
+          state.value.status !== "active" ||
+          state.value.sandboxOnly !== true ||
+          state.value.productionAuthority !== false
+        ) {
+          throw new DomainError(
+            "authorization_live_policy_rejected",
+            "live Credit Passport revocation state rejected the operation"
+          );
+        }
+        return Object.freeze({
+          liveStateVersion: state.aggregateVersion,
+          evaluatedChecks: Object.freeze(["credit_passport_revocation_state"])
+        });
+      }
+
+      if (
         handler.operationId === "pilotActivateSandboxMandate" &&
         hasExactChecks(policy, ["mandate_activation_state"]) &&
         resource?.resourceType === "mandate"

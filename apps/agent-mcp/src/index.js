@@ -1,4 +1,5 @@
 export * from "./agent-mcp-adapter.js";
+export * from "./trading-capital-mcp-adapter.js";
 export * from "./agent-handoff-plan.js";
 export * from "./agent-credit-offer-workflow.js";
 export * from "./agent-mcp-host.js";

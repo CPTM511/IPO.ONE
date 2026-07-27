@@ -1,0 +1,1065 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-real-credit-profile.schema.json",
+  "title": "IPO.ONE Hyperliquid Testnet Read-Only Trading Credit Profile v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tradingCreditProfileId",
+    "subjectId",
+    "principalId",
+    "subjectType",
+    "operatorType",
+    "requestedByActorHash",
+    "accountReferenceHash",
+    "bindingEpoch",
+    "stage",
+    "bindingChallenge",
+    "evidenceAuthority",
+    "version",
+    "createdAt",
+    "updatedAt",
+    "sandboxOnly",
+    "syntheticOnly",
+    "testnetOnly",
+    "realFunds",
+    "productionAuthority",
+    "fundsAuthority",
+    "creditApproval",
+    "universalScoreAvailable",
+    "externalSystemQueried",
+    "rawStrategyIncluded",
+    "rawTransactionsIncluded",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "tradingCreditProfileId": { "$ref": "#/$defs/id" },
+    "subjectId": { "$ref": "#/$defs/id" },
+    "principalId": { "$ref": "#/$defs/id" },
+    "subjectType": { "enum": ["human", "agent"] },
+    "operatorType": { "enum": ["human_trader", "agent_operator"] },
+    "requestedByActorHash": { "$ref": "#/$defs/hash" },
+    "accountReferenceHash": { "$ref": "#/$defs/hash" },
+    "bindingEpoch": { "$ref": "#/$defs/positiveInteger" },
+    "stage": {
+      "enum": ["challenge_pending", "history_imported", "finalized"]
+    },
+    "bindingChallenge": { "$ref": "#/$defs/bindingChallenge" },
+    "accountBinding": { "$ref": "#/$defs/accountBinding" },
+    "historyImport": { "$ref": "#/$defs/historyImport" },
+    "evidenceSnapshot": { "$ref": "#/$defs/evidenceSnapshot" },
+    "factorScorecard": { "$ref": "#/$defs/factorScorecard" },
+    "evidenceAuthority": { "$ref": "#/$defs/evidenceAuthority" },
+    "priorEvidenceInvalidation": {
+      "$ref": "#/$defs/priorEvidenceInvalidation"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "sandboxOnly": { "const": true },
+    "syntheticOnly": { "const": false },
+    "testnetOnly": { "const": true },
+    "realFunds": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "creditApproval": { "const": false },
+    "universalScoreAvailable": { "const": false },
+    "externalSystemQueried": { "type": "boolean" },
+    "rawStrategyIncluded": { "const": false },
+    "rawTransactionsIncluded": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "trading_credit_profile.v2" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "stage": { "const": "challenge_pending" } },
+        "required": ["stage"]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["accountBinding"] },
+            { "required": ["historyImport"] },
+            { "required": ["evidenceSnapshot"] },
+            { "required": ["factorScorecard"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "stage": { "const": "history_imported" } },
+        "required": ["stage"]
+      },
+      "then": {
+        "required": ["accountBinding", "historyImport"],
+        "not": {
+          "anyOf": [
+            { "required": ["evidenceSnapshot"] },
+            { "required": ["factorScorecard"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "stage": { "const": "finalized" } },
+        "required": ["stage"]
+      },
+      "then": {
+        "required": [
+          "accountBinding",
+          "historyImport",
+          "evidenceSnapshot",
+          "factorScorecard"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^-?(?:0|[1-9][0-9]{0,77})(?:\\.[0-9]{1,18})?$"
+    },
+    "nullableDateTime": {
+      "oneOf": [
+        { "type": "string", "format": "date-time" },
+        { "type": "null" }
+      ]
+    },
+    "bindingChallenge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "challengeId",
+        "challengeHash",
+        "nonceHash",
+        "typedDataHash",
+        "tenantHash",
+        "subjectHash",
+        "principalHash",
+        "masterAddressHash",
+        "subaccountAddressHash",
+        "chainId",
+        "environment",
+        "infoProfileId",
+        "bindingEpoch",
+        "issuedAt",
+        "expiresAt",
+        "status",
+        "oneUse",
+        "bindingMethod",
+        "accountOwnershipVerified",
+        "relationshipVerified",
+        "reusableSignatureIncluded",
+        "rawSignaturePersisted",
+        "schemaVersion"
+      ],
+      "properties": {
+        "challengeId": { "$ref": "#/$defs/id" },
+        "challengeHash": { "$ref": "#/$defs/hash" },
+        "nonceHash": { "$ref": "#/$defs/hash" },
+        "typedDataHash": { "$ref": "#/$defs/hash" },
+        "tenantHash": { "$ref": "#/$defs/hash" },
+        "subjectHash": { "$ref": "#/$defs/hash" },
+        "principalHash": { "$ref": "#/$defs/hash" },
+        "masterAddressHash": { "$ref": "#/$defs/hash" },
+        "subaccountAddressHash": { "$ref": "#/$defs/hash" },
+        "chainId": { "const": "eip155:998" },
+        "environment": { "const": "hyperliquid_testnet" },
+        "infoProfileId": { "const": "hyperliquid_testnet_info.v1" },
+        "bindingEpoch": { "$ref": "#/$defs/positiveInteger" },
+        "issuedAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "status": { "enum": ["pending", "consumed"] },
+        "consumedAt": { "type": "string", "format": "date-time" },
+        "oneUse": { "const": true },
+        "bindingMethod": { "const": "eip712_eoa_master_v1" },
+        "accountOwnershipVerified": { "type": "boolean" },
+        "relationshipVerified": { "type": "boolean" },
+        "reusableSignatureIncluded": { "const": false },
+        "rawSignaturePersisted": { "const": false },
+        "schemaVersion": {
+          "const": "trading_real_binding_challenge.v1"
+        }
+      }
+    },
+    "evidenceAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingEpoch",
+        "active",
+        "authorizing",
+        "reasonCode",
+        "schemaVersion"
+      ],
+      "properties": {
+        "bindingEpoch": { "$ref": "#/$defs/positiveInteger" },
+        "active": { "type": "boolean" },
+        "authorizing": { "const": false },
+        "scope": { "const": "read_only_evidence_reference" },
+        "evidenceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "activatedAt": { "type": "string", "format": "date-time" },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "schemaVersion": { "const": "trading_evidence_authority.v1" }
+      }
+    },
+    "priorEvidenceInvalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingEpoch",
+        "accountBindingHash",
+        "evidenceSnapshotHash",
+        "invalidatedAt",
+        "reasonCode",
+        "active",
+        "schemaVersion"
+      ],
+      "properties": {
+        "bindingEpoch": { "$ref": "#/$defs/positiveInteger" },
+        "accountBindingHash": { "$ref": "#/$defs/hash" },
+        "evidenceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "invalidatedAt": { "type": "string", "format": "date-time" },
+        "reasonCode": { "const": "rebinding_challenge_created" },
+        "active": { "const": false },
+        "schemaVersion": {
+          "const": "trading_evidence_invalidation.v1"
+        }
+      }
+    },
+    "accountBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingEpoch",
+        "masterAddressHash",
+        "subaccountAddressHash",
+        "chainId",
+        "environment",
+        "infoProfileId",
+        "proofHash",
+        "relationshipHash",
+        "verifiedAt",
+        "accountBindingHash",
+        "status",
+        "readOnly",
+        "apiWallet",
+        "rawAddressesPersisted",
+        "schemaVersion"
+      ],
+      "properties": {
+        "bindingEpoch": { "$ref": "#/$defs/positiveInteger" },
+        "masterAddressHash": { "$ref": "#/$defs/hash" },
+        "subaccountAddressHash": { "$ref": "#/$defs/hash" },
+        "chainId": { "const": "eip155:998" },
+        "environment": { "const": "hyperliquid_testnet" },
+        "infoProfileId": { "const": "hyperliquid_testnet_info.v1" },
+        "proofHash": { "$ref": "#/$defs/hash" },
+        "relationshipHash": { "$ref": "#/$defs/hash" },
+        "verifiedAt": { "type": "string", "format": "date-time" },
+        "accountBindingHash": { "$ref": "#/$defs/hash" },
+        "status": { "const": "active" },
+        "readOnly": { "const": true },
+        "apiWallet": { "const": false },
+        "rawAddressesPersisted": { "const": false },
+        "schemaVersion": {
+          "const": "trading_hyperliquid_account_binding.v1"
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pageCount",
+        "totalReturnedCount",
+        "uniqueEventCount",
+        "duplicateCount"
+      ],
+      "properties": {
+        "pageCount": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "totalReturnedCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "uniqueEventCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "duplicateCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uniqueFillCount",
+        "positiveRealizedFillCount",
+        "marketCount",
+        "realizedPnl",
+        "feesPaid",
+        "tradedNotional",
+        "currentAccountValue",
+        "currentWithdrawable",
+        "currentPositionCount",
+        "currentOpenOrderCount"
+      ],
+      "properties": {
+        "uniqueFillCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "positiveRealizedFillCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "marketCount": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "realizedPnl": { "$ref": "#/$defs/decimal" },
+        "feesPaid": { "$ref": "#/$defs/decimal" },
+        "tradedNotional": { "$ref": "#/$defs/decimal" },
+        "currentAccountValue": { "$ref": "#/$defs/decimal" },
+        "currentWithdrawable": { "$ref": "#/$defs/decimal" },
+        "currentPositionCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        },
+        "currentOpenOrderCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        }
+      }
+    },
+    "dataQuality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completeness",
+        "confidence",
+        "freshness",
+        "stalenessReason",
+        "sourceFinality",
+        "paginationComplete",
+        "paginationStalled",
+        "pageLimitReached",
+        "sourceRetentionLimitReached",
+        "venueMostRecentFillLimit",
+        "missingFields",
+        "anomalyCodes",
+        "walletClusterFlag",
+        "selfTransferFlag",
+        "washTradingFlag",
+        "accountIdentityReconciled",
+        "historyToEquityReconciled",
+        "reconciliationStatus",
+        "selfReportedSignalsAccepted"
+      ],
+      "properties": {
+        "completeness": { "const": "partial" },
+        "confidence": { "const": "external_read_only_partial" },
+        "freshness": { "enum": ["fresh", "stale"] },
+        "stalenessReason": {
+          "oneOf": [
+            { "const": "current_account_snapshot_stale" },
+            { "type": "null" }
+          ]
+        },
+        "sourceFinality": { "const": "venue_read_only_observation" },
+        "paginationComplete": { "type": "boolean" },
+        "paginationStalled": { "type": "boolean" },
+        "pageLimitReached": { "type": "boolean" },
+        "sourceRetentionLimitReached": { "type": "boolean" },
+        "venueMostRecentFillLimit": { "const": 10000 },
+        "missingFields": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "counterparty_address",
+              "funding_history",
+              "transfer_history",
+              "liquidation_history"
+            ]
+          }
+        },
+        "anomalyCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "walletClusterFlag": { "const": "unknown" },
+        "selfTransferFlag": { "const": "unknown" },
+        "washTradingFlag": { "const": "unknown" },
+        "accountIdentityReconciled": { "const": true },
+        "historyToEquityReconciled": { "const": false },
+        "reconciliationStatus": { "const": "partial" },
+        "selfReportedSignalsAccepted": { "const": false }
+      }
+    },
+    "historyImport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "historyImportId",
+        "historyHash",
+        "sourceType",
+        "environment",
+        "infoProfileId",
+        "bindingEpoch",
+        "historyManifestHash",
+        "eventManifestHash",
+        "pageResponseHashes",
+        "sourceRoleHash",
+        "observationWindow",
+        "counts",
+        "metrics",
+        "dataQuality",
+        "reconciliation",
+        "lineage",
+        "importedAt",
+        "rawEventsPersisted",
+        "rawSignaturePersisted",
+        "schemaVersion"
+      ],
+      "properties": {
+        "historyImportId": { "$ref": "#/$defs/id" },
+        "historyHash": { "$ref": "#/$defs/hash" },
+        "sourceType": { "const": "hyperliquid_testnet_info" },
+        "environment": { "const": "hyperliquid_testnet" },
+        "infoProfileId": { "const": "hyperliquid_testnet_info.v1" },
+        "bindingEpoch": { "$ref": "#/$defs/positiveInteger" },
+        "historyManifestHash": { "$ref": "#/$defs/hash" },
+        "eventManifestHash": { "$ref": "#/$defs/hash" },
+        "pageResponseHashes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "sourceRoleHash": { "$ref": "#/$defs/hash" },
+        "observationWindow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "startsAt",
+            "endsAt",
+            "firstFillAt",
+            "lastFillAt"
+          ],
+          "properties": {
+            "startsAt": { "type": "string", "format": "date-time" },
+            "endsAt": { "type": "string", "format": "date-time" },
+            "firstFillAt": { "$ref": "#/$defs/nullableDateTime" },
+            "lastFillAt": { "$ref": "#/$defs/nullableDateTime" }
+          }
+        },
+        "counts": { "$ref": "#/$defs/counts" },
+        "metrics": { "$ref": "#/$defs/metrics" },
+        "dataQuality": { "$ref": "#/$defs/dataQuality" },
+        "reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "currentSnapshotHash",
+            "currentSourceBundleHash",
+            "currentObservedAt",
+            "currentVenueTime",
+            "currentFreshness",
+            "accountIdentityReconciled",
+            "historyToEquityReconciled",
+            "status",
+            "schemaVersion"
+          ],
+          "properties": {
+            "currentSnapshotHash": { "$ref": "#/$defs/hash" },
+            "currentSourceBundleHash": { "$ref": "#/$defs/hash" },
+            "currentObservedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "currentVenueTime": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "currentFreshness": { "enum": ["fresh", "stale"] },
+            "accountIdentityReconciled": { "const": true },
+            "historyToEquityReconciled": { "const": false },
+            "status": { "const": "partial" },
+            "schemaVersion": {
+              "const": "trading_account_reconciliation.v1"
+            }
+          }
+        },
+        "lineage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "challengeEventId",
+            "challengeEvidenceHash",
+            "bindingProofHash",
+            "relationshipHash",
+            "relationshipSourceResponseHashes"
+          ],
+          "properties": {
+            "challengeEventId": { "$ref": "#/$defs/id" },
+            "challengeEvidenceHash": { "$ref": "#/$defs/hash" },
+            "bindingProofHash": { "$ref": "#/$defs/hash" },
+            "relationshipHash": { "$ref": "#/$defs/hash" },
+            "relationshipSourceResponseHashes": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "masterUserRole",
+                "subaccountUserRole",
+                "subAccounts"
+              ],
+              "properties": {
+                "masterUserRole": { "$ref": "#/$defs/hash" },
+                "subaccountUserRole": { "$ref": "#/$defs/hash" },
+                "subAccounts": { "$ref": "#/$defs/hash" }
+              }
+            }
+          }
+        },
+        "importedAt": { "type": "string", "format": "date-time" },
+        "rawEventsPersisted": { "const": false },
+        "rawSignaturePersisted": { "const": false },
+        "schemaVersion": { "const": "trading_real_history_import.v1" }
+      }
+    },
+    "evidenceSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceSnapshotId",
+        "snapshotHash",
+        "bindingEpoch",
+        "accountBindingHash",
+        "sourceProjectionHash",
+        "sourceEventIds",
+        "sourceEvidenceHashes",
+        "sourceFinality",
+        "historyHash",
+        "policyHash",
+        "dataQuality",
+        "pointInTime",
+        "authorizing",
+        "singleSnapshotCapitalDecision",
+        "finalizedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "evidenceSnapshotId": { "$ref": "#/$defs/id" },
+        "snapshotHash": { "$ref": "#/$defs/hash" },
+        "bindingEpoch": { "$ref": "#/$defs/positiveInteger" },
+        "accountBindingHash": { "$ref": "#/$defs/hash" },
+        "sourceProjectionHash": { "$ref": "#/$defs/hash" },
+        "sourceEventIds": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "sourceEvidenceHashes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "sourceFinality": { "const": "finalized" },
+        "historyHash": { "$ref": "#/$defs/hash" },
+        "policyHash": { "$ref": "#/$defs/hash" },
+        "dataQuality": { "$ref": "#/$defs/dataQuality" },
+        "pointInTime": { "const": true },
+        "authorizing": { "const": false },
+        "singleSnapshotCapitalDecision": { "const": false },
+        "finalizedAt": { "type": "string", "format": "date-time" },
+        "schemaVersion": { "const": "trading_real_evidence_snapshot.v1" }
+      }
+    },
+    "factorScorecard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scorecardId",
+        "scorecardHash",
+        "policyVersion",
+        "factors",
+        "compositeScore",
+        "creditDecision",
+        "recommendedLimit",
+        "pricing",
+        "newRiskAuthority",
+        "fundsAuthority",
+        "generatedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "scorecardId": { "$ref": "#/$defs/id" },
+        "scorecardHash": { "$ref": "#/$defs/hash" },
+        "policyVersion": {
+          "enum": [
+            "trading_real_evidence_policy.v1",
+            "trading_real_shadow_risk_policy.v1"
+          ]
+        },
+        "factors": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "factorId",
+              "assessment",
+              "reasonCodes",
+              "inputMetricIds",
+              "numericScoreAvailable",
+              "authorizing",
+              "schemaVersion"
+            ],
+            "properties": {
+              "factorId": {
+                "enum": [
+                  "alpha_quality",
+                  "risk_reliability",
+                  "strategy_capacity",
+                  "mandate_compliance",
+                  "evidence_confidence"
+                ]
+              },
+              "assessment": { "enum": ["limited", "insufficient"] },
+              "reasonCodes": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "inputMetricIds": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "numericScoreAvailable": { "const": false },
+              "authorizing": { "const": false },
+              "schemaVersion": {
+                "const": "trading_factor_assessment.v1"
+              }
+            }
+          }
+        },
+        "shadowRisk": { "$ref": "#/$defs/shadowRiskProfile" },
+        "compositeScore": {
+          "$ref": "#/$defs/unavailableDecision"
+        },
+        "creditDecision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["performed", "reasonCode"],
+          "properties": {
+            "performed": { "const": false },
+            "reasonCode": {
+              "const": "single_snapshot_capital_decision_prohibited"
+            }
+          }
+        },
+        "recommendedLimit": {
+          "$ref": "#/$defs/unavailableDecision"
+        },
+        "pricing": { "$ref": "#/$defs/unavailableDecision" },
+        "newRiskAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "schemaVersion": {
+          "enum": [
+            "trading_real_factor_scorecard.v1",
+            "trading_real_factor_scorecard.v2"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "const": "trading_real_factor_scorecard.v1"
+              }
+            },
+            "required": ["schemaVersion"]
+          },
+          "then": {
+            "properties": {
+              "policyVersion": {
+                "const": "trading_real_evidence_policy.v1"
+              }
+            },
+            "not": { "required": ["shadowRisk"] }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "const": "trading_real_factor_scorecard.v2"
+              }
+            },
+            "required": ["schemaVersion"]
+          },
+          "then": {
+            "required": ["shadowRisk"],
+            "properties": {
+              "policyVersion": {
+                "const": "trading_real_shadow_risk_policy.v1"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "shadowRiskProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shadowRiskProfileId",
+        "shadowRiskProfileHash",
+        "policyVersion",
+        "featureDefinitionsVersion",
+        "historyHash",
+        "evidenceSnapshotHash",
+        "pointInTime",
+        "features",
+        "stressWindows",
+        "driftMonitor",
+        "modelOutput",
+        "recommendationOnly",
+        "authorizing",
+        "economicStateMutation",
+        "newRiskAuthority",
+        "fundsAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "shadowRiskProfileId": { "$ref": "#/$defs/id" },
+        "shadowRiskProfileHash": { "$ref": "#/$defs/hash" },
+        "policyVersion": {
+          "const": "trading_real_shadow_risk_policy.v1"
+        },
+        "featureDefinitionsVersion": {
+          "const": "trading_shadow_feature_definitions.v1"
+        },
+        "historyHash": { "$ref": "#/$defs/hash" },
+        "evidenceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "pointInTime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observedStartsAt",
+            "observedEndsAt",
+            "generatedAt",
+            "sourceFreshness",
+            "temporalState",
+            "maxAgePolicyApproved",
+            "antiLeakagePassed",
+            "reasonCodes",
+            "schemaVersion"
+          ],
+          "properties": {
+            "observedStartsAt": { "type": "string", "format": "date-time" },
+            "observedEndsAt": { "type": "string", "format": "date-time" },
+            "generatedAt": { "type": "string", "format": "date-time" },
+            "sourceFreshness": { "enum": ["fresh", "stale"] },
+            "temporalState": { "enum": ["unknown", "stale"] },
+            "maxAgePolicyApproved": { "const": false },
+            "antiLeakagePassed": { "const": true },
+            "reasonCodes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "schemaVersion": {
+              "const": "trading_shadow_point_in_time.v1"
+            }
+          }
+        },
+        "features": {
+          "type": "array",
+          "minItems": 16,
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/shadowFeature" }
+        },
+        "stressWindows": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "prefixItems": [
+            {
+              "allOf": [
+                { "$ref": "#/$defs/shadowStressWindow" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "windowId": { "const": "observed_history" },
+                    "state": { "const": "observed" }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/shadowStressWindow" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "windowId": { "const": "out_of_time" },
+                    "state": { "const": "insufficient" }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/shadowStressWindow" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "windowId": { "const": "tail_stress" },
+                    "state": { "const": "insufficient" }
+                  }
+                }
+              ]
+            }
+          ],
+          "items": false
+        },
+        "driftMonitor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "priorSnapshotAvailable",
+            "approvedBaselineAvailable",
+            "reasonCodes",
+            "authorizing",
+            "schemaVersion"
+          ],
+          "properties": {
+            "state": { "const": "insufficient" },
+            "priorSnapshotAvailable": { "const": false },
+            "approvedBaselineAvailable": { "const": false },
+            "reasonCodes": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "authorizing": { "const": false },
+            "schemaVersion": {
+              "const": "trading_shadow_drift_monitor.v1"
+            }
+          }
+        },
+        "modelOutput": { "const": false },
+        "recommendationOnly": { "const": true },
+        "authorizing": { "const": false },
+        "economicStateMutation": { "const": false },
+        "newRiskAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": {
+          "const": "trading_real_shadow_risk_profile.v1"
+        }
+      }
+    },
+    "shadowFeature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "featureId",
+        "state",
+        "reasonCodes",
+        "authorizing",
+        "definitionVersion"
+      ],
+      "properties": {
+        "featureId": {
+          "enum": [
+            "net_realized_pnl",
+            "net_return_on_traded_notional",
+            "positive_realized_fill_rate",
+            "fee_to_traded_notional",
+            "market_count",
+            "traded_notional",
+            "current_withdrawable_ratio",
+            "current_position_count",
+            "current_open_order_count",
+            "risk_adjusted_return",
+            "maximum_drawdown",
+            "tail_loss",
+            "current_leverage",
+            "liquidation_discipline",
+            "strategy_capacity",
+            "regime_stability"
+          ]
+        },
+        "state": {
+          "enum": ["observed", "insufficient", "unknown", "stale"]
+        },
+        "value": { "$ref": "#/$defs/decimal" },
+        "unit": {
+          "enum": ["venue_quote_asset", "ratio", "count"]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "authorizing": { "const": false },
+        "definitionVersion": {
+          "type": "string",
+          "pattern": "^trading_shadow_feature\\.[a-z_]+\\.v1$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "state": { "const": "observed" } },
+            "required": ["state"]
+          },
+          "then": { "required": ["value", "unit"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": { "enum": ["insufficient", "unknown"] }
+            },
+            "required": ["state"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "required": ["value"] },
+                { "required": ["unit"] }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "shadowStressWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "windowId",
+        "state",
+        "startsAt",
+        "endsAt",
+        "reasonCodes"
+      ],
+      "properties": {
+        "windowId": {
+          "enum": ["observed_history", "out_of_time", "tail_stress"]
+        },
+        "state": { "enum": ["observed", "insufficient"] },
+        "startsAt": { "$ref": "#/$defs/nullableDateTime" },
+        "endsAt": { "$ref": "#/$defs/nullableDateTime" },
+        "reasonCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "unavailableDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available", "reasonCode"],
+      "properties": {
+        "available": { "const": false },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    }
+  }
+}

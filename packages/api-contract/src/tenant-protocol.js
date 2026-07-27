@@ -4,6 +4,19 @@ import mandateSchema from "../../../schemas/v2/mandate.schema.json" with { type:
 import providerIntentAcknowledgementSchema from "../../../schemas/v2/provider-intent-acknowledgement.schema.json" with { type: "json" };
 import providerIntentViewSchema from "../../../schemas/v2/provider-intent-view.schema.json" with { type: "json" };
 import providerSandboxCallbackSchema from "../../../schemas/v2/provider-sandbox-callback.schema.json" with { type: "json" };
+import creditPassportArtifactSchema from "../../../schemas/v2/credit-passport-artifact.schema.json" with { type: "json" };
+import officialReportArtifactSchema from "../../../schemas/v2/official-report-artifact.schema.json" with { type: "json" };
+import tradingCreditProfileSchema from "../../../schemas/v2/trading-credit-profile.schema.json" with { type: "json" };
+import tradingRealCreditProfileSchema from "../../../schemas/v2/trading-real-credit-profile.schema.json" with { type: "json" };
+import tradingCapitalRequestSchema from "../../../schemas/v2/trading-capital-request.schema.json" with { type: "json" };
+import tradingProviderMandateSchema from "../../../schemas/v2/trading-provider-mandate.schema.json" with { type: "json" };
+import tradingMatchProposalSchema from "../../../schemas/v2/trading-match-proposal.schema.json" with { type: "json" };
+import tradingFacilitySchema from "../../../schemas/v2/trading-facility.schema.json" with { type: "json" };
+import tradingOrderIntentSchema from "../../../schemas/v2/trading-order-intent.schema.json" with { type: "json" };
+import tradingFacilityRiskEvaluationSchema from "../../../schemas/v2/trading-facility-risk-evaluation.schema.json" with { type: "json" };
+import tradingFacilityCloseRequestSchema from "../../../schemas/v2/trading-facility-close-request.schema.json" with { type: "json" };
+import tradingSettlementSchema from "../../../schemas/v2/trading-settlement.schema.json" with { type: "json" };
+import tradingPerformanceProofSchema from "../../../schemas/v2/trading-performance-proof.schema.json" with { type: "json" };
 import catalogSchema from "../../../schemas/v2/tenant-protocol-catalog.schema.json" with { type: "json" };
 import requestSchema from "../../../schemas/v2/tenant-protocol-request.schema.json" with { type: "json" };
 import resultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
@@ -41,6 +54,19 @@ ajv.addSchema(mandateSchema);
 ajv.addSchema(providerIntentAcknowledgementSchema);
 ajv.addSchema(providerIntentViewSchema);
 ajv.addSchema(providerSandboxCallbackSchema);
+ajv.addSchema(creditPassportArtifactSchema);
+ajv.addSchema(officialReportArtifactSchema);
+ajv.addSchema(tradingCreditProfileSchema);
+ajv.addSchema(tradingRealCreditProfileSchema);
+ajv.addSchema(tradingCapitalRequestSchema);
+ajv.addSchema(tradingProviderMandateSchema);
+ajv.addSchema(tradingMatchProposalSchema);
+ajv.addSchema(tradingFacilitySchema);
+ajv.addSchema(tradingOrderIntentSchema);
+ajv.addSchema(tradingFacilityRiskEvaluationSchema);
+ajv.addSchema(tradingFacilityCloseRequestSchema);
+ajv.addSchema(tradingSettlementSchema);
+ajv.addSchema(tradingPerformanceProofSchema);
 
 const validateRequest = ajv.compile(requestSchema);
 const validateResult = ajv.compile(resultSchema);
@@ -464,6 +490,110 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotCreateCreditPassportArtifact",
+    kind: "command",
+    actorTypes: ["human"],
+    resourceType: "subject",
+    requiredCapability: "credit_passport.create.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_credit_passport_artifact_created.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadOwnCreditPassportArtifact",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "credit_passport_artifact",
+    requiredCapability: "credit_passport.read.self",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_owned_credit_passport_artifact_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotVerifyCreditPassportArtifact",
+    kind: "query",
+    actorTypes: ["human", "agent", "risk_operator", "operations_operator", "auditor"],
+    resourceType: "credit_passport_artifact",
+    requiredCapability: "credit_passport.verify.bound",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_credit_passport_verification_result.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotRevokeCreditPassportArtifact",
+    kind: "command",
+    actorTypes: ["human"],
+    resourceType: "credit_passport_artifact",
+    requiredCapability: "credit_passport.revoke.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_credit_passport_artifact_revoked.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotCreateOfficialReport",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "obligation",
+    requiredCapability: "official_report.create.owned",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_official_report_created.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadOfficialReport",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "official_report",
+    requiredCapability: "official_report.read.owned",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_official_report_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotRetrieveOfficialReport",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "official_report",
+    requiredCapability: "official_report.retrieve.owned",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_official_report_retrieval.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotRevokeOfficialReport",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "official_report",
+    requiredCapability: "official_report.revoke.owned",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_official_report_revoked.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
     operationId: "pilotSubmitPilotFeedback",
     kind: "command",
     actorTypes: ["human", "agent"],
@@ -540,6 +670,331 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     responseSchemaVersion: "provider_sandbox_callback_result.v1",
     public: false,
     fundsAuthority: false
+  },
+  {
+    operationId: "tradingCreateAccountBindingChallenge",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "subject",
+    requiredCapability: "trading.account_challenge.create.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_account_binding_challenge_created.v2",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingImportHyperliquidHistory",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_credit_profile",
+    requiredCapability: "trading.history_import.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_history_imported.v2",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingFinalizeEvidenceSnapshot",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_credit_profile",
+    requiredCapability: "trading.evidence_finalize.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_evidence_snapshot_finalized.v2",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingReadCreditProfile",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_credit_profile",
+    requiredCapability: "trading.credit_profile.read.self",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_credit_profile_view.v2",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingCreateCapitalRequest",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_credit_profile",
+    requiredCapability: "trading.capital_request.create.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_capital_request_created.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingCreateProviderMandate",
+    kind: "command",
+    actorTypes: ["provider"],
+    resourceType: "provider",
+    requiredCapability: "trading.provider_mandate.create.owned",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_provider_mandate_created.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingListCompatibleMandates",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_capital_request",
+    requiredCapability: "trading.compatible_mandate.list.self",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "trading_compatible_mandate_list.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingCreateMatchProposal",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_capital_request",
+    requiredCapability: "trading.match_proposal.create.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_match_proposal_created.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingAcceptMatchAsProvider",
+    kind: "command",
+    actorTypes: ["provider"],
+    resourceType: "trading_match_proposal",
+    requiredCapability: "trading.match.accept.provider",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_match_provider_accepted.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingAcceptMatchAsSubject",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_match_proposal",
+    requiredCapability: "trading.match.accept.subject",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_match_subject_accepted.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingCreateFacility",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_match_proposal",
+    requiredCapability: "trading.facility.create.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_facility_created.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingContributeSubjectCollateral",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.collateral.record.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_subject_collateral_recorded.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingRecordProviderFunding",
+    kind: "command",
+    actorTypes: ["provider"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.funding.record.provider",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_provider_funding_recorded.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingActivateFacility",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.activate.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_facility_activated.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingSubmitOrderIntent",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.order_intent.submit.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_order_intent_submitted.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingCancelOrderIntent",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_order_intent",
+    requiredCapability: "trading.order_intent.cancel.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_order_intent_canceled.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingReadFacilityState",
+    kind: "query",
+    actorTypes: ["human", "agent", "provider"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.read.bound",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "trading_facility_state.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingEvaluateRisk",
+    kind: "command",
+    actorTypes: ["risk_operator", "operations_operator"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.risk.evaluate.tenant",
+    idempotency: "required",
+    quotaClass: "privileged",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_facility_risk_evaluated.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingPauseNewRisk",
+    kind: "command",
+    actorTypes: ["risk_operator", "operations_operator"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.pause.tenant",
+    idempotency: "required",
+    quotaClass: "privileged",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_facility_new_risk_paused.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingFlattenFacility",
+    kind: "command",
+    actorTypes: ["risk_operator", "operations_operator"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.flatten.tenant",
+    idempotency: "required",
+    quotaClass: "privileged",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_facility_flattened.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingRequestClose",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.close_request.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_facility_close_requested.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingRunSettlement",
+    kind: "command",
+    actorTypes: ["system_worker"],
+    resourceType: "trading_facility_close_request",
+    requiredCapability: "trading.settlement.run.worker",
+    idempotency: "required",
+    quotaClass: "worker",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_settlement_finalized.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingReadSettlement",
+    kind: "query",
+    actorTypes: ["human", "agent", "provider"],
+    resourceType: "trading_settlement",
+    requiredCapability: "trading.settlement.read.bound",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "trading_settlement_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingIssuePerformanceProof",
+    kind: "command",
+    actorTypes: ["human", "agent", "provider"],
+    resourceType: "trading_settlement",
+    requiredCapability: "trading.performance_proof.issue.bound",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_trading_performance_proof_issued.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "tradingReadFacilityEvidence",
+    kind: "query",
+    actorTypes: ["human", "agent", "provider"],
+    resourceType: "trading_facility",
+    requiredCapability: "trading.facility.evidence.read.bound",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "trading_facility_evidence.v1",
+    public: false,
+    fundsAuthority: false
   }
 ]);
 
@@ -586,6 +1041,11 @@ export const TENANT_PROTOCOL_CATALOG = deepFreeze({
     agentAccountProofEnabled: true,
     mandateActivationEnabled: true,
     providerSandboxEnabled: true,
+    creditPassportArtifactsEnabled: true,
+    officialReportArtifactsEnabled: true,
+    tradingCapitalNoFundsEvidenceEnabled: true,
+    tradingCapitalNoFundsMatchingEnabled: true,
+    tradingCapitalNoFundsSettlementEnabled: true,
     productionIdentityEnabled: false,
     rawPiiAllowed: false
   },

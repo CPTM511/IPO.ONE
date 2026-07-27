@@ -71,8 +71,8 @@ function normalizeSubmitProofPayload(payload) {
     accountId: boundedString("accountId", payload.accountId, { maximum: 160 }),
     signature: boundedString("signature", payload.signature, {
       minimum: 132,
-      maximum: 132,
-      pattern: /^0x[0-9a-fA-F]{130}$/
+      maximum: 8_194,
+      pattern: /^0x(?:[0-9a-fA-F]{2}){65,4096}$/
     })
   };
 }

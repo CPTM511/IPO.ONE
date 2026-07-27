@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { generateKeyPairSync, randomBytes } from "node:crypto";
+import { createHash, generateKeyPairSync, randomBytes } from "node:crypto";
 import test from "node:test";
 import { privateKeyToAccount } from "viem/accounts";
 import {
@@ -689,7 +689,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.INTEGRATION_READ_OWNED,
           PilotCapability.MANDATE_DRAFT_CREATE,
           PilotCapability.MANDATE_DRAFT_REVOKE,
-          PilotCapability.EVIDENCE_READ_OWNED
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND
         ],
         now: IDENTITY_NOW
       }),
@@ -707,7 +708,15 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.MANDATE_DRAFT_CREATE,
           PilotCapability.MANDATE_DRAFT_REVOKE,
           PilotCapability.MANDATE_ACTIVATE_OWNED,
-          PilotCapability.EVIDENCE_READ_OWNED
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+          PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
         ],
         now: IDENTITY_NOW
       }),
@@ -731,6 +740,14 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
           PilotCapability.OBLIGATION_READ_OWNED,
           PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+          PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
           PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
         ],
         now: IDENTITY_NOW
@@ -752,7 +769,15 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.CREDIT_EVALUATE_SELF,
           PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
           PilotCapability.OBLIGATION_READ_OWNED,
-          PilotCapability.EVIDENCE_READ_OWNED
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+          PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
         ],
         now: IDENTITY_NOW
       }),
@@ -766,6 +791,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.CREDIT_REQUEST,
           PilotCapability.CREDIT_READ_SELF,
           PilotCapability.CREDIT_EVALUATE_SELF,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
           PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
         ],
         now: IDENTITY_NOW
@@ -786,7 +813,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
           PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
           PilotCapability.OBLIGATION_READ_OWNED,
-          PilotCapability.EVIDENCE_READ_OWNED
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+          PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
         ],
         now: IDENTITY_NOW
       }),
@@ -812,7 +845,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.INTEGRATION_READ_OWNED,
           PilotCapability.MANDATE_DRAFT_CREATE,
           PilotCapability.MANDATE_DRAFT_REVOKE,
-          PilotCapability.EVIDENCE_READ_OWNED
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND
         ],
         now: IDENTITY_NOW
       }),
@@ -886,7 +920,15 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.CREDIT_READ_SELF,
           PilotCapability.CREDIT_EVALUATE_SELF,
           PilotCapability.OBLIGATION_READ_OWNED,
-          PilotCapability.EVIDENCE_READ_OWNED
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+          PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+          PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
         ],
         now: IDENTITY_NOW
       }),
@@ -1029,7 +1071,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
          provider_callback_inbox,
          credit_lines, ledger_accounts, ledger_transactions, ledger_entries, repayment_events,
          aggregate_stream_heads, domain_events, credit_events,
-         pilot_feedback_records,
+         pilot_feedback_records, credit_passport_artifacts,
+         official_report_artifacts, trading_credit_profiles,
          evidence_envelopes, outbox_messages, command_idempotency,
          command_events, projection_registry, projection_snapshots,
          reconciliation_runs, reconciliation_discrepancies
@@ -3459,6 +3502,217 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(humanEvaluations[0].response.offer.annualRateBps, 900);
       assert.equal(agentWorkflow.offer.approvedPrincipalMinor, "12000");
       assert.equal(agentWorkflow.offer.annualRateBps, 900);
+
+      const passportCreateCommand = {
+        subjectId: tenantOneHumanSubjectId,
+        payload: {
+          creditIntentId: humanIntent.creditIntentId,
+          verifierActorId:
+            identities.tenantOneOtherBorrower.authenticationContext.actorId,
+          claimSelectors: [
+            "decision_outcome",
+            "factor_authority",
+            "canonical_reason_codes"
+          ],
+          lifetimeSeconds: 900,
+          schemaVersion: "credit_passport_artifact_create.v1"
+        },
+        idempotencyKey: `create-credit-passport-${RUN_ID}-0001`,
+        requestId: `request-create-credit-passport-${RUN_ID}`,
+        correlationId: `correlation-credit-passport-${RUN_ID}`
+      };
+      const passportCreates = await executeConcurrentDuplicate(
+        () => tenantOneBorrower.createCreditPassportArtifact(passportCreateCommand)
+      );
+      assert.deepEqual(
+        passportCreates.map(({ replayed }) => replayed).sort(),
+        [false, true]
+      );
+      assert.deepEqual(passportCreates[0].response, passportCreates[1].response);
+      const firstPassport = passportCreates[0].response.artifact;
+      assert.equal(passportCreates[0].response.replaced, false);
+      assert.equal(firstPassport.effectiveStatus, "active");
+      assert.equal(firstPassport.version, 1);
+      assert.equal(firstPassport.purpose, "private_credit_review");
+      assert.equal(firstPassport.pointInTime, true);
+      assert.equal(firstPassport.nonAuthorizing, true);
+      assert.equal(firstPassport.productionAuthority, false);
+      assert.equal(firstPassport.piiIncluded, false);
+      assert.equal(firstPassport.rawTransactionDataIncluded, false);
+      assert.equal(firstPassport.scoreAuthoritative, false);
+      assert.deepEqual(
+        firstPassport.disclosures.map(({ claim }) => claim),
+        firstPassport.selectedClaims
+      );
+      assert.equal(
+        firstPassport.disclosures.every(
+          ({ evidenceLineage }) => evidenceLineage.length > 0
+        ),
+        true
+      );
+      assert.equal(
+        JSON.stringify(passportCreates[0].response).includes(
+          identities.tenantOneOtherBorrower.authenticationContext.actorId
+        ),
+        false
+      );
+
+      const passportOwned = await tenantOneBorrower.getOwnCreditPassportArtifact({
+        artifactId: firstPassport.creditPassportArtifactId,
+        requestId: `request-read-credit-passport-${RUN_ID}`,
+        correlationId: `correlation-read-credit-passport-${RUN_ID}`
+      });
+      assert.equal(
+        passportOwned.response.artifact.artifactHash,
+        firstPassport.artifactHash
+      );
+      const verificationPayload = {
+        artifactHash: firstPassport.artifactHash,
+        artifactVersion: firstPassport.version,
+        purpose: "private_credit_review",
+        schemaVersion: "credit_passport_verification_request.v1"
+      };
+      const passportVerified =
+        await tenantOneOtherBorrower.verifyCreditPassportArtifact({
+          artifactId: firstPassport.creditPassportArtifactId,
+          payload: verificationPayload,
+          requestId: `request-verify-credit-passport-${RUN_ID}`,
+          correlationId: `correlation-verify-credit-passport-${RUN_ID}`
+        });
+      assert.equal(passportVerified.response.verification.verified, true);
+      assert.equal(passportVerified.response.verification.status, "active");
+      assert.equal(
+        passportVerified.response.artifact.artifactHash,
+        firstPassport.artifactHash
+      );
+
+      for (const [index, denied] of [
+        () => tenantOneOtherHuman.verifyCreditPassportArtifact({
+          artifactId: firstPassport.creditPassportArtifactId,
+          payload: verificationPayload,
+          requestId: `request-wrong-verifier-credit-passport-${RUN_ID}`,
+          correlationId: `correlation-wrong-verifier-credit-passport-${RUN_ID}`
+        }),
+        () => tenantTwoBorrower.verifyCreditPassportArtifact({
+          artifactId: firstPassport.creditPassportArtifactId,
+          payload: verificationPayload,
+          requestId: `request-cross-tenant-credit-passport-${RUN_ID}`,
+          correlationId: `correlation-cross-tenant-credit-passport-${RUN_ID}`
+        }),
+        () => tenantOneOtherBorrower.verifyCreditPassportArtifact({
+          artifactId: firstPassport.creditPassportArtifactId,
+          payload: {
+            ...verificationPayload,
+            artifactVersion: firstPassport.version + 1
+          },
+          requestId: `request-wrong-version-credit-passport-${RUN_ID}`,
+          correlationId: `correlation-wrong-version-credit-passport-${RUN_ID}`
+        })
+      ].entries()) {
+        await assert.rejects(
+          denied,
+          (error) =>
+            ["authorization_denied", "tenant_resource_unavailable"].includes(
+              error.code
+            ),
+          `Credit Passport denial ${index} must remain non-enumerating`
+        );
+      }
+
+      const replacement = await tenantOneBorrower.createCreditPassportArtifact({
+        ...passportCreateCommand,
+        payload: {
+          ...passportCreateCommand.payload,
+          claimSelectors: ["source_evidence_lineage"]
+        },
+        idempotencyKey: `create-credit-passport-${RUN_ID}-0002`,
+        requestId: `request-replace-credit-passport-${RUN_ID}`
+      });
+      const replacementPassport = replacement.response.artifact;
+      assert.equal(replacement.response.replaced, true);
+      assert.equal(replacementPassport.version, 2);
+      assert.equal(
+        replacementPassport.supersedesArtifactHash,
+        firstPassport.artifactHash
+      );
+      assert.equal(replacementPassport.supersedesVersion, 1);
+      assert.deepEqual(replacementPassport.selectedClaims, [
+        "source_evidence_lineage"
+      ]);
+      await assert.rejects(
+        () => tenantOneOtherBorrower.verifyCreditPassportArtifact({
+          artifactId: firstPassport.creditPassportArtifactId,
+          payload: verificationPayload,
+          requestId: `request-superseded-credit-passport-${RUN_ID}`,
+          correlationId: `correlation-superseded-credit-passport-${RUN_ID}`
+        }),
+        (error) => error.code === "tenant_resource_unavailable"
+      );
+      const replacementResource = await ownerPool.query(
+        `SELECT version, status
+           FROM authorization_resources
+          WHERE tenant_id = $1
+            AND resource_type = 'credit_passport_artifact'
+            AND resource_id = $2`,
+        [TENANT_ONE, replacementPassport.creditPassportArtifactId]
+      );
+      assert.deepEqual(replacementResource.rows, [{ version: "2", status: "active" }]);
+
+      const revokeCommand = {
+        artifactId: replacementPassport.creditPassportArtifactId,
+        reasonCode: "owner_withdrawal",
+        idempotencyKey: `revoke-credit-passport-${RUN_ID}-0001`,
+        requestId: `request-revoke-credit-passport-${RUN_ID}`,
+        correlationId: `correlation-revoke-credit-passport-${RUN_ID}`
+      };
+      const revoked = await tenantOneBorrower.revokeCreditPassportArtifact(
+        revokeCommand
+      );
+      const revokeReplay = await tenantOneBorrower.revokeCreditPassportArtifact(
+        revokeCommand
+      );
+      assert.equal(revoked.replayed, false);
+      assert.equal(revokeReplay.replayed, true);
+      assert.deepEqual(revokeReplay.response, revoked.response);
+      assert.equal(revoked.response.artifact.effectiveStatus, "revoked");
+      assert.equal(revoked.response.artifact.version, 3);
+      await assert.rejects(
+        () => tenantOneOtherBorrower.verifyCreditPassportArtifact({
+          artifactId: replacementPassport.creditPassportArtifactId,
+          payload: {
+            ...verificationPayload,
+            artifactHash: revoked.response.artifact.artifactHash,
+            artifactVersion: revoked.response.artifact.version
+          },
+          requestId: `request-revoked-credit-passport-${RUN_ID}`,
+          correlationId: `correlation-revoked-credit-passport-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      const passportAudit = await ownerPool.query(
+        `SELECT event_type, payload_hash, payload_ref
+           FROM credit_events
+          WHERE tenant_id = $1
+            AND subject_id = $2
+            AND event_type LIKE 'credit_passport_artifact_%'
+          ORDER BY occurred_at, id`,
+        [TENANT_ONE, tenantOneHumanSubjectId]
+      );
+      assert.deepEqual(
+        passportAudit.rows.map(({ event_type: eventType }) => eventType),
+        [
+          "credit_passport_artifact_issued",
+          "credit_passport_artifact_superseded",
+          "credit_passport_artifact_revoked"
+        ]
+      );
+      assert.equal(
+        JSON.stringify(passportAudit.rows).includes(
+          identities.tenantOneOtherBorrower.authenticationContext.actorId
+        ),
+        false
+      );
+
       assert.deepEqual(
         Object.keys(agentWorkflow.decision),
         Object.keys(humanEvaluations[0].response.decision)
@@ -3736,6 +3990,228 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           (error) => error.code === "authorization_denied"
         );
       }
+
+      const officialReportCreate = {
+        obligationId: humanAcceptance.obligation.obligationId,
+        payload: {
+          format: "json",
+          lifetimeSeconds: 3600,
+          schemaVersion: "official_report_create.v1"
+        },
+        idempotencyKey: `create-official-report-${RUN_ID}-0001`,
+        requestId: `request-create-official-report-${RUN_ID}-0001`,
+        correlationId: `correlation-official-report-${RUN_ID}`
+      };
+      const reportActorContext =
+        identities.tenantOneBorrower.authenticationContext;
+      assert.equal(
+        reportActorContext.capabilities.includes(
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED
+        ),
+        true
+      );
+      const reportCredential = await harness.credentialRegistry.assertActive(
+        reportActorContext.credentialId,
+        new Date()
+      );
+      assert.equal(
+        reportCredential.allowedCapabilities.includes(
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED
+        ),
+        true
+      );
+      const reportAuthorityRows = await ownerPool.query(
+        `SELECT m.capabilities, b.actor_id, b.relationship
+           FROM memberships m
+           JOIN authorization_resource_bindings b
+             ON b.tenant_id = m.tenant_id
+            AND b.actor_id = m.actor_id
+          WHERE m.tenant_id = $1
+            AND m.actor_id = $2
+            AND b.resource_type = 'obligation'
+            AND b.resource_id = $3
+            AND m.status = 'active'
+            AND b.status = 'active'`,
+        [
+          TENANT_ONE,
+          reportActorContext.actorId,
+          humanAcceptance.obligation.obligationId
+        ]
+      );
+      assert.equal(reportAuthorityRows.rowCount, 1);
+      assert.equal(reportAuthorityRows.rows[0].relationship, "owner");
+      assert.equal(
+        reportAuthorityRows.rows[0].capabilities.includes(
+          PilotCapability.OFFICIAL_REPORT_CREATE_OWNED
+        ),
+        true
+      );
+      const officialReportCreates = await executeConcurrentDuplicate(
+        () => tenantOneBorrower.createOfficialReport(officialReportCreate)
+      );
+      assert.deepEqual(
+        officialReportCreates.map(({ replayed }) => replayed).sort(),
+        [false, true]
+      );
+      assert.deepEqual(
+        officialReportCreates[0].response,
+        officialReportCreates[1].response
+      );
+      const officialReport = officialReportCreates[0].response.report;
+      assert.equal(officialReport.effectiveStatus, "active");
+      assert.equal(officialReport.browserAuthored, false);
+      assert.equal(officialReport.piiIncluded, false);
+      assert.equal(officialReport.signedUrlIssued, false);
+      assert.equal(officialReport.feeAuditPolicy.productionPolicyAvailable, false);
+      assert.equal(officialReport.feeAuditPolicy.principalAsFeeBaseAllowed, false);
+      assert.equal(
+        officialReport.feeAuditPolicy.unrealizedPnlAsFeeBaseAllowed,
+        false
+      );
+      assert.equal(
+        Object.hasOwn(officialReportCreates[0].response, "contentBase64"),
+        false
+      );
+
+      const officialReportMetadata = await tenantOneBorrower.getOfficialReport({
+        officialReportId: officialReport.officialReportId,
+        requestId: `request-read-official-report-${RUN_ID}`,
+        correlationId: `correlation-read-official-report-${RUN_ID}`
+      });
+      assert.equal(
+        officialReportMetadata.response.report.contentSha256,
+        officialReport.contentSha256
+      );
+      const officialReportRetrieval =
+        await tenantOneBorrower.retrieveOfficialReport({
+          officialReportId: officialReport.officialReportId,
+          requestId: `request-retrieve-official-report-${RUN_ID}`,
+          correlationId: `correlation-retrieve-official-report-${RUN_ID}`
+        });
+      assert.equal(officialReportRetrieval.response.integrityVerified, true);
+      const officialReportContent = Buffer.from(
+        officialReportRetrieval.response.contentBase64,
+        "base64"
+      );
+      assert.equal(
+        `sha256:${createHash("sha256").update(officialReportContent).digest("hex")}`,
+        officialReport.contentSha256
+      );
+      assert.equal(officialReportContent.includes(Buffer.from("<script")), false);
+      assert.equal(officialReportContent.includes(Buffer.from("raw_kyc")), true);
+      const officialReportDocument = JSON.parse(officialReportContent.toString("utf8"));
+      assert.equal(
+        officialReportDocument.source.originalPrincipalMinor,
+        humanAcceptance.obligation.originalPrincipalMinor
+      );
+      assert.equal(
+        officialReportDocument.source.outstandingPrincipalMinor,
+        humanAcceptance.obligation.outstandingPrincipalMinor
+      );
+      assert.equal(
+        officialReportDocument.source.totalRepaidMinor,
+        humanAcceptance.obligation.totalRepaidMinor
+      );
+      assert.equal(officialReportContent.includes(Buffer.from("undefined")), false);
+      assert.equal(
+        officialReportContent.includes(
+          Buffer.from(identities.tenantOneBorrower.authenticationContext.actorId)
+        ),
+        false
+      );
+
+      for (const [index, denied] of [
+        () => tenantOneOtherBorrower.retrieveOfficialReport({
+          officialReportId: officialReport.officialReportId,
+          requestId: `request-denied-official-report-${RUN_ID}-0`,
+          correlationId: `correlation-denied-official-report-${RUN_ID}`
+        }),
+        () => tenantTwoBorrower.retrieveOfficialReport({
+          officialReportId: officialReport.officialReportId,
+          requestId: `request-cross-tenant-official-report-${RUN_ID}-1`,
+          correlationId: `correlation-cross-tenant-official-report-${RUN_ID}`
+        })
+      ].entries()) {
+        await assert.rejects(
+          denied,
+          (error) =>
+            ["authorization_denied", "tenant_resource_unavailable"].includes(
+              error.code
+            ),
+          `Official report denial ${index} must remain non-enumerating`
+        );
+      }
+
+      const officialReportRevokeCommand = {
+        officialReportId: officialReport.officialReportId,
+        reasonCode: "owner_withdrawal",
+        idempotencyKey: `revoke-official-report-${RUN_ID}-0001`,
+        requestId: `request-revoke-official-report-${RUN_ID}`,
+        correlationId: `correlation-revoke-official-report-${RUN_ID}`
+      };
+      const officialReportRevoked =
+        await tenantOneBorrower.revokeOfficialReport(
+          officialReportRevokeCommand
+        );
+      const officialReportRevokeReplay =
+        await tenantOneBorrower.revokeOfficialReport(
+          officialReportRevokeCommand
+        );
+      assert.equal(officialReportRevoked.replayed, false);
+      assert.equal(officialReportRevokeReplay.replayed, true);
+      assert.deepEqual(
+        officialReportRevokeReplay.response,
+        officialReportRevoked.response
+      );
+      assert.equal(
+        officialReportRevoked.response.report.effectiveStatus,
+        "revoked"
+      );
+      await assert.rejects(
+        () => tenantOneBorrower.retrieveOfficialReport({
+          officialReportId: officialReport.officialReportId,
+          requestId: `request-retrieve-revoked-report-${RUN_ID}`,
+          correlationId: `correlation-retrieve-revoked-report-${RUN_ID}`
+        }),
+        (error) =>
+          ["authorization_denied", "tenant_resource_unavailable"].includes(
+            error.code
+          )
+      );
+
+      const restartOfficialReport = (
+        await tenantOneBorrower.createOfficialReport({
+          ...officialReportCreate,
+          payload: {
+            ...officialReportCreate.payload,
+            format: "csv"
+          },
+          idempotencyKey: `create-official-report-${RUN_ID}-0002`,
+          requestId: `request-create-official-report-${RUN_ID}-0002`
+        })
+      ).response.report;
+      assert.equal(restartOfficialReport.effectiveStatus, "active");
+      assert.equal(restartOfficialReport.format, "csv");
+      const officialReportRows = await ownerPool.query(
+        `SELECT status, content_base64, content_sha256, browser_authored,
+                pii_included, production_authority
+           FROM official_report_artifacts
+          WHERE tenant_id = $1
+          ORDER BY generated_at, id`,
+        [TENANT_ONE]
+      );
+      assert.equal(officialReportRows.rows.length, 2);
+      assert.equal(
+        officialReportRows.rows.every(
+          (row) =>
+            row.content_base64.length > 0 &&
+            /^sha256:[0-9a-f]{64}$/.test(row.content_sha256) &&
+            row.browser_authored === false &&
+            row.pii_included === false &&
+            row.production_authority === false
+        ),
+        true
+      );
 
       const humanWorkflowAudit = await ownerPool.query(
         `SELECT operation_id, authorization_decision
@@ -4015,6 +4491,18 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       const restartedAgent = agentClient(
         restartedRuntime,
         identities.tenantOneCreditAgent.authenticationContext
+      );
+      const restartedOfficialReport =
+        await restartedHuman.retrieveOfficialReport({
+          officialReportId: restartOfficialReport.officialReportId,
+          requestId: `request-restart-retrieve-official-report-${RUN_ID}`,
+          correlationId: `correlation-restart-official-report-${RUN_ID}`
+        });
+      assert.equal(restartedOfficialReport.response.integrityVerified, true);
+      assert.equal(restartedOfficialReport.response.report.format, "csv");
+      assert.equal(
+        restartedOfficialReport.response.report.contentSha256,
+        restartOfficialReport.contentSha256
       );
       const restartedHumanView = await restartedHuman.getCreditApplication({
         creditIntentId: humanIntent.creditIntentId,

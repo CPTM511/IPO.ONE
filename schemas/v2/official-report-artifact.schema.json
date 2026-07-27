@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/official-report-artifact.schema.json",
+  "title": "IPO.ONE authenticated official report artifact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "officialReportId",
+    "reportKind",
+    "format",
+    "contentType",
+    "fileName",
+    "contentSha256",
+    "artifactHash",
+    "sourceObligationId",
+    "sourceEvidenceCount",
+    "sourceEvidenceHeadHash",
+    "sourceEvidenceTailHash",
+    "controllerActorRefHash",
+    "generatedAt",
+    "expiresAt",
+    "status",
+    "effectiveStatus",
+    "version",
+    "authorizationRevalidationRequired",
+    "objectAccessExpires",
+    "signedUrlIssued",
+    "sameTenantOnly",
+    "sandboxOnly",
+    "productionAuthority",
+    "piiIncluded",
+    "secretsIncluded",
+    "rawTransactionDataIncluded",
+    "browserAuthored",
+    "feeAuditPolicy",
+    "asOf",
+    "schemaVersion"
+  ],
+  "properties": {
+    "officialReportId": { "$ref": "#/$defs/identifier" },
+    "reportKind": { "const": "obligation_activity" },
+    "format": { "enum": ["json", "csv"] },
+    "contentType": { "enum": ["application/json", "text/csv; charset=utf-8"] },
+    "fileName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 192,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "contentSha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "artifactHash": { "$ref": "#/$defs/hash" },
+    "sourceObligationId": { "$ref": "#/$defs/identifier" },
+    "sourceEvidenceCount": { "type": "integer", "minimum": 1, "maximum": 50 },
+    "sourceEvidenceHeadHash": { "$ref": "#/$defs/hash" },
+    "sourceEvidenceTailHash": { "$ref": "#/$defs/hash" },
+    "controllerActorRefHash": { "$ref": "#/$defs/hash" },
+    "generatedAt": { "$ref": "#/$defs/timestamp" },
+    "expiresAt": { "$ref": "#/$defs/timestamp" },
+    "status": { "enum": ["active", "revoked"] },
+    "effectiveStatus": { "enum": ["active", "expired", "revoked"] },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2 },
+    "revokedAt": { "$ref": "#/$defs/timestamp" },
+    "revocationReasonCode": {
+      "enum": ["owner_withdrawal", "source_disclosure_error", "security_concern"]
+    },
+    "authorizationRevalidationRequired": { "const": true },
+    "objectAccessExpires": { "const": true },
+    "signedUrlIssued": { "const": false },
+    "sameTenantOnly": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "rawTransactionDataIncluded": { "const": false },
+    "browserAuthored": { "const": false },
+    "feeAuditPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "availability",
+        "productionPolicyAvailable",
+        "feeCalculationAuthorized",
+        "principalAsFeeBaseAllowed",
+        "unrealizedPnlAsFeeBaseAllowed",
+        "reasonCode"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "fee_audit_policy.v1" },
+        "availability": { "const": "unavailable" },
+        "productionPolicyAvailable": { "const": false },
+        "feeCalculationAuthorized": { "const": false },
+        "principalAsFeeBaseAllowed": { "const": false },
+        "unrealizedPnlAsFeeBaseAllowed": { "const": false },
+        "reasonCode": { "const": "production_fee_policy_not_approved" }
+      }
+    },
+    "asOf": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "official_report_artifact.v1" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "revoked" } }, "required": ["status"] },
+      "then": { "required": ["revokedAt", "revocationReasonCode"] },
+      "else": {
+        "not": {
+          "anyOf": [
+            { "required": ["revokedAt"] },
+            { "required": ["revocationReasonCode"] }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hyperliquid-testnet-execution-record.schema.json",
+  "title": "IPO.ONE Hyperliquid Testnet Simulated Execution Record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executionId",
+    "executionHash",
+    "requestHash",
+    "facilityId",
+    "facilityHash",
+    "facilityVersion",
+    "orderIntentId",
+    "orderIntentHash",
+    "orderIntentVersion",
+    "accountBindingHash",
+    "signerReferenceHash",
+    "idempotencyKeyHash",
+    "policyDecisionHash",
+    "actionKind",
+    "actionHash",
+    "action",
+    "cloid",
+    "expiresAfter",
+    "nonce",
+    "nonceState",
+    "outcome",
+    "resultHash",
+    "createdAt",
+    "reservedAt",
+    "submittedAt",
+    "resolvedAt",
+    "updatedAt",
+    "environment",
+    "origin",
+    "path",
+    "method",
+    "simulationOnly",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "externalReconciliationRequired",
+    "reconciled",
+    "signerIsolated",
+    "keyExportable",
+    "rawActionAccepted",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "withdrawalAuthority",
+    "transferAuthority",
+    "accountAdministrationAuthority",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "executionId": { "$ref": "#/$defs/identifier" },
+    "executionHash": { "$ref": "#/$defs/hash" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "facilityVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "orderIntentId": { "$ref": "#/$defs/identifier" },
+    "orderIntentHash": { "$ref": "#/$defs/hash" },
+    "orderIntentVersion": { "type": "integer", "minimum": 1, "maximum": 2 },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/hash" },
+    "policyDecisionHash": { "$ref": "#/$defs/hash" },
+    "actionKind": {
+      "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+    },
+    "actionHash": { "$ref": "#/$defs/hash" },
+    "action": {
+      "oneOf": [
+        { "$ref": "#/$defs/orderAction" },
+        { "$ref": "#/$defs/reduceOnlyOrderAction" },
+        { "$ref": "#/$defs/cancelAction" },
+        { "$ref": "#/$defs/cancelByCloidAction" },
+        { "$ref": "#/$defs/modifyAction" }
+      ]
+    },
+    "cloid": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/cloid" }
+      ]
+    },
+    "expiresAfter": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "nonce": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "nonceState": {
+      "enum": ["RESERVED", "SUBMITTED", "CONFIRMED", "REJECTED", "UNKNOWN"]
+    },
+    "outcome": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "enum": [
+            "simulated_confirmed",
+            "simulated_rejected",
+            "simulated_unknown"
+          ]
+        }
+      ]
+    },
+    "resultHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "reservedAt": { "type": "string", "format": "date-time" },
+    "submittedAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "resolvedAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "environment": { "const": "hyperliquid_testnet" },
+    "origin": { "const": "https://api.hyperliquid-testnet.xyz" },
+    "path": { "const": "/exchange" },
+    "method": { "const": "POST" },
+    "simulationOnly": { "const": true },
+    "externalSystemQueried": { "const": false },
+    "externalOrderSubmitted": { "const": false },
+    "externalReconciliationRequired": { "const": false },
+    "reconciled": { "const": true },
+    "signerIsolated": { "const": true },
+    "keyExportable": { "const": false },
+    "rawActionAccepted": { "const": false },
+    "rawResponsePersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "withdrawalAuthority": { "const": false },
+    "transferAuthority": { "const": false },
+    "accountAdministrationAuthority": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "hyperliquid_testnet_simulated_execution_record.v1"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "nonceState": { "enum": ["RESERVED", "SUBMITTED"] }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "outcome": { "type": "null" },
+          "resultHash": { "type": "null" },
+          "resolvedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "nonceState": { "enum": ["CONFIRMED", "REJECTED", "UNKNOWN"] }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "outcome": { "type": "string" },
+          "resultHash": { "$ref": "#/$defs/hash" },
+          "resolvedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "cloid": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{32}$"
+    },
+    "assetIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,30})(?:\\.[0-9]{1,18})?$"
+    },
+    "positiveDecimal": {
+      "type": "string",
+      "pattern": "^(?:0\\.(?:0*[1-9][0-9]*|[0-9]*[1-9]0*)|[1-9][0-9]{0,30}(?:\\.[0-9]{1,18})?)$"
+    },
+    "baseOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetIndex",
+        "side",
+        "limitPx",
+        "size",
+        "reduceOnly",
+        "timeInForce",
+        "cloid"
+      ],
+      "properties": {
+        "assetIndex": { "$ref": "#/$defs/assetIndex" },
+        "side": { "enum": ["buy", "sell"] },
+        "limitPx": { "$ref": "#/$defs/positiveDecimal" },
+        "size": { "$ref": "#/$defs/positiveDecimal" },
+        "reduceOnly": { "type": "boolean" },
+        "timeInForce": { "enum": ["Alo", "Gtc", "Ioc"] },
+        "cloid": { "$ref": "#/$defs/cloid" }
+      }
+    },
+    "orderAction": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOrder" },
+        {
+          "type": "object",
+          "properties": {
+            "reduceOnly": { "const": false }
+          }
+        }
+      ]
+    },
+    "reduceOnlyOrderAction": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOrder" },
+        {
+          "type": "object",
+          "properties": {
+            "reduceOnly": { "const": true }
+          }
+        }
+      ]
+    },
+    "cancelAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetIndex", "orderId"],
+      "properties": {
+        "assetIndex": { "$ref": "#/$defs/assetIndex" },
+        "orderId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "cancelByCloidAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetIndex", "cloid"],
+      "properties": {
+        "assetIndex": { "$ref": "#/$defs/assetIndex" },
+        "cloid": { "$ref": "#/$defs/cloid" }
+      }
+    },
+    "modifyAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["orderId", "replacement"],
+      "properties": {
+        "orderId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "replacement": { "$ref": "#/$defs/baseOrder" }
+      }
+    }
+  }
+}

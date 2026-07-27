@@ -38,8 +38,8 @@ Subject, Principal, account, Provider, Event/Evidence, KYC/KYP, Tenant, or PII
 detail. The query records bounded admission and authorization audit only, never
 a business Event, projection, execution, or idempotency record.
 
-The later Human, Identity, Credit, Servicing, Evidence, and Pilot slices expand
-the same closed boundary to 38 operations: Human Consent/identity references,
+The later Human, Identity, Credit, Servicing, Evidence, Passport, and Pilot slices expand
+the same closed boundary to 42 operations: Human Consent/identity references,
 CAIP-10 Agent account proof, active sandbox Mandate acknowledgement, shared
 Intent/Decision/Offer/Obligation, signed non-redeemable execution, balanced
 repayment, deterministic DPD/cure/default, dual-controlled sandbox resolutions,
@@ -52,6 +52,10 @@ uses the existing recent-MFA capability, while owner/controller access is bound
 to the exact Obligation. The queue separately requires recent phishing-resistant
 MFA from Risk or Operations, returns bounded adverse sandbox cases without PII,
 and grants no assignment, resolution, disposition, funds, or Agent MCP authority.
+The four V9-004 Passport operations create, owner-read, exact-verifier-check,
+and terminally revoke one private, temporary, same-Tenant, no-score artifact.
+They provide no bearer link, export, signature, credential, public verification,
+production authority, or underlying resource access.
 
 `RISK-002A` upgrades new authenticated evaluations to `risk_decision.v3`. One
 server-derived point-in-time feature snapshot binds finalized source Evidence,

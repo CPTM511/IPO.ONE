@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-facility-risk-evaluation.schema.json",
+  "title": "IPO.ONE Synthetic Trading Facility Risk Evaluation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tradingFacilityRiskEvaluationId",
+    "evaluationHash",
+    "facilityId",
+    "facilityHash",
+    "facilityVersionBefore",
+    "facilityStateHashBefore",
+    "observationHash",
+    "previousRiskState",
+    "evaluatedRiskState",
+    "freshness",
+    "reasonCodes",
+    "syntheticCapitalMinor",
+    "syntheticExposureMinor",
+    "syntheticEquityMinor",
+    "utilizationBps",
+    "evaluatorActorHash",
+    "evaluatedAt",
+    "riskPolicyVersion",
+    "monotonicProtection",
+    "authorizing",
+    "callerEquityAccepted",
+    "automaticRecovery",
+    "sandboxOnly",
+    "syntheticOnly",
+    "nonRedeemable",
+    "withdrawable",
+    "transferable",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "productionAuthority",
+    "fundsAuthority",
+    "realCollateral",
+    "realFunding",
+    "realEquity",
+    "realPricing",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "tradingFacilityRiskEvaluationId": { "$ref": "#/$defs/identifier" },
+    "evaluationHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "facilityVersionBefore": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "facilityStateHashBefore": { "$ref": "#/$defs/hash" },
+    "observationHash": { "$ref": "#/$defs/hash" },
+    "previousRiskState": { "$ref": "#/$defs/riskState" },
+    "evaluatedRiskState": { "$ref": "#/$defs/riskState" },
+    "freshness": { "enum": ["fresh", "stale", "unknown"] },
+    "reasonCodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z0-9:_-]+$"
+      }
+    },
+    "syntheticCapitalMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "syntheticExposureMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "syntheticEquityMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "utilizationBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "evaluatorActorHash": { "$ref": "#/$defs/hash" },
+    "evaluatedAt": { "type": "string", "format": "date-time" },
+    "riskPolicyVersion": { "const": "trading_shadow_risk_policy.v1" },
+    "monotonicProtection": { "const": true },
+    "authorizing": { "const": false },
+    "callerEquityAccepted": { "const": false },
+    "automaticRecovery": { "const": false },
+    "sandboxOnly": { "const": true },
+    "syntheticOnly": { "const": true },
+    "nonRedeemable": { "const": true },
+    "withdrawable": { "const": false },
+    "transferable": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "externalOrderSubmitted": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realCollateral": { "const": false },
+    "realFunding": { "const": false },
+    "realEquity": { "const": false },
+    "realPricing": { "const": false },
+    "productionFundsMoved": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "trading_facility_risk_evaluation.v1"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "nonNegativeMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "riskState": {
+      "enum": ["NORMAL", "WARNING", "REDUCE_ONLY", "FLATTEN", "SETTLEMENT"]
+    }
+  }
+}

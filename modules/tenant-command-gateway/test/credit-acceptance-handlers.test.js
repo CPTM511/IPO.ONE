@@ -175,15 +175,17 @@ function fixture(actorType) {
   return {
     ...initial,
     repository,
+    projectionValues: values,
+    authorityId,
+    authorityType,
     actorType,
     actorId: human ? "actor_human_acceptance" : "actor_agent_acceptance"
   };
 }
 
-async function planAcceptance(actorType) {
-  const values = fixture(actorType);
+async function planAcceptanceWith(values, actorType, payload = {}) {
   const controllerActorId = "actor_agent_controller";
-  const plan = await acceptCreditOfferCommandHandler().plan({
+  return acceptCreditOfferCommandHandler().plan({
     client: {},
     coreRepository: values.repository,
     directory: {
@@ -211,7 +213,8 @@ async function planAcceptance(actorType) {
     payload: {
       expectedOfferHash: values.offer.creditOfferHash,
       expectedTermsHash: values.offer.termsHash,
-      acknowledgementHash: ACKNOWLEDGEMENT_HASH
+      acknowledgementHash: ACKNOWLEDGEMENT_HASH,
+      ...payload
     },
     authenticationContext: { actorId: values.actorId, actorType },
     authorizationDecision: {
@@ -222,6 +225,11 @@ async function planAcceptance(actorType) {
     requestId: `request_accept_${actorType}`,
     correlationId: `correlation_accept_${actorType}`
   });
+}
+
+async function planAcceptance(actorType) {
+  const values = fixture(actorType);
+  const plan = await planAcceptanceWith(values, actorType);
   return { ...values, plan };
 }
 
@@ -284,26 +292,35 @@ test("Human and Agent acceptance plans create one atomic shared Obligation contr
   assert.deepEqual(economicShape(human.plan), economicShape(agent.plan));
 });
 
-test("Offer acceptance fails before any plan is created when hashes are stale", async () => {
-  const values = fixture(ActorType.HUMAN);
-  await assert.rejects(
-    () => acceptCreditOfferCommandHandler().plan({
-      client: {},
-      coreRepository: values.repository,
-      payload: {
-        expectedOfferHash: `0x${"cd".repeat(32)}`,
-        expectedTermsHash: values.offer.termsHash,
-        acknowledgementHash: ACKNOWLEDGEMENT_HASH
-      },
-      authenticationContext: { actorId: values.actorId, actorType: ActorType.HUMAN },
-      authorizationDecision: {
-        resourceType: "credit_offer",
-        resourceId: values.offer.creditOfferId
-      },
-      now: ACCEPTED_AT,
-      requestId: "request_accept_stale",
-      correlationId: "correlation_accept_stale"
-    }),
-    (error) => error.code === "offer_terms_mismatch"
-  );
+test("Human and Agent Offer acceptance fail closed when either reviewed hash is stale", async () => {
+  for (const actorType of [ActorType.HUMAN, ActorType.AGENT]) {
+    const values = fixture(actorType);
+    for (const payload of [
+      { expectedOfferHash: `0x${"cd".repeat(32)}` },
+      { expectedTermsHash: `0x${"ef".repeat(32)}` }
+    ]) {
+      await assert.rejects(
+        () => planAcceptanceWith(values, actorType, payload),
+        (error) => error.code === "offer_terms_mismatch"
+      );
+    }
+  }
+});
+
+test("Human Consent and Agent Mandate must remain current at Offer acceptance", async () => {
+  for (const actorType of [ActorType.HUMAN, ActorType.AGENT]) {
+    const values = fixture(actorType);
+    const projectionType = actorType === ActorType.HUMAN
+      ? CoreProjectionType.CONSENT_RECORD
+      : CoreProjectionType.MANDATE;
+    const key = `${projectionType}:${values.authorityId}`;
+    values.projectionValues.set(key, {
+      ...structuredClone(values.projectionValues.get(key)),
+      status: "revoked"
+    });
+    await assert.rejects(
+      () => planAcceptanceWith(values, actorType),
+      (error) => error.code === "authority_not_current"
+    );
+  }
 });

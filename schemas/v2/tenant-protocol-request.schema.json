@@ -21,6 +21,8 @@
         "pilotCreateConsent",
         "pilotCreateHumanSubject",
         "pilotCreateDraftMandate",
+        "pilotCreateCreditPassportArtifact",
+        "pilotCreateOfficialReport",
         "pilotEvaluateCreditApplication",
         "pilotExecuteSandboxObligation",
         "pilotFreezeSubject",
@@ -31,6 +33,10 @@
         "pilotReadAgentSelf",
         "pilotReadAgentAccountBinding",
         "pilotReadCreditApplication",
+        "pilotReadOwnCreditPassportArtifact",
+        "pilotReadOfficialReport",
+        "pilotRetrieveOfficialReport",
+        "pilotVerifyCreditPassportArtifact",
         "pilotReadConsent",
         "pilotReadHumanSelf",
         "pilotReadWorkspaceResume",
@@ -45,36 +51,82 @@
         "pilotReadOwnObligationEvidence",
         "pilotRevokeConsent",
         "pilotRevokeDraftMandate",
+        "pilotRevokeCreditPassportArtifact",
+        "pilotRevokeOfficialReport",
         "pilotSubmitAgentAccountProof",
         "pilotSubmitPilotFeedback",
         "pilotWriteOffSandboxObligation",
         "workerAdvanceSandboxServicing",
         "pilotReadProviderIntent",
         "pilotAcknowledgeProviderIntent",
-        "workerProcessInbox"
+        "workerProcessInbox",
+        "tradingCreateAccountBindingChallenge",
+        "tradingImportHyperliquidHistory",
+        "tradingFinalizeEvidenceSnapshot",
+        "tradingReadCreditProfile",
+        "tradingCreateCapitalRequest",
+        "tradingCreateProviderMandate",
+        "tradingListCompatibleMandates",
+        "tradingCreateMatchProposal",
+        "tradingAcceptMatchAsProvider",
+        "tradingAcceptMatchAsSubject",
+        "tradingCreateFacility",
+        "tradingContributeSubjectCollateral",
+        "tradingRecordProviderFunding",
+        "tradingActivateFacility",
+        "tradingSubmitOrderIntent",
+        "tradingCancelOrderIntent",
+        "tradingReadFacilityState",
+        "tradingEvaluateRisk",
+        "tradingPauseNewRisk",
+        "tradingFlattenFacility",
+        "tradingRequestClose",
+        "tradingRunSettlement",
+        "tradingReadSettlement",
+        "tradingIssuePerformanceProof",
+        "tradingReadFacilityEvidence"
       ]
     },
-    "payload": { "type": "object" },
-    "requestId": { "$ref": "#/$defs/requestIdentifier" },
-    "correlationId": { "$ref": "#/$defs/requestIdentifier" },
+    "payload": {
+      "type": "object"
+    },
+    "requestId": {
+      "$ref": "#/$defs/requestIdentifier"
+    },
+    "correlationId": {
+      "$ref": "#/$defs/requestIdentifier"
+    },
     "idempotencyKey": {
       "type": "string",
       "minLength": 16,
       "maxLength": 256,
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
     },
-    "resource": { "$ref": "#/$defs/resourceReference" },
-    "approvalArtifact": { "$ref": "#/$defs/approvalArtifact" },
-    "purpose": { "const": "provider_intent_delivery" },
+    "resource": {
+      "$ref": "#/$defs/resourceReference"
+    },
+    "approvalArtifact": {
+      "$ref": "#/$defs/approvalArtifact"
+    },
+    "purpose": {
+      "enum": [
+        "provider_intent_delivery",
+        "private_credit_review"
+      ]
+    },
     "reasonCode": {
       "enum": [
         "credential_compromise",
         "human_withdrawal",
         "operator_request",
+        "owner_withdrawal",
         "provider_failure",
         "reconciliation_failure",
         "risk_limit_breach",
         "security_incident",
+        "verifier_access_no_longer_required",
+        "source_disclosure_error",
+        "security_concern",
         "sandbox_contractual_repurchase",
         "sandbox_hardship_restructure",
         "sandbox_uncollectible_writeoff",
@@ -82,166 +134,911 @@
         "stop_loss_triggered"
       ]
     },
-    "retryAttempt": { "type": "integer", "minimum": 0, "maximum": 16 },
-    "schemaVersion": { "const": "tenant_protocol_request.v1" }
+    "retryAttempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 16
+    },
+    "schemaVersion": {
+      "const": "tenant_protocol_request.v1"
+    }
   },
   "oneOf": [
     {
-      "title": "Accept Exact Sandbox Credit Offer",
-      "required": ["idempotencyKey", "resource"],
+      "title": "Request Synthetic Facility Close",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotAcceptCreditOffer" },
-        "payload": { "$ref": "#/$defs/acceptCreditOfferPayload" },
-        "resource": { "$ref": "#/$defs/creditOfferResourceReference" }
+        "operationId": {
+          "const": "tradingRequestClose"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingFacilityStatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Run Deterministic No-Funds Settlement",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingRunSettlement"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingSettlementRunPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityCloseRequestResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Read Bound Synthetic Settlement",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingReadSettlement"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingSettlementResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Issue Bound Synthetic Performance Proof",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingIssuePerformanceProof"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingPerformanceProofPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingSettlementResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Read Bound Facility Evidence",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingReadFacilityEvidence"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Create Canonical Synthetic Trading Facility",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingCreateFacility"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingCreateFacilityPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingMatchProposalResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Record Non-Redeemable Subject Collateral",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingContributeSubjectCollateral"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingContributionPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Record Non-Redeemable Provider Funding",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingRecordProviderFunding"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingContributionPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Activate Synthetic Trading Facility",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingActivateFacility"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingFacilityStatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Submit Local Synthetic Order Intent",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingSubmitOrderIntent"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingSubmitOrderIntentPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Cancel Local Synthetic Order Intent",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingCancelOrderIntent"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingCancelOrderIntentPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingOrderIntentResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Read Bound Synthetic Trading Facility",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingReadFacilityState"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "idempotencyKey"
+        ]
+      }
+    },
+    {
+      "title": "Evaluate Local Shadow Risk",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingEvaluateRisk"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingFacilityStatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Protectively Pause New Synthetic Risk",
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode",
+        "approvalArtifact"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingPauseNewRisk"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingFacilityStatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Protectively Flatten Synthetic Facility",
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode",
+        "approvalArtifact"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingFlattenFacility"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingFacilityStatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingFacilityResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Create Hyperliquid Testnet Read-Only Account Binding Challenge",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingCreateAccountBindingChallenge"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingAccountBindingChallengePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Import Hyperliquid Testnet Read-Only Trading History",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingImportHyperliquidHistory"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingHistoryImportPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingCreditProfileResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Finalize Point-in-Time Trading Evidence Snapshot",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingFinalizeEvidenceSnapshot"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingCreditProfileResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Read Owned No-Funds Trading Credit Profile",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingReadCreditProfile"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingCreditProfileResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "idempotencyKey"
+        ]
+      }
+    },
+    {
+      "title": "Create No-Funds Trading Capital Request",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingCreateCapitalRequest"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingCapitalRequestPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingCreditProfileResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Create No-Funds Provider Mandate",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingCreateProviderMandate"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingProviderMandatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/providerResourceReference"
+        }
+      }
+    },
+    {
+      "title": "List Compatible No-Funds Provider Mandates",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingListCompatibleMandates"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingCapitalRequestResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "idempotencyKey"
+        ]
+      }
+    },
+    {
+      "title": "Create Exact No-Funds Match Proposal",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingCreateMatchProposal"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingMatchProposalPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingCapitalRequestResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Accept Exact Match Terms as Provider",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingAcceptMatchAsProvider"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingMatchAcceptancePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingMatchProposalResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Accept Exact Match Terms as Subject",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "tradingAcceptMatchAsSubject"
+        },
+        "payload": {
+          "$ref": "#/$defs/tradingMatchAcceptancePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/tradingMatchProposalResourceReference"
+        }
+      }
+    },
+    {
+      "title": "Accept Exact Sandbox Credit Offer",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotAcceptCreditOffer"
+        },
+        "payload": {
+          "$ref": "#/$defs/acceptCreditOfferPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditOfferResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Execute Accepted Sandbox Obligation",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotExecuteSandboxObligation" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/obligationResourceReference" }
+        "operationId": {
+          "const": "pilotExecuteSandboxObligation"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Post Sandbox Repayment",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotPostSandboxRepayment" },
-        "payload": { "$ref": "#/$defs/postSandboxRepaymentPayload" },
-        "resource": { "$ref": "#/$defs/obligationResourceReference" }
+        "operationId": {
+          "const": "pilotPostSandboxRepayment"
+        },
+        "payload": {
+          "$ref": "#/$defs/postSandboxRepaymentPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Advance Shared Sandbox Servicing",
-      "required": ["idempotencyKey", "resource", "reasonCode"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
       "properties": {
-        "operationId": { "const": "workerAdvanceSandboxServicing" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/obligationResourceReference" },
-        "reasonCode": { "const": "servicing_clock_tick" }
+        "operationId": {
+          "const": "workerAdvanceSandboxServicing"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        },
+        "reasonCode": {
+          "const": "servicing_clock_tick"
+        }
       },
-      "not": { "required": ["approvalArtifact"] }
+      "not": {
+        "required": [
+          "approvalArtifact"
+        ]
+      }
     },
     {
       "title": "Restructure Shared Sandbox Obligation",
-      "required": ["idempotencyKey", "resource", "reasonCode", "approvalArtifact"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode",
+        "approvalArtifact"
+      ],
       "properties": {
-        "operationId": { "const": "pilotRestructureSandboxObligation" },
-        "payload": { "$ref": "#/$defs/restructureSandboxObligationPayload" },
-        "resource": { "$ref": "#/$defs/obligationResourceReference" },
-        "reasonCode": { "const": "sandbox_hardship_restructure" }
+        "operationId": {
+          "const": "pilotRestructureSandboxObligation"
+        },
+        "payload": {
+          "$ref": "#/$defs/restructureSandboxObligationPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        },
+        "reasonCode": {
+          "const": "sandbox_hardship_restructure"
+        }
       }
     },
     {
       "title": "Repurchase Shared Sandbox Obligation",
-      "required": ["idempotencyKey", "resource", "reasonCode", "approvalArtifact"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode",
+        "approvalArtifact"
+      ],
       "properties": {
-        "operationId": { "const": "pilotRepurchaseSandboxObligation" },
-        "payload": { "$ref": "#/$defs/repurchaseSandboxObligationPayload" },
-        "resource": { "$ref": "#/$defs/obligationResourceReference" },
-        "reasonCode": { "const": "sandbox_contractual_repurchase" }
+        "operationId": {
+          "const": "pilotRepurchaseSandboxObligation"
+        },
+        "payload": {
+          "$ref": "#/$defs/repurchaseSandboxObligationPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        },
+        "reasonCode": {
+          "const": "sandbox_contractual_repurchase"
+        }
       }
     },
     {
       "title": "Write Off Shared Sandbox Obligation",
-      "required": ["idempotencyKey", "resource", "reasonCode", "approvalArtifact"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode",
+        "approvalArtifact"
+      ],
       "properties": {
-        "operationId": { "const": "pilotWriteOffSandboxObligation" },
-        "payload": { "$ref": "#/$defs/writeOffSandboxObligationPayload" },
-        "resource": { "$ref": "#/$defs/obligationResourceReference" },
-        "reasonCode": { "const": "sandbox_uncollectible_writeoff" }
+        "operationId": {
+          "const": "pilotWriteOffSandboxObligation"
+        },
+        "payload": {
+          "$ref": "#/$defs/writeOffSandboxObligationPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        },
+        "reasonCode": {
+          "const": "sandbox_uncollectible_writeoff"
+        }
       }
     },
     {
       "title": "Activate Sandbox Mandate",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotActivateSandboxMandate" },
-        "payload": { "$ref": "#/$defs/activateSandboxMandatePayload" },
-        "resource": { "$ref": "#/$defs/mandateResourceReference" }
+        "operationId": {
+          "const": "pilotActivateSandboxMandate"
+        },
+        "payload": {
+          "$ref": "#/$defs/activateSandboxMandatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/mandateResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Create Agent Account Challenge",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotCreateAgentAccountChallenge" },
-        "payload": { "$ref": "#/$defs/createAgentAccountChallengePayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotCreateAgentAccountChallenge"
+        },
+        "payload": {
+          "$ref": "#/$defs/createAgentAccountChallengePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Create Agent Subject",
-      "required": ["idempotencyKey"],
+      "required": [
+        "idempotencyKey"
+      ],
       "properties": {
-        "operationId": { "const": "pilotCreateAgentSubject" },
-        "payload": { "$ref": "#/$defs/createAgentSubjectPayload" }
+        "operationId": {
+          "const": "pilotCreateAgentSubject"
+        },
+        "payload": {
+          "$ref": "#/$defs/createAgentSubjectPayload"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["resource"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Create Human Consent",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotCreateConsent" },
-        "payload": { "$ref": "#/$defs/createConsentPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotCreateConsent"
+        },
+        "payload": {
+          "$ref": "#/$defs/createConsentPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Create Human Subject",
-      "required": ["idempotencyKey"],
+      "required": [
+        "idempotencyKey"
+      ],
       "properties": {
-        "operationId": { "const": "pilotCreateHumanSubject" },
-        "payload": { "$ref": "#/$defs/emptyPayload" }
+        "operationId": {
+          "const": "pilotCreateHumanSubject"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["resource"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Create Draft Mandate",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotCreateDraftMandate" },
-        "payload": { "$ref": "#/$defs/createDraftMandatePayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotCreateDraftMandate"
+        },
+        "payload": {
+          "$ref": "#/$defs/createDraftMandatePayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Evaluate Sandbox Credit Application",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotEvaluateCreditApplication" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/creditIntentResourceReference" }
+        "operationId": {
+          "const": "pilotEvaluateCreditApplication"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditIntentResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Freeze Agent Subject",
-      "required": ["idempotencyKey", "resource", "reasonCode"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
       "properties": {
-        "operationId": { "const": "pilotFreezeSubject" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" },
+        "operationId": {
+          "const": "pilotFreezeSubject"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        },
         "reasonCode": {
           "enum": [
             "credential_compromise",
@@ -257,346 +1054,1057 @@
     },
     {
       "title": "Request Sandbox Credit Intent",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotRequestCredit" },
-        "payload": { "$ref": "#/$defs/requestCreditPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotRequestCredit"
+        },
+        "payload": {
+          "$ref": "#/$defs/requestCreditPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Read Agent Account Binding",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadAgentAccountBinding" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotReadAgentAccountBinding"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Agent Self",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadAgentSelf" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotReadAgentSelf"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Credit Application",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadCreditApplication" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/creditIntentResourceReference" }
+        "operationId": {
+          "const": "pilotReadCreditApplication"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditIntentResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Create Private Credit Passport Artifact",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotCreateCreditPassportArtifact"
+        },
+        "payload": {
+          "$ref": "#/$defs/createCreditPassportArtifactPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Read Own Private Credit Passport Artifact",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadOwnCreditPassportArtifact"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditPassportArtifactResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Verify Bound Private Credit Passport Artifact",
+      "required": [
+        "resource",
+        "purpose"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotVerifyCreditPassportArtifact"
+        },
+        "payload": {
+          "$ref": "#/$defs/verifyCreditPassportArtifactPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditPassportArtifactResourceReference"
+        },
+        "purpose": {
+          "const": "private_credit_review"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Revoke Own Private Credit Passport Artifact",
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotRevokeCreditPassportArtifact"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditPassportArtifactResourceReference"
+        },
+        "reasonCode": {
+          "enum": [
+            "owner_withdrawal",
+            "verifier_access_no_longer_required",
+            "source_disclosure_error",
+            "security_concern"
+          ]
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Create Authenticated Official Report",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotCreateOfficialReport"
+        },
+        "payload": {
+          "$ref": "#/$defs/createOfficialReportPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Read Authenticated Official Report Metadata",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadOfficialReport"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/officialReportResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Retrieve Authenticated Official Report Bytes",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotRetrieveOfficialReport"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/officialReportResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Revoke Authenticated Official Report",
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotRevokeOfficialReport"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/officialReportResourceReference"
+        },
+        "reasonCode": {
+          "enum": [
+            "owner_withdrawal",
+            "source_disclosure_error",
+            "security_concern"
+          ]
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Human Consent",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadConsent" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/consentResourceReference" }
+        "operationId": {
+          "const": "pilotReadConsent"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/consentResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Human Self",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadHumanSelf" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotReadHumanSelf"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Resume Authenticated Human Workspace",
       "properties": {
-        "operationId": { "const": "pilotReadWorkspaceResume" },
-        "payload": { "$ref": "#/$defs/emptyPayload" }
+        "operationId": {
+          "const": "pilotReadWorkspaceResume"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["resource"] },
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] },
-          { "required": ["purpose"] },
-          { "required": ["approvalArtifact"] }
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Human Identity Reference",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadIdentityReference" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/humanIdentityReferenceResourceReference" }
+        "operationId": {
+          "const": "pilotReadIdentityReference"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/humanIdentityReferenceResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Mandate",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadMandate" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/mandateResourceReference" }
+        "operationId": {
+          "const": "pilotReadMandate"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/mandateResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Tenant Risk Portfolio",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadTenantRisk" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/riskPortfolioResourceReference" }
+        "operationId": {
+          "const": "pilotReadTenantRisk"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/riskPortfolioResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Privacy-safe Pilot Health",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadPilotHealth" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/riskPortfolioResourceReference" }
+        "operationId": {
+          "const": "pilotReadPilotHealth"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/riskPortfolioResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Privacy-safe Pilot Feedback Summary",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadPilotFeedbackSummary" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/riskPortfolioResourceReference" }
+        "operationId": {
+          "const": "pilotReadPilotFeedbackSummary"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/riskPortfolioResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Private Servicing Operations Queue",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadServicingQueue" },
-        "payload": { "$ref": "#/$defs/servicingQueueQueryPayload" },
-        "resource": { "$ref": "#/$defs/servicingQueueResourceReference" }
+        "operationId": {
+          "const": "pilotReadServicingQueue"
+        },
+        "payload": {
+          "$ref": "#/$defs/servicingQueueQueryPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/servicingQueueResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Obligation Evidence",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadEvidence" },
-        "payload": { "$ref": "#/$defs/evidenceQueryPayload" },
-        "resource": { "$ref": "#/$defs/evidenceResourceReference" }
+        "operationId": {
+          "const": "pilotReadEvidence"
+        },
+        "payload": {
+          "$ref": "#/$defs/evidenceQueryPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/evidenceResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Own Obligation",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadOwnObligation" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/obligationResourceReference" }
+        "operationId": {
+          "const": "pilotReadOwnObligation"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Read Own Obligation Evidence",
-      "required": ["resource"],
+      "required": [
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadOwnObligationEvidence" },
-        "payload": { "$ref": "#/$defs/evidenceQueryPayload" },
-        "resource": { "$ref": "#/$defs/evidenceResourceReference" }
+        "operationId": {
+          "const": "pilotReadOwnObligationEvidence"
+        },
+        "payload": {
+          "$ref": "#/$defs/evidenceQueryPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/evidenceResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Revoke Human Consent",
-      "required": ["idempotencyKey", "resource", "reasonCode"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
       "properties": {
-        "operationId": { "const": "pilotRevokeConsent" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/consentResourceReference" },
-        "reasonCode": { "const": "human_withdrawal" }
+        "operationId": {
+          "const": "pilotRevokeConsent"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/consentResourceReference"
+        },
+        "reasonCode": {
+          "const": "human_withdrawal"
+        }
       }
     },
     {
       "title": "Revoke Draft Mandate",
-      "required": ["idempotencyKey", "resource", "reasonCode"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "reasonCode"
+      ],
       "properties": {
-        "operationId": { "const": "pilotRevokeDraftMandate" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/mandateResourceReference" },
+        "operationId": {
+          "const": "pilotRevokeDraftMandate"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/mandateResourceReference"
+        },
         "reasonCode": {
-          "enum": ["credential_compromise", "operator_request", "security_incident"]
+          "enum": [
+            "credential_compromise",
+            "operator_request",
+            "security_incident"
+          ]
         }
       }
     },
     {
       "title": "Submit Agent Account Proof",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotSubmitAgentAccountProof" },
-        "payload": { "$ref": "#/$defs/submitAgentAccountProofPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotSubmitAgentAccountProof"
+        },
+        "payload": {
+          "$ref": "#/$defs/submitAgentAccountProofPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
-      "not": { "required": ["reasonCode"] }
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
     },
     {
       "title": "Read AccessGrant-bound Provider Intent",
-      "required": ["resource", "purpose"],
+      "required": [
+        "resource",
+        "purpose"
+      ],
       "properties": {
-        "operationId": { "const": "pilotReadProviderIntent" },
-        "payload": { "$ref": "#/$defs/emptyPayload" },
-        "resource": { "$ref": "#/$defs/transferIntentResourceReference" },
-        "purpose": { "const": "provider_intent_delivery" }
+        "operationId": {
+          "const": "pilotReadProviderIntent"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/transferIntentResourceReference"
+        },
+        "purpose": {
+          "const": "provider_intent_delivery"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["idempotencyKey"] },
-          { "required": ["reasonCode"] },
-          { "required": ["approvalArtifact"] }
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Acknowledge AccessGrant-bound Provider Intent",
-      "required": ["idempotencyKey", "resource", "purpose"],
+      "required": [
+        "idempotencyKey",
+        "resource",
+        "purpose"
+      ],
       "properties": {
-        "operationId": { "const": "pilotAcknowledgeProviderIntent" },
-        "payload": { "$ref": "#/$defs/acknowledgeProviderIntentPayload" },
-        "resource": { "$ref": "#/$defs/transferIntentResourceReference" },
-        "purpose": { "const": "provider_intent_delivery" }
+        "operationId": {
+          "const": "pilotAcknowledgeProviderIntent"
+        },
+        "payload": {
+          "$ref": "#/$defs/acknowledgeProviderIntentPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/transferIntentResourceReference"
+        },
+        "purpose": {
+          "const": "provider_intent_delivery"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["reasonCode"] },
-          { "required": ["approvalArtifact"] }
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Process Signed Provider Sandbox Callback Inbox",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "workerProcessInbox" },
-        "payload": { "$ref": "https://schemas.ipo.one/v2/provider-sandbox-callback.schema.json" },
-        "resource": { "$ref": "#/$defs/inboxMessageResourceReference" }
+        "operationId": {
+          "const": "workerProcessInbox"
+        },
+        "payload": {
+          "$ref": "https://schemas.ipo.one/v2/provider-sandbox-callback.schema.json"
+        },
+        "resource": {
+          "$ref": "#/$defs/inboxMessageResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["purpose"] },
-          { "required": ["reasonCode"] },
-          { "required": ["approvalArtifact"] }
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
         ]
       }
     },
     {
       "title": "Submit Privacy-safe Pilot Feedback",
-      "required": ["idempotencyKey", "resource"],
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
       "properties": {
-        "operationId": { "const": "pilotSubmitPilotFeedback" },
-        "payload": { "$ref": "#/$defs/pilotFeedbackPayload" },
-        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+        "operationId": {
+          "const": "pilotSubmitPilotFeedback"
+        },
+        "payload": {
+          "$ref": "#/$defs/pilotFeedbackPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        }
       },
       "not": {
         "anyOf": [
-          { "required": ["purpose"] },
-          { "required": ["reasonCode"] },
-          { "required": ["approvalArtifact"] }
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
         ]
       }
     }
   ],
   "allOf": [
     {
-      "if": { "required": ["purpose"] },
+      "if": {
+        "required": [
+          "purpose"
+        ]
+      },
       "then": {
         "type": "object",
         "properties": {
           "operationId": {
-            "enum": ["pilotReadProviderIntent", "pilotAcknowledgeProviderIntent"]
+            "enum": [
+              "pilotReadProviderIntent",
+              "pilotAcknowledgeProviderIntent",
+              "pilotVerifyCreditPassportArtifact"
+            ]
           }
         }
       }
@@ -618,168 +2126,442 @@
     "resourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "enum": ["subject", "consent", "credit_intent", "credit_offer", "evidence", "human_identity_reference", "inbox_message", "mandate", "obligation", "risk_portfolio", "servicing_queue", "transfer_intent"] },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "enum": [
+            "subject",
+            "consent",
+            "credit_intent",
+            "credit_offer",
+            "credit_passport_artifact",
+            "evidence",
+            "human_identity_reference",
+            "inbox_message",
+            "mandate",
+            "obligation",
+            "official_report",
+            "provider",
+            "risk_portfolio",
+            "servicing_queue",
+            "trading_capital_request",
+        "trading_credit_profile",
+        "trading_facility",
+        "trading_facility_close_request",
+        "trading_order_intent",
+        "trading_match_proposal",
+        "trading_settlement",
+        "transfer_intent"
+          ]
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "approvalArtifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["proposalId", "proposalVersion"],
+      "required": [
+        "proposalId",
+        "proposalVersion"
+      ],
       "properties": {
-        "proposalId": { "$ref": "#/$defs/domainIdentifier" },
-        "proposalVersion": { "type": "integer", "minimum": 1 }
+        "proposalId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "proposalVersion": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "subjectResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "subject" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "subject"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "creditPassportArtifactResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "credit_passport_artifact"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "officialReportResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "official_report"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "tradingCreditProfileResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "trading_credit_profile"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "providerResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "provider"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "tradingCapitalRequestResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "trading_capital_request"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "tradingMatchProposalResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "trading_match_proposal"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "mandateResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "mandate" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "mandate"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "transferIntentResourceReference": {
       "allOf": [
-        { "$ref": "#/$defs/resourceReference" },
-        { "type": "object", "properties": { "resourceType": { "const": "transfer_intent" } } }
+        {
+          "$ref": "#/$defs/resourceReference"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceType": {
+              "const": "transfer_intent"
+            }
+          }
+        }
       ]
     },
     "inboxMessageResourceReference": {
       "allOf": [
-        { "$ref": "#/$defs/resourceReference" },
-        { "type": "object", "properties": { "resourceType": { "const": "inbox_message" } } }
+        {
+          "$ref": "#/$defs/resourceReference"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceType": {
+              "const": "inbox_message"
+            }
+          }
+        }
       ]
     },
     "acknowledgeProviderIntentPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["deliveryHash"],
+      "required": [
+        "deliveryHash"
+      ],
       "properties": {
-        "deliveryHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+        "deliveryHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
       }
     },
     "pilotFeedbackPayload": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "surface", "lifecycleStage", "sentiment", "outcome", "blockerCode",
+        "surface",
+        "lifecycleStage",
+        "sentiment",
+        "outcome",
+        "blockerCode",
         "schemaVersion"
       ],
       "properties": {
         "surface": {
           "enum": [
-            "human_portfolio", "human_application", "human_offer", "human_payments",
-            "agent_protocol", "agent_sdk", "agent_mcp", "evidence", "servicing"
+            "human_portfolio",
+            "human_application",
+            "human_offer",
+            "human_payments",
+            "agent_protocol",
+            "agent_sdk",
+            "agent_mcp",
+            "evidence",
+            "servicing"
           ]
         },
         "lifecycleStage": {
           "enum": [
-            "onboarding", "application", "offer", "obligation", "execution",
-            "repayment", "servicing", "evidence"
+            "onboarding",
+            "application",
+            "offer",
+            "obligation",
+            "execution",
+            "repayment",
+            "servicing",
+            "evidence"
           ]
         },
-        "sentiment": { "enum": ["blocked", "difficult", "neutral", "easy", "valuable"] },
-        "outcome": { "enum": ["incomplete", "completed", "needs_support"] },
+        "sentiment": {
+          "enum": [
+            "blocked",
+            "difficult",
+            "neutral",
+            "easy",
+            "valuable"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "incomplete",
+            "completed",
+            "needs_support"
+          ]
+        },
         "blockerCode": {
           "enum": [
-            "none", "unclear_copy", "missing_capability", "authentication",
-            "authority_setup", "identity_proof", "credit_terms", "execution",
-            "repayment", "servicing", "evidence", "integration", "other_no_text"
+            "none",
+            "unclear_copy",
+            "missing_capability",
+            "authentication",
+            "authority_setup",
+            "identity_proof",
+            "credit_terms",
+            "execution",
+            "repayment",
+            "servicing",
+            "evidence",
+            "integration",
+            "other_no_text"
           ]
         },
-        "schemaVersion": { "const": "pilot_feedback_record.v1" }
+        "schemaVersion": {
+          "const": "pilot_feedback_record.v1"
+        }
       }
     },
     "consentResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "consent" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "consent"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "creditIntentResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "credit_intent" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "credit_intent"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "creditOfferResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "credit_offer" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "credit_offer"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "obligationResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "obligation" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "obligation"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "humanIdentityReferenceResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "human_identity_reference" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "human_identity_reference"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "riskPortfolioResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "risk_portfolio" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "risk_portfolio"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "servicingQueueResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "servicing_queue" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "servicing_queue"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "evidenceResourceReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["resourceType", "resourceId"],
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
       "properties": {
-        "resourceType": { "const": "evidence" },
-        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+        "resourceType": {
+          "const": "evidence"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
       }
     },
     "evidenceQueryPayload": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
         "cursor": {
           "type": "string",
           "minLength": 1,
@@ -798,10 +2580,20 @@
           "maxItems": 5,
           "uniqueItems": true,
           "items": {
-            "enum": ["defaulted", "dpd_61_89", "dpd_31_60", "dpd_1_30", "grace_period"]
+            "enum": [
+              "defaulted",
+              "dpd_61_89",
+              "dpd_31_60",
+              "dpd_1_30",
+              "grace_period"
+            ]
           }
         },
-        "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
         "cursor": {
           "type": "string",
           "minLength": 1,
@@ -815,20 +2607,293 @@
       "additionalProperties": false,
       "maxProperties": 0
     },
+    "tradingCapitalRequestPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateType",
+        "strategyClass",
+        "assetId",
+        "requestedAmountMinor",
+        "durationDays"
+      ],
+      "properties": {
+        "templateType": {
+          "enum": [
+            "credit",
+            "performance_participation",
+            "hybrid"
+          ]
+        },
+        "strategyClass": {
+          "enum": [
+            "market_neutral",
+            "directional",
+            "liquidity_provision"
+          ]
+        },
+        "assetId": {
+          "const": "urn:ipo-one:sandbox-asset:usd-cent"
+        },
+        "requestedAmountMinor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78,
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "durationDays": {
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 365
+        }
+      }
+    },
+    "tradingProviderMandatePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supportedTemplateTypes",
+        "allowedSubjectTypes",
+        "allowedStrategyClasses",
+        "assetId",
+        "minAmountMinor",
+        "maxAmountMinor",
+        "minDurationDays",
+        "maxDurationDays"
+      ],
+      "properties": {
+        "supportedTemplateTypes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "credit",
+              "performance_participation",
+              "hybrid"
+            ]
+          }
+        },
+        "allowedSubjectTypes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "human",
+              "agent"
+            ]
+          }
+        },
+        "allowedStrategyClasses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "market_neutral",
+              "directional",
+              "liquidity_provision"
+            ]
+          }
+        },
+        "assetId": {
+          "const": "urn:ipo-one:sandbox-asset:usd-cent"
+        },
+        "minAmountMinor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78,
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "maxAmountMinor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78,
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "minDurationDays": {
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 365
+        },
+        "maxDurationDays": {
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 365
+        }
+      }
+    },
+    "tradingMatchProposalPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerMandateId",
+        "requestHash",
+        "mandateHash"
+      ],
+      "properties": {
+        "providerMandateId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "requestHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "mandateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      }
+    },
+    "tradingMatchAcceptancePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposalHash",
+        "termsHash"
+      ],
+      "properties": {
+        "proposalHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "termsHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      }
+    },
+    "createCreditPassportArtifactPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditIntentId",
+        "verifierActorId",
+        "claimSelectors",
+        "lifetimeSeconds",
+        "schemaVersion"
+      ],
+      "properties": {
+        "creditIntentId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "verifierActorId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "claimSelectors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "decision_outcome",
+              "factor_authority",
+              "factor_subject_principal",
+              "factor_identity_or_principal_binding",
+              "factor_adverse_obligation",
+              "factor_sandbox_policy_fit",
+              "canonical_reason_codes",
+              "reason_to_feature_lineage",
+              "source_evidence_lineage"
+            ]
+          }
+        },
+        "lifetimeSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400
+        },
+        "schemaVersion": {
+          "const": "credit_passport_artifact_create.v1"
+        }
+      }
+    },
+    "createOfficialReportPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "lifetimeSeconds",
+        "schemaVersion"
+      ],
+      "properties": {
+        "format": {
+          "enum": [
+            "json",
+            "csv"
+          ]
+        },
+        "lifetimeSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 3600
+        },
+        "schemaVersion": {
+          "const": "official_report_create.v1"
+        }
+      }
+    },
+    "verifyCreditPassportArtifactPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactHash",
+        "artifactVersion",
+        "purpose",
+        "schemaVersion"
+      ],
+      "properties": {
+        "artifactHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "artifactVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "purpose": {
+          "const": "private_credit_review"
+        },
+        "schemaVersion": {
+          "const": "credit_passport_verification_request.v1"
+        }
+      }
+    },
     "acceptCreditOfferPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expectedOfferHash", "expectedTermsHash", "acknowledgementHash"],
+      "required": [
+        "expectedOfferHash",
+        "expectedTermsHash",
+        "acknowledgementHash"
+      ],
       "properties": {
-        "expectedOfferHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
-        "expectedTermsHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
-        "acknowledgementHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+        "expectedOfferHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedTermsHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "acknowledgementHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
       }
     },
     "postSandboxRepaymentPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["amountMinor", "sourceCode"],
+      "required": [
+        "amountMinor",
+        "sourceCode"
+      ],
       "properties": {
         "amountMinor": {
           "type": "string",
@@ -837,34 +2902,64 @@
           "pattern": "^[1-9][0-9]*$"
         },
         "sourceCode": {
-          "enum": ["synthetic_wallet", "synthetic_bank", "synthetic_revenue"]
+          "enum": [
+            "synthetic_wallet",
+            "synthetic_bank",
+            "synthetic_revenue"
+          ]
         }
       }
     },
     "restructureSandboxObligationPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expectedServicingStateHash", "additionalTermDays"],
+      "required": [
+        "expectedServicingStateHash",
+        "additionalTermDays"
+      ],
       "properties": {
-        "expectedServicingStateHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
-        "additionalTermDays": { "type": "integer", "minimum": 1, "maximum": 90 }
+        "expectedServicingStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "additionalTermDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90
+        }
       }
     },
     "repurchaseSandboxObligationPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expectedServicingStateHash", "servicingOwnerCode"],
+      "required": [
+        "expectedServicingStateHash",
+        "servicingOwnerCode"
+      ],
       "properties": {
-        "expectedServicingStateHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
-        "servicingOwnerCode": { "enum": ["sandbox_platform", "sandbox_originator"] }
+        "expectedServicingStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "servicingOwnerCode": {
+          "enum": [
+            "sandbox_platform",
+            "sandbox_originator"
+          ]
+        }
       }
     },
     "writeOffSandboxObligationPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expectedServicingStateHash"],
+      "required": [
+        "expectedServicingStateHash"
+      ],
       "properties": {
-        "expectedServicingStateHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+        "expectedServicingStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
       }
     },
     "activateSandboxMandatePayload": {
@@ -876,9 +2971,17 @@
         "acknowledgementCode"
       ],
       "properties": {
-        "expectedMandateHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
-        "acknowledgedTermsHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
-        "acknowledgementCode": { "const": "principal_authorizes_sandbox_credit_v1" }
+        "expectedMandateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "acknowledgedTermsHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "acknowledgementCode": {
+          "const": "principal_authorizes_sandbox_credit_v1"
+        }
       }
     },
     "requestCreditPayload": {
@@ -894,8 +2997,12 @@
         "installmentCount"
       ],
       "properties": {
-        "authorityId": { "$ref": "#/$defs/domainIdentifier" },
-        "assetId": { "$ref": "#/$defs/domainIdentifier" },
+        "authorityId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "assetId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
         "requestedPrincipalMinor": {
           "type": "string",
           "minLength": 1,
@@ -908,15 +3015,33 @@
           "maxLength": 64,
           "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
         },
-        "requestedTermDays": { "type": "integer", "minimum": 1, "maximum": 3660 },
-        "repaymentFrequency": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] },
-        "installmentCount": { "type": "integer", "minimum": 1, "maximum": 520 }
+        "requestedTermDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3660
+        },
+        "repaymentFrequency": {
+          "enum": [
+            "weekly",
+            "biweekly",
+            "monthly",
+            "end_of_term"
+          ]
+        },
+        "installmentCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 520
+        }
       }
     },
     "createAgentSubjectPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["subjectActorId", "displayName"],
+      "required": [
+        "subjectActorId",
+        "displayName"
+      ],
       "properties": {
         "subjectActorId": {
           "type": "string",
@@ -924,7 +3049,11 @@
           "maxLength": 128,
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
         },
-        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
         "jurisdiction": {
           "type": "string",
           "minLength": 1,
@@ -936,7 +3065,10 @@
     "createAgentAccountChallengePayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["accountId", "purpose"],
+      "required": [
+        "accountId",
+        "purpose"
+      ],
       "properties": {
         "accountId": {
           "type": "string",
@@ -944,13 +3076,25 @@
           "maxLength": 64,
           "pattern": "^eip155:(84532|1952):0x[0-9a-fA-F]{40}$"
         },
-        "purpose": { "enum": ["primary", "revenue", "repayment", "treasury", "execution"] }
+        "purpose": {
+          "enum": [
+            "primary",
+            "revenue",
+            "repayment",
+            "treasury",
+            "execution"
+          ]
+        }
       }
     },
     "submitAgentAccountProofPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["challengeId", "accountId", "signature"],
+      "required": [
+        "challengeId",
+        "accountId",
+        "signature"
+      ],
       "properties": {
         "challengeId": {
           "type": "string",
@@ -965,8 +3109,8 @@
         "signature": {
           "type": "string",
           "minLength": 132,
-          "maxLength": 132,
-          "pattern": "^0x[0-9a-fA-F]{130}$"
+          "maxLength": 8194,
+          "pattern": "^0x(?:[0-9a-fA-F]{2}){65,4096}$"
         }
       }
     },
@@ -994,9 +3138,18 @@
           "minItems": 1,
           "maxItems": 8,
           "uniqueItems": true,
-          "contains": { "const": "credit_application" },
+          "contains": {
+            "const": "credit_application"
+          },
           "items": {
-            "enum": ["credit_application", "credit_decision", "credit_offer_acceptance", "identity_reference_use", "obligation_servicing", "evidence_sharing"]
+            "enum": [
+              "credit_application",
+              "credit_decision",
+              "credit_offer_acceptance",
+              "identity_reference_use",
+              "obligation_servicing",
+              "evidence_sharing"
+            ]
           }
         },
         "allowedAssetIds": {
@@ -1004,21 +3157,32 @@
           "minItems": 1,
           "maxItems": 16,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/domainIdentifier" }
+          "items": {
+            "$ref": "#/$defs/domainIdentifier"
+          }
         },
         "allowedCreditPurposeCodes": {
           "type": "array",
           "minItems": 1,
           "maxItems": 16,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/code" }
+          "items": {
+            "$ref": "#/$defs/code"
+          }
         },
         "allowedRepaymentFrequencies": {
           "type": "array",
           "minItems": 1,
           "maxItems": 6,
           "uniqueItems": true,
-          "items": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] }
+          "items": {
+            "enum": [
+              "weekly",
+              "biweekly",
+              "monthly",
+              "end_of_term"
+            ]
+          }
         },
         "maxRequestedPrincipalMinor": {
           "type": "string",
@@ -1026,15 +3190,37 @@
           "maxLength": 78,
           "pattern": "^[1-9][0-9]*$"
         },
-        "maxRequestedTermDays": { "type": "integer", "minimum": 1, "maximum": 3660 },
-        "maxInstallmentCount": { "type": "integer", "minimum": 1, "maximum": 520 },
-        "termsRef": { "$ref": "#/$defs/safeReference" },
-        "termsVersion": { "$ref": "#/$defs/versionIdentifier" },
-        "dataUsageRef": { "$ref": "#/$defs/safeReference" },
-        "dataUsageVersion": { "$ref": "#/$defs/versionIdentifier" },
-        "disclosureRef": { "$ref": "#/$defs/safeReference" },
-        "validFrom": { "$ref": "#/$defs/timestamp" },
-        "expiresAt": { "$ref": "#/$defs/timestamp" }
+        "maxRequestedTermDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3660
+        },
+        "maxInstallmentCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 520
+        },
+        "termsRef": {
+          "$ref": "#/$defs/safeReference"
+        },
+        "termsVersion": {
+          "$ref": "#/$defs/versionIdentifier"
+        },
+        "dataUsageRef": {
+          "$ref": "#/$defs/safeReference"
+        },
+        "dataUsageVersion": {
+          "$ref": "#/$defs/versionIdentifier"
+        },
+        "disclosureRef": {
+          "$ref": "#/$defs/safeReference"
+        },
+        "validFrom": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/timestamp"
+        }
       }
     },
     "createDraftMandatePayload": {
@@ -1073,20 +3259,26 @@
           "type": "array",
           "maxItems": 32,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/domainIdentifier" }
+          "items": {
+            "$ref": "#/$defs/domainIdentifier"
+          }
         },
         "allowedCategories": {
           "type": "array",
           "maxItems": 32,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/domainIdentifier" }
+          "items": {
+            "$ref": "#/$defs/domainIdentifier"
+          }
         },
         "assetIds": {
           "type": "array",
           "minItems": 1,
           "maxItems": 16,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/domainIdentifier" }
+          "items": {
+            "$ref": "#/$defs/domainIdentifier"
+          }
         },
         "perActionLimitMinor": {
           "type": "string",
@@ -1100,8 +3292,12 @@
           "maxLength": 78,
           "pattern": "^[1-9][0-9]*$"
         },
-        "validFrom": { "$ref": "#/$defs/timestamp" },
-        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "validFrom": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/timestamp"
+        },
         "nonce": {
           "type": "string",
           "minLength": 16,
@@ -1121,21 +3317,37 @@
             "properties": {
               "capabilities": {
                 "type": "array",
-                "contains": { "const": "provider_spend" }
+                "contains": {
+                  "const": "provider_spend"
+                }
               }
             },
-            "required": ["capabilities"]
+            "required": [
+              "capabilities"
+            ]
           },
           "then": {
             "properties": {
-              "allowedProviderIds": { "type": "array", "minItems": 1 },
-              "allowedCategories": { "type": "array", "minItems": 1 }
+              "allowedProviderIds": {
+                "type": "array",
+                "minItems": 1
+              },
+              "allowedCategories": {
+                "type": "array",
+                "minItems": 1
+              }
             }
           },
           "else": {
             "properties": {
-              "allowedProviderIds": { "type": "array", "maxItems": 0 },
-              "allowedCategories": { "type": "array", "maxItems": 0 }
+              "allowedProviderIds": {
+                "type": "array",
+                "maxItems": 0
+              },
+              "allowedCategories": {
+                "type": "array",
+                "maxItems": 0
+              }
             }
           }
         }
@@ -1164,6 +3376,277 @@
       "minLength": 1,
       "maxLength": 2048,
       "pattern": "^(https://|ipfs:|urn:)[^\\s?#]+$"
+    },
+    "tradingFacilityResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "trading_facility"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "tradingOrderIntentResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "trading_order_intent"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "tradingCreateFacilityPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "obligationId",
+        "proposalHash"
+      ],
+      "properties": {
+        "obligationId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "proposalHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      }
+    },
+    "tradingAccountBindingChallengePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment",
+        "masterAccountAddress",
+        "subaccountAddress"
+      ],
+      "properties": {
+        "environment": {
+          "const": "hyperliquid_testnet"
+        },
+        "masterAccountAddress": {
+          "$ref": "#/$defs/evmAddress"
+        },
+        "subaccountAddress": {
+          "$ref": "#/$defs/evmAddress"
+        }
+      }
+    },
+    "tradingHistoryImportPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "masterAccountAddress",
+        "signature",
+        "subaccountAddress"
+      ],
+      "properties": {
+        "masterAccountAddress": {
+          "$ref": "#/$defs/evmAddress"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{130}$"
+        },
+        "subaccountAddress": {
+          "$ref": "#/$defs/evmAddress"
+        }
+      }
+    },
+    "evmAddress": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]{40}$"
+    },
+    "tradingContributionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amountMinor",
+        "expectedStateHash",
+        "expectedVersion"
+      ],
+      "properties": {
+        "expectedStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "amountMinor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78,
+          "pattern": "^[1-9][0-9]*$"
+        }
+      }
+    },
+    "tradingFacilityStatePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedStateHash",
+        "expectedVersion"
+      ],
+      "properties": {
+        "expectedStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      }
+    },
+    "tradingSubmitOrderIntentPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction",
+        "expectedStateHash",
+        "expectedVersion",
+        "syntheticNotionalMinor"
+      ],
+      "properties": {
+        "expectedStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "direction": {
+          "enum": [
+            "long",
+            "short"
+          ]
+        },
+        "syntheticNotionalMinor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78,
+          "pattern": "^[1-9][0-9]*$"
+        }
+      }
+    },
+    "tradingCancelOrderIntentPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedFacilityStateHash",
+        "expectedFacilityVersion",
+        "expectedOrderIntentHash",
+        "expectedOrderVersion"
+      ],
+      "properties": {
+        "expectedFacilityStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedFacilityVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "expectedOrderIntentHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedOrderVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    },
+    "tradingSettlementRunPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedCloseRequestHash",
+        "expectedFacilityStateHash",
+        "expectedFacilityVersion"
+      ],
+      "properties": {
+        "expectedCloseRequestHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedFacilityStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "expectedFacilityVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      }
+    },
+    "tradingPerformanceProofPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedSettlementHash"
+      ],
+      "properties": {
+        "expectedSettlementHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      }
+    },
+    "tradingFacilityCloseRequestResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "trading_facility_close_request"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "tradingSettlementResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "trading_settlement"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
     }
   }
 }

@@ -33,7 +33,8 @@ Routes are limited to:
 An embedding application may additionally inject
 `createHumanAccessRouteHandler(...)`. It composes the reviewed Human OIDC/SIWE
 primitives at `/auth/v1/*`: provider discovery, OIDC initiation/callback,
-one-use wallet challenge/verification, and logout. The handler binds every OIDC
+one-use wallet challenge/verification, CSRF-bound idempotent wallet-context
+invalidation, and logout. The handler binds every OIDC
 transaction to one configured provider, accepts only fixed same-origin
 redirects, enforces Origin on wallet mutations, and serializes only Secure,
 HttpOnly, host-only cookies. It adds no signup, Tenant/Actor selection, role,

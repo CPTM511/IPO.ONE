@@ -9,6 +9,7 @@ import {
   PostgresCredentialRegistry,
   PostgresHumanSessionStore,
   PostgresLoginTransactionStore,
+  PostgresReplayCache,
   PostgresWalletLoginTransactionStore,
   assertAuthenticationRuntimeConfig,
   assertPostgresAuthenticationRole,
@@ -269,6 +270,11 @@ export async function createPostgresHumanAccessComposition(input) {
   const eventRepository = revalidatingAuthenticationRepository(baseEventRepository, systemBoundary);
 
   const referenceHasher = createReferenceHasher(input.referenceHashKey);
+  const machineReplayCache = new PostgresReplayCache({
+    eventRepository,
+    tenantId,
+    referenceHasher
+  });
   const secretBox = createAuthenticationSecretBox(input.encryptionKey);
   const credentialRegistry = new PostgresCredentialRegistry({
     eventRepository,
@@ -377,6 +383,7 @@ export async function createPostgresHumanAccessComposition(input) {
     csrfTokenProvider,
     humanSessionBff,
     credentialRegistry,
+    machineReplayCache,
     authenticationEvents: new PostgresAuthenticationEventStore({ eventRepository, tenantId }),
     deploymentBoundary: Object.freeze({
       tenantId,

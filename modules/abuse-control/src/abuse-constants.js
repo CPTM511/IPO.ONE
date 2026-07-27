@@ -37,7 +37,9 @@ export const ResourceKind = Object.freeze({
   PROVIDERS: "providers",
   CREDENTIALS: "credentials",
   ACCESS_GRANTS: "access_grants",
-  PILOT_FEEDBACK_RECORDS: "pilot_feedback_records"
+  PILOT_FEEDBACK_RECORDS: "pilot_feedback_records",
+  CREDIT_PASSPORT_ARTIFACTS: "credit_passport_artifacts",
+  OFFICIAL_REPORT_ARTIFACTS: "official_report_artifacts"
 });
 
 export const RequestMetric = Object.freeze({

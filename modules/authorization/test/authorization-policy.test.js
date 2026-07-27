@@ -87,8 +87,57 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
     PilotCapability.OBLIGATION_READ_OWNED,
     PilotCapability.EVIDENCE_READ_OWNED,
+    PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+    PilotCapability.CREDIT_PASSPORT_READ_SELF,
+    PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+    PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+    PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+    PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+    PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+    PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
+    PilotCapability.TRADING_ACCOUNT_CHALLENGE_CREATE_SELF,
+    PilotCapability.TRADING_HISTORY_IMPORT_SELF,
+    PilotCapability.TRADING_EVIDENCE_FINALIZE_SELF,
+    PilotCapability.TRADING_CREDIT_PROFILE_READ_SELF,
+    PilotCapability.TRADING_CAPITAL_REQUEST_CREATE_SELF,
+    PilotCapability.TRADING_COMPATIBLE_MANDATE_LIST_SELF,
+    PilotCapability.TRADING_MATCH_PROPOSAL_CREATE_SELF,
+    PilotCapability.TRADING_MATCH_ACCEPT_SUBJECT,
+    PilotCapability.TRADING_FACILITY_CREATE_SELF,
+    PilotCapability.TRADING_FACILITY_COLLATERAL_RECORD_SELF,
+    PilotCapability.TRADING_FACILITY_ACTIVATE_SELF,
+    PilotCapability.TRADING_ORDER_INTENT_SUBMIT_SELF,
+    PilotCapability.TRADING_ORDER_INTENT_CANCEL_SELF,
+    PilotCapability.TRADING_FACILITY_READ_BOUND,
+    PilotCapability.TRADING_FACILITY_CLOSE_REQUEST_SELF,
+    PilotCapability.TRADING_SETTLEMENT_READ_BOUND,
+    PilotCapability.TRADING_PERFORMANCE_PROOF_ISSUE_BOUND,
+    PilotCapability.TRADING_FACILITY_EVIDENCE_READ_BOUND,
     PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
   ]);
+  const tradingPause = registry.getAuthenticated("tradingPauseNewRisk");
+  assert.equal(
+    tradingPause.approvalRequirement,
+    ApprovalRequirement.PROTECTIVE
+  );
+  assert.deepEqual(tradingPause.allowedActorTypes, [
+    "risk_operator",
+    "operations_operator"
+  ]);
+  assert.deepEqual(tradingPause.liveChecks, ["risk", "reconciliation"]);
+  const tradingFlatten = registry.getAuthenticated("tradingFlattenFacility");
+  assert.equal(
+    tradingFlatten.approvalRequirement,
+    ApprovalRequirement.PROTECTIVE
+  );
+  assert.equal(tradingFlatten.ownershipRule, "tenant");
+  const verifyPassport = registry.getAuthenticated("pilotVerifyCreditPassportArtifact");
+  assert.equal(
+    verifyPassport.requiredCapability,
+    PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND
+  );
+  assert.equal(verifyPassport.ownershipRule, "actor");
+  assert.deepEqual(verifyPassport.liveChecks, ["credit_passport_verification_state"]);
   const submitFeedback = registry.getAuthenticated("pilotSubmitPilotFeedback");
   assert.equal(submitFeedback.requiredCapability, PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF);
   assert.equal(submitFeedback.ownershipRule, "actor");
@@ -156,7 +205,33 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
       PilotCapability.MANDATE_DRAFT_CREATE,
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
-      PilotCapability.EVIDENCE_READ_OWNED
+      PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+      PilotCapability.CREDIT_PASSPORT_READ_SELF,
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+      PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+      PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
+      PilotCapability.TRADING_ACCOUNT_CHALLENGE_CREATE_SELF,
+      PilotCapability.TRADING_HISTORY_IMPORT_SELF,
+      PilotCapability.TRADING_EVIDENCE_FINALIZE_SELF,
+      PilotCapability.TRADING_CREDIT_PROFILE_READ_SELF,
+      PilotCapability.TRADING_CAPITAL_REQUEST_CREATE_SELF,
+      PilotCapability.TRADING_COMPATIBLE_MANDATE_LIST_SELF,
+      PilotCapability.TRADING_MATCH_PROPOSAL_CREATE_SELF,
+      PilotCapability.TRADING_MATCH_ACCEPT_SUBJECT,
+      PilotCapability.TRADING_FACILITY_CREATE_SELF,
+      PilotCapability.TRADING_FACILITY_COLLATERAL_RECORD_SELF,
+      PilotCapability.TRADING_FACILITY_ACTIVATE_SELF,
+      PilotCapability.TRADING_ORDER_INTENT_SUBMIT_SELF,
+      PilotCapability.TRADING_ORDER_INTENT_CANCEL_SELF,
+      PilotCapability.TRADING_FACILITY_READ_BOUND,
+      PilotCapability.TRADING_FACILITY_CLOSE_REQUEST_SELF,
+      PilotCapability.TRADING_SETTLEMENT_READ_BOUND,
+      PilotCapability.TRADING_PERFORMANCE_PROOF_ISSUE_BOUND,
+      PilotCapability.TRADING_FACILITY_EVIDENCE_READ_BOUND
     ]
   );
   assert.equal(

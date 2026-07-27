@@ -1,6 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { verifyMessage } from "viem";
 import {
   PinnedJwksResolver,
   createOidcCodeExchangeAdapter,
@@ -8,8 +7,17 @@ import {
   createTrustedMtlsSenderEvidence,
   loadAuthenticationRuntimeConfig
 } from "../../../modules/authentication/src/index.js";
+import {
+  BASE_SEPOLIA_PROFILE,
+  EvmAccountProofAdapter,
+  EvmWalletSignatureVerifier,
+  X_LAYER_TESTNET_PROFILE
+} from "../../../modules/chain-adapter/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
-import { createTrustedNetworkContext } from "../../../modules/abuse-control/src/index.js";
+import {
+  abuseHash,
+  createTrustedNetworkContext
+} from "../../../modules/abuse-control/src/index.js";
 import { createPostgresPool } from "../../../modules/persistence/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 
@@ -216,13 +224,16 @@ async function loadProviderConfig(environment, publicOrigin) {
   });
 
   const walletConfig = exactObject("wallet identity", config.wallet, WALLET_KEYS);
+  const walletSignatureVerifier = new EvmWalletSignatureVerifier();
   const wallet = walletConfig.enabled === true
     ? Object.freeze({
         issuer: exactHttpsUrl("wallet issuer", walletConfig.issuer, { originOnly: true }).origin,
         clientId: walletConfig.clientId,
         domain: publicOrigin.host,
         uri: publicOrigin.origin,
-        signatureVerifier: Object.freeze({ verify: (input) => verifyMessage(input) })
+        signatureVerifier: Object.freeze({
+          verify: (input) => walletSignatureVerifier.verifyMessage(input)
+        })
       })
     : undefined;
   if (walletConfig.enabled !== true && walletConfig.enabled !== false) {
@@ -234,6 +245,7 @@ async function loadProviderConfig(environment, publicOrigin) {
   return Object.freeze({
     providers: Object.freeze(providers),
     wallet,
+    walletSignatureVerifier,
     machineIssuer: workloadIssuer,
     machineAudience: workload.audience,
     machineResolver
@@ -257,6 +269,13 @@ export async function loadProductionClosedPilotEnvironment(environment = process
   const encryptionKey = await readKeyFile(environment, "IPO_ONE_AUTH_ENCRYPTION_KEY_FILE");
   const edgeAssertionKey = await readKeyFile(environment, "IPO_ONE_EDGE_ASSERTION_KEY_FILE");
   const identity = await loadProviderConfig(environment, browserOrigin);
+  const proofAdapters = Object.freeze([
+    BASE_SEPOLIA_PROFILE,
+    X_LAYER_TESTNET_PROFILE
+  ].map((profile) => new EvmAccountProofAdapter({
+    profile,
+    signatureVerifier: identity.walletSignatureVerifier
+  })));
   const referenceHasher = createReferenceHasher(referenceHashKey);
   const port = Number(environment.PORT ?? 8080);
   if (!Number.isSafeInteger(port) || port < 1_024 || port > 65_535) throw configError("PORT is invalid");
@@ -287,6 +306,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     encryptionKey,
     encryptionKeyRef: runtimeConfig.encryptionKeyRef,
     oidcProviders: identity.providers,
+    proofAdapters,
     ...(identity.wallet === undefined ? {} : { wallet: identity.wallet }),
     machineIssuer: identity.machineIssuer,
     machineAudience: identity.machineAudience,
@@ -305,7 +325,10 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     createNetworkContext({ request }) {
       const forwardedFor = oneHeader(request, "x-forwarded-for", 2_048);
       return createTrustedNetworkContext({
-        networkRefHash: referenceHasher.hash("network.forwarded", forwardedFor),
+        networkRefHash: abuseHash(
+          "verified_proxy_network",
+          referenceHasher.hash("network.forwarded", forwardedFor)
+        ),
         source: "verified_proxy"
       });
     }

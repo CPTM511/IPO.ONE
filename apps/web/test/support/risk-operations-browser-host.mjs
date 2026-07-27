@@ -16,6 +16,31 @@ const servicingQueueId = "servicing_queue_browser_qa";
 const subjectId = "agent_subject_browser_qa";
 let subjectFrozen = false;
 
+async function serveAuthentication({ request, response, url, requestId }) {
+  if (url.pathname !== "/auth/v1/options") return false;
+  if (request.method !== "GET" && request.method !== "HEAD") return false;
+  const body = JSON.stringify({
+    schemaVersion: "ipo_one_authentication_options.v1",
+    profile: "closed_non_funds_pilot",
+    enabled: false,
+    sessionActive: true,
+    oidcProviders: [],
+    walletAuthentication: false,
+    supportedChains: [84532, 1952],
+    boundary:
+      "Authentication proves presence; internal policy and Mandates separately decide authority."
+  });
+  response.writeHead(200, {
+    "cache-control": "no-store",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": Buffer.byteLength(body),
+    "x-content-type-options": "nosniff",
+    "x-request-id": requestId
+  });
+  response.end(request.method === "HEAD" ? undefined : body);
+  return true;
+}
+
 function protocolResult(operationId, response) {
   return {
     operationId,
@@ -301,6 +326,73 @@ function resultFor(command) {
       schemaVersion: "tenant_pilot_health_view.v1"
     });
   }
+  if (command.operationId === "pilotReadPilotFeedbackSummary") {
+    if (command.resource?.resourceId !== portfolioId) {
+      throw new Error("pilot_feedback_browser_qa_unavailable");
+    }
+    return protocolResult(command.operationId, {
+      asOf: "2026-07-17T08:30:00.000Z",
+      totalCount: 6,
+      entryModes: { humanCount: 4, agentCount: 2 },
+      surfaces: {
+        humanPortfolioCount: 1,
+        humanApplicationCount: 1,
+        humanOfferCount: 0,
+        humanPaymentsCount: 1,
+        agentProtocolCount: 1,
+        agentSdkCount: 1,
+        agentMcpCount: 1,
+        evidenceCount: 0,
+        servicingCount: 0
+      },
+      lifecycleStages: {
+        onboardingCount: 1,
+        applicationCount: 1,
+        offerCount: 0,
+        obligationCount: 1,
+        executionCount: 0,
+        repaymentCount: 2,
+        servicingCount: 1,
+        evidenceCount: 0
+      },
+      sentiments: {
+        blockedCount: 1,
+        difficultCount: 1,
+        neutralCount: 0,
+        easyCount: 2,
+        valuableCount: 2
+      },
+      outcomes: {
+        incompleteCount: 1,
+        completedCount: 4,
+        needsSupportCount: 1
+      },
+      blockerCodes: {
+        noneCount: 4,
+        unclearCopyCount: 0,
+        missingCapabilityCount: 0,
+        authenticationCount: 0,
+        authoritySetupCount: 1,
+        identityProofCount: 0,
+        creditTermsCount: 0,
+        executionCount: 0,
+        repaymentCount: 1,
+        servicingCount: 0,
+        evidenceCount: 0,
+        integrationCount: 0,
+        otherNoTextCount: 0
+      },
+      safety: {
+        aggregateOnly: true,
+        piiIncluded: false,
+        identifiersIncluded: false,
+        thirdPartyAnalytics: false,
+        sandboxOnly: true,
+        productionFundsMoved: false
+      },
+      schemaVersion: "tenant_pilot_feedback_summary_view.v1"
+    });
+  }
   if (command.operationId === "pilotReadServicingQueue") {
     if (command.resource?.resourceId !== servicingQueueId) throw new Error("servicing_queue_browser_qa_unavailable");
     return protocolResult(command.operationId, servicingQueue(command));
@@ -322,6 +414,7 @@ function resultFor(command) {
   throw new Error(`unsupported_risk_browser_qa_operation:${command.operationId}`);
 }
 
+const qaAuthenticationTime = new Date().toISOString();
 const authenticationContext = createAuthenticationContext({
   tenantId: "tenant_risk_operations_browser_qa",
   actorId: "actor_risk_operations_browser_qa",
@@ -330,13 +423,19 @@ const authenticationContext = createAuthenticationContext({
   credentialId: "credential_risk_operations_browser_qa",
   credentialVersion: 1,
   policyVersion: "security_001.v1",
-  capabilities: ["risk.read.tenant", "pilot.health.read", "servicing.queue.read", "risk.freeze"],
+  capabilities: [
+    "risk.read.tenant",
+    "pilot.health.read",
+    "pilot.feedback.read.tenant",
+    "servicing.queue.read",
+    "risk.freeze"
+  ],
   roles: ["risk_operator"],
   tokenJtiHash: "token_jti_hash_risk_operations_browser_qa_000000000000",
   authenticationMethod: ClientAuthenticationMethod.OIDC_PKCE_BFF,
   senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
-  authenticatedAt: "2026-07-17T08:00:00.000Z",
-  authTime: "2026-07-17T08:00:00.000Z",
+  authenticatedAt: qaAuthenticationTime,
+  authTime: qaAuthenticationTime,
   acr: "urn:ipo.one:acr:phishing-resistant",
   amr: ["webauthn"]
 });
@@ -352,11 +451,12 @@ const host = createTenantHttpServer({
     return authenticationContext;
   },
   createNetworkContext: async () => ({ source: "risk_operations_browser_qa" }),
+  serveAuthentication,
   serveWebAsset: createTenantWebAssetHandler({ csrfTokenProvider: async () => csrfToken })
 });
 
 const address = await host.listen();
-console.log(`RISK_OPERATIONS_BROWSER_QA_URL=http://${address.host}:${address.port}/#risk`);
+console.log(`RISK_OPERATIONS_BROWSER_QA_URL=http://${address.host}:${address.port}/#risk-operations`);
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, async () => {

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/fee-audit-policy.schema.json",
+  "title": "IPO.ONE fee audit policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "availability",
+    "productionPolicyAvailable",
+    "feeCalculationAuthorized",
+    "principalAsFeeBaseAllowed",
+    "unrealizedPnlAsFeeBaseAllowed",
+    "reasonCode"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "fee_audit_policy.v1" },
+    "availability": { "const": "unavailable" },
+    "productionPolicyAvailable": { "const": false },
+    "feeCalculationAuthorized": { "const": false },
+    "principalAsFeeBaseAllowed": { "const": false },
+    "unrealizedPnlAsFeeBaseAllowed": { "const": false },
+    "reasonCode": { "const": "production_fee_policy_not_approved" }
+  }
+}

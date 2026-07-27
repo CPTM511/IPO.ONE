@@ -10,8 +10,7 @@ import { DomainError } from "../../../packages/domain/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
 import { createTenantAuthenticationResolver } from "./tenant-authentication-resolver.js";
 import { createTenantWebAssetHandler } from "./tenant-web-assets.js";
-import tenantProtocolRequestSchema from "../../../schemas/v2/tenant-protocol-request.schema.json" with { type: "json" };
-import tenantProtocolResultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
+import { createTenantOpenApiDocument } from "./tenant-openapi.js";
 
 export const PRODUCTION_TENANT_ROUTES = Object.freeze({
   operations: "/tenant/v1/operations",
@@ -20,73 +19,6 @@ export const PRODUCTION_TENANT_ROUTES = Object.freeze({
   live: "/livez",
   ready: "/readyz"
 });
-
-function tenantOpenApi(publicOrigin) {
-  return Object.freeze({
-    openapi: "3.1.0",
-    info: Object.freeze({
-      title: "IPO.ONE Authenticated Tenant Protocol",
-      version: "1.0.0",
-      description: "One durable no-real-funds obligation protocol shared by Human and Agent entry modes."
-    }),
-    servers: Object.freeze([{ url: publicOrigin.origin }]),
-    paths: Object.freeze({
-      "/tenant/v1/operations": Object.freeze({
-        post: Object.freeze({
-          operationId: "executeTenantOperation",
-          summary: "Execute one catalogued Tenant operation",
-          security: Object.freeze([
-            Object.freeze({ humanSession: [] }),
-            Object.freeze({ workloadBearer: [], mutualTls: [] })
-          ]),
-          requestBody: Object.freeze({
-            required: true,
-            content: Object.freeze({
-              "application/json": Object.freeze({ schema: tenantProtocolRequestSchema })
-            })
-          }),
-          responses: Object.freeze({
-            200: Object.freeze({
-              description: "Authenticated protocol result",
-              content: Object.freeze({
-                "application/json": Object.freeze({ schema: tenantProtocolResultSchema })
-              })
-            }),
-            400: Object.freeze({ description: "Problem Details" }),
-            401: Object.freeze({ description: "Authentication required" }),
-            403: Object.freeze({ description: "Authorization denied" }),
-            429: Object.freeze({ description: "Admission limit reached" })
-          })
-        })
-      }),
-      "/tenant/v1/catalog": Object.freeze({
-        get: Object.freeze({
-          operationId: "getTenantOperationCatalog",
-          summary: "Read the closed operation catalog",
-          security: Object.freeze([
-            Object.freeze({ humanSession: [] }),
-            Object.freeze({ workloadBearer: [], mutualTls: [] })
-          ]),
-          responses: Object.freeze({
-            200: Object.freeze({ description: "Versioned Tenant operation catalog" }),
-            401: Object.freeze({ description: "Authentication required" })
-          })
-        })
-      })
-    }),
-    components: Object.freeze({
-      securitySchemes: Object.freeze({
-        humanSession: Object.freeze({
-          type: "apiKey",
-          in: "cookie",
-          name: "__Host-ipo_one_session"
-        }),
-        workloadBearer: Object.freeze({ type: "http", scheme: "bearer", bearerFormat: "JWT" }),
-        mutualTls: Object.freeze({ type: "mutualTLS" })
-      })
-    })
-  });
-}
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_CONCURRENCY = 64;
@@ -326,7 +258,13 @@ export function createProductionTenantHost(input) {
         url.search === "" &&
         url.pathname === "/openapi.json"
       ) {
-        return json(response, 200, tenantOpenApi(publicOrigin), requestId, headOnly);
+        return json(
+          response,
+          200,
+          createTenantOpenApiDocument(publicOrigin),
+          requestId,
+          headOnly
+        );
       }
       if (
         new Set(["GET", "HEAD"]).has(request.method) &&

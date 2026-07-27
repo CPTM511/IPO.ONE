@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hyperliquid-testnet-facility-funding-record.schema.json",
+  "title": "Hyperliquid Testnet Simulated Facility Funding Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fundingId",
+    "fundingHash",
+    "stateHash",
+    "requestHash",
+    "idempotencyKeyHash",
+    "facilityId",
+    "facilityHash",
+    "facilityStateHash",
+    "facilityVersion",
+    "facilityLifecycleStatus",
+    "obligationId",
+    "subjectId",
+    "bilateralTermsHash",
+    "assetId",
+    "requiredSubjectContributionMinor",
+    "requiredProviderContributionMinor",
+    "maximumFacilityCapMinor",
+    "facilityDestinationHash",
+    "accountBindingHash",
+    "masterAccountHash",
+    "withdrawalAuthorityHash",
+    "executionSignerReferenceHash",
+    "subjectContributionMinor",
+    "providerContributionMinor",
+    "reconciledTotalMinor",
+    "subjectReceiptHash",
+    "providerReceiptHash",
+    "subjectContributionFinalized",
+    "providerContributionFinalized",
+    "processedReceiptCount",
+    "latestSourceEvidenceHash",
+    "canonicalLedgerStateHash",
+    "ledgerTransactionCount",
+    "riskSnapshotHash",
+    "riskState",
+    "riskFreshness",
+    "riskObservedAt",
+    "riskMaximumAgeMs",
+    "initialKernelSnapshotHash",
+    "latestKernelSnapshotHash",
+    "authorizationDecisionHash",
+    "admissionDecisionHash",
+    "authorizedActorHash",
+    "activatedByActorHash",
+    "status",
+    "incidentReasonCodes",
+    "activationEvidenceHash",
+    "activationIdempotencyKeyHash",
+    "activationCommandHash",
+    "resultHash",
+    "version",
+    "createdAt",
+    "updatedAt",
+    "activatedAt",
+    "environment",
+    "testnetOnly",
+    "simulationOnly",
+    "protectedTestnetE2EOnly",
+    "nonRedeemable",
+    "directFacilityDestination",
+    "pooledCapital",
+    "traderWalletPassThrough",
+    "traderWithdrawalAuthority",
+    "masterWithdrawalAuthoritySeparated",
+    "executionSignerSeparated",
+    "externalSystemQueried",
+    "externalContributionSubmitted",
+    "liveTransportApproved",
+    "liveAccountsApproved",
+    "apiWalletApproved",
+    "rawAddressPersisted",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "canonicalFacility",
+    "secondFacilityCreated",
+    "canonicalFacilityMutationCreated",
+    "canonicalLedger",
+    "ledgerMutationCreated",
+    "secondLedgerCreated",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "realFunds",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "fundingId": { "$ref": "#/$defs/identifier" },
+    "fundingHash": { "$ref": "#/$defs/hash" },
+    "stateHash": { "$ref": "#/$defs/hash" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "facilityStateHash": { "$ref": "#/$defs/hash" },
+    "facilityVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "facilityLifecycleStatus": { "const": "ready_for_activation" },
+    "obligationId": { "$ref": "#/$defs/identifier" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "bilateralTermsHash": { "$ref": "#/$defs/hash" },
+    "assetId": { "$ref": "#/$defs/identifier" },
+    "requiredSubjectContributionMinor": {
+      "$ref": "#/$defs/positiveMinor"
+    },
+    "requiredProviderContributionMinor": {
+      "$ref": "#/$defs/positiveMinor"
+    },
+    "maximumFacilityCapMinor": { "$ref": "#/$defs/positiveMinor" },
+    "facilityDestinationHash": { "$ref": "#/$defs/hash" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "masterAccountHash": { "$ref": "#/$defs/hash" },
+    "withdrawalAuthorityHash": { "$ref": "#/$defs/hash" },
+    "executionSignerReferenceHash": { "$ref": "#/$defs/hash" },
+    "subjectContributionMinor": {
+      "$ref": "#/$defs/nonNegativeMinor"
+    },
+    "providerContributionMinor": {
+      "$ref": "#/$defs/nonNegativeMinor"
+    },
+    "reconciledTotalMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "subjectReceiptHash": { "$ref": "#/$defs/nullableHash" },
+    "providerReceiptHash": { "$ref": "#/$defs/nullableHash" },
+    "subjectContributionFinalized": { "type": "boolean" },
+    "providerContributionFinalized": { "type": "boolean" },
+    "processedReceiptCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "latestSourceEvidenceHash": { "$ref": "#/$defs/nullableHash" },
+    "canonicalLedgerStateHash": { "$ref": "#/$defs/hash" },
+    "ledgerTransactionCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+    "riskState": { "const": "NORMAL" },
+    "riskFreshness": { "const": "FRESH" },
+    "riskObservedAt": { "type": "string", "format": "date-time" },
+    "riskMaximumAgeMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300000
+    },
+    "initialKernelSnapshotHash": { "$ref": "#/$defs/hash" },
+    "latestKernelSnapshotHash": { "$ref": "#/$defs/hash" },
+    "authorizationDecisionHash": { "$ref": "#/$defs/hash" },
+    "admissionDecisionHash": { "$ref": "#/$defs/hash" },
+    "authorizedActorHash": { "$ref": "#/$defs/hash" },
+    "activatedByActorHash": { "$ref": "#/$defs/nullableHash" },
+    "status": {
+      "enum": [
+        "AWAITING_CONTRIBUTIONS",
+        "AWAITING_SUBJECT",
+        "AWAITING_PROVIDER",
+        "READY",
+        "ACTIVE",
+        "INCIDENT"
+      ]
+    },
+    "incidentReasonCodes": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9_]{0,95}$"
+      }
+    },
+    "activationEvidenceHash": { "$ref": "#/$defs/nullableHash" },
+    "activationIdempotencyKeyHash": {
+      "$ref": "#/$defs/nullableHash"
+    },
+    "activationCommandHash": { "$ref": "#/$defs/nullableHash" },
+    "resultHash": { "$ref": "#/$defs/nullableHash" },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "activatedAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "environment": { "const": "hyperliquid_testnet" },
+    "testnetOnly": { "const": true },
+    "simulationOnly": { "const": true },
+    "protectedTestnetE2EOnly": { "const": true },
+    "nonRedeemable": { "const": true },
+    "directFacilityDestination": { "const": true },
+    "pooledCapital": { "const": false },
+    "traderWalletPassThrough": { "const": false },
+    "traderWithdrawalAuthority": { "const": false },
+    "masterWithdrawalAuthoritySeparated": { "const": true },
+    "executionSignerSeparated": { "const": true },
+    "externalSystemQueried": { "const": false },
+    "externalContributionSubmitted": { "const": false },
+    "liveTransportApproved": { "const": false },
+    "liveAccountsApproved": { "const": false },
+    "apiWalletApproved": { "const": false },
+    "rawAddressPersisted": { "const": false },
+    "rawResponsePersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "canonicalFacility": { "const": true },
+    "secondFacilityCreated": { "const": false },
+    "canonicalFacilityMutationCreated": { "type": "boolean" },
+    "canonicalLedger": { "const": true },
+    "ledgerMutationCreated": { "const": false },
+    "secondLedgerCreated": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realFunds": { "const": false },
+    "productionFundsMoved": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "hyperliquid_testnet_simulated_facility_funding.v1"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "ACTIVE" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "subjectContributionFinalized": { "const": true },
+          "providerContributionFinalized": { "const": true },
+          "activatedByActorHash": { "$ref": "#/$defs/hash" },
+          "activationEvidenceHash": { "$ref": "#/$defs/hash" },
+          "activationIdempotencyKeyHash": { "$ref": "#/$defs/hash" },
+          "activationCommandHash": { "$ref": "#/$defs/hash" },
+          "resultHash": { "$ref": "#/$defs/hash" },
+          "activatedAt": { "type": "string", "format": "date-time" },
+          "canonicalFacilityMutationCreated": { "const": true }
+        }
+      },
+      "else": {
+        "properties": {
+          "canonicalFacilityMutationCreated": { "const": false }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "INCIDENT" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "incidentReasonCodes": { "type": "array", "minItems": 1 },
+          "resultHash": { "$ref": "#/$defs/hash" }
+        }
+      },
+      "else": {
+        "properties": {
+          "incidentReasonCodes": { "type": "array", "maxItems": 0 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "nullableHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "positiveMinor": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,77}$"
+    },
+    "nonNegativeMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    }
+  }
+}

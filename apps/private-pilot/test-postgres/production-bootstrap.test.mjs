@@ -32,7 +32,10 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     targetUrl.pathname = `/${database}`;
     target = new Pool({ connectionString: targetUrl.toString(), max: 1 });
     const applied = await migrateUp({ pool: target });
-    assert.equal(applied.at(-1), "0025_durable_human_authentication");
+    assert.equal(
+      applied.at(-1),
+      "0039_durable_authentication_replay"
+    );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
       adminConnectionString: targetUrl.toString(),

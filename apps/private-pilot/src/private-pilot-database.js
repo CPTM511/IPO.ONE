@@ -100,7 +100,8 @@ async function provisionApplicationRole(ownerPool, password) {
        provider_intent_acknowledgements, provider_callback_inbox,
        credit_lines, ledger_accounts, ledger_transactions, ledger_entries,
        repayment_events, aggregate_stream_heads, domain_events, credit_events,
-       pilot_feedback_records,
+       pilot_feedback_records, credit_passport_artifacts,
+       official_report_artifacts,
        evidence_envelopes, outbox_messages, command_idempotency,
        command_events, projection_registry, projection_snapshots,
        reconciliation_runs, reconciliation_discrepancies

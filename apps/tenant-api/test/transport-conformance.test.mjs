@@ -228,21 +228,38 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     const pageResponse = await fetch(`${baseUrl}/`);
     assert.equal(pageResponse.status, 200);
     assert.match(pageResponse.headers.get("content-type"), /^text\/html/);
-    assert.match(pageResponse.headers.get("content-security-policy"), /connect-src 'self'/);
+    assert.match(
+      pageResponse.headers.get("content-security-policy"),
+      /connect-src 'self' wss:\/\/relay\.walletconnect\.org https:\/\/sepolia\.base\.org https:\/\/testrpc\.xlayer\.tech/
+    );
     assert.equal(pageResponse.headers.get("x-frame-options"), "DENY");
     const page = await pageResponse.text();
     assert.match(page, /Request and price no-funds credit/);
     assert.match(page, /Create, review, and activate Agent authority/);
     assert.match(page, /Principal → Agent capability packet/);
-    assert.match(page, /Approved Tenant operations/);
-    assert.match(page, /Approved authenticated workflows/);
-    assert.match(page, /authenticated Tenant HTTPS · closed_non_funds_pilot/);
+    assert.match(page, /One manifest\. Eleven local tools\. No ambient authority\./);
+    assert.match(page, /Approved local stdio MCP tools/);
+    assert.match(page, /Three staged workflows/);
+    assert.match(page, /local stdio MCP · closed_non_funds_pilot/);
     assert.match(page, /Obligation Evidence/);
     assert.match(page, /Durable audit timeline/);
     assert.match(page, /New Subjects remain pending/);
     assert.match(page, /no credential creation/);
     assert.match(page, new RegExp(`name="ipo-one-csrf-token" content="${csrfToken}"`));
     assert.equal(pageResponse.headers.get("vary"), "cookie");
+
+    const openApiResponse = await fetch(`${baseUrl}${TENANT_HTTP_ROUTES.openapi}`);
+    assert.equal(openApiResponse.status, 200);
+    const openApi = await openApiResponse.json();
+    assert.equal(openApi.openapi, "3.1.0");
+    assert.equal(openApi.servers[0].url, baseUrl);
+    assert.equal(openApi["x-ipo-one-schema-version"], "tenant_openapi.v1");
+    assert.equal(openApi["x-ipo-one-profile"], "closed_non_funds_pilot");
+    assert.equal(openApi["x-real-funds-enabled"], false);
+    assert.deepEqual(Object.keys(openApi.paths).sort(), [
+      "/tenant/v1/catalog",
+      "/tenant/v1/operations"
+    ]);
 
     const scriptResponse = await fetch(`${baseUrl}/app.js`, { method: "HEAD" });
     assert.equal(scriptResponse.status, 200);
@@ -251,24 +268,46 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
 
     const scriptBodyResponse = await fetch(`${baseUrl}/app.js`);
     const script = await scriptBodyResponse.text();
+    assert.match(script, /from "\.\/agent-console-presentation\.js"/);
     assert.match(script, /from "\.\/agent-handoff-manifest\.js"/);
     assert.match(script, /from "\.\/agent-pilot-capability-manifest\.js"/);
+    assert.match(script, /from "\.\/capital-network-presentation\.js"/);
+    assert.match(script, /from "\.\/risk-operations-presentation\.js"/);
+    assert.match(script, /from "\.\/credit-passport-presentation\.js"/);
     assert.match(script, /from "\.\/decision-passport-presentation\.js"/);
     assert.match(script, /from "\.\/human-credit-offer-workflow-receipt\.js"/);
     assert.match(script, /from "\.\/human-sandbox-obligation-workflow-receipt\.js"/);
+    assert.match(script, /from "\.\/obligation-portfolio-presentation\.js"/);
+    assert.match(script, /from "\.\/official-report-download\.js"/);
+    assert.match(script, /from "\.\/request-credit-review-binding\.js"/);
     assert.match(script, /from "\.\/servicing-case-presentation\.js"/);
+    assert.match(script, /from "\.\/servicing-position-index\.js"/);
+    assert.match(script, /from "\.\/wallet-authority-lifecycle\.js"/);
+    assert.match(script, /from "\.\/wallet-provider-registry\.js"/);
+    assert.match(script, /from "\.\/v9-trust-surfaces\.js"/);
     assert.match(script, /tenantApi\("pilotReadEvidence"/);
     assert.match(script, /resourceType: "evidence"/);
 
     const relativeModules = [...script.matchAll(/from "\.\/([^"?]+\.js)"/g)]
       .map((match) => `/${match[1]}`);
     assert.deepEqual(relativeModules.sort(), [
+      "/agent-console-presentation.js",
       "/agent-handoff-manifest.js",
       "/agent-pilot-capability-manifest.js",
+      "/capital-network-presentation.js",
+      "/credit-passport-presentation.js",
       "/decision-passport-presentation.js",
       "/human-credit-offer-workflow-receipt.js",
       "/human-sandbox-obligation-workflow-receipt.js",
-      "/servicing-case-presentation.js"
+      "/obligation-portfolio-presentation.js",
+      "/official-report-download.js",
+      "/request-credit-review-binding.js",
+      "/risk-operations-presentation.js",
+      "/servicing-case-presentation.js",
+      "/servicing-position-index.js",
+      "/v9-trust-surfaces.js",
+      "/wallet-authority-lifecycle.js",
+      "/wallet-provider-registry.js"
     ]);
     for (const modulePath of relativeModules) {
       const moduleResponse = await fetch(`${baseUrl}${modulePath}`);
@@ -297,6 +336,19 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(capabilityManifest, /economicMcpToolsEnabled: true/);
     assert.match(capabilityManifest, /liveChainExecution: false/);
     assert.doesNotMatch(capabilityManifest, /accessToken|privateKey|authenticationContext/);
+
+    const consolePresentationResponse = await fetch(
+      `${baseUrl}/agent-console-presentation.js`
+    );
+    assert.equal(consolePresentationResponse.status, 200);
+    const consolePresentation = await consolePresentationResponse.text();
+    assert.match(consolePresentation, /agent_console_presentation\.v1/);
+    assert.match(consolePresentation, /catalogParity/);
+    assert.match(consolePresentation, /productionFundsApproved: false/);
+    assert.doesNotMatch(
+      consolePresentation,
+      /accessToken|privateKey|authenticationContext/
+    );
 
     const unknownResponse = await fetch(`${baseUrl}/not-an-asset`);
     assert.equal(unknownResponse.status, 404);
@@ -361,6 +413,15 @@ test("named Tenant pilot Host composes one authenticated Human UI and operation 
     assert.equal(moduleResponse.status, 200);
     assert.match(await moduleResponse.text(), /human_credit_offer_workflow_receipt\.v1/);
 
+    const reviewBindingResponse = await fetch(
+      `${baseUrl}/request-credit-review-binding.js`
+    );
+    assert.equal(reviewBindingResponse.status, 200);
+    assert.match(
+      await reviewBindingResponse.text(),
+      /request_credit_review_binding\.v1/
+    );
+
     const passportModuleResponse = await fetch(
       `${baseUrl}/decision-passport-presentation.js`
     );
@@ -386,6 +447,24 @@ test("named Tenant pilot Host composes one authenticated Human UI and operation 
     assert.match(
       await servicingModuleResponse.text(),
       /servicing_case_presentation\.v1/
+    );
+
+    const servicingPositionIndexResponse = await fetch(
+      `${baseUrl}/servicing-position-index.js`
+    );
+    assert.equal(servicingPositionIndexResponse.status, 200);
+    assert.match(
+      await servicingPositionIndexResponse.text(),
+      /servicing_position_index\.v1/
+    );
+
+    const obligationPortfolioResponse = await fetch(
+      `${baseUrl}/obligation-portfolio-presentation.js`
+    );
+    assert.equal(obligationPortfolioResponse.status, 200);
+    assert.match(
+      await obligationPortfolioResponse.text(),
+      /obligation_portfolio_presentation\.v1/
     );
 
     const catalogResponse = await fetch(`${baseUrl}${TENANT_HTTP_ROUTES.catalog}`, {

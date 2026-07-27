@@ -48,7 +48,11 @@ function loginCookie(value = "login-transaction-handle-00000000000000000001") {
 
 function createAccessFixture() {
   const calls = [];
-  const sessions = new Set(["session-active-handle-00000000000000000000001"]);
+  const sessions = new Set([
+    "session-active-handle-00000000000000000000001",
+    "session-logout-handle-00000000000000000000001"
+  ]);
+  const invalidations = new Map();
   const humanSessionBff = {
     authenticateSession(input) {
       calls.push({ method: "authenticateSession", input: structuredClone(input) });
@@ -65,6 +69,45 @@ function createAccessFixture() {
       const revoked = sessions.delete(sessionHandle);
       return Object.freeze({
         revoked,
+        clearSessionCookie: expiredSessionCookie(),
+        clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
+      });
+    },
+    invalidateBrowserSession(input) {
+      calls.push({ method: "invalidateBrowserSession", input: structuredClone(input) });
+      const replay = invalidations.get(input.idempotencyKey);
+      if (replay) {
+        if (
+          replay.reasonCode !== input.reasonCode ||
+          (input.sessionHandle !== undefined && input.sessionHandle !== replay.sessionHandle) ||
+          input.requestOrigin !== BROWSER_ORIGIN ||
+          input.csrfToken !== "csrf-token-00000000000000000000000000000000001"
+        ) {
+          throw Object.assign(new Error("inactive"), { code: "authentication_session_rejected" });
+        }
+      } else {
+        if (
+          !sessions.has(input.sessionHandle) ||
+          input.requestOrigin !== BROWSER_ORIGIN ||
+          input.csrfToken !== "csrf-token-00000000000000000000000000000000001"
+        ) {
+          throw Object.assign(new Error("inactive"), { code: "authentication_session_rejected" });
+        }
+        sessions.delete(input.sessionHandle);
+        invalidations.set(input.idempotencyKey, {
+          reasonCode: input.reasonCode,
+          sessionHandle: input.sessionHandle
+        });
+      }
+      return Object.freeze({
+        result: Object.freeze({
+          schemaVersion: "wallet_session_invalidation_result.v1",
+          status: "invalidated",
+          reauthenticationRequired: true,
+          authorityAvailable: false,
+          credentialsIncluded: false,
+          fundsAuthority: false
+        }),
         clearSessionCookie: expiredSessionCookie(),
         clearCsrfBootstrapCookie: expiredCsrfBootstrapCookie()
       });
@@ -218,10 +261,66 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       authenticationMethod: "siwe"
     });
 
-    const logout = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.logout}`, {
+    const invalidationKey = "wallet-invalidation-idempotency-000000000001";
+    const invalidate = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.walletInvalidate}`, {
       method: "POST",
       headers: {
         cookie: `${SESSION_COOKIE_NAME}=session-active-handle-00000000000000000000001`,
+        "content-type": "application/json",
+        "idempotency-key": invalidationKey,
+        origin: BROWSER_ORIGIN,
+        "x-csrf-token": "csrf-token-00000000000000000000000000000000001"
+      },
+      body: JSON.stringify({
+        schemaVersion: "wallet_session_invalidation_request.v1",
+        reasonCode: "wallet_account_changed"
+      })
+    });
+    assert.equal(invalidate.status, 200);
+    assert.deepEqual(await invalidate.json(), {
+      schemaVersion: "wallet_session_invalidation_result.v1",
+      status: "invalidated",
+      reauthenticationRequired: true,
+      authorityAvailable: false,
+      credentialsIncluded: false,
+      fundsAuthority: false
+    });
+    assert.equal(invalidate.headers.getSetCookie().length, 2);
+
+    const replay = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.walletInvalidate}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "idempotency-key": invalidationKey,
+        origin: BROWSER_ORIGIN,
+        "x-csrf-token": "csrf-token-00000000000000000000000000000000001"
+      },
+      body: JSON.stringify({
+        schemaVersion: "wallet_session_invalidation_request.v1",
+        reasonCode: "wallet_account_changed"
+      })
+    });
+    assert.equal(replay.status, 200);
+    assert.deepEqual(await replay.json(), {
+      schemaVersion: "wallet_session_invalidation_result.v1",
+      status: "invalidated",
+      reauthenticationRequired: true,
+      authorityAvailable: false,
+      credentialsIncluded: false,
+      fundsAuthority: false
+    });
+
+    const invalidatedOptions = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.options}`, {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=session-active-handle-00000000000000000000001` }
+    });
+    assert.equal((await invalidatedOptions.json()).sessionActive, false);
+
+    const logoutKey = "human-logout-idempotency-000000000000000001";
+    const logout = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.logout}`, {
+      method: "POST",
+      headers: {
+        cookie: `${SESSION_COOKIE_NAME}=session-logout-handle-00000000000000000000001`,
+        "idempotency-key": logoutKey,
         origin: BROWSER_ORIGIN,
         "x-csrf-token": "csrf-token-00000000000000000000000000000000001"
       }
@@ -232,6 +331,17 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
     assert.match(logoutCookies[0], /^__Host-ipo_one_session=;/);
     assert.match(logoutCookies[1], new RegExp(`^${CSRF_BOOTSTRAP_COOKIE_NAME}=;`));
     assert.equal((await logout.json()).status, "logged_out");
+
+    const logoutReplay = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.logout}`, {
+      method: "POST",
+      headers: {
+        "idempotency-key": logoutKey,
+        origin: BROWSER_ORIGIN,
+        "x-csrf-token": "csrf-token-00000000000000000000000000000000001"
+      }
+    });
+    assert.equal(logoutReplay.status, 200);
+    assert.equal((await logoutReplay.json()).status, "logged_out");
 
     const oidcCall = fixture.calls.find((call) => call.method === "completeOidc");
     assert.equal(oidcCall.input.redirectUri, GOOGLE_REDIRECT);

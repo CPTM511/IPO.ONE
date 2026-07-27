@@ -2,3 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
   - "modules/*"
+
+overrides:
+  fast-uri: "3.1.4"
+  axios: "1.18.0"

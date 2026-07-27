@@ -179,7 +179,7 @@ export async function verifyDpopProof({
   if (claims.nonce !== undefined) {
     assertBoundedString("DPoP nonce", claims.nonce, { minimum: 16, maximum: 256 });
   }
-  replayCache.consume({
+  await replayCache.consume({
     namespace: "dpop",
     value: `${thumbprint}\0${jti}`,
     expiresAt: current + maximumProofAgeSeconds + clockToleranceSeconds + 1,

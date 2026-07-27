@@ -18,3 +18,12 @@ The deployment runner compiles this source with the pinned `solc` dependency,
 requires an externally provisioned ephemeral testnet key file, sends only
 zero-value transactions, retires the instance, verifies the retired state, and
 then destroys the key file. Mainnet chain IDs are rejected before signing.
+
+`IpoOneMinimalErc1271TestWalletV1.sol` is a WALLET-003 review artifact with one
+Founder-approved, expiring Base Sepolia acceptance instance at
+`0x0a635DcC3D3F9a742B2236f270Fb010585858068`. It can only validate a
+canonical low-s owner signature through `isValidSignature(bytes32,bytes)` for
+at most seven days. It rejects native value and has no execution, transfer,
+approval, custody, upgrade, or administration function. The recorded Testnet
+deployment and proofs do not authorize another deployment, signer, key,
+mainnet action, production funds, or release.

@@ -659,6 +659,21 @@ export class PostgresReconciliationService {
         UNION ALL SELECT 'credit_offer_acceptance', id FROM credit_offer_acceptances
         UNION ALL SELECT 'credit_line', id FROM credit_lines
         UNION ALL SELECT 'risk_decision', id FROM risk_decisions
+        UNION ALL SELECT 'credit_passport_artifact', id FROM credit_passport_artifacts
+        UNION ALL SELECT 'official_report_artifact', id FROM official_report_artifacts
+        UNION ALL SELECT 'trading_credit_profile', id FROM trading_credit_profiles
+        UNION ALL SELECT 'trading_capital_request', id FROM trading_capital_requests
+        UNION ALL SELECT 'trading_provider_mandate', id FROM trading_provider_mandates
+        UNION ALL SELECT 'trading_match_proposal', id FROM trading_match_proposals
+        UNION ALL SELECT 'trading_facility', id FROM trading_facilities
+        UNION ALL SELECT 'trading_order_intent', id FROM trading_order_intents
+        UNION ALL SELECT 'trading_facility_risk_evaluation', id
+          FROM trading_facility_risk_evaluations
+        UNION ALL SELECT 'trading_facility_close_request', id
+          FROM trading_facility_close_requests
+        UNION ALL SELECT 'trading_settlement', id FROM trading_settlements
+        UNION ALL SELECT 'trading_performance_proof', id
+          FROM trading_performance_proofs
         UNION ALL SELECT 'admin_action', id FROM admin_actions
         UNION ALL SELECT 'pilot_feedback_record', id FROM pilot_feedback_records
         UNION ALL SELECT 'approval_proposal', id FROM approval_proposals

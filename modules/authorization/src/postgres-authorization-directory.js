@@ -9,7 +9,7 @@ import {
 } from "./authorization-utils.js";
 
 const RESOURCE_STATUSES = new Set(["active", "frozen", "closed"]);
-const RESOURCE_RELATIONSHIPS = new Set(["owner", "controller", "subject"]);
+const RESOURCE_RELATIONSHIPS = new Set(["owner", "controller", "subject", "verifier"]);
 const RESOURCE_TRANSITIONS = Object.freeze({
   active: Object.freeze(["frozen", "closed"]),
   frozen: Object.freeze(["active", "closed"]),
@@ -434,6 +434,60 @@ export class PostgresAuthorizationDirectory {
         nextStatus,
         occurredAt,
         expectedStatus,
+        version
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw authorizationError(
+        "authorization_resource_conflict",
+        "authorization resource changed concurrently"
+      );
+    }
+    const row = result.rows[0];
+    return cloneAuthorization({
+      tenantId: row.tenant_id,
+      resourceType: row.resource_type,
+      resourceId: row.resource_id,
+      status: row.status,
+      version: safeVersion(row.version, "authorization resource version"),
+      createdAt: timestamp(row.created_at),
+      updatedAt: timestamp(row.updated_at),
+      schemaVersion: row.schema_version
+    });
+  }
+
+  async advanceResourceVersion({
+    resourceType,
+    resourceId,
+    expectedVersion,
+    now = new Date()
+  }) {
+    const type = assertAuthorizationIdentifier("resourceType", resourceType);
+    const id = assertAuthorizationIdentifier("resourceId", resourceId);
+    const version = safeVersion(
+      expectedVersion,
+      "authorization resource expected version"
+    );
+    const occurredAt = authorizationTimestamp("now", now);
+    await this.client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('authorization_resource:' || $1), hashtext($2))",
+      [type, id]
+    );
+    const result = await this.client.query(
+      `UPDATE authorization_resources
+          SET version = version + 1,
+              updated_at = $4
+        WHERE tenant_id = $1
+          AND resource_type = $2
+          AND resource_id = $3
+          AND status = 'active'
+          AND version = $5
+      RETURNING *`,
+      [
+        this.authenticationContext.tenantId,
+        type,
+        id,
+        occurredAt,
         version
       ]
     );

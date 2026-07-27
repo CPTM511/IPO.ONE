@@ -419,6 +419,11 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
     agentAccountProofEnabled: true,
     mandateActivationEnabled: true,
     providerSandboxEnabled: true,
+    creditPassportArtifactsEnabled: true,
+    officialReportArtifactsEnabled: true,
+    tradingCapitalNoFundsEvidenceEnabled: true,
+    tradingCapitalNoFundsMatchingEnabled: true,
+    tradingCapitalNoFundsSettlementEnabled: true,
     productionIdentityEnabled: false,
     rawPiiAllowed: false
   });
@@ -491,12 +496,13 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
   assert.equal(handoffSchema.properties.remoteMcpEnabled.const, false);
   assert.equal(handoffSchema.properties.fundsAuthority.const, false);
   assert.match(webHtml, /Non-authorizing manifest/);
-  assert.match(webHtml, /authenticated Tenant HTTPS · closed_non_funds_pilot/);
-  assert.match(webHtml, /JWT ≤300s bound to mTLS certificate/);
-  assert.doesNotMatch(webHtml, /Local stdio only|Remote endpoint\s*Disabled|no remote MCP/i);
+  assert.match(webHtml, /local stdio MCP · closed_non_funds_pilot/);
+  assert.match(webHtml, /Host context injected out of band/);
+  assert.match(webApp, /No HTTP, SSE, WebSocket or public MCP listener/);
+  assert.match(webApp, /No token, client certificate or private key is issued here/);
   assert.doesNotMatch(webApp, /accessToken|privateKey|authenticationContext/);
   assert.doesNotMatch(webHandoff, /accessToken|privateKey|authenticationContext/);
-  assert.match(webHtml, /credentials, mTLS keys, and funds authority never enter the packet/i);
+  assert.match(webHtml, /credentials and funds authority never enter the packet/i);
   assert.doesNotMatch(
     webHtml,
     /(?:name|id)=["'][^"']*(?:access.?token|private.?key|authentication.?context)/i
@@ -575,4 +581,989 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
   );
   assert.match(tenantWebAssets, /"\/human-credit-offer-workflow-receipt\.js"/);
   assert.doesNotMatch(tenantWebAssets, /request\.url|pathname\s*\)|join\(|resolve\(/);
+});
+
+test("TC-201 Hyperliquid read plane is fixed, Testnet-only, and signer-free", async () => {
+  const [adapterSource, liveContract, readme, snapshotSchema] = await Promise.all([
+    source("modules/hyperliquid-info/src/index.js"),
+    source("modules/hyperliquid-info/test-live/hyperliquid-testnet-info.contract.mjs"),
+    source("modules/hyperliquid-info/README.md"),
+    source("schemas/v2/hyperliquid-info-account-snapshot.schema.json").then(JSON.parse)
+  ]);
+  for (const required of [
+    'origin: "https://api.hyperliquid-testnet.xyz"',
+    'path: "/info"',
+    'endpoint: "https://api.hyperliquid-testnet.xyz/info"',
+    'method: "POST"',
+    'credentials: "omit"',
+    'redirect: "error"',
+    'referrerPolicy: "no-referrer"',
+    "AbortSignal.timeout",
+    "boundedResponseText",
+    "parseExternalJson",
+    "MAXIMUM_JSON_DEPTH",
+    "MAXIMUM_JSON_KEYS",
+    "hyperliquid_info_query_denied",
+    "actual master or subaccount address"
+  ]) {
+    assert.match(
+      adapterSource,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    adapterSource,
+    /api\.hyperliquid\.xyz|["']\/exchange["']|authorization|privateKey|approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer|process\.env|node:net|node:tls|node:dns/
+  );
+  assert.match(liveContract, /IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_READ/);
+  assert.match(liveContract, /TC201_LIVE_EVIDENCE/);
+  assert.doesNotMatch(liveContract, /privateKey|authorization|\/exchange/);
+  assert.match(readme, /TC-202/);
+  assert.equal(
+    snapshotSchema.properties.origin.const,
+    "https://api.hyperliquid-testnet.xyz"
+  );
+  assert.equal(snapshotSchema.properties.path.const, "/info");
+  assert.equal(snapshotSchema.properties.method.const, "POST");
+  for (const property of [
+    "readOnly",
+    "testnetOnly",
+    "testnetData",
+    "externalSystemQueried"
+  ]) {
+    assert.equal(snapshotSchema.properties[property].const, true);
+  }
+  for (const property of [
+    "realFunds",
+    "authorizing",
+    "signerAvailable",
+    "exchangeEndpointAvailable",
+    "credentialsUsed",
+    "externalOrderSubmitted",
+    "productionAuthority",
+    "fundsAuthority",
+    "piiIncluded",
+    "secretsIncluded"
+  ]) {
+    assert.equal(snapshotSchema.properties[property].const, false);
+  }
+});
+
+test("TC-202 account binding is authorized, one-use, hash-only, and non-authorizing", async () => {
+  const [
+    handlerSource,
+    proofSource,
+    domainSource,
+    profileSchema,
+    migrationSource
+  ] = await Promise.all([
+    source("modules/tenant-command-gateway/src/trading-capital-evidence-handlers.js"),
+    source("modules/hyperliquid-info/src/binding-proof.js"),
+    source("packages/domain/src/trading-capital-real-evidence.js"),
+    source("schemas/v2/trading-real-credit-profile.schema.json").then(JSON.parse),
+    source("db/migrations/0033_trading_real_evidence_binding.up.sql")
+  ]);
+  const authorizationIndex = handlerSource.indexOf(
+    "await requireRelationship(directory"
+  );
+  const proofIndex = handlerSource.indexOf(
+    "await proofVerifier.verify"
+  );
+  const relationshipIndex = handlerSource.indexOf(
+    "await infoAdapter.verifyMasterSubaccountBinding"
+  );
+  const historyIndex = handlerSource.indexOf(
+    "await infoAdapter.readFillHistory"
+  );
+  assert.equal(authorizationIndex >= 0, true);
+  assert.equal(proofIndex > authorizationIndex, true);
+  assert.equal(relationshipIndex > proofIndex, true);
+  assert.equal(historyIndex > relationshipIndex, true);
+  for (const required of [
+    "eip155:998",
+    "hyperliquid_testnet",
+    "IPO.ONE Hyperliquid Account Binding",
+    "rawSignaturePersisted: false",
+    "reusableSignature: false",
+    "verifyTypedData",
+    "SECP256K1_HALF_ORDER"
+  ]) {
+    assert.match(
+      proofSource,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  for (const forbidden of [
+    "approveAgent",
+    "withdraw3",
+    "usdSend",
+    "spotSend",
+    "sendAsset",
+    "vaultTransfer",
+    '"/exchange"',
+    "api.hyperliquid.xyz"
+  ]) {
+    assert.equal(
+      `${handlerSource}\n${proofSource}\n${domainSource}`.includes(forbidden),
+      false
+    );
+  }
+  assert.equal(profileSchema.properties.syntheticOnly.const, false);
+  assert.equal(profileSchema.properties.testnetOnly.const, true);
+  assert.equal(profileSchema.properties.realFunds.const, false);
+  assert.equal(profileSchema.properties.productionAuthority.const, false);
+  assert.equal(profileSchema.properties.fundsAuthority.const, false);
+  assert.equal(profileSchema.properties.creditApproval.const, false);
+  assert.equal(profileSchema.properties.rawTransactionsIncluded.const, false);
+  assert.match(migrationSource, /finalized[\s\S]*challenge_pending/);
+  assert.match(migrationSource, /external_system_queried/);
+  assert.match(domainSource, /single_snapshot_capital_decision_prohibited/);
+  assert.match(domainSource, /priorEvidenceInvalidation/);
+});
+
+test("TC-203 Shadow Risk is point-in-time, non-economic, and threshold-free", async () => {
+  const [domainSource, handlerSource, profileSchema, catalog] =
+    await Promise.all([
+      source("packages/domain/src/trading-capital-real-evidence.js"),
+      source(
+        "modules/tenant-command-gateway/src/trading-capital-evidence-handlers.js"
+      ),
+      source("schemas/v2/trading-real-credit-profile.schema.json").then(
+        JSON.parse
+      ),
+      source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json").then(
+        JSON.parse
+      )
+    ]);
+  const shadow = profileSchema.$defs.shadowRiskProfile;
+  for (const property of [
+    "authorizing",
+    "economicStateMutation",
+    "newRiskAuthority",
+    "fundsAuthority"
+  ]) {
+    assert.equal(shadow.properties[property].const, false);
+  }
+  assert.equal(shadow.properties.modelOutput.const, false);
+  assert.equal(shadow.properties.recommendationOnly.const, true);
+  assert.equal(
+    shadow.properties.pointInTime.properties.maxAgePolicyApproved.const,
+    false
+  );
+  assert.equal(
+    shadow.properties.pointInTime.properties.antiLeakagePassed.const,
+    true
+  );
+  assert.deepEqual(
+    shadow.properties.driftMonitor.properties.state,
+    { const: "insufficient" }
+  );
+  assert.equal(
+    catalog.operations.filter(({ operationId }) =>
+      operationId.startsWith("trading")
+    ).length,
+    25
+  );
+  assert.doesNotMatch(
+    `${domainSource}\n${handlerSource}`,
+    /approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer|["']\/exchange["']/
+  );
+  assert.doesNotMatch(
+    domainSource,
+    /recommendedLimit:\s*\{\s*available:\s*true|creditDecision:\s*\{\s*performed:\s*true|thresholdApplied:\s*true/
+  );
+  assert.match(domainSource, /approved_max_age_policy_unavailable/);
+  assert.match(domainSource, /future_outcome_window_unavailable/);
+  assert.match(domainSource, /approved_drift_threshold_unavailable/);
+});
+
+test("TC-301 execution writer is typed, simulated, durable, and live-fail-closed", async () => {
+  const [sourceBody, readme, executionSchema, migration, catalog] =
+    await Promise.all([
+      source("modules/hyperliquid-execution/src/index.js"),
+      source("modules/hyperliquid-execution/README.md"),
+      source(
+        "schemas/v2/hyperliquid-testnet-execution-record.schema.json"
+      ).then(JSON.parse),
+      source("db/migrations/0034_trading_testnet_execution.up.sql"),
+      source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json").then(
+        JSON.parse
+      )
+    ]);
+
+  for (const required of [
+    'origin: "https://api.hyperliquid-testnet.xyz"',
+    'path: "/exchange"',
+    'endpoint: "https://api.hyperliquid-testnet.xyz/exchange"',
+    "liveTransportApproved: false",
+    "liveSignerApproved: false",
+    "apiWalletProvisioningApproved: false",
+    "HyperliquidExecutionActionKind",
+    "REDUCE_ONLY_ORDER",
+    "deterministicCloid",
+    "serverReduceOnlyProven",
+    "hyperliquid_execution_action_denied",
+    "hyperliquid_execution_idempotency_conflict",
+    "HyperliquidExecutionNonceState.UNKNOWN",
+    "PostgresHyperliquidExecutionRepository"
+  ]) {
+    assert.match(
+      sourceBody,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    sourceBody,
+    /\bfetch\s*\(|process\.env|console\.|node:net|node:tls|node:dns|api\.hyperliquid\.xyz/
+  );
+  assert.equal(
+    catalog.operations.filter(({ operationId }) =>
+      operationId.startsWith("trading")
+    ).length,
+    25
+  );
+  assert.deepEqual(
+    executionSchema.properties.actionKind.enum,
+    ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+  );
+  for (const property of [
+    "simulationOnly",
+    "reconciled",
+    "signerIsolated"
+  ]) {
+    assert.equal(executionSchema.properties[property].const, true);
+  }
+  for (const property of [
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "externalReconciliationRequired",
+    "keyExportable",
+    "rawActionAccepted",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "withdrawalAuthority",
+    "transferAuthority",
+    "accountAdministrationAuthority",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "piiIncluded",
+    "secretsIncluded"
+  ]) {
+    assert.equal(executionSchema.properties[property].const, false);
+  }
+  for (const required of [
+    "trading_testnet_execution_records_signer_nonce_key",
+    "trading_testnet_execution_records_tenant_idempotency_key",
+    "trading_execution_nonce_heads_transition_guard",
+    "trading_testnet_execution_records_transition_guard",
+    "trading_testnet_execution_transitions_immutable_guard",
+    "FORCE ROW LEVEL SECURITY",
+    "external_system_queried = FALSE",
+    "external_order_submitted = FALSE",
+    "reusable_signature_persisted = FALSE",
+    "withdrawal_authority = FALSE",
+    "transfer_authority = FALSE",
+    "mainnet_authority = FALSE",
+    "funds_authority = FALSE",
+    "secrets_included = FALSE"
+  ]) {
+    assert.match(
+      migration,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  for (const required of [
+    "real signer",
+    "new human approval",
+    "UNKNOWN",
+    "never resubmitted",
+    "no private key",
+    "raw signature"
+  ]) {
+    assert.match(readme.toLowerCase(), new RegExp(required.toLowerCase()));
+  }
+});
+
+test("TC-302 Risk Guardian is monotonic, protective-only, durable, and live-fail-closed", async () => {
+  const [sourceBody, readme, controlSchema, migration, catalog] =
+    await Promise.all([
+      source("modules/hyperliquid-risk-guardian/src/index.js"),
+      source("modules/hyperliquid-risk-guardian/README.md"),
+      source(
+        "schemas/v2/hyperliquid-testnet-protective-control.schema.json"
+      ).then(JSON.parse),
+      source("db/migrations/0035_trading_testnet_risk_guardian.up.sql"),
+      source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json").then(
+        JSON.parse
+      )
+    ]);
+
+  for (const required of [
+    "HyperliquidRiskFreshness",
+    "HyperliquidProtectiveControlStatus",
+    "mostRestrictive",
+    "venue_snapshot_stale",
+    "venue_snapshot_unknown",
+    "risk_increasing_kill_switch_closed",
+    "external_write_outcome_unknown",
+    "reduce_only_blocks_risk_increase",
+    "flatten_blocks_non_protective_action",
+    "createHyperliquidRiskGuardianPolicyEvaluator",
+    "SimulatedHyperliquidProtectiveExecutor",
+    "PostgresHyperliquidRiskGuardianRepository",
+    "automaticRecovery: false",
+    "withdrawalAuthority: false",
+    "transferAuthority: false",
+    "strategyAuthority: false"
+  ]) {
+    assert.match(
+      sourceBody,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    sourceBody,
+    /\bfetch\s*\(|process\.env|console\.|node:net|node:tls|node:dns|api\.hyperliquid\.xyz|privateKey|approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer/
+  );
+  assert.equal(
+    catalog.operations.filter(({ operationId }) =>
+      operationId.startsWith("trading")
+    ).length,
+    25
+  );
+  assert.deepEqual(
+    controlSchema.properties.targetRiskState.$ref,
+    "#/$defs/riskState"
+  );
+  for (const property of [
+    "simulationOnly",
+    "simulationFixtureOnly"
+  ]) {
+    assert.equal(controlSchema.properties[property].const, true);
+  }
+  for (const property of [
+    "productionPolicyApproved",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "liveTransportApproved",
+    "liveSignerApproved",
+    "apiWalletApproved",
+    "withdrawalAuthority",
+    "transferAuthority",
+    "accountAdministrationAuthority",
+    "strategyAuthority",
+    "economicRepricingAuthority",
+    "automaticRecovery",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "piiIncluded",
+    "secretsIncluded"
+  ]) {
+    assert.equal(controlSchema.properties[property].const, false);
+  }
+  for (const required of [
+    "trading_testnet_protective_controls_tenant_idempotency_key",
+    "trading_testnet_protective_controls_transition_guard",
+    "trading_testnet_protective_transitions_immutable_guard",
+    "FORCE ROW LEVEL SECURITY",
+    "simulation_fixture_only = TRUE",
+    "external_system_queried = FALSE",
+    "external_order_submitted = FALSE",
+    "withdrawal_authority = FALSE",
+    "transfer_authority = FALSE",
+    "strategy_authority = FALSE",
+    "automatic_recovery = FALSE",
+    "mainnet_authority = FALSE",
+    "production_authority = FALSE",
+    "funds_authority = FALSE",
+    "secrets_included = FALSE"
+  ]) {
+    assert.match(
+      migration,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  for (const required of [
+    "new, precise human approval",
+    "synthetic scenario fixtures only",
+    "no automatic-recovery",
+    "unknown",
+    "no generic order",
+    "live exchange writes remain unavailable"
+  ]) {
+    assert.match(readme.toLowerCase(), new RegExp(required.toLowerCase()));
+  }
+});
+
+test("TC-303 reconciliation is cumulative, inbox-idempotent, bounded, and live-fail-closed", async () => {
+  const [sourceBody, readme, recordSchema, migration, catalog] =
+    await Promise.all([
+      source("modules/hyperliquid-reconciliation/src/index.js"),
+      source("modules/hyperliquid-reconciliation/README.md"),
+      source(
+        "schemas/v2/hyperliquid-testnet-reconciliation-record.schema.json"
+      ).then(JSON.parse),
+      source(
+        "db/migrations/0036_trading_testnet_reconciliation_recovery.up.sql"
+      ),
+      source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json").then(
+        JSON.parse
+      )
+    ]);
+
+  for (const required of [
+    "HyperliquidReconciliationStatus",
+    "HyperliquidVenueOrderStatus",
+    "cumulativeFilledSize",
+    "cumulativeFillNotionalMinor",
+    "latestEconomicDeltaNotionalMinor",
+    "canonical_ledger_changed",
+    "cumulative_fill_regressed",
+    "poll_budget_exhausted",
+    "circuitBreakerOpen",
+    "manualSafeStop",
+    "processInbox",
+    "appendCommandBatchInTransaction",
+    "PostgresHyperliquidReconciliationRepository",
+    "ledgerPostingRequired: false",
+    "ledgerMutationCreated: false",
+    "secondLedgerCreated: false",
+    "facilityMutationCreated: false",
+    "riskRecoveryAuthority: false"
+  ]) {
+    assert.match(
+      sourceBody,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    sourceBody,
+    /\bfetch\s*\(|process\.env|console\.|node:net|node:tls|node:dns|api\.hyperliquid\.xyz|approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer/
+  );
+  assert.equal(
+    catalog.operations.filter(({ operationId }) =>
+      operationId.startsWith("trading")
+    ).length,
+    25
+  );
+  assert.deepEqual(recordSchema.properties.status.enum, [
+    "PENDING",
+    "PARTIAL",
+    "UNKNOWN",
+    "RECONCILED",
+    "REJECTED",
+    "INCIDENT",
+    "SAFE_STOPPED"
+  ]);
+  for (const property of [
+    "simulationOnly",
+    "protectedTestnetE2EOnly",
+    "canonicalLedger"
+  ]) {
+    assert.equal(recordSchema.properties[property].const, true);
+  }
+  for (const property of [
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "liveTransportApproved",
+    "liveSignerApproved",
+    "apiWalletApproved",
+    "ledgerPostingRequired",
+    "ledgerMutationCreated",
+    "ledgerPostingAuthority",
+    "secondLedgerCreated",
+    "facilityMutationCreated",
+    "facilityMutationAuthority",
+    "riskRecoveryAuthority",
+    "withdrawalAuthority",
+    "transferAuthority",
+    "accountAdministrationAuthority",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "piiIncluded",
+    "secretsIncluded"
+  ]) {
+    assert.equal(recordSchema.properties[property].const, false);
+  }
+  for (const required of [
+    "trading_testnet_reconciliation_runs_tenant_idempotency_key",
+    "trading_testnet_reconciliation_runs_execution_key",
+    "trading_testnet_reconciliation_runs_transition_guard",
+    "FORCE ROW LEVEL SECURITY",
+    "simulation_only = TRUE",
+    "external_system_queried = FALSE",
+    "external_order_submitted = FALSE",
+    "ledger_mutation_created = FALSE",
+    "second_ledger_created = FALSE",
+    "facility_mutation_created = FALSE",
+    "mainnet_authority = FALSE",
+    "production_authority = FALSE",
+    "funds_authority = FALSE",
+    "secrets_included = FALSE"
+  ]) {
+    assert.match(
+      migration,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  for (const required of [
+    "new, precise human approval",
+    "unknown",
+    "never become a false success",
+    "manual safe stop",
+    "not a ledger account",
+    "order is resent"
+  ]) {
+    assert.match(readme.toLowerCase(), new RegExp(required.toLowerCase()));
+  }
+});
+
+test("TC-401 Facility funding is exact, non-redeemable, separated, and live-fail-closed", async () => {
+  const [sourceBody, readme, recordSchema, migration, catalog] =
+    await Promise.all([
+      source("modules/hyperliquid-facility-funding/src/index.js"),
+      source("modules/hyperliquid-facility-funding/README.md"),
+      source(
+        "schemas/v2/hyperliquid-testnet-facility-funding-record.schema.json"
+      ).then(JSON.parse),
+      source(
+        "db/migrations/0037_trading_testnet_facility_funding.up.sql"
+      ),
+      source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json").then(
+        JSON.parse
+      )
+    ]);
+
+  for (const required of [
+    "HyperliquidTestnetFacilityFundingStatus",
+    "HyperliquidTestnetContributionRole",
+    "SUBJECT_FIRST_LOSS",
+    "PROVIDER_PRINCIPAL",
+    "REORG_INVALIDATION",
+    "wrong_destination",
+    "wrong_asset",
+    "wrong_amount",
+    "canonical_ledger_changed",
+    "directFacilityDestination: true",
+    "traderWalletPassThrough: false",
+    "traderWithdrawalAuthority: false",
+    "masterWithdrawalAuthoritySeparated: true",
+    "executionSignerSeparated: true",
+    "secondFacilityCreated: false",
+    "ledgerMutationCreated: false",
+    "secondLedgerCreated: false",
+    "processInbox",
+    "commitCommandInTransaction",
+    "PostgresHyperliquidFacilityFundingRepository"
+  ]) {
+    assert.match(
+      sourceBody,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    sourceBody,
+    /\bfetch\s*\(|process\.env|console\.|node:net|node:tls|node:dns|api\.hyperliquid\.xyz|approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer|privateKey|mnemonic|seedPhrase/
+  );
+  assert.equal(
+    catalog.operations.filter(({ operationId }) =>
+      operationId.startsWith("trading")
+    ).length,
+    25
+  );
+  assert.deepEqual(recordSchema.properties.status.enum, [
+    "AWAITING_CONTRIBUTIONS",
+    "AWAITING_SUBJECT",
+    "AWAITING_PROVIDER",
+    "READY",
+    "ACTIVE",
+    "INCIDENT"
+  ]);
+  for (const property of [
+    "testnetOnly",
+    "simulationOnly",
+    "protectedTestnetE2EOnly",
+    "nonRedeemable",
+    "directFacilityDestination",
+    "masterWithdrawalAuthoritySeparated",
+    "executionSignerSeparated",
+    "canonicalFacility",
+    "canonicalLedger"
+  ]) {
+    assert.equal(recordSchema.properties[property].const, true);
+  }
+  for (const property of [
+    "pooledCapital",
+    "traderWalletPassThrough",
+    "traderWithdrawalAuthority",
+    "externalSystemQueried",
+    "externalContributionSubmitted",
+    "liveTransportApproved",
+    "liveAccountsApproved",
+    "apiWalletApproved",
+    "rawAddressPersisted",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "secondFacilityCreated",
+    "ledgerMutationCreated",
+    "secondLedgerCreated",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "realFunds",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded"
+  ]) {
+    assert.equal(recordSchema.properties[property].const, false);
+  }
+  for (const required of [
+    "trading_testnet_facility_funding_controls_tenant_idempotency_key",
+    "trading_testnet_facility_funding_controls_facility_key",
+    "trading_testnet_facility_funding_controls_authority_separation",
+    "trading_testnet_facility_funding_controls_transition_guard",
+    "FORCE ROW LEVEL SECURITY",
+    "simulation_only = TRUE",
+    "non_redeemable = TRUE",
+    "direct_facility_destination = TRUE",
+    "trader_wallet_pass_through = FALSE",
+    "trader_withdrawal_authority = FALSE",
+    "ledger_mutation_created = FALSE",
+    "second_facility_created = FALSE",
+    "second_ledger_created = FALSE",
+    "mainnet_authority = FALSE",
+    "production_authority = FALSE",
+    "funds_authority = FALSE",
+    "secrets_included = FALSE"
+  ]) {
+    assert.match(
+      migration,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  for (const required of [
+    "new, precise human approval",
+    "does not connect to hyperliquid",
+    "never pass through",
+    "reorg invalidation",
+    "not a second facility",
+    "network-disabled",
+    "not live-testnet or production-readiness evidence"
+  ]) {
+    assert.match(readme.toLowerCase(), new RegExp(required.toLowerCase()));
+  }
+});
+
+test("TC-402 final settlement is reconciled, principal-safe, atomic, and live-fail-closed", async () => {
+  const [sourceBody, readme, recordSchema, migration, catalog] =
+    await Promise.all([
+      source("modules/hyperliquid-settlement/src/index.js"),
+      source("modules/hyperliquid-settlement/README.md"),
+      source(
+        "schemas/v2/hyperliquid-testnet-settlement-record.schema.json"
+      ).then(JSON.parse),
+      source(
+        "db/migrations/0038_trading_testnet_settlement.up.sql"
+      ),
+      source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json").then(
+        JSON.parse
+      )
+    ]);
+
+  for (const required of [
+    "HyperliquidTestnetSettlementStatus",
+    "HyperliquidTestnetFinalityStatus",
+    "HyperliquidTestnetReconciliationStatus",
+    "calculateTestnetSettlementWaterfall",
+    "providerPrincipalReturnMinor",
+    "subjectFirstLossMinor",
+    "providerFixedReturnGrossMinor",
+    "providerPerformanceParticipationGrossMinor",
+    "ipoOneFeeBasisMinor",
+    "principalFeeApplied: false",
+    "unrealizedPnlFeeApplied: false",
+    "providerPrincipalGuaranteed: false",
+    "payoutExecuted: false",
+    "secondFacilityCreated: false",
+    "secondObligationCreated: false",
+    "secondLedgerCreated: false",
+    "processInbox",
+    "commitCommandInTransaction",
+    "PostgresHyperliquidSettlementRepository"
+  ]) {
+    assert.match(
+      sourceBody,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    sourceBody,
+    /\bfetch\s*\(|process\.env|console\.|node:net|node:tls|node:dns|api\.hyperliquid\.xyz|approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer|privateKey|mnemonic|seedPhrase/
+  );
+  assert.equal(
+    catalog.operations.filter(({ operationId }) =>
+      operationId.startsWith("trading")
+    ).length,
+    25
+  );
+  assert.deepEqual(recordSchema.properties.status.enum, [
+    "AWAITING_FINALITY",
+    "READY_TO_SETTLE",
+    "SETTLED",
+    "EVIDENCE_ACTIVE",
+    "EVIDENCE_REVOKED",
+    "INCIDENT"
+  ]);
+  for (const property of [
+    "economicTermsImmutable",
+    "feePolicyVersioned",
+    "finalReconciliationRequired",
+    "noPayoutBeforeFinality",
+    "performanceEvidenceRevocable",
+    "testnetOnly",
+    "simulationOnly",
+    "protectedTestnetE2EOnly",
+    "nonRedeemable",
+    "canonicalFacility",
+    "canonicalObligation",
+    "canonicalLedger"
+  ]) {
+    assert.equal(recordSchema.properties[property].const, true);
+  }
+  for (const property of [
+    "payoutExecuted",
+    "withdrawalExecuted",
+    "transferExecuted",
+    "externalSystemQueried",
+    "externalCloseSubmitted",
+    "liveTransportApproved",
+    "liveAccountsApproved",
+    "apiWalletApproved",
+    "rawAddressPersisted",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "secondFacilityCreated",
+    "secondObligationCreated",
+    "secondLedgerCreated",
+    "principalGuaranteeCreated",
+    "syntheticReceivableCreated",
+    "dynamicRepricingApplied",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "realFunds",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded"
+  ]) {
+    assert.equal(recordSchema.properties[property].const, false);
+  }
+  for (const required of [
+    "trading_testnet_settlement_runs_tenant_idempotency_key",
+    "trading_testnet_settlement_runs_facility_key",
+    "trading_testnet_settlement_runs_transition_guard",
+    "trading_testnet_settlement_runs_ledger_transaction_fk",
+    "DEFERRABLE INITIALLY DEFERRED",
+    "FORCE ROW LEVEL SECURITY",
+    "simulation_only = TRUE",
+    "payout_executed = FALSE",
+    "second_facility_created = FALSE",
+    "second_obligation_created = FALSE",
+    "second_ledger_created = FALSE",
+    "principal_guarantee_created = FALSE",
+    "synthetic_receivable_created = FALSE",
+    "dynamic_repricing_applied = FALSE",
+    "mainnet_authority = FALSE",
+    "production_authority = FALSE",
+    "funds_authority = FALSE",
+    "secrets_included = FALSE"
+  ]) {
+    assert.match(
+      migration,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  for (const required of [
+    "new, precise human approval",
+    "does not connect to hyperliquid",
+    "no fee is charged on principal or unrealized pnl",
+    "provider principal is returned first, without a guarantee",
+    "append-only, revocable, and supersedable",
+    "not live-testnet or production-readiness evidence"
+  ]) {
+    assert.match(readme.toLowerCase(), new RegExp(required.toLowerCase()));
+  }
+});
+
+test("TC-403 operability gate is restore-complete, failure-safe, bounded, and cannot self-review", async () => {
+  const [
+    sourceBody,
+    policy,
+    recordSchema,
+    readme,
+    runbook,
+    independentReviewHandoff,
+    drScript,
+    packageDocument,
+    catalog
+  ] = await Promise.all([
+    source("modules/hyperliquid-operability/src/index.js"),
+    source(
+      "modules/hyperliquid-operability/policy/testnet-facility-operability-policy.v1.json"
+    ).then(JSON.parse),
+    source(
+      "schemas/v2/hyperliquid-testnet-operability-assurance.schema.json"
+    ).then(JSON.parse),
+    source("modules/hyperliquid-operability/README.md"),
+    source(
+      "docs/operations/TRADING_CAPITAL_TESTNET_OPERABILITY_RUNBOOK.md"
+    ),
+    source("docs/security/TC_403_INDEPENDENT_REVIEW_HANDOFF.md"),
+    source("scripts/run-tc403-disaster-recovery-drill.mjs"),
+    source("package.json").then(JSON.parse),
+    source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json").then(
+      JSON.parse
+    )
+  ]);
+
+  for (const required of [
+    "createHyperliquidRestoreManifest",
+    "compareHyperliquidRestoreManifests",
+    "createHyperliquidFailureDrill",
+    "evaluateHyperliquidOperabilitySignal",
+    "runHyperliquidOperabilityCapacityProbe",
+    "evaluateHyperliquidTestnetOperabilityAssurance",
+    "BLOCKED_INDEPENDENT_REVIEW",
+    "external human or organization",
+    "source-approved policy artifact",
+    "artifactSetHash",
+    "launchBlocked: true",
+    "open_p0_p1_findings",
+    "unknownOutcomeCriticalAfterMs",
+    "uncertainEffectRetried !== false",
+    "externalWriteSubmitted !== false",
+    "credentialOperationPerformed !== false",
+    "exchangeWritesEnabled: false",
+    "apiWalletOperationsEnabled: false",
+    "mainnetAuthority: false",
+    "productionAuthority: false",
+    "fundsAuthority: false",
+    "realFunds: false"
+  ]) {
+    assert.match(
+      sourceBody,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    sourceBody,
+    /\bfetch\s*\(|process\.env|console\.|node:net|node:tls|node:dns|api\.hyperliquid\.xyz|approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer|privateKey|mnemonic|seedPhrase/
+  );
+
+  assert.equal(policy.environment, "hyperliquid_testnet");
+  assert.equal(policy.mode, "simulation_and_local_drill_only");
+  assert.equal(policy.accountability.incidentOwner, "ipo_one_founder");
+  assert.equal(policy.accountability.independentReviewer, null);
+  assert.equal(policy.accountability.independentReviewerType, null);
+  assert.equal(policy.requiredFailureScenarios.length, 7);
+  assert.equal(policy.alerts.length, 7);
+  assert.ok(policy.alerts.every(({ blocksNewRisk }) => blocksNewRisk));
+  assert.ok(
+    Object.values(policy.safetyBoundary).every((value) => value === false)
+  );
+
+  for (const property of [
+    "automaticRecoveryEnabled",
+    "automaticUnfreezeEnabled",
+    "automaticKeyOperationEnabled",
+    "notificationDeliveryEnabled",
+    "protectedSchedulingEnabled",
+    "exchangeWritesEnabled",
+    "apiWalletOperationsEnabled",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "realFunds",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded"
+  ]) {
+    assert.equal(recordSchema.properties[property].const, false);
+  }
+  assert.ok(
+    recordSchema.properties.releaseStatus.enum.includes(
+      "BLOCKED_INDEPENDENT_REVIEW"
+    )
+  );
+  assert.equal(
+    recordSchema.properties.schemaVersion.const,
+    "hyperliquid_testnet_operability_assurance.v1"
+  );
+  assert.equal(recordSchema.properties.launchBlocked.const, true);
+
+  for (const required of [
+    "localhost database whose name contains 'test'",
+    "IPO_ONE_TC403_DRILL_APPROVAL",
+    "--format=custom",
+    "--no-owner",
+    "--no-privileges",
+    "--exit-on-error",
+    "sourceDatabaseMutated: false",
+    "externalSystemQueried: false",
+    "exchangeWriteSubmitted: false",
+    "credentialOperationPerformed: false",
+    "productionFundsMoved: false",
+    "TRUSTED_POSTGRES_PREFIXES",
+    "must resolve to a non-writable PostgreSQL 17 binary",
+    "DROP DATABASE IF EXISTS",
+    "rm(workingDirectory"
+  ]) {
+    assert.match(
+      drScript,
+      new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.doesNotMatch(
+    drScript,
+    /api\.hyperliquid\.xyz|approveAgent|withdraw3|usdSend|spotSend|sendAsset|vaultTransfer|privateKey|mnemonic|seedPhrase/
+  );
+  assert.equal(
+    packageDocument.scripts["test:tc403:dr"],
+    "node scripts/run-tc403-disaster-recovery-drill.mjs"
+  );
+  assert.equal(
+    catalog.operations.filter(({ operationId }) =>
+      operationId.startsWith("trading")
+    ).length,
+    25
+  );
+  for (const required of [
+    "not a Credential",
+    "cannot mark its own work independently reviewed",
+    "BLOCKED_INDEPENDENT_REVIEW",
+    "machine result always",
+    "content-addressed dirty-worktree"
+  ]) {
+    assert.match(readme, new RegExp(required));
+  }
+  for (const required of [
+    "Never resubmit the action or reuse its nonce",
+    "The source database is never mutated",
+    "Any open or accepted-launch-blocker P0/P1 finding blocks release",
+    "Codex tests, this runbook, and the TC-403 audit are not independent review"
+  ]) {
+    assert.match(runbook, new RegExp(required));
+  }
+  for (const required of [
+    "review `NOT_PERFORMED`",
+    "must not be Codex or the author approving its own implementation",
+    "Until then, TC-403 remains `IMPLEMENTED_UNVERIFIED`"
+  ]) {
+    assert.match(independentReviewHandoff, new RegExp(required));
+  }
 });

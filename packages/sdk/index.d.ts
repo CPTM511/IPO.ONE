@@ -10,6 +10,45 @@ import type {
   TenantProtocolResult
 } from "@ipo-one/api-contract";
 
+export type TradingCapitalActorType =
+  | "human"
+  | "agent"
+  | "provider"
+  | "risk_operator"
+  | "operations_operator"
+  | "system_worker";
+
+export const TRADING_CAPITAL_OPERATION_IDS:
+  readonly import("@ipo-one/api-contract").TenantProtocolOperationId[];
+export const TRADING_CAPITAL_ROLE_OPERATIONS: Readonly<
+  Record<TradingCapitalActorType, readonly import("@ipo-one/api-contract").TenantProtocolOperationId[]>
+>;
+
+export class IpoOneTradingCapitalSdkError extends Error {
+  constructor(code: string, message: string);
+  readonly code: string;
+}
+
+export interface IpoOneTradingCapitalClientOptions {
+  execute: AgentTenantProtocolExecute;
+  actorType: TradingCapitalActorType;
+  transportProfile: "local_in_process";
+}
+
+export class IpoOneTradingCapitalClient {
+  constructor(options: IpoOneTradingCapitalClientOptions);
+  readonly actorType: TradingCapitalActorType;
+  listOperations(): import("@ipo-one/api-contract").TenantProtocolOperationId[];
+  executeOperation<OperationId extends import("@ipo-one/api-contract").TenantProtocolOperationId>(
+    request: Extract<
+      import("@ipo-one/api-contract").TenantProtocolRequest,
+      { operationId: OperationId }
+    >
+  ): Promise<
+    import("@ipo-one/api-contract").TenantProtocolResultFor<OperationId>
+  >;
+}
+
 export type {
   AgentCreditOfferWorkflowReceipt,
   AgentPilotCapabilityManifest,

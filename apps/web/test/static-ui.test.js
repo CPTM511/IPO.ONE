@@ -10,6 +10,42 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     new URL("../src/agent-pilot-capability-manifest.js", import.meta.url),
     "utf8"
   );
+  const agentConsolePresentation = await readFile(
+    new URL("../src/agent-console-presentation.js", import.meta.url),
+    "utf8"
+  );
+  const capitalNetworkPresentation = await readFile(
+    new URL("../src/capital-network-presentation.js", import.meta.url),
+    "utf8"
+  );
+  const riskOperationsPresentation = await readFile(
+    new URL("../src/risk-operations-presentation.js", import.meta.url),
+    "utf8"
+  );
+  const walletRegistry = await readFile(
+    new URL("../src/wallet-provider-registry.js", import.meta.url),
+    "utf8"
+  );
+  const walletLifecycle = await readFile(
+    new URL("../src/wallet-authority-lifecycle.js", import.meta.url),
+    "utf8"
+  );
+  const reviewBinding = await readFile(
+    new URL("../src/request-credit-review-binding.js", import.meta.url),
+    "utf8"
+  );
+  const servicingPositionIndex = await readFile(
+    new URL("../src/servicing-position-index.js", import.meta.url),
+    "utf8"
+  );
+  const obligationPortfolio = await readFile(
+    new URL("../src/obligation-portfolio-presentation.js", import.meta.url),
+    "utf8"
+  );
+  const v9TrustSurfaces = await readFile(
+    new URL("../src/v9-trust-surfaces.js", import.meta.url),
+    "utf8"
+  );
   const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
   const icons = await readFile(new URL("../src/icons.svg", import.meta.url), "utf8");
   const manifest = JSON.parse(await readFile(new URL("../src/manifest.webmanifest", import.meta.url), "utf8"));
@@ -18,10 +54,15 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Verifying secure session",
     "Application & Obligation",
     "Identity & bounded authority",
-    "Borrow with the exact Offer in view.",
+    "Every position, reconciled to server truth.",
+    "Same economics. <em>Bounded machine authority.</em>",
+    "One server receipt per completed step",
+    "No lender or facility is live",
     "Repay with the schedule in view.",
     "Verify the lifecycle, not a screenshot.",
-    "Portfolio risk, with <em>protective action.</em>"
+    "Portfolio risk, with <em>protective action.</em>",
+    "Operational assurance, without invented runtime state",
+    "Borrower, Risk, Operations, and Auditor remain separate"
   ]) {
     assert.ok(html.includes(label), `${label} screen missing`);
   }
@@ -52,7 +93,18 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   for (const label of [
     "No real lending",
     "No real funds",
-    "My Credit",
+    "Request Credit",
+    "Repay &amp; Settle",
+    "Credit Passport",
+    "Obligations",
+    "Agent Console",
+    "Capital Network",
+    "Wallet &amp; Permissions",
+    "Activity &amp; Proofs",
+    "Credit Track Record",
+    "Reports &amp; Exports",
+    "Risk &amp; Operations",
+    "Architecture",
     "Agent API",
     "Your integration path",
     "The Principal approves. The Agent executes only that scope.",
@@ -69,23 +121,29 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Principal-controlled Agent setup",
     "Create, review, and activate Agent authority",
     "Agent API handoff",
-    "Authenticated HTTPS quick start",
+    "Local stdio SDK quick start",
     "Load an eligible draft Mandate to create the application packet",
     "Principal → Agent capability packet",
-    "Approved Tenant operations",
-    "Approved authenticated workflows",
+    "One manifest. Eleven local tools. No ambient authority.",
+    "Approved local stdio MCP tools",
+    "Three staged workflows",
     "Decision &amp; Offer",
     "Obligation &amp; repayment",
     "Servicing Case",
+    "Refresh current positions",
     "pilotReadOwnObligation + repayment + Evidence",
     "Dual-chain conformance",
-    "3 authenticated workflows",
-    "authenticated Tenant HTTPS · closed_non_funds_pilot",
-    "JWT ≤300s bound to mTLS certificate",
+    "Checking manifest",
+    "local stdio MCP · closed_non_funds_pilot",
+    "Host context injected out of band",
     "Execution, repayment & servicing",
     "Signed sandbox rail + shared ledger",
     "Obligation created",
-    "38 Tenant operations",
+    "Checked-in catalog + runtime response",
+    "Issue a bounded proof",
+    "Online verification",
+    "No bearer sharing",
+    "Current Evidence summary",
     "My positions",
     "Authenticated server truth",
     "Start another application",
@@ -110,6 +168,8 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Continue with Google",
     "Continue with email",
     "Connect &amp; sign in with wallet",
+    "Available browser wallets",
+    "Wallet names and icons are untrusted display metadata.",
     "Authentication is not credit authority.",
     "Connect an approved network",
     "Base Sepolia",
@@ -119,13 +179,34 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "EVIDENCE-001B · owner only",
     "Durable audit timeline",
     "Auditor access",
-    "Authenticated request telemetry"
+    "Authenticated request telemetry",
+    "Provider workspace · no funds",
+    "Load your assigned TransferIntent",
+    "Assigned no-funds exposure",
+    "Historical example only · unapproved",
+    "Capital actions remain disabled",
+    "No TVL, public LP, remote Provider, mainnet, real capital, custody, or withdrawable balance is enabled."
   ]) {
     assert.ok(html.includes(label), `${label} boundary or surface missing`);
   }
 
-  for (const view of ["overview", "human", "agent", "credit", "transfers", "evidence", "risk", "developer"]) {
+  for (const view of [
+    "overview",
+    "request-credit",
+    "repay-settle",
+    "credit-passport",
+    "obligations",
+    "agent-console",
+    "capital-network",
+    "wallet-permissions",
+    "activity-proofs",
+    "credit-track-record",
+    "reports-exports",
+    "risk-operations",
+    "architecture"
+  ]) {
     assert.ok(html.includes(`data-view-panel="${view}"`), `${view} view missing`);
+    assert.ok(html.includes(`data-v9-maturity="${view}"`), `${view} maturity badge missing`);
   }
 
   for (const control of [
@@ -134,11 +215,15 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "authenticatedRuntimeGateCopy",
     "authenticatedRuntimeGateAction",
     "accessBtn",
+    "walletPermissionsAccessBtn",
     "accessLayer",
     "accessCloseBtn",
     "googleSignInBtn",
     "emailSignInBtn",
     "walletSignInBtn",
+    "walletProviderTitle",
+    "walletProviderStatus",
+    "walletProviderList",
     "networkChoiceList",
     "connectNetworkBtn",
     "humanGuide",
@@ -165,11 +250,42 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "submitHumanCreditBtn",
     "humanOfferAcknowledge",
     "acceptHumanOfferBtn",
+    "humanOfferFee",
+    "humanOfferRepayment",
+    "humanOfferValidUntil",
+    "humanOfferDisclosure",
+    "humanOfferAuthority",
+    "humanOfferHash",
+    "humanOfferTermsHash",
+    "humanOfferReviewState",
+    "humanReceiptPreflight",
+    "humanReceiptIntent",
+    "humanReceiptApplication",
+    "humanReceiptDecision",
+    "humanReceiptAcceptance",
+    "humanReceiptExecution",
     "humanDecisionPassport",
     "humanDecisionPassportProof",
     "humanDecisionReasonList",
     "humanDecisionSourceRows",
     "copyDecisionPassportBtn",
+    "creditPassportIssueForm",
+    "creditPassportSubjectId",
+    "creditPassportIntentId",
+    "creditPassportVerifierActorId",
+    "creditPassportLifetime",
+    "issueCreditPassportBtn",
+    "creditPassportReadForm",
+    "creditPassportArtifactId",
+    "readCreditPassportBtn",
+    "creditPassportDisclosureRows",
+    "revokeCreditPassportBtn",
+    "creditPassportVerifyForm",
+    "creditPassportVerifyArtifactId",
+    "creditPassportVerifyHash",
+    "creditPassportVerifyVersion",
+    "verifyCreditPassportBtn",
+    "creditTrackRecordFinality",
     "pilotFeedbackForm",
     "submitPilotFeedbackBtn",
     "pilotFeedbackSummaryTotal",
@@ -205,9 +321,28 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "returnToAgentAuthorityBtn",
     "createAgentBtn",
     "createAgentBtnLabel",
+    "agentRequestCreditStatus",
+    "agentRequestCreditAuthority",
+    "agentRequestCreditIntent",
+    "agentRequestCreditDecision",
+    "agentRequestCreditAcceptance",
+    "agentRequestCreditExecution",
+    "agentRequestCreditOfferReceipt",
+    "agentRequestCreditObligationReceipt",
+    "agentRequestCreditCopy",
     "privatePortfolioSurface",
     "privatePortfolioPrimaryBtn",
     "privatePortfolioSecondaryBtn",
+    "privatePortfolioAvailableCredit",
+    "v9OverviewState",
+    "v9OverviewStateTitle",
+    "v9OverviewStateCopy",
+    "creditPassportStateTitle",
+    "creditPassportStateCopy",
+    "walletPermissionsStateTitle",
+    "walletPermissionsStateCopy",
+    "creditTrackRecordStateTitle",
+    "creditTrackRecordStateCopy",
     "privateCreditSurface",
     "privateCreditPrimaryBtn",
     "privatePaymentsSurface",
@@ -240,7 +375,26 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "riskFreezeReason",
     "riskFreezeAcknowledge",
     "freezeRiskSubjectBtn",
-    "riskFreezeStatus"
+    "riskFreezeStatus",
+    "operationsAssuranceStatus",
+    "operationsAlertEvidenceStatus",
+    "operationsReconciliationEvidenceStatus",
+    "operationsIncidentEvidenceStatus",
+    "operationsApprovalEvidenceStatus",
+    "operationsEvidenceBoundaryCopy",
+    "riskAuthorityRows",
+    "capitalNetworkQueryForm",
+    "capitalNetworkTransferIntentId",
+    "capitalNetworkLoadBtn",
+    "capitalNetworkContractStatus",
+    "capitalNetworkStateTitle",
+    "capitalNetworkProviderId",
+    "capitalNetworkExposure",
+    "capitalNetworkAllocationReceipt",
+    "capitalNetworkReconciliationReceipt",
+    "capitalNetworkDeliveryReceipt",
+    "capitalNetworkAcknowledgeBtn",
+    "capitalNetworkEarnings"
   ]) {
     assert.ok(html.includes(`id="${control}"`), `${control} control missing`);
   }
@@ -269,7 +423,9 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "pilotReadAgentAccountBinding",
     "pilotCreateDraftMandate",
     "pilotReadMandate",
-    "pilotActivateSandboxMandate"
+    "pilotActivateSandboxMandate",
+    "pilotReadProviderIntent",
+    "pilotAcknowledgeProviderIntent"
   ]) {
     assert.ok(js.includes(operation), `${operation} private Human operation missing`);
   }
@@ -328,7 +484,8 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "eip155:1952",
     "/auth/v1/options",
     "/auth/v1/wallet/challenge",
-    "/auth/v1/wallet/verify"
+    "/auth/v1/wallet/verify",
+    "/auth/v1/wallet/invalidate"
   ]) {
     assert.ok(js.includes(value), `${value} access boundary missing`);
   }
@@ -355,7 +512,15 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes('action === "return-current"'));
   assert.ok(js.includes("privateHumanLifecycleStatus"));
   assert.ok(js.includes("privateAgentLifecycleStatus"));
-  assert.ok(js.includes('else if (["agent", "developer"].includes(nextView)) setMode("agent")'));
+  assert.ok(js.includes('if (["agent-console", "architecture"].includes(nextView)) setMode("agent")'));
+  assert.equal(
+    js.includes('if (nextView === "request-credit") setMode("human")'),
+    false,
+    "Request Credit must preserve the selected Human or Agent entry mode"
+  );
+  assert.ok(js.includes(
+    'nextView === "request-credit"\n    ? `${interactionMode === "agent" ? "Agent" : "Human"} entry · shared kernel`'
+  ));
   assert.equal(
     js.includes('["overview", "agent", "credit", "transfers", "developer"].includes(nextView)'),
     false,
@@ -365,6 +530,12 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes('action === "human-obligation"'));
   assert.ok(js.includes('action === "agent-api"'));
   assert.ok(css.includes(".private-product-hero"));
+  assert.ok(css.includes(".v9-runtime-state"));
+  assert.ok(css.includes(".v9-maturity-grid"));
+  assert.ok(css.includes(".v9-maturity-badge"));
+  assert.ok(js.includes("v9DestinationMaturity"));
+  assert.ok(js.includes("renderV9ShellStates"));
+  assert.ok(js.includes("serverCatalogOperations"));
   assert.ok(css.includes(".human-guide"));
   assert.ok(css.includes(".human-journey"));
   assert.ok(css.includes(".agent-integration-guide"));
@@ -375,6 +546,8 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(css.includes(".private-checkpoint"));
   assert.ok(css.includes(".risk-metric-grid"));
   assert.ok(css.includes(".risk-asset-table"));
+  assert.ok(css.includes(".operations-assurance-grid"));
+  assert.ok(css.includes(".risk-authority-table"));
   assert.ok(css.includes(".pilot-health-metrics"));
   assert.ok(css.includes(".servicing-queue-table"));
   assert.ok(css.includes(".servicing-queue-row"));
@@ -425,32 +598,101 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   }
   assert.ok(js.includes('from "./agent-handoff-manifest.js"'));
   assert.ok(js.includes('from "./agent-pilot-capability-manifest.js"'));
+  assert.ok(js.includes('from "./agent-console-presentation.js"'));
+  assert.ok(js.includes('from "./capital-network-presentation.js"'));
+  assert.ok(js.includes('from "./risk-operations-presentation.js"'));
   assert.ok(js.includes('from "./human-credit-offer-workflow-receipt.js"'));
   assert.ok(js.includes('from "./human-sandbox-obligation-workflow-receipt.js"'));
+  assert.ok(js.includes('from "./request-credit-review-binding.js"'));
   assert.ok(js.includes('from "./decision-passport-presentation.js"'));
   assert.ok(js.includes('from "./servicing-case-presentation.js"'));
+  assert.ok(js.includes('from "./wallet-authority-lifecycle.js"'));
+  assert.ok(js.includes('from "./wallet-provider-registry.js"'));
+  assert.equal(js.includes("function eip1193Provider"), false);
+  assert.ok(walletRegistry.includes('WALLET_PROVIDER_REGISTRY_SCHEMA_VERSION = "wallet_provider_registry.v1"'));
+  assert.ok(walletRegistry.includes('"eip6963:requestProvider"'));
+  assert.ok(walletRegistry.includes('"eip6963:announceProvider"'));
+  assert.ok(walletRegistry.includes('"legacy:globalThis.ethereum"'));
+  assert.ok(walletRegistry.includes("MAXIMUM_PROVIDERS = 16"));
+  assert.ok(walletRegistry.includes("recordsById.has(record.descriptor.providerId)"));
+  assert.ok(walletRegistry.includes("providerIdsByReference.has(record.provider)"));
+  assert.ok(walletRegistry.includes("eventTarget.removeEventListener"));
+  assert.equal(walletRegistry.includes("localStorage"), false);
+  assert.equal(walletRegistry.includes("sessionStorage"), false);
+  assert.equal(walletRegistry.includes(".innerHTML"), false);
+  assert.equal(walletRegistry.includes("wallet_requestPermissions"), false);
+  assert.equal(walletRegistry.includes("eth_sendTransaction"), false);
+  assert.equal(walletRegistry.includes("eth_signTransaction"), false);
+  assert.ok(walletLifecycle.includes('"wallet_authority_lifecycle.v1"'));
+  assert.ok(walletLifecycle.includes('"wallet_session_invalidation_result.v1"'));
+  assert.ok(walletLifecycle.includes("BroadcastChannel") === false);
+  assert.ok(walletLifecycle.includes("retryInvalidation"));
+  assert.ok(walletLifecycle.includes("assertProtectedAvailable"));
+  assert.ok(js.includes('provider.on("disconnect", disconnected)'));
+  assert.ok(js.includes("walletAuthorityLifecycle.assertContextEpoch"));
+  assert.ok(js.includes("walletAuthorityLifecycle.assertProtectedAvailable"));
+  assert.ok(js.includes('"wallet_session_invalidation_request.v1"'));
+  assert.equal(walletLifecycle.includes("localStorage"), false);
+  assert.equal(walletLifecycle.includes("sessionStorage"), false);
+  assert.equal(walletLifecycle.includes("walletAddress"), false);
+  assert.equal(walletLifecycle.includes("signature"), false);
   assert.ok(html.includes("Evidence-derived decision"));
   assert.ok(html.includes("Inspect machine-verifiable proof"));
   assert.ok(html.includes("Finalized synthetic Evidence · non-authorizing · no credentials · no production funds"));
   assert.ok(html.includes("risk_decision_passport.v1 · policy + finalized Evidence lineage"));
   assert.ok(js.includes("createHumanDecisionPassportPresentation"));
   assert.ok(js.includes("hasVerifiedHumanDecisionPassport"));
-  assert.ok(js.includes("!passportVerified || !acknowledgement.checked"));
+  assert.ok(js.includes("!passportVerified || !reviewState.current"));
+  assert.ok(js.includes("!acknowledgement.checked"));
   assert.ok(js.includes("JSON.stringify(decision.decisionPassport, null, 2)"));
   assert.ok(css.includes(".decision-passport-card"));
   assert.ok(css.includes(".decision-source-table"));
   assert.ok(js.includes("createHumanSandboxObligationWorkflowReceipt"));
   assert.ok(js.includes("createServicingCasePresentation"));
+  assert.ok(js.includes("createServicingPositionIndex"));
+  assert.ok(js.includes("createObligationPortfolioPresentation"));
+  assert.ok(js.includes("refreshOwnedPositionIndex"));
+  assert.ok(js.includes("workspacePositionViews"));
+  assert.ok(servicingPositionIndex.includes("servicing_position_index.v1"));
+  assert.ok(servicingPositionIndex.includes("tenant_owned_obligation_view.v1"));
+  assert.ok(servicingPositionIndex.includes("serverAuthoritative: true"));
+  assert.equal(servicingPositionIndex.includes("settlementPredicted"), false);
+  assert.ok(obligationPortfolio.includes("obligation_portfolio_presentation.v1"));
+  assert.ok(obligationPortfolio.includes("reconciledFromCanonicalSchedule: true"));
+  assert.ok(obligationPortfolio.includes("correctionsAreExplicit: true"));
+  assert.ok(obligationPortfolio.includes('profile: executed ? "signed_local_sandbox"'));
+  assert.equal(obligationPortfolio.includes("localStorage"), false);
+  assert.equal(obligationPortfolio.includes("sessionStorage"), false);
+  assert.ok(capitalNetworkPresentation.includes("capital_network_presentation.v1"));
+  assert.ok(capitalNetworkPresentation.includes("signed_fixed_loopback_provider_sandbox"));
+  assert.ok(capitalNetworkPresentation.includes("duplicateCanonicalStateAllowed: false"));
+  assert.ok(capitalNetworkPresentation.includes('source: "historical_example_only"'));
+  assert.ok(capitalNetworkPresentation.includes("pricingPolicy: false"));
+  assert.ok(riskOperationsPresentation.includes("checkedInEvidenceIsLiveState: false"));
+  assert.ok(riskOperationsPresentation.includes("automaticActionsEnabled: false"));
+  assert.ok(riskOperationsPresentation.includes("breakGlassEnabled: false"));
+  assert.ok(riskOperationsPresentation.includes("piiInAggregateViews: false"));
+  assert.equal(riskOperationsPresentation.includes("liveStateLoaded: true"), false);
+  assert.equal(capitalNetworkPresentation.includes("localStorage"), false);
+  assert.equal(capitalNetworkPresentation.includes("sessionStorage"), false);
   assert.ok(js.includes('action === "servicing-cure"'));
   assert.ok(css.includes(".servicing-case-panel"));
   assert.ok(css.includes(".servicing-case-workspace"));
   assert.ok(html.includes('id="ownedPositionPicker"'));
   assert.ok(html.includes('id="ownedPositionList"'));
+  assert.ok(html.includes('id="refreshOwnedPositionsBtn"'));
+  assert.ok(html.includes('id="ownedPositionRefreshState"'));
+  assert.ok(html.includes('id="obligationPortfolioList"'));
+  assert.ok(html.includes('id="obligationPortfolioRefreshBtn"'));
+  assert.ok(html.includes('id="obligationDetailHistory"'));
+  assert.ok(html.includes('id="obligationDetailEvidenceBtn"'));
   assert.ok(js.includes("workspaceObligationResources"));
   assert.ok(js.includes("rememberWorkspaceObligation"));
   assert.ok(js.includes("startAnotherHumanApplication"));
   assert.ok(js.includes('button[data-obligation-id]'));
   assert.ok(css.includes(".owned-position-button"));
+  assert.ok(css.includes(".obligation-portfolio-workspace"));
+  assert.ok(css.includes(".obligation-detail-history-row"));
   assert.ok(js.includes('requestId: humanObligationWorkflowIdentifier(workflowId, "request", "01")'));
   assert.ok(js.includes('requestId: humanObligationWorkflowIdentifier(workflowId, "request", "02")'));
   assert.ok(js.includes('requestId: humanObligationWorkflowIdentifier(workflowId, "request", repaymentStepId)'));
@@ -473,6 +715,15 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes("document.createElement"));
   assert.equal(js.includes("authorizationContext"), false);
   assert.ok(js.includes("createHumanCreditOfferWorkflowReceipt"));
+  assert.ok(js.includes("createRequestCreditReviewBinding"));
+  assert.ok(js.includes("assertRequestCreditReviewCurrent"));
+  assert.ok(reviewBinding.includes(
+    'REQUEST_CREDIT_REVIEW_BINDING_SCHEMA_VERSION =\n  "request_credit_review_binding.v1"'
+  ));
+  assert.ok(reviewBinding.includes('"request_economics_changed"'));
+  assert.ok(reviewBinding.includes('"authority_changed"'));
+  assert.ok(css.includes(".request-credit-agent"));
+  assert.ok(css.includes(".agent-request-journey"));
   assert.ok(html.includes("Non-authorizing · no credentials · no funds"));
   assert.ok(js.includes("createApplicationReadyAgentHandoffManifest"));
   assert.ok(js.includes('handoff?.status === "application_ready"'));
@@ -483,7 +734,14 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   ));
   assert.ok(capabilities.includes("economicMcpToolsEnabled: true"));
   assert.ok(capabilities.includes("liveChainExecution: false"));
+  assert.ok(agentConsolePresentation.includes(
+    'AGENT_CONSOLE_PRESENTATION_VERSION =\n  "agent_console_presentation.v1"'
+  ));
+  assert.ok(agentConsolePresentation.includes("catalogParity"));
+  assert.ok(agentConsolePresentation.includes("productionFundsApproved: false"));
+  assert.ok(agentConsolePresentation.includes("remoteMcpEnabled: false"));
   assert.ok(js.includes("createAgentPilotCapabilityManifest"));
+  assert.ok(js.includes("createAgentConsolePresentation"));
   assert.ok(js.includes('workflowId === status.dataset.agentWorkflowStatus'));
   assert.ok(handoff.includes('credentialDelivery: "out_of_band"'));
   assert.ok(handoff.includes("credentialsIncluded: false"));
@@ -500,15 +758,89 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(css.includes("grid-column: 1 / -1"));
   assert.ok(css.includes(".obligation-card-layout"));
   assert.ok(js.includes("sessionStorage.getItem"));
-  assert.ok(js.includes("getCertificateBoundJwt"));
-  assert.ok(js.includes("maxTtlSeconds: 300"));
-  assert.ok(js.includes("dispatcher: mtlsDispatcher"));
-  assert.ok(js.includes('new URL("/tenant/v1/operations", IPO_ONE_ORIGIN)'));
-  assert.ok(js.includes('operationId: "pilotReadAgentSelf"'));
+  assert.equal(js.includes("getCertificateBoundJwt"), false);
+  assert.equal(js.includes("maxTtlSeconds: 300"), false);
+  assert.equal(js.includes("dispatcher: mtlsDispatcher"), false);
+  assert.equal(js.includes("IPO_ONE_ORIGIN"), false);
+  assert.ok(js.includes('transportProfile: "mcp_stdio_local"'));
+  assert.ok(js.includes('new URL("/openapi.json", globalThis.location.origin)'));
+  assert.ok(v9TrustSurfaces.includes('"pilotReadAgentSelf"'));
   assert.ok(html.includes('href="/openapi.json"'));
   assert.equal(/\bDPoP\b/.test(`${html}\n${js}`), false, "DPoP is not a production capability");
   assert.equal(html.includes("baseUrl: \"http://127.0.0.1:3000\""), false);
   assert.equal(js.includes(".innerHTML"), false, "API-controlled values must use text-safe DOM rendering");
+});
+
+test("Capital Network cannot label sandbox exposure as TVL or deployed capital", async () => {
+  const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const presentation = await readFile(
+    new URL("../src/capital-network-presentation.js", import.meta.url),
+    "utf8"
+  );
+  const start = html.indexOf('data-view-panel="capital-network"');
+  const end = html.indexOf('data-view-panel="wallet-permissions"', start);
+  const surface = html.slice(start, end);
+
+  assert.ok(start >= 0 && end > start, "Capital Network surface missing");
+  assert.equal(/total value locked/i.test(surface), false);
+  assert.equal(/\bTVL\s*[:=]\s*[$0-9]/i.test(surface), false);
+  assert.equal(/\bdeployed capital\b/i.test(
+    surface.replace(/not deployed capital/gi, "")
+  ), false);
+  assert.ok(surface.includes("Simulation only"));
+  assert.ok(surface.includes("Historical example only · unapproved"));
+  assert.ok(surface.includes("Not pricing policy"));
+  assert.ok(surface.includes("No Provider funding"));
+  assert.match(
+    surface,
+    /<button type="button" disabled>Fund facility<\/button>/
+  );
+  assert.match(
+    surface,
+    /<button type="button" disabled>Withdraw<\/button>/
+  );
+  assert.ok(js.includes('purpose: "provider_intent_delivery"'));
+  assert.ok(js.includes("capital_network_ack_"));
+  assert.ok(presentation.includes("deployedCapital: false"));
+  assert.ok(presentation.includes("productionFundsMoved: false"));
+  assert.ok(presentation.includes("withdrawable: false"));
+  assert.equal(presentation.includes("approved: true"), false);
+});
+
+test("TC-104 exposes eight authenticated Trading Capital views without funds claims", async () => {
+  const [html, js, presentation] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(
+      new URL("../src/trading-capital-product-presentation.js", import.meta.url),
+      "utf8"
+    )
+  ]);
+  assert.ok(html.includes('data-view-panel="trading-capital"'));
+  for (const view of [
+    "overview",
+    "profile",
+    "marketplace",
+    "setup",
+    "live",
+    "risk",
+    "settle",
+    "proof"
+  ]) {
+    assert.ok(
+      html.includes(`data-trading-capital-view="${view}"`),
+      `${view} Trading Capital view missing`
+    );
+  }
+  assert.ok(js.includes('from "./trading-capital-product-presentation.js"'));
+  assert.ok(js.includes('"tradingReadFacilityEvidence"'));
+  assert.ok(js.includes('"tradingRequestClose"'));
+  assert.ok(js.includes('"tradingIssuePerformanceProof"'));
+  assert.ok(presentation.includes("TRADING_CAPITAL_OPERATION_IDS"));
+  assert.ok(html.includes("Run settlement · worker only"));
+  assert.ok(html.includes("Withdraw · unavailable"));
+  assert.equal(html.includes("official redeemable settlement"), false);
 });
 
 test("closed-pilot browser has no demo route, reset control, or hidden fallback", async () => {

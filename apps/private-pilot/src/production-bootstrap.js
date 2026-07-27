@@ -49,6 +49,14 @@ const PROFILES = Object.freeze({
       PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+      PilotCapability.CREDIT_PASSPORT_READ_SELF,
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+      PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+      PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
       PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
     ])
   }),
@@ -65,7 +73,15 @@ const PROFILES = Object.freeze({
       PilotCapability.MANDATE_DRAFT_CREATE,
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
-      PilotCapability.EVIDENCE_READ_OWNED
+      PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+      PilotCapability.CREDIT_PASSPORT_READ_SELF,
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+      PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+      PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
     ])
   }),
   agent_runtime: Object.freeze({
@@ -83,6 +99,12 @@ const PROFILES = Object.freeze({
       PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_PASSPORT_READ_SELF,
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+      PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+      PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
       PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
     ])
   })
@@ -99,7 +121,8 @@ const GATEWAY_MUTATION_TABLES = Object.freeze([
   "provider_intent_acknowledgements", "provider_callback_inbox",
   "credit_lines", "ledger_accounts", "ledger_transactions", "ledger_entries",
   "repayment_events", "aggregate_stream_heads", "domain_events", "credit_events",
-  "pilot_feedback_records", "evidence_envelopes", "outbox_messages",
+  "pilot_feedback_records", "credit_passport_artifacts",
+  "official_report_artifacts", "evidence_envelopes", "outbox_messages",
   "command_idempotency", "command_events", "projection_registry",
   "projection_snapshots", "reconciliation_runs", "reconciliation_discrepancies"
 ]);
@@ -269,10 +292,12 @@ async function configureRole(client, { roleName, password, authenticationOnly })
   await client.query(`GRANT CONNECT ON DATABASE ${database} TO ${role}`);
   await client.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
   if (authenticationOnly) {
-    await client.query(`GRANT SELECT ON tenants, actors, memberships, authentication_credentials, authentication_oidc_transactions, authentication_wallet_transactions, authentication_sessions, authentication_events TO ${role}`);
+    await client.query(`GRANT SELECT ON tenants, actors, memberships, authentication_credentials, authentication_oidc_transactions, authentication_wallet_transactions, authentication_sessions, authentication_session_invalidations, authentication_replay_entries, authentication_events TO ${role}`);
     await client.query(`GRANT INSERT, UPDATE ON authentication_credentials TO ${role}`);
     await client.query(`GRANT INSERT, DELETE ON authentication_oidc_transactions, authentication_wallet_transactions TO ${role}`);
     await client.query(`GRANT INSERT, UPDATE ON authentication_sessions TO ${role}`);
+    await client.query(`GRANT INSERT ON authentication_session_invalidations TO ${role}`);
+    await client.query(`GRANT INSERT, DELETE ON authentication_replay_entries TO ${role}`);
     await client.query(`GRANT INSERT ON authentication_events TO ${role}`);
     await client.query(`GRANT UPDATE (id) ON actors, memberships TO ${role}`);
     return;

@@ -2,6 +2,7 @@ import {
   SESSION_COOKIE_NAME,
   CSRF_BOOTSTRAP_COOKIE_NAME,
   TRANSACTION_COOKIE_NAME,
+  WalletSessionInvalidationReason,
   assertBoundedString,
   assertSafeIdentifier,
   csrfBootstrapCookie
@@ -16,6 +17,7 @@ export const HUMAN_ACCESS_ROUTES = Object.freeze({
   callback: "/auth/v1/callback",
   walletChallenge: "/auth/v1/wallet/challenge",
   walletVerify: "/auth/v1/wallet/verify",
+  walletInvalidate: "/auth/v1/wallet/invalidate",
   logout: "/auth/v1/logout"
 });
 
@@ -339,6 +341,7 @@ export function createHumanAccessRouteHandler(input) {
   const providers = normalizeProviders(oidcProviders);
   if (
     !humanSessionBff?.authenticateSession ||
+    !humanSessionBff?.invalidateBrowserSession ||
     !humanSessionBff?.logout ||
     (walletBff !== undefined && (!walletBff?.beginLogin || !walletBff?.completeLogin)) ||
     typeof clock !== "function"
@@ -472,27 +475,59 @@ export function createHumanAccessRouteHandler(input) {
       return true;
     }
 
+    if (request.method === "POST" && url.pathname === HUMAN_ACCESS_ROUTES.walletInvalidate) {
+      requireOrigin(request, browserOrigin);
+      if (url.search !== "") {
+        throw new ApiBoundaryError("authentication_input_rejected", "authentication query is invalid");
+      }
+      const body = await readStrictBody(request, ["schemaVersion", "reasonCode"]);
+      if (body.schemaVersion !== "wallet_session_invalidation_request.v1") {
+        throw new ApiBoundaryError(
+          "authentication_input_rejected",
+          "wallet invalidation request is invalid"
+        );
+      }
+      const cookies = parseCookies(request.headers.cookie);
+      const result = await humanSessionBff.invalidateBrowserSession({
+        sessionHandle: cookies.get(SESSION_COOKIE_NAME),
+        requestOrigin: oneHeader(request.headers, "origin", { required: true }),
+        csrfToken: oneHeader(request.headers, "x-csrf-token", { required: true, maximum: 256 }),
+        idempotencyKey: oneHeader(request.headers, "idempotency-key", {
+          required: true,
+          maximum: 128
+        }),
+        reasonCode: body.reasonCode,
+        now
+      });
+      sendJson(response, 200, result.result, requestId, {
+        "set-cookie": [
+          serializeCookie(result.clearSessionCookie),
+          serializeCookie(result.clearCsrfBootstrapCookie)
+        ]
+      });
+      return true;
+    }
+
     if (request.method === "POST" && url.pathname === HUMAN_ACCESS_ROUTES.logout) {
       requireOrigin(request, browserOrigin);
       if (url.search !== "") {
         throw new ApiBoundaryError("authentication_input_rejected", "authentication query is invalid");
       }
       const cookies = parseCookies(request.headers.cookie);
-      const sessionHandle = cookies.get(SESSION_COOKIE_NAME);
-      if (!sessionHandle) {
-        throw new ApiBoundaryError("authentication_required", "Human session is required");
-      }
-      await humanSessionBff.authenticateSession({
-        sessionHandle,
-        requestMethod: "POST",
+      const result = await humanSessionBff.invalidateBrowserSession({
+        sessionHandle: cookies.get(SESSION_COOKIE_NAME),
         requestOrigin: oneHeader(request.headers, "origin", { required: true }),
         csrfToken: oneHeader(request.headers, "x-csrf-token", { required: true, maximum: 256 }),
+        idempotencyKey: oneHeader(request.headers, "idempotency-key", {
+          required: true,
+          maximum: 128
+        }),
+        reasonCode: WalletSessionInvalidationReason.HUMAN_LOGOUT,
         now
       });
-      const result = await humanSessionBff.logout({ sessionHandle, now });
       sendJson(response, 200, {
         schemaVersion: "ipo_one_logout_result.v1",
-        status: result.revoked ? "logged_out" : "already_inactive"
+        status: "logged_out"
       }, requestId, {
         "set-cookie": [
           serializeCookie(result.clearSessionCookie),

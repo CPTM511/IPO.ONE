@@ -1,0 +1,2009 @@
+{
+  "schemaVersion": "tc_403_reviewed_artifact_manifest.v1",
+  "artifactSetHash": "0x8b37c799ad118c30d48e2aaa8feda157e388a4a2bca576cd4b7458c89b0f3b26",
+  "fileCount": 331,
+  "releaseCommit": "de5e72d5a912d2d55c2ce86570408f37c07d4a4f",
+  "worktreeMode": "content_addressed_dirty_worktree",
+  "excludedGeneratedArtifacts": [
+    "docs/codex/audits/TC-403/ai-supplementary-review.md",
+    "docs/codex/audits/TC-403/audit.md",
+    "docs/codex/audits/TC-403/founder-acceptance-decision.md",
+    "docs/codex/audits/TC-403/operability-assurance.json",
+    "docs/codex/audits/TC-403/reviewed-artifact-manifest.json"
+  ],
+  "excludedUnrelatedPrefixes": [
+    "cdp-app-react/"
+  ],
+  "excludedSuccessorAuditPrefixes": [
+    "docs/codex/audits/RELEASE-001/",
+    "docs/codex/audits/REALVALUE-001/"
+  ],
+  "entries": [
+    {
+      "path": "api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json",
+      "statusCode": " M",
+      "byteLength": 268708,
+      "sha256": "185172489fa69c3bad4b3a3e80498c7fd91013afe5c34a7371d8c01238ec2d0f"
+    },
+    {
+      "path": "api/tenant-protocol/ipo-one.tenant-protocol.v1.json",
+      "statusCode": " M",
+      "byteLength": 37102,
+      "sha256": "cb0bfcf6e4217d43e6fd7a725130d6e847a0cf5d7fa051b51b7cd12acf4070db"
+    },
+    {
+      "path": "apps/agent-mcp/src/index.js",
+      "statusCode": " M",
+      "byteLength": 292,
+      "sha256": "691cc5419290b145ab50f91d690fc20655626c1346ebec5fd269ad0467e2aead"
+    },
+    {
+      "path": "apps/agent-mcp/src/trading-capital-mcp-adapter.js",
+      "statusCode": "??",
+      "byteLength": 5875,
+      "sha256": "c40f1df901b816041dcf15ff13eabf0926d189d3b46bd4a338f3685d947f0e9c"
+    },
+    {
+      "path": "apps/agent-mcp/test/trading-capital-mcp-adapter.test.js",
+      "statusCode": "??",
+      "byteLength": 2649,
+      "sha256": "0ec5041d9e9f31ac5e3319ffc92dd1325f0a7260037e9f123064ce15ddb0c266"
+    },
+    {
+      "path": "apps/private-pilot/src/private-pilot-database.js",
+      "statusCode": " M",
+      "byteLength": 9484,
+      "sha256": "fbd1e5967d693ca77a2cd806c628ed12d79cea9639f2edb68c58843f85620843"
+    },
+    {
+      "path": "apps/private-pilot/src/private-pilot-runtime.js",
+      "statusCode": " M",
+      "byteLength": 9675,
+      "sha256": "617f8eb5d90beb5c40a5439a407e6b6d53efa974207a7d3add0958ec0a9fbbe8"
+    },
+    {
+      "path": "apps/private-pilot/src/production-bootstrap.js",
+      "statusCode": " M",
+      "byteLength": 25358,
+      "sha256": "70c97d5728820462ba313fcd28906df7d0d9b93ddad65a2bb645b0954a8fe1b9"
+    },
+    {
+      "path": "apps/private-pilot/src/production-environment.js",
+      "statusCode": " M",
+      "byteLength": 13195,
+      "sha256": "d624687ef26c891de60dff1e34d8d799d73fd5548bf06b6692e55ccefaed06c4"
+    },
+    {
+      "path": "apps/private-pilot/src/production-runtime.js",
+      "statusCode": " M",
+      "byteLength": 7125,
+      "sha256": "7d4d50e7f1179ac1cff983ea25ac5c66f05e183b9b38f81b94eeb9f2e4b0e9bc"
+    },
+    {
+      "path": "apps/private-pilot/test-postgres/production-bootstrap.test.mjs",
+      "statusCode": " M",
+      "byteLength": 6258,
+      "sha256": "df3476c29bedcd8f6a001c1f522d281c46fa0f47b54af640dc269bda376c5b72"
+    },
+    {
+      "path": "apps/tenant-api/README.md",
+      "statusCode": " M",
+      "byteLength": 4666,
+      "sha256": "4a60fd3ccdc04fdbde89172f32e7e9042778c1e52c5194673ce19f50545b3994"
+    },
+    {
+      "path": "apps/tenant-api/src/human-access-routes.js",
+      "statusCode": " M",
+      "byteLength": 19043,
+      "sha256": "c50e2a572bbfae45ba22036383f4d77b2b113cc3a1163f56a377d19f48b934d2"
+    },
+    {
+      "path": "apps/tenant-api/src/index.js",
+      "statusCode": " M",
+      "byteLength": 355,
+      "sha256": "36434b4408fed94a328b641cffd5fcd0113aa2883b9a6e5e798b88bb7e5668ba"
+    },
+    {
+      "path": "apps/tenant-api/src/production-tenant-host.js",
+      "statusCode": " M",
+      "byteLength": 12452,
+      "sha256": "c75205473aa7751c36025e9bdbb2edce1f9bb12dd8922f54d8fe595d67b8d95e"
+    },
+    {
+      "path": "apps/tenant-api/src/tenant-http-adapter.js",
+      "statusCode": " M",
+      "byteLength": 7683,
+      "sha256": "2a6fca5f28ad02cf761a46b9b2eeca3c6fedf92310b7d34e6998e21aeadb4e28"
+    },
+    {
+      "path": "apps/tenant-api/src/tenant-openapi.js",
+      "statusCode": "??",
+      "byteLength": 3338,
+      "sha256": "c1f0f50b1f0ecc2647a1a0c2b3977698aa97f4ccd36d1a6ca89aa0930115f065"
+    },
+    {
+      "path": "apps/tenant-api/src/tenant-web-assets.js",
+      "statusCode": " M",
+      "byteLength": 7707,
+      "sha256": "c1964ad45c51270365b0f7d5ff6bbb6721f2c406929f7adcd0fc5f2c1b37a589"
+    },
+    {
+      "path": "apps/tenant-api/test/human-access-invalidation.test.mjs",
+      "statusCode": "??",
+      "byteLength": 6387,
+      "sha256": "909eae4b488a0b4cd954909c49c4e757cbd03384c3652d588f74a13cd37c206a"
+    },
+    {
+      "path": "apps/tenant-api/test/human-access-routes.test.mjs",
+      "statusCode": " M",
+      "byteLength": 18733,
+      "sha256": "11b797f4b725f0fdf2df2c11054c32609a3ab87af91123a919d1a8b92b792afd"
+    },
+    {
+      "path": "apps/tenant-api/test/transport-conformance.test.mjs",
+      "statusCode": " M",
+      "byteLength": 22529,
+      "sha256": "1a9b4f2424b0aa440efb756b9cde0539fb351f13d2e274749692d177056b23b0"
+    },
+    {
+      "path": "apps/web/src/agent-console-presentation.js",
+      "statusCode": "??",
+      "byteLength": 10492,
+      "sha256": "3561eb2110517ed808b72e8ecc6faadb37492337750191ca9ae7c9ade2ca16f7"
+    },
+    {
+      "path": "apps/web/src/app.js",
+      "statusCode": " M",
+      "byteLength": 319685,
+      "sha256": "3a2635bf0915c05cd73757cfb0cbbc739de08fe29350a95c2b87a3f272dac660"
+    },
+    {
+      "path": "apps/web/src/capital-network-presentation.js",
+      "statusCode": "??",
+      "byteLength": 8843,
+      "sha256": "193e6d42eddbd0c1f96a1ebfc539f8d15aee275e2c86080cdc9cd7eb6db6774c"
+    },
+    {
+      "path": "apps/web/src/credit-passport-presentation.js",
+      "statusCode": "??",
+      "byteLength": 5287,
+      "sha256": "6e319e2bb75a607e2e422e46f4817a59b2d93128495eeab9c018f7a45c909bbc"
+    },
+    {
+      "path": "apps/web/src/index.html",
+      "statusCode": " M",
+      "byteLength": 174558,
+      "sha256": "13964b887b2fcf3c70163e07853ddeec687208a09c5d6ad80a9cdf183979a2eb"
+    },
+    {
+      "path": "apps/web/src/mobile-wallet-connector.js",
+      "statusCode": "??",
+      "byteLength": 14453,
+      "sha256": "e7dc30e927e7ed65bdce208b66e247be5497134487ff995b659a743b9d3399c4"
+    },
+    {
+      "path": "apps/web/src/obligation-portfolio-presentation.js",
+      "statusCode": "??",
+      "byteLength": 12766,
+      "sha256": "dad38c9b26b2d93a562c2329ab0be9c4ff252a694e59967107017b884b6ad10d"
+    },
+    {
+      "path": "apps/web/src/official-report-download.js",
+      "statusCode": "??",
+      "byteLength": 3048,
+      "sha256": "6b1404e6465723e5f0f20fa359ad681f1dd711134409df89d3e0440ef08a79b6"
+    },
+    {
+      "path": "apps/web/src/request-credit-review-binding.js",
+      "statusCode": "??",
+      "byteLength": 11630,
+      "sha256": "9cfea430d2ed66e64d8607964371cd759d5205abfb087e7e95e0c4b728e9977a"
+    },
+    {
+      "path": "apps/web/src/risk-operations-presentation.js",
+      "statusCode": "??",
+      "byteLength": 6833,
+      "sha256": "fe3c030230bbc4d69eeaa0df1e0071fe39880627ef0a2d48391c857e213934e2"
+    },
+    {
+      "path": "apps/web/src/servicing-position-index.js",
+      "statusCode": "??",
+      "byteLength": 8755,
+      "sha256": "2cf6c7f71f8f842e4b88484b0c79fa66d1097d4cfafe3f2ed4b50790fcc19921"
+    },
+    {
+      "path": "apps/web/src/styles.css",
+      "statusCode": " M",
+      "byteLength": 168799,
+      "sha256": "2d4d705ca94f60308cc0d958d4556bb4c6899a894407cfa3a8eb018d939b99e9"
+    },
+    {
+      "path": "apps/web/src/trading-capital-facility-presentation.js",
+      "statusCode": "??",
+      "byteLength": 5325,
+      "sha256": "f24d7451b3dfb2d7da24d79110c825cd5c57a692de77b4c55d5626a53b25df9a"
+    },
+    {
+      "path": "apps/web/src/trading-capital-matching-presentation.js",
+      "statusCode": "??",
+      "byteLength": 5612,
+      "sha256": "339c6d0a30846e39888900ae28af94a199446f70b26d163ec389fdab2eb0f2de"
+    },
+    {
+      "path": "apps/web/src/trading-capital-product-presentation.js",
+      "statusCode": "??",
+      "byteLength": 11782,
+      "sha256": "6fc8ff7de490d53977f3c7788bfbe66288f358a81c60187ca141778b5cb2d914"
+    },
+    {
+      "path": "apps/web/src/v9-trust-surfaces.js",
+      "statusCode": "??",
+      "byteLength": 6869,
+      "sha256": "bf0b0ee18fc662f4170459ef394497f2881959f69d1775524e8c810b7bcbc5a5"
+    },
+    {
+      "path": "apps/web/src/vendor/walletconnect-community-license.txt",
+      "statusCode": "??",
+      "byteLength": 20091,
+      "sha256": "1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc"
+    },
+    {
+      "path": "apps/web/src/vendor/walletconnect-ethereum-provider-2.23.10.iife.js",
+      "statusCode": "??",
+      "byteLength": 1998764,
+      "sha256": "b1b3761ef4ceb33f080bea9b91dec8eca47f1a39e4a88f1736f95f0340c5be1b"
+    },
+    {
+      "path": "apps/web/src/wallet-authority-lifecycle.js",
+      "statusCode": "??",
+      "byteLength": 6814,
+      "sha256": "2d987b05b0a2f12a3b518c7ce20215b0ad817bcaccf50fa799194f51c6881c60"
+    },
+    {
+      "path": "apps/web/src/wallet-provider-registry.js",
+      "statusCode": "??",
+      "byteLength": 9650,
+      "sha256": "d58e2e2ac186bcf3d600002903be777c02ba4ae966f2cd0a5529153375fbde82"
+    },
+    {
+      "path": "apps/web/src/walletconnect-browser-entry.js",
+      "statusCode": "??",
+      "byteLength": 424,
+      "sha256": "904ee42a33b09c01c87ac4f213e087ae2c5c9a1d5269c3f1a28aa5eea6a20be6"
+    },
+    {
+      "path": "apps/web/src/walletconnect-ethereum-provider-loader.js",
+      "statusCode": "??",
+      "byteLength": 1741,
+      "sha256": "6d73116fb8bd0e0d75538df4fa8b1e72531666c38d5a5c56a367d2aae6cc334d"
+    },
+    {
+      "path": "apps/web/test/agent-console-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 6549,
+      "sha256": "7d2435919823737040cfb40f39093594629498171863f025cbd4ef9f37df03dd"
+    },
+    {
+      "path": "apps/web/test/capital-network-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 4510,
+      "sha256": "969523d231629fba3e51d64d853951ce70e0bfc8d675ba3965c89dd22e2e8790"
+    },
+    {
+      "path": "apps/web/test/credit-passport-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 3182,
+      "sha256": "165c63771ce0daa9ad52da7a53beb7a9ebeb533eb9f52677be6e85f189cff4a1"
+    },
+    {
+      "path": "apps/web/test/mobile-wallet-connector.test.js",
+      "statusCode": "??",
+      "byteLength": 13079,
+      "sha256": "030d3e6ce814703ced30454ad4311f221506adbcf58107f18e9378ed577fb288"
+    },
+    {
+      "path": "apps/web/test/obligation-portfolio-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 5113,
+      "sha256": "be3dac581d5015ff3056370d045d7e24183f7ccdd55485e95d309b2a4cb5d3c6"
+    },
+    {
+      "path": "apps/web/test/official-report-download.test.js",
+      "statusCode": "??",
+      "byteLength": 1913,
+      "sha256": "b657ec85a9532d4a5d432f70f0121aab1242d0899075f5680c5b7bbf94b1a14e"
+    },
+    {
+      "path": "apps/web/test/request-credit-review-binding.test.js",
+      "statusCode": "??",
+      "byteLength": 4112,
+      "sha256": "6f81fa363c06588423f5c5835f01e3ef231dd5d654df2599326cb4cc2d637706"
+    },
+    {
+      "path": "apps/web/test/risk-operations-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 6343,
+      "sha256": "29b06eb80fe810a420f1e40a1fb2a2e4b319a9114a8f79f3406bcb428db9a8a9"
+    },
+    {
+      "path": "apps/web/test/servicing-position-index.test.js",
+      "statusCode": "??",
+      "byteLength": 7736,
+      "sha256": "863ad4d05c66ffecd035fe3d83cf7af543389f673313c161fd2fdd51de4c0a5e"
+    },
+    {
+      "path": "apps/web/test/static-ui.test.js",
+      "statusCode": " M",
+      "byteLength": 40002,
+      "sha256": "60579f3d9c2dd802dccadfc8d5851ff3542667e98dedd36e07846d199222ef30"
+    },
+    {
+      "path": "apps/web/test/support/agent-console-browser-host.mjs",
+      "statusCode": "??",
+      "byteLength": 5063,
+      "sha256": "3fd217faa6ec4ead6a6878ddc5ce5aaac7104056a1da2d52ca1fb531d25a53cc"
+    },
+    {
+      "path": "apps/web/test/support/capital-network-browser-host.mjs",
+      "statusCode": "??",
+      "byteLength": 7067,
+      "sha256": "d14780b0dfc0f90ad96eb42a6d44f033e56294830eca9266b2b21e889be7388a"
+    },
+    {
+      "path": "apps/web/test/support/human-lifecycle-browser-host.mjs",
+      "statusCode": " M",
+      "byteLength": 27123,
+      "sha256": "71d5e8254c337b49723f5c96d5e76f3fda8a70e10983a49f44f7bdd11639603c"
+    },
+    {
+      "path": "apps/web/test/support/risk-operations-browser-host.mjs",
+      "statusCode": " M",
+      "byteLength": 15499,
+      "sha256": "0b42a2d4299983f95ef49edbb5e3b7226586e997b4e72fabf08dd514aafe74eb"
+    },
+    {
+      "path": "apps/web/test/support/wallet-authority-browser-fixture.html",
+      "statusCode": "??",
+      "byteLength": 3534,
+      "sha256": "48ce7501fa0bfe1062438068bf2953086b79f76922316840bdb004ff2fbf14af"
+    },
+    {
+      "path": "apps/web/test/support/wallet-provider-browser-host.mjs",
+      "statusCode": "??",
+      "byteLength": 2178,
+      "sha256": "698a736b3e6eec6912c4d74c0ed9a7ffdec9b79b805c04620eb2f1bc8cb86d47"
+    },
+    {
+      "path": "apps/web/test/support/wallet-provider-browser-init.js",
+      "statusCode": "??",
+      "byteLength": 2509,
+      "sha256": "99edae091f7ac702a16c4be93fd9eb2bc2b2e804a9d77db4602822612aaca9dd"
+    },
+    {
+      "path": "apps/web/test/trading-capital-facility-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 3830,
+      "sha256": "4c6b95c4f3adc09800958cd3b74764e509196a3c5b4a01d2714ad93770191f38"
+    },
+    {
+      "path": "apps/web/test/trading-capital-matching-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 3941,
+      "sha256": "f25edf92f21a0907d14174176e5ac2be4f33570a5955e55cca340456a16cac9d"
+    },
+    {
+      "path": "apps/web/test/trading-capital-product-presentation.test.js",
+      "statusCode": "??",
+      "byteLength": 6541,
+      "sha256": "7c44f70773aee89a277b09e3a5dad04d053ad235cfbc0a02a3dd2c7cc0d48607"
+    },
+    {
+      "path": "apps/web/test/v9-trust-surfaces.test.js",
+      "statusCode": "??",
+      "byteLength": 2480,
+      "sha256": "1816b06257e91d291b31201c85c45e403b4ddf2183a34fb2e02a6bc209c6463e"
+    },
+    {
+      "path": "apps/web/test/wallet-authority-lifecycle.test.js",
+      "statusCode": "??",
+      "byteLength": 6060,
+      "sha256": "60e8eba38e7e16527f51ed672c07ba0c0e9a531c627ec3a9187b394efe776cd2"
+    },
+    {
+      "path": "apps/web/test/wallet-provider-registry.test.js",
+      "statusCode": "??",
+      "byteLength": 12518,
+      "sha256": "d204e1bee0c496a303d1084d484909507322df00d664a44acaafd2e1e5c6c57a"
+    },
+    {
+      "path": "apps/web/test/walletconnect-browser-bundle.test.js",
+      "statusCode": "??",
+      "byteLength": 1176,
+      "sha256": "eaea84e43bdcfb9e848f33e1c7ffa42d1adfe35d777c20ffaf84f548cebffe8a"
+    },
+    {
+      "path": "contracts/IpoOneMinimalErc1271TestWalletV1.sol",
+      "statusCode": "??",
+      "byteLength": 2392,
+      "sha256": "d622a3c841ec5d022ae3aa1dec312459da3492b5897e4bc05532a4e214190787"
+    },
+    {
+      "path": "contracts/README.md",
+      "statusCode": " M",
+      "byteLength": 1728,
+      "sha256": "045db47e947b39d7a487b56e396fd8abee707ba21178efc066a62a3e30f0004b"
+    },
+    {
+      "path": "contracts/test/minimal-erc1271-test-wallet.test.js",
+      "statusCode": "??",
+      "byteLength": 2280,
+      "sha256": "57511d4c159804a8b9ef1b93216ca565d914828f875823a77d458f0d7a6320c8"
+    },
+    {
+      "path": "db/migrations/0026_idempotent_wallet_session_invalidation.down.sql",
+      "statusCode": "??",
+      "byteLength": 840,
+      "sha256": "34cde0f7797ff368c9eca3ff63d6036bd6f6ec84cdf9649eac9288cd7f5eaf20"
+    },
+    {
+      "path": "db/migrations/0026_idempotent_wallet_session_invalidation.up.sql",
+      "statusCode": "??",
+      "byteLength": 2579,
+      "sha256": "12f4b942a5cab33ac9ddfb9b03a666360b37c6f1ab99037cffcd9b1c846871bd"
+    },
+    {
+      "path": "db/migrations/0027_credit_passport_artifacts.down.sql",
+      "statusCode": "??",
+      "byteLength": 2782,
+      "sha256": "e600fb1c597df6224233ce77b736b0a6242c268371b9fe0f695d1b27ce72da63"
+    },
+    {
+      "path": "db/migrations/0027_credit_passport_artifacts.up.sql",
+      "statusCode": "??",
+      "byteLength": 9468,
+      "sha256": "f6991af01205d2f8b528082f63fe2400a4fdc7d6466904d7608072b98735029f"
+    },
+    {
+      "path": "db/migrations/0028_official_report_artifacts.down.sql",
+      "statusCode": "??",
+      "byteLength": 1313,
+      "sha256": "067c26f36274f51db538d139a03b6b8de627ae558517844646548dbe4e4b3833"
+    },
+    {
+      "path": "db/migrations/0028_official_report_artifacts.up.sql",
+      "statusCode": "??",
+      "byteLength": 7058,
+      "sha256": "ed771acf4aa4bfeffb6a2439f59edbe5ef6495e627516a55c425b1e62c718e2c"
+    },
+    {
+      "path": "db/migrations/0029_trading_credit_profiles.down.sql",
+      "statusCode": "??",
+      "byteLength": 698,
+      "sha256": "d906633fc61688874c7b881ae2f4c3eb81cebde130df943073f4161376651314"
+    },
+    {
+      "path": "db/migrations/0029_trading_credit_profiles.up.sql",
+      "statusCode": "??",
+      "byteLength": 6041,
+      "sha256": "fb9422338587d4430da381040d769d0b3ff1d127cfde3469037994f1cddfbe81"
+    },
+    {
+      "path": "db/migrations/0030_trading_capital_matching.down.sql",
+      "statusCode": "??",
+      "byteLength": 1902,
+      "sha256": "fa26d16e2436b8895e287428f67fe9d33407a6827585a3a7514ee3d2256be4e3"
+    },
+    {
+      "path": "db/migrations/0030_trading_capital_matching.up.sql",
+      "statusCode": "??",
+      "byteLength": 16136,
+      "sha256": "9fa1fa37181bac43e3ea63a16fee2dfacf08fb378b4c799a00fc23f046c7c679"
+    },
+    {
+      "path": "db/migrations/0031_trading_capital_facilities.down.sql",
+      "statusCode": "??",
+      "byteLength": 1974,
+      "sha256": "d46daffc9ad89aa3950a5d6127db4d34bfaae1180b1e0264bc96d8245b6b1ee2"
+    },
+    {
+      "path": "db/migrations/0031_trading_capital_facilities.up.sql",
+      "statusCode": "??",
+      "byteLength": 18824,
+      "sha256": "490d27f64aeffa4fe5165e202c365b1f04ed852cbcc16914e3bf0a4309312fe7"
+    },
+    {
+      "path": "db/migrations/0032_trading_capital_settlement.down.sql",
+      "statusCode": "??",
+      "byteLength": 1822,
+      "sha256": "7cc26700d30b61b3c345b0314689654da2c5a8541fdd38c73b58e56a15a324f6"
+    },
+    {
+      "path": "db/migrations/0032_trading_capital_settlement.up.sql",
+      "statusCode": "??",
+      "byteLength": 15185,
+      "sha256": "a358cf0f2ad60bb7b85b2ed32fb30ff3a2e56bc4c6033c943111d05dbc86f8a9"
+    },
+    {
+      "path": "db/migrations/0033_trading_real_evidence_binding.down.sql",
+      "statusCode": "??",
+      "byteLength": 3686,
+      "sha256": "e99e7e99121bbf52663e0b045a246bf64c1701ee48e5183321c968b03223fcf0"
+    },
+    {
+      "path": "db/migrations/0033_trading_real_evidence_binding.up.sql",
+      "statusCode": "??",
+      "byteLength": 4624,
+      "sha256": "122ec22ea7e83688fffb2bbfcb394104f30ca30dfb3d8f16bff7492cb4a89c2e"
+    },
+    {
+      "path": "db/migrations/0034_trading_testnet_execution.down.sql",
+      "statusCode": "??",
+      "byteLength": 2207,
+      "sha256": "e111edd399406353d5a679479ae27b81ee8e0dc9807786edcde08070bde5ce23"
+    },
+    {
+      "path": "db/migrations/0034_trading_testnet_execution.up.sql",
+      "statusCode": "??",
+      "byteLength": 16886,
+      "sha256": "a6a642cfaabb68754dcd0529471b2d76caec1779d77f9220b392d32607637604"
+    },
+    {
+      "path": "db/migrations/0035_trading_testnet_risk_guardian.down.sql",
+      "statusCode": "??",
+      "byteLength": 1610,
+      "sha256": "be108a5618769a3a8dc96d2f1af12d0f15b990a5ef681b1ee96b8b504178fd86"
+    },
+    {
+      "path": "db/migrations/0035_trading_testnet_risk_guardian.up.sql",
+      "statusCode": "??",
+      "byteLength": 12695,
+      "sha256": "ac642285cda95c2eb94bce7b9d5ccb868234d7ee34219b155d417702ecc5d45b"
+    },
+    {
+      "path": "db/migrations/0036_trading_testnet_reconciliation_recovery.down.sql",
+      "statusCode": "??",
+      "byteLength": 936,
+      "sha256": "e21f65afd6f887c1e2b7da8fa8a1ea04704be09725787791f8acc915ce8841ea"
+    },
+    {
+      "path": "db/migrations/0036_trading_testnet_reconciliation_recovery.up.sql",
+      "statusCode": "??",
+      "byteLength": 13795,
+      "sha256": "fc3f6fb36747339722de3b1765fe9295f41f171a413a41d9d15badfa7e616b34"
+    },
+    {
+      "path": "db/migrations/0037_trading_testnet_facility_funding.down.sql",
+      "statusCode": "??",
+      "byteLength": 1009,
+      "sha256": "5f7e381e26e19dcd7461ad9845c13c80756b7214fdae446557d924885974b51d"
+    },
+    {
+      "path": "db/migrations/0037_trading_testnet_facility_funding.up.sql",
+      "statusCode": "??",
+      "byteLength": 19800,
+      "sha256": "dd9fbbef6fef5df03174cfec4fac45293facc69debc156b374e1d6b3ca5bb8a8"
+    },
+    {
+      "path": "db/migrations/0038_trading_testnet_settlement.down.sql",
+      "statusCode": "??",
+      "byteLength": 865,
+      "sha256": "ca89662a9a4cddf004e89ee5743cafc434504f8ee5c8160ed872a680ab222e89"
+    },
+    {
+      "path": "db/migrations/0038_trading_testnet_settlement.up.sql",
+      "statusCode": "??",
+      "byteLength": 20890,
+      "sha256": "8e111b58414ce1e39b32cadd44036b99b0cf6515b6ed73fd1ed03f4170b852cd"
+    },
+    {
+      "path": "deploy/testnet/compile-erc1271-test-wallet.mjs",
+      "statusCode": "??",
+      "byteLength": 6016,
+      "sha256": "38929084f98df07e5305e7f7766e17c21bc5f4f02d8622b9a25f3b23eac47978"
+    },
+    {
+      "path": "deploy/testnet/erc1271-deployment-handoff.mjs",
+      "statusCode": "??",
+      "byteLength": 14999,
+      "sha256": "1ac954c3754ffc5b15223eaa882651669f2b7585f005acd1f5772ddbed15bf60"
+    },
+    {
+      "path": "deploy/testnet/prepare-erc1271-deployment.mjs",
+      "statusCode": "??",
+      "byteLength": 11178,
+      "sha256": "890a682ed3aedcb5e1e91ac32d23835f5b2118aeb5544a2e8e8dd5fcdb1d96f5"
+    },
+    {
+      "path": "deploy/testnet/start-erc1271-human-handoff.mjs",
+      "statusCode": "??",
+      "byteLength": 28865,
+      "sha256": "4473b8553ab61d97793420a7221689d9d58fcc970e98aa61982b1daf3767f07b"
+    },
+    {
+      "path": "deploy/testnet/start-hyperliquid-live-evidence-handoff.mjs",
+      "statusCode": "??",
+      "byteLength": 29455,
+      "sha256": "f45f292b5402a1e16d0abf77a132bb10bbd7db6fe97e0d3bef32e5c5d7ae7fc0"
+    },
+    {
+      "path": "deploy/testnet/test/erc1271-deployment-handoff.test.js",
+      "statusCode": "??",
+      "byteLength": 8711,
+      "sha256": "355b7ffe35017567623e925642b0c1a8a55f76db3608375a89b97c3dccd8fae1"
+    },
+    {
+      "path": "deploy/testnet/test/erc1271-deployment-preflight.test.js",
+      "statusCode": "??",
+      "byteLength": 8389,
+      "sha256": "aa277f5eb5cdff96b036ef3a187b3e0aa0a787d9210c5cada00d520a0c820a54"
+    },
+    {
+      "path": "deploy/testnet/test/hyperliquid-live-evidence-handoff.test.js",
+      "statusCode": "??",
+      "byteLength": 8384,
+      "sha256": "4e5e359755c9bb56b81ec0dab9bdef737c0cea04a7b1447bcc9deb02651500fa"
+    },
+    {
+      "path": "docs/architecture/ADR-034-trading-capital-shared-facility-and-maturity-gates.md",
+      "statusCode": "??",
+      "byteLength": 6550,
+      "sha256": "0710f01e4a7fab8a0886e1e556ade5ff100ccd95b3f2bd0b6a5a95f5d575276b"
+    },
+    {
+      "path": "docs/architecture/ADR-035-hyperliquid-adapter-signer-custody-action-and-nonce-boundary.md",
+      "statusCode": "??",
+      "byteLength": 7898,
+      "sha256": "9334b56c3ec3a72ff1e310fc5cd6525866dd1b419152a9fcb56d3c23c108d995"
+    },
+    {
+      "path": "docs/architecture/ADR-036-trading-capital-evidence-factor-risk-staleness-and-state-machine.md",
+      "statusCode": "??",
+      "byteLength": 6850,
+      "sha256": "b3c3a2c0fe55ccbb5b31735c65a40badd909b0e6628e3a7cce7cbd188d3d11d9"
+    },
+    {
+      "path": "docs/architecture/ADR-037-trading-capital-settlement-incident-ownership-and-recovery.md",
+      "statusCode": "??",
+      "byteLength": 7244,
+      "sha256": "038639ec9517703ba602b4901069f39e753d5e7c27c816e0e13413b2527680f3"
+    },
+    {
+      "path": "docs/codex/audits/AUDIT-001/audit.md",
+      "statusCode": "??",
+      "byteLength": 17913,
+      "sha256": "cb925a814a7ee534b30393e7c9221b27dae9bd845b568d6f3e6a5589c7634c48"
+    },
+    {
+      "path": "docs/codex/audits/PRODUCT-002/audit.md",
+      "statusCode": "??",
+      "byteLength": 9630,
+      "sha256": "b855d43fef6babf915971daf1303b1732fbfa75c21396b3ee5558778ca1452cd"
+    },
+    {
+      "path": "docs/codex/audits/PRODUCT-002/source-drift.md",
+      "statusCode": "??",
+      "byteLength": 971,
+      "sha256": "42ba5dd999519d2f95dc36ef3192a9ad252f49d77b0328271fd8b0f0fa1f3ebe"
+    },
+    {
+      "path": "docs/codex/audits/TC-000/audit.md",
+      "statusCode": "??",
+      "byteLength": 12056,
+      "sha256": "7f362adb2fe9a0d910c141341ceaf46905f4ccf8176eaff057118db8b88d1950"
+    },
+    {
+      "path": "docs/codex/audits/TC-000/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 5229,
+      "sha256": "b0c3f604f9e95425c58b895574b3a82d18943e9deac8ebf1ce721c25d8744667"
+    },
+    {
+      "path": "docs/codex/audits/TC-101/audit.md",
+      "statusCode": "??",
+      "byteLength": 13581,
+      "sha256": "8978bc370e1c9c37bc5b2de0d517b21f0c1063e1aedfac282636932037107f56"
+    },
+    {
+      "path": "docs/codex/audits/TC-101/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4554,
+      "sha256": "82910dccae79f4bc38ca81f99b2f86c8c4ac8fe5a2ddc556f2b177fc36ae8fec"
+    },
+    {
+      "path": "docs/codex/audits/TC-102/audit.md",
+      "statusCode": "??",
+      "byteLength": 16271,
+      "sha256": "57ff7ea0001780439ed416b68cf4b6352ab66198887eddbd1d1466cca1b50a5c"
+    },
+    {
+      "path": "docs/codex/audits/TC-102/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 5384,
+      "sha256": "e7e30504c5f61af31cf07713902c47d7e045be962a4c801c118c881fd414cc6b"
+    },
+    {
+      "path": "docs/codex/audits/TC-103/audit.md",
+      "statusCode": "??",
+      "byteLength": 15169,
+      "sha256": "4f4447815576b2bed304d9c7ff24e382f9eea1cb985bded2d1c880e55fc87086"
+    },
+    {
+      "path": "docs/codex/audits/TC-103/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4982,
+      "sha256": "f1f4f1c438e23489b917c72e65ac37c52587032a98368d561804eba15e37593b"
+    },
+    {
+      "path": "docs/codex/audits/TC-104/audit.md",
+      "statusCode": "??",
+      "byteLength": 19719,
+      "sha256": "117ee81bff2f76b0c58d56faf0f12a3ae2db2146333d2b655cfd55d346ab9a18"
+    },
+    {
+      "path": "docs/codex/audits/TC-104/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4682,
+      "sha256": "f30afd57fb4f8e805afc44b0cd855577fcde4e3ac49ad4db5decf4552a6c2169"
+    },
+    {
+      "path": "docs/codex/audits/TC-201/audit.md",
+      "statusCode": "??",
+      "byteLength": 9212,
+      "sha256": "994481ed986c09f321004cb36ed2e4be32e480ade2b84987f584976cf9ada0cc"
+    },
+    {
+      "path": "docs/codex/audits/TC-201/live-testnet-info-evidence.json",
+      "statusCode": "??",
+      "byteLength": 1980,
+      "sha256": "6b310e3c4e538f8f9ffeaa5f40c9eb37ad6061727f13f334aa9c942ff1657ae7"
+    },
+    {
+      "path": "docs/codex/audits/TC-201/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 5179,
+      "sha256": "1dae0f9089683ba92bfc3a45aae3d4e8c1166260a46a5a4ccfc022d78a59a49d"
+    },
+    {
+      "path": "docs/codex/audits/TC-202/audit.md",
+      "statusCode": "??",
+      "byteLength": 11896,
+      "sha256": "0e7a0bc712f966f206bf60bf7763615ab559590c258fd2d146b9cfa1a176e7ba"
+    },
+    {
+      "path": "docs/codex/audits/TC-202/live-readonly-reachability-evidence.json",
+      "statusCode": "??",
+      "byteLength": 1730,
+      "sha256": "70539b93e398f0868587e550521d28b6b3099f315f6a2f3bf3856e05747e0074"
+    },
+    {
+      "path": "docs/codex/audits/TC-202/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 6386,
+      "sha256": "b5186acb5959c9d45677e06c8815d467df797a287b751c607b468ca9ee6161f1"
+    },
+    {
+      "path": "docs/codex/audits/TC-203/audit.md",
+      "statusCode": "??",
+      "byteLength": 10165,
+      "sha256": "ccc0668384a4a1e62aca819bdb913688fc8b49faac99808f0376900de270f1f3"
+    },
+    {
+      "path": "docs/codex/audits/TC-203/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 2367,
+      "sha256": "555291084f600e6c483fdcb8e332f63c68de3d1eaab8fb4349b3c541ec841bf2"
+    },
+    {
+      "path": "docs/codex/audits/TC-301/audit.md",
+      "statusCode": "??",
+      "byteLength": 11650,
+      "sha256": "2f7f84782b86b613bc68cbc35748db4e42b8d434d6ad805ac8dfa94c48995a66"
+    },
+    {
+      "path": "docs/codex/audits/TC-301/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4811,
+      "sha256": "3a6f5295711dbe6b152dcca3ea519d659d94537623e88a8468f673144090eb0d"
+    },
+    {
+      "path": "docs/codex/audits/TC-302/audit.md",
+      "statusCode": "??",
+      "byteLength": 13271,
+      "sha256": "705d113ff17ff886e577c9e7a39af8a31eb26113dc5a722d957a6853a7965fff"
+    },
+    {
+      "path": "docs/codex/audits/TC-302/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 3826,
+      "sha256": "0452ceff3d1e6dbccb9f0b95d40e25dae1ba812f83b556d4a0feb48f30cb708c"
+    },
+    {
+      "path": "docs/codex/audits/TC-303/audit.md",
+      "statusCode": "??",
+      "byteLength": 12034,
+      "sha256": "02ce090e765405ae5b22393bfcde5576cbeaaefa566435e3e7e5b934e01521dc"
+    },
+    {
+      "path": "docs/codex/audits/TC-303/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4334,
+      "sha256": "8ef535bbea6307a0bf54f962c006e325b70c4919d60de6022c2a34e5a5ee9743"
+    },
+    {
+      "path": "docs/codex/audits/TC-401/audit.md",
+      "statusCode": "??",
+      "byteLength": 13103,
+      "sha256": "5a7d61f3c0e90afb960571a5b07f535da17c4c94702c5fe85bb776f42d7809d7"
+    },
+    {
+      "path": "docs/codex/audits/TC-401/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 5131,
+      "sha256": "b505eb0bb95e4b4fe0a76984479236a1ffa5fb1bab5c77bb40f1390af14d2ae8"
+    },
+    {
+      "path": "docs/codex/audits/TC-402/audit.md",
+      "statusCode": "??",
+      "byteLength": 14668,
+      "sha256": "c5dddc29ba0e32733a153faf13e08870310141ab28fbc17b4bf01b5bc536a24b"
+    },
+    {
+      "path": "docs/codex/audits/TC-402/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 7065,
+      "sha256": "8d7f3014bf7ee83275d1de328e8de984e9ce81a252980edde538efeec215f261"
+    },
+    {
+      "path": "docs/codex/audits/TC-403/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4448,
+      "sha256": "54c883efcbeb3eb790e34ffa19af5ca590decc9912201d2eaa0fdc525719b8b1"
+    },
+    {
+      "path": "docs/codex/audits/V9-001/audit.md",
+      "statusCode": "??",
+      "byteLength": 8714,
+      "sha256": "20f30fee2856f91baff8e546770d2ac1e0cecf3e551aca385615b03198154c9b"
+    },
+    {
+      "path": "docs/codex/audits/V9-001/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 3966,
+      "sha256": "34f546dbefa85c75b543473c6c5b674bebef1d75d7db16f8628d2c5f0a8612ba"
+    },
+    {
+      "path": "docs/codex/audits/V9-002/audit.md",
+      "statusCode": "??",
+      "byteLength": 14396,
+      "sha256": "5b3a539a406176132192a33b6d029de5449da0a1675189d6d1f12aca6e3ec549"
+    },
+    {
+      "path": "docs/codex/audits/V9-002/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4746,
+      "sha256": "c30a307c04c8aff264614559c5c35da3b0c85092656fee90177fa47b13b9aebf"
+    },
+    {
+      "path": "docs/codex/audits/V9-003/audit.md",
+      "statusCode": "??",
+      "byteLength": 15476,
+      "sha256": "9561ac3a5c0046fd67be474a20f104449e39ea29614fb292f9e10e88c03ab7b6"
+    },
+    {
+      "path": "docs/codex/audits/V9-003/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4603,
+      "sha256": "dcda32eaf27ce15b0ce90b8870c885e6c68f86582bd3fd2cd022a2e65e7f43c4"
+    },
+    {
+      "path": "docs/codex/audits/V9-004/audit.md",
+      "statusCode": "??",
+      "byteLength": 12664,
+      "sha256": "1405cb921eea736288f8e13aaf571d53db618b9ad50483c1843635974a75ce87"
+    },
+    {
+      "path": "docs/codex/audits/V9-004/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 6587,
+      "sha256": "e864c1869b5fd73e04e60c3e93435cb48902c55a10d1332fe1d14f4713ee289b"
+    },
+    {
+      "path": "docs/codex/audits/V9-005/audit.md",
+      "statusCode": "??",
+      "byteLength": 9035,
+      "sha256": "ccbd8ea203763bacdfda94cbf1350594bf1b6cfe11c326eace1660cd465cd34f"
+    },
+    {
+      "path": "docs/codex/audits/V9-005/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 3883,
+      "sha256": "32ce9f73132cc50306a294c1ba73415876688966b0599587060714458c86406c"
+    },
+    {
+      "path": "docs/codex/audits/V9-006/audit.md",
+      "statusCode": "??",
+      "byteLength": 11547,
+      "sha256": "dfdf7de5046861c97cfa99d525bc3de53cbc5d3f8a308b0a38e75fce6527abb5"
+    },
+    {
+      "path": "docs/codex/audits/V9-006/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 5102,
+      "sha256": "693c689b21094581eb710620b85994cba127c6ad656f8ffb0ca913e79c198ada"
+    },
+    {
+      "path": "docs/codex/audits/V9-007/audit.md",
+      "statusCode": "??",
+      "byteLength": 13856,
+      "sha256": "acc2b0eb1daa3048708561c67dc15966f539824770a9a3d93f22d3561e8067aa"
+    },
+    {
+      "path": "docs/codex/audits/V9-007/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4665,
+      "sha256": "b8271115ec71e05ab960de32cd867c3650e282c18f35aa63ae2b71b9b5609a18"
+    },
+    {
+      "path": "docs/codex/audits/V9-008/audit.md",
+      "statusCode": "??",
+      "byteLength": 17712,
+      "sha256": "952054d874c1e98de06926f048c740771e622b9f7e64d79205070ba3039b884c"
+    },
+    {
+      "path": "docs/codex/audits/V9-008/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 5581,
+      "sha256": "97f7bba5d44019325cca86f5f3d6981b9baad2286e1ec950fa4200dd1ed0b45c"
+    },
+    {
+      "path": "docs/codex/audits/V9-009/audit.md",
+      "statusCode": "??",
+      "byteLength": 17036,
+      "sha256": "d7c1fcb4839793651a6f6f1d8d73b44dbfbee618d8e9cfbd826afcd6b58a975e"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-001/audit.md",
+      "statusCode": "??",
+      "byteLength": 11664,
+      "sha256": "669c5112ea3e6ee33dadb98b8714489fc621b709bfbd29295f0b741cb2f24218"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-001/source-drift.md",
+      "statusCode": "??",
+      "byteLength": 1051,
+      "sha256": "238fe7630cb0b7988bceecec6572aef9ea3a29d5f14fa5308ce142b4155dffd7"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-002/audit.md",
+      "statusCode": "??",
+      "byteLength": 16714,
+      "sha256": "bc4dfa0a8237bc77136c97495c0d8a41decf6b1c92ae246585d3fbbf44f6e955"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-002/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 2956,
+      "sha256": "5b0925a2a161bf9dcf51f4c7120df5236bea5228e82b1b6c816e87784c766899"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-002/source-drift.md",
+      "statusCode": "??",
+      "byteLength": 1587,
+      "sha256": "73683c39b116ea82acfee93575283e710d52393b47ecd6095e3807c82fc5c104"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/approval-decision.md",
+      "statusCode": "??",
+      "byteLength": 7382,
+      "sha256": "2d37c0437c19b1b54cbed01bbfa1f70b73cc869b0d73b8c8109d7d7e38c62fb0"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/audit.md",
+      "statusCode": "??",
+      "byteLength": 20580,
+      "sha256": "7da912989627c3d607eaa74eecc239785679ca3a78f1d4c2f2f27f23d11ce38e"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/dependency-review 2.md",
+      "statusCode": "??",
+      "byteLength": 3213,
+      "sha256": "6688014076bb266aa00dad46963cdfe732d0f540229ad487e1fb54747c746b95"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/dependency-review.md",
+      "statusCode": "??",
+      "byteLength": 6564,
+      "sha256": "e1ec5a7af9fed9fd7048b5a8208135f5c0b009c91acd2b2767405ed3d9057aad"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/deployment-approval-followup.md",
+      "statusCode": "??",
+      "byteLength": 4061,
+      "sha256": "5a8521720ac9883cd1b146de7aef3e599074ca27d3f404578a2a18ab80d4da8c"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/erc1271-deployment-preflight-evidence.md",
+      "statusCode": "??",
+      "byteLength": 6398,
+      "sha256": "d0fdf3a27644e1061c8af2f24ba9dca6ab78ef8bc237a44ce906b68700aeb674"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/live-testnet-e2e-evidence.md",
+      "statusCode": "??",
+      "byteLength": 4119,
+      "sha256": "1974506d55986066825389951b3540e89f9618295ef9ae5ccc99ad5be02d161e"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/postgres-runtime-evidence 2.md",
+      "statusCode": "??",
+      "byteLength": 1412,
+      "sha256": "faa272dd372ec7ab8348e23ea1b74e34407ea8cd9936d10df72e543d78d90dd9"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/postgres-runtime-evidence.md",
+      "statusCode": "??",
+      "byteLength": 2955,
+      "sha256": "0bcd30ce969daebaaec6f480a550517b8b0612c5122e4a7aacb8c6a0767180fc"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/pre-change-mapping.md",
+      "statusCode": "??",
+      "byteLength": 4419,
+      "sha256": "91057184fa46c3ba6a2f716f21c1b811f09ee611ba693d7459dafd859b479fe0"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/source-drift.md",
+      "statusCode": "??",
+      "byteLength": 1056,
+      "sha256": "a49e7c36494315c7d809fca51637cc0a36b1042fa71d2719e519353ee0d0b213"
+    },
+    {
+      "path": "docs/codex/audits/WALLET-003/wallet-acceptance-matrix.md",
+      "statusCode": "??",
+      "byteLength": 3485,
+      "sha256": "5aafa0c62063fe143cb23b58ea3bf05575d8a82c2bec8ef9a9513e94aac092be"
+    },
+    {
+      "path": "docs/operations/TRADING_CAPITAL_TESTNET_OPERABILITY_RUNBOOK.md",
+      "statusCode": "??",
+      "byteLength": 9099,
+      "sha256": "fe735684de96e327cea85c7954ad82b8114652784753281092fdee198e018d84"
+    },
+    {
+      "path": "docs/product/IPO_ONE_V9_PRODUCT_TRACEABILITY_v1.md",
+      "statusCode": "??",
+      "byteLength": 13404,
+      "sha256": "8853e2de0670fbc1e688d46465ab00caac52ae2ad278c523e413d30aa0a9f232"
+    },
+    {
+      "path": "docs/security/IPO_ONE_AUTHENTICATED_TRANSPORT_BOUNDARY_v0.1_DRAFT.md",
+      "statusCode": " M",
+      "byteLength": 4346,
+      "sha256": "06be5973ae5770ee9f832b93d3e636d76d6b36b6aa66d48ef3e08fffec4b5f78"
+    },
+    {
+      "path": "docs/security/IPO_ONE_COMMERCIAL_ACCESS_BOUNDARY_v0.1.md",
+      "statusCode": " M",
+      "byteLength": 3225,
+      "sha256": "5f0ff9cc998639422e847e7c89e5ff961b55be23f18ddd1a99dac54e7b2b29c4"
+    },
+    {
+      "path": "docs/security/IPO_ONE_TRADING_CAPITAL_THREAT_MODEL_v0.1_PROPOSED.md",
+      "statusCode": "??",
+      "byteLength": 10169,
+      "sha256": "42b6aac4f27b29fbd51df64266ca8f289f273d905c2d5e065661d4881e6a24cd"
+    },
+    {
+      "path": "docs/security/TC_403_INDEPENDENT_REVIEW_HANDOFF.md",
+      "statusCode": "??",
+      "byteLength": 3724,
+      "sha256": "a39c5158e9d05eda2ce9b64801c73f37fc0778c545a06c084acfa8b940daed94"
+    },
+    {
+      "path": "docs/security/V9_004_CREDIT_PASSPORT_PRIVACY_APPROVAL_001.md",
+      "statusCode": "??",
+      "byteLength": 2458,
+      "sha256": "c56fdb9f268237f3790331376aa4280658f4024901b7598c8ced38ac38a4af73"
+    },
+    {
+      "path": "docs/security/V9_004_CREDIT_PASSPORT_PRIVACY_DECISION_PACK_v0.1.md",
+      "statusCode": "??",
+      "byteLength": 13512,
+      "sha256": "427f0a95d52b78e463a50d20c377a36d8893d68f8301fb98b52a5164741bad30"
+    },
+    {
+      "path": "docs/security/WALLET_003_ERC1271_DEPLOYMENT_BALANCE_CAP_AMENDMENT_001.md",
+      "statusCode": "??",
+      "byteLength": 1335,
+      "sha256": "179768eae10af3004b3c980677bc20554625226cd1c24800dc8274511edf7d9e"
+    },
+    {
+      "path": "docs/security/WALLET_003_MINIMAL_ERC1271_DEPLOYMENT_DECISION_PACK_v0.1.md",
+      "statusCode": "??",
+      "byteLength": 5628,
+      "sha256": "4d015b8f0d3a91ba1fc8397496449698d25fa80dbaba340cc9262c09c7d915ae"
+    },
+    {
+      "path": "modules/abuse-control/src/abuse-constants.js",
+      "statusCode": " M",
+      "byteLength": 1661,
+      "sha256": "da59080a9b0fcde89321e6aeff254dbabc9742c2921e1d390dd5755b58d5b51f"
+    },
+    {
+      "path": "modules/abuse-control/src/abuse-policy.js",
+      "statusCode": " M",
+      "byteLength": 10902,
+      "sha256": "f2efd42837e59481946eb9b7b91d942d2d7e0a5f243c00cbf18012cab94bb9e5"
+    },
+    {
+      "path": "modules/approval/src/approval-policy.js",
+      "statusCode": " M",
+      "byteLength": 4810,
+      "sha256": "9e99aee5df4bc3705dfcd128bd9f0434025d24511dafded26a2eb034b66ee0a4"
+    },
+    {
+      "path": "modules/authentication/src/human-bff.js",
+      "statusCode": " M",
+      "byteLength": 15205,
+      "sha256": "2b08f018aeb30560b05199c8bc7ff6321f98df82769fb484be911345b9dfb5a5"
+    },
+    {
+      "path": "modules/authentication/src/human-session-bff.js",
+      "statusCode": " M",
+      "byteLength": 2041,
+      "sha256": "428beb6f5dc0a4d0ebfc1ea96a2ed0a0897471a405ad4142e08a4cfe51c9253b"
+    },
+    {
+      "path": "modules/authentication/src/human-session-store.js",
+      "statusCode": " M",
+      "byteLength": 14926,
+      "sha256": "39e2fe0d2f1caa42cc051c4fd926fa446967bfb0bd0200da32c389dcf00aa747"
+    },
+    {
+      "path": "modules/authentication/src/human-wallet-bff.js",
+      "statusCode": " M",
+      "byteLength": 5163,
+      "sha256": "8deb248e51068d562e55be5378abe804fcd8b6ad3bfcce79b10b77064b0e4dc3"
+    },
+    {
+      "path": "modules/authentication/src/index.js",
+      "statusCode": " M",
+      "byteLength": 866,
+      "sha256": "9f7b11ac313586c85f919d4c50cf28e15461dade922f8e7b421f2edb2405bd7a"
+    },
+    {
+      "path": "modules/authentication/src/postgres-human-authentication.js",
+      "statusCode": " M",
+      "byteLength": 77770,
+      "sha256": "7d1fcf35b39256163d92c15bad2e9a327aac93d1a49e1aabcc59e97afdda7c63"
+    },
+    {
+      "path": "modules/authentication/src/wallet-session-invalidation.js",
+      "statusCode": "??",
+      "byteLength": 1455,
+      "sha256": "b86a2d82ba2321499dc06abe5b058b88a48186901edaffab4304121c85f2c8b5"
+    },
+    {
+      "path": "modules/authentication/test-postgres/durable-human-authentication.test.mjs",
+      "statusCode": " M",
+      "byteLength": 35149,
+      "sha256": "c1196634c7bf8608d29d03c0e71f9316d93306d758574a6d9dccbe70b693264a"
+    },
+    {
+      "path": "modules/authentication/test/human-bff.test.js",
+      "statusCode": " M",
+      "byteLength": 19862,
+      "sha256": "1c4695288a675b75850bdf7259a957674d01aa53c327ff170e88fbd4ef232a37"
+    },
+    {
+      "path": "modules/authentication/test/human-wallet-bff.test.js",
+      "statusCode": " M",
+      "byteLength": 7528,
+      "sha256": "7042e7e13e7a4466fea3e8475e18aa5ca9197d4b977c43f6259ef160e2e71c8c"
+    },
+    {
+      "path": "modules/authorization/src/authorization-constants.js",
+      "statusCode": " M",
+      "byteLength": 18210,
+      "sha256": "c740609cc6fb12baae12ce396858e53609456159ae13d63e04163cd14169e5f5"
+    },
+    {
+      "path": "modules/authorization/src/authorization-policy.js",
+      "statusCode": " M",
+      "byteLength": 52167,
+      "sha256": "33e6adaf40e4786ac9f52d4089de44e30e6b44e2e13c484f74a1dc75dad181f1"
+    },
+    {
+      "path": "modules/authorization/src/postgres-authorization-directory.js",
+      "statusCode": " M",
+      "byteLength": 18461,
+      "sha256": "286dac24c09553eb6d228935bfb476a999c894f519c17ccaa1709a8f0a55e805"
+    },
+    {
+      "path": "modules/authorization/test/authorization-policy.test.js",
+      "statusCode": " M",
+      "byteLength": 15330,
+      "sha256": "8b675e0edc2b50c54fa066bdd2bc624640f4c0ba1c253cd965b1c8c300845087"
+    },
+    {
+      "path": "modules/chain-adapter/src/erc1271-signature-verifier.js",
+      "statusCode": "??",
+      "byteLength": 17348,
+      "sha256": "dd4e50e7216ed0cc25482f7a0e94b30ef71bd340d39944101a7680dea5a28e55"
+    },
+    {
+      "path": "modules/chain-adapter/src/evm-account-proof-adapter.js",
+      "statusCode": " M",
+      "byteLength": 9722,
+      "sha256": "c5a6fdb23ffb227583344c7ddf6ddb8504a82ea5956ed55dee2b0546551f58c9"
+    },
+    {
+      "path": "modules/chain-adapter/src/index.js",
+      "statusCode": " M",
+      "byteLength": 353,
+      "sha256": "8bdb4194538084591852f54d2fa4fbd01881a624c2b29ad8642ea75be6bf5890"
+    },
+    {
+      "path": "modules/chain-adapter/test/erc1271-signature-verifier.test.js",
+      "statusCode": "??",
+      "byteLength": 10762,
+      "sha256": "700b4a4788ad6c98e80405831d5ab74ee6732e4f30a53126be148ebab5aa6849"
+    },
+    {
+      "path": "modules/chain-adapter/test/evm-account-proof.test.js",
+      "statusCode": " M",
+      "byteLength": 6722,
+      "sha256": "5eea1744f9cd986feb27d691c963143b00ca04ed686ab5e6cad4d46661651c5a"
+    },
+    {
+      "path": "modules/hyperliquid-execution/README.md",
+      "statusCode": "??",
+      "byteLength": 2957,
+      "sha256": "998bbbfd2f55eff7e2f32c18ae28cfdd912c613a3db4ea0f7ebbf0aaf70d4496"
+    },
+    {
+      "path": "modules/hyperliquid-execution/src/index.js",
+      "statusCode": "??",
+      "byteLength": 42873,
+      "sha256": "b370d6ed2b3fb3018bff8e9651c953957c752449141bed34d798bbff4c6ddc7f"
+    },
+    {
+      "path": "modules/hyperliquid-execution/test/hyperliquid-execution-gateway.test.js",
+      "statusCode": "??",
+      "byteLength": 14578,
+      "sha256": "03cdcc3d5470839dab12347e8b0fecf4a457e5af852a162302d19f2a1fbf88fb"
+    },
+    {
+      "path": "modules/hyperliquid-facility-funding/README.md",
+      "statusCode": "??",
+      "byteLength": 3895,
+      "sha256": "61ea94ccff94e286182db41b18a958cc219af18fca0cc21e243f767e723ecd88"
+    },
+    {
+      "path": "modules/hyperliquid-facility-funding/src/index.js",
+      "statusCode": "??",
+      "byteLength": 92906,
+      "sha256": "9f9aa8bc001a205ca782c6e1d52363a981eb3ca2daf6daabf5c7fc3a12ba8bf6"
+    },
+    {
+      "path": "modules/hyperliquid-facility-funding/test/hyperliquid-facility-funding.test.js",
+      "statusCode": "??",
+      "byteLength": 22647,
+      "sha256": "98be39c986add70fc9171d354badce6f5a77df9870264cb51cceb9416db6dcaa"
+    },
+    {
+      "path": "modules/hyperliquid-info/README.md",
+      "statusCode": "??",
+      "byteLength": 1904,
+      "sha256": "64b7912270ded83250ec5f0f328bc92ce2bb46fbdf450a8ded135f2f9c5b62ea"
+    },
+    {
+      "path": "modules/hyperliquid-info/src/binding-proof.js",
+      "statusCode": "??",
+      "byteLength": 8965,
+      "sha256": "43aaa62868dd3c2eb5aa0ededcbf1bb1e439f679a4fbe1ad9f9a80440904930e"
+    },
+    {
+      "path": "modules/hyperliquid-info/src/index.js",
+      "statusCode": "??",
+      "byteLength": 40831,
+      "sha256": "e6e2175d4dac4cc60aadb1bd651681ab84da0247bb8718c26d404e56ce9a3c93"
+    },
+    {
+      "path": "modules/hyperliquid-info/test-live/hyperliquid-testnet-info.contract.mjs",
+      "statusCode": "??",
+      "byteLength": 3770,
+      "sha256": "e980cffc8822e3de5101a9b56b178b5f4a7bf5a16572077f6414013b236e3742"
+    },
+    {
+      "path": "modules/hyperliquid-info/test/fixtures/official-info-responses.v1.json",
+      "statusCode": "??",
+      "byteLength": 3445,
+      "sha256": "521fda222da3886186f6bee1131d1f182fec691fa5c01324ad3e4ea315f0747b"
+    },
+    {
+      "path": "modules/hyperliquid-info/test/hyperliquid-info-adapter.test.js",
+      "statusCode": "??",
+      "byteLength": 19241,
+      "sha256": "f64123194b2d0b6d80ca7e71144a2dd8cc303828f6d40ebf5f179c53f553480c"
+    },
+    {
+      "path": "modules/hyperliquid-operability/policy/testnet-facility-operability-policy.v1.json",
+      "statusCode": "??",
+      "byteLength": 3226,
+      "sha256": "67e0c01abc33aff4ace9169abf9264b10cbbdc03e1912ee8d814cc21384e229e"
+    },
+    {
+      "path": "modules/hyperliquid-operability/README.md",
+      "statusCode": "??",
+      "byteLength": 2898,
+      "sha256": "3588515b9349bc7f71e66e41c27974e4310b1efc7d406984fd94856b85ba3a50"
+    },
+    {
+      "path": "modules/hyperliquid-operability/src/index.js",
+      "statusCode": "??",
+      "byteLength": 36887,
+      "sha256": "95f1ecb4b5572f2a80c4d0c895012ace849c223a46e19d604f148c4ebe9ca442"
+    },
+    {
+      "path": "modules/hyperliquid-operability/test/hyperliquid-operability.test.js",
+      "statusCode": "??",
+      "byteLength": 20026,
+      "sha256": "8ebab084501e5e99c00a79a331a2334947266a3f785c9421c781d23ce52d39ff"
+    },
+    {
+      "path": "modules/hyperliquid-reconciliation/README.md",
+      "statusCode": "??",
+      "byteLength": 3025,
+      "sha256": "b78747bb743327f07077b67aa1c1d1abbca3c3911aa4a555a7eb6deca216a3a1"
+    },
+    {
+      "path": "modules/hyperliquid-reconciliation/src/index.js",
+      "statusCode": "??",
+      "byteLength": 79953,
+      "sha256": "61035a27c0d45657e9eeb44c04cf84f9331b7fd41ca39c3ff892f83344fc7bed"
+    },
+    {
+      "path": "modules/hyperliquid-reconciliation/test/hyperliquid-reconciliation.test.js",
+      "statusCode": "??",
+      "byteLength": 18953,
+      "sha256": "52d8db7b6170d7fa1eb835759ae9b34a305011333e4ebbaa30635d6fda49dfa3"
+    },
+    {
+      "path": "modules/hyperliquid-risk-guardian/README.md",
+      "statusCode": "??",
+      "byteLength": 3142,
+      "sha256": "8dbad0593d9498933b55a81db1a6bdd9315cdb61dd5c44bd5835a4a25c02abd5"
+    },
+    {
+      "path": "modules/hyperliquid-risk-guardian/src/index.js",
+      "statusCode": "??",
+      "byteLength": 73660,
+      "sha256": "ff332af8d09f306ea21510002d385c3f5eb2c9e16c394d211e64493bddc7f02a"
+    },
+    {
+      "path": "modules/hyperliquid-risk-guardian/test/hyperliquid-risk-guardian.test.js",
+      "statusCode": "??",
+      "byteLength": 18646,
+      "sha256": "c50d771683b86c82842ba0762b4499465e6543b8fa1754dc747c52af51b129bf"
+    },
+    {
+      "path": "modules/hyperliquid-settlement/README.md",
+      "statusCode": "??",
+      "byteLength": 2372,
+      "sha256": "26c7444824cb0418bcfc0ffbedc875d6f3fb8511020297156fae7d8bbc484e0a"
+    },
+    {
+      "path": "modules/hyperliquid-settlement/src/index.js",
+      "statusCode": "??",
+      "byteLength": 94171,
+      "sha256": "276f2fa60412aa778b5379f0d1a29bc6eb31bf782461d8556cf90030aed4170c"
+    },
+    {
+      "path": "modules/hyperliquid-settlement/test/hyperliquid-settlement.test.js",
+      "statusCode": "??",
+      "byteLength": 25517,
+      "sha256": "2525c3d1dda685c99dd437a34b103e278b7a41761013b2b905341b47e3bc7f3b"
+    },
+    {
+      "path": "modules/persistence/src/postgres-core-repository.js",
+      "statusCode": " M",
+      "byteLength": 251578,
+      "sha256": "4d9002a3dcab546349a615e55a979ca6d21fa35cd10363c00c53222bc930ff19"
+    },
+    {
+      "path": "modules/persistence/src/postgres-reconciliation-service.js",
+      "statusCode": " M",
+      "byteLength": 44218,
+      "sha256": "2ea00c9b4b634a98345ba1358b623b4d12e7ee95398d68ea0e94bd95481f595c"
+    },
+    {
+      "path": "modules/persistence/test-postgres/postgres-event-runtime.test.mjs",
+      "statusCode": " M",
+      "byteLength": 286013,
+      "sha256": "33f303156a3d2ba2b72ba1bfb51fa2a96294d9b55e137bc4e79cea1b9220014a"
+    },
+    {
+      "path": "modules/tenant-command-gateway/README.md",
+      "statusCode": " M",
+      "byteLength": 4970,
+      "sha256": "409c12cfdb6f5de11c81901b42ee175854d7a4ce4095ed61b704f6452ad43b62"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/agent-account-proof-handlers.js",
+      "statusCode": " M",
+      "byteLength": 19325,
+      "sha256": "cd9d2a52ce447a15c2912c03753ca1eb99ed932d6cbe8e89b802ee253e8fdafa"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/credit-passport-handlers.js",
+      "statusCode": "??",
+      "byteLength": 20356,
+      "sha256": "41fe39898854db18c84d2452fb1c4bc729a85454a5c1cedbb449680bf997f25a"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/index.js",
+      "statusCode": " M",
+      "byteLength": 1545,
+      "sha256": "2a32d7c4234afc15354bffd91ba18e95ecbd33d8bf850f079b1a5a319cbbb9a6"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/official-report-handlers.js",
+      "statusCode": "??",
+      "byteLength": 13952,
+      "sha256": "17e3a6f4999dace0ec41a72a206f789881ffe2659a7867b127d9901635bd9098"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/postgres-live-policy-adapter.js",
+      "statusCode": " M",
+      "byteLength": 20999,
+      "sha256": "0be0ae59f558e31f3db8a0867afded00562d57d1556d171732d57950434087f7"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/tenant-command-clients.js",
+      "statusCode": " M",
+      "byteLength": 44043,
+      "sha256": "38f451459435a9ff967931b8b0ff2b237a2763633e9ea823098a5ed7fc104770"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/tenant-command-gateway.js",
+      "statusCode": " M",
+      "byteLength": 28236,
+      "sha256": "87f74badacbdc72d20d8df7c83f88fbba70a000f08ee9fe9d734d039635b287b"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/tenant-command-handler-registry.js",
+      "statusCode": " M",
+      "byteLength": 2234,
+      "sha256": "21c64fc921dfcc36d9f27b1b0ad7027cb29501322b21d81c3aa85de55d29f655"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/tenant-foundation-handlers.js",
+      "statusCode": " M",
+      "byteLength": 3136,
+      "sha256": "4223672c65330959c16d44a8c2b2d0906b4b5dbd81794a5feb7ff3b88c91b590"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/trading-capital-evidence-handlers.js",
+      "statusCode": "??",
+      "byteLength": 21172,
+      "sha256": "2b548a2b3dcdb669a86687e8fc5868ec439fdfd8f52316a9577458698655d7bb"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/trading-capital-facility-handlers.js",
+      "statusCode": "??",
+      "byteLength": 32475,
+      "sha256": "471f07f4a9d2f06a6d7261fa5c8319b8c2b1df24988053074d19bb2ea995d0b1"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/trading-capital-matching-handlers.js",
+      "statusCode": "??",
+      "byteLength": 19356,
+      "sha256": "b9f0601c9f35893319ad9a02981f03cd9c7abbb7e9a46a14e93fdcc6802e21eb"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/trading-capital-settlement-handlers.js",
+      "statusCode": "??",
+      "byteLength": 20991,
+      "sha256": "787a0aaafc7538312fbd23701a011e8f84687fe9011e448822de1ec5e773b7eb"
+    },
+    {
+      "path": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+      "statusCode": " M",
+      "byteLength": 213323,
+      "sha256": "7e6baa96f7fe4caf0bcc6de547162d567dc0561cb192e1de08ce2e3d72a9d2f2"
+    },
+    {
+      "path": "modules/tenant-command-gateway/test/credit-acceptance-handlers.test.js",
+      "statusCode": " M",
+      "byteLength": 12181,
+      "sha256": "0fb1e8f93f6e9256a80ef0ab9d36f7ed51fe02f092c3384850aa5a2ec01aa60a"
+    },
+    {
+      "path": "modules/tenant-command-gateway/test/official-report-handlers.test.js",
+      "statusCode": "??",
+      "byteLength": 8405,
+      "sha256": "eec18b873df6e401e1409c0b191cfa62edc58c2664766560333f65d879a7ede9"
+    },
+    {
+      "path": "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+      "statusCode": " M",
+      "byteLength": 67740,
+      "sha256": "9646aeeaad3ceb9c293722d7eb1580d65b09698ca271c18a8b7e36b5f206ac48"
+    },
+    {
+      "path": "modules/tenant-command-gateway/test/trading-capital-evidence-handlers.test.js",
+      "statusCode": "??",
+      "byteLength": 15245,
+      "sha256": "ca9e321125dff18732b4ce786324beb4346497e9606877d4fd5193839303f3f7"
+    },
+    {
+      "path": "modules/tenant-command-gateway/test/trading-capital-matching-handlers.test.js",
+      "statusCode": "??",
+      "byteLength": 10253,
+      "sha256": "25c1282d037daff279a26dbb11619ac53552944e9479497e80c9887133a32a96"
+    },
+    {
+      "path": "modules/tenant-command-gateway/test/trading-capital-settlement-handlers.test.js",
+      "statusCode": "??",
+      "byteLength": 2106,
+      "sha256": "9051040f6d00ed8ac8fc78877f347d15f25d68af8e071d3b93657ed22cf391d2"
+    },
+    {
+      "path": "package.json",
+      "statusCode": " M",
+      "byteLength": 4875,
+      "sha256": "afe5bb488c8b9bfb2a515a12300ea67c77f024bfa26857daa8f4395545f6a75f"
+    },
+    {
+      "path": "packages/api-contract/index.d.ts",
+      "statusCode": " M",
+      "byteLength": 143037,
+      "sha256": "28810ff310c889bac444afa9320a1cb6ac7cecbe138284008e7aa8e2deb55d99"
+    },
+    {
+      "path": "packages/api-contract/src/agent-credit-offer-workflow-receipt.js",
+      "statusCode": " M",
+      "byteLength": 4020,
+      "sha256": "559cc5dd92462a5f96d0126703224002ca42df4beb70283a7ea9511585c466ff"
+    },
+    {
+      "path": "packages/api-contract/src/agent-sandbox-obligation-workflow-receipt.js",
+      "statusCode": " M",
+      "byteLength": 4074,
+      "sha256": "641ca9687145c7cc75b78f5ed892d43eeec584e832bd87a7babe27665857cb1f"
+    },
+    {
+      "path": "packages/api-contract/src/human-credit-offer-workflow-receipt.js",
+      "statusCode": " M",
+      "byteLength": 4020,
+      "sha256": "1e45f24759b1ee3622f9575150a1925dd07a94e7b707098991b08b8f3edb1a47"
+    },
+    {
+      "path": "packages/api-contract/src/human-sandbox-obligation-workflow-receipt.js",
+      "statusCode": " M",
+      "byteLength": 4074,
+      "sha256": "f3487fe32c11ab2a5e846e8f71a96aba54a0d093ed4074fc1a8ddaaf6a0b1a27"
+    },
+    {
+      "path": "packages/api-contract/src/tenant-protocol.js",
+      "statusCode": " M",
+      "byteLength": 38309,
+      "sha256": "dd952697cf7f8377d6aee831111dcf591a08bd4d0754edbacedc255f0a72f03b"
+    },
+    {
+      "path": "packages/api-contract/test/trading-credit-profile-contract.test.js",
+      "statusCode": "??",
+      "byteLength": 2376,
+      "sha256": "7407fcb5d894f7b7099a2c6a34bb03755de50085a18297f6e22664b23c1032f0"
+    },
+    {
+      "path": "packages/domain/src/credit-passport-artifact.js",
+      "statusCode": "??",
+      "byteLength": 14295,
+      "sha256": "93c2b9290703cd5b329dc949db20bbc35049584d94986979573fd4689b2dea0c"
+    },
+    {
+      "path": "packages/domain/src/enums.js",
+      "statusCode": " M",
+      "byteLength": 14338,
+      "sha256": "44774d1eeb74953546576cbf8a4271577fb094f469d8988299c99873b98a5639"
+    },
+    {
+      "path": "packages/domain/src/index.js",
+      "statusCode": " M",
+      "byteLength": 1014,
+      "sha256": "e4efe1104bc9f8f02c4f3962e56b0d2d2da26a8a62de35064c74cdab5b970d3e"
+    },
+    {
+      "path": "packages/domain/src/official-report-artifact.js",
+      "statusCode": "??",
+      "byteLength": 11973,
+      "sha256": "9f683e19f67a4fafaee516a1c0c85d6e3f57e4d7cd7259b0c3f77c38a830a802"
+    },
+    {
+      "path": "packages/domain/src/trading-capital-evidence.js",
+      "statusCode": "??",
+      "byteLength": 16636,
+      "sha256": "b38ca13423b6b4f37434c480cc6af86cb776fe1f61d2a78b78148dd650836fd7"
+    },
+    {
+      "path": "packages/domain/src/trading-capital-facility.js",
+      "statusCode": "??",
+      "byteLength": 40632,
+      "sha256": "ba8ad303e739f4611739923e6862bdc992b9a05081c3dd6d87e2caf018490e5d"
+    },
+    {
+      "path": "packages/domain/src/trading-capital-matching.js",
+      "statusCode": "??",
+      "byteLength": 28817,
+      "sha256": "3504439a7518d8f46e655aa1ef5d94ce03de382a7a1f00a2a03ae2e903c968d5"
+    },
+    {
+      "path": "packages/domain/src/trading-capital-real-evidence.js",
+      "statusCode": "??",
+      "byteLength": 42267,
+      "sha256": "d23dd49c88efd34e7b69d276d6768db36ce774e1cefb98e98aaecfcaf22025b4"
+    },
+    {
+      "path": "packages/domain/src/trading-capital-settlement.js",
+      "statusCode": "??",
+      "byteLength": 20983,
+      "sha256": "dc5f8eb1e30ad28a46b0cb35c681fcd7b34bc7b05b7d98a92adbd8ddb2f1df93"
+    },
+    {
+      "path": "packages/domain/test/credit-passport-artifact.test.js",
+      "statusCode": "??",
+      "byteLength": 7623,
+      "sha256": "99c290683b7378856d22cb6bdbfba8ece7193b4df063c1918fef28aa21114428"
+    },
+    {
+      "path": "packages/domain/test/official-report-artifact.test.js",
+      "statusCode": "??",
+      "byteLength": 4263,
+      "sha256": "68e2df2c850a2978e81ca8298e9fe77b135de41c78821509289740abeacb3cdb"
+    },
+    {
+      "path": "packages/domain/test/trading-capital-evidence.test.js",
+      "statusCode": "??",
+      "byteLength": 3831,
+      "sha256": "3c58f8051f8098ef53f21360f7eae59d5b76cb1fa81f30560b109e12b85fe241"
+    },
+    {
+      "path": "packages/domain/test/trading-capital-facility.test.js",
+      "statusCode": "??",
+      "byteLength": 21705,
+      "sha256": "cea689595c662543777bcc743dd441d00dc910052e8eb9a0884d6763e9e904bc"
+    },
+    {
+      "path": "packages/domain/test/trading-capital-matching.test.js",
+      "statusCode": "??",
+      "byteLength": 11428,
+      "sha256": "4a5f25458dfdb99b0ab46199f61f9ea4e805304bdba20b19b8e95ba4eaba672b"
+    },
+    {
+      "path": "packages/domain/test/trading-capital-real-evidence.test.js",
+      "statusCode": "??",
+      "byteLength": 17113,
+      "sha256": "016e3e6c877c36f43d699c489e437bf581bebf0133d4cc1a8aafc674c9b9ce14"
+    },
+    {
+      "path": "packages/sdk/index.d.ts",
+      "statusCode": " M",
+      "byteLength": 10712,
+      "sha256": "f8ff1593a547777807921e5b1e67e9be96d091552629bb9ed34ced83cca67a7c"
+    },
+    {
+      "path": "packages/sdk/src/index.js",
+      "statusCode": " M",
+      "byteLength": 6831,
+      "sha256": "c4d72f2b80bc10a393bd76c3b6e63940608dfc4471aced0912b7575b0a3db7d4"
+    },
+    {
+      "path": "packages/sdk/src/trading-capital-client.js",
+      "statusCode": "??",
+      "byteLength": 4982,
+      "sha256": "f7ef563d413751ee06e69e76930391491b73bf90c309f6f5311d1b19357629ef"
+    },
+    {
+      "path": "packages/sdk/test/agent-sandbox-obligation-client.test.js",
+      "statusCode": " M",
+      "byteLength": 13202,
+      "sha256": "b6a8e66e7bf1e95f3b22d72b04765497a1ff6e9574d6e8660b1a22bc51403e3e"
+    },
+    {
+      "path": "packages/sdk/test/trading-capital-client.test.js",
+      "statusCode": "??",
+      "byteLength": 3072,
+      "sha256": "af70db05aac5260246f3af552dd6536e19b230cb8789603e24b1b40f2bacbd27"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "statusCode": " M",
+      "byteLength": 115647,
+      "sha256": "38d1699e9f52f6acd8e611598a0f2573c32447d79063485a7d0655250e311a0f"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "statusCode": " M",
+      "byteLength": 106,
+      "sha256": "c653b4488b9f0c55a74b79ce50af0cdb8f5da00e85fa9a8a0a335062a9c18f21"
+    },
+    {
+      "path": "product/policies/ipo-one.fee-audit-policy.v1.json",
+      "statusCode": "??",
+      "byteLength": 287,
+      "sha256": "e83415ff56d73860b4dadf4db33b20ee028ccfb71f56157e60eedbd264191f31"
+    },
+    {
+      "path": "product/traceability/ipo-one.v9-product-traceability.v1.json",
+      "statusCode": "??",
+      "byteLength": 133486,
+      "sha256": "5702203a5e576cca4fc1ecc15ac34275942c204eb63be053124450722652b01c"
+    },
+    {
+      "path": "schemas/v2/abuse-control-policy.schema.json",
+      "statusCode": " M",
+      "byteLength": 17143,
+      "sha256": "c398f3ccc2e2206cb215d47c19e9004c603c90eeafa125d09246a7d86c3e46ed"
+    },
+    {
+      "path": "schemas/v2/capital-network-presentation.schema.json",
+      "statusCode": "??",
+      "byteLength": 8001,
+      "sha256": "13366725585052f5d67f6f4ac93a91f3afade1764cf3d908d248da2d04c70dee"
+    },
+    {
+      "path": "schemas/v2/credit-passport-artifact.schema.json",
+      "statusCode": "??",
+      "byteLength": 7676,
+      "sha256": "3dee482f6c3c8344cc8c43f91a041f596ea86c48e1a404e1c5ca530a7bdfbd9e"
+    },
+    {
+      "path": "schemas/v2/fee-audit-policy.schema.json",
+      "statusCode": "??",
+      "byteLength": 852,
+      "sha256": "5eea91fbb2816c4b1ca8fb4c8a9fa43d425cc076f555a99f4b21163f7be60cd5"
+    },
+    {
+      "path": "schemas/v2/hyperliquid-info-account-snapshot.schema.json",
+      "statusCode": "??",
+      "byteLength": 9797,
+      "sha256": "f72425e40a6640aef16532084f80897b94bdd266d9f283e5c3e5a4dde1a15d7d"
+    },
+    {
+      "path": "schemas/v2/hyperliquid-testnet-execution-record.schema.json",
+      "statusCode": "??",
+      "byteLength": 8434,
+      "sha256": "74d96791a0fbafcb84e911cb67db70317805cba007b3805097f3f94695a902ad"
+    },
+    {
+      "path": "schemas/v2/hyperliquid-testnet-facility-funding-record.schema.json",
+      "statusCode": "??",
+      "byteLength": 9909,
+      "sha256": "31ad62fb848509f5cbfa7dff3219076e1ebbfc3fc3ea64e451ab391a1be667a6"
+    },
+    {
+      "path": "schemas/v2/hyperliquid-testnet-operability-assurance.schema.json",
+      "statusCode": "??",
+      "byteLength": 15717,
+      "sha256": "0330298beee8909b6491a20001e7f6d166d846e4a529782be5c166732261c487"
+    },
+    {
+      "path": "schemas/v2/hyperliquid-testnet-protective-control.schema.json",
+      "statusCode": "??",
+      "byteLength": 20924,
+      "sha256": "a3963ff550e4b8b6b5c521a12a37c8fc9a35b29a1126b6fe46ef8fb69333a6c5"
+    },
+    {
+      "path": "schemas/v2/hyperliquid-testnet-reconciliation-record.schema.json",
+      "statusCode": "??",
+      "byteLength": 10448,
+      "sha256": "a7dc9a136d74107244dbbac5008cffe49bac07a00d6d991b54101326ca2fbc20"
+    },
+    {
+      "path": "schemas/v2/hyperliquid-testnet-settlement-record.schema.json",
+      "statusCode": "??",
+      "byteLength": 17632,
+      "sha256": "3fcf9ef9561f43d2b28042998f23cca43a7fd791a97aff08fd3cd2d2c86ccc03"
+    },
+    {
+      "path": "schemas/v2/official-report-artifact.schema.json",
+      "statusCode": "??",
+      "byteLength": 4252,
+      "sha256": "700dfab1d95724e13bf7ffa8afde6d161ad0ce34e2184bf2ebbba9ce3e281970"
+    },
+    {
+      "path": "schemas/v2/real-value-offline-review-attestation.schema.json",
+      "statusCode": "??",
+      "byteLength": 5813,
+      "sha256": "a4f51f98690412561e0ea11e3e09f86911f59a6aff4ea607ad14a05a7cefdb17"
+    },
+    {
+      "path": "schemas/v2/real-value-pilot-decision-package.schema.json",
+      "statusCode": "??",
+      "byteLength": 8152,
+      "sha256": "263544e282aa73270e8cea99890093e5d6c00a1776d3e0ef14e0622e55221693"
+    },
+    {
+      "path": "schemas/v2/tenant-protocol-catalog.schema.json",
+      "statusCode": " M",
+      "byteLength": 75421,
+      "sha256": "d6d75ed4965289c3724fcb69bf29deed70a7b255ece51837d07d43112f9526a4"
+    },
+    {
+      "path": "schemas/v2/tenant-protocol-request.schema.json",
+      "statusCode": " M",
+      "byteLength": 83767,
+      "sha256": "260e6e36f4f82843655c12745d130f2dc6ca564683dc5fa18381f783228c5bce"
+    },
+    {
+      "path": "schemas/v2/tenant-protocol-result.schema.json",
+      "statusCode": " M",
+      "byteLength": 152131,
+      "sha256": "0f0bbe1d4b10cbd40d2c864e89396cdfc53ee89e956b4cd33f86210254864408"
+    },
+    {
+      "path": "schemas/v2/trading-capital-request.schema.json",
+      "statusCode": "??",
+      "byteLength": 6707,
+      "sha256": "db473a23785b0180897353a6706e37395bb74be6938943d3973ecdce52f29e5d"
+    },
+    {
+      "path": "schemas/v2/trading-credit-profile.schema.json",
+      "statusCode": "??",
+      "byteLength": 15184,
+      "sha256": "96aa2084905f95b0af53aa89a12082c704fd9032fd79dedf37e24af77df2284a"
+    },
+    {
+      "path": "schemas/v2/trading-facility-close-request.schema.json",
+      "statusCode": "??",
+      "byteLength": 3111,
+      "sha256": "2e49d91fbc6d94706e5580ccd30fabbc033cf57a82d819faf88d7b7f3ce6affc"
+    },
+    {
+      "path": "schemas/v2/trading-facility-risk-evaluation.schema.json",
+      "statusCode": "??",
+      "byteLength": 3984,
+      "sha256": "673c42079767514674e9f835eebac8d9a844630e23f8ca66deb8f214e455c209"
+    },
+    {
+      "path": "schemas/v2/trading-facility.schema.json",
+      "statusCode": "??",
+      "byteLength": 10634,
+      "sha256": "349586e1d1daf2e321bbaf184b4fe533630327efe6c4aacbfb1492ca16f6f034"
+    },
+    {
+      "path": "schemas/v2/trading-match-proposal.schema.json",
+      "statusCode": "??",
+      "byteLength": 6854,
+      "sha256": "6f337455cabfe1a20d644124e77aa543be08e077af346ca393140427dad4ccd2"
+    },
+    {
+      "path": "schemas/v2/trading-order-intent.schema.json",
+      "statusCode": "??",
+      "byteLength": 4642,
+      "sha256": "f200231283c7f3b2eb4ec06838b24af6da74ce6f4717ab2c7a4f3951f035dc42"
+    },
+    {
+      "path": "schemas/v2/trading-performance-proof.schema.json",
+      "statusCode": "??",
+      "byteLength": 4493,
+      "sha256": "06d644c6961a5c6f1828954816c06a9f8bcee5a5d1819e669d43f19efedac35e"
+    },
+    {
+      "path": "schemas/v2/trading-provider-mandate.schema.json",
+      "statusCode": "??",
+      "byteLength": 3707,
+      "sha256": "16de5772ce43d6cf68e611b584f2d2bd8b698ef22cc30b0d88ab6d5fb6aaec71"
+    },
+    {
+      "path": "schemas/v2/trading-real-credit-profile.schema.json",
+      "statusCode": "??",
+      "byteLength": 33027,
+      "sha256": "97e651a4d82c2c53f9ddc20f2624f3df15c4ea7eea45f675c107b5c7942ae5f7"
+    },
+    {
+      "path": "schemas/v2/trading-settlement.schema.json",
+      "statusCode": "??",
+      "byteLength": 4781,
+      "sha256": "89697205a14f0a933e72b585226efdaec54b69e87067c859439d2d31fea6a52f"
+    },
+    {
+      "path": "schemas/v2/v9-product-traceability.schema.json",
+      "statusCode": "??",
+      "byteLength": 8354,
+      "sha256": "cfd78e6135c5aa4d2ea14c3849a76552f8c23d2ced0733319dfa334c64ba3ccb"
+    },
+    {
+      "path": "schemas/v2/wallet-003-erc1271-deployment-decision.schema.json",
+      "statusCode": "??",
+      "byteLength": 4560,
+      "sha256": "269622df50456411fc3feeb9f75fbc06fa2cd66459f227224d4a28f5cf0d01dd"
+    },
+    {
+      "path": "schemas/v2/wallet-provider-registry.schema.json",
+      "statusCode": "??",
+      "byteLength": 2390,
+      "sha256": "70214d40d64a81c0c8979133de81a37aa04d959bfde55c9ce914a14e47d5ebe9"
+    },
+    {
+      "path": "schemas/v2/wallet-session-invalidation.schema.json",
+      "statusCode": "??",
+      "byteLength": 743,
+      "sha256": "52989f0135f68dbc7c869cb87ca0de9389bcb88cc19a55965c83da443d4234b8"
+    },
+    {
+      "path": "schemas/v2/wallet-signature-verification.schema.json",
+      "statusCode": "??",
+      "byteLength": 1752,
+      "sha256": "409dc1bda67eb6ea472ef525b2bc56ce44a16339807d045a89a4d721b0402c3c"
+    },
+    {
+      "path": "scripts/build-tc403-artifact-manifest.mjs",
+      "statusCode": "??",
+      "byteLength": 4227,
+      "sha256": "deb5e495946c0dcdbdf67c56df07b6870374167665abfaf1dc959368d57ad02d"
+    },
+    {
+      "path": "scripts/build-tc403-assurance-artifact.mjs",
+      "statusCode": "??",
+      "byteLength": 7843,
+      "sha256": "897cc8c0d789d0f5e56f3139a10d665e5332eda0109000009583cafe800408e0"
+    },
+    {
+      "path": "scripts/build-walletconnect-browser.mjs",
+      "statusCode": "??",
+      "byteLength": 2402,
+      "sha256": "6d8b784f8bc12a53cfab99736e159eae0b1cd2a18c7362619d8adb6a229a1332"
+    },
+    {
+      "path": "scripts/check-migrations.mjs",
+      "statusCode": " M",
+      "byteLength": 7422,
+      "sha256": "ee45286be136e47ea601cc7d580ab0d1683673b3106b879ff057e6f8382286c2"
+    },
+    {
+      "path": "scripts/check-product-traceability.mjs",
+      "statusCode": "??",
+      "byteLength": 14879,
+      "sha256": "899515aa5697f90b4617b7feb276575927bccddba97ab0502fd97c430abee026"
+    },
+    {
+      "path": "scripts/check-realvalue-decision-package.mjs",
+      "statusCode": "??",
+      "byteLength": 3400,
+      "sha256": "d442ce404eb01b81d048d44e2873a6cb630beaee805919c29f9ffeb741261345"
+    },
+    {
+      "path": "scripts/check-realvalue-offline-review-contract.mjs",
+      "statusCode": "??",
+      "byteLength": 3535,
+      "sha256": "991d645b2ade85a912f623f191fbb192aae1e47046bd205ca10d56821e25931e"
+    },
+    {
+      "path": "scripts/check-schemas.mjs",
+      "statusCode": " M",
+      "byteLength": 4590,
+      "sha256": "8583a0eda1f68446f6a21b3ae2abc660667b8ba4870a53ab0da98eab6df0fe7d"
+    },
+    {
+      "path": "scripts/check-web-bundle-integrity.mjs",
+      "statusCode": "??",
+      "byteLength": 3114,
+      "sha256": "dbd189c58a6ca91aa4a5803fd81d3339a8fa325ec043b6ffdf345ffc5869d2ae"
+    },
+    {
+      "path": "scripts/run-tc403-disaster-recovery-drill.mjs",
+      "statusCode": "??",
+      "byteLength": 8792,
+      "sha256": "48de8890fe4b789ca8cff7be279352168fbb24bec6c68c6f581aac9f2cf34c25"
+    },
+    {
+      "path": "security/test/gateway-security.test.mjs",
+      "statusCode": " M",
+      "byteLength": 58338,
+      "sha256": "009675a778ad1ed9c66beb813b34754571f1087ae2684ddc606e4cc3e10c114c"
+    }
+  ]
+}

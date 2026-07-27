@@ -19,6 +19,28 @@ External tokens, access tokens, refresh tokens, authorization codes, client
 secrets, SIWE signatures, and raw identity claims are prohibited from browser
 storage, logs, Events, Evidence, errors, and analytics.
 
+## Wallet Context Invalidation
+
+An `accountsChanged`, `chainChanged`, Provider replacement, or Provider
+disconnect event immediately quarantines protected browser actions in every
+same-origin tab. The browser submits one closed reason to
+`POST /auth/v1/wallet/invalidate` with the existing host session, exact Origin,
+CSRF token, and one operation-bound opaque idempotency key.
+
+The durable session store atomically transitions the session to `revoked`,
+records the protected idempotency reference, and appends one credential-free
+`session_revoked` authentication Event. Exact retries return the same bounded
+result, including after process restart, without a second Event. Network or
+server uncertainty remains quarantined and can retry only the same idempotency
+key. It never restores authority automatically.
+
+Provider event payloads are not account or chain truth. The browser clears the
+previous display state, abandons any pre-change SIWE challenge epoch, and
+requires a new user-initiated, server-generated, one-use SIWE challenge before
+a host session can be restored. This lifecycle does not revoke or rewrite the
+separate canonical Agent AccountBinding; that authority remains governed by
+its Principal-controlled proof lifecycle.
+
 ## Supported Chain Connection
 
 - Base Sepolia: `eip155:84532`, EIP-1193 chain ID `0x14a34`.

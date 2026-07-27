@@ -21,6 +21,11 @@ import {
   randomOpaqueValue,
   sha256Base64Url
 } from "./security-utils.js";
+import {
+  assertWalletSessionInvalidationIdempotencyKey,
+  assertWalletSessionInvalidationReason,
+  walletSessionInvalidationResult
+} from "./wallet-session-invalidation.js";
 
 const HUMAN_ACTOR_TYPES = new Set([
   ActorType.HUMAN,
@@ -68,6 +73,8 @@ function authenticationRlsPolicies() {
     "authentication_oidc_transactions",
     "authentication_wallet_transactions",
     "authentication_sessions",
+    "authentication_session_invalidations",
+    "authentication_replay_entries",
     "authentication_events"
   ]) {
     policies.set(`${table}\0tenant_isolation_${table}`, ["ALL", TENANT_ROW_POLICY, TENANT_ROW_POLICY]);
@@ -170,6 +177,8 @@ export async function assertPostgresAuthenticationRole(queryable) {
     authentication_oidc_transactions: [true, true, false, true, false, false, false],
     authentication_wallet_transactions: [true, true, false, true, false, false, false],
     authentication_sessions: [true, true, true, false, false, false, false],
+    authentication_session_invalidations: [true, true, false, false, false, false, false],
+    authentication_replay_entries: [true, true, false, true, false, false, false],
     authentication_events: [true, true, false, false, false, false, false]
   });
   for (const [table, privileges] of Object.entries(expected)) {
@@ -1642,6 +1651,119 @@ export class PostgresHumanSessionStore {
       );
       return true;
     });
+  }
+
+  async invalidate({
+    sessionHandle,
+    requestOrigin,
+    csrfToken,
+    idempotencyKey,
+    reasonCode,
+    now = new Date()
+  }) {
+    if (requestOrigin !== this.origin) {
+      throw authenticationError("csrf_origin_rejected", "request origin is not allowed");
+    }
+    const reason = assertWalletSessionInvalidationReason(reasonCode);
+    const idempotencyRefHash = this.referenceHasher.hash(
+      "session.invalidation.idempotency",
+      assertWalletSessionInvalidationIdempotencyKey(idempotencyKey)
+    );
+    const csrfRefHash = this.referenceHasher.hash(
+      "session.csrf",
+      assertBoundedString("csrfToken", csrfToken, { minimum: 32, maximum: 128 })
+    );
+    const suppliedSessionRefHash = sessionHandle === undefined
+      ? undefined
+      : this.referenceHasher.hash(
+          "session.handle",
+          assertBoundedString("sessionHandle", sessionHandle, { minimum: 32, maximum: 128 })
+        );
+
+    const result = await this.repository.withTenantWrite(async (client) => {
+      const replayByIdempotency = async () => {
+        const replay = await client.query(
+          `SELECT i.reason_code, i.session_ref_hash, s.csrf_ref_hash, s.status
+             FROM authentication_session_invalidations i
+            JOIN authentication_sessions s
+               ON s.tenant_id = i.tenant_id
+              AND s.session_ref_hash = i.session_ref_hash
+            WHERE i.tenant_id = $1 AND i.idempotency_ref_hash = $2
+            FOR UPDATE OF s`,
+          [this.tenantId, idempotencyRefHash]
+        );
+        const row = replay.rows[0];
+        if (!row) return false;
+        if (
+          row.reason_code !== reason ||
+          row.status !== "revoked" ||
+          (suppliedSessionRefHash !== undefined &&
+            suppliedSessionRefHash !== row.session_ref_hash) ||
+          !constantTimeEqual(csrfRefHash, row.csrf_ref_hash)
+        ) {
+          throw authenticationError(
+            "authentication_session_rejected",
+            "session is not active"
+          );
+        }
+        return true;
+      };
+
+      if (await replayByIdempotency()) return walletSessionInvalidationResult();
+      if (suppliedSessionRefHash === undefined) {
+        throw authenticationError("authentication_session_rejected", "session is not active");
+      }
+
+      const selected = await client.query(
+        `SELECT *
+           FROM authentication_sessions
+          WHERE tenant_id = $1 AND session_ref_hash = $2
+          FOR UPDATE`,
+        [this.tenantId, suppliedSessionRefHash]
+      );
+      const current = selected.rows[0];
+      if (!current || current.status !== "active") {
+        if (await replayByIdempotency()) return walletSessionInvalidationResult();
+        throw authenticationError("authentication_session_rejected", "session is not active");
+      }
+      if (
+        new Date(current.absolute_expires_at) <= now ||
+        new Date(current.idle_expires_at) <= now
+      ) {
+        throw authenticationError("authentication_session_rejected", "session is not active");
+      }
+      if (!constantTimeEqual(csrfRefHash, current.csrf_ref_hash)) {
+        throw authenticationError("csrf_token_rejected", "CSRF token is invalid");
+      }
+
+      const revoked = await client.query(
+        `UPDATE authentication_sessions
+            SET status = 'revoked', revoked_at = $3, end_reason_code = $4
+          WHERE tenant_id = $1 AND session_ref_hash = $2 AND status = 'active'
+        RETURNING *`,
+        [this.tenantId, suppliedSessionRefHash, now, reason]
+      );
+      if (revoked.rowCount !== 1) {
+        throw authenticationError("authentication_session_rejected", "session is not active");
+      }
+      await client.query(
+        `INSERT INTO authentication_session_invalidations(
+           tenant_id, idempotency_ref_hash, session_ref_hash, reason_code,
+           occurred_at, schema_version
+         ) VALUES ($1, $2, $3, $4, $5, 'wallet_session_invalidation.v1')`,
+        [this.tenantId, idempotencyRefHash, suppliedSessionRefHash, reason, now]
+      );
+      const session = sessionFromRow(revoked.rows[0]);
+      await this.#sessionEvent(
+        client,
+        AuthenticationEventType.SESSION_REVOKED,
+        session,
+        reason,
+        now
+      );
+      return walletSessionInvalidationResult();
+    });
+    return result;
   }
 
   async revokeByCredential({ credentialId, reasonCode = "credential_revoked", now = new Date() }) {
