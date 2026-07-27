@@ -10,6 +10,7 @@ export * from "./credit-passport-artifact.js";
 export * from "./official-report-artifact.js";
 export * from "./trading-capital-evidence.js";
 export * from "./trading-capital-real-evidence.js";
+export * from "./trading-credit-learning.js";
 export * from "./trading-capital-matching.js";
 export * from "./trading-capital-facility.js";
 export * from "./trading-capital-settlement.js";

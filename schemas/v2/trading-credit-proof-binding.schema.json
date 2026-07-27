@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-credit-proof-binding.schema.json",
+  "title": "IPO.ONE Trading Credit Registry Proof Binding v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proofBindingId",
+    "proofBindingHash",
+    "assessmentHash",
+    "registryContractSchemaVersion",
+    "projectionFields",
+    "missingServerResolvedFields",
+    "projectionReady",
+    "publicationAllowed",
+    "requiresExistingApprovalGate",
+    "transactionCalldataIncluded",
+    "authorizing",
+    "fundsAuthority",
+    "economicStateMutation",
+    "productionAuthority",
+    "schemaVersion"
+  ],
+  "properties": {
+    "proofBindingId": { "$ref": "#/$defs/id" },
+    "proofBindingHash": { "$ref": "#/$defs/hash" },
+    "assessmentHash": { "$ref": "#/$defs/hash" },
+    "registryContractSchemaVersion": {
+      "const": "ipo_one_credit_authorization_registry.v1"
+    },
+    "projectionFields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectAccountHash",
+        "acceptedOfferHash",
+        "policyHash",
+        "providerScopeHash",
+        "creditStateHash",
+        "obligationProofHash",
+        "validUntil"
+      ],
+      "properties": {
+        "subjectAccountHash": { "$ref": "#/$defs/hash" },
+        "acceptedOfferHash": { "$ref": "#/$defs/hash" },
+        "policyHash": { "$ref": "#/$defs/hash" },
+        "providerScopeHash": { "$ref": "#/$defs/hash" },
+        "creditStateHash": { "$ref": "#/$defs/hash" },
+        "obligationProofHash": { "$ref": "#/$defs/hash" },
+        "validUntil": { "type": "string", "format": "date-time" }
+      }
+    },
+    "missingServerResolvedFields": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "authorization_id" },
+        { "const": "account_id" }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "projectionReady": { "const": false },
+    "publicationAllowed": { "const": false },
+    "requiresExistingApprovalGate": { "const": true },
+    "transactionCalldataIncluded": { "const": false },
+    "authorizing": { "const": false },
+    "fundsAuthority": { "const": false },
+    "economicStateMutation": { "const": false },
+    "productionAuthority": { "const": false },
+    "schemaVersion": { "const": "trading_credit_proof_binding.v1" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    }
+  }
+}

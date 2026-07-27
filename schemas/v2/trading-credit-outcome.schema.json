@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-credit-outcome.schema.json",
+  "title": "IPO.ONE Trading Credit Outcome v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "outcomeId",
+    "outcomeHash",
+    "subjectId",
+    "principalId",
+    "assetId",
+    "assessmentHash",
+    "featureSnapshotHash",
+    "policyHash",
+    "decisionFeatureSnapshot",
+    "obligationId",
+    "obligationHash",
+    "outcomeLabel",
+    "maxDaysPastDue",
+    "restructured",
+    "repurchased",
+    "manualInterventionCount",
+    "defaulted",
+    "originalPrincipalMinor",
+    "totalRepaidMinor",
+    "lossMinor",
+    "repaymentRatioBps",
+    "outcomeEvidenceHash",
+    "repaymentEvidenceHashes",
+    "servicingEvidenceHashes",
+    "outcomeFinalizedAt",
+    "recordedAt",
+    "outcomeFinalized",
+    "futureFeatureSubstitutionAllowed",
+    "authorizing",
+    "fundsAuthority",
+    "economicStateMutation",
+    "productionAuthority",
+    "schemaVersion"
+  ],
+  "properties": {
+    "outcomeId": { "$ref": "#/$defs/id" },
+    "outcomeHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/id" },
+    "principalId": { "$ref": "#/$defs/id" },
+    "assetId": { "$ref": "#/$defs/assetId" },
+    "assessmentHash": { "$ref": "#/$defs/hash" },
+    "featureSnapshotHash": { "$ref": "#/$defs/hash" },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "decisionFeatureSnapshot": { "$ref": "#/$defs/featureSnapshot" },
+    "obligationId": { "$ref": "#/$defs/id" },
+    "obligationHash": { "$ref": "#/$defs/hash" },
+    "outcomeLabel": {
+      "enum": [
+        "on_time_repaid",
+        "late_or_modified_repaid",
+        "written_off"
+      ]
+    },
+    "maxDaysPastDue": { "$ref": "#/$defs/count" },
+    "restructured": { "type": "boolean" },
+    "repurchased": { "type": "boolean" },
+    "manualInterventionCount": { "$ref": "#/$defs/count" },
+    "defaulted": { "type": "boolean" },
+    "originalPrincipalMinor": { "$ref": "#/$defs/minor" },
+    "totalRepaidMinor": { "$ref": "#/$defs/minor" },
+    "lossMinor": { "$ref": "#/$defs/minor" },
+    "repaymentRatioBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "outcomeEvidenceHash": { "$ref": "#/$defs/hash" },
+    "repaymentEvidenceHashes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "servicingEvidenceHashes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "outcomeFinalizedAt": { "type": "string", "format": "date-time" },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "outcomeFinalized": { "const": true },
+    "futureFeatureSubstitutionAllowed": { "const": false },
+    "authorizing": { "const": false },
+    "fundsAuthority": { "const": false },
+    "economicStateMutation": { "const": false },
+    "productionAuthority": { "const": false },
+    "schemaVersion": { "const": "trading_credit_outcome.v1" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+:[A-Za-z0-9._%-]+/[a-z0-9-]+:[A-Za-z0-9._%:-]+$"
+    },
+    "minor": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,77})$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "nullableBps": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0, "maximum": 10000 },
+        { "type": "null" }
+      ]
+    },
+    "featureSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "netRealizedPnlMinor",
+        "positiveFillRateBps",
+        "observationCount",
+        "equityP10Minor",
+        "maximumDrawdownBps",
+        "p95LeverageBps",
+        "positivePeriodRateBps",
+        "liquidationCount",
+        "mandateBreachCount",
+        "severeAnomalyCount",
+        "priorCompletedOutcomeCount",
+        "priorDefaultRateBps",
+        "priorLateOrModifiedRateBps",
+        "pointInTimeAt",
+        "futureOutcomeDataIncluded",
+        "schemaVersion",
+        "compositeScoreBps"
+      ],
+      "properties": {
+        "netRealizedPnlMinor": {
+          "oneOf": [
+            { "$ref": "#/$defs/minor" },
+            { "type": "string", "pattern": "^-[1-9][0-9]{0,77}$" },
+            { "type": "null" }
+          ]
+        },
+        "positiveFillRateBps": { "$ref": "#/$defs/nullableBps" },
+        "observationCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "equityP10Minor": {
+          "oneOf": [
+            { "$ref": "#/$defs/minor" },
+            { "type": "null" }
+          ]
+        },
+        "maximumDrawdownBps": { "$ref": "#/$defs/nullableBps" },
+        "p95LeverageBps": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            { "type": "null" }
+          ]
+        },
+        "positivePeriodRateBps": { "$ref": "#/$defs/nullableBps" },
+        "liquidationCount": {
+          "oneOf": [
+            { "$ref": "#/$defs/count" },
+            { "type": "null" }
+          ]
+        },
+        "mandateBreachCount": {
+          "oneOf": [
+            { "$ref": "#/$defs/count" },
+            { "type": "null" }
+          ]
+        },
+        "severeAnomalyCount": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0, "maximum": 3 },
+            { "type": "null" }
+          ]
+        },
+        "priorCompletedOutcomeCount": { "$ref": "#/$defs/count" },
+        "priorDefaultRateBps": { "$ref": "#/$defs/nullableBps" },
+        "priorLateOrModifiedRateBps": {
+          "$ref": "#/$defs/nullableBps"
+        },
+        "pointInTimeAt": { "type": "string", "format": "date-time" },
+        "futureOutcomeDataIncluded": { "const": false },
+        "schemaVersion": { "const": "trading_credit_feature_snapshot.v1" },
+        "compositeScoreBps": { "$ref": "#/$defs/nullableBps" }
+      }
+    }
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-credit-supplemental-evidence.schema.json",
+  "title": "IPO.ONE Trading Credit Supplemental Evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "supplementalEvidenceId",
+    "supplementalEvidenceHash",
+    "accountBindingHash",
+    "historyHash",
+    "evidenceSnapshotHash",
+    "assetId",
+    "assetDecimals",
+    "observedAt",
+    "sourceFinality",
+    "reconciliationStatus",
+    "sourceEvidenceHashes",
+    "equitySeries",
+    "liquidationCount",
+    "mandateBreachCount",
+    "integrityChecks",
+    "repaymentCashflowCapacityMinor",
+    "rawTransactionsIncluded",
+    "rawAddressesIncluded",
+    "selfReportedSignalsAccepted",
+    "authorizing",
+    "fundsAuthority",
+    "economicStateMutation",
+    "schemaVersion"
+  ],
+  "properties": {
+    "supplementalEvidenceId": { "$ref": "#/$defs/id" },
+    "supplementalEvidenceHash": { "$ref": "#/$defs/hash" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "historyHash": { "$ref": "#/$defs/hash" },
+    "evidenceSnapshotHash": { "$ref": "#/$defs/hash" },
+    "assetId": { "$ref": "#/$defs/assetId" },
+    "assetDecimals": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18
+    },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "sourceFinality": { "const": "finalized" },
+    "reconciliationStatus": { "const": "reconciled" },
+    "sourceEvidenceHashes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "equitySeries": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2000,
+      "items": { "$ref": "#/$defs/equityObservation" }
+    },
+    "liquidationCount": { "$ref": "#/$defs/count" },
+    "mandateBreachCount": { "$ref": "#/$defs/count" },
+    "integrityChecks": { "$ref": "#/$defs/integrityChecks" },
+    "repaymentCashflowCapacityMinor": { "$ref": "#/$defs/minor" },
+    "rawTransactionsIncluded": { "const": false },
+    "rawAddressesIncluded": { "const": false },
+    "selfReportedSignalsAccepted": { "const": false },
+    "authorizing": { "const": false },
+    "fundsAuthority": { "const": false },
+    "economicStateMutation": { "const": false },
+    "schemaVersion": {
+      "const": "trading_credit_supplemental_evidence.v1"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+:[A-Za-z0-9._%-]+/[a-z0-9-]+:[A-Za-z0-9._%:-]+$"
+    },
+    "minor": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,77})$"
+    },
+    "signedMinor": {
+      "type": "string",
+      "pattern": "^-?(?:0|[1-9][0-9]{0,77})$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "equityObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observedAt",
+        "equityMinor",
+        "netExternalFlowMinor",
+        "positionNotionalMinor",
+        "evidenceHash"
+      ],
+      "properties": {
+        "observedAt": { "type": "string", "format": "date-time" },
+        "equityMinor": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,77}$"
+        },
+        "netExternalFlowMinor": { "$ref": "#/$defs/signedMinor" },
+        "positionNotionalMinor": { "$ref": "#/$defs/minor" },
+        "evidenceHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "integrityChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "walletCluster",
+        "selfTransfer",
+        "washTrading",
+        "evidenceHash"
+      ],
+      "properties": {
+        "walletCluster": { "enum": ["clear", "flagged"] },
+        "selfTransfer": { "enum": ["clear", "flagged"] },
+        "washTrading": { "enum": ["clear", "flagged"] },
+        "evidenceHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}
