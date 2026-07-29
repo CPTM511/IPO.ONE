@@ -17,3 +17,9 @@ secret, mutate DNS, open remote access, activate the worker, or launch.
 digest-pinned PostgreSQL 17, three loopback workspaces, and a separate unsigned
 synthetic worker. It cannot broaden local execution into remote, cloud,
 testnet-write, signer, Human-credit, or real-funds authority.
+
+`OPS-004` binds the sealed local release candidate to a hosted operations and
+recovery baseline. Managed backup/PITR, isolated restore, lease-safe workers,
+Human/Agent synthetics, alert delivery, named ownership, secret rotation, and
+immutable-release rollback are mandatory, but remain activation-disabled until
+the listed founder inputs and drills are accepted.

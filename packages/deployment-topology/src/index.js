@@ -787,3 +787,398 @@ export function parseLocalStack(text) {
   }
   return validateLocalStack(value);
 }
+
+const OPS_AUTHORITY_KEYS = Object.freeze([
+  "cloudMutationEnabled",
+  "remoteParticipantAccessEnabled",
+  "scheduleActivationEnabled",
+  "notificationDeliveryEnabled",
+  "secretWriteEnabled",
+  "realFundsEnabled",
+  "humanCreditEnabled",
+  "externalProviderExecutionEnabled",
+  "venueSignerEnabled",
+  "publicSignupEnabled"
+]);
+
+const OPS_WORKER_RESPONSIBILITIES = WORKER_RESPONSIBILITIES;
+
+const OPS_APPROVAL_INPUTS = Object.freeze([
+  "pilot_region",
+  "monthly_cost_ceiling_usd",
+  "billing_owner",
+  "provider_account_owner",
+  "public_tls_database_risk_acceptance",
+  "rpo_minutes",
+  "rto_minutes",
+  "restore_drill_owner",
+  "incident_owner",
+  "alert_delivery_provider",
+  "notification_recipients",
+  "secret_manager",
+  "credential_rotation_owner",
+  "rollback_owner"
+]);
+
+const OPS_ACTIVATION_GATES = Object.freeze([
+  "DEPLOY-001B-FOUNDER-APPROVAL",
+  "OPS-004-NAMED-OWNERS",
+  "OPS-004-RESTORE-DRILL",
+  "OPS-004-RECONCILIATION-DRILL",
+  "OPS-004-SYNTHETIC-DRILL",
+  "OPS-004-ALERT-DELIVERY-DRILL",
+  "OPS-004-KEY-ROTATION-DRILL",
+  "OPS-004-ROLLBACK-DRILL",
+  "SECURITY-INDEPENDENT-REVIEW",
+  "PRIVACY-PILOT-REVIEW",
+  "DEPLOYMENT-HUMAN-APPROVAL",
+  "LAUNCH-POLICY-REVISION"
+]);
+
+const OPS_SEALED_COMMIT = "3a466c4a3267923de96f4c31c1f1d2b1531e73c6";
+const OPS_SEALED_MANIFEST_SHA =
+  "cbe736a80860f718350d8289b72d8f589176bbce0e9d16f792b1dd9d277a36ad";
+
+export class ClosedPilotOperationsError extends Error {
+  constructor(issues) {
+    super("OPS-004 closed-pilot operations contract is invalid.");
+    this.name = "ClosedPilotOperationsError";
+    this.issues = Object.freeze([...issues]);
+  }
+}
+
+export function validateClosedPilotOperations(value) {
+  const issues = [];
+  if (!exactKeys(value, [
+    "schemaVersion",
+    "decisionId",
+    "status",
+    "profile",
+    "launchBlocked",
+    "sourceRelease",
+    "authority",
+    "databaseRecovery",
+    "workerOperations",
+    "reconciliation",
+    "synthetics",
+    "alerting",
+    "secrets",
+    "rollback",
+    "approvalInputs",
+    "activationGates",
+    "satisfiedActivationGates",
+    "runbooks"
+  ], "operations", issues)) {
+    throw new ClosedPilotOperationsError(issues);
+  }
+
+  exact(
+    value.schemaVersion,
+    "ipo.one.closed-pilot-operations/v1",
+    "operations.schemaVersion",
+    issues
+  );
+  exact(value.decisionId, "OPS-004", "operations.decisionId", issues);
+  exact(
+    value.status,
+    "local_preflight_pending_named_approval",
+    "operations.status",
+    issues
+  );
+  exact(value.profile, "closed_non_funds_pilot", "operations.profile", issues);
+  exact(value.launchBlocked, true, "operations.launchBlocked", issues);
+
+  if (exactKeys(value.sourceRelease, [
+    "releaseCandidateId",
+    "commitSha",
+    "manifestPath",
+    "manifestSha256"
+  ], "operations.sourceRelease", issues)) {
+    exact(
+      value.sourceRelease.releaseCandidateId,
+      "ipo-one-local-rc-20260729-001",
+      "operations.sourceRelease.releaseCandidateId",
+      issues
+    );
+    exact(
+      value.sourceRelease.commitSha,
+      OPS_SEALED_COMMIT,
+      "operations.sourceRelease.commitSha",
+      issues
+    );
+    exact(
+      value.sourceRelease.manifestPath,
+      "deploy/local/release-candidate.v1.json",
+      "operations.sourceRelease.manifestPath",
+      issues
+    );
+    exact(
+      value.sourceRelease.manifestSha256,
+      OPS_SEALED_MANIFEST_SHA,
+      "operations.sourceRelease.manifestSha256",
+      issues
+    );
+  }
+
+  allFalse(value.authority, OPS_AUTHORITY_KEYS, "operations.authority", issues);
+
+  if (exactKeys(value.databaseRecovery, [
+    "providerDecisionState",
+    "automatedBackupsRequired",
+    "pointInTimeRecoveryRequired",
+    "destructiveRestoreIntoCanonicalDatabaseAllowed",
+    "restoreTarget",
+    "restoreDrillActivation",
+    "restoreEvidenceRequired",
+    "rpoMinutes",
+    "rtoMinutes",
+    "objectivesDecisionState"
+  ], "operations.databaseRecovery", issues)) {
+    exact(
+      value.databaseRecovery.providerDecisionState,
+      "founder_approval_required",
+      "operations.databaseRecovery.providerDecisionState",
+      issues
+    );
+    exact(
+      value.databaseRecovery.automatedBackupsRequired,
+      true,
+      "operations.databaseRecovery.automatedBackupsRequired",
+      issues
+    );
+    exact(
+      value.databaseRecovery.pointInTimeRecoveryRequired,
+      true,
+      "operations.databaseRecovery.pointInTimeRecoveryRequired",
+      issues
+    );
+    exact(
+      value.databaseRecovery.destructiveRestoreIntoCanonicalDatabaseAllowed,
+      false,
+      "operations.databaseRecovery.destructiveRestoreIntoCanonicalDatabaseAllowed",
+      issues
+    );
+    exact(
+      value.databaseRecovery.restoreTarget,
+      "ephemeral_isolated_database",
+      "operations.databaseRecovery.restoreTarget",
+      issues
+    );
+    exact(
+      value.databaseRecovery.restoreDrillActivation,
+      "disabled",
+      "operations.databaseRecovery.restoreDrillActivation",
+      issues
+    );
+    exact(
+      value.databaseRecovery.restoreEvidenceRequired,
+      true,
+      "operations.databaseRecovery.restoreEvidenceRequired",
+      issues
+    );
+    exact(value.databaseRecovery.rpoMinutes, null, "operations.databaseRecovery.rpoMinutes", issues);
+    exact(value.databaseRecovery.rtoMinutes, null, "operations.databaseRecovery.rtoMinutes", issues);
+    exact(
+      value.databaseRecovery.objectivesDecisionState,
+      "founder_approval_required",
+      "operations.databaseRecovery.objectivesDecisionState",
+      issues
+    );
+  }
+
+  if (exactKeys(value.workerOperations, [
+    "activation",
+    "scheduleProviderDecisionState",
+    "responsibilities",
+    "leaseAndIdempotencyRequired",
+    "overlappingRunsAllowed",
+    "automaticRepairAllowed",
+    "boundedRetryRequired"
+  ], "operations.workerOperations", issues)) {
+    exact(value.workerOperations.activation, "disabled", "operations.workerOperations.activation", issues);
+    exact(
+      value.workerOperations.scheduleProviderDecisionState,
+      "founder_approval_required",
+      "operations.workerOperations.scheduleProviderDecisionState",
+      issues
+    );
+    exactArray(
+      value.workerOperations.responsibilities,
+      OPS_WORKER_RESPONSIBILITIES,
+      "operations.workerOperations.responsibilities",
+      issues
+    );
+    exact(
+      value.workerOperations.leaseAndIdempotencyRequired,
+      true,
+      "operations.workerOperations.leaseAndIdempotencyRequired",
+      issues
+    );
+    exact(
+      value.workerOperations.overlappingRunsAllowed,
+      false,
+      "operations.workerOperations.overlappingRunsAllowed",
+      issues
+    );
+    exact(
+      value.workerOperations.automaticRepairAllowed,
+      false,
+      "operations.workerOperations.automaticRepairAllowed",
+      issues
+    );
+    exact(
+      value.workerOperations.boundedRetryRequired,
+      true,
+      "operations.workerOperations.boundedRetryRequired",
+      issues
+    );
+  }
+
+  if (exactKeys(value.reconciliation, [
+    "scheduleActivation",
+    "canonicalState",
+    "unknownOutcomeResolutionRequired",
+    "manualRepairApprovalRequired",
+    "immutableEvidenceRequired"
+  ], "operations.reconciliation", issues)) {
+    exact(value.reconciliation.scheduleActivation, "disabled", "operations.reconciliation.scheduleActivation", issues);
+    exact(value.reconciliation.canonicalState, "postgresql", "operations.reconciliation.canonicalState", issues);
+    for (const key of [
+      "unknownOutcomeResolutionRequired",
+      "manualRepairApprovalRequired",
+      "immutableEvidenceRequired"
+    ]) {
+      exact(value.reconciliation[key], true, `operations.reconciliation.${key}`, issues);
+    }
+  }
+
+  if (exactKeys(value.synthetics, [
+    "scheduleActivation",
+    "scopes",
+    "syntheticOnly",
+    "noFunds",
+    "failureBlocksLaunch"
+  ], "operations.synthetics", issues)) {
+    exact(value.synthetics.scheduleActivation, "disabled", "operations.synthetics.scheduleActivation", issues);
+    exactArray(
+      value.synthetics.scopes,
+      ["human_full_lifecycle", "agent_full_lifecycle", "reconciliation"],
+      "operations.synthetics.scopes",
+      issues
+    );
+    for (const key of ["syntheticOnly", "noFunds", "failureBlocksLaunch"]) {
+      exact(value.synthetics[key], true, `operations.synthetics.${key}`, issues);
+    }
+  }
+
+  if (exactKeys(value.alerting, [
+    "deliveryActivation",
+    "providerDecisionState",
+    "namedRecipientsConfigured",
+    "incidentOwnerConfigured",
+    "restoreOwnerConfigured",
+    "acknowledgementAndResolutionAuthorityEnabled",
+    "piiFreeLowCardinalitySignalsRequired"
+  ], "operations.alerting", issues)) {
+    exact(value.alerting.deliveryActivation, "disabled", "operations.alerting.deliveryActivation", issues);
+    exact(
+      value.alerting.providerDecisionState,
+      "founder_approval_required",
+      "operations.alerting.providerDecisionState",
+      issues
+    );
+    for (const key of [
+      "namedRecipientsConfigured",
+      "incidentOwnerConfigured",
+      "restoreOwnerConfigured",
+      "acknowledgementAndResolutionAuthorityEnabled"
+    ]) {
+      exact(value.alerting[key], false, `operations.alerting.${key}`, issues);
+    }
+    exact(
+      value.alerting.piiFreeLowCardinalitySignalsRequired,
+      true,
+      "operations.alerting.piiFreeLowCardinalitySignalsRequired",
+      issues
+    );
+  }
+
+  if (exactKeys(value.secrets, [
+    "managerDecisionState",
+    "browserSecretExposureAllowed",
+    "vercelDirectDatabaseSecretAllowed",
+    "runtimeSecretInjectionActivation",
+    "rotationActivation",
+    "rotationDrillRequired",
+    "longLivedCloudKeyAllowed"
+  ], "operations.secrets", issues)) {
+    exact(value.secrets.managerDecisionState, "founder_approval_required", "operations.secrets.managerDecisionState", issues);
+    exact(value.secrets.browserSecretExposureAllowed, false, "operations.secrets.browserSecretExposureAllowed", issues);
+    exact(value.secrets.vercelDirectDatabaseSecretAllowed, false, "operations.secrets.vercelDirectDatabaseSecretAllowed", issues);
+    exact(value.secrets.runtimeSecretInjectionActivation, "disabled", "operations.secrets.runtimeSecretInjectionActivation", issues);
+    exact(value.secrets.rotationActivation, "disabled", "operations.secrets.rotationActivation", issues);
+    exact(value.secrets.rotationDrillRequired, true, "operations.secrets.rotationDrillRequired", issues);
+    exact(value.secrets.longLivedCloudKeyAllowed, false, "operations.secrets.longLivedCloudKeyAllowed", issues);
+  }
+
+  if (exactKeys(value.rollback, [
+    "activation",
+    "strategy",
+    "previousCommit",
+    "databaseRollbackStrategy",
+    "automaticDatabaseRollbackAllowed",
+    "preserveCanonicalEvents",
+    "preserveEvidence",
+    "preserveIdempotency",
+    "rollbackReceiptRequired"
+  ], "operations.rollback", issues)) {
+    exact(value.rollback.activation, "disabled", "operations.rollback.activation", issues);
+    exact(value.rollback.strategy, "redeploy_previous_immutable_commit", "operations.rollback.strategy", issues);
+    exact(value.rollback.previousCommit, OPS_SEALED_COMMIT, "operations.rollback.previousCommit", issues);
+    exact(value.rollback.databaseRollbackStrategy, "forward_only_reviewed_migration", "operations.rollback.databaseRollbackStrategy", issues);
+    exact(value.rollback.automaticDatabaseRollbackAllowed, false, "operations.rollback.automaticDatabaseRollbackAllowed", issues);
+    for (const key of [
+      "preserveCanonicalEvents",
+      "preserveEvidence",
+      "preserveIdempotency",
+      "rollbackReceiptRequired"
+    ]) {
+      exact(value.rollback[key], true, `operations.rollback.${key}`, issues);
+    }
+  }
+
+  exactArray(value.approvalInputs, OPS_APPROVAL_INPUTS, "operations.approvalInputs", issues);
+  exactArray(value.activationGates, OPS_ACTIVATION_GATES, "operations.activationGates", issues);
+  exactArray(value.satisfiedActivationGates, [], "operations.satisfiedActivationGates", issues);
+
+  if (exactKeys(value.runbooks, ["operations", "task"], "operations.runbooks", issues)) {
+    exact(
+      value.runbooks.operations,
+      "docs/security/IPO_ONE_CLOSED_PILOT_OPERATIONS_RUNBOOK_v0.1.md",
+      "operations.runbooks.operations",
+      issues
+    );
+    exact(
+      value.runbooks.task,
+      "docs/codex/tasks/OPS_004_HOSTED_OPERATIONS_RECOVERY_BASELINE.md",
+      "operations.runbooks.task",
+      issues
+    );
+  }
+
+  if (issues.length > 0) throw new ClosedPilotOperationsError(issues);
+  return value;
+}
+
+export function parseClosedPilotOperations(text) {
+  let value;
+  try {
+    value = parseCanonicalJson(text, "OPS-004 closed-pilot operations contract");
+  } catch (error) {
+    if (error instanceof LaunchEvidenceError) {
+      throw new ClosedPilotOperationsError([error.message]);
+    }
+    throw error;
+  }
+  return validateClosedPilotOperations(value);
+}

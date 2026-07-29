@@ -2,6 +2,11 @@
 
 Status: local preflight contract only; launch blocked
 
+`operations.v1.json` is the machine-validated `OPS-004` hosted operations and
+recovery baseline. It binds the sealed local RC while leaving cloud mutation,
+worker schedules, alert delivery, secret writes, ingress, participant access,
+and launch disabled.
+
 `topology.v1.json` selects the minimum architecture shape for the next
 IPO.ONE no-real-funds closed pilot:
 
