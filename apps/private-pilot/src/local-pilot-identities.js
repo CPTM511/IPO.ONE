@@ -42,6 +42,7 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
     ])
   }),
@@ -59,7 +60,8 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.MANDATE_DRAFT_CREATE,
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
-      PilotCapability.EVIDENCE_READ_OWNED
+      PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT
     ])
   }),
   agent: Object.freeze({
@@ -78,6 +80,7 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
     ]),
     controllerActorId: "actor_principal_controller_pilot"
@@ -91,7 +94,8 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.PILOT_HEALTH_READ,
       PilotCapability.PILOT_FEEDBACK_READ_TENANT,
       PilotCapability.SERVICING_QUEUE_READ,
-      PilotCapability.RISK_FREEZE
+      PilotCapability.RISK_FREEZE,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT
     ])
   })
 });

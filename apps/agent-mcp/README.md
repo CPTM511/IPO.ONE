@@ -16,13 +16,16 @@ The closed tool list is:
 - `ipo_one_read_obligation_evidence`;
 - `ipo_one_accept_credit_offer`;
 - `ipo_one_execute_sandbox_obligation`;
-- `ipo_one_post_sandbox_repayment`.
+- `ipo_one_post_sandbox_repayment`;
+- `ipo_one_read_credit_registry_evidence`.
 
 The four credit-application tools retain their deterministic Offer workflow.
 The two IDENTITY-001 tools let the exact authenticated Agent submit a one-use
 CAIP-10 proof and read only the resulting hash-based binding state.
 The EVIDENCE-001B tool returns only the exact owned Obligation's redacted
-Evidence page. The three TRANSPORT-002 commands accept one self-owned Offer or
+Evidence page. EVIDENCE-001C separately returns a Tenant-authorized, read-only,
+synthetic Base Sepolia Registry observation; it is not an owned repayment
+record or credit authority. The three TRANSPORT-002 commands accept one self-owned Offer or
 Obligation and remain sandbox-only, non-withdrawable, and bound to an active
 runtime handoff.
 
@@ -99,7 +102,7 @@ const receipt = await runAgentCreditOfferWorkflow({
 The same canonical implementation is exported for Agent integrations through
 `IpoOneAgentMcpClient` in `@ipo-one/sdk`. The MCP App wrapper preserves the
 existing Host API but no longer maintains a second workflow implementation;
-SDK and App conformance tests pin the same eleven tool/operation pairs while the
+SDK and App conformance tests pin the same twelve tool/operation pairs while the
 Offer receipt continues to pin its four-step economic workflow.
 
 The helper derives `authorityId` from the handoff, uses stable retry IDs,
@@ -125,7 +128,7 @@ The command:
 
 - strictly parses at most 32 KiB and rejects duplicate or unknown fields;
 - requires a ready, non-authorizing, credential-free, local-stdio manifest;
-- checks the exact eleven tool/operation pairs against the MCP registry;
+- checks the exact twelve tool/operation pairs against the MCP registry;
 - emits fresh request/correlation/JSON-RPC IDs and a first
   `ipo_one_read_self` call; and
 - does not echo hashes, capabilities, limits, credentials, or validator

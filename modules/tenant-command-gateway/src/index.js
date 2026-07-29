@@ -5,6 +5,8 @@ export * from "./credit-decision-handlers.js";
 export * from "./credit-passport-handlers.js";
 export * from "./credit-acceptance-handlers.js";
 export * from "./credit-execution-handlers.js";
+export * from "./economic-action-confirmation.js";
+export * from "./credit-registry-evidence-handlers.js";
 export * from "./human-consent-handlers.js";
 export * from "./human-self-summaries.js";
 export * from "./human-subject-handlers.js";

@@ -2,6 +2,7 @@ const CYCLE_TYPES = new Set(["healthy", "risky", "recovery"]);
 
 export * from "./agent-mcp-client.js";
 export * from "./agent-evidence-client.js";
+export * from "./agent-registry-evidence-client.js";
 export * from "./agent-feedback-client.js";
 export * from "./agent-obligation-client.js";
 export * from "./agent-sandbox-obligation-client.js";

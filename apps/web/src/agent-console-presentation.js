@@ -21,6 +21,7 @@ const TOOL_PHASES = Object.freeze({
   pilotReadAgentAccountBinding: "shared",
   pilotReadOwnObligation: "runtime",
   pilotReadOwnObligationEvidence: "runtime",
+  pilotReadCreditRegistryEvidence: "runtime",
   pilotAcceptCreditOffer: "runtime",
   pilotExecuteSandboxObligation: "runtime",
   pilotPostSandboxRepayment: "runtime"
@@ -35,6 +36,7 @@ const TOOL_GROUPS = Object.freeze({
   pilotEvaluateCreditApplication: "application",
   pilotReadOwnObligation: "evidence",
   pilotReadOwnObligationEvidence: "evidence",
+  pilotReadCreditRegistryEvidence: "evidence",
   pilotAcceptCreditOffer: "economic",
   pilotExecuteSandboxObligation: "economic",
   pilotPostSandboxRepayment: "economic"

@@ -31,6 +31,12 @@ import {
   PostgresAuthorizationDirectory,
   RoleBundle
 } from "../../authorization/src/index.js";
+import {
+  PostgresCreditOutcomeMaterializer
+} from "../../credit-learning/src/index.js";
+import {
+  PostgresTenantCommandPauseStore
+} from "../../operations-control/src/index.js";
 import { createAuthorizationHarness } from "../../authorization/test/support/authorization-fixture.js";
 import {
   CoreProjectionType,
@@ -1071,9 +1077,11 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
          provider_callback_inbox,
          credit_lines, ledger_accounts, ledger_transactions, ledger_entries, repayment_events,
          aggregate_stream_heads, domain_events, credit_events,
-         pilot_feedback_records, credit_passport_artifacts,
+         pilot_feedback_records, credit_passport_artifacts, credit_outcomes,
+         tenant_command_pauses,
          official_report_artifacts, trading_credit_profiles,
-         evidence_envelopes, outbox_messages, command_idempotency,
+         evidence_envelopes, evidence_chain_anchors,
+         evidence_chain_anchor_observations, outbox_messages, command_idempotency,
          command_events, projection_registry, projection_snapshots,
          reconciliation_runs, reconciliation_discrepancies
        TO ${APP_ROLE}`
@@ -3227,7 +3235,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       }]);
     });
 
-    await t.test("Human and Agent persist one restart-safe no-funds Credit Intent protocol", async () => {
+    await t.test("Human and Agent persist one restart-safe no-funds Credit Intent protocol with retry-safe credit Outcomes", async () => {
       const humanWorkflowId = `human-credit-offer-postgres-${RUN_ID}`;
       const humanWorkflowCorrelationId = `correlation_human_credit_offer_${RUN_ID}`;
       const consentCreated = await tenantOneBorrower.createConsent(createConsentCommand({
@@ -4609,6 +4617,140 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         "SELECT count(*)::int AS count FROM credit_intents WHERE tenant_id = $1",
         [TENANT_ONE]
       )).rows[0].count), 2);
+
+      const finalHumanRepayment = await restartedHuman.postSandboxRepayment({
+        obligationId: humanAcceptance.obligation.obligationId,
+        payload: { amountMinor: "9000", sourceCode: "synthetic_bank" },
+        idempotencyKey: `repay-human-sandbox-credit-${RUN_ID}-0002`,
+        requestId: `request-repay-human-sandbox-credit-final-${RUN_ID}`,
+        correlationId: `correlation-repay-human-sandbox-credit-final-${RUN_ID}`
+      });
+      const finalAgentRepayment = await restartedAgent.postSandboxRepayment({
+        obligationId: agentAcceptance.obligation.obligationId,
+        payload: { amountMinor: "9000", sourceCode: "synthetic_revenue" },
+        idempotencyKey: `repay-agent-sandbox-credit-${RUN_ID}-0002`,
+        requestId: `request-repay-agent-sandbox-credit-final-${RUN_ID}`,
+        correlationId: `correlation-repay-agent-sandbox-credit-final-${RUN_ID}`
+      });
+      for (const result of [finalHumanRepayment, finalAgentRepayment]) {
+        assert.equal(result.response.obligation.status, "fully_repaid");
+        assert.equal(result.response.obligation.outstandingPrincipalMinor, "0");
+        assert.equal(result.response.productionFundsMoved, false);
+      }
+
+      const creditOutcomeTenantContext = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneRisk.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      let injectedOutcomeFault = false;
+      const faultingOutcomeRepository = new PostgresEventRepository({
+        pool: appPool,
+        tenantContext: creditOutcomeTenantContext,
+        faultInjector: ({ stage }) => {
+          if (!injectedOutcomeFault && stage === "after_event_inserted") {
+            injectedOutcomeFault = true;
+            throw new Error("injected credit outcome process failure");
+          }
+        }
+      });
+      await assert.rejects(
+        () => new PostgresCreditOutcomeMaterializer({
+          eventRepository: faultingOutcomeRepository
+        }).run(),
+        /injected credit outcome process failure/
+      );
+      const afterOutcomeFailure = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM credit_outcomes
+             WHERE tenant_id = $1) AS outcomes,
+           (SELECT count(*)::int FROM domain_events
+             WHERE tenant_id = $1 AND event_type = 'credit_outcome_finalized') AS events`,
+        [TENANT_ONE]
+      );
+      assert.deepEqual(afterOutcomeFailure.rows[0], {
+        outcomes: 0,
+        events: 0
+      });
+
+      const outcomeMaterializer = new PostgresCreditOutcomeMaterializer({
+        eventRepository: new PostgresEventRepository({
+          pool: appPool,
+          tenantContext: creditOutcomeTenantContext
+        })
+      });
+      const materialized = await outcomeMaterializer.run();
+      assert.equal(materialized.candidateCount, 2);
+      assert.equal(materialized.materializedCount, 2);
+      assert.deepEqual(
+        materialized.outcomes.map((outcome) => outcome.outcomeLabel),
+        ["on_time_repaid", "on_time_repaid"]
+      );
+      const materializedReplay = await outcomeMaterializer.run();
+      assert.equal(materializedReplay.candidateCount, 0);
+      assert.equal(materializedReplay.materializedCount, 0);
+
+      const outcomeDurability = await ownerPool.query(
+        `SELECT
+           count(*)::int AS outcomes,
+           count(DISTINCT subject_id)::int AS subjects,
+           bool_and(outcome_label = 'on_time_repaid') AS on_time,
+           bool_and(repayment_ratio_bps = 10000) AS repaid,
+           bool_and(
+             outcome_finalized
+             AND NOT future_feature_substitution_allowed
+             AND NOT authorizing
+             AND NOT funds_authority
+             AND NOT economic_state_mutation
+             AND NOT production_authority
+             AND NOT pii_included
+             AND NOT raw_transaction_data_included
+             AND NOT score_authoritative
+             AND sandbox_only
+             AND NOT production_funds_moved
+           ) AS safety,
+           bool_and(
+             decision_feature_snapshot->>'featureSnapshotHash' = feature_snapshot_hash
+             AND jsonb_array_length(source_evidence_hashes) >= 2
+           ) AS evidence_bound,
+           (SELECT count(*)::int FROM domain_events
+             WHERE tenant_id = $1 AND event_type = 'credit_outcome_finalized') AS events,
+           (SELECT count(*)::int FROM evidence_envelopes
+             WHERE tenant_id = $1 AND event_type = 'credit_outcome_finalized') AS evidence,
+           (SELECT count(*)::int FROM outbox_messages m
+             JOIN domain_events e
+               ON e.tenant_id = m.tenant_id AND e.id = m.event_id
+            WHERE m.tenant_id = $1
+              AND e.event_type = 'credit_outcome_finalized') AS outbox
+         FROM credit_outcomes
+        WHERE tenant_id = $1`,
+        [TENANT_ONE]
+      );
+      assert.deepEqual(outcomeDurability.rows[0], {
+        outcomes: 2,
+        subjects: 2,
+        on_time: true,
+        repaid: true,
+        safety: true,
+        evidence_bound: true,
+        events: 2,
+        evidence: 2,
+        outbox: 2
+      });
+      await assert.rejects(
+        () => withTenantTransaction(appPool, creditOutcomeTenantContext, (client) =>
+          client.query(
+            `UPDATE credit_outcomes
+                SET outcome_label = 'late_or_modified_repaid'
+              WHERE tenant_id = $1`,
+            [TENANT_ONE]
+          )
+        ),
+        (error) =>
+          error.code === "P0001" &&
+          error.message === "append-only rows cannot be updated or deleted"
+      );
     });
 
     await t.test("signed Provider sandbox is AccessGrant-bound, replay-safe, and atomically durable", async () => {
@@ -4965,6 +5107,184 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         [TENANT_ONE, [deniedValid.requestId, deniedMissing.requestId]]
       );
       assert.equal(audit.rows[0].count, 0);
+    });
+
+    await t.test("admission cleanup retains records referenced by durable command executions", async () => {
+      const referenced = await ownerPool.query(
+        `SELECT execution.idempotency_key
+           FROM tenant_command_executions execution
+          WHERE execution.tenant_id = $1
+          ORDER BY execution.completed_at
+          LIMIT 1`,
+        [TENANT_ONE]
+      );
+      assert.equal(referenced.rowCount, 1);
+      const sourceIdempotencyKey = referenced.rows[0].idempotency_key;
+      const idempotencyKey = `admission-retention-${RUN_ID}`;
+      const admissionId = `admission_retention_${RUN_ID}`;
+      const context = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneHuman.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      await withTenantTransaction(ownerPool, context, async (client) => {
+        await client.query(
+        `INSERT INTO command_idempotency(
+           tenant_id, idempotency_key, command_hash, aggregate_type,
+           aggregate_id, status, event_id, response_json, created_at,
+           updated_at, response_hash
+         )
+         SELECT tenant_id, $2, command_hash, aggregate_type,
+                aggregate_id, status, event_id, response_json,
+                transaction_timestamp() - INTERVAL '25 hours',
+                transaction_timestamp() - INTERVAL '25 hours',
+                response_hash
+           FROM command_idempotency
+          WHERE tenant_id = $1 AND idempotency_key = $3`,
+          [TENANT_ONE, idempotencyKey, sourceIdempotencyKey]
+        );
+        await client.query(
+        `INSERT INTO abuse_admissions(
+           id, tenant_id, actor_ref_hash, client_ref_hash, operation_id,
+           quota_class, command_ref_hash, state, outcome, replayed,
+           rate_reservations, capacity_reservations, policy_version,
+           issued_at, expires_at, completed_at, version, schema_version
+         )
+         SELECT $2, tenant_id, actor_ref_hash, client_ref_hash, operation_id,
+                quota_class, NULL, 'completed', 'succeeded', false,
+                rate_reservations, capacity_reservations, policy_version,
+                transaction_timestamp() - INTERVAL '25 hours',
+                transaction_timestamp() - INTERVAL '24 hours 59 minutes',
+                transaction_timestamp() - INTERVAL '24 hours 59 minutes',
+                2, schema_version
+           FROM abuse_admissions
+          WHERE tenant_id = $1
+          ORDER BY issued_at
+          LIMIT 1`,
+          [TENANT_ONE, admissionId]
+        );
+        await client.query(
+        `INSERT INTO tenant_command_executions(
+           tenant_id, idempotency_key, operation_id, actor_id, actor_type,
+           client_ref_hash, command_payload_hash, command_hash,
+           authorization_decision_id, admission_id, business_event_id,
+           response_hash, completed_at, version, schema_version
+         )
+         SELECT tenant_id, $2, operation_id, actor_id, actor_type,
+                client_ref_hash, command_payload_hash, command_hash,
+                authorization_decision_id, $3, business_event_id,
+                response_hash,
+                transaction_timestamp() - INTERVAL '24 hours 59 minutes',
+                version, schema_version
+           FROM tenant_command_executions
+          WHERE tenant_id = $1 AND idempotency_key = $4`,
+          [
+            TENANT_ONE,
+            idempotencyKey,
+            admissionId,
+            sourceIdempotencyKey
+          ]
+        );
+      });
+
+      const self = await tenantOneAgent.getSelf({
+        subjectId: tenantOneSubjectId,
+        requestId: `request-agent-self-after-admission-retention-${RUN_ID}`,
+        correlationId: `correlation-agent-self-after-admission-retention-${RUN_ID}`
+      });
+      assert.equal(self.response.subject.subjectId, tenantOneSubjectId);
+      const retained = await ownerPool.query(
+        `SELECT count(*)::int AS count
+           FROM abuse_admissions
+          WHERE tenant_id = $1 AND id = $2`,
+        [TENANT_ONE, admissionId]
+      );
+      assert.equal(retained.rows[0].count, 1);
+    });
+
+    await t.test("durable Tenant command pause blocks new commands but preserves queries and exact replay", async () => {
+      const tenantContext = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneRisk.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      const pauseStore = new PostgresTenantCommandPauseStore({
+        eventRepository: new PostgresEventRepository({
+          pool: appPool,
+          tenantContext
+        })
+      });
+      const command = {
+        reasonCode: "manual_local_safety_pause",
+        idempotencyKey: `tenant-command-pause-${RUN_ID}-0001`
+      };
+      const paused = await pauseStore.pause(command);
+      const replayed = await pauseStore.pause(command);
+      assert.equal(paused.replayed, false);
+      assert.equal(replayed.replayed, true);
+      assert.deepEqual(replayed.tenantCommandPause, paused.tenantCommandPause);
+      assert.equal(paused.tenantCommandPause.commandExecutionAllowed, false);
+      assert.equal(paused.tenantCommandPause.queriesAllowed, true);
+      assert.equal(paused.tenantCommandPause.unpauseAvailable, false);
+
+      const query = await tenantOneBorrower.getHumanSelf({
+        subjectId: tenantOneHumanSubjectId,
+        requestId: `request-read-human-after-pause-${RUN_ID}`,
+        correlationId: `correlation-read-human-after-pause-${RUN_ID}`
+      });
+      assert.equal(query.response.subject.subjectId, tenantOneHumanSubjectId);
+
+      await assert.rejects(
+        () => tenantOneBorrower.createConsent(createConsentCommand({
+          subjectId: tenantOneHumanSubjectId,
+          idempotencyKey: `create-consent-after-pause-${RUN_ID}-0001`
+        })),
+        (error) =>
+          error.code === "tenant_commands_paused" &&
+          error.details.reasonCode === "manual_local_safety_pause"
+      );
+
+      const durable = await ownerPool.query(
+        `SELECT
+           count(*)::int AS pauses,
+           bool_and(
+             queries_allowed
+             AND background_evidence_allowed
+             AND NOT command_execution_allowed
+             AND NOT unpause_available
+             AND NOT authorizing
+             AND NOT funds_authority
+             AND NOT economic_state_mutation
+             AND NOT production_authority
+             AND sandbox_only
+           ) AS safety,
+           (SELECT count(*)::int FROM domain_events
+             WHERE tenant_id = $1 AND event_type = 'tenant_commands_paused') AS events,
+           (SELECT count(*)::int FROM evidence_envelopes
+             WHERE tenant_id = $1 AND event_type = 'tenant_commands_paused') AS evidence
+         FROM tenant_command_pauses
+        WHERE tenant_id = $1`,
+        [TENANT_ONE]
+      );
+      assert.deepEqual(durable.rows[0], {
+        pauses: 1,
+        safety: true,
+        events: 1,
+        evidence: 1
+      });
+      await assert.rejects(
+        () => withTenantTransaction(appPool, tenantContext, (client) =>
+          client.query(
+            "DELETE FROM tenant_command_pauses WHERE tenant_id = $1",
+            [TENANT_ONE]
+          )
+        ),
+        (error) =>
+          error.code === "P0001" &&
+          error.message === "append-only rows cannot be updated or deleted"
+      );
     });
   } finally {
     if (appPool) await appPool.end();

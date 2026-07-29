@@ -42,7 +42,8 @@
           { "name": "ipo_one_read_obligation_evidence", "operationId": "pilotReadOwnObligationEvidence" },
           { "name": "ipo_one_accept_credit_offer", "operationId": "pilotAcceptCreditOffer" },
           { "name": "ipo_one_execute_sandbox_obligation", "operationId": "pilotExecuteSandboxObligation" },
-          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" }
+          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" },
+          { "name": "ipo_one_read_credit_registry_evidence", "operationId": "pilotReadCreditRegistryEvidence" }
         ]
       },
       "credentialDelivery": "out_of_band",
@@ -82,7 +83,8 @@
           { "name": "ipo_one_read_obligation_evidence", "operationId": "pilotReadOwnObligationEvidence" },
           { "name": "ipo_one_accept_credit_offer", "operationId": "pilotAcceptCreditOffer" },
           { "name": "ipo_one_execute_sandbox_obligation", "operationId": "pilotExecuteSandboxObligation" },
-          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" }
+          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" },
+          { "name": "ipo_one_read_credit_registry_evidence", "operationId": "pilotReadCreditRegistryEvidence" }
         ]
       },
       "credentialDelivery": "out_of_band",
@@ -168,7 +170,8 @@
           { "name": "ipo_one_read_obligation_evidence", "operationId": "pilotReadOwnObligationEvidence" },
           { "name": "ipo_one_accept_credit_offer", "operationId": "pilotAcceptCreditOffer" },
           { "name": "ipo_one_execute_sandbox_obligation", "operationId": "pilotExecuteSandboxObligation" },
-          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" }
+          { "name": "ipo_one_post_sandbox_repayment", "operationId": "pilotPostSandboxRepayment" },
+          { "name": "ipo_one_read_credit_registry_evidence", "operationId": "pilotReadCreditRegistryEvidence" }
         ]
       },
       "credentialDelivery": "out_of_band",

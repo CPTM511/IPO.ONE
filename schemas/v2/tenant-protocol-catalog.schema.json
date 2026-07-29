@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 71,
-      "maxItems": 71,
+      "minItems": 72,
+      "maxItems": 72,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -264,6 +264,7 @@
             "pilotReadAgentSelf",
             "pilotReadAgentAccountBinding",
             "pilotReadCreditApplication",
+            "pilotReadCreditRegistryEvidence",
             "pilotReadOwnCreditPassportArtifact",
             "pilotReadOfficialReport",
             "pilotRetrieveOfficialReport",
@@ -348,6 +349,7 @@
             "credit_intent",
             "credit_offer",
             "credit_passport_artifact",
+            "credit_registry_evidence",
             "evidence",
             "human_identity_reference",
             "mandate",
@@ -386,6 +388,7 @@
             "credit_passport.read.self",
             "credit_passport.verify.bound",
             "credit_passport.revoke.self",
+            "credit_registry.evidence.read.tenant",
             "official_report.create.owned",
             "official_report.read.owned",
             "official_report.retrieve.owned",
@@ -501,6 +504,7 @@
             "tenant_pilot_feedback_summary_view.v1",
             "tenant_pilot_feedback_recorded.v1",
             "tenant_servicing_queue_view.v1",
+            "tenant_credit_registry_evidence_view.v1",
             "tenant_obligation_evidence_view.v1",
             "tenant_owned_obligation_evidence_view.v1",
             "tenant_owned_obligation_view.v1",
@@ -544,6 +548,40 @@
         }
       },
       "oneOf": [
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadCreditRegistryEvidence"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "human",
+                "agent",
+                "risk_operator",
+                "operations_operator",
+                "auditor"
+              ]
+            },
+            "resourceType": {
+              "const": "credit_registry_evidence"
+            },
+            "requiredCapability": {
+              "const": "credit_registry.evidence.read.tenant"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_credit_registry_evidence_view.v1"
+            }
+          }
+        },
         {
           "properties": {
             "operationId": {

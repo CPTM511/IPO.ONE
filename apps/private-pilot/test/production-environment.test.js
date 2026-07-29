@@ -11,6 +11,8 @@ import {
 import { createProductionClosedPilotRuntime } from "../src/production-runtime.js";
 
 const SECRET_REF = "projects/ipo-one-prod/secrets/example/versions/1";
+const futureCredentialExpiry = () =>
+  new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString();
 
 test("production environment supports reviewed wallet-only access without an OIDC client secret", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "ipo-one-production-env-"));
@@ -94,7 +96,7 @@ test("production bootstrap config derives closed roles and rejects permission in
   t.after(() => rm(directory, { recursive: true, force: true }));
   const path = join(directory, "bootstrap.json");
   await writeFile(path, JSON.stringify({
-    schemaVersion: "ipo_one_production_bootstrap.v1",
+    schemaVersion: "ipo_one_production_bootstrap.v2",
     gatewayRole: "ipo_one_gateway",
     authenticationRole: "ipo_one_authentication",
     tenant: {
@@ -115,7 +117,9 @@ test("production bootstrap config derives closed roles and rejects permission in
       actorId: "actor_principal_controller",
       clientId: "client_principal_controller",
       issuer: "https://ipo.one",
-      externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111"
+      externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111",
+      invitationId: "invite_principal_controller_0001",
+      expiresAt: futureCredentialExpiry()
     }, {
       kind: "agent_mtls",
       profile: "agent_runtime",
@@ -124,14 +128,98 @@ test("production bootstrap config derives closed roles and rejects permission in
       issuer: "https://workload.ipo.one",
       externalSubject: "agent-runtime-production",
       controllerActorId: "actor_principal_controller",
-      senderThumbprint: "m".repeat(43)
+      senderThumbprint: "m".repeat(43),
+      invitationId: "invite_agent_runtime_000000001",
+      expiresAt: futureCredentialExpiry()
     }]
   }));
   const config = await loadProductionBootstrapConfig(path);
   assert.equal(assertProductionBootstrapConfig(config), config);
   assert.equal(config.credentials[0].profile.roleBundle, "principal_controller");
   assert.equal(config.credentials[1].profile.roleBundle, "agent_runtime");
+  assert.ok(new Date(config.credentials[0].expiresAt) > new Date());
   assert.equal(Object.hasOwn(config.credentials[0], "capabilities"), false);
+});
+
+test("invite-only bootstrap rejects legacy, duplicate, and permission-bearing identities", () => {
+  const base = {
+    schemaVersion: "ipo_one_production_bootstrap.v2",
+    gatewayRole: "ipo_one_gateway",
+    authenticationRole: "ipo_one_authentication",
+    tenant: {
+      tenantId: "tenant_invite_contract",
+      organizationRef: "urn:ipo.one:organization:invite-contract",
+      displayName: "Invite Contract",
+      pilotJurisdiction: "PRIVATE_NO_FUNDS",
+      retentionOwnerRef: "urn:ipo.one:retention:invite-contract"
+    },
+    systemActor: {
+      actorId: "actor_authentication_system",
+      clientId: "client_authentication_system"
+    },
+    policyVersion: "security_001.v1",
+    credentials: [{
+      kind: "human_wallet",
+      profile: "risk_operator",
+      actorId: "actor_invited_risk",
+      clientId: "ipo_one_wallet",
+      issuer: "https://ipo.one",
+      externalSubject: "eip155:84532:0x4444444444444444444444444444444444444444",
+      invitationId: "invite_risk_operator_000000001",
+      expiresAt: futureCredentialExpiry()
+    }]
+  };
+  const checked = assertProductionBootstrapConfig(base);
+  assert.equal(checked.credentials[0].profile.actorType, "risk_operator");
+  assert.equal(checked.credentials[0].profile.roleBundle, "risk_operator");
+  assert.equal(
+    checked.credentials[0].profile.capabilities.includes(
+      "credit_registry.evidence.read.tenant"
+    ),
+    true
+  );
+
+  assert.throws(
+    () => assertProductionBootstrapConfig({
+      ...base,
+      schemaVersion: "ipo_one_production_bootstrap.v1"
+    }),
+    (error) => error?.code === "invalid_production_bootstrap"
+  );
+  assert.throws(
+    () => assertProductionBootstrapConfig({
+      ...base,
+      credentials: [
+        base.credentials[0],
+        {
+          ...base.credentials[0],
+          actorId: "actor_second_invited_risk",
+          externalSubject: "eip155:84532:0x5555555555555555555555555555555555555555"
+        }
+      ]
+    }),
+    (error) => error?.code === "invalid_production_bootstrap"
+  );
+  assert.throws(
+    () => assertProductionBootstrapConfig({
+      ...base,
+      credentials: [{
+        ...base.credentials[0],
+        allowedCapabilities: ["risk.read.tenant"]
+      }]
+    }),
+    (error) => error?.code === "invalid_production_bootstrap"
+  );
+  assert.throws(
+    () => assertProductionBootstrapConfig({
+      ...base,
+      credentials: [{
+        ...base.credentials[0],
+        expiresAt: "2099-01-01T00:00:00Z"
+      }]
+    }),
+    (error) => error?.code === "invalid_production_bootstrap"
+  );
 });
 
 test("production runtime closes both pools when startup validation fails", async () => {

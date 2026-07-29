@@ -73,7 +73,8 @@ export interface AgentMcpToolOperation {
     | "ipo_one_read_obligation_evidence"
     | "ipo_one_accept_credit_offer"
     | "ipo_one_execute_sandbox_obligation"
-    | "ipo_one_post_sandbox_repayment";
+    | "ipo_one_post_sandbox_repayment"
+    | "ipo_one_read_credit_registry_evidence";
   readonly operationId:
     | "pilotReadAgentSelf"
     | "pilotRequestCredit"
@@ -85,7 +86,8 @@ export interface AgentMcpToolOperation {
     | "pilotReadOwnObligationEvidence"
     | "pilotAcceptCreditOffer"
     | "pilotExecuteSandboxObligation"
-    | "pilotPostSandboxRepayment";
+    | "pilotPostSandboxRepayment"
+    | "pilotReadCreditRegistryEvidence";
 }
 
 export const AGENT_MCP_CLIENT_TOOLS: readonly AgentMcpToolOperation[];
@@ -139,6 +141,34 @@ export interface IpoOneAgentEvidenceClientOptions {
   manifest: ReadyAgentHandoffManifest;
   transportProfile: "local_in_process";
 }
+
+export interface IpoOneAgentRegistryEvidenceClientOptions {
+  execute: AgentTenantProtocolExecute;
+  manifest: ReadyAgentHandoffManifest;
+  transportProfile: "local_in_process";
+}
+
+export interface AgentCreditRegistryEvidenceQuery {
+  authorizationHash: `0x${string}`;
+  requestId: string;
+  correlationId: string;
+}
+
+export class IpoOneAgentRegistryEvidenceClient {
+  constructor(options: IpoOneAgentRegistryEvidenceClientOptions);
+  readCreditRegistryEvidence(
+    input: AgentCreditRegistryEvidenceQuery
+  ): Promise<
+    import("@ipo-one/api-contract").CreditRegistryEvidenceViewResponse
+  >;
+}
+
+export function readAgentCreditRegistryEvidence(
+  input: IpoOneAgentRegistryEvidenceClientOptions &
+    AgentCreditRegistryEvidenceQuery
+): Promise<
+  import("@ipo-one/api-contract").CreditRegistryEvidenceViewResponse
+>;
 
 export interface AgentObligationEvidenceQuery {
   obligationId: string;

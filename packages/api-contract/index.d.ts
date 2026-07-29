@@ -19,6 +19,7 @@ export type TenantProtocolOperationId =
   | "pilotReadAgentSelf"
   | "pilotReadAgentAccountBinding"
   | "pilotReadCreditApplication"
+  | "pilotReadCreditRegistryEvidence"
   | "pilotReadOwnCreditPassportArtifact"
   | "pilotReadOfficialReport"
   | "pilotRetrieveOfficialReport"
@@ -118,7 +119,8 @@ export interface AgentHandoffToolReference {
     | "ipo_one_read_obligation_evidence"
     | "ipo_one_accept_credit_offer"
     | "ipo_one_execute_sandbox_obligation"
-    | "ipo_one_post_sandbox_repayment";
+    | "ipo_one_post_sandbox_repayment"
+    | "ipo_one_read_credit_registry_evidence";
   operationId:
     | "pilotReadAgentSelf"
     | "pilotRequestCredit"
@@ -130,7 +132,8 @@ export interface AgentHandoffToolReference {
     | "pilotReadOwnObligationEvidence"
     | "pilotAcceptCreditOffer"
     | "pilotExecuteSandboxObligation"
-    | "pilotPostSandboxRepayment";
+    | "pilotPostSandboxRepayment"
+    | "pilotReadCreditRegistryEvidence";
 }
 
 interface AgentHandoffManifestSafety {
@@ -1113,6 +1116,16 @@ export interface ReadObligationEvidenceRequest extends TenantProtocolRequestBase
   purpose?: string;
 }
 
+export interface ReadCreditRegistryEvidenceRequest
+  extends TenantProtocolRequestBase {
+  operationId: "pilotReadCreditRegistryEvidence";
+  payload: Record<string, never>;
+  resource: {
+    resourceType: "credit_registry_evidence";
+    resourceId: `0x${string}`;
+  };
+}
+
 export interface ReadOwnObligationEvidenceRequest extends TenantProtocolRequestBase {
   operationId: "pilotReadOwnObligationEvidence";
   payload: { limit?: number; cursor?: string };
@@ -1535,6 +1548,7 @@ export type TenantProtocolRequest =
   | ReadPilotFeedbackSummaryRequest
   | ReadServicingQueueRequest
   | ReadObligationEvidenceRequest
+  | ReadCreditRegistryEvidenceRequest
   | ReadOwnObligationRequest
   | ReadOwnObligationEvidenceRequest
   | ReadProviderIntentRequest
@@ -2467,6 +2481,50 @@ export interface ObligationEvidenceViewResponse {
   hasMore: boolean;
   nextCursor?: string;
   schemaVersion: "tenant_obligation_evidence_view.v1";
+}
+
+export interface CreditRegistryTransactionEvidenceSummary {
+  kind: "publication" | "proof_update" | "close" | "pause";
+  transactionHash: `0x${string}`;
+  blockNumber: string;
+  blockHash: `0x${string}`;
+  observationStatus: "safe" | "finalized";
+  confirmations: number;
+  schemaVersion: "credit_registry_transaction_evidence_summary.v1";
+}
+
+export interface CreditRegistryEvidenceViewResponse {
+  chainId: "eip155:84532";
+  contractAddress: `0x${string}`;
+  authorizationHash: `0x${string}`;
+  observationHash: `0x${string}`;
+  finalityProofHash: `0x${string}`;
+  finalCreditStateHash: `0x${string}`;
+  finalObligationProofHash: `0x${string}`;
+  finalStatus: "closed";
+  finalVersion: 3;
+  registryPaused: true;
+  authorizationActive: false;
+  transactions: readonly [
+    CreditRegistryTransactionEvidenceSummary,
+    CreditRegistryTransactionEvidenceSummary,
+    CreditRegistryTransactionEvidenceSummary,
+    CreditRegistryTransactionEvidenceSummary
+  ];
+  safeBlock: { number: string; hash: `0x${string}` };
+  finalizedBlock: { number: string; hash: `0x${string}` };
+  observedAt: string;
+  recordedAt: string;
+  asOf: string;
+  readOnly: true;
+  liveTestnetObservation: true;
+  syntheticOnly: true;
+  authorizing: false;
+  productionFundsMoved: false;
+  fundsAuthority: false;
+  rawAccountIncluded: false;
+  rawProviderPayloadIncluded: false;
+  schemaVersion: "tenant_credit_registry_evidence_view.v1";
 }
 
 export interface OwnedObligationEvidenceViewResponse {
@@ -3605,6 +3663,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotReadPilotFeedbackSummary", TenantPilotFeedbackSummaryViewResponse>
   | TenantProtocolResultBase<"pilotReadServicingQueue", TenantServicingQueueViewResponse>
   | TenantProtocolResultBase<"pilotReadEvidence", ObligationEvidenceViewResponse>
+  | TenantProtocolResultBase<"pilotReadCreditRegistryEvidence", CreditRegistryEvidenceViewResponse>
   | TenantProtocolResultBase<"pilotReadOwnObligation", OwnedObligationViewResponse>
   | TenantProtocolResultBase<"pilotReadOwnObligationEvidence", OwnedObligationEvidenceViewResponse>
   | TenantProtocolResultBase<"pilotReadProviderIntent", ProviderIntentViewResponse>
@@ -4218,6 +4277,22 @@ export type TenantProtocolOperation =
       "prohibited",
       "read",
       "tenant_servicing_queue_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadCreditRegistryEvidence",
+      "query",
+      readonly [
+        "human",
+        "agent",
+        "risk_operator",
+        "operations_operator",
+        "auditor"
+      ],
+      "credit_registry_evidence",
+      "credit_registry.evidence.read.tenant",
+      "prohibited",
+      "read",
+      "tenant_credit_registry_evidence_view.v1"
     >
   | TenantProtocolOperationBase<
       "pilotReadEvidence",

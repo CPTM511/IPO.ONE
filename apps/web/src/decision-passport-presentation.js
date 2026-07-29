@@ -83,6 +83,12 @@ export function compactDecisionProofHash(value) {
   return HASH.test(value) ? `${value.slice(0, 10)}…${value.slice(-6)}` : "Unavailable";
 }
 
+export function compactEvmAddress(value) {
+  return /^0x[0-9A-Fa-f]{40}$/.test(value)
+    ? `${value.slice(0, 10)}…${value.slice(-6)}`
+    : "Unavailable";
+}
+
 export function createHumanDecisionPassportPresentation(decision) {
   const passport = decision?.decisionPassport;
   if (

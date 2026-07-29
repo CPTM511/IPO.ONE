@@ -72,7 +72,7 @@ test("capability manifest derives staged availability without granting authority
     runtimeReady.workflows.map(({ availability }) => availability),
     ["locked", "enabled", "input_required"]
   );
-  assert.equal(runtimeReady.mcp.toolCount, 11);
+  assert.equal(runtimeReady.mcp.toolCount, 12);
   assert.deepEqual(runtimeReady.mcp.tools, AGENT_PILOT_MCP_TOOLS);
   assert.equal(runtimeReady.mcp.economicLifecycleToolsIncluded, true);
   for (const safety of [

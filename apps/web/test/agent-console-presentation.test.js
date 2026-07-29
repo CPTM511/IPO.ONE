@@ -79,8 +79,8 @@ test("waiting Agent Console is closed, non-authorizing and catalog-derived", () 
   const presentation = createAgentConsolePresentation(stateFor(manifests.waiting));
   assert.equal(presentation.schemaVersion, AGENT_CONSOLE_PRESENTATION_VERSION);
   assert.equal(presentation.status, "waiting");
-  assert.equal(presentation.registry.toolCount, 11);
-  assert.equal(presentation.registry.catalogBoundCount, 11);
+  assert.equal(presentation.registry.toolCount, 12);
+  assert.equal(presentation.registry.catalogBoundCount, 12);
   assert.equal(presentation.registry.catalogParity, true);
   assert.equal(
     presentation.registry.tools.every(({ availability }) =>
@@ -131,6 +131,7 @@ test("runtime handoff exposes runtime tools but keeps new applications phase-bou
   for (const operationId of [
     "pilotReadOwnObligation",
     "pilotReadOwnObligationEvidence",
+    "pilotReadCreditRegistryEvidence",
     "pilotAcceptCreditOffer",
     "pilotExecuteSandboxObligation",
     "pilotPostSandboxRepayment"
@@ -158,7 +159,7 @@ test("catalog absence remains visible and never becomes implied authority", () =
   );
   const presentation = createAgentConsolePresentation(state);
   assert.equal(presentation.registry.catalogParity, false);
-  assert.equal(presentation.registry.catalogBoundCount, 10);
+  assert.equal(presentation.registry.catalogBoundCount, 11);
   assert.equal(
     presentation.registry.tools.find(
       ({ operationId }) => operationId === "pilotPostSandboxRepayment"

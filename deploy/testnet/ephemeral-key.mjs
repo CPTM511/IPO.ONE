@@ -4,16 +4,36 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-const KEY_DIRECTORY = "/private/tmp/ipo-one-chain-001b";
+const KEY_SCOPES = Object.freeze({
+  "CHAIN-001B": "/private/tmp/ipo-one-chain-001b",
+  "CHAIN-001D": "/private/tmp/ipo-one-chain-001d",
+  "CHAIN-001F": "/private/tmp/ipo-one-chain-001f"
+});
 const PRIVATE_KEY = /^0x[0-9a-f]{64}$/;
 
 function fail(message) {
   throw new Error(`ephemeral_testnet_key_error: ${message}`);
 }
 
-function safeKeyPath(path) {
+function approvedKeyScope() {
+  const approvalScope = process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
+  const keyDirectory = KEY_SCOPES[approvalScope];
+  if (!keyDirectory) {
+    fail("explicit approved runtime acknowledgement is required");
+  }
+  return { approvalScope, keyDirectory };
+}
+
+function safeKeyPath(path, { expectedDirectory } = {}) {
   const absolute = resolve(path);
-  if (!absolute.startsWith(`${KEY_DIRECTORY}/`) || !absolute.endsWith(".key")) {
+  const keyDirectory = Object.values(KEY_SCOPES).find(
+    (directory) => absolute.startsWith(`${directory}/`)
+  );
+  if (
+    !keyDirectory ||
+    (expectedDirectory && keyDirectory !== expectedDirectory) ||
+    !absolute.endsWith(".key")
+  ) {
     fail("key files must stay under the dedicated private temporary directory");
   }
   return absolute;
@@ -23,10 +43,11 @@ export async function provisionEphemeralTestnetKey({ keyPath } = {}) {
   if (process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true") {
     fail("ephemeral testnet key provisioning is disabled in CI");
   }
-  if (process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY !== "CHAIN-001B") {
-    fail("explicit CHAIN-001B runtime acknowledgement is required");
-  }
-  const selected = safeKeyPath(keyPath ?? `${KEY_DIRECTORY}/deployer-${Date.now()}-${randomUUID()}.key`);
+  const { approvalScope, keyDirectory } = approvedKeyScope();
+  const selected = safeKeyPath(
+    keyPath ?? `${keyDirectory}/deployer-${Date.now()}-${randomUUID()}.key`,
+    { expectedDirectory: keyDirectory }
+  );
   await mkdir(dirname(selected), { recursive: true, mode: 0o700 });
   const privateKey = generatePrivateKey();
   const handle = await open(selected, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
@@ -39,6 +60,7 @@ export async function provisionEphemeralTestnetKey({ keyPath } = {}) {
   return Object.freeze({
     address: privateKeyToAccount(privateKey).address,
     keyPath: selected,
+    approvalScope,
     keyStoredInRepository: false,
     keyLogged: false,
     ciEnabled: false,

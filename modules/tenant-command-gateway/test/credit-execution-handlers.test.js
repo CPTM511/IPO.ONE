@@ -18,6 +18,7 @@ import {
 } from "../../../packages/domain/src/index.js";
 import {
   advanceSandboxServicingCommandHandler,
+  createAuthenticatedProtocolActionConfirmation,
   executeSandboxObligationCommandHandler,
   postSandboxRepaymentCommandHandler,
   sandboxServicingResolutionCommandHandler
@@ -159,20 +160,46 @@ function approvedServicingDecision(obligation, proposal) {
 }
 
 function context(obligation, now) {
+  const requestId = "request-sandbox-execution-0001";
+  const resource = {
+    resourceType: "obligation",
+    resourceId: obligation.obligationId
+  };
   return {
     client: {},
-    payload: {},
+    payload: {
+      actionConfirmation: createAuthenticatedProtocolActionConfirmation({
+        operationId: "pilotExecuteSandboxObligation",
+        payload: {},
+        resource,
+        requestId
+      })
+    },
     authenticationContext: {
       actorId: "actor_human_sandbox_execution",
-      actorType: ActorType.HUMAN
+      actorType: ActorType.HUMAN,
+      authenticationMethod: "oidc_pkce_bff"
     },
-    authorizationDecision: {
-      resourceType: "obligation",
-      resourceId: obligation.obligationId
-    },
+    authorizationDecision: resource,
     now,
-    requestId: "request-sandbox-execution-0001",
+    requestId,
     correlationId: "correlation-sandbox-execution-0001"
+  };
+}
+
+function repaymentPayload(obligation, payload, requestId = "request-sandbox-execution-0001") {
+  const resource = {
+    resourceType: "obligation",
+    resourceId: obligation.obligationId
+  };
+  return {
+    ...payload,
+    actionConfirmation: createAuthenticatedProtocolActionConfirmation({
+      operationId: "pilotPostSandboxRepayment",
+      payload,
+      resource,
+      requestId
+    })
   };
 }
 
@@ -197,7 +224,10 @@ test("Human sandbox execution plans one signed receipt, eight accounts, balanced
     .map(({ value }) => value);
   const repaymentPlan = await postSandboxRepaymentCommandHandler().plan({
     ...context(executed, new Date("2026-07-17T00:01:00.000Z")),
-    payload: { amountMinor: "5000", sourceCode: "synthetic_wallet" },
+    payload: repaymentPayload(executed, {
+      amountMinor: "5000",
+      sourceCode: "synthetic_wallet"
+    }),
     coreRepository: repository(fixture, { obligation: executed, accounts })
   });
   assert.equal(repaymentPlan.response.repayment.appliedPrincipalMinor, "4998");
@@ -223,6 +253,35 @@ test("sandbox execution fails closed before any write when the signed rail is un
       coreRepository: repository(fixture)
     }),
     (error) => error.code === "sandbox_rail_unavailable"
+  );
+});
+
+test("a suspended Agent Subject cannot execute or repay an existing sandbox Obligation", async () => {
+  const fixture = humanFixture();
+  fixture.subject.subjectType = "agent";
+  fixture.subject.status = "suspended";
+  const agentContext = {
+    ...context(fixture.obligation, new Date("2026-07-16T00:01:00.000Z")),
+    authenticationContext: {
+      actorId: "actor_agent_sandbox_execution",
+      actorType: ActorType.AGENT,
+      authenticationMethod: "private_key_jwt"
+    },
+    coreRepository: repository(fixture)
+  };
+  await assert.rejects(
+    () => executeSandboxObligationCommandHandler().plan(agentContext),
+    (error) => error.code === "credit_state_frozen"
+  );
+  await assert.rejects(
+    () => postSandboxRepaymentCommandHandler().plan({
+      ...agentContext,
+      payload: repaymentPayload(fixture.obligation, {
+        amountMinor: "1000",
+        sourceCode: "synthetic_revenue"
+      })
+    }),
+    (error) => error.code === "credit_state_frozen"
   );
 });
 

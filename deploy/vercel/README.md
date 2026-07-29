@@ -7,7 +7,7 @@ an API Wallet.
 
 `api/index.mjs` is bundled locally from the reviewed root entrypoint before
 upload. `apps/web/src` and the public OpenAPI document are included as
-read-only runtime files. The temporary bundle uses Node 24 and has no runtime
+read-only runtime files. The temporary bundle uses Node 26 and has no runtime
 package installation.
 
 The public sandbox keeps bounded process-local sessions. Vercel Functions may

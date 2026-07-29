@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "private_pilot_tenant_profile.v1",
+  "mode": "local_no_funds",
+  "tenantId": "tenant_ipo_one_local_pilot",
+  "syntheticDataOnly": true,
+  "realFundsEnabled": false,
+  "remoteAccessEnabled": false,
+  "riskPortfolioId": "risk_portfolio_local_private_pilot",
+  "servicingQueueId": "servicing_queue_local_private_pilot",
+  "identities": {
+    "borrower": {
+      "actorId": "actor_human_borrower_pilot"
+    },
+    "controller": {
+      "actorId": "actor_principal_controller_pilot"
+    },
+    "agent": {
+      "actorId": "actor_agent_pilot_alpha"
+    },
+    "risk": {
+      "actorId": "actor_risk_operations_pilot"
+    }
+  }
+}

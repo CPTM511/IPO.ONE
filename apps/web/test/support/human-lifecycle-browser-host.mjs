@@ -20,6 +20,9 @@ import {
 } from "../../../../packages/domain/src/index.js";
 
 const csrfToken = "human_lifecycle_browser_qa_csrf_token_00000001";
+const disableAuthenticationDiscovery =
+  process.env.IPO_ONE_BROWSER_QA_DISABLE_AUTH_DISCOVERY === "1";
+let browserSessionActive = true;
 const offerReceipt = JSON.parse(await readFile(
   new URL(
     "../../../../api/tenant-protocol/conformance/human-credit-offer-workflow-receipt.v1.fixtures.json",
@@ -702,12 +705,46 @@ const authenticationContext = createAuthenticationContext({
 });
 
 async function serveAuthentication({ request, response, url, requestId }) {
+  if (disableAuthenticationDiscovery) return false;
+  if (request.method === "POST" && url.pathname === "/auth/v1/logout") {
+    if (
+      request.headers["x-csrf-token"] !== csrfToken ||
+      typeof request.headers["idempotency-key"] !== "string"
+    ) {
+      response.writeHead(403, {
+        "content-type": "application/problem+json; charset=utf-8",
+        "x-request-id": requestId
+      });
+      response.end(JSON.stringify({
+        code: "authentication_rejected",
+        detail: "The browser QA logout boundary rejected the request."
+      }));
+      return true;
+    }
+    browserSessionActive = false;
+    const body = JSON.stringify({
+      schemaVersion: "ipo_one_logout_result.v1",
+      status: "logged_out"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "set-cookie": [
+        "__Host-ipo_one_session=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0",
+        "__Host-ipo_one_csrf=; Path=/; Secure; SameSite=Strict; Max-Age=0"
+      ],
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
   if (request.method !== "GET" || url.pathname !== "/auth/v1/options") return false;
   const body = JSON.stringify({
     schemaVersion: "ipo_one_authentication_options.v1",
     profile: "closed_non_funds_pilot",
     enabled: true,
-    sessionActive: true,
+    sessionActive: browserSessionActive,
     oidcProviders: [],
     walletAuthentication: false,
     supportedChains: ["eip155:84532", "eip155:1952"],
@@ -730,6 +767,9 @@ const host = createTenantHttpServer({
   credentialSource: "local_test",
   gateway: { async execute(command) { return resultFor(command); } },
   resolveAuthenticationContext: async ({ request }) => {
+    if (!browserSessionActive) {
+      throw new Error("browser_qa_session_inactive");
+    }
     if (request.method === "POST" && request.headers["x-csrf-token"] !== csrfToken) {
       throw new Error("invalid_browser_qa_csrf");
     }
@@ -737,7 +777,9 @@ const host = createTenantHttpServer({
   },
   createNetworkContext: async () => ({ source: "human_lifecycle_browser_qa" }),
   serveAuthentication,
-  serveWebAsset: createTenantWebAssetHandler({ csrfTokenProvider: async () => csrfToken })
+  serveWebAsset: createTenantWebAssetHandler({
+    csrfTokenProvider: async () => browserSessionActive ? csrfToken : undefined
+  })
 });
 
 const address = await host.listen();

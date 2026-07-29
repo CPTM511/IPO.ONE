@@ -38,6 +38,13 @@ const LIFECYCLE_PAIRS = Object.freeze({
 });
 const ADVERSE = new Set(["grace_period", "dpd_1_30", "dpd_31_60", "dpd_61_89", "defaulted"]);
 const TERMINAL = new Set(["fully_repaid", "written_off"]);
+const SERVICING_ACTION_SOURCES = Object.freeze({
+  advance: new Set(["system_worker", "repayment"]),
+  cure: new Set(["repayment"]),
+  restructure: new Set(["dual_control"]),
+  repurchase: new Set(["dual_control"]),
+  write_off: new Set(["dual_control"])
+});
 
 function deepFreeze(value) {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
@@ -152,37 +159,54 @@ function actionPresentation(action, obligation) {
     !new Set(["system_worker", "repayment", "dual_control"]).has(action.source) ||
     !validDateTime(action.effectiveAt)
   ) return null;
-  const sourceByAction = {
-    advance: "system_worker",
-    cure: "repayment",
-    restructure: "dual_control",
-    repurchase: "dual_control",
-    write_off: "dual_control"
-  };
   const scheduleDelta = action.actionType === "restructure" ? 1 : 0;
   if (
-    sourceByAction[action.actionType] !== action.source ||
+    !SERVICING_ACTION_SOURCES[action.actionType].has(action.source) ||
     !LIFECYCLE_PAIRS[action.previousStatus].includes(action.previousClassification) ||
     action.scheduleSequenceAfter !== action.scheduleSequenceBefore + scheduleDelta ||
     (action.actionType === "cure" && !ADVERSE.has(action.previousClassification))
   ) return null;
   const after = action.balancesAfter;
+  if (!after || typeof after !== "object" || Array.isArray(after)) return null;
+  const before = action.balancesBefore;
+  const balanceValues = [
+    before?.outstandingPrincipalMinor,
+    before?.outstandingInterestMinor,
+    before?.outstandingFeesMinor,
+    before?.totalRepaidMinor,
+    after.outstandingPrincipalMinor,
+    after.outstandingInterestMinor,
+    after.outstandingFeesMinor,
+    after.totalRepaidMinor
+  ].map(minor);
   if (
-    !after ||
     after.outstandingPrincipalMinor !== obligation.outstandingPrincipalMinor ||
     after.outstandingInterestMinor !== obligation.outstandingInterestMinor ||
     after.outstandingFeesMinor !== obligation.outstandingFeesMinor ||
     after.totalRepaidMinor !== obligation.totalRepaidMinor ||
-    [
-      action.balancesBefore?.outstandingPrincipalMinor,
-      action.balancesBefore?.outstandingInterestMinor,
-      action.balancesBefore?.outstandingFeesMinor,
-      action.balancesBefore?.totalRepaidMinor,
-      after.outstandingPrincipalMinor,
-      after.outstandingInterestMinor,
-      after.outstandingFeesMinor,
-      after.totalRepaidMinor
-    ].some((value) => minor(value) === null)
+    balanceValues.some((value) => value === null)
+  ) return null;
+  const [
+    beforePrincipal,
+    beforeInterest,
+    beforeFees,
+    beforeRepaid,
+    afterPrincipal,
+    afterInterest,
+    afterFees,
+    afterRepaid
+  ] = balanceValues;
+  const beforeOutstanding = beforePrincipal + beforeInterest + beforeFees;
+  const afterOutstanding = afterPrincipal + afterInterest + afterFees;
+  if (
+    (
+      action.source === "repayment" &&
+      (afterRepaid <= beforeRepaid || afterOutstanding >= beforeOutstanding)
+    ) ||
+    (
+      action.source === "system_worker" &&
+      balanceValues.some((value, index) => index >= 4 && value !== balanceValues[index - 4])
+    )
   ) return null;
   return {
     actionId: action.servicingActionId,

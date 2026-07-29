@@ -100,15 +100,20 @@ function immutableSecretRef(name, value) {
   return value;
 }
 
-function exactBrowserOrigin(value) {
+function exactBrowserOrigin(value, { allowLoopback = false } = {}) {
   let parsed;
   try {
     parsed = new URL(value);
   } catch {
     throw authenticationError("invalid_authentication_configuration", "browserOrigin is invalid");
   }
+  const approvedLoopback =
+    allowLoopback &&
+    parsed.protocol === "http:" &&
+    parsed.hostname === "127.0.0.1" &&
+    parsed.port !== "";
   if (
-    parsed.protocol !== "https:" ||
+    (parsed.protocol !== "https:" && !approvedLoopback) ||
     parsed.username ||
     parsed.password ||
     parsed.search ||
@@ -118,6 +123,32 @@ function exactBrowserOrigin(value) {
     throw authenticationError("invalid_authentication_configuration", "browserOrigin is invalid");
   }
   return parsed.origin;
+}
+
+function localSessionBff(humanSessionBff, { browserOrigin, sessionOrigin }) {
+  const mapOrigin = (input) => ({
+    ...input,
+    requestOrigin: input?.requestOrigin === browserOrigin
+      ? sessionOrigin
+      : input?.requestOrigin
+  });
+  return Object.freeze({
+    authenticateSession(input) {
+      return humanSessionBff.authenticateSession(mapOrigin(input));
+    },
+    rotateSession(input) {
+      return humanSessionBff.rotateSession(mapOrigin(input));
+    },
+    logout(input) {
+      return humanSessionBff.logout(mapOrigin(input));
+    },
+    invalidateBrowserSession(input) {
+      return humanSessionBff.invalidateBrowserSession(mapOrigin(input));
+    },
+    deprovisionCredential(input) {
+      return humanSessionBff.deprovisionCredential(input);
+    }
+  });
 }
 
 function normalizeOidcProviders(value) {
@@ -217,35 +248,67 @@ export async function createPostgresHumanAccessComposition(input) {
     "tenantId"
   ]);
   const runtimeConfig = assertAuthenticationRuntimeConfig(input.runtimeConfig);
-  if (
-    runtimeConfig.mode !== "closed_pilot" ||
-    runtimeConfig.enabled !== true ||
-    runtimeConfig.deploymentGateSatisfied !== true
-  ) {
+  const localProfile =
+    runtimeConfig.mode === "local_test" &&
+    runtimeConfig.enabled === true &&
+    runtimeConfig.deploymentGateSatisfied === false &&
+    input.profile === "local_no_funds";
+  const closedPilot =
+    runtimeConfig.mode === "closed_pilot" &&
+    runtimeConfig.enabled === true &&
+    runtimeConfig.deploymentGateSatisfied === true;
+  if (!closedPilot && !localProfile) {
     throw authenticationError(
       "authentication_deployment_gate_closed",
-      "PostgreSQL Human access requires the approved closed-pilot runtime"
+      "PostgreSQL Human access requires the approved closed-pilot or local no-funds runtime"
     );
   }
   const tenantId = assertSafeIdentifier("tenantId", input.tenantId);
   const systemActorId = assertSafeIdentifier("systemActorId", input.systemActorId);
   const policyVersion = assertSafeIdentifier("policyVersion", input.policyVersion);
-  const browserOrigin = exactBrowserOrigin(input.browserOrigin);
-  const referenceHashKeyRef = immutableSecretRef("referenceHashKeyRef", input.referenceHashKeyRef);
-  const encryptionKeyRef = immutableSecretRef("encryptionKeyRef", input.encryptionKeyRef);
-  if (
-    runtimeConfig.referenceHashKeyRef !== referenceHashKeyRef ||
-    runtimeConfig.encryptionKeyRef !== encryptionKeyRef
-  ) {
-    throw authenticationError(
-      "authentication_deployment_gate_closed",
-      "authentication key references do not match the approved runtime"
-    );
+  const browserOrigin = exactBrowserOrigin(input.browserOrigin, {
+    allowLoopback: localProfile
+  });
+  const sessionOrigin = localProfile
+    ? `https://${new URL(browserOrigin).host}`
+    : browserOrigin;
+  let referenceHashKeyRef;
+  let encryptionKeyRef;
+  if (localProfile) {
+    if (
+      input.referenceHashKeyRef !== "local-secret://authentication/reference-hash-key" ||
+      input.encryptionKeyRef !== "local-secret://authentication/encryption-key"
+    ) {
+      throw authenticationError(
+        "authentication_deployment_gate_closed",
+        "local authentication requires the reviewed ignored-file key references"
+      );
+    }
+    referenceHashKeyRef = input.referenceHashKeyRef;
+    encryptionKeyRef = input.encryptionKeyRef;
+  } else {
+    referenceHashKeyRef = immutableSecretRef("referenceHashKeyRef", input.referenceHashKeyRef);
+    encryptionKeyRef = immutableSecretRef("encryptionKeyRef", input.encryptionKeyRef);
+    if (
+      runtimeConfig.referenceHashKeyRef !== referenceHashKeyRef ||
+      runtimeConfig.encryptionKeyRef !== encryptionKeyRef
+    ) {
+      throw authenticationError(
+        "authentication_deployment_gate_closed",
+        "authentication key references do not match the approved runtime"
+      );
+    }
   }
   const providers = normalizeOidcProviders(input.oidcProviders);
   const wallet = input.wallet === undefined
     ? undefined
     : closedObject("wallet authentication", input.wallet, WALLET_KEYS, [...WALLET_KEYS]);
+  if (localProfile && (providers.length !== 0 || wallet === undefined)) {
+    throw authenticationError(
+      "authentication_deployment_gate_closed",
+      "local no-funds authentication requires wallet-only login"
+    );
+  }
   if (providers.length === 0 && wallet === undefined) {
     throw authenticationError(
       "authentication_deployment_gate_closed",
@@ -286,14 +349,23 @@ export async function createPostgresHumanAccessComposition(input) {
     eventRepository,
     tenantId,
     referenceHasher,
-    origin: browserOrigin,
+    origin: sessionOrigin,
     ...(input.idleTimeoutMs === undefined ? {} : { idleTimeoutMs: input.idleTimeoutMs }),
     ...(input.sessionAbsoluteTimeoutMs === undefined
       ? {}
       : { absoluteTimeoutMs: input.sessionAbsoluteTimeoutMs }),
     ...(input.maximumSessions === undefined ? {} : { maximumSessions: input.maximumSessions })
   });
-  const humanSessionBff = new HumanSessionBff({ sessionStore, credentialRegistry });
+  const durableHumanSessionBff = new HumanSessionBff({
+    sessionStore,
+    credentialRegistry
+  });
+  const humanSessionBff = localProfile
+    ? localSessionBff(durableHumanSessionBff, {
+        browserOrigin,
+        sessionOrigin
+      })
+    : durableHumanSessionBff;
   const oidcProviders = {};
   for (const provider of providers) {
     immutableSecretRef("OIDC configurationRef", provider.configurationRef);
@@ -391,8 +463,8 @@ export async function createPostgresHumanAccessComposition(input) {
       policyVersion,
       databaseRole: roleBoundary.roleName,
       databaseBoundary: roleBoundary.boundary,
-      idpVendorId: runtimeConfig.vendorId,
-      idpApprovalSha: runtimeConfig.approvalSha,
+      idpVendorId: localProfile ? "local_wallet_only" : runtimeConfig.vendorId,
+      idpApprovalSha: localProfile ? undefined : runtimeConfig.approvalSha,
       referenceHashKeyRef,
       encryptionKeyRef,
       credentialProvisioning: "pre_provisioned_only",

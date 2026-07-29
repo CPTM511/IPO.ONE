@@ -115,6 +115,8 @@ export const PilotCapability = Object.freeze({
   PROVIDER_INTENT_ACKNOWLEDGE: "provider.intent.acknowledge",
   EVIDENCE_READ: "evidence.read",
   EVIDENCE_READ_OWNED: "evidence.read.owned",
+  CREDIT_REGISTRY_EVIDENCE_READ_TENANT:
+    "credit_registry.evidence.read.tenant",
   CREDIT_PASSPORT_CREATE_SELF: "credit_passport.create.self",
   CREDIT_PASSPORT_READ_SELF: "credit_passport.read.self",
   CREDIT_PASSPORT_VERIFY_BOUND: "credit_passport.verify.bound",
@@ -188,6 +190,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.MANDATE_DRAFT_CREATE,
     PilotCapability.MANDATE_DRAFT_REVOKE,
     PilotCapability.EVIDENCE_READ_OWNED,
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND
   ]),
   [RoleBundle.PRINCIPAL_CONTROLLER]: Object.freeze([
@@ -200,6 +203,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.MANDATE_DRAFT_REVOKE,
     PilotCapability.MANDATE_ACTIVATE_OWNED,
     PilotCapability.EVIDENCE_READ_OWNED,
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
     PilotCapability.CREDIT_PASSPORT_READ_SELF,
     PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
@@ -242,6 +246,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
     PilotCapability.OBLIGATION_READ_OWNED,
     PilotCapability.EVIDENCE_READ_OWNED,
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
     PilotCapability.CREDIT_PASSPORT_READ_SELF,
     PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
@@ -282,6 +287,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
     PilotCapability.OBLIGATION_READ_OWNED,
     PilotCapability.EVIDENCE_READ_OWNED,
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.CREDIT_PASSPORT_READ_SELF,
     PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
     PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
@@ -312,6 +318,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
   ]),
   [RoleBundle.RISK_OPERATOR]: Object.freeze([
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.RISK_READ_TENANT,
     PilotCapability.PILOT_HEALTH_READ,
     PilotCapability.PILOT_FEEDBACK_READ_TENANT,
@@ -330,6 +337,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.APPROVAL_CANCEL
   ]),
   [RoleBundle.OPERATIONS_OPERATOR]: Object.freeze([
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.PILOT_HEALTH_READ,
     PilotCapability.PILOT_FEEDBACK_READ_TENANT,
     PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
@@ -353,6 +361,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
   ]),
   [RoleBundle.AUDITOR]: Object.freeze([
     PilotCapability.EVIDENCE_READ,
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.AUDIT_EXPORT,
     PilotCapability.RISK_READ_TENANT,
     PilotCapability.PILOT_HEALTH_READ,

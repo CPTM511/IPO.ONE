@@ -119,7 +119,9 @@ import {
 } from "../../chain-adapter/src/index.js";
 import {
   LiveChainIndexer,
-  PostgresChainObservationStore
+  PostgresChainObservationStore,
+  PostgresCreditRegistryObservationStore,
+  calculateCreditRegistryObservationHash
 } from "../../event-indexer/src/index.js";
 import {
   HyperliquidTestnetExecutionGateway,
@@ -194,6 +196,72 @@ const TENANT_TWO_CONTEXT = createTenantSecurityContext({
   policyVersion: "security_001.v1",
   source: "local_test"
 });
+
+function creditRegistryObservationFixture() {
+  const observation = {
+    chainId: "eip155:84532",
+    providerSlot: "primary",
+    contractAddress: "0x1111111111111111111111111111111111111111",
+    authorizationHash: hashId("pg_credit_registry_authorization", "one"),
+    accountReferenceHash: hashId(
+      "pg_credit_registry_account_reference",
+      "one"
+    ),
+    subjectAccountHash: hashId("pg_credit_registry_subject", "one"),
+    acceptedOfferHash: hashId("pg_credit_registry_offer", "one"),
+    policyHash: hashId("pg_credit_registry_policy", "one"),
+    providerScopeHash: hashId("pg_credit_registry_provider", "one"),
+    finalCreditStateHash: hashId("pg_credit_registry_credit_state", "repaid"),
+    finalObligationProofHash: hashId(
+      "pg_credit_registry_obligation_proof",
+      "settled"
+    ),
+    validUntil: "2026-07-28T13:11:00.000Z",
+    finalStatus: "closed",
+    finalVersion: 3,
+    registryPaused: true,
+    authorizationActive: false,
+    transactions: [
+      ["publication", "one", "44734260", "one"],
+      ["proof_update", "two", "44734583", "two"],
+      ["close", "three", "44734585", "three"],
+      ["pause", "four", "44734587", "four"]
+    ].map(([kind, transaction, blockNumber, blockValue], index) => ({
+      kind,
+      transactionHash: hashId(
+        "pg_credit_registry_transaction",
+        transaction
+      ),
+      blockNumber,
+      blockHash: hashId("pg_credit_registry_block", blockValue),
+      transactionIndex: "0",
+      eventOrdinal: "0",
+      observationStatus: "safe",
+      confirmations: 12 - index
+    })),
+    safeBlock: {
+      number: "44734636",
+      hash: hashId("pg_credit_registry_safe_block", "one")
+    },
+    finalizedBlock: {
+      number: "44734600",
+      hash: hashId("pg_credit_registry_finalized_block", "one")
+    },
+    finalityProofHash: hashId("pg_credit_registry_finality", "one"),
+    observedAt: "2026-07-28T12:00:00.000Z",
+    readOnly: true,
+    liveTestnetObservation: true,
+    rawAccountPersisted: false,
+    rawProviderPayloadPersisted: false,
+    syntheticOnly: true,
+    productionFundsMoved: false,
+    schemaVersion: "credit_registry_live_observation.v1"
+  };
+  observation.observationHash =
+    calculateCreditRegistryObservationHash(observation);
+  return observation;
+}
+
 const TENANT_OWNED_TABLES = [
   "abuse_admissions",
   "abuse_capacity_buckets",
@@ -231,9 +299,15 @@ const TENANT_OWNED_TABLES = [
   "credit_lines",
   "credit_offer_acceptances",
   "credit_offers",
+  "credit_outcomes",
   "credit_passport_artifacts",
   "credit_profiles",
+  "credit_registry_chain_observations",
+  "credit_registry_chain_outbox_messages",
   "domain_events",
+  "evidence_chain_anchor_binding_repairs",
+  "evidence_chain_anchor_observations",
+  "evidence_chain_anchors",
   "evidence_envelopes",
   "human_identity_references",
   "inbox_messages",
@@ -276,6 +350,7 @@ const TENANT_OWNED_TABLES = [
   "spend_requests",
   "subjects",
   "tenant_command_executions",
+  "tenant_command_pauses",
   "trading_capital_requests",
   "trading_credit_profiles",
   "trading_execution_nonce_heads",
@@ -342,6 +417,7 @@ async function runtimeCounts(pool) {
       (SELECT count(*)::int FROM command_idempotency) AS commands,
       (SELECT count(*)::int FROM domain_events) AS events,
       (SELECT count(*)::int FROM evidence_envelopes) AS evidence,
+      (SELECT count(*)::int FROM evidence_chain_anchors) AS anchors,
       (SELECT count(*)::int FROM credit_events) AS credit_events,
       (SELECT count(*)::int FROM outbox_messages) AS outbox,
       (SELECT count(*)::int FROM aggregate_stream_heads) AS stream_heads
@@ -997,12 +1073,28 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0036_trading_testnet_reconciliation_recovery",
         "0037_trading_testnet_facility_funding",
         "0038_trading_testnet_settlement",
-        "0039_durable_authentication_replay"
+        "0039_durable_authentication_replay",
+        "0040_credit_registry_chain_observations",
+        "0041_credit_registry_evidence_resource",
+        "0042_invite_bound_authentication_credentials",
+        "0043_durable_credit_outcomes",
+        "0044_durable_tenant_command_pause",
+        "0045_evidence_chain_anchors",
+        "0046_evidence_anchor_coverage_guard",
+        "0047_chain_001f_anchor_binding_repair"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 39 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 47 }), [
+        "0047_chain_001f_anchor_binding_repair",
+        "0046_evidence_anchor_coverage_guard",
+        "0045_evidence_chain_anchors",
+        "0044_durable_tenant_command_pause",
+        "0043_durable_credit_outcomes",
+        "0042_invite_bound_authentication_credentials",
+        "0041_credit_registry_evidence_resource",
+        "0040_credit_registry_chain_observations",
         "0039_durable_authentication_replay",
         "0038_trading_testnet_settlement",
         "0037_trading_testnet_facility_funding",
@@ -1082,10 +1174,26 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0036_trading_testnet_reconciliation_recovery",
         "0037_trading_testnet_facility_funding",
         "0038_trading_testnet_settlement",
-        "0039_durable_authentication_replay"
+        "0039_durable_authentication_replay",
+        "0040_credit_registry_chain_observations",
+        "0041_credit_registry_evidence_resource",
+        "0042_invite_bound_authentication_credentials",
+        "0043_durable_credit_outcomes",
+        "0044_durable_tenant_command_pause",
+        "0045_evidence_chain_anchors",
+        "0046_evidence_anchor_coverage_guard",
+        "0047_chain_001f_anchor_binding_repair"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 37 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 45 }), [
+        "0047_chain_001f_anchor_binding_repair",
+        "0046_evidence_anchor_coverage_guard",
+        "0045_evidence_chain_anchors",
+        "0044_durable_tenant_command_pause",
+        "0043_durable_credit_outcomes",
+        "0042_invite_bound_authentication_credentials",
+        "0041_credit_registry_evidence_resource",
+        "0040_credit_registry_chain_observations",
         "0039_durable_authentication_replay",
         "0038_trading_testnet_settlement",
         "0037_trading_testnet_facility_funding",
@@ -1174,7 +1282,15 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0036_trading_testnet_reconciliation_recovery",
         "0037_trading_testnet_facility_funding",
         "0038_trading_testnet_settlement",
-        "0039_durable_authentication_replay"
+        "0039_durable_authentication_replay",
+        "0040_credit_registry_chain_observations",
+        "0041_credit_registry_evidence_resource",
+        "0042_invite_bound_authentication_credentials",
+        "0043_durable_credit_outcomes",
+        "0044_durable_tenant_command_pause",
+        "0045_evidence_chain_anchors",
+        "0046_evidence_anchor_coverage_guard",
+        "0047_chain_001f_anchor_binding_repair"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -1660,7 +1776,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         `GRANT SELECT, INSERT, UPDATE, DELETE ON
            aggregate_stream_heads, domain_events, command_idempotency,
            outbox_messages, inbox_messages, evidence_envelopes, credit_events,
-           command_events
+           command_events, evidence_chain_anchors,
+           evidence_chain_anchor_observations
          TO ${appRole}`
       );
       const appConnection = new URL(CONNECTION_STRING);
@@ -1730,6 +1847,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
           commands: 2,
           events: 2,
           evidence: 2,
+          anchors: 2,
           credit_events: 2,
           outbox: 2,
           stream_heads: 2
@@ -1764,6 +1882,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         commands: 0,
         events: 0,
         evidence: 0,
+        anchors: 0,
         credit_events: 0,
         outbox: 0,
         stream_heads: 0
@@ -1776,6 +1895,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         commands: 1,
         events: 1,
         evidence: 1,
+        anchors: 1,
         credit_events: 1,
         outbox: 1,
         stream_heads: 1
@@ -2390,6 +2510,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       const after = await runtimeCounts(pool);
       assert.equal(after.events - baseline.events, 3);
       assert.equal(after.evidence - baseline.evidence, 3);
+      assert.equal(after.anchors - baseline.anchors, 3);
       assert.equal(after.outbox - baseline.outbox, 3);
       await assert.rejects(
         () =>
@@ -2825,6 +2946,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       const after = await runtimeCounts(pool);
       assert.equal(after.events - baseline.events, 4);
       assert.equal(after.evidence - baseline.evidence, 4);
+      assert.equal(after.anchors - baseline.anchors, 4);
       assert.equal(after.outbox - baseline.outbox, 4);
     });
 
@@ -7309,6 +7431,127 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         );
       } finally {
         await appPool.end();
+        await dropAppRole();
+      }
+    });
+
+    await t.test("credit Registry observations persist, isolate, deduplicate, and reconcile without raw account state", async () => {
+      const appRole = "ipo_one_credit_registry_test";
+      const dropAppRole = async () => {
+        const exists = await pool.query(
+          "SELECT 1 FROM pg_roles WHERE rolname = $1",
+          [appRole]
+        );
+        if (exists.rowCount === 0) return;
+        await pool.query(`DROP OWNED BY ${appRole}`);
+        await pool.query(`DROP ROLE ${appRole}`);
+      };
+      await dropAppRole();
+      const appRolePassword = randomBytes(24).toString("base64url");
+      const quotedPassword = (
+        await pool.query("SELECT quote_literal($1) AS value", [appRolePassword])
+      ).rows[0].value;
+      await pool.query(
+        `CREATE ROLE ${appRole} LOGIN PASSWORD ${quotedPassword}
+         NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION
+         NOBYPASSRLS`
+      );
+      await pool.query(`GRANT USAGE ON SCHEMA public TO ${appRole}`);
+      await pool.query(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON
+           credit_registry_chain_observations,
+           credit_registry_chain_outbox_messages
+         TO ${appRole}`
+      );
+      await pool.query(
+        `GRANT SELECT, INSERT ON authorization_resources TO ${appRole};
+         GRANT SELECT ON access_grants TO ${appRole}`
+      );
+      const appConnection = new URL(CONNECTION_STRING);
+      appConnection.username = appRole;
+      appConnection.password = appRolePassword;
+      const appPool = createPostgresPool({
+        connectionString: appConnection.toString(),
+        max: 4,
+        applicationName: "ipo-one-credit-registry-test"
+      });
+      const observation = creditRegistryObservationFixture();
+      try {
+        await assertTenantDatabaseRole(appPool);
+        const store = new PostgresCreditRegistryObservationStore({
+          pool: appPool,
+          tenantContext: TENANT_CONTEXT,
+          clock: () => new Date("2026-07-28T12:01:00.000Z")
+        });
+        const first = await store.append(observation);
+        const replay = await store.append(observation);
+        assert.equal(first.replayed, false);
+        assert.equal(replay.replayed, true);
+        assert.equal((await store.listPendingOutbox()).length, 1);
+        const restored = await store.readLatest(
+          observation.authorizationHash
+        );
+        assert.deepEqual(restored, observation);
+        const resource = await withTenantTransaction(
+          pool,
+          TENANT_CONTEXT,
+          (client) => client.query(
+            `SELECT status, version, schema_version
+               FROM authorization_resources
+              WHERE resource_type = 'credit_registry_evidence'
+                AND resource_id = $1`,
+            [observation.authorizationHash]
+          )
+        );
+        assert.deepEqual(resource.rows, [{
+          status: "active",
+          version: "1",
+          schema_version: "authorization_resource.v1"
+        }]);
+        const result = await store.reconcile(observation.authorizationHash);
+        assert.equal(result.consistent, true);
+        assert.deepEqual(result.differences, []);
+
+        const otherTenantStore = new PostgresCreditRegistryObservationStore({
+          pool: appPool,
+          tenantContext: TENANT_TWO_CONTEXT,
+          clock: () => new Date("2026-07-28T12:02:00.000Z")
+        });
+        assert.equal(
+          await otherTenantStore.readLatest(observation.authorizationHash),
+          undefined
+        );
+        const durable = await withTenantTransaction(
+          pool,
+          TENANT_CONTEXT,
+          (client) => client.query(
+            `SELECT observation
+               FROM credit_registry_chain_observations`
+          )
+        );
+        assert.equal(durable.rowCount, 1);
+        const serialized = JSON.stringify(durable.rows);
+        assert.equal(serialized.includes("rpcUrl"), false);
+        assert.equal(serialized.includes("privateKey"), false);
+        assert.equal(serialized.includes("accountAddress"), false);
+        await assert.rejects(
+          () => withTenantTransaction(
+            pool,
+            TENANT_CONTEXT,
+            (client) => client.query(
+              `UPDATE credit_registry_chain_observations
+                  SET observation = '{}'::jsonb`
+            )
+          ),
+          /append-only|immutable/
+        );
+      } finally {
+        await appPool.end();
+        await pool.query(
+          `TRUNCATE TABLE
+             credit_registry_chain_outbox_messages,
+             credit_registry_chain_observations`
+        );
         await dropAppRole();
       }
     });

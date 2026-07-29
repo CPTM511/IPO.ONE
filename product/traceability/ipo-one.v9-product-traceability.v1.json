@@ -927,6 +927,27 @@
       ]
     },
     {
+      "operationId": "pilotReadCreditRegistryEvidence",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_registry_evidence_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-registry-evidence-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "packages/sdk/src/agent-registry-evidence-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/credit-registry-evidence-handlers.test.js",
+        "packages/sdk/test/agent-registry-evidence-client.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
       "operationId": "pilotReadEvidence",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_obligation_evidence_view.v1",
@@ -2594,20 +2615,34 @@
         },
         {
           "actionId": "activity_proofs.testnet_chain_observation",
-          "label": "Expose live Testnet observation as a V9 proof action",
+          "label": "Read a durable, redacted Base Sepolia Credit Registry observation",
           "prototypeLabels": [
             "On-chain",
             "Evidence anchors"
           ],
-          "classification": "ABSENT",
-          "authorityType": "none",
-          "operationIds": [],
-          "authorityReferences": [],
-          "uiAdapters": [],
-          "testFiles": [],
-          "truthBoundary": "Read-only chain observer code exists, but no catalogued, access-controlled V9 action exposes its live output.",
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadCreditRegistryEvidence"
+          ],
+          "authorityReferences": [
+            "artifacts/testnet/eip155-84532-chain-001e-read-20260728-001-credit-registry-observation.json",
+            "docs/security/IPO_ONE_CHAIN_001D_CREDIT_REGISTRY_TESTNET_RUNBOOK_v0.1.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "packages/sdk/src/agent-registry-evidence-client.js",
+            "apps/agent-mcp/src/agent-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/credit-registry-evidence-handlers.test.js",
+            "packages/sdk/test/agent-registry-evidence-client.test.js",
+            "apps/agent-mcp/test/agent-mcp.test.mjs",
+            "apps/web/test/static-ui.test.js"
+          ],
+          "truthBoundary": "The Tenant query returns one persisted, redacted, synthetic-only public-chain observation. It is read-only and non-authorizing, moves no funds, excludes raw account and KYC/PII, and does not claim ownership by the current Human, Agent, or Obligation.",
           "nextTaskIds": [
-            "V9-005"
+            "EVIDENCE-001C"
           ],
           "humanGateRequired": false
         },

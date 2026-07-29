@@ -15,7 +15,10 @@ import {
 } from "../../../packages/domain/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
-import { acceptCreditOfferCommandHandler } from "../src/index.js";
+import {
+  acceptCreditOfferCommandHandler,
+  createAuthenticatedProtocolActionConfirmation
+} from "../src/index.js";
 
 const CREATED_AT = new Date("2026-07-16T00:00:00.000Z");
 const ACCEPTED_AT = new Date("2026-07-16T00:01:00.000Z");
@@ -185,6 +188,17 @@ function fixture(actorType) {
 
 async function planAcceptanceWith(values, actorType, payload = {}) {
   const controllerActorId = "actor_agent_controller";
+  const requestId = `request_accept_${actorType}`;
+  const resource = {
+    resourceType: "credit_offer",
+    resourceId: values.offer.creditOfferId
+  };
+  const businessPayload = {
+    expectedOfferHash: values.offer.creditOfferHash,
+    expectedTermsHash: values.offer.termsHash,
+    acknowledgementHash: ACKNOWLEDGEMENT_HASH,
+    ...payload
+  };
   return acceptCreditOfferCommandHandler().plan({
     client: {},
     coreRepository: values.repository,
@@ -211,18 +225,24 @@ async function planAcceptanceWith(values, actorType, payload = {}) {
       }
     },
     payload: {
-      expectedOfferHash: values.offer.creditOfferHash,
-      expectedTermsHash: values.offer.termsHash,
-      acknowledgementHash: ACKNOWLEDGEMENT_HASH,
-      ...payload
+      ...businessPayload,
+      actionConfirmation: createAuthenticatedProtocolActionConfirmation({
+        operationId: "pilotAcceptCreditOffer",
+        payload: businessPayload,
+        resource,
+        requestId
+      })
     },
-    authenticationContext: { actorId: values.actorId, actorType },
-    authorizationDecision: {
-      resourceType: "credit_offer",
-      resourceId: values.offer.creditOfferId
+    authenticationContext: {
+      actorId: values.actorId,
+      actorType,
+      authenticationMethod: actorType === ActorType.AGENT
+        ? "private_key_jwt"
+        : "oidc_pkce_bff"
     },
+    authorizationDecision: resource,
     now: ACCEPTED_AT,
-    requestId: `request_accept_${actorType}`,
+    requestId,
     correlationId: `correlation_accept_${actorType}`
   });
 }

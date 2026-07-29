@@ -894,6 +894,27 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["provider_assignment", "provider_state", "transfer_intent_state"]
   }),
   tenantOperation({
+    operationId: "pilotReadCreditRegistryEvidence",
+    action: "credit_registry.evidence.read.tenant",
+    resourceType: "credit_registry_evidence",
+    allowedActorTypes: [
+      ActorType.HUMAN,
+      ActorType.AGENT,
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ],
+    requiredCapability:
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ]
+  }),
+  tenantOperation({
     operationId: "pilotReadEvidence",
     action: "evidence.read",
     resourceType: "evidence",

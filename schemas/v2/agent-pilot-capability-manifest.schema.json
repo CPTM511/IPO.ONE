@@ -50,11 +50,11 @@
       "properties": {
         "registryVersion": { "const": "agent_mcp_registry.v2" },
         "transportProfile": { "const": "mcp_stdio_local" },
-        "toolCount": { "const": 11 },
+        "toolCount": { "const": 12 },
         "tools": {
           "type": "array",
-          "minItems": 11,
-          "maxItems": 11,
+          "minItems": 12,
+          "maxItems": 12,
           "prefixItems": [
             { "$ref": "#/$defs/readSelfTool" },
             { "$ref": "#/$defs/requestCreditTool" },
@@ -67,6 +67,8 @@
             { "$ref": "#/$defs/acceptCreditOfferTool" },
             { "$ref": "#/$defs/executeSandboxObligationTool" },
             { "$ref": "#/$defs/postSandboxRepaymentTool" }
+            ,
+            { "$ref": "#/$defs/readCreditRegistryEvidenceTool" }
           ],
           "items": false
         },
@@ -152,6 +154,22 @@
       "allOf": [
         { "$ref": "#/$defs/tool" },
         { "type": "object", "properties": { "name": { "const": "ipo_one_read_obligation" }, "operationId": { "const": "pilotReadOwnObligation" } } }
+      ]
+    },
+    "readCreditRegistryEvidenceTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "ipo_one_read_credit_registry_evidence"
+            },
+            "operationId": {
+              "const": "pilotReadCreditRegistryEvidence"
+            }
+          }
+        }
       ]
     },
     "acceptCreditOfferTool": {

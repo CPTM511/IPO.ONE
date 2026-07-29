@@ -3,8 +3,11 @@ import { DomainError } from "../../../packages/domain/src/index.js";
 const METHODS = new Set([
   "eth_blockNumber",
   "eth_chainId",
+  "eth_getBlockByHash",
   "eth_getBlockByNumber",
-  "eth_getTransactionReceipt"
+  "eth_getTransactionByHash",
+  "eth_getTransactionReceipt",
+  "eth_call"
 ]);
 
 function fail(code, message) {

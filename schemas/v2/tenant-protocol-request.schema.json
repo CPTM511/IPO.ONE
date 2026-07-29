@@ -33,6 +33,7 @@
         "pilotReadAgentSelf",
         "pilotReadAgentAccountBinding",
         "pilotReadCreditApplication",
+        "pilotReadCreditRegistryEvidence",
         "pilotReadOwnCreditPassportArtifact",
         "pilotReadOfficialReport",
         "pilotRetrieveOfficialReport",
@@ -720,7 +721,7 @@
           "const": "pilotExecuteSandboxObligation"
         },
         "payload": {
-          "$ref": "#/$defs/emptyPayload"
+          "$ref": "#/$defs/executeSandboxObligationPayload"
         },
         "resource": {
           "$ref": "#/$defs/obligationResourceReference"
@@ -1837,6 +1838,37 @@
       }
     },
     {
+      "title": "Read Credit Registry Evidence",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadCreditRegistryEvidence"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditRegistryEvidenceResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "title": "Read Own Obligation Evidence",
       "required": [
         "resource"
@@ -2138,6 +2170,7 @@
             "credit_intent",
             "credit_offer",
             "credit_passport_artifact",
+            "credit_registry_evidence",
             "evidence",
             "human_identity_reference",
             "inbox_message",
@@ -2553,6 +2586,23 @@
         }
       }
     },
+    "creditRegistryEvidenceResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "credit_registry_evidence"
+        },
+        "resourceId": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      }
+    },
     "evidenceQueryPayload": {
       "type": "object",
       "additionalProperties": false,
@@ -2870,7 +2920,8 @@
       "required": [
         "expectedOfferHash",
         "expectedTermsHash",
-        "acknowledgementHash"
+        "acknowledgementHash",
+        "actionConfirmation"
       ],
       "properties": {
         "expectedOfferHash": {
@@ -2884,6 +2935,21 @@
         "acknowledgementHash": {
           "type": "string",
           "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "actionConfirmation": {
+          "$ref": "#/$defs/economicActionConfirmation"
+        }
+      }
+    },
+    "executeSandboxObligationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionConfirmation"
+      ],
+      "properties": {
+        "actionConfirmation": {
+          "$ref": "#/$defs/economicActionConfirmation"
         }
       }
     },
@@ -2892,7 +2958,8 @@
       "additionalProperties": false,
       "required": [
         "amountMinor",
-        "sourceCode"
+        "sourceCode",
+        "actionConfirmation"
       ],
       "properties": {
         "amountMinor": {
@@ -2907,6 +2974,157 @@
             "synthetic_bank",
             "synthetic_revenue"
           ]
+        },
+        "actionConfirmation": {
+          "$ref": "#/$defs/economicActionConfirmation"
+        }
+      }
+    },
+    "economicActionConfirmation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/userEconomicActionConfirmation"
+        },
+        {
+          "$ref": "#/$defs/protocolEconomicActionConfirmation"
+        }
+      ]
+    },
+    "userEconomicActionConfirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionType",
+        "resourceId",
+        "resourceHash",
+        "payloadHash",
+        "requestId",
+        "requestNonce",
+        "requestedAt",
+        "confirmedAt",
+        "expiresAt",
+        "confirmationMethod",
+        "confirmationHash",
+        "messageHash",
+        "rawSignaturePersisted",
+        "blockchainTransactionSubmitted",
+        "schemaVersion"
+      ],
+      "properties": {
+        "actionType": {
+          "enum": [
+            "accept_offer",
+            "execute_obligation",
+            "post_repayment"
+          ]
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "resourceHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "payloadHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "requestId": {
+          "$ref": "#/$defs/requestIdentifier"
+        },
+        "requestNonce": {
+          "type": "string",
+          "pattern": "^human_action_confirmation_[0-9a-f-]{36}$"
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confirmedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confirmationMethod": {
+          "enum": [
+            "wallet_personal_sign",
+            "authenticated_account_click"
+          ]
+        },
+        "confirmationHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "messageHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "rawSignaturePersisted": {
+          "const": false
+        },
+        "blockchainTransactionSubmitted": {
+          "const": false
+        },
+        "schemaVersion": {
+          "const": "economic_action_confirmation_result.v1"
+        }
+      }
+    },
+    "protocolEconomicActionConfirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionType",
+        "resourceId",
+        "resourceHash",
+        "payloadHash",
+        "requestId",
+        "confirmationMethod",
+        "confirmationHash",
+        "rawSignaturePersisted",
+        "blockchainTransactionSubmitted",
+        "schemaVersion"
+      ],
+      "properties": {
+        "actionType": {
+          "enum": [
+            "accept_offer",
+            "execute_obligation",
+            "post_repayment"
+          ]
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        },
+        "resourceHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "payloadHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "requestId": {
+          "$ref": "#/$defs/requestIdentifier"
+        },
+        "confirmationMethod": {
+          "const": "authenticated_protocol_request"
+        },
+        "confirmationHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "rawSignaturePersisted": {
+          "const": false
+        },
+        "blockchainTransactionSubmitted": {
+          "const": false
+        },
+        "schemaVersion": {
+          "const": "economic_action_confirmation_result.v1"
         }
       }
     },

@@ -87,6 +87,7 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
     PilotCapability.OBLIGATION_READ_OWNED,
     PilotCapability.EVIDENCE_READ_OWNED,
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
     PilotCapability.CREDIT_PASSPORT_READ_SELF,
     PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
@@ -157,6 +158,26 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
   assert.equal(ownedEvidence.requiredCapability, PilotCapability.EVIDENCE_READ_OWNED);
   assert.equal(ownedEvidence.ownershipRule, "actor");
   assert.deepEqual(ownedEvidence.allowedActorTypes, ["human", "agent"]);
+  const registryEvidence = registry.getAuthenticated(
+    "pilotReadCreditRegistryEvidence"
+  );
+  assert.equal(
+    registryEvidence.requiredCapability,
+    PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT
+  );
+  assert.equal(registryEvidence.ownershipRule, "tenant");
+  assert.deepEqual(registryEvidence.allowedActorTypes, [
+    "human",
+    "agent",
+    "risk_operator",
+    "operations_operator",
+    "auditor"
+  ]);
+  assert.deepEqual(registryEvidence.requiresRecentMfaActorTypes, [
+    "risk_operator",
+    "operations_operator",
+    "auditor"
+  ]);
   const servicingQueue = registry.getAuthenticated("pilotReadServicingQueue");
   assert.equal(servicingQueue.requiredCapability, PilotCapability.SERVICING_QUEUE_READ);
   assert.equal(servicingQueue.resourceType, "servicing_queue");
@@ -206,6 +227,7 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
       PilotCapability.CREDIT_PASSPORT_READ_SELF,
       PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,

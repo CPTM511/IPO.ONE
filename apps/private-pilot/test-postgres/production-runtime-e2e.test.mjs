@@ -79,7 +79,7 @@ test(
     const policyVersion = "security_001.v1";
     const walletClientId = `client_predeploy_wallet_${suffix}`;
     const config = assertProductionBootstrapConfig({
-      schemaVersion: "ipo_one_production_bootstrap.v1",
+      schemaVersion: "ipo_one_production_bootstrap.v2",
       gatewayRole,
       authenticationRole,
       tenant: {
@@ -101,7 +101,10 @@ test(
         clientId: walletClientId,
         issuer: browserOrigin,
         externalSubject:
-          `eip155:84532:${account.address.toLowerCase()}`
+          `eip155:84532:${account.address.toLowerCase()}`,
+        invitationId: `invite_predeploy_borrower_${suffix}`,
+        expiresAt:
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString()
       }]
     });
     const bootstrap = await bootstrapProductionDatabase({

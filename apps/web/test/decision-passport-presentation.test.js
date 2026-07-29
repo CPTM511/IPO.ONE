@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   compactDecisionProofHash,
+  compactEvmAddress,
   createHumanDecisionPassportPresentation,
   hasVerifiedHumanDecisionPassport
 } from "../src/decision-passport-presentation.js";
@@ -59,6 +60,11 @@ test("Human Decision Passport presentation preserves one closed verified product
   assert.equal(presentation.sources.every(({ sourceFinality }) => sourceFinality === "finalized"), true);
   assert.equal(compactDecisionProofHash(decision.decisionPassport.policyHash), "0xaaaaaaaa…aaaaaa");
   assert.equal(compactDecisionProofHash("unsafe"), "Unavailable");
+  assert.equal(
+    compactEvmAddress("0x88926c11185E94bd8e9dE33959b6316CDA7c3e4A"),
+    "0x88926c11…7c3e4A"
+  );
+  assert.equal(compactEvmAddress(decision.decisionPassport.policyHash), "Unavailable");
 });
 
 test("Human Decision Passport presentation fails closed on provenance or safety drift", () => {

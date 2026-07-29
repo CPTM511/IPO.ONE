@@ -5,6 +5,7 @@ import { createCreditDecisionHandlers } from "./credit-decision-handlers.js";
 import { createCreditPassportHandlers } from "./credit-passport-handlers.js";
 import { createCreditAcceptanceHandlers } from "./credit-acceptance-handlers.js";
 import { createCreditExecutionHandlers } from "./credit-execution-handlers.js";
+import { createCreditRegistryEvidenceHandlers } from "./credit-registry-evidence-handlers.js";
 import { createEvidenceQueryHandlers } from "./evidence-query-handlers.js";
 import { createHumanConsentHandlers } from "./human-consent-handlers.js";
 import { createHumanSubjectHandlers } from "./human-subject-handlers.js";
@@ -32,6 +33,7 @@ export function createTenantFoundationHandlers(options) {
     ...createCreditPassportHandlers(),
     ...createCreditAcceptanceHandlers(),
     ...createCreditExecutionHandlers(options),
+    ...createCreditRegistryEvidenceHandlers(),
     ...createEvidenceQueryHandlers(),
     ...createOwnedObligationQueryHandlers(),
     ...createOfficialReportHandlers(),

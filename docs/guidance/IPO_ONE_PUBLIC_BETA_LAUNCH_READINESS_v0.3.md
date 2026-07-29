@@ -129,7 +129,7 @@ two audiences over one state model:
 | Durable Rail proof | PostgreSQL migration, rollback, idempotency, concurrency, outbox/inbox, and restart replay suite passes. |
 | Supply chain | Locked pnpm install, production audit, and a GitHub Actions quality gate are present. |
 | Production runtime | Invalid public mode, origin, Host, HTTPS proxy, HSTS, release, or no-real-funds configuration fails closed. |
-| Container boundary | Digest-pinned Node 24 LTS image, non-root runtime, health check, and CI read-only/no-capability smoke are defined. |
+| Container boundary | Digest-pinned Node 26.5.0 image, non-root runtime, health check, and CI read-only/no-capability smoke are defined. |
 | Machine discovery | Human/Agent endpoints and disabled real-funds/Human-credit capabilities are explicit at `/.well-known/ipo-one.json`. |
 | Launch governance | Versioned profiles require canonical fresh evidence, exact commit and image digest, complete named gates, and protected-environment authorization; private-data and real-value profiles are policy-locked. |
 | Local operational alerts | `OPS-001C` durably maps seven reviewed signals into Tenant-RLS alert state and immutable occurrences with Event/Evidence/Outbox linkage; the exact-release dual-native check requires Human/Agent lifecycle parity and clean reconciliation. Notification targets, named owners, protected scheduling, acknowledgement/resolution permissions, deployment, and automatic actions remain absent. |

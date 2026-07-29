@@ -6,11 +6,11 @@ Defines two authority-free API contract layers:
   for the anonymous public sandbox; and
 - the closed, transport-neutral `tenant_protocol_request.v1`,
   `tenant_protocol_result.v1`, and `tenant_protocol_catalog.v1` contracts for
-  the 34 reviewed local durable Tenant operations, including the shared
+  the 72 reviewed local durable Tenant operations, including the shared
   no-funds credit/servicing lifecycle, protective controls, aggregate
   Risk/Auditor portfolio read, and redacted owner/controller plus Auditor
-  Obligation Evidence views and the private read-only PII-free Servicing
-  Operations queue.
+  Obligation Evidence views, the separate synthetic Base Sepolia Registry
+  Evidence view, and the private read-only PII-free Servicing Operations queue.
 
 The package also validates the separate Human HTTP and Agent MCP Credit Offer
 Workflow Receipts plus the local Human and Agent sandbox Obligation workflow
@@ -37,7 +37,7 @@ absolute timestamps are excluded.
 
 `agent_pilot_capability_manifest.v1` is the non-authorizing discovery contract
 for those existing Agent surfaces. It nests one validated handoff, pins the
-exact eleven-tool local MCP registry, and lists the Offer,
+exact twelve-tool local MCP registry, and lists the Offer,
 Obligation/repayment, and dual-chain portability SDK workflows with derived
 availability. Validator logic regenerates the manifest from its handoff so
 tool, entry-point, receipt-version, availability, next-action, endpoint,

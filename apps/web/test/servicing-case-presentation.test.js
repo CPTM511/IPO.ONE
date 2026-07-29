@@ -100,6 +100,44 @@ function cureAction(obligation) {
   };
 }
 
+function fullyRepaidObligation() {
+  const obligation = structuredClone(validReceipt.obligation);
+  for (const installment of obligation.installments) {
+    installment.paidPrincipalMinor = installment.scheduledPrincipalMinor;
+    installment.paidInterestMinor = installment.scheduledInterestMinor;
+    installment.paidFeeMinor = installment.scheduledFeeMinor;
+    installment.status = "paid";
+  }
+  obligation.outstandingPrincipalMinor = "0";
+  obligation.outstandingInterestMinor = "0";
+  obligation.outstandingFeesMinor = "0";
+  obligation.totalRepaidMinor = obligation.originalPrincipalMinor;
+  obligation.status = "fully_repaid";
+  obligation.servicingClassification = "current";
+  obligation.daysPastDue = 0;
+  obligation.oldestUnpaidInstallmentId = null;
+  obligation.servicingReasonCode = "servicing_current";
+  return obligation;
+}
+
+function repaymentAdvanceAction(obligation) {
+  return {
+    ...cureAction(obligation),
+    servicingActionId: "sandbox_servicing_action_browser_repaid_001",
+    actionType: "advance",
+    previousStatus: "partially_repaid",
+    previousClassification: "current",
+    nextClassification: "current",
+    source: "repayment",
+    balancesBefore: {
+      outstandingPrincipalMinor: validReceipt.obligation.outstandingPrincipalMinor,
+      outstandingInterestMinor: validReceipt.obligation.outstandingInterestMinor,
+      outstandingFeesMinor: validReceipt.obligation.outstandingFeesMinor,
+      totalRepaidMinor: validReceipt.obligation.totalRepaidMinor
+    }
+  };
+}
+
 function deeplyFrozen(value) {
   if (!value || typeof value !== "object") return true;
   return Object.isFrozen(value) && Object.values(value).every(deeplyFrozen);
@@ -140,6 +178,17 @@ test("Servicing Case records cure only from the exact returned action", () => {
   assert.equal(Object.hasOwn(action, "actorHash"), false);
   assert.equal(Object.hasOwn(action, "scheduleHashBefore"), false);
   assert.equal(Object.hasOwn(action, "scheduleHashAfter"), false);
+});
+
+test("Servicing Case accepts a repayment-driven advance to fully repaid", () => {
+  const obligation = fullyRepaidObligation();
+  const action = repaymentAdvanceAction(obligation);
+  const presentation = createServicingCasePresentation(obligation, action);
+  assert.equal(presentation.classification, "current");
+  assert.equal(presentation.repaymentAvailable, false);
+  assert.equal(presentation.latestAction.actionType, "advance");
+  assert.equal(presentation.latestAction.source, "repayment");
+  assert.equal(presentation.latestAction.nextClassification, "current");
 });
 
 test("Servicing Case fails closed on lifecycle, clock, schedule, safety, or action drift", () => {
@@ -193,4 +242,16 @@ test("Servicing Case fails closed on lifecycle, clock, schedule, safety, or acti
   const wrongSequence = cureAction(cured);
   wrongSequence.scheduleSequenceAfter += 1;
   assert.equal(createServicingCasePresentation(cured, wrongSequence), null);
+  const noRepaymentProgress = repaymentAdvanceAction(fullyRepaidObligation());
+  noRepaymentProgress.balancesBefore = structuredClone(noRepaymentProgress.balancesAfter);
+  assert.equal(
+    createServicingCasePresentation(fullyRepaidObligation(), noRepaymentProgress),
+    null
+  );
+  const trustedTimeBalanceMutation = repaymentAdvanceAction(fullyRepaidObligation());
+  trustedTimeBalanceMutation.source = "system_worker";
+  assert.equal(
+    createServicingCasePresentation(fullyRepaidObligation(), trustedTimeBalanceMutation),
+    null
+  );
 });

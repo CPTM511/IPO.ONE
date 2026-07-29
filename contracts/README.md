@@ -27,3 +27,11 @@ at most seven days. It rejects native value and has no execution, transfer,
 approval, custody, upgrade, or administration function. The recorded Testnet
 deployment and proofs do not authorize another deployment, signer, key,
 mainnet action, production funds, or release.
+
+`IpoOneEvidenceAnchorRegistryV1.sol` is the CHAIN-001F Base Sepolia review
+artifact. It accepts a bounded batch of durable Evidence hashes and emits one
+event per hash, bound to event type, aggregate reference, action digest,
+attestor nonce, and batch position. It rejects native value and has no owner,
+privileged mutation, token, custody, arbitrary call, lending, payment, upgrade,
+or withdrawal path. PostgreSQL remains the canonical application state; only a
+verified Registry event can establish that an Evidence hash was anchored.

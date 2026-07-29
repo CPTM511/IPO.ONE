@@ -109,7 +109,7 @@ policy-locked and cannot be unlocked by editing an evidence file.
 
 ## 1. Build an Immutable Image
 
-Use Node 24.18.0 and pnpm 11.1.3. Build from the exact green Git commit:
+Use Node 26.5.0 and pnpm 11.1.3. Build from the exact green Git commit:
 
 ```sh
 git status --short
@@ -129,7 +129,7 @@ the identity published by the distroless project:
 
 ```sh
 cosign verify \
-  gcr.io/distroless/nodejs24-debian13@sha256:70a2c12a0d76018b54d7bd01c5e3677632eeed9f890ba318d6db55fc54cf3baa \
+  gcr.io/distroless/nodejs26-debian13@sha256:d440510c9ef4ff874b240bb6b855e4de4e797db283e41d8d506da5085a677f26 \
   --certificate-oidc-issuer https://accounts.google.com \
   --certificate-identity keyless@distroless.iam.gserviceaccount.com
 ```

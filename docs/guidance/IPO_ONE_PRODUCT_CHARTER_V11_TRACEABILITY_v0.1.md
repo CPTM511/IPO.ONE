@@ -21,15 +21,20 @@ Credit Intent, deterministic Decision/Offer, exact acceptance, one shared
 `obligation.v2`, signed nonwithdrawable execution, balanced Ledger posting,
 repayment, DPD/default/cure and simulated resolution. The Human path is usable
 through the authenticated loopback UI; the Agent path is usable through the
-local SDK and the exact eleven-tool authenticated local-stdio MCP registry,
+local SDK and the exact twelve-tool authenticated local-stdio MCP registry,
 including exact owned Obligation/Evidence reads and bounded Offer acceptance,
 execution, and repayment. Both entry modes also produce a closed dual-test-profile portability receipt
 that binds the actual Obligation, repayment, and Ledger references without an
 RPC, key, contract, deployment, or live testnet claim. CHAIN-001B additionally
 proves read-only live RPC observation and implements the bounded emitter, key,
-indexer, and durable store path; its two signed testnet runs await faucet-only
-gas. Production IdP, remote transport, Provider, real collection, and
-production chain composition remain open. PROVIDER-001A now also proves an
+indexer, and durable store path; its two signed emitter runs remain separate.
+CHAIN-001D now proves one synthetic Base Sepolia Credit Authorization Registry
+lifecycle through publication, repayment-proof update, closure, pause and safe
+finality. CHAIN-001E re-observes those public facts through both approved RPCs
+and adds a dedicated Tenant-RLS, immutable, replay-safe, non-authorizing
+observation/outbox path without another transaction or signer. Production IdP,
+remote transport, Provider, real collection, and production chain composition
+remain open. PROVIDER-001A now also proves an
 independent, signed, loopback-only Provider boundary with exact replay and
 crash recovery; it does not enable a public/remote Provider or move value.
 WEB-008 now replaces the authenticated DEMO risk projection with a formal
@@ -96,10 +101,10 @@ show what is actually evidenced.
 | --- | --- | --- | --- |
 | Human UI | Verified local through the complete no-funds lifecycle, Decision Passport, reload-safe Servicing Case, Agent Mandate activation, Principal-to-Agent handoff, and private risk controls; queue source implemented | Aave-inspired formal Human/Agent shell; named `createTenantPilotHost` loopback composition; CSRF-enforcing Subject/Consent/identity -> Intent -> Decision/Offer -> acceptance -> shared Obligation -> signed execution/Ledger -> sequenced repayment path; WEB-009 presents six ordered plain-language reasons plus exact proof lineage before acceptance; WEB-010 and `SERVICING-002A` restore exact durable borrower servicing truth after reload; `SERVICING-002B` adds a private Risk/Operations queue with desktop table/mobile cards, closed stage filters and no executable dispositions; Principal Agent Subject -> Draft -> exact-hash Activation workbench; credential-free handoff; exact PII-free portfolio query and protective-only Agent Subject freeze | Re-run queue desktop/mobile browser capture in a listener-capable environment; production HTTPS OIDC/IdP, remote/public Tenant access, production identity/KYC and real-value lending remain disabled |
 | Responsive/accessibility QA | Verified local for the authenticated shell through `SERVICING-002A`; queue static gate passed | Desktop plus 834x1194, 390x844 and 360x732 captures; Aave/IPO.ONE same-view comparison; no horizontal overflow; mobile focus/Escape checks; 44px primary touch targets; WEB-003 current-run audit proves the Human application heading clears the sticky header at 390x844; WEB-008 adds a dimensionally verified mobile risk state; WEB-009 adds desktop/mobile Decision Passport proof interaction; WEB-010 adds active/cured Servicing Case captures; `SERVICING-002A` adds desktop and 390x844 reload/manual-restore states, `scrollWidth === innerWidth === 390`, 44px load/repayment actions and zero browser diagnostics; `SERVICING-002B` static UI/CSS coverage verifies the queue states and responsive card rules | Capture and inspect the queue in a listener-capable environment, then repeat assistive-technology/live-region checks; screenshots/DOM checks do not constitute full WCAG certification |
-| Agent API contract | Verified local through Decision Passport, exact current Obligation read, owned Evidence, repayment and portability | Closed 34-operation private catalog, JSON Schemas, fixtures and stable errors; UI separates retained public test fixtures, private Tenant operations and eleven local MCP tools; `pilotReadServicingQueue` is explicitly excluded from Agent MCP, while `pilotReadOwnObligation` / `ipo_one_read_obligation`, `pilotPostSandboxRepayment` and `pilotReadOwnObligationEvidence` retain the owner-bound shared servicing path; Human session state remains hidden in Agent mode; the three Provider operations remain absent from Agent MCP; handoff/capability manifests and lifecycle SDK clients retain closed replay-safe receipts | Remote/public transport, production credentials/deployment and real funds remain unavailable |
+| Agent API contract | Verified local through Decision Passport, exact current Obligation read, owned Evidence, public synthetic Registry Evidence, repayment and portability | Closed 72-operation private catalog, JSON Schemas, fixtures and stable errors; UI separates retained public test fixtures, private Tenant operations and twelve local MCP tools; `pilotReadServicingQueue` is explicitly excluded from Agent MCP, while `pilotReadOwnObligation` / `ipo_one_read_obligation`, `pilotPostSandboxRepayment` and `pilotReadOwnObligationEvidence` retain the owner-bound shared servicing path; `pilotReadCreditRegistryEvidence` remains a separate Tenant-authorized, read-only, synthetic-only chain proof and is not an owned repayment event; Human session state remains hidden in Agent mode; the three Provider operations remain absent from Agent MCP; handoff/capability manifests and lifecycle SDK clients retain closed replay-safe receipts | Remote/public transport, production credentials/deployment and real funds remain unavailable |
 | Provider sandbox UI | Verified local capability status | The authenticated Payments surface reports signed delivery, exact acknowledgement, verified callback, replay and reconciliation capability while explicitly stating that the current Obligation has no Provider execution | Live per-delivery Provider operations UI, public/remote integration, production KYP/SLA and funds require separate approval |
 | Authenticated HTTP | Verified local adapter, durable Human authentication, embedding composition, and commercial Human access transport | Separate loopback-only `apps/tenant-api`; closed `createTenantPilotHost` wires Human session/Agent workload resolver, trusted Network Context, CSRF bootstrap and fixed UI module graph; AUTHN-004 adds forced-RLS PostgreSQL Credentials, encrypted one-use OIDC/SIWE transactions, restart-safe sessions, immutable events, atomic Credential/session deprovisioning, an authentication-only database role, and `createPostgresHumanAccessComposition` startup verification; `createHumanAccessRouteHandler` composes truthful options, provider-bound OIDC initiation/callback, same-origin SIWE challenge/verify, and CSRF-protected logout with Secure host-only cookies; transport, adversarial and real PostgreSQL tests keep public authentication disabled | Named IdP/client registration, managed secret values, protected HTTPS deployment, backup/restore exercise, independent review and exact-release evidence remain open; public/remote remains disabled |
-| Agent MCP | Verified locally through exact owned Obligation/Evidence reads and the no-funds lifecycle | The fixed eleven-tool registry provides application/Offer, CAIP-10 proof/binding, exact owned Obligation, owned Evidence, Offer acceptance, sandbox execution and synthetic repayment; `createAgentPilotHost` composes fresh Host-owned authentication, trusted Network Context, exact handoff Subject binding and actual local stdio | Production credential/deployment, remote/public MCP, withdrawals and real funds remain unavailable |
+| Agent MCP | Verified locally through exact owned Obligation/Evidence reads, public synthetic Registry Evidence and the no-funds lifecycle | The fixed twelve-tool registry provides application/Offer, CAIP-10 proof/binding, exact owned Obligation, owned Evidence, separate Registry Evidence, Offer acceptance, sandbox execution and synthetic repayment; `createAgentPilotHost` composes fresh Host-owned authentication, trusted Network Context, exact handoff Subject binding and actual local stdio | Production credential/deployment, remote/public MCP, withdrawals and real funds remain unavailable |
 | Risk operations | Private servicing queue implemented; full runtime verification and broader commercial operations remain partial | `WEB-008` composes the recent-MFA Tenant-risk read and reason-coded protective freeze; `OPS-001B/001C` persist bounded operational signals; WEB-010 plus `SERVICING-002A` expose exact durable borrower repayment/cure state; `SERVICING-002B` adds a separate recent-MFA, read-only, PII-free adverse Obligation queue for Risk/Operations and keeps restructure, repurchase and write-off non-executable behind dual control | Re-run queue PostgreSQL RLS and desktop/mobile Host tests; protected scheduling, acknowledgement/resolution permissions, approved SLO/cap/stop-loss thresholds, notification recipients, named incident/on-call ownership, unfreeze/limit dual control, production identities and deployment remain open |
 
 ## Architecture and Reliability Traceability
@@ -109,10 +114,10 @@ show what is actually evidenced.
 | Tenant isolation | Verified local for implemented private operations | PostgreSQL RLS, exact-resource ownership, replay, restart and rollback tests | Repeat for every new operation and transport |
 | Idempotency / atomicity | Verified local for implemented private operations | Command replay and one Event/Evidence/outbox/projection/Ledger/admission transaction pattern now include activation, acceptance, execution, repayment, servicing, Provider acknowledgement and signed Provider callback inbox processing | Repeat for future production Provider, Evidence export, and production operations |
 | Ledger | Verified local no-funds | Balanced principal/interest/fee receivable, sandbox clearing, repayment allocation, trial balance, restart reconciliation and write-off postings | Production chart of accounts, custody/bank reconciliation, and finance sign-off remain open |
-| Multi-chain portability | Local synthetic conformance and bounded live observation verified; signed runs pending faucet gas | Base Sepolia and X Layer profiles share one adapter; lifecycle receipts bind actual Obligation, repayment and Ledger references; canonical Payment is chain-neutral; fixed public RPC observers, immutable one-event emitter, ephemeral-key lifecycle, durable Tenant-RLS observation/outbox/reconciliation and incident runbook are implemented; a captured artifact proves correct-chain read-only access to both profiles | Complete one deploy/emission/retirement receipt and verified key destruction per test chain; production chain, HSM, contracts, providers, finality policy and capital remain separate approvals |
+| Multi-chain portability | Local dual-profile conformance and bounded live observation verified; one Base Sepolia Credit Registry lifecycle is finalized | Base Sepolia and X Layer profiles share one adapter; lifecycle receipts bind actual Obligation, repayment and Ledger references; CHAIN-001D records five successful zero-value Base Sepolia transactions and destroyed its signer; CHAIN-001E verifies the four lifecycle mutations through both fixed RPCs and persists one Tenant-RLS, immutable, replay-safe, non-authorizing observation/outbox aggregate | CHAIN-001D does not prove X Layer Registry deployment or production finality. Remaining CHAIN-001B dual-testnet emitter receipts, production chain, HSM, providers, finality policy and capital remain separate gates |
 | Provider boundary | Verified local no-funds | Approved exact Provider-read, Provider-acknowledgement and restricted callback-inbox permissions; fixed loopback-only process, Ed25519 delivery/callback binding, AccessGrant scoping, bounded retry/circuit, durable RLS inbox, exact replay, before/after-commit recovery and reconciliation | Public/remote Provider, production credentials/KYP/SLA, operations ownership, custody, capital and funds require separate named approvals |
 | Threat model | Verified locally for the Provider sandbox boundary | Public sandbox, permission-boundary, testnet, and signed Provider sandbox threat models exist with automated adversarial coverage | Independent review and deployment-specific assessment remain mandatory before external exposure |
-| Test runtime | Verified target-runtime snapshot | Node 24.18.0 / pnpm 11.1.3 gate passes through `.node-version` and `.nvmrc`; full check 301/301, OPS module 13/13, fresh PostgreSQL 17 61/61 with exact-owner and non-owner/RLS coverage, security 21/21, Human/Agent transport 37/37, Provider 5/5, chain live/conformance/reorg 9/9 + 6/6 + 5/5, 46 schemas and 23 migration pairs all pass | Re-run the same target-runtime matrix after each approved implementation; globally changing an arbitrary developer shell is not required or claimed |
+| Test runtime | Verified target-runtime snapshot | Node 26.5.0 / pnpm 11.1.3 gate passes through `.node-version` and `.nvmrc`; full check 609/609, fresh PostgreSQL 17 78/78 with production bootstrap, exact-owner and non-owner/RLS coverage, 81 schemas and 40 migration pairs all pass. Historical Node 24 evidence remains attributed to its original release snapshots. | Re-run the same target-runtime matrix after each approved implementation and run the digest-pinned container smoke in CI; globally changing an arbitrary developer shell is not required or claimed |
 
 ## No-Funds Design-Partner Critical Path
 
@@ -155,34 +160,42 @@ stage's exact durable output:
 13. **In progress:** `CHAIN-001B` has completed read-only dual-chain access and
     all local emitter/key/indexer/durable-store controls; two signed runs wait
     only for official faucet gas.
-14. **Completed locally:** `PROVIDER-001A` activates the three exact permissions
+14. **Completed live testnet:** `CHAIN-001D` executes one bounded, synthetic
+    Base Sepolia Credit Authorization lifecycle. Exactly five zero-value
+    transactions deploy, publish, update proof, close and pause the Registry;
+    safe finality, reconciliation and signer destruction are verified.
+15. **Completed read-only:** `CHAIN-001E` independently verifies the four
+    lifecycle mutations through both fixed Base Sepolia RPCs, excludes the raw
+    test account and calldata, and adds a dedicated Tenant-RLS immutable
+    observation, hash-only outbox and deterministic reconciliation path.
+16. **Completed locally:** `PROVIDER-001A` activates the three exact permissions
     for Provider intent read, Provider acknowledgement, and signed callback
     inbox processing through a separate fixed loopback process. Public/remote
     Provider transport and real value remain unapproved.
-15. **Completed locally:** `WEB-008` exposes the existing aggregate Tenant-risk
+17. **Completed locally:** `WEB-008` exposes the existing aggregate Tenant-risk
     read and protective Agent Subject freeze as a formal private operational UI,
     while quarantining the historical DEMO Admin Dashboard.
-16. **Completed locally:** `OPS-001B` defines the closed no-funds event-to-alert
+18. **Completed locally:** `OPS-001B` defines the closed no-funds event-to-alert
     contract, deterministic replay-safe aggregation, seven manual incident/
     servicing runbooks, and fail-closed drift checks without notification,
     automatic action, release, or funds authority.
-17. **Completed locally:** `OPS-001C` persists Tenant-RLS alert state, immutable
+19. **Completed locally:** `OPS-001C` persists Tenant-RLS alert state, immutable
     occurrences and exact-release Human/Agent lifecycle results atomically with
     Event/Evidence/Outbox; it does not schedule, notify, acknowledge, or resolve.
-18. **Completed locally:** `WEB-009` productizes the existing
+20. **Completed locally:** `WEB-009` productizes the existing
     `risk_decision_passport.v1` in the Human Offer review and names the same
     receipt in Agent Runtime without adding a decision, authority, operation,
     endpoint, tool, credential or funds capability.
-19. **Completed locally:** `WEB-010` productizes the existing shared servicing
+21. **Completed locally:** `WEB-010` productizes the existing shared servicing
     kernel as a Human Servicing Case and an Agent workflow discovery entry. It
     reuses repayment and owned Evidence, fails closed on Obligation/action
     drift, and adds no operation, permission, clock control or disposition.
-20. **Completed locally:** `SERVICING-002A` adds one exact, owner-authorized
+22. **Completed locally:** `SERVICING-002A` adds one exact, owner-authorized
     `obligation.v2` read shared by Human HTTP and Agent SDK/MCP. The browser
     retains only the opaque ID, re-authorizes after reload and continues the
     no-funds repayment path from durable server truth; no list, search, PII,
     operator scope, funds or disposition authority was added.
-21. **Implemented locally; release-gate retest pending:** `SERVICING-002B`
+23. **Implemented locally; release-gate retest pending:** `SERVICING-002B`
     adds a separate recent-MFA Risk/Operations query and Aave-inspired private
     work queue over adverse sandbox Obligations. It is bounded, PII-free,
     read-only, excluded from Agent MCP and carries no disposition or funds
@@ -190,7 +203,7 @@ stage's exact durable output:
     PostgreSQL RLS execution plus browser/loopback capture must be rerun when
     the execution environment supports PostgreSQL shared memory and local
     listeners.
-22. Complete the remaining live dual-testnet receipts, configure and exercise
+24. Complete the remaining live dual-testnet emitter receipts, configure and exercise
     named private-pilot operational ownership, then run the public beta
     readiness and closed design-partner pilot gates. Production Provider,
     capital, custody, legal and real-value gates stay independent.
@@ -222,6 +235,10 @@ The owner approved and local implementation completed `IDENTITY-001`,
 `EVIDENCE-001B`, and `TRANSPORT-002`. `CHAIN-001B` is also approved: its local
 control plane and two-chain read-only live proof are complete, while two
 faucet-funded deploy/emission/retirement receipts remain operationally open.
+`CHAIN-001D` is complete for one synthetic Base Sepolia Credit Registry
+lifecycle, and `CHAIN-001E` is complete for read-only cross-provider ingestion,
+Tenant-RLS storage, hash-only outbox and reconciliation. Neither grants
+production, mainnet, real-funds, capital, signer or automatic policy authority.
 `PROVIDER-001A` is approved and locally implemented: `pilotReadProviderIntent`,
 `pilotAcknowledgeProviderIntent`, and restricted `workerProcessInbox` for
 `provider_sandbox_callback.v1` are active only in the closed local boundary.

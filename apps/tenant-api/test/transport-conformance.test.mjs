@@ -210,6 +210,7 @@ test("Tenant HTTP fails closed outside loopback and rejects caller authority fie
 test("loopback Tenant host can serve the Human pilot shell without exposing private operations", async () => {
   const context = agentContext();
   const csrfToken = "q".repeat(43);
+  const localAgentAccount = `0x${"2".repeat(40)}`;
   let authLookups = 0;
   const listener = createTenantHttpServer({
     gateway: { execute: async () => assert.fail("static asset request reached Gateway") },
@@ -219,7 +220,8 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     },
     createNetworkContext: async () => ({}),
     serveWebAsset: createTenantWebAssetHandler({
-      csrfTokenProvider: async () => csrfToken
+      csrfTokenProvider: async () => csrfToken,
+      localAgentAccountProvider: async () => localAgentAccount
     })
   });
   const address = await listener.listen();
@@ -237,7 +239,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(page, /Request and price no-funds credit/);
     assert.match(page, /Create, review, and activate Agent authority/);
     assert.match(page, /Principal → Agent capability packet/);
-    assert.match(page, /One manifest\. Eleven local tools\. No ambient authority\./);
+    assert.match(page, /One manifest\. Twelve local tools\. No ambient authority\./);
     assert.match(page, /Approved local stdio MCP tools/);
     assert.match(page, /Three staged workflows/);
     assert.match(page, /local stdio MCP · closed_non_funds_pilot/);
@@ -246,12 +248,21 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(page, /New Subjects remain pending/);
     assert.match(page, /no credential creation/);
     assert.match(page, new RegExp(`name="ipo-one-csrf-token" content="${csrfToken}"`));
+    assert.match(
+      page,
+      new RegExp(`name="ipo-one-local-agent-account" content="${localAgentAccount}"`)
+    );
+    assert.doesNotMatch(page, /privateKey|signatureHex/);
     assert.equal(pageResponse.headers.get("vary"), "cookie");
 
     const openApiResponse = await fetch(`${baseUrl}${TENANT_HTTP_ROUTES.openapi}`);
     assert.equal(openApiResponse.status, 200);
     const openApi = await openApiResponse.json();
-    assert.equal(openApi.openapi, "3.1.0");
+    assert.equal(openApi.openapi, "3.1.2");
+    assert.equal(
+      openApi.jsonSchemaDialect,
+      "https://json-schema.org/draft/2020-12/schema"
+    );
     assert.equal(openApi.servers[0].url, baseUrl);
     assert.equal(openApi["x-ipo-one-schema-version"], "tenant_openapi.v1");
     assert.equal(openApi["x-ipo-one-profile"], "closed_non_funds_pilot");
@@ -282,8 +293,10 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(script, /from "\.\/request-credit-review-binding\.js"/);
     assert.match(script, /from "\.\/servicing-case-presentation\.js"/);
     assert.match(script, /from "\.\/servicing-position-index\.js"/);
+    assert.match(script, /from "\.\/trading-capital-product-presentation\.js"/);
     assert.match(script, /from "\.\/wallet-authority-lifecycle\.js"/);
     assert.match(script, /from "\.\/wallet-provider-registry\.js"/);
+    assert.match(script, /from "\.\/wallet-sign-out\.js"/);
     assert.match(script, /from "\.\/v9-trust-surfaces\.js"/);
     assert.match(script, /tenantApi\("pilotReadEvidence"/);
     assert.match(script, /resourceType: "evidence"/);
@@ -305,9 +318,11 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/risk-operations-presentation.js",
       "/servicing-case-presentation.js",
       "/servicing-position-index.js",
+      "/trading-capital-product-presentation.js",
       "/v9-trust-surfaces.js",
       "/wallet-authority-lifecycle.js",
-      "/wallet-provider-registry.js"
+      "/wallet-provider-registry.js",
+      "/wallet-sign-out.js"
     ]);
     for (const modulePath of relativeModules) {
       const moduleResponse = await fetch(`${baseUrl}${modulePath}`);
@@ -362,6 +377,7 @@ test("named Tenant pilot Host composes one authenticated Human UI and operation 
   const context = humanContext();
   const csrfToken = "c".repeat(43);
   const sessionHandle = "s".repeat(43);
+  const localAgentAccount = `0x${"3".repeat(40)}`;
   const authenticationCalls = [];
   const gatewayCalls = [];
   const host = createTenantPilotHost({
@@ -388,6 +404,7 @@ test("named Tenant pilot Host composes one authenticated Human UI and operation 
     },
     createNetworkContext: async () => ({ source: "local_test" }),
     sessionHandleProvider: async () => sessionHandle,
+    localAgentAccountProvider: async () => localAgentAccount,
     csrfTokenProvider: async ({ request }) => {
       assert.equal(request.headers.cookie, `${SESSION_COOKIE_NAME}=${sessionHandle}`);
       return csrfToken;
@@ -403,9 +420,11 @@ test("named Tenant pilot Host composes one authenticated Human UI and operation 
       pageResponse.headers.get("set-cookie"),
       `${SESSION_COOKIE_NAME}=${sessionHandle}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800`
     );
+    const page = await pageResponse.text();
+    assert.match(page, new RegExp(`name="ipo-one-csrf-token" content="${csrfToken}"`));
     assert.match(
-      await pageResponse.text(),
-      new RegExp(`name="ipo-one-csrf-token" content="${csrfToken}"`)
+      page,
+      new RegExp(`name="ipo-one-local-agent-account" content="${localAgentAccount}"`)
     );
     assert.equal(authenticationCalls.length, 0, "static UI must not synthesize Authentication Context");
 
@@ -521,6 +540,10 @@ test("Tenant web shell fails closed for an invalid CSRF bootstrap provider", asy
     () => createTenantWebAssetHandler({ csrfTokenProvider: "caller-field" }),
     (error) => error.code === "invalid_tenant_web_config"
   );
+  assert.throws(
+    () => createTenantWebAssetHandler({ localAgentAccountProvider: "caller-field" }),
+    (error) => error.code === "invalid_tenant_web_config"
+  );
   const handler = createTenantWebAssetHandler({ csrfTokenProvider: async () => "too-short" });
   await assert.rejects(
     () => handler({
@@ -530,6 +553,18 @@ test("Tenant web shell fails closed for an invalid CSRF bootstrap provider", asy
       requestId: "request-invalid-csrf-bootstrap"
     }),
     (error) => error.code === "invalid_tenant_csrf_bootstrap"
+  );
+  const invalidAccountHandler = createTenantWebAssetHandler({
+    localAgentAccountProvider: async () => "not-an-account"
+  });
+  await assert.rejects(
+    () => invalidAccountHandler({
+      request: { method: "GET" },
+      response: {},
+      pathname: "/",
+      requestId: "request-invalid-agent-account-bootstrap"
+    }),
+    (error) => error.code === "invalid_tenant_agent_account_bootstrap"
   );
 });
 

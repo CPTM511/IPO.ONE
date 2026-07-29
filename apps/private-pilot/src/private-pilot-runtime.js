@@ -1,5 +1,14 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createTrustedNetworkContext } from "../../../modules/abuse-control/src/index.js";
+import {
+  createEvidenceAnchorObserver,
+  createEvidenceAnchorNonceReader
+} from "../../../modules/event-indexer/src/index.js";
+import {
+  createReferenceHasher,
+  loadAuthenticationRuntimeConfig
+} from "../../../modules/authentication/src/index.js";
 import {
   createTenantSecurityContext,
   setTenantTransactionContext
@@ -14,56 +23,53 @@ import {
   HyperliquidBindingProofVerifier,
   HyperliquidTestnetInfoAdapter
 } from "../../../modules/hyperliquid-info/src/index.js";
-import { createTenantPilotHost } from "../../tenant-api/src/index.js";
+import {
+  EVIDENCE_ANCHOR_HTTP_ROUTES,
+  createEvidenceAnchorHttpHandler,
+  createPostgresHumanAccessComposition,
+  createTenantPilotHost
+} from "../../tenant-api/src/index.js";
+import {
+  EvmWalletSignatureVerifier
+} from "../../../modules/chain-adapter/src/index.js";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
 import { createLocalPilotIdentities } from "./local-pilot-identities.js";
 import {
   loadOrCreatePrivatePilotDatabaseSecret,
+  provisionPrivatePilotAuthentication,
   provisionPrivatePilotDatabase
 } from "./private-pilot-database.js";
 import { createLocalSyntheticIdentityProvider } from "./local-synthetic-identity-provider.js";
+import {
+  loadLocalAuthenticationInvitation,
+  loadLocalAuthenticationServerMaterial
+} from "./local-authentication-material.js";
+import {
+  LocalDurableAgentAuthenticator
+} from "./local-durable-agent-authentication.js";
 import { derivePrivatePilotAgentAccount } from "./private-pilot-agent-account.js";
 import { loadPrivatePilotProfile } from "./private-pilot-profile.js";
 
-const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_AUTHENTICATION_SERVER_FILE = resolve(
+  MODULE_DIRECTORY,
+  "../../../.ipo-one/local-stack/authentication-server.v1.json"
+);
+const DEFAULT_AUTHENTICATION_INVITATION_FILE = resolve(
+  MODULE_DIRECTORY,
+  "../../../.ipo-one/local-stack/authentication-invitation.v1.json"
+);
+const LOCAL_AGENT_STDIO_AUDIENCE =
+  "urn:ipo.one:local:agent-stdio";
 
-function sameSecret(actual, expected) {
-  if (typeof actual !== "string") return false;
-  const actualBytes = Buffer.from(actual);
-  const expectedBytes = Buffer.from(expected);
-  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
-}
-
-function createLocalHumanSession({ identity, port, sessionHandle, csrfToken }) {
-  let authenticatedAt = new Date();
-  const origin = `http://127.0.0.1:${port}`;
-  return Object.freeze({
-    humanBff: Object.freeze({
-      authenticateSession({ sessionHandle: presented, requestMethod, requestOrigin, csrfToken: presentedCsrf }) {
-        if (!sameSecret(presented, sessionHandle)) {
-          throw new DomainError("authentication_required", "Private pilot session is not active");
-        }
-        const method = String(requestMethod ?? "").toUpperCase();
-        if (!SAFE_METHODS.has(method) && (
-          requestOrigin !== origin ||
-          !sameSecret(presentedCsrf, csrfToken)
-        )) {
-          throw new DomainError("csrf_token_rejected", "Private pilot request origin or CSRF token is invalid");
-        }
-        return identity.createContext({ authenticatedAt });
-      }
-    }),
-    sessionHandleProvider() {
-      authenticatedAt = new Date();
-      return sessionHandle;
-    },
-    csrfTokenProvider() {
-      return csrfToken;
-    }
-  });
-}
-
-function createGateway(pool, authentication) {
+function createGateway(
+  pool,
+  authentication,
+  {
+    credentialRegistry = authentication.credentialRegistry,
+    referenceHasher = authentication.referenceHasher
+  } = {}
+) {
   const durableGateway = new TenantCommandGateway({
     pool,
     handlers: new TenantCommandHandlerRegistry(
@@ -74,8 +80,8 @@ function createGateway(pool, authentication) {
       })
     ),
     policyRegistry: authentication.policyRegistry,
-    credentialRegistry: authentication.credentialRegistry,
-    referenceHasher: authentication.referenceHasher,
+    credentialRegistry,
+    referenceHasher,
     livePolicyAdapterFactory: createPostgresTenantLivePolicyAdapter
   });
   const syntheticIdentity = createLocalSyntheticIdentityProvider({ pool });
@@ -114,21 +120,70 @@ function assertPort(name, value) {
   return value;
 }
 
-function dailySessionSecret(password, label, now = new Date()) {
-  const day = now.toISOString().slice(0, 10);
-  return createHmac("sha256", password)
-    .update("IPO_ONE_PRIVATE_PILOT_SESSION_V1")
-    .update("\0")
-    .update(day)
-    .update("\0")
-    .update(label)
-    .digest("base64url");
+async function loadLocalDurableAuthenticationMaterial() {
+  return Promise.all([
+    loadLocalAuthenticationServerMaterial(
+      process.env.IPO_ONE_LOCAL_AUTH_SERVER_FILE ||
+        DEFAULT_AUTHENTICATION_SERVER_FILE
+    ),
+    loadLocalAuthenticationInvitation(
+      process.env.IPO_ONE_LOCAL_AUTH_INVITATION_FILE ||
+        DEFAULT_AUTHENTICATION_INVITATION_FILE
+    )
+  ]);
+}
+
+function localRuntimeConfig() {
+  return loadAuthenticationRuntimeConfig({
+    NODE_ENV: "development",
+    IPO_ONE_AUTHENTICATION_MODE: "local_test"
+  });
+}
+
+async function createLocalHumanAccess({
+  authenticationPool,
+  authenticationMaterial,
+  identity,
+  port,
+  profile
+}) {
+  const browserOrigin = `http://127.0.0.1:${port}`;
+  const secureOrigin = `https://127.0.0.1:${port}`;
+  const walletSignatureVerifier = new EvmWalletSignatureVerifier();
+  return createPostgresHumanAccessComposition({
+    browserOrigin,
+    encryptionKey: authenticationMaterial.encryptionKey,
+    encryptionKeyRef: "local-secret://authentication/encryption-key",
+    oidcProviders: [],
+    policyVersion: identity.createContext().policyVersion,
+    pool: authenticationPool,
+    profile: "local_no_funds",
+    referenceHashKey: authenticationMaterial.referenceHashKey,
+    referenceHashKeyRef:
+      "local-secret://authentication/reference-hash-key",
+    runtimeConfig: localRuntimeConfig(),
+    systemActorId: authenticationMaterial.systemActorId,
+    tenantId: profile.tenantId,
+    wallet: {
+      issuer: secureOrigin,
+      clientId: identity.clientId,
+      domain: `127.0.0.1:${port}`,
+      uri: secureOrigin,
+      signatureVerifier: {
+        verify: (input) => walletSignatureVerifier.verifyMessage(input)
+      }
+    }
+  });
 }
 
 export async function createPrivatePilotRuntime({
   ownerConnectionString,
   basePort = 8787,
-  profile
+  profile,
+  creditRegistryObservationArtifactPath =
+    process.env.IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT,
+  evidenceAnchorContractAddress =
+    process.env.IPO_ONE_EVIDENCE_ANCHOR_CONTRACT_ADDRESS
 }) {
   if (typeof ownerConnectionString !== "string" || ownerConnectionString.length < 1) {
     throw new DomainError(
@@ -140,6 +195,8 @@ export async function createPrivatePilotRuntime({
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const authentication = createLocalPilotIdentities({ profile: checkedProfile });
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
+  const [serverMaterial, invitation] =
+    await loadLocalDurableAuthenticationMaterial();
   const localAgentAccount = derivePrivatePilotAgentAccount(password, {
     tenantId: authentication.profile.tenantId
   });
@@ -147,11 +204,17 @@ export async function createPrivatePilotRuntime({
     ownerConnectionString,
     identities: authentication.identities,
     password,
-    profile: authentication.profile
+    profile: authentication.profile,
+    creditRegistryObservationArtifactPath
   });
-  const gateway = createGateway(pool, authentication);
-  const sessionHandle = dailySessionSecret(password, "session");
-  const csrfToken = dailySessionSecret(password, "csrf");
+  const durableAuthentication = await provisionPrivatePilotAuthentication({
+    ownerConnectionString,
+    identities: authentication.identities,
+    profile: authentication.profile,
+    basePort,
+    serverMaterial,
+    invitation
+  });
   const networkContext = createTrustedNetworkContext({
     networkRefHash: hashId("private_pilot_network", "127.0.0.1"),
     source: "local_test"
@@ -162,25 +225,81 @@ export async function createPrivatePilotRuntime({
     { name: "risk", identity: authentication.identities.risk, port: basePort + 2, hash: "#risk" }
   ];
   const hosts = [];
+  let gateway;
   try {
+    const humanAccessProfiles = [];
     for (const profile of profiles) {
-      const session = createLocalHumanSession({
+      const humanAccess = await createLocalHumanAccess({
+        authenticationPool: durableAuthentication.pool,
+        authenticationMaterial: durableAuthentication,
         identity: profile.identity,
         port: profile.port,
-        sessionHandle,
-        csrfToken
+        profile: authentication.profile
+      });
+      humanAccessProfiles.push({ profile, humanAccess });
+    }
+    gateway = createGateway(pool, authentication, {
+      credentialRegistry:
+        humanAccessProfiles[0].humanAccess.credentialRegistry,
+      referenceHasher: createReferenceHasher(
+        durableAuthentication.referenceHashKey
+      )
+    });
+    const evidenceAnchors = evidenceAnchorContractAddress
+      ? Object.freeze({
+          routes: EVIDENCE_ANCHOR_HTTP_ROUTES,
+          handle: createEvidenceAnchorHttpHandler({
+            pool,
+            contractAddress: evidenceAnchorContractAddress,
+            nonceReader: createEvidenceAnchorNonceReader({
+              contractAddress: evidenceAnchorContractAddress
+            }),
+            observer: createEvidenceAnchorObserver({
+              contractAddress: evidenceAnchorContractAddress
+            }),
+            systemAttestorConfigured:
+              Boolean(process.env.IPO_ONE_EVIDENCE_ATTESTOR_KEY_FILE)
+          })
+        })
+      : undefined;
+    for (const { profile, humanAccess } of humanAccessProfiles) {
+      const localAgentAuthenticator = new LocalDurableAgentAuthenticator({
+        tenantId: authentication.profile.tenantId,
+        clientId: authentication.identities.agent.clientId,
+        policyVersion: authentication.identities.agent.createContext()
+          .policyVersion,
+        audience:
+          `urn:ipo.one:local:tenant-http:${profile.port}`,
+        credentialRegistry: humanAccess.credentialRegistry,
+        replayCache: humanAccess.machineReplayCache,
+        referenceHasher: createReferenceHasher(
+          durableAuthentication.referenceHashKey
+        )
       });
       const host = createTenantPilotHost({
         gateway,
-        humanBff: session.humanBff,
+        humanBff: humanAccess.humanSessionBff,
         machineAuthenticator: {
-          async authenticate() {
-            throw new DomainError("authentication_required", "Workload credentials are not accepted by a Human workspace");
+          async authenticate({ accessToken, dpopProof, mtlsEvidence, now }) {
+            if (dpopProof !== undefined || mtlsEvidence !== undefined) {
+              throw new DomainError(
+                "authentication_required",
+                "local Agent proof must use exactly one bearer credential"
+              );
+            }
+            return localAgentAuthenticator.authenticate({
+              proof: accessToken,
+              now
+            });
           }
         },
         createNetworkContext: async () => networkContext,
-        csrfTokenProvider: session.csrfTokenProvider,
-        sessionHandleProvider: session.sessionHandleProvider,
+        csrfTokenProvider: humanAccess.csrfTokenProvider,
+        localAgentAccountProvider: () => localAgentAccount.address,
+        serveAuthentication: humanAccess.serveAuthentication,
+        ...(evidenceAnchors === undefined
+          ? {}
+          : { serveEvidenceAnchors: evidenceAnchors }),
         port: profile.port
       });
       const address = await host.listen();
@@ -188,7 +307,10 @@ export async function createPrivatePilotRuntime({
     }
   } catch (error) {
     await Promise.allSettled(hosts.map(({ host }) => host.close()));
-    await pool.end();
+    await Promise.allSettled([
+      pool.end(),
+      durableAuthentication.pool.end()
+    ]);
     throw error;
   }
 
@@ -206,7 +328,10 @@ export async function createPrivatePilotRuntime({
     }))),
     async close() {
       await Promise.allSettled(hosts.map(({ host }) => host.close()));
-      await pool.end();
+      await Promise.allSettled([
+        pool.end(),
+        durableAuthentication.pool.end()
+      ]);
     }
   });
 }
@@ -249,7 +374,14 @@ export function createAgentSubjectBindingVerifier(pool) {
   };
 }
 
-export async function createPrivatePilotGateway(ownerConnectionString, { profile } = {}) {
+export async function createPrivatePilotGateway(
+  ownerConnectionString,
+  {
+    profile,
+    creditRegistryObservationArtifactPath =
+      process.env.IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT
+  } = {}
+) {
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const authentication = createLocalPilotIdentities({ profile: checkedProfile });
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
@@ -257,13 +389,87 @@ export async function createPrivatePilotGateway(ownerConnectionString, { profile
     ownerConnectionString,
     identities: authentication.identities,
     password,
-    profile: authentication.profile
+    profile: authentication.profile,
+    creditRegistryObservationArtifactPath
   });
   return Object.freeze({
     authentication,
     gateway: createGateway(pool, authentication),
     pool
   });
+}
+
+export async function createPrivatePilotDurableAgentGateway(
+  ownerConnectionString,
+  {
+    profile,
+    basePort = 8787,
+    audience = LOCAL_AGENT_STDIO_AUDIENCE,
+    creditRegistryObservationArtifactPath =
+      process.env.IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT
+  } = {}
+) {
+  const checkedProfile = profile ?? await loadPrivatePilotProfile();
+  const authentication = createLocalPilotIdentities({
+    profile: checkedProfile
+  });
+  const password = await loadOrCreatePrivatePilotDatabaseSecret();
+  const [serverMaterial, invitation] =
+    await loadLocalDurableAuthenticationMaterial();
+  const pool = await provisionPrivatePilotDatabase({
+    ownerConnectionString,
+    identities: authentication.identities,
+    password,
+    profile: authentication.profile,
+    creditRegistryObservationArtifactPath
+  });
+  const durableAuthentication = await provisionPrivatePilotAuthentication({
+    ownerConnectionString,
+    identities: authentication.identities,
+    profile: authentication.profile,
+    basePort,
+    serverMaterial,
+    invitation
+  });
+  try {
+    const humanAccess = await createLocalHumanAccess({
+      authenticationPool: durableAuthentication.pool,
+      authenticationMaterial: durableAuthentication,
+      identity: authentication.identities.controller,
+      port: basePort + 1,
+      profile: authentication.profile
+    });
+    return Object.freeze({
+      authentication,
+      gateway: createGateway(pool, authentication, {
+        credentialRegistry: humanAccess.credentialRegistry,
+        referenceHasher: createReferenceHasher(
+          durableAuthentication.referenceHashKey
+        )
+      }),
+      pool,
+      authenticationPool: durableAuthentication.pool,
+      agentAuthenticator: new LocalDurableAgentAuthenticator({
+        tenantId: authentication.profile.tenantId,
+        clientId: authentication.identities.agent.clientId,
+        policyVersion: authentication.identities.agent.createContext()
+          .policyVersion,
+        audience,
+        credentialRegistry: humanAccess.credentialRegistry,
+        replayCache: humanAccess.machineReplayCache,
+        referenceHasher: createReferenceHasher(
+          durableAuthentication.referenceHashKey
+        )
+      }),
+      audience
+    });
+  } catch (error) {
+    await Promise.allSettled([
+      pool.end(),
+      durableAuthentication.pool.end()
+    ]);
+    throw error;
+  }
 }
 
 export { createProductionClosedPilotRuntime } from "./production-runtime.js";

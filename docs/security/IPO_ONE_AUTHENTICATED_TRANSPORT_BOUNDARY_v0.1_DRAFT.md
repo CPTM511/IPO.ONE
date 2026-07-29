@@ -5,7 +5,7 @@ TRANSPORT-001 approval and verification on 2026-07-15. Public/remote and
 production transport remain disabled.
 
 Current V9 product note: V9-006 exposes the later reviewed
-`agent_mcp_registry.v2` with exactly eleven local stdio tools. It does not
+`agent_mcp_registry.v2` with exactly twelve local stdio tools. It does not
 provision or expose a workload token, DPoP proof, mTLS key, production
 credential, remote MCP listener, or public Agent endpoint. Host authentication
 context remains out of band.
@@ -25,7 +25,7 @@ context remains out of band.
 - Anonymous public sandbox: unchanged and cannot import the durable Gateway.
 - Tenant HTTP: separate loopback-only listener, closed envelope, authenticated
   context, no production start profile.
-- Agent MCP: local stdio only, eleven reviewed self-owned tools, no remote
+- Agent MCP: local stdio only, twelve reviewed bounded tools, no remote
   transport or ambient filesystem/shell/network tools.
 
 ## Agent Handoff Boundary
@@ -40,7 +40,7 @@ context remains out of band.
   its tool sequence is conformance-checked against the approved MCP registry.
 - The manifest may contain the owned Subject ID, Mandate ID, Mandate/terms
   hashes, bounded capabilities, assets, limits, expiry, request schema version,
-  local transport profile, and the exact eleven reviewed MCP tool/operation
+  local transport profile, and the exact twelve reviewed MCP tool/operation
   pairs.
 - Credential delivery is out of band. The manifest must not contain a Tenant
   selector, role or approval claim, token, cookie, DPoP proof, signature,

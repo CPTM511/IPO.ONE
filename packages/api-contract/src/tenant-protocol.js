@@ -438,6 +438,25 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotReadCreditRegistryEvidence",
+    kind: "query",
+    actorTypes: [
+      "human",
+      "agent",
+      "risk_operator",
+      "operations_operator",
+      "auditor"
+    ],
+    resourceType: "credit_registry_evidence",
+    requiredCapability: "credit_registry.evidence.read.tenant",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_credit_registry_evidence_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
     operationId: "pilotReadEvidence",
     kind: "query",
     actorTypes: ["auditor"],

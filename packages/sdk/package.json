@@ -9,6 +9,7 @@
       "import": "./src/index.js"
     },
     "./production-agent-client": {
+      "types": "./production-agent-client.d.ts",
       "import": "./src/production-agent-client.js"
     }
   },

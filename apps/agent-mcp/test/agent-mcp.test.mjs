@@ -49,6 +49,10 @@ function client() {
     async acceptCreditOffer(input) { return { operationId: "pilotAcceptCreditOffer", input }; },
     async executeSandboxObligation(input) { return { operationId: "pilotExecuteSandboxObligation", input }; },
     async postSandboxRepayment(input) { return { operationId: "pilotPostSandboxRepayment", input }; }
+    ,
+    async getCreditRegistryEvidence(input) {
+      return { operationId: "pilotReadCreditRegistryEvidence", input };
+    }
   };
 }
 
@@ -250,12 +254,19 @@ function workflowClient({ selfSubjectId = applicationHandoff.subjectId } = {}) {
       async postSandboxRepayment(input) {
         calls.push({ method: "postSandboxRepayment", input: structuredClone(input) });
         return protocolResult("pilotPostSandboxRepayment");
+      },
+      async getCreditRegistryEvidence(input) {
+        calls.push({
+          method: "getCreditRegistryEvidence",
+          input: structuredClone(input)
+        });
+        return protocolResult("pilotReadCreditRegistryEvidence");
       }
     }
   };
 }
 
-test("local Agent MCP publishes exactly the eleven approved self-owned tools", async () => {
+test("local Agent MCP publishes exactly the twelve approved bounded tools", async () => {
   const adapter = createAgentMcpAdapter({ client: client() });
   assert.deepEqual(
     AGENT_MCP_TOOLS.map(({ name, operationId }) => ({ name, operationId })),
@@ -272,7 +283,8 @@ test("local Agent MCP publishes exactly the eleven approved self-owned tools", a
     "ipo_one_read_obligation_evidence",
     "ipo_one_accept_credit_offer",
     "ipo_one_execute_sandbox_obligation",
-    "ipo_one_post_sandbox_repayment"
+    "ipo_one_post_sandbox_repayment",
+    "ipo_one_read_credit_registry_evidence"
   ]);
   const rpc = createAgentMcpJsonRpcHandler({ adapter });
   const listed = await rpc({ jsonrpc: "2.0", id: 1, method: "tools/list" });
@@ -352,6 +364,24 @@ test("local Agent MCP publishes exactly the eleven approved self-owned tools", a
     }
   });
   assert.equal(evidence.result.structuredContent.operationId, "pilotReadOwnObligationEvidence");
+
+  const registryEvidence = await rpc({
+    jsonrpc: "2.0",
+    id: 61,
+    method: "tools/call",
+    params: {
+      name: "ipo_one_read_credit_registry_evidence",
+      arguments: {
+        authorizationHash: `0x${"11".repeat(32)}`,
+        requestId: "request-agent-registry-evidence-0001",
+        correlationId: "correlation-agent-registry-evidence-0001"
+      }
+    }
+  });
+  assert.equal(
+    registryEvidence.result.structuredContent.operationId,
+    "pilotReadCreditRegistryEvidence"
+  );
 
   const accepted = await rpc({
     jsonrpc: "2.0",

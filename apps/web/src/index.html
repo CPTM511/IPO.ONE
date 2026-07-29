@@ -6,12 +6,13 @@
     <meta name="theme-color" content="#15171c" />
     <meta name="description" content="IPO.ONE no-funds credit workspace for Human and Agent obligations, repayment, and verifiable evidence." />
     <meta name="ipo-one-csrf-token" content="" />
-    <title>IPO.ONE Credit Workspace</title>
+    <meta name="ipo-one-local-agent-account" content="" />
+    <title>IPO.ONE Product Workspace</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=web013" />
+    <link rel="stylesheet" href="/styles.css?v=web014" />
   </head>
-  <body>
+  <body class="private-session-closed">
     <a class="skip-link" href="#mainContent">Skip to workspace</a>
 
     <div class="app-shell">
@@ -35,63 +36,85 @@
           </div>
         </div>
 
-        <nav class="nav-list" aria-label="V9 workspace destinations">
-          <button class="nav-item active" type="button" data-view="overview" aria-current="page">
-            <svg aria-hidden="true"><use href="/icons.svg#layout-dashboard"></use></svg>
-            <span><strong>Overview</strong><small data-v9-maturity="overview">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="request-credit">
-            <svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg>
-            <span><strong>Request Credit</strong><small data-v9-maturity="request-credit">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="repay-settle">
-            <svg aria-hidden="true"><use href="/icons.svg#arrow-left-right"></use></svg>
-            <span><strong>Repay &amp; Settle</strong><small data-v9-maturity="repay-settle">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="credit-passport">
-            <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
-            <span><strong>Credit Passport</strong><small data-v9-maturity="credit-passport">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="obligations">
-            <svg aria-hidden="true"><use href="/icons.svg#book-open"></use></svg>
-            <span><strong>Obligations</strong><small data-v9-maturity="obligations">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="agent-console">
-            <svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg>
-            <span><strong>Agent Console</strong><small data-v9-maturity="agent-console">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="capital-network">
-            <svg aria-hidden="true"><use href="/icons.svg#server"></use></svg>
-            <span><strong>Capital Network</strong><small data-v9-maturity="capital-network">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="trading-capital">
-            <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
-            <span><strong>Trading Capital</strong><small id="tradingCapitalNavState">Checking 25 operations</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="wallet-permissions">
-            <svg aria-hidden="true"><use href="/icons.svg#link"></use></svg>
-            <span><strong>Wallet &amp; Permissions</strong><small data-v9-maturity="wallet-permissions">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="activity-proofs">
-            <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
-            <span><strong>Activity &amp; Proofs</strong><small data-v9-maturity="activity-proofs">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="credit-track-record">
-            <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
-            <span><strong>Credit Track Record</strong><small data-v9-maturity="credit-track-record">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="reports-exports">
-            <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
-            <span><strong>Reports &amp; Exports</strong><small data-v9-maturity="reports-exports">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="risk-operations">
-            <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
-            <span><strong>Risk &amp; Operations</strong><small data-v9-maturity="risk-operations">Checking server</small></span>
-          </button>
-          <button class="nav-item" type="button" data-view="architecture">
-            <svg aria-hidden="true"><use href="/icons.svg#code"></use></svg>
-            <span><strong>Architecture</strong><small data-v9-maturity="architecture">Checking server</small></span>
-          </button>
+        <nav class="nav-list" aria-label="IPO.ONE product navigation">
+          <div class="nav-section nav-section-home">
+            <button class="nav-item active" type="button" data-view="overview" aria-current="page">
+              <svg aria-hidden="true"><use href="/icons.svg#layout-dashboard"></use></svg>
+              <span><strong>Overview</strong><small data-v9-maturity="overview">Checking server</small></span>
+            </button>
+          </div>
+
+          <div class="nav-section" aria-labelledby="navProductsLabel">
+            <p class="nav-section-label" id="navProductsLabel">Products</p>
+            <button class="nav-item nav-product" type="button" data-view="request-credit">
+              <svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg>
+              <span><strong>Credit</strong><small data-v9-maturity="request-credit">Checking server</small></span>
+            </button>
+            <button class="nav-item nav-product" type="button" data-view="trading-capital">
+              <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
+              <span><strong>Trading Capital</strong><small id="tradingCapitalNavState">Hyperliquid MVP</small></span>
+            </button>
+            <button class="nav-item nav-product nav-preview" type="button" data-view="capital-partners">
+              <svg aria-hidden="true"><use href="/icons.svg#server"></use></svg>
+              <span><strong>Capital Partners</strong><small>Invitation-only preview</small></span>
+            </button>
+          </div>
+
+          <div class="nav-section" aria-labelledby="navCreditLifecycleLabel">
+            <p class="nav-section-label" id="navCreditLifecycleLabel">Credit lifecycle</p>
+            <button class="nav-item" type="button" data-view="obligations">
+              <svg aria-hidden="true"><use href="/icons.svg#book-open"></use></svg>
+              <span><strong>Obligations</strong><small data-v9-maturity="obligations">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="repay-settle">
+              <svg aria-hidden="true"><use href="/icons.svg#arrow-left-right"></use></svg>
+              <span><strong>Repay &amp; Settle</strong><small data-v9-maturity="repay-settle">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="credit-passport">
+              <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
+              <span><strong>Credit Passport</strong><small data-v9-maturity="credit-passport">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="credit-track-record">
+              <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
+              <span><strong>Credit Track Record</strong><small data-v9-maturity="credit-track-record">Checking server</small></span>
+            </button>
+          </div>
+
+          <div class="nav-section" aria-labelledby="navAccessLabel">
+            <p class="nav-section-label" id="navAccessLabel">Access &amp; integrations</p>
+            <button class="nav-item" type="button" data-view="agent-console">
+              <svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg>
+              <span><strong>Agent Console</strong><small data-v9-maturity="agent-console">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="wallet-permissions">
+              <svg aria-hidden="true"><use href="/icons.svg#link"></use></svg>
+              <span><strong>Wallet &amp; Permissions</strong><small data-v9-maturity="wallet-permissions">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="capital-network">
+              <svg aria-hidden="true"><use href="/icons.svg#server"></use></svg>
+              <span><strong>Provider Network</strong><small data-v9-maturity="capital-network">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="architecture">
+              <svg aria-hidden="true"><use href="/icons.svg#code"></use></svg>
+              <span><strong>Architecture</strong><small data-v9-maturity="architecture">Checking server</small></span>
+            </button>
+          </div>
+
+          <div class="nav-section" aria-labelledby="navOperationsLabel">
+            <p class="nav-section-label" id="navOperationsLabel">Evidence &amp; operations</p>
+            <button class="nav-item" type="button" data-view="activity-proofs">
+              <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
+              <span><strong>Activity &amp; Proofs</strong><small data-v9-maturity="activity-proofs">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="reports-exports">
+              <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
+              <span><strong>Reports &amp; Exports</strong><small data-v9-maturity="reports-exports">Checking server</small></span>
+            </button>
+            <button class="nav-item" type="button" data-view="risk-operations">
+              <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+              <span><strong>Risk &amp; Operations</strong><small data-v9-maturity="risk-operations">Checking server</small></span>
+            </button>
+          </div>
         </nav>
 
         <div class="sidebar-footer">
@@ -127,6 +150,7 @@
               <svg aria-hidden="true"><use href="/icons.svg#link"></use></svg>
               <span id="accessButtonLabel">Sign in</span>
             </button>
+            <button class="topbar-sign-out-button" id="topbarSignOutBtn" type="button" hidden>Sign out</button>
             <div class="connection-chip" id="connectionChip" role="status">
               <span class="connection-dot" aria-hidden="true"></span>
               <span id="connectionStatus">Connecting</span>
@@ -159,6 +183,16 @@
             <button id="authenticatedRuntimeGateAction" class="primary" type="button">Sign in to continue</button>
           </section>
 
+          <section id="signedOutPrivacyShield" class="signed-out-privacy-shield" aria-labelledby="signedOutPrivacyTitle" aria-live="polite">
+            <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+            <div>
+              <p class="eyebrow">Private workspace closed</p>
+              <h2 id="signedOutPrivacyTitle">Signed out</h2>
+              <p id="signedOutPrivacyCopy">The account session, wallet connection, and private browser state have been cleared.</p>
+            </div>
+            <button id="signedOutPrivacyAction" class="primary" type="button">Sign in</button>
+          </section>
+
           <section class="view active" data-view-panel="overview" aria-labelledby="privatePortfolioTitle">
             <section id="privatePortfolioSurface" class="private-product-surface" aria-labelledby="privatePortfolioTitle" data-private-session-surface>
               <section class="private-product-hero">
@@ -167,9 +201,9 @@
                     <span class="protocol-badge"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span id="privatePortfolioMode">Human entry</span></span>
                     <span class="v9-maturity-badge checking" data-v9-maturity="overview">Checking server</span>
                   </div>
-                  <p class="eyebrow">Shared obligation kernel</p>
-                  <h2 id="privatePortfolioTitle">One Obligation. <em>Two first-class entry modes.</em></h2>
-                  <p id="privatePortfolioCopy">Continue the Human no-funds lifecycle without leaving the authenticated private session.</p>
+                  <p class="eyebrow">Unified product home</p>
+                  <h2 id="privatePortfolioTitle">Choose a product. <em>Keep one credit identity.</em></h2>
+                  <p id="privatePortfolioCopy">Enter Credit, Trading Capital, or Capital Partners through the selected Human or Agent access mode.</p>
                   <div class="heading-actions">
                     <button id="privatePortfolioPrimaryBtn" class="primary" type="button">Open Human credit</button>
                     <button id="privatePortfolioSecondaryBtn" class="secondary" type="button">Configure Agent authority</button>
@@ -191,6 +225,59 @@
                   <small id="v9OverviewStateCopy">Workspace recovery and owned reads are still pending. No amount is inferred in the browser.</small>
                 </span>
               </section>
+
+              <section class="product-entry-section" aria-labelledby="productEntryTitle">
+                <div class="product-section-heading">
+                  <div>
+                    <p class="eyebrow">Choose a product</p>
+                    <h3 id="productEntryTitle">One identity, three capital paths</h3>
+                  </div>
+                  <p>Human and Agent are access modes. Credit, Trading Capital, and Capital Partners stay distinct while sharing the same obligation, risk, and Evidence truth.</p>
+                </div>
+                <div class="product-entry-grid">
+                  <button class="product-entry-card credit-product" type="button" data-go-view="request-credit">
+                    <span class="product-entry-card-top">
+                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg></span>
+                      <span class="state-pill">Core lifecycle</span>
+                    </span>
+                    <span class="product-entry-copy">
+                      <strong>Credit</strong>
+                      <small>Request terms, review an explainable Offer, activate one Obligation, repay, and build verifiable history.</small>
+                    </span>
+                    <span class="product-entry-action">Open Credit <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
+                  </button>
+                  <button class="product-entry-card trading-product" type="button" data-go-view="trading-capital">
+                    <span class="product-entry-card-top">
+                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg></span>
+                      <span class="state-pill">Hyperliquid MVP</span>
+                    </span>
+                    <span class="product-entry-copy">
+                      <strong>Trading Capital</strong>
+                      <small>Use a bounded Trading Facility, inspect risk controls, settle, and prove performance through the Hyperliquid testnet profile.</small>
+                    </span>
+                    <span class="product-entry-action">Open Trading Capital <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
+                  </button>
+                  <button class="product-entry-card capital-product" type="button" data-go-view="capital-partners">
+                    <span class="product-entry-card-top">
+                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg></span>
+                      <span class="state-pill warning">Invitation-only preview</span>
+                    </span>
+                    <span class="product-entry-copy">
+                      <strong>Capital Partners</strong>
+                      <small>Preview future exposure, performance, and Evidence reporting for approved capital providers. No deposit or withdrawal is available.</small>
+                    </span>
+                    <span class="product-entry-action">View preview <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
+                  </button>
+                </div>
+              </section>
+
+              <div class="product-section-heading access-mode-heading">
+                <div>
+                  <p class="eyebrow">Choose an access mode</p>
+                  <h3>Human and Agent, one shared kernel</h3>
+                </div>
+                <p>The interface and authority method change. Obligation, Ledger, risk, servicing, and Evidence do not fork.</p>
+              </div>
 
               <div class="private-product-grid">
                 <section class="panel private-entry-card" aria-labelledby="privateHumanEntryTitle">
@@ -456,7 +543,7 @@
                         </dl>
                         <div class="decision-source-table" role="table" aria-label="Decision source Evidence">
                           <div class="decision-source-row decision-source-header" role="row">
-                            <span role="columnheader">Source</span><span role="columnheader">Version</span><span role="columnheader">Finality</span><span role="columnheader">Proof</span>
+                            <span role="columnheader">Source</span><span role="columnheader">Version</span><span role="columnheader">Evidence state</span><span role="columnheader">Proof</span>
                           </div>
                           <div id="humanDecisionSourceRows" role="rowgroup"></div>
                         </div>
@@ -477,7 +564,7 @@
                       <input id="humanOfferAcknowledge" type="checkbox" disabled />
                       <span>I reviewed the exact Offer hash and terms. I understand this creates a sandbox Obligation with no real funds.</span>
                     </label>
-                    <button class="primary" id="acceptHumanOfferBtn" type="button" disabled>Review & accept Offer</button>
+                    <button class="primary" id="acceptHumanOfferBtn" type="button" disabled>Confirm &amp; create sandbox Obligation</button>
                   </div>
                   <p class="offer-boundary" id="humanOfferBoundary">Acceptance creates one auditable Obligation and deterministic schedule. No production funds can move.</p>
                 </aside>
@@ -497,40 +584,50 @@
                         <div><dt>Interest due</dt><dd id="humanObligationInterest">$0.00</dd></div>
                         <div><dt>Total repaid</dt><dd id="humanObligationRepaid">$0.00</dd></div>
                         <div><dt>Obligation ID</dt><dd id="humanObligationId">—</dd></div>
-                        <div><dt>Execution receipt</dt><dd id="humanExecutionReceipt">Not executed</dd></div>
+                        <div><dt>Sandbox rail receipt (offchain)</dt><dd id="humanExecutionReceipt">Not executed</dd></div>
                       </dl>
                     </div>
                     <div class="obligation-action-column">
                       <ol class="obligation-schedule" id="humanObligationSchedule" aria-label="Repayment schedule"></ol>
                       <div class="sandbox-obligation-actions">
-                        <button class="primary" id="executeHumanObligationBtn" type="button" disabled>Execute sandbox credit</button>
+                        <button class="primary" id="executeHumanObligationBtn" type="button" disabled>Confirm sandbox execution</button>
                         <div class="sandbox-repayment-fields">
                           <label for="humanRepaymentAmount">Repayment (USD)<input id="humanRepaymentAmount" type="number" min="0.01" max="1000" step="0.01" value="25.00" inputmode="decimal" /></label>
                           <label for="humanRepaymentSource">Synthetic source<select id="humanRepaymentSource"><option value="synthetic_wallet">Wallet</option><option value="synthetic_bank">Bank</option><option value="synthetic_revenue">Revenue</option></select></label>
                         </div>
-                        <button class="secondary" id="postHumanRepaymentBtn" type="button" disabled>Post sandbox repayment</button>
+                        <button class="secondary" id="postHumanRepaymentBtn" type="button" disabled>Confirm sandbox repayment</button>
                         <p id="humanRepaymentAllocation">Fee → interest → principal. Any surplus is returned without a ledger posting.</p>
                       </div>
                     </div>
                   </div>
+                  <section class="obligation-chain-anchor" aria-labelledby="humanObligationChainAnchorTitle">
+                    <div>
+                      <p class="eyebrow">Public-chain verification</p>
+                      <h4 id="humanObligationChainAnchorTitle">Base Sepolia anchor</h4>
+                      <p id="humanObligationChainAnchorCopy">Not anchored. This sandbox Obligation and its repayments currently exist in IPO.ONE PostgreSQL only; no Base Sepolia transaction exists for this lifecycle.</p>
+                    </div>
+                    <span id="humanObligationChainAnchorStatus" class="state-pill warning">Not anchored</span>
+                    <button id="anchorPendingEvidenceBtn" class="secondary" type="button" hidden>Confirm Evidence anchor</button>
+                    <a id="humanObligationChainAnchorLink" class="secondary button-link" href="#" target="_blank" rel="noopener noreferrer" hidden>View verified transaction</a>
+                  </section>
                   <section class="owned-evidence-panel" id="ownedEvidencePanel" aria-labelledby="ownedEvidenceTitle">
                     <div class="panel-heading owned-evidence-heading">
-                      <div><p class="eyebrow">EVIDENCE-001B · owner only</p><h4 id="ownedEvidenceTitle">Your immutable Obligation timeline</h4></div>
+                      <div><p class="eyebrow">EVIDENCE-001B · owner only</p><h4 id="ownedEvidenceTitle">Your durable Obligation timeline</h4></div>
                       <span class="state-pill neutral" id="ownedEvidenceAccess">Private read</span>
                     </div>
                     <div class="owned-evidence-summary" aria-label="Owned Evidence summary">
                       <div><span>Events loaded</span><strong id="ownedEvidenceCount">0</strong></div>
-                      <div><span>Finality</span><strong id="ownedEvidenceFinality">Waiting</strong></div>
+                      <div><span>Server Evidence state</span><strong id="ownedEvidenceFinality">Waiting</strong></div>
                       <div><span>As of</span><strong id="ownedEvidenceAsOf">Not queried</strong></div>
                     </div>
-                    <p id="ownedEvidenceHelper" class="auditor-evidence-helper" role="status" aria-live="polite">Load the redacted immutable Evidence for this exact Obligation.</p>
+                    <p id="ownedEvidenceHelper" class="auditor-evidence-helper" role="status" aria-live="polite">Load the redacted PostgreSQL Evidence for this exact Obligation. Evidence digests are integrity checks, not blockchain transactions.</p>
                     <div class="auditor-evidence-table owned-evidence-table" role="table" aria-label="Your Obligation Evidence events">
                       <div class="auditor-evidence-row auditor-evidence-table-head" role="row">
                         <span role="columnheader">Event</span>
                         <span role="columnheader">Aggregate</span>
-                        <span role="columnheader">Finality</span>
+                        <span role="columnheader">Server state</span>
                         <span role="columnheader">Occurred</span>
-                        <span role="columnheader">Evidence hash</span>
+                        <span role="columnheader">Evidence digest (offchain)</span>
                       </div>
                       <div id="ownedEvidenceRows" class="auditor-evidence-table-body" role="rowgroup"></div>
                     </div>
@@ -646,7 +743,7 @@
                       </div>
                       <div>
                         <label for="agentAccountAddress">EVM account</label>
-                        <input id="agentAccountAddress" autocomplete="off" spellcheck="false" value="0x1111111111111111111111111111111111111111" />
+                        <input id="agentAccountAddress" autocomplete="off" spellcheck="false" placeholder="Registered local Agent account" />
                       </div>
                       <div>
                         <label for="agentAccountPurpose">Binding purpose</label>
@@ -830,7 +927,7 @@
                 <div>
                   <div class="v9-heading-badges"><p class="eyebrow">Private point-in-time Evidence</p><span class="v9-maturity-badge checking" data-v9-maturity="credit-passport">Checking server</span></div>
                   <h2 id="creditPassportViewTitle">Credit Passport</h2>
-                  <p>Issue one temporary, same-Tenant proof to one exact verifier. It is non-authorizing, online-only, and derived from canonical Decision Evidence.</p>
+                  <p>Share a temporary, same-Tenant view of your current Decision with one exact verifier. IPO.ONE fills the application source; you choose only the verifier, lifetime, and disclosed facts.</p>
                 </div>
                 <button class="primary" type="button" data-go-view="request-credit">Open Decision Passport</button>
               </div>
@@ -841,18 +938,22 @@
               <div class="credit-passport-workspace">
                 <section class="panel credit-passport-issue-card" aria-labelledby="creditPassportIssueTitle">
                   <div class="panel-heading">
-                    <div><p class="eyebrow">Owner / controller only</p><h3 id="creditPassportIssueTitle">Issue a bounded proof</h3></div>
-                    <span class="state-pill">No score</span>
+                    <div><p class="eyebrow">Owner / controller only</p><h3 id="creditPassportIssueTitle">Share the current Decision</h3></div>
+                    <span class="state-pill">Private · expiring</span>
                   </div>
                   <form id="creditPassportIssueForm" class="credit-passport-form">
-                    <div class="form-grid two">
-                      <label>Exact Subject ID<input id="creditPassportSubjectId" autocomplete="off" maxlength="256" placeholder="subject_…" /></label>
-                      <label>Exact Credit Intent ID<input id="creditPassportIntentId" autocomplete="off" maxlength="256" placeholder="credit_intent_…" /></label>
-                      <label>Exact verifier Actor ID<input id="creditPassportVerifierActorId" autocomplete="off" maxlength="256" placeholder="actor_…" /></label>
+                    <div class="credit-passport-source" aria-label="Current Decision source">
+                      <div><span>Current Human Subject</span><code id="creditPassportSubjectSource">Not loaded</code></div>
+                      <div><span>Current credit application</span><code id="creditPassportIntentSource">Not loaded</code></div>
+                    </div>
+                    <input id="creditPassportSubjectId" type="hidden" />
+                    <input id="creditPassportIntentId" type="hidden" />
+                    <div class="form-grid two credit-passport-recipient">
+                      <label>Verifier Actor ID<input id="creditPassportVerifierActorId" autocomplete="off" maxlength="256" placeholder="actor_…" /></label>
                       <label>Lifetime<select id="creditPassportLifetime"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="21600">6 hours</option><option value="86400">24 hours maximum</option></select></label>
                     </div>
                     <fieldset class="credit-passport-claims">
-                      <legend>Selective disclosure</legend>
+                      <legend>What can this verifier see?</legend>
                       <label><input type="checkbox" name="creditPassportClaim" value="decision_outcome" checked />Decision outcome</label>
                       <label><input type="checkbox" name="creditPassportClaim" value="factor_authority" checked />Authority factor</label>
                       <label><input type="checkbox" name="creditPassportClaim" value="factor_subject_principal" />Subject &amp; principal factor</label>
@@ -863,9 +964,9 @@
                       <label><input type="checkbox" name="creditPassportClaim" value="reason_to_feature_lineage" />Reason-to-feature lineage</label>
                       <label><input type="checkbox" name="creditPassportClaim" value="source_evidence_lineage" />Source Evidence lineage</label>
                     </fieldset>
-                    <button id="issueCreditPassportBtn" class="primary" type="submit">Issue private proof</button>
+                    <button id="issueCreditPassportBtn" class="primary" type="submit">Create private proof</button>
                   </form>
-                  <p id="creditPassportIssueHelper" class="risk-helper" role="status" aria-live="polite">Enter exact server-known IDs. The verifier is not discovered or suggested by the browser.</p>
+                  <p id="creditPassportIssueHelper" class="risk-helper" role="status" aria-live="polite">Complete a current Decision first. The verifier is never discovered or suggested by the browser.</p>
                 </section>
 
                 <section class="panel credit-passport-artifact-card" aria-labelledby="creditPassportArtifactTitle">
@@ -873,10 +974,13 @@
                     <div><p class="eyebrow">Online server truth</p><h3 id="creditPassportArtifactTitle">Artifact state</h3></div>
                     <span id="creditPassportArtifactStatus" class="state-pill neutral">Not loaded</span>
                   </div>
-                  <form id="creditPassportReadForm" class="credit-passport-inline-form">
-                    <label>Exact Artifact ID<input id="creditPassportArtifactId" autocomplete="off" maxlength="256" placeholder="credit_passport_artifact_…" /></label>
-                    <button id="readCreditPassportBtn" class="secondary" type="submit">Read owned proof</button>
-                  </form>
+                  <details class="credit-passport-advanced">
+                    <summary>Recover an existing proof by ID</summary>
+                    <form id="creditPassportReadForm" class="credit-passport-inline-form">
+                      <label>Exact Artifact ID<input id="creditPassportArtifactId" autocomplete="off" maxlength="256" placeholder="credit_passport_artifact_…" /></label>
+                      <button id="readCreditPassportBtn" class="secondary" type="submit">Read owned proof</button>
+                    </form>
+                  </details>
                   <dl class="credit-passport-facts">
                     <div><dt>Artifact</dt><dd id="creditPassportArtifactIdentity">—</dd></div>
                     <div><dt>Issuer</dt><dd id="creditPassportArtifactIssuer">—</dd></div>
@@ -896,19 +1000,21 @@
                 </section>
               </div>
 
-              <section class="panel credit-passport-verify-card" aria-labelledby="creditPassportVerifyTitle">
-                <div class="panel-heading">
-                  <div><p class="eyebrow">Exact bound verifier only</p><h3 id="creditPassportVerifyTitle">Online verification</h3></div>
+              <details class="panel credit-passport-verify-card credit-passport-advanced" aria-labelledby="creditPassportVerifyTitle">
+                <summary>
+                  <span><small>Verifier tool</small><strong id="creditPassportVerifyTitle">Verify a received proof online</strong></span>
                   <span id="creditPassportVerificationStatus" class="state-pill neutral">Not verified</span>
+                </summary>
+                <div class="credit-passport-advanced-body">
+                  <form id="creditPassportVerifyForm" class="form-grid three">
+                    <label>Artifact ID<input id="creditPassportVerifyArtifactId" autocomplete="off" maxlength="256" /></label>
+                    <label>Artifact hash<input id="creditPassportVerifyHash" autocomplete="off" maxlength="66" /></label>
+                    <label>Artifact version<input id="creditPassportVerifyVersion" type="number" min="1" step="1" /></label>
+                    <button id="verifyCreditPassportBtn" class="primary" type="submit">Verify online</button>
+                  </form>
+                  <p id="creditPassportVerificationHelper" class="risk-helper" role="status" aria-live="polite">Verification requires the exact authenticated verifier, current same-Tenant Membership, purpose, hash, version, source, and trusted server time.</p>
                 </div>
-                <form id="creditPassportVerifyForm" class="form-grid three">
-                  <label>Artifact ID<input id="creditPassportVerifyArtifactId" autocomplete="off" maxlength="256" /></label>
-                  <label>Artifact hash<input id="creditPassportVerifyHash" autocomplete="off" maxlength="66" /></label>
-                  <label>Artifact version<input id="creditPassportVerifyVersion" type="number" min="1" step="1" /></label>
-                  <button id="verifyCreditPassportBtn" class="primary" type="submit">Verify online</button>
-                </form>
-                <p id="creditPassportVerificationHelper" class="risk-helper" role="status" aria-live="polite">Verification requires the exact authenticated verifier, current same-Tenant Membership, purpose, hash, version, source, and trusted server time.</p>
-              </section>
+              </details>
 
               <div class="v9-maturity-grid">
                 <section class="panel"><span class="state-pill">Real local</span><h3>Private proof lifecycle</h3><p>Four authenticated operations create, read, verify, and terminally revoke a versioned artifact.</p></section>
@@ -940,7 +1046,7 @@
               <div class="agent-console-contract-heading">
                 <div>
                   <p class="eyebrow">Versioned integration truth</p>
-                  <h3 id="agentConsoleContractTitle">One manifest. Eleven local tools. No ambient authority.</h3>
+                  <h3 id="agentConsoleContractTitle">One manifest. Twelve local tools. No ambient authority.</h3>
                   <p>The browser presents the exact local registry and authenticated server state. It cannot execute an Agent workflow, mint a credential, or expand a Mandate.</p>
                 </div>
                 <div class="agent-console-contract-actions">
@@ -1045,12 +1151,88 @@
 
           </section>
 
+          <section class="view" data-view-panel="capital-partners" aria-labelledby="capitalPartnersViewTitle">
+            <section class="v9-capability-page capital-partners-page" aria-labelledby="capitalPartnersViewTitle">
+              <div class="private-page-heading capital-partners-heading">
+                <div>
+                  <div class="v9-heading-badges">
+                    <p class="eyebrow">Capital provider entry</p>
+                    <span class="v9-maturity-badge unavailable">Invitation-only preview</span>
+                  </div>
+                  <h2 id="capitalPartnersViewTitle">Capital Partners</h2>
+                  <p>Preview the future capital-provider workspace for exposure, performance, risk, and Evidence reporting. No public pool, deposit, allocation, withdrawal, custody, or real capital is enabled.</p>
+                </div>
+                <span class="state-pill warning">No funds authority</span>
+              </div>
+
+              <section class="capital-partner-summary" aria-label="Capital Partners availability">
+                <div>
+                  <span>Access</span>
+                  <strong>Invitation only</strong>
+                  <small>Named approval and eligibility remain external gates.</small>
+                </div>
+                <div>
+                  <span>Capital mode</span>
+                  <strong>Preview only</strong>
+                  <small>No deposit, allocation, custody, or deployed capital.</small>
+                </div>
+                <div>
+                  <span>Reporting</span>
+                  <strong>Evidence-first</strong>
+                  <small>Future views derive from obligations, repayment, and risk truth.</small>
+                </div>
+              </section>
+
+              <div class="capital-partner-grid">
+                <section class="panel capital-partner-journey" aria-labelledby="capitalPartnerJourneyTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Future permissioned workflow</p><h3 id="capitalPartnerJourneyTitle">Capital partner journey</h3></div>
+                    <span class="state-pill warning">Not activated</span>
+                  </div>
+                  <ol>
+                    <li><span>1</span><div><strong>Qualify</strong><small>Identity, eligibility, legal, and risk review</small></div><em>External gate</em></li>
+                    <li><span>2</span><div><strong>Review mandate</strong><small>Exact strategy, loss bearer, caps, and reporting terms</small></div><em>Not configured</em></li>
+                    <li><span>3</span><div><strong>Allocate</strong><small>Permissioned capital routing after named approval</small></div><em>Disabled</em></li>
+                    <li><span>4</span><div><strong>Monitor</strong><small>Exposure, repayment, loss, and Evidence reporting</small></div><em>Preview</em></li>
+                  </ol>
+                </section>
+
+                <section class="panel capital-partner-reporting" aria-labelledby="capitalPartnerReportingTitle">
+                  <div class="panel-heading">
+                    <div><p class="eyebrow">Planned read surface</p><h3 id="capitalPartnerReportingTitle">What approved partners will inspect</h3></div>
+                    <span class="state-pill neutral">Read model only</span>
+                  </div>
+                  <dl>
+                    <div><dt>Exposure</dt><dd>Facility, asset, venue, and concentration</dd></div>
+                    <div><dt>Performance</dt><dd>Repayment, utilization, loss, and settlement</dd></div>
+                    <div><dt>Controls</dt><dd>Caps, stop-loss, pause, and reconciliation posture</dd></div>
+                    <div><dt>Evidence</dt><dd>Versioned reports and verifiable lifecycle lineage</dd></div>
+                  </dl>
+                  <button class="secondary" type="button" data-go-view="reports-exports">View current report architecture</button>
+                </section>
+              </div>
+
+              <section class="panel capital-partner-boundary" aria-labelledby="capitalPartnerBoundaryTitle">
+                <div>
+                  <p class="eyebrow">Explicit MVP boundary</p>
+                  <h3 id="capitalPartnerBoundaryTitle">Capital actions remain unavailable</h3>
+                  <p>IPO.ONE has not approved a public LP vault, capital source, production pricing, custody structure, loss allocation, or withdrawal path.</p>
+                </div>
+                <div class="capital-partner-disabled-actions" aria-label="Unavailable Capital Partner actions">
+                  <button type="button" disabled>Deposit capital</button>
+                  <button type="button" disabled>Allocate to facility</button>
+                  <button type="button" disabled>Withdraw</button>
+                </div>
+              </section>
+            </section>
+          </section>
+
           <section class="view" data-view-panel="capital-network" aria-labelledby="capitalNetworkViewTitle">
             <section class="v9-capability-page capital-network-page" aria-labelledby="capitalNetworkViewTitle">
               <div class="private-page-heading">
                 <div>
                   <div class="v9-heading-badges"><p class="eyebrow">Provider workspace · no funds</p><span class="v9-maturity-badge checking" data-v9-maturity="capital-network">Checking server</span></div>
-                  <h2 id="capitalNetworkViewTitle">Capital Network</h2>
+                  <h2 id="capitalNetworkViewTitle">Provider Network</h2>
                   <p>Inspect one assigned sandbox intent from the authenticated Provider boundary. Exposure, delivery, and reconciliation remain server-derived, nonwithdrawable, and explicitly not deployed capital.</p>
                 </div>
                 <div class="capital-network-heading-status">
@@ -1162,11 +1344,11 @@
               <div class="private-page-heading">
                 <div>
                   <div class="v9-heading-badges">
-                    <p class="eyebrow">Shared Facility · local no-funds</p>
+                    <p class="eyebrow">Hyperliquid MVP · local no-funds</p>
                     <span class="v9-maturity-badge checking" id="tradingCapitalCatalogStatus">Checking contract</span>
                   </div>
                   <h2 id="tradingCapitalViewTitle">Trading Capital</h2>
-                  <p>Eight product views over one authenticated Facility, one canonical Obligation, and 25 closed local operations. No redeemable settlement, external execution, or remote MCP is implied.</p>
+                  <p>Hyperliquid testnet is the only MVP venue for this authenticated Facility and canonical Obligation. Other venue adapters remain disabled; no redeemable settlement, external execution, or remote MCP is implied.</p>
                 </div>
                 <div class="trading-capital-heading-status">
                   <strong id="tradingCapitalOperationCount">0 / 25</strong>
@@ -1472,12 +1654,61 @@
                 <div class="data-strip four">
                   <div><span>Obligation</span><strong id="privateEvidenceObligation">Not created</strong></div>
                   <div><span>Events loaded</span><strong id="privateEvidenceCount">0</strong></div>
-                  <div><span>Finality</span><strong id="privateEvidenceFinality">Waiting</strong></div>
+                  <div><span>Server Evidence state</span><strong id="privateEvidenceFinality">Waiting</strong></div>
                   <div><span>As of</span><strong id="privateEvidenceAsOf">Not queried</strong></div>
                 </div>
                 <div id="privateEvidenceList" class="private-lifecycle-list private-evidence-list"></div>
                 <p class="policy-note">Session projection only. Durable Evidence is loaded through the already-approved owner or Agent Evidence operation; this page creates no new read permission.</p>
               </section>
+            </section>
+
+            <section id="creditRegistryEvidencePanel" class="panel registry-evidence-card" aria-labelledby="creditRegistryEvidenceTitle" data-private-session-surface>
+              <div class="panel-heading registry-evidence-heading">
+                <div>
+                  <div class="v9-heading-badges">
+                    <p class="eyebrow">EVIDENCE-001C · Base Sepolia</p>
+                    <span class="state-pill neutral" id="creditRegistryEvidenceAccess">Checking operation</span>
+                  </div>
+                  <h3 id="creditRegistryEvidenceTitle">Public Registry Evidence</h3>
+                  <p>Verify one finalized, redacted testnet credit-registry lifecycle without treating it as the signed-in user’s own repayment record.</p>
+                </div>
+                <span class="protocol-badge"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>Synthetic only</span>
+              </div>
+
+              <form id="creditRegistryEvidenceForm" class="registry-evidence-form">
+                <div>
+                  <label for="creditRegistryAuthorizationHash">Authorization hash</label>
+                  <input id="creditRegistryAuthorizationHash" name="authorizationHash" autocomplete="off" spellcheck="false" placeholder="0x + 64 lowercase hex characters" maxlength="66" aria-describedby="creditRegistryEvidenceHelper" />
+                </div>
+                <button id="loadCreditRegistryEvidenceBtn" class="primary icon-text" type="submit"><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>Verify Registry Evidence</button>
+              </form>
+              <p id="creditRegistryEvidenceHelper" class="auditor-evidence-helper" role="status" aria-live="polite">Enter one exact public authorization hash. The authenticated Gateway returns only the bounded synthetic Base Sepolia observation.</p>
+
+              <div class="data-strip four registry-evidence-summary" aria-label="Registry Evidence summary">
+                <div><span>Final state</span><strong id="creditRegistryEvidenceState">Not queried</strong></div>
+                <div><span>Registry contract</span><strong id="creditRegistryEvidenceContract">—</strong></div>
+                <div><span>Finality</span><strong id="creditRegistryEvidenceFinality">Waiting</strong></div>
+                <div><span>Observed</span><strong id="creditRegistryEvidenceObservedAt">Not queried</strong></div>
+              </div>
+
+              <div class="registry-evidence-proof-grid" aria-label="Registry Evidence proof hashes">
+                <div><span>Observation hash</span><code id="creditRegistryObservationHash">—</code></div>
+                <div><span>Finality proof hash</span><code id="creditRegistryFinalityProofHash">—</code></div>
+              </div>
+
+              <div class="registry-evidence-table" role="table" aria-label="Credit Registry lifecycle transactions">
+                <div class="registry-evidence-row registry-evidence-table-head" role="row">
+                  <span role="columnheader">Lifecycle event</span>
+                  <span role="columnheader">Transaction</span>
+                  <span role="columnheader">Block</span>
+                        <span role="columnheader">Server state</span>
+                </div>
+                <div id="creditRegistryEvidenceRows" class="registry-evidence-table-body" role="rowgroup"></div>
+              </div>
+              <div class="registry-evidence-footer">
+                <span id="creditRegistryEvidenceAsOf">No authenticated Registry query yet.</span>
+                <strong>Read only · non-authorizing · no funds · no raw account or KYC/PII</strong>
+              </div>
             </section>
 
 
@@ -1486,11 +1717,11 @@
                 <div class="auditor-evidence-heading">
                   <span class="protocol-badge"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>Auditor workspace</span>
                   <h3 id="auditorEvidenceTitle">Obligation Evidence</h3>
-                  <p>Inspect the immutable lifecycle behind one shared Human or Agent Obligation.</p>
+                  <p>Inspect the durable server lifecycle behind one shared Human or Agent Obligation.</p>
                 </div>
                 <div class="auditor-evidence-metrics" aria-label="Evidence query summary">
                   <div><span>Events loaded</span><strong id="auditorEvidenceCount">0</strong></div>
-                  <div><span>Source finality</span><strong id="auditorEvidenceFinality">Waiting</strong></div>
+                  <div><span>Server Evidence state</span><strong id="auditorEvidenceFinality">Waiting</strong></div>
                   <div><span>Last recorded</span><strong id="auditorEvidenceLastRecorded">Not queried</strong></div>
                 </div>
               </div>
@@ -1521,9 +1752,9 @@
                   <div class="auditor-evidence-row auditor-evidence-table-head" role="row">
                     <span role="columnheader">Event</span>
                     <span role="columnheader">Aggregate</span>
-                    <span role="columnheader">Finality</span>
+                    <span role="columnheader">Server state</span>
                     <span role="columnheader">Occurred</span>
-                    <span role="columnheader">Evidence hash</span>
+                    <span role="columnheader">Evidence digest (offchain)</span>
                   </div>
                   <div id="auditorEvidenceRows" class="auditor-evidence-table-body" role="rowgroup"></div>
                 </div>
@@ -1961,7 +2192,7 @@
 
             <details class="panel agent-protocol-disclosure" id="agentProtocolDetails" tabindex="-1">
               <summary>
-                <span><small>Machine-readable integration</small><strong>View handoff packet, 11 Agent operations, OpenAPI, and request log</strong></span>
+                <span><small>Machine-readable integration</small><strong>View handoff packet, 12 Agent operations, OpenAPI, and request log</strong></span>
                 <span class="state-pill neutral" id="agentProtocolDisclosureStatus">Waiting for authority</span>
               </summary>
               <div class="agent-protocol-content">
@@ -1976,7 +2207,7 @@
                   </div>
                 </div>
                 <pre><code id="mcpHandoffPacket"></code></pre>
-                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises eleven local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority never enter the packet.</p>
+                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises twelve local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority never enter the packet.</p>
               </section>
 
               <section class="panel" aria-labelledby="mcpToolTitle">
@@ -1993,6 +2224,7 @@
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_accept_credit_offer</strong><small>pilotAcceptCreditOffer</small></span><em data-mcp-tool-status="economic">Waiting</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_execute_sandbox_obligation</strong><small>pilotExecuteSandboxObligation</small></span><em data-mcp-tool-status="economic">Waiting</em></div>
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_post_sandbox_repayment</strong><small>pilotPostSandboxRepayment</small></span><em data-mcp-tool-status="economic">Waiting</em></div>
+                  <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_read_credit_registry_evidence</strong><small>pilotReadCreditRegistryEvidence</small></span><em data-mcp-tool-status="evidence">Waiting</em></div>
                 </div>
                 <div class="mcp-transport-boundary">
                   <div><span>Transport</span><strong>local stdio MCP · closed_non_funds_pilot</strong></div>
@@ -2039,7 +2271,7 @@
         <header class="access-dialog-header">
           <div>
             <p class="eyebrow">Access IPO.ONE</p>
-            <h2 id="accessTitle">Sign in. Connect. <em>Stay in control.</em></h2>
+            <h2 id="accessTitle"><span id="accessTitleLead">Sign in. Connect.</span> <em id="accessTitleEmphasis">Stay in control.</em></h2>
             <p id="accessCopy">Choose a familiar account, then connect one approved test network. Identity proves who you are; Principal and Mandate rules still decide what you can do.</p>
           </div>
           <button class="icon-button" id="accessCloseBtn" type="button" aria-label="Close sign in and network setup" title="Close">
@@ -2047,8 +2279,23 @@
           </button>
         </header>
 
-        <div class="access-dialog-grid">
-          <section class="access-methods" aria-labelledby="signInMethodTitle">
+        <section class="access-session-panel" id="accessSessionPanel" aria-labelledby="accessSessionTitle" hidden>
+          <span class="access-session-icon" aria-hidden="true">
+            <svg><use href="/icons.svg#shield-check"></use></svg>
+          </span>
+          <div>
+            <p class="eyebrow">Authenticated session</p>
+            <h3 id="accessSessionTitle">You are signed in</h3>
+            <p id="accessSessionCopy">Your secure host-only session has been verified. Product permissions remain controlled by your server-side role, Consent, and Mandate.</p>
+          </div>
+          <div class="access-session-actions">
+            <button class="primary" id="continueAuthenticatedSessionBtn" type="button">Continue to workspace</button>
+            <button class="secondary" id="signOutBtn" type="button">Sign out</button>
+          </div>
+        </section>
+
+        <div class="access-dialog-grid" id="accessDialogGrid">
+          <section class="access-methods" id="accessMethodPanel" aria-labelledby="signInMethodTitle">
             <div class="access-section-heading">
               <span>Step 1</span>
               <div><h3 id="signInMethodTitle">Choose how to sign in</h3><p>One secure session across the Human and Agent workspaces.</p></div>
@@ -2115,8 +2362,41 @@
       </section>
     </div>
 
+    <div class="economic-action-layer" id="economicActionLayer" hidden>
+      <button class="economic-action-scrim" id="economicActionScrim" type="button" aria-label="Cancel action confirmation"></button>
+      <section class="economic-action-dialog" role="dialog" aria-modal="true" aria-labelledby="economicActionTitle" aria-describedby="economicActionCopy" tabindex="-1">
+        <header>
+          <div>
+            <p class="eyebrow">Explicit action confirmation</p>
+            <h2 id="economicActionTitle">Confirm sandbox action</h2>
+            <p id="economicActionCopy">Review the exact no-funds action before IPO.ONE submits it to the authenticated server.</p>
+          </div>
+          <button class="icon-button" id="economicActionCloseBtn" type="button" aria-label="Cancel action confirmation" title="Cancel">
+            <svg aria-hidden="true"><use href="/icons.svg#x"></use></svg>
+          </button>
+        </header>
+        <dl class="economic-action-facts">
+          <div><dt>Action</dt><dd id="economicActionType">—</dd></div>
+          <div><dt>Confirmation</dt><dd id="economicActionMethod">Authenticated account</dd></div>
+          <div><dt>Resource</dt><dd id="economicActionResource">—</dd></div>
+          <div><dt>Amount / effect</dt><dd id="economicActionEffect">—</dd></div>
+          <div><dt>Public chain</dt><dd>Not submitted</dd></div>
+          <div><dt>Funds mode</dt><dd>No real funds</dd></div>
+        </dl>
+        <div class="economic-action-boundary">
+          <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+          <p><strong>This confirmation does not create a blockchain transaction.</strong> A BaseScan link appears only after a separately verified Base Sepolia anchor transaction exists.</p>
+        </div>
+        <p id="economicActionStatus" class="risk-helper" role="status" aria-live="polite">Nothing has been submitted.</p>
+        <footer>
+          <button class="secondary" id="economicActionCancelBtn" type="button">Cancel</button>
+          <button class="primary" id="economicActionConfirmBtn" type="button">Confirm with account</button>
+        </footer>
+      </section>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="operationStatus" class="sr-only" role="status" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=web015"></script>
+    <script type="module" src="/app.js?v=web017"></script>
   </body>
 </html>

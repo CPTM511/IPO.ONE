@@ -3,16 +3,37 @@ import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashId } from "../../../packages/domain/src/index.js";
+import { createOperationalId } from "../../../packages/domain/src/index.js";
 import {
   assertTenantDatabaseRole,
   createPostgresPool,
   createTenantSecurityContext,
   setTenantTransactionContext
 } from "../../../modules/persistence/src/index.js";
+import {
+  ActorType,
+  ClientAuthenticationMethod,
+  SenderConstraintMethod,
+  assertPostgresAuthenticationRole,
+  createReferenceHasher
+} from "../../../modules/authentication/src/index.js";
+import {
+  AUTHORIZATION_POLICY_VERSION,
+  ROLE_BUNDLE_CAPABILITIES,
+  RoleBundle
+} from "../../../modules/authorization/src/index.js";
 import { migrateUp } from "../../../scripts/migrate.mjs";
 import { assertPrivatePilotProfile } from "./private-pilot-profile.js";
+import {
+  bootstrapLocalCreditRegistryObservation
+} from "./credit-registry-observation-bootstrap.js";
 
 const APP_ROLE = "ipo_one_private_pilot_app";
+const AUTHENTICATION_ROLE = "ipo_one_private_pilot_auth";
+const LOCAL_AUTHENTICATION_SYSTEM_ACTOR_ID =
+  "actor_local_authentication_system";
+const LOCAL_AUTHENTICATION_SYSTEM_CLIENT_ID =
+  "client_local_authentication_system";
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_SECRET_PATH = resolve(MODULE_DIRECTORY, "../../../.ipo-one/private-pilot-db-secret");
 
@@ -100,12 +121,104 @@ async function provisionApplicationRole(ownerPool, password) {
        provider_intent_acknowledgements, provider_callback_inbox,
        credit_lines, ledger_accounts, ledger_transactions, ledger_entries,
        repayment_events, aggregate_stream_heads, domain_events, credit_events,
-       pilot_feedback_records, credit_passport_artifacts,
+       pilot_feedback_records, credit_passport_artifacts, credit_outcomes,
+       tenant_command_pauses,
        official_report_artifacts,
-       evidence_envelopes, outbox_messages, command_idempotency,
+       evidence_envelopes, outbox_messages,
+       evidence_chain_anchors, evidence_chain_anchor_observations,
+       command_idempotency,
        command_events, projection_registry, projection_snapshots,
        reconciliation_runs, reconciliation_discrepancies
      TO ${APP_ROLE}`
+  );
+}
+
+async function provisionAuthenticationRole(ownerPool, password) {
+  const quotedPassword = (
+    await ownerPool.query("SELECT quote_literal($1) AS value", [password])
+  ).rows[0].value;
+  const quotedRole = `"${AUTHENTICATION_ROLE}"`;
+  const role = await ownerPool.query(
+    `SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolinherit,
+            rolreplication, rolbypassrls
+       FROM pg_roles
+      WHERE rolname = $1`,
+    [AUTHENTICATION_ROLE]
+  );
+  if (role.rowCount === 0) {
+    await ownerPool.query(
+      `CREATE ROLE ${quotedRole} LOGIN PASSWORD ${quotedPassword}
+       NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+    );
+    await ownerPool.query(
+      `ALTER ROLE ${quotedRole} SET search_path TO public`
+    );
+  } else {
+    const current = role.rows[0];
+    if (
+      !current.rolcanlogin ||
+      current.rolsuper ||
+      current.rolcreatedb ||
+      current.rolcreaterole ||
+      current.rolinherit ||
+      current.rolreplication ||
+      current.rolbypassrls
+    ) {
+      throw new Error("local authentication database role is unsafe");
+    }
+    await ownerPool.query(
+      `ALTER ROLE ${quotedRole} WITH LOGIN PASSWORD ${quotedPassword}
+       NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+    );
+    await ownerPool.query(
+      `ALTER ROLE ${quotedRole} SET search_path TO public`
+    );
+  }
+  const database = (
+    await ownerPool.query(
+      "SELECT quote_ident(current_database()) AS value"
+    )
+  ).rows[0].value;
+  await ownerPool.query(`REVOKE CREATE ON DATABASE ${database} FROM ${quotedRole}`);
+  await ownerPool.query(`REVOKE CREATE ON SCHEMA public FROM ${quotedRole}`);
+  await ownerPool.query(
+    `REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM ${quotedRole}`
+  );
+  await ownerPool.query(
+    `REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM ${quotedRole}`
+  );
+  await ownerPool.query(`GRANT CONNECT ON DATABASE ${database} TO ${quotedRole}`);
+  await ownerPool.query(`GRANT USAGE ON SCHEMA public TO ${quotedRole}`);
+  await ownerPool.query(
+    `GRANT SELECT ON
+       tenants, actors, memberships, authentication_credentials,
+       authentication_oidc_transactions, authentication_wallet_transactions,
+       authentication_sessions, authentication_session_invalidations,
+       authentication_replay_entries, authentication_events
+     TO ${quotedRole}`
+  );
+  await ownerPool.query(
+    `GRANT INSERT, UPDATE ON authentication_credentials TO ${quotedRole}`
+  );
+  await ownerPool.query(
+    `GRANT INSERT, DELETE ON
+       authentication_oidc_transactions, authentication_wallet_transactions
+     TO ${quotedRole}`
+  );
+  await ownerPool.query(
+    `GRANT INSERT, UPDATE ON authentication_sessions TO ${quotedRole}`
+  );
+  await ownerPool.query(
+    `GRANT INSERT ON authentication_session_invalidations TO ${quotedRole}`
+  );
+  await ownerPool.query(
+    `GRANT INSERT, DELETE ON authentication_replay_entries TO ${quotedRole}`
+  );
+  await ownerPool.query(
+    `GRANT INSERT ON authentication_events TO ${quotedRole}`
+  );
+  await ownerPool.query(
+    `GRANT UPDATE (id) ON actors, memberships TO ${quotedRole}`
   );
 }
 
@@ -178,6 +291,131 @@ async function seedIdentity(ownerPool, identity, profile, now) {
   ));
 }
 
+async function seedAuthenticationSystemIdentity(ownerPool, profile, now) {
+  await seedIdentity(ownerPool, {
+    actorId: LOCAL_AUTHENTICATION_SYSTEM_ACTOR_ID,
+    actorType: ActorType.SYSTEM_WORKER,
+    roleBundle: RoleBundle.SYSTEM_WORKER,
+    capabilities: ROLE_BUNDLE_CAPABILITIES[RoleBundle.SYSTEM_WORKER],
+    clientId: LOCAL_AUTHENTICATION_SYSTEM_CLIENT_ID,
+    membershipId:
+      `membership_${LOCAL_AUTHENTICATION_SYSTEM_ACTOR_ID}`
+  }, profile, now);
+}
+
+async function seedAuthenticationCredential(client, {
+  tenantId,
+  actor,
+  issuer,
+  externalSubject,
+  clientAuthenticationMethod,
+  senderConstraintMethod,
+  senderThumbprint,
+  referenceHasher,
+  expiresAt,
+  invitationLabel,
+  now
+}) {
+  const subjectRefHash = referenceHasher.hash(
+    "subject",
+    `${issuer}\0${externalSubject}`
+  );
+  const senderConstraintRefHash = referenceHasher.hash(
+    "sender.constraint",
+    senderThumbprint
+  );
+  const existing = await client.query(
+    `SELECT *
+       FROM authentication_credentials
+      WHERE tenant_id = $1
+        AND issuer = $2
+        AND client_id = $3
+        AND subject_ref_hash = $4`,
+    [tenantId, issuer, actor.clientId, subjectRefHash]
+  );
+  if (existing.rowCount === 1) {
+    const stored = existing.rows[0];
+    if (
+      stored.actor_id !== actor.actorId ||
+      stored.actor_type !== actor.actorType ||
+      stored.client_authentication_method !== clientAuthenticationMethod ||
+      stored.sender_constraint_method !== senderConstraintMethod ||
+      stored.sender_constraint_ref_hash !== senderConstraintRefHash ||
+      stored.policy_version !== AUTHORIZATION_POLICY_VERSION ||
+      JSON.stringify(stored.roles) !== JSON.stringify([actor.roleBundle]) ||
+      JSON.stringify(stored.allowed_capabilities) !==
+        JSON.stringify(actor.capabilities) ||
+      new Date(stored.expires_at).toISOString() !== expiresAt
+    ) {
+      throw new Error(
+        `existing local authentication Credential does not match ${actor.actorId}`
+      );
+    }
+    return stored;
+  }
+  const credentialId = createOperationalId("credential");
+  const inserted = await client.query(
+    `INSERT INTO authentication_credentials(
+       id, tenant_id, actor_id, actor_type, issuer, subject_ref_hash,
+       client_id, client_authentication_method, sender_constraint_method,
+       sender_constraint_ref_hash, roles, allowed_capabilities,
+       policy_version, status, version, expires_at, created_at, updated_at,
+       schema_version
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6,
+       $7, $8, $9,
+       $10, $11::jsonb, $12::jsonb,
+       $13, 'active', 1, $14, $15, $15,
+       'authentication_credential.v1'
+     ) RETURNING *`,
+    [
+      credentialId,
+      tenantId,
+      actor.actorId,
+      actor.actorType,
+      issuer,
+      subjectRefHash,
+      actor.clientId,
+      clientAuthenticationMethod,
+      senderConstraintMethod,
+      senderConstraintRefHash,
+      JSON.stringify([actor.roleBundle]),
+      JSON.stringify(actor.capabilities),
+      AUTHORIZATION_POLICY_VERSION,
+      expiresAt,
+      now
+    ]
+  );
+  await client.query(
+    `INSERT INTO authentication_events(
+       id, tenant_id, event_type, actor_id, credential_id, reason_code,
+       occurred_at, payload, schema_version
+     ) VALUES (
+       $1, $2, 'credential_registered', $3, $4,
+       'local_pilot_invitation_provisioned', $5, $6::jsonb,
+       'authentication_event.v1'
+     )`,
+    [
+      createOperationalId("auth_event"),
+      tenantId,
+      LOCAL_AUTHENTICATION_SYSTEM_ACTOR_ID,
+      credentialId,
+      now,
+      JSON.stringify({
+        actorType: actor.actorType,
+        clientAuthenticationMethod,
+        invitationRefHash: referenceHasher.hash(
+          "pilot.invitation",
+          `${tenantId}\0${invitationLabel}`
+        ),
+        senderConstraintMethod,
+        version: 1
+      })
+    ]
+  );
+  return inserted.rows[0];
+}
+
 async function seedRiskResources(ownerPool, riskIdentity, profile, now) {
   const context = createTenantSecurityContext({
     tenantId: profile.tenantId,
@@ -206,7 +444,8 @@ export async function provisionPrivatePilotDatabase({
   ownerConnectionString,
   identities,
   password,
-  profile
+  profile,
+  creditRegistryObservationArtifactPath
 }) {
   const checkedProfile = assertPrivatePilotProfile(profile);
   const ownerPool = createPostgresPool({
@@ -222,6 +461,19 @@ export async function provisionPrivatePilotDatabase({
       await seedIdentity(ownerPool, identity, checkedProfile, now);
     }
     await seedRiskResources(ownerPool, identities.risk, checkedProfile, now);
+    if (creditRegistryObservationArtifactPath) {
+      const riskContext = createTenantSecurityContext({
+        tenantId: checkedProfile.tenantId,
+        actorId: identities.risk.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      await bootstrapLocalCreditRegistryObservation({
+        artifactPath: creditRegistryObservationArtifactPath,
+        pool: ownerPool,
+        tenantContext: riskContext
+      });
+    }
     await provisionApplicationRole(ownerPool, password);
   } finally {
     await ownerPool.end();
@@ -242,4 +494,122 @@ export async function provisionPrivatePilotDatabase({
     throw error;
   }
   return applicationPool;
+}
+
+export async function provisionPrivatePilotAuthentication({
+  ownerConnectionString,
+  identities,
+  profile,
+  basePort,
+  serverMaterial,
+  invitation
+}) {
+  const checkedProfile = assertPrivatePilotProfile(profile);
+  if (
+    !Number.isSafeInteger(basePort) ||
+    basePort < 1_024 ||
+    basePort > 65_533 ||
+    !serverMaterial?.authenticationRolePassword ||
+    !serverMaterial?.referenceHashKey ||
+    !serverMaterial?.encryptionKey ||
+    !invitation?.walletAddress ||
+    !invitation?.credentialExpiresAt ||
+    !invitation?.agentThumbprint
+  ) {
+    throw new Error("local durable authentication configuration is invalid");
+  }
+  const referenceHashKey = Buffer.from(
+    serverMaterial.referenceHashKey,
+    "base64url"
+  );
+  const encryptionKey = Buffer.from(
+    serverMaterial.encryptionKey,
+    "base64url"
+  );
+  const referenceHasher = createReferenceHasher(referenceHashKey);
+  const ownerPool = createPostgresPool({
+    connectionString: ownerConnectionString,
+    max: 4,
+    applicationName: "ipo-one-private-pilot-authentication-owner"
+  });
+  try {
+    await migrateUp({ pool: ownerPool });
+    const now = new Date();
+    await seedTenant(ownerPool, checkedProfile, now);
+    for (const identity of Object.values(identities)) {
+      await seedIdentity(ownerPool, identity, checkedProfile, now);
+    }
+    await seedAuthenticationSystemIdentity(ownerPool, checkedProfile, now);
+    const context = createTenantSecurityContext({
+      tenantId: checkedProfile.tenantId,
+      actorId: LOCAL_AUTHENTICATION_SYSTEM_ACTOR_ID,
+      policyVersion: AUTHORIZATION_POLICY_VERSION,
+      source: "system_worker"
+    });
+    await withTenantTransaction(ownerPool, context, async (client) => {
+      for (const [index, name] of ["borrower", "controller", "risk"].entries()) {
+        const actor = identities[name];
+        const issuer = `https://127.0.0.1:${basePort + index}`;
+        await seedAuthenticationCredential(client, {
+          tenantId: checkedProfile.tenantId,
+          actor,
+          issuer,
+          externalSubject:
+            `eip155:84532:${invitation.walletAddress.toLowerCase()}`,
+          clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
+          senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
+          senderThumbprint: referenceHasher.hash(
+            "local.host-session",
+            `${actor.actorId}\0${issuer}`
+          ),
+          referenceHasher,
+          expiresAt: invitation.credentialExpiresAt,
+          invitationLabel: `local-${name}-wallet-v1`,
+          now
+        });
+      }
+      await seedAuthenticationCredential(client, {
+        tenantId: checkedProfile.tenantId,
+        actor: identities.agent,
+        issuer: "https://workload.local.ipo.one",
+        externalSubject: "urn:ipo.one:local-agent:pilot-alpha",
+        clientAuthenticationMethod:
+          ClientAuthenticationMethod.PRIVATE_KEY_JWT,
+        senderConstraintMethod: SenderConstraintMethod.DPOP,
+        senderThumbprint: invitation.agentThumbprint,
+        referenceHasher,
+        expiresAt: invitation.credentialExpiresAt,
+        invitationLabel: "local-agent-runtime-v1",
+        now
+      });
+    });
+    await provisionAuthenticationRole(
+      ownerPool,
+      serverMaterial.authenticationRolePassword
+    );
+  } finally {
+    await ownerPool.end();
+  }
+
+  const authenticationUrl = new URL(ownerConnectionString);
+  authenticationUrl.username = AUTHENTICATION_ROLE;
+  authenticationUrl.password = serverMaterial.authenticationRolePassword;
+  const pool = createPostgresPool({
+    connectionString: authenticationUrl.toString(),
+    max: 12,
+    applicationName: "ipo-one-private-pilot-authentication"
+  });
+  try {
+    await assertPostgresAuthenticationRole(pool);
+  } catch (error) {
+    await pool.end();
+    throw error;
+  }
+  return Object.freeze({
+    pool,
+    referenceHashKey,
+    encryptionKey,
+    systemActorId: LOCAL_AUTHENTICATION_SYSTEM_ACTOR_ID,
+    authenticationRole: AUTHENTICATION_ROLE
+  });
 }

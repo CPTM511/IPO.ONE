@@ -4,6 +4,10 @@ import {
   assertTenantProtocolRequest
 } from "../../../packages/api-contract/src/index.js";
 import { ActorType, assertAuthenticationContext } from "../../authentication/src/index.js";
+import {
+  createAuthenticatedProtocolActionConfirmation,
+  economicActionTypeForOperation
+} from "./economic-action-confirmation.js";
 
 const HUMAN_CLIENT_ACTOR_TYPES = new Set([
   ActorType.HUMAN,
@@ -49,15 +53,34 @@ class TenantProtocolClient {
   }
 
   async execute(command) {
-    const request = {
-      ...command,
-      schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
-    };
-    assertTenantProtocolRequest(request);
+    const needsEconomicConfirmation = Boolean(economicActionTypeForOperation(command.operationId));
+    if (!needsEconomicConfirmation) {
+      assertTenantProtocolRequest({
+        ...command,
+        schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
+      });
+    }
     const authenticationContext = assertAuthenticationContext(await this.authenticationContextProvider());
     if (!this.#allowedActorTypes.has(authenticationContext.actorType)) {
       throw new DomainError("tenant_protocol_client_mismatch", "authenticated Actor cannot use this client");
     }
+    const payload = needsEconomicConfirmation && !command.payload?.actionConfirmation
+      ? {
+          ...command.payload,
+          actionConfirmation: createAuthenticatedProtocolActionConfirmation({
+            operationId: command.operationId,
+            payload: command.payload,
+            resource: command.resource,
+            requestId: command.requestId
+          })
+        }
+      : command.payload;
+    const request = {
+      ...command,
+      payload,
+      schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
+    };
+    assertTenantProtocolRequest(request);
     const networkContext = await this.networkContextProvider?.();
     return this.gateway.execute({
       ...request,
@@ -261,6 +284,23 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
         ...(cursor === undefined ? {} : { cursor })
       },
       resource: { resourceType: "evidence", resourceId: obligationId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getCreditRegistryEvidence({
+    authorizationHash,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotReadCreditRegistryEvidence",
+      payload: {},
+      resource: {
+        resourceType: "credit_registry_evidence",
+        resourceId: authorizationHash
+      },
       requestId,
       correlationId
     });
@@ -920,6 +960,23 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async getCreditRegistryEvidence({
+    authorizationHash,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotReadCreditRegistryEvidence",
+      payload: {},
+      resource: {
+        resourceType: "credit_registry_evidence",
+        resourceId: authorizationHash
+      },
+      requestId,
+      correlationId
+    });
+  }
+
   async createOfficialReport({
     obligationId,
     payload,
@@ -1358,6 +1415,23 @@ export class OperatorTenantCommandClient extends TenantProtocolClient {
     super({ ...input, allowedActorTypes: OPERATOR_CLIENT_ACTOR_TYPES });
   }
 
+  async getCreditRegistryEvidence({
+    authorizationHash,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotReadCreditRegistryEvidence",
+      payload: {},
+      resource: {
+        resourceType: "credit_registry_evidence",
+        resourceId: authorizationHash
+      },
+      requestId,
+      correlationId
+    });
+  }
+
   async freezeSubject({
     subjectId,
     reasonCode,
@@ -1735,6 +1809,23 @@ export class RiskTenantQueryClient extends TenantProtocolClient {
     super({ ...input, allowedActorTypes: RISK_QUERY_CLIENT_ACTOR_TYPES });
   }
 
+  async getCreditRegistryEvidence({
+    authorizationHash,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotReadCreditRegistryEvidence",
+      payload: {},
+      resource: {
+        resourceType: "credit_registry_evidence",
+        resourceId: authorizationHash
+      },
+      requestId,
+      correlationId
+    });
+  }
+
   async getPortfolio({ portfolioId, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadTenantRisk",
@@ -1790,6 +1881,23 @@ export class RiskTenantQueryClient extends TenantProtocolClient {
 export class AuditorTenantQueryClient extends TenantProtocolClient {
   constructor(input) {
     super({ ...input, allowedActorTypes: new Set([ActorType.AUDITOR]) });
+  }
+
+  async getCreditRegistryEvidence({
+    authorizationHash,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotReadCreditRegistryEvidence",
+      payload: {},
+      resource: {
+        resourceType: "credit_registry_evidence",
+        resourceId: authorizationHash
+      },
+      requestId,
+      correlationId
+    });
   }
 
   async getObligationEvidence({

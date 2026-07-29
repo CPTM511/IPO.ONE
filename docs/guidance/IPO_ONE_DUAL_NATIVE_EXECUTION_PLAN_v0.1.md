@@ -133,8 +133,8 @@ reason-code, hash, and absolute-time differences. Golden fixtures fail
 60-day, two-installment request returns the same 900 bps zero-fee outcome from
 Human Consent and Agent Mandate entry.
 
-Release evidence now has the same deterministic boundary. `OPS-003` makes the
-repository-wide gate verify the actual Node 24.18.0 and pnpm 11.1.3 processes,
+Release evidence now has the same deterministic boundary. `OPS-003B` makes the
+repository-wide gate verify the actual Node 26.5.0 and pnpm 11.1.3 processes,
 keeps `.node-version`, `.nvmrc`, package engines, CI, and deployment assertions
 in sync, and rejects warning-only evidence from unsupported Node releases. This
 is an operational conformance control and grants no new product permission.

@@ -34,6 +34,7 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
     "pilotEvaluateCreditApplication",
     "pilotReadOwnObligation",
     "pilotReadOwnObligationEvidence",
+    "pilotReadCreditRegistryEvidence",
     "pilotAcceptCreditOffer",
     "pilotExecuteSandboxObligation",
     "pilotPostSandboxRepayment"
@@ -51,7 +52,8 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
   ]),
   "activity-proofs": Object.freeze([
     "pilotReadOwnObligationEvidence",
-    "pilotReadEvidence"
+    "pilotReadEvidence",
+    "pilotReadCreditRegistryEvidence"
   ]),
   "credit-track-record": Object.freeze([
     "pilotReadCreditApplication",
@@ -66,6 +68,7 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
     "pilotRevokeOfficialReport"
   ]),
   "risk-operations": Object.freeze([
+    "pilotReadCreditRegistryEvidence",
     "pilotReadTenantRisk",
     "pilotReadPilotHealth",
     "pilotReadPilotFeedbackSummary",

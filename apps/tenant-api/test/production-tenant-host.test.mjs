@@ -111,6 +111,41 @@ test("production Host rejects direct and downgraded traffic before authenticatio
   assert.equal(runtime.gatewayCalls, 0);
 });
 
+test("production Host publishes the disabled remote Agent HTTPS contract behind the approved edge", async (t) => {
+  const runtime = await fixture();
+  t.after(() => runtime.host.close());
+
+  const response = await get(runtime.port, "/agent-openapi.json", {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https",
+    "x-ipo-edge": "approved"
+  });
+  assert.equal(response.status, 200);
+  const contract = JSON.parse(response.body);
+  assert.equal(contract.openapi, "3.1.2");
+  assert.equal(contract["x-ipo-one-schema-version"], "agent_https_openapi.v1");
+  assert.equal(
+    contract["x-ipo-one-activation"],
+    "disabled_pending_named_deployment_approval"
+  );
+  assert.deepEqual(
+    contract.paths["/tenant/v1/operations"].post.security,
+    [{ workloadBearer: [], mutualTls: [] }]
+  );
+  assert.equal(
+    contract.paths["/tenant/v1/operations"].post[
+      "x-ipo-one-idempotency"
+    ].unknownOutcomeMustNotUseNewIdempotencyKey,
+    true
+  );
+  assert.equal(
+    contract["x-ipo-one-safety"].remoteParticipantAccessEnabled,
+    false
+  );
+  assert.equal(runtime.gatewayCalls, 0);
+});
+
 test("production Host requires all real authentication and edge adapters", () => {
   assert.throws(
     () => createProductionTenantHost({}),

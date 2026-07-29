@@ -1,6 +1,7 @@
 export * from "./chain-profiles.js";
 export * from "./conformance.js";
 export * from "./credit-authorization-registry.js";
+export * from "./evidence-anchor-registry.js";
 export * from "./erc1271-signature-verifier.js";
 export * from "./evm-account-proof-adapter.js";
 export * from "./obligation-portability.js";

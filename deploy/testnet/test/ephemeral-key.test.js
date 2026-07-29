@@ -49,3 +49,52 @@ test("ephemeral key provisioning refuses CI and repository paths", async () => {
     else process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = previousApproval;
   }
 });
+
+test("CHAIN-001D keys use an isolated owner-only temporary scope", async () => {
+  const previous = process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
+  process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = "CHAIN-001D";
+  const keyPath = `/private/tmp/ipo-one-chain-001d/test-${process.pid}-${Date.now()}.key`;
+  try {
+    const provisioned = await provisionEphemeralTestnetKey({ keyPath });
+    assert.equal(provisioned.approvalScope, "CHAIN-001D");
+    assert.equal(provisioned.keyPath, keyPath);
+    assert.equal((await lstat(keyPath)).mode & 0o077, 0);
+    await assert.rejects(
+      provisionEphemeralTestnetKey({
+        keyPath: `/private/tmp/ipo-one-chain-001b/cross-scope-${process.pid}-${Date.now()}.key`
+      }),
+      /dedicated private temporary/
+    );
+    await destroyEphemeralTestnetKey(keyPath);
+  } finally {
+    if (previous === undefined) delete process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
+    else process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = previous;
+  }
+});
+
+test("CHAIN-001F deployer uses a new isolated owner-only temporary scope", async () => {
+  const previous = process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
+  process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = "CHAIN-001F";
+  const keyPath =
+    `/private/tmp/ipo-one-chain-001f/test-${process.pid}-${Date.now()}.key`;
+  try {
+    const provisioned = await provisionEphemeralTestnetKey({ keyPath });
+    assert.equal(provisioned.approvalScope, "CHAIN-001F");
+    assert.equal(provisioned.keyPath, keyPath);
+    assert.equal((await lstat(keyPath)).mode & 0o077, 0);
+    await assert.rejects(
+      provisionEphemeralTestnetKey({
+        keyPath:
+          `/private/tmp/ipo-one-chain-001d/cross-scope-${process.pid}-${Date.now()}.key`
+      }),
+      /dedicated private temporary/
+    );
+    await destroyEphemeralTestnetKey(keyPath);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
+    } else {
+      process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = previous;
+    }
+  }
+});

@@ -534,6 +534,43 @@ export class PostgresEventRepository {
             evidence.schemaVersion
           ]
         );
+        const eventTypeHash = hashId("evidence_event_type", {
+          eventType: evidence.eventType
+        });
+        const aggregateRefHash = hashId("evidence_aggregate_reference", {
+          aggregateType: evidence.aggregateType,
+          aggregateId: evidence.aggregateId,
+          aggregateVersion: evidence.aggregateVersion
+        });
+        const actionDigest = hashId("evidence_anchor_action", {
+          commandHash,
+          idempotencyKey,
+          aggregateType,
+          aggregateId
+        });
+        await client.query(
+          `INSERT INTO evidence_chain_anchors(
+             id, evidence_event_id, evidence_hash, event_type, event_type_hash,
+             aggregate_ref_hash, action_digest, chain_id, confirmation_mode,
+             status, requested_at, sandbox_only, production_funds_moved,
+             schema_version
+           ) VALUES (
+             $1, $2, $3, $4, $5,
+             $6, $7, 'eip155:84532', 'unassigned',
+             'pending', $8, TRUE, FALSE,
+             'evidence_chain_anchor.v1'
+           )`,
+          [
+            hashId("evidence_chain_anchor", evidence.evidenceHash),
+            evidence.evidenceId,
+            evidence.evidenceHash,
+            evidence.eventType,
+            eventTypeHash,
+            aggregateRefHash,
+            actionDigest,
+            recordedAt
+          ]
+        );
 
         const durableEvent = {
           ...event,

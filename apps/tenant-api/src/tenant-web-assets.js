@@ -25,6 +25,7 @@ const WEB_ASSETS = Object.freeze({
   "/trading-capital-product-presentation.js": Object.freeze({ file: "trading-capital-product-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/wallet-authority-lifecycle.js": Object.freeze({ file: "wallet-authority-lifecycle.js", contentType: "text/javascript; charset=utf-8" }),
   "/wallet-provider-registry.js": Object.freeze({ file: "wallet-provider-registry.js", contentType: "text/javascript; charset=utf-8" }),
+  "/wallet-sign-out.js": Object.freeze({ file: "wallet-sign-out.js", contentType: "text/javascript; charset=utf-8" }),
   "/v9-trust-surfaces.js": Object.freeze({ file: "v9-trust-surfaces.js", contentType: "text/javascript; charset=utf-8" }),
   "/vendor/walletconnect-ethereum-provider-2.23.10.iife.js": Object.freeze({ file: "vendor/walletconnect-ethereum-provider-2.23.10.iife.js", contentType: "text/javascript; charset=utf-8" }),
   "/vendor/walletconnect-community-license.txt": Object.freeze({ file: "vendor/walletconnect-community-license.txt", contentType: "text/plain; charset=utf-8" }),
@@ -35,8 +36,11 @@ const WEB_ASSETS = Object.freeze({
   "/manifest.webmanifest": Object.freeze({ file: "manifest.webmanifest", contentType: "application/manifest+json" })
 });
 const CSRF_META_PLACEHOLDER = '<meta name="ipo-one-csrf-token" content="" />';
+const LOCAL_AGENT_ACCOUNT_META_PLACEHOLDER =
+  '<meta name="ipo-one-local-agent-account" content="" />';
 const CSRF_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
 const SESSION_HANDLE_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
+const EVM_ACCOUNT_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
 const SECURITY_HEADERS = Object.freeze({
   "cache-control": "no-store",
@@ -50,12 +54,17 @@ const SECURITY_HEADERS = Object.freeze({
   "x-frame-options": "DENY"
 });
 
-export function createTenantWebAssetHandler({ csrfTokenProvider, sessionHandleProvider } = {}) {
+export function createTenantWebAssetHandler({
+  csrfTokenProvider,
+  sessionHandleProvider,
+  localAgentAccountProvider
+} = {}) {
   if (
     (csrfTokenProvider !== undefined && typeof csrfTokenProvider !== "function") ||
-    (sessionHandleProvider !== undefined && typeof sessionHandleProvider !== "function")
+    (sessionHandleProvider !== undefined && typeof sessionHandleProvider !== "function") ||
+    (localAgentAccountProvider !== undefined && typeof localAgentAccountProvider !== "function")
   ) {
-    throw new DomainError("invalid_tenant_web_config", "Tenant CSRF token provider must be a function");
+    throw new DomainError("invalid_tenant_web_config", "Tenant web bootstrap providers must be functions");
   }
   return async function serveTenantWebAsset({ request, response, pathname, requestId }) {
     if (!request || !response || typeof pathname !== "string" || typeof requestId !== "string") {
@@ -66,10 +75,14 @@ export function createTenantWebAssetHandler({ csrfTokenProvider, sessionHandlePr
     if (!asset) return false;
     let body = await readFile(new URL(asset.file, WEB_ASSET_ROOT));
     let sessionHandle;
-    if (asset.file === "index.html" && (csrfTokenProvider || sessionHandleProvider)) {
-      const [csrfToken, providedSessionHandle] = await Promise.all([
+    if (
+      asset.file === "index.html" &&
+      (csrfTokenProvider || sessionHandleProvider || localAgentAccountProvider)
+    ) {
+      const [csrfToken, providedSessionHandle, localAgentAccount] = await Promise.all([
         csrfTokenProvider?.({ request, requestId }),
-        sessionHandleProvider?.({ request, requestId })
+        sessionHandleProvider?.({ request, requestId }),
+        localAgentAccountProvider?.({ request, requestId })
       ]);
       if (csrfToken !== undefined && !CSRF_TOKEN_PATTERN.test(csrfToken)) {
         throw new DomainError("invalid_tenant_csrf_bootstrap", "Tenant CSRF bootstrap token is invalid");
@@ -77,17 +90,36 @@ export function createTenantWebAssetHandler({ csrfTokenProvider, sessionHandlePr
       if (providedSessionHandle !== undefined && !SESSION_HANDLE_PATTERN.test(providedSessionHandle)) {
         throw new DomainError("invalid_tenant_session_bootstrap", "Tenant session bootstrap handle is invalid");
       }
+      if (localAgentAccount !== undefined && !EVM_ACCOUNT_PATTERN.test(localAgentAccount)) {
+        throw new DomainError(
+          "invalid_tenant_agent_account_bootstrap",
+          "Tenant local Agent account bootstrap is invalid"
+        );
+      }
       sessionHandle = providedSessionHandle;
+      let html = body.toString("utf8");
       if (csrfToken !== undefined) {
-        const html = body.toString("utf8");
         if (html.split(CSRF_META_PLACEHOLDER).length !== 2) {
           throw new DomainError("invalid_tenant_web_asset", "Tenant web shell CSRF placeholder is invalid");
         }
-        body = Buffer.from(html.replace(
+        html = html.replace(
           CSRF_META_PLACEHOLDER,
           `<meta name="ipo-one-csrf-token" content="${csrfToken}" />`
-        ));
+        );
       }
+      if (localAgentAccount !== undefined) {
+        if (html.split(LOCAL_AGENT_ACCOUNT_META_PLACEHOLDER).length !== 2) {
+          throw new DomainError(
+            "invalid_tenant_web_asset",
+            "Tenant web shell local Agent account placeholder is invalid"
+          );
+        }
+        html = html.replace(
+          LOCAL_AGENT_ACCOUNT_META_PLACEHOLDER,
+          `<meta name="ipo-one-local-agent-account" content="${localAgentAccount}" />`
+        );
+      }
+      body = Buffer.from(html);
     }
     response.writeHead(200, {
       ...SECURITY_HEADERS,

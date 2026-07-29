@@ -12,6 +12,8 @@ read the project guidance source:
 - Original MVP build archive: `docs/guidance/IPO_ONE_MVP_Build_PRD_Technical_Architecture_Codex_Task_Spec_v0.1_FINAL.docx`
 - Architecture review proposal: `docs/guidance/IPO_ONE_ARCHITECTURE_REVIEW_v0.2_DRAFT.md`
 - Commercialization roadmap proposal: `docs/guidance/IPO_ONE_COMMERCIALIZATION_ROADMAP_v0.3_DRAFT.md`
+- Local-to-closed-pilot delivery guidance:
+  `docs/guidance/IPO_ONE_LOCAL_TO_CLOSED_PILOT_DELIVERY_GUIDE_v0.1_DRAFT.md`
 - Public beta launch gate: `docs/guidance/IPO_ONE_PUBLIC_BETA_LAUNCH_READINESS_v0.3.md`
 - Public sandbox threat model: `docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md`
 - CHAIN-001B live-testnet runbook:
@@ -37,6 +39,10 @@ Guidance hierarchy:
   and pilot-readiness proposal. Use it to sequence issues and launch gates, but
   keep product, pricing, legal, capital, provider, chain, and production
   permission decisions behind named human approval.
+- Local-to-Closed-Pilot Delivery Guide v0.1 is non-canonical delivery guidance.
+  Use it to separate repeatable local integration, invited durable no-funds
+  operation, live testnet execution, and controlled real value. It grants no
+  deployment, signer, remote-access, risk, contract, or funds authority.
 
 Current core constraints:
 

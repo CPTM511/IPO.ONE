@@ -8,13 +8,15 @@ transport, credit, or funds authority.
 
 `createAgentPilotCapabilityManifest(handoff)` turns one validated waiting,
 draft-application, or active-runtime handoff into the closed immutable
-`agent_pilot_capability_manifest.v1`. The manifest advertises the exact eleven
-local MCP tools, including exact owned Obligation hydration, and three existing SDK workflows in lifecycle order, with an
+`agent_pilot_capability_manifest.v1`. The manifest advertises the exact twelve
+local MCP tools, including exact owned Obligation hydration and separate
+synthetic Registry Evidence, and three existing SDK workflows in lifecycle order, with an
 explicit `enabled`, `locked`, or `input_required` state and next Agent action.
 
 The packet is metadata only. It does not invoke a tool, load a credential,
 grant a capability, create an endpoint, or perform chain/network execution.
-Offer remains a draft-handoff MCP composition. Owned Evidence, Offer
+Offer remains a draft-handoff MCP composition. Owned Evidence, Registry
+Evidence, Offer
 acceptance, sandbox execution, and synthetic repayment are active-handoff MCP
 tools over the same authenticated Tenant protocol. The Obligation SDK remains
 an equivalent typed composition, and portability consumes a prior lifecycle
@@ -58,7 +60,8 @@ const receipt = await agent.runCreditOfferWorkflow({
 The credit workflow executes exactly four reviewed self-owned tools: self-read,
 Credit Intent submission, application read, and deterministic evaluation. The
 shared local MCP registry additionally exposes two IDENTITY-001 tools, one
-owned Evidence read, and three TRANSPORT-002 economic lifecycle tools. It derives
+owned Evidence read, one Tenant-authorized Registry Evidence read, and three
+TRANSPORT-002 economic lifecycle tools. It derives
 Mandate authority from the handoff, creates stable retry identifiers, validates
 every Tenant result, and returns a closed immutable
 `agent_credit_offer_workflow_receipt.v1`. Reusing the workflow ID replays the

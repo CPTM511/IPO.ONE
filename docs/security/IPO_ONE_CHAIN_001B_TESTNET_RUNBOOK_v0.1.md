@@ -114,7 +114,7 @@ SIEM, paging, and regulatory record policy remain a separate approval gate.
 
 ## Commands
 
-All commands require Node `24.18.0` from `.nvmrc` / `.node-version`.
+All commands require Node `26.5.0` from `.nvmrc` / `.node-version`.
 
 ```sh
 pnpm run test:chain:live-unit

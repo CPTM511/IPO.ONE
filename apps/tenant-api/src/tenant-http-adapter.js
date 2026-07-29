@@ -97,6 +97,7 @@ export function createTenantHttpServer({
   requestTimeoutMs = REQUEST_TIMEOUT_MS,
   maximumConcurrency = MAX_CONCURRENCY,
   serveAuthentication,
+  serveEvidenceAnchors,
   serveWebAsset
 }) {
   assertConfig({ host, trustProxy, environment, credentialSource });
@@ -108,6 +109,15 @@ export function createTenantHttpServer({
     !Number.isSafeInteger(requestTimeoutMs) || requestTimeoutMs < 100 || requestTimeoutMs > REQUEST_TIMEOUT_MS ||
     !Number.isSafeInteger(maximumConcurrency) || maximumConcurrency < 1 || maximumConcurrency > MAX_CONCURRENCY ||
     (serveAuthentication !== undefined && typeof serveAuthentication !== "function") ||
+    (
+      serveEvidenceAnchors !== undefined &&
+      (
+        !serveEvidenceAnchors ||
+        typeof serveEvidenceAnchors.handle !== "function" ||
+        !serveEvidenceAnchors.routes ||
+        typeof serveEvidenceAnchors.routes !== "object"
+      )
+    ) ||
     (serveWebAsset !== undefined && typeof serveWebAsset !== "function")
   ) {
     throw new DomainError("invalid_tenant_transport_config", "Tenant HTTP adapter configuration is invalid");
@@ -145,6 +155,31 @@ export function createTenantHttpServer({
         await serveAuthentication({ request, response, url, requestId })
       ) {
         return;
+      }
+      if (
+        serveEvidenceAnchors &&
+        Object.values(serveEvidenceAnchors.routes ?? {}).includes(url.pathname)
+      ) {
+        const authenticationContext = await resolveAuthenticationContext({
+          request,
+          requestUrl: url.toString()
+        });
+        if (
+          await serveEvidenceAnchors.handle({
+            request,
+            response,
+            url,
+            requestId,
+            authenticationContext,
+            readJson: () => readBody(request),
+            sendJson(status, value) {
+              json(response, status, value, requestId);
+              return true;
+            }
+          })
+        ) {
+          return;
+        }
       }
       if (request.method === "GET" && url.pathname === TENANT_HTTP_ROUTES.catalog) {
         await resolveAuthenticationContext({

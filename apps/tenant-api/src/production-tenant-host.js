@@ -10,9 +10,13 @@ import { DomainError } from "../../../packages/domain/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
 import { createTenantAuthenticationResolver } from "./tenant-authentication-resolver.js";
 import { createTenantWebAssetHandler } from "./tenant-web-assets.js";
-import { createTenantOpenApiDocument } from "./tenant-openapi.js";
+import {
+  createAgentHttpsOpenApiDocument,
+  createTenantOpenApiDocument
+} from "./tenant-openapi.js";
 
 export const PRODUCTION_TENANT_ROUTES = Object.freeze({
+  agentOpenApi: "/agent-openapi.json",
   operations: "/tenant/v1/operations",
   catalog: "/tenant/v1/catalog",
   health: "/tenant/v1/healthz",
@@ -256,12 +260,14 @@ export function createProductionTenantHost(input) {
       if (
         new Set(["GET", "HEAD"]).has(request.method) &&
         url.search === "" &&
-        url.pathname === "/openapi.json"
+        new Set(["/openapi.json", PRODUCTION_TENANT_ROUTES.agentOpenApi]).has(url.pathname)
       ) {
         return json(
           response,
           200,
-          createTenantOpenApiDocument(publicOrigin),
+          url.pathname === PRODUCTION_TENANT_ROUTES.agentOpenApi
+            ? createAgentHttpsOpenApiDocument(publicOrigin)
+            : createTenantOpenApiDocument(publicOrigin),
           requestId,
           headOnly
         );

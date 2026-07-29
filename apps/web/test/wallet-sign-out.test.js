@@ -1,0 +1,61 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { releaseSelectedWallet } from "../src/wallet-sign-out.js";
+
+function assertClosed(result, status) {
+  assert.deepEqual(result, {
+    schemaVersion: "wallet_release_result.v1",
+    status,
+    accountDataRetained: false,
+    credentialsIncluded: false,
+    fundsAuthority: false
+  });
+  assert.equal(Object.isFrozen(result), true);
+}
+
+test("WalletConnect sign-out disconnects its memory-only Provider", async () => {
+  let disconnected = 0;
+  const result = await releaseSelectedWallet({
+    provider: {
+      async disconnect() {
+        disconnected += 1;
+      }
+    },
+    source: "mobile_walletconnect"
+  });
+  assert.equal(disconnected, 1);
+  assertClosed(result, "wallet_disconnected");
+});
+
+test("injected wallet sign-out requests exact account permission revocation", async () => {
+  const requests = [];
+  const result = await releaseSelectedWallet({
+    provider: {
+      async request(input) {
+        requests.push(structuredClone(input));
+        return null;
+      }
+    },
+    source: "eip6963"
+  });
+  assert.deepEqual(requests, [{
+    method: "wallet_revokePermissions",
+    params: [{ eth_accounts: {} }]
+  }]);
+  assertClosed(result, "account_permission_revoked");
+});
+
+test("unsupported or absent wallet still clears IPO.ONE account state", async () => {
+  assertClosed(
+    await releaseSelectedWallet({
+      provider: {
+        async request() {
+          throw Object.assign(new Error("unsupported"), { code: 4200 });
+        }
+      },
+      source: "legacy_eip1193"
+    }),
+    "app_state_cleared"
+  );
+  assertClosed(await releaseSelectedWallet(), "no_wallet_selected");
+});

@@ -25,6 +25,11 @@ import {
   summarizeServicingAction,
   summarizeSharedObligation
 } from "./credit-acceptance-handlers.js";
+import {
+  normalizeEconomicActionConfirmation,
+  sha256Json,
+  summarizeEconomicActionConfirmation
+} from "./economic-action-confirmation.js";
 
 const LOCAL_SIGNED_SANDBOX_RAIL = new SignedSandboxRailAdapter();
 const REPAYMENT_SOURCES = new Set(["synthetic_wallet", "synthetic_bank", "synthetic_revenue"]);
@@ -33,17 +38,26 @@ function unavailable() {
   throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
 }
 
-function normalizeEmptyPayload(payload) {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload) || Object.keys(payload).length !== 0) {
-    throw new DomainError("invalid_tenant_command_payload", "sandbox execution payload must be empty");
+function normalizeExecutionPayload(payload) {
+  if (
+    !payload || typeof payload !== "object" || Array.isArray(payload) ||
+    Object.keys(payload).length !== 1 ||
+    !Object.hasOwn(payload, "actionConfirmation")
+  ) {
+    throw new DomainError(
+      "invalid_tenant_command_payload",
+      "sandbox execution payload must contain one action confirmation"
+    );
   }
+  return structuredClone(payload);
 }
 
 function normalizeRepaymentPayload(payload) {
   if (
     !payload || typeof payload !== "object" || Array.isArray(payload) ||
-    Object.keys(payload).length !== 2 ||
+    Object.keys(payload).length !== 3 ||
     !Object.hasOwn(payload, "amountMinor") || !Object.hasOwn(payload, "sourceCode") ||
+    !Object.hasOwn(payload, "actionConfirmation") ||
     typeof payload.amountMinor !== "string" || !/^[1-9][0-9]{0,77}$/.test(payload.amountMinor) ||
     !REPAYMENT_SOURCES.has(payload.sourceCode)
   ) {
@@ -242,7 +256,7 @@ export function executeSandboxObligationCommandHandler({
       requestId,
       correlationId
     }) {
-      normalizeEmptyPayload(payload);
+      const input = normalizeExecutionPayload(payload);
       const { state, obligation, authority } = await loadObligationContext({
         client,
         coreRepository,
@@ -251,6 +265,30 @@ export function executeSandboxObligationCommandHandler({
         now,
         operation: "execute"
       });
+      const actionConfirmation = normalizeEconomicActionConfirmation(
+        input.actionConfirmation,
+        {
+          operationId: "pilotExecuteSandboxObligation",
+          resource: {
+            resourceType: "obligation",
+            resourceId: obligation.obligationId
+          },
+          resourceHash: obligation.obligationHash,
+          payloadHash: sha256Json({
+            obligationHash: obligation.obligationHash,
+            amountMinor: obligation.originalPrincipalMinor,
+            sandboxRail: "signed_non_redeemable",
+            withdrawable: false,
+            productionFundsMoved: false
+          }),
+          requestId,
+          authenticationContext,
+          now,
+          businessPayload: {}
+        }
+      );
+      const actionConfirmationSummary =
+        summarizeEconomicActionConfirmation(actionConfirmation);
       if (
         obligation.status !== ObligationStatus.CREATED ||
         obligation.executionStatus !== ObligationExecutionStatus.PENDING
@@ -326,7 +364,8 @@ export function executeSandboxObligationCommandHandler({
           correlationId,
           sandboxOnly: true,
           productionFundsMoved: false,
-          withdrawable: false
+          withdrawable: false,
+          actionConfirmation: actionConfirmationSummary
         },
         now
       });
@@ -448,9 +487,38 @@ export function postSandboxRepaymentCommandHandler() {
         now,
         operation: "repay"
       });
+      const businessPayload = {
+        amountMinor: input.amountMinor,
+        sourceCode: input.sourceCode
+      };
+      const actionConfirmation = normalizeEconomicActionConfirmation(
+        input.actionConfirmation,
+        {
+          operationId: "pilotPostSandboxRepayment",
+          resource: {
+            resourceType: "obligation",
+            resourceId: obligation.obligationId
+          },
+          resourceHash: obligation.obligationHash,
+          payloadHash: sha256Json({
+            obligationHash: obligation.obligationHash,
+            amountMinor: input.amountMinor,
+            sourceCode: input.sourceCode,
+            waterfall: "fee_interest_principal",
+            productionFundsMoved: false
+          }),
+          requestId,
+          authenticationContext,
+          now,
+          businessPayload
+        }
+      );
+      const actionConfirmationSummary =
+        summarizeEconomicActionConfirmation(actionConfirmation);
       await assertSandboxAccountsAvailable({ client, coreRepository, obligation });
       const result = postSandboxRepayment(obligation, {
-        ...input,
+        amountMinor: input.amountMinor,
+        sourceCode: input.sourceCode,
         actorId: authenticationContext.actorId,
         now
       });
@@ -519,7 +587,8 @@ export function postSandboxRepaymentCommandHandler() {
           causationId: requestId,
           correlationId,
           sandboxOnly: true,
-          productionFundsMoved: false
+          productionFundsMoved: false,
+          actionConfirmation: actionConfirmationSummary
         },
         now
       });
@@ -600,7 +669,13 @@ export function postSandboxRepaymentCommandHandler() {
       return {
         aggregateType: "obligation",
         aggregateId: obligation.obligationId,
-        events: events.map((event, index) => ({
+        // The Obligation projection is written from repaymentEvent. Keep that
+        // event last in the shared aggregate stream so its projection registry
+        // version remains equal to the stream head for the next repayment.
+        events: [
+          ...events.filter((event) => event !== repaymentEvent),
+          repaymentEvent
+        ].map((event, index) => ({
           aggregateType: "obligation",
           aggregateId: obligation.obligationId,
           expectedVersion: state.aggregateVersion + index,

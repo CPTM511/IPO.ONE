@@ -29,21 +29,30 @@ const listener = createTenantHttpServer({
     return Object.freeze({ source: "local_wallet_browser_fixture" });
   },
   async serveAuthentication({ request, response, url, requestId }) {
-    if (request.method !== "GET") return false;
-    if (url.pathname === "/auth/v1/options") {
+    if (request.method === "GET" && url.pathname === "/auth/v1/options") {
       json(response, 200, {
-        enabled: false,
+        enabled: true,
         oidcProviders: [],
-        walletAuthentication: false,
+        walletAuthentication: true,
         sessionActive: false,
-        schemaVersion: "human_access_options.v1"
+        schemaVersion: "ipo_one_authentication_options.v1"
       }, requestId);
       return true;
     }
-    if (url.pathname === "/tenant/v1/catalog") {
+    if (request.method === "POST" && url.pathname === "/auth/v1/wallet/challenge") {
+      json(response, 201, {
+        schemaVersion: "ipo_one_wallet_challenge.v1",
+        handle: "wallet_browser_challenge_000000000000000001",
+        message: "Sign in to the IPO.ONE no-funds browser fixture.",
+        expiresAt: "2026-07-27T12:05:00.000Z"
+      }, requestId);
+      return true;
+    }
+    if (request.method === "POST" && url.pathname === "/auth/v1/wallet/verify") {
       json(response, 200, {
-        operations: [],
-        schemaVersion: "tenant_protocol_catalog.v1"
+        schemaVersion: "ipo_one_authentication_result.v1",
+        status: "authenticated",
+        authenticationMethod: "siwe"
       }, requestId);
       return true;
     }

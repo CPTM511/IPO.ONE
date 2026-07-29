@@ -464,6 +464,25 @@
       "fundsAuthority": false
     },
     {
+      "operationId": "pilotReadCreditRegistryEvidence",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent",
+        "risk_operator",
+        "operations_operator",
+        "auditor"
+      ],
+      "resourceType": "credit_registry_evidence",
+      "requiredCapability": "credit_registry.evidence.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_registry_evidence_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
       "operationId": "pilotReadEvidence",
       "kind": "query",
       "actorTypes": [

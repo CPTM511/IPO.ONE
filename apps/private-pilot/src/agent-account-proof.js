@@ -1,4 +1,6 @@
 import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createTrustedNetworkContext } from "../../../modules/abuse-control/src/index.js";
 import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
 import { AgentTenantCommandClient } from "../../../modules/tenant-command-gateway/src/index.js";
@@ -8,7 +10,21 @@ import {
   derivePrivatePilotAgentAccount,
   preparePrivatePilotAgentProof
 } from "./private-pilot-agent-account.js";
-import { createPrivatePilotGateway } from "./private-pilot-runtime.js";
+import {
+  createPrivatePilotDurableAgentGateway
+} from "./private-pilot-runtime.js";
+import {
+  loadLocalAgentKeyMaterial
+} from "./local-authentication-material.js";
+import {
+  createLocalAgentProof
+} from "./local-durable-agent-authentication.js";
+
+const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_AGENT_KEY_FILE = resolve(
+  MODULE_DIRECTORY,
+  "../../../.ipo-one/local-stack/agent-key.v1.json"
+);
 
 const cliArguments = process.argv.slice(2);
 const challengePath = cliArguments[0] === "--" ? cliArguments[1] : cliArguments[0];
@@ -31,7 +47,10 @@ try {
     maximumKeys: 128
   });
   const secret = await loadOrCreatePrivatePilotDatabaseSecret();
-  runtime = await createPrivatePilotGateway(databaseUrl);
+  const agentKey = await loadLocalAgentKeyMaterial(
+    process.env.IPO_ONE_LOCAL_AGENT_KEY_FILE || DEFAULT_AGENT_KEY_FILE
+  );
+  runtime = await createPrivatePilotDurableAgentGateway(databaseUrl);
   const account = derivePrivatePilotAgentAccount(secret, {
     tenantId: runtime.authentication.profile.tenantId
   });
@@ -40,7 +59,16 @@ try {
   const agentIdentity = runtime.authentication.identities.agent;
   const client = new AgentTenantCommandClient({
     gateway: runtime.gateway,
-    authenticationContextProvider: async () => agentIdentity.createContext(),
+    authenticationContextProvider: async () =>
+      runtime.agentAuthenticator.authenticate({
+        proof: await createLocalAgentProof({
+          keyMaterial: agentKey,
+          tenantId: runtime.authentication.profile.tenantId,
+          clientId: agentIdentity.clientId,
+          policyVersion: agentIdentity.createContext().policyVersion,
+          audience: runtime.audience
+        })
+      }),
     networkContextProvider: async () => createTrustedNetworkContext({
       networkRefHash: hashId("private_pilot_network", "local_agent_account_proof"),
       source: "local_test"
@@ -75,5 +103,8 @@ try {
   process.stderr.write(`Agent account proof failed: ${error?.code ?? error?.message ?? "proof_failed"}\n`);
   process.exitCode = 1;
 } finally {
-  await runtime?.pool.end();
+  await Promise.allSettled([
+    runtime?.pool.end(),
+    runtime?.authenticationPool.end()
+  ]);
 }

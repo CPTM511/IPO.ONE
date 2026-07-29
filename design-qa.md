@@ -882,3 +882,77 @@ Final result: passed.
   21/21; PostgreSQL 53/53; schema count 33.
 
 Final result: passed.
+
+## WEB-014 Product Entry Information Architecture — 2026-07-27
+
+Source visual truth:
+`https://www.figma.com/board/GG5rlZHZiODH8KuyUmb1ry`.
+
+Implementation evidence:
+
+- `artifacts/product-design-audit/2026-07-27-product-entry/00-figjam-source-2400x1515.png`
+- `artifacts/product-design-audit/2026-07-27-product-entry/00b-figjam-capital-partners-source-400x880.png`
+- `artifacts/product-design-audit/2026-07-27-product-entry/01-overview-desktop-1440x1000.png`
+- `artifacts/product-design-audit/2026-07-27-product-entry/02-capital-partners-desktop-1440x1000.png`
+- `artifacts/product-design-audit/2026-07-27-product-entry/05-mobile-navigation-390x844.png`
+- `artifacts/product-design-audit/2026-07-27-product-entry/06-capital-partners-mobile-390x844.png`
+
+Verified dimensions and states: desktop 1440×1000 at CSS density 1; mobile
+390×844 at CSS density 1; Overview in Agent mode, opened mobile navigation, and
+Capital Partners in both desktop and mobile modes.
+
+Full-view comparison put the FigJam source and the implemented Overview into
+one comparison input. The build implements the source hierarchy directly:
+Human/Agent access enters one Product Home; Credit, Trading Capital, and Capital
+Partners are distinct intent paths; Provider and Risk remain supporting
+surfaces rather than product branches.
+
+Focused comparison put the Capital Partners source section and implemented
+Capital Partners desktop page into one comparison input. Invitation-only entry,
+exposure/performance, and reporting/Evidence are visible while every capital
+action remains explicitly disabled. Separate mobile captures verify the same
+boundary below the 390px breakpoint.
+
+Findings and comparison history:
+
+- P2 fixed: the Overview emphasis initially touched the preceding sentence
+  visually. A small typographic margin now preserves the intended phrase break
+  at desktop and mobile without changing the type system.
+- P2 fixed: the existing Provider operations surface was visibly named Capital
+  Network, creating an LP-product interpretation. It is now Provider Network
+  while its internal route, IDs, module, and behavior remain unchanged.
+- P2 fixed: the transport-only test omitted the already imported and allowlisted
+  Trading Capital presentation module from its exact static-module expectation.
+  The expectation now matches the existing fixed asset; runtime behavior did
+  not change.
+- Desktop and mobile have no page-level horizontal overflow. The mobile drawer
+  opens/closes with correct inert and expanded state, and product navigation
+  preserves the Human/Agent mode.
+- Browser console inspection returned no warnings or errors.
+- No remaining actionable P0/P1/P2 visual mismatch was found.
+
+Final result: passed.
+
+## WEB-015 Authenticated Session State — 2026-07-27
+
+Implementation evidence:
+
+- `artifacts/product-design-audit/2026-07-27-auth-session/01-authenticated-session-mobile-390x844.png`
+- `artifacts/product-design-audit/2026-07-27-auth-session/02-authenticated-session-desktop-1440x1000.png`
+
+The authenticated access dialog now has a distinct verified-session state with
+Continue and Sign out controls. The top bar, access dialog, runtime gate, and
+workspace status agree on the same server-verified session state; a connected
+wallet alone remains visually signed out.
+
+- Desktop 1440×1000 and mobile 390×844 have no page-level horizontal overflow.
+- Continue closes the dialog, restores focus to `mainContent`, and preserves the
+  authenticated state.
+- Sign out returns the fixture to the signed-out shell.
+- The auth-discovery-disabled private-pilot fixture still verifies its
+  pre-provisioned session through the authenticated Tenant catalog.
+- Browser warning and error logs were empty.
+- Repository check passed 557/557; security 33/33; transport 52/52; static web
+  checks 7/7.
+
+Final result: passed.

@@ -11,7 +11,8 @@ export const AGENT_HANDOFF_TOOLS = Object.freeze([
   Object.freeze({ name: "ipo_one_read_obligation_evidence", operationId: "pilotReadOwnObligationEvidence" }),
   Object.freeze({ name: "ipo_one_accept_credit_offer", operationId: "pilotAcceptCreditOffer" }),
   Object.freeze({ name: "ipo_one_execute_sandbox_obligation", operationId: "pilotExecuteSandboxObligation" }),
-  Object.freeze({ name: "ipo_one_post_sandbox_repayment", operationId: "pilotPostSandboxRepayment" })
+  Object.freeze({ name: "ipo_one_post_sandbox_repayment", operationId: "pilotPostSandboxRepayment" }),
+  Object.freeze({ name: "ipo_one_read_credit_registry_evidence", operationId: "pilotReadCreditRegistryEvidence" })
 ]);
 
 const MANDATE_CAPABILITIES = new Set([

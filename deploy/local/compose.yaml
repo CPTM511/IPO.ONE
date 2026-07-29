@@ -1,0 +1,128 @@
+name: ipo-one-local
+
+services:
+  postgres:
+    image: postgres@sha256:4f736ae292687621d4dbe0d499ffd024a36bd2ee7d8ca6f2ccd4c800f047b394
+    environment:
+      POSTGRES_DB: ipo_one_private_pilot
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+      POSTGRES_PASSWORD: ${IPO_ONE_LOCAL_POSTGRES_PASSWORD:?local PostgreSQL password is required}
+      POSTGRES_USER: ipo_one_owner
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - max_connections=100
+    ports:
+      - 127.0.0.2:55432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ipo_one_owner -d ipo_one_private_pilot
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  pilot:
+    image: ipo-one-local:node-26.5.0
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        BUILD_REVISION: local-stack
+    network_mode: host
+    environment:
+      DATABASE_URL: postgresql://ipo_one_owner:${IPO_ONE_LOCAL_POSTGRES_PASSWORD}@127.0.0.2:55432/ipo_one_private_pilot
+      IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT: /app/artifacts/testnet/eip155-84532-chain-001e-read-20260728-001-credit-registry-observation.json
+      IPO_ONE_LOCAL_AGENT_KEY_FILE: /run/secrets/agent-key.v1.json
+      IPO_ONE_LOCAL_AUTH_INVITATION_FILE: /run/secrets/authentication-invitation.v1.json
+      IPO_ONE_LOCAL_AUTH_SERVER_FILE: /run/secrets/authentication-server.v1.json
+      IPO_ONE_PILOT_DB_SECRET_FILE: /run/secrets/private-pilot-db-secret
+      IPO_ONE_PILOT_PROFILE_FILE: /app/deploy/local/private-pilot-profile.v1.json
+      IPO_ONE_PILOT_PORT: "8787"
+      NODE_ENV: development
+    command:
+      - apps/private-pilot/src/start.js
+    volumes:
+      - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/authentication-server.v1.json:/run/secrets/authentication-server.v1.json:ro
+      - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/authentication-invitation.v1.json:/run/secrets/authentication-invitation.v1.json:ro
+      - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/private-pilot-db-secret:/run/secrets/private-pilot-db-secret:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - /nodejs/bin/node
+        - -e
+        - Promise.all([8787,8788,8789].map((port)=>fetch('http://127.0.0.1:'+port+'/tenant/v1/healthz').then((response)=>{if(!response.ok)throw new Error('unhealthy')}))).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+  worker:
+    image: ipo-one-local:node-26.5.0
+    pull_policy: never
+    network_mode: host
+    environment:
+      DATABASE_URL: postgresql://ipo_one_owner:${IPO_ONE_LOCAL_POSTGRES_PASSWORD}@127.0.0.2:55432/ipo_one_private_pilot
+      IPO_ONE_CREDIT_REGISTRY_OBSERVATION_ARTIFACT: /app/artifacts/testnet/eip155-84532-chain-001e-read-20260728-001-credit-registry-observation.json
+      IPO_ONE_LOCAL_RECONCILIATION_INTERVAL_MS: "300000"
+      IPO_ONE_LOCAL_WORKER_ACK: I_UNDERSTAND_SYNTHETIC_OUTBOX_ONLY
+      IPO_ONE_LOCAL_WORKER_HEARTBEAT_FILE: /tmp/ipo-one-local-worker-heartbeat.json
+      IPO_ONE_LOCAL_WORKER_ID: ipo_one_local_worker
+      IPO_ONE_LOCAL_WORKER_INTERVAL_MS: "5000"
+      IPO_ONE_PILOT_DB_SECRET_FILE: /run/secrets/private-pilot-db-secret
+      IPO_ONE_PILOT_PROFILE_FILE: /app/deploy/local/private-pilot-profile.v1.json
+      NODE_ENV: development
+    command:
+      - apps/private-pilot/src/local-worker.js
+    volumes:
+      - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/private-pilot-db-secret:/run/secrets/private-pilot-db-secret:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pilot:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - /nodejs/bin/node
+        - -e
+        - const{mtimeMs}=require('node:fs').statSync('/tmp/ipo-one-local-worker-heartbeat.json');if(Date.now()-mtimeMs>30000)process.exit(1)
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 60s
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+volumes:
+  postgres-data:
+    name: ipo-one-local-postgres-data

@@ -28,6 +28,9 @@ import {
   createTenantSecurityContextFromAuthorization,
   setTenantTransactionContext
 } from "../../persistence/src/index.js";
+import {
+  assertTenantCommandsNotPaused
+} from "../../operations-control/src/index.js";
 import { TenantCommandExecutionStore } from "./tenant-command-execution-store.js";
 import { TenantCommandHandlerRegistry } from "./tenant-command-handler-registry.js";
 
@@ -491,6 +494,7 @@ export class TenantCommandGateway {
               "idempotent accounting indicates a replay but no durable command response exists"
             );
           }
+          await assertTenantCommandsNotPaused(client);
         }
 
         const directory = new PostgresAuthorizationDirectory({

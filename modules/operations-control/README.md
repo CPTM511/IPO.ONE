@@ -50,6 +50,12 @@ No count, loss, utilization, credit, or stop-loss threshold is invented here.
 Commercial caps, numeric SLOs, notification recipients, named incident owners,
 and production deployment remain separate human-reviewed decisions.
 
+`PostgresTenantCommandPauseStore` provides a separate durable, one-way Tenant
+command pause for local no-funds incident containment. New Tenant commands
+fail closed after the pause, while queries, reconciliation, outbox delivery,
+and Evidence/Outcome materialization remain available. The MVP deliberately
+has no automatic or single-operator unpause.
+
 Verification:
 
 ```sh

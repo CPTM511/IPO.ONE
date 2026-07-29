@@ -27,6 +27,8 @@ import { migrateUp } from "../../../scripts/migrate.mjs";
 const ROLE_NAME = /^[a-z][a-z0-9_]{2,62}$/;
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
+const INVITATION_ID = /^invite_[A-Za-z0-9][A-Za-z0-9._:-]{7,120}$/;
+const MAXIMUM_CREDENTIAL_LIFETIME_MS = 90 * 24 * 60 * 60 * 1_000;
 const trustedBootstrapConfigs = new WeakSet();
 
 const PROFILES = Object.freeze({
@@ -49,6 +51,7 @@ const PROFILES = Object.freeze({
       PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
       PilotCapability.CREDIT_PASSPORT_READ_SELF,
       PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
@@ -74,6 +77,7 @@ const PROFILES = Object.freeze({
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
       PilotCapability.CREDIT_PASSPORT_READ_SELF,
       PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
@@ -99,6 +103,7 @@ const PROFILES = Object.freeze({
       PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.CREDIT_PASSPORT_READ_SELF,
       PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
       PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
@@ -106,6 +111,18 @@ const PROFILES = Object.freeze({
       PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
       PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
       PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+    ])
+  }),
+  risk_operator: Object.freeze({
+    actorType: ActorType.RISK_OPERATOR,
+    roleBundle: RoleBundle.RISK_OPERATOR,
+    capabilities: Object.freeze([
+      PilotCapability.RISK_READ_TENANT,
+      PilotCapability.PILOT_HEALTH_READ,
+      PilotCapability.PILOT_FEEDBACK_READ_TENANT,
+      PilotCapability.SERVICING_QUEUE_READ,
+      PilotCapability.RISK_FREEZE,
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT
     ])
   })
 });
@@ -121,8 +138,10 @@ const GATEWAY_MUTATION_TABLES = Object.freeze([
   "provider_intent_acknowledgements", "provider_callback_inbox",
   "credit_lines", "ledger_accounts", "ledger_transactions", "ledger_entries",
   "repayment_events", "aggregate_stream_heads", "domain_events", "credit_events",
-  "pilot_feedback_records", "credit_passport_artifacts",
+  "pilot_feedback_records", "credit_passport_artifacts", "credit_outcomes",
+  "tenant_command_pauses",
   "official_report_artifacts", "evidence_envelopes", "outbox_messages",
+  "evidence_chain_anchors", "evidence_chain_anchor_observations",
   "command_idempotency", "command_events", "projection_registry",
   "projection_snapshots", "reconciliation_runs", "reconciliation_discrepancies"
 ]);
@@ -164,13 +183,22 @@ function httpsOrigin(name, value) {
   return parsed.origin;
 }
 
+function canonicalTimestamp(name, value) {
+  if (typeof value !== "string") throw fail(`${name} is invalid`);
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString() !== value) {
+    throw fail(`${name} is invalid`);
+  }
+  return value;
+}
+
 function normalizeConfig(value) {
   if (value && typeof value === "object" && trustedBootstrapConfigs.has(value)) return value;
   exactObject("bootstrap config", value, [
     "schemaVersion", "gatewayRole", "authenticationRole", "tenant",
     "systemActor", "policyVersion", "credentials"
   ]);
-  if (value.schemaVersion !== "ipo_one_production_bootstrap.v1") throw fail("bootstrap schemaVersion is invalid");
+  if (value.schemaVersion !== "ipo_one_production_bootstrap.v2") throw fail("bootstrap schemaVersion is invalid");
   const tenant = exactObject("Tenant", value.tenant, [
     "tenantId", "organizationRef", "displayName", "pilotJurisdiction", "retentionOwnerRef"
   ]);
@@ -180,7 +208,8 @@ function normalizeConfig(value) {
   }
   const credentials = value.credentials.map((entry) => {
     exactObject("credential", entry, [
-      "kind", "profile", "actorId", "clientId", "issuer", "externalSubject"
+      "kind", "profile", "actorId", "clientId", "issuer", "externalSubject",
+      "invitationId", "expiresAt"
     ], ["controllerActorId", "senderThumbprint"]);
     if (!new Set(["human_wallet", "agent_mtls"]).has(entry.kind)) throw fail("credential kind is invalid");
     const profile = PROFILES[entry.profile];
@@ -207,12 +236,29 @@ function normalizeConfig(value) {
       clientId: id("clientId", entry.clientId),
       issuer: httpsOrigin("credential issuer", entry.issuer),
       externalSubject,
+      invitationId: id("invitationId", entry.invitationId, INVITATION_ID),
+      expiresAt: canonicalTimestamp("credential expiresAt", entry.expiresAt),
       controllerActorId: entry.controllerActorId,
       senderThumbprint: entry.senderThumbprint
     });
   });
   const actorIds = new Set(credentials.map(({ actorId }) => actorId));
   if (actorIds.size !== credentials.length) throw fail("one bootstrap Credential per Actor is required");
+  const invitationIds = new Set(credentials.map(({ invitationId }) => invitationId));
+  if (invitationIds.size !== credentials.length) throw fail("one unique invitation per Credential is required");
+  const subjectBindings = new Set(
+    credentials.map(({ issuer, clientId, externalSubject }) =>
+      `${issuer}\0${clientId}\0${externalSubject}`)
+  );
+  if (subjectBindings.size !== credentials.length) {
+    throw fail("one unique external subject binding per Credential is required");
+  }
+  const agentThumbprints = credentials
+    .filter(({ kind }) => kind === "agent_mtls")
+    .map(({ senderThumbprint }) => senderThumbprint);
+  if (new Set(agentThumbprints).size !== agentThumbprints.length) {
+    throw fail("one unique mTLS sender constraint per Agent is required");
+  }
   for (const credential of credentials) {
     if (credential.controllerActorId) {
       const controller = credentials.find(({ actorId }) => actorId === credential.controllerActorId);
@@ -240,6 +286,16 @@ function normalizeConfig(value) {
   });
   trustedBootstrapConfigs.add(normalized);
   return normalized;
+}
+
+function assertProvisioningWindow(config, now) {
+  for (const credential of config.credentials) {
+    const expiresAt = new Date(credential.expiresAt);
+    const lifetime = expiresAt.getTime() - now.getTime();
+    if (lifetime <= 0 || lifetime > MAXIMUM_CREDENTIAL_LIFETIME_MS) {
+      throw fail("credential provisioning window is invalid");
+    }
+  }
 }
 
 export function assertProductionBootstrapConfig(value) {
@@ -368,36 +424,102 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
   let insertedCredentials = 0;
   for (const credential of config.credentials) {
     const subjectRefHash = referenceHasher.hash("subject", `${credential.issuer}\0${credential.externalSubject}`);
+    const invitationRefHash = referenceHasher.hash(
+      "pilot.invitation",
+      `${config.tenant.tenantId}\0${credential.invitationId}`
+    );
     const senderThumbprint = credential.kind === "agent_mtls"
       ? credential.senderThumbprint
       : referenceHasher.hash("bootstrap.host-session", credential.actorId);
     const senderConstraintRefHash = referenceHasher.hash("sender.constraint", senderThumbprint);
+    const invitationBinding = await client.query(
+      `SELECT credential_id
+         FROM authentication_events
+        WHERE tenant_id=$1 AND event_type='credential_registered'
+          AND payload->>'invitationRefHash'=$2
+        ORDER BY occurred_at, id`,
+      [config.tenant.tenantId, invitationRefHash]
+    );
+    if (invitationBinding.rowCount > 1) {
+      throw fail("invitation history is not unique");
+    }
+    if (credential.kind === "agent_mtls") {
+      const senderBinding = await client.query(
+        `SELECT actor_id
+           FROM authentication_credentials
+          WHERE tenant_id=$1 AND client_authentication_method='mtls'
+            AND sender_constraint_ref_hash=$2`,
+        [config.tenant.tenantId, senderConstraintRefHash]
+      );
+      if (
+        senderBinding.rowCount > 1 ||
+        (
+          senderBinding.rowCount === 1 &&
+          senderBinding.rows[0].actor_id !== credential.actorId
+        )
+      ) {
+        throw fail("mTLS sender constraint is already bound");
+      }
+    }
     const existing = await client.query(
       "SELECT * FROM authentication_credentials WHERE tenant_id=$1 AND issuer=$2 AND client_id=$3 AND subject_ref_hash=$4",
       [config.tenant.tenantId, credential.issuer, credential.clientId, subjectRefHash]
     );
     if (existing.rowCount === 1) {
       const stored = existing.rows[0];
-      if (stored.actor_id !== credential.actorId || stored.actor_type !== credential.profile.actorType || stored.status !== "active" || stored.policy_version !== config.policyVersion || stored.sender_constraint_ref_hash !== senderConstraintRefHash || stored.client_authentication_method !== (credential.kind === "agent_mtls" ? ClientAuthenticationMethod.MTLS : ClientAuthenticationMethod.SIWE)) {
+      const registration = await client.query(
+        `SELECT payload
+           FROM authentication_events
+          WHERE tenant_id=$1 AND credential_id=$2
+            AND event_type='credential_registered'
+          ORDER BY occurred_at, id`,
+        [config.tenant.tenantId, stored.id]
+      );
+      if (
+        stored.actor_id !== credential.actorId ||
+        stored.actor_type !== credential.profile.actorType ||
+        stored.status !== "active" ||
+        stored.policy_version !== config.policyVersion ||
+        stored.sender_constraint_ref_hash !== senderConstraintRefHash ||
+        stored.client_authentication_method !==
+          (credential.kind === "agent_mtls"
+            ? ClientAuthenticationMethod.MTLS
+            : ClientAuthenticationMethod.SIWE) ||
+        new Date(stored.expires_at).toISOString() !== credential.expiresAt ||
+        invitationBinding.rowCount !== 1 ||
+        invitationBinding.rows[0].credential_id !== stored.id ||
+        registration.rowCount !== 1 ||
+        registration.rows[0].payload?.invitationRefHash !== invitationRefHash
+      ) {
         throw fail(`existing Credential does not match ${credential.actorId}`);
       }
       continue;
+    }
+    if (invitationBinding.rowCount !== 0) {
+      throw fail("invitation is already bound");
     }
     const credentialId = createOperationalId("credential");
     const clientAuthenticationMethod = credential.kind === "agent_mtls" ? ClientAuthenticationMethod.MTLS : ClientAuthenticationMethod.SIWE;
     const senderConstraintMethod = credential.kind === "agent_mtls" ? SenderConstraintMethod.MTLS : SenderConstraintMethod.HOST_SESSION;
     await client.query(
       `INSERT INTO authentication_credentials(id,tenant_id,actor_id,actor_type,issuer,subject_ref_hash,client_id,client_authentication_method,sender_constraint_method,sender_constraint_ref_hash,roles,allowed_capabilities,policy_version,status,version,expires_at,created_at,updated_at,schema_version)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,'active',1,NULL,$14,$14,'authentication_credential.v1')`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,'active',1,$14,$15,$15,'authentication_credential.v1')`,
       [credentialId, config.tenant.tenantId, credential.actorId, credential.profile.actorType, credential.issuer,
         subjectRefHash, credential.clientId, clientAuthenticationMethod, senderConstraintMethod, senderConstraintRefHash,
-        JSON.stringify([credential.profile.roleBundle]), JSON.stringify(credential.profile.capabilities), config.policyVersion, now]
+        JSON.stringify([credential.profile.roleBundle]), JSON.stringify(credential.profile.capabilities),
+        config.policyVersion, credential.expiresAt, now]
     );
     await client.query(
       `INSERT INTO authentication_events(id,tenant_id,event_type,actor_id,credential_id,reason_code,occurred_at,payload,schema_version)
-       VALUES ($1,$2,'credential_registered',$3,$4,'production_bootstrap',$5,$6::jsonb,'authentication_event.v1')`,
+       VALUES ($1,$2,'credential_registered',$3,$4,'closed_pilot_invitation_provisioned',$5,$6::jsonb,'authentication_event.v1')`,
       [createOperationalId("auth_event"), config.tenant.tenantId, config.systemActor.actorId, credentialId, now,
-        JSON.stringify({ actorType: credential.profile.actorType, clientAuthenticationMethod, senderConstraintMethod, version: 1 })]
+        JSON.stringify({
+          actorType: credential.profile.actorType,
+          clientAuthenticationMethod,
+          invitationRefHash,
+          senderConstraintMethod,
+          version: 1
+        })]
     );
     insertedCredentials += 1;
   }
@@ -419,6 +541,7 @@ export async function bootstrapProductionDatabase({
   referenceHashKey
 }) {
   const checked = assertProductionBootstrapConfig(config);
+  assertProvisioningWindow(checked, new Date());
   for (const [name, password] of [["gateway password", gatewayPassword], ["authentication password", authenticationPassword]]) {
     if (typeof password !== "string" || password.length < 32 || password.length > 128 || /[\0\r\n]/.test(password)) throw fail(`${name} is invalid`);
   }
@@ -474,11 +597,12 @@ export async function bootstrapProductionDatabase({
     await Promise.allSettled([gatewayPool.end(), authenticationPool.end()]);
   }
   return Object.freeze({
-    schemaVersion: "ipo_one_production_bootstrap_result.v1",
+    schemaVersion: "ipo_one_production_bootstrap_result.v2",
     tenantId: checked.tenant.tenantId,
     gatewayRole: checked.gatewayRole,
     authenticationRole: checked.authenticationRole,
     credentialCount: checked.credentials.length,
+    invitationCount: checked.credentials.length,
     insertedCredentials
   });
 }

@@ -18,7 +18,8 @@ const APPROVED_METHODS = Object.freeze([
   "wallet_switchEthereumChain",
   "wallet_addEthereumChain",
   "personal_sign",
-  "eth_signTypedData_v4"
+  "eth_signTypedData_v4",
+  "eth_sendTransaction"
 ]);
 const APPROVED_PROVIDER_EVENTS = Object.freeze([
   "accountsChanged",
@@ -234,6 +235,15 @@ function checkedParams(method, params) {
       values[1].length >= 2 &&
       values[1].length <= 64 * 1_024;
   }
+  if (method === "eth_sendTransaction") {
+    const transaction = values[0];
+    return values.length === 1 &&
+      exactKeys(transaction, ["from", "to", "data", "value"]) &&
+      /^0x[0-9a-fA-F]{40}$/.test(transaction.from ?? "") &&
+      /^0x[0-9a-fA-F]{40}$/.test(transaction.to ?? "") &&
+      /^0x[0-9a-fA-F]{8,65536}$/.test(transaction.data ?? "") &&
+      transaction.value === "0x0";
+  }
   return false;
 }
 
@@ -330,7 +340,9 @@ export function createMobileWalletConnector({
       pairingPersisted: false,
       credentialsIncluded: false,
       fundsAuthority: false,
-      transactionsAllowed: false
+      transactionsAllowed: true,
+      transactionScope:
+        "zero_value_contract_calldata_only"
     });
   }
 

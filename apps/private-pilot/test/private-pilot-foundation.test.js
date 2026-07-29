@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ActorType, assertAuthenticationContext } from "../../../modules/authentication/src/index.js";
+import {
+  ActorType,
+  SESSION_COOKIE_NAME,
+  assertAuthenticationContext
+} from "../../../modules/authentication/src/index.js";
 import { PilotCapability, RoleBundle } from "../../../modules/authorization/src/index.js";
 import {
   createAgentAccountBindingTypedData,
@@ -16,6 +20,7 @@ import {
   derivePrivatePilotAgentAccount,
   preparePrivatePilotAgentProof
 } from "../src/private-pilot-agent-account.js";
+import { createLocalAuthenticationOptions } from "../src/local-authentication-options.js";
 import {
   DEFAULT_PRIVATE_PILOT_PROFILE,
   assertPrivatePilotProfile,
@@ -24,6 +29,44 @@ import {
 } from "../src/private-pilot-profile.js";
 
 const ACCOUNT_PROOF_NOW = new Date("2026-07-17T04:00:00.000Z");
+
+async function localAuthenticationResponse({
+  cookie,
+  csrfToken,
+  method = "GET",
+  origin,
+  pathname = "/auth/v1/options",
+  search = ""
+} = {}) {
+  const responseState = {};
+  const serveAuthentication = createLocalAuthenticationOptions({
+    sessionHandle: "s".repeat(43),
+    csrfToken: "c".repeat(43),
+    origin: "http://127.0.0.1:8787"
+  });
+  const handled = await serveAuthentication({
+    request: {
+      method,
+      headers: {
+        ...(cookie === undefined ? {} : { cookie }),
+        ...(csrfToken === undefined ? {} : { "x-csrf-token": csrfToken }),
+        ...(origin === undefined ? {} : { origin })
+      }
+    },
+    response: {
+      writeHead(status, headers) {
+        responseState.status = status;
+        responseState.headers = headers;
+      },
+      end(body) {
+        responseState.body = body;
+      }
+    },
+    url: new URL(`http://127.0.0.1:8787${pathname}${search}`),
+    requestId: "request_local_authentication_options"
+  });
+  return { handled, ...responseState };
+}
 
 function agentAccountChallenge(account, overrides = {}) {
   const chainId = "eip155:84532";
@@ -97,6 +140,72 @@ test("private pilot identities are role-separated over one Tenant", () => {
     assert.equal(context.tenantId, LOCAL_PILOT_TENANT_ID);
     assert.equal(context.actorId, identity.actorId);
     assert.equal(context.roles[0], identity.roleBundle);
+  }
+});
+
+test("private pilot exposes authenticated local options without enabling a credential provider", async () => {
+  const active = await localAuthenticationResponse({
+    cookie: `${SESSION_COOKIE_NAME}=${"s".repeat(43)}`
+  });
+  assert.equal(active.handled, true);
+  assert.equal(active.status, 200);
+  assert.deepEqual(JSON.parse(active.body), {
+    schemaVersion: "ipo_one_authentication_options.v1",
+    profile: "local_no_funds",
+    enabled: false,
+    sessionActive: true,
+    oidcProviders: [],
+    walletAuthentication: false,
+    supportedChains: ["eip155:84532", "eip155:1952"],
+    boundary:
+      "Local synthetic authentication proves presence; policy and Mandates separately decide authority."
+  });
+  const inactive = await localAuthenticationResponse();
+  assert.equal(JSON.parse(inactive.body).sessionActive, false);
+});
+
+test("private pilot authentication options reject method and query drift", async () => {
+  await assert.rejects(
+    () => localAuthenticationResponse({ method: "POST" }),
+    (error) => error.code === "method_not_allowed" && error.status === 405
+  );
+  await assert.rejects(
+    () => localAuthenticationResponse({ search: "?provider=google" }),
+    (error) => error.code === "authentication_input_rejected"
+  );
+});
+
+test("private pilot local sign-out clears the exact host session", async () => {
+  const response = await localAuthenticationResponse({
+    cookie: `${SESSION_COOKIE_NAME}=${"s".repeat(43)}`,
+    csrfToken: "c".repeat(43),
+    method: "POST",
+    origin: "http://127.0.0.1:8787",
+    pathname: "/auth/v1/logout"
+  });
+  assert.equal(response.handled, true);
+  assert.equal(response.status, 200);
+  assert.match(
+    response.headers["set-cookie"],
+    new RegExp(`^${SESSION_COOKIE_NAME}=;.*Max-Age=0$`)
+  );
+  assert.deepEqual(JSON.parse(response.body), {
+    schemaVersion: "ipo_one_logout_result.v1",
+    status: "logged_out"
+  });
+  for (const invalid of [
+    { csrfToken: "x".repeat(43), origin: "http://127.0.0.1:8787" },
+    { csrfToken: "c".repeat(43), origin: "http://127.0.0.1:9999" }
+  ]) {
+    await assert.rejects(
+      () => localAuthenticationResponse({
+        cookie: `${SESSION_COOKIE_NAME}=${"s".repeat(43)}`,
+        method: "POST",
+        pathname: "/auth/v1/logout",
+        ...invalid
+      }),
+      (error) => error.code === "csrf_token_rejected"
+    );
   }
 });
 

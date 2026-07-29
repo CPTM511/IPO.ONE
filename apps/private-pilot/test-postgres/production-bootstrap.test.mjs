@@ -9,6 +9,8 @@ import {
 } from "../src/production-bootstrap.js";
 
 const { Pool } = pg;
+const futureCredentialExpiry = () =>
+  new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString();
 
 test("fresh migrations succeed for a non-superuser database owner under forced RLS", async () => {
   const suffix = randomBytes(5).toString("hex");
@@ -34,13 +36,13 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0039_durable_authentication_replay"
+      "0047_chain_001f_anchor_binding_repair"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
       adminConnectionString: targetUrl.toString(),
       config: assertProductionBootstrapConfig({
-        schemaVersion: "ipo_one_production_bootstrap.v1",
+        schemaVersion: "ipo_one_production_bootstrap.v2",
         gatewayRole,
         authenticationRole,
         tenant: {
@@ -61,7 +63,9 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
           actorId: `actor_human_${suffix}`,
           clientId: "ipo_one_wallet",
           issuer: "https://ipo.one",
-          externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111"
+          externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111",
+          invitationId: `invite_cloud_owner_${suffix}`,
+          expiresAt: futureCredentialExpiry()
         }]
       }),
       gatewayPassword: randomBytes(32).toString("base64url"),
@@ -90,7 +94,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
 test("production bootstrap creates closed roles, seeds identity, and is idempotent", async () => {
   const suffix = randomBytes(6).toString("hex");
   const input = {
-    schemaVersion: "ipo_one_production_bootstrap.v1",
+    schemaVersion: "ipo_one_production_bootstrap.v2",
     gatewayRole: `ipo_gateway_${suffix}`,
     authenticationRole: `ipo_auth_${suffix}`,
     tenant: {
@@ -111,14 +115,18 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       actorId: `actor_borrower_${suffix}`,
       clientId: "ipo_one_wallet",
       issuer: "https://ipo.one",
-      externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111"
+      externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111",
+      invitationId: `invite_borrower_${suffix}`,
+      expiresAt: futureCredentialExpiry()
     }, {
       kind: "human_wallet",
       profile: "principal_controller",
       actorId: `actor_principal_${suffix}`,
       clientId: "ipo_one_wallet",
       issuer: "https://ipo.one",
-      externalSubject: "eip155:84532:0x2222222222222222222222222222222222222222"
+      externalSubject: "eip155:84532:0x2222222222222222222222222222222222222222",
+      invitationId: `invite_principal_${suffix}`,
+      expiresAt: futureCredentialExpiry()
     }, {
       kind: "agent_mtls",
       profile: "agent_runtime",
@@ -127,7 +135,18 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       issuer: "https://workload.ipo.one",
       externalSubject: `agent-runtime-${suffix}`,
       controllerActorId: `actor_principal_${suffix}`,
-      senderThumbprint: "m".repeat(43)
+      senderThumbprint: "m".repeat(43),
+      invitationId: `invite_agent_${suffix}`,
+      expiresAt: futureCredentialExpiry()
+    }, {
+      kind: "human_wallet",
+      profile: "risk_operator",
+      actorId: `actor_risk_${suffix}`,
+      clientId: "ipo_one_wallet",
+      issuer: "https://ipo.one",
+      externalSubject: "eip155:84532:0x3333333333333333333333333333333333333333",
+      invitationId: `invite_risk_${suffix}`,
+      expiresAt: futureCredentialExpiry()
     }]
   };
   const parameters = {
@@ -139,12 +158,109 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   };
 
   const first = await bootstrapProductionDatabase(parameters);
-  assert.equal(first.insertedCredentials, 3);
-  assert.equal(first.credentialCount, 3);
+  assert.equal(first.schemaVersion, "ipo_one_production_bootstrap_result.v2");
+  assert.equal(first.insertedCredentials, 4);
+  assert.equal(first.credentialCount, 4);
+  assert.equal(first.invitationCount, 4);
 
   const second = await bootstrapProductionDatabase(parameters);
   assert.equal(second.insertedCredentials, 0);
   assert.equal(second.tenantId, input.tenant.tenantId);
+
+  const reusedInvitationConfig = assertProductionBootstrapConfig({
+    ...input,
+    credentials: [{
+      ...input.credentials[0],
+      actorId: `actor_reused_invitation_${suffix}`,
+      externalSubject:
+        "eip155:84532:0x5555555555555555555555555555555555555555"
+    }]
+  });
+  await assert.rejects(
+    () => bootstrapProductionDatabase({
+      ...parameters,
+      config: reusedInvitationConfig
+    }),
+    (error) => error?.code === "invalid_production_bootstrap"
+  );
+
+  const verificationPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 1
+  });
+  let invitationEvents;
+  let provisionedCredentials;
+  try {
+    invitationEvents = await verificationPool.query(
+      `SELECT payload
+         FROM authentication_events
+        WHERE tenant_id=$1 AND event_type='credential_registered'
+        ORDER BY credential_id`,
+      [input.tenant.tenantId]
+    );
+    provisionedCredentials = await verificationPool.query(
+      `SELECT actor_id, actor_type, allowed_capabilities, expires_at
+         FROM authentication_credentials
+        WHERE tenant_id=$1
+        ORDER BY actor_id`,
+      [input.tenant.tenantId]
+    );
+  } finally {
+    await verificationPool.end();
+  }
+  assert.equal(invitationEvents.rowCount, 4);
+  assert.equal(
+    invitationEvents.rows.every(({ payload }) =>
+      /^[A-Za-z0-9_-]{43}$/.test(payload.invitationRefHash)),
+    true
+  );
+  assert.equal(JSON.stringify(invitationEvents.rows).includes("invite_"), false);
+  assert.equal(JSON.stringify(invitationEvents.rows).includes("0x111111"), false);
+  assert.equal(JSON.stringify(invitationEvents.rows).includes("m".repeat(43)), false);
+  assert.equal(provisionedCredentials.rowCount, 4);
+  const riskCredential = provisionedCredentials.rows.find(
+    ({ actor_type: actorType }) => actorType === "risk_operator"
+  );
+  assert.ok(riskCredential);
+  assert.equal(
+    riskCredential.allowed_capabilities.includes(
+      "credit_registry.evidence.read.tenant"
+    ),
+    true
+  );
+  assert.ok(new Date(riskCredential.expires_at) > new Date());
+
+  await assert.rejects(
+    () => bootstrapProductionDatabase({
+      ...parameters,
+      config: assertProductionBootstrapConfig({
+        ...input,
+        credentials: input.credentials.map((credential, index) => index === 0
+          ? {
+              ...credential,
+              expiresAt: new Date(Date.now() - 1_000).toISOString()
+            }
+          : credential)
+      })
+    }),
+    (error) => error.code === "invalid_production_bootstrap"
+  );
+  await assert.rejects(
+    () => bootstrapProductionDatabase({
+      ...parameters,
+      config: assertProductionBootstrapConfig({
+        ...input,
+        credentials: input.credentials.map((credential, index) => index === 0
+          ? {
+              ...credential,
+              expiresAt:
+                new Date(Date.now() + 91 * 24 * 60 * 60 * 1_000).toISOString()
+            }
+          : credential)
+      })
+    }),
+    (error) => error.code === "invalid_production_bootstrap"
+  );
 
   await assert.rejects(
     () => bootstrapProductionDatabase({

@@ -21,7 +21,7 @@
       "mcp": {
         "registryVersion": "agent_mcp_registry.v2",
         "transportProfile": "mcp_stdio_local",
-        "toolCount": 11,
+        "toolCount": 12,
         "tools": [
           {
             "name": "ipo_one_read_self",
@@ -66,6 +66,10 @@
           {
             "name": "ipo_one_post_sandbox_repayment",
             "operationId": "pilotPostSandboxRepayment"
+          },
+          {
+            "name": "ipo_one_read_credit_registry_evidence",
+            "operationId": "pilotReadCreditRegistryEvidence"
           }
         ],
         "economicLifecycleToolsIncluded": true
@@ -201,6 +205,10 @@
           {
             "name": "ipo_one_post_sandbox_repayment",
             "operationId": "pilotPostSandboxRepayment"
+          },
+          {
+            "name": "ipo_one_read_credit_registry_evidence",
+            "operationId": "pilotReadCreditRegistryEvidence"
           }
           ]
         },
@@ -213,7 +221,7 @@
       "mcp": {
         "registryVersion": "agent_mcp_registry.v2",
         "transportProfile": "mcp_stdio_local",
-        "toolCount": 11,
+        "toolCount": 12,
         "tools": [
           {
             "name": "ipo_one_read_self",
@@ -258,6 +266,10 @@
           {
             "name": "ipo_one_post_sandbox_repayment",
             "operationId": "pilotPostSandboxRepayment"
+          },
+          {
+            "name": "ipo_one_read_credit_registry_evidence",
+            "operationId": "pilotReadCreditRegistryEvidence"
           }
         ],
         "economicLifecycleToolsIncluded": true
@@ -392,6 +404,10 @@
           {
             "name": "ipo_one_post_sandbox_repayment",
             "operationId": "pilotPostSandboxRepayment"
+          },
+          {
+            "name": "ipo_one_read_credit_registry_evidence",
+            "operationId": "pilotReadCreditRegistryEvidence"
           }
           ]
         },
@@ -404,7 +420,7 @@
       "mcp": {
         "registryVersion": "agent_mcp_registry.v2",
         "transportProfile": "mcp_stdio_local",
-        "toolCount": 11,
+        "toolCount": 12,
         "tools": [
           {
             "name": "ipo_one_read_self",
@@ -449,6 +465,10 @@
           {
             "name": "ipo_one_post_sandbox_repayment",
             "operationId": "pilotPostSandboxRepayment"
+          },
+          {
+            "name": "ipo_one_read_credit_registry_evidence",
+            "operationId": "pilotReadCreditRegistryEvidence"
           }
         ],
         "economicLifecycleToolsIncluded": true

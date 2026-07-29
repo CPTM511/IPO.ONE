@@ -1,7 +1,7 @@
 # IPO.ONE
 
 [![Quality Gate](https://github.com/CPTM511/IPO.ONE/actions/workflows/quality.yml/badge.svg)](https://github.com/CPTM511/IPO.ONE/actions/workflows/quality.yml)
-[![Node 24.18.0](https://img.shields.io/badge/Node-24.18.0-232127)](.node-version)
+[![Node 26.5.0](https://img.shields.io/badge/Node-26.5.0-232127)](.node-version)
 [![OpenAPI 3.1.2](https://img.shields.io/badge/OpenAPI-3.1.2-6d5ddd)](api/openapi/ipo-one.v1.json)
 [![Funds mode](https://img.shields.io/badge/funds-no--real--funds-14875f)](deploy/launch-policy.v1.json)
 
@@ -146,7 +146,7 @@ co-equal adapters over the same application protocol.
 
 ### Prerequisites
 
-- Node.js `24.18.0`
+- Node.js `26.5.0`
 - pnpm `11.1.3`
 - PostgreSQL `17`
 
@@ -164,6 +164,15 @@ Create an empty local PostgreSQL database and start the private product:
 ```sh
 export DATABASE_URL=postgresql://127.0.0.1:5432/ipo_one_private_pilot
 pnpm run pilot:start
+```
+
+For a one-command isolated environment with PostgreSQL 17, the Private Pilot,
+and a separate unsigned worker, use the
+[local multi-container stack](deploy/local/README.md):
+
+```sh
+pnpm run local:up
+pnpm run local:acceptance
 ```
 
 The launcher migrates the database, creates a non-owner `NOBYPASSRLS` runtime

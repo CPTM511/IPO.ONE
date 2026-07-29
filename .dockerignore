@@ -2,6 +2,7 @@
 .github
 .env
 .env.*
+.ipo-one
 .DS_Store
 node_modules
 **/node_modules
@@ -21,3 +22,8 @@ scripts/*
 **/*.test.js
 **/*.test.mjs
 deploy
+!deploy/
+deploy/*
+!deploy/local/
+deploy/local/*
+!deploy/local/private-pilot-profile.v1.json

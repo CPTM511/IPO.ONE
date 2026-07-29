@@ -5,4 +5,5 @@ export * from "./production-tenant-host.js";
 export * from "./tenant-http-adapter.js";
 export * from "./tenant-openapi.js";
 export * from "./tenant-pilot-host.js";
+export * from "./evidence-anchor-http.js";
 export * from "./tenant-web-assets.js";

@@ -127,6 +127,7 @@
         "pilotIncreaseCreditLimit",
         "pilotUnfreezeSubject",
         "pilotReadProviderIntent",
+        "pilotReadCreditRegistryEvidence",
         "pilotAcknowledgeProviderIntent",
         "pilotReadEvidence",
         "pilotReadOwnObligation",
@@ -345,6 +346,9 @@
           "const": "privileged"
         },
         "pilotReadProviderIntent": {
+          "const": "read"
+        },
+        "pilotReadCreditRegistryEvidence": {
           "const": "read"
         },
         "pilotAcknowledgeProviderIntent": {

@@ -19,6 +19,11 @@ import {
 import { ResourceKind } from "../../abuse-control/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
+import {
+  normalizeEconomicActionConfirmation,
+  sha256Json,
+  summarizeEconomicActionConfirmation
+} from "./economic-action-confirmation.js";
 
 const HASH_PATTERN = /^0x[0-9a-f]{64}$/;
 
@@ -30,7 +35,9 @@ function normalizePayload(payload) {
   const keys = ["expectedOfferHash", "expectedTermsHash", "acknowledgementHash"];
   if (
     !payload || typeof payload !== "object" || Array.isArray(payload) ||
-    Object.keys(payload).length !== keys.length || keys.some((key) => !Object.hasOwn(payload, key)) ||
+    Object.keys(payload).length !== keys.length + 1 ||
+    keys.some((key) => !Object.hasOwn(payload, key)) ||
+    !Object.hasOwn(payload, "actionConfirmation") ||
     keys.some((key) => typeof payload[key] !== "string" || !HASH_PATTERN.test(payload[key]))
   ) {
     throw new DomainError("invalid_tenant_command_payload", "Offer acceptance payload is invalid");
@@ -261,6 +268,35 @@ export function acceptCreditOfferCommandHandler() {
       if (offer.creditOfferHash !== input.expectedOfferHash || offer.termsHash !== input.expectedTermsHash) {
         throw new DomainError("offer_terms_mismatch", "Offer or terms hash is stale");
       }
+      const businessPayload = {
+        expectedOfferHash: input.expectedOfferHash,
+        expectedTermsHash: input.expectedTermsHash,
+        acknowledgementHash: input.acknowledgementHash
+      };
+      const actionConfirmation = normalizeEconomicActionConfirmation(
+        input.actionConfirmation,
+        {
+          operationId: "pilotAcceptCreditOffer",
+          resource: {
+            resourceType: "credit_offer",
+            resourceId: offer.creditOfferId
+          },
+          resourceHash: offer.creditOfferHash,
+          payloadHash: sha256Json({
+            expectedOfferHash: offer.creditOfferHash,
+            expectedTermsHash: offer.termsHash,
+            disclosureRef: offer.disclosureRef,
+            sandboxOnly: true,
+            productionFundsAuthority: false
+          }),
+          requestId,
+          authenticationContext,
+          now,
+          businessPayload
+        }
+      );
+      const actionConfirmationSummary =
+        summarizeEconomicActionConfirmation(actionConfirmation);
 
       const intentState = await coreRepository.getProjectionStateInTransaction(
         client,
@@ -388,6 +424,7 @@ export function acceptCreditOfferCommandHandler() {
           authorityType: acceptance.authorityType,
           authorityRef: acceptance.authorityRef,
           actorHash: acceptance.acceptedByActorHash,
+          actionConfirmation: actionConfirmationSummary,
           sandboxOnly: true,
           productionAuthority: false,
           causationId: requestId,
@@ -405,6 +442,7 @@ export function acceptCreditOfferCommandHandler() {
           previousStatus: offer.status,
           nextStatus: acceptedOffer.status,
           actorHash: acceptance.acceptedByActorHash,
+          actionConfirmation: actionConfirmationSummary,
           causationId: requestId,
           correlationId
         },
@@ -430,6 +468,7 @@ export function acceptCreditOfferCommandHandler() {
           sandboxOnly: true,
           productionFundsMoved: false,
           actorHash: acceptance.acceptedByActorHash,
+          actionConfirmation: actionConfirmationSummary,
           causationId: requestId,
           correlationId
         },

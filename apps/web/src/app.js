@@ -13,6 +13,7 @@ import {
 } from "./trading-capital-product-presentation.js";
 import {
   compactDecisionProofHash,
+  compactEvmAddress,
   createHumanDecisionPassportPresentation,
   hasVerifiedHumanDecisionPassport
 } from "./decision-passport-presentation.js";
@@ -37,6 +38,7 @@ import {
 import { createObligationPortfolioPresentation } from "./obligation-portfolio-presentation.js";
 import { createWalletAuthorityLifecycle } from "./wallet-authority-lifecycle.js";
 import { createWalletProviderRegistry } from "./wallet-provider-registry.js";
+import { releaseSelectedWallet } from "./wallet-sign-out.js";
 import {
   V9_DESTINATION_OPERATION_MAP,
   createArchitectureCapabilityPresentation,
@@ -51,14 +53,15 @@ const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD
 const percent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
 const VIEW_META = {
-  overview: { eyebrow: "Authenticated workspace", title: "Overview" },
-  "request-credit": { eyebrow: "Human entry · shared kernel", title: "Request Credit" },
+  overview: { eyebrow: "Unified product home", title: "Overview" },
+  "request-credit": { eyebrow: "Human entry · shared kernel", title: "Credit" },
   "repay-settle": { eyebrow: "Obligation workspace", title: "Repay & Settle" },
   "credit-passport": { eyebrow: "Explainable Decision Evidence", title: "Credit Passport" },
   obligations: { eyebrow: "Shared obligation kernel", title: "Obligations" },
   "agent-console": { eyebrow: "Principal-controlled workspace", title: "Agent Console" },
-  "capital-network": { eyebrow: "Provider sandbox boundary", title: "Capital Network" },
-  "trading-capital": { eyebrow: "Shared Facility · local no-funds", title: "Trading Capital" },
+  "capital-partners": { eyebrow: "Invitation-only preview", title: "Capital Partners" },
+  "capital-network": { eyebrow: "Provider sandbox boundary", title: "Provider Network" },
+  "trading-capital": { eyebrow: "Hyperliquid MVP · local no-funds", title: "Trading Capital" },
   "wallet-permissions": { eyebrow: "Authentication boundary", title: "Wallet & Permissions" },
   "activity-proofs": { eyebrow: "Protocol Evidence", title: "Activity & Proofs" },
   "credit-track-record": { eyebrow: "Evidence-derived record", title: "Credit Track Record" },
@@ -70,10 +73,17 @@ const VIEW_META = {
 let currentView = "overview";
 let interactionMode = "human";
 let humanNewApplicationMode = false;
+let authenticatedDataEpoch = 0;
 let requestLog = [];
 let lastRequestId;
 let serverCatalogOperations = new Set();
 let serverCatalogSnapshot = null;
+let agentAccountBindingPollTimer = null;
+let agentAccountBindingPollDeadline = 0;
+let agentAccountBindingPollAttempts = 0;
+const AGENT_ACCOUNT_BINDING_POLL_INTERVAL_MS = 1_500;
+const AGENT_ACCOUNT_BINDING_POLL_MAX_MS = 5 * 60_000;
+const AGENT_ACCOUNT_BINDING_POLL_MAX_ATTEMPTS = 200;
 const tenantPilot = {
   checked: false,
   connected: false,
@@ -173,7 +183,27 @@ const ownedEvidence = {
   hasMore: false,
   capped: false,
   asOf: null,
-  helper: "Load the redacted immutable Evidence for this exact Obligation.",
+  helper: "Load the redacted PostgreSQL Evidence for this exact Obligation. Evidence digests are integrity checks, not blockchain transactions.",
+  error: false
+};
+const evidenceAnchorPilot = {
+  available: false,
+  busy: false,
+  config: null,
+  obligationId: null,
+  items: [],
+  helper:
+    "Every durable Evidence hash requires a verified Base Sepolia transaction.",
+  error: false
+};
+const creditRegistryEvidence = {
+  catalogAvailable: false,
+  busy: false,
+  queried: false,
+  authorizationHash: null,
+  response: null,
+  helper:
+    "Enter one exact public authorization hash. The authenticated Gateway returns only the bounded synthetic Base Sepolia observation.",
   error: false
 };
 const officialReportPilot = {
@@ -199,7 +229,7 @@ const creditPassportPilot = {
   presentation: null,
   verification: null,
   issueHelper:
-    "Enter exact server-known IDs. The verifier is not discovered or suggested by the browser.",
+    "Complete a current Decision first. IPO.ONE supplies the Subject and application; you supply only the exact verifier.",
   artifactHelper: "No artifact is trusted until an authenticated server read succeeds.",
   verificationHelper:
     "Verification requires the exact authenticated verifier, current same-Tenant Membership, purpose, hash, version, source, and trusted server time.",
@@ -241,6 +271,19 @@ const riskOperations = {
   queueHelper: "Risk or Operations access and recent phishing-resistant MFA are verified on every read.",
   queueError: false
 };
+const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
+  [tenantPilot, structuredClone(tenantPilot)],
+  [capitalNetworkPilot, structuredClone(capitalNetworkPilot)],
+  [tradingCapitalPilot, structuredClone(tradingCapitalPilot)],
+  [pilotFeedback, structuredClone(pilotFeedback)],
+  [agentAuthorityPilot, structuredClone(agentAuthorityPilot)],
+  [auditorEvidence, structuredClone(auditorEvidence)],
+  [ownedEvidence, structuredClone(ownedEvidence)],
+  [creditRegistryEvidence, structuredClone(creditRegistryEvidence)],
+  [officialReportPilot, structuredClone(officialReportPilot)],
+  [creditPassportPilot, structuredClone(creditPassportPilot)],
+  [riskOperations, structuredClone(riskOperations)]
+]);
 const PROTECTIVE_REASON_CODES = new Set([
   "credential_compromise",
   "operator_request",
@@ -279,18 +322,27 @@ const SUPPORTED_WALLET_CHAINS = Object.freeze({
 const accessState = {
   checked: false,
   authEnabled: false,
+  authenticationProfile: null,
   providers: new Set(),
   walletAuthenticationEnabled: false,
   sessionActive: false,
+  localSessionSignedOut: false,
   selectedChainId: 84532,
   connectedChainId: null,
   walletAddress: null,
   walletProviderStatus: "discovering",
   walletProviders: [],
   selectedWalletProviderId: null,
+  pendingWorkspaceBootstrap: false,
   busy: false,
   lastFocused: null,
   helper: "Checking available sign-in methods…"
+};
+const economicActionConfirmation = {
+  pending: null,
+  resolve: null,
+  busy: false,
+  lastFocused: null
 };
 let walletProviderEventCleanup = () => {};
 let walletAuthoritySnapshot;
@@ -349,9 +401,12 @@ function applyWalletAuthoritySnapshot(snapshot) {
       ? "The previous server session is invalid. Start a fresh wallet sign-in to continue."
       : "The server session could not be confirmed invalid. Protected actions remain blocked until invalidation can be retried.";
   if (document.readyState !== "loading") {
+    purgeAuthenticatedBrowserState({
+      reason: "Wallet context changed. Private browser state was cleared."
+    });
     setConnection(false);
     renderAccess();
-    renderTenantPilot();
+    render();
   }
 }
 
@@ -387,6 +442,14 @@ function rememberOpaqueId(key, value) {
   if (!exactResourceId(value)) return;
   try {
     localStorage.setItem(key, value);
+  } catch {
+    // Manual exact-ID entry remains available when browser storage is disabled.
+  }
+}
+
+function forgetOpaqueId(key) {
+  try {
+    localStorage.removeItem(key);
   } catch {
     // Manual exact-ID entry remains available when browser storage is disabled.
   }
@@ -454,6 +517,9 @@ function renderAccess() {
   const selected = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
   const connected = SUPPORTED_WALLET_CHAINS[accessState.connectedChainId];
   const walletAuthority = walletAuthoritySnapshot ?? walletAuthorityLifecycle.getSnapshot();
+  const authenticated = accessState.sessionActive === true;
+  const workspaceVerified = tenantPilot.connected === true;
+  const privateWorkspaceVisible = authenticated && workspaceVerified;
   const googleEnabled = accessState.authEnabled && accessState.providers.has("google");
   const emailEnabled = accessState.authEnabled && accessState.providers.has("email");
   el("googleSignInBtn").disabled = accessState.busy || !googleEnabled;
@@ -471,11 +537,77 @@ function renderAccess() {
   el("connectNetworkBtn").textContent = connected?.chainId === selected.chainId
     ? `${selected.name} connected`
     : `Connect ${selected.name}`;
-  el("accessButtonLabel").textContent = accessState.sessionActive
-    ? "Session active"
-    : accessState.walletAddress
-      ? shortWalletAddress(accessState.walletAddress)
-      : "Sign in";
+  const accessButtonLabel = authenticated
+    ? accessState.pendingWorkspaceBootstrap
+      ? "Finish sign-in"
+      : "Signed in"
+    : "Sign in";
+  el("accessButtonLabel").textContent = accessButtonLabel;
+  el("accessBtn").setAttribute("aria-label", accessButtonLabel);
+  el("accessBtn").title = accessButtonLabel;
+  el("accessBtn").classList.toggle("authenticated", authenticated);
+  document.body.classList.toggle(
+    "private-session-closed",
+    !privateWorkspaceVisible
+  );
+  el("signedOutPrivacyTitle").textContent = authenticated
+    ? "Private workspace unavailable"
+    : "Signed out";
+  el("signedOutPrivacyCopy").textContent = authenticated
+    ? "Authentication is present, but no eligible Tenant workspace is available. No prior private workspace is displayed."
+    : "The account session, wallet connection, and private browser state have been cleared.";
+  el("signedOutPrivacyAction").textContent = authenticated
+    ? "Check account access"
+    : "Sign in";
+  const localSessionEnded =
+    accessState.authenticationProfile === "local_no_funds" &&
+    accessState.localSessionSignedOut;
+  el("topbarSignOutBtn").hidden = !authenticated;
+  el("topbarSignOutBtn").disabled =
+    accessState.busy ||
+    accessState.pendingWorkspaceBootstrap ||
+    !tenantCsrfToken();
+  el("accessSessionPanel").hidden = !authenticated && !localSessionEnded;
+  el("accessMethodPanel").hidden = authenticated || localSessionEnded;
+  el("accessDialogGrid").classList.toggle(
+    "session-active",
+    authenticated || localSessionEnded
+  );
+  el("accessTitleLead").textContent = authenticated
+    ? "Signed in."
+    : localSessionEnded
+      ? "Signed out."
+      : "Sign in. Connect.";
+  el("accessTitleEmphasis").textContent = "Stay in control.";
+  el("accessCopy").textContent = localSessionEnded
+    ? "The local host session ended and authenticated product operations are blocked. Start a fresh local no-funds session only when you are ready to continue."
+    : authenticated
+      ? "Your server session is separate from wallet connection, credit authority, and funds authority. Continue to the workspace or sign out explicitly."
+      : "Choose a familiar account, then connect one approved test network. Identity proves who you are; Principal and Mandate rules still decide what you can do.";
+  el("accessSessionTitle").textContent = localSessionEnded
+    ? "Local session ended"
+    : accessState.pendingWorkspaceBootstrap
+      ? "Authentication verified"
+      : workspaceVerified
+        ? "Workspace session verified"
+        : "You are signed in";
+  el("accessSessionCopy").textContent = localSessionEnded
+    ? "No authenticated operation is available in this page. Reloading explicitly provisions a fresh synthetic local session; it does not restore funds or credit authority."
+    : accessState.pendingWorkspaceBootstrap
+      ? "Wallet authentication succeeded. Continue once to reload the protected shell and bind its CSRF-protected workspace session."
+      : workspaceVerified
+        ? "Tenant identity, role, policy, and CSRF bindings are verified. Product state comes from the authenticated protocol."
+        : "Your host-only authentication session is active. Workspace availability still depends on your server-side role and approved operations.";
+  el("continueAuthenticatedSessionBtn").textContent = localSessionEnded
+    ? "Start fresh local session"
+    : accessState.pendingWorkspaceBootstrap
+      ? "Finish sign-in"
+      : "Continue to workspace";
+  el("signOutBtn").hidden = !authenticated;
+  el("signOutBtn").disabled =
+    accessState.busy ||
+    accessState.pendingWorkspaceBootstrap ||
+    !tenantCsrfToken();
   renderWalletProviders();
   for (const button of document.querySelectorAll("[data-wallet-chain]")) {
     const chainId = Number(button.dataset.walletChain);
@@ -631,12 +763,16 @@ async function probeAccessOptions() {
   try {
     const options = await authJson("/auth/v1/options");
     const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
+    accessState.authenticationProfile =
+      typeof options?.profile === "string" ? options.profile : null;
+    accessState.localSessionSignedOut = false;
     accessState.authEnabled = options?.enabled === true;
     accessState.providers = new Set(Array.isArray(options?.oidcProviders) ? options.oidcProviders : []);
     accessState.walletAuthenticationEnabled = options?.walletAuthentication === true;
     accessState.sessionActive =
       authorityAvailable &&
       (options?.sessionActive === true || tenantPilot.connected);
+    accessState.pendingWorkspaceBootstrap = false;
     if (authorityAvailable) {
       accessState.helper = accessState.sessionActive
         ? "Secure session active. You can connect either approved test network."
@@ -646,6 +782,7 @@ async function probeAccessOptions() {
     }
   } catch {
     accessState.authEnabled = false;
+    accessState.authenticationProfile = null;
     const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
     accessState.sessionActive = authorityAvailable && tenantPilot.connected;
     if (authorityAvailable) {
@@ -744,8 +881,10 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       accessState.sessionActive = true;
+      accessState.pendingWorkspaceBootstrap = true;
       accessState.helper = "Wallet sign-in complete. Your internal roles and Mandates remain server-controlled.";
-      window.location.reload();
+      renderAccess();
+      el("continueAuthenticatedSessionBtn").focus();
     }
   } catch (error) {
     accessState.helper = error?.code === 4001
@@ -764,6 +903,93 @@ function beginOidcSignIn(provider) {
     return;
   }
   window.location.assign(`/auth/v1/login?provider=${encodeURIComponent(provider)}`);
+}
+
+function continueAuthenticatedSession() {
+  if (accessState.localSessionSignedOut) {
+    window.location.reload();
+    return;
+  }
+  if (!accessState.sessionActive) {
+    openAccess();
+    return;
+  }
+  if (accessState.pendingWorkspaceBootstrap) {
+    window.location.reload();
+    return;
+  }
+  closeAccess();
+  el("mainContent").focus({ preventScroll: true });
+  announce(tenantPilot.connected
+    ? "Authenticated workspace ready"
+    : "Signed-in session confirmed; workspace access remains server-controlled");
+}
+
+async function signOutAuthenticatedSession() {
+  if (accessState.busy || !accessState.sessionActive) return;
+  const csrfToken = tenantCsrfToken();
+  if (!csrfToken) {
+    accessState.helper = "Reload the protected workspace before signing out.";
+    renderAccess();
+    return;
+  }
+  accessState.busy = true;
+  accessState.helper = "Signing out of the secure host session…";
+  renderAccess();
+  try {
+    const result = await authJson("/auth/v1/logout", {
+      method: "POST",
+      headers: {
+        "idempotency-key": tenantRequestToken("web_logout"),
+        "x-csrf-token": csrfToken
+      }
+    });
+    if (
+      result?.schemaVersion !== "ipo_one_logout_result.v1" ||
+      result?.status !== "logged_out"
+    ) {
+      throw new Error("The sign-out service returned an invalid result.");
+    }
+    const selectedWalletProvider = walletProviderRegistry.getSelectedProvider();
+    const selectedWalletDescriptor = accessState.walletProviders.find(
+      (item) => item.providerId === accessState.selectedWalletProviderId
+    );
+    accessState.sessionActive = false;
+    accessState.pendingWorkspaceBootstrap = false;
+    accessState.localSessionSignedOut =
+      accessState.authenticationProfile === "local_no_funds";
+    tenantPilot.connected = false;
+    renderAccess();
+    clearWalletProviderEvents();
+    const walletRelease = await releaseSelectedWallet({
+      provider: selectedWalletProvider,
+      source: selectedWalletDescriptor?.source
+    });
+    disposeWalletProviders();
+    purgeAuthenticatedBrowserState({
+      clearAuthenticationBootstrap: true,
+      clearWalletUi: true,
+      reason: "Signed out. Account, wallet, and private browser state were cleared."
+    });
+    accessState.helper = walletRelease.status === "account_permission_revoked" ||
+      walletRelease.status === "wallet_disconnected"
+      ? "Signed out. The account session and wallet connection were released."
+      : "Signed out. IPO.ONE cleared the account, wallet selection, and every private browser value.";
+    setConnection(false);
+    render();
+    renderAccess();
+    if (accessState.localSessionSignedOut) {
+      closeAccess();
+      openAccess();
+    } else {
+      window.location.reload();
+    }
+  } catch (error) {
+    accessState.helper = error?.message ?? "Sign out failed. The current session remains protected.";
+  } finally {
+    accessState.busy = false;
+    renderAccess();
+  }
 }
 
 function asBigInt(value) {
@@ -830,7 +1056,7 @@ function decisionSourceRow(source) {
   proofCell.setAttribute("role", "cell");
   sourceCell.dataset.label = "Source";
   versionCell.dataset.label = "Version";
-  finalityCell.dataset.label = "Finality";
+  finalityCell.dataset.label = "Evidence state";
   proofCell.dataset.label = "Proof";
   sourceCell.textContent = source.label;
   sourceCell.title = source.role;
@@ -918,8 +1144,13 @@ function emptyRow(message) {
 }
 
 function setConnection(online) {
+  const authenticated = accessState.sessionActive === true;
   el("connectionChip").classList.toggle("offline", !online);
-  el("connectionStatus").textContent = online ? "Secure session active" : "Sign-in required";
+  el("connectionStatus").textContent = online
+    ? "Secure session active"
+    : authenticated
+      ? "Signed in · workspace unavailable"
+      : "Sign-in required";
   el("sidebarApiStatus").textContent = online ? "Authenticated" : "Locked";
 }
 
@@ -927,17 +1158,22 @@ function renderRuntimeGate() {
   const gate = el("authenticatedRuntimeGate");
   if (!gate) return;
   const connected = tenantPilot.connected;
+  const authenticated = accessState.sessionActive === true;
   el("authenticatedRuntimeGateStatus").textContent = connected
     ? "Authenticated workspace"
+    : authenticated
+      ? tenantPilot.connectionLabel
     : tenantPilot.checked
       ? tenantPilot.connectionLabel
       : "Verifying secure session";
   el("authenticatedRuntimeGateCopy").textContent = connected
     ? "Tenant identity, role, policy, and CSRF bindings were verified. All product state below comes from the authenticated protocol."
+    : authenticated
+      ? "Your authentication session is active, but this workspace still requires an eligible role, CSRF binding, and the approved Tenant operation catalog."
     : tenantPilot.checked
       ? "Sign in with an approved pilot account. IPO.ONE will not substitute public fixtures or browser state when the secure gateway is unavailable."
       : "Checking the authenticated Tenant catalog and browser session. No product operation is available until verification completes.";
-  el("authenticatedRuntimeGateAction").hidden = connected;
+  el("authenticatedRuntimeGateAction").hidden = connected || authenticated;
   gate.classList.toggle("connected", connected);
   gate.classList.toggle("blocked", tenantPilot.checked && !connected);
 }
@@ -963,9 +1199,208 @@ async function sha256Hex(value) {
     .join("")}`;
 }
 
+function closeEconomicActionConfirmation(result = null) {
+  const resolve = economicActionConfirmation.resolve;
+  const lastFocused = economicActionConfirmation.lastFocused;
+  economicActionConfirmation.pending = null;
+  economicActionConfirmation.resolve = null;
+  economicActionConfirmation.busy = false;
+  economicActionConfirmation.lastFocused = null;
+  el("economicActionLayer").hidden = true;
+  el("economicActionConfirmBtn").disabled = false;
+  el("economicActionConfirmBtn").removeAttribute("aria-busy");
+  if (lastFocused instanceof HTMLElement) lastFocused.focus();
+  if (resolve) resolve(result);
+}
+
+function cancelPendingEconomicAction() {
+  if (!economicActionConfirmation.pending || economicActionConfirmation.busy) return;
+  closeEconomicActionConfirmation(null);
+}
+
+function handleEconomicActionKeys(event) {
+  if (el("economicActionLayer").hidden || event.key !== "Escape") return;
+  event.preventDefault();
+  cancelPendingEconomicAction();
+}
+
+function requestEconomicActionConfirmation({
+  actionType,
+  title,
+  resourceId,
+  resourceHash,
+  payloadHash,
+  requestId,
+  effect
+}) {
+  if (economicActionConfirmation.resolve) {
+    return Promise.reject(new Error("Another action confirmation is already open."));
+  }
+  if (
+    !tenantPilot.connected ||
+    !["accept_offer", "execute_obligation", "post_repayment"].includes(actionType) ||
+    typeof title !== "string" ||
+    !exactResourceId(resourceId) ||
+    !/^0x[0-9a-f]{64}$/.test(resourceHash ?? "") ||
+    !/^0x[0-9a-f]{64}$/.test(payloadHash ?? "") ||
+    !/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(requestId ?? "") ||
+    typeof effect !== "string"
+  ) {
+    return Promise.reject(new Error("The exact sandbox action could not be prepared."));
+  }
+  const provider = walletProviderRegistry.getSelectedProvider();
+  const walletConfirmation = Boolean(accessState.walletAddress && provider);
+  const requestedAt = new Date();
+  const expiresAt = new Date(requestedAt.getTime() + 5 * 60_000);
+  const requestNonce = tenantRequestToken("human_action_confirmation");
+  const message = JSON.stringify({
+    schemaVersion: "human_economic_action_confirmation.v1",
+    actionType,
+    resourceId,
+    resourceHash,
+    payloadHash,
+    requestId,
+    requestNonce,
+    requestedAt: requestedAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    origin: window.location.origin,
+    chainId: "eip155:84532",
+    sandboxOnly: true,
+    realFunds: false,
+    blockchainTransactionSubmitted: false
+  });
+  economicActionConfirmation.pending = {
+    actionType,
+    resourceId,
+    resourceHash,
+    payloadHash,
+    requestId,
+    requestNonce,
+    requestedAt,
+    expiresAt,
+    message,
+    walletConfirmation
+  };
+  economicActionConfirmation.lastFocused =
+    document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  el("economicActionTitle").textContent = title;
+  el("economicActionCopy").textContent = walletConfirmation
+    ? "Your connected wallet will sign the exact five-minute sandbox instruction. Rejecting the wallet request submits nothing."
+    : "Your authenticated account requires an explicit second click for this exact five-minute sandbox instruction.";
+  el("economicActionType").textContent = titleize(actionType);
+  el("economicActionMethod").textContent = walletConfirmation
+    ? `Wallet signature · ${shortWalletAddress(accessState.walletAddress)}`
+    : "Authenticated account confirmation";
+  el("economicActionResource").textContent = resourceId;
+  el("economicActionResource").title = resourceId;
+  el("economicActionEffect").textContent = effect;
+  el("economicActionStatus").textContent = "Nothing has been submitted.";
+  el("economicActionStatus").classList.remove("error");
+  el("economicActionConfirmBtn").textContent = walletConfirmation
+    ? "Confirm in wallet"
+    : "Confirm with account";
+  el("economicActionLayer").hidden = false;
+  requestAnimationFrame(() => el("economicActionConfirmBtn").focus());
+  return new Promise((resolve) => {
+    economicActionConfirmation.resolve = resolve;
+  });
+}
+
+async function confirmPendingEconomicAction() {
+  const pending = economicActionConfirmation.pending;
+  if (!pending || economicActionConfirmation.busy) return;
+  if (new Date() >= pending.expiresAt) {
+    el("economicActionStatus").textContent =
+      "This confirmation expired. Close it and prepare the action again.";
+    el("economicActionStatus").classList.add("error");
+    return;
+  }
+  economicActionConfirmation.busy = true;
+  el("economicActionConfirmBtn").disabled = true;
+  el("economicActionConfirmBtn").setAttribute("aria-busy", "true");
+  el("economicActionStatus").classList.remove("error");
+  try {
+    const messageHash = await sha256Hex(pending.message);
+    let confirmationMethod = "authenticated_account_click";
+    let proofHash = await sha256Hex(JSON.stringify({
+      method: confirmationMethod,
+      messageHash,
+      requestNonce: pending.requestNonce
+    }));
+    if (pending.walletConfirmation) {
+      const provider = walletProviderRegistry.getSelectedProvider();
+      if (!provider || !accessState.walletAddress) {
+        throw new Error("The selected wallet is no longer available.");
+      }
+      walletAuthorityLifecycle.assertProtectedAvailable();
+      const baseSepolia = SUPPORTED_WALLET_CHAINS[84532];
+      await switchWalletChain(provider, baseSepolia);
+      const chainId = Number.parseInt(String(
+        await provider.request({ method: "eth_chainId" })
+      ), 16);
+      const accounts = await provider.request({ method: "eth_accounts" });
+      const currentAddress = Array.isArray(accounts) ? accounts[0] : undefined;
+      if (
+        chainId !== 84532 ||
+        currentAddress?.toLowerCase() !== accessState.walletAddress.toLowerCase()
+      ) {
+        throw new Error("The connected Base Sepolia wallet no longer matches this session.");
+      }
+      el("economicActionStatus").textContent =
+        "Waiting for the exact wallet signature. No transaction or gas fee is requested.";
+      const signature = await provider.request({
+        method: "personal_sign",
+        params: [pending.message, currentAddress]
+      });
+      if (!/^0x[0-9a-fA-F]+$/.test(signature ?? "")) {
+        throw new Error("The wallet returned an invalid signature.");
+      }
+      confirmationMethod = "wallet_personal_sign";
+      proofHash = await sha256Hex(JSON.stringify({
+        method: confirmationMethod,
+        messageHash,
+        signatureHash: await sha256Hex(signature),
+        requestNonce: pending.requestNonce
+      }));
+    }
+    const result = Object.freeze({
+      actionType: pending.actionType,
+      resourceId: pending.resourceId,
+      resourceHash: pending.resourceHash,
+      payloadHash: pending.payloadHash,
+      requestId: pending.requestId,
+      requestNonce: pending.requestNonce,
+      requestedAt: pending.requestedAt.toISOString(),
+      confirmedAt: new Date().toISOString(),
+      expiresAt: pending.expiresAt.toISOString(),
+      confirmationMethod,
+      confirmationHash: proofHash,
+      messageHash,
+      rawSignaturePersisted: false,
+      blockchainTransactionSubmitted: false,
+      schemaVersion: "economic_action_confirmation_result.v1"
+    });
+    closeEconomicActionConfirmation(result);
+  } catch (error) {
+    economicActionConfirmation.busy = false;
+    el("economicActionConfirmBtn").disabled = false;
+    el("economicActionConfirmBtn").removeAttribute("aria-busy");
+    el("economicActionStatus").textContent = Number(error?.code) === 4001
+      ? "Wallet confirmation was rejected. Nothing was submitted."
+      : error?.message ?? "Action confirmation failed. Nothing was submitted.";
+    el("economicActionStatus").classList.add("error");
+  }
+}
+
 function tenantCsrfToken() {
   const token = document.querySelector('meta[name="ipo-one-csrf-token"]')?.content ?? "";
   return /^[A-Za-z0-9_-]{32,128}$/.test(token) ? token : undefined;
+}
+
+function localPilotAgentAccount() {
+  const account =
+    document.querySelector('meta[name="ipo-one-local-agent-account"]')?.content ?? "";
+  return /^0x[a-fA-F0-9]{40}$/.test(account) ? account : undefined;
 }
 
 async function tenantApi(operationId, {
@@ -979,6 +1414,7 @@ async function tenantApi(operationId, {
   idempotencyKey,
   includeTransportMeta = false
 } = {}) {
+  const requestDataEpoch = authenticatedDataEpoch;
   walletAuthorityLifecycle.assertProtectedAvailable();
   const csrfToken = tenantCsrfToken();
   if (!csrfToken) throw new Error("The authenticated Human session is missing its CSRF bootstrap token.");
@@ -1017,6 +1453,12 @@ async function tenantApi(operationId, {
 
   const responseRequestId = response.headers.get("x-request-id") ?? requestId;
   const text = await response.text();
+  if (requestDataEpoch !== authenticatedDataEpoch) {
+    throw Object.assign(
+      new Error("The authenticated session ended before this response completed."),
+      { code: "authenticated_session_ended", requestId: responseRequestId }
+    );
+  }
   let result;
   try {
     result = text ? JSON.parse(text) : undefined;
@@ -1038,6 +1480,67 @@ async function tenantApi(operationId, {
   return includeTransportMeta
     ? Object.freeze({ correlationId, requestId: responseRequestId, result })
     : result;
+}
+
+async function evidenceAnchorApi(path, { body, method = "POST" } = {}) {
+  const requestDataEpoch = authenticatedDataEpoch;
+  walletAuthorityLifecycle.assertProtectedAvailable();
+  const requestId = tenantRequestToken("web_chain_request");
+  const headers = {
+    accept: "application/json, application/problem+json",
+    "x-request-id": requestId
+  };
+  if (method === "POST") {
+    const csrfToken = tenantCsrfToken();
+    if (!csrfToken) {
+      throw new Error(
+        "The authenticated session is missing its CSRF bootstrap token."
+      );
+    }
+    headers["content-type"] = "application/json";
+    headers["x-csrf-token"] = csrfToken;
+  }
+  const response = await fetch(path, {
+    method,
+    credentials: "same-origin",
+    headers,
+    ...(body === undefined ? {} : { body: JSON.stringify(body) })
+  });
+  const responseRequestId = response.headers.get("x-request-id") ?? requestId;
+  const text = await response.text();
+  if (requestDataEpoch !== authenticatedDataEpoch) {
+    throw Object.assign(
+      new Error("The authenticated session ended before this response completed."),
+      { code: "authenticated_session_ended", requestId: responseRequestId }
+    );
+  }
+  let result;
+  try {
+    result = text ? JSON.parse(text) : undefined;
+  } catch {
+    throw Object.assign(
+      new Error("The Evidence anchor service returned an invalid response."),
+      { requestId: responseRequestId }
+    );
+  }
+  recordRequest({
+    method,
+    path,
+    status: response.status,
+    requestId: responseRequestId
+  });
+  if (!response.ok) {
+    throw Object.assign(
+      new Error(result?.detail ?? "The Evidence anchor request was rejected."),
+      {
+        code: result?.code ?? "evidence_anchor_unavailable",
+        status: response.status,
+        requestId: result?.requestId ?? responseRequestId
+      }
+    );
+  }
+  walletAuthorityLifecycle.assertProtectedAvailable();
+  return result;
 }
 
 function usdMinorToMoney(value) {
@@ -1078,6 +1581,81 @@ function forgetOwnedObligationId() {
   }
 }
 
+function restoreAuthenticatedStateObject(target, baseline) {
+  for (const key of Object.keys(target)) {
+    if (!Object.hasOwn(baseline, key)) delete target[key];
+  }
+  Object.assign(target, structuredClone(baseline));
+}
+
+function purgeAuthenticatedBrowserState({
+  clearAuthenticationBootstrap = false,
+  clearWalletUi = false,
+  reason = "Private browser state was cleared."
+} = {}) {
+  authenticatedDataEpoch += 1;
+  stopAgentAccountBindingPolling();
+  humanNewApplicationMode = false;
+  requestLog = [];
+  lastRequestId = undefined;
+  serverCatalogOperations = new Set();
+  serverCatalogSnapshot = null;
+  agentAccountBindingPollDeadline = 0;
+  agentAccountBindingPollAttempts = 0;
+  for (const [target, baseline] of AUTHENTICATED_BROWSER_STATE_BASELINES) {
+    restoreAuthenticatedStateObject(target, baseline);
+  }
+  tenantPilot.checked = true;
+  tenantPilot.connected = false;
+  tenantPilot.connectionLabel = "Signed out";
+  tenantPilot.helper = reason;
+  tenantPilot.workspaceRecoveryState = "denied";
+  forgetOwnedObligationId();
+  for (const key of [
+    HUMAN_SUBJECT_STORAGE_KEY,
+    HUMAN_CONSENT_STORAGE_KEY,
+    AGENT_SUBJECT_STORAGE_KEY
+  ]) {
+    forgetOpaqueId(key);
+  }
+  const localAgentAccount = document.querySelector(
+    'meta[name="ipo-one-local-agent-account"]'
+  );
+  if (localAgentAccount) localAgentAccount.content = "";
+  if (clearAuthenticationBootstrap) {
+    const csrf = document.querySelector('meta[name="ipo-one-csrf-token"]');
+    if (csrf) csrf.content = "";
+  }
+  for (const form of document.querySelectorAll("#mainContent form")) {
+    form.reset();
+  }
+  for (const input of document.querySelectorAll("#mainContent input")) {
+    if (new Set(["button", "reset", "submit"]).has(input.type)) continue;
+    if (new Set(["checkbox", "radio"]).has(input.type)) {
+      input.checked = false;
+    } else {
+      input.value = "";
+    }
+  }
+  for (const textarea of document.querySelectorAll("#mainContent textarea")) {
+    textarea.value = "";
+  }
+  for (const detail of document.querySelectorAll("#mainContent details[open]")) {
+    detail.open = false;
+  }
+  window.clearTimeout(toast.timer);
+  el("toast").textContent = "";
+  el("toast").classList.remove("show", "error");
+  announce(reason);
+  if (clearWalletUi) {
+    accessState.walletAddress = null;
+    accessState.connectedChainId = null;
+    accessState.walletProviders = [];
+    accessState.selectedWalletProviderId = null;
+    accessState.walletProviderStatus = "disposed";
+  }
+}
+
 function resetHumanObligationWorkflow() {
   tenantPilot.obligationReceipt = null;
   tenantPilot.obligationWorkflowId = null;
@@ -1103,8 +1681,16 @@ function resetHumanObligationWorkflow() {
   ownedEvidence.hasMore = false;
   ownedEvidence.capped = false;
   ownedEvidence.asOf = null;
-  ownedEvidence.helper = "Load the redacted immutable Evidence for this exact Obligation.";
+  ownedEvidence.helper = "Load the redacted PostgreSQL Evidence for this exact Obligation. Evidence digests are integrity checks, not blockchain transactions.";
   ownedEvidence.error = false;
+  evidenceAnchorPilot.available = false;
+  evidenceAnchorPilot.busy = false;
+  evidenceAnchorPilot.config = null;
+  evidenceAnchorPilot.obligationId = null;
+  evidenceAnchorPilot.items = [];
+  evidenceAnchorPilot.helper =
+    "Every durable Evidence hash requires a verified Base Sepolia transaction.";
+  evidenceAnchorPilot.error = false;
 }
 
 function requestedCreditTerms() {
@@ -1768,8 +2354,8 @@ function renderAgentMcpHandoff() {
   el("mcpHandoffBoundaryNote").textContent = applicationReady
     ? "Application tools are Ready. Evidence and the three sandbox economic tools stay Locked until Principal activation; credentials and authority are never carried in this packet."
     : runtimeReady
-      ? "Eleven local Agent operations are Ready, including exact owned Obligation state, Evidence, and three no-funds economic commands. Every call remains Host-, Tenant-, and Mandate-bound."
-      : "This non-authorizing packet advertises eleven local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority remain outside the packet.";
+      ? "Twelve local Agent operations are Ready, including exact owned Obligation state, Registry Evidence, and three no-funds economic commands. Every call remains Host-, Tenant-, and Mandate-bound."
+      : "This non-authorizing packet advertises twelve local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority remain outside the packet.";
   el("agentHandoffPhase").textContent = applicationReady
     ? "Application handoff"
     : runtimeReady
@@ -1791,7 +2377,7 @@ function renderAgentMcpHandoff() {
     status.textContent = !ready
       ? "Waiting"
       : status.dataset.mcpToolStatus === "identity"
-        ? agentAuthorityPilot.accountBinding
+        ? agentAuthorityPilot.accountBinding?.accountBinding
           ? "Verified"
           : "Ready"
       : status.dataset.mcpToolStatus === "application"
@@ -1859,12 +2445,12 @@ function renderAgentAuthorityPilot() {
   el("agentAuthorityStatus").textContent = statusLabel;
   el("agentAuthorityStatus").classList.toggle("neutral", !mandate || mandate.status !== "active");
   el("agentAuthorityStatus").classList.toggle("warning", subjectPending);
-  el("agentAccountChallengeStatus").textContent = challengeExpired
-    ? "Expired · create a new request"
-    : challenge
-    ? `Open · ${new Intl.DateTimeFormat("en-US", { timeStyle: "short" }).format(new Date(challenge.expiresAt))}`
-    : accountBound
-      ? "Consumed"
+  el("agentAccountChallengeStatus").textContent = accountBound
+    ? "Consumed"
+    : challengeExpired
+      ? "Expired · create a new request"
+      : challenge
+        ? `Open · ${new Intl.DateTimeFormat("en-US", { timeStyle: "short" }).format(new Date(challenge.expiresAt))}`
       : "Not created";
   el("agentAccountAgentAction").textContent = accountBound
     ? "Proof verified"
@@ -2722,8 +3308,8 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
   actionButton.disabled = tenantPilot.busy || !tenantPilot.connected ||
     !presentation.repaymentAvailable || !validServicingRepaymentInput();
   actionButton.lastChild.textContent = presentation.cureAvailable
-    ? "Pay past due & cure"
-    : "Post sandbox repayment";
+    ? "Confirm past due cure"
+    : "Confirm sandbox repayment";
 
   const scheduleItems = presentation.installments.map((installment) =>
     privateCheckpoint(
@@ -2741,8 +3327,11 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
 }
 
 function syncPrivateViewMeta() {
+  if (currentView === "overview") {
+    el("viewEyebrow").textContent = VIEW_META.overview.eyebrow;
+    return;
+  }
   if (![
-    "overview",
     "obligations",
     "repay-settle",
     "activity-proofs",
@@ -3109,8 +3698,8 @@ function renderPrivateProductSurfaces() {
 
   el("privatePortfolioMode").textContent = humanMode ? "Human entry" : "Agent entry";
   el("privatePortfolioCopy").textContent = humanMode
-    ? "Continue the Human no-funds lifecycle without leaving the authenticated private session."
-    : "Carry Principal-approved identity and bounded authority into the same Obligation kernel through the approved local Agent Host.";
+    ? "Choose Credit, Trading Capital, or the Capital Partners preview while your Human identity stays on the shared Obligation kernel."
+    : "Choose Credit, Trading Capital, or the Capital Partners preview while Principal-approved Agent authority stays bounded to the shared kernel.";
   el("privatePortfolioLifecycle").textContent = humanMode ? humanStatus : agentStatus;
   el("privatePortfolioOutstanding").textContent = obligation
     ? usdMinorToMoney(obligation.outstandingPrincipalMinor)
@@ -3422,14 +4011,33 @@ function renderCreditPassportPilot() {
   const connected = tenantPilot.connected;
   const subjectInput = el("creditPassportSubjectId");
   const intentInput = el("creditPassportIntentId");
-  if (!subjectInput.value && tenantPilot.decision?.subjectId) {
-    subjectInput.value = tenantPilot.decision.subjectId;
-  }
-  if (!intentInput.value && tenantPilot.intent?.creditIntentId) {
-    intentInput.value = tenantPilot.intent.creditIntentId;
+  subjectInput.value = tenantPilot.decision?.subjectId ?? "";
+  intentInput.value = tenantPilot.intent?.creditIntentId ?? "";
+  el("creditPassportSubjectSource").textContent =
+    tenantPilot.decision?.subjectId ?? "Not loaded";
+  el("creditPassportSubjectSource").title =
+    tenantPilot.decision?.subjectId ?? "";
+  el("creditPassportIntentSource").textContent =
+    tenantPilot.intent?.creditIntentId ?? "Not loaded";
+  el("creditPassportIntentSource").title =
+    tenantPilot.intent?.creditIntentId ?? "";
+  const currentDecisionSource =
+    exactResourceId(subjectInput.value) &&
+    exactResourceId(intentInput.value) &&
+    hasVerifiedHumanDecisionPassport(tenantPilot.decision);
+  el("creditPassportIssueForm").closest(".credit-passport-issue-card")
+    ?.classList.toggle("unavailable", !currentDecisionSource);
+  for (const control of el("creditPassportIssueForm").querySelectorAll(
+    'input:not([type="hidden"]), select'
+  )) {
+    control.disabled = busy || !connected || !currentDecisionSource;
   }
 
-  el("creditPassportIssueHelper").textContent = creditPassportPilot.issueHelper;
+  el("creditPassportIssueHelper").textContent = currentDecisionSource
+    ? creditPassportPilot.issueHelper
+    : tenantPilot.connected
+      ? "Open Decision Passport and complete one current evaluation before sharing any facts."
+      : "Sign in and complete one current evaluation before sharing any facts.";
   el("creditPassportIssueHelper").classList.toggle("error", creditPassportPilot.error);
   el("creditPassportArtifactHelper").textContent = creditPassportPilot.artifactHelper;
   el("creditPassportArtifactHelper").classList.toggle("error", creditPassportPilot.error);
@@ -4155,15 +4763,19 @@ function renderTenantPilot() {
   const obligationRepaid = obligation?.status === "fully_repaid";
   const passportVerified = renderDecisionPassport(decision);
   if (offer && !reviewState.current) el("humanOfferAcknowledge").checked = false;
-  el("humanApplicationStatus").textContent = offerAccepted
-    ? "Obligation created"
-    : offer
-      ? "Offer ready"
-    : decision
-      ? titleize(decision.status)
-      : intent
-        ? "Intent submitted"
-        : "Not started";
+  el("humanApplicationStatus").textContent = obligationRepaid
+    ? "Lifecycle complete"
+    : obligationExecuted
+      ? "Sandbox active"
+      : offerAccepted
+        ? "Obligation created"
+        : offer
+          ? "Offer ready"
+          : decision
+            ? titleize(decision.status)
+            : intent
+              ? "Intent submitted"
+              : "Not started";
   el("humanDecisionStatus").textContent = decision ? titleize(decision.status) : "Pending";
   el("humanOfferPrincipal").textContent = offer ? usdMinorToMoney(offer.approvedPrincipalMinor) : "—";
   el("humanOfferRate").textContent = offer ? bpsToPercent(offer.annualRateBps) : "—";
@@ -4227,12 +4839,12 @@ function renderTenantPilot() {
     ? "Offer accepted"
     : tenantPilot.busy
       ? "Accepting exact Offer…"
-      : "Review & accept Offer";
+      : "Confirm & create sandbox Obligation";
 
   const obligationCard = el("humanObligationCard");
   obligationCard.hidden = !obligation;
   el("humanObligationExecution").textContent = obligation
-    ? `${titleize(obligation.executionStatus)} execution`
+    ? titleize(obligation.executionStatus)
     : "Pending execution";
   el("humanObligationStatus").textContent = obligation ? titleize(obligation.status) : "Created";
   el("humanObligationServicing").textContent = obligation
@@ -4260,12 +4872,17 @@ function renderTenantPilot() {
   el("executeHumanObligationBtn").disabled =
     privateBusy || !tenantPilot.connected || !obligation || obligationExecuted;
   el("executeHumanObligationBtn").textContent = obligationExecuted
-    ? "Sandbox credit active"
+    ? obligationRepaid
+      ? "Lifecycle complete"
+      : "Sandbox credit active"
     : tenantPilot.busy
       ? "Executing signed sandbox credit…"
-      : "Execute sandbox credit";
+      : "Confirm sandbox execution";
   el("postHumanRepaymentBtn").disabled =
     privateBusy || !tenantPilot.connected || !obligationExecuted || obligationRepaid;
+  el("postHumanRepaymentBtn").textContent = tenantPilot.busy
+    ? "Confirming sandbox repayment…"
+    : "Confirm sandbox repayment";
   const repayment = tenantPilot.repayment;
   el("humanRepaymentAllocation").textContent = repayment
     ? `Applied ${usdMinorToMoney(repayment.appliedMinor)} · interest ${usdMinorToMoney(repayment.appliedInterestMinor)} · principal ${usdMinorToMoney(repayment.appliedPrincipalMinor)}${BigInt(repayment.surplusMinor) > 0n ? ` · surplus ${usdMinorToMoney(repayment.surplusMinor)} not posted` : ""}`
@@ -4320,6 +4937,12 @@ async function runTenantAction(button, operation, successMessage) {
     toast(successMessage);
     announce(successMessage);
   } catch (error) {
+    if (error?.code === "user_action_cancelled") {
+      tenantPilot.helper = "Action cancelled. Nothing was submitted.";
+      toast(tenantPilot.helper);
+      announce(tenantPilot.helper);
+      return;
+    }
     const requestSuffix = error.requestId ? ` Request ID: ${error.requestId}` : "";
     tenantPilot.helper = `${error.message}${requestSuffix}`;
     toast(tenantPilot.helper, "error");
@@ -4856,7 +5479,12 @@ async function recoverAuthenticatedWorkspace() {
 }
 
 async function probeTenantPilot() {
-  if (accessState.checked && !accessState.authEnabled) {
+  if (
+    accessState.checked &&
+    !accessState.authEnabled &&
+    !accessState.walletAuthenticationEnabled &&
+    !tenantCsrfToken()
+  ) {
     tenantPilot.connectionLabel = "Private access not enabled";
     tenantPilot.workspaceRecoveryState = "unavailable";
     tenantPilot.workspaceRecoveryErrorCode = "authentication_unavailable";
@@ -4908,6 +5536,8 @@ async function probeTenantPilot() {
     serverCatalogOperations = available;
     auditorEvidence.catalogAvailable = available.has("pilotReadEvidence");
     ownedEvidence.catalogAvailable = available.has("pilotReadOwnObligationEvidence");
+    creditRegistryEvidence.catalogAvailable =
+      available.has("pilotReadCreditRegistryEvidence");
     creditPassportPilot.createAvailable =
       available.has("pilotCreateCreditPassportArtifact");
     creditPassportPilot.readAvailable =
@@ -4934,6 +5564,12 @@ async function probeTenantPilot() {
     const operationsAvailable = [...requiredOperations].every((operationId) => available.has(operationId));
     const csrfReady = Boolean(tenantCsrfToken());
     tenantPilot.connected = operationsAvailable && csrfReady;
+    if (tenantPilot.connected) {
+      accessState.sessionActive = true;
+      accessState.pendingWorkspaceBootstrap = false;
+      accessState.helper =
+        "Secure session active. Product access remains bound to the authenticated Tenant role and catalog.";
+    }
     tenantPilot.connectionLabel = tenantPilot.connected
       ? "Private gateway connected"
       : operationsAvailable
@@ -4988,6 +5624,7 @@ async function probeTenantPilot() {
     serverCatalogSnapshot = null;
     auditorEvidence.catalogAvailable = false;
     ownedEvidence.catalogAvailable = false;
+    creditRegistryEvidence.catalogAvailable = false;
     tenantPilot.obligationReadAvailable = false;
     pilotFeedback.catalogAvailable = false;
     riskOperations.readCatalogAvailable = false;
@@ -5001,6 +5638,7 @@ async function probeTenantPilot() {
     officialReportPilot.revokeAvailable = false;
   } finally {
     tenantPilot.checked = true;
+    renderAccess();
     renderTenantPilot();
     renderAuditorEvidence();
     renderRiskOperations();
@@ -5079,6 +5717,8 @@ async function createHumanConsent() {
 function startAnotherHumanApplication() {
   if (tenantPilot.busy || !tenantPilot.obligation) return;
   humanNewApplicationMode = true;
+  el("humanConsentId").value = "";
+  forgetOpaqueId(HUMAN_CONSENT_STORAGE_KEY);
   tenantPilot.intent = null;
   tenantPilot.decision = null;
   tenantPilot.offer = null;
@@ -5092,7 +5732,8 @@ function startAnotherHumanApplication() {
   tenantPilot.repaymentStep = null;
   tenantPilot.acceptance = null;
   el("humanOfferAcknowledge").checked = false;
-  tenantPilot.helper = "Current position preserved. Submit another scoped no-funds credit request when ready.";
+  tenantPilot.helper =
+    "Current position preserved. Create a fresh scoped Consent for this new request.";
   renderTenantPilot();
   focusJumpTarget(el("humanApplication"));
 }
@@ -5117,12 +5758,24 @@ async function requestAndEvaluateHumanCredit() {
         correlationId,
         includeTransportMeta: true
       });
-      const requestResult = await tenantApi("pilotRequestCredit", {
-        resource: { resourceType: "subject", resourceId: subjectId },
-        payload: { authorityId, ...creditRequest },
-        correlationId,
-        includeTransportMeta: true
-      });
+      let requestResult;
+      try {
+        requestResult = await tenantApi("pilotRequestCredit", {
+          resource: { resourceType: "subject", resourceId: subjectId },
+          payload: { authorityId, ...creditRequest },
+          correlationId,
+          includeTransportMeta: true
+        });
+      } catch (error) {
+        if (error.code !== "credit_intent_already_exists") throw error;
+        const duplicate = new Error(
+          "This scoped Consent already created an equivalent Credit Intent. Create a fresh scoped Consent for the new request."
+        );
+        duplicate.code = error.code;
+        duplicate.status = error.status;
+        duplicate.requestId = error.requestId;
+        throw duplicate;
+      }
       tenantPilot.intent = requestResult.result.response.creditIntent;
       tenantPilot.decision = null;
       tenantPilot.offer = null;
@@ -5187,29 +5840,57 @@ async function acceptHumanCreditOffer() {
       if (!el("humanOfferAcknowledge").checked) {
         throw new Error("Review and acknowledge the exact sandbox Offer terms first.");
       }
+      const workflowId = tenantPilot.obligationWorkflowId ??
+        tenantRequestToken("human_obligation_workflow");
+      const correlationId = tenantPilot.obligationCorrelationId ??
+        humanObligationWorkflowIdentifier(workflowId, "correlation", "credit");
+      const requestId =
+        humanObligationWorkflowIdentifier(workflowId, "request", "01");
+      tenantPilot.obligationWorkflowId = workflowId;
+      tenantPilot.obligationCorrelationId = correlationId;
+      const actionPayloadHash = await sha256Hex(JSON.stringify({
+        expectedOfferHash: offer.creditOfferHash,
+        expectedTermsHash: offer.termsHash,
+        disclosureRef: offer.disclosureRef,
+        sandboxOnly: true,
+        productionFundsAuthority: false
+      }));
+      const actionConfirmation = await requestEconomicActionConfirmation({
+        actionType: "accept_offer",
+        title: "Create sandbox Obligation",
+        resourceId: offer.creditOfferId,
+        resourceHash: offer.creditOfferHash,
+        payloadHash: actionPayloadHash,
+        requestId,
+        effect: `${usdMinorToMoney(offer.approvedPrincipalMinor)} synthetic principal · no real funds`
+      });
+      if (!actionConfirmation) {
+        throw Object.assign(
+          new Error("Action cancelled. Nothing was submitted."),
+          { code: "user_action_cancelled" }
+        );
+      }
       const acknowledgementHash = await sha256Hex(JSON.stringify({
         acknowledgementVersion: "human_credit_offer_acknowledgement.v1",
         creditOfferHash: offer.creditOfferHash,
         termsHash: offer.termsHash,
         disclosureRef: offer.disclosureRef,
+        actionConfirmationMethod: actionConfirmation.confirmationMethod,
+        actionConfirmationHash: actionConfirmation.confirmationHash,
+        actionConfirmationMessageHash: actionConfirmation.messageHash,
         sandboxOnly: true,
         productionFundsAuthority: false
       }));
-      const workflowId = tenantPilot.obligationWorkflowId ??
-        tenantRequestToken("human_obligation_workflow");
-      const correlationId = tenantPilot.obligationCorrelationId ??
-        humanObligationWorkflowIdentifier(workflowId, "correlation", "credit");
-      tenantPilot.obligationWorkflowId = workflowId;
-      tenantPilot.obligationCorrelationId = correlationId;
       const step = await tenantApi("pilotAcceptCreditOffer", {
         resource: { resourceType: "credit_offer", resourceId: offer.creditOfferId },
         payload: {
           expectedOfferHash: offer.creditOfferHash,
           expectedTermsHash: offer.termsHash,
-          acknowledgementHash
+          acknowledgementHash,
+          actionConfirmation
         },
         correlationId,
-        requestId: humanObligationWorkflowIdentifier(workflowId, "request", "01"),
+        requestId,
         idempotencyKey: humanObligationWorkflowIdentifier(workflowId, "idempotency", "01"),
         includeTransportMeta: true
       });
@@ -5256,11 +5937,35 @@ async function executeHumanSandboxObligation() {
       tenantPilot.obligationWorkflowId = workflowId;
       tenantPilot.obligationCorrelationId ??=
         humanObligationWorkflowIdentifier(workflowId, "correlation", "execution");
+      const requestId =
+        humanObligationWorkflowIdentifier(workflowId, "request", "02");
+      const actionPayloadHash = await sha256Hex(JSON.stringify({
+        obligationHash: obligation.obligationHash,
+        amountMinor: obligation.originalPrincipalMinor,
+        sandboxRail: "signed_non_redeemable",
+        withdrawable: false,
+        productionFundsMoved: false
+      }));
+      const actionConfirmation = await requestEconomicActionConfirmation({
+        actionType: "execute_obligation",
+        title: "Execute sandbox Obligation",
+        resourceId: obligation.obligationId,
+        resourceHash: obligation.obligationHash,
+        payloadHash: actionPayloadHash,
+        requestId,
+        effect: `${usdMinorToMoney(obligation.originalPrincipalMinor)} synthetic ledger execution`
+      });
+      if (!actionConfirmation) {
+        throw Object.assign(
+          new Error("Action cancelled. Nothing was submitted."),
+          { code: "user_action_cancelled" }
+        );
+      }
       const step = await tenantApi("pilotExecuteSandboxObligation", {
         resource: { resourceType: "obligation", resourceId: obligation.obligationId },
-        payload: {},
+        payload: { actionConfirmation },
         correlationId: tenantPilot.obligationCorrelationId,
-        requestId: humanObligationWorkflowIdentifier(workflowId, "request", "02"),
+        requestId,
         idempotencyKey: humanObligationWorkflowIdentifier(workflowId, "idempotency", "02"),
         includeTransportMeta: true
       });
@@ -5279,6 +5984,7 @@ async function executeHumanSandboxObligation() {
         obligationId: result.response.obligation.obligationId,
         quiet: true
       });
+      await loadOwnedEvidence();
     },
     "Signed sandbox execution completed. The principal ledger entry is balanced and no withdrawable funds were created."
   );
@@ -5300,6 +6006,8 @@ async function postHumanSandboxRepayment({
       if (!Number.isFinite(amount) || amount <= 0 || amount > 1000) {
         throw new Error("Repayment must be greater than $0 and no more than $1,000 in the sandbox.");
       }
+      const amountMinor = String(Math.round(amount * 100));
+      const sourceCode = el(sourceInputId).value;
       const workflowId = tenantPilot.obligationWorkflowId ??
         tenantRequestToken("human_obligation_servicing_workflow");
       tenantPilot.obligationWorkflowId = workflowId;
@@ -5307,14 +6015,39 @@ async function postHumanSandboxRepayment({
         humanObligationWorkflowIdentifier(workflowId, "correlation", "servicing");
       const nextRepaymentSequence = tenantPilot.repaymentSequence + 1;
       const repaymentStepId = `03-${String(nextRepaymentSequence).padStart(2, "0")}`;
+      const requestId =
+        humanObligationWorkflowIdentifier(workflowId, "request", repaymentStepId);
+      const actionPayloadHash = await sha256Hex(JSON.stringify({
+        obligationHash: obligation.obligationHash,
+        amountMinor,
+        sourceCode,
+        waterfall: "fee_interest_principal",
+        productionFundsMoved: false
+      }));
+      const actionConfirmation = await requestEconomicActionConfirmation({
+        actionType: "post_repayment",
+        title: "Post sandbox repayment",
+        resourceId: obligation.obligationId,
+        resourceHash: obligation.obligationHash,
+        payloadHash: actionPayloadHash,
+        requestId,
+        effect: `${usdMinorToMoney(amountMinor)} synthetic repayment · ${titleize(sourceCode)}`
+      });
+      if (!actionConfirmation) {
+        throw Object.assign(
+          new Error("Action cancelled. Nothing was submitted."),
+          { code: "user_action_cancelled" }
+        );
+      }
       const step = await tenantApi("pilotPostSandboxRepayment", {
         resource: { resourceType: "obligation", resourceId: obligation.obligationId },
         payload: {
-          amountMinor: String(Math.round(amount * 100)),
-          sourceCode: el(sourceInputId).value
+          amountMinor,
+          sourceCode,
+          actionConfirmation
         },
         correlationId: tenantPilot.obligationCorrelationId,
-        requestId: humanObligationWorkflowIdentifier(workflowId, "request", repaymentStepId),
+        requestId,
         idempotencyKey: humanObligationWorkflowIdentifier(
           workflowId,
           "idempotency",
@@ -5347,12 +6080,14 @@ async function postHumanSandboxRepayment({
         obligationId: result.response.obligation.obligationId,
         quiet: true
       });
+      await loadOwnedEvidence();
     },
     "Sandbox repayment posted through the deterministic fee, interest, and principal waterfall."
   );
 }
 
 async function createPrivateAgentSubject() {
+  stopAgentAccountBindingPolling();
   await runAgentAuthorityAction(
     el("createPrivateAgentSubjectBtn"),
     async () => {
@@ -5407,9 +6142,91 @@ async function createAgentAccountChallenge() {
       });
       agentAuthorityPilot.accountChallenge = result.response;
       agentAuthorityPilot.accountBinding = null;
+      startAgentAccountBindingPolling();
     },
     "One-use EIP-712 request created. Download it and run pilot:agent:prove before creating the Mandate."
   );
+}
+
+function stopAgentAccountBindingPolling() {
+  if (agentAccountBindingPollTimer !== null) {
+    window.clearTimeout(agentAccountBindingPollTimer);
+    agentAccountBindingPollTimer = null;
+  }
+  agentAccountBindingPollDeadline = 0;
+  agentAccountBindingPollAttempts = 0;
+}
+
+function scheduleAgentAccountBindingPoll() {
+  if (agentAccountBindingPollTimer !== null) return;
+  agentAccountBindingPollTimer = window.setTimeout(
+    pollAgentAccountBinding,
+    AGENT_ACCOUNT_BINDING_POLL_INTERVAL_MS
+  );
+}
+
+function startAgentAccountBindingPolling() {
+  stopAgentAccountBindingPolling();
+  const challengeExpiry = new Date(
+    agentAuthorityPilot.accountChallenge?.expiresAt ?? ""
+  ).getTime();
+  agentAccountBindingPollDeadline = Math.min(
+    Number.isFinite(challengeExpiry) ? challengeExpiry : Number.POSITIVE_INFINITY,
+    Date.now() + AGENT_ACCOUNT_BINDING_POLL_MAX_MS
+  );
+  scheduleAgentAccountBindingPoll();
+}
+
+async function pollAgentAccountBinding() {
+  agentAccountBindingPollTimer = null;
+  const challenge = agentAuthorityPilot.accountChallenge;
+  const subjectId = tenantInputValue("agentAuthoritySubjectId");
+  const expired =
+    Date.now() >= agentAccountBindingPollDeadline ||
+    agentAccountBindingPollAttempts >= AGENT_ACCOUNT_BINDING_POLL_MAX_ATTEMPTS;
+  if (
+    expired || !tenantPilot.connected || !challenge ||
+    challenge.subjectId !== subjectId ||
+    agentAuthorityPilot.accountBinding?.accountBinding
+  ) {
+    stopAgentAccountBindingPolling();
+    return;
+  }
+  if (document.visibilityState === "hidden" || tenantPilot.busy || agentAuthorityPilot.busy) {
+    scheduleAgentAccountBindingPoll();
+    return;
+  }
+  agentAccountBindingPollAttempts += 1;
+  try {
+    const result = await tenantApi("pilotReadAgentAccountBinding", {
+      resource: { resourceType: "subject", resourceId: subjectId },
+      idempotent: false
+    });
+    if (
+      agentAuthorityPilot.accountChallenge !== challenge ||
+      tenantInputValue("agentAuthoritySubjectId") !== subjectId
+    ) return;
+    agentAuthorityPilot.accountBinding = result.response;
+    if (agentAuthorityPilot.subject?.subjectId === subjectId) {
+      agentAuthorityPilot.subject = {
+        ...agentAuthorityPilot.subject,
+        status: result.response.subjectStatus
+      };
+    }
+    if (result.response.accountBinding) {
+      stopAgentAccountBindingPolling();
+      agentAuthorityPilot.helper =
+        "Verified CAIP-10 AccountBinding loaded. The Agent Subject is active.";
+      toast("Agent AccountBinding verified");
+      announce("Verified Agent AccountBinding loaded without browser signing authority");
+      renderTenantPilot();
+      return;
+    }
+  } catch {
+    // This bounded read-only synchronization is best-effort; the explicit
+    // refresh control remains available and authentication errors stay quiet.
+  }
+  scheduleAgentAccountBindingPoll();
 }
 
 async function refreshAgentAccountBinding() {
@@ -5423,6 +6240,7 @@ async function refreshAgentAccountBinding() {
         idempotent: false
       });
       agentAuthorityPilot.accountBinding = result.response;
+      if (result.response.accountBinding) stopAgentAccountBindingPolling();
       if (agentAuthorityPilot.subject?.subjectId === subjectId) {
         agentAuthorityPilot.subject = {
           ...agentAuthorityPilot.subject,
@@ -5673,6 +6491,7 @@ function openPrivateProductAction(action) {
         ? el("humanObligationCard")
         : el("humanApplication");
   requestAnimationFrame(() => focusJumpTarget(target));
+  if (action === "human-evidence") loadOwnedEvidence();
   announce(action === "human-evidence"
     ? "Owner Obligation Evidence opened"
     : action === "human-obligation"
@@ -5726,14 +6545,14 @@ function evidenceHashCell(item) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
   cell.className = "auditor-evidence-cell";
-  cell.dataset.label = "Evidence hash";
+  cell.dataset.label = "Evidence digest (offchain)";
   content.className = "auditor-evidence-hash";
   code.textContent = item.evidenceHash;
   code.title = item.evidenceHash;
   button.className = "icon-button";
   button.type = "button";
-  button.title = "Copy Evidence hash";
-  button.setAttribute("aria-label", `Copy Evidence hash for ${item.evidenceId}`);
+  button.title = "Copy offchain Evidence digest";
+  button.setAttribute("aria-label", `Copy offchain Evidence digest for ${item.evidenceId}`);
   button.dataset.evidenceHash = item.evidenceHash;
   use.setAttribute("href", "/icons.svg#copy");
   svg.setAttribute("aria-hidden", "true");
@@ -5751,11 +6570,255 @@ function auditorEvidenceRow(item) {
   row.append(
     evidenceTextCell("Event", titleize(item.eventType), item.evidenceId),
     evidenceTextCell("Aggregate", `${titleize(item.aggregateType)} v${item.aggregateVersion}`, item.aggregateId),
-    evidenceTextCell("Finality", titleize(item.sourceFinality), item.schemaVersion),
+    evidenceTextCell("Server state", titleize(item.sourceFinality), item.schemaVersion),
     evidenceTimeCell(item),
     evidenceHashCell(item)
   );
   return row;
+}
+
+function pendingEvidenceAnchorGroup() {
+  const eligible = evidenceAnchorPilot.items.filter(({ status }) =>
+    new Set(["pending", "failed", "prepared", "reorged"]).has(status)
+  );
+  if (eligible.length === 0) return [];
+  const groupHash = eligible[0].anchorGroupHash;
+  return eligible
+    .filter(({ anchorGroupHash }) => anchorGroupHash === groupHash)
+    .slice(0, 16);
+}
+
+function renderEvidenceAnchor() {
+  const status = el("humanObligationChainAnchorStatus");
+  const copy = el("humanObligationChainAnchorCopy");
+  const button = el("anchorPendingEvidenceBtn");
+  const link = el("humanObligationChainAnchorLink");
+  if (!status || !copy || !button || !link) return;
+  const items = evidenceAnchorPilot.items;
+  const pending = pendingEvidenceAnchorGroup();
+  const open = items.filter(({ status: itemStatus }) =>
+    new Set(["broadcast", "unknown", "included", "safe"]).has(itemStatus)
+  );
+  const finalized = items.filter(({ status: itemStatus }) =>
+    itemStatus === "finalized"
+  );
+  const latestTransaction = [...items]
+    .reverse()
+    .find(({ transactionUrl }) => transactionUrl);
+  link.hidden = !latestTransaction;
+  if (latestTransaction) {
+    link.href = latestTransaction.transactionUrl;
+    link.textContent = finalized.length === items.length
+      ? "View verified transaction"
+      : "View submitted transaction";
+  } else {
+    link.removeAttribute("href");
+  }
+  button.hidden = !evidenceAnchorPilot.available ||
+    items.length === 0 ||
+    (pending.length === 0 && open.length === 0);
+  button.disabled = evidenceAnchorPilot.busy;
+  button.toggleAttribute("aria-busy", evidenceAnchorPilot.busy);
+  button.textContent = evidenceAnchorPilot.busy
+    ? "Checking Base Sepolia…"
+    : pending.length > 0
+      ? `Confirm & anchor ${pending.length} Evidence hash${pending.length === 1 ? "" : "es"}`
+      : "Refresh chain finality";
+
+  status.classList.toggle("warning", finalized.length !== items.length);
+  status.classList.toggle(
+    "neutral",
+    evidenceAnchorPilot.available && items.length === 0
+  );
+  if (!evidenceAnchorPilot.available) {
+    status.textContent = "Anchor service unavailable";
+    copy.textContent =
+      "No chain contract is configured for this local runtime. Server Evidence hashes must not be presented as blockchain transactions.";
+  } else if (items.length === 0) {
+    status.textContent = "Waiting for Evidence";
+    copy.textContent =
+      "Load the durable timeline to resolve the chain status of every Evidence hash.";
+  } else if (finalized.length === items.length) {
+    status.textContent = `${finalized.length}/${items.length} finalized`;
+    copy.textContent =
+      "Every loaded Evidence hash has a verified, finalized Base Sepolia registry event. Only hashes and protocol references are public; payload and KYC/PII remain offchain.";
+  } else if (open.length > 0) {
+    status.textContent = `${finalized.length}/${items.length} finalized`;
+    copy.textContent =
+      `${open.length} Evidence anchor${open.length === 1 ? " is" : "s are"} submitted and awaiting verified finality. A transaction link is not proof of finalization until the observer confirms it.`;
+  } else if (items.some(({ status: itemStatus }) => itemStatus === "reorged")) {
+    status.textContent = "Chain reorganization detected";
+    copy.textContent =
+      "At least one prior Evidence transaction is no longer canonical. Its orphaned-block observation is preserved; confirm a new zero-value anchor transaction to restore chain closure.";
+  } else {
+    status.textContent = `${items.length - finalized.length} pending`;
+    copy.textContent =
+      `${items.length - finalized.length} loaded Evidence hash${items.length - finalized.length === 1 ? "" : "es"} still require a zero-value wallet transaction on Base Sepolia. No loan principal or repayment value is transferred by this anchor.`;
+  }
+}
+
+async function loadEvidenceAnchorStatus({ observe = false } = {}) {
+  const obligationId = tenantPilot.obligation?.obligationId;
+  const hashes = ownedEvidence.items.map(({ evidenceHash }) => evidenceHash);
+  if (!obligationId || hashes.length === 0 || evidenceAnchorPilot.busy) {
+    renderEvidenceAnchor();
+    return;
+  }
+  evidenceAnchorPilot.busy = true;
+  evidenceAnchorPilot.error = false;
+  renderEvidenceAnchor();
+  try {
+    if (!evidenceAnchorPilot.config) {
+      evidenceAnchorPilot.config = await evidenceAnchorApi(
+        "/chain/v1/evidence-anchors/config",
+        { method: "GET" }
+      );
+    }
+    evidenceAnchorPilot.available = true;
+    let result = await evidenceAnchorApi(
+      "/chain/v1/evidence-anchors/status",
+      { body: { obligationId, evidenceHashes: hashes } }
+    );
+    if (
+      observe &&
+      result.items.some(({ status }) =>
+        new Set(["broadcast", "unknown", "included", "safe"]).has(status)
+      )
+    ) {
+      const transactionGroups = new Map();
+      for (const item of result.items) {
+        if (
+          !item.transactionHash ||
+          !new Set(["broadcast", "unknown", "included", "safe"]).has(item.status)
+        ) continue;
+        const current = transactionGroups.get(item.transactionHash) ?? [];
+        current.push(item.evidenceHash);
+        transactionGroups.set(item.transactionHash, current);
+      }
+      for (const transactionHashes of transactionGroups.values()) {
+        await evidenceAnchorApi(
+          "/chain/v1/evidence-anchors/observe",
+          {
+            body: {
+              obligationId,
+              evidenceHashes: transactionHashes
+            }
+          }
+        );
+      }
+      result = await evidenceAnchorApi(
+        "/chain/v1/evidence-anchors/status",
+        { body: { obligationId, evidenceHashes: hashes } }
+      );
+    }
+    evidenceAnchorPilot.obligationId = obligationId;
+    evidenceAnchorPilot.items = result.items;
+    evidenceAnchorPilot.helper = result.complete
+      ? "All loaded Evidence anchors are finalized."
+      : "Chain coverage is incomplete until every loaded Evidence hash is finalized.";
+  } catch (error) {
+    evidenceAnchorPilot.available = error.status !== 404;
+    evidenceAnchorPilot.error = true;
+    evidenceAnchorPilot.helper =
+      error.status === 404
+        ? "The Evidence anchor service is not configured on this runtime."
+        : `Evidence anchor status failed. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    evidenceAnchorPilot.busy = false;
+    renderEvidenceAnchor();
+  }
+}
+
+async function anchorOrRefreshOwnedEvidence() {
+  if (evidenceAnchorPilot.busy) return;
+  const obligationId = tenantPilot.obligation?.obligationId;
+  const group = pendingEvidenceAnchorGroup();
+  if (!obligationId) return;
+  if (group.length === 0) {
+    await loadEvidenceAnchorStatus({ observe: true });
+    return;
+  }
+  const provider = walletProviderRegistry.getSelectedProvider();
+  if (!provider) {
+    toast("Select and connect one wallet before anchoring Evidence.", "error");
+    return;
+  }
+  evidenceAnchorPilot.busy = true;
+  evidenceAnchorPilot.error = false;
+  renderEvidenceAnchor();
+  const hashes = group.map(({ evidenceHash }) => evidenceHash);
+  try {
+    const accounts = await provider.request({ method: "eth_accounts" });
+    const accountAddress = Array.isArray(accounts) ? accounts[0] : undefined;
+    if (!/^0x[0-9a-fA-F]{40}$/.test(accountAddress ?? "")) {
+      throw new Error("The selected wallet has no connected EVM account.");
+    }
+    const baseSepolia = SUPPORTED_WALLET_CHAINS[84532];
+    await switchWalletChain(provider, baseSepolia);
+    const chainId = await provider.request({ method: "eth_chainId" });
+    if (Number.parseInt(String(chainId), 16) !== 84532) {
+      throw new Error("The wallet did not switch to Base Sepolia.");
+    }
+    const prepared = await evidenceAnchorApi(
+      "/chain/v1/evidence-anchors/prepare",
+      {
+        body: {
+          obligationId,
+          evidenceHashes: hashes,
+          accountAddress,
+          confirmationMode: "wallet_transaction"
+        }
+      }
+    );
+    const transaction = prepared.transaction;
+    const exactPrepared =
+      transaction?.chainId === "eip155:84532" &&
+      transaction.from?.toLowerCase() === accountAddress.toLowerCase() &&
+      transaction.to?.toLowerCase() ===
+        evidenceAnchorPilot.config.contractAddress?.toLowerCase() &&
+      transaction.value === "0x0" &&
+      /^0x[0-9a-f]+$/.test(transaction.data ?? "") &&
+      JSON.stringify(transaction.evidenceHashes) === JSON.stringify(hashes);
+    if (!exactPrepared) {
+      throw new Error("The prepared Evidence transaction failed exact browser validation.");
+    }
+    const transactionHash = await provider.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: transaction.from,
+        to: transaction.to,
+        data: transaction.data,
+        value: "0x0"
+      }]
+    });
+    if (!/^0x[0-9a-fA-F]{64}$/.test(transactionHash ?? "")) {
+      throw new Error("The wallet did not return one valid transaction hash.");
+    }
+    await evidenceAnchorApi("/chain/v1/evidence-anchors/submit", {
+      body: {
+        obligationId,
+        evidenceHashes: hashes,
+        batchId: prepared.batchId,
+        transactionHash: transactionHash.toLowerCase(),
+        outcome: "broadcast"
+      }
+    });
+    toast("Evidence anchor submitted to Base Sepolia");
+    await evidenceAnchorApi("/chain/v1/evidence-anchors/observe", {
+      body: { obligationId, evidenceHashes: hashes }
+    });
+    evidenceAnchorPilot.busy = false;
+    await loadEvidenceAnchorStatus({ observe: true });
+  } catch (error) {
+    evidenceAnchorPilot.error = true;
+    evidenceAnchorPilot.helper = Number(error?.code) === 4001
+      ? "Wallet transaction rejected. No Evidence anchor was submitted."
+      : error?.message ?? "Evidence anchor failed.";
+    toast(evidenceAnchorPilot.helper, "error");
+  } finally {
+    evidenceAnchorPilot.busy = false;
+    renderEvidenceAnchor();
+  }
 }
 
 function renderOwnedEvidence() {
@@ -5765,7 +6828,7 @@ function renderOwnedEvidence() {
   const rows = ownedEvidence.items.map(auditorEvidenceRow);
   if (rows.length === 0) {
     const empty = emptyRow(ownedEvidence.queried
-      ? "No immutable Evidence events were returned for this Obligation."
+      ? "No durable server Evidence events were returned for this Obligation."
       : "Load the owner-authorized timeline after accepting the Offer.");
     empty.setAttribute("role", "row");
     rows.push(empty);
@@ -5794,6 +6857,7 @@ function renderOwnedEvidence() {
   more.hidden = !ownedEvidence.hasMore;
   more.disabled = ownedEvidence.busy || !ownedEvidence.nextCursor || !obligationId;
   more.toggleAttribute("aria-busy", ownedEvidence.busy);
+  renderEvidenceAnchor();
 }
 
 async function loadOwnedEvidence({ append = false } = {}) {
@@ -5804,7 +6868,7 @@ async function loadOwnedEvidence({ append = false } = {}) {
   ownedEvidence.busy = true;
   ownedEvidence.error = false;
   ownedEvidence.helper = append
-    ? "Loading the next immutable page…"
+    ? "Loading the next durable Evidence page…"
     : "Verifying exact owner/controller access and loading redacted Evidence…";
   if (!append) {
     ownedEvidence.items = [];
@@ -5843,10 +6907,11 @@ async function loadOwnedEvidence({ append = false } = {}) {
     ownedEvidence.asOf = response.asOf;
     ownedEvidence.queried = true;
     ownedEvidence.helper = ownedEvidence.capped
-      ? `${ownedEvidence.items.length} redacted Evidence events loaded; the bounded browser display cap has been reached.`
-      : `${response.items.length} redacted Evidence event${response.items.length === 1 ? "" : "s"} loaded from the shared immutable timeline.`;
+      ? `${ownedEvidence.items.length} redacted PostgreSQL Evidence events loaded; the bounded browser display cap has been reached. These digests are not blockchain transactions.`
+      : `${response.items.length} redacted PostgreSQL Evidence event${response.items.length === 1 ? "" : "s"} loaded from the durable server timeline. These digests are not blockchain transactions.`;
     toast(append ? "Next owner Evidence page loaded" : "Your Obligation Evidence loaded");
     announce(ownedEvidence.helper);
+    await loadEvidenceAnchorStatus({ observe: true });
   } catch (error) {
     const nonEnumerating = error.status === 401 || error.status === 403 || error.status === 404 ||
       new Set(["authorization_denied", "tenant_resource_unavailable", "resource_not_found"]).has(error.code);
@@ -5976,6 +7041,190 @@ async function loadAuditorEvidence({ append = false } = {}) {
   } finally {
     auditorEvidence.busy = false;
     renderAuditorEvidence();
+  }
+}
+
+function creditRegistryTransactionRow(transaction) {
+  const row = document.createElement("div");
+  const kind = document.createElement("span");
+  const transactionCell = document.createElement("span");
+  const transactionLink = document.createElement("a");
+  const block = document.createElement("span");
+  const finality = document.createElement("span");
+  row.className = "registry-evidence-row";
+  row.setAttribute("role", "row");
+
+  kind.dataset.label = "Lifecycle event";
+  kind.textContent = titleize(transaction.kind);
+
+  transactionCell.dataset.label = "Transaction";
+  transactionLink.href =
+    `https://sepolia.basescan.org/tx/${transaction.transactionHash}`;
+  transactionLink.target = "_blank";
+  transactionLink.rel = "noreferrer noopener";
+  transactionLink.textContent = compactDecisionProofHash(
+    transaction.transactionHash
+  );
+  transactionLink.title = transaction.transactionHash;
+  transactionCell.append(transactionLink);
+
+  block.dataset.label = "Block";
+  block.textContent = `#${transaction.blockNumber}`;
+  block.title = transaction.blockHash;
+
+  finality.dataset.label = "Finality";
+  finality.textContent =
+    `${titleize(transaction.observationStatus)} · ${transaction.confirmations} confirmations`;
+
+  row.append(kind, transactionCell, block, finality);
+  return row;
+}
+
+function renderCreditRegistryEvidence() {
+  const panel = el("creditRegistryEvidencePanel");
+  if (!panel) return;
+  const response = creditRegistryEvidence.response;
+  const rows = response?.transactions?.map(creditRegistryTransactionRow) ?? [];
+  if (rows.length === 0) {
+    const empty = emptyRow(creditRegistryEvidence.queried
+      ? "No eligible Registry observation was returned."
+      : "Query one exact authorization hash to verify its public testnet lifecycle.");
+    empty.setAttribute("role", "row");
+    rows.push(empty);
+  }
+
+  el("creditRegistryEvidenceRows").replaceChildren(...rows);
+  el("creditRegistryEvidenceAccess").textContent =
+    creditRegistryEvidence.catalogAvailable
+      ? "Authenticated read only"
+      : "Operation unavailable";
+  el("creditRegistryEvidenceAccess").classList.toggle(
+    "warning",
+    !creditRegistryEvidence.catalogAvailable
+  );
+  el("creditRegistryEvidenceState").textContent = response
+    ? `Closed v${response.finalVersion} · Registry paused`
+    : "Not queried";
+  el("creditRegistryEvidenceContract").textContent = response
+    ? compactEvmAddress(response.contractAddress)
+    : "—";
+  el("creditRegistryEvidenceContract").title = response?.contractAddress ?? "";
+  el("creditRegistryEvidenceFinality").textContent = response
+    ? `${titleize(response.transactions.at(-1).observationStatus)} · ${response.transactions.length} transactions`
+    : "Waiting";
+  el("creditRegistryEvidenceObservedAt").textContent = response
+    ? formatEvidenceTime(response.observedAt, { short: true })
+    : "Not queried";
+  el("creditRegistryObservationHash").textContent = response
+    ? compactDecisionProofHash(response.observationHash)
+    : "—";
+  el("creditRegistryObservationHash").title = response?.observationHash ?? "";
+  el("creditRegistryFinalityProofHash").textContent = response
+    ? compactDecisionProofHash(response.finalityProofHash)
+    : "—";
+  el("creditRegistryFinalityProofHash").title =
+    response?.finalityProofHash ?? "";
+  el("creditRegistryEvidenceAsOf").textContent = response
+    ? `Observed ${formatEvidenceTime(response.observedAt)} · persisted ${formatEvidenceTime(response.recordedAt)} · read ${formatEvidenceTime(response.asOf)}`
+    : "No authenticated Registry query yet.";
+  el("creditRegistryEvidenceHelper").textContent =
+    creditRegistryEvidence.helper;
+  el("creditRegistryEvidenceHelper").classList.toggle(
+    "error",
+    creditRegistryEvidence.error
+  );
+  el("creditRegistryAuthorizationHash").disabled =
+    creditRegistryEvidence.busy;
+  el("loadCreditRegistryEvidenceBtn").disabled =
+    creditRegistryEvidence.busy ||
+    !creditRegistryEvidence.catalogAvailable;
+  el("loadCreditRegistryEvidenceBtn").toggleAttribute(
+    "aria-busy",
+    creditRegistryEvidence.busy
+  );
+}
+
+function requestedCreditRegistryEvidenceHash() {
+  const authorizationHash = tenantInputValue(
+    "creditRegistryAuthorizationHash"
+  );
+  if (!/^0x[0-9a-f]{64}$/.test(authorizationHash)) {
+    throw new Error(
+      "Enter one lowercase 32-byte authorization hash beginning with 0x."
+    );
+  }
+  return authorizationHash;
+}
+
+async function loadCreditRegistryEvidence() {
+  if (creditRegistryEvidence.busy) return;
+  let authorizationHash;
+  try {
+    authorizationHash = requestedCreditRegistryEvidenceHash();
+  } catch (error) {
+    creditRegistryEvidence.error = true;
+    creditRegistryEvidence.helper = error.message;
+    renderCreditRegistryEvidence();
+    announce(error.message);
+    return;
+  }
+
+  creditRegistryEvidence.busy = true;
+  creditRegistryEvidence.error = false;
+  creditRegistryEvidence.queried = false;
+  creditRegistryEvidence.response = null;
+  creditRegistryEvidence.helper =
+    "Verifying Tenant access and loading the finalized synthetic Base Sepolia observation…";
+  renderCreditRegistryEvidence();
+  try {
+    const result = await tenantApi("pilotReadCreditRegistryEvidence", {
+      resource: {
+        resourceType: "credit_registry_evidence",
+        resourceId: authorizationHash
+      },
+      payload: {},
+      idempotent: false
+    });
+    const response = result.response;
+    if (
+      response?.authorizationHash !== authorizationHash ||
+      response?.schemaVersion !==
+        "tenant_credit_registry_evidence_view.v1" ||
+      compactEvmAddress(response?.contractAddress) === "Unavailable" ||
+      response?.readOnly !== true ||
+      response?.syntheticOnly !== true ||
+      response?.authorizing !== false ||
+      response?.fundsAuthority !== false ||
+      response?.productionFundsMoved !== false
+    ) {
+      throw new Error("Registry Evidence response failed the browser safety contract.");
+    }
+    creditRegistryEvidence.authorizationHash = authorizationHash;
+    creditRegistryEvidence.response = response;
+    creditRegistryEvidence.queried = true;
+    creditRegistryEvidence.helper =
+      "Four finalized Registry lifecycle transactions verified. This public synthetic proof grants no credit, account authority, or funds authority.";
+    toast("Base Sepolia Registry Evidence loaded");
+    announce(creditRegistryEvidence.helper);
+  } catch (error) {
+    const nonEnumerating =
+      error.status === 401 ||
+      error.status === 403 ||
+      error.status === 404 ||
+      new Set([
+        "authorization_denied",
+        "tenant_resource_unavailable",
+        "resource_not_found"
+      ]).has(error.code);
+    creditRegistryEvidence.error = true;
+    creditRegistryEvidence.helper = nonEnumerating
+      ? "Registry Evidence is unavailable or is not authorized for this Tenant."
+      : `Registry Evidence query failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(creditRegistryEvidence.helper, "error");
+    announce(creditRegistryEvidence.helper);
+  } finally {
+    creditRegistryEvidence.busy = false;
+    renderCreditRegistryEvidence();
   }
 }
 
@@ -6721,6 +7970,7 @@ const receipt = await agent.runCreditOfferWorkflow({
 
 function render() {
   renderAuditorEvidence();
+  renderCreditRegistryEvidence();
   renderRiskOperations();
   renderTradingCapital();
   renderRuntime();
@@ -6729,13 +7979,21 @@ function render() {
 
 function bindActions() {
   el("accessBtn").addEventListener("click", openAccess);
+  el("topbarSignOutBtn").addEventListener("click", signOutAuthenticatedSession);
+  el("signedOutPrivacyAction").addEventListener("click", openAccess);
   el("walletPermissionsAccessBtn").addEventListener("click", openAccess);
   el("accessCloseBtn").addEventListener("click", closeAccess);
   el("accessScrim").addEventListener("click", closeAccess);
   el("googleSignInBtn").addEventListener("click", () => beginOidcSignIn("google"));
   el("emailSignInBtn").addEventListener("click", () => beginOidcSignIn("email"));
   el("walletSignInBtn").addEventListener("click", () => connectApprovedNetwork({ authenticate: true }));
+  el("continueAuthenticatedSessionBtn").addEventListener("click", continueAuthenticatedSession);
+  el("signOutBtn").addEventListener("click", signOutAuthenticatedSession);
   el("connectNetworkBtn").addEventListener("click", () => connectApprovedNetwork());
+  el("economicActionScrim").addEventListener("click", cancelPendingEconomicAction);
+  el("economicActionCloseBtn").addEventListener("click", cancelPendingEconomicAction);
+  el("economicActionCancelBtn").addEventListener("click", cancelPendingEconomicAction);
+  el("economicActionConfirmBtn").addEventListener("click", confirmPendingEconomicAction);
   el("walletProviderList").addEventListener("click", (event) => {
     const button = event.target.closest("button[data-wallet-provider-id]");
     if (button) selectWalletProvider(button.dataset.walletProviderId);
@@ -6747,6 +8005,7 @@ function bindActions() {
     });
   }
   document.addEventListener("keydown", handleAccessKeys);
+  document.addEventListener("keydown", handleEconomicActionKeys);
   window.addEventListener("online", () => {
     walletAuthorityLifecycle.retryInvalidation().catch(() => {
       // Network recovery never restores authority; the lifecycle remains quarantined.
@@ -6758,7 +8017,14 @@ function bindActions() {
     button.addEventListener("click", () => showView(button.dataset.view));
   }
   for (const button of document.querySelectorAll("[data-go-view]")) {
-    button.addEventListener("click", () => showView(button.dataset.goView));
+    button.addEventListener("click", () => {
+      showView(button.dataset.goView);
+      if (
+        button.dataset.goView === "activity-proofs" &&
+        interactionMode === "human" &&
+        tenantPilot.obligation
+      ) loadOwnedEvidence();
+    });
   }
   for (const button of document.querySelectorAll("[data-scroll-target]")) {
     button.addEventListener("click", () => {
@@ -7025,13 +8291,17 @@ function bindActions() {
   ));
   el("loadOwnedEvidenceBtn").addEventListener("click", () => loadOwnedEvidence());
   el("loadMoreOwnedEvidenceBtn").addEventListener("click", () => loadOwnedEvidence({ append: true }));
+  el("anchorPendingEvidenceBtn").addEventListener(
+    "click",
+    anchorOrRefreshOwnedEvidence
+  );
   el("ownedEvidenceRows").addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-evidence-hash]");
     if (!button) return;
     try {
       await navigator.clipboard.writeText(button.dataset.evidenceHash);
-      toast("Evidence hash copied");
-      announce("Owned Evidence hash copied");
+      toast("Offchain Evidence digest copied");
+      announce("Owned offchain Evidence digest copied");
     } catch {
       toast("Clipboard access is unavailable in this browser.", "error");
     }
@@ -7058,11 +8328,26 @@ function bindActions() {
     if (!button) return;
     try {
       await navigator.clipboard.writeText(button.dataset.evidenceHash);
-      toast("Evidence hash copied");
-      announce("Evidence hash copied");
+      toast("Offchain Evidence digest copied");
+      announce("Offchain Evidence digest copied");
     } catch {
       toast("Clipboard access is unavailable in this browser.", "error");
     }
+  });
+  el("creditRegistryEvidenceForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    loadCreditRegistryEvidence();
+  });
+  el("creditRegistryAuthorizationHash").addEventListener("input", () => {
+    const nextHash = tenantInputValue("creditRegistryAuthorizationHash");
+    if (creditRegistryEvidence.authorizationHash === nextHash) return;
+    creditRegistryEvidence.queried = false;
+    creditRegistryEvidence.authorizationHash = null;
+    creditRegistryEvidence.response = null;
+    creditRegistryEvidence.error = false;
+    creditRegistryEvidence.helper =
+      "Enter one exact public authorization hash. The authenticated Gateway returns only the bounded synthetic Base Sepolia observation.";
+    renderCreditRegistryEvidence();
   });
   el("riskPortfolioForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -7206,6 +8491,7 @@ function bindActions() {
   el("activateMandateBtn").addEventListener("click", activateExactAgentMandate);
   el("principalMandateAcknowledge").addEventListener("change", renderTenantPilot);
   el("agentAuthoritySubjectId").addEventListener("input", () => {
+    stopAgentAccountBindingPolling();
     if (agentAuthorityPilot.subject?.subjectId !== tenantInputValue("agentAuthoritySubjectId")) {
       agentAuthorityPilot.subject = null;
       agentAuthorityPilot.accountChallenge = null;
@@ -7220,6 +8506,7 @@ function bindActions() {
   });
   for (const input of [el("agentAccountChain"), el("agentAccountAddress"), el("agentAccountPurpose")]) {
     input.addEventListener("input", () => {
+      stopAgentAccountBindingPolling();
       agentAuthorityPilot.accountChallenge = null;
       renderTenantPilot();
     });
@@ -7319,6 +8606,7 @@ function bindActions() {
   });
   el("returnToAgentAuthorityBtn").addEventListener("click", openPrincipalAgentAuthority);
   window.addEventListener("hashchange", () => showView(location.hash.slice(1), { updateHash: false }));
+  window.addEventListener("pagehide", stopAgentAccountBindingPolling, { once: true });
   mobileNavigation.addEventListener("change", () => {
     document.body.classList.remove("nav-open");
     syncNavigationAccessibility();
@@ -7329,11 +8617,16 @@ function bindActions() {
 
 async function boot() {
   bindActions();
+  const localAgentAccount = localPilotAgentAccount();
+  if (localAgentAccount && !tenantInputValue("agentAccountAddress")) {
+    el("agentAccountAddress").value = localAgentAccount;
+  }
   renderAccess();
   el("runtimeBaseUrl").textContent = window.location.origin;
   showView(location.hash.slice(1) || "overview", { focus: false, updateHash: false });
   renderTenantPilot();
   renderAuditorEvidence();
+  renderCreditRegistryEvidence();
   renderRiskOperations();
   await probeAccessOptions();
   await probeTenantPilot();

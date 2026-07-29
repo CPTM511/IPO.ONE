@@ -10,9 +10,11 @@ const CONFIG_KEYS = new Set([
   "gateway",
   "getTrustedMtlsEvidence",
   "humanBff",
+  "localAgentAccountProvider",
   "machineAuthenticator",
   "port",
   "serveAuthentication",
+  "serveEvidenceAnchors",
   "sessionHandleProvider"
 ]);
 
@@ -43,7 +45,9 @@ export function createTenantPilotHost(input) {
     createNetworkContext,
     csrfTokenProvider,
     getTrustedMtlsEvidence,
+    localAgentAccountProvider,
     serveAuthentication,
+    serveEvidenceAnchors,
     sessionHandleProvider,
     clock,
     port = 0
@@ -73,9 +77,11 @@ export function createTenantPilotHost(input) {
     environment: "development",
     credentialSource: "local_test",
     serveAuthentication,
+    serveEvidenceAnchors,
     serveWebAsset: createTenantWebAssetHandler({
       csrfTokenProvider,
-      sessionHandleProvider
+      sessionHandleProvider,
+      localAgentAccountProvider
     })
   });
 }

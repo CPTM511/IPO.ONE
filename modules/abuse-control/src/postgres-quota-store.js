@@ -88,6 +88,11 @@ export class PostgresQuotaStore {
               SELECT 1 FROM abuse_command_charges charge
                WHERE charge.tenant_id = admission.tenant_id
                  AND charge.active_admission_id = admission.id
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM tenant_command_executions execution
+               WHERE execution.tenant_id = admission.tenant_id
+                 AND execution.admission_id = admission.id
             )`,
         [this.tenantId, now]
       );

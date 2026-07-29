@@ -22,6 +22,17 @@ events, forced RLS, and a least-privilege authentication-only database role.
 Recoverable transaction values use AES-256-GCM envelopes; external subjects,
 wallet addresses, cookie/CSRF values, and token identifiers are keyed references.
 
+AUTHN-005 makes the controlled bootstrap invite-only for the closed-pilot
+candidate. Bootstrap v2 requires a unique invitation and a credential expiry
+of no more than 90 days for every Human or Agent identity. Human Borrower,
+Principal Controller, Risk Operator, and Agent Runtime permissions are derived
+from fixed server profiles; caller-supplied roles or capabilities are rejected.
+Invitation, external-subject, and sender-constraint values are persisted only
+as keyed hashes, and the existing durable deprovisioning path immediately
+revokes active browser sessions. This is a local/pre-deployment contract only;
+it does not select an IdP, issue a credential, open remote access, or approve
+production identity.
+
 `createPostgresHumanAccessComposition(...)` in `apps/tenant-api` is the closed
 deployment composition. It requires a fixed Tenant and system identity, a
 reviewed provider set, and immutable Secret Manager version references before it

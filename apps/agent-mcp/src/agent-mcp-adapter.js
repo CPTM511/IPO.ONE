@@ -233,6 +233,22 @@ export const AGENT_MCP_TOOLS = Object.freeze([
       }
     },
     operationId: AGENT_MCP_CLIENT_TOOLS[10].operationId
+  }),
+  Object.freeze({
+    name: "ipo_one_read_credit_registry_evidence",
+    description:
+      "Read one Tenant-authorized redacted Base Sepolia Credit Registry Evidence observation.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["authorizationHash", "requestId", "correlationId"],
+      properties: {
+        authorizationHash: HASH,
+        requestId: REQUEST_IDENTIFIER,
+        correlationId: REQUEST_IDENTIFIER
+      }
+    },
+    operationId: AGENT_MCP_CLIENT_TOOLS[11].operationId
   })
 ]);
 
@@ -259,7 +275,8 @@ export function createAgentMcpAdapter({ client }) {
     !client?.getOwnObligationEvidence ||
     !client?.acceptCreditOffer ||
     !client?.executeSandboxObligation ||
-    !client?.postSandboxRepayment
+    !client?.postSandboxRepayment ||
+    !client?.getCreditRegistryEvidence
   ) {
     throw new DomainError("invalid_agent_mcp_config", "Agent MCP requires one authenticated Agent client");
   }
@@ -305,10 +322,17 @@ export function createAgentMcpAdapter({ client }) {
       } else if (name === "ipo_one_execute_sandbox_obligation") {
         assertExactKeys(args, ["obligationId", "idempotencyKey", "requestId", "correlationId"]);
         result = await client.executeSandboxObligation(args);
-      } else {
+      } else if (name === "ipo_one_post_sandbox_repayment") {
         assertExactKeys(args, ["obligationId", "payload", "idempotencyKey", "requestId", "correlationId"]);
         assertExactKeys(args.payload, ["amountMinor", "sourceCode"]);
         result = await client.postSandboxRepayment(args);
+      } else {
+        assertExactKeys(args, [
+          "authorizationHash",
+          "requestId",
+          "correlationId"
+        ]);
+        result = await client.getCreditRegistryEvidence(args);
       }
       return Object.freeze({
         content: [{ type: "text", text: JSON.stringify(result) }],
