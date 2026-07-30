@@ -920,7 +920,7 @@ test("WEB-014 separates product intent, access mode, and Provider operations", a
   assert.ok(html.includes('class="product-entry-card developer-product"'));
   assert.ok(html.includes('data-go-view="architecture"'));
   assert.ok(html.includes('data-view-panel="capital-partners"'));
-  assert.ok(js.includes('"capital-partners": { eyebrow: "Invitation-only preview", title: "Capital Partners" }'));
+  assert.ok(js.includes('"capital-partners": { eyebrow: "Synthetic bilateral marketplace", title: "Capital Partners" }'));
   assert.ok(js.includes('"capital-network": { eyebrow: "Provider sandbox boundary", title: "Provider Network" }'));
   assert.ok(css.includes(".product-entry-grid"));
   assert.ok(css.includes(".capital-partners-page"));
@@ -928,13 +928,14 @@ test("WEB-014 separates product intent, access mode, and Provider operations", a
   const capitalStart = html.indexOf('data-view-panel="capital-partners"');
   const capitalEnd = html.indexOf('data-view-panel="capital-network"', capitalStart);
   const capitalSurface = html.slice(capitalStart, capitalEnd);
-  assert.ok(capitalStart >= 0 && capitalEnd > capitalStart, "Capital Partners preview missing");
-  assert.ok(capitalSurface.includes("Invitation-only preview"));
+  assert.ok(capitalStart >= 0 && capitalEnd > capitalStart, "Capital Partners workspace missing");
+  assert.ok(capitalSurface.includes("Author sandbox terms"));
+  assert.ok(capitalSurface.includes("Portfolio and Facility truth"));
   assert.ok(capitalSurface.includes("No funds authority"));
-  assert.match(capitalSurface, /<button type="button" disabled>Deposit capital<\/button>/);
-  assert.match(capitalSurface, /<button type="button" disabled>Allocate to facility<\/button>/);
+  assert.match(capitalSurface, /<button type="button" disabled>Deposit<\/button>/);
+  assert.match(capitalSurface, /<button type="button" disabled>Allocate funds<\/button>/);
   assert.match(capitalSurface, /<button type="button" disabled>Withdraw<\/button>/);
-  assert.ok(capitalSurface.includes("No public pool, deposit, allocation, withdrawal, custody, or real capital is enabled."));
+  assert.ok(capitalSurface.includes("Public pools, deposits, custody, allocation, withdrawals, and real capital remain disabled."));
 
   const tradingStart = html.indexOf('data-view-panel="trading-capital"');
   const tradingEnd = html.indexOf('data-view-panel="wallet-permissions"', tradingStart);
@@ -986,8 +987,18 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   );
   assert.match(
     js,
+    /\(accessState\.authEnabled \|\| accessState\.walletAuthenticationEnabled\)\s*&&\s*!accessState\.sessionActive\s*&&\s*!tenantCsrfToken\(\)/,
+    "a signed-out closed-pilot browser must not probe the protected Tenant catalog"
+  );
+  assert.match(
+    js,
     /if \(tenantPilot\.connected\) \{\s*accessState\.sessionActive = true;/,
     "successful Tenant catalog verification must synchronize the visible session state"
+  );
+  assert.match(
+    js,
+    /new Set\(\["borrower", "controller"\]\)\.has\(currentWorkspaceName\(\)\)/,
+    "Capital Partner and Risk workspaces must not invoke borrower workspace recovery"
   );
   assert.ok(css.includes(".account-access-button.authenticated"));
   assert.ok(css.includes(".topbar-sign-out-button"));

@@ -13,6 +13,39 @@ import {
   assertPolicyTransitionDoesNotBroaden
 } from "../src/index.js";
 
+test("Capital Partner operator is a dedicated Human least-privilege role", () => {
+  const capabilities = ROLE_BUNDLE_CAPABILITIES[RoleBundle.CAPITAL_PARTNER_OPERATOR];
+  assert.deepEqual(capabilities, [
+    PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+    PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    PilotCapability.CAPITAL_PARTNER_OFFER_MANAGE_OWN,
+    PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+    PilotCapability.CAPITAL_PARTNER_FACILITY_READ_OWN
+  ]);
+  for (const forbidden of [
+    PilotCapability.CREDIT_REQUEST,
+    PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
+    PilotCapability.RISK_FREEZE,
+    PilotCapability.PROVIDER_INTENT_ACKNOWLEDGE,
+    PilotCapability.TENANT_MEMBERSHIP_MANAGE
+  ]) {
+    assert.equal(capabilities.includes(forbidden), false);
+  }
+  const registry = new AuthorizationPolicyRegistry();
+  assert.equal(
+    registry.getAuthenticated("pilotAuthorCapitalPartnerOffer").requiredCapability,
+    PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN
+  );
+  assert.equal(
+    registry.getAuthenticated("pilotTransitionCapitalPartnerOffer").ownershipRule,
+    "actor"
+  );
+  assert.equal(
+    registry.getAuthenticated("pilotReadCapitalPartnerPortfolio").resourceType,
+    "capital_partner_profile"
+  );
+});
+
 test("the policy registry classifies every OpenAPI operation and keeps the public sandbox separate", async () => {
   const spec = JSON.parse(await readFile("api/openapi/ipo-one.v1.json", "utf8"));
   const documented = [];

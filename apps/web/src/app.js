@@ -6,6 +6,7 @@ import {
 import { createAgentPilotCapabilityManifest } from "./agent-pilot-capability-manifest.js";
 import { createAgentConsolePresentation } from "./agent-console-presentation.js";
 import { createCapitalNetworkPresentation } from "./capital-network-presentation.js";
+import { createCapitalPartnerPresentation } from "./capital-partner-presentation.js";
 import {
   TRADING_CAPITAL_OPERATION_IDS,
   TRADING_CAPITAL_VIEW_DEFINITIONS,
@@ -60,7 +61,7 @@ const VIEW_META = {
   "credit-passport": { eyebrow: "Explainable Decision Evidence", title: "Credit Passport" },
   obligations: { eyebrow: "Shared obligation kernel", title: "Obligations" },
   "agent-console": { eyebrow: "Principal-controlled workspace", title: "Agent Console" },
-  "capital-partners": { eyebrow: "Invitation-only preview", title: "Capital Partners" },
+  "capital-partners": { eyebrow: "Synthetic bilateral marketplace", title: "Capital Partners" },
   "capital-network": { eyebrow: "Provider sandbox boundary", title: "Provider Network" },
   "trading-capital": { eyebrow: "Hyperliquid MVP · local no-funds", title: "Trading Capital" },
   "wallet-permissions": { eyebrow: "Authentication boundary", title: "Wallet & Permissions" },
@@ -132,6 +133,22 @@ const capitalNetworkPilot = {
   presentation: null,
   helper:
     "Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.",
+  error: false
+};
+const capitalPartnerPilot = {
+  authorAvailable: false,
+  transitionAvailable: false,
+  portfolioAvailable: false,
+  facilityAvailable: false,
+  busy: false,
+  offer: null,
+  profile: null,
+  portfolio: null,
+  presentation: null,
+  helper:
+    "Sign in through the invited Capital Partner workspace, then enter the exact Passport values supplied by the borrower.",
+  portfolioHelper:
+    "Portfolio values come from canonical Offer, Obligation, servicing, repayment, and Evidence projections.",
   error: false
 };
 const tradingCapitalPilot = {
@@ -275,6 +292,7 @@ const riskOperations = {
 const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [tenantPilot, structuredClone(tenantPilot)],
   [capitalNetworkPilot, structuredClone(capitalNetworkPilot)],
+  [capitalPartnerPilot, structuredClone(capitalPartnerPilot)],
   [tradingCapitalPilot, structuredClone(tradingCapitalPilot)],
   [pilotFeedback, structuredClone(pilotFeedback)],
   [agentAuthorityPilot, structuredClone(agentAuthorityPilot)],
@@ -1398,6 +1416,12 @@ function localPilotAgentAccount() {
   const account =
     document.querySelector('meta[name="ipo-one-local-agent-account"]')?.content ?? "";
   return /^0x[a-fA-F0-9]{40}$/.test(account) ? account : undefined;
+}
+
+function currentWorkspaceName() {
+  return document.querySelector(
+    'meta[name="ipo-one-workspace-name"]'
+  )?.content ?? "";
 }
 
 async function tenantApi(operationId, {
@@ -4318,6 +4342,298 @@ function renderCapitalNetwork() {
     : "Example rate: 1.25% of an exact loaded sandbox amount. It is nonbinding, unapproved, and cannot create Ledger, Evidence, or Provider entitlement.";
 }
 
+function localDateTimeValue(date) {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function ensureCapitalPartnerDateDefaults() {
+  const defaults = [
+    ["capitalPartnerValidUntil", 1],
+    ["capitalPartnerFirstPaymentAt", 30],
+    ["capitalPartnerMaturityAt", 60]
+  ];
+  for (const [id, days] of defaults) {
+    const input = el(id);
+    if (!input.value) {
+      input.value = localDateTimeValue(
+        new Date(Date.now() + days * 24 * 60 * 60 * 1_000)
+      );
+    }
+  }
+}
+
+function capitalPartnerFacilityRow(facility) {
+  const row = document.createElement("article");
+  row.className = "capital-partner-facility-row";
+  if (facility.adverse) row.classList.add("warning");
+  const identity = document.createElement("div");
+  const identityLabel = document.createElement("span");
+  const identityValue = document.createElement("strong");
+  const identityDetail = document.createElement("small");
+  identityLabel.textContent = "Facility / Obligation";
+  identityValue.textContent = facility.facilityId;
+  identityDetail.textContent = facility.obligationId;
+  identity.append(identityLabel, identityValue, identityDetail);
+  const fields = [
+    ["Status", `${titleize(facility.status)} · ${titleize(facility.servicingClassification)}`],
+    ["Outstanding", facility.outstandingLabel],
+    ["Evidence", facility.evidenceLabel]
+  ].map(([labelText, valueText]) => {
+    const cell = document.createElement("div");
+    const label = document.createElement("span");
+    const value = document.createElement("strong");
+    label.textContent = labelText;
+    value.textContent = valueText;
+    cell.append(label, value);
+    return cell;
+  });
+  row.append(identity, ...fields);
+  return row;
+}
+
+function renderCapitalPartner() {
+  if (!el("capitalPartnerOfferForm")) return;
+  ensureCapitalPartnerDateDefaults();
+  const connected =
+    tenantPilot.connected &&
+    Boolean(tenantCsrfToken()) &&
+    currentWorkspaceName() === "capitalPartner";
+  const operational =
+    capitalPartnerPilot.authorAvailable &&
+    capitalPartnerPilot.transitionAvailable &&
+    capitalPartnerPilot.portfolioAvailable &&
+    capitalPartnerPilot.facilityAvailable;
+  const maturity = el("capitalPartnerMaturity");
+  maturity.classList.remove("checking", "unavailable");
+  maturity.textContent = operational
+    ? "Synthetic marketplace ready"
+    : tenantPilot.checked
+      ? "Role unavailable"
+      : "Checking private gateway";
+  if (!operational && tenantPilot.checked) maturity.classList.add("unavailable");
+  else if (!tenantPilot.checked) maturity.classList.add("checking");
+  el("capitalPartnerAccessState").textContent =
+    connected && operational
+      ? "Invited operator active"
+      : currentWorkspaceName() === "capitalPartner"
+        ? "Capital Partner sign-in required"
+        : "Open the invited Partner workspace";
+
+  const offer = capitalPartnerPilot.offer;
+  const offerStatus = el("capitalPartnerOfferStatus");
+  offerStatus.classList.toggle("neutral", !offer);
+  offerStatus.classList.toggle(
+    "warning",
+    Boolean(offer && !new Set(["offered", "accepted"]).has(offer.status))
+  );
+  offerStatus.textContent = offer ? titleize(offer.status) : "No Offer";
+  el("capitalPartnerProfileId").textContent =
+    capitalPartnerPilot.profile?.capitalPartnerId ?? "—";
+  el("capitalPartnerOfferId").textContent = offer?.creditOfferId ?? "—";
+  el("capitalPartnerOfferHash").textContent = offer?.creditOfferHash ?? "—";
+  el("capitalPartnerTermsHash").textContent = offer?.termsHash ?? "—";
+  el("capitalPartnerBorrowerRef").textContent = offer?.subjectId ?? "—";
+  el("capitalPartnerOfferValidity").textContent = offer
+    ? new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(new Date(offer.validUntil))
+    : "—";
+
+  const passportId = tenantInputValue("capitalPartnerPassportId");
+  const intentId = tenantInputValue("capitalPartnerCreditIntentId");
+  const passportHash = tenantInputValue("capitalPartnerPassportHash");
+  const passportVersion = Number(el("capitalPartnerPassportVersion").value);
+  const exactPassport =
+    exactResourceId(passportId) &&
+    exactResourceId(intentId) &&
+    /^0x[0-9a-f]{64}$/.test(passportHash) &&
+    Number.isSafeInteger(passportVersion) &&
+    passportVersion >= 1;
+  const authorButton = el("capitalPartnerAuthorOfferBtn");
+  authorButton.disabled =
+    capitalPartnerPilot.busy ||
+    !connected ||
+    !capitalPartnerPilot.authorAvailable ||
+    !exactPassport;
+  authorButton.toggleAttribute("aria-busy", capitalPartnerPilot.busy);
+  authorButton.textContent = capitalPartnerPilot.busy
+    ? "Submitting exact terms…"
+    : "Issue exact sandbox Offer";
+  el("capitalPartnerWithdrawOfferBtn").disabled =
+    capitalPartnerPilot.busy ||
+    !connected ||
+    !capitalPartnerPilot.transitionAvailable ||
+    offer?.status !== "offered";
+  el("capitalPartnerOfferHelper").textContent = capitalPartnerPilot.helper;
+  el("capitalPartnerOfferHelper").classList.toggle("error", capitalPartnerPilot.error);
+
+  const presentation = capitalPartnerPilot.presentation;
+  el("capitalPartnerPortfolioStatus").textContent = presentation
+    ? `As of ${new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(new Date(presentation.asOf))}`
+    : "Not loaded";
+  el("capitalPartnerOfferCount").textContent =
+    presentation?.offerCountLabel ?? "0";
+  el("capitalPartnerCommittedAmount").textContent =
+    presentation?.committedLabel ?? "$0.00";
+  el("capitalPartnerOutstandingAmount").textContent =
+    presentation?.outstandingLabel ?? "$0.00";
+  el("capitalPartnerRepaidAmount").textContent =
+    presentation?.repaidLabel ?? "$0.00";
+  el("capitalPartnerEvidenceState").textContent =
+    presentation?.evidenceStateLabel ?? "Server-derived";
+  el("capitalPartnerFacilityRows").replaceChildren(
+    ...(presentation?.facilities.length
+      ? presentation.facilities.map(capitalPartnerFacilityRow)
+      : [emptyRow("Accepted and executed Facilities will appear here after an authorized refresh.")])
+  );
+  const portfolioId = tenantInputValue("capitalPartnerPortfolioId");
+  el("capitalPartnerLoadPortfolioBtn").disabled =
+    capitalPartnerPilot.busy ||
+    !connected ||
+    !capitalPartnerPilot.portfolioAvailable ||
+    !exactResourceId(portfolioId);
+  el("capitalPartnerPortfolioHelper").textContent =
+    capitalPartnerPilot.portfolioHelper;
+  el("capitalPartnerPortfolioHelper").classList.toggle(
+    "error",
+    capitalPartnerPilot.error
+  );
+}
+
+async function runCapitalPartnerAction(operation, successMessage) {
+  if (capitalPartnerPilot.busy) return;
+  capitalPartnerPilot.busy = true;
+  capitalPartnerPilot.error = false;
+  renderCapitalPartner();
+  try {
+    await operation();
+    capitalPartnerPilot.helper = successMessage;
+    toast(successMessage);
+    announce(successMessage);
+  } catch (error) {
+    const requestSuffix = error.requestId ? ` Request ID: ${error.requestId}` : "";
+    capitalPartnerPilot.error = true;
+    capitalPartnerPilot.helper = `${error.message}${requestSuffix}`;
+    capitalPartnerPilot.portfolioHelper = capitalPartnerPilot.helper;
+    toast(capitalPartnerPilot.helper, "error");
+    announce(capitalPartnerPilot.helper);
+  } finally {
+    capitalPartnerPilot.busy = false;
+    renderCapitalPartner();
+  }
+}
+
+function capitalPartnerUsdMinor(inputId) {
+  const amount = Number(el(inputId).value);
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error("Capital Partner amounts must be valid non-negative USD values.");
+  }
+  return String(Math.round(amount * 100));
+}
+
+async function authorCapitalPartnerOffer() {
+  await runCapitalPartnerAction(async () => {
+    const passportId = tenantInputValue("capitalPartnerPassportId");
+    const creditIntentId = tenantInputValue("capitalPartnerCreditIntentId");
+    const artifactHash = tenantInputValue("capitalPartnerPassportHash");
+    const artifactVersion = Number(el("capitalPartnerPassportVersion").value);
+    const terms = {
+      assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+      facilityLimitMinor: capitalPartnerUsdMinor("capitalPartnerFacilityLimit"),
+      approvedPrincipalMinor: capitalPartnerUsdMinor("capitalPartnerPrincipal"),
+      perDrawCapMinor: capitalPartnerUsdMinor("capitalPartnerPerDrawCap"),
+      annualRateBps: Math.round(Number(el("capitalPartnerAnnualRate").value) * 100),
+      originationFeeMinor: capitalPartnerUsdMinor("capitalPartnerOriginationFee"),
+      repaymentFrequency: "monthly",
+      installmentCount: Number(el("capitalPartnerInstallments").value),
+      firstPaymentAt: new Date(el("capitalPartnerFirstPaymentAt").value).toISOString(),
+      maturityAt: new Date(el("capitalPartnerMaturityAt").value).toISOString(),
+      permittedPurposeCode: "working_capital",
+      conditions: [
+        "passport_current_at_acceptance",
+        "authority_current_at_acceptance",
+        "no_adverse_obligation_at_acceptance"
+      ],
+      undrawnRevocationRule: "capital_partner_before_acceptance",
+      validUntil: new Date(el("capitalPartnerValidUntil").value).toISOString(),
+      reasonCodes: ["capital_partner_underwritten"],
+      disclosureRef: "disclosure_capital_partner_standard_v1"
+    };
+    const underwritingSnapshotHash = await sha256Hex(JSON.stringify({
+      creditIntentId,
+      passportId,
+      artifactHash,
+      artifactVersion,
+      terms
+    }));
+    const result = await tenantApi("pilotAuthorCapitalPartnerOffer", {
+      resource: {
+        resourceType: "credit_passport_artifact",
+        resourceId: passportId
+      },
+      payload: {
+        creditIntentId,
+        artifactHash,
+        artifactVersion,
+        underwritingSnapshotHash,
+        ...terms,
+        schemaVersion: "capital_partner_offer_authoring.v1"
+      }
+    });
+    capitalPartnerPilot.offer = result.response.offer;
+    capitalPartnerPilot.profile = result.response.capitalPartner;
+    el("capitalPartnerPortfolioId").value =
+      result.response.capitalPartner.capitalPartnerId;
+    capitalPartnerPilot.portfolioHelper =
+      "Offer issued. Refresh the server-composed portfolio after borrower acceptance or servicing changes.";
+  }, "Exact synthetic credit_offer.v2 issued. No production funds moved.");
+}
+
+async function withdrawCapitalPartnerOffer() {
+  await runCapitalPartnerAction(async () => {
+    const offer = capitalPartnerPilot.offer;
+    if (!offer || offer.status !== "offered") {
+      throw new Error("Load or issue one unaccepted Offer first.");
+    }
+    const result = await tenantApi("pilotTransitionCapitalPartnerOffer", {
+      resource: {
+        resourceType: "credit_offer",
+        resourceId: offer.creditOfferId
+      },
+      payload: {
+        nextStatus: "withdrawn",
+        supersedingOfferId: null,
+        schemaVersion: "capital_partner_offer_transition.v1"
+      }
+    });
+    capitalPartnerPilot.offer = result.response.offer;
+  }, "Unaccepted sandbox Offer withdrawn. Borrower acceptance is now blocked.");
+}
+
+async function loadCapitalPartnerPortfolio() {
+  await runCapitalPartnerAction(async () => {
+    const capitalPartnerId = tenantInputValue("capitalPartnerPortfolioId");
+    const result = await tenantApi("pilotReadCapitalPartnerPortfolio", {
+      resource: {
+        resourceType: "capital_partner_profile",
+        resourceId: capitalPartnerId
+      },
+      idempotent: false
+    });
+    capitalPartnerPilot.profile = result.response.profile;
+    capitalPartnerPilot.portfolio = result.response.portfolio;
+    capitalPartnerPilot.presentation =
+      createCapitalPartnerPresentation(result.response.portfolio);
+    capitalPartnerPilot.portfolioHelper =
+      "Canonical portfolio refreshed from Offer, Obligation, servicing, repayment, and Evidence truth.";
+  }, "Capital Partner portfolio refreshed from server truth.");
+}
+
 function providerResourceUnavailable(error) {
   return (
     error.status === 401 ||
@@ -5485,6 +5801,23 @@ async function recoverAuthenticatedWorkspace() {
 async function probeTenantPilot() {
   if (
     accessState.checked &&
+    (accessState.authEnabled || accessState.walletAuthenticationEnabled) &&
+    !accessState.sessionActive &&
+    !tenantCsrfToken()
+  ) {
+    tenantPilot.connectionLabel = "Authenticated session required";
+    tenantPilot.workspaceRecoveryState = "locked";
+    tenantPilot.workspaceRecoveryErrorCode = "authentication_required";
+    tenantPilot.checked = true;
+    serverCatalogOperations = new Set();
+    serverCatalogSnapshot = null;
+    renderTenantPilot();
+    renderAuditorEvidence();
+    renderRiskOperations();
+    return;
+  }
+  if (
+    accessState.checked &&
     !accessState.authEnabled &&
     !accessState.walletAuthenticationEnabled &&
     !tenantCsrfToken()
@@ -5550,6 +5883,14 @@ async function probeTenantPilot() {
       available.has("pilotVerifyCreditPassportArtifact");
     creditPassportPilot.revokeAvailable =
       available.has("pilotRevokeCreditPassportArtifact");
+    capitalPartnerPilot.authorAvailable =
+      available.has("pilotAuthorCapitalPartnerOffer");
+    capitalPartnerPilot.transitionAvailable =
+      available.has("pilotTransitionCapitalPartnerOffer");
+    capitalPartnerPilot.portfolioAvailable =
+      available.has("pilotReadCapitalPartnerPortfolio");
+    capitalPartnerPilot.facilityAvailable =
+      available.has("pilotReadCapitalPartnerFacility");
     officialReportPilot.createAvailable =
       available.has("pilotCreateOfficialReport");
     officialReportPilot.readAvailable =
@@ -5589,7 +5930,11 @@ async function probeTenantPilot() {
       : operationsAvailable
         ? "Complete the local Human BFF session bootstrap before submitting a private mutation."
         : "The private catalog does not expose the approved Agent Subject and Mandate operations.";
-    if (tenantPilot.connected && currentView !== "risk-operations") {
+    if (
+      tenantPilot.connected &&
+      new Set(["borrower", "controller"]).has(currentWorkspaceName()) &&
+      currentView !== "risk-operations"
+    ) {
       try {
         await recoverAuthenticatedWorkspace();
       } catch (error) {
@@ -5640,6 +5985,10 @@ async function probeTenantPilot() {
     officialReportPilot.readAvailable = false;
     officialReportPilot.retrieveAvailable = false;
     officialReportPilot.revokeAvailable = false;
+    capitalPartnerPilot.authorAvailable = false;
+    capitalPartnerPilot.transitionAvailable = false;
+    capitalPartnerPilot.portfolioAvailable = false;
+    capitalPartnerPilot.facilityAvailable = false;
   } finally {
     tenantPilot.checked = true;
     renderAccess();
@@ -8000,6 +8349,7 @@ function render() {
   renderCreditRegistryEvidence();
   renderRiskOperations();
   renderTradingCapital();
+  renderCapitalPartner();
   renderRuntime();
   renderTenantPilot();
 }
@@ -8175,6 +8525,28 @@ function bindActions() {
       "Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.";
     renderCapitalNetwork();
   });
+  el("capitalPartnerOfferForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    authorCapitalPartnerOffer();
+  });
+  el("capitalPartnerWithdrawOfferBtn").addEventListener(
+    "click",
+    withdrawCapitalPartnerOffer
+  );
+  el("capitalPartnerPortfolioForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    loadCapitalPartnerPortfolio();
+  });
+  for (const control of el("capitalPartnerOfferForm").querySelectorAll(
+    "input, select"
+  )) {
+    control.addEventListener("input", renderCapitalPartner);
+    control.addEventListener("change", renderCapitalPartner);
+  }
+  el("capitalPartnerPortfolioId").addEventListener(
+    "input",
+    renderCapitalPartner
+  );
   el("createHumanSubjectBtn").addEventListener("click", createHumanSubject);
   el("createHumanConsentBtn").addEventListener("click", createHumanConsent);
   el("humanCreditForm").addEventListener("submit", (event) => {

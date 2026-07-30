@@ -37,7 +37,7 @@ function assertHash(name, value) {
 
 function assertOfferChain({ offer, intent, decision }) {
   if (
-    !offer || offer.schemaVersion !== "credit_offer.v1" ||
+    !offer || !["credit_offer.v1", "credit_offer.v2"].includes(offer.schemaVersion) ||
     !intent || intent.schemaVersion !== "credit_intent.v1" ||
     !decision || !["risk_decision.v2", "risk_decision.v3"].includes(decision.schemaVersion) ||
     intent.status !== CreditIntentStatus.DECIDED ||

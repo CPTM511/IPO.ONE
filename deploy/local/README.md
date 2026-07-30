@@ -8,7 +8,7 @@ Linux VM using rootless Docker Compose:
 ```text
 macOS browser / local Agent
             |
-  127.0.0.1:8787-8789
+  127.0.0.1:8787-8790
             |
    private-pilot container
             |
@@ -18,12 +18,12 @@ macOS browser / local Agent
 ```
 
 The PostgreSQL container is reachable only at `127.0.0.2:55432` inside the
-Lima VM. It is not forwarded to the macOS host. The three product workspaces
+Lima VM. It is not forwarded to the macOS host. The four product workspaces
 bind to loopback. Lima's host agent forwards only their guest loopback
 listeners to macOS loopback. `local:up` verifies that the current
-`ipo-one-local` host agent owns all three macOS listeners and that an
+`ipo-one-local` host agent owns all four macOS listeners and that an
 IPO.ONE-specific authentication marker is returned. Startup fails if another
-process owns any of ports 8787-8789.
+process owns any of ports 8787-8790.
 
 ## Requirements
 
@@ -62,6 +62,7 @@ Open:
 - Borrower: <http://127.0.0.1:8787/#human>
 - Principal / Agent Authority: <http://127.0.0.1:8788/#human>
 - Risk Operations: <http://127.0.0.1:8789/#risk>
+- Capital Partner: <http://127.0.0.1:8790/#capital-partners>
 
 The local stack also imports the reviewed CHAIN-001E Base Sepolia observation
 from the checked-in `artifacts/testnet/` receipt. The import is strict,
@@ -148,7 +149,7 @@ manually only when deliberate local credential rotation is required.
 ### Private pilot
 
 - same repository OCI image boundary intended for later hosted execution;
-- three loopback wallet-gated Human/Principal/Risk workspaces;
+- four loopback wallet-gated Human/Principal/Risk/Capital Partner workspaces;
 - durable SIWE challenges, sessions, logout/invalidation, Credential lifecycle,
   authentication Evidence, and Agent replay protection in PostgreSQL;
 - synthetic identities and sandbox value only;
@@ -180,7 +181,7 @@ pnpm run local:acceptance
 pnpm run check
 ```
 
-`local:acceptance` verifies all three HTTP workspaces through the verified Lima
+`local:acceptance` verifies all four HTTP workspaces through the verified Lima
 host-agent loopback forwarding, wallet-gated unauthenticated state, a fresh
 one-use durable Agent proof, PostgreSQL 17, the exact migration count, durable
 Tenant state, forced RLS, both least-privilege application/authentication

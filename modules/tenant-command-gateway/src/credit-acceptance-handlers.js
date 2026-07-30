@@ -14,7 +14,9 @@ import {
   assertMandateAuthorizesCreditOfferAcceptance,
   createAcceptedOfferObligation,
   createCreditEvent,
-  createCreditOfferAcceptance
+  createCreditOfferAcceptance,
+  hashId,
+  verifyCreditPassportArtifact
 } from "../../../packages/domain/src/index.js";
 import { ResourceKind } from "../../abuse-control/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
@@ -26,6 +28,16 @@ import {
 } from "./economic-action-confirmation.js";
 
 const HASH_PATTERN = /^0x[0-9a-f]{64}$/;
+
+function hmacRef(referenceHasher, namespace, value) {
+  if (typeof referenceHasher?.hash !== "function") {
+    throw new DomainError(
+      "invalid_tenant_command_handler",
+      "Offer acceptance reference hashing is unavailable"
+    );
+  }
+  return `0x${Buffer.from(referenceHasher.hash(namespace, value), "base64url").toString("hex")}`;
+}
 
 function unavailable() {
   throw new DomainError("tenant_resource_unavailable", "The requested resource is not available.");
@@ -245,6 +257,7 @@ export function acceptCreditOfferCommandHandler() {
       payload,
       authenticationContext,
       authorizationDecision,
+      referenceHasher,
       now,
       requestId,
       correlationId
@@ -318,6 +331,62 @@ export function acceptCreditOfferCommandHandler() {
         decision.creditIntentId !== intent.creditIntentId
       ) {
         throw new DomainError("offer_not_available", "Offer decision provenance is not current");
+      }
+      let capitalPartnerBinding;
+      if (offer.schemaVersion === "credit_offer.v2") {
+        const profile = await coreRepository.getCapitalPartnerProfileByOperatorInTransaction(
+          client,
+          offer.capitalPartnerOperatorId,
+          { lock: false }
+        );
+        const artifactState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.CREDIT_PASSPORT_ARTIFACT,
+          offer.creditPassportArtifactId,
+          { lock: true }
+        );
+        const artifact = artifactState?.value;
+        if (
+          !profile ||
+          profile.capitalPartnerId !== offer.capitalPartnerId ||
+          profile.operatorActorId !== offer.capitalPartnerOperatorId ||
+          profile.status !== "active" ||
+          profile.sandboxOnly !== true ||
+          profile.productionFundsAuthority !== false ||
+          !artifact ||
+          artifact.creditPassportArtifactId !== offer.creditPassportArtifactId ||
+          artifact.verifierActorRefHash !== hmacRef(
+            referenceHasher,
+            "credit_passport.verifier_actor",
+            offer.capitalPartnerOperatorId
+          ) ||
+          artifact.purpose !== "private_credit_review" ||
+          artifact.subjectId !== intent.subjectId ||
+          intent.purposeCode !== offer.permittedPurposeCode
+        ) {
+          throw new DomainError(
+            "capital_partner_underwriting_not_current",
+            "Capital Partner underwriting provenance is no longer current"
+          );
+        }
+        const verification = verifyCreditPassportArtifact({
+          artifact,
+          presentedArtifactHash: offer.creditPassportArtifactHash,
+          presentedVersion: offer.creditPassportArtifactVersion,
+          sourceDecision: decision,
+          now
+        });
+        if (!verification.verified) {
+          throw new DomainError(
+            "capital_partner_passport_not_current",
+            "Credit Passport is expired, revoked, superseded, or no longer current"
+          );
+        }
+        capitalPartnerBinding = {
+          actorId: offer.capitalPartnerOperatorId,
+          actorType: ActorType.HUMAN,
+          relationship: "verifier"
+        };
       }
 
       const subjectState = await coreRepository.getProjectionStateInTransaction(
@@ -425,6 +494,14 @@ export function acceptCreditOfferCommandHandler() {
           authorityRef: acceptance.authorityRef,
           actorHash: acceptance.acceptedByActorHash,
           actionConfirmation: actionConfirmationSummary,
+          ...(offer.schemaVersion === "credit_offer.v2"
+            ? {
+                capitalPartnerRefHash: hashId("capital_partner", offer.capitalPartnerId),
+                creditPassportArtifactHash: offer.creditPassportArtifactHash,
+                passportVerificationHash: offer.passportVerificationHash,
+                underwritingSnapshotHash: offer.underwritingSnapshotHash
+              }
+            : {}),
           sandboxOnly: true,
           productionAuthority: false,
           causationId: requestId,
@@ -529,7 +606,7 @@ export function acceptCreditOfferCommandHandler() {
             actorId: authenticationContext.actorId,
             actorType: authenticationContext.actorType,
             relationship: "owner"
-          }]
+          }, ...(capitalPartnerBinding ? [capitalPartnerBinding] : [])]
         },
         additionalAuthorizationResources: [{
           resourceType: "evidence",

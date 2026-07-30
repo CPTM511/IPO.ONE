@@ -169,6 +169,7 @@ export const CreditOfferStatus = Object.freeze({
   ACCEPTED: "accepted",
   DECLINED: "declined",
   EXPIRED: "expired",
+  WITHDRAWN: "withdrawn",
   SUPERSEDED: "superseded"
 });
 

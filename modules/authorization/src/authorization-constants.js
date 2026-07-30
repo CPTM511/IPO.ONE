@@ -58,6 +58,7 @@ export const RoleBundle = Object.freeze({
   DEVELOPER: "developer",
   PRINCIPAL_CONTROLLER: "principal_controller",
   HUMAN_BORROWER: "human_borrower",
+  CAPITAL_PARTNER_OPERATOR: "capital_partner_operator",
   AGENT_RUNTIME: "agent_runtime",
   RISK_OPERATOR: "risk_operator",
   OPERATIONS_OPERATOR: "operations_operator",
@@ -121,6 +122,10 @@ export const PilotCapability = Object.freeze({
   CREDIT_PASSPORT_READ_SELF: "credit_passport.read.self",
   CREDIT_PASSPORT_VERIFY_BOUND: "credit_passport.verify.bound",
   CREDIT_PASSPORT_REVOKE_SELF: "credit_passport.revoke.self",
+  CAPITAL_PARTNER_OFFER_CREATE_OWN: "capital_partner.offer.create.own",
+  CAPITAL_PARTNER_OFFER_MANAGE_OWN: "capital_partner.offer.manage.own",
+  CAPITAL_PARTNER_PORTFOLIO_READ_OWN: "capital_partner.portfolio.read.own",
+  CAPITAL_PARTNER_FACILITY_READ_OWN: "capital_partner.facility.read.own",
   OFFICIAL_REPORT_CREATE_OWNED: "official_report.create.owned",
   OFFICIAL_REPORT_READ_OWNED: "official_report.read.owned",
   OFFICIAL_REPORT_RETRIEVE_OWNED: "official_report.retrieve.owned",
@@ -275,6 +280,13 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.TRADING_FACILITY_EVIDENCE_READ_BOUND,
     PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
   ]),
+  [RoleBundle.CAPITAL_PARTNER_OPERATOR]: Object.freeze([
+    PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+    PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    PilotCapability.CAPITAL_PARTNER_OFFER_MANAGE_OWN,
+    PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+    PilotCapability.CAPITAL_PARTNER_FACILITY_READ_OWN
+  ]),
   [RoleBundle.AGENT_RUNTIME]: Object.freeze([
     PilotCapability.SUBJECT_READ_SELF,
     PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
@@ -400,6 +412,7 @@ export const ROLE_BUNDLE_ACTOR_TYPES = Object.freeze({
   [RoleBundle.DEVELOPER]: "human",
   [RoleBundle.PRINCIPAL_CONTROLLER]: "human",
   [RoleBundle.HUMAN_BORROWER]: "human",
+  [RoleBundle.CAPITAL_PARTNER_OPERATOR]: "human",
   [RoleBundle.AGENT_RUNTIME]: "agent",
   [RoleBundle.RISK_OPERATOR]: "risk_operator",
   [RoleBundle.OPERATIONS_OPERATOR]: "operations_operator",

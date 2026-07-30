@@ -520,6 +520,82 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotAuthorCapitalPartnerOffer",
+      "payload": {
+        "creditIntentId": "credit_intent_capital_partner_fixture",
+        "artifactHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "artifactVersion": 1,
+        "underwritingSnapshotHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "facilityLimitMinor": "10000",
+        "approvedPrincipalMinor": "10000",
+        "perDrawCapMinor": "10000",
+        "annualRateBps": 900,
+        "originationFeeMinor": "0",
+        "repaymentFrequency": "end_of_term",
+        "installmentCount": 1,
+        "firstPaymentAt": "2026-08-29T00:00:00.000Z",
+        "maturityAt": "2026-08-29T00:00:00.000Z",
+        "permittedPurposeCode": "working_capital",
+        "conditions": [
+          "passport_current_at_acceptance",
+          "authority_current_at_acceptance",
+          "no_adverse_obligation_at_acceptance"
+        ],
+        "undrawnRevocationRule": "capital_partner_before_acceptance",
+        "validUntil": "2026-07-31T00:00:00.000Z",
+        "reasonCodes": ["capital_partner_underwritten"],
+        "disclosureRef": "terms:capital-partner:phase2",
+        "schemaVersion": "capital_partner_offer_authoring.v1"
+      },
+      "resource": {
+        "resourceType": "credit_passport_artifact",
+        "resourceId": "credit_passport_artifact_fixture"
+      },
+      "idempotencyKey": "fixture-author-capital-partner-offer-0001",
+      "requestId": "request-fixture-author-capital-partner-offer",
+      "correlationId": "correlation-fixture-capital-partner",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotTransitionCapitalPartnerOffer",
+      "payload": {
+        "nextStatus": "superseded",
+        "supersedingOfferId": "credit_offer_capital_partner_replacement",
+        "schemaVersion": "capital_partner_offer_transition.v1"
+      },
+      "resource": {
+        "resourceType": "credit_offer",
+        "resourceId": "credit_offer_capital_partner_fixture"
+      },
+      "idempotencyKey": "fixture-transition-capital-partner-offer-0001",
+      "requestId": "request-fixture-transition-capital-partner-offer",
+      "correlationId": "correlation-fixture-capital-partner",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerFacility",
+      "payload": {},
+      "resource": {
+        "resourceType": "obligation",
+        "resourceId": "obligation_capital_partner_fixture"
+      },
+      "requestId": "request-fixture-read-capital-partner-facility",
+      "correlationId": "correlation-fixture-capital-partner",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPortfolio",
+      "payload": {},
+      "resource": {
+        "resourceType": "capital_partner_profile",
+        "resourceId": "capital_partner_fixture"
+      },
+      "requestId": "request-fixture-read-capital-partner-portfolio",
+      "correlationId": "correlation-fixture-capital-partner",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotCreateOfficialReport",
       "payload": {
         "format": "json",
@@ -3695,6 +3771,202 @@
           "schemaVersion": "credit_passport_artifact.v1"
         },
         "schemaVersion": "tenant_credit_passport_artifact_revoked.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotAuthorCapitalPartnerOffer",
+      "replayed": false,
+      "response": {
+        "offer": {
+          "creditOfferId": "credit_offer_capital_partner_fixture",
+          "creditOfferHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "termsHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "creditIntentId": "credit_intent_capital_partner_fixture",
+          "subjectId": "subject_human_fixture",
+          "riskDecisionId": "risk_decision_capital_partner_fixture",
+          "capitalPartnerId": "capital_partner_fixture",
+          "capitalPartnerOperatorId": "actor_capital_partner_fixture",
+          "creditPassportArtifactId": "credit_passport_artifact_fixture",
+          "creditPassportArtifactHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+          "creditPassportArtifactVersion": 1,
+          "passportVerificationHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "underwritingSnapshotHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "facilityLimitMinor": "10000",
+          "approvedPrincipalMinor": "10000",
+          "perDrawCapMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-08-29T00:00:00.000Z",
+          "maturityAt": "2026-08-29T00:00:00.000Z",
+          "permittedPurposeCode": "working_capital",
+          "conditions": [
+            "passport_current_at_acceptance",
+            "authority_current_at_acceptance",
+            "no_adverse_obligation_at_acceptance"
+          ],
+          "undrawnRevocationRule": "capital_partner_before_acceptance",
+          "disclosureRef": "terms:capital-partner:phase2",
+          "termsVersion": "credit_terms.v2",
+          "validUntil": "2026-07-31T00:00:00.000Z",
+          "reasonCodes": ["capital_partner_underwritten"],
+          "sandboxOnly": true,
+          "productionFundsApproved": false,
+          "status": "offered",
+          "createdAt": "2026-07-30T00:00:00.000Z",
+          "updatedAt": "2026-07-30T00:00:00.000Z",
+          "schemaVersion": "credit_offer.v2"
+        },
+        "capitalPartner": {
+          "capitalPartnerId": "capital_partner_fixture",
+          "displayName": "Pilot Capital Partner"
+        },
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_capital_partner_offer_authored.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotTransitionCapitalPartnerOffer",
+      "replayed": false,
+      "response": {
+        "offer": {
+          "creditOfferId": "credit_offer_capital_partner_fixture",
+          "creditOfferHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "termsHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "creditIntentId": "credit_intent_capital_partner_fixture",
+          "subjectId": "subject_human_fixture",
+          "riskDecisionId": "risk_decision_capital_partner_fixture",
+          "capitalPartnerId": "capital_partner_fixture",
+          "capitalPartnerOperatorId": "actor_capital_partner_fixture",
+          "creditPassportArtifactId": "credit_passport_artifact_fixture",
+          "creditPassportArtifactHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+          "creditPassportArtifactVersion": 1,
+          "passportVerificationHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "underwritingSnapshotHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "facilityLimitMinor": "10000",
+          "approvedPrincipalMinor": "10000",
+          "perDrawCapMinor": "10000",
+          "annualRateBps": 900,
+          "originationFeeMinor": "0",
+          "repaymentFrequency": "end_of_term",
+          "installmentCount": 1,
+          "firstPaymentAt": "2026-08-29T00:00:00.000Z",
+          "maturityAt": "2026-08-29T00:00:00.000Z",
+          "permittedPurposeCode": "working_capital",
+          "conditions": [
+            "passport_current_at_acceptance",
+            "authority_current_at_acceptance",
+            "no_adverse_obligation_at_acceptance"
+          ],
+          "undrawnRevocationRule": "capital_partner_before_acceptance",
+          "disclosureRef": "terms:capital-partner:phase2",
+          "termsVersion": "credit_terms.v2",
+          "validUntil": "2026-07-31T00:00:00.000Z",
+          "reasonCodes": ["capital_partner_underwritten"],
+          "sandboxOnly": true,
+          "productionFundsApproved": false,
+          "status": "withdrawn",
+          "closedAt": "2026-07-30T01:00:00.000Z",
+          "createdAt": "2026-07-30T00:00:00.000Z",
+          "updatedAt": "2026-07-30T01:00:00.000Z",
+          "schemaVersion": "credit_offer.v2"
+        },
+        "schemaVersion": "tenant_capital_partner_offer_transitioned.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerFacility",
+      "replayed": false,
+      "response": {
+        "facility": {
+          "facilityId": "facility_capital_partner_fixture",
+          "capitalPartnerId": "capital_partner_fixture",
+          "creditOfferId": "credit_offer_capital_partner_fixture",
+          "obligationId": "obligation_capital_partner_fixture",
+          "subjectId": "subject_human_fixture",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "facilityLimitMinor": "10000",
+          "utilizedMinor": "10000",
+          "outstandingMinor": "0",
+          "repaidMinor": "10000",
+          "availableMinor": "0",
+          "status": "fully_repaid",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "nextPayment": null,
+          "scheduleHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+          "evidenceCoverage": {
+            "requiredEventCount": 9,
+            "anchoredEventCount": 9,
+            "status": "complete"
+          },
+          "asOf": "2026-08-29T01:00:00.000Z",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "facility_view.v1"
+        },
+        "schemaVersion": "tenant_capital_partner_facility_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPortfolio",
+      "replayed": false,
+      "response": {
+        "profile": {
+          "capitalPartnerId": "capital_partner_fixture",
+          "organizationRef": "urn:ipo.one:synthetic-capital-partner:fixture",
+          "displayName": "Pilot Capital Partner",
+          "operatorActorId": "actor_capital_partner_fixture",
+          "tenantId": "tenant_fixture",
+          "status": "active",
+          "invitationOnly": true,
+          "sameTenantOnly": true,
+          "sandboxOnly": true,
+          "productionFundsAuthority": false,
+          "createdAt": "2026-07-30T00:00:00.000Z",
+          "updatedAt": "2026-07-30T00:00:00.000Z",
+          "profileHash": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "schemaVersion": "capital_partner_profile.v1"
+        },
+        "portfolio": {
+          "capitalPartnerId": "capital_partner_fixture",
+          "authoredOfferCount": 1,
+          "activeOfferCount": 0,
+          "activeFacilityCount": 0,
+          "completedFacilityCount": 1,
+          "committedMinor": "10000",
+          "availableMinor": "0",
+          "utilizedMinor": "10000",
+          "outstandingMinor": "0",
+          "repaidMinor": "10000",
+          "overdueMinor": "0",
+          "writtenOffMinor": "0",
+          "offers": [
+            {
+              "creditOfferId": "credit_offer_capital_partner_fixture",
+              "status": "accepted"
+            }
+          ],
+          "facilities": [
+            {
+              "facilityId": "facility_capital_partner_fixture",
+              "status": "fully_repaid"
+            }
+          ],
+          "asOf": "2026-08-29T01:00:00.000Z",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "portfolioHash": "0x8888888888888888888888888888888888888888888888888888888888888888",
+          "schemaVersion": "capital_partner_portfolio.v1"
+        },
+        "schemaVersion": "tenant_capital_partner_portfolio_view.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },

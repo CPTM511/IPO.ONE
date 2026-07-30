@@ -283,9 +283,11 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(script, /from "\.\/agent-handoff-manifest\.js"/);
     assert.match(script, /from "\.\/agent-pilot-capability-manifest\.js"/);
     assert.match(script, /from "\.\/capital-network-presentation\.js"/);
+    assert.match(script, /from "\.\/capital-partner-presentation\.js"/);
     assert.match(script, /from "\.\/risk-operations-presentation\.js"/);
     assert.match(script, /from "\.\/credit-passport-presentation\.js"/);
     assert.match(script, /from "\.\/decision-passport-presentation\.js"/);
+    assert.match(script, /from "\.\/evidence-receipt-presentation\.js"/);
     assert.match(script, /from "\.\/human-credit-offer-workflow-receipt\.js"/);
     assert.match(script, /from "\.\/human-sandbox-obligation-workflow-receipt\.js"/);
     assert.match(script, /from "\.\/obligation-portfolio-presentation\.js"/);
@@ -308,8 +310,10 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/agent-handoff-manifest.js",
       "/agent-pilot-capability-manifest.js",
       "/capital-network-presentation.js",
+      "/capital-partner-presentation.js",
       "/credit-passport-presentation.js",
       "/decision-passport-presentation.js",
+      "/evidence-receipt-presentation.js",
       "/human-credit-offer-workflow-receipt.js",
       "/human-sandbox-obligation-workflow-receipt.js",
       "/obligation-portfolio-presentation.js",

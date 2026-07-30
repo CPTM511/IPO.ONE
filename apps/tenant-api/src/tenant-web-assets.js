@@ -11,8 +11,10 @@ const WEB_ASSETS = Object.freeze({
   "/agent-handoff-manifest.js": Object.freeze({ file: "agent-handoff-manifest.js", contentType: "text/javascript; charset=utf-8" }),
   "/agent-pilot-capability-manifest.js": Object.freeze({ file: "agent-pilot-capability-manifest.js", contentType: "text/javascript; charset=utf-8" }),
   "/capital-network-presentation.js": Object.freeze({ file: "capital-network-presentation.js", contentType: "text/javascript; charset=utf-8" }),
+  "/capital-partner-presentation.js": Object.freeze({ file: "capital-partner-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/credit-passport-presentation.js": Object.freeze({ file: "credit-passport-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/decision-passport-presentation.js": Object.freeze({ file: "decision-passport-presentation.js", contentType: "text/javascript; charset=utf-8" }),
+  "/evidence-receipt-presentation.js": Object.freeze({ file: "evidence-receipt-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/human-credit-offer-workflow-receipt.js": Object.freeze({ file: "human-credit-offer-workflow-receipt.js", contentType: "text/javascript; charset=utf-8" }),
   "/human-sandbox-obligation-workflow-receipt.js": Object.freeze({ file: "human-sandbox-obligation-workflow-receipt.js", contentType: "text/javascript; charset=utf-8" }),
   "/mobile-wallet-connector.js": Object.freeze({ file: "mobile-wallet-connector.js", contentType: "text/javascript; charset=utf-8" }),
@@ -38,9 +40,12 @@ const WEB_ASSETS = Object.freeze({
 const CSRF_META_PLACEHOLDER = '<meta name="ipo-one-csrf-token" content="" />';
 const LOCAL_AGENT_ACCOUNT_META_PLACEHOLDER =
   '<meta name="ipo-one-local-agent-account" content="" />';
+const WORKSPACE_NAME_META_PLACEHOLDER =
+  '<meta name="ipo-one-workspace-name" content="" />';
 const CSRF_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
 const SESSION_HANDLE_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
 const EVM_ACCOUNT_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+const WORKSPACE_NAME_PATTERN = /^[a-z][A-Za-z0-9]{1,63}$/;
 
 const SECURITY_HEADERS = Object.freeze({
   "cache-control": "no-store",
@@ -57,12 +62,14 @@ const SECURITY_HEADERS = Object.freeze({
 export function createTenantWebAssetHandler({
   csrfTokenProvider,
   sessionHandleProvider,
-  localAgentAccountProvider
+  localAgentAccountProvider,
+  workspaceNameProvider
 } = {}) {
   if (
     (csrfTokenProvider !== undefined && typeof csrfTokenProvider !== "function") ||
     (sessionHandleProvider !== undefined && typeof sessionHandleProvider !== "function") ||
-    (localAgentAccountProvider !== undefined && typeof localAgentAccountProvider !== "function")
+    (localAgentAccountProvider !== undefined && typeof localAgentAccountProvider !== "function") ||
+    (workspaceNameProvider !== undefined && typeof workspaceNameProvider !== "function")
   ) {
     throw new DomainError("invalid_tenant_web_config", "Tenant web bootstrap providers must be functions");
   }
@@ -77,12 +84,23 @@ export function createTenantWebAssetHandler({
     let sessionHandle;
     if (
       asset.file === "index.html" &&
-      (csrfTokenProvider || sessionHandleProvider || localAgentAccountProvider)
+      (
+        csrfTokenProvider ||
+        sessionHandleProvider ||
+        localAgentAccountProvider ||
+        workspaceNameProvider
+      )
     ) {
-      const [csrfToken, providedSessionHandle, localAgentAccount] = await Promise.all([
+      const [
+        csrfToken,
+        providedSessionHandle,
+        localAgentAccount,
+        workspaceName
+      ] = await Promise.all([
         csrfTokenProvider?.({ request, requestId }),
         sessionHandleProvider?.({ request, requestId }),
-        localAgentAccountProvider?.({ request, requestId })
+        localAgentAccountProvider?.({ request, requestId }),
+        workspaceNameProvider?.({ request, requestId })
       ]);
       if (csrfToken !== undefined && !CSRF_TOKEN_PATTERN.test(csrfToken)) {
         throw new DomainError("invalid_tenant_csrf_bootstrap", "Tenant CSRF bootstrap token is invalid");
@@ -94,6 +112,15 @@ export function createTenantWebAssetHandler({
         throw new DomainError(
           "invalid_tenant_agent_account_bootstrap",
           "Tenant local Agent account bootstrap is invalid"
+        );
+      }
+      if (
+        workspaceName !== undefined &&
+        !WORKSPACE_NAME_PATTERN.test(workspaceName)
+      ) {
+        throw new DomainError(
+          "invalid_tenant_workspace_bootstrap",
+          "Tenant workspace bootstrap name is invalid"
         );
       }
       sessionHandle = providedSessionHandle;
@@ -117,6 +144,18 @@ export function createTenantWebAssetHandler({
         html = html.replace(
           LOCAL_AGENT_ACCOUNT_META_PLACEHOLDER,
           `<meta name="ipo-one-local-agent-account" content="${localAgentAccount}" />`
+        );
+      }
+      if (workspaceName !== undefined) {
+        if (html.split(WORKSPACE_NAME_META_PLACEHOLDER).length !== 2) {
+          throw new DomainError(
+            "invalid_tenant_web_asset",
+            "Tenant web shell workspace placeholder is invalid"
+          );
+        }
+        html = html.replace(
+          WORKSPACE_NAME_META_PLACEHOLDER,
+          `<meta name="ipo-one-workspace-name" content="${workspaceName}" />`
         );
       }
       body = Buffer.from(html);

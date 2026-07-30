@@ -18,6 +18,7 @@ import {
   setTenantTransactionContext
 } from "../../../modules/persistence/src/index.js";
 import {
+  createCapitalPartnerProfile,
   createOperationalId,
   hashId
 } from "../../../packages/domain/src/index.js";
@@ -86,6 +87,17 @@ const PROFILES = Object.freeze({
       PilotCapability.OFFICIAL_REPORT_READ_OWNED,
       PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
       PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
+    ])
+  }),
+  capital_partner_operator: Object.freeze({
+    actorType: ActorType.HUMAN,
+    roleBundle: RoleBundle.CAPITAL_PARTNER_OPERATOR,
+    capabilities: Object.freeze([
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+      PilotCapability.CAPITAL_PARTNER_OFFER_MANAGE_OWN,
+      PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+      PilotCapability.CAPITAL_PARTNER_FACILITY_READ_OWN
     ])
   }),
   agent_runtime: Object.freeze({
@@ -418,6 +430,78 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
     const bound = binding.rows[0];
     if (!bound || bound.actor_type !== identity.actorType || bound.actor_status !== "active" || bound.membership_status !== "active" || bound.policy_version !== config.policyVersion || bound.controller_actor_id !== (identity.controllerActorId ?? null) || JSON.stringify(bound.capabilities) !== JSON.stringify(identity.capabilities) || JSON.stringify(bound.client_ids) !== JSON.stringify([identity.clientId])) {
       throw fail(`existing Actor binding does not match ${identity.actorId}`);
+    }
+  }
+
+  for (const credential of config.credentials.filter(
+    ({ profileName }) => profileName === "capital_partner_operator"
+  )) {
+    const capitalPartnerId = `capital_partner_${hashId(
+      "capital_partner_identity",
+      `${config.tenant.tenantId}:${credential.actorId}`
+    ).slice(2)}`;
+    const existingProfile = await client.query(
+      "SELECT * FROM capital_partner_profiles WHERE id = $1",
+      [capitalPartnerId]
+    );
+    if (existingProfile.rowCount === 0) {
+      const profile = createCapitalPartnerProfile({
+        capitalPartnerId,
+        organizationRef: `${config.tenant.organizationRef}/capital-partner/${capitalPartnerId.slice(-12)}`,
+        displayName: `Invited Capital Partner ${capitalPartnerId.slice(-8).toUpperCase()}`,
+        operatorActorId: credential.actorId,
+        tenantId: config.tenant.tenantId,
+        now
+      });
+      await client.query(
+        `INSERT INTO capital_partner_profiles(
+           id, profile_hash, organization_ref, display_name, operator_actor_id,
+           status, invitation_only, same_tenant_only, sandbox_only,
+           production_funds_authority, created_at, updated_at, schema_version
+         ) VALUES (
+           $1,$2,$3,$4,$5,'active',TRUE,TRUE,TRUE,FALSE,$6,$6,
+           'capital_partner_profile.v1'
+         )`,
+        [
+          profile.capitalPartnerId,
+          profile.profileHash,
+          profile.organizationRef,
+          profile.displayName,
+          profile.operatorActorId,
+          now
+        ]
+      );
+      await client.query(
+        `INSERT INTO authorization_resources(
+           tenant_id, resource_type, resource_id, status, version,
+           created_at, updated_at, schema_version
+         ) VALUES ($1,'capital_partner_profile',$2,'active',1,$3,$3,'authorization_resource.v1')`,
+        [config.tenant.tenantId, capitalPartnerId, now]
+      );
+      await client.query(
+        `INSERT INTO authorization_resource_bindings(
+           tenant_id, resource_type, resource_id, actor_id, relationship,
+           status, version, created_at, updated_at, schema_version
+         ) VALUES (
+           $1,'capital_partner_profile',$2,$3,'owner','active',1,$4,$4,
+           'authorization_resource_binding.v1'
+         )`,
+        [config.tenant.tenantId, capitalPartnerId, credential.actorId, now]
+      );
+    } else {
+      const stored = existingProfile.rows[0];
+      if (
+        stored.tenant_id !== config.tenant.tenantId ||
+        stored.operator_actor_id !== credential.actorId ||
+        stored.status !== "active" ||
+        stored.invitation_only !== true ||
+        stored.same_tenant_only !== true ||
+        stored.sandbox_only !== true ||
+        stored.production_funds_authority !== false ||
+        stored.schema_version !== "capital_partner_profile.v1"
+      ) {
+        throw fail(`existing Capital Partner profile does not match ${credential.actorId}`);
+      }
     }
   }
 

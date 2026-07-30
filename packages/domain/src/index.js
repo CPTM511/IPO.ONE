@@ -7,6 +7,7 @@ export * from "./agent-account-proof.js";
 export * from "./credit-decision.js";
 export * from "./risk-evidence.js";
 export * from "./credit-passport-artifact.js";
+export * from "./capital-partner-marketplace.js";
 export * from "./credit-outcome.js";
 export * from "./official-report-artifact.js";
 export * from "./trading-capital-evidence.js";

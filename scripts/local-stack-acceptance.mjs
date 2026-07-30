@@ -178,6 +178,12 @@ const databaseEvidence = compose(
        'authenticationCredentialCount', (
          SELECT count(*) FROM authentication_credentials
        ),
+       'activeAuthenticationCredentialCount', (
+         SELECT count(*) FROM authentication_credentials WHERE status = 'active'
+       ),
+       'capitalPartnerProfileCount', (
+         SELECT count(*) FROM capital_partner_profiles
+       ),
        'evidenceEnvelopeCount', (
          SELECT count(*) FROM evidence_envelopes
        ),
@@ -239,7 +245,9 @@ assert.equal(Number(database.tenantCount), 1);
 assert.ok(Number(database.forcedRlsTables) > 0);
 assert.equal(database.appRoleSafe, true);
 assert.equal(database.authenticationRoleSafe, true);
-assert.equal(Number(database.authenticationCredentialCount), 4);
+assert.ok(Number(database.authenticationCredentialCount) >= 5);
+assert.equal(Number(database.activeAuthenticationCredentialCount), 5);
+assert.equal(Number(database.capitalPartnerProfileCount), 1);
 assert.equal(
   Number(database.evidenceAnchorCount),
   Number(database.evidenceEnvelopeCount)
@@ -309,7 +317,7 @@ assert.equal(pendingOutbox, 0);
 
 process.stdout.write(
   `LOCAL-STACK-001 live acceptance passed: PostgreSQL 17, ${migrations.length} ` +
-    "migrations, wallet-gated Human/Risk workspaces and a durable Agent proof through the " +
+    "migrations, wallet-gated Human/Principal/Risk/Capital Partner workspaces and a durable Agent proof through the " +
     "verified Lima host-agent loopback forwarding, least-privilege forced RLS, worker heartbeat, " +
     "reconciliation, failure-free one-to-one Evidence anchor coverage without fake transaction " +
     "hashes, and " +

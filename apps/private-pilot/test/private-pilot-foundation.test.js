@@ -111,7 +111,7 @@ function agentAccountChallenge(account, overrides = {}) {
 
 test("private pilot identities are role-separated over one Tenant", () => {
   const runtime = createLocalPilotIdentities();
-  const { borrower, controller, agent, risk } = runtime.identities;
+  const { borrower, capitalPartner, controller, agent, risk } = runtime.identities;
 
   assert.equal(borrower.actorType, ActorType.HUMAN);
   assert.equal(borrower.roleBundle, RoleBundle.HUMAN_BORROWER);
@@ -119,6 +119,12 @@ test("private pilot identities are role-separated over one Tenant", () => {
   assert.ok(borrower.capabilities.includes(PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF));
   assert.equal(borrower.capabilities.includes(PilotCapability.RISK_READ_TENANT), false);
   assert.equal(borrower.capabilities.includes(PilotCapability.PILOT_HEALTH_READ), false);
+
+  assert.equal(capitalPartner.roleBundle, RoleBundle.CAPITAL_PARTNER_OPERATOR);
+  assert.ok(capitalPartner.capabilities.includes(
+    PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN
+  ));
+  assert.equal(capitalPartner.capabilities.includes(PilotCapability.CREDIT_REQUEST), false);
 
   assert.equal(controller.roleBundle, RoleBundle.PRINCIPAL_CONTROLLER);
   assert.ok(controller.capabilities.includes(PilotCapability.MANDATE_ACTIVATE_OWNED));
@@ -227,6 +233,7 @@ test("private pilot accepts a closed design-partner Tenant profile without confi
     servicingQueueId: "servicing_queue_design_partner_01",
     identities: {
       borrower: { actorId: "actor_dp01_borrower" },
+      capitalPartner: { actorId: "actor_dp01_capital_partner" },
       controller: { actorId: "actor_dp01_controller" },
       agent: { actorId: "actor_dp01_agent" },
       risk: { actorId: "actor_dp01_risk" }
@@ -242,8 +249,8 @@ test("private pilot accepts a closed design-partner Tenant profile without confi
     schemaVersion: "private_pilot_profile_check.v1",
     tenantId: "tenant_design_partner_01",
     mode: "local_no_funds",
-    identityCount: 4,
-    roleNames: ["agent", "borrower", "controller", "risk"],
+    identityCount: 5,
+    roleNames: ["agent", "borrower", "capitalPartner", "controller", "risk"],
     syntheticDataOnly: true,
     realFundsEnabled: false,
     remoteAccessEnabled: false,

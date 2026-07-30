@@ -103,6 +103,7 @@ assert.equal(
 
 const requiredAcceptanceIds = new Set([
   "complete_dual_native_credit_lifecycle_and_outcome_retry",
+  "phase2_bilateral_marketplace_four_paths",
   "database_and_projection_restart",
   "duplicate_command_idempotency",
   "durable_admission_execution_retention",
@@ -149,21 +150,21 @@ assert.deepEqual(manifest.requiredChecks, [
 assert.deepEqual(manifest.verification, {
   verifiedOn: "2026-07-30",
   repositoryTests: {
-    passed: 659,
+    passed: 666,
     failed: 0
   },
   postgresTests: {
-    passed: 81,
+    passed: 82,
     failed: 0,
     freshDatabase: true
   },
   localStack: {
-    migrationCount: 47,
+    migrationCount: 48,
     liveAcceptancePasses: 2,
     fullRestartBetweenPasses: true,
     persistentVolumeRetained: true,
     pendingOutboxAfterRestart: 0,
-    authenticationCredentialCount: 4,
+    authenticationCredentialCount: 5,
     durableHumanAuthentication: true,
     durableAgentCredential: true,
     invitedWalletPrivateKeyStored: false,
@@ -199,7 +200,7 @@ assert.equal(
 );
 
 console.log(
-  "LOCAL-RC-001 manifest passed: runtime, 47 migrations, contracts, fixed " +
+  "LOCAL-RC-001 manifest passed: runtime, 48 migrations, contracts, fixed " +
     "test data, product experience, restart operations, failure-path and Evidence-anchor matrices, and disabled authority are pinned; " +
     "the candidate is source-sealed by the Git commit containing this manifest."
 );

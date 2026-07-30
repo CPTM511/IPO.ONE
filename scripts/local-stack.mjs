@@ -45,7 +45,7 @@ const AGENT_KEY_FILE = resolve(
   "agent-key.v1.json"
 );
 const LIMA_CONFIG = resolve(homedir(), ".lima", INSTANCE, "lima.yaml");
-const LOCAL_PORTS = Object.freeze([8787, 8788, 8789]);
+const LOCAL_PORTS = Object.freeze([8787, 8788, 8789, 8790]);
 
 function fail(message) {
   process.stderr.write(`LOCAL-STACK-001: ${message}\n`);
@@ -144,7 +144,7 @@ async function ensureLoopbackForwarding() {
   }
   fail(
     "Lima host-agent loopback forwarding failed ownership or IPO.ONE marker checks; " +
-      "stop any other process using ports 8787-8789 and retry"
+      "stop any other process using ports 8787-8790 and retry"
   );
 }
 
@@ -401,7 +401,7 @@ switch (command) {
     compose(["up", "--detach", "--build", "--wait"]);
     await ensureLoopbackForwarding();
     process.stdout.write(
-      "IPO.ONE local stack is healthy at 127.0.0.1 ports 8787-8789.\n"
+      "IPO.ONE local stack is healthy at 127.0.0.1 ports 8787-8790.\n"
     );
     break;
   case "status":

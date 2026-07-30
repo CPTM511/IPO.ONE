@@ -15,7 +15,8 @@ const CONFIG_KEYS = new Set([
   "port",
   "serveAuthentication",
   "serveEvidenceAnchors",
-  "sessionHandleProvider"
+  "sessionHandleProvider",
+  "workspaceNameProvider"
 ]);
 
 function assertClosedConfig(input) {
@@ -49,6 +50,7 @@ export function createTenantPilotHost(input) {
     serveAuthentication,
     serveEvidenceAnchors,
     sessionHandleProvider,
+    workspaceNameProvider,
     clock,
     port = 0
   } = input;
@@ -81,7 +83,8 @@ export function createTenantPilotHost(input) {
     serveWebAsset: createTenantWebAssetHandler({
       csrfTokenProvider,
       sessionHandleProvider,
-      localAgentAccountProvider
+      localAgentAccountProvider,
+      workspaceNameProvider
     })
   });
 }

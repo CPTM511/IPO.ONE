@@ -244,6 +244,74 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async authorCapitalPartnerOffer({
+    creditPassportArtifactId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotAuthorCapitalPartnerOffer",
+      payload,
+      resource: {
+        resourceType: "credit_passport_artifact",
+        resourceId: creditPassportArtifactId
+      },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async transitionCapitalPartnerOffer({
+    creditOfferId,
+    payload,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotTransitionCapitalPartnerOffer",
+      payload,
+      resource: { resourceType: "credit_offer", resourceId: creditOfferId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async getCapitalPartnerPortfolio({
+    capitalPartnerId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotReadCapitalPartnerPortfolio",
+      payload: {},
+      resource: {
+        resourceType: "capital_partner_profile",
+        resourceId: capitalPartnerId
+      },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getCapitalPartnerFacility({
+    obligationId,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotReadCapitalPartnerFacility",
+      payload: {},
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      requestId,
+      correlationId
+    });
+  }
+
   async executeSandboxObligation({ obligationId, idempotencyKey, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotExecuteSandboxObligation",

@@ -54,6 +54,10 @@
         "pilotRevokeDraftMandate",
         "pilotRevokeCreditPassportArtifact",
         "pilotRevokeOfficialReport",
+        "pilotAuthorCapitalPartnerOffer",
+        "pilotTransitionCapitalPartnerOffer",
+        "pilotReadCapitalPartnerFacility",
+        "pilotReadCapitalPartnerPortfolio",
         "pilotSubmitAgentAccountProof",
         "pilotSubmitPilotFeedback",
         "pilotWriteOffSandboxObligation",
@@ -1329,6 +1333,106 @@
       }
     },
     {
+      "title": "Author Exact Capital Partner Sandbox Offer",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotAuthorCapitalPartnerOffer"
+        },
+        "payload": {
+          "$ref": "#/$defs/capitalPartnerOfferAuthoringPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditPassportArtifactResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["purpose"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] }
+        ]
+      }
+    },
+    {
+      "title": "Transition Own Capital Partner Sandbox Offer",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotTransitionCapitalPartnerOffer"
+        },
+        "payload": {
+          "$ref": "#/$defs/capitalPartnerOfferTransitionPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditOfferResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["purpose"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] }
+        ]
+      }
+    },
+    {
+      "title": "Read Own Capital Partner Facility",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadCapitalPartnerFacility"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["idempotencyKey"] },
+          { "required": ["purpose"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] }
+        ]
+      }
+    },
+    {
+      "title": "Read Own Capital Partner Portfolio",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadCapitalPartnerPortfolio"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/capitalPartnerProfileResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["idempotencyKey"] },
+          { "required": ["purpose"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] }
+        ]
+      }
+    },
+    {
       "title": "Create Authenticated Official Report",
       "required": [
         "idempotencyKey",
@@ -2166,6 +2270,7 @@
         "resourceType": {
           "enum": [
             "subject",
+            "capital_partner_profile",
             "consent",
             "credit_intent",
             "credit_offer",
@@ -2238,6 +2343,22 @@
       "properties": {
         "resourceType": {
           "const": "credit_passport_artifact"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "capitalPartnerProfileResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "capital_partner_profile"
         },
         "resourceId": {
           "$ref": "#/$defs/domainIdentifier"
@@ -2911,6 +3032,138 @@
         },
         "schemaVersion": {
           "const": "credit_passport_verification_request.v1"
+        }
+      }
+    },
+    "capitalPartnerOfferAuthoringPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditIntentId",
+        "artifactHash",
+        "artifactVersion",
+        "underwritingSnapshotHash",
+        "assetId",
+        "facilityLimitMinor",
+        "approvedPrincipalMinor",
+        "perDrawCapMinor",
+        "annualRateBps",
+        "originationFeeMinor",
+        "repaymentFrequency",
+        "installmentCount",
+        "firstPaymentAt",
+        "maturityAt",
+        "permittedPurposeCode",
+        "conditions",
+        "undrawnRevocationRule",
+        "validUntil",
+        "reasonCodes",
+        "disclosureRef",
+        "schemaVersion"
+      ],
+      "properties": {
+        "creditIntentId": { "$ref": "#/$defs/domainIdentifier" },
+        "artifactHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "artifactVersion": { "type": "integer", "minimum": 1 },
+        "underwritingSnapshotHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "assetId": { "$ref": "#/$defs/domainIdentifier" },
+        "facilityLimitMinor": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,77}$"
+        },
+        "approvedPrincipalMinor": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,77}$"
+        },
+        "perDrawCapMinor": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,77}$"
+        },
+        "annualRateBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "originationFeeMinor": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,77})$"
+        },
+        "repaymentFrequency": {
+          "enum": ["weekly", "biweekly", "monthly", "end_of_term"]
+        },
+        "installmentCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 520
+        },
+        "firstPaymentAt": { "type": "string", "format": "date-time" },
+        "maturityAt": { "type": "string", "format": "date-time" },
+        "permittedPurposeCode": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "passport_current_at_acceptance",
+              "authority_current_at_acceptance",
+              "no_adverse_obligation_at_acceptance"
+            ]
+          }
+        },
+        "undrawnRevocationRule": {
+          "enum": [
+            "capital_partner_before_acceptance",
+            "irrevocable_until_expiry"
+          ]
+        },
+        "validUntil": { "type": "string", "format": "date-time" },
+        "reasonCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
+          }
+        },
+        "disclosureRef": { "$ref": "#/$defs/domainIdentifier" },
+        "schemaVersion": {
+          "const": "capital_partner_offer_authoring.v1"
+        }
+      }
+    },
+    "capitalPartnerOfferTransitionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nextStatus",
+        "supersedingOfferId",
+        "schemaVersion"
+      ],
+      "properties": {
+        "nextStatus": {
+          "enum": ["expired", "withdrawn", "superseded"]
+        },
+        "supersedingOfferId": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/domainIdentifier" }
+          ]
+        },
+        "schemaVersion": {
+          "const": "capital_partner_offer_transition.v1"
         }
       }
     },

@@ -290,6 +290,7 @@ const TENANT_OWNED_TABLES = [
   "break_glass_custodian_decisions",
   "break_glass_incidents",
   "break_glass_reviews",
+  "capital_partner_profiles",
   "command_events",
   "command_idempotency",
   "consent_records",
@@ -1081,12 +1082,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0044_durable_tenant_command_pause",
         "0045_evidence_chain_anchors",
         "0046_evidence_anchor_coverage_guard",
-        "0047_chain_001f_anchor_binding_repair"
+        "0047_chain_001f_anchor_binding_repair",
+        "0048_synthetic_capital_partner_marketplace"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 47 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 48 }), [
+        "0048_synthetic_capital_partner_marketplace",
         "0047_chain_001f_anchor_binding_repair",
         "0046_evidence_anchor_coverage_guard",
         "0045_evidence_chain_anchors",
@@ -1182,10 +1185,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0044_durable_tenant_command_pause",
         "0045_evidence_chain_anchors",
         "0046_evidence_anchor_coverage_guard",
-        "0047_chain_001f_anchor_binding_repair"
+        "0047_chain_001f_anchor_binding_repair",
+        "0048_synthetic_capital_partner_marketplace"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 45 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 46 }), [
+        "0048_synthetic_capital_partner_marketplace",
         "0047_chain_001f_anchor_binding_repair",
         "0046_evidence_anchor_coverage_guard",
         "0045_evidence_chain_anchors",
@@ -1290,7 +1295,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0044_durable_tenant_command_pause",
         "0045_evidence_chain_anchors",
         "0046_evidence_anchor_coverage_guard",
-        "0047_chain_001f_anchor_binding_repair"
+        "0047_chain_001f_anchor_binding_repair",
+        "0048_synthetic_capital_partner_marketplace"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))

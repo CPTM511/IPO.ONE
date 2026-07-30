@@ -11,6 +11,9 @@
     "borrower": {
       "actorId": "actor_dp01_human_borrower"
     },
+    "capitalPartner": {
+      "actorId": "actor_dp01_capital_partner"
+    },
     "controller": {
       "actorId": "actor_dp01_principal_controller"
     },

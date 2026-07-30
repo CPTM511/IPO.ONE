@@ -2,8 +2,11 @@ import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hashId } from "../../../packages/domain/src/index.js";
-import { createOperationalId } from "../../../packages/domain/src/index.js";
+import {
+  createCapitalPartnerProfile,
+  createOperationalId,
+  hashId
+} from "../../../packages/domain/src/index.js";
 import {
   assertTenantDatabaseRole,
   createPostgresPool,
@@ -324,6 +327,37 @@ async function seedAuthenticationCredential(client, {
     "sender.constraint",
     senderThumbprint
   );
+  const retired = await client.query(
+    `UPDATE authentication_credentials
+        SET status = 'revoked', updated_at = $1
+      WHERE tenant_id = $2
+        AND issuer = $3
+        AND actor_id = $4
+        AND client_id <> $5
+        AND status = 'active'
+      RETURNING id`,
+    [now, tenantId, issuer, actor.actorId, actor.clientId]
+  );
+  for (const row of retired.rows) {
+    await client.query(
+      `INSERT INTO authentication_events(
+         id, tenant_id, event_type, actor_id, credential_id, reason_code,
+         occurred_at, payload, schema_version
+       ) VALUES (
+         $1, $2, 'credential_revoked', $3, $4,
+         'local_pilot_capability_generation_rotated', $5, $6::jsonb,
+         'authentication_event.v1'
+       )`,
+      [
+        createOperationalId("auth_event"),
+        tenantId,
+        LOCAL_AUTHENTICATION_SYSTEM_ACTOR_ID,
+        row.id,
+        now,
+        JSON.stringify({ status: "revoked" })
+      ]
+    );
+  }
   const existing = await client.query(
     `SELECT *
        FROM authentication_credentials
@@ -440,6 +474,67 @@ async function seedRiskResources(ownerPool, riskIdentity, profile, now) {
   });
 }
 
+async function seedCapitalPartnerProfile(ownerPool, identity, profile, now) {
+  const context = createTenantSecurityContext({
+    tenantId: profile.tenantId,
+    actorId: identity.actorId,
+    policyVersion: "security_001.v1",
+    source: "local_test"
+  });
+  const capitalPartnerId = `capital_partner_${hashId(
+    "capital_partner_identity",
+    `${profile.tenantId}:${identity.actorId}`
+  ).slice(2)}`;
+  const capitalPartner = createCapitalPartnerProfile({
+    capitalPartnerId,
+    organizationRef: "urn:ipo.one:synthetic-capital-partner:alpha",
+    displayName: "IPO.ONE Pilot Capital Partner",
+    operatorActorId: identity.actorId,
+    tenantId: profile.tenantId,
+    now
+  });
+  await withTenantTransaction(ownerPool, context, async (client) => {
+    await client.query(
+      `INSERT INTO capital_partner_profiles(
+         id, profile_hash, organization_ref, display_name, operator_actor_id,
+         status, invitation_only, same_tenant_only, sandbox_only,
+         production_funds_authority, created_at, updated_at, schema_version
+       ) VALUES (
+         $1,$2,$3,$4,$5,'active',TRUE,TRUE,TRUE,FALSE,$6,$6,
+         'capital_partner_profile.v1'
+       ) ON CONFLICT (id) DO NOTHING`,
+      [
+        capitalPartner.capitalPartnerId,
+        capitalPartner.profileHash,
+        capitalPartner.organizationRef,
+        capitalPartner.displayName,
+        capitalPartner.operatorActorId,
+        now
+      ]
+    );
+    await client.query(
+      `INSERT INTO authorization_resources(
+         tenant_id, resource_type, resource_id, status, version,
+         created_at, updated_at, schema_version
+       ) VALUES (
+         $1,'capital_partner_profile',$2,'active',1,$3,$3,
+         'authorization_resource.v1'
+       ) ON CONFLICT (tenant_id, resource_type, resource_id) DO NOTHING`,
+      [profile.tenantId, capitalPartner.capitalPartnerId, now]
+    );
+    await client.query(
+      `INSERT INTO authorization_resource_bindings(
+         tenant_id, resource_type, resource_id, actor_id, relationship,
+         status, version, created_at, updated_at, schema_version
+       ) VALUES (
+         $1,'capital_partner_profile',$2,$3,'owner','active',1,$4,$4,
+         'authorization_resource_binding.v1'
+       ) ON CONFLICT (tenant_id, resource_type, resource_id, actor_id) DO NOTHING`,
+      [profile.tenantId, capitalPartner.capitalPartnerId, identity.actorId, now]
+    );
+  });
+}
+
 export async function provisionPrivatePilotDatabase({
   ownerConnectionString,
   identities,
@@ -460,6 +555,12 @@ export async function provisionPrivatePilotDatabase({
     for (const identity of Object.values(identities)) {
       await seedIdentity(ownerPool, identity, checkedProfile, now);
     }
+    await seedCapitalPartnerProfile(
+      ownerPool,
+      identities.capitalPartner,
+      checkedProfile,
+      now
+    );
     await seedRiskResources(ownerPool, identities.risk, checkedProfile, now);
     if (creditRegistryObservationArtifactPath) {
       const riskContext = createTenantSecurityContext({
@@ -547,7 +648,12 @@ export async function provisionPrivatePilotAuthentication({
       source: "system_worker"
     });
     await withTenantTransaction(ownerPool, context, async (client) => {
-      for (const [index, name] of ["borrower", "controller", "risk"].entries()) {
+      for (const [index, name] of [
+        "borrower",
+        "controller",
+        "risk",
+        "capitalPartner"
+      ].entries()) {
         const actor = identities[name];
         const issuer = `https://127.0.0.1:${basePort + index}`;
         await seedAuthenticationCredential(client, {

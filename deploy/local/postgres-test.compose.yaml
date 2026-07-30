@@ -1,0 +1,7 @@
+services:
+  pilot:
+    working_dir: /workspace
+    environment:
+      DATABASE_URL: postgresql://ipo_one_owner:${IPO_ONE_LOCAL_POSTGRES_PASSWORD:?local PostgreSQL password is required}@127.0.0.2:55432/ipo_one_phase2_test
+    volumes:
+      - ../..:/workspace:ro

@@ -14,7 +14,7 @@ cannot approve billing, install an integration, provision a resource, write a
 secret, mutate DNS, open remote access, activate the worker, or launch.
 
 `LOCAL-STACK-001` validates the executable L0 counterpart: rootless Lima,
-digest-pinned PostgreSQL 17, three loopback workspaces, and a separate unsigned
+digest-pinned PostgreSQL 17, four loopback workspaces, and a separate unsigned
 synthetic worker. It cannot broaden local execution into remote, cloud,
 testnet-write, signer, Human-credit, or real-funds authority.
 

@@ -41,6 +41,10 @@ export type TenantProtocolOperationId =
   | "pilotRevokeDraftMandate"
   | "pilotRevokeCreditPassportArtifact"
   | "pilotRevokeOfficialReport"
+  | "pilotAuthorCapitalPartnerOffer"
+  | "pilotTransitionCapitalPartnerOffer"
+  | "pilotReadCapitalPartnerFacility"
+  | "pilotReadCapitalPartnerPortfolio"
   | "pilotSubmitAgentAccountProof"
   | "pilotSubmitPilotFeedback"
   | "pilotWriteOffSandboxObligation"
@@ -1480,6 +1484,65 @@ export interface RevokeCreditPassportArtifactRequest extends TenantProtocolReque
   idempotencyKey: string;
 }
 
+export type CapitalPartnerOfferCondition =
+  | "passport_current_at_acceptance"
+  | "authority_current_at_acceptance"
+  | "no_adverse_obligation_at_acceptance";
+
+export interface AuthorCapitalPartnerOfferRequest extends TenantProtocolRequestBase {
+  operationId: "pilotAuthorCapitalPartnerOffer";
+  payload: {
+    creditIntentId: string;
+    artifactHash: string;
+    artifactVersion: number;
+    underwritingSnapshotHash: string;
+    assetId: string;
+    facilityLimitMinor: string;
+    approvedPrincipalMinor: string;
+    perDrawCapMinor: string;
+    annualRateBps: number;
+    originationFeeMinor: string;
+    repaymentFrequency: RepaymentFrequency;
+    installmentCount: number;
+    firstPaymentAt: string;
+    maturityAt: string;
+    permittedPurposeCode: string;
+    conditions: CapitalPartnerOfferCondition[];
+    undrawnRevocationRule:
+      | "capital_partner_before_acceptance"
+      | "irrevocable_until_expiry";
+    validUntil: string;
+    reasonCodes: string[];
+    disclosureRef: string;
+    schemaVersion: "capital_partner_offer_authoring.v1";
+  };
+  resource: { resourceType: "credit_passport_artifact"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface TransitionCapitalPartnerOfferRequest extends TenantProtocolRequestBase {
+  operationId: "pilotTransitionCapitalPartnerOffer";
+  payload: {
+    nextStatus: "expired" | "withdrawn" | "superseded";
+    supersedingOfferId: string | null;
+    schemaVersion: "capital_partner_offer_transition.v1";
+  };
+  resource: { resourceType: "credit_offer"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ReadCapitalPartnerFacilityRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadCapitalPartnerFacility";
+  payload: Record<string, never>;
+  resource: { resourceType: "obligation"; resourceId: string };
+}
+
+export interface ReadCapitalPartnerPortfolioRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadCapitalPartnerPortfolio";
+  payload: Record<string, never>;
+  resource: { resourceType: "capital_partner_profile"; resourceId: string };
+}
+
 export interface CreateOfficialReportRequest extends TenantProtocolRequestBase {
   operationId: "pilotCreateOfficialReport";
   payload: {
@@ -1555,6 +1618,10 @@ export type TenantProtocolRequest =
   | RevokeConsentRequest
   | RevokeDraftMandateRequest
   | RevokeCreditPassportArtifactRequest
+  | AuthorCapitalPartnerOfferRequest
+  | TransitionCapitalPartnerOfferRequest
+  | ReadCapitalPartnerFacilityRequest
+  | ReadCapitalPartnerPortfolioRequest
   | RevokeOfficialReportRequest
   | SubmitAgentAccountProofRequest
   | SubmitPilotFeedbackRequest
@@ -2712,6 +2779,121 @@ export interface CreditPassportArtifactRevokedResponse {
   schemaVersion: "tenant_credit_passport_artifact_revoked.v1";
 }
 
+export interface CapitalPartnerCreditOffer {
+  creditOfferId: string;
+  creditOfferHash: string;
+  termsHash: string;
+  creditIntentId: string;
+  subjectId: string;
+  riskDecisionId: string;
+  capitalPartnerId: string;
+  capitalPartnerOperatorId: string;
+  creditPassportArtifactId: string;
+  creditPassportArtifactHash: string;
+  creditPassportArtifactVersion: number;
+  passportVerificationHash: string;
+  underwritingSnapshotHash: string;
+  assetId: string;
+  facilityLimitMinor: string;
+  approvedPrincipalMinor: string;
+  perDrawCapMinor: string;
+  annualRateBps: number;
+  originationFeeMinor: string;
+  repaymentFrequency: RepaymentFrequency;
+  installmentCount: number;
+  firstPaymentAt: string;
+  maturityAt: string;
+  permittedPurposeCode: string;
+  conditions: CapitalPartnerOfferCondition[];
+  undrawnRevocationRule:
+    | "capital_partner_before_acceptance"
+    | "irrevocable_until_expiry";
+  disclosureRef: string;
+  termsVersion: "credit_terms.v2";
+  validUntil: string;
+  reasonCodes: string[];
+  sandboxOnly: true;
+  productionFundsApproved: false;
+  status: "offered" | "accepted" | "declined" | "expired" | "withdrawn" | "superseded";
+  acceptanceId?: string;
+  acceptedAt?: string;
+  supersedingOfferId?: string;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  schemaVersion: "credit_offer.v2";
+}
+
+export interface CapitalPartnerOfferAuthoredResponse {
+  offer: CapitalPartnerCreditOffer;
+  capitalPartner: {
+    capitalPartnerId: string;
+    displayName: string;
+  };
+  fundsAuthority: false;
+  schemaVersion: "tenant_capital_partner_offer_authored.v1";
+}
+
+export interface CapitalPartnerOfferTransitionedResponse {
+  offer: CapitalPartnerCreditOffer;
+  schemaVersion: "tenant_capital_partner_offer_transitioned.v1";
+}
+
+export interface CapitalPartnerFacilityViewResponse {
+  facility: {
+    facilityId: string;
+    capitalPartnerId: string;
+    creditOfferId: string;
+    obligationId: string;
+    subjectId: string;
+    assetId: string;
+    facilityLimitMinor: string;
+    utilizedMinor: string;
+    outstandingMinor: string;
+    repaidMinor: string;
+    availableMinor: string;
+    status: string;
+    servicingClassification: string;
+    daysPastDue: number;
+    nextPayment: Record<string, unknown> | null;
+    scheduleHash: string;
+    evidenceCoverage: Record<string, unknown>;
+    asOf: string;
+    sandboxOnly: true;
+    productionFundsMoved: false;
+    schemaVersion: "facility_view.v1";
+  };
+  schemaVersion: "tenant_capital_partner_facility_view.v1";
+}
+
+export interface CapitalPartnerPortfolioViewResponse {
+  profile: {
+    capitalPartnerId: string;
+    displayName: string;
+    operatorActorId: string;
+    tenantId: string;
+    sandboxOnly: true;
+    productionFundsAuthority: false;
+    schemaVersion: "capital_partner_profile.v1";
+    [key: string]: unknown;
+  };
+  portfolio: {
+    capitalPartnerId: string;
+    committedMinor: string;
+    availableMinor: string;
+    utilizedMinor: string;
+    outstandingMinor: string;
+    repaidMinor: string;
+    overdueMinor: string;
+    writtenOffMinor: string;
+    offers: Array<Record<string, unknown>>;
+    facilities: Array<Record<string, unknown>>;
+    schemaVersion: "capital_partner_portfolio.v1";
+    [key: string]: unknown;
+  };
+  schemaVersion: "tenant_capital_partner_portfolio_view.v1";
+}
+
 export interface OfficialReportArtifact {
   officialReportId: string;
   reportKind: "obligation_activity";
@@ -3670,6 +3852,10 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotRevokeConsent", HumanConsentRevokedResponse>
   | TenantProtocolResultBase<"pilotRevokeDraftMandate", DraftMandateRevokedResponse>
   | TenantProtocolResultBase<"pilotRevokeCreditPassportArtifact", CreditPassportArtifactRevokedResponse>
+  | TenantProtocolResultBase<"pilotAuthorCapitalPartnerOffer", CapitalPartnerOfferAuthoredResponse>
+  | TenantProtocolResultBase<"pilotTransitionCapitalPartnerOffer", CapitalPartnerOfferTransitionedResponse>
+  | TenantProtocolResultBase<"pilotReadCapitalPartnerFacility", CapitalPartnerFacilityViewResponse>
+  | TenantProtocolResultBase<"pilotReadCapitalPartnerPortfolio", CapitalPartnerPortfolioViewResponse>
   | TenantProtocolResultBase<"pilotRevokeOfficialReport", OfficialReportRevokedResponse>
   | TenantProtocolResultBase<"pilotSubmitAgentAccountProof", AgentAccountProofVerifiedResponse>
   | TenantProtocolResultBase<"pilotSubmitPilotFeedback", PilotFeedbackRecordedResponse>

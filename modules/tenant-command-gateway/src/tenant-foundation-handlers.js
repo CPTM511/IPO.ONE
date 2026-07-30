@@ -24,6 +24,7 @@ import { createTradingCapitalMatchingHandlers } from "./trading-capital-matching
 import { createTradingCapitalFacilityHandlers } from "./trading-capital-facility-handlers.js";
 import { createTradingCapitalSettlementHandlers } from "./trading-capital-settlement-handlers.js";
 import { createWorkspaceResumeHandlers } from "./workspace-resume-handlers.js";
+import { createCapitalPartnerHandlers } from "./capital-partner-handlers.js";
 
 export function createTenantFoundationHandlers(options) {
   return Object.freeze([
@@ -31,6 +32,7 @@ export function createTenantFoundationHandlers(options) {
     ...createAgentAccountProofHandlers(options),
     ...createCreditDecisionHandlers(),
     ...createCreditPassportHandlers(),
+    ...createCapitalPartnerHandlers(),
     ...createCreditAcceptanceHandlers(),
     ...createCreditExecutionHandlers(options),
     ...createCreditRegistryEvidenceHandlers(),

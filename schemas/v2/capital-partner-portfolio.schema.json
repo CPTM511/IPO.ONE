@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/capital-partner-portfolio.schema.json",
+  "title": "IPO.ONE Capital Partner Portfolio v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capitalPartnerId",
+    "authoredOfferCount",
+    "activeOfferCount",
+    "activeFacilityCount",
+    "completedFacilityCount",
+    "committedMinor",
+    "availableMinor",
+    "utilizedMinor",
+    "outstandingMinor",
+    "repaidMinor",
+    "overdueMinor",
+    "writtenOffMinor",
+    "offers",
+    "facilities",
+    "asOf",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "portfolioHash",
+    "schemaVersion"
+  ],
+  "properties": {
+    "capitalPartnerId": { "$ref": "#/$defs/id" },
+    "authoredOfferCount": { "type": "integer", "minimum": 0 },
+    "activeOfferCount": { "type": "integer", "minimum": 0 },
+    "activeFacilityCount": { "type": "integer", "minimum": 0 },
+    "completedFacilityCount": { "type": "integer", "minimum": 0 },
+    "committedMinor": { "$ref": "#/$defs/minor" },
+    "availableMinor": { "$ref": "#/$defs/minor" },
+    "utilizedMinor": { "$ref": "#/$defs/minor" },
+    "outstandingMinor": { "$ref": "#/$defs/minor" },
+    "repaidMinor": { "$ref": "#/$defs/minor" },
+    "overdueMinor": { "$ref": "#/$defs/minor" },
+    "writtenOffMinor": { "$ref": "#/$defs/minor" },
+    "offers": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "facilities": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "asOf": { "type": "string", "format": "date-time" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "portfolioHash": { "$ref": "#/$defs/hash" },
+    "schemaVersion": { "const": "capital_partner_portfolio.v1" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "minor": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" }
+  }
+}

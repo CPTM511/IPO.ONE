@@ -7,10 +7,11 @@
     <meta name="description" content="IPO.ONE no-funds credit workspace for Human and Agent obligations, repayment, and verifiable evidence." />
     <meta name="ipo-one-csrf-token" content="" />
     <meta name="ipo-one-local-agent-account" content="" />
+    <meta name="ipo-one-workspace-name" content="" />
     <title>IPO.ONE Product Workspace</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=web014" />
+    <link rel="stylesheet" href="/styles.css?v=web018" />
   </head>
   <body class="private-session-closed">
     <a class="skip-link" href="#mainContent">Skip to workspace</a>
@@ -54,9 +55,9 @@
               <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
               <span><strong>Trading Capital</strong><small id="tradingCapitalNavState">Hyperliquid MVP</small></span>
             </button>
-            <button class="nav-item nav-product nav-preview" type="button" data-view="capital-partners">
+            <button class="nav-item nav-product" type="button" data-view="capital-partners">
               <svg aria-hidden="true"><use href="/icons.svg#server"></use></svg>
-              <span><strong>Capital Partners</strong><small>Invitation-only preview</small></span>
+              <span><strong>Capital Partners</strong><small>Synthetic bilateral workspace</small></span>
             </button>
           </div>
 
@@ -266,7 +267,7 @@
                       <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg></span>
                     </span>
                     <span class="product-entry-copy">
-                      <span class="product-entry-title"><strong>Capital Partners</strong><span class="state-pill warning">Invite only</span></span>
+                      <span class="product-entry-title"><strong>Capital Partners</strong><span class="state-pill">Phase 2</span></span>
                       <small>Review the invitation-only capital partner experience and its Evidence-based reporting.</small>
                     </span>
                     <span class="product-entry-action">View preview <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
@@ -1196,11 +1197,11 @@
               <div class="private-page-heading capital-partners-heading">
                 <div>
                   <div class="v9-heading-badges">
-                    <p class="eyebrow">Capital provider entry</p>
-                    <span class="v9-maturity-badge unavailable">Invitation-only preview</span>
+                    <p class="eyebrow">Capital provider workspace</p>
+                    <span class="v9-maturity-badge checking" id="capitalPartnerMaturity">Checking private gateway</span>
                   </div>
                   <h2 id="capitalPartnersViewTitle">Capital Partners</h2>
-                  <p>Preview the future capital-provider workspace for exposure, performance, risk, and Evidence reporting. No public pool, deposit, allocation, withdrawal, custody, or real capital is enabled.</p>
+                  <p>Review an exact borrower-authorized Passport, set transparent sandbox terms, and monitor the resulting Obligation from execution through repayment and Evidence.</p>
                 </div>
                 <span class="state-pill warning">No funds authority</span>
               </div>
@@ -1208,59 +1209,101 @@
               <section class="capital-partner-summary" aria-label="Capital Partners availability">
                 <div>
                   <span>Access</span>
-                  <strong>Invitation only</strong>
-                  <small>Named approval and eligibility remain external gates.</small>
+                  <strong id="capitalPartnerAccessState">Sign-in required</strong>
+                  <small>Pre-provisioned operator with a dedicated least-privilege role.</small>
                 </div>
                 <div>
                   <span>Capital mode</span>
-                  <strong>Preview only</strong>
-                  <small>No deposit, allocation, custody, or deployed capital.</small>
+                  <strong>Synthetic bilateral</strong>
+                  <small>No deposit, custody, withdrawal, or production capital.</small>
                 </div>
                 <div>
                   <span>Reporting</span>
-                  <strong>Evidence-first</strong>
-                  <small>Future views derive from obligations, repayment, and risk truth.</small>
+                  <strong id="capitalPartnerEvidenceState">Server-derived</strong>
+                  <small>Offer, Obligation, servicing, repayment, and anchor coverage.</small>
                 </div>
               </section>
 
               <div class="capital-partner-grid">
-                <section class="panel capital-partner-journey" aria-labelledby="capitalPartnerJourneyTitle">
+                <section class="panel capital-partner-offer-workbench" aria-labelledby="capitalPartnerOfferTitle">
                   <div class="panel-heading">
-                    <div><p class="eyebrow">Future permissioned workflow</p><h3 id="capitalPartnerJourneyTitle">Capital partner journey</h3></div>
-                    <span class="state-pill warning">Not activated</span>
+                    <div><p class="eyebrow">Exact authorized application</p><h3 id="capitalPartnerOfferTitle">Author sandbox terms</h3></div>
+                    <span class="state-pill neutral" id="capitalPartnerOfferStatus">No Offer</span>
                   </div>
-                  <ol>
-                    <li><span>1</span><div><strong>Qualify</strong><small>Identity, eligibility, legal, and risk review</small></div><em>External gate</em></li>
-                    <li><span>2</span><div><strong>Review mandate</strong><small>Exact strategy, loss bearer, caps, and reporting terms</small></div><em>Not configured</em></li>
-                    <li><span>3</span><div><strong>Allocate</strong><small>Permissioned capital routing after named approval</small></div><em>Disabled</em></li>
-                    <li><span>4</span><div><strong>Monitor</strong><small>Exposure, repayment, loss, and Evidence reporting</small></div><em>Preview</em></li>
-                  </ol>
+                  <form id="capitalPartnerOfferForm" class="capital-partner-offer-form">
+                    <fieldset>
+                      <legend>Borrower-authorized Passport</legend>
+                      <div class="form-grid two">
+                        <label>Passport artifact ID<input id="capitalPartnerPassportId" autocomplete="off" maxlength="256" placeholder="credit_passport_artifact_…" required /></label>
+                        <label>Credit Intent ID<input id="capitalPartnerCreditIntentId" autocomplete="off" maxlength="256" placeholder="credit_intent_…" required /></label>
+                        <label>Passport hash<input id="capitalPartnerPassportHash" autocomplete="off" maxlength="66" placeholder="0x…" required /></label>
+                        <label>Passport version<input id="capitalPartnerPassportVersion" type="number" min="1" step="1" value="1" required /></label>
+                      </div>
+                    </fieldset>
+                    <fieldset>
+                      <legend>Transparent economic terms</legend>
+                      <div class="form-grid three">
+                        <label>Facility limit (USD)<input id="capitalPartnerFacilityLimit" type="number" min="1" max="1000" step="1" value="250" required /></label>
+                        <label>Approved principal (USD)<input id="capitalPartnerPrincipal" type="number" min="1" max="250" step="1" value="120" required /></label>
+                        <label>Per-draw cap (USD)<input id="capitalPartnerPerDrawCap" type="number" min="1" max="250" step="1" value="120" required /></label>
+                        <label>Annual rate (%)<input id="capitalPartnerAnnualRate" type="number" min="0" max="1000" step="0.01" value="12" required /></label>
+                        <label>Origination fee (USD)<input id="capitalPartnerOriginationFee" type="number" min="0" max="250" step="0.01" value="0" required /></label>
+                        <label>Installments<input id="capitalPartnerInstallments" type="number" min="1" max="3" step="1" value="2" required /></label>
+                        <label>First payment<input id="capitalPartnerFirstPaymentAt" type="datetime-local" required /></label>
+                        <label>Maturity<input id="capitalPartnerMaturityAt" type="datetime-local" required /></label>
+                        <label>Offer valid until<input id="capitalPartnerValidUntil" type="datetime-local" required /></label>
+                      </div>
+                    </fieldset>
+                    <button class="primary" id="capitalPartnerAuthorOfferBtn" type="submit">Issue exact sandbox Offer</button>
+                  </form>
+                  <p class="helper" id="capitalPartnerOfferHelper" role="status" aria-live="polite">Sign in through the invited Capital Partner workspace, then enter the exact Passport values supplied by the borrower.</p>
                 </section>
 
                 <section class="panel capital-partner-reporting" aria-labelledby="capitalPartnerReportingTitle">
                   <div class="panel-heading">
-                    <div><p class="eyebrow">Planned read surface</p><h3 id="capitalPartnerReportingTitle">What approved partners will inspect</h3></div>
-                    <span class="state-pill neutral">Read model only</span>
+                    <div><p class="eyebrow">Canonical Offer receipt</p><h3 id="capitalPartnerReportingTitle">Terms and authority</h3></div>
+                    <span class="state-pill neutral">credit_offer.v2</span>
                   </div>
-                  <dl>
-                    <div><dt>Exposure</dt><dd>Facility, asset, venue, and concentration</dd></div>
-                    <div><dt>Performance</dt><dd>Repayment, utilization, loss, and settlement</dd></div>
-                    <div><dt>Controls</dt><dd>Caps, stop-loss, pause, and reconciliation posture</dd></div>
-                    <div><dt>Evidence</dt><dd>Versioned reports and verifiable lifecycle lineage</dd></div>
+                  <dl id="capitalPartnerOfferReceipt">
+                    <div><dt>Capital Partner</dt><dd id="capitalPartnerProfileId">—</dd></div>
+                    <div><dt>Offer ID</dt><dd id="capitalPartnerOfferId">—</dd></div>
+                    <div><dt>Offer hash</dt><dd id="capitalPartnerOfferHash">—</dd></div>
+                    <div><dt>Terms hash</dt><dd id="capitalPartnerTermsHash">—</dd></div>
+                    <div><dt>Borrower</dt><dd id="capitalPartnerBorrowerRef">—</dd></div>
+                    <div><dt>Validity</dt><dd id="capitalPartnerOfferValidity">—</dd></div>
                   </dl>
-                  <button class="secondary" type="button" data-go-view="reports-exports">View current report architecture</button>
+                  <button class="secondary" id="capitalPartnerWithdrawOfferBtn" type="button" disabled>Withdraw unaccepted Offer</button>
                 </section>
               </div>
 
+              <section class="panel capital-partner-portfolio-panel" aria-labelledby="capitalPartnerPortfolioTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Server-composed read model</p><h3 id="capitalPartnerPortfolioTitle">Portfolio and Facility truth</h3></div>
+                  <span class="state-pill neutral" id="capitalPartnerPortfolioStatus">Not loaded</span>
+                </div>
+                <form id="capitalPartnerPortfolioForm" class="capital-partner-portfolio-query">
+                  <label>Capital Partner profile ID<input id="capitalPartnerPortfolioId" autocomplete="off" maxlength="256" placeholder="capital_partner_…" required /></label>
+                  <button class="secondary" id="capitalPartnerLoadPortfolioBtn" type="submit">Refresh portfolio</button>
+                </form>
+                <div class="capital-partner-portfolio-metrics">
+                  <div><span>Offers</span><strong id="capitalPartnerOfferCount">0</strong></div>
+                  <div><span>Committed</span><strong id="capitalPartnerCommittedAmount">$0.00</strong></div>
+                  <div><span>Outstanding</span><strong id="capitalPartnerOutstandingAmount">$0.00</strong></div>
+                  <div><span>Repaid</span><strong id="capitalPartnerRepaidAmount">$0.00</strong></div>
+                </div>
+                <div class="capital-partner-facilities" id="capitalPartnerFacilityRows"></div>
+                <p class="helper" id="capitalPartnerPortfolioHelper" role="status" aria-live="polite">Portfolio values come from canonical Offer, Obligation, servicing, repayment, and Evidence projections.</p>
+              </section>
+
               <section class="panel capital-partner-boundary" aria-labelledby="capitalPartnerBoundaryTitle">
                 <div>
-                  <p class="eyebrow">Explicit MVP boundary</p>
-                  <h3 id="capitalPartnerBoundaryTitle">Capital actions remain unavailable</h3>
-                  <p>IPO.ONE has not approved a public LP vault, capital source, production pricing, custody structure, loss allocation, or withdrawal path.</p>
+                  <p class="eyebrow">Explicit Phase 2 boundary</p>
+                  <h3 id="capitalPartnerBoundaryTitle">Bilateral terms are enabled; money movement is not</h3>
+                  <p>This workspace can review a bounded Passport, issue an exact synthetic Offer, and monitor canonical lifecycle truth. Public pools, deposits, custody, allocation, withdrawals, and real capital remain disabled.</p>
                 </div>
                 <div class="capital-partner-disabled-actions" aria-label="Unavailable Capital Partner actions">
-                  <button type="button" disabled>Deposit capital</button>
-                  <button type="button" disabled>Allocate to facility</button>
+                  <button type="button" disabled>Deposit</button>
+                  <button type="button" disabled>Allocate funds</button>
                   <button type="button" disabled>Withdraw</button>
                 </div>
               </section>
@@ -2437,6 +2480,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="operationStatus" class="sr-only" role="status" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=web017"></script>
+    <script type="module" src="/app.js?v=web018"></script>
   </body>
 </html>

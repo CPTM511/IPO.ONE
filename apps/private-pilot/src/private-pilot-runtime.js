@@ -222,7 +222,13 @@ export async function createPrivatePilotRuntime({
   const profiles = [
     { name: "borrower", identity: authentication.identities.borrower, port: basePort, hash: "#human" },
     { name: "controller", identity: authentication.identities.controller, port: basePort + 1, hash: "#human" },
-    { name: "risk", identity: authentication.identities.risk, port: basePort + 2, hash: "#risk" }
+    { name: "risk", identity: authentication.identities.risk, port: basePort + 2, hash: "#risk" },
+    {
+      name: "capitalPartner",
+      identity: authentication.identities.capitalPartner,
+      port: basePort + 3,
+      hash: "#capital-partners"
+    }
   ];
   const hosts = [];
   let gateway;
@@ -296,6 +302,7 @@ export async function createPrivatePilotRuntime({
         createNetworkContext: async () => networkContext,
         csrfTokenProvider: humanAccess.csrfTokenProvider,
         localAgentAccountProvider: () => localAgentAccount.address,
+        workspaceNameProvider: () => profile.name,
         serveAuthentication: humanAccess.serveAuthentication,
         ...(evidenceAnchors === undefined
           ? {}

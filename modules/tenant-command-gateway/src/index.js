@@ -3,6 +3,7 @@ export * from "./agent-account-proof-handlers.js";
 export * from "./credit-intent-handlers.js";
 export * from "./credit-decision-handlers.js";
 export * from "./credit-passport-handlers.js";
+export * from "./capital-partner-handlers.js";
 export * from "./credit-acceptance-handlers.js";
 export * from "./credit-execution-handlers.js";
 export * from "./economic-action-confirmation.js";

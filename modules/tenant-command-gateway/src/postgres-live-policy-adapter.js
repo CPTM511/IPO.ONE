@@ -232,6 +232,132 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
       }
 
       if (
+        handler.operationId === "pilotAuthorCapitalPartnerOffer" &&
+        hasExactChecks(policy, [
+          "credit_passport_verification_state",
+          "credit_intent_state",
+          "capital_partner_profile_state",
+          "pause"
+        ]) &&
+        resource?.resourceType === "credit_passport_artifact" &&
+        typeof payload?.creditIntentId === "string"
+      ) {
+        const passportState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.CREDIT_PASSPORT_ARTIFACT,
+          resource.resourceId,
+          { lock: true }
+        );
+        const intentState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.CREDIT_INTENT,
+          payload.creditIntentId,
+          { lock: true }
+        );
+        const profile =
+          await coreRepository.getCapitalPartnerProfileByOperatorInTransaction(
+            client,
+            authenticationContext.actorId,
+            { lock: false }
+          );
+        if (
+          !passportState ||
+          passportState.value.schemaVersion !== "credit_passport_artifact.v1" ||
+          passportState.value.status !== "active" ||
+          resource.status !== "active" ||
+          now >= new Date(passportState.value.expiresAt) ||
+          passportState.value.sandboxOnly !== true ||
+          passportState.value.productionAuthority !== false ||
+          !intentState ||
+          intentState.value.creditIntentId !== payload.creditIntentId ||
+          intentState.value.subjectId !== passportState.value.subjectId ||
+          intentState.value.status !== "decided" ||
+          intentState.value.sandboxOnly !== true ||
+          intentState.value.productionFundsRequested !== false ||
+          !profile ||
+          profile.operatorActorId !== authenticationContext.actorId ||
+          profile.status !== "active" ||
+          profile.invitationOnly !== true ||
+          profile.sameTenantOnly !== true ||
+          profile.sandboxOnly !== true ||
+          profile.productionFundsAuthority !== false
+        ) {
+          throw new DomainError(
+            "authorization_live_policy_rejected",
+            "live Capital Partner authoring state rejected the operation"
+          );
+        }
+        const liveStateVersion =
+          passportState.aggregateVersion + intentState.aggregateVersion + 1;
+        if (!Number.isSafeInteger(liveStateVersion)) {
+          throw new DomainError(
+            "authorization_live_policy_rejected",
+            "live Capital Partner authoring version is unavailable"
+          );
+        }
+        return Object.freeze({
+          liveStateVersion,
+          evaluatedChecks: Object.freeze([
+            "credit_passport_verification_state",
+            "credit_intent_state",
+            "capital_partner_profile_state",
+            "pause"
+          ])
+        });
+      }
+
+      if (
+        handler.operationId === "pilotTransitionCapitalPartnerOffer" &&
+        hasExactChecks(policy, [
+          "credit_offer_state",
+          "capital_partner_profile_state",
+          "pause"
+        ]) &&
+        resource?.resourceType === "credit_offer"
+      ) {
+        const offerState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.CREDIT_OFFER,
+          resource.resourceId,
+          { lock: true }
+        );
+        const profile =
+          await coreRepository.getCapitalPartnerProfileByOperatorInTransaction(
+            client,
+            authenticationContext.actorId,
+            { lock: false }
+          );
+        if (
+          !offerState ||
+          offerState.value.schemaVersion !== "credit_offer.v2" ||
+          offerState.value.status !== "offered" ||
+          offerState.value.capitalPartnerOperatorId !== authenticationContext.actorId ||
+          offerState.value.sandboxOnly !== true ||
+          offerState.value.productionFundsApproved !== false ||
+          resource.status !== "active" ||
+          !profile ||
+          profile.capitalPartnerId !== offerState.value.capitalPartnerId ||
+          profile.operatorActorId !== authenticationContext.actorId ||
+          profile.status !== "active" ||
+          profile.sandboxOnly !== true ||
+          profile.productionFundsAuthority !== false
+        ) {
+          throw new DomainError(
+            "authorization_live_policy_rejected",
+            "live Capital Partner Offer state rejected the operation"
+          );
+        }
+        return Object.freeze({
+          liveStateVersion: offerState.aggregateVersion + 1,
+          evaluatedChecks: Object.freeze([
+            "credit_offer_state",
+            "capital_partner_profile_state",
+            "pause"
+          ])
+        });
+      }
+
+      if (
         handler.operationId === "pilotVerifyCreditPassportArtifact" &&
         hasExactChecks(policy, ["credit_passport_verification_state"]) &&
         resource?.resourceType === "credit_passport_artifact"

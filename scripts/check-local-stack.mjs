@@ -68,6 +68,7 @@ assert.match(
   privatePilotDatabase,
   /credit_passport_artifacts,\s+credit_outcomes,\s+tenant_command_pauses/
 );
+assert.match(privatePilotDatabase, /seedCapitalPartnerProfile/);
 assert.match(compose, /IPO_ONE_PILOT_PROFILE_FILE: \/app\/deploy\/local\/private-pilot-profile\.v1\.json/g);
 const profile = JSON.parse(localProfile);
 assert.equal(profile.mode, "local_no_funds");
@@ -77,6 +78,7 @@ assert.equal(profile.remoteAccessEnabled, false);
 assert.deepEqual(Object.keys(profile.identities).sort(), [
   "agent",
   "borrower",
+  "capitalPartner",
   "controller",
   "risk"
 ]);
@@ -148,6 +150,6 @@ assert.doesNotMatch(evidenceAnchorCompose, /mainnet|PRIVATE_KEY|MNEMONIC/i);
 
 console.log(
   "LOCAL-STACK-001 static contract passed: rootless Lima, pinned PostgreSQL 17, " +
-    "verified Lima host-agent loopback forwarding, three workspaces, separate default-unsigned worker, " +
+    "verified Lima host-agent loopback forwarding, four workspaces, separate default-unsigned worker, " +
     "opt-in capped CHAIN-001F attestor boundary, persistent state, and no cloud/real-funds authority."
 );

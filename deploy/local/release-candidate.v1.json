@@ -1,10 +1,10 @@
 {
   "schemaVersion": "ipo_one_local_release_candidate.v1",
-  "releaseCandidateId": "ipo-one-local-rc-20260730-002",
+  "releaseCandidateId": "ipo-one-local-rc-20260730-003",
   "status": "sealed",
   "profile": "local_no_funds",
   "sourceBinding": {
-    "baseCommit": "3bcf448542f82273ef12f27096598d501e37a588",
+    "baseCommit": "8ca106b841113dbd654162fd6d5c511c4e4272a3",
     "branch": "codex/checkpoint-20260727-pre-strategy",
     "mode": "git_commit_containing_manifest",
     "sealedCommit": true,
@@ -17,9 +17,9 @@
     "postgresMajorVersion": 17
   },
   "database": {
-    "migrationCount": 47,
-    "latestMigration": "0047_chain_001f_anchor_binding_repair",
-    "latestMigrationChecksum": "c1b3713654541061d46e9ceb6f1aaab99f994585aa8a4fc7802d56ce88c06212"
+    "migrationCount": 48,
+    "latestMigration": "0048_synthetic_capital_partner_marketplace",
+    "latestMigrationChecksum": "d84b7f64d616dbba99e525656559d7aa52c545b3e7514a96c4948c75d415e452"
   },
   "contracts": [
     {
@@ -32,7 +32,7 @@
       "path": "api/tenant-protocol/ipo-one.tenant-protocol.v1.json",
       "kind": "shared_tenant_protocol",
       "version": "tenant_protocol.v1",
-      "sha256": "6c9fbb238aa119c30882581256594db8a6a446da8028b11d726ef9cd6976fecb"
+      "sha256": "5deb78559dbdd63e1a5afe233554ed07ab4650c47e7122221dfbbb91d7cdba1f"
     },
     {
       "path": "api/tenant-protocol/ipo-one.agent-https.v1.json",
@@ -52,15 +52,15 @@
   "testData": [
     {
       "path": "deploy/local/stack.v1.json",
-      "sha256": "992ddae46bc101c3157d007261c50a6068112baf390fc18d87d17247848ac74f"
+      "sha256": "3fa3d0175df1ed6f73362e6f268b74ead79dea394c4a6caac96d5d931a74bfdd"
     },
     {
       "path": "deploy/local/private-pilot-profile.v1.json",
-      "sha256": "69071bf315d25179f8e2f1aec6b30a240d5109cfb0b46bd017ce44f533c75ea8"
+      "sha256": "079fd27b2bf9d3716f07efde07fc4a3d277633e3356ff10f3d760688a636fb55"
     },
     {
       "path": "api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json",
-      "sha256": "cb83c40a7e4c162c4b9f928d56bfe333385a0a8ec2394b18bcf4d59d716e083e"
+      "sha256": "4548cdd51c2ad105474ed94c9808585f026e40e4f2b5bae39910757041468bd0"
     },
     {
       "path": "api/tenant-protocol/conformance/human-credit-offer-workflow-receipt.v1.fixtures.json",
@@ -98,15 +98,19 @@
   "productExperienceSources": [
     {
       "path": "apps/web/src/index.html",
-      "sha256": "098d1bacb8538902cdd7c37ae14ee6d526b06791f673537620d751f327db4875"
+      "sha256": "047a2a08caa035b81f3dbc5d0f1c28245300fbbb807be7755c15c9b7c0f50d83"
     },
     {
       "path": "apps/web/src/app.js",
-      "sha256": "b8cb8d36f62921d7ee21178d0db2d670e2f7c6183c3225fcf21cfb067206a4a2"
+      "sha256": "a3df1479d791afa44b9062b2b06329d4169139d1c0e89679c7f9391626627fc2"
     },
     {
       "path": "apps/web/src/styles.css",
-      "sha256": "de2965e9793fef735dd7b55ecc99b43f84094e98a460cf4acd2245b262cd37e8"
+      "sha256": "26456818654140a3fe4476de008eed8682f3eb86c6677571187e0b32ac7cbf3d"
+    },
+    {
+      "path": "apps/web/src/capital-partner-presentation.js",
+      "sha256": "f8f7940458793ced822c0b106dacc333b0af4f6aec7b9bf542dde4cb3a7464ee"
     },
     {
       "path": "apps/web/src/evidence-receipt-presentation.js",
@@ -114,7 +118,11 @@
     },
     {
       "path": "apps/web/test/static-ui.test.js",
-      "sha256": "51a6f5159f21533708b31e451b194c7e9d9cb1811f394302abcdf7ba97bb7b58"
+      "sha256": "b48fb924e25552166041dd5e68b20ad28d758fd6870a6f13ae3ce93a850694ca"
+    },
+    {
+      "path": "apps/web/test/capital-partner-presentation.test.js",
+      "sha256": "3a35b15d2544ae6242af56205b8895100146aeb0958bcd1fce96a7d1ac698eec"
     },
     {
       "path": "apps/web/test/evidence-receipt-presentation.test.js",
@@ -123,8 +131,16 @@
   ],
   "operationalSources": [
     {
+      "path": "deploy/local/postgres-test.compose.yaml",
+      "sha256": "4d0d61f26124dcc4bb1aa9bcc3f4fa5d7df8fd0bcc08552482f9f61fdedfc24f"
+    },
+    {
       "path": "scripts/local-stack.mjs",
-      "sha256": "c898148b5453af4556f8fcf1f4c8f0681cc41644385826b12eb780b29bbf6a46"
+      "sha256": "503cab7db79c0072eb64faa6a46b54feb28eb4307c375868ce6d8f102e38fa44"
+    },
+    {
+      "path": "scripts/local-stack-acceptance.mjs",
+      "sha256": "54881e2555fd103a228a596397434ba7959dd12287a570ba4d4c52e84cf2cbdd"
     },
     {
       "path": "packages/deployment-topology/test/local-stack.test.js",
@@ -136,25 +152,31 @@
       "id": "complete_dual_native_credit_lifecycle_and_outcome_retry",
       "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
       "testName": "Human and Agent persist one restart-safe no-funds Credit Intent protocol with retry-safe credit Outcomes",
-      "sha256": "45e683fc4ad432e1ca1a893149391b8322352594f74f472b0f49fda3d460a4ab"
+      "sha256": "917dfe8208e5dc2f4b82607c6d8f81d6db97b0fb7e701490d25ccfafd487ba8b"
+    },
+    {
+      "id": "phase2_bilateral_marketplace_four_paths",
+      "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+      "testName": "Phase 2 Capital Partner marketplace closes Human, Agent, stale, and adverse no-funds paths",
+      "sha256": "917dfe8208e5dc2f4b82607c6d8f81d6db97b0fb7e701490d25ccfafd487ba8b"
     },
     {
       "id": "database_and_projection_restart",
       "source": "modules/persistence/test-postgres/postgres-event-runtime.test.mjs",
       "testName": "core projections survive restart and replay the original command response",
-      "sha256": "82ca041dcce1e522a74e87e185c2035b099f3477bfda398bf084c80b41977a1c"
+      "sha256": "9675eaf8b8a169aa8d62e393227aab200874ca1e616d78cd8e3e0bd1dda4699f"
     },
     {
       "id": "duplicate_command_idempotency",
       "source": "modules/persistence/test-postgres/postgres-event-runtime.test.mjs",
       "testName": "command replay is stable and conflicting idempotency reuse fails closed",
-      "sha256": "82ca041dcce1e522a74e87e185c2035b099f3477bfda398bf084c80b41977a1c"
+      "sha256": "9675eaf8b8a169aa8d62e393227aab200874ca1e616d78cd8e3e0bd1dda4699f"
     },
     {
       "id": "durable_admission_execution_retention",
       "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
       "testName": "admission cleanup retains records referenced by durable command executions",
-      "sha256": "45e683fc4ad432e1ca1a893149391b8322352594f74f472b0f49fda3d460a4ab"
+      "sha256": "917dfe8208e5dc2f4b82607c6d8f81d6db97b0fb7e701490d25ccfafd487ba8b"
     },
     {
       "id": "login_expiry_and_revocation",
@@ -196,7 +218,7 @@
       "id": "tenant_global_pause",
       "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
       "testName": "durable Tenant command pause blocks new commands but preserves queries and exact replay",
-      "sha256": "45e683fc4ad432e1ca1a893149391b8322352594f74f472b0f49fda3d460a4ab"
+      "sha256": "917dfe8208e5dc2f4b82607c6d8f81d6db97b0fb7e701490d25ccfafd487ba8b"
     },
     {
       "id": "facility_freeze",
@@ -238,7 +260,7 @@
       "id": "live_local_stack_attestor_and_persistence",
       "source": "scripts/local-stack-acceptance.mjs",
       "testName": "LOCAL-STACK-001 live acceptance passed",
-      "sha256": "baaf6eb83489cc209c193bc35161c6ff907978c1446b47fe6a8930c6586540e3"
+      "sha256": "54881e2555fd103a228a596397434ba7959dd12287a570ba4d4c52e84cf2cbdd"
     }
   ],
   "requiredChecks": [
@@ -252,21 +274,21 @@
   "verification": {
     "verifiedOn": "2026-07-30",
     "repositoryTests": {
-      "passed": 659,
+      "passed": 666,
       "failed": 0
     },
     "postgresTests": {
-      "passed": 81,
+      "passed": 82,
       "failed": 0,
       "freshDatabase": true
     },
     "localStack": {
-      "migrationCount": 47,
+      "migrationCount": 48,
       "liveAcceptancePasses": 2,
       "fullRestartBetweenPasses": true,
       "persistentVolumeRetained": true,
       "pendingOutboxAfterRestart": 0,
-      "authenticationCredentialCount": 4,
+      "authenticationCredentialCount": 5,
       "durableHumanAuthentication": true,
       "durableAgentCredential": true,
       "invitedWalletPrivateKeyStored": false,

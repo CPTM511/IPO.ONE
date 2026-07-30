@@ -420,7 +420,7 @@ export class PostgresAuthorizationDirectory {
       `UPDATE authorization_resources
           SET status = $4,
               version = version + 1,
-              updated_at = $5
+              updated_at = GREATEST(updated_at, $5)
         WHERE tenant_id = $1
           AND resource_type = $2
           AND resource_id = $3
@@ -476,7 +476,7 @@ export class PostgresAuthorizationDirectory {
     const result = await this.client.query(
       `UPDATE authorization_resources
           SET version = version + 1,
-              updated_at = $4
+              updated_at = GREATEST(updated_at, $4)
         WHERE tenant_id = $1
           AND resource_type = $2
           AND resource_id = $3

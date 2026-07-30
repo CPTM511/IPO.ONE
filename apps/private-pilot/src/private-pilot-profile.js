@@ -14,7 +14,13 @@ const PROFILE_KEYS = Object.freeze([
   "syntheticDataOnly",
   "tenantId"
 ]);
-const IDENTITY_NAMES = Object.freeze(["agent", "borrower", "controller", "risk"]);
+const IDENTITY_NAMES = Object.freeze([
+  "agent",
+  "borrower",
+  "capitalPartner",
+  "controller",
+  "risk"
+]);
 
 export const DEFAULT_PRIVATE_PILOT_PROFILE = Object.freeze({
   schemaVersion: "private_pilot_tenant_profile.v1",
@@ -27,6 +33,7 @@ export const DEFAULT_PRIVATE_PILOT_PROFILE = Object.freeze({
   servicingQueueId: "servicing_queue_local_private_pilot",
   identities: Object.freeze({
     borrower: Object.freeze({ actorId: "actor_human_borrower_pilot" }),
+    capitalPartner: Object.freeze({ actorId: "actor_capital_partner_pilot" }),
     controller: Object.freeze({ actorId: "actor_principal_controller_pilot" }),
     agent: Object.freeze({ actorId: "actor_agent_pilot_alpha" }),
     risk: Object.freeze({ actorId: "actor_risk_operations_pilot" })

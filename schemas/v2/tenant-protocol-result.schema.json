@@ -53,6 +53,10 @@
         "pilotRevokeDraftMandate",
         "pilotRevokeCreditPassportArtifact",
         "pilotRevokeOfficialReport",
+        "pilotAuthorCapitalPartnerOffer",
+        "pilotTransitionCapitalPartnerOffer",
+        "pilotReadCapitalPartnerFacility",
+        "pilotReadCapitalPartnerPortfolio",
         "pilotSubmitAgentAccountProof",
         "pilotSubmitPilotFeedback",
         "pilotWriteOffSandboxObligation",
@@ -731,6 +735,46 @@
         },
         "response": {
           "$ref": "#/$defs/creditPassportArtifactRevoked"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotAuthorCapitalPartnerOffer"
+        },
+        "response": {
+          "$ref": "#/$defs/capitalPartnerOfferAuthored"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotTransitionCapitalPartnerOffer"
+        },
+        "response": {
+          "$ref": "#/$defs/capitalPartnerOfferTransitioned"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadCapitalPartnerFacility"
+        },
+        "response": {
+          "$ref": "#/$defs/capitalPartnerFacilityView"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadCapitalPartnerPortfolio"
+        },
+        "response": {
+          "$ref": "#/$defs/capitalPartnerPortfolioView"
         }
       }
     },
@@ -1577,6 +1621,80 @@
         },
         "schemaVersion": {
           "const": "tenant_credit_passport_artifact_revoked.v1"
+        }
+      }
+    },
+    "capitalPartnerOfferAuthored": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offer",
+        "capitalPartner",
+        "fundsAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "offer": {
+          "$ref": "https://schemas.ipo.one/v2/credit-offer-v2.schema.json"
+        },
+        "capitalPartner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["capitalPartnerId", "displayName"],
+          "properties": {
+            "capitalPartnerId": { "$ref": "#/$defs/identifier" },
+            "displayName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": {
+          "const": "tenant_capital_partner_offer_authored.v1"
+        }
+      }
+    },
+    "capitalPartnerOfferTransitioned": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["offer", "schemaVersion"],
+      "properties": {
+        "offer": {
+          "$ref": "https://schemas.ipo.one/v2/credit-offer-v2.schema.json"
+        },
+        "schemaVersion": {
+          "const": "tenant_capital_partner_offer_transitioned.v1"
+        }
+      }
+    },
+    "capitalPartnerFacilityView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["facility", "schemaVersion"],
+      "properties": {
+        "facility": {
+          "$ref": "https://schemas.ipo.one/v2/facility-view.schema.json"
+        },
+        "schemaVersion": {
+          "const": "tenant_capital_partner_facility_view.v1"
+        }
+      }
+    },
+    "capitalPartnerPortfolioView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "portfolio", "schemaVersion"],
+      "properties": {
+        "profile": {
+          "$ref": "https://schemas.ipo.one/v2/capital-partner-profile.schema.json"
+        },
+        "portfolio": {
+          "$ref": "https://schemas.ipo.one/v2/capital-partner-portfolio.schema.json"
+        },
+        "schemaVersion": {
+          "const": "tenant_capital_partner_portfolio_view.v1"
         }
       }
     },

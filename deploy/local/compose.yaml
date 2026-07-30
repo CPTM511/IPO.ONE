@@ -71,7 +71,7 @@ services:
         - CMD
         - /nodejs/bin/node
         - -e
-        - Promise.all([8787,8788,8789].map((port)=>fetch('http://127.0.0.1:'+port+'/tenant/v1/healthz').then((response)=>{if(!response.ok)throw new Error('unhealthy')}))).catch(()=>process.exit(1))
+        - Promise.all([8787,8788,8789,8790].map((port)=>fetch('http://127.0.0.1:'+port+'/tenant/v1/healthz').then((response)=>{if(!response.ok)throw new Error('unhealthy')}))).catch(()=>process.exit(1))
       interval: 5s
       timeout: 3s
       retries: 30

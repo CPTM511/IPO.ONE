@@ -20,6 +20,7 @@ import { DEFAULT_PRIVATE_PILOT_PROFILE, assertPrivatePilotProfile } from "./priv
 export const LOCAL_PILOT_TENANT_ID = DEFAULT_PRIVATE_PILOT_PROFILE.tenantId;
 export const LOCAL_PILOT_RISK_PORTFOLIO_ID = DEFAULT_PRIVATE_PILOT_PROFILE.riskPortfolioId;
 export const LOCAL_PILOT_SERVICING_QUEUE_ID = DEFAULT_PRIVATE_PILOT_PROFILE.servicingQueueId;
+export const LOCAL_PILOT_CREDENTIAL_GENERATION = "phase2";
 
 const IDENTITY_SPECS = Object.freeze({
   borrower: Object.freeze({
@@ -43,7 +44,23 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
+      PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+      PilotCapability.CREDIT_PASSPORT_READ_SELF,
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
       PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+    ])
+  }),
+  capitalPartner: Object.freeze({
+    actorId: "actor_capital_partner_pilot",
+    actorType: ActorType.HUMAN,
+    roleBundle: RoleBundle.CAPITAL_PARTNER_OPERATOR,
+    capabilities: Object.freeze([
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+      PilotCapability.CAPITAL_PARTNER_OFFER_MANAGE_OWN,
+      PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+      PilotCapability.CAPITAL_PARTNER_FACILITY_READ_OWN
     ])
   }),
   controller: Object.freeze({
@@ -61,7 +78,11 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
-      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
+      PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+      PilotCapability.CREDIT_PASSPORT_READ_SELF,
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+      PilotCapability.CREDIT_PASSPORT_REVOKE_SELF
     ])
   }),
   agent: Object.freeze({
@@ -81,6 +102,8 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
+      PilotCapability.CREDIT_PASSPORT_READ_SELF,
+      PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
       PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
     ]),
     controllerActorId: "actor_principal_controller_pilot"
@@ -131,7 +154,11 @@ export function createLocalPilotIdentities({
         ? checkedProfile.identities.controller.actorId
         : template.controllerActorId
     });
-    const clientId = `client_${spec.actorId}`;
+    // Capability grants are immutable on an issued authentication Credential.
+    // Phase 2 therefore rotates the local client binding instead of silently
+    // widening the durable Phase 1 Credential.
+    const clientId =
+      `client_${LOCAL_PILOT_CREDENTIAL_GENERATION}_${spec.actorId}`;
     const human = HUMAN_ACTOR_TYPES.has(spec.actorType);
     actorDirectory.register({ actorId: spec.actorId, actorType: spec.actorType });
     const credential = credentialRegistry.register({

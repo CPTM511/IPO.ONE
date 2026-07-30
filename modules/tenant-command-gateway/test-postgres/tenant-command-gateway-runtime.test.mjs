@@ -4,6 +4,7 @@ import test from "node:test";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   CreditEventType,
+  createCapitalPartnerProfile,
   createCreditEvent,
   createHumanIdentityReference,
   createProviderIntentDelivery,
@@ -182,6 +183,69 @@ async function seedServicingQueueResource(pool, tenantId, actorId, queueId) {
      ) VALUES ($1, 'servicing_queue', $2, 'active', 1, $3, $3, 'authorization_resource.v1')`,
     [tenantId, queueId, IDENTITY_NOW]
   ));
+}
+
+async function seedCapitalPartnerProfile(pool, tenantId, identity) {
+  const actorId = identity.authenticationContext.actorId;
+  const profile = createCapitalPartnerProfile({
+    capitalPartnerId: `capital_partner_gateway_${RUN_ID}`,
+    organizationRef: `org:capital-partner-gateway:${RUN_ID}`,
+    displayName: "Gateway Synthetic Capital Partner",
+    operatorActorId: actorId,
+    tenantId,
+    now: IDENTITY_NOW
+  });
+  const context = createTenantSecurityContext({
+    tenantId,
+    actorId,
+    policyVersion: identity.authenticationContext.policyVersion,
+    source: "local_test"
+  });
+  await withTenantTransaction(pool, context, async (client) => {
+    await client.query(
+      `INSERT INTO capital_partner_profiles(
+         id, tenant_id, profile_hash, organization_ref, display_name,
+         operator_actor_id, status, invitation_only, same_tenant_only,
+         sandbox_only, production_funds_authority, created_at, updated_at,
+         schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5,
+         $6, 'active', TRUE, TRUE,
+         TRUE, FALSE, $7, $7,
+         'capital_partner_profile.v1'
+       )`,
+      [
+        profile.capitalPartnerId,
+        tenantId,
+        profile.profileHash,
+        profile.organizationRef,
+        profile.displayName,
+        actorId,
+        IDENTITY_NOW
+      ]
+    );
+    await client.query(
+      `INSERT INTO authorization_resources(
+         tenant_id, resource_type, resource_id, status, version,
+         created_at, updated_at, schema_version
+       ) VALUES (
+         $1, 'capital_partner_profile', $2, 'active', 1,
+         $3, $3, 'authorization_resource.v1'
+       )`,
+      [tenantId, profile.capitalPartnerId, IDENTITY_NOW]
+    );
+    await client.query(
+      `INSERT INTO authorization_resource_bindings(
+         tenant_id, resource_type, resource_id, actor_id, relationship,
+         status, version, created_at, updated_at, schema_version
+       ) VALUES (
+         $1, 'capital_partner_profile', $2, $3, 'owner',
+         'active', 1, $4, $4, 'authorization_resource_binding.v1'
+       )`,
+      [tenantId, profile.capitalPartnerId, actorId, IDENTITY_NOW]
+    );
+  });
+  return profile;
 }
 
 async function seedRiskPortfolioExposure(pool, {
@@ -614,6 +678,23 @@ async function postRepaymentWithBoundedClockRecovery({
   }
 }
 
+async function waitForDatabaseClockAfter(pool, timestampValue, label) {
+  const target = new Date(timestampValue).getTime();
+  const startedAt = process.hrtime.bigint();
+  while (Number(process.hrtime.bigint() - startedAt) / 1_000_000 <= 3_000) {
+    const clock = await pool.query("SELECT clock_timestamp() AS database_now");
+    const databaseNow = new Date(clock.rows[0].database_now).getTime();
+    if (databaseNow >= target) return;
+    await new Promise((resolve) => setTimeout(
+      resolve,
+      Math.min(100, Math.max(2, target - databaseNow + 2))
+    ));
+  }
+  assert.fail(
+    `${label} PostgreSQL clock recovery exceeded the bounded integration-test allowance`
+  );
+}
+
 function freezeSubjectCommand({ subjectId, idempotencyKey, reasonCode = "risk_limit_breach" }) {
   return {
     subjectId,
@@ -795,6 +876,74 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         ],
         now: IDENTITY_NOW
       }),
+      tenantOneCapitalPartner: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_capital_partner_${RUN_ID}`,
+        actorType: ActorType.HUMAN,
+        roleBundle: RoleBundle.CAPITAL_PARTNER_OPERATOR,
+        capabilities: [
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+          PilotCapability.CAPITAL_PARTNER_OFFER_MANAGE_OWN,
+          PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+          PilotCapability.CAPITAL_PARTNER_FACILITY_READ_OWN
+        ],
+        now: IDENTITY_NOW
+      }),
+      tenantOnePhase2BorrowerA: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_phase2_borrower_a_${RUN_ID}`,
+        actorType: ActorType.HUMAN,
+        roleBundle: RoleBundle.HUMAN_BORROWER,
+        capabilities: [
+          PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
+          PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.CONSENT_CREATE_SELF,
+          PilotCapability.CONSENT_READ_SELF,
+          PilotCapability.CONSENT_REVOKE_SELF,
+          PilotCapability.IDENTITY_REFERENCE_READ_SELF,
+          PilotCapability.CREDIT_REQUEST,
+          PilotCapability.CREDIT_READ_SELF,
+          PilotCapability.CREDIT_EVALUATE_SELF,
+          PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
+          PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+          PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
+          PilotCapability.OBLIGATION_READ_OWNED,
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.CREDIT_PASSPORT_REVOKE_SELF
+        ],
+        now: IDENTITY_NOW
+      }),
+      tenantOnePhase2BorrowerB: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_phase2_borrower_b_${RUN_ID}`,
+        actorType: ActorType.HUMAN,
+        roleBundle: RoleBundle.HUMAN_BORROWER,
+        capabilities: [
+          PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
+          PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.CONSENT_CREATE_SELF,
+          PilotCapability.CONSENT_READ_SELF,
+          PilotCapability.CONSENT_REVOKE_SELF,
+          PilotCapability.IDENTITY_REFERENCE_READ_SELF,
+          PilotCapability.CREDIT_REQUEST,
+          PilotCapability.CREDIT_READ_SELF,
+          PilotCapability.CREDIT_EVALUATE_SELF,
+          PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
+          PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+          PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
+          PilotCapability.OBLIGATION_READ_OWNED,
+          PilotCapability.EVIDENCE_READ_OWNED,
+          PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+          PilotCapability.CREDIT_PASSPORT_READ_SELF,
+          PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+          PilotCapability.CREDIT_PASSPORT_REVOKE_SELF
+        ],
+        now: IDENTITY_NOW
+      }),
       tenantOneOtherBorrower: harness.addIdentity({
         tenantId: TENANT_ONE,
         actorId: `actor_gateway_one_other_borrower_${RUN_ID}`,
@@ -934,6 +1083,14 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [PilotCapability.RISK_FREEZE, PilotCapability.SERVICING_QUEUE_READ],
         now: IDENTITY_NOW
       }),
+      tenantOneWorker: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_servicing_worker_${RUN_ID}`,
+        actorType: ActorType.SYSTEM_WORKER,
+        roleBundle: RoleBundle.SYSTEM_WORKER,
+        capabilities: [PilotCapability.SERVICING_ADVANCE_SANDBOX],
+        now: IDENTITY_NOW
+      }),
       tenantTwoHuman: harness.addIdentity({
         tenantId: TENANT_TWO,
         actorId: `actor_gateway_two_human_${RUN_ID}`,
@@ -1026,12 +1183,16 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneHuman);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneController);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneBorrower);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneCapitalPartner);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOnePhase2BorrowerA);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOnePhase2BorrowerB);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneOtherBorrower);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneOtherHuman);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneRisk);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneAuditor);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneStaleRisk);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneOperations);
+    await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneWorker);
     await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneAgent, {
       controllerActorId: identities.tenantOneHuman.authenticationContext.actorId
     });
@@ -1049,6 +1210,11 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     await seedIdentity(ownerPool, TENANT_TWO, identities.tenantTwoAgent, {
       controllerActorId: identities.tenantTwoHuman.authenticationContext.actorId
     });
+    const capitalPartnerProfile = await seedCapitalPartnerProfile(
+      ownerPool,
+      TENANT_ONE,
+      identities.tenantOneCapitalPartner
+    );
     await seedRiskPortfolioResource(
       ownerPool,
       TENANT_ONE,
@@ -1140,6 +1306,18 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       identities.tenantOneController.authenticationContext
     );
     const tenantOneBorrower = humanClient(runtime, identities.tenantOneBorrower.authenticationContext);
+    const tenantOneCapitalPartner = humanClient(
+      runtime,
+      identities.tenantOneCapitalPartner.authenticationContext
+    );
+    const tenantOnePhase2BorrowerA = humanClient(
+      runtime,
+      identities.tenantOnePhase2BorrowerA.authenticationContext
+    );
+    const tenantOnePhase2BorrowerB = humanClient(
+      runtime,
+      identities.tenantOnePhase2BorrowerB.authenticationContext
+    );
     const tenantOneOtherBorrower = humanClient(
       runtime,
       identities.tenantOneOtherBorrower.authenticationContext
@@ -1174,6 +1352,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     const tenantOneOperations = operatorClient(
       runtime,
       identities.tenantOneOperations.authenticationContext
+    );
+    const tenantOneWorker = workerClient(
+      runtime,
+      identities.tenantOneWorker.authenticationContext
     );
     const tenantTwoHuman = humanClient(runtime, identities.tenantTwoHuman.authenticationContext);
     const tenantTwoBorrower = humanClient(runtime, identities.tenantTwoBorrower.authenticationContext);
@@ -3735,12 +3917,15 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         (error) => error.code === "authorization_denied"
       );
       const passportAudit = await ownerPool.query(
-        `SELECT event_type, payload_hash, payload_ref
-           FROM credit_events
-          WHERE tenant_id = $1
-            AND subject_id = $2
-            AND event_type LIKE 'credit_passport_artifact_%'
-          ORDER BY occurred_at, id`,
+        `SELECT c.event_type, c.payload_hash, c.payload_ref
+           FROM credit_events c
+           JOIN domain_events d
+             ON d.tenant_id = c.tenant_id
+            AND d.id = c.id
+          WHERE c.tenant_id = $1
+            AND c.subject_id = $2
+            AND c.event_type LIKE 'credit_passport_artifact_%'
+          ORDER BY d.aggregate_version, c.id`,
         [TENANT_ONE, tenantOneHumanSubjectId]
       );
       assert.deepEqual(
@@ -4814,6 +4999,567 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           error.code === "P0001" &&
           error.message === "append-only rows cannot be updated or deleted"
       );
+    });
+
+    await t.test("Phase 2 Capital Partner marketplace closes Human, Agent, stale, and adverse no-funds paths", async () => {
+      const capitalPartnerActorId =
+        identities.tenantOneCapitalPartner.authenticationContext.actorId;
+      const setupHumanBorrower = async ({ client, identity, label }) => {
+        const created = await client.createHumanSubject({
+          idempotencyKey: `phase2-create-human-${label}-${RUN_ID}`,
+          requestId: `request-phase2-create-human-${label}-${RUN_ID}`,
+          correlationId: `correlation-phase2-${label}-${RUN_ID}`
+        });
+        const consent = await client.createConsent(createConsentCommand({
+          subjectId: created.response.subjectId,
+          idempotencyKey: `phase2-consent-${label}-${RUN_ID}`,
+          overrides: {
+            purposes: [
+              "credit_application",
+              "credit_decision",
+              "credit_offer_acceptance",
+              "obligation_servicing",
+              "identity_reference_use"
+            ]
+          }
+        }));
+        await seedSyntheticIdentityReference({
+          pool: appPool,
+          tenantId: TENANT_ONE,
+          identity,
+          subjectId: created.response.subjectId,
+          principalId: created.response.principalId,
+          consentId: consent.response.consent.consentId,
+          purposeCodes: [
+            "identity_reference_use",
+            "credit_decision",
+            "credit_offer_acceptance"
+          ]
+        });
+        await waitForDatabaseClockAfter(
+          ownerPool,
+          consent.response.consent.validFrom,
+          `Phase 2 ${label} Consent`
+        );
+        return {
+          subjectId: created.response.subjectId,
+          consentId: consent.response.consent.consentId
+        };
+      };
+      const humanA = await setupHumanBorrower({
+        client: tenantOnePhase2BorrowerA,
+        identity: identities.tenantOnePhase2BorrowerA,
+        label: "human-a"
+      });
+      const humanB = await setupHumanBorrower({
+        client: tenantOnePhase2BorrowerB,
+        identity: identities.tenantOnePhase2BorrowerB,
+        label: "human-b"
+      });
+
+      const agentAuthority = await ownerPool.query(
+        `SELECT b.resource_id AS subject_id
+           FROM authorization_resource_bindings b
+          WHERE b.tenant_id = $1
+            AND b.resource_type = 'subject'
+            AND b.actor_id = $2
+            AND b.relationship = 'subject'
+            AND b.status = 'active'
+          LIMIT 1`,
+        [
+          TENANT_ONE,
+          identities.tenantOneCreditAgent.authenticationContext.actorId
+        ]
+      );
+      assert.equal(agentAuthority.rowCount, 1);
+      const agentSubjectId = agentAuthority.rows[0].subject_id;
+      const phase2AgentMandate = await tenantOneController.createDraftMandate(
+        createMandateCommand({
+          subjectId: agentSubjectId,
+          idempotencyKey: `phase2-agent-mandate-${RUN_ID}`,
+          overrides: {
+            capabilities: [
+              "request_credit",
+              "accept_credit_offer",
+              "execute_sandbox_credit",
+              "route_repayment"
+            ],
+            allowedProviderIds: [],
+            allowedCategories: [],
+            perActionLimitMinor: "10000",
+            aggregateLimitMinor: "20000"
+          }
+        })
+      );
+      const agentMandateId = phase2AgentMandate.response.mandateId;
+
+      const requestAndEvaluate = async ({
+        client,
+        subjectId,
+        authorityId,
+        amountMinor,
+        label
+      }) => {
+        const requested = await client.requestCredit(requestCreditCommand({
+          subjectId,
+          authorityId,
+          idempotencyKey: `phase2-request-${label}-${RUN_ID}`,
+          overrides: { requestedPrincipalMinor: amountMinor }
+        }));
+        const creditIntent = requested.response.creditIntent;
+        const evaluated = await client.evaluateCreditApplication({
+          creditIntentId: creditIntent.creditIntentId,
+          idempotencyKey: `phase2-evaluate-${label}-${RUN_ID}`,
+          requestId: `request-phase2-evaluate-${label}-${RUN_ID}`,
+          correlationId: `correlation-phase2-${label}-${RUN_ID}`
+        });
+        assert.equal(evaluated.response.decision.status, "approved");
+        assert.equal(evaluated.response.offer.status, "offered");
+        return {
+          creditIntent,
+          decision: evaluated.response.decision,
+          preliminaryOffer: evaluated.response.offer
+        };
+      };
+
+      const issueAndAuthor = async ({
+        issuer,
+        subjectId,
+        application,
+        amountMinor,
+        label,
+        firstPaymentDelayMs = 30 * 86_400_000,
+        offerLifetimeMs = 10 * 60_000
+      }) => {
+        const passportResult = await issuer.createCreditPassportArtifact({
+          subjectId,
+          payload: {
+            creditIntentId: application.creditIntent.creditIntentId,
+            verifierActorId: capitalPartnerActorId,
+            claimSelectors: [
+              "decision_outcome",
+              "factor_authority",
+              "canonical_reason_codes",
+              "source_evidence_lineage"
+            ],
+            lifetimeSeconds: 900,
+            schemaVersion: "credit_passport_artifact_create.v1"
+          },
+          idempotencyKey: `phase2-passport-${label}-${RUN_ID}`,
+          requestId: `request-phase2-passport-${label}-${RUN_ID}`,
+          correlationId: `correlation-phase2-${label}-${RUN_ID}`
+        });
+        const passport = passportResult.response.artifact;
+        const authoredAt = Date.now();
+        const firstPaymentAt = new Date(
+          authoredAt + firstPaymentDelayMs
+        ).toISOString();
+        const maturityAt = new Date(
+          authoredAt + firstPaymentDelayMs + 30 * 86_400_000
+        ).toISOString();
+        const validUntil = new Date(authoredAt + offerLifetimeMs).toISOString();
+        const authorCommand = {
+          creditPassportArtifactId: passport.creditPassportArtifactId,
+          payload: {
+            creditIntentId: application.creditIntent.creditIntentId,
+            artifactHash: passport.artifactHash,
+            artifactVersion: passport.version,
+            underwritingSnapshotHash: hashId(
+              "gateway_phase2_underwriting_snapshot",
+              {
+                decisionHash: application.decision.decisionHash,
+                passportHash: passport.artifactHash,
+                amountMinor,
+                label
+              }
+            ),
+            assetId: application.creditIntent.assetId,
+            facilityLimitMinor: amountMinor,
+            approvedPrincipalMinor: amountMinor,
+            perDrawCapMinor: amountMinor,
+            annualRateBps: 825,
+            originationFeeMinor: "0",
+            repaymentFrequency: application.creditIntent.repaymentFrequency,
+            installmentCount: application.creditIntent.installmentCount,
+            firstPaymentAt,
+            maturityAt,
+            permittedPurposeCode: application.creditIntent.purposeCode,
+            conditions: [
+              "passport_current_at_acceptance",
+              "authority_current_at_acceptance",
+              "no_adverse_obligation_at_acceptance"
+            ],
+            undrawnRevocationRule: "capital_partner_before_acceptance",
+            validUntil,
+            reasonCodes: ["capital_partner_underwritten"],
+            disclosureRef: "urn:ipo.one:test:phase2-capital-partner:v1",
+            schemaVersion: "capital_partner_offer_authoring.v1"
+          },
+          idempotencyKey: `phase2-author-${label}-${RUN_ID}`,
+          requestId: `request-phase2-author-${label}-${RUN_ID}`,
+          correlationId: `correlation-phase2-${label}-${RUN_ID}`
+        };
+        const authored = await tenantOneCapitalPartner.authorCapitalPartnerOffer(
+          authorCommand
+        );
+        const replay = await tenantOneCapitalPartner.authorCapitalPartnerOffer(
+          authorCommand
+        );
+        assert.equal(authored.replayed, false);
+        assert.equal(replay.replayed, true);
+        assert.deepEqual(replay.response, authored.response);
+        assert.equal(authored.response.offer.schemaVersion, "credit_offer.v2");
+        assert.equal(authored.response.offer.productionFundsApproved, false);
+        assert.equal(authored.response.fundsAuthority, false);
+        const offerRows = await ownerPool.query(
+          `SELECT schema_version, status
+             FROM credit_offers
+            WHERE tenant_id = $1
+              AND credit_intent_id = $2
+            ORDER BY schema_version`,
+          [TENANT_ONE, application.creditIntent.creditIntentId]
+        );
+        assert.deepEqual(offerRows.rows, [
+          { schema_version: "credit_offer.v1", status: "declined" },
+          { schema_version: "credit_offer.v2", status: "offered" }
+        ]);
+        return {
+          passport,
+          offer: authored.response.offer,
+          firstPaymentAt,
+          validUntil
+        };
+      };
+
+      const acceptExecute = async ({ client, offer, label }) => {
+        const command = {
+          creditOfferId: offer.creditOfferId,
+          payload: {
+            expectedOfferHash: offer.creditOfferHash,
+            expectedTermsHash: offer.termsHash,
+            acknowledgementHash: hashId("gateway_phase2_offer_acknowledgement", {
+              offerHash: offer.creditOfferHash,
+              termsHash: offer.termsHash,
+              label
+            })
+          },
+          idempotencyKey: `phase2-accept-${label}-${RUN_ID}`,
+          requestId: `request-phase2-accept-${label}-${RUN_ID}`,
+          correlationId: `correlation-phase2-${label}-${RUN_ID}`
+        };
+        const acceptances = await executeConcurrentDuplicate(
+          () => client.acceptCreditOffer(command)
+        );
+        assert.deepEqual(
+          acceptances.map(({ replayed }) => replayed).sort(),
+          [false, true]
+        );
+        assert.deepEqual(acceptances[0].response, acceptances[1].response);
+        const obligation = acceptances[0].response.obligation;
+        const executions = await executeConcurrentDuplicate(
+          () => client.executeSandboxObligation({
+            obligationId: obligation.obligationId,
+            idempotencyKey: `phase2-execute-${label}-${RUN_ID}`,
+            requestId: `request-phase2-execute-${label}-${RUN_ID}`,
+            correlationId: `correlation-phase2-${label}-${RUN_ID}`
+          })
+        );
+        assert.deepEqual(
+          executions.map(({ replayed }) => replayed).sort(),
+          [false, true]
+        );
+        assert.equal(executions[0].response.obligation.status, "active");
+        assert.equal(executions[0].response.productionFundsMoved, false);
+        return executions[0].response.obligation;
+      };
+
+      const repayFully = async ({ client, obligation, amountMinor, label }) => {
+        const repaid = await postRepaymentWithBoundedClockRecovery({
+          client,
+          pool: ownerPool,
+          obligationId: obligation.obligationId,
+          command: {
+            obligationId: obligation.obligationId,
+            payload: { amountMinor, sourceCode: "synthetic_bank" },
+            idempotencyKey: `phase2-repay-${label}-${RUN_ID}`,
+            requestId: `request-phase2-repay-${label}-${RUN_ID}`,
+            correlationId: `correlation-phase2-${label}-${RUN_ID}`
+          }
+        });
+        assert.equal(repaid.response.obligation.status, "fully_repaid");
+        assert.equal(repaid.response.obligation.outstandingPrincipalMinor, "0");
+        assert.equal(repaid.response.productionFundsMoved, false);
+        return repaid.response.obligation;
+      };
+
+      const humanApplication = await requestAndEvaluate({
+        client: tenantOnePhase2BorrowerA,
+        subjectId: humanA.subjectId,
+        authorityId: humanA.consentId,
+        amountMinor: "8000",
+        label: "human-repaid"
+      });
+      const humanUnderwriting = await issueAndAuthor({
+        issuer: tenantOnePhase2BorrowerA,
+        subjectId: humanA.subjectId,
+        application: humanApplication,
+        amountMinor: "8000",
+        label: "human-repaid"
+      });
+      const humanObligation = await acceptExecute({
+        client: tenantOnePhase2BorrowerA,
+        offer: humanUnderwriting.offer,
+        label: "human-repaid"
+      });
+      await repayFully({
+        client: tenantOnePhase2BorrowerA,
+        obligation: humanObligation,
+        amountMinor: "8000",
+        label: "human-repaid"
+      });
+      const humanFacility = await tenantOneCapitalPartner.getCapitalPartnerFacility({
+        obligationId: humanObligation.obligationId,
+        requestId: `request-phase2-facility-human-${RUN_ID}`,
+        correlationId: `correlation-phase2-human-repaid-${RUN_ID}`
+      });
+      assert.equal(humanFacility.response.facility.status, "fully_repaid");
+      assert.equal(humanFacility.response.facility.outstandingMinor, "0");
+
+      const agentApplication = await requestAndEvaluate({
+        client: tenantOneCreditAgent,
+        subjectId: agentSubjectId,
+        authorityId: agentMandateId,
+        amountMinor: "7000",
+        label: "agent-repaid"
+      });
+      const agentUnderwriting = await issueAndAuthor({
+        issuer: tenantOneController,
+        subjectId: agentSubjectId,
+        application: agentApplication,
+        amountMinor: "7000",
+        label: "agent-repaid"
+      });
+      const phase2AgentMandateView = await tenantOneController.getMandate({
+        mandateId: agentMandateId,
+        requestId: `request-phase2-agent-mandate-${RUN_ID}`,
+        correlationId: `correlation-phase2-agent-repaid-${RUN_ID}`
+      });
+      await tenantOneController.activateSandboxMandate({
+        mandateId: agentMandateId,
+        payload: {
+          expectedMandateHash:
+            phase2AgentMandateView.response.mandate.mandateHash,
+          acknowledgedTermsHash:
+            phase2AgentMandateView.response.mandate.termsHash,
+          acknowledgementCode: "principal_authorizes_sandbox_credit_v1"
+        },
+        idempotencyKey: `phase2-activate-agent-mandate-${RUN_ID}`,
+        requestId: `request-phase2-activate-agent-mandate-${RUN_ID}`,
+        correlationId: `correlation-phase2-agent-repaid-${RUN_ID}`
+      });
+      const agentObligation = await acceptExecute({
+        client: tenantOneCreditAgent,
+        offer: agentUnderwriting.offer,
+        label: "agent-repaid"
+      });
+      await repayFully({
+        client: tenantOneCreditAgent,
+        obligation: agentObligation,
+        amountMinor: "7000",
+        label: "agent-repaid"
+      });
+
+      const staleApplication = await requestAndEvaluate({
+        client: tenantOnePhase2BorrowerA,
+        subjectId: humanA.subjectId,
+        authorityId: humanA.consentId,
+        amountMinor: "6000",
+        label: "stale"
+      });
+      const staleUnderwriting = await issueAndAuthor({
+        issuer: tenantOnePhase2BorrowerA,
+        subjectId: humanA.subjectId,
+        application: staleApplication,
+        amountMinor: "6000",
+        label: "stale"
+      });
+      await assert.rejects(
+        () => tenantOnePhase2BorrowerA.acceptCreditOffer({
+          creditOfferId: staleUnderwriting.offer.creditOfferId,
+          payload: {
+            expectedOfferHash: hashId("gateway_phase2_stale_offer", {
+              offerId: staleUnderwriting.offer.creditOfferId
+            }),
+            expectedTermsHash: staleUnderwriting.offer.termsHash,
+            acknowledgementHash: hashId("gateway_phase2_stale_ack", {
+              offerId: staleUnderwriting.offer.creditOfferId
+            })
+          },
+          idempotencyKey: `phase2-stale-hash-${RUN_ID}`,
+          requestId: `request-phase2-stale-hash-${RUN_ID}`,
+          correlationId: `correlation-phase2-stale-${RUN_ID}`
+        }),
+        (error) => error.code === "offer_terms_mismatch"
+      );
+      await tenantOnePhase2BorrowerA.revokeCreditPassportArtifact({
+        artifactId: staleUnderwriting.passport.creditPassportArtifactId,
+        reasonCode: "owner_withdrawal",
+        idempotencyKey: `phase2-revoke-passport-${RUN_ID}`,
+        requestId: `request-phase2-revoke-passport-${RUN_ID}`,
+        correlationId: `correlation-phase2-stale-${RUN_ID}`
+      });
+      await assert.rejects(
+        () => tenantOnePhase2BorrowerA.acceptCreditOffer({
+          creditOfferId: staleUnderwriting.offer.creditOfferId,
+          payload: {
+            expectedOfferHash: staleUnderwriting.offer.creditOfferHash,
+            expectedTermsHash: staleUnderwriting.offer.termsHash,
+            acknowledgementHash: hashId("gateway_phase2_revoked_ack", {
+              offerId: staleUnderwriting.offer.creditOfferId
+            })
+          },
+          idempotencyKey: `phase2-revoked-passport-accept-${RUN_ID}`,
+          requestId: `request-phase2-revoked-passport-accept-${RUN_ID}`,
+          correlationId: `correlation-phase2-stale-${RUN_ID}`
+        }),
+        (error) => [
+          "authorization_denied",
+          "capital_partner_passport_not_current"
+        ].includes(error.code)
+      );
+      const withdrawn = await tenantOneCapitalPartner.transitionCapitalPartnerOffer({
+        creditOfferId: staleUnderwriting.offer.creditOfferId,
+        payload: {
+          nextStatus: "withdrawn",
+          supersedingOfferId: null,
+          schemaVersion: "capital_partner_offer_transition.v1"
+        },
+        idempotencyKey: `phase2-withdraw-stale-${RUN_ID}`,
+        requestId: `request-phase2-withdraw-stale-${RUN_ID}`,
+        correlationId: `correlation-phase2-stale-${RUN_ID}`
+      });
+      assert.equal(withdrawn.response.offer.status, "withdrawn");
+
+      const expiredApplication = await requestAndEvaluate({
+        client: tenantOnePhase2BorrowerB,
+        subjectId: humanB.subjectId,
+        authorityId: humanB.consentId,
+        amountMinor: "5000",
+        label: "expired"
+      });
+      const expiredUnderwriting = await issueAndAuthor({
+        issuer: tenantOnePhase2BorrowerB,
+        subjectId: humanB.subjectId,
+        application: expiredApplication,
+        amountMinor: "5000",
+        label: "expired",
+        offerLifetimeMs: 1_500
+      });
+      await waitForDatabaseClockAfter(
+        ownerPool,
+        new Date(new Date(expiredUnderwriting.validUntil).getTime() + 100),
+        "Phase 2 expired Offer"
+      );
+      await assert.rejects(
+        () => tenantOnePhase2BorrowerB.acceptCreditOffer({
+          creditOfferId: expiredUnderwriting.offer.creditOfferId,
+          payload: {
+            expectedOfferHash: expiredUnderwriting.offer.creditOfferHash,
+            expectedTermsHash: expiredUnderwriting.offer.termsHash,
+            acknowledgementHash: hashId("gateway_phase2_expired_ack", {
+              offerId: expiredUnderwriting.offer.creditOfferId
+            })
+          },
+          idempotencyKey: `phase2-expired-accept-${RUN_ID}`,
+          requestId: `request-phase2-expired-accept-${RUN_ID}`,
+          correlationId: `correlation-phase2-expired-${RUN_ID}`
+        }),
+        (error) => ["authorization_denied", "offer_expired"].includes(error.code)
+      );
+
+      const adverseApplication = await requestAndEvaluate({
+        client: tenantOnePhase2BorrowerB,
+        subjectId: humanB.subjectId,
+        authorityId: humanB.consentId,
+        amountMinor: "4000",
+        label: "adverse"
+      });
+      const adverseUnderwriting = await issueAndAuthor({
+        issuer: tenantOnePhase2BorrowerB,
+        subjectId: humanB.subjectId,
+        application: adverseApplication,
+        amountMinor: "4000",
+        label: "adverse",
+        firstPaymentDelayMs: 1_500
+      });
+      const adverseObligation = await acceptExecute({
+        client: tenantOnePhase2BorrowerB,
+        offer: adverseUnderwriting.offer,
+        label: "adverse"
+      });
+      await waitForDatabaseClockAfter(
+        ownerPool,
+        new Date(new Date(adverseUnderwriting.firstPaymentAt).getTime() + 100),
+        "Phase 2 adverse servicing"
+      );
+      let servicing = await tenantOneWorker.advanceSandboxServicing({
+        obligationId: adverseObligation.obligationId,
+        idempotencyKey: `phase2-advance-servicing-${RUN_ID}`,
+        requestId: `request-phase2-advance-servicing-${RUN_ID}`,
+        correlationId: `correlation-phase2-adverse-${RUN_ID}`
+      });
+      if (!servicing.response.changed) {
+        await waitForDatabaseClockAfter(
+          ownerPool,
+          new Date(new Date(adverseUnderwriting.firstPaymentAt).getTime() + 100),
+          "Phase 2 adverse servicing retry"
+        );
+        servicing = await tenantOneWorker.advanceSandboxServicing({
+          obligationId: adverseObligation.obligationId,
+          idempotencyKey: `phase2-advance-servicing-retry-${RUN_ID}`,
+          requestId: `request-phase2-advance-servicing-retry-${RUN_ID}`,
+          correlationId: `correlation-phase2-adverse-${RUN_ID}`
+        });
+      }
+      assert.equal(servicing.response.changed, true);
+      assert.equal(servicing.response.obligation.status, "delinquent");
+      assert.equal(
+        servicing.response.obligation.servicingClassification,
+        "grace_period"
+      );
+
+      const portfolio = await tenantOneCapitalPartner.getCapitalPartnerPortfolio({
+        capitalPartnerId: capitalPartnerProfile.capitalPartnerId,
+        requestId: `request-phase2-portfolio-${RUN_ID}`,
+        correlationId: `correlation-phase2-portfolio-${RUN_ID}`
+      });
+      assert.equal(portfolio.response.profile.productionFundsAuthority, false);
+      assert.equal(portfolio.response.portfolio.productionFundsMoved, false);
+      assert.equal(portfolio.response.portfolio.completedFacilityCount, 2);
+      assert.equal(portfolio.response.portfolio.activeFacilityCount, 1);
+      assert.equal(portfolio.response.portfolio.utilizedMinor, "19000");
+      assert.equal(portfolio.response.portfolio.repaidMinor, "15000");
+      assert.equal(portfolio.response.portfolio.outstandingMinor, "4000");
+      const adverseFacility = portfolio.response.portfolio.facilities.find(
+        ({ obligationId }) => obligationId === adverseObligation.obligationId
+      );
+      assert.equal(adverseFacility.status, "delinquent");
+      assert.equal(adverseFacility.servicingClassification, "grace_period");
+      const evidenceRows = await ownerPool.query(
+        `SELECT count(*)::int AS evidence
+           FROM evidence_envelopes
+          WHERE tenant_id = $1
+            AND obligation_id = ANY($2::text[])`,
+        [
+          TENANT_ONE,
+          [
+            humanObligation.obligationId,
+            agentObligation.obligationId,
+            adverseObligation.obligationId
+          ]
+        ]
+      );
+      assert.equal(evidenceRows.rows[0].evidence >= 18, true);
     });
 
     await t.test("signed Provider sandbox is AccessGrant-bound, replay-safe, and atomically durable", async () => {

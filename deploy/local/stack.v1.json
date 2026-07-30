@@ -33,7 +33,8 @@
     "ports": [
       8787,
       8788,
-      8789
+      8789,
+      8790
     ],
     "syntheticDataOnly": true,
     "processLocalCanonicalStateAllowed": false
@@ -63,6 +64,7 @@
     "humanWorkspace": true,
     "agentControllerWorkspace": true,
     "riskWorkspace": true,
+    "capitalPartnerWorkspace": true,
     "workerHeartbeat": true,
     "outboxDelivery": true,
     "reconciliation": true,

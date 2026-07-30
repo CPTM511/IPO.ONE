@@ -9732,6 +9732,113 @@ body[data-interaction-mode="agent"] [data-view-panel="request-credit"] .request-
   margin-bottom: 0;
 }
 
+.capital-partner-offer-form,
+.capital-partner-portfolio-query {
+  display: grid;
+  gap: 16px;
+}
+
+.capital-partner-offer-form fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.capital-partner-offer-form legend {
+  padding: 0 6px;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.capital-partner-offer-form label,
+.capital-partner-portfolio-query label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+}
+
+.capital-partner-portfolio-panel {
+  margin-bottom: 0;
+}
+
+.capital-partner-portfolio-query {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.capital-partner-portfolio-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--line);
+}
+
+.capital-partner-portfolio-metrics > div {
+  padding: 14px;
+  background: var(--surface-subtle);
+}
+
+.capital-partner-portfolio-metrics span,
+.capital-partner-portfolio-metrics strong {
+  display: block;
+}
+
+.capital-partner-portfolio-metrics span {
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.capital-partner-portfolio-metrics strong {
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+.capital-partner-facilities {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.capital-partner-facility-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.3fr) repeat(3, minmax(90px, 0.6fr));
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+}
+
+.capital-partner-facility-row strong,
+.capital-partner-facility-row span,
+.capital-partner-facility-row small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.capital-partner-facility-row span,
+.capital-partner-facility-row small {
+  color: var(--muted);
+  font-size: 0.64rem;
+}
+
+.capital-partner-facility-row strong {
+  margin-top: 3px;
+  font-size: 0.72rem;
+}
+
 .capital-partner-journey ol {
   display: grid;
   gap: 0;
@@ -9878,6 +9985,12 @@ body[data-interaction-mode="agent"] [data-view-panel="request-credit"] .request-
   }
 
   .capital-partner-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .capital-partner-portfolio-query,
+  .capital-partner-portfolio-metrics,
+  .capital-partner-facility-row {
     grid-template-columns: 1fr;
   }
 

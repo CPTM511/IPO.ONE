@@ -5,6 +5,10 @@ import providerIntentAcknowledgementSchema from "../../../schemas/v2/provider-in
 import providerIntentViewSchema from "../../../schemas/v2/provider-intent-view.schema.json" with { type: "json" };
 import providerSandboxCallbackSchema from "../../../schemas/v2/provider-sandbox-callback.schema.json" with { type: "json" };
 import creditPassportArtifactSchema from "../../../schemas/v2/credit-passport-artifact.schema.json" with { type: "json" };
+import capitalPartnerProfileSchema from "../../../schemas/v2/capital-partner-profile.schema.json" with { type: "json" };
+import capitalPartnerPortfolioSchema from "../../../schemas/v2/capital-partner-portfolio.schema.json" with { type: "json" };
+import creditOfferV2Schema from "../../../schemas/v2/credit-offer-v2.schema.json" with { type: "json" };
+import facilityViewSchema from "../../../schemas/v2/facility-view.schema.json" with { type: "json" };
 import officialReportArtifactSchema from "../../../schemas/v2/official-report-artifact.schema.json" with { type: "json" };
 import tradingCreditProfileSchema from "../../../schemas/v2/trading-credit-profile.schema.json" with { type: "json" };
 import tradingRealCreditProfileSchema from "../../../schemas/v2/trading-real-credit-profile.schema.json" with { type: "json" };
@@ -55,6 +59,10 @@ ajv.addSchema(providerIntentAcknowledgementSchema);
 ajv.addSchema(providerIntentViewSchema);
 ajv.addSchema(providerSandboxCallbackSchema);
 ajv.addSchema(creditPassportArtifactSchema);
+ajv.addSchema(capitalPartnerProfileSchema);
+ajv.addSchema(capitalPartnerPortfolioSchema);
+ajv.addSchema(creditOfferV2Schema);
+ajv.addSchema(facilityViewSchema);
 ajv.addSchema(officialReportArtifactSchema);
 ajv.addSchema(tradingCreditProfileSchema);
 ajv.addSchema(tradingRealCreditProfileSchema);
@@ -557,6 +565,58 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     quotaClass: "mutation",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
     responseSchemaVersion: "tenant_credit_passport_artifact_revoked.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotAuthorCapitalPartnerOffer",
+    kind: "command",
+    actorTypes: ["human"],
+    resourceType: "credit_passport_artifact",
+    requiredCapability: "capital_partner.offer.create.own",
+    idempotency: "required",
+    quotaClass: "economic",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_capital_partner_offer_authored.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotTransitionCapitalPartnerOffer",
+    kind: "command",
+    actorTypes: ["human"],
+    resourceType: "credit_offer",
+    requiredCapability: "capital_partner.offer.manage.own",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_capital_partner_offer_transitioned.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadCapitalPartnerFacility",
+    kind: "query",
+    actorTypes: ["human"],
+    resourceType: "obligation",
+    requiredCapability: "capital_partner.facility.read.own",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_capital_partner_facility_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadCapitalPartnerPortfolio",
+    kind: "query",
+    actorTypes: ["human"],
+    resourceType: "capital_partner_profile",
+    requiredCapability: "capital_partner.portfolio.read.own",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_capital_partner_portfolio_view.v1",
     public: false,
     fundsAuthority: false
   },

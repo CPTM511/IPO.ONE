@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 72,
-      "maxItems": 72,
+      "minItems": 76,
+      "maxItems": 76,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -285,6 +285,10 @@
             "pilotRevokeDraftMandate",
             "pilotRevokeCreditPassportArtifact",
             "pilotRevokeOfficialReport",
+            "pilotAuthorCapitalPartnerOffer",
+            "pilotTransitionCapitalPartnerOffer",
+            "pilotReadCapitalPartnerFacility",
+            "pilotReadCapitalPartnerPortfolio",
             "pilotSubmitAgentAccountProof",
             "pilotSubmitPilotFeedback",
             "pilotWriteOffSandboxObligation",
@@ -345,6 +349,7 @@
         "resourceType": {
           "enum": [
             "subject",
+            "capital_partner_profile",
             "consent",
             "credit_intent",
             "credit_offer",
@@ -388,6 +393,10 @@
             "credit_passport.read.self",
             "credit_passport.verify.bound",
             "credit_passport.revoke.self",
+            "capital_partner.offer.create.own",
+            "capital_partner.offer.manage.own",
+            "capital_partner.portfolio.read.own",
+            "capital_partner.facility.read.own",
             "credit_registry.evidence.read.tenant",
             "official_report.create.owned",
             "official_report.read.owned",
@@ -489,6 +498,10 @@
             "tenant_owned_credit_passport_artifact_view.v1",
             "tenant_credit_passport_verification_result.v1",
             "tenant_credit_passport_artifact_revoked.v1",
+            "tenant_capital_partner_offer_authored.v1",
+            "tenant_capital_partner_offer_transitioned.v1",
+            "tenant_capital_partner_facility_view.v1",
+            "tenant_capital_partner_portfolio_view.v1",
             "tenant_official_report_created.v1",
             "tenant_official_report_view.v1",
             "tenant_official_report_retrieval.v1",
@@ -548,6 +561,118 @@
         }
       },
       "oneOf": [
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotAuthorCapitalPartnerOffer"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": ["human"]
+            },
+            "resourceType": {
+              "const": "credit_passport_artifact"
+            },
+            "requiredCapability": {
+              "const": "capital_partner.offer.create.own"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "economic"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_capital_partner_offer_authored.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotTransitionCapitalPartnerOffer"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": ["human"]
+            },
+            "resourceType": {
+              "const": "credit_offer"
+            },
+            "requiredCapability": {
+              "const": "capital_partner.offer.manage.own"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "mutation"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_capital_partner_offer_transitioned.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadCapitalPartnerFacility"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": ["human"]
+            },
+            "resourceType": {
+              "const": "obligation"
+            },
+            "requiredCapability": {
+              "const": "capital_partner.facility.read.own"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_capital_partner_facility_view.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadCapitalPartnerPortfolio"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": ["human"]
+            },
+            "resourceType": {
+              "const": "capital_partner_profile"
+            },
+            "requiredCapability": {
+              "const": "capital_partner.portfolio.read.own"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_capital_partner_portfolio_view.v1"
+            }
+          }
+        },
         {
           "properties": {
             "operationId": {

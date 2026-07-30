@@ -709,7 +709,7 @@ export function validateLocalStack(value) {
       issues
     );
     exact(value.pilot.hostBinding, "127.0.0.1", "localStack.pilot.hostBinding", issues);
-    exactArray(value.pilot.ports, [8787, 8788, 8789], "localStack.pilot.ports", issues);
+    exactArray(value.pilot.ports, [8787, 8788, 8789, 8790], "localStack.pilot.ports", issues);
     exact(value.pilot.syntheticDataOnly, true, "localStack.pilot.syntheticDataOnly", issues);
     exact(
       value.pilot.processLocalCanonicalStateAllowed,
@@ -760,6 +760,7 @@ export function validateLocalStack(value) {
     "humanWorkspace",
     "agentControllerWorkspace",
     "riskWorkspace",
+    "capitalPartnerWorkspace",
     "workerHeartbeat",
     "outboxDelivery",
     "reconciliation",

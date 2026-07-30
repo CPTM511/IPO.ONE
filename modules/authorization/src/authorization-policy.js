@@ -694,6 +694,47 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["credit_passport_verification_state"]
   }),
   tenantOperation({
+    operationId: "pilotAuthorCapitalPartnerOffer",
+    action: "capital_partner.offer.create.own",
+    resourceType: "credit_passport_artifact",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: [
+      "credit_passport_verification_state",
+      "credit_intent_state",
+      "capital_partner_profile_state",
+      "pause"
+    ]
+  }),
+  tenantOperation({
+    operationId: "pilotTransitionCapitalPartnerOffer",
+    action: "capital_partner.offer.manage.own",
+    resourceType: "credit_offer",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_MANAGE_OWN,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_offer_state", "capital_partner_profile_state", "pause"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadCapitalPartnerPortfolio",
+    action: "capital_partner.portfolio.read.own",
+    resourceType: "capital_partner_profile",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotReadCapitalPartnerFacility",
+    action: "capital_partner.facility.read.own",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_FACILITY_READ_OWN,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
     operationId: "pilotRevokeCreditPassportArtifact",
     action: "credit_passport.revoke.self",
     resourceType: "credit_passport_artifact",

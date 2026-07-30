@@ -1034,6 +1034,20 @@ function mapCreditOffer(row) {
     maturityAt: timestamp(row.maturity_at),
     disclosureRef: row.disclosure_ref,
     termsVersion: row.terms_version,
+    ...(row.capital_partner_id ? {
+      capitalPartnerId: row.capital_partner_id,
+      capitalPartnerOperatorId: row.capital_partner_operator_id,
+      creditPassportArtifactId: row.credit_passport_artifact_id,
+      creditPassportArtifactHash: row.credit_passport_artifact_hash,
+      creditPassportArtifactVersion: Number(row.credit_passport_artifact_version),
+      passportVerificationHash: row.passport_verification_hash,
+      underwritingSnapshotHash: row.underwriting_snapshot_hash,
+      facilityLimitMinor: row.facility_limit_minor,
+      perDrawCapMinor: row.per_draw_cap_minor,
+      permittedPurposeCode: row.permitted_purpose_code,
+      conditions: row.conditions,
+      undrawnRevocationRule: row.undrawn_revocation_rule
+    } : {}),
     validUntil: timestamp(row.valid_until),
     reasonCodes: row.reason_codes,
     sandboxOnly: row.sandbox_only,
@@ -1041,6 +1055,8 @@ function mapCreditOffer(row) {
     status: row.status,
     ...(row.acceptance_id ? { acceptanceId: row.acceptance_id } : {}),
     ...(row.accepted_at ? { acceptedAt: timestamp(row.accepted_at) } : {}),
+    ...(row.superseding_offer_id ? { supersedingOfferId: row.superseding_offer_id } : {}),
+    ...(row.closed_at ? { closedAt: timestamp(row.closed_at) } : {}),
     createdAt: timestamp(row.created_at),
     updatedAt: timestamp(row.updated_at),
     schemaVersion: row.schema_version
@@ -1784,14 +1800,19 @@ export class PostgresCoreRepository {
     const result = await client.query(
       `SELECT * FROM credit_offers
         WHERE credit_intent_id = $1
-        ORDER BY created_at, id
-        LIMIT 2
+        ORDER BY
+          CASE WHEN schema_version = 'credit_offer.v2' THEN 0 ELSE 1 END,
+          CASE status
+            WHEN 'offered' THEN 0
+            WHEN 'accepted' THEN 1
+            ELSE 2
+          END,
+          created_at DESC,
+          id DESC
+        LIMIT 1
         ${lock ? "FOR UPDATE" : ""}`,
       [creditIntentId]
     );
-    if (result.rowCount > 1) {
-      throw new DomainError("projection_integrity_mismatch", "Credit Intent has more than one Offer");
-    }
     return mapCreditOffer(result.rows[0]);
   }
 
@@ -1805,6 +1826,136 @@ export class PostgresCoreRepository {
       [creditOfferId]
     );
     return mapCreditOfferAcceptance(result.rows[0]);
+  }
+
+  async getCapitalPartnerProfileByOperatorInTransaction(client, operatorActorId, { lock = false } = {}) {
+    assertQueryable(client);
+    assertString("operatorActorId", operatorActorId);
+    const result = await client.query(
+      `SELECT * FROM capital_partner_profiles
+        WHERE operator_actor_id = $1
+        ${lock ? "FOR UPDATE" : ""}`,
+      [operatorActorId]
+    );
+    if (result.rowCount > 1) {
+      throw new DomainError(
+        "projection_integrity_mismatch",
+        "Capital Partner operator has more than one profile"
+      );
+    }
+    const row = result.rows[0];
+    if (!row) return undefined;
+    return {
+      capitalPartnerId: row.id,
+      profileHash: row.profile_hash,
+      organizationRef: row.organization_ref,
+      displayName: row.display_name,
+      operatorActorId: row.operator_actor_id,
+      tenantId: row.tenant_id,
+      status: row.status,
+      invitationOnly: row.invitation_only,
+      sameTenantOnly: row.same_tenant_only,
+      sandboxOnly: row.sandbox_only,
+      productionFundsAuthority: row.production_funds_authority,
+      createdAt: timestamp(row.created_at),
+      updatedAt: timestamp(row.updated_at),
+      schemaVersion: row.schema_version
+    };
+  }
+
+  async listCapitalPartnerOffersInTransaction(
+    client,
+    capitalPartnerId,
+    { limit = 200, lock = false } = {}
+  ) {
+    assertQueryable(client);
+    assertString("capitalPartnerId", capitalPartnerId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) {
+      throw new DomainError("invalid_projection_query", "Capital Partner Offer limit is invalid");
+    }
+    const result = await client.query(
+      `SELECT * FROM credit_offers
+        WHERE capital_partner_id = $1
+          AND schema_version = 'credit_offer.v2'
+        ORDER BY created_at, id
+        LIMIT $2
+        ${lock ? "FOR UPDATE" : ""}`,
+      [capitalPartnerId, limit + 1]
+    );
+    return {
+      items: result.rows.slice(0, limit).map(mapCreditOffer),
+      hasMore: result.rowCount > limit
+    };
+  }
+
+  async listCapitalPartnerObligationsInTransaction(client, capitalPartnerId, { limit = 200 } = {}) {
+    assertQueryable(client);
+    assertString("capitalPartnerId", capitalPartnerId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) {
+      throw new DomainError("invalid_projection_query", "Capital Partner Obligation limit is invalid");
+    }
+    const result = await client.query(
+      `SELECT o.id
+         FROM obligations o
+         JOIN credit_offers co
+           ON co.tenant_id = o.tenant_id
+          AND co.id = o.credit_offer_id
+        WHERE co.capital_partner_id = $1
+          AND co.schema_version = 'credit_offer.v2'
+        ORDER BY o.created_at, o.id
+        LIMIT $2`,
+      [capitalPartnerId, limit + 1]
+    );
+    const items = [];
+    for (const row of result.rows.slice(0, limit)) {
+      items.push(await this.getObligationInTransaction(client, row.id, { lock: false }));
+    }
+    return { items, hasMore: result.rowCount > limit };
+  }
+
+  async getEvidenceAnchorCoverageForObligationInTransaction(client, obligationId) {
+    assertQueryable(client);
+    assertString("obligationId", obligationId);
+    const result = await client.query(
+      `SELECT
+         count(*)::integer AS required_event_count,
+         count(*) FILTER (
+           WHERE a.status IN ('finalized', 'reconciled')
+         )::integer AS anchored_event_count,
+         count(*) FILTER (
+           WHERE a.status IN ('pending', 'prepared', 'broadcast', 'unknown', 'included', 'safe')
+         )::integer AS pending_event_count,
+         count(*) FILTER (
+           WHERE a.status IN ('failed', 'reorged')
+         )::integer AS exception_event_count
+       FROM evidence_envelopes e
+       JOIN evidence_chain_anchors a
+         ON a.tenant_id = e.tenant_id
+        AND a.evidence_event_id = e.id
+        AND a.evidence_hash = e.evidence_hash
+      WHERE e.obligation_id = $1`,
+      [obligationId]
+    );
+    const row = result.rows[0];
+    const requiredEventCount = row?.required_event_count ?? 0;
+    const anchoredEventCount = row?.anchored_event_count ?? 0;
+    const pendingEventCount = row?.pending_event_count ?? 0;
+    const exceptionEventCount = row?.exception_event_count ?? 0;
+    return {
+      requiredEventCount,
+      anchoredEventCount,
+      pendingEventCount,
+      exceptionEventCount,
+      status: exceptionEventCount > 0
+        ? "exception"
+        : requiredEventCount > 0 && anchoredEventCount === requiredEventCount
+          ? "complete"
+          : pendingEventCount > 0
+            ? "pending"
+            : "not_evaluated",
+      chainId: "eip155:84532",
+      schemaVersion: "evidence_anchor_coverage.v1"
+    };
   }
 
   async findObligationByCreditOfferInTransaction(client, creditOfferId, { lock = true } = {}) {
@@ -5344,17 +5495,27 @@ export class PostgresCoreRepository {
          installment_count, first_payment_at, maturity_at, disclosure_ref,
          terms_version, valid_until, reason_codes, sandbox_only,
          production_funds_approved, status, created_at, updated_at,
-         schema_version, acceptance_id, accepted_at
+         schema_version, acceptance_id, accepted_at,
+         capital_partner_id, capital_partner_operator_id,
+         credit_passport_artifact_id, credit_passport_artifact_hash,
+         credit_passport_artifact_version, passport_verification_hash,
+         underwriting_snapshot_hash, facility_limit_minor, per_draw_cap_minor,
+         permitted_purpose_code, conditions, undrawn_revocation_rule,
+         superseding_offer_id, closed_at
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8,
          $9, $10, $11, $12, $13, $14, $15, $16,
-         $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
+         $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
+         $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
+         $37, $38, $39, $40
        )
        ON CONFLICT (id) DO UPDATE
          SET status = EXCLUDED.status,
              updated_at = EXCLUDED.updated_at,
              acceptance_id = EXCLUDED.acceptance_id,
-             accepted_at = EXCLUDED.accepted_at
+             accepted_at = EXCLUDED.accepted_at,
+             superseding_offer_id = EXCLUDED.superseding_offer_id,
+             closed_at = EXCLUDED.closed_at
        WHERE credit_offers.offer_hash = EXCLUDED.offer_hash
          AND credit_offers.terms_hash = EXCLUDED.terms_hash
          AND credit_offers.credit_intent_id = EXCLUDED.credit_intent_id
@@ -5376,6 +5537,18 @@ export class PostgresCoreRepository {
          AND credit_offers.production_funds_approved = EXCLUDED.production_funds_approved
          AND credit_offers.created_at = EXCLUDED.created_at
          AND credit_offers.schema_version = EXCLUDED.schema_version
+         AND credit_offers.capital_partner_id IS NOT DISTINCT FROM EXCLUDED.capital_partner_id
+         AND credit_offers.capital_partner_operator_id IS NOT DISTINCT FROM EXCLUDED.capital_partner_operator_id
+         AND credit_offers.credit_passport_artifact_id IS NOT DISTINCT FROM EXCLUDED.credit_passport_artifact_id
+         AND credit_offers.credit_passport_artifact_hash IS NOT DISTINCT FROM EXCLUDED.credit_passport_artifact_hash
+         AND credit_offers.credit_passport_artifact_version IS NOT DISTINCT FROM EXCLUDED.credit_passport_artifact_version
+         AND credit_offers.passport_verification_hash IS NOT DISTINCT FROM EXCLUDED.passport_verification_hash
+         AND credit_offers.underwriting_snapshot_hash IS NOT DISTINCT FROM EXCLUDED.underwriting_snapshot_hash
+         AND credit_offers.facility_limit_minor IS NOT DISTINCT FROM EXCLUDED.facility_limit_minor
+         AND credit_offers.per_draw_cap_minor IS NOT DISTINCT FROM EXCLUDED.per_draw_cap_minor
+         AND credit_offers.permitted_purpose_code IS NOT DISTINCT FROM EXCLUDED.permitted_purpose_code
+         AND credit_offers.conditions IS NOT DISTINCT FROM EXCLUDED.conditions
+         AND credit_offers.undrawn_revocation_rule IS NOT DISTINCT FROM EXCLUDED.undrawn_revocation_rule
        RETURNING id`,
       [
         value.creditOfferId,
@@ -5403,7 +5576,21 @@ export class PostgresCoreRepository {
         value.updatedAt,
         value.schemaVersion,
         value.acceptanceId ?? null,
-        value.acceptedAt ?? null
+        value.acceptedAt ?? null,
+        value.capitalPartnerId ?? null,
+        value.capitalPartnerOperatorId ?? null,
+        value.creditPassportArtifactId ?? null,
+        value.creditPassportArtifactHash ?? null,
+        value.creditPassportArtifactVersion ?? null,
+        value.passportVerificationHash ?? null,
+        value.underwritingSnapshotHash ?? null,
+        value.facilityLimitMinor ?? null,
+        value.perDrawCapMinor ?? null,
+        value.permittedPurposeCode ?? null,
+        value.conditions ? json(value.conditions) : null,
+        value.undrawnRevocationRule ?? null,
+        value.supersedingOfferId ?? null,
+        value.closedAt ?? null
       ]
     );
     if (result.rowCount !== 1) {

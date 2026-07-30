@@ -117,6 +117,10 @@
         "pilotReadOwnCreditPassportArtifact",
         "pilotVerifyCreditPassportArtifact",
         "pilotRevokeCreditPassportArtifact",
+        "pilotAuthorCapitalPartnerOffer",
+        "pilotTransitionCapitalPartnerOffer",
+        "pilotReadCapitalPartnerPortfolio",
+        "pilotReadCapitalPartnerFacility",
         "pilotCreateOfficialReport",
         "pilotReadOfficialReport",
         "pilotRetrieveOfficialReport",
@@ -287,6 +291,18 @@
         },
         "pilotRevokeCreditPassportArtifact": {
           "const": "mutation"
+        },
+        "pilotAuthorCapitalPartnerOffer": {
+          "const": "economic"
+        },
+        "pilotTransitionCapitalPartnerOffer": {
+          "const": "mutation"
+        },
+        "pilotReadCapitalPartnerPortfolio": {
+          "const": "read"
+        },
+        "pilotReadCapitalPartnerFacility": {
+          "const": "read"
         },
         "pilotCreateOfficialReport": {
           "const": "mutation"
