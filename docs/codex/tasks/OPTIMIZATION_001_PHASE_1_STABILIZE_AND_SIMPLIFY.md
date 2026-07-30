@@ -1,6 +1,6 @@
 # OPTIMIZATION-001 — Phase 1 stabilize and simplify
 
-**Status:** Implemented; local release sealing and acceptance in progress
+**Status:** Completed and sealed locally on 2026-07-30
 **Reference:** `IPO_ONE_PRODUCT_OPTIMIZATION_MEASURE_v1.0.md`
 **Delivery shape:** One complete vertical work package
 
@@ -136,15 +136,15 @@ Agent API/SDK path against PostgreSQL, followed by a restart and exact replay.
 
 ## Security checklist
 
-- [ ] No browser fixture or local storage replaces authenticated server truth.
-- [ ] No raw KYC/PII, credential, signature, key, or private identifier is
+- [x] No browser fixture or local storage replaces authenticated server truth.
+- [x] No raw KYC/PII, credential, signature, key, or private identifier is
       added to a public surface or URL.
-- [ ] Sign-out clears the account session, wallet permission, and private state.
-- [ ] Evidence digest and transaction hash remain different types.
-- [ ] Missing, denied, or cross-Tenant resources remain non-enumerating.
-- [ ] All real-funds, mainnet, external execution, deployment, and remote-access
+- [x] Sign-out clears the account session, wallet permission, and private state.
+- [x] Evidence digest and transaction hash remain different types.
+- [x] Missing, denied, or cross-Tenant resources remain non-enumerating.
+- [x] All real-funds, mainnet, external execution, deployment, and remote-access
       flags remain false.
-- [ ] No current Human, Agent, Risk, Provider, Trading, or Evidence authority is
+- [x] No current Human, Agent, Risk, Provider, Trading, or Evidence authority is
       expanded.
 
 ## Completion handoff
@@ -156,3 +156,15 @@ Deliver:
 - full test and PostgreSQL result summary;
 - remaining defects by severity;
 - an explicit Phase 2 go/no-go.
+
+## Completion evidence
+
+- Candidate commit:
+  `7f04aedebe6e624f1cc843298aa22f17b4b87d6f`
+- Release receipt:
+  `deploy/local/release-candidate.v1.json`
+- Acceptance report:
+  `docs/codex/audits/OPTIMIZATION-001/phase-1-acceptance.md`
+- Decision: go for Phase 2 no-funds design and implementation; no-go for
+  cloud launch, remote access, Capital Partner mutation, testnet value
+  movement, or real funds without their separately named approvals.
