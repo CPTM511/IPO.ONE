@@ -262,6 +262,13 @@ export function createWalletProviderRegistry({
     return true;
   }
 
+  function clearSelection() {
+    if (status === "disposed" || selectedProviderId === undefined) return false;
+    selectedProviderId = undefined;
+    notify();
+    return true;
+  }
+
   function registerConnector(connector) {
     return addRecord(connectorRecord(connector));
   }
@@ -302,6 +309,7 @@ export function createWalletProviderRegistry({
     getSelectedProvider: selectedProvider,
     registerConnector,
     selectProvider,
+    clearSelection,
     removeProvider,
     dispose
   });

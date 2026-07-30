@@ -9,6 +9,7 @@ import {
 } from "viem/accounts";
 import {
   CSRF_BOOTSTRAP_COOKIE_NAME,
+  SESSION_COOKIE_NAME,
   createReferenceHasher,
   loadAuthenticationRuntimeConfig
 } from "../../../modules/authentication/src/index.js";
@@ -56,7 +57,7 @@ function cookieValue(cookies, name) {
 }
 
 test(
-  "production closed pilot boots on PostgreSQL, authenticates a real EIP-191 signature, and executes one durable Human command",
+  "production closed pilot executes a durable Human command, logs out, and signs in again with real EIP-191 signatures",
   { timeout: 30_000 },
   async () => {
     assert.ok(
@@ -325,6 +326,102 @@ test(
       assert.equal(result.response.subjectType, "human");
       assert.equal(result.response.prototypeOnly, true);
       assert.equal(result.response.schemaVersion, "tenant_human_subject_created.v1");
+
+      const logout = await fetch(`${baseUrl}/auth/v1/logout`, {
+        method: "POST",
+        headers: {
+          ...edgeHeaders,
+          cookie: cookieHeader,
+          "idempotency-key":
+            `predeploy-wallet-logout-idempotency-${suffix}`,
+          origin: browserOrigin,
+          "x-csrf-token": csrfToken
+        }
+      });
+      assert.equal(logout.status, 200);
+      assert.equal((await logout.json()).status, "logged_out");
+      const logoutCookies = logout.headers.getSetCookie();
+      assert.equal(logoutCookies.length, 2);
+      assert.match(logoutCookies[0], new RegExp(`^${SESSION_COOKIE_NAME}=;`));
+      assert.match(
+        logoutCookies[1],
+        new RegExp(`^${CSRF_BOOTSTRAP_COOKIE_NAME}=;`)
+      );
+
+      const signedOutOptions = await fetch(`${baseUrl}/auth/v1/options`, {
+        headers: {
+          ...edgeHeaders,
+          cookie: cookieHeader
+        }
+      });
+      assert.equal(signedOutOptions.status, 200);
+      assert.equal((await signedOutOptions.json()).sessionActive, false);
+
+      const secondChallengeResponse = await fetch(
+        `${baseUrl}/auth/v1/wallet/challenge`,
+        {
+          method: "POST",
+          headers: {
+            ...edgeHeaders,
+            "content-type": "application/json",
+            origin: browserOrigin
+          },
+          body: JSON.stringify({
+            address: account.address,
+            chainId: 84532
+          })
+        }
+      );
+      assert.equal(secondChallengeResponse.status, 201);
+      const secondChallenge = await secondChallengeResponse.json();
+      assert.notEqual(secondChallenge.handle, challenge.handle);
+      assert.notEqual(secondChallenge.message, challenge.message);
+      const secondSignature = await account.signMessage({
+        message: secondChallenge.message
+      });
+      const secondVerifyResponse = await fetch(
+        `${baseUrl}/auth/v1/wallet/verify`,
+        {
+          method: "POST",
+          headers: {
+            ...edgeHeaders,
+            "content-type": "application/json",
+            origin: browserOrigin
+          },
+          body: JSON.stringify({
+            transactionHandle: secondChallenge.handle,
+            signature: secondSignature
+          })
+        }
+      );
+      assert.equal(secondVerifyResponse.status, 200);
+      const secondSetCookies = secondVerifyResponse.headers.getSetCookie();
+      assert.equal(secondSetCookies.length, 2);
+      const secondCookieHeader = secondSetCookies
+        .map((value) => value.split(";", 1)[0])
+        .join("; ");
+      const signedInAgainOptions = await fetch(
+        `${baseUrl}/auth/v1/options`,
+        {
+          headers: {
+            ...edgeHeaders,
+            cookie: secondCookieHeader
+          }
+        }
+      );
+      assert.equal(signedInAgainOptions.status, 200);
+      assert.equal((await signedInAgainOptions.json()).sessionActive, true);
+      const signedInAgainCatalog = await fetch(
+        `${baseUrl}/tenant/v1/catalog`,
+        {
+          headers: {
+            ...edgeHeaders,
+            cookie: secondCookieHeader
+          }
+        }
+      );
+      assert.equal(signedInAgainCatalog.status, 200);
+      assert.ok((await signedInAgainCatalog.json()).operations.length >= 71);
     } finally {
       await runtime?.close().catch(() => {});
       await Promise.allSettled([

@@ -21,6 +21,7 @@ import {
   createCreditPassportPresentation,
   selectedCreditPassportClaims
 } from "./credit-passport-presentation.js";
+import { createEvidenceReceiptPresentation } from "./evidence-receipt-presentation.js";
 import { createHumanCreditOfferWorkflowReceipt } from "./human-credit-offer-workflow-receipt.js";
 import { createHumanSandboxObligationWorkflowReceipt } from "./human-sandbox-obligation-workflow-receipt.js";
 import {
@@ -53,7 +54,7 @@ const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD
 const percent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
 const VIEW_META = {
-  overview: { eyebrow: "Unified product home", title: "Overview" },
+  overview: { eyebrow: "Private credit workspace", title: "Your portfolio overview" },
   "request-credit": { eyebrow: "Human entry · shared kernel", title: "Credit" },
   "repay-settle": { eyebrow: "Obligation workspace", title: "Repay & Settle" },
   "credit-passport": { eyebrow: "Explainable Decision Evidence", title: "Credit Passport" },
@@ -520,6 +521,9 @@ function renderAccess() {
   const authenticated = accessState.sessionActive === true;
   const workspaceVerified = tenantPilot.connected === true;
   const privateWorkspaceVisible = authenticated && workspaceVerified;
+  const localSessionEnded =
+    accessState.authenticationProfile === "local_no_funds" &&
+    accessState.localSessionSignedOut;
   const googleEnabled = accessState.authEnabled && accessState.providers.has("google");
   const emailEnabled = accessState.authEnabled && accessState.providers.has("email");
   el("googleSignInBtn").disabled = accessState.busy || !googleEnabled;
@@ -550,18 +554,15 @@ function renderAccess() {
     "private-session-closed",
     !privateWorkspaceVisible
   );
-  el("signedOutPrivacyTitle").textContent = authenticated
-    ? "Private workspace unavailable"
-    : "Signed out";
-  el("signedOutPrivacyCopy").textContent = authenticated
-    ? "Authentication is present, but no eligible Tenant workspace is available. No prior private workspace is displayed."
-    : "The account session, wallet connection, and private browser state have been cleared.";
-  el("signedOutPrivacyAction").textContent = authenticated
-    ? "Check account access"
-    : "Sign in";
-  const localSessionEnded =
-    accessState.authenticationProfile === "local_no_funds" &&
-    accessState.localSessionSignedOut;
+  document.body.classList.toggle("authenticated-session-present", authenticated);
+  document.body.classList.toggle("workspace-session-active", privateWorkspaceVisible);
+  const privacyShield = el("signedOutPrivacyShield");
+  privacyShield.hidden = authenticated;
+  el("signedOutPrivacyTitle").textContent = "Choose how you want to use IPO.ONE";
+  el("signedOutPrivacyCopy").textContent = localSessionEnded
+    ? "The previous account session, wallet connection, and private browser state were cleared. Sign in once to open a verified workspace."
+    : "Sign in once, then continue as a Human, connect an Agent, review Capital Partner access, or use the versioned API.";
+  el("signedOutPrivacyAction").hidden = true;
   el("topbarSignOutBtn").hidden = !authenticated;
   el("topbarSignOutBtn").disabled =
     accessState.busy ||
@@ -956,8 +957,7 @@ async function signOutAuthenticatedSession() {
     );
     accessState.sessionActive = false;
     accessState.pendingWorkspaceBootstrap = false;
-    accessState.localSessionSignedOut =
-      accessState.authenticationProfile === "local_no_funds";
+    accessState.localSessionSignedOut = false;
     tenantPilot.connected = false;
     renderAccess();
     clearWalletProviderEvents();
@@ -965,7 +965,7 @@ async function signOutAuthenticatedSession() {
       provider: selectedWalletProvider,
       source: selectedWalletDescriptor?.source
     });
-    disposeWalletProviders();
+    walletProviderRegistry.clearSelection();
     purgeAuthenticatedBrowserState({
       clearAuthenticationBootstrap: true,
       clearWalletUi: true,
@@ -978,12 +978,8 @@ async function signOutAuthenticatedSession() {
     setConnection(false);
     render();
     renderAccess();
-    if (accessState.localSessionSignedOut) {
-      closeAccess();
-      openAccess();
-    } else {
-      window.location.reload();
-    }
+    closeAccess();
+    openAccess();
   } catch (error) {
     accessState.helper = error?.message ?? "Sign out failed. The current session remains protected.";
   } finally {
@@ -1159,6 +1155,7 @@ function renderRuntimeGate() {
   if (!gate) return;
   const connected = tenantPilot.connected;
   const authenticated = accessState.sessionActive === true;
+  gate.hidden = !authenticated || connected;
   el("authenticatedRuntimeGateStatus").textContent = connected
     ? "Authenticated workspace"
     : authenticated
@@ -1173,7 +1170,7 @@ function renderRuntimeGate() {
     : tenantPilot.checked
       ? "Sign in with an approved pilot account. IPO.ONE will not substitute public fixtures or browser state when the secure gateway is unavailable."
       : "Checking the authenticated Tenant catalog and browser session. No product operation is available until verification completes.";
-  el("authenticatedRuntimeGateAction").hidden = connected || authenticated;
+  el("authenticatedRuntimeGateAction").hidden = true;
   gate.classList.toggle("connected", connected);
   gate.classList.toggle("blocked", tenantPilot.checked && !connected);
 }
@@ -3696,10 +3693,10 @@ function renderPrivateProductSurfaces() {
       ? titleize([...finalities][0])
       : `${finalities.size} states`;
 
-  el("privatePortfolioMode").textContent = humanMode ? "Human entry" : "Agent entry";
+  el("privatePortfolioMode").textContent = humanMode ? "Human Workspace" : "Agent Workspace";
   el("privatePortfolioCopy").textContent = humanMode
-    ? "Choose Credit, Trading Capital, or the Capital Partners preview while your Human identity stays on the shared Obligation kernel."
-    : "Choose Credit, Trading Capital, or the Capital Partners preview while Principal-approved Agent authority stays bounded to the shared kernel.";
+    ? "Review your current credit position, next payment, and verified activity from one Human workspace."
+    : "Review Principal-approved Agent authority, active obligations, and verified activity from one Agent workspace.";
   el("privatePortfolioLifecycle").textContent = humanMode ? humanStatus : agentStatus;
   el("privatePortfolioOutstanding").textContent = obligation
     ? usdMinorToMoney(obligation.outstandingPrincipalMinor)
@@ -3707,7 +3704,7 @@ function renderPrivateProductSurfaces() {
       ? "No selected Obligation"
       : "Unavailable";
   el("privatePortfolioNextPayment").textContent = nextInstallment
-    ? `${usdMinorToMoney(privateInstallmentAmount(nextInstallment))} · ${privateDate(nextInstallment.dueAt, { month: "short", day: "numeric" })}`
+    ? `${usdMinorToMoney(privateInstallmentAmount(nextInstallment))}\nDue ${privateDate(nextInstallment.dueAt, { month: "short", day: "numeric" })}`
     : "—";
   el("privatePortfolioAvailableCredit").textContent = "Unavailable";
   el("privatePortfolioAvailableCredit").title =
@@ -3720,12 +3717,12 @@ function renderPrivateProductSurfaces() {
   setPrivateAction(
     el("privatePortfolioPrimaryBtn"),
     humanMode ? "human-credit" : mandate?.status === "active" ? "agent-api" : "principal-authority",
-    humanMode ? obligation ? "Open Obligation" : "Open Human credit" : mandate?.status === "active" ? "Open Agent API" : "Configure Agent authority"
+    humanMode ? obligation ? "Review current credit" : "Start a credit request" : mandate?.status === "active" ? "Open Agent workspace" : "Set up Agent authority"
   );
   setPrivateAction(
     el("privatePortfolioSecondaryBtn"),
     humanMode ? "principal-authority" : "human-credit",
-    humanMode ? "Configure Agent authority" : "Open Human credit"
+    humanMode ? "Set up Agent authority" : "Switch to Human credit"
   );
 
   el("privateHumanEntryStatus").textContent = humanStatus;
@@ -3871,7 +3868,7 @@ function renderPrivateProductSurfaces() {
 
   if (!privateConnected) {
     el("privatePortfolioCopy").textContent =
-      "Sign in to load your permission-bound Human or Agent workspace. No browser fixture or public fallback state will be substituted.";
+      "Sign in to load your private Human or Agent workspace. Missing server data is never replaced with a browser estimate.";
     el("privatePortfolioLifecycle").textContent = tenantPilot.checked
       ? tenantPilot.connectionLabel
       : "Verifying secure session";
@@ -4067,9 +4064,16 @@ function renderCreditPassportPilot() {
     Boolean(presentation && presentation.statusTone === "warning")
   );
   status.textContent = presentation?.statusLabel ?? "Not loaded";
-  el("creditPassportArtifactIdentity").textContent = presentation?.artifactLabel ?? "—";
-  el("creditPassportArtifactIssuer").textContent = presentation?.issuerLabel ?? "—";
+  el("creditPassportArtifactIdentity").textContent = artifact
+    ? `Version ${artifact.version} · point-in-time`
+    : "—";
+  el("creditPassportArtifactIssuer").textContent = presentation
+    ? "IPO.ONE private gateway"
+    : "—";
   el("creditPassportArtifactLifetime").textContent = presentation?.lifetimeLabel ?? "—";
+  el("creditPassportDisclosureCount").textContent = presentation
+    ? `${presentation.disclosures.length} selected fact${presentation.disclosures.length === 1 ? "" : "s"}`
+    : "—";
   el("creditPassportSourceHash").textContent = artifact?.sourceDecisionPassportHash ?? "—";
   el("creditPassportArtifactHash").textContent = artifact?.artifactHash ?? "—";
   el("creditPassportDisclosureRows").replaceChildren(
@@ -6404,6 +6408,19 @@ function showView(viewName, { focus = true, updateHash = true } = {}) {
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   }
+  const activeNavigationItem = document.querySelector(`.nav-item[data-view="${nextView}"]`);
+  const primaryNavigationViews = new Set([
+    "overview",
+    "request-credit",
+    "trading-capital",
+    "capital-partners",
+    "repay-settle",
+    "credit-passport"
+  ]);
+  if (activeNavigationItem && !primaryNavigationViews.has(nextView)) {
+    document.body.classList.add("sidebar-tools-open");
+    el("sidebarMoreBtn").setAttribute("aria-expanded", "true");
+  }
   el("viewEyebrow").textContent = nextView === "request-credit"
     ? `${interactionMode === "agent" ? "Agent" : "Human"} entry · shared kernel`
     : VIEW_META[nextView].eyebrow;
@@ -6602,12 +6619,22 @@ function renderEvidenceAnchor() {
   const finalized = items.filter(({ status: itemStatus }) =>
     itemStatus === "finalized"
   );
-  const latestTransaction = [...items]
-    .reverse()
-    .find(({ transactionUrl }) => transactionUrl);
-  link.hidden = !latestTransaction;
-  if (latestTransaction) {
-    link.href = latestTransaction.transactionUrl;
+  const receipt = createEvidenceReceiptPresentation({
+    evidenceItems: ownedEvidence.items,
+    anchorItems: items,
+    evidenceQueried: ownedEvidence.queried,
+    anchorAvailable: evidenceAnchorPilot.available
+  });
+  el("humanObligationReceiptServerState").textContent = receipt.serverRecordLabel;
+  el("humanObligationReceiptDigestState").textContent = receipt.evidenceDigestLabel;
+  el("humanObligationReceiptTransactionState").textContent = receipt.transactionLabel;
+  el("humanObligationReceiptFinalityState").textContent = receipt.finalityLabel;
+  el("humanObligationReceiptIndexerState").textContent = receipt.indexerLabel;
+  el("humanObligationReceiptReconciliationState").textContent =
+    receipt.reconciliationLabel;
+  link.hidden = !receipt.transactionUrl;
+  if (receipt.transactionUrl) {
+    link.href = receipt.transactionUrl;
     link.textContent = finalized.length === items.length
       ? "View verified transaction"
       : "View submitted transaction";
@@ -8042,9 +8069,14 @@ function bindActions() {
   el("mobileMenuBtn").addEventListener("click", () => setNavigationOpen(true));
   el("sidebarCloseBtn").addEventListener("click", () => setNavigationOpen(false));
   el("sidebarScrim").addEventListener("click", () => setNavigationOpen(false));
+  el("sidebarMoreBtn").addEventListener("click", () => {
+    const expanded = !document.body.classList.contains("sidebar-tools-open");
+    document.body.classList.toggle("sidebar-tools-open", expanded);
+    el("sidebarMoreBtn").setAttribute("aria-expanded", String(expanded));
+  });
   el("operatorModeBtn").addEventListener("click", () => {
     setMode("human");
-    showView("request-credit");
+    showView("overview");
   });
   el("agentModeBtn").addEventListener("click", () => {
     setMode("agent");

@@ -12,6 +12,8 @@ read the project guidance source:
 - Original MVP build archive: `docs/guidance/IPO_ONE_MVP_Build_PRD_Technical_Architecture_Codex_Task_Spec_v0.1_FINAL.docx`
 - Architecture review proposal: `docs/guidance/IPO_ONE_ARCHITECTURE_REVIEW_v0.2_DRAFT.md`
 - Commercialization roadmap proposal: `docs/guidance/IPO_ONE_COMMERCIALIZATION_ROADMAP_v0.3_DRAFT.md`
+- Founder-approved product optimization measure:
+  `docs/guidance/IPO_ONE_PRODUCT_OPTIMIZATION_MEASURE_v1.0.md`
 - Local-to-closed-pilot delivery guidance:
   `docs/guidance/IPO_ONE_LOCAL_TO_CLOSED_PILOT_DELIVERY_GUIDE_v0.1_DRAFT.md`
 - Public beta launch gate: `docs/guidance/IPO_ONE_PUBLIC_BETA_LAUNCH_READINESS_v0.3.md`
@@ -39,6 +41,11 @@ Guidance hierarchy:
   and pilot-readiness proposal. Use it to sequence issues and launch gates, but
   keep product, pricing, legal, capital, provider, chain, and production
   permission decisions behind named human approval.
+- Product Optimization Measure v1.0 is the Founder-approved near-term product
+  and development reference. It sets the three product families, four delivery
+  phases, bilateral Capital Partner workflow, Credit Passport direction, and
+  non-redundancy rules. It does not itself approve deployment, credentials,
+  contracts, signers, KYC vendors, production risk, or funds movement.
 - Local-to-Closed-Pilot Delivery Guide v0.1 is non-canonical delivery guidance.
   Use it to separate repeatable local integration, invited durable no-funds
   operation, live testnet execution, and controlled real value. It grants no

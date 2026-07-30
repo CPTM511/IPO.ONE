@@ -93,6 +93,14 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   for (const label of [
     "No real lending",
     "No real funds",
+    "Human Workspace",
+    "Agent Workspace",
+    "Your portfolio overview",
+    "Choose what you want to do",
+    "Recent credit activity",
+    "Workspace details",
+    "More tools",
+    "Closed Pilot · Synthetic Capital",
     "Request Credit",
     "Repay &amp; Settle",
     "Credit Passport",
@@ -218,6 +226,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "authenticatedRuntimeGateStatus",
     "authenticatedRuntimeGateCopy",
     "authenticatedRuntimeGateAction",
+    "sidebarMoreBtn",
     "accessBtn",
     "walletPermissionsAccessBtn",
     "accessLayer",
@@ -515,8 +524,8 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(html.includes('id="signOutBtn"'));
   assert.ok(css.includes(".access-session-panel"));
   assert.ok(html.includes("Configure Agent authority"));
-  assert.ok(html.includes("Choose a product. <em>Keep one credit identity.</em>"));
-  assert.ok(html.includes("Live projection · core resources recover from server truth"));
+  assert.ok(html.includes("Your portfolio overview"));
+  assert.ok(html.includes("Recent credit activity"));
   assert.ok(html.includes("Signed Provider boundary verified"));
   assert.ok(html.includes("Provider sandbox capability status"));
   assert.ok(html.includes("Capability status only — this Obligation has no Provider execution"));
@@ -524,6 +533,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.equal((html.match(/data-private-session-surface/g) ?? []).length, 6);
   assert.equal((html.match(/data-legacy-demo-surface/g) ?? []).length, 0);
   assert.ok(js.includes("renderPrivateProductSurfaces"));
+  assert.ok(js.includes('setMode("human");\n    showView("overview");'));
   assert.ok(js.includes("renderHumanGuide"));
   assert.ok(js.includes("humanGuidePresentation"));
   assert.ok(js.includes("agentIntegrationPresentation"));
@@ -672,8 +682,19 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(html.includes("Evidence digest (offchain)"));
   assert.ok(html.includes("no Base Sepolia transaction exists for this lifecycle"));
   assert.ok(html.includes("Server Evidence state"));
+  assert.ok(html.includes("Server record"));
+  assert.ok(html.includes("Evidence digest"));
+  assert.ok(html.includes("Chain transaction"));
+  assert.ok(html.includes("Chain finality"));
+  assert.ok(html.includes("Indexer state"));
+  assert.ok(html.includes("Reconciliation"));
+  assert.ok(js.includes('from "./evidence-receipt-presentation.js"'));
   assert.ok(html.includes('id="creditPassportSubjectId" type="hidden"'));
   assert.ok(html.includes('id="creditPassportIntentId" type="hidden"'));
+  assert.ok(html.includes("Authorized reviewer ID"));
+  assert.ok(html.includes("One bound same-Tenant reviewer"));
+  assert.ok(html.includes("Technical receipt and integrity digests"));
+  assert.ok(html.includes("They are not blockchain transaction hashes"));
   assert.ok(css.includes('.credit-passport-claims input[type="checkbox"]'));
   assert.ok(css.includes("width: 18px"));
   assert.ok(css.includes("min-height: 18px"));
@@ -882,11 +903,12 @@ test("WEB-014 separates product intent, access mode, and Provider operations", a
     "Credit lifecycle",
     "Access &amp; integrations",
     "Evidence &amp; operations",
-    "One identity, three capital paths",
+    "Choose what you want to do",
     "Human and Agent, one shared kernel",
     "Credit",
     "Trading Capital",
     "Capital Partners",
+    "Developer / API",
     "Provider Network"
   ]) {
     assert.ok(html.includes(label), `${label} information-architecture label missing`);
@@ -895,6 +917,8 @@ test("WEB-014 separates product intent, access mode, and Provider operations", a
   assert.ok(html.includes('data-go-view="request-credit"'));
   assert.ok(html.includes('data-go-view="trading-capital"'));
   assert.ok(html.includes('data-go-view="capital-partners"'));
+  assert.ok(html.includes('class="product-entry-card developer-product"'));
+  assert.ok(html.includes('data-go-view="architecture"'));
   assert.ok(html.includes('data-view-panel="capital-partners"'));
   assert.ok(js.includes('"capital-partners": { eyebrow: "Invitation-only preview", title: "Capital Partners" }'));
   assert.ok(js.includes('"capital-network": { eyebrow: "Provider sandbox boundary", title: "Provider Network" }'));
@@ -970,10 +994,16 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   assert.ok(css.includes(".access-session-panel"));
   assert.ok(html.includes('class="private-session-closed"'));
   assert.ok(html.includes('id="signedOutPrivacyShield"'));
-  assert.ok(html.includes(
-    "account session, wallet connection, and private browser state"
-  ));
+  assert.ok(html.includes("Choose how you want to use IPO.ONE"));
+  assert.ok(html.includes("Developer / API"));
+  assert.ok(html.includes('id="signedOutPrivacyAction" class="primary" type="button" hidden'));
+  assert.ok(html.includes('id="authenticatedRuntimeGateAction" class="primary" type="button" hidden'));
+  assert.ok(js.includes("account session, wallet connection, and private browser state"));
+  assert.ok(js.includes('el("signedOutPrivacyAction").hidden = true'));
+  assert.ok(js.includes('gate.hidden = !authenticated || connected'));
   assert.ok(css.includes("body.private-session-closed [data-view-panel]"));
+  assert.ok(css.includes(".signed-out-role-list"));
+  assert.ok(css.includes(".signed-out-privacy-shield[hidden]"));
   assert.ok(js.includes('from "./wallet-sign-out.js"'));
   assert.ok(js.includes("releaseSelectedWallet"));
   assert.ok(js.includes("purgeAuthenticatedBrowserState"));

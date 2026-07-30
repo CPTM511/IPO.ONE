@@ -504,7 +504,13 @@ async function seedSyntheticIdentityReference({
   const eventRepository = new PostgresEventRepository({ pool, tenantContext: context });
   const coreRepository = new PostgresCoreRepository({ pool, eventRepository });
   const consent = await coreRepository.getConsentRecord(consentId);
-  const now = new Date();
+  // The PostgreSQL test runtime may execute inside a VM whose clock is a few
+  // milliseconds ahead of the host test process. Keep the fixture strictly
+  // inside the server-issued Consent window without weakening the domain check.
+  const now = new Date(Math.max(
+    Date.now(),
+    new Date(consent.validFrom).getTime() + 1
+  ));
   const expiresAt = new Date(Math.min(
     new Date(consent.expiresAt).getTime(),
     now.getTime() + 30 * 86_400_000
@@ -575,6 +581,37 @@ async function seedSyntheticIdentityReference({
     });
   });
   return reference;
+}
+
+async function postRepaymentWithBoundedClockRecovery({
+  client,
+  command,
+  pool,
+  obligationId
+}) {
+  try {
+    return await client.postSandboxRepayment(command);
+  } catch (error) {
+    if (error?.code !== "invalid_accrual_time") throw error;
+    const clock = await pool.query(
+      `SELECT clock_timestamp() AS database_now, last_accrued_at
+         FROM obligations
+        WHERE id = $1`,
+      [obligationId]
+    );
+    assert.equal(clock.rowCount, 1);
+    const databaseNow = new Date(clock.rows[0].database_now).getTime();
+    const lastAccruedAt = new Date(clock.rows[0].last_accrued_at).getTime();
+    const recoveryDelayMs = Math.max(0, lastAccruedAt - databaseNow + 2);
+    assert.ok(
+      recoveryDelayMs <= 2_000,
+      "PostgreSQL clock recovery exceeded the bounded integration-test allowance"
+    );
+    if (recoveryDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, recoveryDelayMs));
+    }
+    return client.postSandboxRepayment(command);
+  }
 }
 
 function freezeSubjectCommand({ subjectId, idempotencyKey, reasonCode = "risk_limit_breach" }) {
@@ -4618,25 +4655,49 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         [TENANT_ONE]
       )).rows[0].count), 2);
 
-      const finalHumanRepayment = await restartedHuman.postSandboxRepayment({
+      const finalHumanRepayment = await postRepaymentWithBoundedClockRecovery({
+        client: restartedHuman,
+        pool: ownerPool,
         obligationId: humanAcceptance.obligation.obligationId,
-        payload: { amountMinor: "9000", sourceCode: "synthetic_bank" },
-        idempotencyKey: `repay-human-sandbox-credit-${RUN_ID}-0002`,
-        requestId: `request-repay-human-sandbox-credit-final-${RUN_ID}`,
-        correlationId: `correlation-repay-human-sandbox-credit-final-${RUN_ID}`
+        command: {
+          obligationId: humanAcceptance.obligation.obligationId,
+          payload: { amountMinor: "9000", sourceCode: "synthetic_bank" },
+          idempotencyKey: `repay-human-sandbox-credit-${RUN_ID}-0002`,
+          requestId: `request-repay-human-sandbox-credit-final-${RUN_ID}`,
+          correlationId: `correlation-repay-human-sandbox-credit-final-${RUN_ID}`
+        }
       });
-      const finalAgentRepayment = await restartedAgent.postSandboxRepayment({
+      const finalAgentRepayment = await postRepaymentWithBoundedClockRecovery({
+        client: restartedAgent,
+        pool: ownerPool,
         obligationId: agentAcceptance.obligation.obligationId,
-        payload: { amountMinor: "9000", sourceCode: "synthetic_revenue" },
-        idempotencyKey: `repay-agent-sandbox-credit-${RUN_ID}-0002`,
-        requestId: `request-repay-agent-sandbox-credit-final-${RUN_ID}`,
-        correlationId: `correlation-repay-agent-sandbox-credit-final-${RUN_ID}`
+        command: {
+          obligationId: agentAcceptance.obligation.obligationId,
+          payload: { amountMinor: "9000", sourceCode: "synthetic_revenue" },
+          idempotencyKey: `repay-agent-sandbox-credit-${RUN_ID}-0002`,
+          requestId: `request-repay-agent-sandbox-credit-final-${RUN_ID}`,
+          correlationId: `correlation-repay-agent-sandbox-credit-final-${RUN_ID}`
+        }
       });
       for (const result of [finalHumanRepayment, finalAgentRepayment]) {
         assert.equal(result.response.obligation.status, "fully_repaid");
         assert.equal(result.response.obligation.outstandingPrincipalMinor, "0");
         assert.equal(result.response.productionFundsMoved, false);
       }
+      const outcomeClockResult = await ownerPool.query(
+        `SELECT GREATEST(
+           clock_timestamp(),
+           MAX(updated_at) + interval '1 millisecond'
+         ) AS recorded_at
+           FROM obligations
+          WHERE id = ANY($1::text[])`,
+        [[
+          humanAcceptance.obligation.obligationId,
+          agentAcceptance.obligation.obligationId
+        ]]
+      );
+      const outcomeRecordedAt = new Date(outcomeClockResult.rows[0].recorded_at);
+      const outcomeClock = () => new Date(outcomeRecordedAt);
 
       const creditOutcomeTenantContext = createTenantSecurityContext({
         tenantId: TENANT_ONE,
@@ -4657,7 +4718,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       });
       await assert.rejects(
         () => new PostgresCreditOutcomeMaterializer({
-          eventRepository: faultingOutcomeRepository
+          eventRepository: faultingOutcomeRepository,
+          clock: outcomeClock
         }).run(),
         /injected credit outcome process failure/
       );
@@ -4678,7 +4740,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         eventRepository: new PostgresEventRepository({
           pool: appPool,
           tenantContext: creditOutcomeTenantContext
-        })
+        }),
+        clock: outcomeClock
       });
       const materialized = await outcomeMaterializer.run();
       assert.equal(materialized.candidateCount, 2);

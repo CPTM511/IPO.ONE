@@ -25,7 +25,7 @@ assert.equal(manifest.status, "sealed");
 assert.equal(manifest.profile, "local_no_funds");
 assert.equal(manifest.sourceBinding.mode, "git_commit_containing_manifest");
 assert.equal(manifest.sourceBinding.sealedCommit, true);
-assert.equal(manifest.sourceBinding.sealAuthorizedOn, "2026-07-29");
+assert.equal(manifest.sourceBinding.sealAuthorizedOn, "2026-07-30");
 assert.equal(manifest.sourceBinding.sealBlockedBy, null);
 assert.equal(
   execFileSync("git", ["branch", "--show-current"], {
@@ -62,7 +62,11 @@ assert.equal(
   manifest.database.latestMigrationChecksum
 );
 
-for (const entry of [...manifest.contracts, ...manifest.testData]) {
+for (const entry of [
+  ...manifest.contracts,
+  ...manifest.testData,
+  ...manifest.productExperienceSources
+]) {
   assert.match(entry.path, /^[A-Za-z0-9_./-]+$/);
   assert.match(entry.sha256, /^[0-9a-f]{64}$/);
   assert.equal(await sha256(entry.path), entry.sha256, `${entry.path} drifted`);
@@ -142,9 +146,9 @@ assert.deepEqual(manifest.requiredChecks, [
   "pnpm run local:acceptance"
 ]);
 assert.deepEqual(manifest.verification, {
-  verifiedOn: "2026-07-29",
+  verifiedOn: "2026-07-30",
   repositoryTests: {
-    passed: 647,
+    passed: 658,
     failed: 0
   },
   postgresTests: {
@@ -195,6 +199,6 @@ assert.equal(
 
 console.log(
   "LOCAL-RC-001 manifest passed: runtime, 47 migrations, contracts, fixed " +
-    "test data, failure-path and Evidence-anchor matrices, and disabled authority are pinned; " +
+    "test data, product experience, failure-path and Evidence-anchor matrices, and disabled authority are pinned; " +
     "the candidate is source-sealed by the Git commit containing this manifest."
 );

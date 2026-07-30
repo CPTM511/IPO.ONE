@@ -1,14 +1,14 @@
 {
   "schemaVersion": "ipo_one_local_release_candidate.v1",
-  "releaseCandidateId": "ipo-one-local-rc-20260729-001",
+  "releaseCandidateId": "ipo-one-local-rc-20260730-002",
   "status": "sealed",
   "profile": "local_no_funds",
   "sourceBinding": {
-    "baseCommit": "b1cbfb7d9e913bd92a768aa1d1a3ffa09cbfb30f",
+    "baseCommit": "3bcf448542f82273ef12f27096598d501e37a588",
     "branch": "codex/checkpoint-20260727-pre-strategy",
     "mode": "git_commit_containing_manifest",
     "sealedCommit": true,
-    "sealAuthorizedOn": "2026-07-29",
+    "sealAuthorizedOn": "2026-07-30",
     "sealBlockedBy": null
   },
   "runtime": {
@@ -95,12 +95,38 @@
       "sha256": "f467704c31d45d09039eb16e466cb7b276459f476353655d8fac1e1b2877632e"
     }
   ],
+  "productExperienceSources": [
+    {
+      "path": "apps/web/src/index.html",
+      "sha256": "098d1bacb8538902cdd7c37ae14ee6d526b06791f673537620d751f327db4875"
+    },
+    {
+      "path": "apps/web/src/app.js",
+      "sha256": "b8cb8d36f62921d7ee21178d0db2d670e2f7c6183c3225fcf21cfb067206a4a2"
+    },
+    {
+      "path": "apps/web/src/styles.css",
+      "sha256": "2c1d5f9372539e8f1271acb46dc76e1ad7ee696b37524dbc50f8bbd6293bad0d"
+    },
+    {
+      "path": "apps/web/src/evidence-receipt-presentation.js",
+      "sha256": "83aa25bdfa9f59e1b08e4d5bc6c735af75f628a16f229d73019b7e1ead8a9458"
+    },
+    {
+      "path": "apps/web/test/static-ui.test.js",
+      "sha256": "51a6f5159f21533708b31e451b194c7e9d9cb1811f394302abcdf7ba97bb7b58"
+    },
+    {
+      "path": "apps/web/test/evidence-receipt-presentation.test.js",
+      "sha256": "514a838a8f7ce139501decef0b18e8a8437b2cc49fadc72b1527dc7cdd4b182a"
+    }
+  ],
   "acceptanceMatrix": [
     {
       "id": "complete_dual_native_credit_lifecycle_and_outcome_retry",
       "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
       "testName": "Human and Agent persist one restart-safe no-funds Credit Intent protocol with retry-safe credit Outcomes",
-      "sha256": "386eef9b75f51c19dd0ea48bfc95f58de003e18f75dbd0f80869926056c6be83"
+      "sha256": "45e683fc4ad432e1ca1a893149391b8322352594f74f472b0f49fda3d460a4ab"
     },
     {
       "id": "database_and_projection_restart",
@@ -118,7 +144,7 @@
       "id": "durable_admission_execution_retention",
       "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
       "testName": "admission cleanup retains records referenced by durable command executions",
-      "sha256": "386eef9b75f51c19dd0ea48bfc95f58de003e18f75dbd0f80869926056c6be83"
+      "sha256": "45e683fc4ad432e1ca1a893149391b8322352594f74f472b0f49fda3d460a4ab"
     },
     {
       "id": "login_expiry_and_revocation",
@@ -160,7 +186,7 @@
       "id": "tenant_global_pause",
       "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
       "testName": "durable Tenant command pause blocks new commands but preserves queries and exact replay",
-      "sha256": "386eef9b75f51c19dd0ea48bfc95f58de003e18f75dbd0f80869926056c6be83"
+      "sha256": "45e683fc4ad432e1ca1a893149391b8322352594f74f472b0f49fda3d460a4ab"
     },
     {
       "id": "facility_freeze",
@@ -214,9 +240,9 @@
     "pnpm run local:acceptance"
   ],
   "verification": {
-    "verifiedOn": "2026-07-29",
+    "verifiedOn": "2026-07-30",
     "repositoryTests": {
-      "passed": 647,
+      "passed": 658,
       "failed": 0
     },
     "postgresTests": {

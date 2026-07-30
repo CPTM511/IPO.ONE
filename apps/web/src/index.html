@@ -40,7 +40,7 @@
           <div class="nav-section nav-section-home">
             <button class="nav-item active" type="button" data-view="overview" aria-current="page">
               <svg aria-hidden="true"><use href="/icons.svg#layout-dashboard"></use></svg>
-              <span><strong>Overview</strong><small data-v9-maturity="overview">Checking server</small></span>
+              <span><strong>Home</strong><small data-v9-maturity="overview">Checking server</small></span>
             </button>
           </div>
 
@@ -115,9 +115,14 @@
               <span><strong>Risk &amp; Operations</strong><small data-v9-maturity="risk-operations">Checking server</small></span>
             </button>
           </div>
+          <button class="sidebar-more-toggle" id="sidebarMoreBtn" type="button" aria-expanded="false" aria-controls="sidebar">
+            <svg aria-hidden="true"><use href="/icons.svg#menu"></use></svg>
+            <span>More tools</span>
+          </button>
         </nav>
 
         <div class="sidebar-footer">
+          <div class="pilot-boundary"><span class="pilot-boundary-dot" aria-hidden="true"></span><strong>Closed Pilot · Synthetic Capital</strong></div>
           <div><span>API</span><strong id="sidebarApiStatus">Connecting</strong></div>
           <div><span>Rail</span><strong>Sandbox only</strong></div>
           <a href="/openapi.json" target="_blank" rel="noreferrer">
@@ -136,15 +141,15 @@
               <svg aria-hidden="true"><use href="/icons.svg#menu"></use></svg>
             </button>
             <div>
-              <span id="viewEyebrow">Credit workspace</span>
-              <h1 id="viewTitle">Human Pilot</h1>
+              <span id="viewEyebrow">Private credit workspace</span>
+              <h1 id="viewTitle">Your portfolio overview</h1>
             </div>
           </div>
 
           <div class="topbar-actions">
             <div class="mode-switch" role="group" aria-label="Interaction mode">
-              <button id="operatorModeBtn" class="active" type="button" aria-pressed="true">Human</button>
-              <button id="agentModeBtn" type="button" aria-pressed="false">Agent</button>
+              <button id="operatorModeBtn" class="active" type="button" aria-pressed="true">Human Workspace</button>
+              <button id="agentModeBtn" type="button" aria-pressed="false">Agent Workspace</button>
             </div>
             <button class="account-access-button" id="accessBtn" type="button" aria-haspopup="dialog" aria-controls="accessLayer">
               <svg aria-hidden="true"><use href="/icons.svg#link"></use></svg>
@@ -172,7 +177,7 @@
             </div>
           </section>
 
-          <section id="authenticatedRuntimeGate" class="authenticated-runtime-gate" aria-labelledby="authenticatedRuntimeGateStatus" aria-live="polite">
+          <section id="authenticatedRuntimeGate" class="authenticated-runtime-gate" aria-labelledby="authenticatedRuntimeGateStatus" aria-live="polite" hidden>
             <div>
               <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
               <span>
@@ -180,41 +185,102 @@
                 <small id="authenticatedRuntimeGateCopy">Checking the authenticated Tenant catalog and browser session. No product operation is available until verification completes.</small>
               </span>
             </div>
-            <button id="authenticatedRuntimeGateAction" class="primary" type="button">Sign in to continue</button>
+            <button id="authenticatedRuntimeGateAction" class="primary" type="button" hidden>Review account access</button>
           </section>
 
           <section id="signedOutPrivacyShield" class="signed-out-privacy-shield" aria-labelledby="signedOutPrivacyTitle" aria-live="polite">
-            <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
-            <div>
-              <p class="eyebrow">Private workspace closed</p>
-              <h2 id="signedOutPrivacyTitle">Signed out</h2>
-              <p id="signedOutPrivacyCopy">The account session, wallet connection, and private browser state have been cleared.</p>
+            <div class="signed-out-privacy-heading">
+              <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
+              <div>
+                <p class="eyebrow">Private workspace</p>
+                <h2 id="signedOutPrivacyTitle">Choose how you want to use IPO.ONE</h2>
+                <p id="signedOutPrivacyCopy">Sign in once, then continue as a Human, connect an Agent, review Capital Partner access, or use the versioned API.</p>
+              </div>
             </div>
-            <button id="signedOutPrivacyAction" class="primary" type="button">Sign in</button>
+            <ul class="signed-out-role-list" aria-label="IPO.ONE access modes">
+              <li><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg><span><strong>Human</strong><small>Request, manage, and repay purpose-bound credit.</small></span></li>
+              <li><svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg><span><strong>Agent</strong><small>Use scoped authority through the same credit kernel.</small></span></li>
+              <li><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg><span><strong>Capital Partner</strong><small>Review verified credit evidence in an invited workspace.</small></span></li>
+              <li><svg aria-hidden="true"><use href="/icons.svg#code"></use></svg><span><strong>Developer / API</strong><small>Integrate through versioned, machine-readable interfaces.</small></span></li>
+            </ul>
+            <p class="signed-out-privacy-note">Use the single <strong>Sign in</strong> action above. Private account, wallet, and credit data remain hidden until the Tenant workspace is verified.</p>
+            <button id="signedOutPrivacyAction" class="primary" type="button" hidden>Sign in</button>
           </section>
 
           <section class="view active" data-view-panel="overview" aria-labelledby="privatePortfolioTitle">
             <section id="privatePortfolioSurface" class="private-product-surface" aria-labelledby="privatePortfolioTitle" data-private-session-surface>
               <section class="private-product-hero">
                 <div class="private-product-heading">
-                  <div class="v9-heading-badges">
-                    <span class="protocol-badge"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span id="privatePortfolioMode">Human entry</span></span>
+                  <div class="portfolio-context-line">
+                    <span class="portfolio-mode"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span id="privatePortfolioMode">Human Workspace</span></span>
+                    <span class="portfolio-lifecycle"><span>Current status</span><strong id="privatePortfolioLifecycle">Not started</strong></span>
                     <span class="v9-maturity-badge checking" data-v9-maturity="overview">Checking server</span>
                   </div>
-                  <p class="eyebrow">Unified product home</p>
-                  <h2 id="privatePortfolioTitle">Choose a product. <em>Keep one credit identity.</em></h2>
-                  <p id="privatePortfolioCopy">Enter Credit, Trading Capital, or Capital Partners through the selected Human or Agent access mode.</p>
-                  <div class="heading-actions">
-                    <button id="privatePortfolioPrimaryBtn" class="primary" type="button">Open Human credit</button>
-                    <button id="privatePortfolioSecondaryBtn" class="secondary" type="button">Configure Agent authority</button>
-                  </div>
+                  <p class="eyebrow sr-only">Portfolio command center</p>
+                  <h2 id="privatePortfolioTitle" class="sr-only">Your portfolio overview</h2>
+                  <p id="privatePortfolioCopy">Review your current credit position, next payment, and verified activity from one workspace.</p>
                 </div>
                 <div class="private-hero-metrics" aria-label="Shared portfolio status">
-                  <div><span>Lifecycle</span><strong id="privatePortfolioLifecycle">Not started</strong></div>
-                  <div><span>Selected outstanding</span><strong id="privatePortfolioOutstanding">Unavailable</strong></div>
-                  <div><span>Next payment</span><strong id="privatePortfolioNextPayment">—</strong></div>
-                  <div><span>Available credit</span><strong id="privatePortfolioAvailableCredit">Unavailable</strong></div>
-                  <div><span>Evidence</span><strong id="privatePortfolioEvidence">Not loaded</strong></div>
+                  <div><span>Available credit</span><strong id="privatePortfolioAvailableCredit">Unavailable</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg></span></div>
+                  <div><span>Outstanding</span><strong id="privatePortfolioOutstanding">Unavailable</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg></span></div>
+                  <div><span>Next payment</span><strong id="privatePortfolioNextPayment">—</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#arrow-left-right"></use></svg></span></div>
+                  <div><span>Verified track record</span><strong id="privatePortfolioEvidence">Not loaded</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg></span></div>
+                </div>
+                <div class="heading-actions">
+                  <button id="privatePortfolioPrimaryBtn" class="primary" type="button">Start a credit request</button>
+                  <button id="privatePortfolioSecondaryBtn" class="secondary" type="button">Set up Agent authority</button>
+                </div>
+              </section>
+
+              <section class="product-entry-section" aria-labelledby="productEntryTitle">
+                <div class="product-section-heading">
+                  <div>
+                    <p class="eyebrow">IPO.ONE products</p>
+                    <h3 id="productEntryTitle">Choose what you want to do</h3>
+                  </div>
+                  <p>Each product keeps its own purpose while using the same identity, obligation, repayment, and Evidence record.</p>
+                </div>
+                <div class="product-entry-grid">
+                  <button class="product-entry-card credit-product" type="button" data-go-view="request-credit">
+                    <span class="product-entry-card-top">
+                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg></span>
+                    </span>
+                    <span class="product-entry-copy">
+                      <span class="product-entry-title"><strong>Credit</strong><span class="state-pill">Core credit</span></span>
+                      <small>Request and manage purpose-bound credit with clear terms, repayments, and verifiable history.</small>
+                    </span>
+                    <span class="product-entry-action">Open Credit <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
+                  </button>
+                  <button class="product-entry-card trading-product" type="button" data-go-view="trading-capital">
+                    <span class="product-entry-card-top">
+                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg></span>
+                    </span>
+                    <span class="product-entry-copy">
+                      <span class="product-entry-title"><strong>Trading Capital</strong><span class="state-pill">Hyperliquid Testnet</span></span>
+                      <small>Request bounded trading capital for approved strategies and build a verified performance record.</small>
+                    </span>
+                    <span class="product-entry-action">Open Trading Capital <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
+                  </button>
+                  <button class="product-entry-card capital-product" type="button" data-go-view="capital-partners">
+                    <span class="product-entry-card-top">
+                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg></span>
+                    </span>
+                    <span class="product-entry-copy">
+                      <span class="product-entry-title"><strong>Capital Partners</strong><span class="state-pill warning">Invite only</span></span>
+                      <small>Review the invitation-only capital partner experience and its Evidence-based reporting.</small>
+                    </span>
+                    <span class="product-entry-action">View preview <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
+                  </button>
+                  <button class="product-entry-card developer-product" type="button" data-go-view="architecture">
+                    <span class="product-entry-card-top">
+                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#code"></use></svg></span>
+                    </span>
+                    <span class="product-entry-copy">
+                      <span class="product-entry-title"><strong>Developer / API</strong><span class="state-pill">Versioned contract</span></span>
+                      <small>Connect Human or Agent products through the same authenticated OpenAPI, SDK, and protocol operations.</small>
+                    </span>
+                    <span class="product-entry-action">Open API workspace <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
+                  </button>
                 </div>
               </section>
 
@@ -226,82 +292,40 @@
                 </span>
               </section>
 
-              <section class="product-entry-section" aria-labelledby="productEntryTitle">
-                <div class="product-section-heading">
+              <details class="portfolio-details">
+                <summary><span><strong>Workspace details</strong><small>Identity, authority, and product status</small></span><svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></summary>
+                <div class="product-section-heading access-mode-heading">
                   <div>
-                    <p class="eyebrow">Choose a product</p>
-                    <h3 id="productEntryTitle">One identity, three capital paths</h3>
+                    <p class="eyebrow">Access modes</p>
+                    <h3>Human and Agent, one shared kernel</h3>
                   </div>
-                  <p>Human and Agent are access modes. Credit, Trading Capital, and Capital Partners stay distinct while sharing the same obligation, risk, and Evidence truth.</p>
+                  <p>The interface and authority method change. Obligation, Ledger, risk, servicing, and Evidence do not fork.</p>
                 </div>
-                <div class="product-entry-grid">
-                  <button class="product-entry-card credit-product" type="button" data-go-view="request-credit">
-                    <span class="product-entry-card-top">
-                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg></span>
-                      <span class="state-pill">Core lifecycle</span>
-                    </span>
-                    <span class="product-entry-copy">
-                      <strong>Credit</strong>
-                      <small>Request terms, review an explainable Offer, activate one Obligation, repay, and build verifiable history.</small>
-                    </span>
-                    <span class="product-entry-action">Open Credit <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
-                  </button>
-                  <button class="product-entry-card trading-product" type="button" data-go-view="trading-capital">
-                    <span class="product-entry-card-top">
-                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg></span>
-                      <span class="state-pill">Hyperliquid MVP</span>
-                    </span>
-                    <span class="product-entry-copy">
-                      <strong>Trading Capital</strong>
-                      <small>Use a bounded Trading Facility, inspect risk controls, settle, and prove performance through the Hyperliquid testnet profile.</small>
-                    </span>
-                    <span class="product-entry-action">Open Trading Capital <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
-                  </button>
-                  <button class="product-entry-card capital-product" type="button" data-go-view="capital-partners">
-                    <span class="product-entry-card-top">
-                      <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg></span>
-                      <span class="state-pill warning">Invitation-only preview</span>
-                    </span>
-                    <span class="product-entry-copy">
-                      <strong>Capital Partners</strong>
-                      <small>Preview future exposure, performance, and Evidence reporting for approved capital providers. No deposit or withdrawal is available.</small>
-                    </span>
-                    <span class="product-entry-action">View preview <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
-                  </button>
-                </div>
-              </section>
 
-              <div class="product-section-heading access-mode-heading">
-                <div>
-                  <p class="eyebrow">Choose an access mode</p>
-                  <h3>Human and Agent, one shared kernel</h3>
+                <div class="private-product-grid">
+                  <section class="panel private-entry-card" aria-labelledby="privateHumanEntryTitle">
+                    <div class="panel-heading"><div><p class="eyebrow">Human Workspace</p><h3 id="privateHumanEntryTitle">Application & Obligation</h3></div><span class="state-pill neutral" id="privateHumanEntryStatus">Not started</span></div>
+                    <p>Consent, deterministic Offer, exact acceptance, repayment schedule, servicing, and owner Evidence remain one Human path.</p>
+                    <dl class="private-detail-list">
+                      <div><dt>Offer</dt><dd id="privateHumanOfferStatus">Not requested</dd></div>
+                      <div><dt>Obligation</dt><dd id="privateHumanObligationStatus">Not created</dd></div>
+                      <div><dt>Servicing</dt><dd id="privateHumanServicingStatus">Not started</dd></div>
+                    </dl>
+                  </section>
+                  <section class="panel private-entry-card" aria-labelledby="privateAgentEntryTitle">
+                    <div class="panel-heading"><div><p class="eyebrow">Agent Workspace</p><h3 id="privateAgentEntryTitle">Identity & bounded authority</h3></div><span class="state-pill neutral" id="privateAgentEntryStatus">Principal setup</span></div>
+                    <p>The Human Principal binds CAIP-10 identity and a scoped Mandate. The Agent receives machine-readable capability, never credentials or funds authority.</p>
+                    <dl class="private-detail-list">
+                      <div><dt>Subject</dt><dd id="privateAgentSubjectStatus">Not created</dd></div>
+                      <div><dt>Account proof</dt><dd id="privateAgentAccountStatus">Not submitted</dd></div>
+                      <div><dt>Mandate</dt><dd id="privateAgentMandateStatus">Not created</dd></div>
+                    </dl>
+                  </section>
                 </div>
-                <p>The interface and authority method change. Obligation, Ledger, risk, servicing, and Evidence do not fork.</p>
-              </div>
-
-              <div class="private-product-grid">
-                <section class="panel private-entry-card" aria-labelledby="privateHumanEntryTitle">
-                  <div class="panel-heading"><div><p class="eyebrow">Human entry</p><h3 id="privateHumanEntryTitle">Application & Obligation</h3></div><span class="state-pill neutral" id="privateHumanEntryStatus">Not started</span></div>
-                  <p>Consent, deterministic Offer, exact acceptance, repayment schedule, servicing, and owner Evidence remain one Human path.</p>
-                  <dl class="private-detail-list">
-                    <div><dt>Offer</dt><dd id="privateHumanOfferStatus">Not requested</dd></div>
-                    <div><dt>Obligation</dt><dd id="privateHumanObligationStatus">Not created</dd></div>
-                    <div><dt>Servicing</dt><dd id="privateHumanServicingStatus">Not started</dd></div>
-                  </dl>
-                </section>
-                <section class="panel private-entry-card" aria-labelledby="privateAgentEntryTitle">
-                  <div class="panel-heading"><div><p class="eyebrow">Agent entry</p><h3 id="privateAgentEntryTitle">Identity & bounded authority</h3></div><span class="state-pill neutral" id="privateAgentEntryStatus">Principal setup</span></div>
-                  <p>The Human Principal binds CAIP-10 identity and a scoped Mandate. The Agent receives machine-readable capability, never credentials or funds authority.</p>
-                  <dl class="private-detail-list">
-                    <div><dt>Subject</dt><dd id="privateAgentSubjectStatus">Not created</dd></div>
-                    <div><dt>Account proof</dt><dd id="privateAgentAccountStatus">Not submitted</dd></div>
-                    <div><dt>Mandate</dt><dd id="privateAgentMandateStatus">Not created</dd></div>
-                  </dl>
-                </section>
-              </div>
+              </details>
 
               <section class="panel private-lifecycle-panel" aria-labelledby="privateLifecycleTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Current session</p><h3 id="privateLifecycleTitle">Shared lifecycle checkpoints</h3></div><span>Live projection · core resources recover from server truth</span></div>
+                <div class="panel-heading"><div><p class="eyebrow">Verified activity</p><h3 id="privateLifecycleTitle">Recent credit activity</h3></div><button class="text-action" type="button" data-go-view="activity-proofs">Technical details</button></div>
                 <div id="privateLifecycleList" class="private-lifecycle-list"></div>
               </section>
             </section>
@@ -607,6 +631,14 @@
                       <p id="humanObligationChainAnchorCopy">Not anchored. This sandbox Obligation and its repayments currently exist in IPO.ONE PostgreSQL only; no Base Sepolia transaction exists for this lifecycle.</p>
                     </div>
                     <span id="humanObligationChainAnchorStatus" class="state-pill warning">Not anchored</span>
+                    <dl class="evidence-receipt-states" aria-label="Evidence receipt status">
+                      <div><dt>Server record</dt><dd id="humanObligationReceiptServerState">Not loaded</dd></div>
+                      <div><dt>Evidence digest</dt><dd id="humanObligationReceiptDigestState">Not loaded</dd></div>
+                      <div><dt>Chain transaction</dt><dd id="humanObligationReceiptTransactionState">Not submitted</dd></div>
+                      <div><dt>Chain finality</dt><dd id="humanObligationReceiptFinalityState">Incomplete</dd></div>
+                      <div><dt>Indexer state</dt><dd id="humanObligationReceiptIndexerState">Not observed</dd></div>
+                      <div><dt>Reconciliation</dt><dd id="humanObligationReceiptReconciliationState">Coverage pending</dd></div>
+                    </dl>
                     <button id="anchorPendingEvidenceBtn" class="secondary" type="button" hidden>Confirm Evidence anchor</button>
                     <a id="humanObligationChainAnchorLink" class="secondary button-link" href="#" target="_blank" rel="noopener noreferrer" hidden>View verified transaction</a>
                   </section>
@@ -925,9 +957,9 @@
             <section class="v9-capability-page" aria-labelledby="creditPassportViewTitle">
               <div class="private-page-heading">
                 <div>
-                  <div class="v9-heading-badges"><p class="eyebrow">Private point-in-time Evidence</p><span class="v9-maturity-badge checking" data-v9-maturity="credit-passport">Checking server</span></div>
+                  <div class="v9-heading-badges"><p class="eyebrow">Private credit evidence</p><span class="v9-maturity-badge checking" data-v9-maturity="credit-passport">Checking server</span></div>
                   <h2 id="creditPassportViewTitle">Credit Passport</h2>
-                  <p>Share a temporary, same-Tenant view of your current Decision with one exact verifier. IPO.ONE fills the application source; you choose only the verifier, lifetime, and disclosed facts.</p>
+                  <p>Share a temporary, read-only view of the facts behind your current credit Decision. You choose one authorized reviewer, how long access lasts, and exactly which facts are disclosed.</p>
                 </div>
                 <button class="primary" type="button" data-go-view="request-credit">Open Decision Passport</button>
               </div>
@@ -949,8 +981,8 @@
                     <input id="creditPassportSubjectId" type="hidden" />
                     <input id="creditPassportIntentId" type="hidden" />
                     <div class="form-grid two credit-passport-recipient">
-                      <label>Verifier Actor ID<input id="creditPassportVerifierActorId" autocomplete="off" maxlength="256" placeholder="actor_…" /></label>
-                      <label>Lifetime<select id="creditPassportLifetime"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="21600">6 hours</option><option value="86400">24 hours maximum</option></select></label>
+                      <label>Authorized reviewer ID<input id="creditPassportVerifierActorId" autocomplete="off" maxlength="256" placeholder="actor_…" /><small>Enter the exact IPO.ONE Actor ID supplied by the intended same-Tenant reviewer. IPO.ONE never discovers or suggests recipients.</small></label>
+                      <label>Access period<select id="creditPassportLifetime"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="21600">6 hours</option><option value="86400">24 hours maximum</option></select><small>Access expires automatically and can be revoked earlier.</small></label>
                     </div>
                     <fieldset class="credit-passport-claims">
                       <legend>What can this verifier see?</legend>
@@ -964,34 +996,42 @@
                       <label><input type="checkbox" name="creditPassportClaim" value="reason_to_feature_lineage" />Reason-to-feature lineage</label>
                       <label><input type="checkbox" name="creditPassportClaim" value="source_evidence_lineage" />Source Evidence lineage</label>
                     </fieldset>
-                    <button id="issueCreditPassportBtn" class="primary" type="submit">Create private proof</button>
+                    <button id="issueCreditPassportBtn" class="primary" type="submit">Share private Passport</button>
                   </form>
                   <p id="creditPassportIssueHelper" class="risk-helper" role="status" aria-live="polite">Complete a current Decision first. The verifier is never discovered or suggested by the browser.</p>
                 </section>
 
                 <section class="panel credit-passport-artifact-card" aria-labelledby="creditPassportArtifactTitle">
                   <div class="panel-heading">
-                    <div><p class="eyebrow">Online server truth</p><h3 id="creditPassportArtifactTitle">Artifact state</h3></div>
+                    <div><p class="eyebrow">Current sharing status</p><h3 id="creditPassportArtifactTitle">Shared Passport</h3></div>
                     <span id="creditPassportArtifactStatus" class="state-pill neutral">Not loaded</span>
                   </div>
                   <details class="credit-passport-advanced">
-                    <summary>Recover an existing proof by ID</summary>
+                    <summary>Recover an existing Passport by technical ID</summary>
                     <form id="creditPassportReadForm" class="credit-passport-inline-form">
-                      <label>Exact Artifact ID<input id="creditPassportArtifactId" autocomplete="off" maxlength="256" placeholder="credit_passport_artifact_…" /></label>
-                      <button id="readCreditPassportBtn" class="secondary" type="submit">Read owned proof</button>
+                      <label>Exact Passport artifact ID<input id="creditPassportArtifactId" autocomplete="off" maxlength="256" placeholder="credit_passport_artifact_…" /></label>
+                      <button id="readCreditPassportBtn" class="secondary" type="submit">Recover Passport</button>
                     </form>
                   </details>
                   <dl class="credit-passport-facts">
-                    <div><dt>Artifact</dt><dd id="creditPassportArtifactIdentity">—</dd></div>
+                    <div><dt>Proof version</dt><dd id="creditPassportArtifactIdentity">—</dd></div>
                     <div><dt>Issuer</dt><dd id="creditPassportArtifactIssuer">—</dd></div>
-                    <div><dt>Purpose</dt><dd>private_credit_review</dd></div>
-                    <div><dt>Lifetime</dt><dd id="creditPassportArtifactLifetime">—</dd></div>
-                    <div><dt>Source Passport</dt><dd id="creditPassportSourceHash">—</dd></div>
-                    <div><dt>Artifact hash</dt><dd id="creditPassportArtifactHash">—</dd></div>
+                    <div><dt>Permitted use</dt><dd>Private credit review</dd></div>
+                    <div><dt>Active period</dt><dd id="creditPassportArtifactLifetime">—</dd></div>
+                    <div><dt>Review access</dt><dd>One bound same-Tenant reviewer</dd></div>
+                    <div><dt>Disclosed facts</dt><dd id="creditPassportDisclosureCount">—</dd></div>
                   </dl>
                   <div id="creditPassportDisclosureRows" class="credit-passport-disclosures">
                     <p class="empty-row">Issue or read an authorized artifact to inspect its selected, evidenced disclosures.</p>
                   </div>
+                  <details class="credit-passport-advanced credit-passport-receipt-details">
+                    <summary>Technical receipt and integrity digests</summary>
+                    <dl class="credit-passport-facts">
+                      <div><dt>Source Decision Passport digest</dt><dd id="creditPassportSourceHash">—</dd></div>
+                      <div><dt>Passport artifact digest</dt><dd id="creditPassportArtifactHash">—</dd></div>
+                    </dl>
+                    <p>These hashes verify integrity. They are not blockchain transaction hashes; public-chain status is shown separately in the Obligation Evidence receipt.</p>
+                  </details>
                   <div class="credit-passport-revoke">
                     <label>Closed revocation reason<select id="creditPassportRevocationReason"><option value="owner_withdrawal">Owner withdrawal</option><option value="verifier_access_no_longer_required">Verifier access no longer required</option><option value="source_disclosure_error">Source disclosure error</option><option value="security_concern">Security concern</option></select></label>
                     <button id="revokeCreditPassportBtn" class="secondary danger-action" type="button">Revoke active proof</button>

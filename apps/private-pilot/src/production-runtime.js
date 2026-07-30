@@ -15,7 +15,10 @@ import {
   HyperliquidTestnetInfoAdapter
 } from "../../../modules/hyperliquid-info/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
-import { readMigrationSet } from "../../../scripts/migrate.mjs";
+import {
+  migrationChecksumMatches,
+  readMigrationSet
+} from "../../../scripts/migrate.mjs";
 import {
   createPostgresHumanAccessComposition,
   createProductionTenantHost
@@ -74,7 +77,11 @@ async function assertExactMigrationSet(pool) {
     result.rowCount !== expected.length ||
     expected.some((migration, index) => (
       result.rows[index]?.name !== migration.name ||
-      result.rows[index]?.checksum !== migration.checksum
+      !migrationChecksumMatches({
+        name: migration.name,
+        recordedChecksum: result.rows[index]?.checksum,
+        releaseChecksum: migration.checksum
+      })
     ))
   ) {
     throw new DomainError(

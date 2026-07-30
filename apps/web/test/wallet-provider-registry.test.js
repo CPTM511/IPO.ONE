@@ -157,6 +157,33 @@ test("one EIP-6963 Provider is discovered but never selected implicitly", () => 
   assert.equal(wallet.requests.length, 0, "selection must not request an account, chain, or signature");
 });
 
+test("sign-out clears selection without disposing discovered Providers", () => {
+  const target = new EventTarget();
+  const wallet = provider("reusable");
+  const fixture = registry(target);
+  fixture.registry.start();
+  announce(target, detail({
+    uuid: "123e4567-e89b-42d3-a456-426614174099",
+    name: "Reusable Wallet",
+    rdns: "com.reusable.wallet"
+  }, wallet));
+  fixture.timer.run();
+
+  const providerId = fixture.registry.getSnapshot().providers[0].providerId;
+  assert.equal(fixture.registry.selectProvider(providerId), true);
+  assert.equal(fixture.registry.getSelectedProvider(), wallet);
+  assert.equal(fixture.registry.clearSelection(), true);
+
+  const cleared = fixture.registry.getSnapshot();
+  assertValidSnapshot(cleared);
+  assert.equal(cleared.status, "ready");
+  assert.equal(cleared.providers.length, 1);
+  assert.equal(cleared.selectionRequired, true);
+  assert.equal(cleared.selectedProviderId, undefined);
+  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.clearSelection(), false);
+});
+
 test("one reviewed mobile connector registers explicitly and remains unselected", () => {
   const target = new EventTarget();
   const mobile = provider("mobile");
