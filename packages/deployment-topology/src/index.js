@@ -836,9 +836,9 @@ const OPS_ACTIVATION_GATES = Object.freeze([
   "LAUNCH-POLICY-REVISION"
 ]);
 
-const OPS_SEALED_COMMIT = "7f04aedebe6e624f1cc843298aa22f17b4b87d6f";
+const OPS_SEALED_COMMIT = "129f8bb28ff53d6dfb4e175b953a537b987a2a84";
 const OPS_SEALED_MANIFEST_SHA =
-  "f07c96f11c610f7c4f8539aee88875f1678452a5ba48bb39abe6cf8dbdca51fa";
+  "5afc8932e2be7e3a4acb5420e1c873b5e76a34b0f5fa7dd62df6bf0b8c90bdc6";
 
 export class ClosedPilotOperationsError extends Error {
   constructor(issues) {
@@ -897,7 +897,7 @@ export function validateClosedPilotOperations(value) {
   ], "operations.sourceRelease", issues)) {
     exact(
       value.sourceRelease.releaseCandidateId,
-      "ipo-one-local-rc-20260730-002",
+      "ipo-one-local-rc-20260730-003",
       "operations.sourceRelease.releaseCandidateId",
       issues
     );

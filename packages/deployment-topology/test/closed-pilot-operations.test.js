@@ -23,7 +23,7 @@ test("OPS-004 fixes a fail-closed hosted operations and recovery baseline", () =
   assert.equal(operations.launchBlocked, true);
   assert.equal(
     operations.sourceRelease.commitSha,
-    "7f04aedebe6e624f1cc843298aa22f17b4b87d6f"
+    "129f8bb28ff53d6dfb4e175b953a537b987a2a84"
   );
   assert.equal(operations.databaseRecovery.restoreDrillActivation, "disabled");
   assert.equal(operations.workerOperations.activation, "disabled");

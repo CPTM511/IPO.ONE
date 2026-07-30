@@ -1436,6 +1436,94 @@
         "packages/domain/test/trading-capital-facility.test.js",
         "apps/web/test/trading-capital-product-presentation.test.js"
       ]
+    },
+    {
+      "operationId": "pilotAuthorCapitalPartnerOffer",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_offer_authored.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/capital-partner-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/capital-partner-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/capital-partner-marketplace.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/capital-partner-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotTransitionCapitalPartnerOffer",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_offer_transitioned.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/capital-partner-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/capital-partner-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/capital-partner-marketplace.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/capital-partner-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerFacility",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_facility_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/capital-partner-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/capital-partner-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/capital-partner-marketplace.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/capital-partner-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPortfolio",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_portfolio_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/capital-partner-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/capital-partner-presentation.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/capital-partner-marketplace.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/capital-partner-presentation.test.js"
+      ]
     }
   ],
   "destinations": [
@@ -2249,6 +2337,41 @@
       "label": "Capital Network",
       "order": 7,
       "actions": [
+        {
+          "actionId": "capital_network.synthetic_bilateral_marketplace",
+          "label": "Author and monitor an exact borrower-authorized synthetic credit Facility",
+          "prototypeLabels": [
+            "Capital Partners",
+            "Author sandbox terms",
+            "Portfolio and Facility truth"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotAuthorCapitalPartnerOffer",
+            "pilotTransitionCapitalPartnerOffer",
+            "pilotReadCapitalPartnerFacility",
+            "pilotReadCapitalPartnerPortfolio"
+          ],
+          "authorityReferences": [
+            "docs/codex/tasks/CAPITAL_001_SYNTHETIC_BILATERAL_MARKETPLACE.md"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js",
+            "apps/web/src/app.js",
+            "apps/web/src/capital-partner-presentation.js"
+          ],
+          "testFiles": [
+            "packages/domain/test/capital-partner-marketplace.test.js",
+            "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+            "apps/web/test/capital-partner-presentation.test.js"
+          ],
+          "truthBoundary": "The invited Capital Partner may verify one exact granted Passport, author immutable synthetic terms, and read only its canonical Portfolio and Facility projections. No deposit, custody, withdrawal, external transfer, public LP, or real-capital authority exists.",
+          "nextTaskIds": [
+            "CAPITAL-001"
+          ],
+          "humanGateRequired": false
+        },
         {
           "actionId": "capital_network.provider_sandbox_loop",
           "label": "Read, acknowledge, and process a fixed no-funds Provider sandbox intent",

@@ -5,10 +5,10 @@
   "profile": "closed_non_funds_pilot",
   "launchBlocked": true,
   "sourceRelease": {
-    "releaseCandidateId": "ipo-one-local-rc-20260730-002",
-    "commitSha": "7f04aedebe6e624f1cc843298aa22f17b4b87d6f",
+    "releaseCandidateId": "ipo-one-local-rc-20260730-003",
+    "commitSha": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
     "manifestPath": "deploy/local/release-candidate.v1.json",
-    "manifestSha256": "f07c96f11c610f7c4f8539aee88875f1678452a5ba48bb39abe6cf8dbdca51fa"
+    "manifestSha256": "5afc8932e2be7e3a4acb5420e1c873b5e76a34b0f5fa7dd62df6bf0b8c90bdc6"
   },
   "authority": {
     "cloudMutationEnabled": false,
@@ -89,7 +89,7 @@
   "rollback": {
     "activation": "disabled",
     "strategy": "redeploy_previous_immutable_commit",
-    "previousCommit": "7f04aedebe6e624f1cc843298aa22f17b4b87d6f",
+    "previousCommit": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
     "databaseRollbackStrategy": "forward_only_reviewed_migration",
     "automaticDatabaseRollbackAllowed": false,
     "preserveCanonicalEvents": true,

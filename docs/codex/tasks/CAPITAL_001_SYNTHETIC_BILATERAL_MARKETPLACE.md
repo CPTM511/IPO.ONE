@@ -1,6 +1,6 @@
 # CAPITAL-001 — Synthetic bilateral Capital Partner marketplace
 
-**Status:** Planned; product direction approved, implementation not started
+**Status:** Completed and sealed as local no-funds RC on 2026-07-30
 **Reference:** `IPO_ONE_PRODUCT_OPTIMIZATION_MEASURE_v1.0.md`
 **Dependency:** `OPTIMIZATION-001` accepted
 **Delivery shape:** One coordinated domain-to-UI vertical slice
@@ -184,17 +184,17 @@ The final acceptance must run four complete paths:
 
 ## Security checklist
 
-- [ ] Capital Partner role is least-privilege and separate from platform Risk,
+- [x] Capital Partner role is least-privilege and separate from platform Risk,
       Operations, Provider, Auditor, and Tenant administration.
-- [ ] Every Passport read requires an exact active artifact bound to the
+- [x] Every Passport read requires an exact active artifact bound to the
       Capital Partner verifier.
-- [ ] Raw KYC/PII, credentials, signatures, lender-private policy, and private
+- [x] Raw KYC/PII, credentials, signatures, lender-private policy, and private
       notes never enter onchain Evidence or borrower-visible output.
-- [ ] RLS and object authorization protect every new table and operation.
-- [ ] Offer economic terms are immutable after issue; changes supersede.
-- [ ] Acceptance is exact, replay-safe, authority-rechecked, and fail-closed.
-- [ ] Portfolio numbers derive from canonical server Ledger/Obligation truth.
-- [ ] No real-funds, custody, withdrawal, chain-write, deployment, or production
+- [x] RLS and object authorization protect every new table and operation.
+- [x] Offer economic terms are immutable after issue; changes supersede.
+- [x] Acceptance is exact, replay-safe, authority-rechecked, and fail-closed.
+- [x] Portfolio numbers derive from canonical server Ledger/Obligation truth.
+- [x] No real-funds, custody, withdrawal, chain-write, deployment, or production
       authority is introduced.
 
 ## Completion handoff
@@ -208,3 +208,17 @@ Deliver:
 - browser screenshots for the three roles;
 - full test results and remaining defects;
 - explicit Phase 3 hosted-pilot go/no-go recommendation.
+
+## Completion receipt
+
+- Sealed source commit:
+  `129f8bb28ff53d6dfb4e175b953a537b987a2a84`
+- Release candidate: `ipo-one-local-rc-20260730-003`
+- Acceptance report:
+  `docs/codex/audits/CAPITAL-001/phase-2-acceptance.md`
+- Result: all four required PostgreSQL paths, 666 repository tests, 82
+  PostgreSQL tests, two live local acceptance passes separated by a full
+  database/Pilot/worker restart, and authenticated Capital Partner browser
+  verification passed.
+- Authority result: local, synthetic, no-funds only. Hosted mutation, remote
+  participant access, new signer/contract, and real capital remain blocked.
