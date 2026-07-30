@@ -12,6 +12,10 @@ const stackText = await readFile(
   "utf8"
 );
 const stack = parseLocalStack(stackText);
+const localStackScript = await readFile(
+  new URL("../../../scripts/local-stack.mjs", import.meta.url),
+  "utf8"
+);
 
 function changed(change) {
   const value = structuredClone(stack);
@@ -76,5 +80,24 @@ test("LOCAL-STACK-001 requires canonical JSON", () => {
   assert.throws(
     () => parseLocalStack(JSON.stringify(stack)),
     (error) => error instanceof LocalStackError
+  );
+});
+
+test("LOCAL-STACK-001 restart preserves but never invents the opt-in Evidence attestor", () => {
+  assert.match(
+    localStackScript,
+    /const preserveEvidenceAnchor = evidenceAnchorConfigured\(\);/
+  );
+  assert.match(
+    localStackScript,
+    /\{ evidenceAnchor: preserveEvidenceAnchor \}/
+  );
+  assert.match(
+    localStackScript,
+    /\["stop", "worker", "pilot"\][\s\S]*\["restart", "postgres"\][\s\S]*\["up", "--detach", "--wait", "postgres"\][\s\S]*\["up", "--detach", "--wait", "pilot", "worker"\]/
+  );
+  assert.doesNotMatch(
+    localStackScript,
+    /case "restart":[\s\S]*IPO_ONE_APPROVE_LOCAL_EVIDENCE_ANCHOR_WRITES/
   );
 });

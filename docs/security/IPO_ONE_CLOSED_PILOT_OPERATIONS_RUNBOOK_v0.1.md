@@ -16,8 +16,8 @@ must be named.
 
 The sealed baseline is:
 
-- commit `3a466c4a3267923de96f4c31c1f1d2b1531e73c6`;
-- release candidate `ipo-one-local-rc-20260729-001`;
+- commit `96ecefd8ec418ef0ec5ba36b13df312b51c34baf`;
+- release candidate `ipo-one-local-rc-20260730-002`;
 - Node 26.5.0, pnpm 11.1.3, PostgreSQL 17; and
 - no real funds, public signup, Provider execution, or venue signer.
 

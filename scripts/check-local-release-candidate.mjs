@@ -65,7 +65,8 @@ assert.equal(
 for (const entry of [
   ...manifest.contracts,
   ...manifest.testData,
-  ...manifest.productExperienceSources
+  ...manifest.productExperienceSources,
+  ...manifest.operationalSources
 ]) {
   assert.match(entry.path, /^[A-Za-z0-9_./-]+$/);
   assert.match(entry.sha256, /^[0-9a-f]{64}$/);
@@ -148,7 +149,7 @@ assert.deepEqual(manifest.requiredChecks, [
 assert.deepEqual(manifest.verification, {
   verifiedOn: "2026-07-30",
   repositoryTests: {
-    passed: 658,
+    passed: 659,
     failed: 0
   },
   postgresTests: {
@@ -199,6 +200,6 @@ assert.equal(
 
 console.log(
   "LOCAL-RC-001 manifest passed: runtime, 47 migrations, contracts, fixed " +
-    "test data, product experience, failure-path and Evidence-anchor matrices, and disabled authority are pinned; " +
+    "test data, product experience, restart operations, failure-path and Evidence-anchor matrices, and disabled authority are pinned; " +
     "the candidate is source-sealed by the Git commit containing this manifest."
 );

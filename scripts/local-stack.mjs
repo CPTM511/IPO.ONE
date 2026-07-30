@@ -21,6 +21,10 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTANCE = "ipo-one-local";
 const COMPOSE_FILE = resolve(ROOT, "deploy/local/compose.yaml");
+const EVIDENCE_ANCHOR_COMPOSE_FILE = resolve(
+  ROOT,
+  "deploy/local/evidence-anchor.compose.yaml"
+);
 const CONTRACT_FILE = resolve(ROOT, "deploy/local/stack.v1.json");
 const SECRET_DIRECTORY = resolve(ROOT, ".ipo-one/local-stack");
 const ENV_FILE = resolve(SECRET_DIRECTORY, "stack.env");
@@ -311,7 +315,10 @@ async function ensureLima() {
   }
 }
 
-function compose(args, options) {
+function compose(
+  args,
+  { evidenceAnchor = false, ...runOptions } = {}
+) {
   return run(
     "limactl",
     [
@@ -327,10 +334,27 @@ function compose(args, options) {
       ENV_FILE,
       "--file",
       COMPOSE_FILE,
+      ...(evidenceAnchor
+        ? ["--file", EVIDENCE_ANCHOR_COMPOSE_FILE]
+        : []),
       ...args
     ],
-    options
+    runOptions
   );
+}
+
+function evidenceAnchorConfigured() {
+  return compose(
+    [
+      "exec",
+      "-T",
+      "worker",
+      "/nodejs/bin/node",
+      "-e",
+      "process.stdout.write(process.env.IPO_ONE_EVIDENCE_ANCHOR_CONTRACT_ADDRESS?'enabled':'disabled')"
+    ],
+    { capture: true }
+  ) === "enabled";
 }
 
 async function prepare() {
@@ -401,8 +425,19 @@ switch (command) {
     break;
   case "restart":
     await prepare();
-    compose(["restart", "postgres", "pilot", "worker"]);
-    compose(["up", "--detach", "--wait"]);
+    {
+      const preserveEvidenceAnchor = evidenceAnchorConfigured();
+      compose(
+        ["stop", "worker", "pilot"],
+        { evidenceAnchor: preserveEvidenceAnchor }
+      );
+      compose(["restart", "postgres"]);
+      compose(["up", "--detach", "--wait", "postgres"]);
+      compose(
+        ["up", "--detach", "--wait", "pilot", "worker"],
+        { evidenceAnchor: preserveEvidenceAnchor }
+      );
+    }
     await ensureLoopbackForwarding();
     process.stdout.write(
       "IPO.ONE local database, pilot and worker restarted successfully.\n"

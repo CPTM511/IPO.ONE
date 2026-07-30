@@ -121,6 +121,16 @@
       "sha256": "514a838a8f7ce139501decef0b18e8a8437b2cc49fadc72b1527dc7cdd4b182a"
     }
   ],
+  "operationalSources": [
+    {
+      "path": "scripts/local-stack.mjs",
+      "sha256": "c898148b5453af4556f8fcf1f4c8f0681cc41644385826b12eb780b29bbf6a46"
+    },
+    {
+      "path": "packages/deployment-topology/test/local-stack.test.js",
+      "sha256": "a410a4b6f061c92f3eadf4391dbd594b83048a9b7704e6c1e955f193f77c0115"
+    }
+  ],
   "acceptanceMatrix": [
     {
       "id": "complete_dual_native_credit_lifecycle_and_outcome_retry",
@@ -242,7 +252,7 @@
   "verification": {
     "verifiedOn": "2026-07-30",
     "repositoryTests": {
-      "passed": 658,
+      "passed": 659,
       "failed": 0
     },
     "postgresTests": {
