@@ -835,9 +835,9 @@ const OPS_ACTIVATION_GATES = Object.freeze([
   "LAUNCH-POLICY-REVISION"
 ]);
 
-const OPS_SEALED_COMMIT = "96ecefd8ec418ef0ec5ba36b13df312b51c34baf";
+const OPS_SEALED_COMMIT = "96fdbb55d1ea9e6492906c6840609ba0b1e4abfd";
 const OPS_SEALED_MANIFEST_SHA =
-  "57525d6e000dc1925d3c1e9f2cf9365c8e38186adbc16b593664dbf3fa1a4e89";
+  "f70bb232a968901f8a41fd313743732227d034f7fda40c890120ff922ab96524";
 
 export class ClosedPilotOperationsError extends Error {
   constructor(issues) {

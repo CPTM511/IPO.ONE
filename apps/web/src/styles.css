@@ -11340,6 +11340,22 @@ body.sidebar-tools-open .nav-item[data-view="risk-operations"] {
     display: none;
   }
 
+  body.private-session-closed .mode-switch {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  body.private-session-closed .account-access-button {
+    width: auto;
+    min-width: 80px;
+    padding-inline: 10px;
+  }
+
+  body.private-session-closed .account-access-button span {
+    display: inline;
+  }
+
   .topbar-sign-out-button {
     min-width: 68px;
     padding-inline: 9px;

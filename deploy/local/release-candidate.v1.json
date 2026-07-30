@@ -106,7 +106,7 @@
     },
     {
       "path": "apps/web/src/styles.css",
-      "sha256": "2c1d5f9372539e8f1271acb46dc76e1ad7ee696b37524dbc50f8bbd6293bad0d"
+      "sha256": "de2965e9793fef735dd7b55ecc99b43f84094e98a460cf4acd2245b262cd37e8"
     },
     {
       "path": "apps/web/src/evidence-receipt-presentation.js",
