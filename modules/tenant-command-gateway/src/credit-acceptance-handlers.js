@@ -106,7 +106,7 @@ function summarizeAcceptance(acceptance) {
   };
 }
 
-async function evidenceActorBindings({
+async function ownerAndControllerBindings({
   authenticationContext,
   directory,
   subjectId,
@@ -552,7 +552,7 @@ export function acceptCreditOfferCommandHandler() {
         now
       });
       const resourceBaselines = await loadAcceptanceResourceBaselines({ client, coreRepository });
-      const evidenceBindings = await evidenceActorBindings({
+      const obligationBindings = await ownerAndControllerBindings({
         authenticationContext,
         directory,
         subjectId: intent.subjectId,
@@ -602,16 +602,15 @@ export function acceptCreditOfferCommandHandler() {
         authorizationResource: {
           resourceType: "obligation",
           resourceId: obligation.obligationId,
-          actorBindings: [{
-            actorId: authenticationContext.actorId,
-            actorType: authenticationContext.actorType,
-            relationship: "owner"
-          }, ...(capitalPartnerBinding ? [capitalPartnerBinding] : [])]
+          actorBindings: [
+            ...obligationBindings,
+            ...(capitalPartnerBinding ? [capitalPartnerBinding] : [])
+          ]
         },
         additionalAuthorizationResources: [{
           resourceType: "evidence",
           resourceId: obligation.obligationId,
-          actorBindings: evidenceBindings
+          actorBindings: obligationBindings
         }]
       };
     }

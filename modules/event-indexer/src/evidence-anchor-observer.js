@@ -184,6 +184,25 @@ function observation({
   });
 }
 
+function unknownObservations({
+  checked,
+  contractAddress,
+  providerSlot,
+  observedAt
+}) {
+  return Object.freeze(checked.expectedAnchors.map((expected) =>
+    observation({
+      expected,
+      transactionHash: checked.transactionHash,
+      contractAddress,
+      providerSlot,
+      status: "unknown",
+      confirmations: 0,
+      observedAt
+    })
+  ));
+}
+
 export function createEvidenceAnchorObserver({
   contractAddress,
   providerSlot = "primary",
@@ -229,20 +248,22 @@ export function createEvidenceAnchorObserver({
         rpc.call("eth_getTransactionReceipt", [checked.transactionHash])
       ]);
       if (!transaction && !receipt) {
-        return Object.freeze(checked.expectedAnchors.map((expected) =>
-          observation({
-            expected,
-            transactionHash: checked.transactionHash,
-            contractAddress: checkedContract,
-            providerSlot,
-            status: "unknown",
-            confirmations: 0,
-            observedAt
-          })
-        ));
+        return unknownObservations({
+          checked,
+          contractAddress: checkedContract,
+          providerSlot,
+          observedAt
+        });
+      }
+      if (!transaction) {
+        return unknownObservations({
+          checked,
+          contractAddress: checkedContract,
+          providerSlot,
+          observedAt
+        });
       }
       if (
-        !transaction ||
         transaction.hash?.toLowerCase() !== checked.transactionHash ||
         transaction.to?.toLowerCase() !== checkedContract.toLowerCase() ||
         transaction.from?.toLowerCase() !==
@@ -282,17 +303,12 @@ export function createEvidenceAnchorObserver({
         receipt.transactionHash?.toLowerCase() !== checked.transactionHash ||
         receipt.to?.toLowerCase() !== checkedContract.toLowerCase()
       ) {
-        return Object.freeze(checked.expectedAnchors.map((expected) =>
-          observation({
-            expected,
-            transactionHash: checked.transactionHash,
-            contractAddress: checkedContract,
-            providerSlot,
-            status: "unknown",
-            confirmations: 0,
-            observedAt
-          })
-        ));
+        return unknownObservations({
+          checked,
+          contractAddress: checkedContract,
+          providerSlot,
+          observedAt
+        });
       }
       if (receipt.status !== "0x1") {
         return Object.freeze(checked.expectedAnchors.map((expected) =>
@@ -358,6 +374,19 @@ export function createEvidenceAnchorObserver({
           rpc.call("eth_getBlockByNumber", ["finalized", false]),
           rpc.call("eth_getBlockByNumber", [receipt.blockNumber, false])
         ]);
+      if (
+        !latestValue ||
+        !safeValue ||
+        !finalizedValue ||
+        !eventBlockValue
+      ) {
+        return unknownObservations({
+          checked,
+          contractAddress: checkedContract,
+          providerSlot,
+          observedAt
+        });
+      }
       const latest = block(latestValue, "latest");
       const safe = block(safeValue, "safe");
       const finalized = block(finalizedValue, "finalized");
@@ -405,6 +434,14 @@ export function createEvidenceAnchorObserver({
             observedAt
           })
         ));
+      }
+      if (latest.number < eventBlock) {
+        return unknownObservations({
+          checked,
+          contractAddress: checkedContract,
+          providerSlot,
+          observedAt
+        });
       }
       const finality = finalityStatus({
         eventBlock,

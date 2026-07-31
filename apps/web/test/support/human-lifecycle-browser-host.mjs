@@ -401,6 +401,11 @@ function resultFor(command) {
         resourceId: consent.consentId,
         relationship: "owner"
       });
+      resources.push({
+        resourceType: "credit_intent",
+        resourceId: offerReceipt.creditIntent.creditIntentId,
+        relationship: "owner"
+      });
     }
     if (currentSubjectCreated) {
       resources.push({

@@ -620,8 +620,8 @@
                           <label for="humanRepaymentAmount">Repayment (USD)<input id="humanRepaymentAmount" type="number" min="0.01" max="1000" step="0.01" value="25.00" inputmode="decimal" /></label>
                           <label for="humanRepaymentSource">Synthetic source<select id="humanRepaymentSource"><option value="synthetic_wallet">Wallet</option><option value="synthetic_bank">Bank</option><option value="synthetic_revenue">Revenue</option></select></label>
                         </div>
-                        <button class="secondary" id="postHumanRepaymentBtn" type="button" disabled>Confirm sandbox repayment</button>
-                        <p id="humanRepaymentAllocation">Fee → interest → principal. Any surplus is returned without a ledger posting.</p>
+                        <button class="secondary" id="postHumanRepaymentBtn" type="button" disabled>Confirm early or scheduled repayment</button>
+                        <p id="humanRepaymentAllocation">Early partial or full repayment is available after execution with no sandbox prepayment penalty. Fee → interest → principal; surplus is not posted.</p>
                       </div>
                     </div>
                   </div>
@@ -726,7 +726,19 @@
                 <span class="state-pill neutral" id="agentAuthorityStatus">Not started</span>
               </div>
 
-              <div class="authority-workbench-layout">
+              <div class="agent-authority-access-gate" id="agentAuthorityAccessGate" role="status">
+                <div class="agent-authority-access-copy">
+                  <span class="agent-authority-access-label">Principal authority check</span>
+                  <strong id="agentAuthorityAccessTitle">Verifying Principal access</strong>
+                  <p id="agentAuthorityAccessCopy">The Agent authority workflow remains locked until the authenticated workspace is verified.</p>
+                </div>
+                <div class="agent-authority-access-actions">
+                  <a id="openPrincipalWorkspaceLink" class="button-link primary" href="#" hidden>Switch to Principal workspace</a>
+                  <button id="switchPrincipalSessionBtn" class="primary" type="button" hidden>Switch to Principal session</button>
+                </div>
+              </div>
+
+              <div class="authority-workbench-layout" id="agentAuthorityWorkspaceContent" hidden>
                 <form class="authority-form" id="agentAuthorityForm">
                   <div class="workbench-step">
                     <span>01</span>
@@ -763,7 +775,7 @@
 
                   <div class="workbench-step account-proof-step">
                     <span>02</span>
-                    <div><strong>Prove the Agent account</strong><small>Create and download a five-minute EIP-712 request. The registered local Agent Host submits it; this Human screen never receives a credential.</small></div>
+                    <div><strong>Prove the Agent account</strong><small>Create a five-minute EIP-712 request. The registered test Agent can submit it online; external Agents use the protected API. This Human screen never receives a credential or signature.</small></div>
                   </div>
                   <div class="account-proof-card">
                     <div class="form-grid three">
@@ -790,6 +802,7 @@
                     </div>
                     <div class="button-row authority-actions account-proof-actions">
                       <button class="secondary" id="createAccountChallengeBtn" type="button">Create signing request</button>
+                      <button class="primary" id="proveAccountOnlineBtn" type="button" disabled>Ask registered test Agent to prove</button>
                       <button class="secondary" id="downloadAccountChallengeBtn" type="button" disabled>Download proof request</button>
                       <button class="secondary" id="copyAccountChallengeBtn" type="button" disabled>Copy proof request</button>
                       <button class="secondary" id="refreshAccountBindingBtn" type="button">Refresh binding</button>
@@ -799,6 +812,7 @@
                       <div><span>Agent action</span><strong id="agentAccountAgentAction">Waiting for signing request</strong></div>
                       <div><span>Activation</span><strong id="agentAccountActivationStatus">Subject pending</strong></div>
                     </div>
+                    <p class="account-proof-next-step" id="agentAccountProofNextStep">Create a signing request, then let the registered Agent Host submit the one-use proof.</p>
                     <details class="account-proof-request">
                       <summary>Signing request preview</summary>
                       <pre><code id="agentAccountChallengePreview">Create a signing request to view the closed EIP-712 payload.</code></pre>
@@ -831,21 +845,35 @@
                     <button class="secondary" id="loadMandateBtn" type="button">Load exact Mandate</button>
                   </div>
 
-                  <div class="workbench-step authority-review-step">
+                  <div class="workbench-step authority-application-step">
                     <span>04</span>
-                    <div><strong>Review immutable hashes and activate</strong><small>Hashes are read from the server and cannot be edited in this screen.</small></div>
+                    <div><strong>Run the Agent application</strong><small>Before activation, give the Draft application handoff to the registered Agent Host. The Agent requests credit, receives the deterministic Decision and Offer, and retains the returned workflow receipt.</small></div>
+                  </div>
+                  <div class="authority-application-card" id="agentApplicationStage" role="status">
+                    <div>
+                      <span>Draft-only application stage</span>
+                      <strong id="agentApplicationStageStatus">Create or load a Draft Mandate</strong>
+                      <p id="agentApplicationStageCopy">Activation does not run the application. This screen opens the credential-free handoff but cannot execute the Agent or independently verify its Offer receipt.</p>
+                    </div>
+                    <button class="secondary" id="openAgentApplicationHandoffBtn" type="button" data-agent-guide-action="open-handoff" disabled>Open application handoff</button>
+                  </div>
+
+                  <div class="workbench-step authority-review-step">
+                    <span>05</span>
+                    <div><strong>Review immutable hashes and activate</strong><small>Return after the Agent application produced its Offer workflow receipt. Activation unlocks acceptance of that existing Offer; it cannot start a new Credit Intent.</small></div>
                   </div>
                   <label class="mandate-acknowledgement" for="principalMandateAcknowledge">
                     <input id="principalMandateAcknowledge" type="checkbox" />
-                    <span>I confirm this exact sandbox Mandate and its terms for the named Agent Subject.</span>
+                    <span>I confirm this exact sandbox Mandate and understand that activation unlocks runtime use of an existing Agent Offer; it does not create or evaluate a new application.</span>
                   </label>
                   <button class="primary authority-activate" id="activateMandateBtn" type="button">Activate exact Sandbox Mandate</button>
+                  <button class="primary authority-continue" id="continueAgentCreditBtn" type="button" data-agent-guide-action="run-online-agent" hidden>Continue in Agent workspace</button>
                   <p class="helper authority-helper" id="agentAuthorityHelper">Connect through the authenticated Human Principal session to begin.</p>
                 </form>
 
                 <aside class="authority-review" aria-labelledby="mandateReviewTitle">
                   <div class="offer-console-heading">
-                    <div><span>05</span><p>Machine handoff</p></div>
+                    <div><span>06</span><p>Machine handoff</p></div>
                     <strong id="mandateReviewStatus">Awaiting draft</strong>
                   </div>
                   <h4 id="mandateReviewTitle">Exact Mandate review</h4>
@@ -867,7 +895,7 @@
                     <strong id="agentHandoffScope">Subject ID + Mandate ID</strong>
                     <p id="agentHandoffDescription">Load an eligible draft Mandate to create the application packet. Acceptance, sandbox execution, and repayment are available through the authenticated Tenant client.</p>
                   </div>
-                  <button class="authority-handoff-button" id="openAgentApiBtn" type="button" data-go-view="architecture" disabled>Open Agent API handoff</button>
+                  <button class="authority-handoff-button" id="openAgentApiBtn" type="button" data-agent-guide-action="open-handoff" disabled>Open Agent handoff</button>
                   <p class="offer-boundary">Sandbox only · raw account and signature redacted · no credential creation or delivery · no public exposure · no funds authority.</p>
                 </aside>
               </div>
@@ -902,9 +930,10 @@
                   <p class="eyebrow">Agent credit · Principal controlled</p>
                   <h2 id="agentRequestCreditTitle">Same economics. <em>Bounded machine authority.</em></h2>
                   <p id="agentRequestCreditCopy">A Human Principal must bind the Agent Subject and exact Consent-equivalent Mandate scope before the Agent application tools become available.</p>
+                  <p class="agent-credit-next" id="agentRequestCreditNext">Activating a Mandate creates bounded authority; it does not create a Credit Intent, Offer, Obligation, execution, or repayment.</p>
                   <div class="heading-actions">
-                    <button class="primary" type="button" data-agent-guide-action="principal-setup">Open Principal setup</button>
-                    <button class="secondary" type="button" data-agent-guide-action="view-protocol">Inspect Agent API</button>
+                    <button class="primary" id="agentRequestPrimaryBtn" type="button" data-agent-guide-action="principal-setup">Open Principal setup</button>
+                    <button class="secondary" id="agentRequestSecondaryBtn" type="button" data-agent-guide-action="view-protocol">Inspect Agent API</button>
                   </div>
                 </div>
                 <div class="human-entry-stats" aria-label="Agent request status">
@@ -962,7 +991,7 @@
                   <h2 id="creditPassportViewTitle">Credit Passport</h2>
                   <p>Share a temporary, read-only view of the facts behind your current credit Decision. You choose one authorized reviewer, how long access lasts, and exactly which facts are disclosed.</p>
                 </div>
-                <button class="primary" type="button" data-go-view="request-credit">Open Decision Passport</button>
+                <button class="primary" id="restoreCreditPassportBtn" type="button">Load my latest Decision</button>
               </div>
               <section class="panel v9-capability-state" aria-labelledby="creditPassportStateTitle">
                 <div><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg><span><p class="eyebrow">Server-derived state</p><h3 id="creditPassportStateTitle">No Decision Passport loaded</h3></span></div>
@@ -976,7 +1005,7 @@
                   </div>
                   <form id="creditPassportIssueForm" class="credit-passport-form">
                     <div class="credit-passport-source" aria-label="Current Decision source">
-                      <div><span>Current Human Subject</span><code id="creditPassportSubjectSource">Not loaded</code></div>
+                      <div><span>Current Subject</span><code id="creditPassportSubjectSource">Not loaded</code></div>
                       <div><span>Current credit application</span><code id="creditPassportIntentSource">Not loaded</code></div>
                     </div>
                     <input id="creditPassportSubjectId" type="hidden" />
@@ -1087,8 +1116,9 @@
               <div class="agent-console-contract-heading">
                 <div>
                   <p class="eyebrow">Versioned integration truth</p>
-                  <h3 id="agentConsoleContractTitle">One manifest. Twelve local tools. No ambient authority.</h3>
-                  <p>The browser presents the exact local registry and authenticated server state. It cannot execute an Agent workflow, mint a credential, or expand a Mandate.</p>
+                  <h3 id="agentConsoleContractTitle">One online Agent path. Twelve protected operations.</h3>
+                  <p>Run the registered local reference Agent online or connect an external Agent through the protected HTTPS contract. Credentials remain server-side and every call is reauthorized.</p>
+                  <p>One manifest. Twelve local tools. No ambient authority.</p>
                 </div>
                 <div class="agent-console-contract-actions">
                   <span class="state-pill neutral" id="agentConsoleContractStatus">Checking contract</span>
@@ -1103,6 +1133,28 @@
                 <div><span>Workflows</span><strong id="agentConsoleWorkflowCount">—</strong></div>
               </div>
               <p class="agent-console-helper" id="agentConsoleHelper" role="status" aria-live="polite">Waiting for authenticated catalog and Principal state.</p>
+            </section>
+
+            <section class="panel agent-online-workflow" id="agentOnlineWorkflow" aria-labelledby="agentOnlineWorkflowTitle">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Browser-operable reference Agent</p>
+                  <h3 id="agentOnlineWorkflowTitle">Request, borrow, repay, and verify online</h3>
+                </div>
+                <span class="state-pill neutral" id="agentOnlineStatus">Waiting for Mandate</span>
+              </div>
+              <p id="agentOnlineHelper" role="status" aria-live="polite">Create a verified Agent Subject and Draft Mandate first. No handoff download or browser credential is required.</p>
+              <div class="agent-console-proof-grid">
+                <div><span>Application</span><strong id="agentOnlineApplicationState">Not started</strong></div>
+                <div><span>Offer</span><strong id="agentOnlineOfferState">Not loaded</strong></div>
+                <div><span>Obligation</span><strong id="agentOnlineObligationState">Not created</strong></div>
+                <div><span>Evidence</span><strong id="agentOnlineEvidenceState">Not loaded</strong></div>
+              </div>
+              <div class="heading-actions">
+                <button class="primary" id="agentOnlineRunBtn" type="button" disabled>Run Agent application online</button>
+                <button class="secondary" id="agentOnlineReviewBtn" type="button" disabled>Review Agent obligations</button>
+              </div>
+              <p class="policy-note">The Human Principal approves the Mandate; the registered Agent uses its own durable, revocable workload credential on the server. The browser receives only sanitized workflow receipts.</p>
             </section>
 
             <div class="agent-console-authority-grid">
@@ -1143,11 +1195,11 @@
             <div class="agent-console-runtime-grid">
               <section class="panel agent-console-registry" id="agentConsoleProtocol" tabindex="-1" aria-labelledby="agentConsoleRegistryTitle">
                 <div class="panel-heading">
-                  <div><p class="eyebrow">agent_mcp_registry.v2</p><h3 id="agentConsoleRegistryTitle">Approved local stdio MCP tools</h3></div>
+                  <div><p class="eyebrow">agent_mcp_registry.v2</p><h3 id="agentConsoleRegistryTitle">Approved Agent API operations</h3></div>
                   <span class="state-pill neutral" id="agentConsoleRegistryStatus">Checking</span>
                 </div>
                 <div id="agentConsoleToolRows" class="agent-console-tool-rows" role="list" aria-label="Approved Agent MCP tools"></div>
-                <p>Catalog presence is not authorization. The Host rechecks Subject, Mandate, admission and policy on every call.</p>
+                <p>Catalog presence is not authorization. The Host rechecks Subject, Mandate, admission and policy on every call. Approved local stdio MCP tools remain available as an optional developer transport.</p>
               </section>
 
               <section class="panel agent-console-workflows" aria-labelledby="agentConsoleWorkflowsTitle">
@@ -1168,11 +1220,11 @@
             <div class="agent-console-example-grid">
               <section class="panel code-panel" aria-labelledby="agentConsoleSdkTitle">
                 <div class="panel-heading">
-                  <div><p class="eyebrow">Executable local example</p><h3 id="agentConsoleSdkTitle">Typed SDK + local MCP Host</h3></div>
-                  <button class="icon-button copy-button" id="agentConsoleCopySdkBtn" type="button" aria-label="Copy local Agent SDK example" title="Copy local Agent SDK example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button>
+                  <div><p class="eyebrow">Optional developer tooling</p><h3 id="agentConsoleSdkTitle">CLI reference runner</h3></div>
+                  <button class="icon-button copy-button" id="agentConsoleCopySdkBtn" type="button" aria-label="Copy local Agent runner command" title="Copy local Agent runner command"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button>
                 </div>
                 <pre><code id="agentConsoleSdkSnippet"></code></pre>
-                <p>The Host supplies authenticated context out of band. The SDK accepts no token, endpoint, Tenant, role or secret.</p>
+                <p>The CLI remains an optional integration and debugging tool. Normal product testing uses the online reference Agent above; external Agents call the protected HTTPS API with their own credential.</p>
               </section>
 
               <section class="panel code-panel" aria-labelledby="agentConsoleOpenApiTitle">
@@ -1336,7 +1388,7 @@
                   </div>
                   <button class="primary" id="capitalNetworkLoadBtn" type="submit">Load assigned intent</button>
                 </form>
-                <p class="capital-network-helper" id="capitalNetworkHelper" role="status" aria-live="polite">Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.</p>
+                <p class="capital-network-helper" id="capitalNetworkHelper" role="status" aria-live="polite">Use the exact TransferIntent ID from your Provider assignment or invitation. This page cannot search for assignments; missing, expired, denied, and cross-Provider resources are not enumerated.</p>
               </section>
 
               <section class="panel capital-network-state" aria-labelledby="capitalNetworkStateTitle">
@@ -1431,7 +1483,7 @@
                     <span class="v9-maturity-badge checking" id="tradingCapitalCatalogStatus">Checking contract</span>
                   </div>
                   <h2 id="tradingCapitalViewTitle">Trading Capital</h2>
-                  <p>Hyperliquid testnet is the only MVP venue for this authenticated Facility and canonical Obligation. Other venue adapters remain disabled; no redeemable settlement, external execution, or remote MCP is implied.</p>
+                  <p>Hyperliquid testnet is the only MVP venue for this authenticated Facility and canonical Obligation. This local screen inspects and closes an existing synthetic Facility; creation, matching, funding simulation, and execution setup are role-scoped API/SDK workflows. Other venue adapters remain disabled; no redeemable settlement, external execution, or remote MCP is implied.</p>
                 </div>
                 <div class="trading-capital-heading-status">
                   <strong id="tradingCapitalOperationCount">0 / 25</strong>
@@ -1454,7 +1506,7 @@
                     <button class="secondary" id="tradingCapitalLoadEvidenceBtn" type="button">Load Evidence</button>
                   </div>
                 </form>
-                <p id="tradingCapitalHelper" role="status" aria-live="polite">Enter one exact bound ID. Denied, missing, and cross-Tenant resources remain non-enumerating.</p>
+                <p id="tradingCapitalHelper" role="status" aria-live="polite">Use the Facility ID returned by an authorized Trading Capital API/SDK workflow. This page does not create or discover Facilities; denied, missing, and cross-Tenant resources remain non-enumerating.</p>
               </section>
 
               <div class="trading-capital-tabs" role="tablist" aria-label="Trading Capital product views">
@@ -1692,6 +1744,7 @@
                         <label for="servicingRepaymentSource">Synthetic source<select id="servicingRepaymentSource"><option value="synthetic_wallet">Wallet</option><option value="synthetic_bank">Bank</option><option value="synthetic_revenue">Revenue</option></select></label>
                       </div>
                       <button class="primary icon-text" id="postServicingRepaymentBtn" type="button" disabled><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg><span>Post sandbox repayment</span></button>
+                      <button class="secondary" id="servicingClosedNextBtn" type="button" hidden>Choose another position</button>
                       <p class="servicing-action-result" id="servicingCaseActionResult" role="status" aria-live="polite">Fee → interest → principal. Cure is confirmed only by the returned Obligation.</p>
                     </section>
                   </div>
@@ -1858,7 +1911,7 @@
                   <h2 id="creditTrackRecordViewTitle">Credit Track Record</h2>
                   <p>Summarize only the authenticated Decision and Obligation Evidence already available to this session. Browser history is not credit truth.</p>
                 </div>
-                <button class="primary" type="button" data-go-view="activity-proofs">Open verified Evidence</button>
+                <button class="primary" id="loadCreditTrackRecordBtn" type="button">Load verified record</button>
               </div>
               <section class="panel v9-capability-state" aria-labelledby="creditTrackRecordStateTitle">
                 <div><svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg><span><p class="eyebrow">Current record</p><h3 id="creditTrackRecordStateTitle">No verified lifecycle loaded</h3></span></div>
@@ -1966,7 +2019,7 @@
                   </div>
                   <button id="loadRiskPortfolioBtn" class="primary icon-text" type="submit"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load posture</button>
                 </form>
-                <p id="riskPortfolioHelper" class="risk-helper" role="status" aria-live="polite">Enter one exact portfolio ID. Catalog presence does not grant access; the Gateway verifies every read.</p>
+                <p id="riskPortfolioHelper" class="risk-helper" role="status" aria-live="polite">Use the portfolio ID provisioned to the invited Risk or Auditor operator. This page cannot enumerate portfolios; catalog presence does not grant access, and the Gateway verifies every read.</p>
 
                 <div class="risk-metric-grid" aria-label="Tenant risk exposure summary">
                   <div><span>Approved limits</span><strong id="riskExposureLimit">$0.00</strong><small id="riskCreditLineCount">0 credit lines</small></div>
@@ -2321,7 +2374,7 @@
 
             <div class="developer-grid">
               <section class="panel code-panel" aria-labelledby="sdkTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Local no-funds Agent client</p><h3 id="sdkTitle">Local stdio SDK quick start</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy Agent API example" title="Copy Agent API example"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
+                <div class="panel-heading"><div><p class="eyebrow">Local no-funds Agent client</p><h3 id="sdkTitle">Reference Agent runner</h3></div><button class="icon-button copy-button" id="copySdkBtn" type="button" aria-label="Copy Agent runner command" title="Copy Agent runner command"><svg aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button></div>
                 <pre><code id="sdkSnippet"></code></pre>
               </section>
               <section class="panel" aria-labelledby="capabilityTitle">

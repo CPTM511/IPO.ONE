@@ -219,11 +219,12 @@ async function startLocalWorker(environment = process.env) {
         "Evidence anchor attestor requires the exact Base Sepolia acknowledgement"
       );
     }
+    const evidenceAnchorProviderSlot =
+      environment.IPO_ONE_EVIDENCE_ANCHOR_PROVIDER_SLOT ?? "primary";
     const attestor = await createEvidenceAnchorTestnetAttestor({
       contractAddress: evidenceAnchorContractAddress,
       keyFile: evidenceAnchorAttestorKeyFile,
-      providerSlot:
-        environment.IPO_ONE_EVIDENCE_ANCHOR_PROVIDER_SLOT ?? "primary"
+      providerSlot: evidenceAnchorProviderSlot
     });
     evidenceAnchorWorker = createEvidenceAnchorWorker({
       store: new PostgresEvidenceAnchorStore({
@@ -233,10 +234,12 @@ async function startLocalWorker(environment = process.env) {
       contractAddress: evidenceAnchorContractAddress,
       attestorAddress: attestor.address,
       nonceReader: createEvidenceAnchorNonceReader({
-        contractAddress: evidenceAnchorContractAddress
+        contractAddress: evidenceAnchorContractAddress,
+        providerSlot: evidenceAnchorProviderSlot
       }),
       observer: createEvidenceAnchorObserver({
-        contractAddress: evidenceAnchorContractAddress
+        contractAddress: evidenceAnchorContractAddress,
+        providerSlot: evidenceAnchorProviderSlot
       }),
       sender: attestor.sender
     });

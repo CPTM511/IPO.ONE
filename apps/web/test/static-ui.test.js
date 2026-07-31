@@ -129,7 +129,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Principal-controlled Agent setup",
     "Create, review, and activate Agent authority",
     "Agent API handoff",
-    "Local stdio SDK quick start",
+    "Reference Agent runner",
     "Load an eligible draft Mandate to create the application packet",
     "Principal → Agent capability packet",
     "One manifest. Twelve local tools. No ambient authority.",
@@ -170,7 +170,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Freeze Agent Subject",
     "Protective-only command",
     "Closed permissions by design",
-    "Catalog presence does not grant access",
+    "catalog presence does not grant access",
     "Access IPO.ONE",
     "Sign in. Connect.",
     "Stay in control.",
@@ -845,7 +845,9 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.equal(js.includes("maxTtlSeconds: 300"), false);
   assert.equal(js.includes("dispatcher: mtlsDispatcher"), false);
   assert.equal(js.includes("IPO_ONE_ORIGIN"), false);
-  assert.ok(js.includes('transportProfile: "mcp_stdio_local"'));
+  assert.ok(js.includes("pnpm run local:agent:application"));
+  assert.ok(js.includes("pnpm run local:agent:runtime"));
+  assert.ok(js.includes("pnpm run local:agent:acceptance"));
   assert.ok(js.includes('new URL("/openapi.json", globalThis.location.origin)'));
   assert.ok(v9TrustSurfaces.includes('"pilotReadAgentSelf"'));
   assert.ok(html.includes('href="/openapi.json"'));
@@ -1011,7 +1013,9 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   assert.ok(html.includes('id="authenticatedRuntimeGateAction" class="primary" type="button" hidden'));
   assert.ok(js.includes("account session, wallet connection, and private browser state"));
   assert.ok(js.includes('el("signedOutPrivacyAction").hidden = true'));
-  assert.ok(js.includes('gate.hidden = !authenticated || connected'));
+  assert.ok(js.includes(
+    "gate.hidden = !workspaceRoleMismatch && (!authenticated || connected)"
+  ));
   assert.ok(css.includes("body.private-session-closed [data-view-panel]"));
   assert.ok(css.includes(".signed-out-role-list"));
   assert.ok(css.includes(".signed-out-privacy-shield[hidden]"));
@@ -1026,6 +1030,180 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   assert.ok(js.includes(
     "This scoped Consent already created an equivalent Credit Intent."
   ));
+});
+
+test("WEB-020 routes Agent authority through the Principal workspace and explains proof handoff", async () => {
+  const [html, js, css] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  ]);
+
+  for (const id of [
+    "agentAuthorityAccessGate",
+    "agentAuthorityAccessTitle",
+    "agentAuthorityAccessCopy",
+    "openPrincipalWorkspaceLink",
+    "agentAuthorityWorkspaceContent",
+    "agentAccountProofNextStep"
+  ]) {
+    assert.ok(html.includes(`id="${id}"`), `${id} Principal entry control missing`);
+  }
+  assert.match(
+    html,
+    /class="authority-workbench-layout" id="agentAuthorityWorkspaceContent" hidden/,
+    "Agent authority controls must start fail-closed"
+  );
+  assert.match(
+    js,
+    /tenantPilot\.connected === true\s*&&\s*currentWorkspaceName\(\) === "controller"\s*&&\s*tenantPilot\.workspaceKind === "principal_controller"/,
+    "both host and authenticated workspace identities must authorize the form"
+  );
+  assert.ok(js.includes('currentWorkspaceName() !== "borrower"'));
+  assert.ok(js.includes('new Set(["127.0.0.1", "localhost"])'));
+  assert.ok(js.includes("borrowerPort + 1"));
+  assert.ok(js.includes("no Borrower permission will be widened"));
+  assert.match(
+    js,
+    /async function runAgentAuthorityAction[\s\S]*?if \(!hasPrincipalAgentAuthorityWorkspace\(\)\)/,
+    "Agent authority actions need a defensive Principal preflight"
+  );
+  assert.ok(js.includes(
+    "Ask registered test Agent to prove"
+  ));
+  assert.ok(js.includes(
+    "this browser never receives a private key or signature"
+  ));
+  assert.ok(js.includes('"Ready for online proof"'));
+  assert.ok(js.includes('"Submit through Agent API"'));
+  assert.ok(css.includes(".agent-authority-access-gate"));
+  assert.ok(css.includes(".account-proof-next-step"));
+});
+
+test("WEB-021 recovers a cross-port workspace role mismatch without losing wallet discovery", async () => {
+  const [html, js, css] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  ]);
+
+  assert.ok(html.includes('id="switchPrincipalSessionBtn"'));
+  assert.ok(html.includes("Switch to Principal session"));
+  assert.ok(js.includes('"workspace_session_role_mismatch"'));
+  assert.ok(js.includes('tenantPilot.workspaceRecoveryState = "role_mismatch"'));
+  assert.ok(js.includes("switchCurrentWorkspaceSession"));
+  assert.ok(js.includes("continueToPrincipalWorkspace"));
+  assert.ok(js.includes("explicitWalletReleaseInProgress"));
+  assert.ok(
+    js.indexOf('const subject = recoveredResource(resources, "subject")') >
+      js.indexOf('"workspace_session_role_mismatch"'),
+    "role mismatch must return before role-specific resources are hydrated"
+  );
+  assert.match(
+    js,
+    /if \(clearWalletUi\) \{[\s\S]*?accessState\.selectedWalletProviderId = null;[\s\S]*?\}/,
+    "explicit sign-out must clear wallet selection"
+  );
+  assert.equal(
+    /if \(clearWalletUi\) \{[\s\S]*?accessState\.walletProviders = \[\];[\s\S]*?\}/.test(js),
+    false,
+    "explicit sign-out must preserve discovered Providers for fresh role sign-in"
+  );
+  assert.ok(js.includes(
+    "gate.hidden = !workspaceRoleMismatch && (!authenticated || connected)"
+  ));
+  assert.ok(css.includes(".agent-authority-access-actions"));
+});
+
+test("WEB-023 presents distinct Agent application and runtime handoff stages", async () => {
+  const [html, js, css] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  ]);
+
+  for (const id of [
+    "continueAgentCreditBtn",
+    "agentApplicationStage",
+    "agentApplicationStageStatus",
+    "agentApplicationStageCopy",
+    "openAgentApplicationHandoffBtn",
+    "agentRequestCreditNext",
+    "agentRequestPrimaryBtn",
+    "agentRequestSecondaryBtn"
+  ]) {
+    assert.ok(html.includes(`id="${id}"`), `${id} Agent continuation control missing`);
+  }
+  assert.match(
+    html,
+    /id="openAgentApiBtn"[^>]+data-agent-guide-action="open-handoff"/,
+    "post-activation handoff must not route to the Architecture page"
+  );
+  assert.equal(
+    /id="openAgentApiBtn"[^>]+data-go-view="architecture"/.test(html),
+    false
+  );
+  assert.match(
+    html,
+    /id="continueAgentCreditBtn"[^>]+data-agent-guide-action="run-online-agent"[^>]*>Continue in Agent workspace</,
+    "post-activation continuation must open the browser-operable Agent workspace"
+  );
+  assert.ok(html.includes("Run the Agent application"));
+  assert.ok(html.includes("Return after the Agent application produced its Offer workflow receipt."));
+  assert.ok(html.includes("activation unlocks runtime use of an existing Agent Offer"));
+  assert.ok(js.includes("const applicationReady = applicationHandoff && applicationOperationsAvailable"));
+  assert.ok(js.includes("const runtimeReady = runtimeHandoff && economicOperationsAvailable"));
+  assert.ok(js.includes('"Runtime ready · existing Offer required"'));
+  assert.ok(js.includes("this runtime cannot start a new Credit Intent"));
+  assert.ok(js.includes("create a new Draft application Mandate"));
+  assert.ok(js.includes("Required input · agent_credit_offer_workflow_receipt.v1"));
+  assert.ok(js.includes("new application request and evaluation are Draft-only"));
+  assert.ok(js.includes('primary.dataset.agentGuideAction = "view-obligations"'));
+  assert.ok(js.includes('primary.dataset.agentGuideAction = runtimeReady && agentOnlinePilot.offerReceipt'));
+  assert.ok(js.includes('if (action === "run-online-agent")'));
+  assert.ok(js.includes('if (action === "view-obligations")'));
+  assert.match(
+    js,
+    /if \(action === "agent-api"\) \{\s*openAgentProtocolDetails\(\{ targetId: "agentConsoleContract" \}\);/,
+    "Agent workspace action must open the runtime handoff contract"
+  );
+  assert.ok(js.includes("Read-only Principal view."));
+  assert.ok(js.includes("Agent-authenticated repayment required"));
+  assert.ok(js.includes('recovery.workspaceKind === "principal_controller"'));
+  assert.ok(js.includes("selectedObligation && tenantPilot.obligationReadAvailable"));
+  assert.ok(css.includes(".agent-credit-next"));
+  assert.ok(css.includes(".authority-continue"));
+  assert.ok(css.includes(".authority-application-card"));
+});
+
+test("UX-002 keeps Human and Agent credit actions browser-operable", async () => {
+  const [html, js, css] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  ]);
+
+  for (const id of [
+    "agentOnlineWorkflow",
+    "agentOnlineRunBtn",
+    "agentOnlineReviewBtn",
+    "proveAccountOnlineBtn",
+    "restoreCreditPassportBtn",
+    "loadCreditTrackRecordBtn",
+    "servicingClosedNextBtn"
+  ]) {
+    assert.ok(html.includes(`id="${id}"`), `${id} browser action missing`);
+  }
+  assert.ok(html.includes("Request, borrow, repay, and verify online"));
+  assert.ok(html.includes("No handoff download or browser credential is required"));
+  assert.ok(js.includes('"/local/v1/reference-agent/account-proof"'));
+  assert.ok(js.includes('"/local/v1/reference-agent/application"'));
+  assert.ok(js.includes('"/local/v1/reference-agent/runtime"'));
+  assert.ok(js.includes("Early partial or full repayment is available now"));
+  assert.ok(js.includes("restoreLatestCreditPassport"));
+  assert.ok(js.includes("loadCreditTrackRecord"));
+  assert.ok(js.includes("quarantineRejectedAuthenticationSession"));
+  assert.ok(css.includes(".agent-online-workflow"));
 });
 
 test("TC-104 exposes eight authenticated Trading Capital views without funds claims", async () => {
@@ -1103,6 +1281,35 @@ test("closed-pilot browser has no demo route, reset control, or hidden fallback"
   assert.ok(js.includes('fetch("/tenant/v1/operations"'));
   assert.ok(js.includes("setConnection(tenantPilot.connected)"));
   assert.ok(js.includes("No product data is available without an authenticated session."));
+});
+
+test("every enabled browser button has a discoverable action contract", async () => {
+  const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const genericAction = /\bdata-(?:view|go-view|agent-guide-action|human-guide-action|private-action|wallet-chain|auth-provider|trading-capital-view|scroll-target)=/;
+  const buttons = [...html.matchAll(/<button\b[^>]*>/g)].map(
+    (match) => match[0]
+  );
+  const missing = [];
+  for (const button of buttons) {
+    if (genericAction.test(button) || /\bdisabled\b/.test(button)) continue;
+    const id = button.match(/\bid="([^"]+)"/)?.[1];
+    if (
+      !id ||
+      (
+        !js.includes(`el("${id}")`) &&
+        !js.includes(`#${id}`) &&
+        !js.includes(`getElementById("${id}")`)
+      )
+    ) {
+      missing.push(id ?? button);
+    }
+  }
+  assert.deepEqual(
+    missing,
+    [],
+    "enabled controls must not exist without a named or delegated action"
+  );
 });
 
 test("public beta launch configuration is bounded and supply-chain pinned", async () => {

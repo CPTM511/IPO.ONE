@@ -6,6 +6,8 @@ import {
   createEvidenceAnchorNonceReader
 } from "../../../modules/event-indexer/src/index.js";
 import {
+  ActorType,
+  assertAuthenticationContext,
   createReferenceHasher,
   loadAuthenticationRuntimeConfig
 } from "../../../modules/authentication/src/index.js";
@@ -16,6 +18,7 @@ import {
 import {
   TenantCommandGateway,
   TenantCommandHandlerRegistry,
+  AgentTenantCommandClient,
   createPostgresTenantLivePolicyAdapter,
   createTenantFoundationHandlers
 } from "../../../modules/tenant-command-gateway/src/index.js";
@@ -33,6 +36,7 @@ import {
   EvmWalletSignatureVerifier
 } from "../../../modules/chain-adapter/src/index.js";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
+import { createAgentMcpHost } from "../../agent-mcp/src/index.js";
 import { createLocalPilotIdentities } from "./local-pilot-identities.js";
 import {
   loadOrCreatePrivatePilotDatabaseSecret,
@@ -41,13 +45,21 @@ import {
 } from "./private-pilot-database.js";
 import { createLocalSyntheticIdentityProvider } from "./local-synthetic-identity-provider.js";
 import {
+  loadLocalAgentKeyMaterial,
   loadLocalAuthenticationInvitation,
   loadLocalAuthenticationServerMaterial
 } from "./local-authentication-material.js";
 import {
-  LocalDurableAgentAuthenticator
+  LocalDurableAgentAuthenticator,
+  createLocalAgentProof
 } from "./local-durable-agent-authentication.js";
-import { derivePrivatePilotAgentAccount } from "./private-pilot-agent-account.js";
+import {
+  createLocalReferenceAgentHttpService
+} from "./local-reference-agent-http.js";
+import {
+  derivePrivatePilotAgentAccount,
+  preparePrivatePilotAgentProof
+} from "./private-pilot-agent-account.js";
 import { loadPrivatePilotProfile } from "./private-pilot-profile.js";
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
@@ -58,6 +70,10 @@ const DEFAULT_AUTHENTICATION_SERVER_FILE = resolve(
 const DEFAULT_AUTHENTICATION_INVITATION_FILE = resolve(
   MODULE_DIRECTORY,
   "../../../.ipo-one/local-stack/authentication-invitation.v1.json"
+);
+const DEFAULT_AGENT_KEY_FILE = resolve(
+  MODULE_DIRECTORY,
+  "../../../.ipo-one/local-stack/agent-key.v1.json"
 );
 const LOCAL_AGENT_STDIO_AUDIENCE =
   "urn:ipo.one:local:agent-stdio";
@@ -197,6 +213,9 @@ export async function createPrivatePilotRuntime({
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const [serverMaterial, invitation] =
     await loadLocalDurableAuthenticationMaterial();
+  const localAgentKey = await loadLocalAgentKeyMaterial(
+    process.env.IPO_ONE_LOCAL_AGENT_KEY_FILE || DEFAULT_AGENT_KEY_FILE
+  );
   const localAgentAccount = derivePrivatePilotAgentAccount(password, {
     tenantId: authentication.profile.tenantId
   });
@@ -269,19 +288,101 @@ export async function createPrivatePilotRuntime({
         })
       : undefined;
     for (const { profile, humanAccess } of humanAccessProfiles) {
+      const localAgentAudience =
+        `urn:ipo.one:local:tenant-http:${profile.port}`;
       const localAgentAuthenticator = new LocalDurableAgentAuthenticator({
         tenantId: authentication.profile.tenantId,
         clientId: authentication.identities.agent.clientId,
         policyVersion: authentication.identities.agent.createContext()
           .policyVersion,
-        audience:
-          `urn:ipo.one:local:tenant-http:${profile.port}`,
+        audience: localAgentAudience,
         credentialRegistry: humanAccess.credentialRegistry,
         replayCache: humanAccess.machineReplayCache,
         referenceHasher: createReferenceHasher(
           durableAuthentication.referenceHashKey
         )
       });
+      const verifyAgentSubjectBinding =
+        createAgentSubjectBindingVerifier(pool);
+      async function authenticateLocalAgent() {
+        return assertAuthenticationContext(
+          await localAgentAuthenticator.authenticate({
+            proof: await createLocalAgentProof({
+              keyMaterial: localAgentKey,
+              tenantId: authentication.profile.tenantId,
+              clientId: authentication.identities.agent.clientId,
+              policyVersion: authentication.identities.agent.createContext()
+                .policyVersion,
+              audience: localAgentAudience
+            })
+          })
+        );
+      }
+      function createLocalAgentClient(authenticationContextProvider) {
+        return new AgentTenantCommandClient({
+          gateway,
+          authenticationContextProvider,
+          networkContextProvider: async () => networkContext
+        });
+      }
+      const createAgentSession = async (manifest) => {
+        async function authenticationContextProvider() {
+          const context = await authenticateLocalAgent();
+          if (
+            context.actorType !== ActorType.AGENT ||
+            await verifyAgentSubjectBinding({
+              authenticationContext: context,
+              subjectId: manifest.subjectId
+            }) !== true
+          ) {
+            throw new DomainError(
+              "local_agent_session_identity_mismatch",
+              "Authenticated Agent is not bound to the requested Subject"
+            );
+          }
+          return context;
+        }
+        const client = createLocalAgentClient(authenticationContextProvider);
+        return Object.freeze({
+          client,
+          host: createAgentMcpHost({ client, manifest }),
+          async close() {
+            // The reference Agent reuses the bounded local runtime pools.
+          }
+        });
+      };
+      const referenceAgent = profile.name === "controller"
+        ? createLocalReferenceAgentHttpService({
+            createAgentSession,
+            gateway,
+            networkContext,
+            async proveAccount(challenge) {
+              const proof = preparePrivatePilotAgentProof(
+                challenge,
+                localAgentAccount
+              );
+              const signature = await localAgentAccount.signTypedData(
+                proof.typedData
+              );
+              const client = createLocalAgentClient(authenticateLocalAgent);
+              const result = await client.submitAccountProof({
+                subjectId: proof.subjectId,
+                payload: {
+                  challengeId: proof.challengeId,
+                  accountId: proof.accountId,
+                  signature
+                },
+                idempotencyKey:
+                  `reference-agent-account-proof-${proof.challengeId}`,
+                requestId:
+                  `request-reference-agent-account-proof-${proof.challengeId}`,
+                correlationId:
+                  `correlation-reference-agent-account-proof-${proof.challengeId}`
+              });
+              return result.response;
+            }
+          })
+        : undefined;
       const host = createTenantPilotHost({
         gateway,
         humanBff: humanAccess.humanSessionBff,
@@ -307,6 +408,9 @@ export async function createPrivatePilotRuntime({
         ...(evidenceAnchors === undefined
           ? {}
           : { serveEvidenceAnchors: evidenceAnchors }),
+        ...(referenceAgent === undefined
+          ? {}
+          : { serveReferenceAgent: referenceAgent }),
         port: profile.port
       });
       const address = await host.listen();

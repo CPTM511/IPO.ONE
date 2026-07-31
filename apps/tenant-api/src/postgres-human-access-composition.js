@@ -440,13 +440,18 @@ export async function createPostgresHumanAccessComposition(input) {
     const sessionHandle = readHumanAccessCookie(request?.headers?.cookie, SESSION_COOKIE_NAME);
     const csrfToken = readHumanAccessCookie(request?.headers?.cookie, CSRF_BOOTSTRAP_COOKIE_NAME);
     if (!sessionHandle || !csrfToken) return undefined;
-    await humanSessionBff.authenticateSession({
-      sessionHandle,
-      requestMethod: "POST",
-      requestOrigin: browserOrigin,
-      csrfToken,
-      now: clock()
-    });
+    try {
+      await humanSessionBff.authenticateSession({
+        sessionHandle,
+        requestMethod: "POST",
+        requestOrigin: browserOrigin,
+        csrfToken,
+        now: clock()
+      });
+    } catch (error) {
+      if (error?.code === "authentication_session_rejected") return undefined;
+      throw error;
+    }
     return csrfToken;
   };
 

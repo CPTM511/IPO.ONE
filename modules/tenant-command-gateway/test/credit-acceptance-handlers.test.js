@@ -278,21 +278,21 @@ test("Human and Agent acceptance plans create one atomic shared Obligation contr
       (row) => row.scheduledPrincipalMinor
     ), ["6000", "6001"]);
     assert.deepEqual(plan.resourceBaselines, { open_obligations: 2 });
-    assert.deepEqual(plan.authorizationResource, {
-      resourceType: "obligation",
-      resourceId: plan.response.obligation.obligationId,
-      actorBindings: [{ actorId, actorType, relationship: "owner" }]
-    });
-    const evidenceActorBindings = [{ actorId, actorType, relationship: "owner" }];
-    if (actorType === ActorType.AGENT) evidenceActorBindings.push({
+    const controlledActorBindings = [{ actorId, actorType, relationship: "owner" }];
+    if (actorType === ActorType.AGENT) controlledActorBindings.push({
       actorId: "actor_agent_controller",
       actorType: ActorType.HUMAN,
       relationship: "controller"
     });
+    assert.deepEqual(plan.authorizationResource, {
+      resourceType: "obligation",
+      resourceId: plan.response.obligation.obligationId,
+      actorBindings: controlledActorBindings
+    });
     assert.deepEqual(plan.additionalAuthorizationResources, [{
       resourceType: "evidence",
       resourceId: plan.response.obligation.obligationId,
-      actorBindings: evidenceActorBindings
+      actorBindings: controlledActorBindings
     }]);
   }
   const economicShape = (plan) => ({

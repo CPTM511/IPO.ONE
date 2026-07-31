@@ -83,6 +83,7 @@ let serverCatalogSnapshot = null;
 let agentAccountBindingPollTimer = null;
 let agentAccountBindingPollDeadline = 0;
 let agentAccountBindingPollAttempts = 0;
+let explicitWalletReleaseInProgress = false;
 const AGENT_ACCOUNT_BINDING_POLL_INTERVAL_MS = 1_500;
 const AGENT_ACCOUNT_BINDING_POLL_MAX_MS = 5 * 60_000;
 const AGENT_ACCOUNT_BINDING_POLL_MAX_ATTEMPTS = 200;
@@ -132,7 +133,7 @@ const capitalNetworkPilot = {
   acknowledgement: null,
   presentation: null,
   helper:
-    "Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.",
+    "Use the exact TransferIntent ID from your Provider assignment or invitation. This page cannot search for assignments; missing, expired, denied, and cross-Provider resources are not enumerated.",
   error: false
 };
 const capitalPartnerPilot = {
@@ -161,7 +162,7 @@ const tradingCapitalPilot = {
   performanceProof: null,
   evidence: null,
   helper:
-    "Enter one exact bound ID. Denied, missing, and cross-Tenant resources remain non-enumerating."
+    "Use the Facility ID returned by an authorized Trading Capital API/SDK workflow. This page does not create or discover Facilities; denied, missing, and cross-Tenant resources remain non-enumerating."
 };
 const pilotFeedback = {
   catalogAvailable: false,
@@ -178,6 +179,15 @@ const agentAuthorityPilot = {
   accountBinding: null,
   mandate: null,
   activationEvidenceHash: null
+};
+const agentOnlinePilot = {
+  busy: false,
+  error: false,
+  offerReceipt: null,
+  applicationResult: null,
+  runtimeResult: null,
+  helper:
+    "Create a verified Agent Subject and Draft Mandate first. No handoff download or browser credential is required."
 };
 const auditorEvidence = {
   catalogAvailable: false,
@@ -274,7 +284,7 @@ const riskOperations = {
   feedbackQueried: false,
   feedbackHelper: "Load the Tenant portfolio to aggregate feedback.",
   feedbackError: false,
-  helper: "Enter one exact portfolio ID. Catalog presence does not grant access; the Gateway verifies every read.",
+  helper: "Use the portfolio ID provisioned to the invited Risk or Auditor operator. This page cannot enumerate portfolios; catalog presence does not grant access, and the Gateway verifies every read.",
   error: false,
   freezeResult: null,
   freezeHelper: "Risk or Operations authority is verified only when the command is submitted.",
@@ -296,6 +306,7 @@ const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [tradingCapitalPilot, structuredClone(tradingCapitalPilot)],
   [pilotFeedback, structuredClone(pilotFeedback)],
   [agentAuthorityPilot, structuredClone(agentAuthorityPilot)],
+  [agentOnlinePilot, structuredClone(agentOnlinePilot)],
   [auditorEvidence, structuredClone(auditorEvidence)],
   [ownedEvidence, structuredClone(ownedEvidence)],
   [creditRegistryEvidence, structuredClone(creditRegistryEvidence)],
@@ -315,6 +326,8 @@ const PROTECTIVE_REASON_CODES = new Set([
 const mobileNavigation = window.matchMedia("(max-width: 900px)");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const OWNED_OBLIGATION_SESSION_KEY = "ipo-one-owned-obligation-id.v1";
+const AGENT_OFFER_RECEIPT_SESSION_KEY =
+  "ipo-one-agent-offer-receipt.v1";
 const HUMAN_SUBJECT_STORAGE_KEY = "ipo-one-human-subject-id.v1";
 const HUMAN_CONSENT_STORAGE_KEY = "ipo-one-human-consent-id.v1";
 const AGENT_SUBJECT_STORAGE_KEY = "ipo-one-agent-subject-id.v1";
@@ -538,6 +551,7 @@ function renderAccess() {
   const walletAuthority = walletAuthoritySnapshot ?? walletAuthorityLifecycle.getSnapshot();
   const authenticated = accessState.sessionActive === true;
   const workspaceVerified = tenantPilot.connected === true;
+  const workspaceRoleMismatch = hasWorkspaceSessionRoleMismatch();
   const privateWorkspaceVisible = authenticated && workspaceVerified;
   const localSessionEnded =
     accessState.authenticationProfile === "local_no_funds" &&
@@ -560,7 +574,9 @@ function renderAccess() {
     ? `${selected.name} connected`
     : `Connect ${selected.name}`;
   const accessButtonLabel = authenticated
-    ? accessState.pendingWorkspaceBootstrap
+    ? workspaceRoleMismatch
+      ? "Switch role"
+      : accessState.pendingWorkspaceBootstrap
       ? "Finish sign-in"
       : "Signed in"
     : "Sign in";
@@ -593,18 +609,24 @@ function renderAccess() {
     authenticated || localSessionEnded
   );
   el("accessTitleLead").textContent = authenticated
-    ? "Signed in."
+    ? workspaceRoleMismatch
+      ? "Role switch required."
+      : "Signed in."
     : localSessionEnded
       ? "Signed out."
       : "Sign in. Connect.";
   el("accessTitleEmphasis").textContent = "Stay in control.";
   el("accessCopy").textContent = localSessionEnded
     ? "The local host session ended and authenticated product operations are blocked. Start a fresh local no-funds session only when you are ready to continue."
+    : workspaceRoleMismatch
+      ? `This page requires the ${expectedWorkspaceLabel()} role. End the current ${workspaceKindLabel(tenantPilot.workspaceKind)} session, then sign in again on this workspace.`
     : authenticated
       ? "Your server session is separate from wallet connection, credit authority, and funds authority. Continue to the workspace or sign out explicitly."
       : "Choose a familiar account, then connect one approved test network. Identity proves who you are; Principal and Mandate rules still decide what you can do.";
   el("accessSessionTitle").textContent = localSessionEnded
     ? "Local session ended"
+    : workspaceRoleMismatch
+      ? "Workspace role does not match"
     : accessState.pendingWorkspaceBootstrap
       ? "Authentication verified"
       : workspaceVerified
@@ -612,6 +634,8 @@ function renderAccess() {
         : "You are signed in";
   el("accessSessionCopy").textContent = localSessionEnded
     ? "No authenticated operation is available in this page. Reloading explicitly provisions a fresh synthetic local session; it does not restore funds or credit authority."
+    : workspaceRoleMismatch
+      ? `The browser is signed in as ${workspaceKindLabel(tenantPilot.workspaceKind)}, while this page requires ${expectedWorkspaceLabel()}. Switching signs out the current role and requires a fresh wallet signature.`
     : accessState.pendingWorkspaceBootstrap
       ? "Wallet authentication succeeded. Continue once to reload the protected shell and bind its CSRF-protected workspace session."
       : workspaceVerified
@@ -619,6 +643,8 @@ function renderAccess() {
         : "Your host-only authentication session is active. Workspace availability still depends on your server-side role and approved operations.";
   el("continueAuthenticatedSessionBtn").textContent = localSessionEnded
     ? "Start fresh local session"
+    : workspaceRoleMismatch
+      ? `Switch to ${expectedWorkspaceLabel()} session`
     : accessState.pendingWorkspaceBootstrap
       ? "Finish sign-in"
       : "Continue to workspace";
@@ -688,7 +714,7 @@ const walletProviderRegistry = createWalletProviderRegistry({
       accessState.walletAddress = null;
       accessState.connectedChainId = null;
       bindSelectedWalletProviderEvents();
-      if (previousProviderId !== null) {
+      if (previousProviderId !== null && !explicitWalletReleaseInProgress) {
         handleMaterialWalletContextChange(
           accessState.selectedWalletProviderId === null
             ? "wallet_provider_disconnected"
@@ -925,6 +951,10 @@ function beginOidcSignIn(provider) {
 }
 
 function continueAuthenticatedSession() {
+  if (hasWorkspaceSessionRoleMismatch()) {
+    switchCurrentWorkspaceSession();
+    return;
+  }
   if (accessState.localSessionSignedOut) {
     window.location.reload();
     return;
@@ -979,11 +1009,17 @@ async function signOutAuthenticatedSession() {
     tenantPilot.connected = false;
     renderAccess();
     clearWalletProviderEvents();
-    const walletRelease = await releaseSelectedWallet({
-      provider: selectedWalletProvider,
-      source: selectedWalletDescriptor?.source
-    });
-    walletProviderRegistry.clearSelection();
+    explicitWalletReleaseInProgress = true;
+    let walletRelease;
+    try {
+      walletRelease = await releaseSelectedWallet({
+        provider: selectedWalletProvider,
+        source: selectedWalletDescriptor?.source
+      });
+      walletProviderRegistry.clearSelection();
+    } finally {
+      explicitWalletReleaseInProgress = false;
+    }
     purgeAuthenticatedBrowserState({
       clearAuthenticationBootstrap: true,
       clearWalletUi: true,
@@ -1004,6 +1040,26 @@ async function signOutAuthenticatedSession() {
     accessState.busy = false;
     renderAccess();
   }
+}
+
+async function continueToPrincipalWorkspace(event) {
+  event?.preventDefault();
+  const destination = localPrincipalWorkspaceUrl();
+  if (!destination || accessState.busy) return;
+  if (accessState.sessionActive) {
+    await signOutAuthenticatedSession();
+    if (accessState.sessionActive) return;
+  }
+  window.location.assign(destination);
+}
+
+async function switchCurrentWorkspaceSession() {
+  if (accessState.busy) return;
+  if (accessState.sessionActive) {
+    await signOutAuthenticatedSession();
+    if (accessState.sessionActive) return;
+  }
+  openAccess();
 }
 
 function asBigInt(value) {
@@ -1173,22 +1229,29 @@ function renderRuntimeGate() {
   if (!gate) return;
   const connected = tenantPilot.connected;
   const authenticated = accessState.sessionActive === true;
-  gate.hidden = !authenticated || connected;
-  el("authenticatedRuntimeGateStatus").textContent = connected
+  const workspaceRoleMismatch = hasWorkspaceSessionRoleMismatch();
+  gate.hidden = !workspaceRoleMismatch && (!authenticated || connected);
+  el("authenticatedRuntimeGateStatus").textContent = workspaceRoleMismatch
+    ? `${expectedWorkspaceLabel()} session required`
+    : connected
     ? "Authenticated workspace"
     : authenticated
       ? tenantPilot.connectionLabel
     : tenantPilot.checked
       ? tenantPilot.connectionLabel
       : "Verifying secure session";
-  el("authenticatedRuntimeGateCopy").textContent = connected
+  el("authenticatedRuntimeGateCopy").textContent = workspaceRoleMismatch
+    ? `This ${currentWorkspaceName() === "controller" ? "Principal" : "Borrower"} workspace received a ${workspaceKindLabel(tenantPilot.workspaceKind)} session from another local port. Switch roles and sign in again; permissions will not be widened automatically.`
+    : connected
     ? "Tenant identity, role, policy, and CSRF bindings were verified. All product state below comes from the authenticated protocol."
     : authenticated
       ? "Your authentication session is active, but this workspace still requires an eligible role, CSRF binding, and the approved Tenant operation catalog."
     : tenantPilot.checked
       ? "Sign in with an approved pilot account. IPO.ONE will not substitute public fixtures or browser state when the secure gateway is unavailable."
       : "Checking the authenticated Tenant catalog and browser session. No product operation is available until verification completes.";
-  el("authenticatedRuntimeGateAction").hidden = true;
+  el("authenticatedRuntimeGateAction").hidden = !workspaceRoleMismatch;
+  el("authenticatedRuntimeGateAction").textContent =
+    `Switch to ${expectedWorkspaceLabel()} session`;
   gate.classList.toggle("connected", connected);
   gate.classList.toggle("blocked", tenantPilot.checked && !connected);
 }
@@ -1412,6 +1475,36 @@ function tenantCsrfToken() {
   return /^[A-Za-z0-9_-]{32,128}$/.test(token) ? token : undefined;
 }
 
+function isRejectedAuthenticationSession(error) {
+  return (
+    error?.code === "authentication_session_rejected" ||
+    error?.code === "authenticated_session_ended" ||
+    error?.status === 401
+  );
+}
+
+function quarantineRejectedAuthenticationSession(error) {
+  if (!isRejectedAuthenticationSession(error)) return false;
+  const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";
+  accessState.sessionActive = false;
+  accessState.pendingWorkspaceBootstrap = false;
+  accessState.helper =
+    `Your secure session ended. Sign in again; no credit action was submitted.${requestSuffix}`;
+  tenantPilot.connected = false;
+  tenantPilot.connectionLabel = "Secure session ended";
+  tenantPilot.workspaceRecoveryState = "locked";
+  tenantPilot.workspaceRecoveryErrorCode =
+    error?.code ?? "authentication_session_rejected";
+  purgeAuthenticatedBrowserState({
+    clearAuthenticationBootstrap: true,
+    clearWalletUi: false,
+    reason: "Secure session ended. Private browser state was cleared."
+  });
+  setConnection(false);
+  renderAccess();
+  return true;
+}
+
 function localPilotAgentAccount() {
   const account =
     document.querySelector('meta[name="ipo-one-local-agent-account"]')?.content ?? "";
@@ -1422,6 +1515,62 @@ function currentWorkspaceName() {
   return document.querySelector(
     'meta[name="ipo-one-workspace-name"]'
   )?.content ?? "";
+}
+
+function expectedWorkspaceKind() {
+  return {
+    borrower: "human_borrower",
+    controller: "principal_controller"
+  }[currentWorkspaceName()] ?? null;
+}
+
+function workspaceKindLabel(kind) {
+  return {
+    human_borrower: "Borrower",
+    principal_controller: "Principal"
+  }[kind] ?? "another role";
+}
+
+function expectedWorkspaceLabel() {
+  return workspaceKindLabel(expectedWorkspaceKind());
+}
+
+function hasWorkspaceSessionRoleMismatch() {
+  const expected = expectedWorkspaceKind();
+  return (
+    tenantPilot.workspaceRecoveryState === "role_mismatch" &&
+    expected !== null &&
+    tenantPilot.workspaceKind !== null &&
+    tenantPilot.workspaceKind !== expected
+  );
+}
+
+function hasPrincipalAgentAuthorityWorkspace() {
+  return (
+    tenantPilot.connected === true &&
+    currentWorkspaceName() === "controller" &&
+    tenantPilot.workspaceKind === "principal_controller"
+  );
+}
+
+function localPrincipalWorkspaceUrl() {
+  if (
+    accessState.authenticationProfile !== "local_no_funds" ||
+    currentWorkspaceName() !== "borrower" ||
+    window.location.protocol !== "http:" ||
+    !new Set(["127.0.0.1", "localhost"]).has(window.location.hostname)
+  ) return null;
+  const borrowerPort = Number(window.location.port);
+  if (!Number.isSafeInteger(borrowerPort) || borrowerPort < 1_024 || borrowerPort >= 65_533) {
+    return null;
+  }
+  return `http://${window.location.hostname}:${borrowerPort + 1}/#human`;
+}
+
+function agentAccountProofInstruction() {
+  return accessState.authenticationProfile === "local_no_funds"
+    ? "Click “Ask registered test Agent to prove” for the browser path. Download and CLI remain optional developer transports."
+    : "The registered Agent submits this one-use request through the protected Agent API; this browser never receives a private key or signature.";
 }
 
 async function tenantApi(operationId, {
@@ -1495,6 +1644,7 @@ async function tenantApi(operationId, {
     error.code = result?.code ?? "unknown_tenant_error";
     error.status = response.status;
     error.requestId = result?.requestId ?? responseRequestId;
+    quarantineRejectedAuthenticationSession(error);
     throw error;
   }
   walletAuthorityLifecycle.assertProtectedAvailable();
@@ -1564,6 +1714,66 @@ async function evidenceAnchorApi(path, { body, method = "POST" } = {}) {
   return result;
 }
 
+async function referenceAgentApi(path, body) {
+  const requestDataEpoch = authenticatedDataEpoch;
+  walletAuthorityLifecycle.assertProtectedAvailable();
+  const csrfToken = tenantCsrfToken();
+  if (!csrfToken) {
+    throw new Error(
+      "The authenticated Principal session is missing its CSRF bootstrap token."
+    );
+  }
+  const requestId = tenantRequestToken("web_reference_agent_request");
+  const response = await fetch(path, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      accept: "application/json, application/problem+json",
+      "content-type": "application/json",
+      "x-csrf-token": csrfToken,
+      "x-request-id": requestId
+    },
+    body: JSON.stringify(body)
+  });
+  const responseRequestId = response.headers.get("x-request-id") ?? requestId;
+  const text = await response.text();
+  if (requestDataEpoch !== authenticatedDataEpoch) {
+    throw Object.assign(
+      new Error("The authenticated session ended before the Agent response completed."),
+      { code: "authenticated_session_ended", requestId: responseRequestId }
+    );
+  }
+  let result;
+  try {
+    result = text ? JSON.parse(text) : undefined;
+  } catch {
+    throw Object.assign(
+      new Error("The online reference Agent returned an invalid response."),
+      { requestId: responseRequestId }
+    );
+  }
+  recordRequest({
+    method: "POST",
+    path,
+    status: response.status,
+    requestId: responseRequestId
+  });
+  if (!response.ok) {
+    const error = Object.assign(
+      new Error(result?.detail ?? "The online Agent operation was rejected."),
+      {
+        code: result?.code ?? "local_reference_agent_unavailable",
+        status: response.status,
+        requestId: result?.requestId ?? responseRequestId
+      }
+    );
+    quarantineRejectedAuthenticationSession(error);
+    throw error;
+  }
+  walletAuthorityLifecycle.assertProtectedAvailable();
+  return result;
+}
+
 function usdMinorToMoney(value) {
   return money.format(Number(asBigInt(value)) / 100);
 }
@@ -1602,6 +1812,46 @@ function forgetOwnedObligationId() {
   }
 }
 
+function rememberAgentOfferReceipt(receipt) {
+  if (
+    receipt?.schemaVersion !== "agent_credit_offer_workflow_receipt.v1" ||
+    receipt.status !== "offer_ready" ||
+    !exactResourceId(receipt.mandateId)
+  ) return;
+  try {
+    sessionStorage.setItem(
+      AGENT_OFFER_RECEIPT_SESSION_KEY,
+      JSON.stringify(receipt)
+    );
+  } catch {
+    // The receipt is non-authorizing; in-memory use remains available.
+  }
+}
+
+function rememberedAgentOfferReceipt(mandateId) {
+  if (!exactResourceId(mandateId)) return null;
+  try {
+    const value = JSON.parse(
+      sessionStorage.getItem(AGENT_OFFER_RECEIPT_SESSION_KEY) ?? "null"
+    );
+    return (
+      value?.schemaVersion === "agent_credit_offer_workflow_receipt.v1" &&
+      value.status === "offer_ready" &&
+      value.mandateId === mandateId
+    ) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function forgetAgentOfferReceipt() {
+  try {
+    sessionStorage.removeItem(AGENT_OFFER_RECEIPT_SESSION_KEY);
+  } catch {
+    // Browser storage is never the authorization source.
+  }
+}
+
 function restoreAuthenticatedStateObject(target, baseline) {
   for (const key of Object.keys(target)) {
     if (!Object.hasOwn(baseline, key)) delete target[key];
@@ -1632,6 +1882,7 @@ function purgeAuthenticatedBrowserState({
   tenantPilot.helper = reason;
   tenantPilot.workspaceRecoveryState = "denied";
   forgetOwnedObligationId();
+  forgetAgentOfferReceipt();
   for (const key of [
     HUMAN_SUBJECT_STORAGE_KEY,
     HUMAN_CONSENT_STORAGE_KEY,
@@ -1671,9 +1922,7 @@ function purgeAuthenticatedBrowserState({
   if (clearWalletUi) {
     accessState.walletAddress = null;
     accessState.connectedChainId = null;
-    accessState.walletProviders = [];
     accessState.selectedWalletProviderId = null;
-    accessState.walletProviderStatus = "disposed";
   }
 }
 
@@ -1951,6 +2200,138 @@ function currentAgentConsolePresentation() {
   });
 }
 
+function applyAgentOfferReceipt(receipt) {
+  if (
+    receipt?.schemaVersion !== "agent_credit_offer_workflow_receipt.v1" ||
+    receipt.status !== "offer_ready" ||
+    !exactResourceId(receipt.subjectId) ||
+    !exactResourceId(receipt.mandateId)
+  ) return false;
+  agentOnlinePilot.offerReceipt = receipt;
+  tenantPilot.intent = receipt.creditIntent ?? null;
+  tenantPilot.decision = receipt.decision ?? null;
+  tenantPilot.offer = receipt.offer ?? null;
+  rememberAgentOfferReceipt(receipt);
+  return true;
+}
+
+function renderAgentOnlineWorkflow(presentation) {
+  const button = el("agentOnlineRunBtn");
+  const reviewButton = el("agentOnlineReviewBtn");
+  const status = el("agentOnlineStatus");
+  const mandate = presentation?.mandate ?? null;
+  const controllerReady =
+    hasPrincipalAgentAuthorityWorkspace() &&
+    presentation?.registry?.catalogParity === true;
+  if (
+    agentOnlinePilot.offerReceipt &&
+    agentOnlinePilot.offerReceipt.mandateId !== mandate?.mandateId
+  ) {
+    agentOnlinePilot.offerReceipt = null;
+    agentOnlinePilot.applicationResult = null;
+    agentOnlinePilot.runtimeResult = null;
+  }
+  if (
+    !agentOnlinePilot.offerReceipt &&
+    exactResourceId(mandate?.mandateId)
+  ) {
+    applyAgentOfferReceipt(rememberedAgentOfferReceipt(mandate.mandateId));
+  }
+  const offerReceipt = agentOnlinePilot.offerReceipt;
+  const runtimeResult = agentOnlinePilot.runtimeResult;
+  const stage = mandate?.status === "draft"
+    ? offerReceipt
+      ? "principal_activation"
+      : "application"
+    : mandate?.status === "active"
+      ? offerReceipt
+        ? "runtime"
+        : "application_missing"
+      : "authority";
+
+  status.className = `state-pill ${
+    agentOnlinePilot.error ? "warning" : runtimeResult ? "" : "neutral"
+  }`;
+  status.textContent = agentOnlinePilot.busy
+    ? "Agent working"
+    : agentOnlinePilot.error
+      ? "Action required"
+      : runtimeResult
+        ? "Lifecycle verified"
+        : {
+            authority: "Waiting for Mandate",
+            application: "Application ready",
+            principal_activation: "Offer ready · activate",
+            runtime: "Runtime ready",
+            application_missing: "Offer receipt required"
+          }[stage];
+
+  el("agentOnlineApplicationState").textContent = offerReceipt
+    ? "Decision completed"
+    : stage === "application"
+      ? "Ready to run"
+      : "Not started";
+  el("agentOnlineOfferState").textContent = offerReceipt?.offer
+    ? `${titleize(offerReceipt.offer.status)} · ${usdMinorToMoney(
+        offerReceipt.offer.approvedPrincipalMinor
+      )}`
+    : "Not loaded";
+  const runtimeObligation =
+    runtimeResult?.lifecycle?.workflowReceipt?.obligation ?? tenantPilot.obligation;
+  el("agentOnlineObligationState").textContent = runtimeObligation
+    ? `${titleize(runtimeObligation.status)} · ${compactOpaqueId(
+        runtimeObligation.obligationId
+      )}`
+    : "Not created";
+  el("agentOnlineEvidenceState").textContent = runtimeResult
+    ? `${runtimeResult.evidenceEventCount} verified event${
+        runtimeResult.evidenceEventCount === 1 ? "" : "s"
+      }`
+    : ownedEvidence.queried && tenantPilot.obligation
+      ? `${ownedEvidence.items.length} verified event${
+          ownedEvidence.items.length === 1 ? "" : "s"
+        }`
+      : "Not loaded";
+
+  button.disabled =
+    agentOnlinePilot.busy ||
+    !controllerReady ||
+    !["application", "principal_activation", "runtime"].includes(stage);
+  button.toggleAttribute("aria-busy", agentOnlinePilot.busy);
+  button.textContent = agentOnlinePilot.busy
+    ? "Running authenticated Agent…"
+    : {
+        authority: "Set up Agent authority",
+        application: "Run Agent application online",
+        principal_activation: "Review and activate this Mandate",
+        runtime: "Borrow, repay, and verify online",
+        application_missing: "Create a new Draft Mandate"
+      }[stage];
+  reviewButton.disabled =
+    agentOnlinePilot.busy || !exactResourceId(runtimeObligation?.obligationId);
+
+  const defaultHelper = {
+    authority:
+      "Create a verified Agent Subject and Draft Mandate first. No handoff download or browser credential is required.",
+    application:
+      "The registered reference Agent can now request credit through its server-held, revocable credential.",
+    principal_activation:
+      "The Agent returned a Decision and Offer. Review the exact Mandate in the Principal workspace, then activate it.",
+    runtime:
+      "The active Mandate and saved Offer receipt are ready. One click creates the Obligation, executes, repays, and reads Evidence.",
+    application_missing:
+      "This active Mandate has no matching Offer receipt in this browser session. Revoke it and create a new Draft Mandate before requesting credit again."
+  }[stage];
+  el("agentOnlineHelper").textContent =
+    agentOnlinePilot.error ||
+    agentOnlinePilot.busy ||
+    agentOnlinePilot.runtimeResult ||
+    (agentOnlinePilot.applicationResult && stage !== "runtime")
+      ? agentOnlinePilot.helper
+      : defaultHelper;
+  el("agentOnlineHelper").classList.toggle("error", agentOnlinePilot.error);
+}
+
 function agentConsoleToolRow(tool) {
   const row = document.createElement("div");
   const copy = document.createElement("div");
@@ -2057,6 +2438,7 @@ function renderAgentConsole() {
     );
     el("agentConsoleCopyManifestBtn").disabled = true;
     el("agentConsoleDownloadHandoffBtn").disabled = true;
+    renderAgentOnlineWorkflow(null);
     return;
   }
 
@@ -2072,7 +2454,7 @@ function renderAgentConsole() {
   el("agentConsoleManifestVersion").textContent = presentation.schemaVersion;
   el("agentConsoleCatalogParity").textContent =
     `${presentation.registry.catalogBoundCount}/${presentation.registry.toolCount} tools`;
-  el("agentConsoleTransport").textContent = "Local stdio MCP";
+  el("agentConsoleTransport").textContent = "Protected HTTPS + Agent credential";
   el("agentConsoleWorkflowCount").textContent =
     `${presentation.workflows.length} staged`;
   el("agentConsoleHelper").classList.remove("error");
@@ -2145,8 +2527,9 @@ function renderAgentConsole() {
       )} · sandbox only · active scope cannot be edited in place.`
     : "Create or load an exact server Mandate. Active scope cannot be edited in place.";
 
-  el("agentConsoleRegistryStatus").textContent =
-    presentation.registry.catalogParity ? "11/11 parity" : "Drift blocked";
+  el("agentConsoleRegistryStatus").textContent = presentation.registry.catalogParity
+    ? `${presentation.registry.catalogBoundCount}/${presentation.registry.toolCount} parity`
+    : "Drift blocked";
   el("agentConsoleRegistryStatus").className =
     `state-pill ${presentation.registry.catalogParity ? "" : "warning"}`;
   el("agentConsoleToolRows").replaceChildren(
@@ -2159,25 +2542,29 @@ function renderAgentConsole() {
     ...presentation.unavailableCapabilities.map(agentConsoleUnavailableRow)
   );
 
-  el("agentConsoleSdkSnippet").textContent = `import { IpoOneAgentMcpClient } from "@ipo-one/sdk";
+  el("agentConsoleSdkTitle").textContent =
+    presentation.status === "application_ready"
+      ? "Run Request → Decision → Offer"
+      : presentation.status === "runtime_ready"
+        ? "Run Obligation → repayment → Evidence"
+        : "Reference Agent runner";
+  el("agentConsoleSdkSnippet").textContent =
+    presentation.status === "application_ready"
+      ? `# 1. Download the application handoff above.
+# 2. From the IPO.ONE repository root, run:
+pnpm run local:agent:application -- <downloaded-application-handoff.json>
 
-const agent = new IpoOneAgentMcpClient({
-  handle: localMcpHost.handle,
-  manifest: applicationHandoff,
-  transportProfile: "mcp_stdio_local"
-});
+# The Offer receipt is saved locally for this exact Mandate.`
+      : presentation.status === "runtime_ready"
+        ? `# 1. Download the runtime handoff above.
+# 2. Use the same Mandate that produced the saved Offer receipt:
+pnpm run local:agent:runtime -- <downloaded-runtime-handoff.json>
 
-const receipt = await agent.runCreditOfferWorkflow({
-  creditRequest: {
-    assetId: "urn:ipo-one:sandbox-asset:usd-cent",
-    requestedPrincipalMinor: "9000",
-    purposeCode: "compute",
-    requestedTermDays: 30,
-    repaymentFrequency: "end_of_term",
-    installmentCount: 1
-  },
-  workflowId: "design-partner-application-0001"
-});`;
+# The runner creates, executes, repays, and reads Evidence.`
+        : `# Verify the complete isolated Agent path:
+pnpm run local:agent:acceptance
+
+# For an interactive journey, first create or load a Draft Mandate.`;
   el("agentConsoleOpenApiSnippet").textContent =
 `const response = await fetch(
   new URL("/openapi.json", globalThis.location.origin),
@@ -2187,6 +2574,133 @@ const receipt = await agent.runCreditOfferWorkflow({
 if (!response.ok) throw new Error("local_openapi_unavailable");
 const contract = await response.json();
 console.log(contract.info.title, contract.info.version);`;
+  renderAgentOnlineWorkflow(presentation);
+}
+
+async function runOnlineReferenceAgent() {
+  if (agentOnlinePilot.busy) return;
+  const presentation = currentAgentConsolePresentation();
+  const mandate = presentation?.mandate;
+  if (!hasPrincipalAgentAuthorityWorkspace() || !exactResourceId(mandate?.mandateId)) {
+    openPrincipalAgentAuthority();
+    return;
+  }
+  if (mandate.status === "draft" && agentOnlinePilot.offerReceipt) {
+    openPrincipalAgentAuthority();
+    requestAnimationFrame(() => focusJumpTarget(el("agentAuthority")));
+    announce("Review and activate the exact Mandate to continue");
+    return;
+  }
+  if (
+    mandate.status === "active" &&
+    !applyAgentOfferReceipt(
+      agentOnlinePilot.offerReceipt ?? rememberedAgentOfferReceipt(mandate.mandateId)
+    )
+  ) {
+    agentOnlinePilot.error = true;
+    agentOnlinePilot.helper =
+      "This active Mandate has no matching Offer receipt. Revoke it and create a new Draft Mandate to start a fresh Agent application.";
+    renderAgentConsole();
+    return;
+  }
+
+  agentOnlinePilot.busy = true;
+  agentOnlinePilot.error = false;
+  agentOnlinePilot.helper = mandate.status === "draft"
+    ? "The registered Agent is requesting credit and verifying the returned Decision and Offer…"
+    : "The registered Agent is accepting the exact Offer, executing, repaying early, and reading immutable Evidence…";
+  renderAgentConsole();
+  try {
+    if (mandate.status === "draft") {
+      const result = await referenceAgentApi(
+        "/local/v1/reference-agent/application",
+        { mandateId: mandate.mandateId }
+      );
+      if (!applyAgentOfferReceipt(result.offerReceipt)) {
+        throw new Error("The online Agent returned an invalid Offer receipt.");
+      }
+      agentOnlinePilot.applicationResult = result;
+      agentOnlinePilot.runtimeResult = null;
+      agentOnlinePilot.helper =
+        "Decision and Offer verified. Review and activate this exact Mandate; the saved receipt will continue into Obligation creation.";
+      toast("Agent Decision and Offer are ready");
+      announce("Agent application completed; Principal activation required");
+      return;
+    }
+
+    const result = await referenceAgentApi(
+      "/local/v1/reference-agent/runtime",
+      {
+        mandateId: mandate.mandateId,
+        offerReceipt: agentOnlinePilot.offerReceipt
+      }
+    );
+    agentOnlinePilot.runtimeResult = result;
+    const obligation = result.lifecycle?.workflowReceipt?.obligation;
+    if (!exactResourceId(obligation?.obligationId)) {
+      throw new Error("The online Agent returned an invalid Obligation receipt.");
+    }
+    tenantPilot.obligation = obligation;
+    tenantPilot.repayment =
+      result.lifecycle.workflowReceipt.repayment ?? null;
+    rememberOwnedObligationId(obligation.obligationId);
+    rememberWorkspaceObligation(obligation.obligationId);
+    el("ownedObligationId").value = obligation.obligationId;
+    const evidence = result.lifecycle?.evidence;
+    if (Array.isArray(evidence?.items)) {
+      ownedEvidence.queried = true;
+      ownedEvidence.obligationId = obligation.obligationId;
+      ownedEvidence.items = evidence.items;
+      ownedEvidence.nextCursor = evidence.nextCursor ?? null;
+      ownedEvidence.hasMore = evidence.hasMore === true;
+      ownedEvidence.asOf = evidence.asOf ?? new Date().toISOString();
+      ownedEvidence.error = false;
+      ownedEvidence.helper =
+        `${evidence.items.length} Agent-authenticated Evidence events loaded from the shared obligation kernel.`;
+    }
+    try {
+      await recoverAuthenticatedWorkspace();
+      await loadOwnedObligation({
+        obligationId: obligation.obligationId,
+        quiet: true
+      });
+      await loadOwnedEvidence();
+    } catch (error) {
+      if (isRejectedAuthenticationSession(error)) throw error;
+      tenantPilot.obligationHydrationHelper =
+        "The Agent lifecycle completed. Use Review Agent obligations to retry the Principal read.";
+    }
+    agentOnlinePilot.helper =
+      "Agent borrowing, early full repayment, and Evidence read completed through the shared kernel. Review the position and chain-anchor status below.";
+    toast("Agent lifecycle and Evidence verified");
+    announce("Agent Obligation, repayment, and Evidence completed");
+  } catch (error) {
+    agentOnlinePilot.error = true;
+    const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";
+    agentOnlinePilot.helper = `${error?.message ?? "The online Agent operation failed."}${requestSuffix}`;
+    toast(agentOnlinePilot.helper, "error");
+    announce("Online Agent operation failed");
+    if (isRejectedAuthenticationSession(error)) openAccess();
+  } finally {
+    agentOnlinePilot.busy = false;
+    renderTenantPilot();
+  }
+}
+
+async function reviewOnlineAgentObligation() {
+  const obligationId =
+    agentOnlinePilot.runtimeResult?.obligationId ??
+    tenantPilot.obligation?.obligationId;
+  if (!exactResourceId(obligationId)) {
+    toast("Run the Agent lifecycle before reviewing an Obligation.", "error");
+    return;
+  }
+  setMode("agent");
+  showView("obligations");
+  el("ownedObligationId").value = obligationId;
+  await loadOwnedObligation({ obligationId });
+  await loadOwnedEvidence();
+  announce("Agent Obligation and verified Evidence loaded");
 }
 
 function agentIntegrationPresentation() {
@@ -2242,7 +2756,7 @@ function agentIntegrationPresentation() {
       primaryAction: "open-handoff",
       identity: "CAIP-10 proof verified",
       authority: "Runtime handoff ready",
-      protocol: "11 authenticated operations ready"
+      protocol: "Runtime-stage operations ready"
     };
   }
   return {
@@ -2286,6 +2800,7 @@ function renderAgentRequestCreditJourney() {
   const handoff = currentAgentMcpHandoffPacket();
   const applicationHandoff = handoff?.status === "application_ready";
   const runtimeHandoff = handoff?.status === "ready";
+  const controlledObligationCount = tenantPilot.workspaceObligations.length;
   const applicationOperationsAvailable = [
     "pilotRequestCredit",
     "pilotReadCreditApplication",
@@ -2293,15 +2808,18 @@ function renderAgentRequestCreditJourney() {
   ].every((operationId) => serverCatalogOperations.has(operationId));
   const economicOperationsAvailable = [
     "pilotAcceptCreditOffer",
-    "pilotExecuteSandboxObligation"
+    "pilotExecuteSandboxObligation",
+    "pilotPostSandboxRepayment",
+    "pilotReadOwnObligation",
+    "pilotReadOwnObligationEvidence"
   ].every((operationId) => serverCatalogOperations.has(operationId));
-  const applicationReady = Boolean(handoff) && applicationOperationsAvailable;
-  const runtimeReady = runtimeHandoff &&
-    applicationOperationsAvailable &&
-    economicOperationsAvailable;
+  const applicationReady = applicationHandoff && applicationOperationsAvailable;
+  const runtimeReady = runtimeHandoff && economicOperationsAvailable;
 
-  el("agentRequestCreditStatus").textContent = runtimeReady
-    ? "Runtime journey ready"
+  el("agentRequestCreditStatus").textContent = controlledObligationCount > 0
+    ? `${controlledObligationCount} controlled Obligation${controlledObligationCount === 1 ? "" : "s"}`
+    : runtimeReady
+    ? "Runtime ready · existing Offer required"
     : applicationReady
       ? "Application journey ready"
       : tenantPilot.connected
@@ -2309,7 +2827,7 @@ function renderAgentRequestCreditJourney() {
         : "Authenticated session required";
   el("agentRequestCreditStatus").classList.toggle(
     "neutral",
-    !applicationReady && !runtimeReady
+    controlledObligationCount === 0 && !applicationReady && !runtimeReady
   );
   el("agentRequestCreditAuthority").textContent = runtimeHandoff
     ? "Active Principal-approved Mandate"
@@ -2318,25 +2836,79 @@ function renderAgentRequestCreditJourney() {
       : "No eligible handoff";
   el("agentRequestCreditIntent").textContent = applicationReady
     ? "Ready · pilotRequestCredit"
-    : "Locked pending bounded handoff";
+    : runtimeReady
+      ? "Draft only · create a new application Mandate"
+      : "Locked pending Draft handoff";
   el("agentRequestCreditDecision").textContent = applicationReady
     ? "Ready · deterministic policy + Passport"
-    : "Locked pending bounded handoff";
+    : runtimeReady
+      ? "Draft only · new applications are closed"
+      : "Locked pending Draft handoff";
   el("agentRequestCreditAcceptance").textContent = runtimeReady
     ? "Ready · exact Offer and terms hashes"
     : "Locked pending active Mandate";
   el("agentRequestCreditExecution").textContent = runtimeReady
     ? "Ready · signed non-withdrawable receipt"
     : "Locked pending active Mandate";
-  el("agentRequestCreditOfferReceipt").textContent = applicationReady
-    ? "agent_credit_offer_workflow_receipt.v1"
-    : "Returned only after Agent workflow";
-  el("agentRequestCreditObligationReceipt").textContent = runtimeReady
-    ? "agent_sandbox_obligation_workflow_receipt.v1"
+  el("agentRequestCreditOfferReceipt").textContent = agentOnlinePilot.offerReceipt
+    ? `Verified · ${compactOpaqueId(agentOnlinePilot.offerReceipt.offer.creditOfferId)}`
+    : applicationReady
+      ? "Returns agent_credit_offer_workflow_receipt.v1"
+    : runtimeReady
+      ? "Required input · agent_credit_offer_workflow_receipt.v1"
+      : "Returned only after Draft Agent workflow";
+  el("agentRequestCreditObligationReceipt").textContent = agentOnlinePilot.runtimeResult
+    ? `Verified · ${compactOpaqueId(agentOnlinePilot.runtimeResult.obligationId)}`
+    : runtimeReady
+      ? "agent_sandbox_obligation_workflow_receipt.v1"
     : "Returned only after active runtime workflow";
   el("agentRequestCreditCopy").textContent = applicationReady
-    ? "The Agent can submit the same bounded request economics and receive the same deterministic policy, Offer terms, and Evidence-derived Decision Passport. The handoff contains no credential."
-    : "A Human Principal must bind the Agent Subject and exact Consent-equivalent Mandate scope before the Agent application tools become available.";
+    ? "The Draft Mandate lets the authenticated Agent submit bounded request economics and receive the deterministic Decision, Offer terms, and versioned workflow receipt. The browser can run the registered reference Agent without downloading a handoff."
+    : runtimeReady
+      ? "The active Agent runtime accepts the saved Offer receipt, creates the shared Obligation, executes the no-funds credit, posts early repayment, and reads Evidence. External Agents use the same protected API contract."
+      : "A Human Principal must bind the Agent Subject and create an exact Draft Mandate before the Agent application tools become available.";
+  el("agentRequestCreditNext").textContent = controlledObligationCount > 0
+    ? "The Agent has created at least one controlled Obligation. Review its current schedule and repayment state through the shared Obligation workspace."
+    : runtimeReady
+      ? agentOnlinePilot.offerReceipt
+        ? "Activation is complete and the matching Offer receipt is ready. Continue online to create, execute, repay, and verify the Agent Obligation."
+        : "Activation is complete, but this browser has no matching Offer receipt. You can create a new Draft application Mandate before starting a new request; this runtime cannot start a new Credit Intent."
+      : applicationReady
+        ? "Run the Agent application online now. The returned Offer receipt remains bound to this Mandate; then return to Principal setup to activate it."
+        : "Activating a Mandate creates bounded authority; it does not create a Credit Intent, Offer, Obligation, execution, or repayment.";
+
+  const primary = el("agentRequestPrimaryBtn");
+  const secondary = el("agentRequestSecondaryBtn");
+  if (controlledObligationCount > 0) {
+    primary.textContent = "Review Agent obligations";
+    primary.dataset.agentGuideAction = "view-obligations";
+    secondary.textContent = "Open Agent workspace";
+    secondary.dataset.agentGuideAction = "run-online-agent";
+  } else if (runtimeReady || applicationReady) {
+    primary.textContent = runtimeReady
+      ? agentOnlinePilot.offerReceipt
+        ? "Borrow, repay, and verify online"
+        : "Open Agent workspace"
+      : agentOnlinePilot.offerReceipt
+        ? "Review and activate Mandate"
+        : "Run Agent application online";
+    primary.dataset.agentGuideAction = runtimeReady && agentOnlinePilot.offerReceipt
+      ? "run-online-agent"
+      : applicationReady && !agentOnlinePilot.offerReceipt
+        ? "run-online-agent"
+        : "principal-setup";
+    secondary.textContent = runtimeReady
+      ? "Review Agent API contract"
+      : "Optional developer handoff";
+    secondary.dataset.agentGuideAction = runtimeReady
+      ? "open-agent-api"
+      : "open-handoff";
+  } else {
+    primary.textContent = "Open Principal setup";
+    primary.dataset.agentGuideAction = "principal-setup";
+    secondary.textContent = "Inspect Agent API";
+    secondary.dataset.agentGuideAction = "view-protocol";
+  }
 }
 
 function renderAgentMcpHandoff() {
@@ -2354,7 +2926,7 @@ function renderAgentMcpHandoff() {
   el("openAgentApiBtn").disabled = !ready;
   el("openAgentApiBtn").textContent = applicationReady
     ? "Open application handoff"
-    : "Open Agent API handoff";
+    : "Open runtime handoff";
   el("runtimeHandoffStatus").textContent = applicationReady
     ? "Application ready"
     : runtimeReady
@@ -2375,7 +2947,7 @@ function renderAgentMcpHandoff() {
   el("mcpHandoffBoundaryNote").textContent = applicationReady
     ? "Application tools are Ready. Evidence and the three sandbox economic tools stay Locked until Principal activation; credentials and authority are never carried in this packet."
     : runtimeReady
-      ? "Twelve local Agent operations are Ready, including exact owned Obligation state, Registry Evidence, and three no-funds economic commands. Every call remains Host-, Tenant-, and Mandate-bound."
+      ? "Runtime-stage tools are Ready for an existing Offer receipt, including exact owned Obligation state, Registry Evidence, and three no-funds economic commands. The twelve-tool registry remains visible, but new application request and evaluation are Draft-only."
       : "This non-authorizing packet advertises twelve local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority remain outside the packet.";
   el("agentHandoffPhase").textContent = applicationReady
     ? "Application handoff"
@@ -2441,20 +3013,65 @@ function renderAgentAuthorityPilot() {
   const challengeOpen = Boolean(challenge && !challengeExpired && !accountBound);
   const exactDraftLoaded = mandate?.mandateId === mandateId && mandate.status === "draft";
   const acknowledged = el("principalMandateAcknowledge").checked;
-  const privateBusy = tenantPilot.busy || agentAuthorityPilot.busy;
+  const principalWorkspace = hasPrincipalAgentAuthorityWorkspace();
+  const workspaceRoleMismatch = hasWorkspaceSessionRoleMismatch();
+  const privateBusy = tenantPilot.busy || agentAuthorityPilot.busy || !principalWorkspace;
+  const principalWorkspaceUrl = localPrincipalWorkspaceUrl();
 
-  el("createPrivateAgentSubjectBtn").disabled = privateBusy || !tenantPilot.connected;
-  el("createAccountChallengeBtn").disabled = privateBusy || !tenantPilot.connected || !subjectId || subjectKnownActive || accountBound || challengeOpen;
+  el("agentAuthorityAccessGate").hidden = principalWorkspace;
+  el("agentAuthorityWorkspaceContent").hidden = !principalWorkspace;
+  el("openPrincipalWorkspaceLink").hidden = !principalWorkspaceUrl || principalWorkspace;
+  el("switchPrincipalSessionBtn").hidden = !workspaceRoleMismatch;
+  if (principalWorkspaceUrl) el("openPrincipalWorkspaceLink").href = principalWorkspaceUrl;
+  if (!principalWorkspace) {
+    const borrowerWorkspace = currentWorkspaceName() === "borrower";
+    el("agentAuthorityAccessTitle").textContent = workspaceRoleMismatch
+      ? `${workspaceKindLabel(tenantPilot.workspaceKind)} session detected`
+      : borrowerWorkspace
+      ? "Continue in the Principal workspace"
+      : "Principal workspace required";
+    el("agentAuthorityAccessCopy").textContent = workspaceRoleMismatch
+      ? `This page requires the ${expectedWorkspaceLabel()} role, but the shared local host cookie currently identifies a ${workspaceKindLabel(tenantPilot.workspaceKind)} session. Switch sessions, then sign in again with the invited wallet.`
+      : borrowerWorkspace
+      ? "This Borrower workspace can request and repay credit, but it cannot create authority for an Agent. Open the separate Principal workspace and sign in with the invited wallet; no Borrower permission will be widened."
+      : "Only an authenticated Principal Controller can create an Agent Subject, issue an account-proof request, or activate a Mandate.";
+  }
+
+  el("createPrivateAgentSubjectBtn").disabled = privateBusy;
+  el("createAccountChallengeBtn").disabled = privateBusy || !subjectId || subjectKnownActive || accountBound || challengeOpen;
+  el("proveAccountOnlineBtn").hidden =
+    accessState.authenticationProfile !== "local_no_funds";
+  el("proveAccountOnlineBtn").disabled = privateBusy || !challengeOpen;
   el("copyAccountChallengeBtn").disabled = privateBusy || !challengeOpen;
   el("downloadAccountChallengeBtn").disabled = privateBusy || !challengeOpen;
-  el("refreshAccountBindingBtn").disabled = privateBusy || !tenantPilot.connected || !subjectId;
-  el("createDraftMandateBtn").disabled = privateBusy || !tenantPilot.connected || !subjectId;
-  el("loadMandateBtn").disabled = privateBusy || !tenantPilot.connected || !mandateId;
+  el("refreshAccountBindingBtn").disabled = privateBusy || !subjectId;
+  el("createDraftMandateBtn").disabled = privateBusy || !subjectId;
+  el("loadMandateBtn").disabled = privateBusy || !mandateId;
+  const applicationReady = exactDraftLoaded && accountBound;
+  el("openAgentApplicationHandoffBtn").disabled = privateBusy || !applicationReady;
   el("principalMandateAcknowledge").disabled = privateBusy || !exactDraftLoaded || !accountBound;
-  el("activateMandateBtn").disabled = privateBusy || !tenantPilot.connected || !exactDraftLoaded || !acknowledged || !accountBound;
+  el("activateMandateBtn").disabled = privateBusy || !exactDraftLoaded || !acknowledged || !accountBound;
+  el("continueAgentCreditBtn").hidden = mandate?.status !== "active";
+  el("continueAgentCreditBtn").disabled = privateBusy || mandate?.status !== "active";
   el("agentAuthorityHelper").textContent = agentAuthorityPilot.helper;
+  el("agentApplicationStageStatus").textContent = mandate?.status === "active"
+    ? "Application stage closed"
+    : applicationReady
+      ? "Application handoff ready"
+      : exactDraftLoaded
+        ? "Account proof required"
+        : "Create or load a Draft Mandate";
+  el("agentApplicationStageCopy").textContent = mandate?.status === "active"
+    ? "This Mandate is already active and cannot start a new Credit Intent. Use its runtime handoff with an existing Offer receipt, or create a new Draft Mandate for a new application."
+    : applicationReady
+      ? "Open or download the application handoff and let the registered Agent Host run Request → Decision → Offer. Return here with its workflow receipt before activating this exact Mandate."
+      : exactDraftLoaded
+        ? "Complete the Agent account proof first. Application calls require an active Agent Subject even while the Mandate remains Draft."
+        : "Activation does not run the application. Create or load a Draft Mandate to expose the credential-free application handoff.";
 
-  const statusLabel = mandate?.status === "active"
+  const statusLabel = !principalWorkspace
+    ? "Principal access required"
+    : mandate?.status === "active"
     ? "Active sandbox"
     : exactDraftLoaded
       ? subjectPending
@@ -2478,7 +3095,9 @@ function renderAgentAuthorityPilot() {
     : challengeExpired
       ? "New request required"
     : challenge
-      ? "Run pilot:agent:prove"
+      ? accessState.authenticationProfile === "local_no_funds"
+        ? "Ready for online proof"
+        : "Submit through Agent API"
       : "Waiting for signing request";
   el("agentAccountActivationStatus").textContent = accountBound
     ? "Subject active"
@@ -2488,6 +3107,15 @@ function renderAgentAuthorityPilot() {
   el("agentAccountChallengePreview").textContent = challenge
     ? `${challengeExpired ? "EXPIRED — do not sign or submit this request.\n\n" : ""}${JSON.stringify(challenge, null, 2)}`
     : "Create a signing request to view the closed EIP-712 payload.";
+  el("agentAccountProofNextStep").textContent = accountBound
+    ? "Account proof verified. Continue to Draft bounded sandbox authority."
+    : challengeExpired
+      ? "This one-use request expired. Create and download a new signing request."
+      : challenge
+        ? agentAccountProofInstruction()
+        : subjectId
+          ? "Create a signing request, then let the registered Agent Host submit the one-use proof."
+          : "Create or load the Agent Subject before requesting account proof.";
   el("mandateReviewStatus").textContent = mandate ? titleize(mandate.status) : "Awaiting draft";
   el("agentAuthorityPrincipalId").textContent = mandate?.principalId ?? agentAuthorityPilot.subject?.principalId ?? "—";
   el("agentAuthorityReviewSubjectId").textContent = (mandate?.subjectId ?? subjectId) || "—";
@@ -2883,9 +3511,11 @@ function renderOwnedPositionPicker({ humanMode }) {
   const list = el("ownedPositionList");
   const index = currentServicingPositionIndex();
   const positions = index?.positions ?? [];
-  const visible = humanMode &&
-    tenantPilot.connected &&
-    tenantPilot.workspaceKind === "human_borrower" &&
+  const workspaceMatchesMode =
+    (humanMode && tenantPilot.workspaceKind === "human_borrower") ||
+    (!humanMode && tenantPilot.workspaceKind === "principal_controller");
+  const visible = tenantPilot.connected &&
+    workspaceMatchesMode &&
     tenantPilot.workspaceObligations.length > 0;
   const refresh = el("refreshOwnedPositionsBtn");
   picker.hidden = !visible;
@@ -2909,7 +3539,7 @@ function renderOwnedPositionPicker({ humanMode }) {
   el("ownedPositionBoundary").textContent = index?.hasMoreReferences
     ? `Showing at most ${SERVICING_POSITION_INDEX_LIMIT} exact Actor-bound Obligation references. Additional references require a separately bounded server page.`
     : index?.coverage === "complete"
-      ? "Every visible value was refreshed through an exact owner-authorized server read. Browser state is not financial truth."
+      ? "Every visible value was refreshed through an exact Actor-authorized server read. Browser state is not financial truth."
       : "Unrefreshed references show no balance or status. Select one or refresh all to load exact authorized server state.";
   if (!visible) return;
   if (!index) return;
@@ -3214,7 +3844,7 @@ function validServicingRepaymentInput() {
 }
 
 function renderServicingCase({ humanMode, obligation, nextInstallment }) {
-  const caseObligation = humanMode ? obligation : null;
+  const caseObligation = obligation;
   const presentation = caseObligation
     ? createServicingCasePresentation(caseObligation, tenantPilot.servicingAction)
     : null;
@@ -3225,6 +3855,7 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
   const restore = el("ownedObligationRestore");
   const restoreInput = el("ownedObligationId");
   const restoreButton = el("loadOwnedObligationBtn");
+  const closedNextButton = el("servicingClosedNextBtn");
   renderOwnedPositionPicker({ humanMode });
   restore.hidden = !humanMode;
   restoreInput.disabled = tenantPilot.obligationHydrationBusy || !tenantPilot.connected;
@@ -3242,31 +3873,29 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
     tenantPilot.obligationHydrationError
   );
 
-  if (!humanMode) {
-    empty.hidden = false;
-    content.hidden = true;
-    el("servicingCaseEmptyTitle").textContent = "Agent servicing entry";
-    el("servicingCaseEmptyCopy").textContent = agentAuthorityPilot.mandate?.status === "active"
-      ? "Use the approved authenticated Agent repayment workflow, then read the same Obligation Evidence. Human session state is never relabelled as Agent state."
-      : "The Human Principal must activate a scoped Mandate before the Agent can use the existing repayment and Evidence tools.";
-    status.textContent = agentAuthorityPilot.mandate?.status === "active" ? "Agent tools ready" : "Mandate required";
-    status.className = "state-pill neutral";
-    actionButton.disabled = true;
-    return null;
-  }
-
   if (!presentation) {
     empty.hidden = false;
     content.hidden = true;
     el("servicingCaseEmptyTitle").textContent = caseObligation
       ? "Case verification unavailable"
-      : "No active case";
+      : humanMode
+        ? "No active case"
+        : "No Agent Obligation yet";
     el("servicingCaseEmptyCopy").textContent = caseObligation
       ? "This Obligation did not pass the closed lifecycle, schedule, trusted-time, and sandbox safety checks. Refresh it through an authenticated workflow before servicing."
-      : "Accept and execute one exact sandbox Obligation to open its servicing view.";
-    status.textContent = caseObligation ? "Verification failed" : "No Obligation";
+      : humanMode
+        ? "Accept and execute one exact sandbox Obligation to open its servicing view."
+        : agentAuthorityPilot.mandate?.status === "active"
+          ? "Activation created bounded authority, not a loan. Let the authenticated Agent complete its credit workflow, then return here to review the exact schedule and repayment state."
+          : "The Human Principal must activate a scoped Mandate before the Agent can request credit.";
+    status.textContent = caseObligation
+      ? "Verification failed"
+      : agentAuthorityPilot.mandate?.status === "active" && !humanMode
+        ? "Awaiting Agent credit"
+        : "No Obligation";
     status.className = caseObligation ? "state-pill warning" : "state-pill neutral";
     actionButton.disabled = true;
+    closedNextButton.hidden = true;
     return null;
   }
 
@@ -3308,10 +3937,15 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
     : presentation.classification === "cured"
       ? "The exact returned Obligation confirms cure. Future scheduled amounts remain repayable through the same waterfall."
       : presentation.repaymentAvailable
-        ? "Post a synthetic repayment through the existing fee, interest, and principal waterfall."
-        : "This lifecycle state does not accept another sandbox repayment.";
+        ? "Early partial or full repayment is available now; no due-date wait or prepayment penalty applies. Allocation follows fee, interest, then principal."
+        : "This Obligation is fully repaid. No balance remains to repay.";
+  if (!humanMode) {
+    el("servicingCureSummary").textContent =
+      "Read-only Principal view. The authenticated Agent must post any repayment through its active Mandate; this screen cannot impersonate the Agent.";
+  }
 
   const amountInput = el("servicingRepaymentAmount");
+  const sourceInput = el("servicingRepaymentSource");
   const suggestionKey = `${presentation.obligationId}:${presentation.totalRepaidMinor}:${presentation.suggestedPaymentMinor}`;
   if (amountInput.dataset.suggestionKey !== suggestionKey && document.activeElement !== amountInput) {
     amountInput.value = (Number(asBigInt(presentation.suggestedPaymentMinor)) / 100).toFixed(2);
@@ -3321,16 +3955,27 @@ function renderServicingCase({ humanMode, obligation, nextInstallment }) {
     }
   }
   const repayment = tenantPilot.repayment;
+  const fullyRepaid = asBigInt(presentation.outstandingMinor) === 0n;
   el("servicingCaseActionResult").textContent = presentation.latestAction
     ? `${titleize(presentation.latestAction.actionType)} confirmed · ${presentation.latestAction.reasonCode} · no production funds moved.`
     : repayment
       ? `Applied ${usdMinorToMoney(repayment.appliedMinor)} through the deterministic waterfall.`
       : "Fee → interest → principal. Cure is confirmed only by the returned Obligation.";
-  actionButton.disabled = tenantPilot.busy || !tenantPilot.connected ||
+  amountInput.disabled = !humanMode || fullyRepaid;
+  sourceInput.disabled = !humanMode || fullyRepaid;
+  actionButton.disabled = !humanMode || tenantPilot.busy || !tenantPilot.connected ||
     !presentation.repaymentAvailable || !validServicingRepaymentInput();
-  actionButton.lastChild.textContent = presentation.cureAvailable
-    ? "Confirm past due cure"
-    : "Confirm sandbox repayment";
+  actionButton.lastChild.textContent = !humanMode
+    ? "Agent-authenticated repayment required"
+    : presentation.cureAvailable
+      ? "Confirm past due cure"
+      : "Confirm early or scheduled repayment";
+  closedNextButton.hidden = !humanMode || !fullyRepaid;
+  closedNextButton.textContent = tenantPilot.workspaceObligations.some(
+    ({ resourceId }) => resourceId !== presentation.obligationId
+  )
+    ? "Choose another position"
+    : "Start a new credit request";
 
   const scheduleItems = presentation.installments.map((installment) =>
     privateCheckpoint(
@@ -3850,10 +4495,33 @@ function renderPrivateProductSurfaces() {
     ? "Post synthetic repayment against the exact shared Obligation and inspect deterministic allocation."
     : "The Agent uses an approved authenticated HTTPS workflow; servicing, allocation, and Evidence stay in the shared kernel.";
   const servicingCase = renderServicingCase({ humanMode, obligation, nextInstallment });
+  const fullyRepaidServicingCase = Boolean(
+    servicingCase && asBigInt(servicingCase.outstandingMinor) === 0n
+  );
   setPrivateAction(
     el("privatePaymentsPrimaryBtn"),
-    humanMode ? servicingCase ? "servicing-cure" : obligation ? "human-obligation" : "human-credit" : mandate?.status === "active" ? "agent-api" : "principal-authority",
-    humanMode ? servicingCase ? "Open Servicing Case" : obligation ? "Open Obligation" : "Open Human credit" : mandate?.status === "active" ? "Open Agent API" : "Configure Agent authority"
+    humanMode
+      ? fullyRepaidServicingCase
+        ? "new-human-credit"
+        : servicingCase
+          ? "servicing-cure"
+          : obligation
+            ? "human-obligation"
+            : "human-credit"
+      : mandate?.status === "active"
+        ? "agent-api"
+        : "principal-authority",
+    humanMode
+      ? fullyRepaidServicingCase
+        ? "Start new credit"
+        : servicingCase
+          ? "Open early repayment"
+          : obligation
+            ? "Open Obligation"
+            : "Open Human credit"
+      : mandate?.status === "active"
+        ? "Open Agent API"
+        : "Configure Agent authority"
   );
 
   el("privateEvidenceEyebrow").textContent = humanMode ? "Owner Evidence" : "Agent Evidence";
@@ -4030,6 +4698,7 @@ function renderCreditPassportPilot() {
   const artifact = creditPassportPilot.artifact;
   const busy = creditPassportPilot.busy;
   const connected = tenantPilot.connected;
+  el("restoreCreditPassportBtn").disabled = busy || !connected;
   const subjectInput = el("creditPassportSubjectId");
   const intentInput = el("creditPassportIntentId");
   subjectInput.value = tenantPilot.decision?.subjectId ?? "";
@@ -4150,6 +4819,8 @@ function renderCreditPassportPilot() {
     `${ownedEvidence.items.length} event${ownedEvidence.items.length === 1 ? "" : "s"}`;
   el("creditTrackRecordFinalizedCount").textContent = String(finalized);
   el("creditTrackRecordNonFinalCount").textContent = String(nonFinal);
+  el("loadCreditTrackRecordBtn").disabled =
+    ownedEvidence.busy || !connected;
   const finality = el("creditTrackRecordFinality");
   finality.classList.toggle("neutral", !ownedEvidence.queried);
   finality.classList.toggle("warning", ownedEvidence.queried && nonFinal > 0);
@@ -5202,11 +5873,11 @@ function renderTenantPilot() {
     privateBusy || !tenantPilot.connected || !obligationExecuted || obligationRepaid;
   el("postHumanRepaymentBtn").textContent = tenantPilot.busy
     ? "Confirming sandbox repayment…"
-    : "Confirm sandbox repayment";
+    : "Confirm early or scheduled repayment";
   const repayment = tenantPilot.repayment;
   el("humanRepaymentAllocation").textContent = repayment
     ? `Applied ${usdMinorToMoney(repayment.appliedMinor)} · interest ${usdMinorToMoney(repayment.appliedInterestMinor)} · principal ${usdMinorToMoney(repayment.appliedPrincipalMinor)}${BigInt(repayment.surplusMinor) > 0n ? ` · surplus ${usdMinorToMoney(repayment.surplusMinor)} not posted` : ""}`
-    : "Fee → interest → principal. Any surplus is returned without a ledger posting.";
+    : "Early partial or full repayment is available now with no sandbox prepayment penalty. Fee → interest → principal; surplus is not posted.";
   const schedule = el("humanObligationSchedule");
   schedule.replaceChildren();
   for (const installment of obligation?.installments ?? []) {
@@ -5264,9 +5935,12 @@ async function runTenantAction(button, operation, successMessage) {
       return;
     }
     const requestSuffix = error.requestId ? ` Request ID: ${error.requestId}` : "";
-    tenantPilot.helper = `${error.message}${requestSuffix}`;
+    tenantPilot.helper = isRejectedAuthenticationSession(error)
+      ? `Your secure session ended before the action completed. Sign in again; the server did not accept this request.${requestSuffix}`
+      : `${error.message}${requestSuffix}`;
     toast(tenantPilot.helper, "error");
     announce(`Operation failed. ${error.message}`);
+    if (isRejectedAuthenticationSession(error)) openAccess();
   } finally {
     tenantPilot.busy = false;
     button?.removeAttribute("aria-busy");
@@ -5553,6 +6227,15 @@ async function revokeOfficialReport() {
 }
 
 async function runAgentAuthorityAction(button, operation, successMessage) {
+  if (!hasPrincipalAgentAuthorityWorkspace()) {
+    const message =
+      "Agent authority operations require the authenticated Principal workspace. Open the Principal workspace and sign in with the invited wallet.";
+    agentAuthorityPilot.helper = message;
+    renderTenantPilot();
+    toast(message, "error");
+    announce(message);
+    return;
+  }
   if (tenantPilot.busy || agentAuthorityPilot.busy) return;
   agentAuthorityPilot.busy = true;
   button?.setAttribute("aria-busy", "true");
@@ -5730,13 +6413,29 @@ async function recoverAuthenticatedWorkspace() {
   });
   const recovery = result.response;
   const resources = Array.isArray(recovery.resources) ? recovery.resources : [];
+  tenantPilot.workspaceKind = recovery.workspaceKind;
+  tenantPilot.workspaceResume = recovery;
+  const expectedKind = expectedWorkspaceKind();
+  if (expectedKind !== null && recovery.workspaceKind !== expectedKind) {
+    tenantPilot.connected = false;
+    tenantPilot.connectionLabel = `${expectedWorkspaceLabel()} session required`;
+    tenantPilot.helper =
+      `This page received a ${workspaceKindLabel(recovery.workspaceKind)} session from another local workspace. Switch roles and sign in again.`;
+    agentAuthorityPilot.helper = tenantPilot.helper;
+    tenantPilot.workspaceObligations = [];
+    tenantPilot.workspacePositionViews.clear();
+    tenantPilot.workspaceRecoveryHasMore = false;
+    tenantPilot.workspaceRecoveryResourceCount = 0;
+    tenantPilot.workspaceRecoveryState = "role_mismatch";
+    tenantPilot.workspaceRecoveryErrorCode = "workspace_session_role_mismatch";
+    return;
+  }
   const subject = recoveredResource(resources, "subject");
   const obligation = recoveredResource(resources, "obligation");
   const consent = recoveredResource(resources, "consent");
+  const creditIntent = recoveredResource(resources, "credit_intent");
   const mandate = recoveredResource(resources, "mandate");
   const workspaceObligations = workspaceObligationResources(resources);
-  tenantPilot.workspaceKind = recovery.workspaceKind;
-  tenantPilot.workspaceResume = recovery;
   tenantPilot.workspaceObligations = workspaceObligations;
   const recoveredObligationIds = new Set(
     workspaceObligations.map(({ resourceId }) => resourceId)
@@ -5761,6 +6460,32 @@ async function recoverAuthenticatedWorkspace() {
     if (consent) {
       el("humanConsentId").value = consent.resourceId;
       rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, consent.resourceId);
+    }
+    if (creditIntent) {
+      try {
+        const application = await tenantApi("pilotReadCreditApplication", {
+          resource: {
+            resourceType: "credit_intent",
+            resourceId: creditIntent.resourceId
+          },
+          idempotent: false
+        });
+        tenantPilot.intent = application.response.creditIntent;
+        tenantPilot.decision = application.response.decision;
+        tenantPilot.offer = application.response.offer;
+        if (
+          tenantPilot.receipt?.creditIntent?.creditIntentId !==
+            tenantPilot.intent?.creditIntentId
+        ) {
+          tenantPilot.receipt = null;
+          tenantPilot.offerReview = null;
+        }
+      } catch {
+        tenantPilot.intent = null;
+        tenantPilot.decision = null;
+        tenantPilot.offer = null;
+        tenantPilot.offerReview = null;
+      }
     }
     const rememberedObligationId = rememberedOwnedObligationId();
     const selectedObligation = workspaceObligations.find(
@@ -5792,9 +6517,110 @@ async function recoverAuthenticatedWorkspace() {
       };
     }
     if (mandate) await loadExactMandate(mandate.resourceId);
+    const rememberedObligationId = rememberedOwnedObligationId();
+    const selectedObligation = workspaceObligations.find(
+      (item) => item.resourceId === rememberedObligationId
+    ) ?? obligation;
+    if (selectedObligation && tenantPilot.obligationReadAvailable) {
+      el("ownedObligationId").value = selectedObligation.resourceId;
+      await loadOwnedObligation({
+        obligationId: selectedObligation.resourceId,
+        quiet: true
+      });
+    }
     agentAuthorityPilot.helper = resources.length > 0
       ? "Principal workspace restored from authenticated PostgreSQL server truth."
       : "Authenticated Principal workspace ready. Create an Agent Subject to begin.";
+  }
+}
+
+async function restoreLatestCreditPassport() {
+  const button = el("restoreCreditPassportBtn");
+  if (!tenantPilot.connected) {
+    openAccess();
+    return;
+  }
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = "Loading latest Decision…";
+  try {
+    const mandateId = agentAuthorityPilot.mandate?.mandateId;
+    if (
+      interactionMode === "agent" &&
+      exactResourceId(mandateId)
+    ) {
+      applyAgentOfferReceipt(
+        agentOnlinePilot.offerReceipt ?? rememberedAgentOfferReceipt(mandateId)
+      );
+    }
+    if (!hasVerifiedHumanDecisionPassport(tenantPilot.decision)) {
+      await recoverAuthenticatedWorkspace();
+    }
+    if (!hasVerifiedHumanDecisionPassport(tenantPilot.decision)) {
+      throw new Error(
+        interactionMode === "agent"
+          ? "Run the Agent application online to create a current Decision before opening its Passport."
+          : "Complete one current Human credit evaluation before opening its Passport."
+      );
+    }
+    creditPassportPilot.error = false;
+    creditPassportPilot.issueHelper =
+      "Latest authenticated Decision loaded. Enter one authorized reviewer and choose the exact facts to share.";
+    toast("Latest Decision Passport loaded");
+    announce("Latest authenticated Decision Passport loaded");
+  } catch (error) {
+    creditPassportPilot.error = true;
+    creditPassportPilot.issueHelper =
+      error?.message ?? "The latest authenticated Decision could not be loaded.";
+    toast(creditPassportPilot.issueHelper, "error");
+    announce("Decision Passport load failed");
+    if (isRejectedAuthenticationSession(error)) openAccess();
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    button.textContent = "Load my latest Decision";
+    renderTenantPilot();
+  }
+}
+
+async function loadCreditTrackRecord() {
+  const button = el("loadCreditTrackRecordBtn");
+  if (!tenantPilot.connected) {
+    openAccess();
+    return;
+  }
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = "Loading verified record…";
+  try {
+    if (!tenantPilot.obligation) await recoverAuthenticatedWorkspace();
+    const obligationId = tenantPilot.obligation?.obligationId;
+    if (!exactResourceId(obligationId)) {
+      throw new Error(
+        interactionMode === "agent"
+          ? "Run the Agent lifecycle online before loading its Credit Track Record."
+          : "Create and execute one Human Obligation before loading its Credit Track Record."
+      );
+    }
+    await loadOwnedEvidence();
+    if (!ownedEvidence.queried || ownedEvidence.obligationId !== obligationId) {
+      throw new Error("The verified Evidence timeline could not be loaded.");
+    }
+    toast("Verified Credit Track Record loaded");
+    announce("Verified Credit Track Record loaded from server Evidence");
+  } catch (error) {
+    const message =
+      error?.message ?? "The verified Credit Track Record could not be loaded.";
+    el("creditTrackRecordStateTitle").textContent = "Record not available yet";
+    el("creditTrackRecordStateCopy").textContent = message;
+    toast(message, "error");
+    announce("Credit Track Record load failed");
+    if (isRejectedAuthenticationSession(error)) openAccess();
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    button.textContent = "Load verified record";
+    renderTenantPilot();
   }
 }
 
@@ -6271,7 +7097,15 @@ async function acceptHumanCreditOffer() {
         acceptedAt: result.response.acceptance.acceptedAt,
         updatedAt: result.response.acceptance.acceptedAt
       };
-      await recoverAuthenticatedWorkspace();
+      try {
+        await recoverAuthenticatedWorkspace();
+      } catch (error) {
+        tenantPilot.workspaceRecoveryState = "refresh_failed";
+        tenantPilot.workspaceRecoveryErrorCode =
+          error?.code ?? "post_acceptance_refresh_failed";
+        tenantPilot.obligationHydrationHelper =
+          "Obligation creation succeeded. The follow-up workspace refresh failed; use Refresh case to reconcile the committed server state.";
+      }
     },
     "Offer accepted. One shared sandbox Obligation and deterministic schedule were created; signed sandbox execution is ready."
   );
@@ -6497,7 +7331,38 @@ async function createAgentAccountChallenge() {
       agentAuthorityPilot.accountBinding = null;
       startAgentAccountBindingPolling();
     },
-    "One-use EIP-712 request created. Download it and run pilot:agent:prove before creating the Mandate."
+    () => `One-use EIP-712 request created. ${agentAccountProofInstruction()}`
+  );
+}
+
+async function proveAgentAccountOnline() {
+  await runAgentAuthorityAction(
+    el("proveAccountOnlineBtn"),
+    async () => {
+      const subjectId = tenantInputValue("agentAuthoritySubjectId");
+      const challenge = agentAuthorityPilot.accountChallenge;
+      if (!subjectId || challenge?.subjectId !== subjectId) {
+        throw new Error("Create a current signing request for this Agent Subject first.");
+      }
+      const proof = await referenceAgentApi(
+        "/local/v1/reference-agent/account-proof",
+        { subjectId, challenge }
+      );
+      agentAuthorityPilot.accountBinding = {
+        subjectId: proof.subjectId,
+        subjectStatus: proof.subjectStatus,
+        accountBinding: proof.accountBinding
+      };
+      if (agentAuthorityPilot.subject?.subjectId === subjectId) {
+        agentAuthorityPilot.subject = {
+          ...agentAuthorityPilot.subject,
+          status: proof.subjectStatus
+        };
+      }
+      stopAgentAccountBindingPolling();
+    },
+    () =>
+      "The registered test Agent proved its own account online. Only the verified AccountBinding returned to this browser."
   );
 }
 
@@ -6634,7 +7499,7 @@ async function createDraftAgentMandate() {
     },
     () => agentAuthorityPilot.subject?.status === "pending"
       ? "Draft Mandate created and verified. The new Subject is pending, so exact activation remains blocked."
-      : "Draft Mandate created. Review the exact server hashes before activation."
+      : "Draft Mandate created. Open the application handoff and let the Agent obtain its Offer workflow receipt before activation."
   );
 }
 
@@ -6649,7 +7514,9 @@ async function loadAgentMandate() {
         agentAuthorityPilot.subject = null;
       }
     },
-    "Exact Mandate loaded from the private protocol. Review hashes, limits, and expiry."
+    () => agentAuthorityPilot.mandate?.status === "draft"
+      ? "Exact Draft Mandate loaded. Run the Agent application before reviewing and activating its immutable scope."
+      : "Exact active Mandate loaded. Use the runtime handoff with an existing Agent Offer receipt."
   );
 }
 
@@ -6672,7 +7539,7 @@ async function activateExactAgentMandate() {
       agentAuthorityPilot.activationEvidenceHash = result.response.activationEvidenceHash;
       el("principalMandateAcknowledge").checked = false;
     },
-    "Sandbox Mandate activated by the authenticated Human Principal. Agent API handoff is ready."
+    "Sandbox Mandate activated by the authenticated Human Principal. The runtime handoff is ready for the existing Agent Offer receipt."
   );
 }
 
@@ -6811,6 +7678,29 @@ function runAgentGuideAction(action) {
     openPrincipalAgentAuthority();
     return;
   }
+  if (action === "agent-credit") {
+    setMode("agent");
+    showView("request-credit");
+    requestAnimationFrame(() => focusJumpTarget(el("agentRequestCreditTitle")));
+    announce("Agent credit continuation opened");
+    return;
+  }
+  if (action === "view-obligations") {
+    setMode("agent");
+    showView("obligations");
+    if (tenantPilot.workspaceObligations.length > 0) {
+      refreshOwnedPositionIndex();
+    }
+    announce("Principal-controlled Agent obligations opened");
+    return;
+  }
+  if (action === "run-online-agent") {
+    setMode("agent");
+    showView("agent-console");
+    requestAnimationFrame(() => focusJumpTarget(el("agentOnlineWorkflow")));
+    runOnlineReferenceAgent();
+    return;
+  }
   if (action === "open-agent-api") {
     openAgentProtocolDetails({ targetId: "agentConsoleProtocol" });
     return;
@@ -6820,6 +7710,24 @@ function runAgentGuideAction(action) {
     return;
   }
   openAgentProtocolDetails({ targetId: "agentConsoleProtocol" });
+}
+
+function continueAfterClosedServicingCase() {
+  const currentObligationId = tenantPilot.obligation?.obligationId;
+  const anotherPosition = tenantPilot.workspaceObligations.find(
+    ({ resourceId }) => resourceId !== currentObligationId
+  );
+  if (anotherPosition) {
+    el("ownedObligationId").value = anotherPosition.resourceId;
+    loadOwnedObligation({ obligationId: anotherPosition.resourceId });
+    requestAnimationFrame(() => focusJumpTarget(el("ownedPositionPicker")));
+    announce("Another owned position selected");
+    return;
+  }
+  setMode("human");
+  showView("request-credit");
+  startAnotherHumanApplication();
+  announce("New Human credit request opened");
 }
 
 function openPrivateProductAction(action) {
@@ -6837,14 +7745,19 @@ function openPrivateProductAction(action) {
     return;
   }
   if (action === "agent-api") {
-    setMode("agent");
-    showView("architecture");
+    openAgentProtocolDetails({ targetId: "agentConsoleContract" });
     return;
   }
   if (action === "servicing-cure") {
     showView("repay-settle");
     requestAnimationFrame(() => focusJumpTarget(el("servicingCureCard")));
     announce("Human Servicing Case repayment controls opened");
+    return;
+  }
+  if (action === "new-human-credit") {
+    setMode("human");
+    showView("request-credit");
+    startAnotherHumanApplication();
     return;
   }
   setMode("human");
@@ -7605,7 +8518,10 @@ async function loadCreditRegistryEvidence() {
 }
 
 function exactResourceId(value) {
-  return /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/.test(value);
+  return (
+    typeof value === "string" &&
+    /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/.test(value)
+  );
 }
 
 function riskSummaryItem(label, value) {
@@ -8302,18 +9218,28 @@ function renderRuntime() {
     `${agentManifest.workflows.length} checked-in workflows`;
   el("runtimeAgentToolCount").textContent =
     `${agentManifest.mcp.toolCount} checked-in stdio tools`;
-  el("sdkSnippet").textContent = `import { IpoOneAgentMcpClient } from "@ipo-one/sdk";
+  const handoff = currentAgentMcpHandoffPacket();
+  el("sdkTitle").textContent = handoff?.status === "application_ready"
+    ? "Run the Agent application"
+    : handoff?.status === "ready"
+      ? "Run the Agent lifecycle"
+      : "Reference Agent runner";
+  el("sdkSnippet").textContent = handoff?.status === "application_ready"
+    ? `# From the IPO.ONE repository root
+pnpm run local:agent:application -- <downloaded-application-handoff.json>
 
-const agent = new IpoOneAgentMcpClient({
-  handle: localMcpHost.handle,
-  manifest: applicationHandoff,
-  transportProfile: "mcp_stdio_local"
-});
+# Result: agent_credit_offer_workflow_receipt.v1
+# Saved under .ipo-one/local-stack/agent-workflows/`
+    : handoff?.status === "ready"
+      ? `# Use the runtime handoff for the same Mandate
+pnpm run local:agent:runtime -- <downloaded-runtime-handoff.json>
 
-const receipt = await agent.runCreditOfferWorkflow({
-  creditRequest,
-  workflowId: "design-partner-application-0001"
-});`;
+# The matching Offer receipt is loaded automatically.
+# Result: Obligation → execution → repayment → Evidence`
+      : `# Automated isolated acceptance for the complete Agent path
+pnpm run local:agent:acceptance
+
+# Or create/load a Draft Mandate to expose an application handoff.`;
   el("runtimeSessionId").textContent = tenantPilot.connected
     ? "Authenticated"
     : "No active session";
@@ -8366,6 +9292,8 @@ function bindActions() {
   el("walletSignInBtn").addEventListener("click", () => connectApprovedNetwork({ authenticate: true }));
   el("continueAuthenticatedSessionBtn").addEventListener("click", continueAuthenticatedSession);
   el("signOutBtn").addEventListener("click", signOutAuthenticatedSession);
+  el("openPrincipalWorkspaceLink").addEventListener("click", continueToPrincipalWorkspace);
+  el("switchPrincipalSessionBtn").addEventListener("click", switchCurrentWorkspaceSession);
   el("connectNetworkBtn").addEventListener("click", () => connectApprovedNetwork());
   el("economicActionScrim").addEventListener("click", cancelPendingEconomicAction);
   el("economicActionCloseBtn").addEventListener("click", cancelPendingEconomicAction);
@@ -8398,7 +9326,6 @@ function bindActions() {
       showView(button.dataset.goView);
       if (
         button.dataset.goView === "activity-proofs" &&
-        interactionMode === "human" &&
         tenantPilot.obligation
       ) loadOwnedEvidence();
     });
@@ -8416,6 +9343,11 @@ function bindActions() {
   for (const button of document.querySelectorAll("[data-agent-guide-action]")) {
     button.addEventListener("click", () => runAgentGuideAction(button.dataset.agentGuideAction));
   }
+  el("agentOnlineRunBtn").addEventListener("click", runOnlineReferenceAgent);
+  el("agentOnlineReviewBtn").addEventListener(
+    "click",
+    reviewOnlineAgentObligation
+  );
   el("mobileMenuBtn").addEventListener("click", () => setNavigationOpen(true));
   el("sidebarCloseBtn").addEventListener("click", () => setNavigationOpen(false));
   el("sidebarScrim").addEventListener("click", () => setNavigationOpen(false));
@@ -8441,7 +9373,13 @@ function bindActions() {
   ]) {
     button.addEventListener("click", () => openPrivateProductAction(button.dataset.privateAction));
   }
-  el("authenticatedRuntimeGateAction").addEventListener("click", openAccess);
+  el("authenticatedRuntimeGateAction").addEventListener("click", () => {
+    if (hasWorkspaceSessionRoleMismatch()) {
+      switchCurrentWorkspaceSession();
+    } else {
+      openAccess();
+    }
+  });
   el("capitalNetworkQueryForm").addEventListener("submit", (event) => {
     event.preventDefault();
     loadCapitalNetworkIntent();
@@ -8596,6 +9534,14 @@ function bindActions() {
     "click",
     revokeOwnedCreditPassportArtifact
   );
+  el("restoreCreditPassportBtn").addEventListener(
+    "click",
+    restoreLatestCreditPassport
+  );
+  el("loadCreditTrackRecordBtn").addEventListener(
+    "click",
+    loadCreditTrackRecord
+  );
   for (const control of el("creditPassportIssueForm").querySelectorAll("input, select")) {
     control.addEventListener("input", renderCreditPassportPilot);
     control.addEventListener("change", renderCreditPassportPilot);
@@ -8633,6 +9579,10 @@ function bindActions() {
     sourceInputId: "servicingRepaymentSource",
     buttonId: "postServicingRepaymentBtn"
   }));
+  el("servicingClosedNextBtn").addEventListener(
+    "click",
+    continueAfterClosedServicingCase
+  );
   el("ownedObligationRestore").addEventListener("submit", (event) => {
     event.preventDefault();
     loadOwnedObligation();
@@ -8770,7 +9720,7 @@ function bindActions() {
     riskOperations.feedbackError = false;
     riskOperations.feedbackHelper = "Load the Tenant portfolio to aggregate feedback.";
     riskOperations.error = false;
-    riskOperations.helper = "Enter one exact portfolio ID. Catalog presence does not grant access; the Gateway verifies every read.";
+    riskOperations.helper = "Use the portfolio ID provisioned to the invited Risk or Auditor operator. This page cannot enumerate portfolios; catalog presence does not grant access, and the Gateway verifies every read.";
     renderRiskOperations();
   });
   el("servicingQueueForm").addEventListener("submit", (event) => {
@@ -8864,6 +9814,7 @@ function bindActions() {
   el("agentAuthorityForm").addEventListener("submit", (event) => event.preventDefault());
   el("createPrivateAgentSubjectBtn").addEventListener("click", createPrivateAgentSubject);
   el("createAccountChallengeBtn").addEventListener("click", createAgentAccountChallenge);
+  el("proveAccountOnlineBtn").addEventListener("click", proveAgentAccountOnline);
   el("refreshAccountBindingBtn").addEventListener("click", refreshAgentAccountBinding);
   el("copyAccountChallengeBtn").addEventListener("click", async () => {
     if (!agentAuthorityPilot.accountChallenge) return toast("Create a signing request first.", "error");
@@ -8963,12 +9914,16 @@ function bindActions() {
     link.remove();
     URL.revokeObjectURL(url);
     toast(`${handoff.status === "application_ready" ? "Application" : "Runtime"} handoff downloaded`);
-    announce("Credential-free Agent handoff downloaded for the local no-funds runtime");
+    announce(
+      handoff.status === "application_ready"
+        ? "Handoff downloaded. From the repository root, run pnpm run local:agent:application -- <downloaded file>."
+        : "Handoff downloaded. From the repository root, run pnpm run local:agent:runtime -- <downloaded file>."
+    );
   });
   el("agentConsoleCopyManifestBtn").addEventListener("click", async () => {
     const presentation = currentAgentConsolePresentation();
     if (!presentation?.registry.catalogParity || presentation.status === "waiting") {
-      return toast("Load an eligible exact handoff with 11/11 catalog parity first.", "error");
+      return toast("Load an eligible exact handoff with 12/12 catalog parity first.", "error");
     }
     try {
       await navigator.clipboard.writeText(
@@ -8984,7 +9939,7 @@ function bindActions() {
     const presentation = currentAgentConsolePresentation();
     const handoff = currentAgentMcpHandoffPacket();
     if (!handoff || !presentation?.registry.catalogParity) {
-      return toast("Load an eligible exact handoff with 11/11 catalog parity first.", "error");
+      return toast("Load an eligible exact handoff with 12/12 catalog parity first.", "error");
     }
     const body = JSON.stringify(handoff, null, 2);
     const url = URL.createObjectURL(new Blob([body], { type: "application/json" }));
@@ -9003,7 +9958,7 @@ function bindActions() {
   el("agentConsoleCopySdkBtn").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(el("agentConsoleSdkSnippet").textContent);
-      toast("Local Agent SDK example copied");
+      toast("Local Agent runner command copied");
     } catch {
       toast("Clipboard access is unavailable in this browser.", "error");
     }
@@ -9041,4 +9996,13 @@ async function boot() {
     : "Sign in to access the closed-pilot workspace");
 }
 
-boot();
+boot().catch((error) => {
+  const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";
+  el("connectionStatus").textContent = "Workspace startup blocked";
+  el("sidebarApiStatus").textContent = "Startup blocked";
+  tenantPilot.connectionLabel = "Workspace startup blocked";
+  tenantPilot.helper =
+    `${error?.message ?? "The authenticated workspace could not start."}${requestSuffix}`;
+  el("operationStatus").textContent = tenantPilot.helper;
+  toast(tenantPilot.helper, "error");
+});

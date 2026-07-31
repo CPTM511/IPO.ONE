@@ -98,6 +98,7 @@ export function createTenantHttpServer({
   maximumConcurrency = MAX_CONCURRENCY,
   serveAuthentication,
   serveEvidenceAnchors,
+  serveReferenceAgent,
   serveWebAsset
 }) {
   assertConfig({ host, trustProxy, environment, credentialSource });
@@ -116,6 +117,15 @@ export function createTenantHttpServer({
         typeof serveEvidenceAnchors.handle !== "function" ||
         !serveEvidenceAnchors.routes ||
         typeof serveEvidenceAnchors.routes !== "object"
+      )
+    ) ||
+    (
+      serveReferenceAgent !== undefined &&
+      (
+        !serveReferenceAgent ||
+        typeof serveReferenceAgent.handle !== "function" ||
+        !serveReferenceAgent.routes ||
+        typeof serveReferenceAgent.routes !== "object"
       )
     ) ||
     (serveWebAsset !== undefined && typeof serveWebAsset !== "function")
@@ -166,6 +176,31 @@ export function createTenantHttpServer({
         });
         if (
           await serveEvidenceAnchors.handle({
+            request,
+            response,
+            url,
+            requestId,
+            authenticationContext,
+            readJson: () => readBody(request),
+            sendJson(status, value) {
+              json(response, status, value, requestId);
+              return true;
+            }
+          })
+        ) {
+          return;
+        }
+      }
+      if (
+        serveReferenceAgent &&
+        Object.values(serveReferenceAgent.routes ?? {}).includes(url.pathname)
+      ) {
+        const authenticationContext = await resolveAuthenticationContext({
+          request,
+          requestUrl: url.toString()
+        });
+        if (
+          await serveReferenceAgent.handle({
             request,
             response,
             url,

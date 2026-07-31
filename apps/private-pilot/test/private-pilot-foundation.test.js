@@ -128,6 +128,7 @@ test("private pilot identities are role-separated over one Tenant", () => {
 
   assert.equal(controller.roleBundle, RoleBundle.PRINCIPAL_CONTROLLER);
   assert.ok(controller.capabilities.includes(PilotCapability.MANDATE_ACTIVATE_OWNED));
+  assert.ok(controller.capabilities.includes(PilotCapability.OBLIGATION_READ_OWNED));
   assert.equal(controller.capabilities.includes(PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF), false);
 
   assert.equal(agent.actorId, "actor_agent_pilot_alpha");

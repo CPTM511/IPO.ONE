@@ -921,6 +921,25 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
         (error) => error.code === "authentication_session_rejected"
       );
       await ownerPool.query("UPDATE tenants SET status = 'active' WHERE id = $1", [TENANT_ID]);
+      const signedOutSession = await walletSessionStore.create(
+        sessionInput(walletCredential, new Date(NOW.getTime() + 12_500))
+      );
+      await composition.humanSessionBff.invalidateBrowserSession({
+        sessionHandle: signedOutSession.cookie.value,
+        requestOrigin: ORIGIN,
+        csrfToken: signedOutSession.csrfToken,
+        idempotencyKey: "durable-human-sign-out-recovery-0001",
+        reasonCode: "human_logout",
+        now: new Date(NOW.getTime() + 12_600)
+      });
+      assert.equal(await composition.csrfTokenProvider({
+        request: {
+          headers: {
+            cookie: `${signedOutSession.cookie.name}=${signedOutSession.cookie.value}; ` +
+              `${CSRF_BOOTSTRAP_COOKIE_NAME}=${signedOutSession.csrfToken}`
+          }
+        }
+      }), undefined);
       const activeBeforeDeprovision = await walletSessionStore.create(
         sessionInput(walletCredential, new Date(NOW.getTime() + 13_000))
       );
@@ -948,6 +967,14 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
         }),
         (error) => error.code === "authentication_session_rejected"
       );
+      assert.equal(await composition.csrfTokenProvider({
+        request: {
+          headers: {
+            cookie: `${activeBeforeDeprovision.cookie.name}=${activeBeforeDeprovision.cookie.value}; ` +
+              `${CSRF_BOOTSTRAP_COOKIE_NAME}=${activeBeforeDeprovision.csrfToken}`
+          }
+        }
+      }), undefined);
     });
   } finally {
     if (appPool) await appPool.end();

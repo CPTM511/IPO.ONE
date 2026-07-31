@@ -15,6 +15,7 @@ const CONFIG_KEYS = new Set([
   "port",
   "serveAuthentication",
   "serveEvidenceAnchors",
+  "serveReferenceAgent",
   "sessionHandleProvider",
   "workspaceNameProvider"
 ]);
@@ -49,6 +50,7 @@ export function createTenantPilotHost(input) {
     localAgentAccountProvider,
     serveAuthentication,
     serveEvidenceAnchors,
+    serveReferenceAgent,
     sessionHandleProvider,
     workspaceNameProvider,
     clock,
@@ -80,6 +82,7 @@ export function createTenantPilotHost(input) {
     credentialSource: "local_test",
     serveAuthentication,
     serveEvidenceAnchors,
+    serveReferenceAgent,
     serveWebAsset: createTenantWebAssetHandler({
       csrfTokenProvider,
       sessionHandleProvider,

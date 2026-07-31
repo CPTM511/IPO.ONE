@@ -1,4 +1,11 @@
-import { realpath, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import {
+  mkdir,
+  readFile,
+  realpath,
+  stat,
+  writeFile
+} from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -12,11 +19,16 @@ const AGENT_KEY_FILE = resolve(
   ".ipo-one/local-stack/agent-key.v1.json"
 );
 const CONTAINER_INPUT = "/run/input/ipo-one-agent-input.json";
+const CONTAINER_OFFER_RECEIPT =
+  "/run/input/ipo-one-agent-offer-receipt.json";
 const CONTAINER_AGENT_KEY = "/run/secrets/agent-key.v1.json";
 const ACTIONS = Object.freeze({
   prove: "apps/private-pilot/src/agent-account-proof.js",
-  run: "apps/private-pilot/src/agent-stdio.js"
+  run: "apps/private-pilot/src/agent-stdio.js",
+  application: "apps/private-pilot/src/agent-workflow.js",
+  runtime: "apps/private-pilot/src/agent-workflow.js"
 });
+const WORKFLOW_ACTIONS = new Set(["application", "runtime"]);
 
 function fail(message) {
   process.stderr.write(`LOCAL-STACK-001 Agent runner: ${message}\n`);
@@ -33,7 +45,7 @@ if (
 ) {
   fail(
     "usage: node scripts/local-agent.mjs " +
-      "prove|run <repository-local-agent-json>"
+      "prove|run|application|runtime <repository-local-agent-json>"
   );
 }
 
@@ -53,6 +65,57 @@ const input = await stat(inputPath);
 if (!input.isFile() || input.size < 2 || input.size > 256 * 1024) {
   fail("input must be a regular JSON file between 2 bytes and 256 KiB");
 }
+let workflowReceiptPath;
+let workflowOutputPath;
+if (WORKFLOW_ACTIONS.has(action)) {
+  let manifest;
+  try {
+    manifest = JSON.parse(await readFile(inputPath, "utf8"));
+  } catch {
+    fail("workflow input must be one valid JSON handoff");
+  }
+  if (
+    typeof manifest?.mandateId !== "string" ||
+    manifest.mandateId.length < 1
+  ) {
+    fail("workflow handoff must contain one Mandate ID");
+  }
+  const workflowKey = createHash("sha256")
+    .update(manifest.mandateId)
+    .digest("hex")
+    .slice(0, 24);
+  const workflowDirectory = resolve(
+    ROOT,
+    ".ipo-one/local-stack/agent-workflows"
+  );
+  await mkdir(workflowDirectory, { recursive: true, mode: 0o700 });
+  workflowReceiptPath = resolve(
+    workflowDirectory,
+    `${workflowKey}.offer-receipt.json`
+  );
+  workflowOutputPath = action === "application"
+    ? workflowReceiptPath
+    : resolve(
+        workflowDirectory,
+        `${workflowKey}.lifecycle-result.json`
+      );
+  if (action === "runtime") {
+    const receiptPath = await realpath(workflowReceiptPath).catch(() =>
+      fail(
+        "no saved Offer receipt matches this Mandate; run the application workflow first"
+      )
+    );
+    const receipt = await stat(receiptPath);
+    if (
+      !receipt.isFile() ||
+      receipt.size < 2 ||
+      receipt.size > 512 * 1024
+    ) {
+      fail("saved Offer receipt is invalid");
+    }
+    workflowReceiptPath = receiptPath;
+  }
+}
 const agentKeyPath = await realpath(AGENT_KEY_FILE).catch(() =>
   fail("durable local Agent key is not initialized")
 );
@@ -61,39 +124,82 @@ if (!agentKey.isFile() || agentKey.size < 2 || agentKey.size > 16 * 1024) {
   fail("durable local Agent key file is invalid");
 }
 
+const containerArguments = [
+  "shell",
+  "--workdir",
+  ROOT,
+  INSTANCE,
+  "docker",
+  "compose",
+  "--project-name",
+  "ipo-one-local",
+  "--env-file",
+  ENV_FILE,
+  "--file",
+  COMPOSE_FILE,
+  "run",
+  "--rm",
+  "--no-deps",
+  "--volume",
+  `${inputPath}:${CONTAINER_INPUT}:ro`,
+  "--volume",
+  `${agentKeyPath}:${CONTAINER_AGENT_KEY}:ro`
+];
+if (action === "runtime") {
+  containerArguments.push(
+    "--volume",
+    `${workflowReceiptPath}:${CONTAINER_OFFER_RECEIPT}:ro`
+  );
+}
+containerArguments.push(
+  "pilot",
+  ACTIONS[action]
+);
+if (WORKFLOW_ACTIONS.has(action)) {
+  containerArguments.push(action);
+}
+containerArguments.push(CONTAINER_INPUT);
+if (action === "runtime") {
+  containerArguments.push(CONTAINER_OFFER_RECEIPT);
+}
+
 const result = spawnSync(
   "limactl",
-  [
-    "shell",
-    "--workdir",
-    ROOT,
-    INSTANCE,
-    "docker",
-    "compose",
-    "--project-name",
-    "ipo-one-local",
-    "--env-file",
-    ENV_FILE,
-    "--file",
-    COMPOSE_FILE,
-    "run",
-    "--rm",
-    "--no-deps",
-    "--volume",
-    `${inputPath}:${CONTAINER_INPUT}:ro`,
-    "--volume",
-    `${agentKeyPath}:${CONTAINER_AGENT_KEY}:ro`,
-    "pilot",
-    ACTIONS[action],
-    CONTAINER_INPUT
-  ],
+  containerArguments,
   {
     cwd: ROOT,
-    stdio: "inherit"
+    ...(WORKFLOW_ACTIONS.has(action)
+      ? {
+          encoding: "utf8",
+          stdio: ["inherit", "pipe", "pipe"],
+          maxBuffer: 2 * 1024 * 1024
+        }
+      : { stdio: "inherit" })
   }
 );
 
 if (result.error) fail("limactl is unavailable");
 if (result.status !== 0) {
+  if (WORKFLOW_ACTIONS.has(action) && result.stderr) {
+    process.stderr.write(result.stderr);
+  }
   fail(`isolated Agent ${action} command exited with status ${result.status}`);
+}
+if (WORKFLOW_ACTIONS.has(action)) {
+  let output;
+  try {
+    output = JSON.parse(result.stdout);
+  } catch {
+    fail("isolated Agent workflow did not return one JSON receipt");
+  }
+  await writeFile(
+    workflowOutputPath,
+    `${JSON.stringify(output, null, 2)}\n`,
+    { mode: 0o600 }
+  );
+  process.stdout.write(
+    `Agent ${action} workflow complete.\n` +
+    `Receipt: ${relative(ROOT, workflowOutputPath)}\n` +
+    `Status: ${output.status}\n`
+  );
 }

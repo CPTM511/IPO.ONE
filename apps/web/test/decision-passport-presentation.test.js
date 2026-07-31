@@ -12,6 +12,13 @@ const fixtures = JSON.parse(await readFile(
   new URL("../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json", import.meta.url),
   "utf8"
 ));
+const agentOfferFixtures = JSON.parse(await readFile(
+  new URL(
+    "../../../api/tenant-protocol/conformance/agent-credit-offer-workflow-receipt.v1.fixtures.json",
+    import.meta.url
+  ),
+  "utf8"
+));
 
 function validDecision() {
   return structuredClone(
@@ -88,4 +95,16 @@ test("Human Decision Passport presentation fails closed on provenance or safety 
     assert.equal(createHumanDecisionPassportPresentation(decision), null);
     assert.equal(hasVerifiedHumanDecisionPassport(decision), false);
   }
+});
+
+test("Agent Decision Passport accepts the Mandate evidence set without inventing Human identity evidence", () => {
+  const decision = structuredClone(agentOfferFixtures.valid[0].decision);
+  const presentation = createHumanDecisionPassportPresentation(decision);
+
+  assert.equal(hasVerifiedHumanDecisionPassport(decision), true);
+  assert.equal(presentation.evidenceSummary, "4/4 finalized");
+  assert.deepEqual(
+    presentation.sources.map(({ role }) => role),
+    ["credit_intent", "subject", "principal", "authority"]
+  );
 });

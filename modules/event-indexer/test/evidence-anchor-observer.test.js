@@ -34,6 +34,9 @@ function rpc(result, id) {
 function fixture({
   wrongValue = false,
   transactionMissing = false,
+  transactionTemporarilyMissing = false,
+  eventBlockTemporarilyMissing = false,
+  latestTemporarilyBehind = false,
   reorged = false
 } = {}) {
   const batch = createEvidenceAnchorBatch({
@@ -90,13 +93,18 @@ function fixture({
       return rpc("0x14a34", request.id);
     }
     if (request.method === "eth_getTransactionByHash") {
-      return rpc(transactionMissing ? null : {
+      return rpc(
+        transactionMissing || transactionTemporarilyMissing
+          ? null
+          : {
         hash: TRANSACTION_HASH,
         from: ATTESTOR,
         to: CONTRACT,
         value: wrongValue ? "0x1" : "0x0",
         input: prepared.data
-      }, request.id);
+          },
+        request.id
+      );
     }
     if (request.method === "eth_getTransactionReceipt") {
       return rpc(transactionMissing ? null : {
@@ -116,8 +124,13 @@ function fixture({
     }
     if (request.method === "eth_getBlockByNumber") {
       const tag = request.params[0];
+      if (tag === "0x64" && eventBlockTemporarilyMissing) {
+        return rpc(null, request.id);
+      }
       const number = tag === "latest"
-        ? 110
+        ? latestTemporarilyBehind
+          ? 99
+          : 110
         : tag === "safe"
           ? 108
           : tag === "finalized"
@@ -203,6 +216,27 @@ test("observer returns unknown before broadcast visibility and rejects value dri
     }),
     (error) => error.code === "evidence_anchor_transaction_mismatch"
   );
+});
+
+test("observer keeps partial RPC propagation non-final and safely retryable", async () => {
+  for (const partial of [
+    fixture({ transactionTemporarilyMissing: true }),
+    fixture({ eventBlockTemporarilyMissing: true }),
+    fixture({ latestTemporarilyBehind: true })
+  ]) {
+    const observations = await createEvidenceAnchorObserver({
+      contractAddress: CONTRACT,
+      fetchImpl: partial.fetchImpl,
+      clock: () => NOW
+    }).observe({
+      transactionHash: TRANSACTION_HASH,
+      contractAddress: CONTRACT,
+      expectedAnchors: partial.expectedAnchors
+    });
+    assert.equal(observations[0].status, "unknown");
+    assert.equal(observations[0].confirmations, 0);
+    assert.equal(observations[0].blockNumber, undefined);
+  }
 });
 
 test("observer records an orphaned receipt as reorged instead of claiming finality", async () => {

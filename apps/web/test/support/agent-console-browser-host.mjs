@@ -21,6 +21,20 @@ const fixtures = JSON.parse(await readFile(
   ),
   "utf8"
 ));
+const offerFixtures = JSON.parse(await readFile(
+  new URL(
+    "../../../../api/tenant-protocol/conformance/agent-credit-offer-workflow-receipt.v1.fixtures.json",
+    import.meta.url
+  ),
+  "utf8"
+));
+const obligationFixtures = JSON.parse(await readFile(
+  new URL(
+    "../../../../api/tenant-protocol/conformance/agent-sandbox-obligation-workflow-receipt.v1.fixtures.json",
+    import.meta.url
+  ),
+  "utf8"
+));
 
 function fixtureResult(operationId) {
   return structuredClone(
@@ -37,44 +51,126 @@ activeMandate.capabilities = [
   "execute_sandbox_credit",
   "route_repayment"
 ];
-const mandateResult = {
-  operationId: "pilotReadMandate",
-  replayed: false,
-  response: {
-    mandate: activeMandate,
-    schemaVersion: "tenant_mandate_view.v1"
-  },
-  schemaVersion: "tenant_protocol_result.v1"
-};
-const workspaceResult = {
-  operationId: "pilotReadWorkspaceResume",
-  replayed: false,
-  response: {
-    workspaceKind: "principal_controller",
-    resources: [
-      {
-        resourceType: "subject",
-        resourceId: activeMandate.subjectId,
-        relationship: "controller"
-      },
-      {
-        resourceType: "mandate",
-        resourceId: activeMandate.mandateId,
-        relationship: "controller"
-      }
-    ],
-    hasMore: false,
-    serverTruth: true,
-    schemaVersion: "tenant_workspace_resume_view.v1"
-  },
-  schemaVersion: "tenant_protocol_result.v1"
-};
+const draftMandate = structuredClone(activeMandate);
+draftMandate.status = "draft";
+draftMandate.utilizedMinor = "0";
+delete draftMandate.activatedAt;
+let currentMandate = draftMandate;
+let runtimeCompleted = false;
 
-const results = new Map([
-  ["pilotReadWorkspaceResume", workspaceResult],
-  ["pilotReadAgentAccountBinding", bindingResult],
-  ["pilotReadMandate", mandateResult]
-]);
+const offerReceipt = structuredClone(offerFixtures.valid[0]);
+offerReceipt.subjectId = activeMandate.subjectId;
+offerReceipt.mandateId = activeMandate.mandateId;
+offerReceipt.creditIntent.subjectId = activeMandate.subjectId;
+offerReceipt.creditIntent.authorityType = "mandate";
+offerReceipt.creditIntent.authorityId = activeMandate.mandateId;
+offerReceipt.decision.subjectId = activeMandate.subjectId;
+offerReceipt.decision.authorityType = "mandate";
+offerReceipt.decision.authorityId = activeMandate.mandateId;
+offerReceipt.offer.subjectId = activeMandate.subjectId;
+offerReceipt.offer.approvedPrincipalMinor = "10000";
+
+const lifecycleReceipt = structuredClone(obligationFixtures.valid[0]);
+lifecycleReceipt.subjectId = activeMandate.subjectId;
+lifecycleReceipt.mandateId = activeMandate.mandateId;
+lifecycleReceipt.creditIntentId = offerReceipt.creditIntent.creditIntentId;
+lifecycleReceipt.creditOfferId = offerReceipt.offer.creditOfferId;
+const agentObligation = lifecycleReceipt.obligation;
+agentObligation.subjectId = activeMandate.subjectId;
+agentObligation.principalId = activeMandate.principalId;
+agentObligation.authorityId = activeMandate.mandateId;
+agentObligation.creditIntentId = offerReceipt.creditIntent.creditIntentId;
+agentObligation.riskDecisionId = offerReceipt.decision.riskDecisionId;
+agentObligation.creditOfferId = offerReceipt.offer.creditOfferId;
+agentObligation.originalPrincipalMinor = "10000";
+agentObligation.outstandingPrincipalMinor = "0";
+agentObligation.totalRepaidMinor = "10000";
+agentObligation.status = "fully_repaid";
+agentObligation.oldestUnpaidInstallmentId = null;
+for (const installment of agentObligation.installments) {
+  installment.scheduledPrincipalMinor = "5000";
+  installment.paidPrincipalMinor = installment.scheduledPrincipalMinor;
+  installment.status = "paid";
+}
+lifecycleReceipt.repayment.appliedMinor = "10000";
+
+const evidenceResult = fixtureResult("pilotReadOwnObligationEvidence");
+evidenceResult.response.obligationId = agentObligation.obligationId;
+evidenceResult.response.asOf = "2026-07-31T05:00:00.000Z";
+for (const item of evidenceResult.response.items) {
+  item.aggregateId = agentObligation.obligationId;
+  item.obligationId = agentObligation.obligationId;
+}
+
+function protocolResult(operationId, response) {
+  return {
+    operationId,
+    replayed: false,
+    response,
+    schemaVersion: "tenant_protocol_result.v1"
+  };
+}
+
+function resultFor(command) {
+  if (command.operationId === "pilotReadWorkspaceResume") {
+    return protocolResult(command.operationId, {
+      workspaceKind: "principal_controller",
+      resources: [
+        {
+          resourceType: "subject",
+          resourceId: activeMandate.subjectId,
+          relationship: "controller"
+        },
+        {
+          resourceType: "mandate",
+          resourceId: activeMandate.mandateId,
+          relationship: "controller"
+        },
+        ...(runtimeCompleted
+          ? [{
+              resourceType: "obligation",
+              resourceId: agentObligation.obligationId,
+              relationship: "controller"
+            }]
+          : [])
+      ],
+      hasMore: false,
+      serverTruth: true,
+      schemaVersion: "tenant_workspace_resume_view.v1"
+    });
+  }
+  if (command.operationId === "pilotReadAgentAccountBinding") {
+    return structuredClone(bindingResult);
+  }
+  if (command.operationId === "pilotReadMandate") {
+    return protocolResult(command.operationId, {
+      mandate: currentMandate,
+      schemaVersion: "tenant_mandate_view.v1"
+    });
+  }
+  if (command.operationId === "pilotActivateSandboxMandate") {
+    currentMandate = structuredClone(activeMandate);
+    return protocolResult(command.operationId, {
+      mandate: currentMandate,
+      activationEvidenceHash: activationResult.response.activationEvidenceHash,
+      schemaVersion: "tenant_sandbox_mandate_activated.v1"
+    });
+  }
+  if (command.operationId === "pilotReadOwnObligation") {
+    return protocolResult(command.operationId, {
+      obligation: agentObligation,
+      asOf: "2026-07-31T05:00:00.000Z",
+      sandboxOnly: true,
+      productionFundsMoved: false,
+      withdrawable: false,
+      schemaVersion: "tenant_owned_obligation_view.v1"
+    });
+  }
+  if (command.operationId === "pilotReadOwnObligationEvidence") {
+    return structuredClone(evidenceResult);
+  }
+  throw new Error(`unsupported_agent_console_qa_operation:${command.operationId}`);
+}
 
 const authenticationContext = createAuthenticationContext({
   tenantId: "tenant_agent_console_browser_qa",
@@ -121,14 +217,56 @@ async function serveAuthentication({ request, response, url, requestId }) {
   return true;
 }
 
+const serveReferenceAgent = Object.freeze({
+  routes: Object.freeze({
+    application: "/local/v1/reference-agent/application",
+    runtime: "/local/v1/reference-agent/runtime"
+  }),
+  async handle({ url, sendJson }) {
+    if (url.pathname === this.routes.application) {
+      return sendJson(200, {
+        status: "offer_ready",
+        mandateId: activeMandate.mandateId,
+        subjectId: activeMandate.subjectId,
+        offerReceipt,
+        sandboxOnly: true,
+        productionFundsMoved: false,
+        credentialEnteredBrowser: false,
+        schemaVersion: "local_reference_agent_application_result.v1"
+      });
+    }
+    if (url.pathname === this.routes.runtime) {
+      runtimeCompleted = true;
+      return sendJson(200, {
+        status: "evidence_read",
+        mandateId: activeMandate.mandateId,
+        subjectId: activeMandate.subjectId,
+        obligationId: agentObligation.obligationId,
+        evidenceEventCount: evidenceResult.response.items.length,
+        lifecycle: {
+          schemaVersion: "local_agent_reference_workflow_result.v1",
+          status: "evidence_read",
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          workflowReceipt: lifecycleReceipt,
+          evidence: evidenceResult.response
+        },
+        sandboxOnly: true,
+        productionFundsMoved: false,
+        credentialEnteredBrowser: false,
+        schemaVersion: "local_reference_agent_runtime_result.v1"
+      });
+    }
+    return false;
+  }
+});
+
 const host = createTenantHttpServer({
   environment: "development",
   credentialSource: "local_test",
   gateway: {
     async execute(command) {
-      const result = results.get(command.operationId);
-      if (!result) throw new Error(`unsupported_agent_console_qa_operation:${command.operationId}`);
-      return structuredClone(result);
+      return structuredClone(resultFor(command));
     }
   },
   resolveAuthenticationContext: async ({ request }) => {
@@ -139,8 +277,10 @@ const host = createTenantHttpServer({
   },
   createNetworkContext: async () => ({ source: "agent_console_browser_qa" }),
   serveAuthentication,
+  serveReferenceAgent,
   serveWebAsset: createTenantWebAssetHandler({
-    csrfTokenProvider: async () => csrfToken
+    csrfTokenProvider: async () => csrfToken,
+    workspaceNameProvider: async () => "controller"
   })
 });
 

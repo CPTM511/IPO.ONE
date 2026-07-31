@@ -1,0 +1,451 @@
+{
+  "schemaVersion": "ipo_one_local_release_candidate.v2",
+  "releaseCandidateId": "ipo-one-local-rc-20260731-004",
+  "status": "sealed",
+  "profile": "local_no_funds",
+  "predecessor": {
+    "path": "deploy/local/release-candidate.v1.json",
+    "releaseCandidateId": "ipo-one-local-rc-20260730-003",
+    "sha256": "5afc8932e2be7e3a4acb5420e1c873b5e76a34b0f5fa7dd62df6bf0b8c90bdc6"
+  },
+  "sourceBinding": {
+    "baseCommit": "211044b2f19c31385a1fd29d5f34410e0cb2f422",
+    "branch": "codex/checkpoint-20260727-pre-strategy",
+    "mode": "git_commit_containing_manifest",
+    "sealedCommit": true,
+    "sealAuthorizedOn": "2026-07-31",
+    "sealBlockedBy": null
+  },
+  "runtime": {
+    "nodeVersion": "26.5.0",
+    "pnpmVersion": "11.1.3",
+    "postgresMajorVersion": 17
+  },
+  "database": {
+    "migrationCount": 48,
+    "latestMigration": "0048_synthetic_capital_partner_marketplace",
+    "latestMigrationChecksum": "d84b7f64d616dbba99e525656559d7aa52c545b3e7514a96c4948c75d415e452"
+  },
+  "contracts": [
+    {
+      "path": "api/openapi/ipo-one.v1.json",
+      "kind": "human_openapi",
+      "version": "0.3.0-alpha.4",
+      "sha256": "adbb3fa95ef890fc3d5c93f94624a33ba8e27b771a061ceeb94b6c357328f4c3"
+    },
+    {
+      "path": "api/tenant-protocol/ipo-one.tenant-protocol.v1.json",
+      "kind": "shared_tenant_protocol",
+      "version": "tenant_protocol.v1",
+      "sha256": "5deb78559dbdd63e1a5afe233554ed07ab4650c47e7122221dfbbb91d7cdba1f"
+    },
+    {
+      "path": "api/tenant-protocol/ipo-one.agent-https.v1.json",
+      "kind": "remote_agent_https",
+      "version": "agent_https_openapi.v1",
+      "activation": "disabled_pending_named_deployment_approval",
+      "sha256": "fdf2d3d48ef6ac2882cc01fd403fee9c3f66f9d7434a0b1d4ee0ba7fa639b3a5"
+    },
+    {
+      "path": "contracts/IpoOneEvidenceAnchorRegistryV1.sol",
+      "kind": "base_sepolia_evidence_anchor_registry",
+      "version": "evidence_anchor_registry.v1",
+      "activation": "active_separately_approved_zero_value_hash_attestation",
+      "sha256": "066631533dc7d788199074503fb2bca1c9303eb6fc3f0994be8aaabf64ab354d"
+    }
+  ],
+  "testData": [
+    {
+      "path": "deploy/local/stack.v1.json",
+      "sha256": "3fa3d0175df1ed6f73362e6f268b74ead79dea394c4a6caac96d5d931a74bfdd"
+    },
+    {
+      "path": "deploy/local/private-pilot-profile.v1.json",
+      "sha256": "079fd27b2bf9d3716f07efde07fc4a3d277633e3356ff10f3d760688a636fb55"
+    },
+    {
+      "path": "api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json",
+      "sha256": "4548cdd51c2ad105474ed94c9808585f026e40e4f2b5bae39910757041468bd0"
+    },
+    {
+      "path": "api/tenant-protocol/conformance/human-credit-offer-workflow-receipt.v1.fixtures.json",
+      "sha256": "39af1289ebe0624aa3f525faafee9e2b9cc95e8b0d027f1962f5b1eb97b90ff1"
+    },
+    {
+      "path": "api/tenant-protocol/conformance/agent-credit-offer-workflow-receipt.v1.fixtures.json",
+      "sha256": "cd8955af983ac51e5ce0430d45398a014ad21cba246e1f289f4fa4ee3e10e9bf"
+    },
+    {
+      "path": "api/tenant-protocol/conformance/human-sandbox-obligation-workflow-receipt.v1.fixtures.json",
+      "sha256": "88ee1043c940517d8255d86575a8a8c1e56ed3860bde474eca363be3680b0dd3"
+    },
+    {
+      "path": "api/tenant-protocol/conformance/agent-sandbox-obligation-workflow-receipt.v1.fixtures.json",
+      "sha256": "8bdc6c5ca86ffa5e97bc823978fc70915c5ef14278633c95dce9b345135f5923"
+    },
+    {
+      "path": "modules/hyperliquid-info/test/fixtures/official-info-responses.v1.json",
+      "sha256": "521fda222da3886186f6bee1131d1f182fec691fa5c01324ad3e4ea315f0747b"
+    },
+    {
+      "path": "artifacts/testnet/eip155-84532-chain-001d-live-20260728-001-credit-registry.json",
+      "sha256": "c497ddd730fcf53e654ba6a2bd5a534c50a077a563ac2cbc12744e6e1c2cbe98"
+    },
+    {
+      "path": "artifacts/testnet/eip155-84532-chain-001f-evidence-anchor-20260729-001.json",
+      "sha256": "9c93a515018da1f1bd3fdf90148736ce7cb0f388e8a57a7e63f9458ac5a34c31"
+    },
+    {
+      "path": "artifacts/testnet/eip155-84532-chain-001f-evidence-catchup-20260729-001.json",
+      "sha256": "f467704c31d45d09039eb16e466cb7b276459f476353655d8fac1e1b2877632e"
+    }
+  ],
+  "productSources": [
+    {
+      "path": "apps/web/src/index.html",
+      "sha256": "d60f2dc9e0ea3021a72747e93893a4e6a9ed077ce8844e6533ef45d3c402b85a"
+    },
+    {
+      "path": "apps/web/src/app.js",
+      "sha256": "7d0401ff51f9aa99535eb0446253f03ff07c0c0a996646523e1c4fc6413cd376"
+    },
+    {
+      "path": "apps/web/src/styles.css",
+      "sha256": "8f76fc472360ba6357683d3f852de319bd2234000cf1681f468027ef7c28b578"
+    },
+    {
+      "path": "apps/web/src/decision-passport-presentation.js",
+      "sha256": "da80e3ca9087d0ac7723b2e70ef46f1be3c6fc3f35e1e88d612bf08936691c91"
+    },
+    {
+      "path": "apps/private-pilot/src/local-reference-agent-http.js",
+      "sha256": "f25be1bdb3266244a28566db99d9b807806f92766bb18a88234a7f430f494619"
+    },
+    {
+      "path": "apps/private-pilot/src/agent-reference-workflows.js",
+      "sha256": "f1b5cd60b87848cb0337b6d7be446ae4c44edbb16001f28db83a52c83ad9883a"
+    },
+    {
+      "path": "apps/private-pilot/src/agent-reference-acceptance.js",
+      "sha256": "2ef0aa43ffd1ca36bee13500a78a0bff8fdeaef67eca711dd179d1690a40afeb"
+    },
+    {
+      "path": "apps/private-pilot/src/agent-workflow.js",
+      "sha256": "26c8ee1111db724ad878e8a92bf1a4f0ea1581c5abed3fe893b96de954d27a97"
+    },
+    {
+      "path": "apps/private-pilot/src/local-agent-session.js",
+      "sha256": "2a623eb6ac54c2a60d960133cbe965b453e46a388a9cd68c9c6c38cf62415cb7"
+    },
+    {
+      "path": "apps/private-pilot/src/private-pilot-runtime.js",
+      "sha256": "a839e74866571f280e5301c1aacb01d76b36bbf2fe15f5a55b7c751425449e2e"
+    },
+    {
+      "path": "apps/tenant-api/src/tenant-http-adapter.js",
+      "sha256": "1dc3f9aab47004df9f97e9c571cc9f5caef13a22b2fddcc79f9cd1904c9e85e7"
+    },
+    {
+      "path": "apps/tenant-api/src/tenant-pilot-host.js",
+      "sha256": "453661ecaaf6facdf417e96e09ce72c099f5268cdafda9b501b278e6bc646574"
+    },
+    {
+      "path": "modules/tenant-command-gateway/src/credit-acceptance-handlers.js",
+      "sha256": "39c970b625b6f1cba9e6c03e3f6ef7414c0884a98af2c240061fe5d5b59a9782"
+    },
+    {
+      "path": "modules/event-indexer/src/evidence-anchor-observer.js",
+      "sha256": "0179a85bff024ee230807658339ffff0d891341cdaf5af59a9b1f6f0cf8fd207"
+    },
+    {
+      "path": "docs/user-guide/IPO_ONE_HUMAN_AGENT_USER_MANUAL_v0.1_DRAFT.md",
+      "sha256": "40b8ce1799a3fda6e11eecf7c4b5313dbb32a15ee51cbec8f769b58ded480c87"
+    },
+    {
+      "path": "docs/codex/audits/UX-002/README.md",
+      "sha256": "001266813634774dd7f53278168c6cde9e6a431f51633a6382c346f60b03d3b1"
+    }
+  ],
+  "operationalSources": [
+    {
+      "path": "deploy/local/compose.yaml",
+      "sha256": "ba7860b0a630e8982f89b8794eef2738e983c3d95ade3e1403a5c1dfa7adadd6"
+    },
+    {
+      "path": "deploy/local/evidence-anchor.compose.yaml",
+      "sha256": "fa923388c0879543fac543011a974180306d21d0d38f3c4c7d1b65a2b0708d85"
+    },
+    {
+      "path": "apps/private-pilot/src/local-worker.js",
+      "sha256": "7fb4ac5002a1b8b465b94b46a8e1f218b441fb912e63a3eb03d6fa821a7b9155"
+    },
+    {
+      "path": "scripts/check-local-stack.mjs",
+      "sha256": "641afb2f563e5ed96ee626501b046400fc0d88a457e9830a2e46ae9cb8c5168d"
+    },
+    {
+      "path": "scripts/local-stack-acceptance.mjs",
+      "sha256": "54881e2555fd103a228a596397434ba7959dd12287a570ba4d4c52e84cf2cbdd"
+    },
+    {
+      "path": "scripts/local-agent-reference-acceptance.mjs",
+      "sha256": "8ab6bae5385996062ec6769de1db0afafa18cd28b1513f36e866e375f770686b"
+    }
+  ],
+  "acceptanceMatrix": [
+    {
+      "id": "complete_dual_native_credit_lifecycle_and_outcome_retry",
+      "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+      "testName": "Human and Agent persist one restart-safe no-funds Credit Intent protocol with retry-safe credit Outcomes",
+      "sha256": "ae621971eed0fe8a7e06fc6ad124c8dc97ee862338a305212a1c0572c007c7ae"
+    },
+    {
+      "id": "phase2_bilateral_marketplace_four_paths",
+      "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+      "testName": "Phase 2 Capital Partner marketplace closes Human, Agent, stale, and adverse no-funds paths",
+      "sha256": "ae621971eed0fe8a7e06fc6ad124c8dc97ee862338a305212a1c0572c007c7ae"
+    },
+    {
+      "id": "database_and_projection_restart",
+      "source": "modules/persistence/test-postgres/postgres-event-runtime.test.mjs",
+      "testName": "core projections survive restart and replay the original command response",
+      "sha256": "9675eaf8b8a169aa8d62e393227aab200874ca1e616d78cd8e3e0bd1dda4699f"
+    },
+    {
+      "id": "duplicate_command_idempotency",
+      "source": "modules/persistence/test-postgres/postgres-event-runtime.test.mjs",
+      "testName": "command replay is stable and conflicting idempotency reuse fails closed",
+      "sha256": "9675eaf8b8a169aa8d62e393227aab200874ca1e616d78cd8e3e0bd1dda4699f"
+    },
+    {
+      "id": "durable_admission_execution_retention",
+      "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+      "testName": "admission cleanup retains records referenced by durable command executions",
+      "sha256": "ae621971eed0fe8a7e06fc6ad124c8dc97ee862338a305212a1c0572c007c7ae"
+    },
+    {
+      "id": "session_restart_rotation_and_revocation",
+      "source": "modules/authentication/test-postgres/durable-human-authentication.test.mjs",
+      "testName": "sessions survive restart, rotate atomically, and revoke immediately",
+      "sha256": "7c457d280cddfb30acc8c837ddce80ac30ab31f45b767e02fb82851168aa9ee2"
+    },
+    {
+      "id": "login_expiry_and_revocation",
+      "source": "modules/authentication/test/human-bff.test.js",
+      "testName": "sessions enforce inactivity, absolute expiry, credential revocation, and deprovisioning",
+      "sha256": "1c4695288a675b75850bdf7259a957674d01aa53c327ff170e88fbd4ef232a37"
+    },
+    {
+      "id": "wallet_change_quarantine",
+      "source": "apps/web/test/wallet-authority-lifecycle.test.js",
+      "testName": "one wallet change quarantines every tab before the durable invalidation resolves",
+      "sha256": "60e8eba38e7e16527f51ed672c07ba0c0e9a531c627ec3a9187b394efe776cd2"
+    },
+    {
+      "id": "agent_credential_revocation",
+      "source": "apps/private-pilot/test/local-durable-authentication.test.js",
+      "testName": "local Agent proof is one-use, expiry-bound, key-bound, and Credential-revocable",
+      "sha256": "fbb4392c223fff58452e9c44f17eb830afa49844a2a56e6fa0be4fe4797a9e71"
+    },
+    {
+      "id": "reference_agent_application_bounded",
+      "source": "apps/private-pilot/test/agent-reference-workflows.test.js",
+      "testName": "reference Agent application remains bounded by the smallest approved limit",
+      "sha256": "42e2366849e86aee44d61b7de4b1b41600b7004dd79626336960320bfc9f58df"
+    },
+    {
+      "id": "reference_agent_runtime_exact_offer",
+      "source": "apps/private-pilot/test/agent-reference-workflows.test.js",
+      "testName": "reference Agent runtime binds acceptance and repayment to the exact Offer",
+      "sha256": "42e2366849e86aee44d61b7de4b1b41600b7004dd79626336960320bfc9f58df"
+    },
+    {
+      "id": "reference_agent_http_principal_gate",
+      "source": "apps/private-pilot/test/local-reference-agent-http.test.js",
+      "testName": "reference Agent HTTP surface requires Principal access and closed input",
+      "sha256": "c5f0f7beee3c8ac6d18fb142d7a80bd3dd61ba8995a4ec62a5fb7c0b20b2a671"
+    },
+    {
+      "id": "reference_agent_account_proof_redaction",
+      "source": "apps/private-pilot/test/local-reference-agent-http.test.js",
+      "testName": "reference Agent account proof returns only the verified binding",
+      "sha256": "c5f0f7beee3c8ac6d18fb142d7a80bd3dd61ba8995a4ec62a5fb7c0b20b2a671"
+    },
+    {
+      "id": "browser_operable_human_agent_credit",
+      "source": "apps/web/test/static-ui.test.js",
+      "testName": "UX-002 keeps Human and Agent credit actions browser-operable",
+      "sha256": "424bfe3344c7748e1dbdd6c7edd337c9e9bd8e6466d89b123df3c444f897081c"
+    },
+    {
+      "id": "agent_decision_passport_mandate_evidence",
+      "source": "apps/web/test/decision-passport-presentation.test.js",
+      "testName": "Agent Decision Passport accepts the Mandate evidence set without inventing Human identity evidence",
+      "sha256": "8e013f39b4975015b2f7a5b2a7620b98df935d020074cc0d6878ca52e41784ec"
+    },
+    {
+      "id": "offer_acceptance_stale_hash_closed",
+      "source": "modules/tenant-command-gateway/test/credit-acceptance-handlers.test.js",
+      "testName": "Human and Agent Offer acceptance fail closed when either reviewed hash is stale",
+      "sha256": "1addd63cbd7952f609b9e3d3ca2e385583bb1bb3858e3a65e575fc3c73772450"
+    },
+    {
+      "id": "offer_acceptance_authority_current",
+      "source": "modules/tenant-command-gateway/test/credit-acceptance-handlers.test.js",
+      "testName": "Human Consent and Agent Mandate must remain current at Offer acceptance",
+      "sha256": "1addd63cbd7952f609b9e3d3ca2e385583bb1bb3858e3a65e575fc3c73772450"
+    },
+    {
+      "id": "venue_unknown_terminal_no_resend",
+      "source": "modules/hyperliquid-execution/test/hyperliquid-execution-gateway.test.js",
+      "testName": "UNKNOWN is terminal, persists across restart, and is never retried",
+      "sha256": "03cdcc3d5470839dab12347e8b0fecf4a457e5af852a162302d19f2a1fbf88fb"
+    },
+    {
+      "id": "unknown_reconciliation_resolution",
+      "source": "modules/hyperliquid-reconciliation/test/hyperliquid-reconciliation.test.js",
+      "testName": "UNKNOWN survives restart and later fresh Evidence resolves without nonce rewrite or resend",
+      "sha256": "52d8db7b6170d7fa1eb835759ae9b34a305011333e4ebbaa30635d6fda49dfa3"
+    },
+    {
+      "id": "suspended_agent_blocked",
+      "source": "modules/tenant-command-gateway/test/credit-execution-handlers.test.js",
+      "testName": "a suspended Agent Subject cannot execute or repay an existing sandbox Obligation",
+      "sha256": "5a8837cdb02e97c8baba584b49cbf12f6a68e23cc9915b1436f09113b9c62ef6"
+    },
+    {
+      "id": "tenant_global_pause",
+      "source": "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+      "testName": "durable Tenant command pause blocks new commands but preserves queries and exact replay",
+      "sha256": "ae621971eed0fe8a7e06fc6ad124c8dc97ee862338a305212a1c0572c007c7ae"
+    },
+    {
+      "id": "facility_freeze",
+      "source": "packages/domain/test/trading-capital-facility.test.js",
+      "testName": "TC-103 protective pause and flatten cannot transfer or withdraw",
+      "sha256": "cea689595c662543777bcc743dd441d00dc910052e8eb9a0884d6763e9e904bc"
+    },
+    {
+      "id": "transport_003_timeout_unknown",
+      "source": "packages/sdk/test/production-agent-client.test.js",
+      "testName": "remote Agent client treats timeout and response binding drift as unknown outcomes",
+      "sha256": "6bc4d664550ad0010b50b694ebc944162764574f36143af7b97d112ee2b1279d"
+    },
+    {
+      "id": "economic_action_confirmation_required",
+      "source": "modules/tenant-command-gateway/test/economic-action-confirmation.test.js",
+      "testName": "wallet confirmation must be fresh and exactly action, resource, payload, and request bound",
+      "sha256": "ba7e570bee03262bf6c54eb9d0cbde64ff59b8e8357741a3143c509b6420cc09"
+    },
+    {
+      "id": "evidence_anchor_coverage_reorg_retry",
+      "source": "modules/persistence/test-postgres/evidence-anchor-store.test.mjs",
+      "testName": "Evidence anchor store is durable, retry-safe, and finality-aware",
+      "sha256": "9f60b2fae5f03322191de8d697a321f1a1f223f26c1f00b364ce117c717ca6a8"
+    },
+    {
+      "id": "evidence_anchor_partial_rpc_retry",
+      "source": "modules/event-indexer/test/evidence-anchor-observer.test.js",
+      "testName": "observer keeps partial RPC propagation non-final and safely retryable",
+      "sha256": "d48ca16df6f609c725521c7ecc2bbc95b4f8f6014966cf549217c92707e9c30d"
+    },
+    {
+      "id": "evidence_anchor_reorg_observer",
+      "source": "modules/event-indexer/test/evidence-anchor-observer.test.js",
+      "testName": "observer records an orphaned receipt as reorged instead of claiming finality",
+      "sha256": "d48ca16df6f609c725521c7ecc2bbc95b4f8f6014966cf549217c92707e9c30d"
+    },
+    {
+      "id": "evidence_anchor_unknown_no_resend",
+      "source": "modules/event-indexer/test/evidence-anchor-worker.test.js",
+      "testName": "worker submits once, re-observes unknown, and never resends the economic Evidence",
+      "sha256": "c6cfe329ae678ec25a032aeb4d1cbaf3985667c6c93400ecb6b10a48a3bc080d"
+    },
+    {
+      "id": "live_local_stack_attestor_and_persistence",
+      "source": "scripts/local-stack-acceptance.mjs",
+      "testName": "LOCAL-STACK-001 live acceptance passed",
+      "sha256": "54881e2555fd103a228a596397434ba7959dd12287a570ba4d4c52e84cf2cbdd"
+    },
+    {
+      "id": "live_reference_agent_shared_lifecycle",
+      "source": "scripts/local-agent-reference-acceptance.mjs",
+      "testName": "LOCAL-STACK-001 Agent acceptance",
+      "sha256": "8ab6bae5385996062ec6769de1db0afafa18cd28b1513f36e866e375f770686b"
+    }
+  ],
+  "requiredChecks": [
+    "pnpm run check",
+    "pnpm run test:postgres",
+    "pnpm run local:acceptance",
+    "pnpm run local:agent:acceptance",
+    "pnpm run local:restart",
+    "pnpm run local:acceptance",
+    "pnpm run local:agent:acceptance"
+  ],
+  "verification": {
+    "verifiedOn": "2026-07-31",
+    "repositoryTests": {
+      "passed": 678,
+      "failed": 0
+    },
+    "postgresTests": {
+      "passed": 82,
+      "failed": 0,
+      "freshDatabase": true,
+      "ephemeralContainerRemoved": true
+    },
+    "localStack": {
+      "migrationCount": 48,
+      "liveAcceptancePasses": 2,
+      "referenceAgentAcceptancePasses": 2,
+      "fullRestartBetweenPasses": true,
+      "persistentVolumeRetained": true,
+      "pendingOutboxAfterRestartDrain": 0,
+      "transientOutboxGateCaught": true,
+      "durableHumanAuthentication": true,
+      "durableAgentCredential": true,
+      "referenceAgentEvidenceEventCountPerPass": 11,
+      "invitedWalletPrivateKeyStored": false,
+      "evidenceEnvelopeAnchorCoverage": true,
+      "misrepresentedEvidenceHashCount": 0,
+      "evidenceAnchorFailedCount": 0,
+      "evidenceAttestorConfigured": true,
+      "evidenceAttestorMode": "base_sepolia_zero_value_hash_only"
+    }
+  },
+  "liveTestnetCheckpoint": {
+    "chainId": "eip155:84532",
+    "contractAddress": "0x78ba26d4a9211e8d4b0158c9e5443305278c1df0",
+    "attestorAddress": "0x66f0acF3457e7B73845FD33c764947fC5A220f2a",
+    "activity": "active_separately_approved_zero_value_hash_attestation",
+    "releaseGrantsNewWriteAuthority": false,
+    "nativeValuePerAnchor": "0",
+    "productionFundsMoved": false,
+    "observationSnapshot": {
+      "observedAt": "2026-07-31T03:39:41.558337+00:00",
+      "totalEvidenceAnchors": 1265,
+      "statusCounts": {
+        "finalized": 1182,
+        "included": 82,
+        "safe": 1
+      },
+      "pendingOutbox": 0,
+      "nonSandboxCount": 0,
+      "productionFundsMovedCount": 0,
+      "missingTransactionHashCount": 0
+    },
+    "continuousTailEnabledAtSeal": true,
+    "privateKeyIncluded": false
+  },
+  "authority": {
+    "realFundsEnabled": false,
+    "remoteAccessEnabled": false,
+    "humanCreditEnabled": false,
+    "testnetWritesEnabled": false,
+    "externalProviderExecutionEnabled": false,
+    "venueSignerEnabled": false,
+    "publicSignupEnabled": false,
+    "cloudMutationEnabled": false
+  }
+}

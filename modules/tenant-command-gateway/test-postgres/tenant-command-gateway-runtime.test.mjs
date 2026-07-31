@@ -826,12 +826,14 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [
           PilotCapability.AGENT_CREATE,
           PilotCapability.AGENT_MANAGE_OWNED,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.AGENT_ACCOUNT_CHALLENGE_CREATE_OWNED,
           PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
           PilotCapability.INTEGRATION_READ_OWNED,
           PilotCapability.MANDATE_DRAFT_CREATE,
           PilotCapability.MANDATE_DRAFT_REVOKE,
           PilotCapability.MANDATE_ACTIVATE_OWNED,
+          PilotCapability.OBLIGATION_READ_OWNED,
           PilotCapability.EVIDENCE_READ_OWNED,
           PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
           PilotCapability.CREDIT_PASSPORT_READ_SELF,
@@ -4093,9 +4095,15 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-read-owned-agent-obligation-${RUN_ID}`,
         correlationId: `correlation-read-owned-agent-obligation-${RUN_ID}`
       });
+      const controllerOwnedObligation = await tenantOneController.getOwnObligation({
+        obligationId: agentAcceptance.obligation.obligationId,
+        requestId: `request-read-controlled-agent-obligation-${RUN_ID}`,
+        correlationId: `correlation-read-controlled-agent-obligation-${RUN_ID}`
+      });
       for (const [view, accepted] of [
         [humanOwnedObligation, humanAcceptance],
-        [agentOwnedObligation, agentAcceptance]
+        [agentOwnedObligation, agentAcceptance],
+        [controllerOwnedObligation, agentAcceptance]
       ]) {
         assert.equal(view.response.schemaVersion, "tenant_owned_obligation_view.v1");
         assert.equal(view.response.obligation.obligationId, accepted.obligation.obligationId);
@@ -4107,6 +4115,36 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         assert.equal(view.response.productionFundsMoved, false);
         assert.equal(view.response.withdrawable, false);
       }
+      const {
+        asOf: controllerObligationAsOf,
+        ...controllerObligationState
+      } = controllerOwnedObligation.response;
+      const {
+        asOf: agentObligationAsOf,
+        ...agentObligationState
+      } = agentOwnedObligation.response;
+      assert.deepEqual(controllerObligationState, agentObligationState);
+      assert.equal(
+        new Date(controllerObligationAsOf).getTime() >=
+          new Date(agentObligationAsOf).getTime(),
+        true
+      );
+      const controllerWorkspace = await tenantOneController.resumeWorkspace({
+        requestId: `request-resume-controller-agent-obligation-${RUN_ID}`,
+        correlationId: `correlation-resume-controller-agent-obligation-${RUN_ID}`
+      });
+      assert.equal(controllerWorkspace.response.workspaceKind, "principal_controller");
+      assert.deepEqual(
+        controllerWorkspace.response.resources.find((resource) =>
+          resource.resourceType === "obligation" &&
+          resource.resourceId === agentAcceptance.obligation.obligationId
+        ),
+        {
+          resourceType: "obligation",
+          resourceId: agentAcceptance.obligation.obligationId,
+          relationship: "controller"
+        }
+      );
       for (const [index, nonOwner] of [
         tenantOneOtherBorrower,
         tenantOneOtherHuman,

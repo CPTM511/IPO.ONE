@@ -253,12 +253,14 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     [
       PilotCapability.AGENT_CREATE,
       PilotCapability.AGENT_MANAGE_OWNED,
+      PilotCapability.WORKSPACE_RESUME_SELF,
       PilotCapability.AGENT_ACCOUNT_CHALLENGE_CREATE_OWNED,
       PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
       PilotCapability.INTEGRATION_READ_OWNED,
       PilotCapability.MANDATE_DRAFT_CREATE,
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
+      PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
@@ -289,6 +291,23 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
       PilotCapability.TRADING_FACILITY_EVIDENCE_READ_BOUND
     ]
   );
+  assert.equal(
+    ROLE_BUNDLE_CAPABILITIES[RoleBundle.PRINCIPAL_CONTROLLER].includes(
+      PilotCapability.OBLIGATION_READ_OWNED
+    ),
+    true
+  );
+  for (const capability of [
+    PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
+    PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+    PilotCapability.REPAYMENT_POST_SANDBOX_SELF
+  ]) {
+    assert.equal(
+      ROLE_BUNDLE_CAPABILITIES[RoleBundle.PRINCIPAL_CONTROLLER].includes(capability),
+      false,
+      `Principal Controller must not gain Agent economic mutation capability ${capability}`
+    );
+  }
   assert.equal(
     ROLE_BUNDLE_CAPABILITIES[RoleBundle.DEVELOPER].includes(PilotCapability.MANDATE_ACTIVATE_OWNED),
     false

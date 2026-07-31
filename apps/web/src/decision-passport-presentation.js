@@ -72,6 +72,15 @@ export const DECISION_PASSPORT_SOURCE_COPY = Object.freeze({
 });
 
 const HUMAN_SOURCE_ROLES = Object.freeze(Object.keys(DECISION_PASSPORT_SOURCE_COPY));
+const AGENT_SOURCE_ROLES = Object.freeze(
+  HUMAN_SOURCE_ROLES.filter((role) => role !== "human_identity_reference")
+);
+
+function requiredSourceRoles(decision) {
+  return decision?.authorityType === "mandate"
+    ? AGENT_SOURCE_ROLES
+    : HUMAN_SOURCE_ROLES;
+}
 
 function deepFreeze(value) {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
@@ -91,6 +100,7 @@ export function compactEvmAddress(value) {
 
 export function createHumanDecisionPassportPresentation(decision) {
   const passport = decision?.decisionPassport;
+  const sourceRoles = requiredSourceRoles(decision);
   if (
     !passport ||
     passport.schemaVersion !== "risk_decision_passport.v1" ||
@@ -115,13 +125,13 @@ export function createHumanDecisionPassportPresentation(decision) {
       !Array.isArray(lineage.sourceRoles) || lineage.sourceRoles.length === 0
     ) ||
     !Array.isArray(passport.sourceEvidence) ||
-    passport.sourceEvidence.length !== HUMAN_SOURCE_ROLES.length
+    passport.sourceEvidence.length !== sourceRoles.length
   ) return null;
 
   const returnedRoles = passport.sourceEvidence.map(({ role }) => role);
   if (
-    new Set(returnedRoles).size !== HUMAN_SOURCE_ROLES.length ||
-    !HUMAN_SOURCE_ROLES.every((role) => returnedRoles.includes(role)) ||
+    new Set(returnedRoles).size !== sourceRoles.length ||
+    !sourceRoles.every((role) => returnedRoles.includes(role)) ||
     passport.sourceEvidence.some((source) =>
       !DECISION_PASSPORT_SOURCE_COPY[source.role] ||
       !HASH.test(source.evidenceHash) ||

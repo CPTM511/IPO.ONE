@@ -142,6 +142,18 @@ assert.match(
   evidenceAnchorCompose,
   /IPO_ONE_LOCAL_WORKER_INTERVAL_MS: "1000"/
 );
+assert.match(
+  evidenceAnchorCompose,
+  /IPO_ONE_EVIDENCE_ANCHOR_PROVIDER_SLOT: secondary/
+);
+assert.match(
+  worker,
+  /createEvidenceAnchorNonceReader\(\{\s+contractAddress: evidenceAnchorContractAddress,\s+providerSlot: evidenceAnchorProviderSlot/
+);
+assert.match(
+  worker,
+  /createEvidenceAnchorObserver\(\{\s+contractAddress: evidenceAnchorContractAddress,\s+providerSlot: evidenceAnchorProviderSlot/
+);
 assert.match(localEvidenceAnchor, /IPO_ONE_APPROVE_LOCAL_EVIDENCE_ATTESTOR/);
 assert.match(localEvidenceAnchor, /IPO_ONE_APPROVE_LOCAL_EVIDENCE_ANCHOR_WRITES/);
 assert.match(localEvidenceAnchor, /MAX_BALANCE_WEI = 10_000_000_000_000_000n/);

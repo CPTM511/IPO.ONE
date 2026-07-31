@@ -53,6 +53,7 @@ services:
     command:
       - apps/private-pilot/src/start.js
     volumes:
+      - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/agent-key.v1.json:/run/secrets/agent-key.v1.json:ro
       - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/authentication-server.v1.json:/run/secrets/authentication-server.v1.json:ro
       - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/authentication-invitation.v1.json:/run/secrets/authentication-invitation.v1.json:ro
       - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/private-pilot-db-secret:/run/secrets/private-pilot-db-secret:ro
