@@ -154,7 +154,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Current Evidence summary",
     "My positions",
     "Authenticated server truth",
-    "Start another application",
+    "Start a new Human loan",
     "Portfolio risk, with <em>protective action.</em>",
     "Tenant portfolio posture",
     "Design-partner lifecycle health",
@@ -1198,7 +1198,7 @@ test("UX-002 keeps Human and Agent credit actions browser-operable", async () =>
   assert.ok(html.includes("No handoff download or browser credential is required"));
   assert.ok(js.includes('"/local/v1/reference-agent/account-proof"'));
   assert.ok(js.includes('"/local/v1/reference-agent/application"'));
-  assert.ok(js.includes('"/local/v1/reference-agent/runtime"'));
+  assert.ok(js.includes('"/local/v1/reference-agent/runtime-step"'));
   assert.ok(js.includes("Early partial or full repayment is available now"));
   assert.ok(js.includes("restoreLatestCreditPassport"));
   assert.ok(js.includes("loadCreditTrackRecord"));
@@ -1283,10 +1283,151 @@ test("closed-pilot browser has no demo route, reset control, or hidden fallback"
   assert.ok(js.includes("No product data is available without an authenticated session."));
 });
 
+test("UX-003 exposes Human evaluation and staged Agent credit use as browser actions", async () => {
+  const [html, js, css] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  ]);
+  for (const id of [
+    "homeHumanBorrowBtn",
+    "homeAgentBorrowBtn",
+    "submitHumanCreditBtn",
+    "agentOnlineRunBtn",
+    "agentOnlineExecuteBtn",
+    "agentOnlineRepayBtn",
+    "agentOnlineEvidenceBtn",
+    "agentOnlineReviewBtn"
+  ]) {
+    assert.ok(html.includes(`id="${id}"`), `${id} browser action missing`);
+  }
+  assert.ok(html.includes("Start Human application"));
+  assert.ok(html.includes("Request & evaluate credit"));
+  assert.ok(js.includes('"Create Agent Obligation"'));
+  assert.ok(html.includes("Execute approved use"));
+  assert.ok(html.includes("Repay Agent obligation"));
+  assert.ok(html.includes("Verify Agent Evidence"));
+  assert.ok(html.includes("non-withdrawable sandbox rail"));
+  assert.ok(js.includes('"/local/v1/reference-agent/runtime-step"'));
+  for (const action of [
+    "accept_offer",
+    "execute_allowed_use",
+    "post_repayment",
+    "read_evidence"
+  ]) {
+    assert.ok(js.includes(`action: "${action}"`), `${action} Agent stage missing`);
+  }
+  assert.ok(js.includes("function openBorrowingEntry"));
+  assert.ok(js.includes("executeOnlineAgentApprovedUse"));
+  assert.ok(js.includes("repayOnlineAgentObligation"));
+  assert.ok(js.includes("verifyOnlineAgentEvidence"));
+  assert.ok(css.includes(".borrowing-entry-strip"));
+  assert.ok(css.includes(".agent-online-stage-actions"));
+});
+
+test("UX-005 opens a fresh Human application when a recovered Obligation exists", async () => {
+  const [html, js, manual] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(
+      new URL("../../../docs/user-guide/IPO_ONE_HUMAN_AGENT_USER_MANUAL_v0.2_DRAFT.md", import.meta.url),
+      "utf8"
+    )
+  ]);
+  assert.ok(html.includes('id="newHumanApplicationBtn"'));
+  assert.ok(html.includes("Start a new Human loan"));
+  assert.match(
+    js,
+    /function openBorrowingEntry\(entryMode\)[\s\S]*?if \(tenantPilot\.obligation\) \{[\s\S]*?startAnotherHumanApplication\(\)/
+  );
+  assert.match(
+    js,
+    /function startAnotherHumanApplication\(\)[\s\S]*?el\("humanConsentId"\)\.value = "";[\s\S]*?tenantPilot\.intent = null;/
+  );
+  assert.doesNotMatch(
+    js.match(/function startAnotherHumanApplication\(\)[\s\S]*?\n\}/)?.[0] ?? "",
+    /humanSubjectId/
+  );
+  assert.ok(manual.includes("Start a new Human loan"));
+  assert.ok(manual.includes("必须创建"));
+});
+
+test("UX-004 keeps the user manual and primary browser actions in one operability contract", async () => {
+  const [html, js, css, manual, contract, inventorySource] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+    readFile(
+      new URL("../../../docs/user-guide/IPO_ONE_HUMAN_AGENT_USER_MANUAL_v0.2_DRAFT.md", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../../../docs/user-guide/IPO_ONE_MANUAL_PRODUCT_CONTRACT_v0.1.md", import.meta.url),
+      "utf8"
+    ),
+    readFile(new URL("./manual-primary-actions.v1.json", import.meta.url), "utf8")
+  ]);
+  const inventory = JSON.parse(inventorySource);
+  assert.equal(inventory.schemaVersion, "manual_primary_actions.v1");
+  const productSource = `${html}\n${js}`;
+  const documentedSource = `${manual}\n${contract}`;
+  const ids = new Set();
+
+  for (const action of inventory.actions) {
+    assert.equal(ids.has(action.id), false, `${action.id} is duplicated in the action inventory`);
+    ids.add(action.id);
+    const idMatches = html.match(new RegExp(`\\bid="${action.id}"`, "g")) ?? [];
+    assert.equal(idMatches.length, 1, `${action.id} must exist exactly once in the browser`);
+    if (action.view !== "global") {
+      assert.ok(
+        html.includes(`data-view-panel="${action.view}"`),
+        `${action.id} references missing ${action.view} view`
+      );
+    }
+    for (const label of action.labels) {
+      const escapedHtmlLabel = label.replaceAll("&", "&amp;");
+      assert.ok(
+        productSource.includes(label) || html.includes(escapedHtmlLabel),
+        `${action.id} product label "${label}" missing`
+      );
+      assert.ok(
+        documentedSource.includes(`\`${label}\``),
+        `${action.id} label "${label}" missing from the user contract`
+      );
+    }
+  }
+
+  const hiddenPrimarySelector = css.match(
+    /\.nav-item\[data-view="agent-console"\],[\s\S]*?\{\s*display:\s*none;\s*\}/
+  )?.[0] ?? "";
+  for (const view of [
+    "obligations",
+    "repay-settle",
+    "credit-passport",
+    "credit-track-record"
+  ]) {
+    assert.equal(
+      hiddenPrimarySelector.includes(`data-view="${view}"`),
+      false,
+      `${view} must remain visible in primary navigation`
+    );
+  }
+
+  for (const statement of [
+    "non-withdrawable sandbox rail",
+    "Object hashes and server Evidence digests are not blockchain transactions.",
+    "Raw KYC/PII"
+  ]) {
+    assert.ok(documentedSource.includes(statement), `${statement} safety statement missing`);
+  }
+  assert.ok(html.includes("non-withdrawable sandbox rail"));
+  assert.ok(html.includes("A BaseScan link appears only after"));
+});
+
 test("every enabled browser button has a discoverable action contract", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  const genericAction = /\bdata-(?:view|go-view|agent-guide-action|human-guide-action|private-action|wallet-chain|auth-provider|trading-capital-view|scroll-target)=/;
+  const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|auth-provider|trading-capital-view|scroll-target)=/;
   const buttons = [...html.matchAll(/<button\b[^>]*>/g)].map(
     (match) => match[0]
   );

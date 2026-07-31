@@ -56,7 +56,7 @@ draftMandate.status = "draft";
 draftMandate.utilizedMinor = "0";
 delete draftMandate.activatedAt;
 let currentMandate = draftMandate;
-let runtimeCompleted = false;
+let runtimeStage = "none";
 
 const offerReceipt = structuredClone(offerFixtures.valid[0]);
 offerReceipt.subjectId = activeMandate.subjectId;
@@ -93,6 +93,42 @@ for (const installment of agentObligation.installments) {
   installment.status = "paid";
 }
 lifecycleReceipt.repayment.appliedMinor = "10000";
+lifecycleReceipt.repayment.requestedMinor = "10000";
+lifecycleReceipt.repayment.appliedPrincipalMinor = "10000";
+lifecycleReceipt.repayment.remainingPrincipalMinor = "0";
+lifecycleReceipt.executionReceipt.amountMinor = "10000";
+
+function agentObligationAt(stage) {
+  const obligation = structuredClone(agentObligation);
+  if (stage === "created") {
+    obligation.executionStatus = "pending";
+    obligation.status = "created";
+    obligation.outstandingPrincipalMinor = "10000";
+    obligation.totalRepaidMinor = "0";
+    for (const key of [
+      "sandboxExecutionReceiptId",
+      "executedAt",
+      "lastAccruedAt",
+      "interestAccrualRemainder",
+      "withdrawable"
+    ]) delete obligation[key];
+  } else if (stage === "executed") {
+    obligation.executionStatus = "executed";
+    obligation.status = "active";
+    obligation.outstandingPrincipalMinor = "10000";
+    obligation.totalRepaidMinor = "0";
+  }
+  if (stage !== "fully_repaid") {
+    obligation.oldestUnpaidInstallmentId = obligation.installments[0].installmentId;
+    for (const installment of obligation.installments) {
+      installment.paidPrincipalMinor = "0";
+      installment.status = "scheduled";
+    }
+  }
+  return obligation;
+}
+
+let currentAgentObligation = null;
 
 const evidenceResult = fixtureResult("pilotReadOwnObligationEvidence");
 evidenceResult.response.obligationId = agentObligation.obligationId;
@@ -126,7 +162,7 @@ function resultFor(command) {
           resourceId: activeMandate.mandateId,
           relationship: "controller"
         },
-        ...(runtimeCompleted
+        ...(runtimeStage !== "none"
           ? [{
               resourceType: "obligation",
               resourceId: agentObligation.obligationId,
@@ -158,7 +194,7 @@ function resultFor(command) {
   }
   if (command.operationId === "pilotReadOwnObligation") {
     return protocolResult(command.operationId, {
-      obligation: agentObligation,
+      obligation: currentAgentObligation ?? agentObligation,
       asOf: "2026-07-31T05:00:00.000Z",
       sandboxOnly: true,
       productionFundsMoved: false,
@@ -220,9 +256,10 @@ async function serveAuthentication({ request, response, url, requestId }) {
 const serveReferenceAgent = Object.freeze({
   routes: Object.freeze({
     application: "/local/v1/reference-agent/application",
-    runtime: "/local/v1/reference-agent/runtime"
+    runtime: "/local/v1/reference-agent/runtime",
+    runtimeStep: "/local/v1/reference-agent/runtime-step"
   }),
-  async handle({ url, sendJson }) {
+  async handle({ url, readJson, sendJson }) {
     if (url.pathname === this.routes.application) {
       return sendJson(200, {
         status: "offer_ready",
@@ -235,8 +272,96 @@ const serveReferenceAgent = Object.freeze({
         schemaVersion: "local_reference_agent_application_result.v1"
       });
     }
+    if (url.pathname === this.routes.runtimeStep) {
+      const input = await readJson();
+      if (input.action === "accept_offer") {
+        runtimeStage = "created";
+        currentAgentObligation = agentObligationAt(runtimeStage);
+        return sendJson(200, {
+          status: "obligation_created",
+          mandateId: activeMandate.mandateId,
+          subjectId: activeMandate.subjectId,
+          acceptance: lifecycleReceipt.acceptance,
+          obligation: currentAgentObligation,
+          receipt: {
+            operationId: "pilotAcceptCreditOffer",
+            requestId: "request-agent-console-browser-accept-01",
+            replayed: false,
+            responseSchemaVersion: "tenant_credit_offer_accepted.v1"
+          },
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          withdrawable: false,
+          credentialEnteredBrowser: false,
+          schemaVersion: "local_reference_agent_runtime_step_result.v1"
+        });
+      }
+      if (input.action === "execute_allowed_use") {
+        runtimeStage = "executed";
+        currentAgentObligation = agentObligationAt(runtimeStage);
+        return sendJson(200, {
+          status: "approved_use_executed",
+          mandateId: activeMandate.mandateId,
+          subjectId: activeMandate.subjectId,
+          obligation: currentAgentObligation,
+          executionReceipt: lifecycleReceipt.executionReceipt,
+          principalLedgerTransactionId:
+            lifecycleReceipt.principalLedgerTransactionId,
+          receipt: {
+            operationId: "pilotExecuteSandboxObligation",
+            requestId: "request-agent-console-browser-execute-02",
+            replayed: false,
+            responseSchemaVersion: "tenant_sandbox_obligation_executed.v1"
+          },
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          withdrawable: false,
+          credentialEnteredBrowser: false,
+          schemaVersion: "local_reference_agent_runtime_step_result.v1"
+        });
+      }
+      if (input.action === "post_repayment") {
+        runtimeStage = "fully_repaid";
+        currentAgentObligation = agentObligationAt(runtimeStage);
+        return sendJson(200, {
+          status: "repayment_posted",
+          mandateId: activeMandate.mandateId,
+          subjectId: activeMandate.subjectId,
+          obligation: currentAgentObligation,
+          repayment: lifecycleReceipt.repayment,
+          receipt: {
+            operationId: "pilotPostSandboxRepayment",
+            requestId: "request-agent-console-browser-repay-03",
+            replayed: false,
+            responseSchemaVersion: "tenant_sandbox_repayment_posted.v1"
+          },
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          withdrawable: false,
+          credentialEnteredBrowser: false,
+          schemaVersion: "local_reference_agent_runtime_step_result.v1"
+        });
+      }
+      if (input.action === "read_evidence") {
+        runtimeStage = "evidence_read";
+        return sendJson(200, {
+          status: "evidence_read",
+          mandateId: activeMandate.mandateId,
+          subjectId: activeMandate.subjectId,
+          obligationId: agentObligation.obligationId,
+          evidence: evidenceResult.response,
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          withdrawable: false,
+          credentialEnteredBrowser: false,
+          schemaVersion: "local_reference_agent_runtime_step_result.v1"
+        });
+      }
+      throw new Error("unsupported_agent_console_runtime_step");
+    }
     if (url.pathname === this.routes.runtime) {
-      runtimeCompleted = true;
+      runtimeStage = "evidence_read";
+      currentAgentObligation = agentObligationAt("fully_repaid");
       return sendJson(200, {
         status: "evidence_read",
         mandateId: activeMandate.mandateId,

@@ -79,6 +79,42 @@ test("reference Agent HTTP surface requires Principal access and closed input", 
     }),
     (error) => error.code === "local_reference_agent_request_invalid"
   );
+
+  for (const body of [
+    {
+      action: "execute_allowed_use",
+      mandateId: "mandate_reference_agent",
+      obligationId: "obligation_reference_agent",
+      browserCredential: "forbidden"
+    },
+    {
+      action: "post_repayment",
+      amountMinor: "100",
+      mandateId: "mandate_reference_agent",
+      obligationId: "obligation_reference_agent",
+      sourceCode: "production_wallet"
+    },
+    {
+      action: "post_repayment",
+      amountMinor: "0",
+      mandateId: "mandate_reference_agent",
+      obligationId: "obligation_reference_agent",
+      sourceCode: "synthetic_revenue"
+    }
+  ]) {
+    await assert.rejects(
+      referenceAgent.handle({
+        request: { method: "POST" },
+        url: new URL(
+          `http://127.0.0.1${LOCAL_REFERENCE_AGENT_HTTP_ROUTES.runtimeStep}`
+        ),
+        authenticationContext: principal,
+        readJson: async () => body,
+        sendJson: () => undefined
+      }),
+      (error) => error.code === "local_reference_agent_request_invalid"
+    );
+  }
 });
 
 test("reference Agent account proof returns only the verified binding", async () => {

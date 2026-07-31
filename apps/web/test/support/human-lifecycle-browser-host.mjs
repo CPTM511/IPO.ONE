@@ -226,6 +226,81 @@ function curedRepayment(obligation) {
   };
 }
 
+function earlyRepaidObligation(
+  source = obligationAt("executed"),
+  requestedMinor = source.outstandingPrincipalMinor
+) {
+  const obligation = structuredClone(source);
+  const outstandingBefore = BigInt(obligation.outstandingPrincipalMinor);
+  const requested = BigInt(requestedMinor);
+  const applied = requested < outstandingBefore ? requested : outstandingBefore;
+  let principalToApply = applied;
+  for (const installment of obligation.installments) {
+    const scheduled = BigInt(installment.scheduledPrincipalMinor);
+    const alreadyPaid = BigInt(installment.paidPrincipalMinor);
+    const remaining = scheduled - alreadyPaid;
+    const installmentApplied =
+      principalToApply < remaining ? principalToApply : remaining;
+    installment.paidPrincipalMinor =
+      (alreadyPaid + installmentApplied).toString();
+    principalToApply -= installmentApplied;
+    installment.status =
+      installment.paidPrincipalMinor === installment.scheduledPrincipalMinor
+        ? "paid"
+        : installmentApplied > 0n
+          ? "partial"
+          : "scheduled";
+  }
+  const outstandingAfter = outstandingBefore - applied;
+  const effectiveAt = new Date("2026-07-31T12:00:00.000Z").toISOString();
+  obligation.outstandingPrincipalMinor = outstandingAfter.toString();
+  obligation.totalRepaidMinor = (
+    BigInt(obligation.totalRepaidMinor) + applied
+  ).toString();
+  obligation.status =
+    outstandingAfter === 0n ? "fully_repaid" : "partially_repaid";
+  obligation.servicingClassification = "current";
+  obligation.daysPastDue = 0;
+  obligation.oldestUnpaidInstallmentId =
+    obligation.installments.find(
+      (installment) => installment.status !== "paid"
+    )?.installmentId ?? null;
+  obligation.servicingEffectiveAt = effectiveAt;
+  obligation.servicingReasonCode = "servicing_current";
+  obligation.lastAccruedAt = effectiveAt;
+  obligation.updatedAt = effectiveAt;
+  return {
+    appliedMinor: applied.toString(),
+    obligation
+  };
+}
+
+function earlyRepayment(
+  obligation,
+  { appliedMinor, requestedMinor, sourceCode }
+) {
+  return {
+    ...structuredClone(lifecycleReceipt.repayment),
+    obligationId: obligation.obligationId,
+    subjectId: obligation.subjectId,
+    repaymentId: "repayment_human_browser_early_001",
+    repaymentHash:
+      "0xaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeae",
+    requestedMinor,
+    appliedMinor,
+    appliedPrincipalMinor: appliedMinor,
+    surplusMinor: (
+      BigInt(requestedMinor) - BigInt(appliedMinor)
+    ).toString(),
+    remainingPrincipalMinor: obligation.outstandingPrincipalMinor,
+    remainingInterestMinor: obligation.outstandingInterestMinor,
+    remainingFeesMinor: obligation.outstandingFeesMinor,
+    sourceCode,
+    ledgerTransactionId: "ledger_transaction_human_browser_early_001",
+    occurredAt: obligation.servicingEffectiveAt
+  };
+}
+
 function cureAction(obligation) {
   return {
     servicingActionId: "sandbox_servicing_action_human_browser_cure_001",
@@ -545,21 +620,33 @@ function resultFor(command) {
   }
   if (operationId === "pilotPostSandboxRepayment") {
     const secondary = command.resource?.resourceId === secondaryObligationId;
-    const obligation = curedObligation(
-      secondary ? secondaryCurrentObligation : obligationAt("executed")
-    );
-    const servicingAction = cureAction(obligation);
+    const requestedMinor = command.payload?.amountMinor ?? "6000";
+    const sourceCode = command.payload?.sourceCode ?? "synthetic_wallet";
+    const repaymentState = secondary
+      ? {
+          appliedMinor: "6000",
+          obligation: curedObligation(secondaryCurrentObligation)
+        }
+      : earlyRepaidObligation(currentObligation, requestedMinor);
+    const obligation = repaymentState.obligation;
+    const servicingAction = secondary ? cureAction(obligation) : undefined;
     if (secondary) {
       secondaryCurrentObligation = obligation;
       secondaryServicingAction = servicingAction;
     } else {
       currentObligation = obligation;
-      currentServicingAction = servicingAction;
+      currentServicingAction = undefined;
     }
     return protocolResult(operationId, {
       obligation,
-      repayment: curedRepayment(obligation),
-      servicingAction,
+      repayment: secondary
+        ? curedRepayment(obligation)
+        : earlyRepayment(obligation, {
+            appliedMinor: repaymentState.appliedMinor,
+            requestedMinor,
+            sourceCode
+          }),
+      ...(servicingAction ? { servicingAction } : {}),
       sandboxOnly: true,
       productionFundsMoved: false,
       withdrawable: false,

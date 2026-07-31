@@ -233,6 +233,24 @@
                 </div>
               </section>
 
+              <section class="panel borrowing-entry-strip" aria-labelledby="borrowingEntryTitle">
+                <div class="borrowing-entry-copy">
+                  <p class="eyebrow">Borrowing shortcuts</p>
+                  <h3 id="borrowingEntryTitle">Start from the user you are serving</h3>
+                  <p>Human and Agent use different authority, then converge on the same Decision, Offer, Obligation, repayment, and Evidence record.</p>
+                </div>
+                <div class="borrowing-entry-actions">
+                  <button class="borrowing-entry-action" id="homeHumanBorrowBtn" type="button" data-borrow-entry="human">
+                    <span><strong>Human borrowing</strong><small>Apply, evaluate, review terms, and create an Obligation</small></span>
+                    <em>Start Human application</em>
+                  </button>
+                  <button class="borrowing-entry-action" id="homeAgentBorrowBtn" type="button" data-borrow-entry="agent">
+                    <span><strong>Agent borrowing</strong><small>Request credit, create an Obligation, and execute an approved use</small></span>
+                    <em>Open Agent credit</em>
+                  </button>
+                </div>
+              </section>
+
               <section class="product-entry-section" aria-labelledby="productEntryTitle">
                 <div class="product-section-heading">
                   <div>
@@ -425,7 +443,10 @@
                   <h3 id="humanApplicationTitle">Request and price no-funds credit</h3>
                   <p id="humanApplicationCopy">Choose an amount and schedule. You will see an explainable Offer before anything is created.</p>
                 </div>
-                <span class="state-pill neutral" id="tenantPilotConnection">Checking private gateway</span>
+                <div class="human-workbench-actions">
+                  <span class="state-pill neutral" id="tenantPilotConnection">Checking private gateway</span>
+                  <button class="secondary" id="newHumanApplicationBtn" type="button" hidden>Start a new Human loan</button>
+                </div>
               </div>
 
               <div class="application-workbench-layout">
@@ -485,7 +506,6 @@
                   </div>
                   <div class="application-submit-row">
                     <button class="primary application-submit" id="submitHumanCreditBtn" type="submit">Request & evaluate credit</button>
-                    <button class="secondary application-submit" id="newHumanApplicationBtn" type="button" hidden>Start another application</button>
                   </div>
                   <p class="helper" id="humanApplicationHelper">Connect through the local authenticated Human pilot host to begin.</p>
                 </form>
@@ -1148,13 +1168,18 @@
                 <div><span>Application</span><strong id="agentOnlineApplicationState">Not started</strong></div>
                 <div><span>Offer</span><strong id="agentOnlineOfferState">Not loaded</strong></div>
                 <div><span>Obligation</span><strong id="agentOnlineObligationState">Not created</strong></div>
+                <div><span>Approved use</span><strong id="agentOnlineExecutionState">Not executed</strong></div>
+                <div><span>Repayment</span><strong id="agentOnlineRepaymentState">Not posted</strong></div>
                 <div><span>Evidence</span><strong id="agentOnlineEvidenceState">Not loaded</strong></div>
               </div>
-              <div class="heading-actions">
+              <div class="agent-online-stage-actions" aria-label="Agent borrowing and use actions">
                 <button class="primary" id="agentOnlineRunBtn" type="button" disabled>Run Agent application online</button>
-                <button class="secondary" id="agentOnlineReviewBtn" type="button" disabled>Review Agent obligations</button>
+                <button class="secondary" id="agentOnlineExecuteBtn" type="button" disabled>Execute approved use</button>
+                <button class="secondary" id="agentOnlineRepayBtn" type="button" disabled>Repay Agent obligation</button>
+                <button class="secondary" id="agentOnlineEvidenceBtn" type="button" disabled>Verify Agent Evidence</button>
+                <button class="text-action" id="agentOnlineReviewBtn" type="button" disabled>Review Agent obligations</button>
               </div>
-              <p class="policy-note">The Human Principal approves the Mandate; the registered Agent uses its own durable, revocable workload credential on the server. The browser receives only sanitized workflow receipts.</p>
+              <p class="policy-note"><strong>What “use credit” means:</strong> the Agent executes one Mandate-approved purpose through the non-withdrawable sandbox rail. It cannot transfer the credit to an arbitrary wallet. The registered Agent uses its own durable, revocable server-side credential; the browser receives only sanitized workflow receipts.</p>
             </section>
 
             <div class="agent-console-authority-grid">

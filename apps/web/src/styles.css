@@ -6163,6 +6163,7 @@ body.private-session-closed [data-view-panel] {
 
 .workbench-heading {
   align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .workbench-heading > div > p:not(.eyebrow) {
@@ -6171,6 +6172,20 @@ body.private-session-closed [data-view-panel] {
   color: var(--muted);
   font-size: 0.76rem;
   line-height: 1.55;
+}
+
+.human-workbench-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.human-workbench-actions .secondary {
+  min-height: 36px;
+  padding: 8px 14px;
+  white-space: nowrap;
 }
 
 .application-workbench-layout {
@@ -9531,6 +9546,25 @@ body[data-interaction-mode="agent"] [data-view-panel="request-credit"] .request-
   margin-top: 18px;
 }
 
+.agent-online-stage-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.agent-online-stage-actions button {
+  min-width: 0;
+  min-height: 46px;
+  white-space: normal;
+}
+
+.agent-online-stage-actions .text-action {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: auto;
+}
+
 .agent-console-contract-heading {
   display: flex;
   align-items: flex-start;
@@ -9822,6 +9856,10 @@ body[data-interaction-mode="agent"] [data-view-panel="request-credit"] .request-
   .agent-console-contract-metrics,
   .agent-console-proof-grid,
   .agent-console-unavailable-rows {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-online-stage-actions {
     grid-template-columns: 1fr;
   }
 
@@ -10145,6 +10183,15 @@ body[data-interaction-mode="agent"] [data-view-panel="request-credit"] .request-
   .product-entry-section,
   .access-mode-heading {
     margin-inline: 6px;
+  }
+
+  .borrowing-entry-strip {
+    grid-template-columns: 1fr;
+    margin-inline: 6px;
+  }
+
+  .borrowing-entry-actions {
+    grid-template-columns: 1fr;
   }
 
   .product-section-heading,
@@ -10989,8 +11036,6 @@ label,
   color: #b5adff;
 }
 
-.nav-item[data-view="obligations"],
-.nav-item[data-view="credit-track-record"],
 .nav-item[data-view="agent-console"],
 .nav-item[data-view="wallet-permissions"],
 .nav-item[data-view="capital-network"],
@@ -11001,8 +11046,6 @@ label,
   display: none;
 }
 
-body.sidebar-tools-open .nav-item[data-view="obligations"],
-body.sidebar-tools-open .nav-item[data-view="credit-track-record"],
 body.sidebar-tools-open .nav-item[data-view="agent-console"],
 body.sidebar-tools-open .nav-item[data-view="wallet-permissions"],
 body.sidebar-tools-open .nav-item[data-view="capital-network"],
@@ -11315,6 +11358,78 @@ body.sidebar-tools-open .nav-item[data-view="risk-operations"] {
 
 .product-entry-section {
   margin: 20px 0 0;
+}
+
+.borrowing-entry-strip {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
+  gap: 24px;
+  margin: 20px 0 0;
+  padding: 22px;
+  border-color: #d8d3ff;
+  background: linear-gradient(135deg, #fbfaff 0%, #f5f3ff 100%);
+}
+
+.borrowing-entry-copy {
+  align-self: center;
+}
+
+.borrowing-entry-copy h3 {
+  margin-top: 6px;
+  font-size: 1.08rem;
+}
+
+.borrowing-entry-copy > p:last-child {
+  margin-top: 8px;
+  color: #625d6c;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.borrowing-entry-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.borrowing-entry-action {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 18px;
+  border: 1px solid #d5d0df;
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--ink);
+  text-align: left;
+}
+
+.borrowing-entry-action:hover {
+  border-color: var(--brand-strong);
+  box-shadow: 0 10px 24px rgba(46, 38, 91, 0.08);
+}
+
+.borrowing-entry-action span {
+  display: grid;
+  gap: 6px;
+}
+
+.borrowing-entry-action strong {
+  font-size: 0.9rem;
+}
+
+.borrowing-entry-action small {
+  color: #686372;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.borrowing-entry-action em {
+  color: var(--brand-strong);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 850;
 }
 
 .product-section-heading {
