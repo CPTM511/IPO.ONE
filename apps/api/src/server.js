@@ -455,6 +455,7 @@ function handlePublicAuthenticationDiscovery(request, response, pathname) {
     profile: "public_sandbox",
     enabled: false,
     sessionActive: false,
+    sessionAuthenticationMethod: null,
     oidcProviders: [],
     walletAuthentication: false,
     supportedChains: ["eip155:84532", "eip155:1952"],

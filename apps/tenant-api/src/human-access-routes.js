@@ -1,6 +1,7 @@
 import {
   SESSION_COOKIE_NAME,
   CSRF_BOOTSTRAP_COOKIE_NAME,
+  ClientAuthenticationMethod,
   TRANSACTION_COOKIE_NAME,
   WalletSessionInvalidationReason,
   assertBoundedString,
@@ -351,20 +352,28 @@ export function createHumanAccessRouteHandler(input) {
   const checkedProfile = assertSafeIdentifier("profile", profile);
   const successPath = exactPostLoginPath(postLoginPath);
 
-  async function sessionActive(request, now) {
+  async function sessionStatus(request, now) {
     const sessionHandle = parseCookies(request.headers.cookie).get(SESSION_COOKIE_NAME);
-    if (!sessionHandle) return false;
+    if (!sessionHandle) {
+      return Object.freeze({ active: false, authenticationMethod: null });
+    }
     try {
-      await humanSessionBff.authenticateSession({
+      const authenticationContext = await humanSessionBff.authenticateSession({
         sessionHandle,
         requestMethod: "GET",
         requestOrigin: undefined,
         csrfToken: undefined,
         now
       });
-      return true;
+      const authenticationMethod = new Set([
+        ClientAuthenticationMethod.OIDC_PKCE_BFF,
+        ClientAuthenticationMethod.SIWE
+      ]).has(authenticationContext?.authenticationMethod)
+        ? authenticationContext.authenticationMethod
+        : null;
+      return Object.freeze({ active: true, authenticationMethod });
     } catch {
-      return false;
+      return Object.freeze({ active: false, authenticationMethod: null });
     }
   }
 
@@ -382,11 +391,13 @@ export function createHumanAccessRouteHandler(input) {
       if (url.search !== "") {
         throw new ApiBoundaryError("authentication_input_rejected", "authentication query is invalid");
       }
+      const activeSession = await sessionStatus(request, now);
       sendJson(response, 200, {
         schemaVersion: "ipo_one_authentication_options.v1",
         profile: checkedProfile,
         enabled: providers.size > 0 || walletBff !== undefined,
-        sessionActive: await sessionActive(request, now),
+        sessionActive: activeSession.active,
+        sessionAuthenticationMethod: activeSession.authenticationMethod,
         oidcProviders: [...providers.keys()],
         walletAuthentication: walletBff !== undefined,
         supportedChains: SUPPORTED_CHAINS,

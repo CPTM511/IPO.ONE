@@ -54,16 +54,6 @@ class TenantProtocolClient {
 
   async execute(command) {
     const needsEconomicConfirmation = Boolean(economicActionTypeForOperation(command.operationId));
-    if (!needsEconomicConfirmation) {
-      assertTenantProtocolRequest({
-        ...command,
-        schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
-      });
-    }
-    const authenticationContext = assertAuthenticationContext(await this.authenticationContextProvider());
-    if (!this.#allowedActorTypes.has(authenticationContext.actorType)) {
-      throw new DomainError("tenant_protocol_client_mismatch", "authenticated Actor cannot use this client");
-    }
     const payload = needsEconomicConfirmation && !command.payload?.actionConfirmation
       ? {
           ...command.payload,
@@ -81,6 +71,10 @@ class TenantProtocolClient {
       schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
     };
     assertTenantProtocolRequest(request);
+    const authenticationContext = assertAuthenticationContext(await this.authenticationContextProvider());
+    if (!this.#allowedActorTypes.has(authenticationContext.actorType)) {
+      throw new DomainError("tenant_protocol_client_mismatch", "authenticated Actor cannot use this client");
+    }
     const networkContext = await this.networkContextProvider?.();
     return this.gateway.execute({
       ...request,

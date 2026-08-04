@@ -225,7 +225,7 @@
                   <div><span>Available credit</span><strong id="privatePortfolioAvailableCredit">Unavailable</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg></span></div>
                   <div><span>Outstanding</span><strong id="privatePortfolioOutstanding">Unavailable</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg></span></div>
                   <div><span>Next payment</span><strong id="privatePortfolioNextPayment">—</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#arrow-left-right"></use></svg></span></div>
-                  <div><span>Verified track record</span><strong id="privatePortfolioEvidence">Not loaded</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg></span></div>
+                  <div><span>Evidence track record</span><strong id="privatePortfolioEvidence">Not loaded</strong><span class="portfolio-metric-icon"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg></span></div>
                 </div>
                 <div class="heading-actions">
                   <button id="privatePortfolioPrimaryBtn" class="primary" type="button">Start a credit request</button>
@@ -887,7 +887,7 @@
                     <span>I confirm this exact sandbox Mandate and understand that activation unlocks runtime use of an existing Agent Offer; it does not create or evaluate a new application.</span>
                   </label>
                   <button class="primary authority-activate" id="activateMandateBtn" type="button">Activate exact Sandbox Mandate</button>
-                  <button class="primary authority-continue" id="continueAgentCreditBtn" type="button" data-agent-guide-action="run-online-agent" hidden>Continue in Agent workspace</button>
+                  <button class="primary authority-continue" id="continueAgentCreditBtn" type="button" data-agent-guide-action="open-agent-workspace" hidden>Open Agent workspace</button>
                   <p class="helper authority-helper" id="agentAuthorityHelper">Connect through the authenticated Human Principal session to begin.</p>
                 </form>
 
@@ -1173,7 +1173,7 @@
                 <div><span>Evidence</span><strong id="agentOnlineEvidenceState">Not loaded</strong></div>
               </div>
               <div class="agent-online-stage-actions" aria-label="Agent borrowing and use actions">
-                <button class="primary" id="agentOnlineRunBtn" type="button" disabled>Run Agent application online</button>
+                <button class="primary" id="agentOnlineRunBtn" type="button" disabled>Request Agent credit and receive Offer</button>
                 <button class="secondary" id="agentOnlineExecuteBtn" type="button" disabled>Execute approved use</button>
                 <button class="secondary" id="agentOnlineRepayBtn" type="button" disabled>Repay Agent obligation</button>
                 <button class="secondary" id="agentOnlineEvidenceBtn" type="button" disabled>Verify Agent Evidence</button>
@@ -2458,8 +2458,8 @@
         <div class="access-dialog-grid" id="accessDialogGrid">
           <section class="access-methods" id="accessMethodPanel" aria-labelledby="signInMethodTitle">
             <div class="access-section-heading">
-              <span>Step 1</span>
-              <div><h3 id="signInMethodTitle">Choose how to sign in</h3><p>One secure session across the Human and Agent workspaces.</p></div>
+              <span id="accessMethodStep">Step 1</span>
+              <div><h3 id="signInMethodTitle">Choose how to sign in</h3><p id="signInMethodCopy">One secure session across the Human and Agent workspaces.</p></div>
             </div>
             <div class="access-method-list">
               <button class="access-method-button" id="googleSignInBtn" type="button" data-auth-provider="google">

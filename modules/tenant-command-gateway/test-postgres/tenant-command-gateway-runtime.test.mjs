@@ -1280,7 +1280,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
          sandbox_servicing_actions,
          provider_intent_deliveries, provider_intent_acknowledgements,
          provider_callback_inbox,
-         credit_lines, ledger_accounts, ledger_transactions, ledger_entries, repayment_events,
+         credit_lines, lockboxes, ledger_accounts, ledger_transactions, ledger_entries, repayment_events,
          aggregate_stream_heads, domain_events, credit_events,
          pilot_feedback_records, credit_passport_artifacts, credit_outcomes,
          tenant_command_pauses,
@@ -4667,6 +4667,61 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         assert.equal(repayments[0].response.withdrawable, false);
       }
 
+      const agentLockboxDurability = await ownerPool.query(
+        `SELECT l.id, l.lockbox_hash, l.subject_id, l.principal_id,
+                l.mandate_id, l.credit_intent_id, l.credit_offer_id,
+                l.obligation_id, l.credit_line_id, l.account_binding_id,
+                l.chain_id, l.asset_id, l.account_ref, l.purpose_code,
+                l.allowed_provider_ids, l.status, l.sandbox_only,
+                l.production_funds_moved, l.withdrawable,
+                l.custody_authority, l.unrestricted_transfers_allowed,
+                balance.account_type AS balance_account_type,
+                repayment.account_type AS repayment_account_type
+           FROM lockboxes l
+           JOIN ledger_accounts balance
+             ON balance.tenant_id = l.tenant_id
+            AND balance.id = l.ledger_account_id
+           JOIN ledger_accounts repayment
+             ON repayment.tenant_id = l.tenant_id
+            AND repayment.id = l.repayment_ledger_account_id
+          WHERE l.tenant_id = $1 AND l.obligation_id = $2`,
+        [TENANT_ONE, agentAcceptance.obligation.obligationId]
+      );
+      assert.equal(agentLockboxDurability.rowCount, 1);
+      const agentLockboxRow = agentLockboxDurability.rows[0];
+      const agentLockboxId = agentLockboxRow.id;
+      assert.match(agentLockboxRow.lockbox_hash, /^0x[0-9a-f]{64}$/);
+      assert.equal(agentLockboxRow.subject_id, creditAgentSubject.response.subjectId);
+      assert.equal(agentLockboxRow.mandate_id, creditAgentMandate.response.mandateId);
+      assert.equal(agentLockboxRow.credit_intent_id, agentIntent.creditIntentId);
+      assert.equal(agentLockboxRow.credit_offer_id, agentWorkflow.offer.creditOfferId);
+      assert.equal(agentLockboxRow.obligation_id, agentAcceptance.obligation.obligationId);
+      assert.equal(agentLockboxRow.chain_id, "eip155:84532");
+      assert.equal(agentLockboxRow.purpose_code, "working_capital");
+      assert.deepEqual(agentLockboxRow.allowed_provider_ids, []);
+      assert.equal(agentLockboxRow.status, "active");
+      assert.equal(agentLockboxRow.sandbox_only, true);
+      assert.equal(agentLockboxRow.production_funds_moved, false);
+      assert.equal(agentLockboxRow.withdrawable, false);
+      assert.equal(agentLockboxRow.custody_authority, false);
+      assert.equal(agentLockboxRow.unrestricted_transfers_allowed, false);
+      assert.equal(agentLockboxRow.balance_account_type, "principal_receivable");
+      assert.equal(agentLockboxRow.repayment_account_type, "repayment_clearing");
+
+      const agentTenantContext = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneCreditAgent.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      await assert.rejects(
+        () => withTenantTransaction(appPool, agentTenantContext, (client) => client.query(
+          "UPDATE lockboxes SET withdrawable = TRUE WHERE id = $1",
+          [agentLockboxId]
+        )),
+        (error) => error.code === "23514"
+      );
+
       const humanServicingView = await tenantOneBorrower.getOwnObligation({
         obligationId: humanAcceptance.obligation.obligationId,
         requestId: `request-read-serviced-human-obligation-${RUN_ID}`,
@@ -4836,6 +4891,46 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         ["3000", "0"]
       );
 
+      const restartedAgentRepository = new PostgresCoreRepository({
+        pool: appPool,
+        eventRepository: new PostgresEventRepository({
+          pool: appPool,
+          tenantContext: createTenantSecurityContext({
+            tenantId: TENANT_ONE,
+            actorId: identities.tenantOneCreditAgent.authenticationContext.actorId,
+            policyVersion: "security_001.v1",
+            source: "local_test"
+          })
+        })
+      });
+      const restartedAgentLockbox = await restartedAgentRepository.getLockbox(
+        agentLockboxId
+      );
+      assert.equal(restartedAgentLockbox.schemaVersion, "lockbox.v2");
+      assert.equal(restartedAgentLockbox.status, "active");
+      assert.equal(restartedAgentLockbox.obligationId, agentAcceptance.obligation.obligationId);
+      assert.equal(restartedAgentLockbox.mandateId, creditAgentMandate.response.mandateId);
+      assert.equal(restartedAgentLockbox.balanceMinor, "9000");
+      assert.equal(restartedAgentLockbox.capturedRevenueMinor, "3000");
+      assert.equal(restartedAgentLockbox.withdrawable, false);
+
+      const crossTenantLockboxRepository = new PostgresCoreRepository({
+        pool: appPool,
+        eventRepository: new PostgresEventRepository({
+          pool: appPool,
+          tenantContext: createTenantSecurityContext({
+            tenantId: TENANT_TWO,
+            actorId: identities.tenantTwoAgent.authenticationContext.actorId,
+            policyVersion: "security_001.v1",
+            source: "local_test"
+          })
+        })
+      });
+      assert.equal(
+        await crossTenantLockboxRepository.getLockbox(agentLockboxId),
+        undefined
+      );
+
       const frozenCreditLineId = `credit_line_human_credit_frozen_${RUN_ID}`;
       const riskContext = createTenantSecurityContext({
         tenantId: TENANT_ONE,
@@ -4907,6 +5002,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         assert.equal(result.response.obligation.outstandingPrincipalMinor, "0");
         assert.equal(result.response.productionFundsMoved, false);
       }
+      const closedAgentLockbox = await restartedAgentRepository.getLockbox(
+        agentLockboxId
+      );
+      assert.equal(closedAgentLockbox.status, "closed");
+      assert.equal(closedAgentLockbox.balanceMinor, "0");
+      assert.equal(closedAgentLockbox.capturedRevenueMinor, "12000");
+      assert.equal(closedAgentLockbox.withdrawable, false);
       const outcomeClockResult = await ownerPool.query(
         `SELECT GREATEST(
            clock_timestamp(),

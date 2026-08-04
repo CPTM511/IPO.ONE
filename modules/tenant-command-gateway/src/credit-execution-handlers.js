@@ -12,11 +12,13 @@ import {
   SubjectType,
   assertAuthorityAuthorizesSandboxExecution,
   assertAuthorityAuthorizesSandboxRepayment,
+  createAgentLockboxProjection,
   createCreditEvent,
   createSandboxLedgerAccounts,
   executeSandboxObligation,
   hashId,
-  postSandboxRepayment
+  postSandboxRepayment,
+  updateAgentLockboxAfterRepayment
 } from "../../../packages/domain/src/index.js";
 import { ActorType } from "../../authentication/src/index.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
@@ -234,6 +236,52 @@ async function planAgentCreditLineUtilization({
   });
 }
 
+async function planAgentLockboxCreation({
+  client,
+  coreRepository,
+  obligation,
+  authority,
+  creditLine,
+  accounts,
+  now
+}) {
+  const intentState = await coreRepository.getProjectionStateInTransaction(
+    client,
+    CoreProjectionType.CREDIT_INTENT,
+    obligation.creditIntentId,
+    { lock: true }
+  );
+  const accountBinding = await coreRepository.findActiveAccountBindingForSubjectInTransaction(
+    client,
+    obligation.subjectId,
+    { lock: true }
+  );
+  if (!intentState?.value || !accountBinding) {
+    throw new DomainError(
+      "agent_lockbox_unavailable",
+      "Agent Lockbox provenance or verified AccountBinding is unavailable"
+    );
+  }
+  if (await coreRepository.findAgentLockboxByObligationInTransaction(
+    client,
+    obligation.obligationId
+  )) {
+    throw new DomainError(
+      "agent_lockbox_already_exists",
+      "Agent Obligation already has a durable Lockbox projection"
+    );
+  }
+  return createAgentLockboxProjection({
+    obligation,
+    creditIntent: intentState.value,
+    mandate: authority,
+    accountBinding,
+    creditLine,
+    accounts,
+    now
+  });
+}
+
 export function executeSandboxObligationCommandHandler({
   sandboxRailAdapter = LOCAL_SIGNED_SANDBOX_RAIL
 } = {}) {
@@ -322,6 +370,17 @@ export function executeSandboxObligationCommandHandler({
             now
           })
         : undefined;
+      const lockbox = creditLine
+        ? await planAgentLockboxCreation({
+            client,
+            coreRepository,
+            obligation: execution.obligation,
+            authority,
+            creditLine: creditLine.value,
+            accounts: execution.accounts,
+            now
+          })
+        : undefined;
       const accountEvent = createCreditEvent({
         eventType: CreditEventType.LEDGER_ACCOUNT_OPENED,
         subjectId: obligation.subjectId,
@@ -388,7 +447,44 @@ export function executeSandboxObligationCommandHandler({
             now
           })
         : undefined;
-      const events = [accountEvent, ledgerEvent, creditLineEvent, executionEvent].filter(Boolean);
+      const lockboxEvent = lockbox
+        ? createCreditEvent({
+            eventType: CreditEventType.LOCKBOX_CREATED,
+            subjectId: obligation.subjectId,
+            obligationId: obligation.obligationId,
+            payload: {
+              lockboxId: lockbox.lockboxId,
+              lockboxHash: lockbox.lockboxHash,
+              obligationId: obligation.obligationId,
+              principalId: lockbox.principalId,
+              mandateId: lockbox.mandateId,
+              creditOfferId: lockbox.creditOfferId,
+              creditLineId: lockbox.creditLineId,
+              accountBindingId: lockbox.accountBindingId,
+              chainId: lockbox.chainId,
+              assetId: lockbox.assetId,
+              purposeCode: lockbox.purposeCode,
+              allowedProviderIds: lockbox.allowedProviderIds,
+              status: lockbox.status,
+              actorId: authenticationContext.actorId,
+              causationId: requestId,
+              correlationId,
+              sandboxOnly: true,
+              productionFundsMoved: false,
+              withdrawable: false,
+              custodyAuthority: false,
+              unrestrictedTransfersAllowed: false
+            },
+            now
+          })
+        : undefined;
+      const events = [
+        accountEvent,
+        ledgerEvent,
+        creditLineEvent,
+        lockboxEvent,
+        executionEvent
+      ].filter(Boolean);
       return {
         aggregateType: "obligation",
         aggregateId: obligation.obligationId,
@@ -423,6 +519,11 @@ export function executeSandboxObligationCommandHandler({
             type: CoreProjectionType.CREDIT_LINE,
             value: creditLine.value,
             eventId: creditLineEvent.eventId
+          }] : []),
+          ...(lockbox ? [{
+            type: CoreProjectionType.LOCKBOX,
+            value: lockbox,
+            eventId: lockboxEvent.eventId
           }] : [])
         ],
         response: {
@@ -534,6 +635,21 @@ export function postSandboxRepaymentCommandHandler() {
             principalDeltaMinor: `-${principalReleased}`,
             now
           })
+        : undefined;
+      const currentLockbox = authenticationContext.actorType === ActorType.AGENT
+        ? await coreRepository.findAgentLockboxByObligationInTransaction(
+            client,
+            obligation.obligationId
+          )
+        : undefined;
+      if (authenticationContext.actorType === ActorType.AGENT && !currentLockbox) {
+        throw new DomainError(
+          "agent_lockbox_unavailable",
+          "Agent repayment requires the durable Obligation Lockbox projection"
+        );
+      }
+      const lockbox = currentLockbox
+        ? updateAgentLockboxAfterRepayment(currentLockbox, result.obligation, { now })
         : undefined;
       if (result.interestTransaction) {
         const interestEvent = createCreditEvent({
@@ -664,6 +780,38 @@ export function postSandboxRepaymentCommandHandler() {
           type: CoreProjectionType.CREDIT_LINE,
           value: creditLine.value,
           eventId: creditLineEvent.eventId
+        });
+      }
+      if (lockbox) {
+        const lockboxEvent = createCreditEvent({
+          eventType: lockbox.status === currentLockbox.status
+            ? CreditEventType.LOCKBOX_BALANCE_DEBITED
+            : CreditEventType.LOCKBOX_STATUS_CHANGED,
+          subjectId: obligation.subjectId,
+          obligationId: obligation.obligationId,
+          payload: {
+            lockboxId: lockbox.lockboxId,
+            obligationId: obligation.obligationId,
+            previousStatus: currentLockbox.status,
+            nextStatus: lockbox.status,
+            previousBalanceMinor: obligation.outstandingPrincipalMinor,
+            nextBalanceMinor: result.obligation.outstandingPrincipalMinor,
+            repaymentId: result.repayment.repaymentId,
+            sourceCode: result.repayment.sourceCode,
+            actorId: authenticationContext.actorId,
+            causationId: requestId,
+            correlationId,
+            sandboxOnly: true,
+            productionFundsMoved: false,
+            withdrawable: false
+          },
+          now
+        });
+        events.splice(events.length - 1, 0, lockboxEvent);
+        writes.push({
+          type: CoreProjectionType.LOCKBOX,
+          value: lockbox,
+          eventId: lockboxEvent.eventId
         });
       }
       return {

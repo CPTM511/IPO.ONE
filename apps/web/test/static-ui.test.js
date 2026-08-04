@@ -964,6 +964,19 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
     assert.ok(html.includes(`id="${id}"`), `${id} authenticated-session control missing`);
   }
   assert.ok(js.includes('accessState.pendingWorkspaceBootstrap'));
+  assert.ok(js.includes('accessState.sessionAuthenticationMethod === "siwe"'));
+  assert.ok(js.includes('"Reconnect the session wallet"'));
+  assert.match(
+    js,
+    /walletConfirmation = sessionConfirmationMethod === "siwe"/,
+    "economic-action confirmation must follow the authenticated session method"
+  );
+  assert.ok(js.includes("The authenticated session confirmation method is unavailable"));
+  assert.equal(
+    js.includes("const walletConfirmation = Boolean(accessState.walletAddress && provider)"),
+    false,
+    "a SIWE session must never silently downgrade to authenticated account confirmation"
+  );
   assert.ok(js.includes('accessButtonLabel = authenticated'));
   assert.equal(
     js.includes('? shortWalletAddress(accessState.walletAddress)\n      : "Sign in"'),
@@ -1145,8 +1158,8 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   );
   assert.match(
     html,
-    /id="continueAgentCreditBtn"[^>]+data-agent-guide-action="run-online-agent"[^>]*>Continue in Agent workspace</,
-    "post-activation continuation must open the browser-operable Agent workspace"
+    /id="continueAgentCreditBtn"[^>]+data-agent-guide-action="open-agent-workspace"[^>]*>Open Agent workspace</,
+    "post-activation navigation must open the browser-operable Agent workspace without a mutation"
   );
   assert.ok(html.includes("Run the Agent application"));
   assert.ok(html.includes("Return after the Agent application produced its Offer workflow receipt."));
@@ -1159,8 +1172,14 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   assert.ok(js.includes("Required input · agent_credit_offer_workflow_receipt.v1"));
   assert.ok(js.includes("new application request and evaluation are Draft-only"));
   assert.ok(js.includes('primary.dataset.agentGuideAction = "view-obligations"'));
-  assert.ok(js.includes('primary.dataset.agentGuideAction = runtimeReady && agentOnlinePilot.offerReceipt'));
+  assert.ok(js.includes('primary.dataset.agentGuideAction = runtimeReady'));
   assert.ok(js.includes('if (action === "run-online-agent")'));
+  assert.equal(js.includes("Borrow, repay, and verify online"), false);
+  const openAgentWorkspaceBranch = js.match(
+    /if \(action === "open-agent-workspace"\) \{[\s\S]*?\n  \}/
+  )?.[0] ?? "";
+  assert.match(openAgentWorkspaceBranch, /showView\("agent-console"\)/);
+  assert.doesNotMatch(openAgentWorkspaceBranch, /runOnlineReferenceAgent/);
   assert.ok(js.includes('if (action === "view-obligations")'));
   assert.match(
     js,
@@ -1170,10 +1189,78 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   assert.ok(js.includes("Read-only Principal view."));
   assert.ok(js.includes("Agent-authenticated repayment required"));
   assert.ok(js.includes('recovery.workspaceKind === "principal_controller"'));
+  assert.match(
+    js,
+    /if \(mandate\) await loadExactMandate\(mandate\.resourceId\);[\s\S]*?const recoveredPrincipalSubjectId = exactResourceId\([\s\S]*?agentAuthorityPilot\.mandate\?\.subjectId[\s\S]*?resourceId: recoveredPrincipalSubjectId/,
+    "Principal recovery must authorize the AccountBinding for the exact Subject linked by the recovered Mandate"
+  );
   assert.ok(js.includes("selectedObligation && tenantPilot.obligationReadAvailable"));
   assert.ok(css.includes(".agent-credit-next"));
   assert.ok(css.includes(".authority-continue"));
   assert.ok(css.includes(".authority-application-card"));
+});
+
+test("TRUST-002 keeps latest Evidence visible through bounded read-only refreshes", async () => {
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const projection = await readFile(
+    new URL("../src/owned-evidence-presentation.js", import.meta.url),
+    "utf8"
+  );
+  const loadOwnedEvidence = js.match(
+    /async function loadOwnedEvidence\([\s\S]*?(?=\nfunction renderAuditorEvidence)/
+  )?.[0] ?? "";
+  const committedRefresh = js.match(
+    /async function refreshOwnedEvidenceAfterCommittedAction\([\s\S]*?\n\}/
+  )?.[0] ?? "";
+  const resetEvidence = js.match(
+    /function resetOwnedEvidenceState\([\s\S]*?(?=\nfunction resetHumanObligationWorkflow)/
+  )?.[0] ?? "";
+
+  assert.match(loadOwnedEvidence, /limit: OWNED_EVIDENCE_DISPLAY_LIMIT/);
+  assert.match(loadOwnedEvidence, /requestDataEpoch === authenticatedDataEpoch/);
+  assert.match(loadOwnedEvidence, /requestEpoch === ownedEvidence\.queryEpoch/);
+  assert.match(loadOwnedEvidence, /applyOwnedEvidencePage\(result\.response/);
+  assert.match(loadOwnedEvidence, /await loadEvidenceAnchorStatus\(\)/);
+  assert.doesNotMatch(loadOwnedEvidence, /loadEvidenceAnchorStatus\(\{ observe: true \}\)/);
+  assert.match(committedRefresh, /economic command was not resubmitted/);
+  assert.match(committedRefresh, /await loadOwnedEvidence\(\{ refreshAnchor: false \}\)/);
+  assert.match(resetEvidence, /queryEpoch/);
+  assert.match(resetEvidence, /expectedMarker/);
+  assert.match(resetEvidence, /Object\.assign\(evidenceAnchorPilot/);
+  assert.ok(js.includes("newestOwnedEvidenceFirst(items).map(auditorEvidenceRow)"));
+  assert.ok(projection.includes("Bounded partial timeline:"));
+  assert.ok(projection.includes('return "delayed"'));
+  assert.ok(projection.includes("item.aggregateVersion > 0"));
+  assert.ok(js.includes("retainMatchingEvidenceAnchors("));
+  assert.ok(js.includes("currentOwnedEvidenceVerificationState"));
+  assert.ok(projection.includes("response.items.some((item) => item?.obligationId !== obligationId)"));
+  assert.ok(js.includes("hasOwnedEvidenceMarker(ownedEvidence.items"));
+  assert.ok(js.includes('item?.eventType === "repayment_posted"'));
+  assert.ok(js.includes('BigInt(obligation.totalRepaidMinor ?? "0") > 0n'));
+  assert.ok(js.includes('totalRepaidMinor.toString())} repaid'));
+  assert.ok(js.includes('more.hidden = !matchesCurrent || !ownedEvidence.hasMore'));
+  assert.ok(js.includes('? "Retry Evidence read"'));
+  assert.ok(js.includes("Sign in again and reconcile server truth before retrying any action"));
+  assert.ok(js.includes("The Agent Evidence read failed. Any accepted lifecycle action remains unchanged"));
+  assert.equal(
+    js.match(/refreshOwnedEvidenceAfterCommittedAction\(/g)?.length,
+    7,
+    "Human and Agent acceptance, execution and repayment must each have one safe follow-up read"
+  );
+  for (const economicOperation of [
+    "pilotAcceptCreditOffer",
+    "pilotExecuteSandboxObligation",
+    "pilotPostSandboxRepayment",
+    "accept_offer",
+    "execute_allowed_use",
+    "post_repayment"
+  ]) {
+    assert.equal(
+      `${loadOwnedEvidence}\n${committedRefresh}`.includes(economicOperation),
+      false,
+      `${economicOperation} must not be reachable from Evidence refresh`
+    );
+  }
 });
 
 test("UX-002 keeps Human and Agent credit actions browser-operable", async () => {
@@ -1195,11 +1282,15 @@ test("UX-002 keeps Human and Agent credit actions browser-operable", async () =>
     assert.ok(html.includes(`id="${id}"`), `${id} browser action missing`);
   }
   assert.ok(html.includes("Request, borrow, repay, and verify online"));
+  assert.ok(html.includes("Request Agent credit and receive Offer"));
+  assert.equal(html.includes("Run Agent application online"), false);
   assert.ok(html.includes("No handoff download or browser credential is required"));
   assert.ok(js.includes('"/local/v1/reference-agent/account-proof"'));
   assert.ok(js.includes('"/local/v1/reference-agent/application"'));
   assert.ok(js.includes('"/local/v1/reference-agent/runtime-step"'));
   assert.ok(js.includes("Early partial or full repayment is available now"));
+  assert.ok(js.includes("document.activeElement !== amountInput"));
+  assert.ok(js.includes('document.activeElement !== el("humanRepaymentAmount")'));
   assert.ok(js.includes("restoreLatestCreditPassport"));
   assert.ok(js.includes("loadCreditTrackRecord"));
   assert.ok(js.includes("quarantineRejectedAuthenticationSession"));

@@ -97,7 +97,7 @@
       "view": "agent-console",
       "id": "agentOnlineRunBtn",
       "labels": [
-        "Run Agent application online",
+        "Request Agent credit and receive Offer",
         "Review and activate this Mandate",
         "Create Agent Obligation"
       ]

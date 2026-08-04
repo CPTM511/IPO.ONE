@@ -1083,12 +1083,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0045_evidence_chain_anchors",
         "0046_evidence_anchor_coverage_guard",
         "0047_chain_001f_anchor_binding_repair",
-        "0048_synthetic_capital_partner_marketplace"
+        "0048_synthetic_capital_partner_marketplace",
+        "0049_agent_lockbox_projection"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 48 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 49 }), [
+        "0049_agent_lockbox_projection",
         "0048_synthetic_capital_partner_marketplace",
         "0047_chain_001f_anchor_binding_repair",
         "0046_evidence_anchor_coverage_guard",
@@ -1186,10 +1188,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0045_evidence_chain_anchors",
         "0046_evidence_anchor_coverage_guard",
         "0047_chain_001f_anchor_binding_repair",
-        "0048_synthetic_capital_partner_marketplace"
+        "0048_synthetic_capital_partner_marketplace",
+        "0049_agent_lockbox_projection"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 46 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 47 }), [
+        "0049_agent_lockbox_projection",
         "0048_synthetic_capital_partner_marketplace",
         "0047_chain_001f_anchor_binding_repair",
         "0046_evidence_anchor_coverage_guard",
@@ -1296,7 +1300,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0045_evidence_chain_anchors",
         "0046_evidence_anchor_coverage_guard",
         "0047_chain_001f_anchor_binding_repair",
-        "0048_synthetic_capital_partner_marketplace"
+        "0048_synthetic_capital_partner_marketplace",
+        "0049_agent_lockbox_projection"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))

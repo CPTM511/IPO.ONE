@@ -35,6 +35,7 @@ const listener = createTenantHttpServer({
         oidcProviders: [],
         walletAuthentication: true,
         sessionActive: false,
+        sessionAuthenticationMethod: null,
         schemaVersion: "ipo_one_authentication_options.v1"
       }, requestId);
       return true;

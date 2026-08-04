@@ -63,7 +63,10 @@ function createAccessFixture() {
       )) {
         throw Object.assign(new Error("CSRF rejected"), { code: "csrf_token_rejected", name: "DomainError" });
       }
-      return Object.freeze({ actorId: "actor_human_access_test" });
+      return Object.freeze({
+        actorId: "actor_human_access_test",
+        authenticationMethod: "siwe"
+      });
     },
     logout({ sessionHandle }) {
       const revoked = sessions.delete(sessionHandle);
@@ -190,6 +193,7 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       profile: "closed_non_funds_pilot",
       enabled: true,
       sessionActive: false,
+      sessionAuthenticationMethod: null,
       oidcProviders: ["google"],
       walletAuthentication: true,
       supportedChains: ["eip155:84532", "eip155:1952"],
@@ -199,7 +203,17 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
     const activeOptions = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.options}`, {
       headers: { cookie: `${SESSION_COOKIE_NAME}=session-active-handle-00000000000000000000001` }
     });
-    assert.equal((await activeOptions.json()).sessionActive, true);
+    assert.deepEqual(await activeOptions.json(), {
+      schemaVersion: "ipo_one_authentication_options.v1",
+      profile: "closed_non_funds_pilot",
+      enabled: true,
+      sessionActive: true,
+      sessionAuthenticationMethod: "siwe",
+      oidcProviders: ["google"],
+      walletAuthentication: true,
+      supportedChains: ["eip155:84532", "eip155:1952"],
+      boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
+    });
 
     const login = await fetch(`${baseUrl}${HUMAN_ACCESS_ROUTES.login}?provider=google`, {
       redirect: "manual"

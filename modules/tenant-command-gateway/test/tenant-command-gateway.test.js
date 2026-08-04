@@ -1601,6 +1601,30 @@ test("Human, Operator, Risk, and Agent clients inject only their verified contex
   );
   assert.equal(authenticationContextLookups, lookupsBeforeInvalidRequest);
   assert.equal(calls.length, 8);
+
+  const lookupsBeforeInvalidEconomicRequest = authenticationContextLookups;
+  const networkLookupsBeforeInvalidEconomicRequest = networkContextLookups;
+  await assert.rejects(
+    () => human.execute({
+      operationId: "pilotPostSandboxRepayment",
+      resource: {
+        resourceType: "obligation",
+        resourceId: "obligation_alpha"
+      },
+      payload: {
+        amountMinor: "100",
+        sourceCode: "synthetic_wallet"
+      },
+      idempotencyKey: "repay-obligation-alpha-invalid-0001",
+      requestId: "request_human_invalid_economic_001",
+      correlationId: "correlation_human_invalid_economic_001",
+      authenticationContext: { tenantId: "caller_controlled" }
+    }),
+    (error) => error.code === "invalid_tenant_protocol_request"
+  );
+  assert.equal(authenticationContextLookups, lookupsBeforeInvalidEconomicRequest);
+  assert.equal(networkContextLookups, networkLookupsBeforeInvalidEconomicRequest);
+  assert.equal(calls.length, 8);
 });
 
 test("Human client exposes the approved self-service Subject and Consent operations without caller authority fields", async () => {

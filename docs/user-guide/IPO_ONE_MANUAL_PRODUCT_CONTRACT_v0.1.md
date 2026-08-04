@@ -30,7 +30,7 @@ contract.
 | Credit / Principal | `Create signing request` | Pending Agent Subject | Short-lived account proof challenge appears |
 | Credit / Principal | `Ask registered test Agent to prove` | Open challenge | Server-held Agent account binding becomes active |
 | Credit / Principal | `Create Draft Mandate` | Bound Agent Subject | Exact Draft Mandate appears |
-| Agent Console | `Run Agent application online` | Draft Mandate | Decision and Offer workflow receipt appear |
+| Agent Console | `Request Agent credit and receive Offer` | Draft Mandate | Decision and Offer workflow receipt appear |
 | Agent Console | `Review and activate this Mandate` | Offer ready | Principal review opens |
 | Credit / Principal | `Activate exact Sandbox Mandate` | Exact Mandate acknowledged | Mandate becomes active |
 | Agent Console | `Create Agent Obligation` | Active matching Mandate and Offer | Shared Agent Obligation appears |

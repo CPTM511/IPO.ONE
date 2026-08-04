@@ -3,6 +3,8 @@
 Before making product, architecture, or implementation decisions in this repo,
 read the project guidance source:
 
+- Highest product-truth authority and requirement registry:
+  `docs/PRODUCT_CONSTITUTION.md`
 - Canonical Product Charter: `docs/guidance/IPO_ONE_PRODUCT_CHARTER_v1.1.md`
 - Founding Edition source archive:
   `docs/guidance/IPO_ONE_Product_Charter_v1.1_Founding_Edition.docx`
@@ -14,6 +16,8 @@ read the project guidance source:
 - Commercialization roadmap proposal: `docs/guidance/IPO_ONE_COMMERCIALIZATION_ROADMAP_v0.3_DRAFT.md`
 - Founder-approved product optimization measure:
   `docs/guidance/IPO_ONE_PRODUCT_OPTIMIZATION_MEASURE_v1.0.md`
+- Founder-directed product engineering and experience standard:
+  `docs/guidance/IPO_ONE_PRODUCT_ENGINEERING_AND_EXPERIENCE_STANDARD_v1.0.md`
 - Local-to-closed-pilot delivery guidance:
   `docs/guidance/IPO_ONE_LOCAL_TO_CLOSED_PILOT_DELIVERY_GUIDE_v0.1_DRAFT.md`
 - Public beta launch gate: `docs/guidance/IPO_ONE_PUBLIC_BETA_LAUNCH_READINESS_v0.3.md`
@@ -27,6 +31,11 @@ untracked notes.
 
 Guidance hierarchy:
 
+- Product Constitution v1.0 is the highest product-truth authority and conflict
+  resolver. It assigns stable requirement IDs, records approved/gated/rejected
+  capabilities, and resolves the current CreditLine, Agent Lockbox, Strategy
+  Vault, and dispute-workflow decisions. Approval in the Constitution is not
+  implementation, verification, hosting, real-value, or production evidence.
 - Product Charter v1.1 is the canonical long-term product and governance source.
   It ratifies one shared obligation kernel with Human and Agent as parallel,
   first-class entry modes. Product Description v1.0 remains a historical source
@@ -46,6 +55,12 @@ Guidance hierarchy:
   phases, bilateral Capital Partner workflow, Credit Passport direction, and
   non-redundancy rules. It does not itself approve deployment, credentials,
   contracts, signers, KYC vendors, production risk, or funds movement.
+- Product Engineering and Experience Standard v1.0 is the mandatory
+  implementation and acceptance standard for local synthetic/no-funds work.
+  It requires one primary next action, explicit mutation language, safe
+  defaults, server-derived workspace recovery, queryable automation,
+  issue-sized delivery, minimal architecture and real-browser verification.
+  It grants no permission, risk, deployment, signer, KYC or funds authority.
 - Local-to-Closed-Pilot Delivery Guide v0.1 is non-canonical delivery guidance.
   Use it to separate repeatable local integration, invited durable no-funds
   operation, live testnet execution, and controlled real value. It grants no
@@ -89,11 +104,23 @@ MVP build rules:
   separately approved.
 - Human-facing UI and machine-facing OpenAPI/SDK/MCP surfaces are co-equal
   product interfaces over the same versioned application protocol.
+- Normal role journeys must not require internal IDs, hashes, versions, or
+  operation names. Technical details remain available through progressive
+  disclosure and queryable receipts.
+- Labels such as View, Open, Continue, Back, and Next must not hide an
+  economic, authority, or lifecycle mutation.
+- Browser state is never canonical product truth. Role workspaces and next
+  actions must recover from authenticated server truth.
+- Automation may prepare, route, reconcile, and execute exact Mandate-bound
+  work, but every run must remain queryable and fail closed on stale,
+  unknown, unauthorized, or unreconciled state.
 - Multi-chain tests use Base Sepolia (`eip155:84532`) as the first execution
   profile and X Layer Testnet (`eip155:1952`) as the portability profile. This
   is a reversible test configuration, not a mainnet or capital commitment.
 - Codex work must be issue-based. Each task needs context, scope, non-goals,
-  likely files, acceptance criteria, test command, and security checklist.
+  likely files, acceptance criteria, test command, security checklist,
+  permission boundary, migration impact, rollback plan, and completion
+  Evidence.
 - Do not ask Codex to implement the whole MVP in one pass. Start with foundation
   tasks such as monorepo scaffold, AGENTS.md / issue templates, shared enums and
   validators, migration baseline, and local dev environment.

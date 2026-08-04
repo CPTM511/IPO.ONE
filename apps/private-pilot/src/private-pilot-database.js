@@ -122,7 +122,7 @@ async function provisionApplicationRole(ownerPool, password) {
        obligations, obligation_installments, sandbox_execution_receipts,
        sandbox_servicing_actions, provider_intent_deliveries,
        provider_intent_acknowledgements, provider_callback_inbox,
-       credit_lines, ledger_accounts, ledger_transactions, ledger_entries,
+       credit_lines, lockboxes, ledger_accounts, ledger_transactions, ledger_entries,
        repayment_events, aggregate_stream_heads, domain_events, credit_events,
        pilot_feedback_records, credit_passport_artifacts, credit_outcomes,
        tenant_command_pauses,

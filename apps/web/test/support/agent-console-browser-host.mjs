@@ -12,8 +12,21 @@ import {
   createTenantHttpServer,
   createTenantWebAssetHandler
 } from "../../../tenant-api/src/index.js";
+import { DomainError } from "../../../../packages/domain/src/index.js";
 
 const csrfToken = "agent_console_browser_qa_csrf_token_00000000001";
+const evidenceScenario =
+  process.env.IPO_ONE_BROWSER_QA_EVIDENCE_SCENARIO ?? "complete";
+const EVIDENCE_SCENARIOS = new Set([
+  "complete",
+  "partial",
+  "fail-after-repayment-once",
+  "slow-read"
+]);
+if (!EVIDENCE_SCENARIOS.has(evidenceScenario)) {
+  throw new Error("invalid_browser_qa_evidence_scenario");
+}
+const EVIDENCE_READ_DELAY_MS = 250;
 const fixtures = JSON.parse(await readFile(
   new URL(
     "../../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json",
@@ -57,6 +70,7 @@ draftMandate.utilizedMinor = "0";
 delete draftMandate.activatedAt;
 let currentMandate = draftMandate;
 let runtimeStage = "none";
+let failNextEvidenceRead = false;
 
 const offerReceipt = structuredClone(offerFixtures.valid[0]);
 offerReceipt.subjectId = activeMandate.subjectId;
@@ -130,12 +144,137 @@ function agentObligationAt(stage) {
 
 let currentAgentObligation = null;
 
-const evidenceResult = fixtureResult("pilotReadOwnObligationEvidence");
-evidenceResult.response.obligationId = agentObligation.obligationId;
-evidenceResult.response.asOf = "2026-07-31T05:00:00.000Z";
-for (const item of evidenceResult.response.items) {
-  item.aggregateId = agentObligation.obligationId;
-  item.obligationId = agentObligation.obligationId;
+function agentObligationEvidence() {
+  if (!currentAgentObligation) {
+    throw new DomainError(
+      "tenant_resource_unavailable",
+      "The requested resource is not available."
+    );
+  }
+  const obligationId = currentAgentObligation.obligationId;
+  const acceptedAt = lifecycleReceipt.acceptance.acceptedAt;
+  const events = [
+    {
+      eventType: "credit_offer_accepted",
+      aggregateType: "credit_offer",
+      aggregateId: lifecycleReceipt.acceptance.creditOfferId,
+      aggregateVersion: 1,
+      occurredAt: acceptedAt
+    },
+    {
+      eventType: "obligation_created",
+      aggregateType: "obligation",
+      aggregateId: obligationId,
+      aggregateVersion: 1,
+      occurredAt: new Date(new Date(acceptedAt).getTime() + 100).toISOString()
+    }
+  ];
+  if (currentAgentObligation.executionStatus === "executed") {
+    events.push({
+      eventType: "obligation_sandbox_executed",
+      aggregateType: "obligation",
+      aggregateId: obligationId,
+      aggregateVersion: 2,
+      occurredAt:
+        currentAgentObligation.executedAt ?? "2026-07-16T12:02:00.000Z"
+    });
+  }
+  if (BigInt(currentAgentObligation.totalRepaidMinor ?? "0") > 0n) {
+    events.push({
+      eventType: "repayment_posted",
+      aggregateType: "obligation",
+      aggregateId: obligationId,
+      aggregateVersion: 3,
+      occurredAt: lifecycleReceipt.repayment.occurredAt
+    });
+  }
+  const items = events.map((event, index) => ({
+    evidenceId: `event_agent_browser_qa_${event.eventType}`,
+    evidenceHash: `0x${(index + 1).toString(16).repeat(64)}`,
+    eventType: event.eventType,
+    aggregateType: event.aggregateType,
+    aggregateId: event.aggregateId,
+    aggregateVersion: event.aggregateVersion,
+    obligationId,
+    sourceFinality: "finalized",
+    payloadHash: `0x${(index + 9).toString(16).repeat(64)}`,
+    occurredAt: event.occurredAt,
+    recordedAt: new Date(
+      new Date(event.occurredAt).getTime() + 100
+    ).toISOString(),
+    schemaVersion: "obligation_evidence_summary.v1"
+  }));
+  return {
+    obligationId,
+    asOf: new Date(
+      Math.max(
+        new Date("2026-07-31T05:00:00.000Z").getTime(),
+        new Date(items.at(-1).recordedAt).getTime() + 1_000
+      )
+    ).toISOString(),
+    items,
+    hasMore: false,
+    schemaVersion: "tenant_owned_obligation_evidence_view.v1"
+  };
+}
+
+function evidenceCursor(item) {
+  return Buffer.from(
+    JSON.stringify([item.recordedAt, item.evidenceId]),
+    "utf8"
+  ).toString("base64url");
+}
+
+function evidenceCursorIndex(items, cursor) {
+  if (cursor === undefined) return 0;
+  let decoded;
+  try {
+    decoded = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+  } catch {
+    decoded = null;
+  }
+  if (!Array.isArray(decoded) || decoded.length !== 2) {
+    throw new DomainError(
+      "tenant_resource_unavailable",
+      "The requested resource is not available."
+    );
+  }
+  const index = items.findIndex((item) =>
+    item.recordedAt === decoded[0] && item.evidenceId === decoded[1]
+  );
+  if (index < 0) {
+    throw new DomainError(
+      "tenant_resource_unavailable",
+      "The requested resource is not available."
+    );
+  }
+  return index + 1;
+}
+
+function pagedAgentObligationEvidence({ cursor, limit = 25 } = {}) {
+  const complete = agentObligationEvidence();
+  const start = evidenceCursorIndex(complete.items, cursor);
+  const pageLimit = evidenceScenario === "partial"
+    ? Math.min(limit, 2)
+    : limit;
+  const items = complete.items.slice(start, start + pageLimit);
+  const hasMore = start + items.length < complete.items.length;
+  return {
+    ...complete,
+    items,
+    hasMore,
+    ...(hasMore && items.length > 0
+      ? { nextCursor: evidenceCursor(items.at(-1)) }
+      : {})
+  };
+}
+
+function readAgentObligationEvidence(payload) {
+  if (failNextEvidenceRead) {
+    failNextEvidenceRead = false;
+    throw new Error("browser_qa_evidence_read_failed_once");
+  }
+  return pagedAgentObligationEvidence(payload);
 }
 
 function protocolResult(operationId, response) {
@@ -193,8 +332,17 @@ function resultFor(command) {
     });
   }
   if (command.operationId === "pilotReadOwnObligation") {
+    if (
+      !currentAgentObligation ||
+      command.resource?.resourceId !== currentAgentObligation.obligationId
+    ) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
     return protocolResult(command.operationId, {
-      obligation: currentAgentObligation ?? agentObligation,
+      obligation: currentAgentObligation,
       asOf: "2026-07-31T05:00:00.000Z",
       sandboxOnly: true,
       productionFundsMoved: false,
@@ -203,7 +351,19 @@ function resultFor(command) {
     });
   }
   if (command.operationId === "pilotReadOwnObligationEvidence") {
-    return structuredClone(evidenceResult);
+    if (
+      !currentAgentObligation ||
+      command.resource?.resourceId !== currentAgentObligation.obligationId
+    ) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    return protocolResult(
+      command.operationId,
+      readAgentObligationEvidence(command.payload)
+    );
   }
   throw new Error(`unsupported_agent_console_qa_operation:${command.operationId}`);
 }
@@ -236,6 +396,7 @@ async function serveAuthentication({ request, response, url, requestId }) {
     profile: "closed_non_funds_pilot",
     enabled: true,
     sessionActive: true,
+    sessionAuthenticationMethod: "oidc_pkce_bff",
     oidcProviders: [],
     walletAuthentication: false,
     supportedChains: ["eip155:84532", "eip155:1952"],
@@ -323,6 +484,9 @@ const serveReferenceAgent = Object.freeze({
       if (input.action === "post_repayment") {
         runtimeStage = "fully_repaid";
         currentAgentObligation = agentObligationAt(runtimeStage);
+        if (evidenceScenario === "fail-after-repayment-once") {
+          failNextEvidenceRead = true;
+        }
         return sendJson(200, {
           status: "repayment_posted",
           mandateId: activeMandate.mandateId,
@@ -343,13 +507,29 @@ const serveReferenceAgent = Object.freeze({
         });
       }
       if (input.action === "read_evidence") {
+        if (
+          input.mandateId !== activeMandate.mandateId ||
+          !currentAgentObligation ||
+          input.obligationId !== currentAgentObligation.obligationId
+        ) {
+          throw new DomainError(
+            "tenant_resource_unavailable",
+            "The requested resource is not available."
+          );
+        }
+        if (evidenceScenario === "slow-read") {
+          await new Promise((resolve) =>
+            setTimeout(resolve, EVIDENCE_READ_DELAY_MS)
+          );
+        }
+        const evidence = readAgentObligationEvidence({ limit: 50 });
         runtimeStage = "evidence_read";
         return sendJson(200, {
           status: "evidence_read",
           mandateId: activeMandate.mandateId,
           subjectId: activeMandate.subjectId,
-          obligationId: agentObligation.obligationId,
-          evidence: evidenceResult.response,
+          obligationId: currentAgentObligation.obligationId,
+          evidence,
           sandboxOnly: true,
           productionFundsMoved: false,
           withdrawable: false,
@@ -362,19 +542,20 @@ const serveReferenceAgent = Object.freeze({
     if (url.pathname === this.routes.runtime) {
       runtimeStage = "evidence_read";
       currentAgentObligation = agentObligationAt("fully_repaid");
+      const evidence = pagedAgentObligationEvidence({ limit: 50 });
       return sendJson(200, {
         status: "evidence_read",
         mandateId: activeMandate.mandateId,
         subjectId: activeMandate.subjectId,
-        obligationId: agentObligation.obligationId,
-        evidenceEventCount: evidenceResult.response.items.length,
+        obligationId: currentAgentObligation.obligationId,
+        evidenceEventCount: evidence.items.length,
         lifecycle: {
           schemaVersion: "local_agent_reference_workflow_result.v1",
           status: "evidence_read",
           sandboxOnly: true,
           productionFundsMoved: false,
           workflowReceipt: lifecycleReceipt,
-          evidence: evidenceResult.response
+          evidence
         },
         sandboxOnly: true,
         productionFundsMoved: false,
@@ -391,6 +572,12 @@ const host = createTenantHttpServer({
   credentialSource: "local_test",
   gateway: {
     async execute(command) {
+      if (
+        evidenceScenario === "slow-read" &&
+        command.operationId === "pilotReadOwnObligationEvidence"
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, EVIDENCE_READ_DELAY_MS));
+      }
       return structuredClone(resultFor(command));
     }
   },

@@ -161,6 +161,7 @@ test("private pilot exposes authenticated local options without enabling a crede
     profile: "local_no_funds",
     enabled: false,
     sessionActive: true,
+    sessionAuthenticationMethod: "oidc_pkce_bff",
     oidcProviders: [],
     walletAuthentication: false,
     supportedChains: ["eip155:84532", "eip155:1952"],
@@ -168,7 +169,14 @@ test("private pilot exposes authenticated local options without enabling a crede
       "Local synthetic authentication proves presence; policy and Mandates separately decide authority."
   });
   const inactive = await localAuthenticationResponse();
-  assert.equal(JSON.parse(inactive.body).sessionActive, false);
+  assert.deepEqual(
+    {
+      sessionActive: JSON.parse(inactive.body).sessionActive,
+      sessionAuthenticationMethod:
+        JSON.parse(inactive.body).sessionAuthenticationMethod
+    },
+    { sessionActive: false, sessionAuthenticationMethod: null }
+  );
 });
 
 test("private pilot authentication options reject method and query drift", async () => {

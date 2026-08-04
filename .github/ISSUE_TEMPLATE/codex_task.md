@@ -6,9 +6,15 @@ labels: ["codex", "mvp"]
 assignees: []
 ---
 
+## Status
+
+- Status: Draft / Ready / In progress / Completed locally / Blocked by review
+- Baseline commit:
+- Product phase and delivery level:
+
 ## Context
 
-Reference the relevant guidance section or ADR.
+Reference the relevant guidance section, standard rule, prior Issue, or ADR.
 
 ## Scope
 
@@ -29,10 +35,10 @@ Reference the relevant guidance section or ADR.
 
 - [ ] 
 
-## Test Command
+## Test Commands
 
 ```sh
-npm run check
+pnpm run check
 ```
 
 ## Security Checklist
@@ -43,3 +49,44 @@ npm run check
 - [ ] Events/audit logs are added for state changes.
 - [ ] No raw PII/KYC/private keys/secrets are introduced.
 - [ ] No production fund movement is added.
+
+## Permission Boundary
+
+- State exactly which roles, capabilities, contracts, risk controls,
+  deployments, credentials, signers, data classes, or funds paths are
+  unchanged.
+- Name the separate human review required for any permission expansion.
+
+## Data and Migration Impact
+
+- No migration, or list the additive migration and rollback/rebuild behavior.
+- Browser or process-local state does not replace authenticated server truth.
+
+## Rollback Plan
+
+- Describe the code/configuration rollback and any durable-state compatibility
+  requirement.
+
+## Required Evidence
+
+- Targeted test output:
+- Aggregate gate output:
+- Browser/API/PostgreSQL evidence:
+- Remaining risks and follow-up issues:
+
+## Dependency and Sequencing Notes
+
+- Required predecessor Issues:
+- Later Issues that must not be implemented opportunistically:
+- Named human review required before this Issue can start or expand:
+
+## Completion Evidence
+
+Complete only after every acceptance criterion and relevant gate passes.
+
+- Completed date:
+- Exact commands and counts:
+- Browser or machine-facing workflow result:
+- Security and permission review result:
+- Release status: designed / implemented / locally verified / testnet verified /
+  hosted / real-value active

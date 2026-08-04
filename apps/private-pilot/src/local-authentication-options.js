@@ -107,14 +107,16 @@ export function createLocalAuthenticationOptions({
         { status: 405, headers: { allow: "GET, HEAD" } }
       );
     }
+    const sessionActive = sameLocalSecret(
+      readHumanAccessCookie(request.headers.cookie, SESSION_COOKIE_NAME),
+      sessionHandle
+    );
     const body = JSON.stringify({
       schemaVersion: "ipo_one_authentication_options.v1",
       profile: "local_no_funds",
       enabled: false,
-      sessionActive: sameLocalSecret(
-        readHumanAccessCookie(request.headers.cookie, SESSION_COOKIE_NAME),
-        sessionHandle
-      ),
+      sessionActive,
+      sessionAuthenticationMethod: sessionActive ? "oidc_pkce_bff" : null,
       oidcProviders: [],
       walletAuthentication: false,
       supportedChains: SUPPORTED_CHAINS,

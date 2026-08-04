@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "ipo_one_m1_requirement_evidence.v1",
+  "auditId": "M1-A.1-20260804",
+  "status": "CANDIDATE_EVIDENCE_UNDER_FOUNDER_REVIEW",
+  "constitution": {
+    "path": "docs/PRODUCT_CONSTITUTION.md",
+    "sha256": "c36e26a00c49868c418896a8c3a9920108b32ade1161c25104c6586513f5e653",
+    "stableRequirementCount": 44
+  },
+  "classificationVocabulary": [
+    "NOT_IMPLEMENTED",
+    "WIRED_MOCK",
+    "IMPLEMENTED_UNVERIFIED",
+    "VERIFIED_SANDBOX",
+    "VERIFIED_REAL",
+    "PRODUCTION_READY"
+  ],
+  "evidencePolicy": {
+    "sourcePresenceIsRuntimeEvidence": false,
+    "testNameIsRuntimeEvidence": false,
+    "passingUnitTestsAloneAreRuntimeEvidence": false,
+    "verifiedSandboxRequiresExecutableRuntimeEvidence": true,
+    "verifiedRealRequiresApprovedExternalRuntimeEvidence": true,
+    "productionReadyRequiresFounderApprovedImmutableCleanRelease": true
+  },
+  "evidenceCatalog": [
+    {
+      "evidenceId": "EV-M1A1-LINT",
+      "kind": "STATIC_VERIFICATION",
+      "result": "PASS",
+      "command": "pnpm run lint",
+      "artifact": "artifacts/m1-a-1/logs/pnpm-lint-20260804.log",
+      "sha256": "5a592a3bc9c503d2888f9252fbce1a8543fbce6686d9bacf6e19e0b8281f6017"
+    },
+    {
+      "evidenceId": "EV-M1A1-TYPECHECK",
+      "kind": "STATIC_VERIFICATION",
+      "result": "PASS",
+      "command": "pnpm run typecheck",
+      "artifact": "artifacts/m1-a-1/logs/pnpm-typecheck-20260804.log",
+      "sha256": "3393175cbd8af461d17364652fba965f2c0a1ea8c3bcee451c4cb99eb4d2ac56"
+    },
+    {
+      "evidenceId": "EV-M1A1-MIGRATIONS",
+      "kind": "DATABASE_MIGRATION_RUNTIME",
+      "result": "PASS",
+      "command": "pnpm run check:migrations",
+      "artifact": "artifacts/m1-a-1/logs/pnpm-check-migrations-20260804.log",
+      "sha256": "8782b3b3eec89d148ec5c0e99f1053d673a3870b852719ced15b63217109b585"
+    },
+    {
+      "evidenceId": "EV-M1A1-REPOSITORY-TESTS",
+      "kind": "REPOSITORY_TEST_RUNTIME",
+      "result": "PASS",
+      "command": "pnpm test",
+      "artifact": "artifacts/m1-a-1/logs/pnpm-test-20260804.log",
+      "sha256": "6f465757d5c511652e4c71e872e123ae55be6444412f9d43712df786e0c70048"
+    },
+    {
+      "evidenceId": "EV-M1A1-POSTGRES",
+      "kind": "AUTHENTICATED_DURABLE_RUNTIME",
+      "result": "PASS",
+      "command": "DATABASE_URL=<dedicated-local-test-database> pnpm run test:postgres",
+      "artifact": "artifacts/m1-a-1/logs/pnpm-test-postgres-20260804.log",
+      "sha256": "10d9cd1f1743747b1c7ef7f24def05d823e8ca74d60f2a9b14cc6e20a2772403"
+    },
+    {
+      "evidenceId": "EV-M1A1-LOCAL-STACK",
+      "kind": "LOCAL_STACK_RUNTIME",
+      "result": "PASS",
+      "command": "pnpm run local:acceptance",
+      "artifact": "artifacts/m1-a-1/logs/local-acceptance-20260804.log",
+      "sha256": "f3af74c064809c6203a70c7d89560571fb19e0abbfe1862dbb9361161cd2398c"
+    },
+    {
+      "evidenceId": "EV-M1A1-AGENT-ACCEPTANCE-PRE-REMEDIATION",
+      "kind": "AUTHENTICATED_GOLDEN_FLOW",
+      "result": "FAIL",
+      "command": "pnpm run local:agent:acceptance",
+      "artifact": "artifacts/m1-a-1/logs/local-agent-acceptance-20260804.log",
+      "sha256": "0967db17cafe8ff2f88256638ac547da4afd95b2d96ca816a1ae78b4539373a2"
+    },
+    {
+      "evidenceId": "EV-M1A1-WALLET-AUTH-PRE-AUTHORIZATION",
+      "kind": "REAL_BROWSER_RUNTIME",
+      "result": "FAIL",
+      "command": "Chrome extension wallet discovery and local SIWE initiation at http://127.0.0.1:8787/",
+      "artifact": "artifacts/m1-a-1/browser/okx-wallet-request-cancelled.png",
+      "sha256": "a4151adf6dfb732d62ca4152b9127b352d1a3fe80053d3104f3331b35aa5f06a"
+    },
+    {
+      "evidenceId": "EV-M1A1-HUMAN-AUTHENTICATED-LIFECYCLE",
+      "kind": "REAL_BROWSER_RUNTIME",
+      "result": "PASS",
+      "command": "Founder-authorized Chrome SIWE Human no-funds lifecycle at http://127.0.0.1:8787/",
+      "artifact": "artifacts/m1-a-1/browser/human-golden-flow-complete.png",
+      "sha256": "1cf9928c79897d76fbca2e1d7f7bcd771b41c69f8b47f6fea78c258ef30f2e54"
+    },
+    {
+      "evidenceId": "EV-M1A1-AGENT-AUTHENTICATED-LIFECYCLE",
+      "kind": "REAL_BROWSER_RUNTIME",
+      "result": "PASS",
+      "command": "Founder-authorized Chrome SIWE Principal and Agent no-funds lifecycle with reload recovery at http://127.0.0.1:8788/",
+      "artifact": "artifacts/m1-a-1/browser/agent-golden-flow-recovered.png",
+      "sha256": "bdbd359535de8db8aa777a15cb3e7753648055b872d9e6eae93b38a76fd03321"
+    },
+    {
+      "evidenceId": "EV-M1A1-AGENT-ACCEPTANCE",
+      "kind": "AUTHENTICATED_GOLDEN_FLOW",
+      "result": "PASS",
+      "command": "pnpm run local:agent:acceptance",
+      "artifact": "artifacts/m1-a-1/logs/local-agent-acceptance-20260804-rerun.log",
+      "sha256": "fe94cc3006e96eb5ec9143e812ea4c1ed7f2e80ad662f3032ca30efd90f596f5"
+    }
+  ],
+  "requirements": [
+    {"requirementId":"REQ-CORE-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/credit-execution-handlers.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"The Human Consent and Agent Mandate paths execute through one durable credit kernel and shared economic projections."}],"blockers":["No immutable RC hash or production authority."]},
+    {"requirementId":"REQ-ID-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/tenant-command-clients.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Human Subject, Principal membership, and durable EIP-191 authentication execute in the local PostgreSQL runtime."}],"blockers":["No production Human identity or lending authority."]},
+    {"requirementId":"REQ-ID-002","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/tenant-command-clients.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Agent Subject and accountable Principal bindings execute with Tenant isolation in the local PostgreSQL runtime."}],"blockers":["Production workload identity remains gated."]},
+    {"requirementId":"REQ-ID-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Synthetic Human identity references require durable Consent and remain auditable without raw KYC data."}],"blockers":["No real KYC provider or raw KYC authority."]},
+    {"requirementId":"REQ-ID-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"CAIP account binding and one-use wallet proof are persisted, key-bound, restart-safe, and Tenant-isolated."},{"evidenceId":"EV-M1A1-AGENT-AUTHENTICATED-LIFECYCLE","assertion":"The real SIWE Principal browser restored the exact verified CAIP-10 Agent account binding after a full page reload."}],"blockers":["Production connector and workload identity authority remain absent."]},
+    {"requirementId":"REQ-ID-005","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/tenant-command-clients.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Principal-controlled draft, acknowledgement, activation, revocation, nonce, and stale-authority controls execute durably."}],"blockers":["Production Agent credential authority is absent."]},
+    {"requirementId":"REQ-CREDIT-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/credit-execution-handlers.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Human and Agent Credit Intents execute through the durable no-funds protocol with retry-safe outcomes."}],"blockers":["No real-funds authority."]},
+    {"requirementId":"REQ-CREDIT-002","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/credit-execution-handlers.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Deterministic no-funds credit outcomes and decision evidence persist and replay through the shared runtime."}],"blockers":["Legacy demo scoring remains noncanonical and must not become authority."]},
+    {"requirementId":"REQ-CREDIT-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Permissioned factor and outcome records persist as scoped Evidence in the local runtime."}],"blockers":["No current authenticated browser disclosure proof."]},
+    {"requirementId":"REQ-CREDIT-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/tenant-command-clients.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Invited synthetic Capital Partner review executes under Tenant and disclosure authority in the Phase 2 runtime test."}],"blockers":["No external lender or closed-pilot release authority."]},
+    {"requirementId":"REQ-CREDIT-005","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Lender-authored versioned Offer paths execute durably in the synthetic bilateral marketplace."}],"blockers":["Real capital and production pricing are unapproved."]},
+    {"requirementId":"REQ-CREDIT-006","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Exact Offer acceptance, stale, replacement, withdrawal, and adverse paths execute in the durable Phase 2 test."},{"evidenceId":"EV-M1A1-HUMAN-AUTHENTICATED-LIFECYCLE","assertion":"The real SIWE Human browser acknowledged and accepted one exact no-funds Offer before Obligation creation."}],"blockers":["Real capital and production pricing authority remain absent."]},
+    {"requirementId":"REQ-CREDIT-007","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/credit-execution-handlers.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Canonical Human and Agent Obligations and repayment schedules persist through the shared kernel."},{"evidenceId":"EV-M1A1-AGENT-ACCEPTANCE","assertion":"The independent local Agent acceptance created, executed, repaid, and read Evidence for one canonical no-funds Obligation."}],"blockers":["No production or real-funds authority exists."]},
+    {"requirementId":"REQ-CREDIT-008","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Purpose-bound synthetic Facilities persist against exact accepted Offers and Obligations."}],"blockers":["No deposit, custody, withdrawal, or real-funds authority."]},
+    {"requirementId":"REQ-CREDIT-009","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"CreditLine projection fields execute in local flows, but the audit did not isolate complete canonical recalculation and Human/Agent parity."}],"blockers":["No isolated executable proof of full canonical recalculation and parity; CreditLine must never become independent authority."]},
+    {"requirementId":"REQ-EXEC-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/credit-execution-handlers.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Controlled execution persists explicit sandbox-only and no-production-funds state under current authority."}],"blockers":["No external Provider or real-funds authority."]},
+    {"requirementId":"REQ-EXEC-002","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/credit-execution-handlers.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Signed Provider sandbox execution is AccessGrant-bound, replay-safe, capped, and atomically durable."}],"blockers":["External Provider integration remains separately gated."]},
+    {"requirementId":"REQ-EXEC-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["packages/domain/src/agent-lockbox.js","db/migrations/0049_agent_lockbox_projection.up.sql","modules/persistence/src/postgres-core-repository.js","modules/tenant-command-gateway/src/credit-execution-handlers.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Purpose-bound Agent Lockbox state is authenticated, Tenant-isolated, restart-readable, repayment-updated, and non-withdrawable in PostgreSQL."},{"evidenceId":"EV-M1A1-AGENT-AUTHENTICATED-LIFECYCLE","assertion":"The real SIWE Principal browser recovered a fully repaid purpose-bound Agent Obligation and verified fourteen durable Evidence events."},{"evidenceId":"EV-M1A1-AGENT-ACCEPTANCE","assertion":"The independent Agent acceptance completed a fresh non-withdrawable execution and repayment with thirteen durable Evidence events."}],"blockers":["No custody, capital-pool, unrestricted-wallet, production, or real-funds authority exists."]},
+    {"requirementId":"REQ-EXEC-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["packages/domain/src/agent-lockbox.js","db/migrations/0049_agent_lockbox_projection.up.sql"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Database and domain invariants reject withdrawable, custody, and unrestricted-transfer state for Agent Lockbox."}],"blockers":["No real withdrawal capability exists or is authorized."]},
+    {"requirementId":"REQ-PAY-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Balanced Ledger entries persist atomically with execution and repayment projections."}],"blockers":["Production accounting approval is absent."]},
+    {"requirementId":"REQ-PAY-002","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["modules/tenant-command-gateway/src/credit-execution-handlers.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Idempotent synthetic repayment and receipts execute, but the Founder-approved fee policy is intentionally absent from runtime."}],"blockers":["Protocol Execution Fee and Financial Revenue Share runtime policy remain frozen pending Founder-approved Fee Policy or ADR."]},
+    {"requirementId":"REQ-PAY-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Shared servicing transitions and protected actions execute durably under local role authority."}],"blockers":["Legal and real-value servicing roles are unapproved."]},
+    {"requirementId":"REQ-PAY-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Synthetic final settlement and performance proof are durable, balanced, isolated, and restart-recoverable."}],"blockers":["Real-value settlement, correction, release, and override authority are gated."]},
+    {"requirementId":"REQ-EVID-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Typed Events and Evidence persist with provenance and reconciliation bindings in local runtime flows."}],"blockers":["No current external observation was executed for this candidate."]},
+    {"requirementId":"REQ-EVID-002","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Event, outbox, inbox, projection, reconciliation, replay, crash rollback, and restart recovery execute in PostgreSQL."}],"blockers":["Production HA and operations are unverified."]},
+    {"requirementId":"REQ-EVID-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["apps/web/src/owned-evidence-presentation.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Owned Evidence and official report records persist under Tenant and role scope."}],"blockers":["Current authenticated browser export journey is unverified."]},
+    {"requirementId":"REQ-EVID-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Longitudinal factor and outcome records persist with retry-safe credit Outcomes."}],"blockers":["Legacy universal demo score remains noncanonical."]},
+    {"requirementId":"REQ-RISK-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Caps, pause, freeze, dual-control, and protective actions execute durably and fail closed."}],"blockers":["Numerical production limits and override authority are unapproved."]},
+    {"requirementId":"REQ-RISK-002","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Unknown, drift, pause, incident, and reconciliation paths remain monotonic until approved recovery."}],"blockers":["Production incident roster and thresholds are absent."]},
+    {"requirementId":"REQ-CHAIN-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-REPOSITORY-TESTS","assertion":"CAIP profiles and adapter contracts execute against local conformance fixtures."},{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Chain observations persist without raw account state through the adapter boundary."}],"blockers":["No mainnet authority."]},
+    {"requirementId":"REQ-CHAIN-002","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-REPOSITORY-TESTS","assertion":"Finality, deduplication, and reorg invalidation execute in the repository suite."},{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Observation, outbox, and reconciliation state persist in PostgreSQL."}],"blockers":["No current live RPC observation is bound to the dirty candidate snapshot."]},
+    {"requirementId":"REQ-UX-001","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["apps/web/src/app.js","modules/tenant-command-gateway/src/credit-execution-handlers.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-HUMAN-AUTHENTICATED-LIFECYCLE","assertion":"The real SIWE Human browser completed Subject, Consent, Intent, Decision, Offer, acceptance, no-funds execution, repayment, and Credit Outcome Evidence."}],"blockers":["The canonical Human journey still stops before durable dispute, appeal, and additive correction."]},
+    {"requirementId":"REQ-UX-002","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["apps/web/src/app.js","apps/private-pilot/src/local-reference-agent-http.js","modules/tenant-command-gateway/src/tenant-command-clients.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-AGENT-AUTHENTICATED-LIFECYCLE","assertion":"The real SIWE Principal browser completed and reloaded the Agent Mandate, Obligation, repayment, and Evidence lifecycle."},{"evidenceId":"EV-M1A1-AGENT-ACCEPTANCE","assertion":"The independent protected reference Agent completed a fresh application and runtime lifecycle through the versioned protocol."}],"blockers":["Remote MCP, A2A, public Agent endpoints, production credentials, and real funds remain disabled and separately reviewed."]},
+    {"requirementId":"REQ-UX-003","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["apps/web/src/app.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-LOCAL-STACK","assertion":"The invited Capital Partner workspace is live and wallet-gated, but its authenticated browser journey was not completed."}],"blockers":["No current authenticated Capital Partner browser proof."]},
+    {"requirementId":"REQ-UX-004","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["apps/web/src/app.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-LOCAL-STACK","assertion":"The Risk workspace is live and wallet-gated, but its authenticated browser journey was not completed."}],"blockers":["No current authenticated Risk or Operations browser proof."]},
+    {"requirementId":"REQ-UX-005","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["apps/web/src/app.js","modules/tenant-command-gateway/src/workspace-resume-handlers.js","modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Server-derived resource and Obligation state survives database restart under exact Tenant authorization."},{"evidenceId":"EV-M1A1-AGENT-AUTHENTICATED-LIFECYCLE","assertion":"The real SIWE Principal browser reloaded exact Subject, AccountBinding, Mandate, fully repaid Obligation, and Evidence state."}],"blockers":["The Agent Offer workflow receipt still uses same-tab session storage for browser continuation, so a fresh browser session is not yet fully server-derived."]},
+    {"requirementId":"REQ-TRADE-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Trading Capital uses the shared Obligation, Ledger, Event, Evidence, and settlement runtime."}],"blockers":["Real-value activation remains gated."]},
+    {"requirementId":"REQ-TRADE-002","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Signer-free venue binding and imported history persist locally, but no current approved external venue read was executed."}],"blockers":["Current live external read and account UI evidence are absent; no signer authority exists."]},
+    {"requirementId":"REQ-TRADE-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Capital request, provider mandate, compatible match, and bilateral acceptance paths execute durably without funds."}],"blockers":["No real funding authority."]},
+    {"requirementId":"REQ-TRADE-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Synthetic Facility, order, risk, unknown, reconciliation, close, and settlement paths execute durably."}],"blockers":["Numerical production policy is unapproved."]},
+    {"requirementId":"REQ-PRIV-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Forced RLS, Tenant isolation, hash-only authentication records, and offchain identity references execute in PostgreSQL."}],"blockers":["No real KYC or production privacy approval."]},
+    {"requirementId":"REQ-AUTO-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Durable command, outbox, inbox, retry, replay, pause, reconciliation, and exact authority paths execute fail closed."}],"blockers":["Production automation authority is absent."]},
+    {"requirementId":"REQ-PILOT-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No durable dispute, appeal, correction case domain, operation, authorization policy, persistence, UI, or runtime evidence exists."]},
+    {"requirementId":"REQ-PILOT-002","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js","apps/web/src/app.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Feedback and operational alerts persist, but the complete closed-pilot operating model is not approved or browser-proven."}],"blockers":["Retention, privacy, named support, incident ownership, and full closed-pilot workflow remain unresolved."]}
+  ],
+  "explicitExclusions": {
+    "strategyVaultApproved": false,
+    "realFundsEvidence": false,
+    "productionEvidence": false,
+    "mainnetEvidence": false,
+    "custodyEvidence": false,
+    "externalSignerEvidence": false,
+    "realKycEvidence": false,
+    "feeRuntimeFrozen": true
+  }
+}

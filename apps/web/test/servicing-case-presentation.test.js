@@ -63,6 +63,22 @@ function curedObligation() {
   return obligation;
 }
 
+function multiInstallmentDelinquentObligation() {
+  const obligation = delinquentObligation();
+  const [first, second] = obligation.installments;
+  const effectiveAt = new Date(
+    new Date(second.dueAt).getTime() + 4 * 86_400_000
+  ).toISOString();
+  obligation.servicingEffectiveAt = effectiveAt;
+  obligation.daysPastDue = Math.floor(
+    (new Date(effectiveAt).getTime() - new Date(first.dueAt).getTime()) /
+      86_400_000
+  );
+  obligation.servicingClassification = "dpd_31_60";
+  obligation.servicingReasonCode = "servicing_dpd_31_60";
+  return obligation;
+}
+
 function cureAction(obligation) {
   return {
     servicingActionId: "sandbox_servicing_action_browser_cure_001",
@@ -143,6 +159,14 @@ function deeplyFrozen(value) {
   return Object.isFrozen(value) && Object.values(value).every(deeplyFrozen);
 }
 
+test("Servicing Case defaults a current repayment to the next unpaid installment", () => {
+  const presentation = createServicingCasePresentation(validReceipt.obligation);
+  assert.equal(presentation.outstandingMinor, "9000");
+  assert.equal(presentation.installments[0].outstandingMinor, "3000");
+  assert.equal(presentation.suggestedPaymentMinor, "3000");
+  assert.equal(presentation.repaymentAvailable, true);
+});
+
 test("Servicing Case presents one closed trusted-time delinquency truth", () => {
   const obligation = delinquentObligation();
   const presentation = createServicingCasePresentation(obligation);
@@ -155,11 +179,25 @@ test("Servicing Case presents one closed trusted-time delinquency truth", () => 
   assert.equal(presentation.pastDueFeeMinor, obligation.installments[0].scheduledFeeMinor);
   assert.equal(presentation.cureAvailable, true);
   assert.equal(presentation.repaymentAvailable, true);
+  assert.equal(presentation.suggestedPaymentMinor, presentation.pastDueMinor);
   assert.equal(presentation.stages.find(({ state }) => state === "current").key, "dpd_1_30");
   assert.equal(presentation.sandboxOnly, true);
   assert.equal(presentation.productionFundsMoved, false);
   assert.equal(hasVerifiedServicingCase(obligation), true);
   assert.equal(deeplyFrozen(presentation), true);
+});
+
+test("Servicing Case defaults an adverse repayment to every past-due installment", () => {
+  const obligation = multiInstallmentDelinquentObligation();
+  const presentation = createServicingCasePresentation(obligation);
+  const expectedPastDue = obligation.installments.reduce(
+    (sum, installment) => sum + installmentTotal(installment),
+    0n
+  );
+  assert.ok(obligation.daysPastDue >= 31 && obligation.daysPastDue <= 60);
+  assert.equal(presentation.pastDueMinor, String(expectedPastDue));
+  assert.equal(presentation.suggestedPaymentMinor, String(expectedPastDue));
+  assert.ok(expectedPastDue > installmentTotal(obligation.installments[0]));
 });
 
 test("Servicing Case records cure only from the exact returned action", () => {
@@ -172,6 +210,10 @@ test("Servicing Case records cure only from the exact returned action", () => {
   assert.equal(presentation.pastDueInterestMinor, "0");
   assert.equal(presentation.pastDueFeeMinor, "0");
   assert.equal(presentation.cureAvailable, false);
+  assert.equal(
+    presentation.suggestedPaymentMinor,
+    presentation.installments[1].outstandingMinor
+  );
   assert.equal(presentation.latestAction.actionType, "cure");
   assert.equal(presentation.latestAction.source, "repayment");
   assert.equal(presentation.latestAction.nextClassification, "cured");
@@ -186,6 +228,7 @@ test("Servicing Case accepts a repayment-driven advance to fully repaid", () => 
   const presentation = createServicingCasePresentation(obligation, action);
   assert.equal(presentation.classification, "current");
   assert.equal(presentation.repaymentAvailable, false);
+  assert.equal(presentation.suggestedPaymentMinor, "0");
   assert.equal(presentation.latestAction.actionType, "advance");
   assert.equal(presentation.latestAction.source, "repayment");
   assert.equal(presentation.latestAction.nextClassification, "current");

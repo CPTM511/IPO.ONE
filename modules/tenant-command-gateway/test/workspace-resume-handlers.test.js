@@ -40,6 +40,13 @@ test("workspace recovery returns only bounded resources already bound to the aut
   assert.deepEqual(calls[0].values.slice(0, 2), ["tenant_workspace_test", "actor_workspace_test"]);
   assert.match(calls[0].text, /b\.actor_id = \$2/);
   assert.match(calls[0].text, /r\.status = 'active'/);
+  assert.match(calls[0].text, /ROW_NUMBER\(\) OVER/);
+  assert.match(calls[0].text, /PARTITION BY b\.resource_type/);
+  assert.match(
+    calls[0].text,
+    /ORDER BY b\.updated_at DESC, b\.resource_id ASC\s+\) ASC/,
+    "the bounded recovery window must retain the latest authorized resource from every available type"
+  );
   assert.equal(JSON.stringify(result).includes("credential"), false);
 });
 

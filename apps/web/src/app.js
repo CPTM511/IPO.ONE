@@ -23,6 +23,13 @@ import {
   selectedCreditPassportClaims
 } from "./credit-passport-presentation.js";
 import { createEvidenceReceiptPresentation } from "./evidence-receipt-presentation.js";
+import {
+  createBoundedOwnedEvidenceProjection,
+  hasOwnedEvidenceMarker,
+  newestOwnedEvidenceFirst,
+  ownedEvidenceVerificationState,
+  retainMatchingEvidenceAnchors
+} from "./owned-evidence-presentation.js";
 import { createHumanCreditOfferWorkflowReceipt } from "./human-credit-offer-workflow-receipt.js";
 import { createHumanSandboxObligationWorkflowReceipt } from "./human-sandbox-obligation-workflow-receipt.js";
 import {
@@ -205,6 +212,9 @@ const auditorEvidence = {
   helper: "Enter an exact Obligation ID. Access is verified by the private Gateway.",
   error: false
 };
+const OWNED_EVIDENCE_DISPLAY_LIMIT = 50;
+const OWNED_EVIDENCE_DEFAULT_HELPER =
+  "Load the redacted PostgreSQL Evidence for this exact Obligation. Evidence digests are integrity checks, not blockchain transactions.";
 const ownedEvidence = {
   catalogAvailable: false,
   busy: false,
@@ -215,7 +225,9 @@ const ownedEvidence = {
   hasMore: false,
   capped: false,
   asOf: null,
-  helper: "Load the redacted PostgreSQL Evidence for this exact Obligation. Evidence digests are integrity checks, not blockchain transactions.",
+  expectedMarker: null,
+  queryEpoch: 0,
+  helper: OWNED_EVIDENCE_DEFAULT_HELPER,
   error: false
 };
 const evidenceAnchorPilot = {
@@ -250,7 +262,6 @@ const officialReportPilot = {
     "Load an owned Obligation first. Report content is generated and hashed by the server.",
   error: false
 };
-const OWNED_EVIDENCE_DISPLAY_LIMIT = 50;
 const creditPassportPilot = {
   createAvailable: false,
   readAvailable: false,
@@ -362,6 +373,7 @@ const accessState = {
   providers: new Set(),
   walletAuthenticationEnabled: false,
   sessionActive: false,
+  sessionAuthenticationMethod: null,
   localSessionSignedOut: false,
   selectedChainId: 84532,
   connectedChainId: null,
@@ -425,6 +437,7 @@ function applyWalletAuthoritySnapshot(snapshot) {
   walletAuthoritySnapshot = snapshot;
   if (snapshot.status === "available") return;
   accessState.sessionActive = false;
+  accessState.sessionAuthenticationMethod = null;
   tenantPilot.connected = false;
   tenantPilot.connectionLabel = snapshot.status === "pending"
     ? "Wallet authority invalidation pending"
@@ -554,6 +567,8 @@ function renderAccess() {
   const connected = SUPPORTED_WALLET_CHAINS[accessState.connectedChainId];
   const walletAuthority = walletAuthoritySnapshot ?? walletAuthorityLifecycle.getSnapshot();
   const authenticated = accessState.sessionActive === true;
+  const walletSession =
+    authenticated && accessState.sessionAuthenticationMethod === "siwe";
   const workspaceVerified = tenantPilot.connected === true;
   const workspaceRoleMismatch = hasWorkspaceSessionRoleMismatch();
   const privateWorkspaceVisible = authenticated && workspaceVerified;
@@ -607,7 +622,18 @@ function renderAccess() {
     accessState.pendingWorkspaceBootstrap ||
     !tenantCsrfToken();
   el("accessSessionPanel").hidden = !authenticated && !localSessionEnded;
-  el("accessMethodPanel").hidden = authenticated || localSessionEnded;
+  el("accessMethodPanel").hidden =
+    localSessionEnded || (authenticated && !walletSession);
+  el("googleSignInBtn").hidden = authenticated;
+  el("emailSignInBtn").hidden = authenticated;
+  el("walletSignInBtn").hidden = authenticated;
+  el("accessMethodStep").textContent = walletSession ? "Session" : "Step 1";
+  el("signInMethodTitle").textContent = walletSession
+    ? "Reconnect the session wallet"
+    : "Choose how to sign in";
+  el("signInMethodCopy").textContent = walletSession
+    ? "Select and connect the wallet again before an exact sandbox confirmation. The server session remains authoritative."
+    : "One secure session across the Human and Agent workspaces.";
   el("accessDialogGrid").classList.toggle(
     "session-active",
     authenticated || localSessionEnded
@@ -818,6 +844,11 @@ async function probeAccessOptions() {
     accessState.authEnabled = options?.enabled === true;
     accessState.providers = new Set(Array.isArray(options?.oidcProviders) ? options.oidcProviders : []);
     accessState.walletAuthenticationEnabled = options?.walletAuthentication === true;
+    accessState.sessionAuthenticationMethod =
+      options?.sessionActive === true &&
+      new Set(["oidc_pkce_bff", "siwe"]).has(options?.sessionAuthenticationMethod)
+        ? options.sessionAuthenticationMethod
+        : null;
     accessState.sessionActive =
       authorityAvailable &&
       (options?.sessionActive === true || tenantPilot.connected);
@@ -832,6 +863,7 @@ async function probeAccessOptions() {
   } catch {
     accessState.authEnabled = false;
     accessState.authenticationProfile = null;
+    accessState.sessionAuthenticationMethod = null;
     const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
     accessState.sessionActive = authorityAvailable && tenantPilot.connected;
     if (authorityAvailable) {
@@ -924,12 +956,14 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
         params: [challenge.message, address]
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
-      await authJson("/auth/v1/wallet/verify", {
+      const authentication = await authJson("/auth/v1/wallet/verify", {
         method: "POST",
         body: { transactionHandle: challenge.handle, signature }
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       accessState.sessionActive = true;
+      accessState.sessionAuthenticationMethod =
+        authentication?.authenticationMethod === "siwe" ? "siwe" : null;
       accessState.pendingWorkspaceBootstrap = true;
       accessState.helper = "Wallet sign-in complete. Your internal roles and Mandates remain server-controlled.";
       renderAccess();
@@ -1008,6 +1042,7 @@ async function signOutAuthenticatedSession() {
       (item) => item.providerId === accessState.selectedWalletProviderId
     );
     accessState.sessionActive = false;
+    accessState.sessionAuthenticationMethod = null;
     accessState.pendingWorkspaceBootstrap = false;
     accessState.localSessionSignedOut = false;
     tenantPilot.connected = false;
@@ -1331,7 +1366,18 @@ function requestEconomicActionConfirmation({
     return Promise.reject(new Error("The exact sandbox action could not be prepared."));
   }
   const provider = walletProviderRegistry.getSelectedProvider();
-  const walletConfirmation = Boolean(accessState.walletAddress && provider);
+  const sessionConfirmationMethod = accessState.sessionAuthenticationMethod;
+  if (!new Set(["oidc_pkce_bff", "siwe"]).has(sessionConfirmationMethod)) {
+    return Promise.reject(new Error(
+      "The authenticated session confirmation method is unavailable. Reload server truth before retrying."
+    ));
+  }
+  const walletConfirmation = sessionConfirmationMethod === "siwe";
+  if (walletConfirmation && (!accessState.walletAddress || !provider)) {
+    return Promise.reject(new Error(
+      "Reconnect the wallet used for this SIWE session before confirming the exact sandbox action."
+    ));
+  }
   const requestedAt = new Date();
   const expiresAt = new Date(requestedAt.getTime() + 5 * 60_000);
   const requestNonce = tenantRequestToken("human_action_confirmation");
@@ -1491,9 +1537,10 @@ function quarantineRejectedAuthenticationSession(error) {
   if (!isRejectedAuthenticationSession(error)) return false;
   const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";
   accessState.sessionActive = false;
+  accessState.sessionAuthenticationMethod = null;
   accessState.pendingWorkspaceBootstrap = false;
   accessState.helper =
-    `Your secure session ended. Sign in again; no credit action was submitted.${requestSuffix}`;
+    `Your secure session ended. Sign in again and reconcile server truth before retrying any action.${requestSuffix}`;
   tenantPilot.connected = false;
   tenantPilot.connectionLabel = "Secure session ended";
   tenantPilot.workspaceRecoveryState = "locked";
@@ -1930,6 +1977,40 @@ function purgeAuthenticatedBrowserState({
   }
 }
 
+function resetOwnedEvidenceState({
+  busy = false,
+  expectedMarker = null,
+  helper = OWNED_EVIDENCE_DEFAULT_HELPER,
+  obligationId = null
+} = {}) {
+  const queryEpoch = ownedEvidence.queryEpoch + 1;
+  const anchorConfig = evidenceAnchorPilot.config;
+  Object.assign(ownedEvidence, {
+    busy,
+    queried: false,
+    obligationId,
+    items: [],
+    nextCursor: null,
+    hasMore: false,
+    capped: false,
+    asOf: null,
+    expectedMarker,
+    queryEpoch,
+    helper,
+    error: false
+  });
+  Object.assign(evidenceAnchorPilot, {
+    available: Boolean(anchorConfig),
+    busy: false,
+    config: anchorConfig,
+    obligationId: null,
+    items: [],
+    helper: "Every durable Evidence hash requires a verified Base Sepolia transaction.",
+    error: false
+  });
+  return queryEpoch;
+}
+
 function resetHumanObligationWorkflow() {
   tenantPilot.obligationReceipt = null;
   tenantPilot.obligationWorkflowId = null;
@@ -1947,24 +2028,7 @@ function resetHumanObligationWorkflow() {
   tenantPilot.obligationHydrationError = false;
   tenantPilot.obligationHydrationHelper = "Enter an exact Obligation ID or create one in Human Pilot.";
   forgetOwnedObligationId();
-  ownedEvidence.busy = false;
-  ownedEvidence.queried = false;
-  ownedEvidence.obligationId = null;
-  ownedEvidence.items = [];
-  ownedEvidence.nextCursor = null;
-  ownedEvidence.hasMore = false;
-  ownedEvidence.capped = false;
-  ownedEvidence.asOf = null;
-  ownedEvidence.helper = "Load the redacted PostgreSQL Evidence for this exact Obligation. Evidence digests are integrity checks, not blockchain transactions.";
-  ownedEvidence.error = false;
-  evidenceAnchorPilot.available = false;
-  evidenceAnchorPilot.busy = false;
-  evidenceAnchorPilot.config = null;
-  evidenceAnchorPilot.obligationId = null;
-  evidenceAnchorPilot.items = [];
-  evidenceAnchorPilot.helper =
-    "Every durable Evidence hash requires a verified Base Sepolia transaction.";
-  evidenceAnchorPilot.error = false;
+  resetOwnedEvidenceState();
 }
 
 function requestedCreditTerms() {
@@ -2273,6 +2337,48 @@ function renderAgentOnlineWorkflow(presentation) {
     agentOnlinePilot.evidenceResult?.evidence ??
     runtimeResult?.lifecycle?.evidence ??
     null;
+  const totalRepaidMinor = BigInt(runtimeObligation?.totalRepaidMinor ?? "0");
+  const recoveredRepaymentEvidence = evidence?.items?.find((item) => (
+    item?.eventType === "repayment_posted" &&
+    item.obligationId === runtimeObligation?.obligationId &&
+    typeof item.occurredAt === "string"
+  )) ?? null;
+  const repaymentMarker = repayment
+    ? {
+        eventType: "repayment_posted",
+        obligationId: runtimeObligation?.obligationId,
+        occurredAt: repayment.occurredAt
+      }
+    : totalRepaidMinor > 0n && recoveredRepaymentEvidence
+      ? {
+          eventType: recoveredRepaymentEvidence.eventType,
+          obligationId: recoveredRepaymentEvidence.obligationId,
+          occurredAt: recoveredRepaymentEvidence.occurredAt
+        }
+      : null;
+  const ownerEvidenceLatestProven = Boolean(
+    evidence &&
+    repaymentMarker &&
+    ownedEvidence.obligationId === runtimeObligation?.obligationId &&
+    currentOwnedEvidenceLatestProven() &&
+    hasOwnedEvidenceMarker(ownedEvidence.items, repaymentMarker)
+  );
+  const agentEvidenceLatestProven = Boolean(
+    evidence && repaymentMarker && (
+      evidence.hasMore !== true &&
+      hasOwnedEvidenceMarker(evidence.items, repaymentMarker) ||
+      ownerEvidenceLatestProven
+    )
+  );
+  const visibleEvidenceItems = ownerEvidenceLatestProven
+    ? ownedEvidence.items
+    : evidence?.items ?? (
+        ownedEvidence.queried &&
+        ownedEvidence.obligationId === runtimeObligation?.obligationId
+          ? ownedEvidence.items
+          : []
+      );
+  const latestEvidence = visibleEvidenceItems.at(-1);
   const executionCompleted =
     runtimeObligation?.executionStatus === "executed" ||
     Boolean(executionReceipt);
@@ -2295,7 +2401,7 @@ function renderAgentOnlineWorkflow(presentation) {
             ? "runtime_execute"
             : outstandingMinor > 0n
               ? "runtime_repay"
-              : evidence
+              : agentEvidenceLatestProven
                 ? "runtime_complete"
                 : "runtime_evidence"
         : "application_missing"
@@ -2352,19 +2458,18 @@ function renderAgentOnlineWorkflow(presentation) {
     ? `${usdMinorToMoney(repayment.appliedMinor)} posted · ${usdMinorToMoney(
         repayment.remainingPrincipalMinor
       )} principal remaining`
+    : totalRepaidMinor > 0n
+      ? `${usdMinorToMoney(totalRepaidMinor.toString())} repaid · ${usdMinorToMoney(
+          runtimeObligation?.outstandingPrincipalMinor ?? "0"
+        )} principal remaining`
     : executionCompleted
       ? "Ready for early repayment"
       : "Not posted";
-  el("agentOnlineEvidenceState").textContent = evidence
-    ? `${evidence.items.length} verified event${
-        evidence.items.length === 1 ? "" : "s"
+  el("agentOnlineEvidenceState").textContent = latestEvidence
+    ? `${titleize(latestEvidence.eventType)} · v${latestEvidence.aggregateVersion} · ${visibleEvidenceItems.length} ${
+        agentEvidenceLatestProven ? "latest verified" : evidence?.hasMore ? "partial" : "loaded"
       }`
-    : ownedEvidence.queried &&
-        ownedEvidence.obligationId === runtimeObligation?.obligationId
-      ? `${ownedEvidence.items.length} verified event${
-          ownedEvidence.items.length === 1 ? "" : "s"
-        }`
-      : "Not loaded";
+    : "Not loaded";
 
   button.disabled =
     agentOnlinePilot.busy ||
@@ -2375,7 +2480,7 @@ function renderAgentOnlineWorkflow(presentation) {
     ? "Running authenticated Agent…"
     : {
         authority: "Set up Agent authority",
-        application: "Run Agent application online",
+        application: "Request Agent credit and receive Offer",
         principal_activation: "Review and activate this Mandate",
         runtime_accept: "Create Agent Obligation",
         runtime_execute: "Agent Obligation created",
@@ -2746,11 +2851,12 @@ async function runOnlineReferenceAgent() {
     if (!exactResourceId(obligation?.obligationId)) {
       throw new Error("The online Agent returned an invalid Obligation receipt.");
     }
-    tenantPilot.obligation = obligation;
     tenantPilot.repayment = null;
-    rememberOwnedObligationId(obligation.obligationId);
-    rememberWorkspaceObligation(obligation.obligationId);
-    el("ownedObligationId").value = obligation.obligationId;
+    rememberAgentOnlineObligation(obligation);
+    await refreshOwnedEvidenceAfterCommittedAction(obligation.obligationId, {
+      eventType: "credit_offer_accepted",
+      occurredAt: result.acceptance.acceptedAt
+    });
     agentOnlinePilot.helper =
       "Agent Obligation created. No use or repayment has occurred yet. Continue with Execute approved use.";
     toast("Agent Obligation created");
@@ -2783,6 +2889,12 @@ function currentAgentOnlineObligation(mandateId) {
 }
 
 function rememberAgentOnlineObligation(obligation) {
+  if (tenantPilot.obligation?.obligationId !== obligation.obligationId) {
+    resetOwnedEvidenceState({
+      obligationId: obligation.obligationId,
+      helper: "Loading controller-authorized Evidence for the Agent Obligation…"
+    });
+  }
   tenantPilot.obligation = obligation;
   rememberOwnedObligationId(obligation.obligationId);
   rememberWorkspaceObligation(obligation.obligationId);
@@ -2832,6 +2944,10 @@ async function executeOnlineAgentApprovedUse() {
     }
     agentOnlinePilot.executionResult = result;
     rememberAgentOnlineObligation(result.obligation);
+    await refreshOwnedEvidenceAfterCommittedAction(result.obligation.obligationId, {
+      eventType: "obligation_sandbox_executed",
+      occurredAt: result.executionReceipt.executedAt
+    });
     agentOnlinePilot.helper =
       "Approved use executed through the sandbox rail. The receipt is non-withdrawable and no production funds moved. Repayment is now available.";
     toast("Agent approved use executed");
@@ -2892,6 +3008,10 @@ async function repayOnlineAgentObligation() {
     agentOnlinePilot.repaymentResult = result;
     tenantPilot.repayment = result.repayment;
     rememberAgentOnlineObligation(result.obligation);
+    await refreshOwnedEvidenceAfterCommittedAction(result.obligation.obligationId, {
+      eventType: "repayment_posted",
+      occurredAt: result.repayment.occurredAt
+    });
     agentOnlinePilot.helper =
       "Agent repayment posted. The durable Obligation and repayment waterfall are updated. Verify Evidence to close the test journey.";
     toast("Agent repayment posted");
@@ -2918,6 +3038,12 @@ async function verifyOnlineAgentEvidence() {
     renderAgentConsole();
     return;
   }
+  const sharedProjectionEpoch = ownedEvidence.queryEpoch;
+  const sharedProjectionDataEpoch = authenticatedDataEpoch;
+  const projectToSelectedEvidence =
+    tenantPilot.obligation?.obligationId === obligation.obligationId;
+  const expectedRepayment =
+    agentOnlinePilot.repaymentResult?.repayment ?? tenantPilot.repayment;
   agentOnlinePilot.busy = true;
   agentOnlinePilot.error = false;
   agentOnlinePilot.helper =
@@ -2936,37 +3062,106 @@ async function verifyOnlineAgentEvidence() {
     if (!Array.isArray(evidence?.items)) {
       throw new Error("The online Agent returned invalid Evidence.");
     }
+    const agentEvidenceProjection = createBoundedOwnedEvidenceProjection({
+      limit: OWNED_EVIDENCE_DISPLAY_LIMIT,
+      obligationId: obligation.obligationId,
+      response: evidence,
+      sourceLabel: "Agent-authenticated"
+    });
+    if (sharedProjectionDataEpoch !== authenticatedDataEpoch) return;
+    const activeMandate = currentAgentConsolePresentation()?.mandate;
+    if (
+      activeMandate?.mandateId !== mandate.mandateId ||
+      currentAgentOnlineObligation(activeMandate.mandateId)?.obligationId !==
+        obligation.obligationId
+    ) return;
     agentOnlinePilot.evidenceResult = result;
-    ownedEvidence.queried = true;
-    ownedEvidence.obligationId = obligation.obligationId;
-    ownedEvidence.items = evidence.items;
-    ownedEvidence.nextCursor = evidence.nextCursor ?? null;
-    ownedEvidence.hasMore = evidence.hasMore === true;
-    ownedEvidence.asOf = evidence.asOf ?? new Date().toISOString();
-    ownedEvidence.error = false;
-    ownedEvidence.helper =
-      `${evidence.items.length} Agent-authenticated Evidence events loaded from the shared obligation kernel.`;
-    try {
-      await recoverAuthenticatedWorkspace();
-      await loadOwnedObligation({
-        obligationId: obligation.obligationId,
-        quiet: true
+    const projectionStillSelected =
+      projectToSelectedEvidence &&
+      sharedProjectionDataEpoch === authenticatedDataEpoch &&
+      sharedProjectionEpoch === ownedEvidence.queryEpoch &&
+      tenantPilot.obligation?.obligationId === obligation.obligationId;
+    if (
+      projectionStillSelected &&
+      !(currentOwnedEvidenceLatestProven() && evidence.hasMore)
+    ) {
+      const expectedMarker = ownedEvidence.expectedMarker;
+      resetOwnedEvidenceState({
+        expectedMarker,
+        obligationId: obligation.obligationId
       });
-      await loadOwnedEvidence();
-    } catch (error) {
-      if (isRejectedAuthenticationSession(error)) throw error;
-      tenantPilot.obligationHydrationHelper =
-        "Agent Evidence is verified. Use Review Agent obligations to retry the Principal read.";
+      Object.assign(ownedEvidence, agentEvidenceProjection, {
+        queried: true,
+        error: false
+      });
+      reconcileExpectedOwnedEvidenceMarker();
+    }
+    const recoveredRepaymentEvidence = expectedRepayment
+      ? null
+      : evidence.items.find((item) => (
+          item?.eventType === "repayment_posted" &&
+          item.obligationId === obligation.obligationId &&
+          typeof item.occurredAt === "string"
+        )) ?? null;
+    const expectedRepaymentMarker = expectedRepayment
+      ? {
+          eventType: "repayment_posted",
+          obligationId: obligation.obligationId,
+          occurredAt: expectedRepayment.occurredAt
+        }
+      : BigInt(obligation.totalRepaidMinor ?? "0") > 0n && recoveredRepaymentEvidence
+        ? {
+            eventType: recoveredRepaymentEvidence.eventType,
+            obligationId: recoveredRepaymentEvidence.obligationId,
+            occurredAt: recoveredRepaymentEvidence.occurredAt
+          }
+        : null;
+    const latestRepaymentProven = Boolean(
+      expectedRepaymentMarker && (
+        evidence.hasMore !== true &&
+        hasOwnedEvidenceMarker(evidence.items, expectedRepaymentMarker) ||
+        projectionStillSelected &&
+        currentOwnedEvidenceLatestProven() &&
+        hasOwnedEvidenceMarker(ownedEvidence.items, expectedRepaymentMarker)
+      )
+    );
+    if (!latestRepaymentProven) {
+      agentOnlinePilot.error = evidence.hasMore !== true;
+      agentOnlinePilot.helper = evidence.hasMore
+        ? `${agentEvidenceProjection.helper} Open the Obligation to continue its owner-authorized cursor after this Agent-authenticated read.`
+        : "Evidence read succeeded, but the latest repayment Evidence is delayed. Retry the read; no repayment will be resubmitted.";
+      if (projectionStillSelected && agentOnlinePilot.error) {
+        ownedEvidence.error = true;
+        ownedEvidence.helper = agentOnlinePilot.helper;
+      }
+      toast(
+        evidence.hasMore ? "Agent Evidence page loaded" : "Latest Agent Evidence is delayed",
+        agentOnlinePilot.error ? "error" : undefined
+      );
+      announce("Agent Evidence read completed; latest repayment is not yet proven");
+      return;
     }
     agentOnlinePilot.helper =
       "Agent borrowing, approved use, repayment, and Evidence are verified through the shared kernel. Open the Obligation to review its position and chain-anchor state.";
     toast("Agent Evidence verified");
     announce("Agent lifecycle and Evidence verified");
   } catch (error) {
-    failAgentOnlineStep(error);
+    if (sharedProjectionDataEpoch === authenticatedDataEpoch) {
+      const requestSuffix = error?.requestId
+        ? ` Request ID: ${error.requestId}`
+        : "";
+      agentOnlinePilot.error = true;
+      agentOnlinePilot.helper =
+        `The Agent Evidence read failed. Any accepted lifecycle action remains unchanged; retry Evidence only and no economic command will be resubmitted.${requestSuffix}`;
+      toast(agentOnlinePilot.helper, "error");
+      announce("Agent Evidence read failed; accepted lifecycle state is unchanged");
+      if (isRejectedAuthenticationSession(error)) openAccess();
+    }
   } finally {
-    agentOnlinePilot.busy = false;
-    renderTenantPilot();
+    if (sharedProjectionDataEpoch === authenticatedDataEpoch) {
+      agentOnlinePilot.busy = false;
+      renderTenantPilot();
+    }
   }
 }
 
@@ -2982,8 +3177,19 @@ async function reviewOnlineAgentObligation() {
   showView("obligations");
   el("ownedObligationId").value = obligationId;
   await loadOwnedObligation({ obligationId });
+  if (
+    tenantPilot.obligationHydrationError ||
+    tenantPilot.obligation?.obligationId !== obligationId
+  ) {
+    announce("Agent Obligation could not be reauthorized; Evidence was not read");
+    return;
+  }
   await loadOwnedEvidence();
-  announce("Agent Obligation and verified Evidence loaded");
+  announce(currentOwnedEvidenceLatestProven()
+    ? "Agent Obligation loaded and latest Evidence verified"
+    : currentOwnedEvidenceLoaded()
+      ? "Agent Obligation loaded with partial Evidence"
+      : "Agent Obligation loaded; Evidence is not yet available");
 }
 
 function agentIntegrationPresentation() {
@@ -3166,17 +3372,15 @@ function renderAgentRequestCreditJourney() {
     primary.textContent = "Review Agent obligations";
     primary.dataset.agentGuideAction = "view-obligations";
     secondary.textContent = "Open Agent workspace";
-    secondary.dataset.agentGuideAction = "run-online-agent";
+    secondary.dataset.agentGuideAction = "open-agent-workspace";
   } else if (runtimeReady || applicationReady) {
     primary.textContent = runtimeReady
-      ? agentOnlinePilot.offerReceipt
-        ? "Borrow, repay, and verify online"
-        : "Open Agent workspace"
+      ? "Open Agent workspace"
       : agentOnlinePilot.offerReceipt
         ? "Review and activate Mandate"
-        : "Run Agent application online";
-    primary.dataset.agentGuideAction = runtimeReady && agentOnlinePilot.offerReceipt
-      ? "run-online-agent"
+        : "Request Agent credit and receive Offer";
+    primary.dataset.agentGuideAction = runtimeReady
+      ? "open-agent-workspace"
       : applicationReady && !agentOnlinePilot.offerReceipt
         ? "run-online-agent"
         : "principal-setup";
@@ -3450,6 +3654,8 @@ function humanGuidePresentation() {
   const obligation = tenantPilot.obligation;
   const executed = obligation?.executionStatus === "executed";
   const repaid = obligation?.status === "fully_repaid";
+  const evidenceState = currentOwnedEvidenceVerificationState();
+  const evidenceLatestProven = evidenceState === "latest_proven";
   const checkpoints = [
     Boolean((subjectReady && consentReady) || tenantPilot.intent || offer || obligation),
     Boolean(tenantPilot.intent || offer || obligation),
@@ -3583,18 +3789,36 @@ function humanGuidePresentation() {
   }
 
   return {
-    title: ownedEvidence.queried ? "Your sandbox lifecycle is complete" : "Verify your completed lifecycle",
-    copy: ownedEvidence.queried
-      ? "Your Obligation is fully repaid and its redacted immutable Evidence is available for review."
-      : "Your Obligation is fully repaid. Load its redacted immutable timeline to verify the lifecycle from acceptance through repayment.",
-    status: "Complete",
+    title: evidenceLatestProven
+      ? "Your sandbox lifecycle is complete"
+      : evidenceState === "partial"
+        ? "Repayment complete; Evidence is partial"
+        : evidenceState === "delayed"
+          ? "Repayment complete; Evidence is delayed"
+          : "Verify your completed lifecycle",
+    copy: evidenceLatestProven
+      ? "Your Obligation is fully repaid and its latest redacted immutable Evidence is proven. Earlier records may remain outside the browser cap."
+      : evidenceState === "partial"
+        ? "The bounded timeline is loaded, but the latest event is not yet proven. Continue the read-only cursor from Activity & Proofs."
+        : evidenceState === "delayed"
+          ? "The repayment remains successful, but its latest Evidence is not visible yet. Retry only the Evidence read; repayment will not be resubmitted."
+          : evidenceState === "loading"
+            ? "The repayment remains successful while its owner-authorized Evidence is being read."
+            : "Your Obligation is fully repaid. Load its redacted immutable timeline to verify the lifecycle from acceptance through repayment.",
+    status: evidenceLatestProven ? "Complete" : "Evidence check required",
     action: "verify-evidence",
-    actionLabel: ownedEvidence.queried ? "Review Evidence" : "Verify Evidence",
+    actionLabel: evidenceLatestProven
+      ? "Review Evidence"
+      : evidenceState === "partial"
+        ? "Continue Evidence"
+        : evidenceState === "delayed"
+          ? "Retry Evidence read"
+          : "Verify Evidence",
     secondaryAction: "start-new",
     secondaryLabel: "Start another request",
     checkpoints,
     currentIndex: -1,
-    journey: "Lifecycle complete"
+    journey: evidenceLatestProven ? "Lifecycle complete" : "Repayment complete"
   };
 }
 
@@ -3875,6 +4099,34 @@ function ownedEvidencePresentationPage(obligationId) {
       : {}),
     schemaVersion: "tenant_owned_obligation_evidence_view.v1"
   };
+}
+
+function currentOwnedEvidenceLoaded() {
+  const obligationId = tenantPilot.obligation?.obligationId;
+  return Boolean(
+    obligationId &&
+    ownedEvidence.queried &&
+    ownedEvidence.obligationId === obligationId
+  );
+}
+
+function currentOwnedEvidenceVerificationState() {
+  const obligationId = tenantPilot.obligation?.obligationId;
+  return ownedEvidenceVerificationState({
+    busy: ownedEvidence.busy,
+    error: ownedEvidence.error,
+    expectedMarker: Boolean(ownedEvidence.expectedMarker),
+    hasMore: ownedEvidence.hasMore,
+    itemCount: ownedEvidence.items.length,
+    queried: ownedEvidence.queried,
+    resourceMatches: Boolean(
+      obligationId && ownedEvidence.obligationId === obligationId
+    )
+  });
+}
+
+function currentOwnedEvidenceLatestProven() {
+  return currentOwnedEvidenceVerificationState() === "latest_proven";
 }
 
 function currentObligationPortfolioPresentation() {
@@ -4569,10 +4821,19 @@ function renderV9ShellStates() {
       : "Sign in to read an eligible application. Denied and missing applications are not enumerated.";
   }
 
-  if (tenantPilot.obligation && ownedEvidence.queried) {
-    el("creditTrackRecordStateTitle").textContent = "Verified lifecycle loaded";
+  const trackRecordState = currentOwnedEvidenceVerificationState();
+  if (tenantPilot.obligation && trackRecordState === "latest_proven") {
+    el("creditTrackRecordStateTitle").textContent = "Latest lifecycle Evidence verified";
     el("creditTrackRecordStateCopy").textContent =
-      `${ownedEvidence.items.length} redacted Evidence event${ownedEvidence.items.length === 1 ? "" : "s"} loaded for the selected owned Obligation.`;
+      `${ownedEvidence.items.length} latest bounded Evidence event${ownedEvidence.items.length === 1 ? "" : "s"} loaded for the selected owned Obligation. Earlier events may remain outside the browser cap.`;
+  } else if (tenantPilot.obligation && trackRecordState === "partial") {
+    el("creditTrackRecordStateTitle").textContent = "Partial lifecycle Evidence";
+    el("creditTrackRecordStateCopy").textContent =
+      `${ownedEvidence.items.length} bounded event${ownedEvidence.items.length === 1 ? " is" : "s are"} visible, but the latest lifecycle event is not yet proven. Continue the read-only cursor.`;
+  } else if (tenantPilot.obligation && trackRecordState === "delayed") {
+    el("creditTrackRecordStateTitle").textContent = "Latest Evidence delayed";
+    el("creditTrackRecordStateCopy").textContent =
+      "The lifecycle action remains accepted, but its expected Evidence is not visible yet. Retry only the Evidence read; no economic command will be resubmitted.";
   } else if (tenantPilot.obligation) {
     el("creditTrackRecordStateTitle").textContent = "Owned Obligation loaded";
     el("creditTrackRecordStateCopy").textContent =
@@ -4638,7 +4899,11 @@ function renderPrivateProductSurfaces() {
   const nextInstallment = privateNextInstallment(obligation);
   const humanStatus = privateHumanLifecycleStatus();
   const agentStatus = privateAgentLifecycleStatus();
-  const finalities = new Set(ownedEvidence.items.map((item) => item.sourceFinality));
+  const evidenceState = currentOwnedEvidenceVerificationState();
+  const evidenceLoaded = currentOwnedEvidenceLoaded();
+  const evidenceLatestProven = evidenceState === "latest_proven";
+  const visibleEvidenceItems = evidenceLoaded ? ownedEvidence.items : [];
+  const finalities = new Set(visibleEvidenceItems.map((item) => item.sourceFinality));
   const evidenceFinality = finalities.size === 0
     ? "Waiting"
     : finalities.size === 1
@@ -4661,8 +4926,14 @@ function renderPrivateProductSurfaces() {
   el("privatePortfolioAvailableCredit").textContent = "Unavailable";
   el("privatePortfolioAvailableCredit").title =
     "No authenticated server operation currently returns available credit.";
-  el("privatePortfolioEvidence").textContent = ownedEvidence.queried
-    ? `${ownedEvidence.items.length} loaded`
+  el("privatePortfolioEvidence").textContent = evidenceLatestProven
+    ? `${visibleEvidenceItems.length} latest verified`
+    : evidenceState === "partial"
+      ? `${visibleEvidenceItems.length} partial`
+      : evidenceState === "delayed"
+        ? "Verification delayed"
+        : evidenceState === "loading"
+          ? "Loading"
     : obligation
       ? "Available"
       : "Not loaded";
@@ -4700,12 +4971,27 @@ function renderPrivateProductSurfaces() {
       : "Not submitted";
   el("privateAgentMandateStatus").textContent = mandate ? titleize(mandate.status) : "Not created";
 
+  const repaymentEvidenceComplete =
+    obligation?.status === "fully_repaid" && evidenceLatestProven;
+  const repaymentEvidenceStatus = repaymentEvidenceComplete
+    ? "Lifecycle repaid · latest Evidence proven"
+    : obligation?.status === "fully_repaid" && evidenceState === "partial"
+      ? `Repayment complete · ${visibleEvidenceItems.length} partial Evidence events`
+      : obligation?.status === "fully_repaid" && evidenceState === "delayed"
+        ? "Repayment complete · latest Evidence delayed"
+      : obligation?.status === "fully_repaid"
+        ? "Repayment complete · Evidence not loaded"
+        : evidenceState === "partial"
+          ? `${visibleEvidenceItems.length} partial Evidence events loaded`
+          : evidenceState === "delayed"
+            ? "Latest Evidence verification delayed"
+          : "Owner and Agent reads remain permission-bound";
   const checkpoints = [
     ["Identity & authority", tenantPilot.intent || offer || obligation ? "Human Consent verified" : agentAuthorityPilot.subject ? agentStatus : "Create Human Subject or Agent authority", Boolean(tenantPilot.intent || offer || obligation || agentAuthorityPilot.subject)],
     ["Decision & Offer", offer ? `${titleize(decision?.status)} · ${usdMinorToMoney(offer.approvedPrincipalMinor)}` : "Awaiting deterministic evaluation", Boolean(offer)],
     ["Shared Obligation", obligation ? `${titleize(obligation.status)} · schedule v${obligation.scheduleSequence ?? 1}` : "Awaiting exact Offer acceptance", Boolean(obligation)],
     ["Sandbox execution", obligation?.executionStatus === "executed" ? "Signed non-withdrawable receipt verified" : "No production funds can move", obligation?.executionStatus === "executed"],
-    ["Repayment & Evidence", obligation?.status === "fully_repaid" ? "Lifecycle repaid" : ownedEvidence.queried ? `${ownedEvidence.items.length} Evidence events loaded` : "Owner and Agent reads remain permission-bound", obligation?.status === "fully_repaid" || ownedEvidence.queried]
+    ["Repayment & Evidence", repaymentEvidenceStatus, repaymentEvidenceComplete]
   ];
   const firstIncomplete = checkpoints.findIndex((checkpoint) => !checkpoint[2]);
   el("privateLifecycleList").replaceChildren(...checkpoints.map((checkpoint, index) =>
@@ -4814,20 +5100,26 @@ function renderPrivateProductSurfaces() {
   el("privateEvidenceCopy").textContent = humanMode
     ? "Load redacted immutable events for the exact Obligation owned by this authenticated Human session."
     : "The approved Agent Evidence tool returns the same obligation-bound timeline without expanding authority.";
-  el("privateEvidenceStatus").textContent = ownedEvidence.queried
-    ? `${ownedEvidence.items.length} loaded`
+  el("privateEvidenceStatus").textContent = evidenceLatestProven
+    ? `${visibleEvidenceItems.length} latest verified`
+    : evidenceState === "partial"
+      ? `${visibleEvidenceItems.length} partial`
+      : evidenceState === "delayed"
+        ? "Verification delayed"
+        : evidenceState === "loading"
+          ? "Loading"
     : obligation
       ? "Available"
       : "Not loaded";
   el("privateEvidenceObligation").textContent = obligation?.obligationId ?? "Not created";
   el("privateEvidenceObligation").title = obligation?.obligationId ?? "";
-  el("privateEvidenceCount").textContent = String(ownedEvidence.items.length);
+  el("privateEvidenceCount").textContent = String(visibleEvidenceItems.length);
   el("privateEvidenceFinality").textContent = evidenceFinality;
-  el("privateEvidenceAsOf").textContent = ownedEvidence.asOf
+  el("privateEvidenceAsOf").textContent = evidenceLoaded && ownedEvidence.asOf
     ? formatEvidenceTime(ownedEvidence.asOf, { short: true })
     : "Not queried";
-  el("privateEvidenceList").replaceChildren(...(ownedEvidence.items.length
-    ? ownedEvidence.items.slice(-5).reverse().map((item) => privateCheckpoint(
+  el("privateEvidenceList").replaceChildren(...(visibleEvidenceItems.length
+    ? visibleEvidenceItems.slice(-5).reverse().map((item) => privateCheckpoint(
       titleize(item.eventType),
       `${titleize(item.sourceFinality)} · ${formatEvidenceTime(item.occurredAt, { short: true })}`,
       { complete: item.sourceFinality === "finalized" }
@@ -4981,6 +5273,10 @@ function renderCreditPassportPilot() {
   const artifact = creditPassportPilot.artifact;
   const busy = creditPassportPilot.busy;
   const connected = tenantPilot.connected;
+  const trackRecordEvidenceState = currentOwnedEvidenceVerificationState();
+  const trackRecordEvidenceLoaded = currentOwnedEvidenceLoaded();
+  const trackRecordLatestProven = trackRecordEvidenceState === "latest_proven";
+  const trackRecordItems = trackRecordEvidenceLoaded ? ownedEvidence.items : [];
   el("restoreCreditPassportBtn").disabled = busy || !connected;
   const subjectInput = el("creditPassportSubjectId");
   const intentInput = el("creditPassportIntentId");
@@ -5089,29 +5385,43 @@ function renderCreditPassportPilot() {
       : titleize(creditPassportPilot.verification.status)
     : "Not verified";
 
-  const finalized = ownedEvidence.items.filter(
+  const finalized = trackRecordItems.filter(
     ({ sourceFinality }) => sourceFinality === "finalized"
   ).length;
-  const nonFinal = ownedEvidence.items.length - finalized;
+  const nonFinal = trackRecordItems.length - finalized;
   el("creditTrackRecordDecision").textContent = tenantPilot.decision?.decisionPassport
     ? `${titleize(tenantPilot.decision.status)} · ${compactDecisionProofHash(
         tenantPilot.decision.decisionPassport.decisionPassportHash
       )}`
     : "Not loaded";
   el("creditTrackRecordEvidenceCount").textContent =
-    `${ownedEvidence.items.length} event${ownedEvidence.items.length === 1 ? "" : "s"}`;
+    `${trackRecordItems.length} event${trackRecordItems.length === 1 ? "" : "s"}`;
   el("creditTrackRecordFinalizedCount").textContent = String(finalized);
   el("creditTrackRecordNonFinalCount").textContent = String(nonFinal);
   el("loadCreditTrackRecordBtn").disabled =
     ownedEvidence.busy || !connected;
   const finality = el("creditTrackRecordFinality");
-  finality.classList.toggle("neutral", !ownedEvidence.queried);
-  finality.classList.toggle("warning", ownedEvidence.queried && nonFinal > 0);
-  finality.textContent = !ownedEvidence.queried
+  finality.classList.toggle(
+    "neutral",
+    trackRecordEvidenceState === "not_loaded" ||
+      trackRecordEvidenceState === "loading"
+  );
+  finality.classList.toggle(
+    "warning",
+    new Set(["partial", "delayed"]).has(trackRecordEvidenceState) ||
+      trackRecordLatestProven && nonFinal > 0
+  );
+  finality.textContent = trackRecordEvidenceState === "not_loaded"
     ? "Not loaded"
+    : trackRecordEvidenceState === "loading"
+      ? "Loading"
+    : trackRecordEvidenceState === "delayed"
+      ? "Verification delayed"
+    : trackRecordEvidenceState === "partial"
+      ? "Partial timeline"
     : nonFinal > 0
-      ? "Mixed finality"
-      : "Finalized only";
+      ? "Latest proven · mixed finality"
+      : "Latest proven · finalized only";
 }
 
 function capitalNetworkAmount(assetId, minor) {
@@ -6565,13 +6875,21 @@ function cacheOwnedObligationView(obligationId, view) {
 }
 
 async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
-  if (tenantPilot.obligationHydrationBusy) return;
+  if (tenantPilot.obligationHydrationBusy) return false;
   const exactObligationId = (obligationId ?? tenantInputValue("ownedObligationId")).trim();
   if (!exactResourceId(exactObligationId)) {
     tenantPilot.obligationHydrationError = true;
     tenantPilot.obligationHydrationHelper = "Enter one exact Obligation ID with no spaces.";
     renderTenantPilot();
-    return;
+    return false;
+  }
+  const switchingObligation =
+    tenantPilot.obligation?.obligationId !== exactObligationId;
+  if (switchingObligation) {
+    resetOwnedEvidenceState({
+      obligationId: exactObligationId,
+      helper: "Evidence cleared while the selected Obligation is reauthorized."
+    });
   }
   tenantPilot.obligationHydrationBusy = true;
   tenantPilot.obligationHydrationError = false;
@@ -6579,8 +6897,7 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
   renderTenantPilot();
   try {
     const response = await readOwnedObligationView(exactObligationId);
-    const sameObligation = tenantPilot.obligation?.obligationId === exactObligationId;
-    if (!sameObligation) {
+    if (switchingObligation) {
       tenantPilot.receipt = null;
       tenantPilot.offerReview = null;
       tenantPilot.obligationReceipt = null;
@@ -6596,13 +6913,6 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
       tenantPilot.offer = null;
       tenantPilot.executionReceipt = null;
       tenantPilot.repayment = null;
-      ownedEvidence.queried = false;
-      ownedEvidence.obligationId = null;
-      ownedEvidence.items = [];
-      ownedEvidence.nextCursor = null;
-      ownedEvidence.hasMore = false;
-      ownedEvidence.capped = false;
-      ownedEvidence.asOf = null;
     }
     tenantPilot.obligation = response.obligation;
     tenantPilot.servicingAction = response.latestServicingAction ?? null;
@@ -6620,6 +6930,7 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
       toast("Current Obligation state loaded");
       announce("Owned Obligation restored from the server");
     }
+    return true;
   } catch (error) {
     const nonEnumerating = error.status === 401 || error.status === 403 || error.status === 404 ||
       new Set(["authorization_denied", "tenant_resource_unavailable", "resource_not_found"])
@@ -6634,6 +6945,7 @@ async function loadOwnedObligation({ obligationId, quiet = false } = {}) {
       toast(tenantPilot.obligationHydrationHelper, "error");
       announce(tenantPilot.obligationHydrationHelper);
     }
+    return false;
   } finally {
     tenantPilot.obligationHydrationBusy = false;
     renderTenantPilot();
@@ -6785,11 +7097,20 @@ async function recoverAuthenticatedWorkspace() {
   }
 
   if (recovery.workspaceKind === "principal_controller") {
-    if (subject) {
-      el("agentAuthoritySubjectId").value = subject.resourceId;
-      rememberOpaqueId(AGENT_SUBJECT_STORAGE_KEY, subject.resourceId);
+    if (mandate) await loadExactMandate(mandate.resourceId);
+    const recoveredPrincipalSubjectId = exactResourceId(
+      agentAuthorityPilot.mandate?.subjectId
+    )
+      ? agentAuthorityPilot.mandate.subjectId
+      : subject?.resourceId;
+    if (exactResourceId(recoveredPrincipalSubjectId)) {
+      el("agentAuthoritySubjectId").value = recoveredPrincipalSubjectId;
+      rememberOpaqueId(AGENT_SUBJECT_STORAGE_KEY, recoveredPrincipalSubjectId);
       const binding = await tenantApi("pilotReadAgentAccountBinding", {
-        resource: { resourceType: "subject", resourceId: subject.resourceId },
+        resource: {
+          resourceType: "subject",
+          resourceId: recoveredPrincipalSubjectId
+        },
         payload: {},
         idempotent: false
       });
@@ -6799,7 +7120,6 @@ async function recoverAuthenticatedWorkspace() {
         status: binding.response.subjectStatus
       };
     }
-    if (mandate) await loadExactMandate(mandate.resourceId);
     const rememberedObligationId = rememberedOwnedObligationId();
     const selectedObligation = workspaceObligations.find(
       (item) => item.resourceId === rememberedObligationId
@@ -6874,7 +7194,7 @@ async function loadCreditTrackRecord() {
   }
   button.disabled = true;
   button.setAttribute("aria-busy", "true");
-  button.textContent = "Loading verified record…";
+  button.textContent = "Loading Evidence…";
   try {
     if (!tenantPilot.obligation) await recoverAuthenticatedWorkspace();
     const obligationId = tenantPilot.obligation?.obligationId;
@@ -6885,9 +7205,21 @@ async function loadCreditTrackRecord() {
           : "Create and execute one Human Obligation before loading its Credit Track Record."
       );
     }
-    await loadOwnedEvidence();
-    if (!ownedEvidence.queried || ownedEvidence.obligationId !== obligationId) {
-      throw new Error("The verified Evidence timeline could not be loaded.");
+    const append = currentOwnedEvidenceLoaded() && ownedEvidence.hasMore;
+    await loadOwnedEvidence({ append });
+    const evidenceState = currentOwnedEvidenceVerificationState();
+    if (evidenceState === "delayed" || evidenceState === "not_loaded") {
+      throw new Error(ownedEvidence.helper || "The Evidence timeline could not be loaded.");
+    }
+    if (evidenceState === "partial") {
+      el("creditTrackRecordStateTitle").textContent = "Partial lifecycle Evidence";
+      el("creditTrackRecordStateCopy").textContent = ownedEvidence.helper;
+      toast("Partial Credit Track Record loaded");
+      announce("Partial Credit Track Record loaded; continue the read-only cursor");
+      return;
+    }
+    if (evidenceState !== "latest_proven") {
+      throw new Error("The Evidence timeline is still loading.");
     }
     toast("Verified Credit Track Record loaded");
     announce("Verified Credit Track Record loaded from server Evidence");
@@ -6902,7 +7234,9 @@ async function loadCreditTrackRecord() {
   } finally {
     button.disabled = false;
     button.removeAttribute("aria-busy");
-    button.textContent = "Load verified record";
+    button.textContent = currentOwnedEvidenceLoaded() && ownedEvidence.hasMore
+      ? "Load more Evidence"
+      : "Load verified record";
     renderTenantPilot();
   }
 }
@@ -7365,6 +7699,10 @@ async function acceptHumanCreditOffer() {
       tenantPilot.repayment = null;
       tenantPilot.servicingAction = null;
       tenantPilot.acceptance = result.response.acceptance;
+      resetOwnedEvidenceState({
+        obligationId: result.response.obligation.obligationId,
+        helper: "Obligation created; loading its owner-authorized Evidence…"
+      });
       tenantPilot.obligation = result.response.obligation;
       humanNewApplicationMode = false;
       tenantPilot.obligationHydrationAsOf = null;
@@ -7389,6 +7727,13 @@ async function acceptHumanCreditOffer() {
         tenantPilot.obligationHydrationHelper =
           "Obligation creation succeeded. The follow-up workspace refresh failed; use Refresh case to reconcile the committed server state.";
       }
+      await refreshOwnedEvidenceAfterCommittedAction(
+        result.response.obligation.obligationId,
+        {
+          eventType: "credit_offer_accepted",
+          occurredAt: result.response.acceptance.acceptedAt
+        }
+      );
     },
     "Offer accepted. One shared sandbox Obligation and deterministic schedule were created; signed sandbox execution is ready."
   );
@@ -7450,11 +7795,13 @@ async function executeHumanSandboxObligation() {
       tenantPilot.repaymentSequence = 0;
       tenantPilot.repayment = null;
       tenantPilot.servicingAction = null;
-      await loadOwnedObligation({
-        obligationId: result.response.obligation.obligationId,
-        quiet: true
-      });
-      await loadOwnedEvidence();
+      await refreshOwnedEvidenceAfterCommittedAction(
+        result.response.obligation.obligationId,
+        {
+          eventType: "obligation_sandbox_executed",
+          occurredAt: result.response.executionReceipt.executedAt
+        }
+      );
     },
     "Signed sandbox execution completed. The principal ledger entry is balanced and no withdrawable funds were created."
   );
@@ -7546,11 +7893,13 @@ async function postHumanSandboxRepayment({
             workflowId
           })
         : null;
-      await loadOwnedObligation({
-        obligationId: result.response.obligation.obligationId,
-        quiet: true
-      });
-      await loadOwnedEvidence();
+      await refreshOwnedEvidenceAfterCommittedAction(
+        result.response.obligation.obligationId,
+        {
+          eventType: "repayment_posted",
+          occurredAt: result.response.repayment.occurredAt
+        }
+      );
     },
     "Sandbox repayment posted through the deterministic fee, interest, and principal waterfall."
   );
@@ -7979,6 +8328,13 @@ function runAgentGuideAction(action) {
     announce("Principal-controlled Agent obligations opened");
     return;
   }
+  if (action === "open-agent-workspace") {
+    setMode("agent");
+    showView("agent-console");
+    requestAnimationFrame(() => focusJumpTarget(el("agentOnlineWorkflow")));
+    announce("Agent workspace opened");
+    return;
+  }
   if (action === "run-online-agent") {
     setMode("agent");
     showView("agent-console");
@@ -8160,8 +8516,8 @@ function auditorEvidenceRow(item) {
   return row;
 }
 
-function pendingEvidenceAnchorGroup() {
-  const eligible = evidenceAnchorPilot.items.filter(({ status }) =>
+function pendingEvidenceAnchorGroup(items = evidenceAnchorPilot.items) {
+  const eligible = items.filter(({ status }) =>
     new Set(["pending", "failed", "prepared", "reorged"]).has(status)
   );
   if (eligible.length === 0) return [];
@@ -8177,8 +8533,14 @@ function renderEvidenceAnchor() {
   const button = el("anchorPendingEvidenceBtn");
   const link = el("humanObligationChainAnchorLink");
   if (!status || !copy || !button || !link) return;
-  const items = evidenceAnchorPilot.items;
-  const pending = pendingEvidenceAnchorGroup();
+  const evidenceLoaded = currentOwnedEvidenceLoaded();
+  const evidenceLatestProven = currentOwnedEvidenceLatestProven();
+  const evidenceItems = evidenceLoaded ? ownedEvidence.items : [];
+  const items = evidenceAnchorPilot.obligationId === ownedEvidence.obligationId &&
+    evidenceLoaded
+    ? evidenceAnchorPilot.items
+    : [];
+  const pending = pendingEvidenceAnchorGroup(items);
   const open = items.filter(({ status: itemStatus }) =>
     new Set(["broadcast", "unknown", "included", "safe"]).has(itemStatus)
   );
@@ -8186,9 +8548,9 @@ function renderEvidenceAnchor() {
     itemStatus === "finalized"
   );
   const receipt = createEvidenceReceiptPresentation({
-    evidenceItems: ownedEvidence.items,
+    evidenceItems,
     anchorItems: items,
-    evidenceQueried: ownedEvidence.queried,
+    evidenceQueried: evidenceLoaded,
     anchorAvailable: evidenceAnchorPilot.available
   });
   el("humanObligationReceiptServerState").textContent = receipt.serverRecordLabel;
@@ -8197,7 +8559,9 @@ function renderEvidenceAnchor() {
   el("humanObligationReceiptFinalityState").textContent = receipt.finalityLabel;
   el("humanObligationReceiptIndexerState").textContent = receipt.indexerLabel;
   el("humanObligationReceiptReconciliationState").textContent =
-    receipt.reconciliationLabel;
+    evidenceLoaded && !evidenceLatestProven
+      ? "Latest timeline not proven · coverage pending"
+      : receipt.reconciliationLabel;
   link.hidden = !receipt.transactionUrl;
   if (receipt.transactionUrl) {
     link.href = receipt.transactionUrl;
@@ -8218,7 +8582,10 @@ function renderEvidenceAnchor() {
       ? `Confirm & anchor ${pending.length} Evidence hash${pending.length === 1 ? "" : "es"}`
       : "Refresh chain finality";
 
-  status.classList.toggle("warning", finalized.length !== items.length);
+  status.classList.toggle(
+    "warning",
+    !evidenceLatestProven || finalized.length !== items.length
+  );
   status.classList.toggle(
     "neutral",
     evidenceAnchorPilot.available && items.length === 0
@@ -8232,9 +8599,12 @@ function renderEvidenceAnchor() {
     copy.textContent =
       "Load the durable timeline to resolve the chain status of every Evidence hash.";
   } else if (finalized.length === items.length) {
-    status.textContent = `${finalized.length}/${items.length} finalized`;
-    copy.textContent =
-      "Every loaded Evidence hash has a verified, finalized Base Sepolia registry event. Only hashes and protocol references are public; payload and KYC/PII remain offchain.";
+    status.textContent = evidenceLatestProven
+      ? `${finalized.length}/${items.length} finalized`
+      : `${finalized.length}/${items.length} loaded hashes finalized · timeline partial`;
+    copy.textContent = evidenceLatestProven
+      ? "Every loaded Evidence hash has a verified, finalized Base Sepolia registry event. Only hashes and protocol references are public; payload and KYC/PII remain offchain."
+      : "Every currently loaded Evidence hash is finalized, but the latest bounded timeline is not yet proven. Continue or retry only the owner-authorized Evidence read.";
   } else if (open.length > 0) {
     status.textContent = `${finalized.length}/${items.length} finalized`;
     copy.textContent =
@@ -8252,26 +8622,39 @@ function renderEvidenceAnchor() {
 
 async function loadEvidenceAnchorStatus({ observe = false } = {}) {
   const obligationId = tenantPilot.obligation?.obligationId;
-  const hashes = ownedEvidence.items.map(({ evidenceHash }) => evidenceHash);
+  const hashes = currentOwnedEvidenceLoaded()
+    ? ownedEvidence.items.map(({ evidenceHash }) => evidenceHash)
+    : [];
   if (!obligationId || hashes.length === 0 || evidenceAnchorPilot.busy) {
     renderEvidenceAnchor();
     return;
   }
+  const evidenceDataEpoch = authenticatedDataEpoch;
+  const evidenceQueryEpoch = ownedEvidence.queryEpoch;
+  const stillCurrent = () => (
+    evidenceDataEpoch === authenticatedDataEpoch &&
+    evidenceQueryEpoch === ownedEvidence.queryEpoch &&
+    ownedEvidence.obligationId === obligationId &&
+    tenantPilot.obligation?.obligationId === obligationId
+  );
   evidenceAnchorPilot.busy = true;
   evidenceAnchorPilot.error = false;
   renderEvidenceAnchor();
   try {
     if (!evidenceAnchorPilot.config) {
-      evidenceAnchorPilot.config = await evidenceAnchorApi(
+      const config = await evidenceAnchorApi(
         "/chain/v1/evidence-anchors/config",
         { method: "GET" }
       );
+      if (!stillCurrent()) return;
+      evidenceAnchorPilot.config = config;
     }
     evidenceAnchorPilot.available = true;
     let result = await evidenceAnchorApi(
       "/chain/v1/evidence-anchors/status",
       { body: { obligationId, evidenceHashes: hashes } }
     );
+    if (!stillCurrent()) return;
     if (
       observe &&
       result.items.some(({ status }) =>
@@ -8298,11 +8681,13 @@ async function loadEvidenceAnchorStatus({ observe = false } = {}) {
             }
           }
         );
+        if (!stillCurrent()) return;
       }
       result = await evidenceAnchorApi(
         "/chain/v1/evidence-anchors/status",
         { body: { obligationId, evidenceHashes: hashes } }
       );
+      if (!stillCurrent()) return;
     }
     evidenceAnchorPilot.obligationId = obligationId;
     evidenceAnchorPilot.items = result.items;
@@ -8310,6 +8695,7 @@ async function loadEvidenceAnchorStatus({ observe = false } = {}) {
       ? "All loaded Evidence anchors are finalized."
       : "Chain coverage is incomplete until every loaded Evidence hash is finalized.";
   } catch (error) {
+    if (!stillCurrent()) return;
     evidenceAnchorPilot.available = error.status !== 404;
     evidenceAnchorPilot.error = true;
     evidenceAnchorPilot.helper =
@@ -8317,8 +8703,10 @@ async function loadEvidenceAnchorStatus({ observe = false } = {}) {
         ? "The Evidence anchor service is not configured on this runtime."
         : `Evidence anchor status failed. Request ID: ${error.requestId ?? "unavailable"}`;
   } finally {
-    evidenceAnchorPilot.busy = false;
-    renderEvidenceAnchor();
+    if (stillCurrent()) {
+      evidenceAnchorPilot.busy = false;
+      renderEvidenceAnchor();
+    }
   }
 }
 
@@ -8414,98 +8802,163 @@ async function anchorOrRefreshOwnedEvidence() {
   }
 }
 
+function applyOwnedEvidencePage(response, {
+  append = false,
+  obligationId,
+  sourceLabel = "Owner/controller-authorized"
+} = {}) {
+  Object.assign(ownedEvidence, createBoundedOwnedEvidenceProjection({
+    append,
+    currentItems: ownedEvidence.items,
+    limit: OWNED_EVIDENCE_DISPLAY_LIMIT,
+    obligationId,
+    response,
+    sourceLabel,
+    wasCapped: ownedEvidence.capped
+  }), { queried: true, error: false });
+  evidenceAnchorPilot.items = evidenceAnchorPilot.obligationId === obligationId
+    ? retainMatchingEvidenceAnchors(evidenceAnchorPilot.items, ownedEvidence.items)
+    : [];
+  if (evidenceAnchorPilot.obligationId !== obligationId) {
+    evidenceAnchorPilot.obligationId = null;
+  }
+  return reconcileExpectedOwnedEvidenceMarker();
+}
+
+function reconcileExpectedOwnedEvidenceMarker() {
+  const marker = ownedEvidence.expectedMarker;
+  if (!marker) return true;
+  if (marker.obligationId !== ownedEvidence.obligationId) {
+    ownedEvidence.error = true;
+    ownedEvidence.helper =
+      "Evidence verification was quarantined because its expected event belongs to another Obligation.";
+    return false;
+  }
+  if (hasOwnedEvidenceMarker(ownedEvidence.items, marker)) {
+    ownedEvidence.expectedMarker = null;
+    return true;
+  }
+  if (ownedEvidence.hasMore) {
+    ownedEvidence.helper +=
+      ` Expected ${marker.eventType} Evidence may be on the next bounded page; Load more continues the read-only cursor.`;
+    return false;
+  }
+  ownedEvidence.error = true;
+  ownedEvidence.helper =
+    `The lifecycle action completed, but latest ${marker.eventType} Evidence is delayed. Retry Evidence read; the economic command was not resubmitted.`;
+  return false;
+}
+
 function renderOwnedEvidence() {
   const panel = el("ownedEvidencePanel");
   if (!panel) return;
   const obligationId = tenantPilot.obligation?.obligationId ?? null;
-  const rows = ownedEvidence.items.map(auditorEvidenceRow);
+  const matchesCurrent = Boolean(
+    obligationId && ownedEvidence.obligationId === obligationId
+  );
+  const items = matchesCurrent ? ownedEvidence.items : [];
+  const queried = matchesCurrent && ownedEvidence.queried;
+  const rows = newestOwnedEvidenceFirst(items).map(auditorEvidenceRow);
   if (rows.length === 0) {
-    const empty = emptyRow(ownedEvidence.queried
+    const empty = emptyRow(queried
       ? "No durable server Evidence events were returned for this Obligation."
       : "Load the owner-authorized timeline after accepting the Offer.");
     empty.setAttribute("role", "row");
     rows.push(empty);
   }
   el("ownedEvidenceRows").replaceChildren(...rows);
-  el("ownedEvidenceCount").textContent = String(ownedEvidence.items.length);
-  const finalities = new Set(ownedEvidence.items.map((item) => item.sourceFinality));
+  el("ownedEvidenceCount").textContent = String(items.length);
+  const finalities = new Set(items.map((item) => item.sourceFinality));
   el("ownedEvidenceFinality").textContent = finalities.size === 0
     ? "Waiting"
     : finalities.size === 1
       ? titleize([...finalities][0])
       : `${finalities.size} states`;
-  el("ownedEvidenceAsOf").textContent = ownedEvidence.asOf
+  el("ownedEvidenceAsOf").textContent = matchesCurrent && ownedEvidence.asOf
     ? formatEvidenceTime(ownedEvidence.asOf, { short: true })
     : "Not queried";
   el("ownedEvidenceAccess").textContent = ownedEvidence.catalogAvailable
     ? "Owner / controller read"
     : "Operation unavailable";
   el("ownedEvidenceAccess").classList.toggle("warning", !ownedEvidence.catalogAvailable);
-  el("ownedEvidenceHelper").textContent = ownedEvidence.helper;
-  el("ownedEvidenceHelper").classList.toggle("error", ownedEvidence.error);
+  el("ownedEvidenceHelper").textContent = matchesCurrent
+    ? ownedEvidence.helper
+    : OWNED_EVIDENCE_DEFAULT_HELPER;
+  el("ownedEvidenceHelper").classList.toggle(
+    "error",
+    matchesCurrent && ownedEvidence.error
+  );
   const load = el("loadOwnedEvidenceBtn");
   load.disabled = ownedEvidence.busy || !ownedEvidence.catalogAvailable || !obligationId;
   load.toggleAttribute("aria-busy", ownedEvidence.busy);
+  load.textContent = ownedEvidence.busy && matchesCurrent
+    ? "Loading Evidence…"
+    : matchesCurrent && ownedEvidence.error
+      ? "Retry Evidence read"
+      : queried
+        ? "Refresh Evidence"
+        : "Load timeline";
   const more = el("loadMoreOwnedEvidenceBtn");
-  more.hidden = !ownedEvidence.hasMore;
+  more.hidden = !matchesCurrent || !ownedEvidence.hasMore;
   more.disabled = ownedEvidence.busy || !ownedEvidence.nextCursor || !obligationId;
   more.toggleAttribute("aria-busy", ownedEvidence.busy);
   renderEvidenceAnchor();
 }
 
-async function loadOwnedEvidence({ append = false } = {}) {
+async function loadOwnedEvidence({ append = false, refreshAnchor = true } = {}) {
   if (ownedEvidence.busy) return;
   const obligationId = tenantPilot.obligation?.obligationId;
   if (!obligationId) return;
   if (append && (!ownedEvidence.nextCursor || ownedEvidence.obligationId !== obligationId)) return;
-  ownedEvidence.busy = true;
-  ownedEvidence.error = false;
-  ownedEvidence.helper = append
-    ? "Loading the next durable Evidence page…"
-    : "Verifying exact owner/controller access and loading redacted Evidence…";
-  if (!append) {
-    ownedEvidence.items = [];
-    ownedEvidence.nextCursor = null;
-    ownedEvidence.hasMore = false;
-    ownedEvidence.capped = false;
-    ownedEvidence.asOf = null;
+  const expectedMarker = ownedEvidence.obligationId === obligationId
+    ? ownedEvidence.expectedMarker
+    : null;
+  const requestDataEpoch = authenticatedDataEpoch;
+  const requestEpoch = append
+    ? ownedEvidence.queryEpoch + 1
+    : resetOwnedEvidenceState({
+        busy: true,
+        expectedMarker,
+        obligationId,
+        helper: "Verifying exact owner/controller access and loading redacted Evidence…"
+      });
+  if (append) {
+    Object.assign(ownedEvidence, {
+      busy: true,
+      error: false,
+      queryEpoch: requestEpoch,
+      helper: "Loading the next durable Evidence page through the read-only cursor…"
+    });
   }
   renderOwnedEvidence();
+  const stillCurrent = () => (
+    requestDataEpoch === authenticatedDataEpoch &&
+    requestEpoch === ownedEvidence.queryEpoch &&
+    tenantPilot.obligation?.obligationId === obligationId
+  );
   try {
     const result = await tenantApi("pilotReadOwnObligationEvidence", {
       resource: { resourceType: "evidence", resourceId: obligationId },
       payload: {
-        limit: 10,
+        limit: OWNED_EVIDENCE_DISPLAY_LIMIT,
         ...(append ? { cursor: ownedEvidence.nextCursor } : {})
       },
       idempotent: false
     });
-    const response = result.response;
-    const existing = append ? ownedEvidence.items : [];
-    const seen = new Set(existing.map((item) => item.evidenceId));
-    const mergedItems = [
-      ...existing,
-      ...response.items.filter((item) => !seen.has(item.evidenceId))
-    ];
-    ownedEvidence.capped =
-      mergedItems.length > OWNED_EVIDENCE_DISPLAY_LIMIT ||
-      (mergedItems.length >= OWNED_EVIDENCE_DISPLAY_LIMIT && response.hasMore);
-    ownedEvidence.items = mergedItems.slice(0, OWNED_EVIDENCE_DISPLAY_LIMIT);
-    ownedEvidence.obligationId = response.obligationId;
-    ownedEvidence.nextCursor = ownedEvidence.capped
-      ? null
-      : response.nextCursor ?? null;
-    ownedEvidence.hasMore = !ownedEvidence.capped &&
-      Boolean(response.hasMore && response.nextCursor);
-    ownedEvidence.asOf = response.asOf;
-    ownedEvidence.queried = true;
-    ownedEvidence.helper = ownedEvidence.capped
-      ? `${ownedEvidence.items.length} redacted PostgreSQL Evidence events loaded; the bounded browser display cap has been reached. These digests are not blockchain transactions.`
-      : `${response.items.length} redacted PostgreSQL Evidence event${response.items.length === 1 ? "" : "s"} loaded from the durable server timeline. These digests are not blockchain transactions.`;
-    toast(append ? "Next owner Evidence page loaded" : "Your Obligation Evidence loaded");
+    if (!stillCurrent()) return;
+    applyOwnedEvidencePage(result.response, { append, obligationId });
+    toast(
+      ownedEvidence.error
+        ? ownedEvidence.helper
+        : append
+          ? "Next owner Evidence page loaded"
+          : "Your Obligation Evidence loaded",
+      ownedEvidence.error ? "error" : undefined
+    );
     announce(ownedEvidence.helper);
-    await loadEvidenceAnchorStatus({ observe: true });
+    if (refreshAnchor) await loadEvidenceAnchorStatus();
   } catch (error) {
+    if (!stillCurrent()) return;
     const nonEnumerating = error.status === 401 || error.status === 403 || error.status === 404 ||
       new Set(["authorization_denied", "tenant_resource_unavailable", "resource_not_found"]).has(error.code);
     ownedEvidence.error = true;
@@ -8515,8 +8968,49 @@ async function loadOwnedEvidence({ append = false } = {}) {
     toast(ownedEvidence.helper, "error");
     announce(ownedEvidence.helper);
   } finally {
-    ownedEvidence.busy = false;
+    if (stillCurrent()) {
+      ownedEvidence.busy = false;
+      renderTenantPilot();
+    }
+  }
+}
+
+async function refreshOwnedEvidenceAfterCommittedAction(obligationId, expectedEvidence) {
+  const markDelayed = (detail) => {
+    if (
+      tenantPilot.obligation?.obligationId !== obligationId ||
+      ownedEvidence.obligationId !== obligationId
+    ) return false;
+    ownedEvidence.error = true;
+    ownedEvidence.helper =
+      `The lifecycle action completed, but latest Evidence verification is delayed. Retry Evidence read; the economic command was not resubmitted. ${detail}`;
     renderTenantPilot();
+    return false;
+  };
+  try {
+    resetOwnedEvidenceState({
+      expectedMarker: { ...expectedEvidence, obligationId },
+      obligationId,
+      helper: "Lifecycle action completed; verifying its latest Evidence…"
+    });
+    await loadOwnedObligation({ obligationId, quiet: true });
+    await loadOwnedEvidence({ refreshAnchor: false });
+    if (
+      ownedEvidence.error ||
+      !ownedEvidence.queried ||
+      ownedEvidence.obligationId !== obligationId
+    ) {
+      return markDelayed(ownedEvidence.helper);
+    }
+    if (ownedEvidence.expectedMarker) {
+      if (ownedEvidence.hasMore) return false;
+      return markDelayed(
+        `Expected ${expectedEvidence?.eventType ?? "lifecycle"} Evidence is not visible yet.`
+      );
+    }
+    return true;
+  } catch (error) {
+    return markDelayed(`Request ID: ${error?.requestId ?? "unavailable"}`);
   }
 }
 

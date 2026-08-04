@@ -185,7 +185,7 @@ Agent 网页主路径不要求用户下载文件。
 2. 从 Home 点击 `Agent borrowing` → `Open Agent credit`，或打开左侧
    `Agent Console`。
 3. 在 `Request, borrow, repay, and verify online` 点击
-   `Run Agent application online`。
+   `Request Agent credit and receive Offer`。
 4. 页面应显示：
    - `Decision completed`；
    - `Offered · $...`；
@@ -329,7 +329,7 @@ Passport 不应包含 raw KYC/PII、Agent credential、私钥或完整策略数�
 ### Agent
 
 - [ ] Agent Subject、account proof 和 Draft Mandate 可创建。
-- [ ] `Run Agent application online` 返回 Decision 与 Offer。
+- [ ] `Request Agent credit and receive Offer` 返回 Decision 与 Offer。
 - [ ] exact Mandate 可由 Principal 激活。
 - [ ] `Create Agent Obligation` 可单独点击。
 - [ ] `Execute approved use` 可单独点击。

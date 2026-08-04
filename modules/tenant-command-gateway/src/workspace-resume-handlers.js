@@ -67,7 +67,14 @@ export function readWorkspaceResumeQueryHandler() {
             AND b.status = 'active'
             AND r.status = 'active'
             AND b.resource_type = ANY($3::text[])
-          ORDER BY b.updated_at DESC, b.resource_type ASC, b.resource_id ASC
+          ORDER BY
+            ROW_NUMBER() OVER (
+              PARTITION BY b.resource_type
+              ORDER BY b.updated_at DESC, b.resource_id ASC
+            ) ASC,
+            b.updated_at DESC,
+            b.resource_type ASC,
+            b.resource_id ASC
           LIMIT $4`,
         [
           authenticationContext.tenantId,

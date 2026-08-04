@@ -693,7 +693,7 @@ function mapLedgerEntry(row) {
 
 function mapLockbox(row) {
   if (!row) return undefined;
-  return {
+  const lockbox = {
     lockboxId: row.id,
     lockboxHash: row.lockbox_hash,
     subjectId: row.subject_id,
@@ -710,6 +710,25 @@ function mapLockbox(row) {
     updatedAt: timestamp(row.updated_at),
     schemaVersion: row.schema_version
   };
+  if (row.schema_version === "lockbox.v2") {
+    Object.assign(lockbox, {
+      principalId: row.principal_id,
+      mandateId: row.mandate_id,
+      creditIntentId: row.credit_intent_id,
+      creditOfferId: row.credit_offer_id,
+      obligationId: row.obligation_id,
+      creditLineId: row.credit_line_id,
+      accountBindingId: row.account_binding_id,
+      purposeCode: row.purpose_code,
+      allowedProviderIds: row.allowed_provider_ids,
+      sandboxOnly: row.sandbox_only,
+      productionFundsMoved: row.production_funds_moved,
+      withdrawable: row.withdrawable,
+      custodyAuthority: row.custody_authority,
+      unrestrictedTransfersAllowed: row.unrestricted_transfers_allowed
+    });
+  }
+  return lockbox;
 }
 
 function mapObligationInstallment(row) {
@@ -2175,11 +2194,21 @@ export class PostgresCoreRepository {
                 ELSE 0
               END), 0)::text AS balance_minor,
               COALESCE(SUM(CASE
-                WHEN e.account_id = l.ledger_account_id AND e.direction = 'debit' THEN e.amount_minor
+                WHEN l.schema_version = 'lockbox.v2'
+                  AND e.account_id = l.revenue_ledger_account_id
+                  AND e.direction = 'debit'
+                  AND t.metadata->>'sourceCode' = 'synthetic_revenue'
+                  THEN e.amount_minor
+                WHEN l.schema_version <> 'lockbox.v2'
+                  AND e.account_id = l.ledger_account_id
+                  AND e.direction = 'debit'
+                  THEN e.amount_minor
                 ELSE 0
               END), 0)::text AS captured_revenue_minor
          FROM lockboxes l
          LEFT JOIN ledger_entries e ON e.account_id = l.ledger_account_id
+           OR (l.schema_version = 'lockbox.v2' AND e.account_id = l.revenue_ledger_account_id)
+         LEFT JOIN ledger_transactions t ON t.id = e.transaction_id
         WHERE l.id = $1
         GROUP BY l.id`,
       [lockboxId]
@@ -2198,15 +2227,43 @@ export class PostgresCoreRepository {
                 ELSE 0
               END), 0)::text AS balance_minor,
               COALESCE(SUM(CASE
-                WHEN e.account_id = l.ledger_account_id AND e.direction = 'debit' THEN e.amount_minor
+                WHEN l.schema_version = 'lockbox.v2'
+                  AND e.account_id = l.revenue_ledger_account_id
+                  AND e.direction = 'debit'
+                  AND t.metadata->>'sourceCode' = 'synthetic_revenue'
+                  THEN e.amount_minor
+                WHEN l.schema_version <> 'lockbox.v2'
+                  AND e.account_id = l.ledger_account_id
+                  AND e.direction = 'debit'
+                  THEN e.amount_minor
                 ELSE 0
               END), 0)::text AS captured_revenue_minor
          FROM lockboxes l
          LEFT JOIN ledger_entries e ON e.account_id = l.ledger_account_id
+           OR (l.schema_version = 'lockbox.v2' AND e.account_id = l.revenue_ledger_account_id)
+         LEFT JOIN ledger_transactions t ON t.id = e.transaction_id
         WHERE l.id = $1
         GROUP BY l.id`,
       [lockboxId]
     );
+    return mapLockbox(result.rows[0]);
+  }
+
+  async findAgentLockboxByObligationInTransaction(client, obligationId, { lock = true } = {}) {
+    assertQueryable(client);
+    assertString("obligationId", obligationId);
+    const result = await client.query(
+      `SELECT * FROM lockboxes
+        WHERE obligation_id = $1 AND schema_version = 'lockbox.v2'
+        ${lock ? "FOR UPDATE" : ""}`,
+      [obligationId]
+    );
+    if (result.rowCount > 1) {
+      throw new DomainError(
+        "projection_integrity_mismatch",
+        "Obligation has more than one Agent Lockbox projection"
+      );
+    }
     return mapLockbox(result.rows[0]);
   }
 
@@ -4810,8 +4867,16 @@ export class PostgresCoreRepository {
       `INSERT INTO lockboxes(
          id, lockbox_hash, subject_id, chain_id, asset_id, account_ref,
          ledger_account_id, revenue_ledger_account_id, repayment_ledger_account_id,
-         status, created_at, updated_at, schema_version
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         status, created_at, updated_at, schema_version,
+         principal_id, mandate_id, credit_intent_id, credit_offer_id,
+         obligation_id, credit_line_id, account_binding_id, purpose_code,
+         allowed_provider_ids, sandbox_only, production_funds_moved,
+         withdrawable, custody_authority, unrestricted_transfers_allowed
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+         $21, $22, $23, $24, $25, $26, $27
+       )
        ON CONFLICT (id) DO UPDATE
          SET status = EXCLUDED.status, updated_at = EXCLUDED.updated_at
        WHERE lockboxes.lockbox_hash = EXCLUDED.lockbox_hash
@@ -4822,6 +4887,20 @@ export class PostgresCoreRepository {
          AND lockboxes.ledger_account_id = EXCLUDED.ledger_account_id
          AND lockboxes.revenue_ledger_account_id = EXCLUDED.revenue_ledger_account_id
          AND lockboxes.repayment_ledger_account_id = EXCLUDED.repayment_ledger_account_id
+         AND lockboxes.principal_id IS NOT DISTINCT FROM EXCLUDED.principal_id
+         AND lockboxes.mandate_id IS NOT DISTINCT FROM EXCLUDED.mandate_id
+         AND lockboxes.credit_intent_id IS NOT DISTINCT FROM EXCLUDED.credit_intent_id
+         AND lockboxes.credit_offer_id IS NOT DISTINCT FROM EXCLUDED.credit_offer_id
+         AND lockboxes.obligation_id IS NOT DISTINCT FROM EXCLUDED.obligation_id
+         AND lockboxes.credit_line_id IS NOT DISTINCT FROM EXCLUDED.credit_line_id
+         AND lockboxes.account_binding_id IS NOT DISTINCT FROM EXCLUDED.account_binding_id
+         AND lockboxes.purpose_code IS NOT DISTINCT FROM EXCLUDED.purpose_code
+         AND lockboxes.allowed_provider_ids IS NOT DISTINCT FROM EXCLUDED.allowed_provider_ids
+         AND lockboxes.sandbox_only IS NOT DISTINCT FROM EXCLUDED.sandbox_only
+         AND lockboxes.production_funds_moved IS NOT DISTINCT FROM EXCLUDED.production_funds_moved
+         AND lockboxes.withdrawable IS NOT DISTINCT FROM EXCLUDED.withdrawable
+         AND lockboxes.custody_authority IS NOT DISTINCT FROM EXCLUDED.custody_authority
+         AND lockboxes.unrestricted_transfers_allowed IS NOT DISTINCT FROM EXCLUDED.unrestricted_transfers_allowed
        RETURNING id`,
       [
         value.lockboxId,
@@ -4836,7 +4915,21 @@ export class PostgresCoreRepository {
         value.status,
         value.createdAt,
         value.updatedAt ?? occurredAt,
-        value.schemaVersion
+        value.schemaVersion,
+        value.principalId ?? null,
+        value.mandateId ?? null,
+        value.creditIntentId ?? null,
+        value.creditOfferId ?? null,
+        value.obligationId ?? null,
+        value.creditLineId ?? null,
+        value.accountBindingId ?? null,
+        value.purposeCode ?? null,
+        value.allowedProviderIds === undefined ? null : json(value.allowedProviderIds),
+        value.sandboxOnly ?? null,
+        value.productionFundsMoved ?? null,
+        value.withdrawable ?? null,
+        value.custodyAuthority ?? null,
+        value.unrestrictedTransfersAllowed ?? null
       ]
     );
     if (result.rowCount !== 1) throw projectionConflict(CoreProjectionType.LOCKBOX, value.lockboxId);

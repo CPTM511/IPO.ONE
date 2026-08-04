@@ -22,6 +22,18 @@ import {
 const csrfToken = "human_lifecycle_browser_qa_csrf_token_00000001";
 const disableAuthenticationDiscovery =
   process.env.IPO_ONE_BROWSER_QA_DISABLE_AUTH_DISCOVERY === "1";
+const evidenceScenario =
+  process.env.IPO_ONE_BROWSER_QA_EVIDENCE_SCENARIO ?? "complete";
+const EVIDENCE_SCENARIOS = new Set([
+  "complete",
+  "partial",
+  "fail-after-repayment-once",
+  "slow-read"
+]);
+if (!EVIDENCE_SCENARIOS.has(evidenceScenario)) {
+  throw new Error("invalid_browser_qa_evidence_scenario");
+}
+const EVIDENCE_READ_DELAY_MS = 250;
 let browserSessionActive = true;
 const offerReceipt = JSON.parse(await readFile(
   new URL(
@@ -345,70 +357,159 @@ let secondaryServicingAction;
 let currentSubjectCreated = true;
 let currentConsentCreated = true;
 let currentOfficialReport;
+let failNextEvidenceRead = false;
 
 function obligationEvidence(obligationId, evidenceObligation) {
-  const eventTypes = [
-    "credit_offer_accepted",
-    "obligation_created",
-    "sandbox_obligation_executed",
-    "sandbox_repayment_posted",
-    "servicing_cured"
+  const evidenceKey = obligationId === secondaryObligationId
+    ? "secondary"
+    : "primary";
+  const acceptedAt = lifecycleReceipt.acceptance.acceptedAt;
+  const events = [
+    {
+      eventType: "credit_offer_accepted",
+      aggregateType: "credit_offer",
+      aggregateId: lifecycleReceipt.acceptance.creditOfferId,
+      aggregateVersion: 1,
+      occurredAt: acceptedAt
+    },
+    {
+      eventType: "obligation_created",
+      aggregateType: "obligation",
+      aggregateId: obligationId,
+      aggregateVersion: 1,
+      occurredAt: new Date(new Date(acceptedAt).getTime() + 100).toISOString()
+    }
   ];
-  const occurredAt = [
-    "2026-07-15T00:04:00.000Z",
-    "2026-07-15T00:04:00.100Z",
-    "2026-07-15T00:05:00.000Z",
-    "2026-08-16T12:00:00.000Z",
-    "2026-08-16T12:00:00.100Z"
-  ];
+  if (evidenceObligation.executionStatus === "executed") {
+    events.push({
+      eventType: "obligation_sandbox_executed",
+      aggregateType: "obligation",
+      aggregateId: obligationId,
+      aggregateVersion: 2,
+      occurredAt: evidenceObligation.executedAt ?? "2026-07-16T12:02:00.000Z"
+    });
+  }
+  if (BigInt(evidenceObligation.totalRepaidMinor ?? "0") > 0n) {
+    events.push({
+      eventType: "repayment_posted",
+      aggregateType: "obligation",
+      aggregateId: obligationId,
+      aggregateVersion: 3,
+      occurredAt: evidenceObligation.servicingEffectiveAt
+    });
+  }
+  if (evidenceObligation.servicingClassification === "cured") {
+    events.push({
+      eventType: "obligation_cured",
+      aggregateType: "obligation",
+      aggregateId: obligationId,
+      aggregateVersion: 4,
+      occurredAt: new Date(
+        new Date(evidenceObligation.servicingEffectiveAt).getTime() + 100
+      ).toISOString()
+    });
+  }
+  const items = events.map((event, index) => {
+    const evidenceDigit = (
+      (evidenceKey === "secondary" ? 10 : 1) + index
+    ).toString(16);
+    const payloadDigit = (
+      (evidenceKey === "secondary" ? 4 : 9) + index
+    ).toString(16);
+    return {
+      evidenceId: `event_browser_qa_${evidenceKey}_${event.eventType}`,
+      evidenceHash: `0x${evidenceDigit.repeat(64)}`,
+      eventType: event.eventType,
+      aggregateType: event.aggregateType,
+      aggregateId: event.aggregateId,
+      aggregateVersion: event.aggregateVersion,
+      obligationId,
+      sourceFinality: "finalized",
+      payloadHash: `0x${payloadDigit.repeat(64)}`,
+      occurredAt: event.occurredAt,
+      recordedAt: new Date(
+        new Date(event.occurredAt).getTime() + 100
+      ).toISOString(),
+      schemaVersion: "obligation_evidence_summary.v1"
+    };
+  });
+  const latestRecordedAt = items.at(-1)?.recordedAt ??
+    evidenceObligation.updatedAt;
   return {
     obligationId,
     asOf: new Date(
       Math.max(
         new Date("2026-08-16T12:00:01.000Z").getTime(),
-        new Date(evidenceObligation.servicingEffectiveAt).getTime() + 2_000
+        new Date(latestRecordedAt).getTime() + 1_000
       )
     ).toISOString(),
-    items: eventTypes.map((eventType, index) => ({
-      evidenceId: `event_browser_qa_${eventType}`,
-      evidenceHash: `0x${String(index + 5).repeat(64)}`,
-      eventType,
-      aggregateType: index === 0 ? "credit_offer" : "obligation",
-      aggregateId: index === 0 ? lifecycleReceipt.acceptance.creditOfferId : obligationId,
-      aggregateVersion: index + 1,
-      obligationId,
-      sourceFinality: "finalized",
-      payloadHash: `0x${String(index + 1).repeat(64)}`,
-      occurredAt: occurredAt[index],
-      recordedAt: new Date(new Date(occurredAt[index]).getTime() + 100).toISOString(),
-      schemaVersion: "obligation_evidence_summary.v1"
-    })),
+    items,
     hasMore: false,
     schemaVersion: "tenant_owned_obligation_evidence_view.v1"
   };
 }
 
-function pagedObligationEvidence(obligationId, evidenceObligation, cursor) {
-  const complete = obligationEvidence(obligationId, evidenceObligation);
-  if (cursor === "browser_qa_evidence_page_2") {
-    return {
-      ...complete,
-      items: complete.items.slice(3),
-      hasMore: false
-    };
+function evidenceCursor(item) {
+  return Buffer.from(
+    JSON.stringify([item.recordedAt, item.evidenceId]),
+    "utf8"
+  ).toString("base64url");
+}
+
+function evidenceCursorIndex(items, cursor) {
+  if (cursor === undefined) return 0;
+  let decoded;
+  try {
+    decoded = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+  } catch {
+    decoded = null;
   }
-  if (cursor !== undefined) {
+  if (!Array.isArray(decoded) || decoded.length !== 2) {
     throw new DomainError(
       "tenant_resource_unavailable",
       "The requested resource is not available."
     );
   }
+  const index = items.findIndex((item) =>
+    item.recordedAt === decoded[0] && item.evidenceId === decoded[1]
+  );
+  if (index < 0) {
+    throw new DomainError(
+      "tenant_resource_unavailable",
+      "The requested resource is not available."
+    );
+  }
+  return index + 1;
+}
+
+function pagedObligationEvidence(
+  obligationId,
+  evidenceObligation,
+  { cursor, limit = 25 } = {}
+) {
+  const complete = obligationEvidence(obligationId, evidenceObligation);
+  const start = evidenceCursorIndex(complete.items, cursor);
+  const pageLimit = evidenceScenario === "partial"
+    ? Math.min(limit, 2)
+    : limit;
+  const items = complete.items.slice(start, start + pageLimit);
+  const hasMore = start + items.length < complete.items.length;
   return {
     ...complete,
-    items: complete.items.slice(0, 3),
-    hasMore: true,
-    nextCursor: "browser_qa_evidence_page_2"
+    items,
+    hasMore,
+    ...(hasMore && items.length > 0
+      ? { nextCursor: evidenceCursor(items.at(-1)) }
+      : {})
   };
+}
+
+function readObligationEvidence(obligationId, evidenceObligation, payload) {
+  if (failNextEvidenceRead) {
+    failNextEvidenceRead = false;
+    throw new Error("browser_qa_evidence_read_failed_once");
+  }
+  return pagedObligationEvidence(obligationId, evidenceObligation, payload);
 }
 
 function officialReportView(report, now = new Date()) {
@@ -637,6 +738,9 @@ function resultFor(command) {
       currentObligation = obligation;
       currentServicingAction = undefined;
     }
+    if (evidenceScenario === "fail-after-repayment-once") {
+      failNextEvidenceRead = true;
+    }
     return protocolResult(operationId, {
       obligation,
       repayment: secondary
@@ -697,10 +801,10 @@ function resultFor(command) {
     }
     return protocolResult(
       operationId,
-      pagedObligationEvidence(
+      readObligationEvidence(
         obligationId,
         evidenceObligation,
-        command.payload?.cursor
+        command.payload
       )
     );
   }
@@ -837,6 +941,7 @@ async function serveAuthentication({ request, response, url, requestId }) {
     profile: "closed_non_funds_pilot",
     enabled: true,
     sessionActive: browserSessionActive,
+    sessionAuthenticationMethod: browserSessionActive ? "oidc_pkce_bff" : null,
     oidcProviders: [],
     walletAuthentication: false,
     supportedChains: ["eip155:84532", "eip155:1952"],
@@ -857,7 +962,17 @@ async function serveAuthentication({ request, response, url, requestId }) {
 const host = createTenantHttpServer({
   environment: "development",
   credentialSource: "local_test",
-  gateway: { async execute(command) { return resultFor(command); } },
+  gateway: {
+    async execute(command) {
+      if (
+        evidenceScenario === "slow-read" &&
+        command.operationId === "pilotReadOwnObligationEvidence"
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, EVIDENCE_READ_DELAY_MS));
+      }
+      return resultFor(command);
+    }
+  },
   resolveAuthenticationContext: async ({ request }) => {
     if (!browserSessionActive) {
       throw new Error("browser_qa_session_inactive");

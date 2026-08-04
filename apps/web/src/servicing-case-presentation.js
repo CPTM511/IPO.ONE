@@ -308,6 +308,9 @@ export function createServicingCasePresentation(obligation, servicingAction = nu
   const latestAction = actionPresentation(servicingAction, obligation);
   if (servicingAction && !latestAction) return null;
   const totalOutstandingMinor = amounts[1] + amounts[2] + amounts[3];
+  const nextPaymentMinor = outstanding[0]
+    ? BigInt(outstanding[0].outstandingMinor)
+    : 0n;
   return deepFreeze({
     obligationId: obligation.obligationId,
     lifecycleStatus: obligation.status,
@@ -333,7 +336,7 @@ export function createServicingCasePresentation(obligation, servicingAction = nu
     adverse: ADVERSE.has(obligation.servicingClassification),
     cureAvailable: ADVERSE.has(obligation.servicingClassification) && obligation.executionStatus === "executed" && pastDueMinor > 0n,
     repaymentAvailable: obligation.executionStatus === "executed" && !TERMINAL.has(obligation.status) && totalOutstandingMinor > 0n,
-    suggestedPaymentMinor: String(pastDueMinor > 0n ? pastDueMinor : totalOutstandingMinor),
+    suggestedPaymentMinor: String(pastDueMinor > 0n ? pastDueMinor : nextPaymentMinor),
     noPenalty: true,
     trustedTimeOnly: true,
     privilegedDisposition: "operations_plus_risk",
