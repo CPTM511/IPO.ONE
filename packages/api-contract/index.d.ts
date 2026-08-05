@@ -10,6 +10,7 @@ export type TenantProtocolOperationId =
   | "pilotCreateCreditPassportArtifact"
   | "pilotCreateOfficialReport"
   | "pilotEvaluateCreditApplication"
+  | "pilotPersistAgentContinuationReceipt"
   | "pilotExecuteSandboxObligation"
   | "pilotFreezeSubject"
   | "pilotPostSandboxRepayment"
@@ -164,6 +165,8 @@ export interface ApplicationReadyAgentHandoffManifest extends AgentHandoffManife
   authority: {
     status: "draft";
     capabilities: MandateCapability[];
+    allowedProviderIds: string[];
+    allowedCategories: string[];
     assetIds: string[];
     perActionLimitMinor: string;
     aggregateLimitMinor: string;
@@ -186,6 +189,8 @@ export interface ReadyAgentHandoffManifest extends AgentHandoffManifestSafety {
   authority: {
     status: "active";
     capabilities: MandateCapability[];
+    allowedProviderIds: string[];
+    allowedCategories: string[];
     assetIds: string[];
     perActionLimitMinor: string;
     aggregateLimitMinor: string;
@@ -944,6 +949,13 @@ export interface EvaluateCreditApplicationRequest extends TenantProtocolRequestB
   idempotencyKey: string;
 }
 
+export interface PersistAgentContinuationReceiptRequest extends TenantProtocolRequestBase {
+  operationId: "pilotPersistAgentContinuationReceipt";
+  payload: { receipt: AgentCreditOfferWorkflowReceipt };
+  resource: { resourceType: "credit_offer"; resourceId: string };
+  idempotencyKey: string;
+}
+
 export interface AcceptCreditOfferRequest extends TenantProtocolRequestBase {
   operationId: "pilotAcceptCreditOffer";
   payload: {
@@ -957,7 +969,10 @@ export interface AcceptCreditOfferRequest extends TenantProtocolRequestBase {
 
 export interface ExecuteSandboxObligationRequest extends TenantProtocolRequestBase {
   operationId: "pilotExecuteSandboxObligation";
-  payload: Record<string, never>;
+  payload: {
+    providerId?: string;
+    providerCategory?: string;
+  };
   resource: { resourceType: "obligation"; resourceId: string };
   idempotencyKey: string;
 }
@@ -1586,6 +1601,7 @@ export type TenantProtocolRequest =
   | CreateCreditPassportArtifactRequest
   | CreateOfficialReportRequest
   | EvaluateCreditApplicationRequest
+  | PersistAgentContinuationReceiptRequest
   | ExecuteSandboxObligationRequest
   | FreezeSubjectRequest
   | PostSandboxRepaymentRequest
@@ -1894,6 +1910,21 @@ export interface CreditApplicationEvaluatedResponse {
   schemaVersion: "tenant_credit_application_evaluated.v2";
 }
 
+export interface AgentContinuationReceiptPersistedResponse {
+  continuationReceiptId: string;
+  receiptHash: string;
+  subjectId: string;
+  mandateId: string;
+  creditOfferId: string;
+  offerAggregateVersion: number;
+  expiresAt: string;
+  persisted: true;
+  nonAuthorizing: true;
+  sandboxOnly: true;
+  productionAuthority: false;
+  schemaVersion: "tenant_agent_continuation_receipt_persisted.v1";
+}
+
 export interface CreditOfferAcceptanceSummary {
   creditOfferAcceptanceId: string;
   acceptanceHash: string;
@@ -2020,6 +2051,9 @@ export interface SandboxExecutionReceiptSummary {
   obligationId: string;
   assetId: string;
   amountMinor: string;
+  providerId?: string;
+  providerCategory?: string;
+  purposeCode?: string;
   adapterId: string;
   adapterVersion: string;
   adapterKeyId: string;
@@ -2071,11 +2105,31 @@ export interface SandboxRepaymentSummary {
 export interface SandboxRepaymentPostedResponse {
   obligation: SharedObligationSummary;
   repayment: SandboxRepaymentSummary;
+  revenueCapture?: LockboxRevenueCaptureReceipt;
   servicingAction?: SandboxServicingActionSummary;
   sandboxOnly: true;
   productionFundsMoved: false;
   withdrawable: false;
   schemaVersion: "tenant_sandbox_repayment_posted.v1";
+}
+
+export interface LockboxRevenueCaptureReceipt {
+  revenueCaptureId: string;
+  revenueCaptureHash: string;
+  lockboxId: string;
+  obligationId: string;
+  subjectId: string;
+  assetId: string;
+  providerScopeHash: string;
+  capturedMinor: string;
+  automaticRepaymentId: string;
+  ledgerTransactionId: string;
+  occurredAt: string;
+  cashflowRoute: "automatic_repayment_only";
+  sandboxOnly: true;
+  productionFundsMoved: false;
+  withdrawable: false;
+  schemaVersion: "lockbox_revenue_capture_receipt.v1";
 }
 
 export interface SandboxServicingBalances {
@@ -2198,11 +2252,26 @@ export interface WorkspaceResumeResource {
 }
 
 export interface WorkspaceResumeViewResponse {
-  workspaceKind: "human_borrower" | "principal_controller";
+  workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
   resources: WorkspaceResumeResource[];
+  continuationReceipts?: WorkspaceContinuationReceiptView[];
   hasMore: boolean;
   serverTruth: true;
   schemaVersion: "tenant_workspace_resume_view.v1";
+}
+
+export interface WorkspaceContinuationReceiptView {
+  continuationReceiptId: string;
+  receiptHash: string;
+  subjectId: string;
+  mandateId: string;
+  creditOfferId: string;
+  creditOfferHash: string;
+  offerAggregateVersion: number;
+  expiresAt: string;
+  receipt: AgentCreditOfferWorkflowReceipt;
+  serverTruth: true;
+  schemaVersion: "workspace_continuation_receipt_view.v1";
 }
 
 export interface HumanConsentCreatedResponse {
@@ -3826,6 +3895,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotCreateCreditPassportArtifact", CreditPassportArtifactCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateOfficialReport", OfficialReportCreatedResponse>
   | TenantProtocolResultBase<"pilotEvaluateCreditApplication", CreditApplicationEvaluatedResponse>
+  | TenantProtocolResultBase<"pilotPersistAgentContinuationReceipt", AgentContinuationReceiptPersistedResponse>
   | TenantProtocolResultBase<"pilotFreezeSubject", AgentSubjectFrozenResponse>
   | TenantProtocolResultBase<"pilotRequestCredit", CreditIntentCreatedResponse>
   | TenantProtocolResultBase<"pilotReadAgentSelf", AgentSubjectViewResponse>
@@ -4387,12 +4457,22 @@ export type TenantProtocolOperation =
   | TenantProtocolOperationBase<
       "pilotReadWorkspaceResume",
       "query",
-      readonly ["human"],
+      readonly ["human", "agent"],
       "workspace",
       "workspace.resume.self",
       "prohibited",
       "read",
       "tenant_workspace_resume_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotPersistAgentContinuationReceipt",
+      "command",
+      readonly ["agent"],
+      "credit_offer",
+      "workspace.resume.self",
+      "required",
+      "economic",
+      "tenant_agent_continuation_receipt_persisted.v1"
     >
   | TenantProtocolOperationBase<
       "pilotReadIdentityReference",

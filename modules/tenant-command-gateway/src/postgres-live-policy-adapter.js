@@ -31,7 +31,10 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
       }
 
       if (
-        handler.operationId === "pilotAcceptCreditOffer" &&
+        [
+          "pilotAcceptCreditOffer",
+          "pilotPersistAgentContinuationReceipt"
+        ].includes(handler.operationId) &&
         hasExactChecks(policy, ["credit_offer_state"]) &&
         resource?.resourceType === "credit_offer"
       ) {

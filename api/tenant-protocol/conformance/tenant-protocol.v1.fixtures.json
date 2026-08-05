@@ -296,6 +296,20 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotPersistAgentContinuationReceipt",
+      "payload": {
+        "receipt": {}
+      },
+      "resource": {
+        "resourceType": "credit_offer",
+        "resourceId": "credit_offer_continuation_fixture"
+      },
+      "idempotencyKey": "fixture-persist-agent-continuation-0001",
+      "requestId": "request-fixture-persist-agent-continuation",
+      "correlationId": "correlation-fixture-persist-agent-continuation",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotReadConsent",
       "payload": {},
       "resource": {
@@ -2447,6 +2461,25 @@
         "hasMore": false,
         "serverTruth": true,
         "schemaVersion": "tenant_workspace_resume_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotPersistAgentContinuationReceipt",
+      "replayed": false,
+      "response": {
+        "continuationReceiptId": "workspace_continuation_receipt_fixture",
+        "receiptHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "subjectId": "subject_agent_continuation_fixture",
+        "mandateId": "mandate_agent_continuation_fixture",
+        "creditOfferId": "credit_offer_continuation_fixture",
+        "offerAggregateVersion": 1,
+        "expiresAt": "2026-07-16T00:00:00.000Z",
+        "persisted": true,
+        "nonAuthorizing": true,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "schemaVersion": "tenant_agent_continuation_receipt_persisted.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },

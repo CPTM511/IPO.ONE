@@ -234,6 +234,13 @@ test("Agent SDK completes the shared Obligation, execution, accounting, and repa
       }
     ]
   );
+  assert.deepEqual(runtime.calls[1].payload, {
+    providerId: "provider_gateway_compute",
+    providerCategory: "compute"
+  });
+  assert.equal(receipt.executionReceipt.providerId, "provider_gateway_compute");
+  assert.equal(receipt.executionReceipt.providerCategory, "compute");
+  assert.equal(receipt.executionReceipt.purposeCode, "working_capital");
   assert.equal(JSON.stringify(runtime.calls).includes("authorityId"), false);
   assert.equal(JSON.stringify(runtime.calls).includes("accessToken"), false);
 

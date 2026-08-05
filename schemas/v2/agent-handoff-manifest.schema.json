@@ -38,6 +38,8 @@
       "required": [
         "status",
         "capabilities",
+        "allowedProviderIds",
+        "allowedCategories",
         "assetIds",
         "perActionLimitMinor",
         "aggregateLimitMinor",
@@ -61,6 +63,20 @@
             ]
           }
         },
+        "allowedProviderIds": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "allowedCategories": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
         "assetIds": {
           "type": "array",
           "minItems": 1,
@@ -71,7 +87,32 @@
         "perActionLimitMinor": { "$ref": "#/$defs/positiveMinor" },
         "aggregateLimitMinor": { "$ref": "#/$defs/positiveMinor" },
         "expiresAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "capabilities": {
+                "type": "array",
+                "contains": { "const": "provider_spend" }
+              }
+            },
+            "required": ["capabilities"]
+          },
+          "then": {
+            "properties": {
+              "allowedProviderIds": { "type": "array", "minItems": 1 },
+              "allowedCategories": { "type": "array", "minItems": 1 }
+            }
+          },
+          "else": {
+            "properties": {
+              "allowedProviderIds": { "type": "array", "maxItems": 0 },
+              "allowedCategories": { "type": "array", "maxItems": 0 }
+            }
+          }
+        }
+      ]
     },
     "protocol": {
       "type": "object",

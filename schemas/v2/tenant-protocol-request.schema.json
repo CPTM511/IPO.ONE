@@ -24,6 +24,7 @@
         "pilotCreateCreditPassportArtifact",
         "pilotCreateOfficialReport",
         "pilotEvaluateCreditApplication",
+        "pilotPersistAgentContinuationReceipt",
         "pilotExecuteSandboxObligation",
         "pilotFreezeSubject",
         "pilotPostSandboxRepayment",
@@ -1019,6 +1020,29 @@
         },
         "resource": {
           "$ref": "#/$defs/creditIntentResourceReference"
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
+    {
+      "title": "Persist Agent Continuation Receipt",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotPersistAgentContinuationReceipt"
+        },
+        "payload": {
+          "$ref": "#/$defs/persistAgentContinuationReceiptPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/creditOfferResourceReference"
         }
       },
       "not": {
@@ -2778,6 +2802,18 @@
       "additionalProperties": false,
       "maxProperties": 0
     },
+    "persistAgentContinuationReceiptPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt"
+      ],
+      "properties": {
+        "receipt": {
+          "type": "object"
+        }
+      }
+    },
     "tradingCapitalRequestPayload": {
       "type": "object",
       "additionalProperties": false,
@@ -3201,9 +3237,23 @@
         "actionConfirmation"
       ],
       "properties": {
+        "providerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+        },
+        "providerCategory": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
+        },
         "actionConfirmation": {
           "$ref": "#/$defs/economicActionConfirmation"
         }
+      },
+      "dependentRequired": {
+        "providerId": ["providerCategory"],
+        "providerCategory": ["providerId"]
       }
     },
     "postSandboxRepaymentPayload": {
@@ -3713,7 +3763,7 @@
         "capabilities": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 4,
+          "maxItems": 6,
           "uniqueItems": true,
           "items": {
             "enum": [

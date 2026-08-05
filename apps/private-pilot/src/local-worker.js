@@ -55,6 +55,7 @@ export async function runLocalWorkerCycle({
   batchSize = 100,
   leaseMs = 30_000,
   reconciliationKey,
+  reconciliationInitiatedBy = "system:local-stack-reconciliation",
   publish = async () => {}
 }) {
   if (
@@ -64,7 +65,9 @@ export async function runLocalWorkerCycle({
     !reconciliationService?.run ||
     (creditOutcomeMaterializer !== undefined && !creditOutcomeMaterializer?.run) ||
     (evidenceAnchorWorker !== undefined && !evidenceAnchorWorker?.runOnce) ||
-    typeof publish !== "function"
+    typeof publish !== "function" ||
+    typeof reconciliationInitiatedBy !== "string" ||
+    !/^system:[a-z][a-z0-9:_-]{2,127}$/.test(reconciliationInitiatedBy)
   ) {
     throw new DomainError(
       "invalid_local_worker_configuration",
@@ -121,7 +124,7 @@ export async function runLocalWorkerCycle({
     ? undefined
     : await reconciliationService.run({
         scope: "full",
-        initiatedBy: "system:local-stack-reconciliation",
+        initiatedBy: reconciliationInitiatedBy,
         idempotencyKey: reconciliationKey
       });
   return Object.freeze({

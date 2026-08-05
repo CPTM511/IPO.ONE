@@ -36,7 +36,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0049_agent_lockbox_projection"
+      "0053_workspace_continuation_tenant_guard"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
@@ -128,14 +128,14 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       invitationId: `invite_principal_${suffix}`,
       expiresAt: futureCredentialExpiry()
     }, {
-      kind: "agent_mtls",
+      kind: "agent_dpop",
       profile: "agent_runtime",
       actorId: `actor_agent_${suffix}`,
       clientId: `client_agent_${suffix}`,
       issuer: "https://workload.ipo.one",
       externalSubject: `agent-runtime-${suffix}`,
       controllerActorId: `actor_principal_${suffix}`,
-      senderThumbprint: "m".repeat(43),
+      senderThumbprint: "d".repeat(43),
       invitationId: `invite_agent_${suffix}`,
       expiresAt: futureCredentialExpiry()
     }, {
@@ -199,7 +199,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       [input.tenant.tenantId]
     );
     provisionedCredentials = await verificationPool.query(
-      `SELECT actor_id, actor_type, allowed_capabilities, expires_at
+      `SELECT actor_id, actor_type, client_authentication_method,
+              sender_constraint_method, allowed_capabilities, expires_at
          FROM authentication_credentials
         WHERE tenant_id=$1
         ORDER BY actor_id`,
@@ -216,8 +217,13 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   );
   assert.equal(JSON.stringify(invitationEvents.rows).includes("invite_"), false);
   assert.equal(JSON.stringify(invitationEvents.rows).includes("0x111111"), false);
-  assert.equal(JSON.stringify(invitationEvents.rows).includes("m".repeat(43)), false);
+  assert.equal(JSON.stringify(invitationEvents.rows).includes("d".repeat(43)), false);
   assert.equal(provisionedCredentials.rowCount, 4);
+  const agentCredential = provisionedCredentials.rows.find(
+    ({ actor_type: actorType }) => actorType === "agent"
+  );
+  assert.equal(agentCredential.client_authentication_method, "private_key_jwt");
+  assert.equal(agentCredential.sender_constraint_method, "dpop");
   const riskCredential = provisionedCredentials.rows.find(
     ({ actor_type: actorType }) => actorType === "risk_operator"
   );

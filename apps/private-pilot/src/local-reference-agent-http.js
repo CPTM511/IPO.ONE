@@ -25,6 +25,7 @@ import {
 export const LOCAL_REFERENCE_AGENT_HTTP_ROUTES = Object.freeze({
   accountProof: "/local/v1/reference-agent/account-proof",
   application: "/local/v1/reference-agent/application",
+  continuation: "/local/v1/reference-agent/continuation",
   runtime: "/local/v1/reference-agent/runtime",
   runtimeStep: "/local/v1/reference-agent/runtime-step"
 });
@@ -318,7 +319,10 @@ async function runLocalAgentRuntimeStep({
       2,
       "pilotExecuteSandboxObligation",
       { resourceType: "obligation", resourceId: input.obligationId },
-      {}
+      {
+        providerId: manifest.authority.allowedProviderIds[0],
+        providerCategory: manifest.authority.allowedCategories[0]
+      }
     );
     const result = assertRuntimeStepResult(await execute(command), {
       obligationId: input.obligationId,
@@ -329,6 +333,9 @@ async function runLocalAgentRuntimeStep({
       result.response.withdrawable !== false ||
       result.response.obligation?.executionStatus !== "executed" ||
       result.response.executionReceipt?.obligationId !== input.obligationId ||
+      result.response.executionReceipt?.providerId !== manifest.authority.allowedProviderIds[0] ||
+      result.response.executionReceipt?.providerCategory !== manifest.authority.allowedCategories[0] ||
+      typeof result.response.executionReceipt?.purposeCode !== "string" ||
       result.response.executionReceipt?.withdrawable !== false
     ) {
       throw new DomainError(
@@ -462,28 +469,74 @@ export function createLocalReferenceAgentHttpService({
       const mandate = mandateResult.response.mandate;
       const manifest = url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.application
         ? createApplicationReadyAgentHandoffManifest(mandate)
-        : createReadyAgentHandoffManifest(mandate);
+        : url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.continuation
+          ? createApplicationReadyAgentHandoffManifest(mandate) ??
+            createReadyAgentHandoffManifest(mandate)
+          : createReadyAgentHandoffManifest(mandate);
       if (!manifest) {
         throw new DomainError(
           "local_reference_agent_stage_invalid",
           url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.application
             ? "A current Draft Mandate is required for the Agent application"
+            : url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.continuation
+              ? "A current Draft or active Mandate is required for Agent continuation"
             : "A current active Mandate is required for the Agent runtime"
         );
       }
 
       const session = await createAgentSession(manifest);
       try {
+        if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.continuation) {
+          const result = await session.client.resumeWorkspace({
+            requestId: identifier("request-reference-agent-continuation"),
+            correlationId: identifier("correlation-reference-agent-continuation")
+          });
+          const continuation = result.response.continuationReceipts.find(
+            (item) => item.mandateId === manifest.mandateId
+          );
+          if (!continuation) {
+            throw new DomainError(
+              "workspace_continuation_unavailable",
+              "No current server continuation receipt is available"
+            );
+          }
+          assertOfferReceipt(continuation.receipt, manifest.mandateId);
+          return sendJson(200, {
+            status: "offer_ready",
+            mandateId: manifest.mandateId,
+            subjectId: manifest.subjectId,
+            continuationReceiptId: continuation.continuationReceiptId,
+            receiptHash: continuation.receiptHash,
+            expiresAt: continuation.expiresAt,
+            offerReceipt: continuation.receipt,
+            serverTruth: true,
+            sandboxOnly: true,
+            productionFundsMoved: false,
+            credentialEnteredBrowser: false,
+            schemaVersion: "local_reference_agent_continuation_result.v1"
+          });
+        }
         if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.application) {
           const offerReceipt = await runLocalAgentApplicationWorkflow({
             manifest,
             session
+          });
+          const persistence = await session.client.persistContinuationReceipt({
+            creditOfferId: offerReceipt.offer.creditOfferId,
+            receipt: offerReceipt,
+            idempotencyKey: `reference-agent-continuation-${offerReceipt.offer.creditOfferHash}`,
+            requestId: identifier("request-reference-agent-persist-continuation"),
+            correlationId: offerReceipt.correlationId
           });
           return sendJson(200, {
             status: "offer_ready",
             mandateId: manifest.mandateId,
             subjectId: manifest.subjectId,
             offerReceipt,
+            continuationReceiptId: persistence.response.continuationReceiptId,
+            receiptHash: persistence.response.receiptHash,
+            expiresAt: persistence.response.expiresAt,
+            serverTruth: true,
             sandboxOnly: true,
             productionFundsMoved: false,
             credentialEnteredBrowser: false,

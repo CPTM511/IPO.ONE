@@ -257,6 +257,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotPostSandboxRepayment",
     "pilotRequestCredit",
     "pilotEvaluateCreditApplication",
+    "pilotPersistAgentContinuationReceipt",
     "pilotAuthorCapitalPartnerOffer",
     "pilotSubmitSpend",
     "pilotCaptureRevenue",

@@ -220,13 +220,15 @@
         "requiredHandoffStatus": { "enum": ["application_ready", "ready", "none"] },
         "requiredCapabilities": {
           "type": "array",
-          "maxItems": 3,
+          "maxItems": 5,
           "uniqueItems": true,
           "items": {
             "enum": [
               "request_credit",
               "accept_credit_offer",
               "execute_sandbox_credit",
+              "provider_spend",
+              "capture_revenue",
               "route_repayment"
             ]
           }
@@ -297,11 +299,13 @@
               "prefixItems": [
                 { "const": "accept_credit_offer" },
                 { "const": "execute_sandbox_credit" },
+                { "const": "provider_spend" },
+                { "const": "capture_revenue" },
                 { "const": "route_repayment" }
               ],
               "items": false,
-              "minItems": 3,
-              "maxItems": 3
+              "minItems": 5,
+              "maxItems": 5
             },
             "inputSchemaVersion": { "const": "agent_credit_offer_workflow_receipt.v1" },
             "outputSchemaVersion": { "const": "agent_sandbox_obligation_workflow_receipt.v1" }

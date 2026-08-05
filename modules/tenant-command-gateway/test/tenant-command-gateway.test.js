@@ -162,6 +162,7 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotEvaluateCreditApplication",
     "pilotExecuteSandboxObligation",
     "pilotFreezeSubject",
+    "pilotPersistAgentContinuationReceipt",
     "pilotPostSandboxRepayment",
     "pilotReadAgentAccountBinding",
     "pilotReadAgentSelf",

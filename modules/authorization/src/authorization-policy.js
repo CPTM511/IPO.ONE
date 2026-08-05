@@ -457,10 +457,20 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     operationId: "pilotReadWorkspaceResume",
     action: "workspace.resume.self",
     resourceType: "workspace",
-    allowedActorTypes: [ActorType.HUMAN],
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
     requiredCapability: PilotCapability.WORKSPACE_RESUME_SELF,
     ownershipRule: OwnershipRule.NONE,
     idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "pilotPersistAgentContinuationReceipt",
+    action: "workspace.resume.self",
+    resourceType: "credit_offer",
+    allowedActorTypes: [ActorType.AGENT],
+    requiredCapability: PilotCapability.WORKSPACE_RESUME_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_offer_state"]
   }),
   tenantOperation({
     operationId: "pilotCreateConsent",

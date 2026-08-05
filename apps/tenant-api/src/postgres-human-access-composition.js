@@ -28,7 +28,7 @@ import {
 } from "./human-access-routes.js";
 
 const IMMUTABLE_SECRET_REF =
-  /^projects\/[a-z][a-z0-9-]{4,61}\/secrets\/[A-Za-z0-9_-]{1,255}\/versions\/[1-9][0-9]*$/;
+  /^(?:projects\/[a-z][a-z0-9-]{4,61}\/secrets\/[A-Za-z0-9_-]{1,255}\/versions\/[1-9][0-9]*|vercel:\/\/environment\/production\/[A-Z][A-Z0-9_]{2,127}@sha256:[0-9a-f]{64})$/;
 const ROOT_KEYS = new Set([
   "browserOrigin",
   "clock",
@@ -94,7 +94,7 @@ function immutableSecretRef(name, value) {
   if (typeof value !== "string" || !IMMUTABLE_SECRET_REF.test(value)) {
     throw authenticationError(
       "authentication_deployment_gate_closed",
-      `${name} must be an immutable secret-manager version reference`
+      `${name} must be an immutable secret version reference`
     );
   }
   return value;

@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { SESSION_COOKIE_NAME } from "../../../modules/authentication/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
 
-const WEB_ASSET_ROOT = new URL("../../web/src/", import.meta.url);
+const WEB_ASSET_ROOT = join(process.cwd(), "apps", "web", "src");
 const WEB_ASSETS = Object.freeze({
   "/": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
   "/index.html": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
@@ -81,7 +82,7 @@ export function createTenantWebAssetHandler({
     if (request.method !== "GET" && request.method !== "HEAD") return false;
     const asset = WEB_ASSETS[pathname];
     if (!asset) return false;
-    let body = await readFile(new URL(asset.file, WEB_ASSET_ROOT));
+    let body = await readFile(join(WEB_ASSET_ROOT, asset.file));
     let sessionHandle;
     if (
       asset.file === "index.html" &&

@@ -813,6 +813,25 @@
       ]
     },
     {
+      "operationId": "pilotPersistAgentContinuationReceipt",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_continuation_receipt_persisted.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/workspace-continuation-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/private-pilot/src/local-reference-agent-http.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js"
+      ]
+    },
+    {
       "operationId": "pilotReadIdentityReference",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_human_identity_reference_view.v1",
@@ -1543,6 +1562,7 @@
           "authorityType": "tenant_protocol",
           "operationIds": [
             "pilotReadWorkspaceResume",
+            "pilotPersistAgentContinuationReceipt",
             "pilotReadHumanSelf"
           ],
           "authorityReferences": [],
@@ -1550,9 +1570,10 @@
             "apps/web/src/app.js"
           ],
           "testFiles": [
-            "modules/tenant-command-gateway/test/workspace-resume-handlers.test.js"
+            "modules/tenant-command-gateway/test/workspace-resume-handlers.test.js",
+            "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs"
           ],
-          "truthBoundary": "Only server-returned, tenant-scoped resources are authoritative; prototype balances, scores, and availability cards are excluded.",
+          "truthBoundary": "Only server-returned, tenant-scoped resources and actor-bound continuation receipts are authoritative; continuation is non-authorizing, and prototype balances, scores, and availability cards are excluded.",
           "nextTaskIds": [
             "V9-001"
           ],

@@ -23,6 +23,7 @@
         "pilotCreateCreditPassportArtifact",
         "pilotCreateOfficialReport",
         "pilotEvaluateCreditApplication",
+        "pilotPersistAgentContinuationReceipt",
         "pilotExecuteSandboxObligation",
         "pilotFreezeSubject",
         "pilotPostSandboxRepayment",
@@ -675,6 +676,16 @@
         },
         "response": {
           "$ref": "#/$defs/creditApplicationEvaluated"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotPersistAgentContinuationReceipt"
+        },
+        "response": {
+          "$ref": "#/$defs/agentContinuationReceiptPersisted"
         }
       }
     },
@@ -2289,6 +2300,17 @@
         "amountMinor": {
           "$ref": "#/$defs/positiveMinorUnits"
         },
+        "providerId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "providerCategory": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
+        },
+        "purposeCode": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
+        },
         "adapterId": {
           "$ref": "#/$defs/identifier"
         },
@@ -2481,6 +2503,9 @@
         "repayment": {
           "$ref": "#/$defs/sandboxRepaymentSummary"
         },
+        "revenueCapture": {
+          "$ref": "#/$defs/lockboxRevenueCaptureReceipt"
+        },
         "servicingAction": {
           "$ref": "#/$defs/sandboxServicingActionSummary"
         },
@@ -2496,6 +2521,46 @@
         "schemaVersion": {
           "const": "tenant_sandbox_repayment_posted.v1"
         }
+      }
+    },
+    "lockboxRevenueCaptureReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revenueCaptureId",
+        "revenueCaptureHash",
+        "lockboxId",
+        "obligationId",
+        "subjectId",
+        "assetId",
+        "providerScopeHash",
+        "capturedMinor",
+        "automaticRepaymentId",
+        "ledgerTransactionId",
+        "occurredAt",
+        "cashflowRoute",
+        "sandboxOnly",
+        "productionFundsMoved",
+        "withdrawable",
+        "schemaVersion"
+      ],
+      "properties": {
+        "revenueCaptureId": { "$ref": "#/$defs/identifier" },
+        "revenueCaptureHash": { "$ref": "#/$defs/hash" },
+        "lockboxId": { "$ref": "#/$defs/identifier" },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "providerScopeHash": { "$ref": "#/$defs/hash" },
+        "capturedMinor": { "$ref": "#/$defs/positiveMinorUnits" },
+        "automaticRepaymentId": { "$ref": "#/$defs/identifier" },
+        "ledgerTransactionId": { "$ref": "#/$defs/identifier" },
+        "occurredAt": { "$ref": "#/$defs/timestamp" },
+        "cashflowRoute": { "const": "automatic_repayment_only" },
+        "sandboxOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "withdrawable": { "const": false },
+        "schemaVersion": { "const": "lockbox_revenue_capture_receipt.v1" }
       }
     },
     "sandboxServicingBalances": {
@@ -4319,7 +4384,8 @@
         "workspaceKind": {
           "enum": [
             "human_borrower",
-            "principal_controller"
+            "principal_controller",
+            "agent_runtime"
           ]
         },
         "resources": {
@@ -4327,6 +4393,13 @@
           "maxItems": 32,
           "items": {
             "$ref": "#/$defs/workspaceResumeResource"
+          }
+        },
+        "continuationReceipts": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/workspaceContinuationReceiptView"
           }
         },
         "hasMore": {
@@ -4338,6 +4411,68 @@
         "schemaVersion": {
           "const": "tenant_workspace_resume_view.v1"
         }
+      }
+    },
+    "workspaceContinuationReceiptView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "continuationReceiptId",
+        "receiptHash",
+        "subjectId",
+        "mandateId",
+        "creditOfferId",
+        "creditOfferHash",
+        "offerAggregateVersion",
+        "expiresAt",
+        "receipt",
+        "serverTruth",
+        "schemaVersion"
+      ],
+      "properties": {
+        "continuationReceiptId": { "$ref": "#/$defs/identifier" },
+        "receiptHash": { "$ref": "#/$defs/hash" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "mandateId": { "$ref": "#/$defs/identifier" },
+        "creditOfferId": { "$ref": "#/$defs/identifier" },
+        "creditOfferHash": { "$ref": "#/$defs/hash" },
+        "offerAggregateVersion": { "type": "integer", "minimum": 1 },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "receipt": { "type": "object" },
+        "serverTruth": { "const": true },
+        "schemaVersion": { "const": "workspace_continuation_receipt_view.v1" }
+      }
+    },
+    "agentContinuationReceiptPersisted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "continuationReceiptId",
+        "receiptHash",
+        "subjectId",
+        "mandateId",
+        "creditOfferId",
+        "offerAggregateVersion",
+        "expiresAt",
+        "persisted",
+        "nonAuthorizing",
+        "sandboxOnly",
+        "productionAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "continuationReceiptId": { "$ref": "#/$defs/identifier" },
+        "receiptHash": { "$ref": "#/$defs/hash" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "mandateId": { "$ref": "#/$defs/identifier" },
+        "creditOfferId": { "$ref": "#/$defs/identifier" },
+        "offerAggregateVersion": { "type": "integer", "minimum": 1 },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "persisted": { "const": true },
+        "nonAuthorizing": { "const": true },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_agent_continuation_receipt_persisted.v1" }
       }
     },
     "humanConsentCreated": {

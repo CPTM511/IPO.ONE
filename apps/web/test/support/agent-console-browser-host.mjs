@@ -417,16 +417,37 @@ async function serveAuthentication({ request, response, url, requestId }) {
 const serveReferenceAgent = Object.freeze({
   routes: Object.freeze({
     application: "/local/v1/reference-agent/application",
+    continuation: "/local/v1/reference-agent/continuation",
     runtime: "/local/v1/reference-agent/runtime",
     runtimeStep: "/local/v1/reference-agent/runtime-step"
   }),
   async handle({ url, readJson, sendJson }) {
+    if (url.pathname === this.routes.continuation) {
+      return sendJson(200, {
+        status: "offer_ready",
+        mandateId: activeMandate.mandateId,
+        subjectId: activeMandate.subjectId,
+        continuationReceiptId: "continuation-receipt-agent-console-browser-0001",
+        receiptHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        expiresAt: "2026-08-05T00:00:00.000Z",
+        offerReceipt,
+        serverTruth: true,
+        sandboxOnly: true,
+        productionFundsMoved: false,
+        credentialEnteredBrowser: false,
+        schemaVersion: "local_reference_agent_continuation_result.v1"
+      });
+    }
     if (url.pathname === this.routes.application) {
       return sendJson(200, {
         status: "offer_ready",
         mandateId: activeMandate.mandateId,
         subjectId: activeMandate.subjectId,
         offerReceipt,
+        continuationReceiptId: "continuation-receipt-agent-console-browser-0001",
+        receiptHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        expiresAt: "2026-08-05T00:00:00.000Z",
+        serverTruth: true,
         sandboxOnly: true,
         productionFundsMoved: false,
         credentialEnteredBrowser: false,

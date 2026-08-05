@@ -20,7 +20,7 @@ import { DEFAULT_PRIVATE_PILOT_PROFILE, assertPrivatePilotProfile } from "./priv
 export const LOCAL_PILOT_TENANT_ID = DEFAULT_PRIVATE_PILOT_PROFILE.tenantId;
 export const LOCAL_PILOT_RISK_PORTFOLIO_ID = DEFAULT_PRIVATE_PILOT_PROFILE.riskPortfolioId;
 export const LOCAL_PILOT_SERVICING_QUEUE_ID = DEFAULT_PRIVATE_PILOT_PROFILE.servicingQueueId;
-export const LOCAL_PILOT_CREDENTIAL_GENERATION = "phase3";
+export const LOCAL_PILOT_CREDENTIAL_GENERATION = "phase4";
 
 const IDENTITY_SPECS = Object.freeze({
   borrower: Object.freeze({
@@ -92,6 +92,7 @@ const IDENTITY_SPECS = Object.freeze({
     roleBundle: RoleBundle.AGENT_RUNTIME,
     capabilities: Object.freeze([
       PilotCapability.SUBJECT_READ_SELF,
+      PilotCapability.WORKSPACE_RESUME_SELF,
       PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
       PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
       PilotCapability.CREDIT_REQUEST,
@@ -156,8 +157,8 @@ export function createLocalPilotIdentities({
         : template.controllerActorId
     });
     // Capability grants are immutable on an issued authentication Credential.
-    // Phase 2 therefore rotates the local client binding instead of silently
-    // widening the durable Phase 1 Credential.
+    // Each capability generation therefore rotates the local client binding
+    // instead of silently widening an already-issued durable Credential.
     const clientId =
       `client_${LOCAL_PILOT_CREDENTIAL_GENERATION}_${spec.actorId}`;
     const human = HUMAN_ACTOR_TYPES.has(spec.actorType);

@@ -70,10 +70,15 @@ export function createAgentLockboxProjection({
     invalid("an active verified Agent AccountBinding is required");
   }
   if (
-    !creditLine || creditLine.schemaVersion !== "credit_line.v1" ||
+    !creditLine || creditLine.schemaVersion !== "credit_line.v2" ||
     creditLine.subjectId !== obligation.subjectId ||
-    creditLine.mandateId !== mandate.mandateId ||
+    creditLine.validatedMandateId !== mandate.mandateId ||
     creditLine.assetId !== obligation.assetId ||
+    creditLine.creditIntentId !== obligation.creditIntentId ||
+    creditLine.creditOfferId !== obligation.creditOfferId ||
+    creditLine.obligationId !== obligation.obligationId ||
+    creditLine.purposeCode !== creditIntent.purposeCode ||
+    creditLine.sandboxOnly !== true || creditLine.productionAuthority !== false ||
     creditLine.status !== CreditLineStatus.APPROVED
   ) {
     invalid("the canonical CreditLine capacity projection is required");

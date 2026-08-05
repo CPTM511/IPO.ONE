@@ -8,7 +8,8 @@ export function createPostgresPool({
   max = 10,
   idleTimeoutMillis = 30_000,
   connectionTimeoutMillis = 5_000,
-  applicationName = "ipo-one"
+  applicationName = "ipo-one",
+  allowExitOnIdle = false
 } = {}) {
   if (typeof connectionString !== "string" || connectionString.length === 0) {
     throw new DomainError("database_url_required", "DATABASE_URL is required for PostgreSQL mode");
@@ -16,11 +17,15 @@ export function createPostgresPool({
   if (!Number.isSafeInteger(max) || max < 1) {
     throw new DomainError("invalid_pool_size", "PostgreSQL pool max must be a positive safe integer");
   }
+  if (typeof allowExitOnIdle !== "boolean") {
+    throw new DomainError("invalid_pool_configuration", "PostgreSQL allowExitOnIdle must be a boolean");
+  }
   return new Pool({
     connectionString,
     max,
     idleTimeoutMillis,
     connectionTimeoutMillis,
-    application_name: applicationName
+    application_name: applicationName,
+    allowExitOnIdle
   });
 }

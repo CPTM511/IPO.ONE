@@ -52,6 +52,7 @@ test("every authenticated operation has exactly one closed quota classification"
     "pilotPostSandboxRepayment",
     "pilotRequestCredit",
     "pilotEvaluateCreditApplication",
+    "pilotPersistAgentContinuationReceipt",
     "pilotSubmitSpend",
     "pilotCaptureRevenue",
     "pilotAutoRepay",

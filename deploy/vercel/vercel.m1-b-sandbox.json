@@ -1,0 +1,33 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "",
+  "fluid": true,
+  "functions": {
+    "api/vercel-sandbox.mjs": {
+      "includeFiles": "{apps/web/src/**,db/migrations/**}",
+      "maxDuration": 30
+    },
+    "api/vercel-sandbox-cron.mjs": {
+      "includeFiles": "db/migrations/**",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/cron",
+      "destination": "/api/vercel-sandbox-cron"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/vercel-sandbox"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

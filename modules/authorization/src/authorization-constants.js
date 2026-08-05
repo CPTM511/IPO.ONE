@@ -291,6 +291,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
   ]),
   [RoleBundle.AGENT_RUNTIME]: Object.freeze([
     PilotCapability.SUBJECT_READ_SELF,
+    PilotCapability.WORKSPACE_RESUME_SELF,
     PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
     PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
     PilotCapability.CREDIT_REQUEST,

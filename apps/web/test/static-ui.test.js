@@ -1191,7 +1191,7 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   assert.ok(js.includes('recovery.workspaceKind === "principal_controller"'));
   assert.match(
     js,
-    /if \(mandate\) await loadExactMandate\(mandate\.resourceId\);[\s\S]*?const recoveredPrincipalSubjectId = exactResourceId\([\s\S]*?agentAuthorityPilot\.mandate\?\.subjectId[\s\S]*?resourceId: recoveredPrincipalSubjectId/,
+    /if \(mandate\) \{[\s\S]*?await loadExactMandate\(mandate\.resourceId\);[\s\S]*?const recoveredPrincipalSubjectId = exactResourceId\([\s\S]*?agentAuthorityPilot\.mandate\?\.subjectId[\s\S]*?resourceId: recoveredPrincipalSubjectId/,
     "Principal recovery must authorize the AccountBinding for the exact Subject linked by the recovered Mandate"
   );
   assert.ok(js.includes("selectedObligation && tenantPilot.obligationReadAvailable"));
@@ -1372,6 +1372,7 @@ test("closed-pilot browser has no demo route, reset control, or hidden fallback"
   assert.ok(js.includes('fetch("/tenant/v1/operations"'));
   assert.ok(js.includes("setConnection(tenantPilot.connected)"));
   assert.ok(js.includes("No product data is available without an authenticated session."));
+  assert.ok(html.includes("Protocol fees disabled · Fee Policy deferred"));
 });
 
 test("UX-003 exposes Human evaluation and staged Agent credit use as browser actions", async () => {
@@ -1395,8 +1396,8 @@ test("UX-003 exposes Human evaluation and staged Agent credit use as browser act
   assert.ok(html.includes("Start Human application"));
   assert.ok(html.includes("Request & evaluate credit"));
   assert.ok(js.includes('"Create Agent Obligation"'));
-  assert.ok(html.includes("Execute approved use"));
-  assert.ok(html.includes("Repay Agent obligation"));
+  assert.ok(html.includes("Execute allowlisted Provider spend"));
+  assert.ok(html.includes("Capture revenue and auto-repay"));
   assert.ok(html.includes("Verify Agent Evidence"));
   assert.ok(html.includes("non-withdrawable sandbox rail"));
   assert.ok(js.includes('"/local/v1/reference-agent/runtime-step"'));

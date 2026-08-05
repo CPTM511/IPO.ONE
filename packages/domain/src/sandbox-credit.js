@@ -204,11 +204,34 @@ export function createSandboxExecutionReceipt({
   if (!Number.isFinite(new Date(adapterReceipt.issuedAt).getTime())) {
     throw new DomainError("sandbox_rail_unavailable", "sandbox rail receipt timestamp is invalid");
   }
+  const providerBound = Object.hasOwn(adapterReceipt, "providerId") ||
+    Object.hasOwn(adapterReceipt, "providerCategory") ||
+    Object.hasOwn(adapterReceipt, "purposeCode");
+  if (
+    providerBound &&
+    (
+      typeof adapterReceipt.providerId !== "string" ||
+      adapterReceipt.providerId.length === 0 ||
+      typeof adapterReceipt.providerCategory !== "string" ||
+      adapterReceipt.providerCategory.length === 0 ||
+      typeof adapterReceipt.purposeCode !== "string" ||
+      adapterReceipt.purposeCode.length === 0
+    )
+  ) {
+    throw new DomainError("sandbox_rail_unavailable", "sandbox Provider target binding is invalid");
+  }
   const core = {
     obligationId: obligation.obligationId,
     subjectId: obligation.subjectId,
     assetId: obligation.assetId,
     amountMinor: obligation.originalPrincipalMinor,
+    ...(providerBound
+      ? {
+          providerId: adapterReceipt.providerId,
+          providerCategory: adapterReceipt.providerCategory,
+          purposeCode: adapterReceipt.purposeCode
+        }
+      : {}),
     adapterId: adapterReceipt.adapterId,
     adapterVersion: adapterReceipt.adapterVersion,
     adapterKeyId: adapterReceipt.adapterKeyId,

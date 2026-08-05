@@ -19,12 +19,20 @@ const REQUEST_KEYS = Object.freeze([
   "correlationId",
   "issuedAt"
 ]);
+const PROVIDER_TARGET_KEYS = Object.freeze([
+  "providerId",
+  "providerCategory",
+  "purposeCode"
+]);
 
 function normalizeRequest(input) {
   if (
     !input || typeof input !== "object" || Array.isArray(input) ||
-    Object.keys(input).length !== REQUEST_KEYS.length ||
-    REQUEST_KEYS.some((key) => !Object.hasOwn(input, key))
+    ![REQUEST_KEYS.length, REQUEST_KEYS.length + PROVIDER_TARGET_KEYS.length]
+      .includes(Object.keys(input).length) ||
+    REQUEST_KEYS.some((key) => !Object.hasOwn(input, key)) ||
+    PROVIDER_TARGET_KEYS.some((key) => Object.hasOwn(input, key)) !==
+      PROVIDER_TARGET_KEYS.every((key) => Object.hasOwn(input, key))
   ) {
     throw new DomainError("sandbox_rail_unavailable", "sandbox rail request has an invalid shape");
   }
@@ -43,6 +51,12 @@ function normalizeRequest(input) {
     correlationId: input.correlationId,
     issuedAt: issuedAt.toISOString()
   };
+  if (Object.hasOwn(input, "providerId")) {
+    for (const key of PROVIDER_TARGET_KEYS) assertNonEmptyString(key, input[key]);
+    normalized.providerId = input.providerId;
+    normalized.providerCategory = input.providerCategory;
+    normalized.purposeCode = input.purposeCode;
+  }
   assertNoRawPiiReference(normalized, "sandboxRail.request");
   return Object.freeze(normalized);
 }
@@ -100,6 +114,13 @@ export class SignedSandboxRailAdapter {
       obligationId: request.obligationId,
       assetId: request.assetId,
       amountMinor: request.amountMinor,
+      ...(request.providerId
+        ? {
+            providerId: request.providerId,
+            providerCategory: request.providerCategory,
+            purposeCode: request.purposeCode
+          }
+        : {}),
       adapterId: this.adapterId,
       adapterVersion: this.adapterVersion,
       adapterKeyId: this.adapterKeyId,
@@ -117,6 +138,10 @@ export class SignedSandboxRailAdapter {
 
   verify(receipt, expected) {
     const request = normalizeRequest(expected);
+    const providerTargetMatches = PROVIDER_TARGET_KEYS.every((key) => (
+      Object.hasOwn(receipt ?? {}, key) === Object.hasOwn(request, key) &&
+      (!Object.hasOwn(request, key) || receipt[key] === request[key])
+    ));
     if (
       !receipt || receipt.schemaVersion !== "signed_sandbox_rail_receipt.v1" ||
       receipt.obligationId !== request.obligationId ||
@@ -128,6 +153,7 @@ export class SignedSandboxRailAdapter {
       receipt.adapterId !== this.adapterId ||
       receipt.adapterVersion !== this.adapterVersion ||
       receipt.adapterKeyId !== this.adapterKeyId ||
+      !providerTargetMatches ||
       receipt.sandboxOnly !== true ||
       receipt.productionFundsMoved !== false ||
       receipt.withdrawable !== false

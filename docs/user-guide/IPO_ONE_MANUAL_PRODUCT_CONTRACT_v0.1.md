@@ -34,8 +34,8 @@ contract.
 | Agent Console | `Review and activate this Mandate` | Offer ready | Principal review opens |
 | Credit / Principal | `Activate exact Sandbox Mandate` | Exact Mandate acknowledged | Mandate becomes active |
 | Agent Console | `Create Agent Obligation` | Active matching Mandate and Offer | Shared Agent Obligation appears |
-| Agent Console | `Execute approved use` | Obligation created | Purpose-bound, non-withdrawable use is executed |
-| Agent Console | `Repay Agent obligation` | Execution complete and balance positive | Repayment posts and balance updates |
+| Agent Console | `Execute allowlisted Provider spend` | Obligation created | Purpose-bound, non-withdrawable Provider spend is executed |
+| Agent Console | `Capture revenue and auto-repay` | Provider spend complete and balance positive | Synthetic revenue is captured and automatically routed through the deterministic repayment waterfall |
 | Agent Console | `Verify Agent Evidence` | Repayment posted | Immutable Evidence timeline is verified |
 | Agent Console | `Review Agent obligations` | Agent Obligation exists | Agent-owned position opens in Obligations |
 

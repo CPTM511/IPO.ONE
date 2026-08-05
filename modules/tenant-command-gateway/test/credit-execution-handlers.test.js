@@ -91,7 +91,12 @@ function humanFixture() {
     acceptance,
     now: START
   });
-  return { subject, principal, consent, obligation };
+  return { subject, principal, consent, intent: decidedIntent, decision, offer: {
+    ...offer,
+    status: "accepted",
+    acceptanceId: acceptance.creditOfferAcceptanceId,
+    acceptedAt: acceptance.acceptedAt
+  }, acceptance, obligation };
 }
 
 function repository(
@@ -103,6 +108,10 @@ function repository(
     [`${CoreProjectionType.SUBJECT}:${fixture.subject.subjectId}`, { aggregateVersion: 2, value: fixture.subject }],
     [`${CoreProjectionType.PRINCIPAL}:${fixture.principal.principalId}`, { aggregateVersion: 1, value: fixture.principal }],
     [`${CoreProjectionType.CONSENT_RECORD}:${fixture.consent.consentId}`, { aggregateVersion: 3, value: fixture.consent }],
+    [`${CoreProjectionType.CREDIT_INTENT}:${fixture.intent.creditIntentId}`, { aggregateVersion: 2, value: fixture.intent }],
+    [`${CoreProjectionType.RISK_DECISION}:${fixture.decision.riskDecisionId}`, { aggregateVersion: 1, value: fixture.decision }],
+    [`${CoreProjectionType.CREDIT_OFFER}:${fixture.offer.creditOfferId}`, { aggregateVersion: 2, value: fixture.offer }],
+    [`${CoreProjectionType.CREDIT_OFFER_ACCEPTANCE}:${fixture.acceptance.creditOfferAcceptanceId}`, { aggregateVersion: 1, value: fixture.acceptance }],
     ...accounts.map((value) => [
       `${CoreProjectionType.LEDGER_ACCOUNT}:${value.ledgerAccountId}`,
       { aggregateVersion: 1, value }

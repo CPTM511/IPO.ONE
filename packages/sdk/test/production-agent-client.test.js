@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import test from "node:test";
 import fixtures from "../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json" with { type: "json" };
@@ -27,6 +28,33 @@ function accessToken(overrides = {}) {
     iat: current,
     exp: current + 300,
     cnf: { "x5t#S256": "m".repeat(43) },
+    ...overrides
+  })).toString("base64url");
+  return `${header}.${payload}.${"s".repeat(86)}`;
+}
+
+function dpopAccessToken(overrides = {}) {
+  return accessToken({ cnf: { jkt: "d".repeat(43) }, ...overrides });
+}
+
+function dpopProof(accessToken, overrides = {}) {
+  const current = Math.floor(NOW.getTime() / 1_000);
+  const header = Buffer.from(JSON.stringify({
+    alg: "ES256",
+    typ: "dpop+jwt",
+    jwk: {
+      kty: "EC",
+      crv: "P-256",
+      x: "A".repeat(43),
+      y: "B".repeat(43)
+    }
+  })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({
+    htm: "POST",
+    htu: "https://closed-pilot.invalid/tenant/v1/operations",
+    iat: current,
+    jti: "dpop-production-agent-0001",
+    ath: createHash("sha256").update(accessToken).digest("base64url"),
     ...overrides
   })).toString("base64url");
   return `${header}.${payload}.${"s".repeat(86)}`;
@@ -95,6 +123,31 @@ test("remote Agent client sends one exact mTLS-bound HTTPS protocol request", as
   assert.match(options.headers.authorization, /^Bearer [A-Za-z0-9_-]+\./);
   assert.equal(Object.hasOwn(options.headers, "dpop"), false);
   assert.deepEqual(JSON.parse(body), REQUEST);
+});
+
+test("remote Agent client sends one exact DPoP-bound HTTPS protocol request without certificate material", async () => {
+  const transport = fakeHttpsRequest();
+  const token = dpopAccessToken();
+  const client = new ProductionAgentClient({
+    baseUrl: "https://closed-pilot.invalid",
+    accessTokenProvider: async () => token,
+    dpopProofProvider: async (binding) => {
+      assert.deepEqual(binding, {
+        accessToken: token,
+        method: "POST",
+        url: "https://closed-pilot.invalid/tenant/v1/operations"
+      });
+      return dpopProof(token);
+    },
+    request: transport.request,
+    clock: () => NOW
+  });
+  const result = await client.execute(REQUEST);
+  assert.deepEqual(result, RESULT);
+  const [{ options }] = transport.calls;
+  assert.match(options.headers.dpop, /^[A-Za-z0-9_-]+\./);
+  assert.equal(Object.hasOwn(options, "cert"), false);
+  assert.equal(Object.hasOwn(options, "key"), false);
 });
 
 test("remote Agent client rejects unsafe origins and non-short-lived tokens before transport", async () => {

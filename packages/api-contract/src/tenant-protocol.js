@@ -357,13 +357,26 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
   {
     operationId: "pilotReadWorkspaceResume",
     kind: "query",
-    actorTypes: ["human"],
+    actorTypes: ["human", "agent"],
     resourceType: "workspace",
     requiredCapability: "workspace.resume.self",
     idempotency: "prohibited",
     quotaClass: "read",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
     responseSchemaVersion: "tenant_workspace_resume_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotPersistAgentContinuationReceipt",
+    kind: "command",
+    actorTypes: ["agent"],
+    resourceType: "credit_offer",
+    requiredCapability: "workspace.resume.self",
+    idempotency: "required",
+    quotaClass: "economic",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_agent_continuation_receipt_persisted.v1",
     public: false,
     fundsAuthority: false
   },

@@ -101,6 +101,7 @@
         "pilotReadMandate",
         "pilotReadCreditApplication",
         "pilotEvaluateCreditApplication",
+        "pilotPersistAgentContinuationReceipt",
         "pilotRevokeDraftMandate",
         "pilotReadAgentSelf",
         "pilotReadAgentAccountBinding",
@@ -242,6 +243,9 @@
           "const": "read"
         },
         "pilotEvaluateCreditApplication": {
+          "const": "economic"
+        },
+        "pilotPersistAgentContinuationReceipt": {
           "const": "economic"
         },
         "pilotRevokeDraftMandate": {

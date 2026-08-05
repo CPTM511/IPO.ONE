@@ -1,4 +1,5 @@
 import { request as httpsRequest } from "node:https";
+import { createHash } from "node:crypto";
 import {
   assertTenantProtocolRequest,
   assertTenantProtocolResult
@@ -22,14 +23,19 @@ function pem(name, value, marker) {
   return value;
 }
 
-function shortLivedJwt(value, now = new Date()) {
-  if (typeof value !== "string" || value.length < 64 || value.length > 16_384) {
-    throw new TypeError("access token must be a bounded JWT");
+function compactJwt(name, value, maximum = 16_384) {
+  if (typeof value !== "string" || value.length < 64 || value.length > maximum) {
+    throw new TypeError(`${name} must be a bounded JWT`);
   }
   const segments = value.split(".");
   if (segments.length !== 3 || segments.some((segment) => !/^[A-Za-z0-9_-]+$/.test(segment))) {
-    throw new TypeError("access token must be a compact JWT");
+    throw new TypeError(`${name} must be a compact JWT`);
   }
+  return segments;
+}
+
+function shortLivedJwt(value, senderMethod, now = new Date()) {
+  const segments = compactJwt("access token", value);
   let claims;
   try { claims = JSON.parse(Buffer.from(segments[1], "base64url").toString("utf8")); } catch {
     throw new TypeError("access token claims are invalid");
@@ -39,10 +45,34 @@ function shortLivedJwt(value, now = new Date()) {
     !claims || typeof claims !== "object" || Array.isArray(claims) ||
     !Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp) ||
     claims.exp <= current || claims.iat > current + 30 ||
-    claims.exp <= claims.iat || claims.exp - claims.iat > 300 ||
-    typeof claims.cnf?.["x5t#S256"] !== "string" ||
-    !/^[A-Za-z0-9_-]{43}$/.test(claims.cnf["x5t#S256"])
-  ) throw new TypeError("access token must be an active <=300 second mTLS-bound JWT");
+    claims.exp <= claims.iat || claims.exp - claims.iat > 300
+  ) throw new TypeError("access token must be an active <=300 second sender-bound JWT");
+  const confirmation = senderMethod === "dpop" ? claims.cnf?.jkt : claims.cnf?.["x5t#S256"];
+  if (typeof confirmation !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(confirmation)) {
+    throw new TypeError(`access token must be bound to the configured ${senderMethod} sender`);
+  }
+  return value;
+}
+
+function dpopProof(value, { accessToken, method, url, now }) {
+  const segments = compactJwt("DPoP proof", value, 8_192);
+  let header;
+  let claims;
+  try {
+    header = JSON.parse(Buffer.from(segments[0], "base64url").toString("utf8"));
+    claims = JSON.parse(Buffer.from(segments[1], "base64url").toString("utf8"));
+  } catch {
+    throw new TypeError("DPoP proof claims are invalid");
+  }
+  const current = Math.floor(now.getTime() / 1_000);
+  const tokenHash = createHash("sha256").update(accessToken).digest("base64url");
+  if (
+    header?.alg !== "ES256" || header?.typ?.toLowerCase() !== "dpop+jwt" ||
+    header?.jwk?.kty !== "EC" || header.jwk.crv !== "P-256" || Object.hasOwn(header.jwk, "d") ||
+    claims?.htm !== method || claims?.htu !== url || claims?.ath !== tokenHash ||
+    !Number.isSafeInteger(claims?.iat) || Math.abs(claims.iat - current) > 60 ||
+    typeof claims?.jti !== "string" || claims.jti.length < 16 || claims.jti.length > 256
+  ) throw new TypeError("DPoP proof is not bound to the exact request and access token");
   return value;
 }
 
@@ -98,6 +128,8 @@ export class ProductionAgentClient {
   #cert;
   #key;
   #ca;
+  #dpopProofProvider;
+  #senderMethod;
   #request;
   #clock;
 
@@ -107,6 +139,7 @@ export class ProductionAgentClient {
     cert,
     key,
     ca,
+    dpopProofProvider,
     request = httpsRequest,
     clock = () => new Date()
   }) {
@@ -115,18 +148,44 @@ export class ProductionAgentClient {
       throw new TypeError("Agent token, HTTPS, and clock adapters are required");
     }
     this.#accessTokenProvider = accessTokenProvider;
-    this.#cert = pem("mTLS certificate", cert, "CERTIFICATE");
-    this.#key = pem("mTLS private key", key, "PRIVATE KEY");
-    this.#ca = ca === undefined ? undefined : pem("trusted CA", ca, "CERTIFICATE");
+    if (dpopProofProvider === undefined) {
+      this.#senderMethod = "mtls";
+      this.#cert = pem("mTLS certificate", cert, "CERTIFICATE");
+      this.#key = pem("mTLS private key", key, "PRIVATE KEY");
+      this.#ca = ca === undefined ? undefined : pem("trusted CA", ca, "CERTIFICATE");
+    } else {
+      if (typeof dpopProofProvider !== "function" || cert !== undefined || key !== undefined || ca !== undefined) {
+        throw new TypeError("DPoP and mTLS Agent sender configurations are mutually exclusive");
+      }
+      this.#senderMethod = "dpop";
+      this.#dpopProofProvider = dpopProofProvider;
+    }
     this.#request = request;
     this.#clock = clock;
   }
 
   async execute(protocolRequest, { signal } = {}) {
     assertTenantProtocolRequest(protocolRequest);
-    const accessToken = shortLivedJwt(await this.#accessTokenProvider(), this.#clock());
+    const now = this.#clock();
+    const accessToken = shortLivedJwt(
+      await this.#accessTokenProvider(),
+      this.#senderMethod,
+      now
+    );
     const body = JSON.stringify(protocolRequest);
     const url = new URL("/tenant/v1/operations", this.#origin);
+    const proof = this.#senderMethod === "dpop"
+      ? dpopProof(await this.#dpopProofProvider({
+          accessToken,
+          method: "POST",
+          url: url.href
+        }), {
+          accessToken,
+          method: "POST",
+          url: url.href,
+          now
+        })
+      : undefined;
     const payload = await new Promise((resolve, reject) => {
       const request = this.#request(url, {
         method: "POST",
@@ -135,11 +194,16 @@ export class ProductionAgentClient {
           authorization: `Bearer ${accessToken}`,
           "content-type": "application/json",
           "content-length": Buffer.byteLength(body),
-          "x-request-id": protocolRequest.requestId
+          "x-request-id": protocolRequest.requestId,
+          ...(proof === undefined ? {} : { dpop: proof })
         },
-        cert: this.#cert,
-        key: this.#key,
-        ...(this.#ca === undefined ? {} : { ca: this.#ca }),
+        ...(this.#senderMethod === "mtls"
+          ? {
+              cert: this.#cert,
+              key: this.#key,
+              ...(this.#ca === undefined ? {} : { ca: this.#ca })
+            }
+          : {}),
         rejectUnauthorized: true,
         minVersion: "TLSv1.2",
         servername: this.#origin.hostname,

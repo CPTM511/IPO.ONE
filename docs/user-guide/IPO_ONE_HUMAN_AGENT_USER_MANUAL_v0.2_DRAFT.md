@@ -206,8 +206,8 @@ Mandate 激活后，回到 `Agent Workspace` → `Open Agent credit`。页面现
 | 顺序 | 按钮 | 功能 | 成功标志 |
 | --- | --- | --- | --- |
 | 1 | `Create Agent Obligation` | 使用先前 exact Offer 创建共享 Obligation；不执行、不还款 | `Obligation: Created`，下一步按钮启用 |
-| 2 | `Execute approved use` | 通过 Mandate-approved、non-withdrawable sandbox rail 执行允许用途 | `Approved use: Executed` |
-| 3 | `Repay Agent obligation` | 使用 Agent 自己的服务器端 credential 进行提前全额 synthetic repayment | `Repayment: $... posted`、余额更新 |
+| 2 | `Execute allowlisted Provider spend` | Execute one Mandate-approved Provider spend through the non-withdrawable sandbox rail | `Provider spend: Allowlisted` |
+| 3 | `Capture revenue and auto-repay` | Capture partial synthetic revenue through the Agent credential and route it automatically through the deterministic repayment waterfall | `Revenue captured` and the remaining principal |
 | 4 | `Verify Agent Evidence` | 读取 Agent-owned immutable Evidence timeline | `Lifecycle verified` 和 verified event 数量 |
 | 5 | `Review Agent obligations` | 打开 Agent 自己的共享 Obligation 位置 | `Obligations` 显示该 Agent position、余额和状态 |
 
@@ -215,7 +215,7 @@ Mandate 激活后，回到 `Agent Workspace` → `Open Agent credit`。页面现
 
 ### 6.5 “Agent 使用这笔钱”具体指什么
 
-当前 MVP 中，Agent 的信用不是可以提到任意钱包的现金余额。`Execute approved use`
+当前 MVP 中，Agent 的信用不是可以提到任意钱包的现金余额。`Execute allowlisted Provider spend`
 表示：
 
 - 使用同一 Active Mandate；
@@ -332,8 +332,8 @@ Passport 不应包含 raw KYC/PII、Agent credential、私钥或完整策略数�
 - [ ] `Request Agent credit and receive Offer` 返回 Decision 与 Offer。
 - [ ] exact Mandate 可由 Principal 激活。
 - [ ] `Create Agent Obligation` 可单独点击。
-- [ ] `Execute approved use` 可单独点击。
-- [ ] `Repay Agent obligation` 可单独点击。
+- [ ] `Execute allowlisted Provider spend` 可单独点击。
+- [ ] `Capture revenue and auto-repay` 可单独点击。
 - [ ] `Verify Agent Evidence` 可单独点击。
 - [ ] `Review Agent obligations` 可打开当前 Agent 的 Obligation。
 - [ ] 页面明确说明用途受限、不可任意提款。
@@ -346,8 +346,8 @@ Passport 不应包含 raw KYC/PII、Agent credential、私钥或完整策略数�
 | `Request & evaluate credit` 灰色 | Subject 或 Consent 尚未完成 | 先点击前两个创建按钮 |
 | Agent 只能看到 handoff 下载 | 进入了开发集成区，或没有加载 Draft/Active Mandate | 回到 `Agent Console` 的 browser-operable 区域 |
 | `Create Agent Obligation` 灰色 | Offer 尚未生成，或 exact Mandate 未激活 | 先运行 application，再由 Principal 激活 |
-| `Execute approved use` 灰色 | Obligation 尚未创建 | 先点击 `Create Agent Obligation` |
-| `Repay Agent obligation` 灰色 | approved use 尚未执行，或余额为零 | 先执行用途；零余额无需重复还款 |
+| `Execute allowlisted Provider spend` 灰色 | Obligation 尚未创建 | 先点击 `Create Agent Obligation` |
+| `Capture revenue and auto-repay` 灰色 | Provider spend 尚未执行，或余额为零 | 先执行 Provider spend；零余额无需重复还款 |
 | `Verify Agent Evidence` 灰色 | 还款未完成 | 先完成当前测试还款 |
 | 看到 hash 但 BaseScan 查不到 | 看到的是 object/Evidence digest，不是 transaction hash | 查看 Base Sepolia anchor 的 transaction/finality/indexer 状态 |
 | Sign in 后又失效 | Session 已过期、角色端口切换或钱包变化 | Sign out，回到正确端口重新 Sign in |

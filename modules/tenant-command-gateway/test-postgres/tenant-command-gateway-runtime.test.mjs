@@ -9,7 +9,9 @@ import {
   createHumanIdentityReference,
   createProviderIntentDelivery,
   createSignedProviderSandboxCallback,
-  hashId
+  hashId,
+  replayAgentCreditLineProjection,
+  verifyCreditLineProjection
 } from "../../../packages/domain/src/index.js";
 import {
   TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
@@ -982,6 +984,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         roleBundle: RoleBundle.AGENT_RUNTIME,
         capabilities: [
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.CREDIT_REQUEST,
           PilotCapability.CREDIT_READ_SELF,
           PilotCapability.CREDIT_EVALUATE_SELF,
@@ -998,6 +1001,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         roleBundle: RoleBundle.AGENT_RUNTIME,
         capabilities: [
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
           PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
           PilotCapability.CREDIT_REQUEST,
@@ -1141,9 +1145,21 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         roleBundle: RoleBundle.AGENT_RUNTIME,
         capabilities: [
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.CREDIT_REQUEST,
           PilotCapability.CREDIT_READ_SELF,
           PilotCapability.CREDIT_EVALUATE_SELF
+        ],
+        now: IDENTITY_NOW
+      }),
+      tenantTwoContinuationAgent: harness.addIdentity({
+        tenantId: TENANT_TWO,
+        actorId: `actor_gateway_two_continuation_agent_${RUN_ID}`,
+        actorType: ActorType.AGENT,
+        roleBundle: RoleBundle.AGENT_RUNTIME,
+        capabilities: [
+          PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF
         ],
         now: IDENTITY_NOW
       }),
@@ -1212,6 +1228,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     await seedIdentity(ownerPool, TENANT_TWO, identities.tenantTwoAgent, {
       controllerActorId: identities.tenantTwoHuman.authenticationContext.actorId
     });
+    await seedIdentity(ownerPool, TENANT_TWO, identities.tenantTwoContinuationAgent, {
+      controllerActorId: identities.tenantTwoHuman.authenticationContext.actorId
+    });
     const capitalPartnerProfile = await seedCapitalPartnerProfile(
       ownerPool,
       TENANT_ONE,
@@ -1276,6 +1295,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
          account_bindings,
          consent_records, human_identity_references, credit_intents,
          risk_decisions, credit_offers, credit_offer_acceptances,
+         workspace_continuation_receipts,
          obligations, obligation_installments, sandbox_execution_receipts,
          sandbox_servicing_actions,
          provider_intent_deliveries, provider_intent_acknowledgements,
@@ -1362,6 +1382,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     const tenantTwoHuman = humanClient(runtime, identities.tenantTwoHuman.authenticationContext);
     const tenantTwoBorrower = humanClient(runtime, identities.tenantTwoBorrower.authenticationContext);
     const tenantTwoAgent = agentClient(runtime, identities.tenantTwoAgent.authenticationContext);
+    const tenantTwoContinuationAgent = agentClient(
+      runtime,
+      identities.tenantTwoContinuationAgent.authenticationContext
+    );
     const tenantTwoRisk = operatorClient(runtime, identities.tenantTwoRisk.authenticationContext);
     const tenantTwoRiskQuery = riskQueryClient(
       runtime,
@@ -3535,10 +3559,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
             "request_credit",
             "accept_credit_offer",
             "execute_sandbox_credit",
+            "provider_spend",
+            "capture_revenue",
             "route_repayment"
           ],
-          allowedProviderIds: [],
-          allowedCategories: [],
+          allowedProviderIds: ["provider_gateway_compute"],
+          allowedCategories: ["compute"],
           perActionLimitMinor: "20000",
           aggregateLimitMinor: "50000"
         }
@@ -3611,6 +3637,126 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         workflowAudit.rows.every((row) => row.authorization_decision === "allow"),
         true
       );
+
+      const persistContinuationCommand = {
+        creditOfferId: agentWorkflow.offer.creditOfferId,
+        receipt: agentWorkflow,
+        idempotencyKey: `persist-agent-continuation-${RUN_ID}-0001`,
+        requestId: `request-persist-agent-continuation-${RUN_ID}`,
+        correlationId: agentWorkflow.correlationId
+      };
+      const persistedContinuation = await tenantOneCreditAgent.persistContinuationReceipt(
+        persistContinuationCommand
+      );
+      assert.equal(persistedContinuation.replayed, false);
+      assert.equal(persistedContinuation.response.persisted, true);
+      assert.equal(persistedContinuation.response.nonAuthorizing, true);
+      assert.equal(persistedContinuation.response.productionAuthority, false);
+      const persistedContinuationReplay = await tenantOneCreditAgent.persistContinuationReceipt(
+        persistContinuationCommand
+      );
+      assert.equal(persistedContinuationReplay.replayed, true);
+      assert.deepEqual(persistedContinuationReplay.response, persistedContinuation.response);
+      await assert.rejects(
+        () => tenantOneCreditAgent.persistContinuationReceipt({
+          ...persistContinuationCommand,
+          receipt: {
+            ...agentWorkflow,
+            offer: {
+              ...agentWorkflow.offer,
+              creditOfferHash: `0x${"00".repeat(32)}`
+            }
+          },
+          idempotencyKey: `persist-agent-continuation-mismatch-${RUN_ID}-0001`,
+          requestId: `request-persist-agent-continuation-mismatch-${RUN_ID}`
+        }),
+        (error) => error.code === "continuation_receipt_projection_mismatch"
+      );
+      await assert.rejects(
+        () => tenantOneAgent.persistContinuationReceipt({
+          ...persistContinuationCommand,
+          idempotencyKey: `persist-agent-continuation-cross-actor-${RUN_ID}-0001`,
+          requestId: `request-persist-agent-continuation-cross-actor-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+
+      const resumedAgentWorkspace = await agentClient(
+        gateway(appPool, harness),
+        identities.tenantOneCreditAgent.authenticationContext
+      ).resumeWorkspace({
+        requestId: `request-restart-resume-agent-continuation-${RUN_ID}`,
+        correlationId: `correlation-restart-resume-agent-continuation-${RUN_ID}`
+      });
+      assert.equal(resumedAgentWorkspace.response.workspaceKind, "agent_runtime");
+      assert.equal(resumedAgentWorkspace.response.serverTruth, true);
+      assert.equal(resumedAgentWorkspace.response.continuationReceipts.length, 1);
+      assert.equal(
+        resumedAgentWorkspace.response.continuationReceipts[0].continuationReceiptId,
+        persistedContinuation.response.continuationReceiptId
+      );
+      assert.deepEqual(
+        resumedAgentWorkspace.response.continuationReceipts[0].receipt,
+        agentWorkflow
+      );
+      const otherAgentWorkspace = await tenantOneAgent.resumeWorkspace({
+        requestId: `request-other-agent-resume-continuation-${RUN_ID}`,
+        correlationId: `correlation-other-agent-resume-continuation-${RUN_ID}`
+      });
+      assert.deepEqual(otherAgentWorkspace.response.continuationReceipts, []);
+      const otherTenantAgentWorkspace = await tenantTwoContinuationAgent.resumeWorkspace({
+        requestId: `request-other-tenant-agent-resume-continuation-${RUN_ID}`,
+        correlationId: `correlation-other-tenant-agent-resume-continuation-${RUN_ID}`
+      });
+      assert.deepEqual(otherTenantAgentWorkspace.response.continuationReceipts, []);
+
+      const continuationContext = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneCreditAgent.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      const continuationRepository = new PostgresCoreRepository({
+        pool: appPool,
+        eventRepository: new PostgresEventRepository({
+          pool: appPool,
+          tenantContext: continuationContext
+        })
+      });
+      const expiredContinuation = await continuationRepository.withTenantTransaction(
+        (client) => continuationRepository.listActiveWorkspaceContinuationReceiptsInTransaction(
+          client,
+          {
+            actorId: identities.tenantOneCreditAgent.authenticationContext.actorId,
+            now: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+            limit: 16
+          }
+        )
+      );
+      assert.deepEqual(expiredContinuation, []);
+
+      const durableContinuation = await ownerPool.query(
+        `SELECT actor_id, subject_id, mandate_id, credit_intent_id,
+                risk_decision_id, credit_offer_id, credit_offer_hash,
+                offer_aggregate_version::int, status, receipt_payload,
+                expires_at > issued_at AS expiry_valid
+           FROM workspace_continuation_receipts
+          WHERE tenant_id = $1 AND id = $2`,
+        [TENANT_ONE, persistedContinuation.response.continuationReceiptId]
+      );
+      assert.deepEqual(durableContinuation.rows, [{
+        actor_id: identities.tenantOneCreditAgent.authenticationContext.actorId,
+        subject_id: creditAgentSubject.response.subjectId,
+        mandate_id: creditAgentMandate.response.mandateId,
+        credit_intent_id: agentWorkflow.creditIntent.creditIntentId,
+        risk_decision_id: agentWorkflow.decision.riskDecisionId,
+        credit_offer_id: agentWorkflow.offer.creditOfferId,
+        credit_offer_hash: agentWorkflow.offer.creditOfferHash,
+        offer_aggregate_version: 1,
+        status: "active",
+        receipt_payload: agentWorkflow,
+        expiry_valid: true
+      }]);
 
       await proveAndActivateAgentAccount({
         controller: tenantOneController,
@@ -4050,6 +4196,66 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       );
       assert.deepEqual(agentAcceptances.map((result) => result.replayed).sort(), [false, true]);
       assert.deepEqual(agentAcceptances[0].response, agentAcceptances[1].response);
+      const replayInvalidWorkspace = await tenantOneCreditAgent.resumeWorkspace({
+        requestId: `request-resume-accepted-offer-continuation-${RUN_ID}`,
+        correlationId: `correlation-resume-accepted-offer-continuation-${RUN_ID}`
+      });
+      assert.deepEqual(replayInvalidWorkspace.response.continuationReceipts, []);
+
+      await continuationRepository.withTenantTransaction(async (client) => {
+        const state = await continuationRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.WORKSPACE_CONTINUATION_RECEIPT,
+          persistedContinuation.response.continuationReceiptId,
+          { lock: true }
+        );
+        const revokedAt = new Date();
+        const event = createCreditEvent({
+          eventType: "workspace_continuation_receipt_revoked",
+          subjectId: state.value.subjectId,
+          payload: {
+            continuationReceiptId: state.value.continuationReceiptId,
+            receiptHash: state.value.receiptHash,
+            reasonCode: "offer_no_longer_current",
+            sandboxOnly: true,
+            productionAuthority: false
+          },
+          now: revokedAt
+        });
+        await continuationRepository.commitCommandInTransaction(client, {
+          aggregateType: "workspace_continuation_receipt",
+          aggregateId: state.value.continuationReceiptId,
+          idempotencyKey: `revoke-agent-continuation-${RUN_ID}-0001`,
+          commandHash: hashId("gateway_test_revoke_continuation", state.value.receiptHash),
+          events: [{
+            aggregateType: "workspace_continuation_receipt",
+            aggregateId: state.value.continuationReceiptId,
+            expectedVersion: state.aggregateVersion,
+            event
+          }],
+          writes: [{
+            type: CoreProjectionType.WORKSPACE_CONTINUATION_RECEIPT,
+            value: {
+              ...state.value,
+              status: "revoked",
+              version: state.value.version + 1,
+              revokedAt: revokedAt.toISOString(),
+              updatedAt: revokedAt.toISOString()
+            },
+            eventId: event.eventId
+          }],
+          response: {
+            continuationReceiptId: state.value.continuationReceiptId,
+            status: "revoked",
+            schemaVersion: "workspace_continuation_receipt_revoked.v1"
+          }
+        });
+      });
+      const revokedWorkspace = await tenantOneCreditAgent.resumeWorkspace({
+        requestId: `request-resume-revoked-continuation-${RUN_ID}`,
+        correlationId: `correlation-resume-revoked-continuation-${RUN_ID}`
+      });
+      assert.deepEqual(revokedWorkspace.response.continuationReceipts, []);
 
       const humanAcceptance = humanAcceptances[0].response;
       const agentAcceptance = agentAcceptances[0].response;
@@ -4619,10 +4825,36 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       );
       const agentExecutionCommand = {
         obligationId: agentAcceptance.obligation.obligationId,
+        payload: {
+          providerId: "provider_gateway_compute",
+          providerCategory: "compute"
+        },
         idempotencyKey: `execute-agent-sandbox-credit-${RUN_ID}-0001`,
         requestId: `request-execute-agent-sandbox-credit-${RUN_ID}`,
         correlationId: `correlation-execute-agent-sandbox-credit-${RUN_ID}`
       };
+      for (const [label, payload] of [
+        ["missing", {}],
+        ["provider", {
+          providerId: "provider_not_allowlisted",
+          providerCategory: "compute"
+        }],
+        ["category", {
+          providerId: "provider_gateway_compute",
+          providerCategory: "unrestricted"
+        }]
+      ]) {
+        await assert.rejects(
+          () => tenantOneCreditAgent.executeSandboxObligation({
+            obligationId: agentAcceptance.obligation.obligationId,
+            payload,
+            idempotencyKey: `execute-agent-sandbox-credit-${label}-${RUN_ID}`,
+            requestId: `request-execute-agent-sandbox-credit-${label}-${RUN_ID}`,
+            correlationId: `correlation-execute-agent-sandbox-credit-${RUN_ID}`
+          }),
+          (error) => error.code === "credit_facility_scope_mismatch"
+        );
+      }
       const agentExecutions = await executeConcurrentDuplicate(
         () => tenantOneCreditAgent.executeSandboxObligation(agentExecutionCommand)
       );
@@ -4634,6 +4866,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         assert.equal(executions[0].response.executionReceipt.withdrawable, false);
         assert.equal(executions[0].response.productionFundsMoved, false);
       }
+      assert.equal(
+        agentExecutions[0].response.executionReceipt.providerId,
+        "provider_gateway_compute"
+      );
+      assert.equal(agentExecutions[0].response.executionReceipt.providerCategory, "compute");
+      assert.equal(agentExecutions[0].response.executionReceipt.purposeCode, "working_capital");
 
       const humanRepaymentCommand = {
         obligationId: humanAcceptance.obligation.obligationId,
@@ -4655,6 +4893,15 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       const agentRepayments = await executeConcurrentDuplicate(
         () => tenantOneCreditAgent.postSandboxRepayment(agentRepaymentCommand)
       );
+      for (const result of agentRepayments) {
+        assert.equal(result.response.revenueCapture.capturedMinor, "3000");
+        assert.equal(
+          result.response.revenueCapture.automaticRepaymentId,
+          result.response.repayment.repaymentId
+        );
+        assert.equal(result.response.revenueCapture.cashflowRoute, "automatic_repayment_only");
+        assert.equal(result.response.revenueCapture.withdrawable, false);
+      }
       for (const repayments of [humanRepayments, agentRepayments]) {
         assert.deepEqual(repayments.map((result) => result.replayed).sort(), [false, true]);
         assert.deepEqual(repayments[0].response, repayments[1].response);
@@ -4690,6 +4937,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(agentLockboxDurability.rowCount, 1);
       const agentLockboxRow = agentLockboxDurability.rows[0];
       const agentLockboxId = agentLockboxRow.id;
+      const agentCreditLineId = agentLockboxRow.credit_line_id;
       assert.match(agentLockboxRow.lockbox_hash, /^0x[0-9a-f]{64}$/);
       assert.equal(agentLockboxRow.subject_id, creditAgentSubject.response.subjectId);
       assert.equal(agentLockboxRow.mandate_id, creditAgentMandate.response.mandateId);
@@ -4698,7 +4946,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(agentLockboxRow.obligation_id, agentAcceptance.obligation.obligationId);
       assert.equal(agentLockboxRow.chain_id, "eip155:84532");
       assert.equal(agentLockboxRow.purpose_code, "working_capital");
-      assert.deepEqual(agentLockboxRow.allowed_provider_ids, []);
+      assert.deepEqual(agentLockboxRow.allowed_provider_ids, ["provider_gateway_compute"]);
       assert.equal(agentLockboxRow.status, "active");
       assert.equal(agentLockboxRow.sandbox_only, true);
       assert.equal(agentLockboxRow.production_funds_moved, false);
@@ -4707,6 +4955,40 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(agentLockboxRow.unrestricted_transfers_allowed, false);
       assert.equal(agentLockboxRow.balance_account_type, "principal_receivable");
       assert.equal(agentLockboxRow.repayment_account_type, "repayment_clearing");
+
+      const [creditLineEventRows, creditLineSnapshotRows] = await Promise.all([
+        ownerPool.query(
+          `SELECT event_type, payload
+             FROM domain_events
+            WHERE tenant_id = $1
+              AND obligation_id = $2
+              AND event_type IN ('credit_line_utilized', 'credit_line_released')
+            ORDER BY recorded_at, aggregate_version`,
+          [TENANT_ONE, agentAcceptance.obligation.obligationId]
+        ),
+        ownerPool.query(
+          `SELECT payload
+             FROM projection_snapshots
+            WHERE tenant_id = $1
+              AND entity_type = 'credit_line'
+              AND entity_id = $2
+            ORDER BY recorded_at DESC, write_sequence DESC
+            LIMIT 1`,
+          [TENANT_ONE, agentCreditLineId]
+        )
+      ]);
+      const replayedCreditLine = replayAgentCreditLineProjection(
+        creditLineEventRows.rows.map((row) => ({
+          eventType: row.event_type,
+          payload: row.payload
+        }))
+      );
+      assert.equal(creditLineSnapshotRows.rowCount, 1);
+      assert.deepEqual(replayedCreditLine, creditLineSnapshotRows.rows[0].payload);
+      assert.equal(verifyCreditLineProjection(replayedCreditLine), true);
+      assert.equal(replayedCreditLine.utilizedMinor, "9000");
+      assert.equal(replayedCreditLine.limitMinor, "12000");
+      assert.equal(replayedCreditLine.schemaVersion, "credit_line.v2");
 
       const agentTenantContext = createTenantSecurityContext({
         tenantId: TENANT_ONE,
@@ -4752,6 +5034,11 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
            (SELECT count(*)::int FROM sandbox_execution_receipts
              WHERE tenant_id = $1 AND sandbox_only AND NOT production_funds_moved
                AND NOT withdrawable) AS receipts,
+           (SELECT count(*)::int FROM sandbox_execution_receipts
+             WHERE tenant_id = $1
+               AND provider_id = 'provider_gateway_compute'
+               AND provider_category = 'compute'
+               AND purpose_code = 'working_capital') AS provider_bound_receipts,
            (SELECT count(*)::int FROM ledger_accounts
              WHERE tenant_id = $1 AND owner_type = 'obligation') AS accounts,
            (SELECT count(*)::int FROM ledger_transactions
@@ -4760,6 +5047,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
              WHERE tenant_id = $1 AND transaction_type = 'sandbox_repayment') AS repayments,
            (SELECT count(*)::int FROM repayment_events
              WHERE tenant_id = $1 AND schema_version = 'repayment.v2') AS repayment_events,
+           (SELECT count(*)::int FROM credit_events
+             WHERE tenant_id = $1 AND event_type = 'revenue_captured') AS revenue_captures,
            (SELECT count(*)::int FROM obligations
              WHERE tenant_id = $1 AND execution_status = 'executed'
                AND status = 'partially_repaid' AND outstanding_minor = 9000) AS partial_obligations,
@@ -4773,10 +5062,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       );
       assert.deepEqual(executionDurability.rows[0], {
         receipts: 2,
+        provider_bound_receipts: 1,
         accounts: 16,
         executions: 2,
         repayments: 2,
         repayment_events: 2,
+        revenue_captures: 1,
         partial_obligations: 2,
         partial_installments: 2,
         balanced: true
@@ -5222,10 +5513,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
               "request_credit",
               "accept_credit_offer",
               "execute_sandbox_credit",
+              "provider_spend",
+              "capture_revenue",
               "route_repayment"
             ],
-            allowedProviderIds: [],
-            allowedCategories: [],
+            allowedProviderIds: ["provider_gateway_compute"],
+            allowedCategories: ["compute"],
             perActionLimitMinor: "10000",
             aggregateLimitMinor: "20000"
           }
@@ -5371,7 +5664,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         };
       };
 
-      const acceptExecute = async ({ client, offer, label }) => {
+      const acceptExecute = async ({ client, offer, label, providerTarget }) => {
         const command = {
           creditOfferId: offer.creditOfferId,
           payload: {
@@ -5399,6 +5692,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         const executions = await executeConcurrentDuplicate(
           () => client.executeSandboxObligation({
             obligationId: obligation.obligationId,
+            payload: providerTarget ?? {},
             idempotencyKey: `phase2-execute-${label}-${RUN_ID}`,
             requestId: `request-phase2-execute-${label}-${RUN_ID}`,
             correlationId: `correlation-phase2-${label}-${RUN_ID}`
@@ -5500,7 +5794,11 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       const agentObligation = await acceptExecute({
         client: tenantOneCreditAgent,
         offer: agentUnderwriting.offer,
-        label: "agent-repaid"
+        label: "agent-repaid",
+        providerTarget: {
+          providerId: "provider_gateway_compute",
+          providerCategory: "compute"
+        }
       });
       await repayFully({
         client: tenantOneCreditAgent,

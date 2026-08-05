@@ -26,6 +26,8 @@ const REPAYMENT_KEYS = Object.freeze(["amountMinor", "sourceCode"]);
 const REQUIRED_CAPABILITIES = Object.freeze([
   "accept_credit_offer",
   "execute_sandbox_credit",
+  "provider_spend",
+  "capture_revenue",
   "route_repayment"
 ]);
 const REPAYMENT_SOURCES = new Set([
@@ -94,7 +96,8 @@ function assertClientConfig(input) {
   }
   if (!REQUIRED_CAPABILITIES.every((capability) => (
     input.manifest.authority.capabilities.includes(capability)
-  ))) {
+  )) || input.manifest.authority.allowedProviderIds.length < 1 ||
+    input.manifest.authority.allowedCategories.length < 1) {
     fail(
       "agent_obligation_workflow_scope_denied",
       "Agent Mandate does not authorize the sandbox Obligation workflow"
@@ -226,7 +229,7 @@ function assertAcceptance(result, offerReceipt, manifest, acknowledgementHash) {
   ) workflowDrift();
 }
 
-function assertExecution(result, acceptedObligation) {
+function assertExecution(result, acceptedObligation, expectedTarget) {
   const response = result.response;
   const obligation = response?.obligation;
   const executionReceipt = response?.executionReceipt;
@@ -243,6 +246,9 @@ function assertExecution(result, acceptedObligation) {
     obligation.status !== "active" ||
     obligation.withdrawable !== false ||
     executionReceipt?.obligationId !== acceptedObligation.obligationId ||
+    executionReceipt.providerId !== expectedTarget.providerId ||
+    executionReceipt.providerCategory !== expectedTarget.providerCategory ||
+    executionReceipt.purposeCode !== expectedTarget.purposeCode ||
     executionReceipt.assetId !== acceptedObligation.assetId ||
     executionReceipt.amountMinor !== acceptedObligation.originalPrincipalMinor ||
     executionReceipt.sandboxOnly !== true ||
@@ -320,14 +326,21 @@ async function executeObligationWorkflow({
     2,
     "pilotExecuteSandboxObligation",
     { resourceType: "obligation", resourceId: acceptedObligation.obligationId },
-    {}
+    {
+      providerId: manifest.authority.allowedProviderIds[0],
+      providerCategory: manifest.authority.allowedCategories[0]
+    }
   );
   const executionResult = await executeCommand(
     execute,
     executionCommand,
     "pilotExecuteSandboxObligation"
   );
-  assertExecution(executionResult, acceptedObligation);
+  assertExecution(executionResult, acceptedObligation, {
+    providerId: manifest.authority.allowedProviderIds[0],
+    providerCategory: manifest.authority.allowedCategories[0],
+    purposeCode: offerReceipt.creditIntent.purposeCode
+  });
 
   const repaymentCommand = tenantCommand(
     workflowId,

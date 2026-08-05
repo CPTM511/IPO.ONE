@@ -657,6 +657,8 @@ export class PostgresReconciliationService {
         UNION ALL SELECT 'credit_intent', id FROM credit_intents
         UNION ALL SELECT 'credit_offer', id FROM credit_offers
         UNION ALL SELECT 'credit_offer_acceptance', id FROM credit_offer_acceptances
+        UNION ALL SELECT 'workspace_continuation_receipt', id
+          FROM workspace_continuation_receipts
         UNION ALL SELECT 'credit_line', id FROM credit_lines
         UNION ALL SELECT 'risk_decision', id FROM risk_decisions
         UNION ALL SELECT 'credit_passport_artifact', id FROM credit_passport_artifacts

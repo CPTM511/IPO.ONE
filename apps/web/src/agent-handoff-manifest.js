@@ -72,6 +72,18 @@ function createScopedAgentHandoffManifest(mandate, status, authorityStatus) {
     HASH.test(mandate.termsHash ?? "") &&
     validStringArray(mandate.capabilities, (value) => MANDATE_CAPABILITIES.has(value), 6) &&
     mandate.capabilities.includes("request_credit") &&
+    Array.isArray(mandate.allowedProviderIds) &&
+    mandate.allowedProviderIds.length <= 32 &&
+    new Set(mandate.allowedProviderIds).size === mandate.allowedProviderIds.length &&
+    mandate.allowedProviderIds.every(validIdentifier) &&
+    Array.isArray(mandate.allowedCategories) &&
+    mandate.allowedCategories.length <= 32 &&
+    new Set(mandate.allowedCategories).size === mandate.allowedCategories.length &&
+    mandate.allowedCategories.every(validIdentifier) &&
+    (
+      !mandate.capabilities.includes("provider_spend") ||
+      (mandate.allowedProviderIds.length > 0 && mandate.allowedCategories.length > 0)
+    ) &&
     validStringArray(mandate.assetIds, validIdentifier, 16) &&
     POSITIVE_MINOR.test(mandate.perActionLimitMinor ?? "") &&
     POSITIVE_MINOR.test(mandate.aggregateLimitMinor ?? "") &&
@@ -92,6 +104,8 @@ function createScopedAgentHandoffManifest(mandate, status, authorityStatus) {
     authority: {
       status: mandate.status,
       capabilities: [...mandate.capabilities],
+      allowedProviderIds: [...mandate.allowedProviderIds],
+      allowedCategories: [...mandate.allowedCategories],
       assetIds: [...mandate.assetIds],
       perActionLimitMinor: mandate.perActionLimitMinor,
       aggregateLimitMinor: mandate.aggregateLimitMinor,

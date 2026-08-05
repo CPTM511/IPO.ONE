@@ -98,6 +98,8 @@
           "requiredCapabilities": [
             "accept_credit_offer",
             "execute_sandbox_credit",
+            "provider_spend",
+            "capture_revenue",
             "route_repayment"
           ],
           "inputSchemaVersion": "agent_credit_offer_workflow_receipt.v1",
@@ -148,7 +150,15 @@
             "request_credit",
             "accept_credit_offer",
             "execute_sandbox_credit",
+            "provider_spend",
+            "capture_revenue",
             "route_repayment"
+          ],
+          "allowedProviderIds": [
+            "provider_gateway_compute"
+          ],
+          "allowedCategories": [
+            "compute"
           ],
           "assetIds": [
             "urn:ipo-one:sandbox-asset:usd-cent"
@@ -297,6 +307,8 @@
           "requiredCapabilities": [
             "accept_credit_offer",
             "execute_sandbox_credit",
+            "provider_spend",
+            "capture_revenue",
             "route_repayment"
           ],
           "inputSchemaVersion": "agent_credit_offer_workflow_receipt.v1",
@@ -347,7 +359,15 @@
             "request_credit",
             "accept_credit_offer",
             "execute_sandbox_credit",
+            "provider_spend",
+            "capture_revenue",
             "route_repayment"
+          ],
+          "allowedProviderIds": [
+            "provider_gateway_compute"
+          ],
+          "allowedCategories": [
+            "compute"
           ],
           "assetIds": [
             "urn:ipo-one:sandbox-asset:usd-cent"
@@ -497,6 +517,8 @@
           "requiredCapabilities": [
             "accept_credit_offer",
             "execute_sandbox_credit",
+            "provider_spend",
+            "capture_revenue",
             "route_repayment"
           ],
           "inputSchemaVersion": "agent_credit_offer_workflow_receipt.v1",

@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import {
   PinnedJwksResolver,
@@ -34,10 +34,12 @@ const PROVIDER_KEYS = new Set([
   "providerId",
   "tokenEndpoint"
 ]);
-const WORKLOAD_KEYS = new Set(["allowedAlgorithms", "audience", "issuer", "jwksUri"]);
+const WORKLOAD_V1_KEYS = new Set(["allowedAlgorithms", "audience", "issuer", "jwksUri"]);
+const WORKLOAD_V2_KEYS = new Set(["allowedAlgorithms", "audience", "issuer", "publicJwks"]);
 const ROOT_KEYS = new Set(["oidcProviders", "schemaVersion", "wallet", "workload"]);
 const WALLET_KEYS = new Set(["clientId", "enabled", "issuer"]);
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
+const VERCEL_SECRET_REFERENCE = /^vercel:\/\/environment\/production\/([A-Z][A-Z0-9_]{2,127})@sha256:([0-9a-f]{64})$/;
 
 function configError(message = "Production environment configuration is invalid") {
   return new DomainError("invalid_production_environment", message);
@@ -75,13 +77,64 @@ async function readBounded(path, maximum) {
   return bytes.toString("utf8").trim();
 }
 
-async function readKeyFile(environment, name) {
-  const path = required(environment, name, /^\/.{1,4094}$/u, 4_096);
-  const encoded = await readBounded(path, 256);
-  if (!BASE64URL.test(encoded)) throw configError(`${name} does not contain a base64url key`);
+function inlineSecret(environment, name, maximum) {
+  const value = required(environment, name, /^[^\0\r\n]+$/u, maximum);
+  return value.trim();
+}
+
+function assertVercelSecretReference(environment, referenceName, valueName, value) {
+  const reference = required(
+    environment,
+    referenceName,
+    /^vercel:\/\/environment\/production\/.+$/u,
+    256
+  );
+  const match = VERCEL_SECRET_REFERENCE.exec(reference);
+  const digest = createHash("sha256").update(value).digest("hex");
+  if (!match || match[1] !== valueName || match[2] !== digest) {
+    throw configError(`${referenceName} does not bind the exact Vercel secret version`);
+  }
+}
+
+async function readDeploymentSecret(environment, {
+  fileName,
+  valueName,
+  referenceName,
+  maximum,
+  vercelSandbox
+}) {
+  if (vercelSandbox) {
+    if (environment[fileName] !== undefined) {
+      throw configError(`${fileName} is not allowed in the Vercel Sandbox`);
+    }
+    const value = inlineSecret(environment, valueName, maximum);
+    assertVercelSecretReference(environment, referenceName, valueName, value);
+    return value;
+  }
+  if (environment[valueName] !== undefined) {
+    throw configError(`${valueName} is only allowed in the Vercel Sandbox`);
+  }
+  const path = required(environment, fileName, /^\/.{1,4094}$/u, 4_096);
+  return readBounded(path, maximum);
+}
+
+async function readKey(environment, {
+  fileName,
+  valueName,
+  referenceName,
+  vercelSandbox
+}) {
+  const encoded = await readDeploymentSecret(environment, {
+    fileName,
+    valueName,
+    referenceName,
+    maximum: 256,
+    vercelSandbox
+  });
+  if (!BASE64URL.test(encoded)) throw configError(`${valueName} does not contain a base64url key`);
   const key = Buffer.from(encoded, "base64url");
   if (key.length < 32 || key.length > 64 || key.toString("base64url") !== encoded) {
-    throw configError(`${name} does not contain a 32-64 byte key`);
+    throw configError(`${valueName} does not contain a 32-64 byte key`);
   }
   return key;
 }
@@ -142,6 +195,22 @@ function algorithms(value) {
   return Object.freeze([...value]);
 }
 
+function inlinePublicJwks(value) {
+  const jwks = exactObject("workload public JWKS", value, new Set(["keys"]));
+  if (!Array.isArray(jwks.keys) || jwks.keys.length < 1 || jwks.keys.length > 8) {
+    throw configError("workload public JWKS is invalid");
+  }
+  const privateFields = new Set(["d", "p", "q", "dp", "dq", "qi", "oth", "k"]);
+  for (const key of jwks.keys) {
+    if (
+      !key || typeof key !== "object" || Array.isArray(key) ||
+      Object.values(Object.getOwnPropertyDescriptors(key)).some((descriptor) => descriptor.get || descriptor.set) ||
+      Object.keys(key).some((field) => privateFields.has(field))
+    ) throw configError("workload public JWKS contains invalid or private key material");
+  }
+  return Object.freeze({ keys: Object.freeze(jwks.keys.map((key) => Object.freeze({ ...key }))) });
+}
+
 function constantTimeMatch(actual, expected) {
   if (typeof actual !== "string") return false;
   const left = Buffer.from(actual);
@@ -157,16 +226,24 @@ function oneHeader(request, name, maximum = 4_096) {
   return value;
 }
 
-async function loadProviderConfig(environment, publicOrigin) {
-  const path = required(environment, "IPO_ONE_IDENTITY_CONFIG_FILE", /^\/.{1,4094}$/u, 4_096);
-  const source = await readBounded(path, 64 * 1024);
+async function loadProviderConfig(environment, publicOrigin, { vercelSandbox }) {
+  const source = await readDeploymentSecret(environment, {
+    fileName: "IPO_ONE_IDENTITY_CONFIG_FILE",
+    valueName: "IPO_ONE_IDENTITY_CONFIG_JSON",
+    referenceName: "IPO_ONE_IDP_CONFIGURATION_REF",
+    maximum: 64 * 1024,
+    vercelSandbox
+  });
   const config = parseStrictJson(source, {
     maximumBytes: 64 * 1024,
     maximumDepth: 8,
     maximumKeys: 256
   });
   exactObject("identity config", config, ROOT_KEYS);
-  if (config.schemaVersion !== "ipo_one_production_identity_config.v1") {
+  if (!new Set([
+    "ipo_one_production_identity_config.v1",
+    "ipo_one_production_identity_config.v2"
+  ]).has(config.schemaVersion)) {
     throw configError("identity config schemaVersion is invalid");
   }
   if (!Array.isArray(config.oidcProviders) || config.oidcProviders.length > 8) {
@@ -174,10 +251,13 @@ async function loadProviderConfig(environment, publicOrigin) {
   }
   const oidcClientSecret = config.oidcProviders.length === 0
     ? undefined
-    : await readBounded(
-        required(environment, "IPO_ONE_OIDC_CLIENT_SECRET_FILE", /^\/.{1,4094}$/u, 4_096),
-        1_024
-      );
+    : await readDeploymentSecret(environment, {
+        fileName: "IPO_ONE_OIDC_CLIENT_SECRET_FILE",
+        valueName: "IPO_ONE_OIDC_CLIENT_SECRET",
+        referenceName: "IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF",
+        maximum: 1_024,
+        vercelSandbox
+      });
   if (oidcClientSecret !== undefined && oidcClientSecret.length < 8) {
     throw configError("OIDC client secret is invalid");
   }
@@ -213,14 +293,27 @@ async function loadProviderConfig(environment, publicOrigin) {
     throw configError("OIDC provider IDs must be unique");
   }
 
-  const workload = exactObject("workload identity", config.workload, WORKLOAD_KEYS);
+  const inlineWorkloadKeys = config.schemaVersion === "ipo_one_production_identity_config.v2";
+  if (vercelSandbox !== inlineWorkloadKeys) {
+    throw configError("Vercel Sandbox requires identity config v2 with inline public workload keys");
+  }
+  const workload = inlineWorkloadKeys
+    ? exactObject("workload identity", config.workload, WORKLOAD_V2_KEYS)
+    : exactObject("workload identity", config.workload, WORKLOAD_V1_KEYS);
   const workloadAlgorithms = algorithms(workload.allowedAlgorithms);
   const workloadIssuer = exactHttpsUrl("workload issuer", workload.issuer, { originOnly: true }).origin;
-  const workloadJwks = exactHttpsUrl("workload JWKS URI", workload.jwksUri).href;
+  const workloadJwks = inlineWorkloadKeys
+    ? inlinePublicJwks(workload.publicJwks)
+    : undefined;
+  const workloadJwksUri = inlineWorkloadKeys
+    ? undefined
+    : exactHttpsUrl("workload JWKS URI", workload.jwksUri).href;
   const machineResolver = new PinnedJwksResolver({
     issuer: workloadIssuer,
     allowedAlgorithms: workloadAlgorithms,
-    fetchJwks: ({ signal }) => fetchBoundedJson(workloadJwks, signal)
+    fetchJwks: inlineWorkloadKeys
+      ? async () => workloadJwks
+      : ({ signal }) => fetchBoundedJson(workloadJwksUri, signal)
   });
 
   const walletConfig = exactObject("wallet identity", config.wallet, WALLET_KEYS);
@@ -256,6 +349,27 @@ export async function loadProductionClosedPilotEnvironment(environment = process
   if (environment.NODE_ENV !== "production") {
     throw configError("NODE_ENV must be production");
   }
+  const vercelSandbox = environment.IPO_ONE_DEPLOYMENT_PROFILE === "vercel_sandbox";
+  if (
+    environment.IPO_ONE_DEPLOYMENT_PROFILE !== undefined && !vercelSandbox
+  ) throw configError("IPO_ONE_DEPLOYMENT_PROFILE is invalid");
+  if (vercelSandbox && (
+    environment.VERCEL !== "1" ||
+    environment.VERCEL_ENV !== "production" ||
+    environment.VERCEL_TARGET_ENV !== "production" ||
+    environment.IPO_ONE_DEPLOYMENT_MODE !== "vercel_sandbox" ||
+    !new Set(["primary", "risk"]).has(environment.IPO_ONE_VERCEL_PROJECT_ROLE) ||
+    environment.IPO_ONE_NO_REAL_FUNDS_ACK !== "I_UNDERSTAND_DEPLOYABLE_SANDBOX_NO_REAL_FUNDS"
+  )) {
+    throw configError("Vercel Sandbox deployment authority is invalid");
+  }
+  if (
+    vercelSandbox &&
+    process.env.IPO_ONE_BUNDLED_RELEASE_ID !== undefined &&
+    environment.IPO_ONE_RELEASE_ID !== process.env.IPO_ONE_BUNDLED_RELEASE_ID
+  ) {
+    throw configError("IPO_ONE_RELEASE_ID does not match the bundled source commit");
+  }
   const runtimeConfig = loadAuthenticationRuntimeConfig(environment);
   if (runtimeConfig.mode !== "closed_pilot" || runtimeConfig.deploymentGateSatisfied !== true) {
     throw configError("closed-pilot authentication approval is required");
@@ -265,10 +379,30 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     required(environment, "IPO_ONE_PUBLIC_ORIGIN", /^https:\/\/.+$/u, 2_048),
     { originOnly: true }
   );
-  const referenceHashKey = await readKeyFile(environment, "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE");
-  const encryptionKey = await readKeyFile(environment, "IPO_ONE_AUTH_ENCRYPTION_KEY_FILE");
-  const edgeAssertionKey = await readKeyFile(environment, "IPO_ONE_EDGE_ASSERTION_KEY_FILE");
-  const identity = await loadProviderConfig(environment, browserOrigin);
+  if (vercelSandbox && browserOrigin.host !== environment.VERCEL_PROJECT_PRODUCTION_URL) {
+    throw configError("IPO_ONE_PUBLIC_ORIGIN must match the Vercel production project URL");
+  }
+  const referenceHashKey = await readKey(environment, {
+    fileName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE",
+    valueName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY",
+    referenceName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+    vercelSandbox
+  });
+  const encryptionKey = await readKey(environment, {
+    fileName: "IPO_ONE_AUTH_ENCRYPTION_KEY_FILE",
+    valueName: "IPO_ONE_AUTH_ENCRYPTION_KEY",
+    referenceName: "IPO_ONE_AUTH_ENCRYPTION_KEY_REF",
+    vercelSandbox
+  });
+  const edgeAssertionKey = vercelSandbox
+    ? undefined
+    : await readKey(environment, {
+        fileName: "IPO_ONE_EDGE_ASSERTION_KEY_FILE",
+        valueName: "IPO_ONE_EDGE_ASSERTION_KEY",
+        referenceName: "IPO_ONE_EDGE_ASSERTION_KEY_REF",
+        vercelSandbox
+      });
+  const identity = await loadProviderConfig(environment, browserOrigin, { vercelSandbox });
   const proofAdapters = Object.freeze([
     BASE_SEPOLIA_PROFILE,
     X_LAYER_TESTNET_PROFILE
@@ -281,15 +415,21 @@ export async function loadProductionClosedPilotEnvironment(environment = process
   if (!Number.isSafeInteger(port) || port < 1_024 || port > 65_535) throw configError("PORT is invalid");
   const gatewayPool = createPostgresPool({
     connectionString: required(environment, "IPO_ONE_GATEWAY_DATABASE_URL", /^postgres(?:ql)?:\/\/.+$/u),
-    max: 16,
-    applicationName: "ipo-one-production-gateway"
+    max: vercelSandbox ? 1 : 16,
+    idleTimeoutMillis: vercelSandbox ? 5_000 : 30_000,
+    allowExitOnIdle: vercelSandbox,
+    applicationName: vercelSandbox ? "ipo-one-vercel-gateway" : "ipo-one-production-gateway"
   });
   const authenticationPool = createPostgresPool({
     connectionString: required(environment, "IPO_ONE_AUTH_DATABASE_URL", /^postgres(?:ql)?:\/\/.+$/u),
-    max: 8,
-    applicationName: "ipo-one-production-authentication"
+    max: vercelSandbox ? 1 : 8,
+    idleTimeoutMillis: vercelSandbox ? 5_000 : 30_000,
+    allowExitOnIdle: vercelSandbox,
+    applicationName: vercelSandbox
+      ? "ipo-one-vercel-authentication"
+      : "ipo-one-production-authentication"
   });
-  const edgeAssertion = edgeAssertionKey.toString("base64url");
+  const edgeAssertion = edgeAssertionKey?.toString("base64url");
 
   return Object.freeze({
     gatewayPool,
@@ -299,6 +439,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     systemActorId: required(environment, "IPO_ONE_SYSTEM_ACTOR_ID", /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/u, 128),
     policyVersion: required(environment, "IPO_ONE_POLICY_VERSION", /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/u, 256),
     releaseId: required(environment, "IPO_ONE_RELEASE_ID", /^[0-9a-f]{40}$/u, 40),
+    deploymentRole: vercelSandbox ? environment.IPO_ONE_VERCEL_PROJECT_ROLE : "container",
     port,
     runtimeConfig,
     referenceHashKey,
@@ -312,9 +453,25 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     machineAudience: identity.machineAudience,
     machineResolver: identity.machineResolver,
     verifyEdgeRequest(request) {
+      if (vercelSandbox) {
+        const vercelId = request.headers["x-vercel-id"];
+        const deploymentUrl = request.headers["x-vercel-deployment-url"];
+        return (
+          typeof vercelId === "string" &&
+          typeof deploymentUrl === "string" &&
+          /^[a-z0-9-]{2,32}(?:::[a-z0-9-]{2,128}){1,3}$/.test(vercelId) &&
+          deploymentUrl === environment.VERCEL_URL
+        );
+      }
       return constantTimeMatch(request.headers["x-ipo-one-edge-assertion"], edgeAssertion);
     },
     getTrustedMtlsEvidence(request) {
+      if (vercelSandbox) {
+        if (request.headers["x-ipo-one-client-cert-sha256"] !== undefined) {
+          throw configError("Vercel Sandbox rejects untrusted client certificate headers");
+        }
+        return undefined;
+      }
       const authorization = request.headers.authorization;
       if (typeof authorization !== "string" || !authorization.startsWith("Bearer ")) return undefined;
       return createTrustedMtlsSenderEvidence({

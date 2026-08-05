@@ -106,13 +106,13 @@
       "journey": "agent",
       "view": "agent-console",
       "id": "agentOnlineExecuteBtn",
-      "labels": ["Execute approved use"]
+      "labels": ["Execute allowlisted Provider spend"]
     },
     {
       "journey": "agent",
       "view": "agent-console",
       "id": "agentOnlineRepayBtn",
-      "labels": ["Repay Agent obligation"]
+      "labels": ["Capture revenue and auto-repay"]
     },
     {
       "journey": "agent",

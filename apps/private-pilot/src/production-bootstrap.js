@@ -106,6 +106,7 @@ const PROFILES = Object.freeze({
     roleBundle: RoleBundle.AGENT_RUNTIME,
     capabilities: Object.freeze([
       PilotCapability.SUBJECT_READ_SELF,
+      PilotCapability.WORKSPACE_RESUME_SELF,
       PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
       PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
       PilotCapability.CREDIT_REQUEST,
@@ -146,6 +147,7 @@ const GATEWAY_MUTATION_TABLES = Object.freeze([
   "agent_account_challenges", "agent_account_proof_attempts", "account_bindings",
   "consent_records", "human_identity_references", "credit_intents",
   "risk_decisions", "credit_offers", "credit_offer_acceptances",
+  "workspace_continuation_receipts",
   "obligations", "obligation_installments", "sandbox_execution_receipts",
   "sandbox_servicing_actions", "provider_intent_deliveries",
   "provider_intent_acknowledgements", "provider_callback_inbox",
@@ -224,15 +226,18 @@ function normalizeConfig(value) {
       "kind", "profile", "actorId", "clientId", "issuer", "externalSubject",
       "invitationId", "expiresAt"
     ], ["controllerActorId", "senderThumbprint"]);
-    if (!new Set(["human_wallet", "agent_mtls"]).has(entry.kind)) throw fail("credential kind is invalid");
+    if (!new Set(["human_wallet", "agent_mtls", "agent_dpop"]).has(entry.kind)) {
+      throw fail("credential kind is invalid");
+    }
+    const agentCredential = new Set(["agent_mtls", "agent_dpop"]).has(entry.kind);
     const profile = PROFILES[entry.profile];
-    if (!profile || (entry.kind === "agent_mtls") !== (profile.actorType === ActorType.AGENT)) {
+    if (!profile || agentCredential !== (profile.actorType === ActorType.AGENT)) {
       throw fail("credential profile is invalid");
     }
-    if (entry.kind === "agent_mtls") {
+    if (agentCredential) {
       id("controllerActorId", entry.controllerActorId);
       if (typeof entry.senderThumbprint !== "string" || !BASE64URL.test(entry.senderThumbprint) || entry.senderThumbprint.length !== 43) {
-        throw fail("Agent mTLS thumbprint is invalid");
+        throw fail("Agent sender thumbprint is invalid");
       }
     } else if (entry.controllerActorId !== undefined || entry.senderThumbprint !== undefined) {
       throw fail("Human wallet credential contains Agent-only fields");
@@ -267,10 +272,10 @@ function normalizeConfig(value) {
     throw fail("one unique external subject binding per Credential is required");
   }
   const agentThumbprints = credentials
-    .filter(({ kind }) => kind === "agent_mtls")
+    .filter(({ kind }) => kind === "agent_mtls" || kind === "agent_dpop")
     .map(({ senderThumbprint }) => senderThumbprint);
   if (new Set(agentThumbprints).size !== agentThumbprints.length) {
-    throw fail("one unique mTLS sender constraint per Agent is required");
+    throw fail("one unique sender constraint per Agent is required");
   }
   for (const credential of credentials) {
     if (credential.controllerActorId) {
@@ -513,7 +518,8 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
       "pilot.invitation",
       `${config.tenant.tenantId}\0${credential.invitationId}`
     );
-    const senderThumbprint = credential.kind === "agent_mtls"
+    const agentCredential = credential.kind === "agent_mtls" || credential.kind === "agent_dpop";
+    const senderThumbprint = agentCredential
       ? credential.senderThumbprint
       : referenceHasher.hash("bootstrap.host-session", credential.actorId);
     const senderConstraintRefHash = referenceHasher.hash("sender.constraint", senderThumbprint);
@@ -528,13 +534,16 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
     if (invitationBinding.rowCount > 1) {
       throw fail("invitation history is not unique");
     }
-    if (credential.kind === "agent_mtls") {
+    if (agentCredential) {
+      const clientAuthenticationMethod = credential.kind === "agent_mtls"
+        ? ClientAuthenticationMethod.MTLS
+        : ClientAuthenticationMethod.PRIVATE_KEY_JWT;
       const senderBinding = await client.query(
         `SELECT actor_id
            FROM authentication_credentials
-          WHERE tenant_id=$1 AND client_authentication_method='mtls'
-            AND sender_constraint_ref_hash=$2`,
-        [config.tenant.tenantId, senderConstraintRefHash]
+          WHERE tenant_id=$1 AND client_authentication_method=$2
+            AND sender_constraint_ref_hash=$3`,
+        [config.tenant.tenantId, clientAuthenticationMethod, senderConstraintRefHash]
       );
       if (
         senderBinding.rowCount > 1 ||
@@ -543,7 +552,7 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
           senderBinding.rows[0].actor_id !== credential.actorId
         )
       ) {
-        throw fail("mTLS sender constraint is already bound");
+        throw fail("Agent sender constraint is already bound");
       }
     }
     const existing = await client.query(
@@ -569,7 +578,9 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
         stored.client_authentication_method !==
           (credential.kind === "agent_mtls"
             ? ClientAuthenticationMethod.MTLS
-            : ClientAuthenticationMethod.SIWE) ||
+            : credential.kind === "agent_dpop"
+              ? ClientAuthenticationMethod.PRIVATE_KEY_JWT
+              : ClientAuthenticationMethod.SIWE) ||
         new Date(stored.expires_at).toISOString() !== credential.expiresAt ||
         invitationBinding.rowCount !== 1 ||
         invitationBinding.rows[0].credential_id !== stored.id ||
@@ -584,8 +595,16 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
       throw fail("invitation is already bound");
     }
     const credentialId = createOperationalId("credential");
-    const clientAuthenticationMethod = credential.kind === "agent_mtls" ? ClientAuthenticationMethod.MTLS : ClientAuthenticationMethod.SIWE;
-    const senderConstraintMethod = credential.kind === "agent_mtls" ? SenderConstraintMethod.MTLS : SenderConstraintMethod.HOST_SESSION;
+    const clientAuthenticationMethod = credential.kind === "agent_mtls"
+      ? ClientAuthenticationMethod.MTLS
+      : credential.kind === "agent_dpop"
+        ? ClientAuthenticationMethod.PRIVATE_KEY_JWT
+        : ClientAuthenticationMethod.SIWE;
+    const senderConstraintMethod = credential.kind === "agent_mtls"
+      ? SenderConstraintMethod.MTLS
+      : credential.kind === "agent_dpop"
+        ? SenderConstraintMethod.DPOP
+        : SenderConstraintMethod.HOST_SESSION;
     await client.query(
       `INSERT INTO authentication_credentials(id,tenant_id,actor_id,actor_type,issuer,subject_ref_hash,client_id,client_authentication_method,sender_constraint_method,sender_constraint_ref_hash,roles,allowed_capabilities,policy_version,status,version,expires_at,created_at,updated_at,schema_version)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,'active',1,$14,$15,$15,'authentication_credential.v1')`,

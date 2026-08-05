@@ -79,7 +79,15 @@
       ]
     },
     "executionReceipt": {
-      "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/sandboxExecutionReceiptSummary"
+      "allOf": [
+        {
+          "$ref": "https://schemas.ipo.one/v2/tenant-protocol-result.schema.json#/$defs/sandboxExecutionReceiptSummary"
+        },
+        {
+          "type": "object",
+          "required": ["providerId", "providerCategory", "purposeCode"]
+        }
+      ]
     },
     "principalLedgerTransactionId": { "$ref": "#/$defs/identifier" },
     "repayment": {

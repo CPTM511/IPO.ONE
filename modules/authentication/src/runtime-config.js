@@ -1,6 +1,7 @@
 import { authenticationError } from "./security-utils.js";
 
 const AUTHENTICATION_MODES = new Set(["disabled", "local_test", "closed_pilot"]);
+const IMMUTABLE_SECRET_REFERENCE = /^(?:projects\/[a-z][a-z0-9-]{4,61}\/secrets\/[A-Za-z0-9_-]{1,255}\/versions\/[1-9][0-9]*|vercel:\/\/environment\/production\/[A-Z][A-Z0-9_]{2,127}@sha256:[0-9a-f]{64})$/;
 const trustedRuntimeConfigs = new WeakSet();
 
 function trustedConfig(value) {
@@ -37,11 +38,11 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
       const value = environment[name];
       if (
         typeof value !== "string" ||
-        !/^projects\/[a-z][a-z0-9-]{4,61}\/secrets\/[A-Za-z0-9_-]{1,255}\/versions\/[1-9][0-9]*$/.test(value)
+        !IMMUTABLE_SECRET_REFERENCE.test(value)
       ) {
         throw authenticationError(
           "authentication_deployment_gate_closed",
-          "closed-pilot authentication requires approved secret-manager references"
+          "closed-pilot authentication requires approved immutable secret references"
         );
       }
     }

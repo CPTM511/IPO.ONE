@@ -185,6 +185,7 @@ async function composeProductionClosedPilotRuntime(input) {
       ownsRlsTable: false
     }),
     authenticationBoundary: humanAccess.deploymentBoundary,
+    handleRequest: host.handleRequest,
     async listen() {
       if (started) throw new DomainError("production_runtime_already_started", "Production runtime is already active");
       const address = await host.listen();

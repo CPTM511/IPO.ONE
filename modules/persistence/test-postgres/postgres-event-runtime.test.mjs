@@ -371,7 +371,8 @@ const TENANT_OWNED_TABLES = [
   "trading_testnet_reconciliation_runs",
   "trading_testnet_settlement_runs",
   "transfer_intents",
-  "transfer_quotes"
+  "transfer_quotes",
+  "workspace_continuation_receipts"
 ];
 
 async function withTenantTransaction(pool, context, operation) {
@@ -1084,12 +1085,20 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0046_evidence_anchor_coverage_guard",
         "0047_chain_001f_anchor_binding_repair",
         "0048_synthetic_capital_partner_marketplace",
-        "0049_agent_lockbox_projection"
+        "0049_agent_lockbox_projection",
+        "0050_canonical_credit_line_projection",
+        "0051_durable_workspace_continuation_receipts",
+        "0052_provider_bound_sandbox_execution_receipts",
+        "0053_workspace_continuation_tenant_guard"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 49 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 53 }), [
+        "0053_workspace_continuation_tenant_guard",
+        "0052_provider_bound_sandbox_execution_receipts",
+        "0051_durable_workspace_continuation_receipts",
+        "0050_canonical_credit_line_projection",
         "0049_agent_lockbox_projection",
         "0048_synthetic_capital_partner_marketplace",
         "0047_chain_001f_anchor_binding_repair",
@@ -1189,10 +1198,18 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0046_evidence_anchor_coverage_guard",
         "0047_chain_001f_anchor_binding_repair",
         "0048_synthetic_capital_partner_marketplace",
-        "0049_agent_lockbox_projection"
+        "0049_agent_lockbox_projection",
+        "0050_canonical_credit_line_projection",
+        "0051_durable_workspace_continuation_receipts",
+        "0052_provider_bound_sandbox_execution_receipts",
+        "0053_workspace_continuation_tenant_guard"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 47 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 51 }), [
+        "0053_workspace_continuation_tenant_guard",
+        "0052_provider_bound_sandbox_execution_receipts",
+        "0051_durable_workspace_continuation_receipts",
+        "0050_canonical_credit_line_projection",
         "0049_agent_lockbox_projection",
         "0048_synthetic_capital_partner_marketplace",
         "0047_chain_001f_anchor_binding_repair",
@@ -1301,7 +1318,11 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0046_evidence_anchor_coverage_guard",
         "0047_chain_001f_anchor_binding_repair",
         "0048_synthetic_capital_partner_marketplace",
-        "0049_agent_lockbox_projection"
+        "0049_agent_lockbox_projection",
+        "0050_canonical_credit_line_projection",
+        "0051_durable_workspace_continuation_receipts",
+        "0052_provider_bound_sandbox_execution_receipts",
+        "0053_workspace_continuation_tenant_guard"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))

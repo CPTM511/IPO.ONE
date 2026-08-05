@@ -33,3 +33,4 @@ export * from "./tenant-foundation-handlers.js";
 export * from "./tenant-command-gateway.js";
 export * from "./tenant-command-handler-registry.js";
 export * from "./workspace-resume-handlers.js";
+export * from "./workspace-continuation-handlers.js";

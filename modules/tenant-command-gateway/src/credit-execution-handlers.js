@@ -15,6 +15,7 @@ import {
   createAgentLockboxProjection,
   createCreditEvent,
   createSandboxLedgerAccounts,
+  deriveAgentCreditLineProjection,
   executeSandboxObligation,
   hashId,
   postSandboxRepayment,
@@ -41,10 +42,23 @@ function unavailable() {
 }
 
 function normalizeExecutionPayload(payload) {
+  const keys = payload && typeof payload === "object" && !Array.isArray(payload)
+    ? Object.keys(payload)
+    : [];
+  const hasProviderId = Object.hasOwn(payload ?? {}, "providerId");
+  const hasProviderCategory = Object.hasOwn(payload ?? {}, "providerCategory");
   if (
     !payload || typeof payload !== "object" || Array.isArray(payload) ||
-    Object.keys(payload).length !== 1 ||
-    !Object.hasOwn(payload, "actionConfirmation")
+    ![1, 3].includes(keys.length) ||
+    keys.some((key) => !["actionConfirmation", "providerId", "providerCategory"].includes(key)) ||
+    !Object.hasOwn(payload, "actionConfirmation") ||
+    hasProviderId !== hasProviderCategory ||
+    (hasProviderId && (
+      typeof payload.providerId !== "string" ||
+      !/^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/.test(payload.providerId) ||
+      typeof payload.providerCategory !== "string" ||
+      !/^[a-z][a-z0-9_.-]{1,95}$/.test(payload.providerCategory)
+    ))
   ) {
     throw new DomainError(
       "invalid_tenant_command_payload",
@@ -145,7 +159,47 @@ async function loadObligationContext({
   if (risk.frozenCreditLineCount > 0) {
     throw new DomainError("credit_state_frozen", "credit state is frozen");
   }
-  return { state, obligation, authority: authorityState.value };
+  const [intentState, decisionState, offerState, acceptanceState] = await Promise.all([
+    coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.CREDIT_INTENT,
+      obligation.creditIntentId,
+      { lock: true }
+    ),
+    coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.RISK_DECISION,
+      obligation.riskDecisionId,
+      { lock: true }
+    ),
+    coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.CREDIT_OFFER,
+      obligation.creditOfferId,
+      { lock: true }
+    ),
+    coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.CREDIT_OFFER_ACCEPTANCE,
+      obligation.creditOfferAcceptanceId,
+      { lock: true }
+    )
+  ]);
+  if (!intentState || !decisionState || !offerState || !acceptanceState) {
+    throw new DomainError(
+      "credit_facility_unavailable",
+      "Offer, Policy, Acceptance, or Facility provenance is unavailable"
+    );
+  }
+  return {
+    state,
+    obligation,
+    authority: authorityState.value,
+    intent: intentState.value,
+    decision: decisionState.value,
+    offer: offerState.value,
+    acceptance: acceptanceState.value
+  };
 }
 
 function ledgerPostedEvent({ transaction, obligation, requestId, correlationId, actorId, now }) {
@@ -178,6 +232,13 @@ function summarizeExecutionReceipt(receipt) {
     obligationId: receipt.obligationId,
     assetId: receipt.assetId,
     amountMinor: receipt.amountMinor,
+    ...(receipt.providerId
+      ? {
+          providerId: receipt.providerId,
+          providerCategory: receipt.providerCategory,
+          purposeCode: receipt.purposeCode
+        }
+      : {}),
     adapterId: receipt.adapterId,
     adapterVersion: receipt.adapterVersion,
     adapterKeyId: receipt.adapterKeyId,
@@ -190,11 +251,32 @@ function summarizeExecutionReceipt(receipt) {
   };
 }
 
+function assertAgentProviderTarget({ input, authority, creditLine }) {
+  if (
+    !input.providerId || !input.providerCategory ||
+    !Array.isArray(authority.allowedProviderIds) ||
+    !Array.isArray(authority.allowedCategories) ||
+    !Array.isArray(creditLine.facility.allowedProviderIds) ||
+    !authority.allowedProviderIds.includes(input.providerId) ||
+    !authority.allowedCategories.includes(input.providerCategory) ||
+    !creditLine.facility.allowedProviderIds.includes(input.providerId)
+  ) {
+    throw new DomainError(
+      "credit_facility_scope_mismatch",
+      "Agent execution target is outside the current Mandate and Facility scope"
+    );
+  }
+}
+
 async function planAgentCreditLineUtilization({
   client,
   coreRepository,
   obligation,
   authority,
+  intent,
+  decision,
+  offer,
+  acceptance,
   principalDeltaMinor,
   now
 }) {
@@ -206,33 +288,22 @@ async function planAgentCreditLineUtilization({
   if (current && current.status !== CreditLineStatus.APPROVED) {
     throw new DomainError("credit_state_frozen", "Agent CreditLine is not approved");
   }
-  const previousUtilized = BigInt(current?.utilizedMinor ?? "0");
-  const nextUtilized = previousUtilized + BigInt(principalDeltaMinor);
-  const authorityLimit = BigInt(authority.aggregateLimitMinor);
-  const limit = current ? BigInt(current.limitMinor) : authorityLimit;
-  if (nextUtilized < 0n || nextUtilized > limit || nextUtilized > authorityLimit) {
-    throw new DomainError("sandbox_capacity_exhausted", "Agent CreditLine utilization is unavailable");
-  }
-  const creditLineId = current?.creditLineId ?? `credit_line_${hashId("shared_sandbox_credit_line", {
-    subjectId: obligation.subjectId,
-    assetId: obligation.assetId
-  }).slice(2)}`;
-  return Object.freeze({
-    value: {
-      creditLineId,
-      subjectId: obligation.subjectId,
-      mandateId: authority.mandateId,
-      assetId: obligation.assetId,
-      limitMinor: limit.toString(),
-      utilizedMinor: nextUtilized.toString(),
-      status: CreditLineStatus.APPROVED,
-      riskSnapshotId: obligation.riskDecisionId,
-      createdAt: current?.createdAt ?? now.toISOString(),
-      updatedAt: now.toISOString(),
-      schemaVersion: "credit_line.v1"
-    },
-    previousUtilizedMinor: previousUtilized.toString(),
-    utilizedMinor: nextUtilized.toString()
+  const exposure = await coreRepository.getAgentCreditExposureInTransaction(
+    client,
+    obligation.subjectId,
+    obligation.assetId
+  );
+  return deriveAgentCreditLineProjection({
+    intent,
+    decision,
+    offer,
+    acceptance,
+    obligation,
+    authority,
+    currentProjection: current,
+    exposure,
+    principalDeltaMinor,
+    now
   });
 }
 
@@ -305,7 +376,15 @@ export function executeSandboxObligationCommandHandler({
       correlationId
     }) {
       const input = normalizeExecutionPayload(payload);
-      const { state, obligation, authority } = await loadObligationContext({
+      const {
+        state,
+        obligation,
+        authority,
+        intent,
+        decision,
+        offer,
+        acceptance
+      } = await loadObligationContext({
         client,
         coreRepository,
         authorizationDecision,
@@ -313,6 +392,9 @@ export function executeSandboxObligationCommandHandler({
         now,
         operation: "execute"
       });
+      const providerTarget = authenticationContext.actorType === ActorType.AGENT
+        ? { providerId: input.providerId, providerCategory: input.providerCategory }
+        : {};
       const actionConfirmation = normalizeEconomicActionConfirmation(
         input.actionConfirmation,
         {
@@ -325,6 +407,7 @@ export function executeSandboxObligationCommandHandler({
           payloadHash: sha256Json({
             obligationHash: obligation.obligationHash,
             amountMinor: obligation.originalPrincipalMinor,
+            ...providerTarget,
             sandboxRail: "signed_non_redeemable",
             withdrawable: false,
             productionFundsMoved: false
@@ -332,7 +415,7 @@ export function executeSandboxObligationCommandHandler({
           requestId,
           authenticationContext,
           now,
-          businessPayload: {}
+          businessPayload: providerTarget
         }
       );
       const actionConfirmationSummary =
@@ -349,10 +432,27 @@ export function executeSandboxObligationCommandHandler({
       )) {
         throw new DomainError("execution_already_exists", "sandbox execution already exists");
       }
+      const creditLine = authenticationContext.actorType === ActorType.AGENT
+        ? await planAgentCreditLineUtilization({
+            client,
+            coreRepository,
+            obligation,
+            authority,
+            intent,
+            decision,
+            offer,
+            acceptance,
+            principalDeltaMinor: obligation.originalPrincipalMinor,
+            now
+          })
+        : undefined;
+      if (creditLine) assertAgentProviderTarget({ input, authority, creditLine });
       const adapterRequest = {
         obligationId: obligation.obligationId,
         assetId: obligation.assetId,
         amountMinor: obligation.originalPrincipalMinor,
+        ...providerTarget,
+        ...(creditLine ? { purposeCode: creditLine.facility.purposeCode } : {}),
         requestId,
         correlationId,
         issuedAt: now.toISOString()
@@ -360,16 +460,6 @@ export function executeSandboxObligationCommandHandler({
       const adapterReceipt = await sandboxRailAdapter.execute(adapterRequest);
       sandboxRailAdapter.verify(adapterReceipt, adapterRequest);
       const execution = executeSandboxObligation(obligation, { adapterReceipt, now });
-      const creditLine = authenticationContext.actorType === ActorType.AGENT
-        ? await planAgentCreditLineUtilization({
-            client,
-            coreRepository,
-            obligation,
-            authority,
-            principalDeltaMinor: obligation.originalPrincipalMinor,
-            now
-          })
-        : undefined;
       const lockbox = creditLine
         ? await planAgentLockboxCreation({
             client,
@@ -439,6 +529,8 @@ export function executeSandboxObligationCommandHandler({
               previousUtilizedMinor: creditLine.previousUtilizedMinor,
               utilizedMinor: creditLine.utilizedMinor,
               principalDeltaMinor: obligation.originalPrincipalMinor,
+              facilityProjection: creditLine.facility,
+              creditLineProjection: creditLine.value,
               actorId: authenticationContext.actorId,
               causationId: requestId,
               correlationId,
@@ -565,6 +657,34 @@ function summarizeRepayment(repayment) {
   return { ...repayment };
 }
 
+function createRevenueCaptureReceipt({ lockbox, repayment, now }) {
+  const core = {
+    lockboxId: lockbox.lockboxId,
+    obligationId: repayment.obligationId,
+    subjectId: repayment.subjectId,
+    assetId: repayment.assetId,
+    providerScopeHash: hashId(
+      "lockbox_revenue_provider_scope",
+      lockbox.allowedProviderIds
+    ),
+    capturedMinor: repayment.appliedMinor,
+    automaticRepaymentId: repayment.repaymentId,
+    ledgerTransactionId: repayment.ledgerTransactionId,
+    occurredAt: now.toISOString(),
+    cashflowRoute: "automatic_repayment_only",
+    sandboxOnly: true,
+    productionFundsMoved: false,
+    withdrawable: false
+  };
+  const revenueCaptureHash = hashId("lockbox_revenue_capture", core);
+  return Object.freeze({
+    revenueCaptureId: `revenue_capture_${revenueCaptureHash.slice(2)}`,
+    revenueCaptureHash,
+    ...core,
+    schemaVersion: "lockbox_revenue_capture_receipt.v1"
+  });
+}
+
 export function postSandboxRepaymentCommandHandler() {
   return Object.freeze({
     operationId: "pilotPostSandboxRepayment",
@@ -580,7 +700,15 @@ export function postSandboxRepaymentCommandHandler() {
       correlationId
     }) {
       const input = normalizeRepaymentPayload(payload);
-      const { state, obligation, authority } = await loadObligationContext({
+      const {
+        state,
+        obligation,
+        authority,
+        intent,
+        decision,
+        offer,
+        acceptance
+      } = await loadObligationContext({
         client,
         coreRepository,
         authorizationDecision,
@@ -632,6 +760,10 @@ export function postSandboxRepaymentCommandHandler() {
             coreRepository,
             obligation,
             authority,
+            intent,
+            decision,
+            offer,
+            acceptance,
             principalDeltaMinor: `-${principalReleased}`,
             now
           })
@@ -651,6 +783,30 @@ export function postSandboxRepaymentCommandHandler() {
       const lockbox = currentLockbox
         ? updateAgentLockboxAfterRepayment(currentLockbox, result.obligation, { now })
         : undefined;
+      const revenueCapture =
+        authenticationContext.actorType === ActorType.AGENT &&
+        input.sourceCode === "synthetic_revenue"
+          ? createRevenueCaptureReceipt({
+              lockbox: currentLockbox,
+              repayment: result.repayment,
+              now
+            })
+          : undefined;
+      if (revenueCapture) {
+        const revenueCaptureEvent = createCreditEvent({
+          eventType: CreditEventType.REVENUE_CAPTURED,
+          subjectId: obligation.subjectId,
+          obligationId: obligation.obligationId,
+          payload: {
+            ...revenueCapture,
+            actorId: authenticationContext.actorId,
+            causationId: requestId,
+            correlationId
+          },
+          now
+        });
+        events.push(revenueCaptureEvent);
+      }
       if (result.interestTransaction) {
         const interestEvent = createCreditEvent({
           eventType: CreditEventType.INTEREST_ACCRUED,
@@ -768,6 +924,8 @@ export function postSandboxRepaymentCommandHandler() {
             previousUtilizedMinor: creditLine.previousUtilizedMinor,
             utilizedMinor: creditLine.utilizedMinor,
             principalDeltaMinor: result.repayment.appliedPrincipalMinor,
+            facilityProjection: creditLine.facility,
+            creditLineProjection: creditLine.value,
             actorId: authenticationContext.actorId,
             causationId: requestId,
             correlationId,
@@ -833,6 +991,7 @@ export function postSandboxRepaymentCommandHandler() {
         response: {
           obligation: summarizeSharedObligation(result.obligation),
           repayment: summarizeRepayment(result.repayment),
+          ...(revenueCapture ? { revenueCapture } : {}),
           ...(result.servicingAction ? {
             servicingAction: summarizeServicingAction(result.servicingAction)
           } : {}),

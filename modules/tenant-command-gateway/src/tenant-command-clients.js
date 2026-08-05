@@ -306,10 +306,10 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
-  async executeSandboxObligation({ obligationId, idempotencyKey, requestId, correlationId }) {
+  async executeSandboxObligation({ obligationId, payload = {}, idempotencyKey, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotExecuteSandboxObligation",
-      payload: {},
+      payload,
       resource: { resourceType: "obligation", resourceId: obligationId },
       idempotencyKey,
       requestId,
@@ -913,6 +913,32 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async resumeWorkspace({ requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadWorkspaceResume",
+      payload: {},
+      requestId,
+      correlationId
+    });
+  }
+
+  async persistContinuationReceipt({
+    creditOfferId,
+    receipt,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "pilotPersistAgentContinuationReceipt",
+      payload: { receipt },
+      resource: { resourceType: "credit_offer", resourceId: creditOfferId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
   async submitAccountProof({ subjectId, payload, idempotencyKey, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotSubmitAgentAccountProof",
@@ -977,10 +1003,10 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
-  async executeSandboxObligation({ obligationId, idempotencyKey, requestId, correlationId }) {
+  async executeSandboxObligation({ obligationId, payload = {}, idempotencyKey, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotExecuteSandboxObligation",
-      payload: {},
+      payload,
       resource: { resourceType: "obligation", resourceId: obligationId },
       idempotencyKey,
       requestId,

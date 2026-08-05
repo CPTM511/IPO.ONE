@@ -55,6 +55,8 @@ export const AGENT_PILOT_MCP_TOOLS = Object.freeze([
 const REQUIRED_RUNTIME_CAPABILITIES = Object.freeze([
   "accept_credit_offer",
   "execute_sandbox_credit",
+  "provider_spend",
+  "capture_revenue",
   "route_repayment"
 ]);
 

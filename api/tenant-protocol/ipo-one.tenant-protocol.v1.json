@@ -356,7 +356,8 @@
       "operationId": "pilotReadWorkspaceResume",
       "kind": "query",
       "actorTypes": [
-        "human"
+        "human",
+        "agent"
       ],
       "resourceType": "workspace",
       "requiredCapability": "workspace.resume.self",
@@ -364,6 +365,21 @@
       "quotaClass": "read",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_workspace_resume_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotPersistAgentContinuationReceipt",
+      "kind": "command",
+      "actorTypes": [
+        "agent"
+      ],
+      "resourceType": "credit_offer",
+      "requiredCapability": "workspace.resume.self",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_continuation_receipt_persisted.v1",
       "public": false,
       "fundsAuthority": false
     },

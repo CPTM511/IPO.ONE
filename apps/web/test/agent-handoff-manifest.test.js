@@ -26,7 +26,16 @@ const mandate = Object.freeze({
   mandateId: "mandate_handoff_001",
   mandateHash: `0x${"a".repeat(64)}`,
   termsHash: `0x${"b".repeat(64)}`,
-  capabilities: ["request_credit", "accept_credit_offer", "execute_sandbox_credit"],
+  capabilities: [
+    "request_credit",
+    "accept_credit_offer",
+    "execute_sandbox_credit",
+    "provider_spend",
+    "capture_revenue",
+    "route_repayment"
+  ],
+  allowedProviderIds: ["provider_gateway_compute"],
+  allowedCategories: ["compute"],
   assetIds: ["urn:ipo-one:sandbox-asset:usd-cent"],
   perActionLimitMinor: "25000",
   aggregateLimitMinor: "100000",

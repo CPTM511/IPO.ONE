@@ -65,10 +65,17 @@ function fixture() {
     creditLine: {
       creditLineId: "credit_line_agent_lockbox_test",
       subjectId: obligation.subjectId,
-      mandateId: obligation.mandateId,
+      principalId: obligation.principalId,
+      validatedMandateId: obligation.mandateId,
       assetId: obligation.assetId,
+      creditIntentId: obligation.creditIntentId,
+      creditOfferId: obligation.creditOfferId,
+      obligationId: obligation.obligationId,
+      purposeCode: "compute",
+      sandboxOnly: true,
+      productionAuthority: false,
       status: CreditLineStatus.APPROVED,
-      schemaVersion: "credit_line.v1"
+      schemaVersion: "credit_line.v2"
     },
     accounts: {
       principal_receivable: {

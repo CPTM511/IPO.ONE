@@ -121,14 +121,14 @@ test("production bootstrap config derives closed roles and rejects permission in
       invitationId: "invite_principal_controller_0001",
       expiresAt: futureCredentialExpiry()
     }, {
-      kind: "agent_mtls",
+      kind: "agent_dpop",
       profile: "agent_runtime",
       actorId: "actor_agent_runtime",
       clientId: "client_agent_runtime",
       issuer: "https://workload.ipo.one",
       externalSubject: "agent-runtime-production",
       controllerActorId: "actor_principal_controller",
-      senderThumbprint: "m".repeat(43),
+      senderThumbprint: "d".repeat(43),
       invitationId: "invite_agent_runtime_000000001",
       expiresAt: futureCredentialExpiry()
     }]

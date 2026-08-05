@@ -24,6 +24,7 @@ import { createTradingCapitalMatchingHandlers } from "./trading-capital-matching
 import { createTradingCapitalFacilityHandlers } from "./trading-capital-facility-handlers.js";
 import { createTradingCapitalSettlementHandlers } from "./trading-capital-settlement-handlers.js";
 import { createWorkspaceResumeHandlers } from "./workspace-resume-handlers.js";
+import { createWorkspaceContinuationHandlers } from "./workspace-continuation-handlers.js";
 import { createCapitalPartnerHandlers } from "./capital-partner-handlers.js";
 
 export function createTenantFoundationHandlers(options) {
@@ -45,6 +46,7 @@ export function createTenantFoundationHandlers(options) {
     ...createCreditIntentHandlers(),
     ...createHumanSubjectHandlers(),
     ...createWorkspaceResumeHandlers(),
+    ...createWorkspaceContinuationHandlers(),
     ...createHumanConsentHandlers(),
     ...createMandateHandlers(),
     ...createProviderHandlers(options),

@@ -177,7 +177,7 @@ function json(response, status, value, requestId, headOnly = false) {
   response.end(headOnly ? undefined : body);
 }
 
-export function createProductionTenantHost(input) {
+export function createProductionTenantRequestHandler(input) {
   assertClosedConfig(input);
   const publicOrigin = exactPublicOrigin(input.publicOrigin);
   const port = input.port ?? 8080;
@@ -212,8 +212,7 @@ export function createProductionTenantHost(input) {
     sessionHandleProvider: input.sessionHandleProvider
   });
   let active = 0;
-  let listeningPort = port;
-  const server = createServer(async (request, response) => {
+  return async function handleProductionTenantRequest(request, response) {
     const requestId = createRequestId(request.headers);
     if (active >= maximumConcurrency) {
       return json(response, 503, createProblemDetails(
@@ -326,10 +325,18 @@ export function createProductionTenantHost(input) {
     } finally {
       active -= 1;
     }
-  });
+  };
+}
+
+export function createProductionTenantHost(input) {
+  const handleRequest = createProductionTenantRequestHandler(input);
+  const port = input.port ?? 8080;
+  let listeningPort = port;
+  const server = createServer(handleRequest);
 
   return Object.freeze({
     server,
+    handleRequest,
     async listen() {
       if (server.listening) throw new DomainError("tenant_transport_already_started", "Tenant listener is already active");
       await new Promise((resolve, reject) => {

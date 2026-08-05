@@ -175,6 +175,7 @@
               <span>No real funds</span>
               <span>No financial advice</span>
               <span>Synthetic identity only</span>
+              <span>Protocol fees disabled · Fee Policy deferred</span>
             </div>
           </section>
 
@@ -844,7 +845,7 @@
                     <div><strong>Draft bounded sandbox authority</strong><small>The approved capability set is fixed here; limits and expiry remain explicit.</small></div>
                   </div>
                   <div class="mandate-capability-list" aria-label="Mandate capabilities">
-                    <span>Request credit</span><span>Accept sandbox Offer</span><span>Execute sandbox credit</span>
+                    <span>Request credit</span><span>Accept sandbox Offer</span><span>Execute sandbox credit</span><span>Provider: Gateway Compute</span><span>Purpose: compute</span><span>Revenue auto-repayment</span>
                   </div>
                   <div class="form-grid three">
                     <div>
@@ -1168,14 +1169,14 @@
                 <div><span>Application</span><strong id="agentOnlineApplicationState">Not started</strong></div>
                 <div><span>Offer</span><strong id="agentOnlineOfferState">Not loaded</strong></div>
                 <div><span>Obligation</span><strong id="agentOnlineObligationState">Not created</strong></div>
-                <div><span>Approved use</span><strong id="agentOnlineExecutionState">Not executed</strong></div>
-                <div><span>Repayment</span><strong id="agentOnlineRepaymentState">Not posted</strong></div>
+                <div><span>Provider spend</span><strong id="agentOnlineExecutionState">Not executed</strong></div>
+                <div><span>Revenue → repayment</span><strong id="agentOnlineRepaymentState">Not posted</strong></div>
                 <div><span>Evidence</span><strong id="agentOnlineEvidenceState">Not loaded</strong></div>
               </div>
               <div class="agent-online-stage-actions" aria-label="Agent borrowing and use actions">
                 <button class="primary" id="agentOnlineRunBtn" type="button" disabled>Request Agent credit and receive Offer</button>
-                <button class="secondary" id="agentOnlineExecuteBtn" type="button" disabled>Execute approved use</button>
-                <button class="secondary" id="agentOnlineRepayBtn" type="button" disabled>Repay Agent obligation</button>
+                <button class="secondary" id="agentOnlineExecuteBtn" type="button" disabled>Execute allowlisted Provider spend</button>
+                <button class="secondary" id="agentOnlineRepayBtn" type="button" disabled>Capture revenue and auto-repay</button>
                 <button class="secondary" id="agentOnlineEvidenceBtn" type="button" disabled>Verify Agent Evidence</button>
                 <button class="text-action" id="agentOnlineReviewBtn" type="button" disabled>Review Agent obligations</button>
               </div>

@@ -5,6 +5,7 @@ import {
   SubjectStatus,
   SubjectType,
   assertNoRawPiiReference,
+  createAgentCreditExposureHash,
   createCreditEvent,
   hashId
 } from "../../../packages/domain/src/index.js";
@@ -38,6 +39,7 @@ export const CoreProjectionType = Object.freeze({
   CREDIT_INTENT: "credit_intent",
   CREDIT_OFFER: "credit_offer",
   CREDIT_OFFER_ACCEPTANCE: "credit_offer_acceptance",
+  WORKSPACE_CONTINUATION_RECEIPT: "workspace_continuation_receipt",
   CREDIT_LINE: "credit_line",
   RISK_DECISION: "risk_decision",
   CREDIT_PASSPORT_ARTIFACT: "credit_passport_artifact",
@@ -84,6 +86,7 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.CREDIT_INTENT]: "creditIntentId",
   [CoreProjectionType.CREDIT_OFFER]: "creditOfferId",
   [CoreProjectionType.CREDIT_OFFER_ACCEPTANCE]: "creditOfferAcceptanceId",
+  [CoreProjectionType.WORKSPACE_CONTINUATION_RECEIPT]: "continuationReceiptId",
   [CoreProjectionType.CREDIT_LINE]: "creditLineId",
   [CoreProjectionType.RISK_DECISION]: "riskDecisionId",
   [CoreProjectionType.CREDIT_PASSPORT_ARTIFACT]: "creditPassportArtifactId",
@@ -885,6 +888,13 @@ function mapSandboxExecutionReceipt(row) {
     subjectId: row.subject_id,
     assetId: row.asset_id,
     amountMinor: row.amount_minor,
+    ...(row.provider_id
+      ? {
+          providerId: row.provider_id,
+          providerCategory: row.provider_category,
+          purposeCode: row.purpose_code
+        }
+      : {}),
     adapterId: row.adapter_id,
     adapterVersion: row.adapter_version,
     adapterKeyId: row.adapter_key_id,
@@ -1112,7 +1122,7 @@ function mapCreditOfferAcceptance(row) {
 
 function mapCreditLine(row) {
   if (!row) return undefined;
-  return {
+  const base = {
     creditLineId: row.id,
     subjectId: row.subject_id,
     mandateId: row.mandate_id,
@@ -1122,6 +1132,69 @@ function mapCreditLine(row) {
     status: row.status,
     riskSnapshotId: row.risk_snapshot_id ?? undefined,
     createdAt: timestamp(row.created_at),
+    updatedAt: timestamp(row.updated_at),
+    schemaVersion: row.schema_version
+  };
+  if (row.schema_version !== "credit_line.v2") return base;
+  return {
+    creditLineId: row.id,
+    projectionHash: row.projection_hash,
+    exposureHash: row.exposure_hash,
+    subjectId: row.subject_id,
+    principalId: row.principal_id,
+    assetId: row.asset_id,
+    validatedMandateId: row.mandate_id,
+    validatedAuthorityTermsHash: row.authority_terms_hash,
+    validatedFacilityId: row.facility_id,
+    validatedFacilityHash: row.facility_hash,
+    creditIntentId: row.credit_intent_id,
+    creditIntentHash: row.credit_intent_hash,
+    riskDecisionId: row.risk_decision_id,
+    decisionHash: row.decision_hash,
+    policyHash: row.policy_hash,
+    creditOfferId: row.credit_offer_id,
+    creditOfferHash: row.credit_offer_hash,
+    termsHash: row.terms_hash,
+    acceptanceId: row.acceptance_id,
+    acceptanceHash: row.acceptance_hash,
+    obligationId: row.obligation_id,
+    purposeCode: row.purpose_code,
+    allowedProviderIds: row.allowed_provider_ids,
+    limitMinor: row.limit_minor,
+    utilizedMinor: row.utilized_minor,
+    status: row.status,
+    riskSnapshotId: row.risk_snapshot_id,
+    sandboxOnly: row.sandbox_only,
+    productionAuthority: row.production_authority,
+    createdAt: timestamp(row.created_at),
+    updatedAt: timestamp(row.updated_at),
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapWorkspaceContinuationReceipt(row) {
+  if (!row) return undefined;
+  return {
+    continuationReceiptId: row.id,
+    receiptHash: row.receipt_hash,
+    actorId: row.actor_id,
+    actorType: row.actor_type,
+    subjectId: row.subject_id,
+    mandateId: row.mandate_id,
+    creditIntentId: row.credit_intent_id,
+    riskDecisionId: row.risk_decision_id,
+    creditOfferId: row.credit_offer_id,
+    creditOfferHash: row.credit_offer_hash,
+    termsHash: row.terms_hash,
+    offerSchemaVersion: row.offer_schema_version,
+    offerAggregateVersion: safeInteger(row.offer_aggregate_version, "offerAggregateVersion"),
+    receiptPayload: row.receipt_payload,
+    status: row.status,
+    version: safeInteger(row.version, "version"),
+    issuedAt: timestamp(row.issued_at),
+    expiresAt: timestamp(row.expires_at),
+    ...(row.consumed_at ? { consumedAt: timestamp(row.consumed_at) } : {}),
+    ...(row.revoked_at ? { revokedAt: timestamp(row.revoked_at) } : {}),
     updatedAt: timestamp(row.updated_at),
     schemaVersion: row.schema_version
   };
@@ -2728,6 +2801,103 @@ export class PostgresCoreRepository {
     return this.#getOne("creditLineId", creditLineId, "SELECT * FROM credit_lines WHERE id = $1", mapCreditLine);
   }
 
+  async getWorkspaceContinuationReceipt(continuationReceiptId) {
+    return this.#getOne(
+      "continuationReceiptId",
+      continuationReceiptId,
+      "SELECT * FROM workspace_continuation_receipts WHERE id = $1",
+      mapWorkspaceContinuationReceipt
+    );
+  }
+
+  async findWorkspaceContinuationReceiptForOfferInTransaction(
+    client,
+    { actorId, creditOfferId, lock = false }
+  ) {
+    assertQueryable(client);
+    assertString("actorId", actorId);
+    assertString("creditOfferId", creditOfferId);
+    const result = await client.query(
+      `SELECT * FROM workspace_continuation_receipts
+        WHERE actor_id = $1 AND credit_offer_id = $2
+        ${lock ? "FOR UPDATE" : ""}`,
+      [actorId, creditOfferId]
+    );
+    return mapWorkspaceContinuationReceipt(result.rows[0]);
+  }
+
+  async listActiveWorkspaceContinuationReceiptsInTransaction(
+    client,
+    { actorId, now, limit = 16 }
+  ) {
+    assertQueryable(client);
+    assertString("actorId", actorId);
+    if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+      throw new DomainError("invalid_workspace_recovery_time", "workspace recovery time is invalid");
+    }
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 32) {
+      throw new DomainError("invalid_list_limit", "continuation receipt limit must be between 1 and 32");
+    }
+    const result = await client.query(
+      `SELECT r.*
+         FROM workspace_continuation_receipts AS r
+         JOIN actors AS a
+           ON a.id = r.actor_id
+          AND a.actor_type::text = r.actor_type
+          AND a.status = 'active'
+         JOIN memberships AS membership
+           ON membership.tenant_id = r.tenant_id
+          AND membership.actor_id = r.actor_id
+          AND membership.role_bundle = 'agent_runtime'
+          AND membership.status = 'active'
+          AND membership.valid_from <= $2
+          AND (membership.expires_at IS NULL OR membership.expires_at > $2)
+         JOIN subjects AS s
+           ON s.tenant_id = r.tenant_id
+          AND s.id = r.subject_id
+          AND s.status IN ('pending', 'active')
+         JOIN mandates AS m
+           ON m.tenant_id = r.tenant_id
+          AND m.id = r.mandate_id
+          AND m.subject_id = r.subject_id
+          AND m.status IN ('draft', 'active')
+          AND m.expires_at > $2
+         JOIN credit_intents AS i
+           ON i.tenant_id = r.tenant_id
+          AND i.id = r.credit_intent_id
+          AND i.subject_id = r.subject_id
+          AND i.authority_ref = r.mandate_id
+          AND i.status = 'decided'
+         JOIN risk_decisions AS d
+           ON d.tenant_id = r.tenant_id
+          AND d.id = r.risk_decision_id
+          AND d.credit_intent_id = r.credit_intent_id
+          AND d.status = 'approved'
+         JOIN credit_offers AS o
+           ON o.tenant_id = r.tenant_id
+          AND o.id = r.credit_offer_id
+          AND o.credit_intent_id = r.credit_intent_id
+          AND o.risk_decision_id = r.risk_decision_id
+          AND o.offer_hash = r.credit_offer_hash
+          AND o.terms_hash = r.terms_hash
+          AND o.schema_version = r.offer_schema_version
+          AND o.status = 'offered'
+          AND o.valid_until > $2
+         JOIN projection_registry AS p
+           ON p.tenant_id = r.tenant_id
+          AND p.entity_type = 'credit_offer'
+          AND p.entity_id = r.credit_offer_id
+          AND p.aggregate_version = r.offer_aggregate_version
+        WHERE r.actor_id = $1
+          AND r.status = 'active'
+          AND r.expires_at > $2
+        ORDER BY r.issued_at DESC, r.id
+        LIMIT $3`,
+      [actorId, now.toISOString(), limit]
+    );
+    return result.rows.map(mapWorkspaceContinuationReceipt);
+  }
+
   async findCreditLineBySubjectAssetInTransaction(client, subjectId, assetId) {
     assertQueryable(client);
     assertString("subjectId", subjectId);
@@ -2745,6 +2915,88 @@ export class PostgresCoreRepository {
       [subjectId, assetId]
     );
     return mapCreditLine(result.rows[0]);
+  }
+
+  async getAgentCreditExposureInTransaction(client, subjectId, assetId) {
+    assertQueryable(client);
+    assertString("subjectId", subjectId);
+    assertString("assetId", assetId);
+    await client.query(
+      `SELECT pg_advisory_xact_lock(
+         hashtext('credit_application_risk:' || $1 || ':' || $2),
+         hashtext($3)
+       )`,
+      [this.eventRepository.tenantContext.tenantId, subjectId, assetId]
+    );
+    const result = await client.query(
+      `SELECT o.id, o.outstanding_minor::text, o.status, o.execution_status,
+              co.schema_version AS offer_schema_version,
+              co.facility_limit_minor::text,
+              co.approved_principal_minor::text,
+              rd.limit_minor::text AS decision_limit_minor,
+              m.aggregate_limit_minor::text AS mandate_limit_minor
+         FROM obligations o
+         JOIN subjects s
+          ON s.tenant_id = o.tenant_id
+          AND s.id = o.subject_id
+         JOIN credit_offers co
+           ON co.tenant_id = o.tenant_id
+          AND co.id = o.credit_offer_id
+         JOIN risk_decisions rd
+           ON rd.tenant_id = o.tenant_id
+          AND rd.id = o.risk_decision_id
+         JOIN mandates m
+           ON m.tenant_id = o.tenant_id
+          AND m.id = o.mandate_id
+        WHERE o.subject_id = $1
+          AND o.asset_id = $2
+          AND s.subject_type = $3
+          AND o.schema_version = 'obligation.v2'
+          AND o.execution_status = 'executed'
+        ORDER BY o.id
+        FOR SHARE`,
+      [subjectId, assetId, SubjectType.AGENT]
+    );
+    const obligations = result.rows.map((row) => ({
+      obligationId: row.id,
+      outstandingPrincipalMinor: row.outstanding_minor,
+      committedLimitMinor: [
+        BigInt(row.offer_schema_version === "credit_offer.v2"
+          ? row.facility_limit_minor
+          : row.approved_principal_minor),
+        BigInt(row.decision_limit_minor),
+        BigInt(row.mandate_limit_minor),
+        500_000n
+      ].reduce((lowest, value) => value < lowest ? value : lowest).toString(),
+      status: row.status,
+      executionStatus: row.execution_status
+    }));
+    const outstandingPrincipalMinor = obligations.reduce(
+      (total, item) => total + BigInt(item.outstandingPrincipalMinor),
+      0n
+    ).toString();
+    const committedLimitMinor = obligations.reduce(
+      (total, item) => total + BigInt(item.committedLimitMinor),
+      0n
+    ).toString();
+    const exposureObligations = obligations.map(({ obligationId, outstandingPrincipalMinor }) => ({
+      obligationId,
+      outstandingPrincipalMinor
+    }));
+    return {
+      subjectId,
+      assetId,
+      outstandingPrincipalMinor,
+      committedLimitMinor,
+      obligationCount: obligations.length,
+      exposureHash: createAgentCreditExposureHash({
+        subjectId,
+        assetId,
+        obligations: exposureObligations
+      }),
+      obligations,
+      schemaVersion: "agent_credit_exposure.v1"
+    };
   }
 
   async getRiskDecision(riskDecisionId) {
@@ -4003,6 +4255,9 @@ export class PostgresCoreRepository {
       case CoreProjectionType.CREDIT_OFFER_ACCEPTANCE:
         value = await this.getCreditOfferAcceptance(entityId);
         break;
+      case CoreProjectionType.WORKSPACE_CONTINUATION_RECEIPT:
+        value = await this.getWorkspaceContinuationReceipt(entityId);
+        break;
       case CoreProjectionType.CREDIT_LINE:
         value = await this.getCreditLine(entityId);
         break;
@@ -4175,6 +4430,8 @@ export class PostgresCoreRepository {
         return this.#writeCreditOffer(client, value);
       case CoreProjectionType.CREDIT_OFFER_ACCEPTANCE:
         return this.#writeCreditOfferAcceptance(client, value);
+      case CoreProjectionType.WORKSPACE_CONTINUATION_RECEIPT:
+        return this.#writeWorkspaceContinuationReceipt(client, value);
       case CoreProjectionType.CREDIT_LINE:
         return this.#writeCreditLine(client, value, occurredAt);
       case CoreProjectionType.RISK_DECISION:
@@ -5178,12 +5435,13 @@ export class PostgresCoreRepository {
     const result = await client.query(
       `INSERT INTO sandbox_execution_receipts(
          id, receipt_hash, obligation_id, subject_id, asset_id, amount_minor,
+         provider_id, provider_category, purpose_code,
          adapter_id, adapter_version, adapter_key_id, adapter_message_hash,
          adapter_signature, adapter_issued_at, executed_at, sandbox_only,
          production_funds_moved, withdrawable, schema_version
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-         $11, $12, $13, $14, $15, $16, $17
+         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
        ) ON CONFLICT (id) DO NOTHING RETURNING id`,
       [
         value.sandboxExecutionReceiptId,
@@ -5192,6 +5450,9 @@ export class PostgresCoreRepository {
         value.subjectId,
         value.assetId,
         value.amountMinor,
+        value.providerId ?? null,
+        value.providerCategory ?? null,
+        value.purposeCode ?? null,
         value.adapterId,
         value.adapterVersion,
         value.adapterKeyId,
@@ -5737,7 +5998,152 @@ export class PostgresCoreRepository {
     }
   }
 
+  async #writeWorkspaceContinuationReceipt(client, value) {
+    const result = await client.query(
+      `INSERT INTO workspace_continuation_receipts(
+         id, receipt_hash, actor_id, actor_type, subject_id, mandate_id,
+         credit_intent_id, risk_decision_id, credit_offer_id, credit_offer_hash,
+         terms_hash, offer_schema_version, offer_aggregate_version,
+         receipt_payload, status, version, issued_at, expires_at,
+         consumed_at, revoked_at, updated_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+       )
+       ON CONFLICT (tenant_id, id) DO UPDATE
+         SET status = EXCLUDED.status,
+             version = EXCLUDED.version,
+             consumed_at = EXCLUDED.consumed_at,
+             revoked_at = EXCLUDED.revoked_at,
+             updated_at = EXCLUDED.updated_at
+       WHERE workspace_continuation_receipts.receipt_hash = EXCLUDED.receipt_hash
+         AND workspace_continuation_receipts.actor_id = EXCLUDED.actor_id
+         AND workspace_continuation_receipts.credit_offer_id = EXCLUDED.credit_offer_id
+         AND workspace_continuation_receipts.receipt_payload = EXCLUDED.receipt_payload
+         AND workspace_continuation_receipts.version <= EXCLUDED.version
+       RETURNING id`,
+      [
+        value.continuationReceiptId,
+        value.receiptHash,
+        value.actorId,
+        value.actorType,
+        value.subjectId,
+        value.mandateId,
+        value.creditIntentId,
+        value.riskDecisionId,
+        value.creditOfferId,
+        value.creditOfferHash,
+        value.termsHash,
+        value.offerSchemaVersion,
+        value.offerAggregateVersion,
+        json(value.receiptPayload),
+        value.status,
+        value.version,
+        value.issuedAt,
+        value.expiresAt,
+        value.consumedAt ?? null,
+        value.revokedAt ?? null,
+        value.updatedAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.WORKSPACE_CONTINUATION_RECEIPT,
+        value.continuationReceiptId
+      );
+    }
+  }
+
   async #writeCreditLine(client, value, occurredAt) {
+    if (value.schemaVersion === "credit_line.v2") {
+      const result = await client.query(
+        `INSERT INTO credit_lines(
+           id, projection_hash, exposure_hash, subject_id, principal_id, mandate_id,
+           authority_terms_hash, asset_id, facility_id, facility_hash,
+           credit_intent_id, credit_intent_hash, risk_decision_id,
+           decision_hash, policy_hash, credit_offer_id, credit_offer_hash,
+           terms_hash, acceptance_id, acceptance_hash, obligation_id,
+           purpose_code, allowed_provider_ids, limit_minor, utilized_minor,
+           status, risk_snapshot_id, sandbox_only, production_authority,
+           created_at, updated_at, schema_version
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+           $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
+         )
+         ON CONFLICT (id) DO UPDATE
+           SET projection_hash = EXCLUDED.projection_hash,
+               exposure_hash = EXCLUDED.exposure_hash,
+               mandate_id = EXCLUDED.mandate_id,
+               authority_terms_hash = EXCLUDED.authority_terms_hash,
+               facility_id = EXCLUDED.facility_id,
+               facility_hash = EXCLUDED.facility_hash,
+               credit_intent_id = EXCLUDED.credit_intent_id,
+               credit_intent_hash = EXCLUDED.credit_intent_hash,
+               risk_decision_id = EXCLUDED.risk_decision_id,
+               decision_hash = EXCLUDED.decision_hash,
+               policy_hash = EXCLUDED.policy_hash,
+               credit_offer_id = EXCLUDED.credit_offer_id,
+               credit_offer_hash = EXCLUDED.credit_offer_hash,
+               terms_hash = EXCLUDED.terms_hash,
+               acceptance_id = EXCLUDED.acceptance_id,
+               acceptance_hash = EXCLUDED.acceptance_hash,
+               obligation_id = EXCLUDED.obligation_id,
+               purpose_code = EXCLUDED.purpose_code,
+               allowed_provider_ids = EXCLUDED.allowed_provider_ids,
+               limit_minor = EXCLUDED.limit_minor,
+               utilized_minor = EXCLUDED.utilized_minor,
+               status = EXCLUDED.status,
+               risk_snapshot_id = EXCLUDED.risk_snapshot_id,
+               updated_at = EXCLUDED.updated_at
+         WHERE credit_lines.schema_version = 'credit_line.v2'
+           AND credit_lines.subject_id = EXCLUDED.subject_id
+           AND credit_lines.principal_id = EXCLUDED.principal_id
+           AND credit_lines.asset_id = EXCLUDED.asset_id
+           AND credit_lines.sandbox_only = TRUE
+           AND credit_lines.production_authority = FALSE
+         RETURNING id`,
+        [
+          value.creditLineId,
+          value.projectionHash,
+          value.exposureHash,
+          value.subjectId,
+          value.principalId,
+          value.validatedMandateId,
+          value.validatedAuthorityTermsHash,
+          value.assetId,
+          value.validatedFacilityId,
+          value.validatedFacilityHash,
+          value.creditIntentId,
+          value.creditIntentHash,
+          value.riskDecisionId,
+          value.decisionHash,
+          value.policyHash,
+          value.creditOfferId,
+          value.creditOfferHash,
+          value.termsHash,
+          value.acceptanceId,
+          value.acceptanceHash,
+          value.obligationId,
+          value.purposeCode,
+          json(value.allowedProviderIds),
+          value.limitMinor,
+          value.utilizedMinor,
+          value.status,
+          value.riskSnapshotId,
+          value.sandboxOnly,
+          value.productionAuthority,
+          value.createdAt,
+          value.updatedAt ?? occurredAt,
+          value.schemaVersion
+        ]
+      );
+      if (result.rowCount !== 1) {
+        throw projectionConflict(CoreProjectionType.CREDIT_LINE, value.creditLineId);
+      }
+      return;
+    }
     const result = await client.query(
       `INSERT INTO credit_lines(
          id, subject_id, mandate_id, asset_id, limit_minor, utilized_minor,

@@ -21,7 +21,8 @@ function assertEmptyPayload(payload) {
 function workspaceKind(authenticationContext) {
   const kinds = [
     authenticationContext.roles.includes(RoleBundle.HUMAN_BORROWER) && "human_borrower",
-    authenticationContext.roles.includes(RoleBundle.PRINCIPAL_CONTROLLER) && "principal_controller"
+    authenticationContext.roles.includes(RoleBundle.PRINCIPAL_CONTROLLER) && "principal_controller",
+    authenticationContext.roles.includes(RoleBundle.AGENT_RUNTIME) && "agent_runtime"
   ].filter(Boolean);
   if (kinds.length !== 1) {
     throw new DomainError(
@@ -52,7 +53,7 @@ export function readWorkspaceResumeQueryHandler() {
   return Object.freeze({
     operationId: "pilotReadWorkspaceResume",
     kind: "query",
-    async execute({ client, payload, authenticationContext }) {
+    async execute({ client, coreRepository, payload, authenticationContext, now }) {
       assertEmptyPayload(payload);
       const kind = workspaceKind(authenticationContext);
       const result = await client.query(
@@ -84,9 +85,29 @@ export function readWorkspaceResumeQueryHandler() {
         ]
       );
       const rows = result.rows.map(normalizeRow);
+      const continuationReceipts = kind === "agent_runtime"
+        ? await coreRepository.listActiveWorkspaceContinuationReceiptsInTransaction(client, {
+            actorId: authenticationContext.actorId,
+            now,
+            limit: 16
+          })
+        : [];
       return {
         workspaceKind: kind,
         resources: rows.slice(0, PAGE_SIZE),
+        continuationReceipts: continuationReceipts.map((receipt) => ({
+          continuationReceiptId: receipt.continuationReceiptId,
+          receiptHash: receipt.receiptHash,
+          subjectId: receipt.subjectId,
+          mandateId: receipt.mandateId,
+          creditOfferId: receipt.creditOfferId,
+          creditOfferHash: receipt.creditOfferHash,
+          offerAggregateVersion: receipt.offerAggregateVersion,
+          expiresAt: receipt.expiresAt,
+          receipt: receipt.receiptPayload,
+          serverTruth: true,
+          schemaVersion: "workspace_continuation_receipt_view.v1"
+        })),
         hasMore: rows.length > PAGE_SIZE,
         serverTruth: true,
         schemaVersion: "tenant_workspace_resume_view.v1"

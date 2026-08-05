@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "ipo.one.vercel-m1-b-sandbox/v1",
+  "status": "founder_authorized_implementation_pending_deployment_evidence",
+  "productProfile": "deployable_sandbox_vertical_slice",
+  "vercelTargetEnvironment": "production",
+  "vercelTargetReason": "Vercel Cron invokes only production deployments",
+  "productProductionClaim": false,
+  "releaseClaim": false,
+  "realFundsEnabled": false,
+  "protocolFeesEnabled": false,
+  "signerAuthorityEnabled": false,
+  "withdrawalAuthorityEnabled": false,
+  "venueWriteAuthorityEnabled": false,
+  "topology": {
+    "projectCount": 2,
+    "projectRoles": [
+      "principal_agent_automation",
+      "risk_admin_read_freeze"
+    ],
+    "secondProjectReason": "A single fixed SIWE client binding cannot map the same invited Founder wallet to both Principal Controller and Risk Operator without a broad authentication redesign",
+    "web": "vercel_function_asset_handler",
+    "api": "vercel_node_function",
+    "automation": "vercel_cron_bounded_function",
+    "canonicalState": "neon_postgresql",
+    "durability": "postgresql_outbox_inbox_leases_idempotency_reconciliation",
+    "continuousWorker": false,
+    "externalQueue": false,
+    "externalCache": false
+  },
+  "runtime": {
+    "buildNode": "26.5.0",
+    "deployedNode": "24.x",
+    "functionMaximumDurationSeconds": 30,
+    "fluidCompute": true,
+    "cronSchedule": "*/5 * * * *"
+  },
+  "database": {
+    "provider": "neon_via_vercel_marketplace",
+    "plan": "lowest_available_non_paid_or_founder_approved_plan",
+    "requiredMajorVersion": 17,
+    "gatewayPoolMaximumPerInstance": 1,
+    "authenticationPoolMaximumPerInstance": 1,
+    "cronPoolMaximumPerInvocation": 2,
+    "runtimeMigrationsAllowed": false,
+    "runtimeSeedingAllowed": false
+  },
+  "authority": {
+    "founderAmendment": "Founder Deployment Architecture Amendment - Vercel-First Low-Cost Sandbox",
+    "vercelProConfirmed": true,
+    "rcBranchAuthorized": false,
+    "releaseTagAuthorized": false,
+    "paidExternalIntegrationAuthorized": false,
+    "maximumVercelProjectsAuthorized": 2,
+    "customDomainAuthorized": false
+  }
+}
