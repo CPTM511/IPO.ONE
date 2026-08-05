@@ -20,8 +20,12 @@ reproducible candidate therefore contained 120 paths, including this manifest
 and only those 11 historical evidence dependencies. The Founder subsequently
 approved the exact authentication expectation update in
 `apps/private-pilot/test-postgres/production-runtime-e2e.test.mjs`; the final
-candidate therefore contains 121 paths. The list must be
-regenerated and rechecked immediately before staging and after any change.
+candidate therefore contains 121 paths. The first hosted invocation then
+proved that the environment loader's reviewed `deploymentRole` field was not
+accepted by the runtime's exact-object boundary. The bounded correction and
+its PostgreSQL E2E regression reuse two paths already present in this list, so
+the candidate remains 121 paths. The list must be regenerated and rechecked
+immediately before staging and after any change.
 
 ## Exact candidate implementation paths
 

@@ -29,6 +29,7 @@ const CONFIG_KEYS = new Set([
   "browserOrigin",
   "clock",
   "createNetworkContext",
+  "deploymentRole",
   "encryptionKey",
   "encryptionKeyRef",
   "gatewayPool",

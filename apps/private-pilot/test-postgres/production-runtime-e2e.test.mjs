@@ -155,6 +155,7 @@ test(
         gatewayPool,
         authenticationPool,
         browserOrigin,
+        deploymentRole: "primary",
         tenantId,
         systemActorId,
         policyVersion,
