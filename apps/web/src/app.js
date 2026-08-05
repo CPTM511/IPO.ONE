@@ -45,7 +45,11 @@ import {
   createServicingPositionIndex
 } from "./servicing-position-index.js";
 import { createObligationPortfolioPresentation } from "./obligation-portfolio-presentation.js";
-import { principalWorkspaceAccess } from "./principal-workspace-access.js";
+import {
+  humanWorkspaceAccess,
+  principalWorkspaceAccess,
+  shouldRecoverAuthenticatedWorkspace
+} from "./principal-workspace-access.js";
 import { createWalletAuthorityLifecycle } from "./wallet-authority-lifecycle.js";
 import { createWalletProviderRegistry } from "./wallet-provider-registry.js";
 import { releaseSelectedWallet } from "./wallet-sign-out.js";
@@ -1605,6 +1609,21 @@ function hasPrincipalAgentAuthorityWorkspace() {
   });
 }
 
+function hasHumanBorrowerWorkspace() {
+  return humanWorkspaceAccess({
+    connected: tenantPilot.connected,
+    hostWorkspaceName: currentWorkspaceName(),
+    serverWorkspaceKind: tenantPilot.workspaceKind
+  });
+}
+
+function humanWorkspaceUnavailableMessage() {
+  if (tenantPilot.workspaceKind === "principal_controller") {
+    return "This secure session is a Principal Controller. Sign out and use an invited Human Borrower wallet to create a Human Subject.";
+  }
+  return "Human Borrower workspace authority has not been recovered. Wait for verification or sign in with an invited Human Borrower wallet.";
+}
+
 function localPrincipalWorkspaceUrl() {
   if (
     accessState.authenticationProfile !== "local_no_funds" ||
@@ -2458,7 +2477,7 @@ function renderAgentOnlineWorkflow(presentation) {
   button.disabled =
     agentOnlinePilot.busy ||
     !controllerReady ||
-    !["application", "principal_activation", "runtime_accept"].includes(stage);
+    !["authority", "application", "principal_activation", "runtime_accept"].includes(stage);
   button.toggleAttribute("aria-busy", agentOnlinePilot.busy);
   button.textContent = agentOnlinePilot.busy
     ? "Running authenticated Agent…"
@@ -3835,7 +3854,9 @@ function renderHumanGuide() {
   for (const button of [el("humanGuidePrimaryBtn"), el("humanHeroPrimaryBtn")]) {
     button.dataset.humanGuideAction = guide.action;
     button.textContent = guide.actionLabel;
-    button.disabled = guide.action === "none";
+    button.disabled = guide.action === "none" || (
+      tenantPilot.connected && !hasHumanBorrowerWorkspace()
+    );
   }
   el("humanGuideSecondaryBtn").dataset.humanGuideAction = guide.secondaryAction;
   el("humanGuideSecondaryBtn").textContent = guide.secondaryLabel;
@@ -6321,17 +6342,23 @@ function renderTenantPilot() {
   const subjectId = tenantInputValue("humanSubjectId");
   const consentId = tenantInputValue("humanConsentId");
   const privateBusy = tenantPilot.busy || agentAuthorityPilot.busy;
+  const humanWorkspace = hasHumanBorrowerWorkspace();
   const reviewState = humanCreditReviewState();
-  el("createHumanSubjectBtn").disabled = privateBusy || !tenantPilot.connected;
-  el("createHumanConsentBtn").disabled = privateBusy || !tenantPilot.connected || !subjectId;
+  el("createHumanSubjectBtn").disabled =
+    privateBusy || !tenantPilot.connected || !humanWorkspace;
+  el("createHumanConsentBtn").disabled =
+    privateBusy || !tenantPilot.connected || !humanWorkspace || !subjectId;
   el("submitHumanCreditBtn").disabled = privateBusy || !tenantPilot.connected ||
-    !subjectId || !consentId || Boolean(tenantPilot.offer && reviewState.current);
+    !humanWorkspace || !subjectId || !consentId || Boolean(tenantPilot.offer && reviewState.current);
   el("submitHumanCreditBtn").textContent = tenantPilot.offer && !reviewState.current
     ? "Request fresh Offer"
     : "Request & evaluate credit";
   el("newHumanApplicationBtn").hidden = !tenantPilot.obligation || humanNewApplicationMode;
   el("newHumanApplicationBtn").disabled = privateBusy;
-  el("humanApplicationHelper").textContent = tenantPilot.helper;
+  el("humanApplicationHelper").textContent =
+    tenantPilot.connected && !humanWorkspace
+      ? humanWorkspaceUnavailableMessage()
+      : tenantPilot.helper;
 
   const decision = tenantPilot.decision;
   const offer = tenantPilot.offer;
@@ -7089,6 +7116,7 @@ async function recoverAuthenticatedWorkspace() {
     tenantPilot.helper = resources.length > 0
       ? "Borrower workspace restored from authenticated PostgreSQL server truth."
       : "Authenticated Borrower workspace ready. Create a Human Subject to begin.";
+    setMode("human");
     return;
   }
 
@@ -7146,6 +7174,7 @@ async function recoverAuthenticatedWorkspace() {
     agentAuthorityPilot.helper = resources.length > 0
       ? "Principal workspace restored from authenticated PostgreSQL server truth."
       : "Authenticated Principal workspace ready. Create an Agent Subject to begin.";
+    setMode("agent");
   }
 }
 
@@ -7383,11 +7412,11 @@ async function probeTenantPilot() {
       : operationsAvailable
         ? "Complete the local Human BFF session bootstrap before submitting a private mutation."
         : "The private catalog does not expose the approved Agent Subject and Mandate operations.";
-    if (
-      tenantPilot.connected &&
-      new Set(["borrower", "controller"]).has(currentWorkspaceName()) &&
-      currentView !== "risk-operations"
-    ) {
+    if (shouldRecoverAuthenticatedWorkspace({
+      connected: tenantPilot.connected,
+      currentView,
+      hostWorkspaceName: currentWorkspaceName()
+    })) {
       try {
         await recoverAuthenticatedWorkspace();
       } catch (error) {
@@ -7452,6 +7481,14 @@ async function probeTenantPilot() {
 }
 
 async function createHumanSubject() {
+  if (!hasHumanBorrowerWorkspace()) {
+    const message = humanWorkspaceUnavailableMessage();
+    tenantPilot.helper = message;
+    renderTenantPilot();
+    toast(message, "error");
+    announce(message);
+    return;
+  }
   await runTenantAction(
     el("createHumanSubjectBtn"),
     async () => {
@@ -8303,11 +8340,11 @@ function focusJumpTarget(target) {
 }
 
 function openPrincipalAgentAuthority() {
-  setMode("human");
+  setMode("agent");
   showView("request-credit");
   el("agentAuthorityDisclosure").open = true;
   requestAnimationFrame(() => focusJumpTarget(el("agentAuthority")));
-  announce("Human Principal authority configuration opened");
+  announce("Principal Agent authority configuration opened");
 }
 
 function openAgentProtocolDetails({ targetId = "agentProtocolDetails" } = {}) {

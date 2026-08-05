@@ -1012,8 +1012,8 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   );
   assert.match(
     js,
-    /new Set\(\["borrower", "controller"\]\)\.has\(currentWorkspaceName\(\)\)/,
-    "Capital Partner and Risk workspaces must not invoke borrower workspace recovery"
+    /shouldRecoverAuthenticatedWorkspace\(\{[\s\S]*?connected: tenantPilot\.connected,[\s\S]*?currentView,[\s\S]*?hostWorkspaceName: currentWorkspaceName\(\)/,
+    "workspace recovery must use the production-neutral fail-closed policy"
   );
   assert.ok(css.includes(".account-access-button.authenticated"));
   assert.ok(css.includes(".topbar-sign-out-button"));
@@ -1073,12 +1073,24 @@ test("WEB-020 routes Agent authority through the Principal workspace and explain
     /principalWorkspaceAccess\(\{[\s\S]*?connected: tenantPilot\.connected,[\s\S]*?hostWorkspaceName: currentWorkspaceName\(\),[\s\S]*?serverWorkspaceKind: tenantPilot\.workspaceKind/,
     "the form must derive access from host posture and authenticated server truth"
   );
+  assert.match(
+    js,
+    /shouldRecoverAuthenticatedWorkspace\(\{[\s\S]*?connected: tenantPilot\.connected,[\s\S]*?currentView,[\s\S]*?hostWorkspaceName: currentWorkspaceName\(\)/,
+    "production-neutral hosts must recover the authenticated server workspace"
+  );
+  assert.match(
+    js,
+    /humanWorkspaceAccess\(\{[\s\S]*?connected: tenantPilot\.connected,[\s\S]*?hostWorkspaceName: currentWorkspaceName\(\),[\s\S]*?serverWorkspaceKind: tenantPilot\.workspaceKind/,
+    "Human mutations must derive access from authenticated Human Borrower server truth"
+  );
   assert.ok(principalWorkspaceAccess.includes('serverWorkspaceKind !== "principal_controller"'));
   assert.ok(principalWorkspaceAccess.includes('hostWorkspaceName === "" || hostWorkspaceName === "controller"'));
   assert.ok(js.includes('currentWorkspaceName() !== "borrower"'));
   assert.ok(js.includes('new Set(["127.0.0.1", "localhost"])'));
   assert.ok(js.includes("borrowerPort + 1"));
   assert.ok(js.includes("no Borrower permission will be widened"));
+  assert.ok(js.includes('setMode("agent");\n  showView("request-credit")'));
+  assert.ok(js.includes('["authority", "application", "principal_activation", "runtime_accept"]'));
   assert.match(
     js,
     /async function runAgentAuthorityAction[\s\S]*?if \(!hasPrincipalAgentAuthorityWorkspace\(\)\)/,

@@ -1,7 +1,37 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { principalWorkspaceAccess } from "../src/principal-workspace-access.js";
+import {
+  humanWorkspaceAccess,
+  principalWorkspaceAccess,
+  shouldRecoverAuthenticatedWorkspace
+} from "../src/principal-workspace-access.js";
+
+test("production-neutral authenticated host recovers server workspace truth", () => {
+  assert.equal(shouldRecoverAuthenticatedWorkspace({
+    connected: true,
+    currentView: "request-credit",
+    hostWorkspaceName: ""
+  }), true);
+});
+
+test("risk, disconnected, and unrelated named workspaces do not run borrower recovery", () => {
+  for (const input of [
+    { connected: true, currentView: "risk-operations", hostWorkspaceName: "" },
+    { connected: false, currentView: "request-credit", hostWorkspaceName: "" },
+    { connected: true, currentView: "capital-partners", hostWorkspaceName: "capitalPartner" }
+  ]) {
+    assert.equal(shouldRecoverAuthenticatedWorkspace(input), false);
+  }
+});
+
+test("production-neutral host accepts authenticated Human Borrower server truth", () => {
+  assert.equal(humanWorkspaceAccess({
+    connected: true,
+    hostWorkspaceName: "",
+    serverWorkspaceKind: "human_borrower"
+  }), true);
+});
 
 test("production-neutral host accepts authenticated Principal server truth", () => {
   assert.equal(principalWorkspaceAccess({
@@ -43,5 +73,32 @@ test("Borrower, unknown, disconnected, and non-Principal states fail closed", ()
     }
   ]) {
     assert.equal(principalWorkspaceAccess(input), false);
+  }
+});
+
+test("Principal, unknown, disconnected, and non-Human states fail closed for Human mutations", () => {
+  for (const input of [
+    {
+      connected: true,
+      hostWorkspaceName: "controller",
+      serverWorkspaceKind: "human_borrower"
+    },
+    {
+      connected: true,
+      hostWorkspaceName: "unexpected",
+      serverWorkspaceKind: "human_borrower"
+    },
+    {
+      connected: false,
+      hostWorkspaceName: "",
+      serverWorkspaceKind: "human_borrower"
+    },
+    {
+      connected: true,
+      hostWorkspaceName: "",
+      serverWorkspaceKind: "principal_controller"
+    }
+  ]) {
+    assert.equal(humanWorkspaceAccess(input), false);
   }
 });
