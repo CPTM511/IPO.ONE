@@ -2254,6 +2254,7 @@ export interface WorkspaceResumeResource {
 export interface WorkspaceResumeViewResponse {
   workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
   resources: WorkspaceResumeResource[];
+  controlledAgentActorIds?: string[];
   continuationReceipts?: WorkspaceContinuationReceiptView[];
   hasMore: boolean;
   serverTruth: true;

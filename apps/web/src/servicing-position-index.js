@@ -50,7 +50,8 @@ function normalizeWorkspace(workspace) {
   if (
     !closedRecord(
       workspace,
-      ["workspaceKind", "resources", "hasMore", "serverTruth", "schemaVersion"]
+      ["workspaceKind", "resources", "hasMore", "serverTruth", "schemaVersion"],
+      ["continuationReceipts", "controlledAgentActorIds"]
     ) ||
     !WORKSPACE_KINDS.has(workspace.workspaceKind) ||
     workspace.serverTruth !== true ||
@@ -59,6 +60,19 @@ function normalizeWorkspace(workspace) {
     !Array.isArray(workspace.resources) ||
     workspace.resources.length > 32
   ) return null;
+  if (
+    workspace.continuationReceipts !== undefined &&
+    (!Array.isArray(workspace.continuationReceipts) || workspace.continuationReceipts.length !== 0)
+  ) return null;
+  if (workspace.controlledAgentActorIds !== undefined) {
+    if (
+      workspace.workspaceKind !== "principal_controller" ||
+      !Array.isArray(workspace.controlledAgentActorIds) ||
+      workspace.controlledAgentActorIds.length > 8 ||
+      new Set(workspace.controlledAgentActorIds).size !== workspace.controlledAgentActorIds.length ||
+      workspace.controlledAgentActorIds.some((actorId) => !IDENTIFIER.test(actorId ?? ""))
+    ) return null;
+  }
 
   const resources = [];
   const keys = new Set();

@@ -13,6 +13,8 @@ Human mutation to the wrong role, and left the Agent authority entry disabled.
 - Derive Human and Principal access from the recovered server workspace kind.
 - Keep Human mutations fail-closed for a Principal Controller session.
 - Route Agent authority setup into its visible Human Principal control surface.
+- Recover the exact controlled Agent Actor from authenticated server truth
+  instead of relying on the local development default.
 - Make the Agent Console's initial authority action operable.
 - Add regression coverage for the production-neutral host.
 
@@ -42,9 +44,12 @@ Human mutation to the wrong role, and left the Agent authority entry disabled.
 4. Opening Agent authority from the Agent Workspace switches to the Human
    Principal control surface, expands the disclosure, and exposes the
    `Create Agent Subject` control.
-5. The deployed Vercel sandbox is verified with real mouse clicks in the
+5. Agent Subject creation uses the one exact active Agent Actor controlled by
+   the authenticated Principal and fails closed on zero, multiple, or invalid
+   bindings.
+6. The deployed Vercel sandbox is verified with real mouse clicks in the
    authenticated Founder Chrome session.
-6. Authorization audit and PostgreSQL projections confirm the observed result.
+7. Authorization audit and PostgreSQL projections confirm the observed result.
 
 ## Test commands
 
@@ -96,3 +101,10 @@ opening the Principal authority disclosure left the disclosure under the hidden
 Human Principal mode before opening the already authorized disclosure. This
 changes presentation only; authenticated server workspace truth remains the
 authorization source.
+
+The second production mouse run reached the Gateway and failed because the web
+form still carried the local development Agent Actor default while the deployed
+Tenant had a different preconfigured Agent workload Actor. Workspace recovery
+now returns only bounded, active Agent memberships controlled by the exact
+authenticated Principal. The browser auto-binds only when one exact Actor is
+returned and otherwise leaves creation unavailable.

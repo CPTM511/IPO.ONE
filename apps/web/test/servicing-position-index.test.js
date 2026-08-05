@@ -83,7 +83,11 @@ test("servicing position index exposes only reauthorized server-current values",
 test("principal controller uses the same bounded index for Agent-owned obligations", () => {
   const id = "obligation_agent_position_alpha";
   const index = createServicingPositionIndex({
-    workspace: workspace([id], { workspaceKind: "principal_controller" }),
+    workspace: workspace([id], {
+      workspaceKind: "principal_controller",
+      continuationReceipts: [],
+      controlledAgentActorIds: ["actor_agent_controlled"]
+    }),
     views: [{ obligationId: id, view: viewFor(id) }],
     selectedObligationId: id
   });
@@ -120,6 +124,13 @@ test("servicing position index fails closed on authority, identity, clock, and s
 
   cases.push({
     workspace: workspace([id], { workspaceKind: "auditor" }),
+    views: []
+  });
+
+  cases.push({
+    workspace: workspace([id], {
+      controlledAgentActorIds: ["actor_agent_not_human_workspace_data"]
+    }),
     views: []
   });
 

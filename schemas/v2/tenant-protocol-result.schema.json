@@ -4395,6 +4395,14 @@
             "$ref": "#/$defs/workspaceResumeResource"
           }
         },
+        "controlledAgentActorIds": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
         "continuationReceipts": {
           "type": "array",
           "maxItems": 16,

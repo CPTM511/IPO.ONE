@@ -4341,6 +4341,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       });
       assert.equal(controllerWorkspace.response.workspaceKind, "principal_controller");
       assert.deepEqual(
+        controllerWorkspace.response.controlledAgentActorIds,
+        [
+          identities.tenantOneControllerAgent.authenticationContext.actorId,
+          identities.tenantOneCreditAgent.authenticationContext.actorId
+        ].sort()
+      );
+      assert.deepEqual(
         controllerWorkspace.response.resources.find((resource) =>
           resource.resourceType === "obligation" &&
           resource.resourceId === agentAcceptance.obligation.obligationId

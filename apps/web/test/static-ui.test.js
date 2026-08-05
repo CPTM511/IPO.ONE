@@ -1089,6 +1089,8 @@ test("WEB-020 routes Agent authority through the Principal workspace and explain
   assert.ok(js.includes('new Set(["127.0.0.1", "localhost"])'));
   assert.ok(js.includes("borrowerPort + 1"));
   assert.ok(js.includes("no Borrower permission will be widened"));
+  assert.ok(js.includes("controlledAgentActorIds"));
+  assert.ok(js.includes("Authenticated Principal workspace ready with one server-bound Agent"));
   assert.ok(
     js.includes('setMode("human");\n  showView("request-credit")'),
     "Principal-controlled Agent authority must open inside the visible Human Principal container"

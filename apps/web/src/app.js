@@ -7121,6 +7121,16 @@ async function recoverAuthenticatedWorkspace() {
   }
 
   if (recovery.workspaceKind === "principal_controller") {
+    const controlledAgentActorIds = Array.isArray(recovery.controlledAgentActorIds)
+      ? recovery.controlledAgentActorIds.filter((actorId) => exactResourceId(actorId))
+      : [];
+    const controlledAgentActorId =
+      controlledAgentActorIds.length === 1 &&
+      new Set(controlledAgentActorIds).size === 1
+        ? controlledAgentActorIds[0]
+        : null;
+    el("agentAuthorityActorId").value = controlledAgentActorId ?? "";
+    el("agentAuthorityActorId").readOnly = Boolean(controlledAgentActorId);
     if (mandate) {
       await loadExactMandate(mandate.resourceId);
       try {
@@ -7171,9 +7181,11 @@ async function recoverAuthenticatedWorkspace() {
         quiet: true
       });
     }
-    agentAuthorityPilot.helper = resources.length > 0
-      ? "Principal workspace restored from authenticated PostgreSQL server truth."
-      : "Authenticated Principal workspace ready. Create an Agent Subject to begin.";
+    agentAuthorityPilot.helper = controlledAgentActorId
+      ? resources.length > 0
+        ? "Principal workspace and controlled Agent binding restored from authenticated PostgreSQL server truth."
+        : "Authenticated Principal workspace ready with one server-bound Agent. Create the Agent Subject to begin."
+      : "No single active controlled Agent binding was returned. Agent Subject creation remains unavailable.";
     setMode("agent");
   }
 }

@@ -53,14 +53,27 @@ test("workspace recovery returns only bounded resources already bound to the aut
 test("workspace recovery is capped and recognizes one Principal Controller role", async () => {
   const handler = readWorkspaceResumeQueryHandler();
   const rows = Array.from({ length: 33 }, (_, index) => row(index, index % 2 ? "mandate" : "subject"));
+  const calls = [];
   const result = await handler.execute({
-    client: { async query() { return { rows }; } },
+    client: {
+      async query(text, values) {
+        calls.push({ text, values });
+        return text.includes("controller_actor_id")
+          ? { rows: [{ actor_id: "actor_agent_controlled" }] }
+          : { rows };
+      }
+    },
     payload: {},
-    authenticationContext: context([RoleBundle.PRINCIPAL_CONTROLLER])
+    authenticationContext: context([RoleBundle.PRINCIPAL_CONTROLLER]),
+    now: new Date("2026-07-20T00:00:00.000Z")
   });
   assert.equal(result.workspaceKind, "principal_controller");
   assert.equal(result.resources.length, 32);
   assert.equal(result.hasMore, true);
+  assert.deepEqual(result.controlledAgentActorIds, ["actor_agent_controlled"]);
+  assert.match(calls[1].text, /m\.controller_actor_id = \$2/);
+  assert.match(calls[1].text, /a\.actor_type = 'agent'/);
+  assert.deepEqual(calls[1].values.slice(0, 2), ["tenant_workspace_test", "actor_workspace_test"]);
 });
 
 test("workspace recovery fails closed on caller scope, ambiguous role, or invalid durable rows", async () => {
@@ -86,6 +99,21 @@ test("workspace recovery fails closed on caller scope, ambiguous role, or invali
       client: { async query() { return { rows: [{ ...row(1), resource_type: "credential" }] }; } },
       payload: {},
       authenticationContext: context()
+    }),
+    (error) => error.code === "workspace_recovery_unavailable"
+  );
+  await assert.rejects(
+    handler.execute({
+      client: {
+        async query(text) {
+          return text.includes("controller_actor_id")
+            ? { rows: [{ actor_id: "not valid" }] }
+            : { rows: [] };
+        }
+      },
+      payload: {},
+      authenticationContext: context([RoleBundle.PRINCIPAL_CONTROLLER]),
+      now: new Date("2026-07-20T00:00:00.000Z")
     }),
     (error) => error.code === "workspace_recovery_unavailable"
   );

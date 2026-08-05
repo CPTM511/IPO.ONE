@@ -11,6 +11,7 @@ const RESOURCE_TYPES = Object.freeze([
 const RELATIONSHIPS = new Set(["owner", "controller", "subject"]);
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/;
 const PAGE_SIZE = 32;
+const CONTROLLED_AGENT_LIMIT = 8;
 
 function assertEmptyPayload(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload) || Object.keys(payload).length !== 0) {
@@ -49,6 +50,47 @@ function normalizeRow(row) {
   });
 }
 
+async function controlledAgentActorIds({ client, authenticationContext, kind, now }) {
+  if (kind !== "principal_controller") return [];
+  const result = await client.query(
+    `SELECT m.actor_id
+       FROM memberships AS m
+       JOIN actors AS a ON a.id = m.actor_id
+      WHERE m.tenant_id = $1
+        AND m.controller_actor_id = $2
+        AND m.status = 'active'
+        AND a.status = 'active'
+        AND a.actor_type = 'agent'
+        AND m.valid_from <= $3
+        AND (m.expires_at IS NULL OR m.expires_at > $3)
+      ORDER BY m.actor_id ASC
+      LIMIT $4`,
+    [
+      authenticationContext.tenantId,
+      authenticationContext.actorId,
+      now,
+      CONTROLLED_AGENT_LIMIT + 1
+    ]
+  );
+  if (result.rows.length > CONTROLLED_AGENT_LIMIT) {
+    throw new DomainError(
+      "workspace_recovery_unavailable",
+      "Controlled Agent recovery exceeds the bounded workspace limit"
+    );
+  }
+  const actorIds = result.rows.map((row) => row?.actor_id);
+  if (
+    actorIds.some((actorId) => typeof actorId !== "string" || !IDENTIFIER.test(actorId)) ||
+    new Set(actorIds).size !== actorIds.length
+  ) {
+    throw new DomainError(
+      "workspace_recovery_unavailable",
+      "Controlled Agent recovery state is invalid"
+    );
+  }
+  return actorIds;
+}
+
 export function readWorkspaceResumeQueryHandler() {
   return Object.freeze({
     operationId: "pilotReadWorkspaceResume",
@@ -85,6 +127,12 @@ export function readWorkspaceResumeQueryHandler() {
         ]
       );
       const rows = result.rows.map(normalizeRow);
+      const controlledAgents = await controlledAgentActorIds({
+        client,
+        authenticationContext,
+        kind,
+        now
+      });
       const continuationReceipts = kind === "agent_runtime"
         ? await coreRepository.listActiveWorkspaceContinuationReceiptsInTransaction(client, {
             actorId: authenticationContext.actorId,
@@ -95,6 +143,9 @@ export function readWorkspaceResumeQueryHandler() {
       return {
         workspaceKind: kind,
         resources: rows.slice(0, PAGE_SIZE),
+        ...(kind === "principal_controller"
+          ? { controlledAgentActorIds: controlledAgents }
+          : {}),
         continuationReceipts: continuationReceipts.map((receipt) => ({
           continuationReceiptId: receipt.continuationReceiptId,
           receiptHash: receipt.receiptHash,
