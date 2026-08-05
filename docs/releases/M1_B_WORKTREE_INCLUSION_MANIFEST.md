@@ -16,8 +16,11 @@ release manifest, deployment manifest, or authorization to use `git add -A`.
 The exact implementation candidate contained 109 paths. A clean-worktree
 verification then proved that the tracked Requirement gate referenced 11 exact
 hash-bound M1-A.1 artifacts that were not present in the commit. The complete
-reproducible candidate therefore contains 120 paths, including this manifest
-and only those 11 historical evidence dependencies. The list must be
+reproducible candidate therefore contained 120 paths, including this manifest
+and only those 11 historical evidence dependencies. The Founder subsequently
+approved the exact authentication expectation update in
+`apps/private-pilot/test-postgres/production-runtime-e2e.test.mjs`; the final
+candidate therefore contains 121 paths. The list must be
 regenerated and rechecked immediately before staging and after any change.
 
 ## Exact candidate implementation paths
@@ -41,6 +44,7 @@ apps/private-pilot/src/production-runtime.js
 apps/private-pilot/src/vercel-sandbox-cron.js
 apps/private-pilot/src/vercel-sandbox-runtime.js
 apps/private-pilot/test-postgres/production-bootstrap.test.mjs
+apps/private-pilot/test-postgres/production-runtime-e2e.test.mjs
 apps/private-pilot/test-postgres/vercel-sandbox-cron.test.mjs
 apps/private-pilot/test/production-environment.test.js
 apps/private-pilot/test/vercel-sandbox-serverless.test.js
@@ -155,7 +159,6 @@ These tracked paths are modified but must not be staged, overwritten, reverted,
 formatted, or included without separate Founder approval:
 
 ```text
-apps/private-pilot/test-postgres/production-runtime-e2e.test.mjs
 apps/web/test/support/capital-network-browser-host.mjs
 apps/web/test/support/risk-operations-browser-host.mjs
 ```

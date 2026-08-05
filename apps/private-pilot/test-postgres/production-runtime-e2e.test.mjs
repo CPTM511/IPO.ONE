@@ -235,6 +235,7 @@ test(
           profile: "closed_non_funds_pilot",
           enabled: true,
           sessionActive: false,
+          sessionAuthenticationMethod: null,
           oidcProviders: [],
           walletAuthentication: true,
           supportedChains: ["eip155:84532", "eip155:1952"],
@@ -410,7 +411,9 @@ test(
         }
       );
       assert.equal(signedInAgainOptions.status, 200);
-      assert.equal((await signedInAgainOptions.json()).sessionActive, true);
+      const signedInAgainAuthentication = await signedInAgainOptions.json();
+      assert.equal(signedInAgainAuthentication.sessionActive, true);
+      assert.equal(signedInAgainAuthentication.sessionAuthenticationMethod, "siwe");
       const signedInAgainCatalog = await fetch(
         `${baseUrl}/tenant/v1/catalog`,
         {
