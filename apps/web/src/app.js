@@ -45,6 +45,7 @@ import {
   createServicingPositionIndex
 } from "./servicing-position-index.js";
 import { createObligationPortfolioPresentation } from "./obligation-portfolio-presentation.js";
+import { principalWorkspaceAccess } from "./principal-workspace-access.js";
 import { createWalletAuthorityLifecycle } from "./wallet-authority-lifecycle.js";
 import { createWalletProviderRegistry } from "./wallet-provider-registry.js";
 import { releaseSelectedWallet } from "./wallet-sign-out.js";
@@ -1597,11 +1598,11 @@ function hasWorkspaceSessionRoleMismatch() {
 }
 
 function hasPrincipalAgentAuthorityWorkspace() {
-  return (
-    tenantPilot.connected === true &&
-    currentWorkspaceName() === "controller" &&
-    tenantPilot.workspaceKind === "principal_controller"
-  );
+  return principalWorkspaceAccess({
+    connected: tenantPilot.connected,
+    hostWorkspaceName: currentWorkspaceName(),
+    serverWorkspaceKind: tenantPilot.workspaceKind
+  });
 }
 
 function localPrincipalWorkspaceUrl() {

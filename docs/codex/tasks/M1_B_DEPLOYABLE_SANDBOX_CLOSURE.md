@@ -9,6 +9,14 @@ no-real-funds Sandbox vertical slice. The immutable engineering base is commit
 reproducible evidence. It is not an RC, release, controlled pilot, paid pilot,
 mainnet, or production-financial authorization.
 
+During the Founder-observed remote Golden Flow, the Vercel primary host
+recovered an authenticated `principal_controller` session but rendered no
+Agent-authority action. The production shell intentionally has no local
+`borrower` or `controller` port marker, while the browser gate required the
+local `controller` marker in addition to authenticated server truth. This task
+also closes that bounded presentation defect without changing server
+authorization or Principal capabilities.
+
 ## Scope
 
 - Derive CreditLine capacity and utilization from the current Offer, policy,
@@ -28,6 +36,9 @@ mainnet, or production-financial authorization.
   bounded primary-project Cron cycle.
 - Produce exact code, test, browser, database, runtime, deployment, rollback,
   and limitation evidence.
+- Permit the production-neutral Web host to render Principal controls only
+  when authenticated server recovery returns `principal_controller`; preserve
+  the stricter named-host check for local Borrower and Controller ports.
 
 ## Non-goals
 
@@ -54,6 +65,8 @@ mainnet, or production-financial authorization.
 - `db/migrations/0053_workspace_continuation_tenant_guard.*.sql`
 - tenant protocol schemas, fixtures, SDK, local reference Agent, Web UI, tests,
   deployment manifests, verification reports, and M1-B artifacts.
+- `apps/web/src/principal-workspace-access.js`
+- `apps/web/test/principal-workspace-access.test.js`
 
 ## Acceptance criteria
 
@@ -78,6 +91,9 @@ mainnet, or production-financial authorization.
    and exposes verified invitation-only health and product URLs.
 9. All deferred requirements retain their Founder-approved boundaries, and no
    implementation level is upgraded without reproducible evidence.
+10. The Vercel production-neutral host presents the Agent-authority form only
+    for a connected, server-recovered `principal_controller`; Borrower, unknown
+    host, disconnected, and non-Principal cases remain closed.
 
 ## Test commands
 

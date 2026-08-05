@@ -27,6 +27,12 @@ its PostgreSQL E2E regression reuse two paths already present in this list, so
 the candidate remains 121 paths. The list must be regenerated and rechecked
 immediately before staging and after any change.
 
+The Founder-observed Vercel Principal-entry defect adds one focused Web access
+module, its unit test, and the Tenant transport allowlist regression. The exact
+candidate therefore contains 124 paths. Existing Web, Tenant asset, static UI,
+and active M1-B task paths are already present in the list. No protected
+browser-host WIP is included.
+
 ## Exact candidate implementation paths
 
 ```text
@@ -55,12 +61,15 @@ apps/private-pilot/test/vercel-sandbox-serverless.test.js
 apps/tenant-api/src/postgres-human-access-composition.js
 apps/tenant-api/src/production-tenant-host.js
 apps/tenant-api/src/tenant-web-assets.js
+apps/tenant-api/test/transport-conformance.test.mjs
 apps/web/src/agent-handoff-manifest.js
 apps/web/src/agent-pilot-capability-manifest.js
 apps/web/src/app.js
 apps/web/src/index.html
+apps/web/src/principal-workspace-access.js
 apps/web/test/agent-handoff-manifest.test.js
 apps/web/test/manual-primary-actions.v1.json
+apps/web/test/principal-workspace-access.test.js
 apps/web/test/static-ui.test.js
 apps/web/test/support/agent-console-browser-host.mjs
 artifacts/m1-a-1/browser/agent-golden-flow-recovered.png

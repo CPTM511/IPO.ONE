@@ -22,6 +22,7 @@ const WEB_ASSETS = Object.freeze({
   "/obligation-portfolio-presentation.js": Object.freeze({ file: "obligation-portfolio-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/official-report-download.js": Object.freeze({ file: "official-report-download.js", contentType: "text/javascript; charset=utf-8" }),
   "/owned-evidence-presentation.js": Object.freeze({ file: "owned-evidence-presentation.js", contentType: "text/javascript; charset=utf-8" }),
+  "/principal-workspace-access.js": Object.freeze({ file: "principal-workspace-access.js", contentType: "text/javascript; charset=utf-8" }),
   "/request-credit-review-binding.js": Object.freeze({ file: "request-credit-review-binding.js", contentType: "text/javascript; charset=utf-8" }),
   "/risk-operations-presentation.js": Object.freeze({ file: "risk-operations-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/servicing-case-presentation.js": Object.freeze({ file: "servicing-case-presentation.js", contentType: "text/javascript; charset=utf-8" }),

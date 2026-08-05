@@ -1046,10 +1046,11 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
 });
 
 test("WEB-020 routes Agent authority through the Principal workspace and explains proof handoff", async () => {
-  const [html, js, css] = await Promise.all([
+  const [html, js, css, principalWorkspaceAccess] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
     readFile(new URL("../src/app.js", import.meta.url), "utf8"),
-    readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../src/principal-workspace-access.js", import.meta.url), "utf8")
   ]);
 
   for (const id of [
@@ -1069,9 +1070,11 @@ test("WEB-020 routes Agent authority through the Principal workspace and explain
   );
   assert.match(
     js,
-    /tenantPilot\.connected === true\s*&&\s*currentWorkspaceName\(\) === "controller"\s*&&\s*tenantPilot\.workspaceKind === "principal_controller"/,
-    "both host and authenticated workspace identities must authorize the form"
+    /principalWorkspaceAccess\(\{[\s\S]*?connected: tenantPilot\.connected,[\s\S]*?hostWorkspaceName: currentWorkspaceName\(\),[\s\S]*?serverWorkspaceKind: tenantPilot\.workspaceKind/,
+    "the form must derive access from host posture and authenticated server truth"
   );
+  assert.ok(principalWorkspaceAccess.includes('serverWorkspaceKind !== "principal_controller"'));
+  assert.ok(principalWorkspaceAccess.includes('hostWorkspaceName === "" || hostWorkspaceName === "controller"'));
   assert.ok(js.includes('currentWorkspaceName() !== "borrower"'));
   assert.ok(js.includes('new Set(["127.0.0.1", "localhost"])'));
   assert.ok(js.includes("borrowerPort + 1"));
