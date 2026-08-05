@@ -1,0 +1,2 @@
+^D$ node scripts/check-migrations.mjs
+Migration checks passed (49 ordered up/down pairs).

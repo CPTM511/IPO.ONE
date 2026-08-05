@@ -1,0 +1,2 @@
+^D$ node scripts/local-stack-acceptance.mjs
+LOCAL-STACK-001 live acceptance passed: PostgreSQL 17, 49 migrations, wallet-gated Human/Principal/Risk/Capital Partner workspaces and a durable Agent proof through the verified Lima host-agent loopback forwarding, least-privilege forced RLS, worker heartbeat, reconciliation, failure-free one-to-one Evidence anchor coverage without fake transaction hashes, and an empty pending outbox.

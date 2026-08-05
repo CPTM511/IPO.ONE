@@ -1,0 +1,5 @@
+^D$ pnpm run lint:source && pnpm run lint:boundaries
+$ node scripts/lint-source.mjs
+Source lint passed: 560 JavaScript modules parsed with the pinned Node runtime and no NUL bytes were present.
+$ node scripts/lint-boundaries.mjs
+Boundary lint passed.

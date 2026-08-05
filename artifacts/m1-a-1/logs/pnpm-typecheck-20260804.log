@@ -1,0 +1,2 @@
+^D$ node scripts/check-contract-types.mjs
+Contract typecheck passed: 3 package export surfaces and 68 runtime value exports match parseable TypeScript declaration surfaces.

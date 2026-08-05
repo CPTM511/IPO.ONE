@@ -13,9 +13,12 @@ This manifest separates the current authorized M1-B implementation work from
 protected user WIP and unrelated untracked material. It is not an RC manifest,
 release manifest, deployment manifest, or authorization to use `git add -A`.
 
-The exact pre-commit candidate currently contains 109 paths, including this
-manifest. The list must be regenerated and rechecked immediately before staging
-and again after any further change.
+The exact implementation candidate contained 109 paths. A clean-worktree
+verification then proved that the tracked Requirement gate referenced 11 exact
+hash-bound M1-A.1 artifacts that were not present in the commit. The complete
+reproducible candidate therefore contains 120 paths, including this manifest
+and only those 11 historical evidence dependencies. The list must be
+regenerated and rechecked immediately before staging and after any change.
 
 ## Exact candidate implementation paths
 
@@ -52,6 +55,17 @@ apps/web/test/agent-handoff-manifest.test.js
 apps/web/test/manual-primary-actions.v1.json
 apps/web/test/static-ui.test.js
 apps/web/test/support/agent-console-browser-host.mjs
+artifacts/m1-a-1/browser/agent-golden-flow-recovered.png
+artifacts/m1-a-1/browser/human-golden-flow-complete.png
+artifacts/m1-a-1/browser/okx-wallet-request-cancelled.png
+artifacts/m1-a-1/logs/local-acceptance-20260804.log
+artifacts/m1-a-1/logs/local-agent-acceptance-20260804-rerun.log
+artifacts/m1-a-1/logs/local-agent-acceptance-20260804.log
+artifacts/m1-a-1/logs/pnpm-check-migrations-20260804.log
+artifacts/m1-a-1/logs/pnpm-lint-20260804.log
+artifacts/m1-a-1/logs/pnpm-test-20260804.log
+artifacts/m1-a-1/logs/pnpm-test-postgres-20260804.log
+artifacts/m1-a-1/logs/pnpm-typecheck-20260804.log
 db/migrations/0050_canonical_credit_line_projection.down.sql
 db/migrations/0050_canonical_credit_line_projection.up.sql
 db/migrations/0051_durable_workspace_continuation_receipts.down.sql
@@ -154,7 +168,7 @@ GOLDEN_FLOW_GAP_ANALYSIS.md
 RECOVERY_EXEC_PLAN.md
 SPEC_CONTRADICTIONS.md
 TRACEABILITY_MATRIX.md
-artifacts/m1-a-1/
+all other `artifacts/m1-a-1/` paths not listed in the exact candidate block
 artifacts/m1-a/
 deploy/local/m1-a-1-candidate-snapshot.v1.json
 docs/codex/tasks/MARKETING_FILM_006_OPENING_AND_NARRATION_REFINEMENT.md
@@ -177,7 +191,9 @@ Before a normal M1-B implementation commit:
 4. inspect the exact staged diff;
 5. run secret, credential, generated-file, and excluded-path checks on the
    exact staged set;
-6. run `git diff --cached --check`;
+6. run `git diff --cached --check` for source and documentation paths; the
+   exact hash-bound historical logs retain their original CRLF/terminal control
+   bytes and are checked by catalog SHA-256 instead of being normalized;
 7. run the complete static, unit, contract, and fresh PostgreSQL gates;
 8. record the staged tree SHA and file hashes;
 9. use a normal implementation commit only, never an RC branch or tag;
