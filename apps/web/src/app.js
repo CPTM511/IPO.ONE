@@ -8340,11 +8340,11 @@ function focusJumpTarget(target) {
 }
 
 function openPrincipalAgentAuthority() {
-  setMode("agent");
+  setMode("human");
   showView("request-credit");
   el("agentAuthorityDisclosure").open = true;
   requestAnimationFrame(() => focusJumpTarget(el("agentAuthority")));
-  announce("Principal Agent authority configuration opened");
+  announce("Human Principal authority configuration opened");
 }
 
 function openAgentProtocolDetails({ targetId = "agentProtocolDetails" } = {}) {

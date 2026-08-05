@@ -1089,7 +1089,10 @@ test("WEB-020 routes Agent authority through the Principal workspace and explain
   assert.ok(js.includes('new Set(["127.0.0.1", "localhost"])'));
   assert.ok(js.includes("borrowerPort + 1"));
   assert.ok(js.includes("no Borrower permission will be widened"));
-  assert.ok(js.includes('setMode("agent");\n  showView("request-credit")'));
+  assert.ok(
+    js.includes('setMode("human");\n  showView("request-credit")'),
+    "Principal-controlled Agent authority must open inside the visible Human Principal container"
+  );
   assert.ok(js.includes('["authority", "application", "principal_activation", "runtime_accept"]'));
   assert.match(
     js,

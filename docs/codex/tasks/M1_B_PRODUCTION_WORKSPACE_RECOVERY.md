@@ -12,8 +12,7 @@ Human mutation to the wrong role, and left the Agent authority entry disabled.
 - Recover authenticated workspace truth on the production-neutral primary host.
 - Derive Human and Principal access from the recovered server workspace kind.
 - Keep Human mutations fail-closed for a Principal Controller session.
-- Keep the Agent interaction mode selected while opening Principal-controlled
-  Agent authority.
+- Route Agent authority setup into its visible Human Principal control surface.
 - Make the Agent Console's initial authority action operable.
 - Add regression coverage for the production-neutral host.
 
@@ -40,7 +39,8 @@ Human mutation to the wrong role, and left the Agent authority entry disabled.
 2. A Principal Controller cannot invoke Human Subject creation from the UI.
 3. The Agent Console initial `Set up Agent authority` action is enabled after
    Principal recovery.
-4. Opening Agent authority preserves Agent interaction mode and exposes the
+4. Opening Agent authority from the Agent Workspace switches to the Human
+   Principal control surface, expands the disclosure, and exposes the
    `Create Agent Subject` control.
 5. The deployed Vercel sandbox is verified with real mouse clicks in the
    authenticated Founder Chrome session.
@@ -87,3 +87,12 @@ this change.
 - Vercel deployment IDs and readiness output.
 - Mouse-click screenshots and route/control observations.
 - Authorization audit events and PostgreSQL projection counts.
+
+## Browser-discovered regression
+
+The first production mouse run proved that keeping Agent interaction mode while
+opening the Principal authority disclosure left the disclosure under the hidden
+`request-credit-human` container. The bounded correction restores the explicit
+Human Principal mode before opening the already authorized disclosure. This
+changes presentation only; authenticated server workspace truth remains the
+authorization source.
