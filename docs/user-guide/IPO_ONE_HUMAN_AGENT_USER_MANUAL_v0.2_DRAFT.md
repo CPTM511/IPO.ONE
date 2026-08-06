@@ -184,8 +184,8 @@ Agent 网页主路径不要求用户下载文件。
 1. 切换顶部 `Agent Workspace`。
 2. 从 Home 点击 `Agent borrowing` → `Open Agent credit`，或打开左侧
    `Agent Console`。
-3. 在 `Request, borrow, repay, and verify online` 点击
-   `Request Agent credit and receive Offer`。
+3. 在 `Check authenticated Agent progress online` 点击
+   `Check for Agent Offer`。
 4. 页面应显示：
    - `Decision completed`；
    - `Offered · $...`；
@@ -205,10 +205,13 @@ Mandate 激活后，回到 `Agent Workspace` → `Open Agent credit`。页面现
 
 | 顺序 | 按钮 | 功能 | 成功标志 |
 | --- | --- | --- | --- |
-| 1 | `Create Agent Obligation` | 使用先前 exact Offer 创建共享 Obligation；不执行、不还款 | `Obligation: Created`，下一步按钮启用 |
-| 2 | `Execute allowlisted Provider spend` | Execute one Mandate-approved Provider spend through the non-withdrawable sandbox rail | `Provider spend: Allowlisted` |
-| 3 | `Capture revenue and auto-repay` | Capture partial synthetic revenue through the Agent credential and route it automatically through the deterministic repayment waterfall | `Revenue captured` and the remaining principal |
-| 4 | `Verify Agent Evidence` | 读取 Agent-owned immutable Evidence timeline | `Lifecycle verified` 和 verified event 数量 |
+| 1 | `Check for Agent Obligation` | Restore the shared Obligation after the external Agent accepts the exact Offer | `Obligation: Created` |
+| 2 | `Check Provider spend` | Restore the current Mandate-approved Provider-spend state | `Provider spend: Allowlisted` |
+| 3 | `Check automatic repayment` | Restore the deterministic repayment projection after the external Agent posts synthetic revenue | `Revenue captured` and the remaining principal |
+| 4 | `Check Agent Evidence` | Restore the owner-authorized immutable Evidence timeline | `Lifecycle verified` and the verified event count |
+
+The external Agent remains limited to the non-withdrawable sandbox rail; the
+Principal checks durable server truth and never receives the Agent credential.
 | 5 | `Review Agent obligations` | 打开 Agent 自己的共享 Obligation 位置 | `Obligations` 显示该 Agent position、余额和状态 |
 
 每个按钮只执行一个动作。前一步没有成功时，后一步保持 disabled。
@@ -329,12 +332,12 @@ Passport 不应包含 raw KYC/PII、Agent credential、私钥或完整策略数�
 ### Agent
 
 - [ ] Agent Subject、account proof 和 Draft Mandate 可创建。
-- [ ] `Request Agent credit and receive Offer` 返回 Decision 与 Offer。
+- [ ] `Check for Agent Offer` restores the persisted Decision and Offer.
 - [ ] exact Mandate 可由 Principal 激活。
-- [ ] `Create Agent Obligation` 可单独点击。
-- [ ] `Execute allowlisted Provider spend` 可单独点击。
-- [ ] `Capture revenue and auto-repay` 可单独点击。
-- [ ] `Verify Agent Evidence` 可单独点击。
+- [ ] `Check for Agent Obligation` restores the current Obligation state.
+- [ ] `Check Provider spend` restores the current execution state.
+- [ ] `Check automatic repayment` restores the current repayment state.
+- [ ] `Check Agent Evidence` restores the current Evidence state.
 - [ ] `Review Agent obligations` 可打开当前 Agent 的 Obligation。
 - [ ] 页面明确说明用途受限、不可任意提款。
 - [ ] Agent credential、私钥和 raw signature 不进入浏览器。
@@ -345,10 +348,10 @@ Passport 不应包含 raw KYC/PII、Agent credential、私钥或完整策略数�
 | --- | --- | --- |
 | `Request & evaluate credit` 灰色 | Subject 或 Consent 尚未完成 | 先点击前两个创建按钮 |
 | Agent 只能看到 handoff 下载 | 进入了开发集成区，或没有加载 Draft/Active Mandate | 回到 `Agent Console` 的 browser-operable 区域 |
-| `Create Agent Obligation` 灰色 | Offer 尚未生成，或 exact Mandate 未激活 | 先运行 application，再由 Principal 激活 |
-| `Execute allowlisted Provider spend` 灰色 | Obligation 尚未创建 | 先点击 `Create Agent Obligation` |
-| `Capture revenue and auto-repay` 灰色 | Provider spend 尚未执行，或余额为零 | 先执行 Provider spend；零余额无需重复还款 |
-| `Verify Agent Evidence` 灰色 | 还款未完成 | 先完成当前测试还款 |
+| `Check for Agent Obligation` 灰色 | Offer 尚未生成，或 exact Mandate 未激活 | 先运行 application，再由 Principal 激活 |
+| `Check Provider spend` 灰色 | Obligation 尚未创建 | Run the external Agent runtime first |
+| `Check automatic repayment` 灰色 | Provider spend 尚未执行 | Run the external Agent repayment step first |
+| `Check Agent Evidence` 灰色 | 还款未完成 | Complete the current sandbox repayment first |
 | 看到 hash 但 BaseScan 查不到 | 看到的是 object/Evidence digest，不是 transaction hash | 查看 Base Sepolia anchor 的 transaction/finality/indexer 状态 |
 | Sign in 后又失效 | Session 已过期、角色端口切换或钱包变化 | Sign out，回到正确端口重新 Sign in |
 

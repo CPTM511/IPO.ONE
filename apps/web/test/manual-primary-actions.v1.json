@@ -97,28 +97,28 @@
       "view": "agent-console",
       "id": "agentOnlineRunBtn",
       "labels": [
-        "Request Agent credit and receive Offer",
+        "Check for Agent Offer",
         "Review and activate this Mandate",
-        "Create Agent Obligation"
+        "Check for Agent Obligation"
       ]
     },
     {
       "journey": "agent",
       "view": "agent-console",
       "id": "agentOnlineExecuteBtn",
-      "labels": ["Execute allowlisted Provider spend"]
+      "labels": ["Check Provider spend"]
     },
     {
       "journey": "agent",
       "view": "agent-console",
       "id": "agentOnlineRepayBtn",
-      "labels": ["Capture revenue and auto-repay"]
+      "labels": ["Check automatic repayment"]
     },
     {
       "journey": "agent",
       "view": "agent-console",
       "id": "agentOnlineEvidenceBtn",
-      "labels": ["Verify Agent Evidence"]
+      "labels": ["Check Agent Evidence"]
     },
     {
       "journey": "agent",

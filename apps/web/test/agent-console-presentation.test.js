@@ -116,7 +116,26 @@ test("application handoff enables only the approved application phase", () => {
   );
   assert.equal(presentation.principal.bound, true);
   assert.equal(presentation.identity.accountBinding.chainId, "eip155:84532");
+  assert.equal(presentation.identity.applicationEligible, true);
   assert.equal(presentation.mandate.status, "draft");
+});
+
+test("pending or unbound Agent identity fails closed before application", () => {
+  const active = stateFor(manifests.application_ready);
+  const pending = createAgentConsolePresentation({
+    ...active,
+    subject: { ...active.subject, status: "pending" },
+    accountBinding: null
+  });
+  assert.equal(pending.identity.subjectStatus, "pending");
+  assert.equal(pending.identity.accountBinding, null);
+  assert.equal(pending.identity.applicationEligible, false);
+
+  const inactiveBinding = createAgentConsolePresentation({
+    ...active,
+    accountBinding: { ...active.accountBinding, status: "revoked" }
+  });
+  assert.equal(inactiveBinding, null);
 });
 
 test("runtime handoff exposes runtime tools but keeps new applications phase-bound", () => {

@@ -1160,12 +1160,12 @@
             <section class="panel agent-online-workflow" id="agentOnlineWorkflow" aria-labelledby="agentOnlineWorkflowTitle">
               <div class="panel-heading">
                 <div>
-                  <p class="eyebrow">Browser-operable reference Agent</p>
-                  <h3 id="agentOnlineWorkflowTitle">Request, borrow, repay, and verify online</h3>
+                  <p class="eyebrow">Principal-observable Agent lifecycle</p>
+                  <h3 id="agentOnlineWorkflowTitle">Check authenticated Agent progress online</h3>
                 </div>
                 <span class="state-pill neutral" id="agentOnlineStatus">Waiting for Mandate</span>
               </div>
-              <p id="agentOnlineHelper" role="status" aria-live="polite">Create a verified Agent Subject and Draft Mandate first. No handoff download or browser credential is required.</p>
+              <p id="agentOnlineHelper" role="status" aria-live="polite">Create a verified Agent Subject and Draft Mandate first. The external Agent uses its own credential; this Principal browser reads only durable server truth.</p>
               <div class="agent-console-proof-grid">
                 <div><span>Application</span><strong id="agentOnlineApplicationState">Not started</strong></div>
                 <div><span>Offer</span><strong id="agentOnlineOfferState">Not loaded</strong></div>
@@ -1175,13 +1175,13 @@
                 <div><span>Evidence</span><strong id="agentOnlineEvidenceState">Not loaded</strong></div>
               </div>
               <div class="agent-online-stage-actions" aria-label="Agent borrowing and use actions">
-                <button class="primary" id="agentOnlineRunBtn" type="button" disabled>Request Agent credit and receive Offer</button>
-                <button class="secondary" id="agentOnlineExecuteBtn" type="button" disabled>Execute allowlisted Provider spend</button>
-                <button class="secondary" id="agentOnlineRepayBtn" type="button" disabled>Capture revenue and auto-repay</button>
-                <button class="secondary" id="agentOnlineEvidenceBtn" type="button" disabled>Verify Agent Evidence</button>
+                <button class="primary" id="agentOnlineRunBtn" type="button" disabled>Check for Agent Offer</button>
+                <button class="secondary" id="agentOnlineExecuteBtn" type="button" disabled>Check Provider spend</button>
+                <button class="secondary" id="agentOnlineRepayBtn" type="button" disabled>Check automatic repayment</button>
+                <button class="secondary" id="agentOnlineEvidenceBtn" type="button" disabled>Check Agent Evidence</button>
                 <button class="text-action" id="agentOnlineReviewBtn" type="button" disabled>Review Agent obligations</button>
               </div>
-              <p class="policy-note"><strong>What “use credit” means:</strong> the Agent executes one Mandate-approved purpose through the non-withdrawable sandbox rail. It cannot transfer the credit to an arbitrary wallet. The registered Agent uses its own durable, revocable server-side credential; the browser receives only sanitized workflow receipts.</p>
+              <p class="policy-note"><strong>What “use credit” means:</strong> the Agent executes one Mandate-approved purpose through the non-withdrawable sandbox rail. It cannot transfer the credit to an arbitrary wallet. The external Agent uses its own durable, revocable credential; the Principal browser can only check sanitized, persisted workflow receipts.</p>
             </section>
 
             <div class="agent-console-authority-grid">

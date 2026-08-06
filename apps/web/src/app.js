@@ -203,7 +203,7 @@ const agentOnlinePilot = {
   evidenceResult: null,
   runtimeResult: null,
   helper:
-    "Create a verified Agent Subject and Draft Mandate first. No handoff download or browser credential is required."
+    "Create a verified Agent Subject and Draft Mandate first. The external Agent uses its own credential; this Principal browser reads only durable server truth."
 };
 const auditorEvidence = {
   catalogAvailable: false,
@@ -2289,6 +2289,31 @@ function applyAgentOfferReceipt(receipt) {
   return true;
 }
 
+function controlledAgentContinuationForMandate(recovery, mandate) {
+  if (
+    recovery?.serverTruth !== true ||
+    recovery?.workspaceKind !== "principal_controller" ||
+    !exactResourceId(mandate?.mandateId) ||
+    !exactResourceId(mandate?.subjectId)
+  ) return null;
+  const matches = (Array.isArray(recovery.continuationReceipts)
+    ? recovery.continuationReceipts
+    : []
+  ).filter((continuation) => (
+    continuation?.serverTruth === true &&
+    continuation?.schemaVersion === "workspace_continuation_receipt_view.v1" &&
+    continuation.subjectId === mandate.subjectId &&
+    continuation.mandateId === mandate.mandateId &&
+    continuation.receipt?.subjectId === continuation.subjectId &&
+    continuation.receipt?.mandateId === continuation.mandateId &&
+    continuation.receipt?.offer?.creditOfferId === continuation.creditOfferId &&
+    continuation.receipt?.offer?.creditOfferHash === continuation.creditOfferHash &&
+    continuation.receipt?.offer?.aggregateVersion === continuation.offerAggregateVersion &&
+    new Date(continuation.expiresAt).getTime() > Date.now()
+  ));
+  return matches.length === 1 ? matches[0] : null;
+}
+
 function renderAgentOnlineWorkflow(presentation) {
   const button = el("agentOnlineRunBtn");
   const executeButton = el("agentOnlineExecuteBtn");
@@ -2390,7 +2415,10 @@ function renderAgentOnlineWorkflow(presentation) {
   ) + BigInt(
     runtimeObligation?.outstandingFeesMinor ?? "0"
   );
-  const stage = mandate?.status === "draft"
+  const applicationEligible = presentation?.identity?.applicationEligible === true;
+  const stage = mandate?.status === "draft" && !applicationEligible
+    ? "identity"
+    : mandate?.status === "draft"
     ? offerReceipt
       ? "principal_activation"
       : "application"
@@ -2421,7 +2449,8 @@ function renderAgentOnlineWorkflow(presentation) {
       ? "Action required"
       : {
           authority: "Waiting for Mandate",
-          application: "Application ready",
+          identity: "Account proof required",
+          application: "Waiting for Agent Offer",
           principal_activation: "Offer ready · activate",
           runtime_accept: "Ready to create Obligation",
           runtime_execute: "Ready for approved use",
@@ -2433,8 +2462,10 @@ function renderAgentOnlineWorkflow(presentation) {
 
   el("agentOnlineApplicationState").textContent = offerReceipt
     ? "Decision completed"
+    : stage === "identity"
+      ? "Blocked by identity proof"
     : stage === "application"
-      ? "Ready to run"
+      ? "Waiting for external Agent"
       : "Not started";
   el("agentOnlineOfferState").textContent = offerReceipt?.offer
     ? `${titleize(offerReceipt.offer.status)} · ${usdMinorToMoney(
@@ -2480,12 +2511,13 @@ function renderAgentOnlineWorkflow(presentation) {
     !["authority", "application", "principal_activation", "runtime_accept"].includes(stage);
   button.toggleAttribute("aria-busy", agentOnlinePilot.busy);
   button.textContent = agentOnlinePilot.busy
-    ? "Running authenticated Agent…"
+      ? "Running authenticated Agent…"
     : {
         authority: "Set up Agent authority",
-        application: "Request Agent credit and receive Offer",
+        identity: "Agent account proof required",
+        application: "Check for Agent Offer",
         principal_activation: "Review and activate this Mandate",
-        runtime_accept: "Create Agent Obligation",
+        runtime_accept: "Check for Agent Obligation",
         runtime_execute: "Agent Obligation created",
         runtime_repay: "Approved use executed",
         runtime_evidence: "Repayment posted",
@@ -2494,11 +2526,10 @@ function renderAgentOnlineWorkflow(presentation) {
       }[stage];
   executeButton.disabled =
     agentOnlinePilot.busy || !controllerReady || stage !== "runtime_execute";
+  executeButton.textContent = "Check Provider spend";
   repayButton.disabled =
     agentOnlinePilot.busy || !controllerReady || stage !== "runtime_repay";
-  repayButton.textContent = totalRepaidMinor > 0n
-    ? "Capture remaining revenue and auto-repay"
-    : "Capture partial revenue and auto-repay";
+  repayButton.textContent = "Check automatic repayment";
   evidenceButton.disabled =
     agentOnlinePilot.busy ||
     !controllerReady ||
@@ -2508,17 +2539,19 @@ function renderAgentOnlineWorkflow(presentation) {
 
   const defaultHelper = {
     authority:
-      "Create a verified Agent Subject and Draft Mandate first. No handoff download or browser credential is required.",
+      "Create a verified Agent Subject and Draft Mandate first. The external Agent uses its own credential; this Principal browser reads only durable server truth.",
+    identity:
+      "The Agent Subject is pending or its CAIP-10 AccountBinding is not active. Create the one-use signing request and let the registered external Agent submit its own proof before requesting credit.",
     application:
-      "The registered reference Agent can now request credit through its server-held, revocable credential.",
+      "Run the application handoff with the registered external Agent, then use this check to restore its persisted Decision and Offer receipt.",
     principal_activation:
       "The Agent returned a Decision and Offer. Review the exact Mandate in the Principal workspace, then activate it.",
     runtime_accept:
-      "The active Mandate and exact Offer are ready. Create the shared Agent Obligation; this step does not execute or repay it.",
+      "The active Mandate and exact Offer are ready. The external Agent must accept the Offer; this Principal action only checks durable progress.",
     runtime_execute:
-      "The Obligation exists. Execute one allowlisted Provider spend through the non-withdrawable sandbox rail.",
+      "The Obligation exists. The external Agent may execute one allowlisted Provider spend; this Principal action only checks current server truth.",
     runtime_repay:
-      "Provider spend is recorded. Capture synthetic revenue and route it automatically through the deterministic repayment waterfall.",
+      "Provider spend is recorded. The external Agent may capture synthetic revenue and route repayment through the deterministic waterfall; this Principal action only checks current server truth.",
     runtime_evidence:
       "Repayment is complete. Load the immutable Evidence timeline and chain-anchor status.",
     runtime_complete:
@@ -2785,6 +2818,78 @@ console.log(contract.info.title, contract.info.version);`;
   renderAgentOnlineWorkflow(presentation);
 }
 
+async function checkAgentContinuation(mandate) {
+  const result = await tenantApi("pilotReadWorkspaceResume", {
+    payload: {},
+    idempotent: false
+  });
+  const continuation = controlledAgentContinuationForMandate(
+    result.response,
+    mandate
+  );
+  if (!continuation) {
+    agentOnlinePilot.offerReceipt = null;
+    agentOnlinePilot.applicationResult = null;
+    forgetAgentOfferReceipt();
+    agentOnlinePilot.helper =
+      "No current Agent Offer receipt is persisted yet. Run the downloaded application handoff with the registered external Agent, then check again.";
+    toast("Agent Offer is not ready yet");
+    announce("No current Agent Offer receipt is available");
+    return false;
+  }
+  if (!applyAgentOfferReceipt(continuation.receipt)) {
+    throw new Error("The persisted Agent Offer receipt is invalid.");
+  }
+  agentOnlinePilot.applicationResult = continuation;
+  agentOnlinePilot.acceptanceResult = null;
+  agentOnlinePilot.executionResult = null;
+  agentOnlinePilot.repaymentResult = null;
+  agentOnlinePilot.evidenceResult = null;
+  agentOnlinePilot.runtimeResult = null;
+  agentOnlinePilot.helper =
+    "Decision and Offer restored from durable server truth. Review and activate this exact Mandate; activation does not create a new application.";
+  toast("Agent Decision and Offer restored");
+  announce("Agent Offer restored; Principal activation required");
+  return true;
+}
+
+async function checkAgentRuntimeProgress(mandate) {
+  await recoverAuthenticatedWorkspace();
+  const activeMandate = currentAgentConsolePresentation()?.mandate;
+  if (activeMandate?.mandateId !== mandate.mandateId) {
+    throw new Error("The authenticated Mandate changed during progress recovery.");
+  }
+  const obligation = currentAgentOnlineObligation(mandate.mandateId);
+  if (!obligation) {
+    agentOnlinePilot.helper =
+      "No Agent Obligation is persisted yet. Run the active-Mandate runtime handoff with the registered external Agent, then check again.";
+    toast("Agent Obligation is not ready yet");
+    announce("No current Agent Obligation is available");
+    return false;
+  }
+  rememberAgentOnlineObligation(obligation);
+  if (BigInt(obligation.totalRepaidMinor ?? "0") > 0n) {
+    await loadOwnedEvidence();
+    if (currentOwnedEvidenceLoaded()) {
+      agentOnlinePilot.evidenceResult = {
+        evidence: {
+          items: [...ownedEvidence.items],
+          hasMore: ownedEvidence.hasMore,
+          schemaVersion: "principal_observed_agent_evidence.v1"
+        }
+      };
+    }
+  }
+  agentOnlinePilot.helper = obligation.status === "fully_repaid"
+    ? "The Agent Obligation, automatic repayment, and current owner-authorized Evidence were restored from durable server truth."
+    : obligation.executionStatus === "executed"
+      ? "The allowlisted sandbox spend is persisted. The external Agent must post the next automatic repayment step; check again afterward."
+      : "The Agent Obligation is persisted. The external Agent must execute the allowlisted sandbox use; check again afterward.";
+  toast("Agent lifecycle progress refreshed");
+  announce("Agent lifecycle progress restored from the server");
+  return true;
+}
+
 async function runOnlineReferenceAgent() {
   if (agentOnlinePilot.busy) return;
   const presentation = currentAgentConsolePresentation();
@@ -2793,85 +2898,37 @@ async function runOnlineReferenceAgent() {
     openPrincipalAgentAuthority();
     return;
   }
+  if (mandate.status === "draft" && presentation.identity.applicationEligible !== true) {
+    openPrincipalAgentAuthority();
+    requestAnimationFrame(() => focusJumpTarget(el("agentAuthority")));
+    announce("Agent account proof is required before application");
+    return;
+  }
   if (mandate.status === "draft" && agentOnlinePilot.offerReceipt) {
     openPrincipalAgentAuthority();
     requestAnimationFrame(() => focusJumpTarget(el("agentAuthority")));
     announce("Review and activate the exact Mandate to continue");
     return;
   }
-  if (
-    mandate.status === "active" &&
-    !applyAgentOfferReceipt(agentOnlinePilot.offerReceipt)
-  ) {
-    agentOnlinePilot.error = true;
-    agentOnlinePilot.helper =
-      "This active Mandate has no matching Offer receipt. Revoke it and create a new Draft Mandate to start a fresh Agent application.";
-    renderAgentConsole();
-    return;
-  }
 
   agentOnlinePilot.busy = true;
   agentOnlinePilot.error = false;
   agentOnlinePilot.helper = mandate.status === "draft"
-    ? "The registered Agent is requesting credit and verifying the returned Decision and Offer…"
-    : "The registered Agent is accepting the exact Offer and creating the shared Obligation…";
+    ? "Checking PostgreSQL-backed continuation receipts for this exact controlled Agent and Draft Mandate…"
+    : "Checking current Agent Obligation, execution, repayment, and Evidence state from the authenticated server…";
   renderAgentConsole();
   try {
     if (mandate.status === "draft") {
-      const result = await referenceAgentApi(
-        "/local/v1/reference-agent/application",
-        { mandateId: mandate.mandateId }
-      );
-      if (!applyAgentOfferReceipt(result.offerReceipt)) {
-        throw new Error("The online Agent returned an invalid Offer receipt.");
+      await checkAgentContinuation(mandate);
+    } else {
+      if (!applyAgentOfferReceipt(agentOnlinePilot.offerReceipt)) {
+        const restored = await checkAgentContinuation(mandate);
+        if (!restored) return;
       }
-      agentOnlinePilot.applicationResult = result;
-      agentOnlinePilot.acceptanceResult = null;
-      agentOnlinePilot.executionResult = null;
-      agentOnlinePilot.repaymentResult = null;
-      agentOnlinePilot.evidenceResult = null;
-      agentOnlinePilot.runtimeResult = null;
-      agentOnlinePilot.helper =
-        "Decision and Offer verified. Review and activate this exact Mandate; the saved receipt will continue into Obligation creation.";
-      toast("Agent Decision and Offer are ready");
-      announce("Agent application completed; Principal activation required");
-      return;
+      await checkAgentRuntimeProgress(mandate);
     }
-
-    const result = await referenceAgentApi(
-      "/local/v1/reference-agent/runtime-step",
-      {
-        action: "accept_offer",
-        mandateId: mandate.mandateId,
-        offerReceipt: agentOnlinePilot.offerReceipt
-      }
-    );
-    agentOnlinePilot.acceptanceResult = result;
-    agentOnlinePilot.executionResult = null;
-    agentOnlinePilot.repaymentResult = null;
-    agentOnlinePilot.evidenceResult = null;
-    agentOnlinePilot.runtimeResult = null;
-    const obligation = result.obligation;
-    if (!exactResourceId(obligation?.obligationId)) {
-      throw new Error("The online Agent returned an invalid Obligation receipt.");
-    }
-    tenantPilot.repayment = null;
-    rememberAgentOnlineObligation(obligation);
-    await refreshOwnedEvidenceAfterCommittedAction(obligation.obligationId, {
-      eventType: "credit_offer_accepted",
-      occurredAt: result.acceptance.acceptedAt
-    });
-    agentOnlinePilot.helper =
-      "Agent Obligation created. No spend or repayment has occurred yet. Continue with Execute allowlisted Provider spend.";
-    toast("Agent Obligation created");
-    announce("Agent Obligation created; approved use is next");
   } catch (error) {
-    agentOnlinePilot.error = true;
-    const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";
-    agentOnlinePilot.helper = `${error?.message ?? "The online Agent operation failed."}${requestSuffix}`;
-    toast(agentOnlinePilot.helper, "error");
-    announce("Online Agent operation failed");
-    if (isRejectedAuthenticationSession(error)) openAccess();
+    failAgentOnlineStep(error);
   } finally {
     agentOnlinePilot.busy = false;
     renderTenantPilot();
@@ -2918,44 +2975,20 @@ function failAgentOnlineStep(error) {
 async function executeOnlineAgentApprovedUse() {
   if (agentOnlinePilot.busy) return;
   const mandate = currentAgentConsolePresentation()?.mandate;
-  const obligation = currentAgentOnlineObligation(mandate?.mandateId);
-  if (
-    mandate?.status !== "active" ||
-    !exactResourceId(obligation?.obligationId)
-  ) {
+  if (mandate?.status !== "active") {
     agentOnlinePilot.error = true;
     agentOnlinePilot.helper =
-      "Create the Agent Obligation before executing an approved use.";
+      "Activate the exact Mandate before checking runtime progress.";
     renderAgentConsole();
     return;
   }
   agentOnlinePilot.busy = true;
   agentOnlinePilot.error = false;
   agentOnlinePilot.helper =
-    "The Agent is executing one Mandate-approved synthetic use through the non-withdrawable sandbox rail…";
+    "Checking the Agent Obligation and allowlisted sandbox-spend projection from authenticated server truth…";
   renderAgentConsole();
   try {
-    const result = await referenceAgentApi(
-      "/local/v1/reference-agent/runtime-step",
-      {
-        action: "execute_allowed_use",
-        mandateId: mandate.mandateId,
-        obligationId: obligation.obligationId
-      }
-    );
-    if (!exactResourceId(result.obligation?.obligationId)) {
-      throw new Error("The online Agent returned an invalid execution receipt.");
-    }
-    agentOnlinePilot.executionResult = result;
-    rememberAgentOnlineObligation(result.obligation);
-    await refreshOwnedEvidenceAfterCommittedAction(result.obligation.obligationId, {
-      eventType: "obligation_sandbox_executed",
-      occurredAt: result.executionReceipt.executedAt
-    });
-    agentOnlinePilot.helper =
-      "Approved use executed through the sandbox rail. The receipt is non-withdrawable and no production funds moved. Repayment is now available.";
-    toast("Allowlisted Provider spend executed");
-    announce("Allowlisted Provider spend executed; revenue capture is next");
+    await checkAgentRuntimeProgress(mandate);
   } catch (error) {
     failAgentOnlineStep(error);
   } finally {
@@ -2967,70 +3000,20 @@ async function executeOnlineAgentApprovedUse() {
 async function repayOnlineAgentObligation() {
   if (agentOnlinePilot.busy) return;
   const mandate = currentAgentConsolePresentation()?.mandate;
-  const obligation = currentAgentOnlineObligation(mandate?.mandateId);
-  if (
-    mandate?.status !== "active" ||
-    obligation?.executionStatus !== "executed"
-  ) {
+  if (mandate?.status !== "active") {
     agentOnlinePilot.error = true;
     agentOnlinePilot.helper =
-      "Execute the approved Agent use before posting repayment.";
-    renderAgentConsole();
-    return;
-  }
-  const outstandingMinor = (
-    BigInt(obligation.outstandingPrincipalMinor ?? "0") +
-    BigInt(obligation.outstandingInterestMinor ?? "0") +
-    BigInt(obligation.outstandingFeesMinor ?? "0")
-  );
-  const amountMinor = (
-    BigInt(obligation.totalRepaidMinor ?? "0") === 0n && outstandingMinor > 1n
-      ? outstandingMinor / 2n
-      : outstandingMinor
-  ).toString();
-  if (amountMinor === "0") {
-    agentOnlinePilot.error = true;
-    agentOnlinePilot.helper =
-      "This Agent Obligation has no remaining repayable balance.";
+      "Activate the exact Mandate before checking repayment progress.";
     renderAgentConsole();
     return;
   }
   agentOnlinePilot.busy = true;
   agentOnlinePilot.error = false;
   agentOnlinePilot.helper =
-    "The Agent is capturing synthetic revenue and routing it automatically through the shared repayment waterfall…";
+    "Checking the current repayment projection and owner-authorized Evidence from authenticated server truth…";
   renderAgentConsole();
   try {
-    const result = await referenceAgentApi(
-      "/local/v1/reference-agent/runtime-step",
-      {
-        action: "post_repayment",
-        amountMinor,
-        mandateId: mandate.mandateId,
-        obligationId: obligation.obligationId,
-        sourceCode: "synthetic_revenue"
-      }
-    );
-    if (!exactResourceId(result.obligation?.obligationId)) {
-      throw new Error("The online Agent returned an invalid repayment receipt.");
-    }
-    agentOnlinePilot.repaymentResult = result;
-    tenantPilot.repayment = result.repayment;
-    rememberAgentOnlineObligation(result.obligation);
-    await refreshOwnedEvidenceAfterCommittedAction(result.obligation.obligationId, {
-      eventType: "repayment_posted",
-      occurredAt: result.repayment.occurredAt
-    });
-    agentOnlinePilot.helper =
-      result.obligation.status === "fully_repaid"
-        ? "Revenue capture and automatic repayment completed. The durable Obligation is fully repaid; verify Evidence to close the test journey."
-        : "Partial revenue capture and automatic repayment completed. Capture the remaining revenue to close the Obligation.";
-    toast(result.obligation.status === "fully_repaid"
-      ? "Agent Obligation fully repaid"
-      : "Partial automatic repayment posted");
-    announce(result.obligation.status === "fully_repaid"
-      ? "Automatic repayment completed; Evidence verification is next"
-      : "Partial automatic repayment completed");
+    await checkAgentRuntimeProgress(mandate);
   } catch (error) {
     failAgentOnlineStep(error);
   } finally {
@@ -3042,141 +3025,25 @@ async function repayOnlineAgentObligation() {
 async function verifyOnlineAgentEvidence() {
   if (agentOnlinePilot.busy) return;
   const mandate = currentAgentConsolePresentation()?.mandate;
-  const obligation = currentAgentOnlineObligation(mandate?.mandateId);
-  if (
-    mandate?.status !== "active" ||
-    !exactResourceId(obligation?.obligationId)
-  ) {
+  if (mandate?.status !== "active") {
     agentOnlinePilot.error = true;
     agentOnlinePilot.helper =
-      "Create and execute the Agent Obligation before reading its Evidence.";
+      "Activate the exact Mandate before checking Agent Evidence.";
     renderAgentConsole();
     return;
   }
-  const sharedProjectionEpoch = ownedEvidence.queryEpoch;
-  const sharedProjectionDataEpoch = authenticatedDataEpoch;
-  const projectToSelectedEvidence =
-    tenantPilot.obligation?.obligationId === obligation.obligationId;
-  const expectedRepayment =
-    agentOnlinePilot.repaymentResult?.repayment ?? tenantPilot.repayment;
   agentOnlinePilot.busy = true;
   agentOnlinePilot.error = false;
   agentOnlinePilot.helper =
-    "The Agent is reading its immutable Evidence timeline through its own credential…";
+    "Checking the owner-authorized Agent Evidence timeline from authenticated server truth…";
   renderAgentConsole();
   try {
-    const result = await referenceAgentApi(
-      "/local/v1/reference-agent/runtime-step",
-      {
-        action: "read_evidence",
-        mandateId: mandate.mandateId,
-        obligationId: obligation.obligationId
-      }
-    );
-    const evidence = result.evidence;
-    if (!Array.isArray(evidence?.items)) {
-      throw new Error("The online Agent returned invalid Evidence.");
-    }
-    const agentEvidenceProjection = createBoundedOwnedEvidenceProjection({
-      limit: OWNED_EVIDENCE_DISPLAY_LIMIT,
-      obligationId: obligation.obligationId,
-      response: evidence,
-      sourceLabel: "Agent-authenticated"
-    });
-    if (sharedProjectionDataEpoch !== authenticatedDataEpoch) return;
-    const activeMandate = currentAgentConsolePresentation()?.mandate;
-    if (
-      activeMandate?.mandateId !== mandate.mandateId ||
-      currentAgentOnlineObligation(activeMandate.mandateId)?.obligationId !==
-        obligation.obligationId
-    ) return;
-    agentOnlinePilot.evidenceResult = result;
-    const projectionStillSelected =
-      projectToSelectedEvidence &&
-      sharedProjectionDataEpoch === authenticatedDataEpoch &&
-      sharedProjectionEpoch === ownedEvidence.queryEpoch &&
-      tenantPilot.obligation?.obligationId === obligation.obligationId;
-    if (
-      projectionStillSelected &&
-      !(currentOwnedEvidenceLatestProven() && evidence.hasMore)
-    ) {
-      const expectedMarker = ownedEvidence.expectedMarker;
-      resetOwnedEvidenceState({
-        expectedMarker,
-        obligationId: obligation.obligationId
-      });
-      Object.assign(ownedEvidence, agentEvidenceProjection, {
-        queried: true,
-        error: false
-      });
-      reconcileExpectedOwnedEvidenceMarker();
-    }
-    const recoveredRepaymentEvidence = expectedRepayment
-      ? null
-      : evidence.items.find((item) => (
-          item?.eventType === "repayment_posted" &&
-          item.obligationId === obligation.obligationId &&
-          typeof item.occurredAt === "string"
-        )) ?? null;
-    const expectedRepaymentMarker = expectedRepayment
-      ? {
-          eventType: "repayment_posted",
-          obligationId: obligation.obligationId,
-          occurredAt: expectedRepayment.occurredAt
-        }
-      : BigInt(obligation.totalRepaidMinor ?? "0") > 0n && recoveredRepaymentEvidence
-        ? {
-            eventType: recoveredRepaymentEvidence.eventType,
-            obligationId: recoveredRepaymentEvidence.obligationId,
-            occurredAt: recoveredRepaymentEvidence.occurredAt
-          }
-        : null;
-    const latestRepaymentProven = Boolean(
-      expectedRepaymentMarker && (
-        evidence.hasMore !== true &&
-        hasOwnedEvidenceMarker(evidence.items, expectedRepaymentMarker) ||
-        projectionStillSelected &&
-        currentOwnedEvidenceLatestProven() &&
-        hasOwnedEvidenceMarker(ownedEvidence.items, expectedRepaymentMarker)
-      )
-    );
-    if (!latestRepaymentProven) {
-      agentOnlinePilot.error = evidence.hasMore !== true;
-      agentOnlinePilot.helper = evidence.hasMore
-        ? `${agentEvidenceProjection.helper} Open the Obligation to continue its owner-authorized cursor after this Agent-authenticated read.`
-        : "Evidence read succeeded, but the latest repayment Evidence is delayed. Retry the read; no repayment will be resubmitted.";
-      if (projectionStillSelected && agentOnlinePilot.error) {
-        ownedEvidence.error = true;
-        ownedEvidence.helper = agentOnlinePilot.helper;
-      }
-      toast(
-        evidence.hasMore ? "Agent Evidence page loaded" : "Latest Agent Evidence is delayed",
-        agentOnlinePilot.error ? "error" : undefined
-      );
-      announce("Agent Evidence read completed; latest repayment is not yet proven");
-      return;
-    }
-    agentOnlinePilot.helper =
-      "Agent borrowing, approved use, repayment, and Evidence are verified through the shared kernel. Open the Obligation to review its position and chain-anchor state.";
-    toast("Agent Evidence verified");
-    announce("Agent lifecycle and Evidence verified");
+    await checkAgentRuntimeProgress(mandate);
   } catch (error) {
-    if (sharedProjectionDataEpoch === authenticatedDataEpoch) {
-      const requestSuffix = error?.requestId
-        ? ` Request ID: ${error.requestId}`
-        : "";
-      agentOnlinePilot.error = true;
-      agentOnlinePilot.helper =
-        `The Agent Evidence read failed. Any accepted lifecycle action remains unchanged; retry Evidence only and no economic command will be resubmitted.${requestSuffix}`;
-      toast(agentOnlinePilot.helper, "error");
-      announce("Agent Evidence read failed; accepted lifecycle state is unchanged");
-      if (isRejectedAuthenticationSession(error)) openAccess();
-    }
+    failAgentOnlineStep(error);
   } finally {
-    if (sharedProjectionDataEpoch === authenticatedDataEpoch) {
-      agentOnlinePilot.busy = false;
-      renderTenantPilot();
-    }
+    agentOnlinePilot.busy = false;
+    renderTenantPilot();
   }
 }
 
@@ -3302,6 +3169,7 @@ function renderAgentIntegrationGuide() {
 
 function renderAgentRequestCreditJourney() {
   const handoff = currentAgentMcpHandoffPacket();
+  const presentation = currentAgentConsolePresentation();
   const applicationHandoff = handoff?.status === "application_ready";
   const runtimeHandoff = handoff?.status === "ready";
   const controlledObligationCount = tenantPilot.workspaceObligations.length;
@@ -3317,7 +3185,10 @@ function renderAgentRequestCreditJourney() {
     "pilotReadOwnObligation",
     "pilotReadOwnObligationEvidence"
   ].every((operationId) => serverCatalogOperations.has(operationId));
-  const applicationReady = applicationHandoff && applicationOperationsAvailable;
+  const applicationReady =
+    applicationHandoff &&
+    applicationOperationsAvailable &&
+    presentation?.identity?.applicationEligible === true;
   const runtimeReady = runtimeHandoff && economicOperationsAvailable;
 
   el("agentRequestCreditStatus").textContent = controlledObligationCount > 0
@@ -3367,7 +3238,7 @@ function renderAgentRequestCreditJourney() {
       ? "agent_sandbox_obligation_workflow_receipt.v1"
     : "Returned only after active runtime workflow";
   el("agentRequestCreditCopy").textContent = applicationReady
-    ? "The Draft Mandate lets the authenticated Agent submit bounded request economics and receive the deterministic Decision, Offer terms, and versioned workflow receipt. The browser can run the registered reference Agent without downloading a handoff."
+    ? "The Draft Mandate lets the authenticated external Agent submit bounded request economics and persist a deterministic Decision, Offer, and versioned workflow receipt. This Principal browser only checks that server truth."
     : runtimeReady
       ? "The active Agent runtime exposes each economic step separately: create the shared Obligation, execute one approved non-withdrawable use, post repayment, then read Evidence. External Agents use the same protected API contract."
       : "A Human Principal must bind the Agent Subject and create an exact Draft Mandate before the Agent application tools become available.";
@@ -3375,10 +3246,10 @@ function renderAgentRequestCreditJourney() {
     ? "The Agent has created at least one controlled Obligation. Review its current schedule and repayment state through the shared Obligation workspace."
     : runtimeReady
       ? agentOnlinePilot.offerReceipt
-        ? "Activation is complete and the matching Offer receipt is ready. Continue online and click each visible step: Create Obligation, Execute allowlisted Provider spend, Capture revenue and auto-repay, then Verify Evidence."
+        ? "Activation is complete and the matching Offer receipt is ready. Run the external Agent runtime handoff, then use the visible checks to recover Obligation, allowlisted spend, automatic repayment, and Evidence."
         : "Activation is complete, but this browser has no matching Offer receipt. You can create a new Draft application Mandate before starting a new request; this runtime cannot start a new Credit Intent."
       : applicationReady
-        ? "Run the Agent application online now. The returned Offer receipt remains bound to this Mandate; then return to Principal setup to activate it."
+        ? "Run the external Agent application handoff now. Its persisted Offer receipt remains bound to this Mandate; then check progress and return to Principal setup to activate it."
         : "Activating a Mandate creates bounded authority; it does not create a Credit Intent, Offer, Obligation, execution, or repayment.";
 
   const primary = el("agentRequestPrimaryBtn");
@@ -3393,7 +3264,7 @@ function renderAgentRequestCreditJourney() {
       ? "Open Agent workspace"
       : agentOnlinePilot.offerReceipt
         ? "Review and activate Mandate"
-        : "Request Agent credit and receive Offer";
+        : "Check for Agent Offer";
     primary.dataset.agentGuideAction = runtimeReady
       ? "open-agent-workspace"
       : applicationReady && !agentOnlinePilot.offerReceipt
@@ -7151,16 +7022,13 @@ async function recoverAuthenticatedWorkspace() {
     el("agentAuthorityActorId").readOnly = Boolean(controlledAgentActorId);
     if (mandate) {
       await loadExactMandate(mandate.resourceId);
-      try {
-        const continuation = await referenceAgentApi(
-          "/local/v1/reference-agent/continuation",
-          { mandateId: mandate.resourceId }
-        );
-        if (continuation.serverTruth !== true || !applyAgentOfferReceipt(continuation.offerReceipt)) {
-          throw new Error("The server continuation receipt is invalid.");
-        }
+      const continuation = controlledAgentContinuationForMandate(
+        recovery,
+        agentAuthorityPilot.mandate
+      );
+      if (continuation && applyAgentOfferReceipt(continuation.receipt)) {
         agentOnlinePilot.applicationResult = continuation;
-      } catch {
+      } else {
         agentOnlinePilot.offerReceipt = null;
         agentOnlinePilot.applicationResult = null;
         forgetAgentOfferReceipt();

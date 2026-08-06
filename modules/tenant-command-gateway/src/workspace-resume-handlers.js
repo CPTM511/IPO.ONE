@@ -91,6 +91,34 @@ async function controlledAgentActorIds({ client, authenticationContext, kind, no
   return actorIds;
 }
 
+async function continuationReceiptsForWorkspace({
+  client,
+  coreRepository,
+  authenticationContext,
+  kind,
+  controlledAgents,
+  now
+}) {
+  const actorIds = kind === "agent_runtime"
+    ? [authenticationContext.actorId]
+    : kind === "principal_controller"
+      ? controlledAgents
+      : [];
+  const receipts = [];
+  for (const actorId of actorIds) {
+    receipts.push(...await coreRepository.listActiveWorkspaceContinuationReceiptsInTransaction(
+      client,
+      { actorId, now, limit: 16 }
+    ));
+  }
+  return receipts
+    .sort((left, right) => (
+      left.expiresAt.localeCompare(right.expiresAt) ||
+      left.continuationReceiptId.localeCompare(right.continuationReceiptId)
+    ))
+    .slice(0, 16);
+}
+
 export function readWorkspaceResumeQueryHandler() {
   return Object.freeze({
     operationId: "pilotReadWorkspaceResume",
@@ -133,13 +161,14 @@ export function readWorkspaceResumeQueryHandler() {
         kind,
         now
       });
-      const continuationReceipts = kind === "agent_runtime"
-        ? await coreRepository.listActiveWorkspaceContinuationReceiptsInTransaction(client, {
-            actorId: authenticationContext.actorId,
-            now,
-            limit: 16
-          })
-        : [];
+      const continuationReceipts = await continuationReceiptsForWorkspace({
+        client,
+        coreRepository,
+        authenticationContext,
+        kind,
+        controlledAgents,
+        now
+      });
       return {
         workspaceKind: kind,
         resources: rows.slice(0, PAGE_SIZE),

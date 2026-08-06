@@ -63,6 +63,11 @@ test("workspace recovery is capped and recognizes one Principal Controller role"
           : { rows };
       }
     },
+    coreRepository: {
+      async listActiveWorkspaceContinuationReceiptsInTransaction() {
+        return [];
+      }
+    },
     payload: {},
     authenticationContext: context([RoleBundle.PRINCIPAL_CONTROLLER]),
     now: new Date("2026-07-20T00:00:00.000Z")

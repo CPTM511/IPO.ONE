@@ -266,7 +266,10 @@ export function createAgentConsolePresentation(input) {
     identity: {
       subjectId: input.subject?.subjectId ?? null,
       subjectStatus: input.subject?.status ?? null,
-      accountBinding: input.accountBinding ? { ...input.accountBinding } : null
+      accountBinding: input.accountBinding ? { ...input.accountBinding } : null,
+      applicationEligible:
+        input.subject?.status === "active" &&
+        input.accountBinding?.status === "active"
     },
     mandate: input.mandate ? { ...input.mandate } : null,
     registry: {

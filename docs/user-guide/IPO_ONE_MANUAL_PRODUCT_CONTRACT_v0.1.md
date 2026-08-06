@@ -30,13 +30,13 @@ contract.
 | Credit / Principal | `Create signing request` | Pending Agent Subject | Short-lived account proof challenge appears |
 | Credit / Principal | `Ask registered test Agent to prove` | Open challenge | Server-held Agent account binding becomes active |
 | Credit / Principal | `Create Draft Mandate` | Bound Agent Subject | Exact Draft Mandate appears |
-| Agent Console | `Request Agent credit and receive Offer` | Draft Mandate | Decision and Offer workflow receipt appear |
+| Agent Console | `Check for Agent Offer` | Verified Agent identity and Draft Mandate | Persisted Decision and Offer workflow receipt appear after the external Agent application |
 | Agent Console | `Review and activate this Mandate` | Offer ready | Principal review opens |
 | Credit / Principal | `Activate exact Sandbox Mandate` | Exact Mandate acknowledged | Mandate becomes active |
-| Agent Console | `Create Agent Obligation` | Active matching Mandate and Offer | Shared Agent Obligation appears |
-| Agent Console | `Execute allowlisted Provider spend` | Obligation created | Purpose-bound, non-withdrawable Provider spend is executed |
-| Agent Console | `Capture revenue and auto-repay` | Provider spend complete and balance positive | Synthetic revenue is captured and automatically routed through the deterministic repayment waterfall |
-| Agent Console | `Verify Agent Evidence` | Repayment posted | Immutable Evidence timeline is verified |
+| Agent Console | `Check for Agent Obligation` | Active matching Mandate and Offer | Shared Agent Obligation appears after the external Agent accepts the Offer |
+| Agent Console | `Check Provider spend` | Obligation created | Current purpose-bound, non-withdrawable Provider-spend state is restored |
+| Agent Console | `Check automatic repayment` | Provider spend complete | Current deterministic repayment projection is restored |
+| Agent Console | `Check Agent Evidence` | Repayment posted | Owner-authorized immutable Evidence timeline is restored |
 | Agent Console | `Review Agent obligations` | Agent Obligation exists | Agent-owned position opens in Obligations |
 
 The Closed Pilot reference Agent uses a registered server-held, revocable

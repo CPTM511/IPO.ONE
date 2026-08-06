@@ -1189,7 +1189,7 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   assert.ok(html.includes("Run the Agent application"));
   assert.ok(html.includes("Return after the Agent application produced its Offer workflow receipt."));
   assert.ok(html.includes("activation unlocks runtime use of an existing Agent Offer"));
-  assert.ok(js.includes("const applicationReady = applicationHandoff && applicationOperationsAvailable"));
+  assert.ok(js.includes("presentation?.identity?.applicationEligible === true"));
   assert.ok(js.includes("const runtimeReady = runtimeHandoff && economicOperationsAvailable"));
   assert.ok(js.includes('"Runtime ready · existing Offer required"'));
   assert.ok(js.includes("this runtime cannot start a new Credit Intent"));
@@ -1266,11 +1266,11 @@ test("TRUST-002 keeps latest Evidence visible through bounded read-only refreshe
   assert.ok(js.includes('more.hidden = !matchesCurrent || !ownedEvidence.hasMore'));
   assert.ok(js.includes('? "Retry Evidence read"'));
   assert.ok(js.includes("Sign in again and reconcile server truth before retrying any action"));
-  assert.ok(js.includes("The Agent Evidence read failed. Any accepted lifecycle action remains unchanged"));
+  assert.ok(js.includes("Checking the owner-authorized Agent Evidence timeline from authenticated server truth"));
   assert.equal(
     js.match(/refreshOwnedEvidenceAfterCommittedAction\(/g)?.length,
-    7,
-    "Human and Agent acceptance, execution and repayment must each have one safe follow-up read"
+    4,
+    "Human acceptance, execution and repayment must each have one safe follow-up read"
   );
   for (const economicOperation of [
     "pilotAcceptCreditOffer",
@@ -1288,7 +1288,7 @@ test("TRUST-002 keeps latest Evidence visible through bounded read-only refreshe
   }
 });
 
-test("UX-002 keeps Human and Agent credit actions browser-operable", async () => {
+test("UX-002 keeps Human actions operable and Agent actions authority-truthful", async () => {
   const [html, js, css] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
     readFile(new URL("../src/app.js", import.meta.url), "utf8"),
@@ -1306,13 +1306,15 @@ test("UX-002 keeps Human and Agent credit actions browser-operable", async () =>
   ]) {
     assert.ok(html.includes(`id="${id}"`), `${id} browser action missing`);
   }
-  assert.ok(html.includes("Request, borrow, repay, and verify online"));
-  assert.ok(html.includes("Request Agent credit and receive Offer"));
+  assert.ok(html.includes("Check authenticated Agent progress online"));
+  assert.ok(html.includes("Check for Agent Offer"));
   assert.equal(html.includes("Run Agent application online"), false);
-  assert.ok(html.includes("No handoff download or browser credential is required"));
+  assert.ok(html.includes("The external Agent uses its own credential"));
   assert.ok(js.includes('"/local/v1/reference-agent/account-proof"'));
-  assert.ok(js.includes('"/local/v1/reference-agent/application"'));
-  assert.ok(js.includes('"/local/v1/reference-agent/runtime-step"'));
+  assert.equal(js.includes('"/local/v1/reference-agent/application"'), false);
+  assert.equal(js.includes('"/local/v1/reference-agent/runtime-step"'), false);
+  assert.ok(js.includes("checkAgentContinuation"));
+  assert.ok(js.includes("identity.applicationEligible"));
   assert.ok(js.includes("Early partial or full repayment is available now"));
   assert.ok(js.includes("document.activeElement !== amountInput"));
   assert.ok(js.includes('document.activeElement !== el("humanRepaymentAmount")'));
@@ -1400,7 +1402,7 @@ test("closed-pilot browser has no demo route, reset control, or hidden fallback"
   assert.ok(html.includes("Protocol fees disabled · Fee Policy deferred"));
 });
 
-test("UX-003 exposes Human evaluation and staged Agent credit use as browser actions", async () => {
+test("UX-003 exposes Human mutations and Principal-observable Agent progress", async () => {
   const [html, js, css] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
     readFile(new URL("../src/app.js", import.meta.url), "utf8"),
@@ -1420,20 +1422,13 @@ test("UX-003 exposes Human evaluation and staged Agent credit use as browser act
   }
   assert.ok(html.includes("Start Human application"));
   assert.ok(html.includes("Request & evaluate credit"));
-  assert.ok(js.includes('"Create Agent Obligation"'));
-  assert.ok(html.includes("Execute allowlisted Provider spend"));
-  assert.ok(html.includes("Capture revenue and auto-repay"));
-  assert.ok(html.includes("Verify Agent Evidence"));
+  assert.ok(js.includes('"Check for Agent Obligation"'));
+  assert.ok(html.includes("Check Provider spend"));
+  assert.ok(html.includes("Check automatic repayment"));
+  assert.ok(html.includes("Check Agent Evidence"));
   assert.ok(html.includes("non-withdrawable sandbox rail"));
-  assert.ok(js.includes('"/local/v1/reference-agent/runtime-step"'));
-  for (const action of [
-    "accept_offer",
-    "execute_allowed_use",
-    "post_repayment",
-    "read_evidence"
-  ]) {
-    assert.ok(js.includes(`action: "${action}"`), `${action} Agent stage missing`);
-  }
+  assert.equal(js.includes('"/local/v1/reference-agent/runtime-step"'), false);
+  assert.ok(js.includes("checkAgentRuntimeProgress"));
   assert.ok(js.includes("function openBorrowingEntry"));
   assert.ok(js.includes("executeOnlineAgentApprovedUse"));
   assert.ok(js.includes("repayOnlineAgentObligation"));

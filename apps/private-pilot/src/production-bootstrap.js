@@ -141,6 +141,8 @@ const PROFILES = Object.freeze({
   })
 });
 
+export const PRODUCTION_BOOTSTRAP_PROFILES = PROFILES;
+
 const GATEWAY_MUTATION_TABLES = Object.freeze([
   "abuse_rate_buckets", "abuse_capacity_buckets", "abuse_admissions",
   "abuse_command_charges", "principals", "subjects", "mandates",

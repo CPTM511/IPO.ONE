@@ -3699,6 +3699,20 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         resumedAgentWorkspace.response.continuationReceipts[0].receipt,
         agentWorkflow
       );
+      const resumedControllerWorkspace = await tenantOneController.resumeWorkspace({
+        requestId: `request-controller-resume-agent-continuation-${RUN_ID}`,
+        correlationId: `correlation-controller-resume-agent-continuation-${RUN_ID}`
+      });
+      assert.equal(resumedControllerWorkspace.response.workspaceKind, "principal_controller");
+      assert.equal(resumedControllerWorkspace.response.continuationReceipts.length, 1);
+      assert.equal(
+        resumedControllerWorkspace.response.continuationReceipts[0].continuationReceiptId,
+        persistedContinuation.response.continuationReceiptId
+      );
+      assert.deepEqual(
+        resumedControllerWorkspace.response.continuationReceipts[0].receipt,
+        agentWorkflow
+      );
       const otherAgentWorkspace = await tenantOneAgent.resumeWorkspace({
         requestId: `request-other-agent-resume-continuation-${RUN_ID}`,
         correlationId: `correlation-other-agent-resume-continuation-${RUN_ID}`
