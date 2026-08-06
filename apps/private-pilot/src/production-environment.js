@@ -39,6 +39,7 @@ const WORKLOAD_V2_KEYS = new Set(["allowedAlgorithms", "audience", "issuer", "pu
 const ROOT_KEYS = new Set(["oidcProviders", "schemaVersion", "wallet", "workload"]);
 const WALLET_KEYS = new Set(["clientId", "enabled", "issuer"]);
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
+const EVM_ACCOUNT = /^0x[a-fA-F0-9]{40}$/;
 const VERCEL_SECRET_REFERENCE = /^vercel:\/\/environment\/production\/([A-Z][A-Z0-9_]{2,127})@sha256:([0-9a-f]{64})$/;
 
 function configError(message = "Production environment configuration is invalid") {
@@ -370,6 +371,24 @@ export async function loadProductionClosedPilotEnvironment(environment = process
   ) {
     throw configError("IPO_ONE_RELEASE_ID does not match the bundled source commit");
   }
+  const agentAccountAddress = vercelSandbox &&
+    environment.IPO_ONE_VERCEL_PROJECT_ROLE === "primary"
+    ? required(
+        environment,
+        "IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS",
+        EVM_ACCOUNT,
+        42
+      )
+    : undefined;
+  if (
+    vercelSandbox &&
+    environment.IPO_ONE_VERCEL_PROJECT_ROLE === "risk" &&
+    environment.IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS !== undefined
+  ) {
+    throw configError(
+      "IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS is not allowed on the Risk project"
+    );
+  }
   const runtimeConfig = loadAuthenticationRuntimeConfig(environment);
   if (runtimeConfig.mode !== "closed_pilot" || runtimeConfig.deploymentGateSatisfied !== true) {
     throw configError("closed-pilot authentication approval is required");
@@ -434,6 +453,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
   return Object.freeze({
     gatewayPool,
     authenticationPool,
+    ...(agentAccountAddress === undefined ? {} : { agentAccountAddress }),
     browserOrigin: browserOrigin.origin,
     tenantId: required(environment, "IPO_ONE_TENANT_ID", /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/u, 128),
     systemActorId: required(environment, "IPO_ONE_SYSTEM_ACTOR_ID", /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/u, 128),

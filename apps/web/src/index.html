@@ -809,7 +809,8 @@
                       </div>
                       <div>
                         <label for="agentAccountAddress">EVM account</label>
-                        <input id="agentAccountAddress" autocomplete="off" spellcheck="false" placeholder="Registered local Agent account" />
+                        <input id="agentAccountAddress" autocomplete="off" spellcheck="false" placeholder="Registered sandbox Agent account" inputmode="text" required pattern="0x[0-9a-fA-F]{40}" aria-describedby="agentAccountAddressHelper" />
+                        <small id="agentAccountAddressHelper">A reviewed public test-chain Agent address is required. No private key or signer is entered here.</small>
                       </div>
                       <div>
                         <label for="agentAccountPurpose">Binding purpose</label>

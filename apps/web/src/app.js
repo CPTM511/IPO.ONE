@@ -3501,6 +3501,13 @@ function renderAgentMcpHandoff() {
 function renderAgentAuthorityPilot() {
   const subjectId = tenantInputValue("agentAuthoritySubjectId");
   const mandateId = tenantInputValue("agentAuthorityMandateId");
+  const accountChain = tenantInputValue("agentAccountChain");
+  const accountAddress = tenantInputValue("agentAccountAddress").toLowerCase();
+  const accountPurpose = tenantInputValue("agentAccountPurpose");
+  const accountProofInputReady =
+    new Set(["eip155:84532", "eip155:1952"]).has(accountChain) &&
+    /^0x[0-9a-f]{40}$/.test(accountAddress) &&
+    new Set(["primary", "revenue", "repayment", "execution"]).has(accountPurpose);
   const mandate = agentAuthorityPilot.mandate;
   const subjectPending = agentAuthorityPilot.subject?.subjectId === subjectId && agentAuthorityPilot.subject.status === "pending";
   const accountBinding = agentAuthorityPilot.accountBinding?.subjectId === subjectId
@@ -3540,7 +3547,16 @@ function renderAgentAuthorityPilot() {
   }
 
   el("createPrivateAgentSubjectBtn").disabled = privateBusy;
-  el("createAccountChallengeBtn").disabled = privateBusy || !subjectId || subjectKnownActive || accountBound || challengeOpen;
+  el("createAccountChallengeBtn").disabled = privateBusy || !subjectId || !accountProofInputReady || subjectKnownActive || accountBound || challengeOpen;
+  el("agentAccountAddress").setAttribute(
+    "aria-invalid",
+    subjectId && !accountProofInputReady ? "true" : "false"
+  );
+  el("agentAccountAddressHelper").textContent = !accountAddress
+    ? "Enter the reviewed public sandbox Agent EVM address. No private key or signer belongs in this field."
+    : !/^0x[0-9a-f]{40}$/.test(accountAddress)
+      ? "The sandbox Agent address must be one exact 20-byte EVM address beginning with 0x."
+      : "Public test-chain account ready. The external Agent runner remains the only proof signer.";
   el("proveAccountOnlineBtn").hidden =
     accessState.authenticationProfile !== "local_no_funds";
   el("proveAccountOnlineBtn").disabled = privateBusy || !challengeOpen;
@@ -3615,6 +3631,8 @@ function renderAgentAuthorityPilot() {
       ? "This one-use request expired. Create and download a new signing request."
       : challenge
         ? agentAccountProofInstruction()
+        : subjectId && !accountProofInputReady
+          ? "Enter the reviewed public sandbox Agent EVM address before creating the signing request."
         : subjectId
           ? "Create a signing request, then let the registered Agent Host submit the one-use proof."
           : "Create or load the Agent Subject before requesting account proof.";

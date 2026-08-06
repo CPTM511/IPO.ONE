@@ -25,6 +25,7 @@ import {
 } from "../../tenant-api/src/index.js";
 
 const CONFIG_KEYS = new Set([
+  "agentAccountAddress",
   "authenticationPool",
   "browserOrigin",
   "clock",
@@ -50,6 +51,7 @@ const CONFIG_KEYS = new Set([
   "verifyEdgeRequest",
   "wallet"
 ]);
+const EVM_ACCOUNT = /^0x[a-fA-F0-9]{40}$/;
 
 function invalidConfig(message = "Production closed-pilot runtime configuration is invalid") {
   return new DomainError("invalid_production_runtime_config", message);
@@ -100,6 +102,8 @@ async function composeProductionClosedPilotRuntime(input) {
     !input.authenticationPool?.connect ||
     !input.authenticationPool?.query ||
     !input.machineResolver?.keyResolver ||
+    (input.agentAccountAddress !== undefined &&
+      !EVM_ACCOUNT.test(input.agentAccountAddress)) ||
     typeof input.createNetworkContext !== "function" ||
     typeof input.getTrustedMtlsEvidence !== "function" ||
     typeof input.verifyEdgeRequest !== "function"
@@ -165,6 +169,9 @@ async function composeProductionClosedPilotRuntime(input) {
     machineAuthenticator,
     createNetworkContext: input.createNetworkContext,
     csrfTokenProvider: humanAccess.csrfTokenProvider,
+    ...(input.agentAccountAddress === undefined ? {} : {
+      localAgentAccountProvider: async () => input.agentAccountAddress
+    }),
     getTrustedMtlsEvidence: input.getTrustedMtlsEvidence,
     serveAuthentication: humanAccess.serveAuthentication,
     readinessCheck,

@@ -604,6 +604,11 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes('meta[name="ipo-one-csrf-token"]'));
   assert.ok(html.includes('meta name="ipo-one-local-agent-account" content=""'));
   assert.ok(js.includes('meta[name="ipo-one-local-agent-account"]'));
+  assert.ok(html.includes('id="agentAccountAddressHelper"'));
+  assert.ok(html.includes('pattern="0x[0-9a-fA-F]{40}"'));
+  assert.ok(js.includes("accountProofInputReady"));
+  assert.ok(js.includes("!accountProofInputReady"));
+  assert.ok(js.includes("The external Agent runner remains the only proof signer."));
   assert.equal(
     html.includes('value="0x1111111111111111111111111111111111111111"'),
     false

@@ -152,3 +152,37 @@ test("production Host requires all real authentication and edge adapters", () =>
     (error) => error?.code === "invalid_production_tenant_host_config"
   );
 });
+
+test("production Host injects only the configured public Agent account into the web shell", async (t) => {
+  const port = await unusedPort();
+  const account = `0x${"4".repeat(40)}`;
+  const host = createProductionTenantHost({
+    gateway: { async execute() { throw new Error("not expected"); } },
+    humanBff: { async authenticateSession() { throw new Error("not expected"); } },
+    machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
+    createNetworkContext: async () => { throw new Error("not expected"); },
+    csrfTokenProvider: async () => undefined,
+    localAgentAccountProvider: async () => account,
+    readinessCheck: async () => true,
+    verifyEdgeRequest: async () => true,
+    publicOrigin: "https://ipo.one",
+    port,
+    releaseId: "a".repeat(40)
+  });
+  await host.listen();
+  t.after(() => host.close());
+  const response = await get(port, "/", {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https"
+  });
+  assert.equal(response.status, 200);
+  assert.match(
+    response.body,
+    new RegExp(`meta name="ipo-one-local-agent-account" content="${account}"`)
+  );
+  assert.equal(
+    response.body.match(/meta name="ipo-one-local-agent-account"/g)?.length,
+    1
+  );
+});

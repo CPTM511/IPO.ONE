@@ -23,6 +23,11 @@ assert.ok(
   "IPO_ONE_VERCEL_PROJECT_ROLE must be primary or risk"
 );
 if (process.env.IPO_ONE_VERCEL_PROJECT_ROLE === "primary") {
+  assert.match(
+    process.env.IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS ?? "",
+    /^0x[a-fA-F0-9]{40}$/,
+    "Primary IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS must be one public EVM address"
+  );
   assert.ok(
     typeof process.env.CRON_SECRET === "string" &&
     process.env.CRON_SECRET.length >= 16 &&
@@ -30,6 +35,11 @@ if (process.env.IPO_ONE_VERCEL_PROJECT_ROLE === "primary") {
     "Primary CRON_SECRET must contain 16-256 characters"
   );
 } else {
+  assert.equal(
+    process.env.IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS,
+    undefined,
+    "Risk project must not contain IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS"
+  );
   assert.equal(
     process.env.CRON_SECRET,
     undefined,
@@ -56,6 +66,8 @@ try {
     tenantId: configuration.tenantId,
     policyVersion: configuration.policyVersion,
     deploymentRole: configuration.deploymentRole,
+    sandboxAgentAccountConfigured:
+      typeof configuration.agentAccountAddress === "string",
     gatewayPoolMaximum: configuration.gatewayPool.options.max,
     authenticationPoolMaximum: configuration.authenticationPool.options.max,
     walletOnly: configuration.oidcProviders.length === 0 && configuration.wallet !== undefined,

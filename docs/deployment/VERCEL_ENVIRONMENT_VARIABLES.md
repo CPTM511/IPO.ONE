@@ -45,6 +45,7 @@ value and fails closed on drift.
 | `IPO_ONE_SYSTEM_ACTOR_ID` | Exact seeded system worker Actor |
 | `IPO_ONE_POLICY_VERSION` | Exact reviewed policy version |
 | `IPO_ONE_RELEASE_ID` | Exact deployed 40-character Git commit SHA |
+| `IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS` | Primary project only: exact reviewed public test-chain Agent EVM address used for account-proof requests; never a private key or signer |
 | `IPO_ONE_AUTHENTICATION_MODE` | `closed_pilot` |
 | `IPO_ONE_IDP_DEPLOYMENT_APPROVAL` | `APPROVED` |
 | `IPO_ONE_IDP_VENDOR_ID` | `wallet_only` |
@@ -80,6 +81,11 @@ origin. The Risk identity configuration binds the same invited wallet to the
 Risk Operator credential through a different issuer/client tuple. Both
 configurations contain the same reviewed public workload JWKS and no private
 key material.
+
+The primary project also renders `IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS` as a
+public account-proof input. The Risk project must not define it. This value is
+non-authorizing and contains no private key, signature, transaction capability,
+or funds authority.
 
 The workload private key is held only by the external Golden Flow runner. It is
 an authentication key for short-lived access JWT and DPoP proof signatures; it

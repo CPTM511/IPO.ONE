@@ -62,6 +62,7 @@ function vercelEnvironment(overrides = {}) {
     IPO_ONE_TENANT_ID: "tenant_m1_b_sandbox",
     IPO_ONE_SYSTEM_ACTOR_ID: "actor_authentication_system",
     IPO_ONE_POLICY_VERSION: "security_001.v1",
+    IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: `0x${"2".repeat(40)}`,
     IPO_ONE_RELEASE_ID: "a".repeat(40),
     IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
@@ -121,6 +122,10 @@ test("Vercel Sandbox environment accepts only exact inline secret digests and bo
   assert.equal(configuration.authenticationPool.options.allowExitOnIdle, true);
   assert.equal(configuration.browserOrigin, "https://ipo-one-internal.vercel.app");
   assert.equal(configuration.deploymentRole, "primary");
+  assert.equal(
+    configuration.agentAccountAddress,
+    `0x${"2".repeat(40)}`
+  );
   assert.ok(await configuration.machineResolver.resolve({
     alg: "ES256",
     kid: "m1-b-workload-001"
@@ -149,6 +154,32 @@ test("Vercel Sandbox environment rejects preview and project-origin drift", asyn
       (error) => error?.code === "invalid_production_environment"
     );
   }
+});
+
+test("Vercel Sandbox requires a valid public Agent account only on the primary project", async (t) => {
+  for (const value of [undefined, "0x1234", `0x${"g".repeat(40)}`]) {
+    await assert.rejects(
+      () => loadProductionClosedPilotEnvironment(vercelEnvironment({
+        IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: value
+      })),
+      (error) => error?.code === "invalid_production_environment"
+    );
+  }
+  const risk = await loadProductionClosedPilotEnvironment(vercelEnvironment({
+    IPO_ONE_VERCEL_PROJECT_ROLE: "risk",
+    IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: undefined
+  }));
+  t.after(() => Promise.allSettled([
+    risk.gatewayPool.end(),
+    risk.authenticationPool.end()
+  ]));
+  assert.equal(risk.agentAccountAddress, undefined);
+  await assert.rejects(
+    () => loadProductionClosedPilotEnvironment(vercelEnvironment({
+      IPO_ONE_VERCEL_PROJECT_ROLE: "risk"
+    })),
+    (error) => error?.code === "invalid_production_environment"
+  );
 });
 
 test("Vercel Sandbox edge verification binds injected request and deployment headers", async (t) => {

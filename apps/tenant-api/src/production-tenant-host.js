@@ -34,6 +34,7 @@ const CONFIG_KEYS = new Set([
   "gateway",
   "getTrustedMtlsEvidence",
   "humanBff",
+  "localAgentAccountProvider",
   "machineAuthenticator",
   "maximumConcurrency",
   "port",
@@ -189,6 +190,8 @@ export function createProductionTenantRequestHandler(input) {
     !input.machineAuthenticator?.authenticate ||
     typeof input.createNetworkContext !== "function" ||
     typeof input.csrfTokenProvider !== "function" ||
+    (input.localAgentAccountProvider !== undefined &&
+      typeof input.localAgentAccountProvider !== "function") ||
     typeof input.readinessCheck !== "function" ||
     typeof input.verifyEdgeRequest !== "function" ||
     (input.serveAuthentication !== undefined && typeof input.serveAuthentication !== "function") ||
@@ -209,7 +212,8 @@ export function createProductionTenantRequestHandler(input) {
   });
   const serveWebAsset = createTenantWebAssetHandler({
     csrfTokenProvider: input.csrfTokenProvider,
-    sessionHandleProvider: input.sessionHandleProvider
+    sessionHandleProvider: input.sessionHandleProvider,
+    localAgentAccountProvider: input.localAgentAccountProvider
   });
   let active = 0;
   return async function handleProductionTenantRequest(request, response) {
