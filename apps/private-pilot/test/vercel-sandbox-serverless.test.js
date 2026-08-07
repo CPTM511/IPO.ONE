@@ -189,13 +189,19 @@ test("Vercel Sandbox edge verification binds injected request and deployment hea
     configuration.authenticationPool.end()
   ]));
   assert.equal(configuration.verifyEdgeRequest({ headers: {
-    "x-vercel-id": "sfo1::iad1::example-123",
+    "x-vercel-id": "hkg1::sin1::fra1::iad1::example-123",
     "x-vercel-deployment-url": "ipo-one-internal-example.vercel.app"
   }}), true);
   assert.equal(configuration.verifyEdgeRequest({ headers: {
     "x-vercel-id": "sfo1::iad1::example-123",
     "x-vercel-deployment-url": "different.vercel.app"
   }}), false);
+  for (const vercelId of [undefined, ["iad1::example-123"], "iad1\rmalformed"]) {
+    assert.equal(configuration.verifyEdgeRequest({ headers: {
+      "x-vercel-id": vercelId,
+      "x-vercel-deployment-url": "ipo-one-internal-example.vercel.app"
+    }}), false);
+  }
   assert.equal(configuration.getTrustedMtlsEvidence({ headers: {
     authorization: "Bearer opaque"
   }}), undefined);

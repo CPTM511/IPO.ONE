@@ -227,6 +227,38 @@ function oneHeader(request, name, maximum = 4_096) {
   return value;
 }
 
+function safeVercelEdgeHeader(value, maximum) {
+  return (
+    typeof value === "string" &&
+    value.length >= 1 &&
+    value.length <= maximum &&
+    !/[\r\n\0]/u.test(value)
+  );
+}
+
+function verifyVercelEdgeRequest(request, environment) {
+  const vercelId = request.headers["x-vercel-id"];
+  const deploymentUrl = request.headers["x-vercel-deployment-url"];
+  const vercelIdValid = safeVercelEdgeHeader(vercelId, 1_024);
+  const deploymentUrlValid = safeVercelEdgeHeader(deploymentUrl, 255);
+  const deploymentUrlMatches = (
+    deploymentUrlValid &&
+    deploymentUrl === environment.VERCEL_URL
+  );
+  if (!vercelIdValid || !deploymentUrlMatches) {
+    process.stderr.write(`${JSON.stringify({
+      event: "vercel_edge_request_rejected",
+      deploymentUrlMatches,
+      deploymentUrlPresent: deploymentUrl !== undefined,
+      releaseId: environment.IPO_ONE_RELEASE_ID ?? "unknown",
+      vercelIdPresent: vercelId !== undefined,
+      vercelIdValid
+    })}\n`);
+    return false;
+  }
+  return true;
+}
+
 async function loadProviderConfig(environment, publicOrigin, { vercelSandbox }) {
   const source = await readDeploymentSecret(environment, {
     fileName: "IPO_ONE_IDENTITY_CONFIG_FILE",
@@ -474,14 +506,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     machineResolver: identity.machineResolver,
     verifyEdgeRequest(request) {
       if (vercelSandbox) {
-        const vercelId = request.headers["x-vercel-id"];
-        const deploymentUrl = request.headers["x-vercel-deployment-url"];
-        return (
-          typeof vercelId === "string" &&
-          typeof deploymentUrl === "string" &&
-          /^[a-z0-9-]{2,32}(?:::[a-z0-9-]{2,128}){1,3}$/.test(vercelId) &&
-          deploymentUrl === environment.VERCEL_URL
-        );
+        return verifyVercelEdgeRequest(request, environment);
       }
       return constantTimeMatch(request.headers["x-ipo-one-edge-assertion"], edgeAssertion);
     },

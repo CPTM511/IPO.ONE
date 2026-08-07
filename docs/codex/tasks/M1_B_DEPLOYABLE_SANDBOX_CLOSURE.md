@@ -17,6 +17,15 @@ local `controller` marker in addition to authenticated server truth. This task
 also closes that bounded presentation defect without changing server
 authorization or Principal capabilities.
 
+After the production Agent continuation closure was deployed, a Founder-
+authorized Chrome reload reached the exact production Function but returned
+`421 Misdirected Request`. The edge verifier constrained Vercel's injected
+`x-vercel-id` to an undocumented internal segment pattern. The closure must
+accept any bounded, control-character-free platform value while continuing to
+require the exact current `x-vercel-deployment-url`, public Host, forwarded
+Host, and HTTPS origin. Rejections may log only fixed low-cardinality
+classification fields and the non-secret release ID.
+
 ## Scope
 
 - Derive CreditLine capacity and utilization from the current Offer, policy,
@@ -39,6 +48,8 @@ authorization or Principal capabilities.
 - Permit the production-neutral Web host to render Principal controls only
   when authenticated server recovery returns `principal_controller`; preserve
   the stricter named-host check for local Borrower and Controller ports.
+- Restore the Vercel production edge request path without weakening exact
+  deployment URL, public origin, or HTTPS verification.
 
 ## Non-goals
 
@@ -94,6 +105,10 @@ authorization or Principal capabilities.
 10. The Vercel production-neutral host presents the Agent-authority form only
     for a connected, server-recovered `principal_controller`; Borrower, unknown
     host, disconnected, and non-Principal cases remain closed.
+11. A Vercel request with an injected bounded multi-region `x-vercel-id` and
+    the exact unique deployment URL is accepted; missing, multi-valued,
+    control-character-bearing, or deployment-mismatched edge evidence remains
+    rejected with no sensitive header values in logs.
 
 ## Test commands
 
