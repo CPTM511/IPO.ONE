@@ -1,0 +1,440 @@
+{
+  "validRequests": [
+    {
+      "operationId": "walletPrepareAccountBinding",
+      "payload": { "accountId": "eip155:84532:0x1111111111111111111111111111111111111111" },
+      "resource": { "resourceType": "subject", "resourceId": "subject_wallet_fixture" },
+      "idempotencyKey": "wallet-prepare-binding-0001",
+      "requestId": "request-wallet-prepare-binding-0001",
+      "correlationId": "correlation-wallet-prepare-binding-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletSubmitAccountBinding",
+      "payload": {
+        "challengeId": "execution_account_binding_challenge_11111111-1111-4111-8111-111111111111",
+        "accountId": "eip155:84532:0x1111111111111111111111111111111111111111",
+        "signature": "0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b"
+      },
+      "resource": { "resourceType": "subject", "resourceId": "subject_wallet_fixture" },
+      "idempotencyKey": "wallet-submit-binding-0001",
+      "requestId": "request-wallet-submit-binding-0001",
+      "correlationId": "correlation-wallet-submit-binding-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletReadAccountBindings",
+      "payload": {},
+      "resource": { "resourceType": "subject", "resourceId": "subject_wallet_fixture" },
+      "requestId": "request-wallet-read-bindings-0001",
+      "correlationId": "correlation-wallet-read-bindings-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletRevokeAccountBinding",
+      "payload": { "accountBindingId": "account_binding_wallet_fixture" },
+      "resource": { "resourceType": "subject", "resourceId": "subject_wallet_fixture" },
+      "idempotencyKey": "wallet-revoke-binding-0001",
+      "requestId": "request-wallet-revoke-binding-0001",
+      "correlationId": "correlation-wallet-revoke-binding-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletDiscoverCapabilities",
+      "payload": {},
+      "resource": { "resourceType": "wallet_adapter", "resourceId": "adapter_local_sandbox" },
+      "requestId": "request-wallet-capabilities-0001",
+      "correlationId": "correlation-wallet-capabilities-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletPrepareGrant",
+      "payload": {
+        "providerId": "provider_compute_fixture",
+        "accountBindingId": "account_binding_wallet_fixture",
+        "chainId": "eip155:84532",
+        "requestedExpiresAt": "2026-08-07T12:30:00.000Z",
+        "sessionEpoch": 7,
+        "nonce": "wallet-grant-nonce-0001"
+      },
+      "resource": { "resourceType": "subject", "resourceId": "subject_wallet_fixture" },
+      "idempotencyKey": "wallet-prepare-grant-0001",
+      "requestId": "request-wallet-prepare-grant-0001",
+      "correlationId": "correlation-wallet-prepare-grant-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletActivateGrant",
+      "payload": { "expectedGrantHash": "0x1111111111111111111111111111111111111111111111111111111111111111" },
+      "resource": { "resourceType": "delegated_wallet_grant", "resourceId": "delegated_wallet_grant_fixture" },
+      "idempotencyKey": "wallet-activate-grant-0001",
+      "requestId": "request-wallet-activate-grant-0001",
+      "correlationId": "correlation-wallet-activate-grant-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletReadGrant",
+      "payload": {},
+      "resource": { "resourceType": "delegated_wallet_grant", "resourceId": "delegated_wallet_grant_fixture" },
+      "requestId": "request-wallet-read-grant-0001",
+      "correlationId": "correlation-wallet-read-grant-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletRevokeGrant",
+      "payload": {},
+      "resource": { "resourceType": "delegated_wallet_grant", "resourceId": "delegated_wallet_grant_fixture" },
+      "reasonCode": "operator_request",
+      "idempotencyKey": "wallet-revoke-grant-0001",
+      "requestId": "request-wallet-revoke-grant-0001",
+      "correlationId": "correlation-wallet-revoke-grant-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletPrepareExecution",
+      "payload": { "transferIntentId": "transfer_intent_wallet_fixture" },
+      "resource": { "resourceType": "delegated_wallet_grant", "resourceId": "delegated_wallet_grant_fixture" },
+      "idempotencyKey": "wallet-prepare-execution-0001",
+      "requestId": "request-wallet-prepare-execution-0001",
+      "correlationId": "correlation-wallet-prepare-execution-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletApproveExecution",
+      "payload": {
+        "preflightHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "approvalArtifactHash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "resource": { "resourceType": "wallet_execution", "resourceId": "wallet_execution_fixture" },
+      "idempotencyKey": "wallet-approve-execution-0001",
+      "requestId": "request-wallet-approve-execution-0001",
+      "correlationId": "correlation-wallet-approve-execution-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletSubmitExecution",
+      "payload": { "preflightHash": "0x2222222222222222222222222222222222222222222222222222222222222222" },
+      "resource": { "resourceType": "wallet_execution", "resourceId": "wallet_execution_fixture" },
+      "idempotencyKey": "wallet-submit-execution-0001",
+      "requestId": "request-wallet-submit-execution-0001",
+      "correlationId": "correlation-wallet-submit-execution-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "walletReadExecution",
+      "payload": {},
+      "resource": { "resourceType": "wallet_execution", "resourceId": "wallet_execution_fixture" },
+      "requestId": "request-wallet-read-execution-0001",
+      "correlationId": "correlation-wallet-read-execution-0001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    }
+  ],
+  "validResults": [
+    {
+      "operationId": "walletPrepareAccountBinding",
+      "replayed": false,
+      "response": {
+        "challengeId": "execution_account_binding_challenge_11111111-1111-4111-8111-111111111111",
+        "subjectId": "subject_wallet_fixture",
+        "chainId": "eip155:84532",
+        "accountHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "purpose": "execution",
+        "nonce": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "issuedAt": "2026-08-07T12:00:00.000Z",
+        "expiresAt": "2026-08-07T12:05:00.000Z",
+        "protocolVersion": "1.2",
+        "typedDataHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "typedData": { "primaryType": "ExecutionAccountBindingProof" },
+        "createsAuthenticationSession": false,
+        "createsExecutionAuthority": false,
+        "oneUse": true,
+        "schemaVersion": "tenant_execution_account_binding_challenge_created.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletSubmitAccountBinding",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_wallet_fixture",
+        "accountBinding": {
+          "accountBindingId": "account_binding_wallet_fixture",
+          "subjectId": "subject_wallet_fixture",
+          "accountHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "chainId": "eip155:84532",
+          "purpose": "execution",
+          "bindingKind": "execution",
+          "proofHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "verificationMethod": "eip712_eoa_v1",
+          "status": "active",
+          "boundAt": "2026-08-07T12:01:00.000Z",
+          "protocolVersion": "1.2",
+          "createsAuthenticationSession": false,
+          "createsExecutionAuthority": false
+        },
+        "challengeConsumed": true,
+        "authenticationSessionChanged": false,
+        "executionAuthorityGranted": false,
+        "productionAuthority": false,
+        "schemaVersion": "tenant_execution_account_binding_verified.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletReadAccountBindings",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_wallet_fixture",
+        "accounts": [],
+        "authenticationSessionChanged": false,
+        "executionAuthorityGranted": false,
+        "schemaVersion": "tenant_execution_account_bindings_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletRevokeAccountBinding",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_wallet_fixture",
+        "accountBinding": {
+          "accountBindingId": "account_binding_wallet_fixture",
+          "subjectId": "subject_wallet_fixture",
+          "accountHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "chainId": "eip155:84532",
+          "purpose": "execution",
+          "bindingKind": "execution",
+          "proofHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "verificationMethod": "eip712_eoa_v1",
+          "status": "revoked",
+          "boundAt": "2026-08-07T12:01:00.000Z",
+          "revokedAt": "2026-08-07T12:02:00.000Z",
+          "protocolVersion": "1.2",
+          "createsAuthenticationSession": false,
+          "createsExecutionAuthority": false
+        },
+        "authenticationSessionChanged": false,
+        "executionAuthorityGranted": false,
+        "schemaVersion": "tenant_execution_account_binding_revoked.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletDiscoverCapabilities",
+      "replayed": false,
+      "response": {
+        "items": [{
+          "schemaVersion": "evm_wallet_connector_descriptor.v1",
+          "providerId": "provider_wallet_fixture",
+          "source": "eip6963",
+          "name": "Fixture Wallet",
+          "walletTransport": "eip1193",
+          "enabledChains": ["eip155:84532", "eip155:1952"],
+          "explicitSelectionRequired": true,
+          "capabilityNegotiated": true,
+          "rawProviderExposed": false,
+          "arbitraryCalldataAccepted": false,
+          "preparedExecutionSubmission": false,
+          "sandboxOnly": true,
+          "productionApproved": false,
+          "fundsAuthority": false
+        }],
+        "count": 1,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "wallet_capability_descriptor_list.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletPrepareGrant",
+      "replayed": false,
+      "response": {
+        "grantId": "delegated_wallet_grant_fixture",
+        "grantHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "status": "prepared",
+        "pendingExposureMinor": "0",
+        "version": 1,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_grant_prepared.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletActivateGrant",
+      "replayed": false,
+      "response": {
+        "grantId": "delegated_wallet_grant_fixture",
+        "grantHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "status": "active",
+        "pendingExposureMinor": "0",
+        "version": 2,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_grant_activated.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletReadGrant",
+      "replayed": false,
+      "response": {
+        "grantId": "delegated_wallet_grant_fixture",
+        "grantHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "status": "active",
+        "pendingExposureMinor": "5000",
+        "version": 3,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_grant_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletRevokeGrant",
+      "replayed": false,
+      "response": {
+        "grantId": "delegated_wallet_grant_fixture",
+        "grantHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "status": "revoked",
+        "pendingExposureMinor": "0",
+        "version": 4,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_grant_revoked.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletPrepareExecution",
+      "replayed": false,
+      "response": {
+        "executionId": "wallet_execution_fixture",
+        "preparedExecutionHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "exactPayloadHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+        "preflightHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "decision": "ALLOW",
+        "expiresAt": "2026-08-07T12:02:00.000Z",
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_execution_prepared.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletApproveExecution",
+      "replayed": false,
+      "response": {
+        "executionId": "wallet_execution_fixture",
+        "preflightHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "approvalArtifactHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "status": "recorded_local_no_funds",
+        "approvedAt": "2026-08-07T12:00:30.000Z",
+        "expiresAt": "2026-08-07T12:01:30.000Z",
+        "submissionAllowed": false,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_execution_approved.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletSubmitExecution",
+      "replayed": false,
+      "response": {
+        "executionId": "wallet_execution_fixture",
+        "preflightHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "blocked": true,
+        "reasonCode": "execution_submission_disabled_l0_local_no_funds",
+        "adapterInvoked": false,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_execution_submission_blocked.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "walletReadExecution",
+      "replayed": false,
+      "response": {
+        "executionId": "wallet_execution_fixture",
+        "preparedExecutionHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "latestPreflightHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "decision": "ALLOW",
+        "stale": false,
+        "transactionsAllowed": false,
+        "sandboxOnly": true,
+        "productionAuthority": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_wallet_execution_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    }
+  ],
+  "invalidRequests": [
+    {
+      "name": "raw calldata bypass",
+      "value": {
+        "operationId": "walletPrepareExecution",
+        "payload": { "transferIntentId": "transfer_intent_wallet_fixture", "calldata": "0x12345678" },
+        "resource": { "resourceType": "delegated_wallet_grant", "resourceId": "delegated_wallet_grant_fixture" },
+        "idempotencyKey": "wallet-prepare-execution-0001",
+        "requestId": "request-wallet-prepare-execution-0001",
+        "correlationId": "correlation-wallet-prepare-execution-0001",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "query attempts idempotent mutation",
+      "value": {
+        "operationId": "walletReadExecution",
+        "payload": {},
+        "resource": { "resourceType": "wallet_execution", "resourceId": "wallet_execution_fixture" },
+        "idempotencyKey": "wallet-read-execution-0001",
+        "requestId": "request-wallet-read-execution-0001",
+        "correlationId": "correlation-wallet-read-execution-0001",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    }
+  ],
+  "invalidResults": [
+    {
+      "name": "submission claims adapter invocation",
+      "value": {
+        "operationId": "walletSubmitExecution",
+        "replayed": false,
+        "response": {
+          "executionId": "wallet_execution_fixture",
+          "preflightHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "blocked": true,
+          "reasonCode": "execution_submission_disabled_l0_local_no_funds",
+          "adapterInvoked": true,
+          "transactionsAllowed": false,
+          "sandboxOnly": true,
+          "productionAuthority": false,
+          "fundsAuthority": false,
+          "schemaVersion": "tenant_wallet_execution_submission_blocked.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    }
+  ],
+  "schemaVersion": "wallet_execution_transport_conformance.v1"
+}

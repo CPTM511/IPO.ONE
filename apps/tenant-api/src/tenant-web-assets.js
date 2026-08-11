@@ -19,6 +19,7 @@ const WEB_ASSETS = Object.freeze({
   "/human-credit-offer-workflow-receipt.js": Object.freeze({ file: "human-credit-offer-workflow-receipt.js", contentType: "text/javascript; charset=utf-8" }),
   "/human-sandbox-obligation-workflow-receipt.js": Object.freeze({ file: "human-sandbox-obligation-workflow-receipt.js", contentType: "text/javascript; charset=utf-8" }),
   "/mobile-wallet-connector.js": Object.freeze({ file: "mobile-wallet-connector.js", contentType: "text/javascript; charset=utf-8" }),
+  "/evm-wallet-connector.js": Object.freeze({ file: "evm-wallet-connector.js", contentType: "text/javascript; charset=utf-8" }),
   "/obligation-portfolio-presentation.js": Object.freeze({ file: "obligation-portfolio-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/official-report-download.js": Object.freeze({ file: "official-report-download.js", contentType: "text/javascript; charset=utf-8" }),
   "/owned-evidence-presentation.js": Object.freeze({ file: "owned-evidence-presentation.js", contentType: "text/javascript; charset=utf-8" }),

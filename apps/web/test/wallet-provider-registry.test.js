@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
+import { createEvmWalletConnector } from "../src/evm-wallet-connector.js";
 import {
   EIP6963_ANNOUNCE_EVENT,
   EIP6963_REQUEST_EVENT,
@@ -32,6 +33,17 @@ function provider(label) {
       return null;
     }
   };
+}
+
+function mobileConnector(walletProvider) {
+  return createEvmWalletConnector({
+    descriptor: {
+      providerId: MOBILE_WALLET_PROVIDER_ID,
+      source: "mobile_walletconnect",
+      name: "WalletConnect mobile / QR"
+    },
+    provider: walletProvider
+  });
 }
 
 function detail(info, walletProvider, extra = {}) {
@@ -122,7 +134,7 @@ test("no announced or legacy Provider reaches one empty ready registry", () => {
   assertValidSnapshot(ready);
   assert.equal(ready.status, "ready");
   assert.deepEqual(ready.providers, []);
-  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
 });
 
 test("one EIP-6963 Provider is discovered but never selected implicitly", () => {
@@ -148,11 +160,14 @@ test("one EIP-6963 Provider is discovered but never selected implicitly", () => 
   assert.equal(snapshot.providers[0].providerId, "eip6963:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   assert.equal(snapshot.selectionRequired, true);
   assert.equal(snapshot.selectedProviderId, undefined);
-  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
   assert.equal(wallet.requests.length, 0);
 
   assert.equal(fixture.registry.selectProvider(snapshot.providers[0].providerId), true);
-  assert.equal(fixture.registry.getSelectedProvider(), wallet);
+  assert.equal(
+    fixture.registry.getSelectedConnector().descriptor().providerId,
+    snapshot.providers[0].providerId
+  );
   assert.equal(fixture.registry.getSnapshot().selectionRequired, false);
   assert.equal(wallet.requests.length, 0, "selection must not request an account, chain, or signature");
 });
@@ -171,7 +186,7 @@ test("sign-out clears selection without disposing discovered Providers", () => {
 
   const providerId = fixture.registry.getSnapshot().providers[0].providerId;
   assert.equal(fixture.registry.selectProvider(providerId), true);
-  assert.equal(fixture.registry.getSelectedProvider(), wallet);
+  assert.equal(fixture.registry.getSelectedConnector().descriptor().providerId, providerId);
   assert.equal(fixture.registry.clearSelection(), true);
 
   const cleared = fixture.registry.getSnapshot();
@@ -180,7 +195,7 @@ test("sign-out clears selection without disposing discovered Providers", () => {
   assert.equal(cleared.providers.length, 1);
   assert.equal(cleared.selectionRequired, true);
   assert.equal(cleared.selectedProviderId, undefined);
-  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
   assert.equal(fixture.registry.clearSelection(), false);
 });
 
@@ -197,7 +212,7 @@ test("one reviewed mobile connector registers explicitly and remains unselected"
       connectorVersion: "2.23.10",
       storage: "memory_only"
     },
-    provider: mobile
+    connector: mobileConnector(mobile)
   }), true);
   fixture.timer.run();
 
@@ -213,7 +228,7 @@ test("one reviewed mobile connector registers explicitly and remains unselected"
   });
   assert.equal(snapshot.selectionRequired, true);
   assert.equal(snapshot.selectedProviderId, undefined);
-  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
   assert.equal(mobile.requests.length, 0);
 });
 
@@ -244,12 +259,13 @@ test("multiple Providers render in deterministic order and duplicate announcemen
     fixture.registry.selectProvider("eip6963:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),
     true
   );
+  const selectedConnector = fixture.registry.getSelectedConnector();
   announce(target, detail({
     uuid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     name: "Replacement Wallet",
     rdns: "com.replacement.wallet"
   }, maliciousReplacement));
-  assert.equal(fixture.registry.getSelectedProvider(), beta);
+  assert.equal(fixture.registry.getSelectedConnector(), selectedConnector);
   assert.deepEqual(
     fixture.registry.getSnapshot().providers.map((item) => item.name),
     ["alpha wallet", "Beta Wallet"]
@@ -319,17 +335,17 @@ test("selected Provider removal clears selection and replacement requires a new 
   announce(target, detail(announcement, first));
   assert.equal(fixture.registry.selectProvider(providerId), true);
   assert.equal(fixture.registry.removeProvider(providerId, replacement), false);
-  assert.equal(fixture.registry.getSelectedProvider(), first);
+  assert.equal(fixture.registry.getSelectedConnector().descriptor().providerId, providerId);
 
   assert.equal(fixture.registry.removeProvider(providerId, first), true);
-  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
   assert.equal(fixture.registry.getSnapshot().selectedProviderId, undefined);
 
   announce(target, detail(announcement, replacement));
   assert.equal(fixture.registry.getSnapshot().providers.length, 1);
-  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
   assert.equal(fixture.registry.selectProvider(providerId), true);
-  assert.equal(fixture.registry.getSelectedProvider(), replacement);
+  assert.equal(fixture.registry.getSelectedConnector().descriptor().providerId, providerId);
 });
 
 test("legacy global EIP-1193 support is a fixed fallback and still requires selection", () => {
@@ -347,9 +363,12 @@ test("legacy global EIP-1193 support is a fixed fallback and still requires sele
     name: "Browser wallet (legacy EIP-1193)"
   }]);
   assert.equal(snapshot.selectionRequired, true);
-  assert.equal(fixture.registry.getSelectedProvider(), null);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
   assert.equal(fixture.registry.selectProvider(LEGACY_WALLET_PROVIDER_ID), true);
-  assert.equal(fixture.registry.getSelectedProvider(), legacy);
+  assert.equal(
+    fixture.registry.getSelectedConnector().descriptor().providerId,
+    LEGACY_WALLET_PROVIDER_ID
+  );
   assert.equal(legacy.requests.length, 0);
 });
 

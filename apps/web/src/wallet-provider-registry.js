@@ -1,3 +1,5 @@
+import { createEvmWalletConnector } from "./evm-wallet-connector.js";
+
 export const WALLET_PROVIDER_REGISTRY_SCHEMA_VERSION = "wallet_provider_registry.v1";
 export const EIP6963_REQUEST_EVENT = "eip6963:requestProvider";
 export const EIP6963_ANNOUNCE_EVENT = "eip6963:announceProvider";
@@ -13,7 +15,7 @@ const UNSAFE_DISPLAY_CONTROLS =
   /[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;
 const PROVIDER_INFO_KEYS = new Set(["uuid", "name", "icon", "rdns"]);
 const ANNOUNCEMENT_KEYS = new Set(["info", "provider"]);
-const CONNECTOR_KEYS = new Set(["descriptor", "provider"]);
+const CONNECTOR_KEYS = new Set(["connector", "descriptor"]);
 const CONNECTOR_DESCRIPTOR_KEYS = new Set([
   "connectorVersion",
   "name",
@@ -126,13 +128,22 @@ function legacyRecord(provider) {
 
 function connectorRecord(value) {
   if (
-    !isClosedDataObject(value, CONNECTOR_KEYS, ["descriptor", "provider"]) ||
+    !isClosedDataObject(value, CONNECTOR_KEYS, ["connector", "descriptor"]) ||
     !isClosedDataObject(
       value.descriptor,
       CONNECTOR_DESCRIPTOR_KEYS,
       [...CONNECTOR_DESCRIPTOR_KEYS]
     ) ||
-    !isProvider(value.provider) ||
+    !value.connector ||
+    typeof value.connector !== "object" ||
+    typeof value.connector.descriptor !== "function" ||
+    typeof value.connector.connect !== "function" ||
+    typeof value.connector.getAccounts !== "function" ||
+    typeof value.connector.getChain !== "function" ||
+    typeof value.connector.getCapabilities !== "function" ||
+    typeof value.connector.signTypedData !== "function" ||
+    typeof value.connector.submitPreparedExecution !== "function" ||
+    typeof value.connector.disconnect !== "function" ||
     value.descriptor.providerId !== MOBILE_WALLET_PROVIDER_ID ||
     value.descriptor.source !== "mobile_walletconnect" ||
     value.descriptor.connectorVersion !== "2.23.10" ||
@@ -140,8 +151,18 @@ function connectorRecord(value) {
   ) {
     return null;
   }
+  const normalizedDescriptor = value.connector.descriptor();
+  if (
+    normalizedDescriptor?.providerId !== MOBILE_WALLET_PROVIDER_ID ||
+    normalizedDescriptor.walletTransport !== "walletconnect" ||
+    normalizedDescriptor.rawProviderExposed !== false ||
+    normalizedDescriptor.arbitraryCalldataAccepted !== false
+  ) {
+    return null;
+  }
   return {
-    provider: value.provider,
+    connector: value.connector,
+    providerReference: value.connector,
     descriptor: {
       providerId: MOBILE_WALLET_PROVIDER_ID,
       source: "mobile_walletconnect",
@@ -211,17 +232,30 @@ export function createWalletProviderRegistry({
   }
 
   function addRecord(record, { emit = true } = {}) {
+    if (record && !record.connector && isProvider(record.provider)) {
+      record = {
+        ...record,
+        connector: createEvmWalletConnector({
+          descriptor: record.descriptor,
+          provider: record.provider
+        }),
+        providerReference: record.provider
+      };
+    }
+    const providerReference = record?.providerReference;
     if (
       status === "disposed" ||
       !record ||
+      !record.connector ||
+      !providerReference ||
       recordsById.size >= MAXIMUM_PROVIDERS ||
       recordsById.has(record.descriptor.providerId) ||
-      providerIdsByReference.has(record.provider)
+      providerIdsByReference.has(providerReference)
     ) {
       return false;
     }
     recordsById.set(record.descriptor.providerId, record);
-    providerIdsByReference.set(record.provider, record.descriptor.providerId);
+    providerIdsByReference.set(providerReference, record.descriptor.providerId);
     if (emit) notify();
     return true;
   }
@@ -257,13 +291,22 @@ export function createWalletProviderRegistry({
       return false;
     }
     if (selectedProviderId === providerId) return true;
+    recordsById.get(selectedProviderId)?.connector.invalidateContext(
+      "wallet_provider_changed"
+    );
     selectedProviderId = providerId;
+    recordsById.get(selectedProviderId)?.connector.invalidateContext(
+      "wallet_provider_changed"
+    );
     notify();
     return true;
   }
 
   function clearSelection() {
     if (status === "disposed" || selectedProviderId === undefined) return false;
+    recordsById.get(selectedProviderId)?.connector.invalidateContext(
+      "wallet_provider_changed"
+    );
     selectedProviderId = undefined;
     notify();
     return true;
@@ -273,18 +316,23 @@ export function createWalletProviderRegistry({
     return addRecord(connectorRecord(connector));
   }
 
-  function selectedProvider() {
+  function selectedConnector() {
     return selectedProviderId === undefined
       ? null
-      : recordsById.get(selectedProviderId)?.provider ?? null;
+      : recordsById.get(selectedProviderId)?.connector ?? null;
   }
 
   function removeProvider(providerId, expectedProvider) {
     if (status === "disposed" || typeof providerId !== "string") return false;
     const record = recordsById.get(providerId);
-    if (!record || (expectedProvider !== undefined && record.provider !== expectedProvider)) return false;
+    if (!record || (
+      expectedProvider !== undefined &&
+      record.providerReference !== expectedProvider &&
+      record.connector !== expectedProvider
+    )) return false;
     recordsById.delete(providerId);
-    providerIdsByReference.delete(record.provider);
+    providerIdsByReference.delete(record.providerReference);
+    record.connector.invalidateContext("wallet_provider_changed");
     if (selectedProviderId === providerId) selectedProviderId = undefined;
     notify();
     return true;
@@ -295,6 +343,7 @@ export function createWalletProviderRegistry({
     if (started) eventTarget.removeEventListener(EIP6963_ANNOUNCE_EVENT, announce);
     if (fallbackTimer !== undefined) clearTimer(fallbackTimer);
     fallbackTimer = undefined;
+    for (const record of recordsById.values()) record.connector.dispose();
     recordsById.clear();
     selectedProviderId = undefined;
     status = "disposed";
@@ -306,7 +355,7 @@ export function createWalletProviderRegistry({
     start,
     finishDiscovery,
     getSnapshot: snapshot,
-    getSelectedProvider: selectedProvider,
+    getSelectedConnector: selectedConnector,
     registerConnector,
     selectProvider,
     clearSelection,

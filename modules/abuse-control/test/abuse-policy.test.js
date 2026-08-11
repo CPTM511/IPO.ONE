@@ -56,11 +56,36 @@ test("every authenticated operation has exactly one closed quota classification"
     "pilotSubmitSpend",
     "pilotCaptureRevenue",
     "pilotAutoRepay",
-    "workerAutoRepay"
+    "workerAutoRepay",
+    "walletPrepareExecution",
+    "walletSubmitExecution",
+    "venuePrepareExecution",
+    "venueSubmitExecution"
   ]));
   const byOperation = new Map(TENANT_ABUSE_OPERATION_POLICIES.map((item) => [item.operationId, item]));
   assert.equal(byOperation.get("pilotReadMandate").quotaClass, QuotaClass.READ);
   assert.equal(byOperation.get("pilotRevokeDraftMandate").quotaClass, QuotaClass.MUTATION);
+  assert.equal(byOperation.get("walletReadGrant").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("walletDiscoverCapabilities").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("walletReadExecution").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("venueDiscoverCapabilities").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("venueReadBinding").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("venueReadExecution").quotaClass, QuotaClass.READ);
+  for (const operationId of [
+    "walletPrepareGrant",
+    "walletActivateGrant",
+    "walletRevokeGrant",
+    "walletApproveExecution"
+  ]) {
+    assert.equal(byOperation.get(operationId).quotaClass, QuotaClass.PRIVILEGED);
+    assert.equal(byOperation.get(operationId).profile.idempotencyRequired, true);
+  }
+  for (const operationId of [
+    "venuePrepareDelegate", "venueActivateDelegate", "venueRevokeDelegate"
+  ]) {
+    assert.equal(byOperation.get(operationId).quotaClass, QuotaClass.PRIVILEGED);
+    assert.equal(byOperation.get(operationId).profile.idempotencyRequired, true);
+  }
 });
 
 test("all configured values remain within immutable hard ceilings", () => {

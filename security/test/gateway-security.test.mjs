@@ -424,6 +424,8 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
     tradingCapitalNoFundsEvidenceEnabled: true,
     tradingCapitalNoFundsMatchingEnabled: true,
     tradingCapitalNoFundsSettlementEnabled: true,
+    agenticWalletPreflightEnabled: true,
+    walletSubmissionEnabled: false,
     productionIdentityEnabled: false,
     rawPiiAllowed: false
   });
@@ -580,7 +582,12 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
     /accessToken|privateKey|tenantId|actorId|roles|process\.env|node:fs|node:http|node:https|fetch\(|listen\(/
   );
   assert.match(tenantWebAssets, /"\/human-credit-offer-workflow-receipt\.js"/);
-  assert.doesNotMatch(tenantWebAssets, /request\.url|pathname\s*\)|join\(|resolve\(/);
+  assert.match(tenantWebAssets, /const asset = WEB_ASSETS\[pathname\]/);
+  assert.match(tenantWebAssets, /readFile\(join\(WEB_ASSET_ROOT, asset\.file\)\)/);
+  assert.doesNotMatch(
+    tenantWebAssets,
+    /request\.url|readFile\([^\n]*(?:pathname|request)|join\(WEB_ASSET_ROOT,\s*pathname\)|resolve\(/
+  );
 });
 
 test("TC-201 Hyperliquid read plane is fixed, Testnet-only, and signer-free", async () => {

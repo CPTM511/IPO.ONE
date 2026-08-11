@@ -309,7 +309,7 @@ test("local Agent MCP publishes exactly the twelve approved bounded tools", asyn
         payload: {
           challengeId: "agent_account_challenge_11111111-1111-4111-8111-111111111111",
           accountId: "eip155:84532:0x1111111111111111111111111111111111111111",
-          signature: `0x${"11".repeat(65)}`
+          signature: `0x${"11".repeat(96)}`
         },
         idempotencyKey: "idempotency-agent-account-proof-0001",
         requestId: "request-agent-account-proof-0001",

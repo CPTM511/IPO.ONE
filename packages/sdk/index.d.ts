@@ -357,3 +357,146 @@ export class IpoOneClient {
   runVerticalSlice(options?: RequestOptions): Promise<JsonObject>;
   resetDemo(options?: RequestOptions): Promise<DemoState>;
 }
+
+export type WalletExecutionOperationId =
+  | "walletPrepareAccountBinding"
+  | "walletSubmitAccountBinding"
+  | "walletReadAccountBindings"
+  | "walletRevokeAccountBinding"
+  | "walletDiscoverCapabilities"
+  | "walletPrepareGrant"
+  | "walletActivateGrant"
+  | "walletReadGrant"
+  | "walletRevokeGrant"
+  | "walletPrepareExecution"
+  | "walletApproveExecution"
+  | "walletSubmitExecution"
+  | "walletReadExecution";
+
+export const WALLET_EXECUTION_SDK_OPERATIONS: readonly WalletExecutionOperationId[];
+
+export interface WalletExecutionRequestIdentity {
+  requestId: string;
+  correlationId: string;
+}
+
+export interface WalletExecutionCommandIdentity extends WalletExecutionRequestIdentity {
+  idempotencyKey: string;
+}
+
+export interface WalletExecutionClientOptions {
+  execute(
+    request: import("@ipo-one/api-contract").TenantProtocolRequest
+  ): Promise<import("@ipo-one/api-contract").TenantProtocolResult>;
+}
+
+export class WalletExecutionClient {
+  constructor(options: WalletExecutionClientOptions);
+  prepareAccountBinding(input: WalletExecutionCommandIdentity & {
+    subjectId: string;
+    accountId: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletPrepareAccountBinding">>;
+  submitAccountBinding(input: WalletExecutionCommandIdentity & {
+    subjectId: string;
+    challengeId: string;
+    accountId: string;
+    signature: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletSubmitAccountBinding">>;
+  readAccountBindings(input: WalletExecutionRequestIdentity & {
+    subjectId: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletReadAccountBindings">>;
+  revokeAccountBinding(input: WalletExecutionCommandIdentity & {
+    subjectId: string;
+    accountBindingId: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletRevokeAccountBinding">>;
+  discoverCapabilities(input: WalletExecutionRequestIdentity & { adapterId: string }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletDiscoverCapabilities">>;
+  prepareGrant(input: WalletExecutionCommandIdentity & {
+    subjectId: string;
+    providerId: string;
+    accountBindingId: string;
+    chainId: "eip155:84532" | "eip155:1952";
+    requestedExpiresAt: string;
+    sessionEpoch: number;
+    nonce: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletPrepareGrant">>;
+  activateGrant(input: WalletExecutionCommandIdentity & {
+    grantId: string;
+    expectedGrantHash: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletActivateGrant">>;
+  readGrant(input: WalletExecutionRequestIdentity & { grantId: string }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletReadGrant">>;
+  revokeGrant(input: WalletExecutionCommandIdentity & {
+    grantId: string;
+    reasonCode: "credential_compromise" | "operator_request" | "security_incident";
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletRevokeGrant">>;
+  prepareExecution(input: WalletExecutionCommandIdentity & {
+    grantId: string;
+    transferIntentId: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletPrepareExecution">>;
+  approveExecution(input: WalletExecutionCommandIdentity & {
+    executionId: string;
+    preflightHash: string;
+    approvalArtifactHash: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletApproveExecution">>;
+  submitExecution(input: WalletExecutionCommandIdentity & {
+    executionId: string;
+    preflightHash: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletSubmitExecution">>;
+  readExecution(input: WalletExecutionRequestIdentity & { executionId: string }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"walletReadExecution">>;
+}
+
+export type VenueExecutionOperationId =
+  | "venueDiscoverCapabilities"
+  | "venueReadBinding"
+  | "venuePrepareDelegate"
+  | "venueActivateDelegate"
+  | "venueRevokeDelegate"
+  | "venuePrepareExecution"
+  | "venueSubmitExecution"
+  | "venueReadExecution";
+
+export const VENUE_EXECUTION_SDK_OPERATIONS: readonly VenueExecutionOperationId[];
+
+export interface VenueExecutionRequestIdentity {
+  requestId: string;
+  correlationId: string;
+}
+
+export interface VenueExecutionCommandIdentity extends VenueExecutionRequestIdentity {
+  idempotencyKey: string;
+}
+
+export interface VenueExecutionClientOptions {
+  execute(
+    request: import("@ipo-one/api-contract").TenantProtocolRequest
+  ): Promise<import("@ipo-one/api-contract").TenantProtocolResult>;
+}
+
+export class VenueExecutionClient {
+  constructor(options: VenueExecutionClientOptions);
+  discoverCapabilities(input: VenueExecutionRequestIdentity & { adapterId: string }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueDiscoverCapabilities">>;
+  readBinding(input: VenueExecutionRequestIdentity & { bindingId: string }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueReadBinding">>;
+  prepareDelegate(input: VenueExecutionCommandIdentity & {
+    bindingId: string;
+    delegateAddressHash: string;
+    signerReferenceHash: string;
+    requestedExpiresAt: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venuePrepareDelegate">>;
+  activateDelegate(input: VenueExecutionCommandIdentity & {
+    delegateId: string;
+    expectedDelegateHash: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueActivateDelegate">>;
+  revokeDelegate(input: VenueExecutionCommandIdentity & {
+    delegateId: string;
+    reasonCode: "credential_compromise" | "operator_request" | "security_incident" | "scheduled_rotation" | "delegate_expired";
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueRevokeDelegate">>;
+  prepareExecution(input: VenueExecutionCommandIdentity & {
+    delegateId: string;
+    orderIntentId: string;
+    orderIntentHash: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venuePrepareExecution">>;
+  submitExecution(input: VenueExecutionCommandIdentity & {
+    executionId: string;
+    preparedExecutionHash: string;
+  }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueSubmitExecution">>;
+  readExecution(input: VenueExecutionRequestIdentity & { executionId: string }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueReadExecution">>;
+}

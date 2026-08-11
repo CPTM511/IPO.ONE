@@ -209,6 +209,13 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotReadCapitalPartnerFacility",
     "pilotReadOfficialReport",
     "pilotRetrieveOfficialReport",
+    "walletReadAccountBindings",
+    "walletReadGrant",
+    "walletDiscoverCapabilities",
+    "walletReadExecution",
+    "venueDiscoverCapabilities",
+    "venueReadBinding",
+    "venueReadExecution",
     "tradingReadCreditProfile",
     "tradingListCompatibleMandates",
     "tradingReadFacilityState",
@@ -249,7 +256,10 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
   ],
   [QuotaClass.CREDENTIAL]: [
     "pilotCreateAgentAccountChallenge",
-    "pilotSubmitAgentAccountProof"
+    "pilotSubmitAgentAccountProof",
+    "walletPrepareAccountBinding",
+    "walletSubmitAccountBinding",
+    "walletRevokeAccountBinding"
   ],
   [QuotaClass.ECONOMIC]: [
     "pilotAcceptCreditOffer",
@@ -262,7 +272,11 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotSubmitSpend",
     "pilotCaptureRevenue",
     "pilotAutoRepay",
-    "workerAutoRepay"
+    "workerAutoRepay",
+    "walletPrepareExecution",
+    "walletSubmitExecution",
+    "venuePrepareExecution",
+    "venueSubmitExecution"
   ],
   [QuotaClass.PRIVILEGED]: [
     "pilotProposeApproval",
@@ -275,6 +289,13 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotRestructureSandboxObligation",
     "pilotRepurchaseSandboxObligation",
     "pilotWriteOffSandboxObligation",
+    "walletPrepareGrant",
+    "walletActivateGrant",
+    "walletRevokeGrant",
+    "walletApproveExecution",
+    "venuePrepareDelegate",
+    "venueActivateDelegate",
+    "venueRevokeDelegate",
     "tradingEvaluateRisk",
     "tradingPauseNewRisk",
     "tradingFlattenFacility",

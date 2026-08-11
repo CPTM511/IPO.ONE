@@ -13,6 +13,7 @@
     "providerSlot",
     "sourceFinality",
     "walletType",
+    "signatureType",
     "verificationMethod",
     "challengeReferenceHash",
     "signatureReferenceHash",
@@ -39,14 +40,19 @@
       "enum": ["safe", "inclusion_only"]
     },
     "walletType": {
-      "enum": ["eoa", "contract"]
+      "enum": ["eoa", "contract", "counterfactual"]
+    },
+    "signatureType": {
+      "enum": ["eoa", "erc1271", "erc6492"]
     },
     "verificationMethod": {
       "enum": [
         "eip191_eoa_v1",
         "eip1271_eip191_v1",
         "eip712_eoa_v1",
-        "eip1271_eip712_v1"
+        "eip1271_eip712_v1",
+        "eip6492_eip191_v1",
+        "eip6492_eip712_v1"
       ]
     },
     "challengeReferenceHash": { "$ref": "#/$defs/hash" },

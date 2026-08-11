@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-stable-founder-approval.schema.json",
+  "title": "HyperCore Stable Founder Approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "approvalId", "approvalHash", "intentId", "intentHash", "economicActionHash",
+    "payloadHash", "actorId", "confirmationNonceHash", "humanConfirmationHash",
+    "accountBindingHash", "canonicalAccountAddressHash", "handoffHash",
+    "delegateHash", "apiWalletAddressHash", "signerReferenceHash",
+    "policyConstraintHash", "nonce", "approvedAt", "expiresAt", "status",
+    "consumedAt", "version", "exactExecutionOnly", "oneUse", "mainnetAuthority",
+    "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "approvalId": { "$ref": "#/$defs/id" }, "approvalHash": { "$ref": "#/$defs/hash" },
+    "intentId": { "$ref": "#/$defs/id" }, "intentHash": { "$ref": "#/$defs/hash" },
+    "economicActionHash": { "$ref": "#/$defs/hash" }, "payloadHash": { "$ref": "#/$defs/hash" },
+    "actorId": { "$ref": "#/$defs/id" }, "confirmationNonceHash": { "$ref": "#/$defs/hash" },
+    "humanConfirmationHash": { "$ref": "#/$defs/hash" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "handoffHash": { "$ref": "#/$defs/hash" }, "delegateHash": { "$ref": "#/$defs/hash" },
+    "apiWalletAddressHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "policyConstraintHash": { "$ref": "#/$defs/hash" },
+    "nonce": { "type": "integer", "minimum": 1 },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["APPROVED", "CONSUMED"] },
+    "consumedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2 },
+    "exactExecutionOnly": { "const": true }, "oneUse": { "const": true },
+    "mainnetAuthority": { "const": false }, "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_stable_founder_approval.v2" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$" }
+  }
+}

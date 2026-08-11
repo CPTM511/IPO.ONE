@@ -1,0 +1,43 @@
+{
+  "artifactVersion": "ipo-one.hyperliquid-002d.registration-balance-observation.v1",
+  "issueId": "HYPERLIQUID-002D",
+  "observedAt": "2026-08-09T09:39:41Z",
+  "environment": "HYPERLIQUID_TESTNET",
+  "accountAddressHash": "0x5a76dcbd66986bbd211258f508ca494cb474e4315b69d0fd9ef855d2fd37559e",
+  "apiWalletAddressHash": "0x1d1911fcbdb3809a1530f1e0740e23e04ff795239f0b497674a2c756322acea1",
+  "requestedAgentName": "ipo-one-002d",
+  "registrationObservation": {
+    "registered": false,
+    "role": "missing",
+    "responseHash": "0xaab7a6162a8b2e79239b2aed424e8b04d5c1af210007b45565419827e1878a6b"
+  },
+  "perpAccountObservation": {
+    "accountValue": "0.0",
+    "withdrawable": "0.0",
+    "positionCount": 0,
+    "responseHash": "0xacbb1c37b5033a149a0a3ba5b0d543d8531baea3828693d28aabed69cac00e37"
+  },
+  "spotAccountObservation": {
+    "balances": [],
+    "responseHash": "0xb9ece672848a528897c1a2ce69d2e74ff84799be769b3daf01f268ebc44c3911"
+  },
+  "openOrdersObservation": {
+    "count": 0,
+    "responseHash": "0xca4510738395af1429224dd785675309c344b2b549632e20275c69b15ed1d210"
+  },
+  "faucetObservation": {
+    "status": "ALREADY_CLAIMED_MOCK_USDC",
+    "additionalClaimPerformed": false
+  },
+  "hashMethod": "sha3-256(JSON.stringify(read-only response))",
+  "decision": "BLOCKED_ACCOUNT_HAS_NO_TESTNET_FUNDS",
+  "safety": {
+    "registrationRetryPerformedAfterObservation": false,
+    "exchangeWritePerformed": false,
+    "orderSubmitted": false,
+    "fundsMoved": false,
+    "rawAccountAddressStored": false,
+    "rawApiWalletAddressStored": false,
+    "rawSignatureStored": false
+  }
+}

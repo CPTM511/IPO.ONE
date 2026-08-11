@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/external-wallet-permission-projection.schema.json",
+  "title": "IPO.ONE External Wallet Permission Projection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "permissionProjectionId",
+    "permissionProjectionHash",
+    "grantId",
+    "grantHash",
+    "adapterId",
+    "providerId",
+    "descriptorHash",
+    "capabilitiesHash",
+    "sessionEpoch",
+    "chainIds",
+    "assetIds",
+    "targetPolicies",
+    "perTxLimitMinor",
+    "rolling24hLimitMinor",
+    "aggregateLimitMinor",
+    "obligationLimitMinor",
+    "validFrom",
+    "expiresAt",
+    "status",
+    "externalPermissionRefHash",
+    "activationAllowed",
+    "externalProvisioningPerformed",
+    "withdrawalAllowed",
+    "transferAllowed",
+    "transactionsAllowed",
+    "sandboxOnly",
+    "productionAuthority",
+    "fundsAuthority",
+    "schemaVersion"
+  ],
+  "properties": {
+    "permissionProjectionId": { "$ref": "#/$defs/identifier" },
+    "permissionProjectionHash": { "$ref": "#/$defs/hash" },
+    "grantId": { "$ref": "#/$defs/identifier" },
+    "grantHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "$ref": "#/$defs/identifier" },
+    "providerId": { "$ref": "#/$defs/identifier" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "capabilitiesHash": { "$ref": "#/$defs/hash" },
+    "sessionEpoch": { "type": "integer", "minimum": 0 },
+    "chainIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["eip155:84532", "eip155:1952"] }
+    },
+    "assetIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "targetPolicies": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/targetPolicy" }
+    },
+    "perTxLimitMinor": { "$ref": "#/$defs/positiveMinor" },
+    "rolling24hLimitMinor": { "$ref": "#/$defs/positiveMinor" },
+    "aggregateLimitMinor": { "$ref": "#/$defs/positiveMinor" },
+    "obligationLimitMinor": { "$ref": "#/$defs/positiveMinor" },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "status": { "const": "prepared" },
+    "externalPermissionRefHash": { "type": "null" },
+    "activationAllowed": { "const": false },
+    "externalProvisioningPerformed": { "const": false },
+    "withdrawalAllowed": { "const": false },
+    "transferAllowed": { "const": false },
+    "transactionsAllowed": { "const": false },
+    "sandboxOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "external_wallet_permission_projection.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "positiveMinor": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" },
+    "targetPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetPolicyId",
+        "policyHash",
+        "chainId",
+        "targetAddress",
+        "codeHash",
+        "proxyImplementationHash",
+        "allowedFunctionSelectors",
+        "maxNativeValueMinor",
+        "maxTokenAllowanceMinor",
+        "approvalMode",
+        "withdrawalAllowed",
+        "transferAllowed"
+      ],
+      "properties": {
+        "targetPolicyId": { "$ref": "#/$defs/identifier" },
+        "policyHash": { "$ref": "#/$defs/hash" },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "targetAddress": { "type": "string", "pattern": "^0x[0-9a-f]{40}$" },
+        "codeHash": { "$ref": "#/$defs/hash" },
+        "proxyImplementationHash": {
+          "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+        },
+        "allowedFunctionSelectors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^0x[0-9a-f]{8}$" }
+        },
+        "maxNativeValueMinor": { "const": "0" },
+        "maxTokenAllowanceMinor": { "const": "0" },
+        "approvalMode": { "const": "none" },
+        "withdrawalAllowed": { "const": false },
+        "transferAllowed": { "const": false }
+      }
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { createEvmWalletConnector } from "./evm-wallet-connector.js";
+
 export const MOBILE_WALLET_CONNECTOR_SCHEMA_VERSION =
   "mobile_wallet_connector.v1";
 export const APPROVED_WALLETCONNECT_PACKAGE =
@@ -17,9 +19,9 @@ const APPROVED_METHODS = Object.freeze([
   "eth_chainId",
   "wallet_switchEthereumChain",
   "wallet_addEthereumChain",
+  "wallet_getCapabilities",
   "personal_sign",
-  "eth_signTypedData_v4",
-  "eth_sendTransaction"
+  "eth_signTypedData_v4"
 ]);
 const APPROVED_PROVIDER_EVENTS = Object.freeze([
   "accountsChanged",
@@ -235,14 +237,10 @@ function checkedParams(method, params) {
       values[1].length >= 2 &&
       values[1].length <= 64 * 1_024;
   }
-  if (method === "eth_sendTransaction") {
-    const transaction = values[0];
-    return values.length === 1 &&
-      exactKeys(transaction, ["from", "to", "data", "value"]) &&
-      /^0x[0-9a-fA-F]{40}$/.test(transaction.from ?? "") &&
-      /^0x[0-9a-fA-F]{40}$/.test(transaction.to ?? "") &&
-      /^0x[0-9a-fA-F]{8,65536}$/.test(transaction.data ?? "") &&
-      transaction.value === "0x0";
+  if (method === "wallet_getCapabilities") {
+    return values.length <= 1 && (
+      values.length === 0 || /^0x[0-9a-fA-F]{40}$/.test(values[0] ?? "")
+    );
   }
   return false;
 }
@@ -340,9 +338,8 @@ export function createMobileWalletConnector({
       pairingPersisted: false,
       credentialsIncluded: false,
       fundsAuthority: false,
-      transactionsAllowed: true,
-      transactionScope:
-        "zero_value_contract_calldata_only"
+      transactionsAllowed: false,
+      transactionScope: "prepared_execution_only_pending_exec_002"
     });
   }
 
@@ -472,6 +469,7 @@ export function createMobileWalletConnector({
 
   async function dispose() {
     if (disposed) return snapshot();
+    walletConnector.dispose();
     for (const remove of cleanup.splice(0)) remove();
     await storage.dispose();
     for (const eventListeners of listeners.values()) eventListeners.clear();
@@ -481,8 +479,21 @@ export function createMobileWalletConnector({
     return snapshot();
   }
 
+  const walletConnector = createEvmWalletConnector({
+    descriptor: {
+      providerId: MOBILE_WALLET_PROVIDER_ID,
+      source: "mobile_walletconnect",
+      name: "WalletConnect mobile / QR"
+    },
+    provider: providerFacade,
+    connectProvider: connect,
+    disconnectProvider: disconnect,
+    declaredMethods: APPROVED_METHODS
+  });
+
   return Object.freeze({
     connect,
+    connector: walletConnector,
     descriptor: deepFreeze({
       providerId: MOBILE_WALLET_PROVIDER_ID,
       source: "mobile_walletconnect",

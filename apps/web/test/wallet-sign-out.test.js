@@ -16,9 +16,11 @@ function assertClosed(result, status) {
 test("WalletConnect sign-out disconnects its memory-only Provider", async () => {
   let disconnected = 0;
   const result = await releaseSelectedWallet({
-    provider: {
-      async disconnect() {
+    connector: {
+      async disconnect(input) {
         disconnected += 1;
+        assert.deepEqual(input, { revokePermissions: false });
+        return { status: "wallet_disconnected" };
       }
     },
     source: "mobile_walletconnect"
@@ -30,17 +32,16 @@ test("WalletConnect sign-out disconnects its memory-only Provider", async () => 
 test("injected wallet sign-out requests exact account permission revocation", async () => {
   const requests = [];
   const result = await releaseSelectedWallet({
-    provider: {
-      async request(input) {
+    connector: {
+      async disconnect(input) {
         requests.push(structuredClone(input));
-        return null;
+        return { status: "account_permission_revoked" };
       }
     },
     source: "eip6963"
   });
   assert.deepEqual(requests, [{
-    method: "wallet_revokePermissions",
-    params: [{ eth_accounts: {} }]
+    revokePermissions: true
   }]);
   assertClosed(result, "account_permission_revoked");
 });
@@ -48,9 +49,9 @@ test("injected wallet sign-out requests exact account permission revocation", as
 test("unsupported or absent wallet still clears IPO.ONE account state", async () => {
   assertClosed(
     await releaseSelectedWallet({
-      provider: {
-        async request() {
-          throw Object.assign(new Error("unsupported"), { code: 4200 });
+      connector: {
+        async disconnect() {
+          return { status: "app_state_cleared" };
         }
       },
       source: "legacy_eip1193"

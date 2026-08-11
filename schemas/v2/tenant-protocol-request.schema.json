@@ -90,7 +90,28 @@
         "tradingRunSettlement",
         "tradingReadSettlement",
         "tradingIssuePerformanceProof",
-        "tradingReadFacilityEvidence"
+        "tradingReadFacilityEvidence",
+        "walletPrepareAccountBinding",
+        "walletSubmitAccountBinding",
+        "walletReadAccountBindings",
+        "walletRevokeAccountBinding",
+        "walletDiscoverCapabilities",
+        "walletPrepareGrant",
+        "walletActivateGrant",
+        "walletReadGrant",
+        "walletRevokeGrant",
+        "walletPrepareExecution",
+        "walletApproveExecution",
+        "walletSubmitExecution",
+        "walletReadExecution",
+        "venueDiscoverCapabilities",
+        "venueReadBinding",
+        "venuePrepareDelegate",
+        "venueActivateDelegate",
+        "venueRevokeDelegate",
+        "venuePrepareExecution",
+        "venueSubmitExecution",
+        "venueReadExecution"
       ]
     },
     "payload": {
@@ -130,6 +151,8 @@
         "reconciliation_failure",
         "risk_limit_breach",
         "security_incident",
+        "scheduled_rotation",
+        "delegate_expired",
         "verifier_access_no_longer_required",
         "source_disclosure_error",
         "security_concern",
@@ -150,6 +173,216 @@
     }
   },
   "oneOf": [
+    {
+      "title": "Prepare Execution AccountBinding",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletPrepareAccountBinding" },
+        "payload": { "$ref": "#/$defs/walletPrepareAccountBindingPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Submit Execution AccountBinding Proof",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletSubmitAccountBinding" },
+        "payload": { "$ref": "#/$defs/walletSubmitAccountBindingPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Read Execution AccountBindings",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "walletReadAccountBindings" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }] }
+    },
+    {
+      "title": "Revoke Execution AccountBinding",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletRevokeAccountBinding" },
+        "payload": { "$ref": "#/$defs/walletRevokeAccountBindingPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Discover Wallet Capabilities",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "walletDiscoverCapabilities" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/walletAdapterResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }] }
+    },
+    {
+      "title": "Prepare Delegated Wallet Grant",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletPrepareGrant" },
+        "payload": { "$ref": "#/$defs/walletPrepareGrantPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Activate Delegated Wallet Grant",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletActivateGrant" },
+        "payload": { "$ref": "#/$defs/walletExpectedGrantHashPayload" },
+        "resource": { "$ref": "#/$defs/delegatedWalletGrantResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Read Delegated Wallet Grant",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "walletReadGrant" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/delegatedWalletGrantResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }] }
+    },
+    {
+      "title": "Revoke Delegated Wallet Grant",
+      "required": ["idempotencyKey", "resource", "reasonCode"],
+      "properties": {
+        "operationId": { "const": "walletRevokeGrant" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/delegatedWalletGrantResourceReference" },
+        "reasonCode": { "enum": ["credential_compromise", "operator_request", "security_incident"] }
+      }
+    },
+    {
+      "title": "Prepare and Preflight Wallet Execution",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletPrepareExecution" },
+        "payload": { "$ref": "#/$defs/walletPrepareExecutionPayload" },
+        "resource": { "$ref": "#/$defs/delegatedWalletGrantResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Approve Exact Wallet Execution",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletApproveExecution" },
+        "payload": { "$ref": "#/$defs/walletApproveExecutionPayload" },
+        "resource": { "$ref": "#/$defs/walletExecutionResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Submit Exact Wallet Execution",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "walletSubmitExecution" },
+        "payload": { "$ref": "#/$defs/walletSubmitExecutionPayload" },
+        "resource": { "$ref": "#/$defs/walletExecutionResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Read Wallet Execution",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "walletReadExecution" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/walletExecutionResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }] }
+    },
+    {
+      "title": "Discover Venue Capabilities",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "venueDiscoverCapabilities" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/venueAdapterResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }] }
+    },
+    {
+      "title": "Read Venue Binding",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "venueReadBinding" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/venueBindingResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }] }
+    },
+    {
+      "title": "Prepare Venue Delegate",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "venuePrepareDelegate" },
+        "payload": { "$ref": "#/$defs/venuePrepareDelegatePayload" },
+        "resource": { "$ref": "#/$defs/venueBindingResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Activate Venue Delegate Guard",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "venueActivateDelegate" },
+        "payload": { "$ref": "#/$defs/venueExpectedDelegateHashPayload" },
+        "resource": { "$ref": "#/$defs/venueDelegateResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Revoke Venue Delegate Guard",
+      "required": ["idempotencyKey", "resource", "reasonCode"],
+      "properties": {
+        "operationId": { "const": "venueRevokeDelegate" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/venueDelegateResourceReference" },
+        "reasonCode": { "enum": ["credential_compromise", "operator_request", "security_incident", "scheduled_rotation", "delegate_expired"] }
+      }
+    },
+    {
+      "title": "Prepare Venue Execution",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "venuePrepareExecution" },
+        "payload": { "$ref": "#/$defs/venuePrepareExecutionPayload" },
+        "resource": { "$ref": "#/$defs/venueDelegateResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Submit Venue Execution Guard",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "venueSubmitExecution" },
+        "payload": { "$ref": "#/$defs/venueSubmitExecutionPayload" },
+        "resource": { "$ref": "#/$defs/venueExecutionResourceReference" }
+      },
+      "not": { "required": ["reasonCode"] }
+    },
+    {
+      "title": "Read Venue Execution",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "venueReadExecution" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/venueExecutionResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }] }
+    },
     {
       "title": "Request Synthetic Facility Close",
       "required": [
@@ -2271,6 +2504,164 @@
     }
   ],
   "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "walletAdapterResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "wallet_adapter" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "delegatedWalletGrantResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "delegated_wallet_grant" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "walletExecutionResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "wallet_execution" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "walletPrepareGrantPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerId", "accountBindingId", "chainId", "requestedExpiresAt", "sessionEpoch", "nonce"],
+      "properties": {
+        "providerId": { "$ref": "#/$defs/domainIdentifier" },
+        "accountBindingId": { "$ref": "#/$defs/domainIdentifier" },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "requestedExpiresAt": { "type": "string", "format": "date-time" },
+        "sessionEpoch": { "type": "integer", "minimum": 0 },
+        "nonce": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "walletPrepareAccountBindingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accountId"],
+      "properties": { "accountId": { "$ref": "#/$defs/domainIdentifier" } }
+    },
+    "walletSubmitAccountBindingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["challengeId", "accountId", "signature"],
+      "properties": {
+        "challengeId": {
+          "type": "string",
+          "pattern": "^execution_account_binding_challenge_[0-9a-f-]{36}$"
+        },
+        "accountId": { "$ref": "#/$defs/domainIdentifier" },
+        "signature": {
+          "type": "string",
+          "pattern": "^0x(?:[0-9a-fA-F]{2}){65,4096}$"
+        }
+      }
+    },
+    "walletRevokeAccountBindingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accountBindingId"],
+      "properties": { "accountBindingId": { "$ref": "#/$defs/domainIdentifier" } }
+    },
+    "walletExpectedGrantHashPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expectedGrantHash"],
+      "properties": { "expectedGrantHash": { "$ref": "#/$defs/hash" } }
+    },
+    "walletPrepareExecutionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transferIntentId"],
+      "properties": { "transferIntentId": { "$ref": "#/$defs/domainIdentifier" } }
+    },
+    "walletApproveExecutionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preflightHash", "approvalArtifactHash"],
+      "properties": {
+        "preflightHash": { "$ref": "#/$defs/hash" },
+        "approvalArtifactHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "walletSubmitExecutionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preflightHash"],
+      "properties": { "preflightHash": { "$ref": "#/$defs/hash" } }
+    },
+    "venueAdapterResourceReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "venue_adapter" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "venueBindingResourceReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "venue_binding" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "venueDelegateResourceReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "venue_delegate" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "venueExecutionResourceReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "venue_execution" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
+      }
+    },
+    "venuePrepareDelegatePayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["delegateAddressHash", "signerReferenceHash", "requestedExpiresAt"],
+      "properties": {
+        "delegateAddressHash": { "$ref": "#/$defs/hash" },
+        "signerReferenceHash": { "$ref": "#/$defs/hash" },
+        "requestedExpiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "venueExpectedDelegateHashPayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["expectedDelegateHash"],
+      "properties": { "expectedDelegateHash": { "$ref": "#/$defs/hash" } }
+    },
+    "venuePrepareExecutionPayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["orderIntentId", "orderIntentHash"],
+      "properties": {
+        "orderIntentId": { "$ref": "#/$defs/domainIdentifier" },
+        "orderIntentHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "venueSubmitExecutionPayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["preparedExecutionHash"],
+      "properties": { "preparedExecutionHash": { "$ref": "#/$defs/hash" } }
+    },
     "requestIdentifier": {
       "type": "string",
       "minLength": 8,
@@ -2309,6 +2700,7 @@
             "provider",
             "risk_portfolio",
             "servicing_queue",
+            "delegated_wallet_grant",
             "trading_capital_request",
         "trading_credit_profile",
         "trading_facility",
@@ -2316,7 +2708,13 @@
         "trading_order_intent",
         "trading_match_proposal",
         "trading_settlement",
-        "transfer_intent"
+        "transfer_intent",
+        "wallet_adapter",
+        "wallet_execution",
+        "venue_adapter",
+        "venue_binding",
+        "venue_delegate",
+        "venue_execution"
           ]
         },
         "resourceId": {

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/prepared-execution.schema.json",
+  "title": "PreparedExecution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executionId", "preparedExecutionHash", "subjectId", "principalId",
+    "accountBindingId", "obligationId", "transferIntentId", "grantId", "grantHash",
+    "targetPolicyId", "targetPolicyHash", "authorizationDecisionId",
+    "authorizationHash", "reservationId", "reservationHash", "sessionEpoch",
+    "payload", "expectedEffects", "stepUpRequired", "validFrom", "expiresAt",
+    "transactionsAllowed", "sandboxOnly", "productionAuthority",
+    "fundsAuthority", "schemaVersion", "createdAt"
+  ],
+  "properties": {
+    "executionId": { "$ref": "#/$defs/id" },
+    "preparedExecutionHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/id" },
+    "principalId": { "$ref": "#/$defs/id" },
+    "accountBindingId": { "$ref": "#/$defs/id" },
+    "obligationId": { "$ref": "#/$defs/id" },
+    "transferIntentId": { "$ref": "#/$defs/id" },
+    "grantId": { "$ref": "#/$defs/id" },
+    "grantHash": { "$ref": "#/$defs/hash" },
+    "targetPolicyId": { "$ref": "#/$defs/id" },
+    "targetPolicyHash": { "$ref": "#/$defs/hash" },
+    "authorizationDecisionId": { "$ref": "#/$defs/id" },
+    "authorizationHash": { "$ref": "#/$defs/hash" },
+    "reservationId": { "$ref": "#/$defs/id" },
+    "reservationHash": { "$ref": "#/$defs/hash" },
+    "sessionEpoch": { "type": "integer", "minimum": 0 },
+    "payload": { "$ref": "#/$defs/payload" },
+    "expectedEffects": { "$ref": "#/$defs/effects" },
+    "stepUpRequired": { "type": "boolean" },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "transactionsAllowed": { "const": false },
+    "sandboxOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "prepared_execution.v1" },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$" },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "units": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,77})$" },
+    "signedUnits": { "type": "string", "pattern": "^(?:0|-?[1-9][0-9]{0,77})$" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exactPayloadHash", "payloadKind", "chainId", "accountRefHash", "targetAddress", "functionSelector", "calldata", "nativeValueMinor", "callType", "schemaVersion"],
+      "properties": {
+        "exactPayloadHash": { "$ref": "#/$defs/hash" },
+        "payloadKind": { "const": "evm_call_v1" },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "accountRefHash": { "$ref": "#/$defs/hash" },
+        "targetAddress": { "type": "string", "pattern": "^0x[0-9a-f]{40}$" },
+        "functionSelector": { "type": "string", "pattern": "^0x[0-9a-f]{8}$" },
+        "calldata": { "type": "string", "minLength": 10, "maxLength": 65538, "pattern": "^0x(?:[0-9a-f]{2})+$" },
+        "nativeValueMinor": { "$ref": "#/$defs/units" },
+        "callType": { "const": "call" },
+        "schemaVersion": { "const": "exact_evm_payload.v1" }
+      }
+    },
+    "assetDelta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["assetId", "accountRefHash", "deltaMinor"],
+      "properties": { "assetId": { "$ref": "#/$defs/id" }, "accountRefHash": { "$ref": "#/$defs/hash" }, "deltaMinor": { "$ref": "#/$defs/signedUnits" } }
+    },
+    "allowanceDelta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["assetId", "spenderAddress", "previousAllowanceMinor", "nextAllowanceMinor"],
+      "properties": { "assetId": { "$ref": "#/$defs/id" }, "spenderAddress": { "type": "string", "pattern": "^0x[0-9a-f]{40}$" }, "previousAllowanceMinor": { "$ref": "#/$defs/units" }, "nextAllowanceMinor": { "$ref": "#/$defs/units" } }
+    },
+    "effects": {
+      "type": "object", "additionalProperties": false,
+      "required": ["effectsHash", "nativeDeltaMinor", "assetDeltas", "allowanceDeltas", "withdrawal", "transfer", "schemaVersion"],
+      "properties": {
+        "effectsHash": { "$ref": "#/$defs/hash" },
+        "nativeDeltaMinor": { "$ref": "#/$defs/signedUnits" },
+        "assetDeltas": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/assetDelta" } },
+        "allowanceDeltas": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/allowanceDelta" } },
+        "withdrawal": { "const": false }, "transfer": { "const": false },
+        "schemaVersion": { "const": "normalized_execution_effects.v1" }
+      }
+    }
+  }
+}

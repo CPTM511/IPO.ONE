@@ -17,7 +17,8 @@ const HUMAN_ACTOR_TYPES = new Set([
 ]);
 const EIP191_VERIFICATION_METHODS = new Set([
   "eip191_eoa_v1",
-  "eip1271_eip191_v1"
+  "eip1271_eip191_v1",
+  "eip6492_eip191_v1"
 ]);
 
 function exactHttpsOrigin(name, value) {
@@ -47,7 +48,8 @@ function acceptedWalletVerification(value, transaction) {
     Array.isArray(value) ||
     value.schemaVersion !== "wallet_signature_verification.v1" ||
     value.chainId !== `eip155:${transaction.chainId}` ||
-    !new Set(["eoa", "contract"]).has(value.walletType) ||
+    !new Set(["eoa", "contract", "counterfactual"]).has(value.walletType) ||
+    !new Set(["eoa", "erc1271", "erc6492"]).has(value.signatureType) ||
     !EIP191_VERIFICATION_METHODS.has(value.verificationMethod) ||
     (
       value.walletType === "eoa" &&
@@ -57,6 +59,15 @@ function acceptedWalletVerification(value, transaction) {
       value.walletType === "contract" &&
       value.verificationMethod !== "eip1271_eip191_v1"
     ) ||
+    (
+      value.walletType === "counterfactual" &&
+      (
+        value.signatureType !== "erc6492" ||
+        value.verificationMethod !== "eip6492_eip191_v1"
+      )
+    ) ||
+    (value.walletType === "eoa" && value.signatureType !== "eoa") ||
+    (value.walletType === "contract" && value.signatureType !== "erc1271") ||
     value.authenticationEligible !== true ||
     value.rawSignaturePersisted !== false ||
     value.credentialsIncluded !== false ||

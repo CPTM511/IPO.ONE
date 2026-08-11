@@ -128,7 +128,8 @@ test("initialization proves exact package, fixed Testnets/methods, and memory-on
     84532: "https://sepolia.base.org/",
     1952: "https://testrpc.xlayer.tech/terigon"
   });
-  assert.equal(load.options.methods.includes("eth_sendTransaction"), true);
+  assert.equal(load.options.methods.includes("eth_sendTransaction"), false);
+  assert.equal(load.options.methods.includes("wallet_getCapabilities"), true);
   assert.equal(load.options.methods.includes("personal_sign"), true);
   assert.equal(load.options.methods.includes("eth_signTypedData_v4"), true);
   assert.equal(load.options.showQrModal, false);
@@ -138,10 +139,10 @@ test("initialization proves exact package, fixed Testnets/methods, and memory-on
   assert.equal(load.storage.descriptor.indexedDb, false);
   assert.equal(initialized.projectIdPersisted, false);
   assert.equal(initialized.pairingPersisted, false);
-  assert.equal(initialized.transactionsAllowed, true);
+  assert.equal(initialized.transactionsAllowed, false);
   assert.equal(
     initialized.transactionScope,
-    "zero_value_contract_calldata_only"
+    "prepared_execution_only_pending_exec_002"
   );
   assert.equal(initialized.fundsAuthority, false);
 });
@@ -176,7 +177,7 @@ test("loader must attest exact version and actual memory storage application", a
   }
 });
 
-test("Provider facade allows only approved account/network/sign and exact zero-value calldata", async () => {
+test("Provider facade allows approved account/network/sign/capability reads and denies raw transactions", async () => {
   const fixture = connectorFixture();
   await fixture.connector.initialize();
   const accounts = await fixture.connector.provider.request({
@@ -188,15 +189,6 @@ test("Provider facade allows only approved account/network/sign and exact zero-v
   await fixture.connector.provider.request({
     method: "personal_sign",
     params: ["bounded-message", accounts[0]]
-  });
-  await fixture.connector.provider.request({
-    method: "eth_sendTransaction",
-    params: [{
-      from: accounts[0],
-      to: "0x2222222222222222222222222222222222222222",
-      data: "0x12345678",
-      value: "0x0"
-    }]
   });
   await assert.rejects(
     fixture.connector.provider.request({
@@ -210,6 +202,10 @@ test("Provider facade allows only approved account/network/sign and exact zero-v
     }),
     (error) => error.code === "wallet_connector_method_denied"
   );
+  await fixture.connector.provider.request({
+    method: "wallet_getCapabilities",
+    params: [accounts[0]]
+  });
   await assert.rejects(
     fixture.connector.provider.request({
       method: "eth_sendTransaction",
@@ -239,7 +235,7 @@ test("Provider facade allows only approved account/network/sign and exact zero-v
   );
   assert.deepEqual(
     fixture.provider.requests.map(({ method }) => method),
-    ["eth_accounts", "personal_sign", "eth_sendTransaction"]
+    ["eth_accounts", "personal_sign", "wallet_getCapabilities"]
   );
 });
 
@@ -306,12 +302,12 @@ test("mobile Provider enters the same registry selection and authority invalidat
   registry.start();
   assert.equal(registry.registerConnector({
     descriptor: fixture.connector.descriptor,
-    provider: fixture.connector.provider
+    connector: fixture.connector.connector
   }), true);
   registry.finishDiscovery();
   assert.equal(registry.getSnapshot().providers[0].providerId, MOBILE_WALLET_PROVIDER_ID);
   assert.equal(registry.selectProvider(MOBILE_WALLET_PROVIDER_ID), true);
-  assert.equal(registry.getSelectedProvider(), fixture.connector.provider);
+  assert.equal(registry.getSelectedConnector(), fixture.connector.connector);
 
   const invalidations = [];
   const lifecycle = createWalletAuthorityLifecycle({
@@ -328,7 +324,7 @@ test("mobile Provider enters the same registry selection and authority invalidat
       };
     }
   });
-  fixture.connector.provider.on("accountsChanged", () => {
+  fixture.connector.connector.subscribeAccountChanges(() => {
     lifecycle.handleContextChange("wallet_account_changed", {
       serverAuthorityActive: true
     });

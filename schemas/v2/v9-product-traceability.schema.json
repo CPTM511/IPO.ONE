@@ -148,7 +148,7 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 128,
-          "pattern": "^(pilot|worker|trading)[A-Z][A-Za-z0-9]*$"
+          "pattern": "^(pilot|worker|trading|wallet|venue)[A-Z][A-Za-z0-9]*$"
         },
         "requestSchemaVersion": {
           "type": "string",

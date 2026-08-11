@@ -1,5 +1,7 @@
 import {
+  decodeAbiParameters,
   encodeFunctionData,
+  encodeAbiParameters,
   getAddress,
   hashMessage,
   verifyMessage,
@@ -61,6 +63,13 @@ const ERC1271_ABI = Object.freeze([Object.freeze({
   ])
 })]);
 const ERC1271_MAGIC_RESULT = `0x1626ba7e${"0".repeat(56)}`;
+export const ERC6492_MAGIC_SUFFIX =
+  "0x6492649264926492649264926492649264926492649264926492649264926492";
+const ERC6492_WRAPPER_PARAMETERS = Object.freeze([
+  Object.freeze({ name: "factory", type: "address" }),
+  Object.freeze({ name: "factoryCalldata", type: "bytes" }),
+  Object.freeze({ name: "originalSignature", type: "bytes" })
+]);
 const HEX_DATA = /^0x(?:[0-9a-fA-F]{2})*$/;
 const HEX_QUANTITY = /^0x(?:0|[1-9a-f][0-9a-f]*)$/;
 const HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -116,11 +125,115 @@ function checkedSignature(signature) {
   return signature;
 }
 
+export function isErc6492Signature(signature) {
+  return typeof signature === "string" &&
+    signature.length > ERC6492_MAGIC_SUFFIX.length &&
+    signature.toLowerCase().endsWith(ERC6492_MAGIC_SUFFIX.slice(2));
+}
+
+export function decodeErc6492Signature(signature) {
+  const checked = checkedSignature(signature);
+  if (!isErc6492Signature(checked)) {
+    fail("invalid_erc6492_signature", "signature does not contain the ERC-6492 suffix");
+  }
+  const encoded = `0x${checked.slice(2, -64)}`;
+  let decoded;
+  try {
+    decoded = decodeAbiParameters(ERC6492_WRAPPER_PARAMETERS, encoded);
+  } catch {
+    fail("invalid_erc6492_signature", "ERC-6492 wrapper ABI is invalid");
+  }
+  const [factory, factoryCalldata, originalSignature] = decoded;
+  if (
+    typeof factoryCalldata !== "string" ||
+    !HEX_DATA.test(factoryCalldata) ||
+    factoryCalldata === "0x" ||
+    typeof originalSignature !== "string" ||
+    !HEX_DATA.test(originalSignature) ||
+    originalSignature === "0x" ||
+    isErc6492Signature(originalSignature)
+  ) {
+    fail("invalid_erc6492_signature", "ERC-6492 wrapper fields are invalid");
+  }
+  let normalizedFactory;
+  try {
+    normalizedFactory = getAddress(factory);
+  } catch {
+    fail("invalid_erc6492_signature", "ERC-6492 factory address is invalid");
+  }
+  if (
+    encodeAbiParameters(
+      ERC6492_WRAPPER_PARAMETERS,
+      [normalizedFactory, factoryCalldata, originalSignature]
+    ).toLowerCase() !== encoded.toLowerCase()
+  ) {
+    fail("invalid_erc6492_signature", "ERC-6492 wrapper is not canonical ABI");
+  }
+  return Object.freeze({
+    schemaVersion: "erc6492_signature_wrapper.v1",
+    factory: normalizedFactory,
+    factoryCalldata,
+    originalSignature,
+    factoryCalldataReferenceHash: hashId("erc6492_factory_calldata", factoryCalldata),
+    originalSignatureReferenceHash: hashId("erc6492_original_signature", originalSignature),
+    rawSignaturePersisted: false
+  });
+}
+
+export function createErc6492OffchainVerifier({ validate } = {}) {
+  if (typeof validate !== "function") {
+    fail(
+      "invalid_erc6492_verifier",
+      "ERC-6492 offchain verifier requires one read-only validator"
+    );
+  }
+  return Object.freeze({
+    descriptor() {
+      return Object.freeze({
+        schemaVersion: "erc6492_offchain_verifier.v1",
+        mode: "read_only_eth_call",
+        maximumCallsPerChallenge: 1,
+        deploymentTransactionAllowed: false,
+        transactionSubmissionAllowed: false,
+        statePersisted: false,
+        productionApproved: false,
+        fundsAuthority: false
+      });
+    },
+    async verify(input) {
+      return (await validate(input)) === true;
+    }
+  });
+}
+
 function checkedProofType(proofType) {
   if (!new Set(["eip191", "eip712"]).has(proofType)) {
     fail("invalid_wallet_signature_input", "wallet proof type is not approved");
   }
   return proofType;
+}
+
+function checkedVerificationInput(input) {
+  const required = [
+    "address",
+    "chainId",
+    "digest",
+    "signature",
+    "proofType",
+    "eoaVerify"
+  ];
+  const allowed = new Set([...required, "requireAuthenticationEligible"]);
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input) ||
+    Object.getPrototypeOf(input) !== Object.prototype ||
+    required.some((key) => !Object.hasOwn(input, key)) ||
+    Object.keys(input).some((key) => !allowed.has(key))
+  ) {
+    fail("invalid_wallet_signature_input", "wallet signature input must be one closed contract");
+  }
+  return input;
 }
 
 function exactApprovedUrl(chainId, providerSlot, rpcUrl) {
@@ -360,15 +473,114 @@ function verificationResult({
     providerSlot,
     sourceFinality: profile.sourceFinality,
     walletType,
+    signatureType: walletType === "contract"
+      ? "erc1271"
+      : walletType === "counterfactual"
+        ? "erc6492"
+        : "eoa",
     verificationMethod: walletType === "contract"
       ? `eip1271_${proofType}_v1`
-      : `${proofType}_eoa_v1`,
+      : walletType === "counterfactual"
+        ? `eip6492_${proofType}_v1`
+        : `${proofType}_eoa_v1`,
     challengeReferenceHash: hashId("wallet_signature_challenge", digest),
     signatureReferenceHash: hashId("wallet_signature", signature),
     authenticationEligible: profile.authenticationEligible,
     rawSignaturePersisted: false,
     credentialsIncluded: false,
     productionFundsMoved: false
+  });
+}
+
+async function verifyErc6492AtProvider({
+  address,
+  chainId,
+  client,
+  counterfactualVerifier,
+  digest,
+  maximumBlockAgeMs,
+  now,
+  onCounterfactualCall,
+  proofType,
+  signature,
+  signal,
+  wrapper
+}) {
+  const profile = approvedChain(chainId);
+  const reportedChainId = await client.call("eth_chainId", [], { signal });
+  if (
+    typeof reportedChainId !== "string" ||
+    !HEX_QUANTITY.test(reportedChainId) ||
+    BigInt(reportedChainId) !== BigInt(profile.numericChainId)
+  ) {
+    fail("erc1271_rpc_chain_mismatch", "ERC-6492 RPC returned the wrong chain");
+  }
+  const block = normalizedBlock(
+    await client.call("eth_getBlockByNumber", [profile.blockTag, false], { signal }),
+    { now, maximumBlockAgeMs }
+  );
+  onCounterfactualCall();
+  let readOnlyCalls = 0;
+  const valid = await counterfactualVerifier.verify(Object.freeze({
+    schemaVersion: "erc6492_offchain_verification_input.v1",
+    address,
+    chainId,
+    digest,
+    factory: wrapper.factory,
+    factoryCalldata: wrapper.factoryCalldata,
+    originalSignature: wrapper.originalSignature,
+    blockNumber: block.numberDecimal,
+    async readOnlyCall(call) {
+      if (
+        readOnlyCalls !== 0 ||
+        !call ||
+        typeof call !== "object" ||
+        Array.isArray(call) ||
+        Object.keys(call).some((key) => !new Set(["data", "to"]).has(key)) ||
+        typeof call.data !== "string" ||
+        !HEX_DATA.test(call.data) ||
+        call.data === "0x" ||
+        (call.data.length - 2) / 2 > DEFAULT_MAXIMUM_RESPONSE_BYTES ||
+        (call.to !== undefined && (() => {
+          try { getAddress(call.to); return false; } catch { return true; }
+        })())
+      ) {
+        fail("erc6492_call_denied", "ERC-6492 verifier call is outside the read-only bound");
+      }
+      readOnlyCalls += 1;
+      return client.call(
+        "eth_call",
+        [{ ...(call.to === undefined ? {} : { to: getAddress(call.to) }), data: call.data }, block.number],
+        { signal }
+      );
+    },
+    rawSignaturePersisted: false,
+    transactionSubmissionAllowed: false,
+    deploymentTransactionAllowed: false
+  }));
+  if (valid !== true || readOnlyCalls !== 1) {
+    fail(
+      "wallet_signature_verification_failed",
+      "ERC-6492 counterfactual signature verification failed"
+    );
+  }
+  const revalidated = normalizedBlock(
+    await client.call("eth_getBlockByNumber", [block.number, false], { signal }),
+    { expectedNumber: block.number, now, maximumBlockAgeMs }
+  );
+  if (revalidated.hash !== block.hash) {
+    fail("erc1271_block_reorged", "ERC-6492 verification block hash changed");
+  }
+  return verificationResult({
+    address,
+    block,
+    chainId,
+    digest,
+    profile,
+    proofType,
+    providerSlot: client.providerSlot,
+    signature,
+    walletType: "counterfactual"
   });
 }
 
@@ -459,7 +671,8 @@ export class EvmWalletSignatureVerifier {
   constructor({
     fetchImpl = globalThis.fetch,
     clock = () => new Date(),
-    maximumBlockAgeMs = DEFAULT_MAXIMUM_BLOCK_AGE_MS
+    maximumBlockAgeMs = DEFAULT_MAXIMUM_BLOCK_AGE_MS,
+    counterfactualVerifier
   } = {}) {
     if (
       typeof fetchImpl !== "function" ||
@@ -473,8 +686,24 @@ export class EvmWalletSignatureVerifier {
         "ERC-1271 wallet signature verifier configuration is invalid"
       );
     }
+    if (counterfactualVerifier !== undefined) {
+      const boundary = counterfactualVerifier?.descriptor?.();
+      if (
+        typeof counterfactualVerifier?.verify !== "function" ||
+        boundary?.schemaVersion !== "erc6492_offchain_verifier.v1" ||
+        boundary.mode !== "read_only_eth_call" ||
+        boundary.maximumCallsPerChallenge !== 1 ||
+        boundary.deploymentTransactionAllowed !== false ||
+        boundary.transactionSubmissionAllowed !== false ||
+        boundary.statePersisted !== false ||
+        boundary.fundsAuthority !== false
+      ) {
+        fail("invalid_erc6492_verifier", "ERC-6492 verifier boundary is invalid");
+      }
+    }
     this.clock = clock;
     this.maximumBlockAgeMs = maximumBlockAgeMs;
+    this.counterfactualVerifier = counterfactualVerifier;
     this.clients = Object.fromEntries(
       Object.keys(APPROVED_CHAINS).map((chainId) => [
         chainId,
@@ -487,15 +716,16 @@ export class EvmWalletSignatureVerifier {
     Object.freeze(this);
   }
 
-  async verifyDigest({
-    address,
-    chainId,
-    digest,
-    signature,
-    proofType,
-    eoaVerify,
-    requireAuthenticationEligible = true
-  }) {
+  async verifyDigest(input) {
+    const {
+      address,
+      chainId,
+      digest,
+      signature,
+      proofType,
+      eoaVerify,
+      requireAuthenticationEligible = true
+    } = checkedVerificationInput(input);
     const normalizedAddress = checkedAddress(address);
     const normalizedDigest = checkedDigest(digest);
     const normalizedSignature = checkedSignature(signature);
@@ -507,33 +737,66 @@ export class EvmWalletSignatureVerifier {
     ) {
       fail("invalid_wallet_signature_input", "EOA verification callback is required");
     }
+    const wrapper = isErc6492Signature(normalizedSignature)
+      ? decodeErc6492Signature(normalizedSignature)
+      : undefined;
+    if (wrapper && this.counterfactualVerifier === undefined) {
+      fail(
+        "erc6492_verifier_unavailable",
+        "ERC-6492 verification requires a reviewed read-only offchain verifier"
+      );
+    }
     let contractCallAttempted = false;
+    let counterfactualCallAttempted = false;
     let lastError;
     for (const client of this.clients[chainId]) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
       try {
-        const result = await verifyAtProvider({
-          address: normalizedAddress,
-          chainId,
-          client,
-          digest: normalizedDigest,
-          eoaVerify,
-          maximumBlockAgeMs: this.maximumBlockAgeMs,
-          now: this.clock(),
-          onContractCall() {
-            if (contractCallAttempted) {
-              fail(
-                "erc1271_call_limit_exceeded",
-                "only one ERC-1271 verification call is allowed per challenge"
-              );
-            }
-            contractCallAttempted = true;
-          },
-          proofType: normalizedProofType,
-          signal: controller.signal,
-          signature: normalizedSignature
-        });
+        const result = wrapper
+          ? await verifyErc6492AtProvider({
+              address: normalizedAddress,
+              chainId,
+              client,
+              counterfactualVerifier: this.counterfactualVerifier,
+              digest: normalizedDigest,
+              maximumBlockAgeMs: this.maximumBlockAgeMs,
+              now: this.clock(),
+              onCounterfactualCall() {
+                if (counterfactualCallAttempted) {
+                  fail(
+                    "erc6492_call_limit_exceeded",
+                    "only one ERC-6492 verification call is allowed per challenge"
+                  );
+                }
+                counterfactualCallAttempted = true;
+              },
+              proofType: normalizedProofType,
+              signal: controller.signal,
+              signature: normalizedSignature,
+              wrapper
+            })
+          : await verifyAtProvider({
+              address: normalizedAddress,
+              chainId,
+              client,
+              digest: normalizedDigest,
+              eoaVerify,
+              maximumBlockAgeMs: this.maximumBlockAgeMs,
+              now: this.clock(),
+              onContractCall() {
+                if (contractCallAttempted) {
+                  fail(
+                    "erc1271_call_limit_exceeded",
+                    "only one ERC-1271 verification call is allowed per challenge"
+                  );
+                }
+                contractCallAttempted = true;
+              },
+              proofType: normalizedProofType,
+              signal: controller.signal,
+              signature: normalizedSignature
+            });
         if (
           requireAuthenticationEligible &&
           result.authenticationEligible !== true
@@ -548,6 +811,7 @@ export class EvmWalletSignatureVerifier {
         lastError = error;
         if (
           contractCallAttempted ||
+          counterfactualCallAttempted ||
           !RETRYABLE_CODES.has(error?.code) ||
           client === this.clients[chainId].at(-1)
         ) {
@@ -604,7 +868,11 @@ export function describeErc1271VerificationBoundary() {
     maximumResponseBytes: DEFAULT_MAXIMUM_RESPONSE_BYTES,
     maximumSignatureBytes: MAXIMUM_SIGNATURE_BYTES,
     maximumContractCallsPerChallenge: 1,
+    maximumCounterfactualCallsPerChallenge: 1,
     acceptedMagicValue: "0x1626ba7e",
+    erc6492MagicSuffix: ERC6492_MAGIC_SUFFIX,
+    erc6492RequiresConfiguredOffchainVerifier: true,
+    erc6492DeploymentTransactionAllowed: false,
     xLayerAuthenticationEligible: false,
     arbitraryRpc: false,
     transactionsAllowed: false,

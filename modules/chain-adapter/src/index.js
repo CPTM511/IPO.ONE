@@ -4,6 +4,7 @@ export * from "./credit-authorization-registry.js";
 export * from "./evidence-anchor-registry.js";
 export * from "./erc1271-signature-verifier.js";
 export * from "./evm-account-proof-adapter.js";
+export * from "./evm-execution-account-proof-adapter.js";
 export * from "./obligation-portability.js";
 export * from "./sandbox-chain-adapter.js";
 export * from "./sandbox-chain-indexer.js";

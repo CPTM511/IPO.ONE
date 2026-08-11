@@ -32,6 +32,10 @@ const fixtures = JSON.parse(await readFile(
   join(process.cwd(), "api", "tenant-protocol", "conformance", "tenant-protocol.v1.fixtures.json"),
   "utf8"
 ));
+const walletExecutionFixtures = JSON.parse(await readFile(
+  join(process.cwd(), "api", "tenant-protocol", "conformance", "wallet-execution.v1.fixtures.json"),
+  "utf8"
+));
 const workflowReceiptFixtures = JSON.parse(await readFile(
   join(
     process.cwd(),
@@ -425,10 +429,12 @@ test("Human HTTP and Agent MCP Offer receipts enforce one economic parity profil
 });
 
 test("Tenant protocol fixtures enforce every closed request and result branch", () => {
-  for (const request of fixtures.validRequests) assert.equal(isTenantProtocolRequest(request), true);
-  for (const request of fixtures.invalidRequests) assert.equal(isTenantProtocolRequest(request), false);
-  for (const result of fixtures.validResults) assert.equal(isTenantProtocolResult(result), true);
-  for (const result of fixtures.invalidResults) assert.equal(isTenantProtocolResult(result), false);
+  for (const group of [fixtures, walletExecutionFixtures]) {
+    for (const request of group.validRequests) assert.equal(isTenantProtocolRequest(request), true);
+    for (const request of group.invalidRequests) assert.equal(isTenantProtocolRequest(request), false);
+    for (const result of group.validResults) assert.equal(isTenantProtocolResult(result), true);
+    for (const result of group.invalidResults) assert.equal(isTenantProtocolResult(result), false);
+  }
   assert.equal(isTenantProtocolCatalog(TENANT_PROTOCOL_CATALOG), true);
 });
 

@@ -75,7 +75,28 @@ export type TenantProtocolOperationId =
   | "tradingRunSettlement"
   | "tradingReadSettlement"
   | "tradingIssuePerformanceProof"
-  | "tradingReadFacilityEvidence";
+  | "tradingReadFacilityEvidence"
+  | "walletPrepareAccountBinding"
+  | "walletSubmitAccountBinding"
+  | "walletReadAccountBindings"
+  | "walletRevokeAccountBinding"
+  | "walletDiscoverCapabilities"
+  | "walletPrepareGrant"
+  | "walletActivateGrant"
+  | "walletReadGrant"
+  | "walletRevokeGrant"
+  | "walletPrepareExecution"
+  | "walletApproveExecution"
+  | "walletSubmitExecution"
+  | "walletReadExecution"
+  | "venueDiscoverCapabilities"
+  | "venueReadBinding"
+  | "venuePrepareDelegate"
+  | "venueActivateDelegate"
+  | "venueRevokeDelegate"
+  | "venuePrepareExecution"
+  | "venueSubmitExecution"
+  | "venueReadExecution";
 
 export type TenantProtocolRequestSchemaVersion = "tenant_protocol_request.v1";
 export type TenantProtocolResultSchemaVersion = "tenant_protocol_result.v1";
@@ -814,7 +835,7 @@ export function assertDualNativeSandboxObligationParity(input: {
 }): DualNativeObligationEconomicParity;
 
 export interface TenantProtocolResourceReference {
-  resourceType: "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "risk_portfolio" | "servicing_queue" | "trading_facility" | "trading_order_intent" | "trading_match_proposal" | "transfer_intent";
+  resourceType: "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "delegated_wallet_grant" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "risk_portfolio" | "servicing_queue" | "trading_facility" | "trading_order_intent" | "trading_match_proposal" | "transfer_intent" | "wallet_adapter" | "wallet_execution";
   resourceId: string;
 }
 
@@ -1589,7 +1610,177 @@ export interface RevokeOfficialReportRequest extends TenantProtocolRequestBase {
   idempotencyKey: string;
 }
 
+export interface WalletDiscoverCapabilitiesRequest extends TenantProtocolRequestBase {
+  operationId: "walletDiscoverCapabilities";
+  payload: Record<string, never>;
+  resource: { resourceType: "wallet_adapter"; resourceId: string };
+}
+
+export interface WalletPrepareAccountBindingRequest extends TenantProtocolRequestBase {
+  operationId: "walletPrepareAccountBinding";
+  payload: { accountId: string };
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletSubmitAccountBindingRequest extends TenantProtocolRequestBase {
+  operationId: "walletSubmitAccountBinding";
+  payload: { challengeId: string; accountId: string; signature: string };
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletReadAccountBindingsRequest extends TenantProtocolRequestBase {
+  operationId: "walletReadAccountBindings";
+  payload: Record<string, never>;
+  resource: { resourceType: "subject"; resourceId: string };
+}
+
+export interface WalletRevokeAccountBindingRequest extends TenantProtocolRequestBase {
+  operationId: "walletRevokeAccountBinding";
+  payload: { accountBindingId: string };
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletPrepareGrantRequest extends TenantProtocolRequestBase {
+  operationId: "walletPrepareGrant";
+  payload: {
+    providerId: string;
+    accountBindingId: string;
+    chainId: "eip155:84532" | "eip155:1952";
+    requestedExpiresAt: string;
+    sessionEpoch: number;
+    nonce: string;
+  };
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletActivateGrantRequest extends TenantProtocolRequestBase {
+  operationId: "walletActivateGrant";
+  payload: { expectedGrantHash: string };
+  resource: { resourceType: "delegated_wallet_grant"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletReadGrantRequest extends TenantProtocolRequestBase {
+  operationId: "walletReadGrant";
+  payload: Record<string, never>;
+  resource: { resourceType: "delegated_wallet_grant"; resourceId: string };
+}
+
+export interface WalletRevokeGrantRequest extends TenantProtocolRequestBase {
+  operationId: "walletRevokeGrant";
+  payload: Record<string, never>;
+  resource: { resourceType: "delegated_wallet_grant"; resourceId: string };
+  reasonCode: "credential_compromise" | "operator_request" | "security_incident";
+  idempotencyKey: string;
+}
+
+export interface WalletPrepareExecutionRequest extends TenantProtocolRequestBase {
+  operationId: "walletPrepareExecution";
+  payload: { transferIntentId: string };
+  resource: { resourceType: "delegated_wallet_grant"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletApproveExecutionRequest extends TenantProtocolRequestBase {
+  operationId: "walletApproveExecution";
+  payload: { preflightHash: string; approvalArtifactHash: string };
+  resource: { resourceType: "wallet_execution"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletSubmitExecutionRequest extends TenantProtocolRequestBase {
+  operationId: "walletSubmitExecution";
+  payload: { preflightHash: string };
+  resource: { resourceType: "wallet_execution"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface WalletReadExecutionRequest extends TenantProtocolRequestBase {
+  operationId: "walletReadExecution";
+  payload: Record<string, never>;
+  resource: { resourceType: "wallet_execution"; resourceId: string };
+}
+
+export interface VenueDiscoverCapabilitiesRequest extends TenantProtocolRequestBase {
+  operationId: "venueDiscoverCapabilities";
+  payload: Record<string, never>;
+  resource: { resourceType: "venue_adapter"; resourceId: string };
+}
+
+export interface VenueReadBindingRequest extends TenantProtocolRequestBase {
+  operationId: "venueReadBinding";
+  payload: Record<string, never>;
+  resource: { resourceType: "venue_binding"; resourceId: string };
+}
+
+export interface VenuePrepareDelegateRequest extends TenantProtocolRequestBase {
+  operationId: "venuePrepareDelegate";
+  payload: { delegateAddressHash: string; signerReferenceHash: string; requestedExpiresAt: string };
+  resource: { resourceType: "venue_binding"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface VenueActivateDelegateRequest extends TenantProtocolRequestBase {
+  operationId: "venueActivateDelegate";
+  payload: { expectedDelegateHash: string };
+  resource: { resourceType: "venue_delegate"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface VenueRevokeDelegateRequest extends TenantProtocolRequestBase {
+  operationId: "venueRevokeDelegate";
+  payload: Record<string, never>;
+  resource: { resourceType: "venue_delegate"; resourceId: string };
+  reasonCode: "credential_compromise" | "operator_request" | "security_incident" | "scheduled_rotation" | "delegate_expired";
+  idempotencyKey: string;
+}
+
+export interface VenuePrepareExecutionRequest extends TenantProtocolRequestBase {
+  operationId: "venuePrepareExecution";
+  payload: { orderIntentId: string; orderIntentHash: string };
+  resource: { resourceType: "venue_delegate"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface VenueSubmitExecutionRequest extends TenantProtocolRequestBase {
+  operationId: "venueSubmitExecution";
+  payload: { preparedExecutionHash: string };
+  resource: { resourceType: "venue_execution"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface VenueReadExecutionRequest extends TenantProtocolRequestBase {
+  operationId: "venueReadExecution";
+  payload: Record<string, never>;
+  resource: { resourceType: "venue_execution"; resourceId: string };
+}
+
 export type TenantProtocolRequest =
+  | WalletPrepareAccountBindingRequest
+  | WalletSubmitAccountBindingRequest
+  | WalletReadAccountBindingsRequest
+  | WalletRevokeAccountBindingRequest
+  | WalletDiscoverCapabilitiesRequest
+  | WalletPrepareGrantRequest
+  | WalletActivateGrantRequest
+  | WalletReadGrantRequest
+  | WalletRevokeGrantRequest
+  | WalletPrepareExecutionRequest
+  | WalletApproveExecutionRequest
+  | WalletSubmitExecutionRequest
+  | WalletReadExecutionRequest
+  | VenueDiscoverCapabilitiesRequest
+  | VenueReadBindingRequest
+  | VenuePrepareDelegateRequest
+  | VenueActivateDelegateRequest
+  | VenueRevokeDelegateRequest
+  | VenuePrepareExecutionRequest
+  | VenueSubmitExecutionRequest
+  | VenueReadExecutionRequest
   | AcceptCreditOfferRequest
   | AcknowledgeProviderIntentRequest
   | ActivateSandboxMandateRequest
@@ -1674,7 +1865,10 @@ export interface AgentAccountBindingSummary {
   chainId: "eip155:84532" | "eip155:1952";
   purpose: AgentAccountPurpose;
   proofHash: string;
-  verificationMethod: "eip712_eoa_v1";
+  verificationMethod:
+    | "eip712_eoa_v1"
+    | "eip1271_eip712_v1"
+    | "eip6492_eip712_v1";
   status: "active";
   boundAt: string;
   protocolVersion: "1.1";
@@ -3868,6 +4062,212 @@ export interface TradingFacilityEvidenceResponse {
   schemaVersion: "trading_facility_evidence.v1";
 }
 
+export interface WalletSafetyFields {
+  transactionsAllowed: false;
+  sandboxOnly: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+}
+
+export interface ExecutionAccountBindingView {
+  accountBindingId: string;
+  subjectId: string;
+  accountHash: string;
+  chainId: "eip155:84532" | "eip155:1952";
+  purpose: "execution";
+  bindingKind: "execution";
+  proofHash: string;
+  verificationMethod:
+    | "eip712_eoa_v1"
+    | "eip1271_eip712_v1"
+    | "eip6492_eip712_v1";
+  status: "active" | "revoked";
+  boundAt: string;
+  revokedAt?: string;
+  protocolVersion: "1.2";
+  createsAuthenticationSession: false;
+  createsExecutionAuthority: false;
+}
+
+export interface ExecutionAccountBindingChallengeResponse {
+  challengeId: string;
+  subjectId: string;
+  chainId: "eip155:84532" | "eip155:1952";
+  accountHash: string;
+  purpose: "execution";
+  nonce: string;
+  issuedAt: string;
+  expiresAt: string;
+  protocolVersion: "1.2";
+  typedDataHash: string;
+  typedData: Record<string, unknown>;
+  createsAuthenticationSession: false;
+  createsExecutionAuthority: false;
+  oneUse: true;
+  schemaVersion: "tenant_execution_account_binding_challenge_created.v1";
+}
+
+export interface ExecutionAccountBindingMutationResponse {
+  subjectId: string;
+  accountBinding: ExecutionAccountBindingView;
+  challengeConsumed?: true;
+  authenticationSessionChanged: false;
+  executionAuthorityGranted: false;
+  productionAuthority?: false;
+  schemaVersion:
+    | "tenant_execution_account_binding_verified.v1"
+    | "tenant_execution_account_binding_revoked.v1";
+}
+
+export interface ExecutionAccountBindingsViewResponse {
+  subjectId: string;
+  accounts: ExecutionAccountBindingView[];
+  authenticationSessionChanged: false;
+  executionAuthorityGranted: false;
+  schemaVersion: "tenant_execution_account_bindings_view.v1";
+}
+
+export interface WalletConnectorDescriptor {
+  schemaVersion: "evm_wallet_connector_descriptor.v1";
+  providerId: string;
+  source: "eip6963" | "legacy_eip1193" | "mobile_walletconnect";
+  name: string;
+  walletTransport: "eip1193" | "walletconnect";
+  enabledChains: ["eip155:84532", "eip155:1952"];
+  explicitSelectionRequired: true;
+  capabilityNegotiated: true;
+  rawProviderExposed: false;
+  arbitraryCalldataAccepted: false;
+  preparedExecutionSubmission: false;
+  sandboxOnly: true;
+  productionApproved: false;
+  fundsAuthority: false;
+}
+
+export interface WalletCapabilityDescriptorListResponse extends WalletSafetyFields {
+  items: WalletConnectorDescriptor[];
+  count: number;
+  schemaVersion: "wallet_capability_descriptor_list.v1";
+}
+
+export interface WalletGrantResponse extends WalletSafetyFields {
+  grantId: string;
+  grantHash: string;
+  status: "prepared" | "active" | "revoked" | "expired" | "quarantined";
+  pendingExposureMinor: string;
+  version: number;
+  schemaVersion:
+    | "tenant_wallet_grant_prepared.v1"
+    | "tenant_wallet_grant_activated.v1"
+    | "tenant_wallet_grant_view.v1"
+    | "tenant_wallet_grant_revoked.v1";
+}
+
+export type WalletExecutionDecision = "ALLOW" | "STEP_UP" | "DENY" | "QUARANTINE";
+
+export interface WalletExecutionPreparedResponse extends WalletSafetyFields {
+  executionId: string;
+  preparedExecutionHash: string;
+  exactPayloadHash: string;
+  preflightHash: string;
+  decision: WalletExecutionDecision;
+  expiresAt: string;
+  schemaVersion: "tenant_wallet_execution_prepared.v1";
+}
+
+export interface WalletExecutionApprovedResponse extends WalletSafetyFields {
+  executionId: string;
+  preflightHash: string;
+  approvalArtifactHash: string;
+  status: "recorded_local_no_funds";
+  approvedAt: string;
+  expiresAt: string;
+  submissionAllowed: false;
+  schemaVersion: "tenant_wallet_execution_approved.v1";
+}
+
+export interface WalletExecutionSubmissionBlockedResponse extends WalletSafetyFields {
+  executionId: string;
+  preflightHash: string;
+  blocked: true;
+  reasonCode: "execution_submission_disabled_l0_local_no_funds";
+  adapterInvoked: false;
+  schemaVersion: "tenant_wallet_execution_submission_blocked.v1";
+}
+
+export interface WalletExecutionViewResponse extends WalletSafetyFields {
+  executionId: string;
+  preparedExecutionHash: string;
+  latestPreflightHash: string | null;
+  decision: WalletExecutionDecision | null;
+  stale: boolean;
+  schemaVersion: "tenant_wallet_execution_view.v1";
+}
+
+export interface VenueSafetyFields extends WalletSafetyFields {}
+
+export interface VenueCapabilityDescriptorListResponse extends VenueSafetyFields {
+  items: Record<string, unknown>[];
+  count: number;
+  schemaVersion: "venue_capability_descriptor_list.v1";
+}
+
+export interface VenueBindingViewResponse extends VenueSafetyFields {
+  bindingId: string;
+  status: "unverified" | "verified" | "revoked" | "quarantined";
+  schemaVersion: "tenant_venue_binding_view.v1";
+}
+
+export interface VenueDelegatePreparedResponse extends VenueSafetyFields {
+  delegateId: string;
+  delegateHash: string;
+  status: "prepared";
+  activationAllowed: false;
+  schemaVersion: "tenant_venue_delegate_prepared.v1";
+}
+
+export interface VenueDelegateActivationBlockedResponse extends VenueSafetyFields {
+  delegateId: string;
+  blocked: true;
+  reasonCode: "venue_delegate_activation_disabled_l0_local_no_funds";
+  adapterInvoked: false;
+  schemaVersion: "tenant_venue_delegate_activation_blocked.v1";
+}
+
+export interface VenueDelegateRevocationBlockedResponse extends VenueSafetyFields {
+  delegateId: string;
+  blocked: true;
+  reasonCode: "venue_delegate_revocation_disabled_l0_local_no_funds";
+  adapterInvoked: false;
+  schemaVersion: "tenant_venue_delegate_revocation_blocked.v1";
+}
+
+export interface VenueExecutionPreparedResponse extends VenueSafetyFields {
+  executionId: string;
+  preparedExecutionHash: string;
+  orderIntentHash: string;
+  status: "prepared";
+  submissionAllowed: false;
+  schemaVersion: "tenant_venue_execution_prepared.v1";
+}
+
+export interface VenueExecutionSubmissionBlockedResponse extends VenueSafetyFields {
+  executionId: string;
+  preparedExecutionHash: string;
+  blocked: true;
+  reasonCode: "venue_execution_submission_disabled_l0_local_no_funds";
+  adapterInvoked: false;
+  schemaVersion: "tenant_venue_execution_submission_blocked.v1";
+}
+
+export interface VenueExecutionViewResponse extends VenueSafetyFields {
+  executionId: string;
+  preparedExecutionHash: string;
+  status: "prepared" | "blocked" | "submitted" | "reconciled" | "quarantined";
+  submissionAllowed: false;
+  schemaVersion: "tenant_venue_execution_view.v1";
+}
+
 export interface TenantProtocolResultBase<
   OperationId extends TenantProtocolOperationId,
   Response
@@ -3879,6 +4279,27 @@ export interface TenantProtocolResultBase<
 }
 
 export type TenantProtocolResult =
+  | TenantProtocolResultBase<"walletPrepareAccountBinding", ExecutionAccountBindingChallengeResponse>
+  | TenantProtocolResultBase<"walletSubmitAccountBinding", ExecutionAccountBindingMutationResponse>
+  | TenantProtocolResultBase<"walletReadAccountBindings", ExecutionAccountBindingsViewResponse>
+  | TenantProtocolResultBase<"walletRevokeAccountBinding", ExecutionAccountBindingMutationResponse>
+  | TenantProtocolResultBase<"walletDiscoverCapabilities", WalletCapabilityDescriptorListResponse>
+  | TenantProtocolResultBase<"walletPrepareGrant", WalletGrantResponse>
+  | TenantProtocolResultBase<"walletActivateGrant", WalletGrantResponse>
+  | TenantProtocolResultBase<"walletReadGrant", WalletGrantResponse>
+  | TenantProtocolResultBase<"walletRevokeGrant", WalletGrantResponse>
+  | TenantProtocolResultBase<"walletPrepareExecution", WalletExecutionPreparedResponse>
+  | TenantProtocolResultBase<"walletApproveExecution", WalletExecutionApprovedResponse>
+  | TenantProtocolResultBase<"walletSubmitExecution", WalletExecutionSubmissionBlockedResponse>
+  | TenantProtocolResultBase<"walletReadExecution", WalletExecutionViewResponse>
+  | TenantProtocolResultBase<"venueDiscoverCapabilities", VenueCapabilityDescriptorListResponse>
+  | TenantProtocolResultBase<"venueReadBinding", VenueBindingViewResponse>
+  | TenantProtocolResultBase<"venuePrepareDelegate", VenueDelegatePreparedResponse>
+  | TenantProtocolResultBase<"venueActivateDelegate", VenueDelegateActivationBlockedResponse>
+  | TenantProtocolResultBase<"venueRevokeDelegate", VenueDelegateRevocationBlockedResponse>
+  | TenantProtocolResultBase<"venuePrepareExecution", VenueExecutionPreparedResponse>
+  | TenantProtocolResultBase<"venueSubmitExecution", VenueExecutionSubmissionBlockedResponse>
+  | TenantProtocolResultBase<"venueReadExecution", VenueExecutionViewResponse>
   | TenantProtocolResultBase<"pilotAcceptCreditOffer", CreditOfferAcceptedResponse>
   | TenantProtocolResultBase<"pilotAcknowledgeProviderIntent", ProviderIntentAcknowledgementResponse>
   | TenantProtocolResultBase<"pilotExecuteSandboxObligation", SandboxObligationExecutedResponse>
@@ -3975,7 +4396,7 @@ export interface TenantProtocolOperationBase<
   OperationId extends TenantProtocolOperationId,
   Kind extends "command" | "query",
   ActorTypes extends readonly TenantProtocolActorType[],
-  ResourceType extends "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "official_report" | "provider" | "risk_portfolio" | "servicing_queue" | "trading_capital_request" | "trading_credit_profile" | "trading_facility" | "trading_facility_close_request" | "trading_order_intent" | "trading_match_proposal" | "trading_settlement" | "transfer_intent" | "workspace",
+  ResourceType extends "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "delegated_wallet_grant" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "official_report" | "provider" | "risk_portfolio" | "servicing_queue" | "trading_capital_request" | "trading_credit_profile" | "trading_facility" | "trading_facility_close_request" | "trading_order_intent" | "trading_match_proposal" | "trading_settlement" | "transfer_intent" | "wallet_adapter" | "wallet_execution" | "venue_adapter" | "venue_binding" | "venue_delegate" | "venue_execution" | "workspace",
   Capability extends string,
   Idempotency extends "required" | "prohibited",
   QuotaClass extends "read" | "mutation" | "economic" | "credential" | "privileged" | "worker",
@@ -3995,6 +4416,136 @@ export interface TenantProtocolOperationBase<
 }
 
 export type TenantProtocolOperation =
+  | TenantProtocolOperationBase<
+      "walletPrepareAccountBinding",
+      "command",
+      readonly ["human", "agent"],
+      "subject",
+      "wallet.account_binding.prepare.owned",
+      "required",
+      "credential",
+      "tenant_execution_account_binding_challenge_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletSubmitAccountBinding",
+      "command",
+      readonly ["human", "agent"],
+      "subject",
+      "wallet.account_binding.submit.owned",
+      "required",
+      "credential",
+      "tenant_execution_account_binding_verified.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletReadAccountBindings",
+      "query",
+      readonly ["human", "agent"],
+      "subject",
+      "wallet.account_binding.read.owned",
+      "prohibited",
+      "read",
+      "tenant_execution_account_bindings_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletRevokeAccountBinding",
+      "command",
+      readonly ["human", "agent"],
+      "subject",
+      "wallet.account_binding.revoke.owned",
+      "required",
+      "credential",
+      "tenant_execution_account_binding_revoked.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletDiscoverCapabilities",
+      "query",
+      readonly ["human", "agent"],
+      "wallet_adapter",
+      "wallet.capabilities.discover",
+      "prohibited",
+      "read",
+      "wallet_capability_descriptor_list.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletPrepareGrant",
+      "command",
+      readonly ["human"],
+      "subject",
+      "wallet.grant.prepare.owned",
+      "required",
+      "privileged",
+      "tenant_wallet_grant_prepared.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletActivateGrant",
+      "command",
+      readonly ["human"],
+      "delegated_wallet_grant",
+      "wallet.grant.activate.owned",
+      "required",
+      "privileged",
+      "tenant_wallet_grant_activated.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletReadGrant",
+      "query",
+      readonly ["human", "agent"],
+      "delegated_wallet_grant",
+      "wallet.grant.read.owned",
+      "prohibited",
+      "read",
+      "tenant_wallet_grant_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletRevokeGrant",
+      "command",
+      readonly ["human"],
+      "delegated_wallet_grant",
+      "wallet.grant.revoke.owned",
+      "required",
+      "privileged",
+      "tenant_wallet_grant_revoked.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletPrepareExecution",
+      "command",
+      readonly ["human", "agent"],
+      "delegated_wallet_grant",
+      "wallet.execution.prepare.owned",
+      "required",
+      "economic",
+      "tenant_wallet_execution_prepared.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletApproveExecution",
+      "command",
+      readonly ["human"],
+      "wallet_execution",
+      "wallet.execution.approve.owned",
+      "required",
+      "privileged",
+      "tenant_wallet_execution_approved.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletSubmitExecution",
+      "command",
+      readonly ["human", "agent"],
+      "wallet_execution",
+      "wallet.execution.submit.owned",
+      "required",
+      "economic",
+      "tenant_wallet_execution_submission_blocked.v1"
+    >
+  | TenantProtocolOperationBase<
+      "walletReadExecution",
+      "query",
+      readonly ["human", "agent"],
+      "wallet_execution",
+      "wallet.execution.read.owned",
+      "prohibited",
+      "read",
+      "tenant_wallet_execution_view.v1"
+    >
   | TenantProtocolOperationBase<
       "tradingCreateAccountBindingChallenge",
       "command",
@@ -4776,6 +5327,8 @@ export interface TenantProtocolCatalog {
     tradingCapitalNoFundsEvidenceEnabled: true;
     tradingCapitalNoFundsMatchingEnabled: true;
     tradingCapitalNoFundsSettlementEnabled: true;
+    agenticWalletPreflightEnabled: true;
+    walletSubmissionEnabled: false;
     productionIdentityEnabled: false;
     rawPiiAllowed: false;
   };

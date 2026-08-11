@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-testnet-proof-policy.schema.json",
+  "title": "HyperCore Testnet Proof Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policyHash", "policyId", "environment", "origin", "path", "method",
+    "accountBindingHash", "delegateHash", "signerReferenceHash", "metadataHash",
+    "market", "productClass", "assetIndex", "sizeDecimals", "priceDecimals",
+    "metadataObservedAt", "allowedActionKinds", "openingTimeInForce",
+    "maxOrderNotionalUsd", "maxAggregateProofExposureUsd", "maxOpenOrders",
+    "maxSubmissions", "requestExpiryMs", "proofWindowMs",
+    "expectedFillNotionalUsd", "executionOwnerActorId", "riskOwnerActorId",
+    "incidentOwnerActorId", "approvedAt", "expiresAt", "withdrawalAuthority",
+    "transferAuthority", "leverageChangeAuthority",
+    "accountAdministrationAuthority", "builderFeeAuthority", "mainnetAuthority",
+    "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "policyId": { "$ref": "#/$defs/identifier" },
+    "environment": { "const": "hyperliquid_testnet" },
+    "origin": { "const": "https://api.hyperliquid-testnet.xyz" },
+    "path": { "const": "/exchange" },
+    "method": { "const": "POST" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "delegateHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "metadataHash": { "$ref": "#/$defs/hash" },
+    "market": { "const": "BTC" },
+    "productClass": { "const": "perpetual" },
+    "assetIndex": { "const": 3 },
+    "sizeDecimals": { "const": 5 },
+    "priceDecimals": { "const": 1 },
+    "metadataObservedAt": { "type": "string", "format": "date-time" },
+    "allowedActionKinds": {
+      "const": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+    },
+    "openingTimeInForce": { "const": "Alo" },
+    "maxOrderNotionalUsd": { "const": "10" },
+    "maxAggregateProofExposureUsd": { "const": "10" },
+    "maxOpenOrders": { "const": 1 },
+    "maxSubmissions": { "const": 3 },
+    "requestExpiryMs": { "const": 30000 },
+    "proofWindowMs": { "const": 900000 },
+    "expectedFillNotionalUsd": { "const": "0" },
+    "executionOwnerActorId": { "$ref": "#/$defs/identifier" },
+    "riskOwnerActorId": { "$ref": "#/$defs/identifier" },
+    "incidentOwnerActorId": { "$ref": "#/$defs/identifier" },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "withdrawalAuthority": { "const": false },
+    "transferAuthority": { "const": false },
+    "leverageChangeAuthority": { "const": false },
+    "accountAdministrationAuthority": { "const": false },
+    "builderFeeAuthority": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_testnet_proof_policy.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    }
+  }
+}

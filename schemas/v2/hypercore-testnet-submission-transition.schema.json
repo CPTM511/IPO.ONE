@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-testnet-submission-transition.schema.json",
+  "title": "HyperCore Testnet Submission Transition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sequence", "previousState", "nextState", "transitionHash",
+    "resultHash", "changedAt", "retryAllowed", "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "sequence": { "type": "integer", "minimum": 1, "maximum": 8 },
+    "previousState": { "$ref": "#/$defs/nullableState" },
+    "nextState": { "$ref": "#/$defs/state" },
+    "transitionHash": { "$ref": "#/$defs/hash" },
+    "resultHash": { "$ref": "#/$defs/nullableHash" },
+    "changedAt": { "type": "string", "format": "date-time" },
+    "retryAllowed": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "hypercore_testnet_submission_transition.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "nullableHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "state": {
+      "enum": [
+        "PREPARED", "APPROVED", "SUBMITTING", "SUBMITTED", "REJECTED",
+        "UNKNOWN", "RECONCILED", "CLOSED"
+      ]
+    },
+    "nullableState": {
+      "oneOf": [{ "$ref": "#/$defs/state" }, { "type": "null" }]
+    }
+  }
+}

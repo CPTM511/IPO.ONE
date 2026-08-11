@@ -1,8 +1,8 @@
 # IPO.ONE Product Constitution
 
-Version: v1.0
+Version: v1.1
 
-Effective date: 2026-08-03
+Effective date: 2026-08-11
 
 Status: Founder-directed and ratified for current product-truth governance
 
@@ -106,7 +106,7 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-ID-001 | Human Subject plus accountable Principal | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 1 | synthetic/private identity only; no production Human credit |
 | REQ-ID-002 | Agent Subject plus accountable Principal | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 1 | production workload identity separately approved |
 | REQ-ID-003 | Human Consent and KYC/VC reference | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 4 | reference/attestation only; raw KYC/PII offchain |
-| REQ-ID-004 | Agent CAIP-10 Account Binding and wallet proof | APPROVED_MVP | L0_LOCAL_NO_FUNDS | MVP Build Spec FR-003 | production wallet/connector/session authority separately gated |
+| REQ-ID-004 | Human/Agent CAIP-10 execution AccountBinding and wallet proof | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-AECL-INTEGRATION-001 in section 7 | binding is not login, Actor/Role/Subject creation, credit authority, custody or session authority; production wallet/connector separately gated |
 | REQ-ID-005 | Principal-controlled Agent Mandate | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 4 | exact bounded capabilities; stale/revoked authority fails closed |
 | REQ-CREDIT-001 | Credit Intent | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 3 | authority, purpose, amount, asset, cap, and freeze checks |
 | REQ-CREDIT-002 | deterministic explainable Risk Decision | APPROVED_MVP | L0_LOCAL_NO_FUNDS | ADR-033 | non-authorizing Evidence-derived decision passport |
@@ -117,8 +117,8 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-CREDIT-007 | canonical Obligation and repayment schedule | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 5 | one state machine for Human and Agent |
 | REQ-CREDIT-008 | purpose-bound Facility | APPROVED_PHASE_2 | L0_LOCAL_NO_FUNDS | Product Optimization Measure v1.0 section 4 | exact accepted Offer/Obligation; no deposit, withdrawal, custody, or real funds |
 | REQ-CREDIT-009 | authority-bound CreditLine capacity/utilization projection | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-CREDITLINE-001 in section 7 | never independent lending authority or caller-controlled limit |
-| REQ-EXEC-001 | signed controlled sandbox execution | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 6 | explicit no-funds/non-withdrawable receipt |
-| REQ-EXEC-002 | allowlisted Provider spend with caps | APPROVED_MVP | L0_LOCAL_NO_FUNDS | MVP Build Spec FR-005 | fixed signed sandbox Provider; external Provider separately approved |
+| REQ-EXEC-001 | signed controlled sandbox execution from an exact server-resolved intent | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-AECL-INTEGRATION-001 in section 7 | exact payload, ExpectedEffects and target policy are server-derived; explicit no-funds/non-withdrawable receipt |
+| REQ-EXEC-002 | allowlisted Provider spend with caps | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-AECL-INTEGRATION-001 in section 7 | canonical TransferIntent plus versioned server registry only; ambiguous/unsupported resolution denies; external Provider separately approved |
 | REQ-EXEC-003 | Agent Lockbox revenue capture and repayment profile | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-LOCKBOX-001 in section 7 | must become durable/authenticated before L4; no arbitrary balance release |
 | REQ-EXEC-004 | withdrawal and transfer denial boundary | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 8 | no arbitrary withdrawal/unrestricted external transfer |
 | REQ-PAY-001 | canonical double-entry Ledger | APPROVED_MVP | L0_LOCAL_NO_FUNDS | ADR-010 | Ledger is source of economic truth; local approval is not production authority |
@@ -126,7 +126,7 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-PAY-003 | DPD/default/cure/restructure/repurchase/write-off | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 8 | Human/Agent shared servicing; protected actions keep named authority |
 | REQ-PAY-004 | canonical settlement and performance proof | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-037 | real-value settlement, corrections, release, and overrides separately approved |
 | REQ-EVID-001 | typed portable Event and Evidence record | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 10 | explicit provenance, finality, revocation, and reconciliation |
-| REQ-EVID-002 | event/outbox/projection reconciliation and replay | APPROVED_MVP | L0_LOCAL_NO_FUNDS | ADR-013 | one serializable PG runtime; production HA/ops separately gated |
+| REQ-EVID-002 | event/outbox/projection reconciliation and replay | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-AECL-INTEGRATION-001 in section 7 | Tenant Command Gateway owns one serializable AECL command transaction and durable response; production HA/ops separately gated |
 | REQ-EVID-003 | owned/operator receipts and official reports | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Optimization Measure v1.0 section 6 rule 4 | resolvable typed hashes; browser exports are not truth |
 | REQ-EVID-004 | longitudinal factor/outcome credit record | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Optimization Measure v1.0 section 4 | active policy deterministic; learning shadow-only |
 | REQ-RISK-001 | caps, pause/freeze, stop-loss posture, dual control | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 5 Operator product | numerical production limits and override authority separately approved |
@@ -233,6 +233,48 @@ pilot activation. The minimum approved outcome is:
 - prevent a dispute from silently changing credit, Ledger, or Evidence truth;
 - keep legal complaint procedure, adverse-action law, SLA, jurisdiction, and
   production roles behind separate Legal/Privacy/Operations approval.
+
+### DEC-AECL-INTEGRATION-001 — native execution keeps identity, intent and persistence closed
+
+Founder approval on 2026-08-11 resolves the three canonical blockers recorded
+by `PRODUCT-INTEGRATION-001` for `L0_LOCAL_NO_FUNDS` implementation only:
+
+1. **Dual-native execution AccountBinding.** An already authenticated Human or
+   Agent Actor may prove control of a CAIP-10 execution account and bind it to
+   an existing, active Subject relationship. The binding uses one shared
+   AccountBinding truth across both entry modes. It never creates or replaces
+   IPO.ONE login, session, Tenant, Actor, Role, Subject, PrincipalRelationship,
+   Mandate, credit authority or custody. The existing Agent-onboarding binding
+   remains a distinct lifecycle and is not silently reinterpreted. Multiple
+   accounts are allowed only as separate, readable and revocable bindings with
+   exact purpose, chain, account, controller, proof and lifecycle Evidence.
+2. **Exact TransferIntent resolver.** A versioned Provider/Venue resolver may
+   derive an exact target policy, target, value, calldata/action payload,
+   ExpectedEffects and simulation context only from a canonical TransferIntent
+   plus authenticated server-side registry and current authority state. A
+   browser, SDK, MCP client, Agent or wallet may supply the intent reference,
+   but never raw target, calldata or expected effects. Missing, ambiguous,
+   unsupported, stale or policy-inconsistent resolution fails closed.
+3. **Gateway-owned AECL persistence.** Tenant Command Gateway owns one
+   serializable command transaction for authorization revalidation, grant and
+   exposure state, exact prepared execution, simulation/preflight decision,
+   Event, Evidence, outbox/projection changes and the durable response. AECL
+   repositories may participate only through a reviewed in-transaction port or
+   Gateway projection plan. A second independent commit is prohibited.
+
+These approvals establish application semantics and local implementation
+authority. They do not approve a Provider/Venue, production connector,
+credential, signer, custody model, chain/mainnet, contract, risk limit,
+deployment, real-value execution or funds movement.
+
+### v1.0 to v1.1 requirement crosswalk
+
+No requirement ID is added, deleted or repurposed. `REQ-ID-004` is explicitly
+broadened from the Agent-onboarding proof use case to a dual-native execution
+AccountBinding while preserving that onboarding lifecycle as a distinct
+subtype. `REQ-EXEC-001`, `REQ-EXEC-002` and `REQ-EVID-002` retain their original
+capabilities and gain the exact resolver and single-transaction invariants
+above. All other v1.0 requirement IDs and dispositions are unchanged.
 
 ## 8. Explicit current non-goals and gates
 

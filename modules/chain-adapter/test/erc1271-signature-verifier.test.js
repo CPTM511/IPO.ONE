@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
-import { hashMessage } from "viem";
+import { encodeAbiParameters, hashMessage } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   EvmWalletSignatureVerifier,
+  ERC6492_MAGIC_SUFFIX,
   createErc1271JsonRpcClient,
+  createErc6492OffchainVerifier,
+  decodeErc6492Signature,
   describeErc1271VerificationBoundary
 } from "../src/index.js";
 
@@ -33,6 +36,18 @@ const CONTRACT = "0x1111111111111111111111111111111111111111";
 const MAGIC_RESULT = `0x1626ba7e${"0".repeat(56)}`;
 const CONTRACT_SIGNATURE = `0x${"44".repeat(65)}`;
 const PRIVATE_KEY = `0x${"11".repeat(32)}`;
+const FACTORY = "0x2222222222222222222222222222222222222222";
+
+function erc6492Signature({
+  factory = FACTORY,
+  factoryCalldata = "0x12345678",
+  originalSignature = CONTRACT_SIGNATURE
+} = {}) {
+  return `${encodeAbiParameters(
+    [{ type: "address" }, { type: "bytes" }, { type: "bytes" }],
+    [factory, factoryCalldata, originalSignature]
+  )}${ERC6492_MAGIC_SUFFIX.slice(2)}`;
+}
 
 function jsonRpc(result, id, { status = 200 } = {}) {
   return new Response(
@@ -91,6 +106,11 @@ function rpcFixture({
       if (failContractCall) {
         return new Response("unavailable", { status: 503 });
       }
+      if (request.params[0].to === undefined) {
+        assert.match(request.params[0].data, /^0x[0-9a-f]+$/);
+        assert.equal(request.params[1], "0x123");
+        return jsonRpc("0x01", request.id);
+      }
       assert.equal(request.params[0].to.toLowerCase(), CONTRACT.toLowerCase());
       assert.match(request.params[0].data, /^0x1626ba7e[0-9a-f]+$/);
       assert.equal(request.params[1], "0x123");
@@ -101,10 +121,11 @@ function rpcFixture({
   return { fetchImpl, requests };
 }
 
-function verifier(fixture) {
+function verifier(fixture, options = {}) {
   return new EvmWalletSignatureVerifier({
     fetchImpl: fixture.fetchImpl,
-    clock: () => NOW
+    clock: () => NOW,
+    ...options
   });
 }
 
@@ -118,6 +139,10 @@ function assertValid(result) {
   assert.equal(result.credentialsIncluded, false);
   assert.equal(result.productionFundsMoved, false);
   assert.equal(JSON.stringify(result).includes(CONTRACT_SIGNATURE), false);
+  assert.equal(
+    { eoa: "eoa", contract: "erc1271", counterfactual: "erc6492" }[result.walletType],
+    result.signatureType
+  );
 }
 
 test("approved boundary is read-only, Testnet-only, bounded, and non-authorizing", () => {
@@ -134,9 +159,37 @@ test("approved boundary is read-only, Testnet-only, bounded, and non-authorizing
   assert.equal(boundary.maximumResponseBytes, 65_536);
   assert.equal(boundary.maximumSignatureBytes, 4_096);
   assert.equal(boundary.maximumContractCallsPerChallenge, 1);
+  assert.equal(boundary.maximumCounterfactualCallsPerChallenge, 1);
+  assert.equal(boundary.erc6492MagicSuffix, ERC6492_MAGIC_SUFFIX);
+  assert.equal(boundary.erc6492RequiresConfiguredOffchainVerifier, true);
+  assert.equal(boundary.erc6492DeploymentTransactionAllowed, false);
   assert.equal(boundary.transactionsAllowed, false);
   assert.equal(boundary.productionApproved, false);
   assert.equal(boundary.fundsAuthority, false);
+});
+
+test("SIG-003 migration admits only three EIP-712 methods and refuses unsafe rollback", async () => {
+  const [up, down] = await Promise.all([
+    readFile(new URL(
+      "../../../db/migrations/0054_universal_evm_signature_methods.up.sql",
+      import.meta.url
+    ), "utf8"),
+    readFile(new URL(
+      "../../../db/migrations/0054_universal_evm_signature_methods.down.sql",
+      import.meta.url
+    ), "utf8")
+  ]);
+  for (const method of [
+    "eip712_eoa_v1",
+    "eip1271_eip712_v1",
+    "eip6492_eip712_v1"
+  ]) {
+    assert.ok(up.includes(`'${method}'`));
+  }
+  assert.equal(up.includes("eip6492_eip191_v1"), false);
+  assert.match(down, /verification_method <> 'eip712_eoa_v1'/);
+  assert.match(down, /cannot roll back universal EVM signatures/);
+  assert.equal(/DELETE FROM|TRUNCATE|DROP TABLE/.test(down), false);
 });
 
 test("RPC client rejects unapproved endpoints, mainnet, write methods, and oversized responses", async () => {
@@ -182,6 +235,21 @@ test("RPC client rejects unapproved endpoints, mainnet, write methods, and overs
   await assert.rejects(
     timeoutClient.call("eth_chainId", []),
     (error) => error.code === "erc1271_rpc_timeout"
+  );
+});
+
+test("universal signature input is closed and rejects caller authority fields", async () => {
+  await assert.rejects(
+    verifier(rpcFixture()).verifyDigest({
+      address: CONTRACT,
+      chainId: "eip155:84532",
+      digest: hashMessage("closed-input"),
+      signature: CONTRACT_SIGNATURE,
+      proofType: "eip191",
+      eoaVerify: async () => false,
+      fundsAuthority: true
+    }),
+    (error) => error.code === "invalid_wallet_signature_input"
   );
 });
 
@@ -235,6 +303,110 @@ test("Base Sepolia contract wallet uses ERC-1271 once and never invokes EOA fall
   assertValid(result);
   assert.equal(result.walletType, "contract");
   assert.equal(result.verificationMethod, "eip1271_eip191_v1");
+  assert.equal(eoaCalls, 0);
+  assert.equal(
+    fixture.requests.filter(({ method }) => method === "eth_call").length,
+    1
+  );
+});
+
+test("ERC-6492 is detected first and verified by one reviewed read-only offchain call", async () => {
+  const fixture = rpcFixture();
+  const wrappedSignature = erc6492Signature();
+  const validations = [];
+  const counterfactualVerifier = createErc6492OffchainVerifier({
+    async validate(input) {
+      validations.push(input);
+      assert.equal(input.factory, FACTORY);
+      assert.equal(input.factoryCalldata, "0x12345678");
+      assert.equal(input.originalSignature, CONTRACT_SIGNATURE);
+      assert.equal(input.transactionSubmissionAllowed, false);
+      assert.equal(input.deploymentTransactionAllowed, false);
+      return await input.readOnlyCall({ data: "0x6000" }) === "0x01";
+    }
+  });
+  let eoaCalls = 0;
+  const result = await verifier(fixture, { counterfactualVerifier }).verifyDigest({
+    address: CONTRACT,
+    chainId: "eip155:84532",
+    digest: hashMessage("counterfactual"),
+    signature: wrappedSignature,
+    proofType: "eip712",
+    eoaVerify: async () => {
+      eoaCalls += 1;
+      return true;
+    }
+  });
+
+  assertValid(result);
+  assert.equal(result.walletType, "counterfactual");
+  assert.equal(result.signatureType, "erc6492");
+  assert.equal(result.verificationMethod, "eip6492_eip712_v1");
+  assert.equal(eoaCalls, 0);
+  assert.equal(validations.length, 1);
+  assert.equal(
+    fixture.requests.filter(({ method }) => method === "eth_call").length,
+    1
+  );
+  assert.deepEqual(
+    fixture.requests.map(({ method }) => method),
+    ["eth_chainId", "eth_getBlockByNumber", "eth_call", "eth_getBlockByNumber"]
+  );
+  assert.equal(JSON.stringify(result).includes(wrappedSignature), false);
+});
+
+test("ERC-6492 wrapper decoding is canonical, bounded, and unavailable by default", async () => {
+  const wrappedSignature = erc6492Signature();
+  const decoded = decodeErc6492Signature(wrappedSignature);
+  assert.equal(decoded.factory, FACTORY);
+  assert.equal(decoded.factoryCalldata, "0x12345678");
+  assert.equal(decoded.originalSignature, CONTRACT_SIGNATURE);
+  assert.equal(decoded.rawSignaturePersisted, false);
+
+  await assert.rejects(
+    verifier(rpcFixture()).verifyDigest({
+      address: CONTRACT,
+      chainId: "eip155:84532",
+      digest: hashMessage("unavailable"),
+      signature: wrappedSignature,
+      proofType: "eip191",
+      eoaVerify: async () => false
+    }),
+    (error) => error.code === "erc6492_verifier_unavailable"
+  );
+  assert.throws(
+    () => decodeErc6492Signature(`0x1234${ERC6492_MAGIC_SUFFIX.slice(2)}`),
+    (error) => error.code === "invalid_erc6492_signature"
+  );
+  assert.throws(
+    () => decodeErc6492Signature(`0x${"11".repeat(4097)}${ERC6492_MAGIC_SUFFIX.slice(2)}`),
+    (error) => error.code === "invalid_wallet_signature_input"
+  );
+});
+
+test("invalid ERC-6492 validation cannot fall through to ERC-1271 or EOA", async () => {
+  const fixture = rpcFixture({ code: "0x6001" });
+  let eoaCalls = 0;
+  const counterfactualVerifier = createErc6492OffchainVerifier({
+    async validate(input) {
+      await input.readOnlyCall({ data: "0x6000" });
+      return false;
+    }
+  });
+  await assert.rejects(
+    verifier(fixture, { counterfactualVerifier }).verifyDigest({
+      address: CONTRACT,
+      chainId: "eip155:84532",
+      digest: hashMessage("counterfactual-invalid"),
+      signature: erc6492Signature(),
+      proofType: "eip191",
+      eoaVerify: async () => {
+        eoaCalls += 1;
+        return true;
+      }
+    }),
+    (error) => error.code === "wallet_signature_verification_failed"
+  );
   assert.equal(eoaCalls, 0);
   assert.equal(
     fixture.requests.filter(({ method }) => method === "eth_call").length,

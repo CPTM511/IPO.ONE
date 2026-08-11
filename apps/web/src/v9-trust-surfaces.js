@@ -48,7 +48,20 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
     "pilotRevokeConsent",
     "pilotReadAgentAccountBinding",
     "pilotReadMandate",
-    "pilotRevokeDraftMandate"
+    "pilotRevokeDraftMandate",
+    "walletPrepareAccountBinding",
+    "walletSubmitAccountBinding",
+    "walletReadAccountBindings",
+    "walletRevokeAccountBinding",
+    "walletDiscoverCapabilities",
+    "walletPrepareGrant",
+    "walletActivateGrant",
+    "walletReadGrant",
+    "walletRevokeGrant",
+    "walletPrepareExecution",
+    "walletApproveExecution",
+    "walletSubmitExecution",
+    "walletReadExecution"
   ]),
   "activity-proofs": Object.freeze([
     "pilotReadOwnObligationEvidence",

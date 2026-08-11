@@ -78,6 +78,7 @@ function createFixture({ signatureVerifier } = {}) {
           schemaVersion: "wallet_signature_verification.v1",
           chainId: `eip155:${input.chainId}`,
           walletType: "eoa",
+          signatureType: "eoa",
           verificationMethod: "eip191_eoa_v1",
           authenticationEligible: true,
           rawSignaturePersisted: false,
@@ -174,6 +175,7 @@ test("SIWE records an eligible ERC-1271 method and rejects inclusion-only eviden
     schemaVersion: "wallet_signature_verification.v1",
     chainId: `eip155:${input.chainId}`,
     walletType: "contract",
+    signatureType: "erc1271",
     verificationMethod: "eip1271_eip191_v1",
     authenticationEligible,
     rawSignaturePersisted: false,
@@ -219,4 +221,37 @@ test("SIWE records an eligible ERC-1271 method and rejects inclusion-only eviden
     }),
     (error) => error.code === "wallet_signature_rejected"
   );
+});
+
+test("SIWE accepts an eligible ERC-6492 receipt without retaining the raw signature", async () => {
+  const fixture = createFixture({
+    signatureVerifier: {
+      async verify(input) {
+        return Object.freeze({
+          schemaVersion: "wallet_signature_verification.v1",
+          chainId: `eip155:${input.chainId}`,
+          walletType: "counterfactual",
+          signatureType: "erc6492",
+          verificationMethod: "eip6492_eip191_v1",
+          authenticationEligible: true,
+          rawSignaturePersisted: false,
+          credentialsIncluded: false,
+          productionFundsMoved: false
+        });
+      }
+    }
+  });
+  const challenge = await fixture.bff.beginLogin({
+    address: fixture.account.address,
+    chainId: 84532,
+    now: NOW
+  });
+  const signature = `0x${"33".repeat(96)}`;
+  const issued = await fixture.bff.completeLogin({
+    transactionHandle: challenge.handle,
+    signature,
+    now: NOW
+  });
+  assert.deepEqual(issued.session.amr, ["wallet", "siwe", "eip6492_eip191_v1"]);
+  assert.equal(JSON.stringify(fixture.eventStore.list()).includes(signature), false);
 });

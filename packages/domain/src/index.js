@@ -4,6 +4,7 @@ export * from "./ids.js";
 export * from "./models.js";
 export * from "./credit-contracts.js";
 export * from "./agent-account-proof.js";
+export * from "./execution-account-binding.js";
 export * from "./agent-lockbox.js";
 export * from "./credit-decision.js";
 export * from "./credit-line-projection.js";

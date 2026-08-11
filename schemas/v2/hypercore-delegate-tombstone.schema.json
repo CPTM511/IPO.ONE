@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-delegate-tombstone.schema.json",
+  "title": "HyperCore Delegate Tombstone",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tombstoneId", "tombstoneHash", "delegateId", "delegateHash",
+    "facilityId", "accountBindingId", "apiWalletAddressHash",
+    "terminalStatus", "terminalReason", "terminalAt", "addressReuseAllowed",
+    "rawAddressPersisted", "rawKeyPersisted", "reusableSignaturePersisted",
+    "mainnetAuthority", "productionAuthority", "fundsAuthority",
+    "secretsIncluded", "schemaVersion"
+  ],
+  "properties": {
+    "tombstoneId": { "$ref": "#/$defs/identifier" },
+    "tombstoneHash": { "$ref": "#/$defs/hash" },
+    "delegateId": { "$ref": "#/$defs/identifier" },
+    "delegateHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "accountBindingId": { "$ref": "#/$defs/identifier" },
+    "apiWalletAddressHash": { "$ref": "#/$defs/hash" },
+    "terminalStatus": {
+      "enum": ["REVOKED", "EXPIRED", "COMPROMISED", "RETIRED"]
+    },
+    "terminalReason": { "$ref": "#/$defs/identifier" },
+    "terminalAt": { "type": "string", "format": "date-time" },
+    "addressReuseAllowed": { "const": false },
+    "rawAddressPersisted": { "const": false },
+    "rawKeyPersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "hypercore_delegate_tombstone.v1" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    }
+  }
+}

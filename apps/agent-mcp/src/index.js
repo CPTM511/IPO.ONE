@@ -5,3 +5,5 @@ export * from "./agent-credit-offer-workflow.js";
 export * from "./agent-mcp-host.js";
 export * from "./agent-pilot-host.js";
 export * from "./stdio-server.js";
+export * from "./wallet-execution-mcp-adapter.js";
+export * from "./venue-execution-mcp-adapter.js";

@@ -27,14 +27,14 @@ async function bounded(operation, timeoutMs) {
 }
 
 export async function releaseSelectedWallet({
-  provider,
+  connector,
   source,
   timeoutMs = DEFAULT_TIMEOUT_MS
 } = {}) {
   if (
-    provider === null ||
-    provider === undefined ||
-    (typeof provider !== "object" && typeof provider !== "function")
+    connector === null ||
+    connector === undefined ||
+    typeof connector !== "object"
   ) {
     return releaseResult("no_wallet_selected");
   }
@@ -47,28 +47,18 @@ export async function releaseSelectedWallet({
   }
 
   try {
-    if (
-      source === "mobile_walletconnect" &&
-      typeof provider.disconnect === "function"
-    ) {
-      const result = await bounded(() => provider.disconnect(), timeoutMs);
-      return releaseResult(
-        result === TIMEOUT ? "app_state_cleared" : "wallet_disconnected"
-      );
-    }
-    if (typeof provider.request === "function") {
-      const result = await bounded(
-        () => provider.request({
-          method: "wallet_revokePermissions",
-          params: [{ eth_accounts: {} }]
-        }),
-        timeoutMs
-      );
-      return releaseResult(
-        result === TIMEOUT
-          ? "app_state_cleared"
-          : "account_permission_revoked"
-      );
+    if (typeof connector.disconnect === "function") {
+      const result = await bounded(() => connector.disconnect({
+        revokePermissions: source !== "mobile_walletconnect"
+      }), timeoutMs);
+      if (result === TIMEOUT) return releaseResult("app_state_cleared");
+      if (new Set([
+        "wallet_disconnected",
+        "account_permission_revoked",
+        "app_state_cleared"
+      ]).has(result?.status)) {
+        return releaseResult(result.status);
+      }
     }
   } catch {
     // Not every injected EIP-1193 wallet implements programmatic revocation.

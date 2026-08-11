@@ -368,6 +368,12 @@ export const CreditEventType = Object.freeze({
   AGENT_ACCOUNT_CHALLENGE_CREATED: "agent_account_challenge_created",
   AGENT_ACCOUNT_CHALLENGE_EXPIRED: "agent_account_challenge_expired",
   AGENT_ACCOUNT_PROOF_VERIFIED: "agent_account_proof_verified",
+  EXECUTION_ACCOUNT_BINDING_CHALLENGE_CREATED:
+    "execution_account_binding_challenge_created",
+  EXECUTION_ACCOUNT_BINDING_CHALLENGE_EXPIRED:
+    "execution_account_binding_challenge_expired",
+  EXECUTION_ACCOUNT_BINDING_VERIFIED: "execution_account_binding_verified",
+  EXECUTION_ACCOUNT_BINDING_REVOKED: "execution_account_binding_revoked",
   WALLET_BOUND: "wallet_bound",
   MANDATE_CREATED: "mandate_created",
   MANDATE_STATUS_CHANGED: "mandate_status_changed",
@@ -461,6 +467,18 @@ export const CreditEventType = Object.freeze({
   TRADING_FACILITY_SETTLED: "trading_facility_settled",
   TRADING_PERFORMANCE_PROOF_ISSUED: "trading_performance_proof_issued",
   TRADING_MATCH_BILATERALLY_ACCEPTED: "trading_match_bilaterally_accepted",
+  DELEGATED_WALLET_GRANT_PREPARED: "delegated_wallet_grant_prepared",
+  DELEGATED_WALLET_GRANT_ACTIVATED: "delegated_wallet_grant_activated",
+  DELEGATED_WALLET_GRANT_REVOKED: "delegated_wallet_grant_revoked",
+  DELEGATED_WALLET_PENDING_EXPOSURE_RESERVED:
+    "delegated_wallet_pending_exposure_reserved",
+  DELEGATED_WALLET_PENDING_EXPOSURE_RELEASED:
+    "delegated_wallet_pending_exposure_released",
+  WALLET_EXECUTION_PREPARED: "wallet_execution_prepared",
+  WALLET_EXECUTION_PREFLIGHTED: "wallet_execution_preflighted",
+  HYPERCORE_ACCOUNT_BINDING_RECORDED: "hypercore_account_binding_recorded",
+  HYPERCORE_DELEGATE_PREPARED: "hypercore_delegate_prepared",
+  HYPERCORE_DELEGATE_TERMINATED: "hypercore_delegate_terminated",
   ADMIN_ACTION_RECORDED: "admin_action_recorded"
 });
 

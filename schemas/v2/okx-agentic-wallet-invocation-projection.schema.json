@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/okx-agentic-wallet-invocation-projection.schema.json",
+  "title": "IPO.ONE OKX Agentic Wallet Invocation Projection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "invocationProjectionId", "invocationProjectionHash", "descriptorHash", "capabilitiesHash",
+    "capabilityObservationHash", "providerRequestId", "providerRequestHash", "contextEpoch", "chainId",
+    "integrationSurface", "toolId", "operationId", "exactInputHash", "toolContractHash", "decision",
+    "reasonCodes", "preparedAt", "expiresAt", "naturalLanguagePromptAllowed", "genericMcpForwardingAllowed",
+    "shellCommandAllowed", "rawArgumentsRetained", "externalCallAllowed", "executionAllowed",
+    "transactionsAllowed", "productionAuthority", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "invocationProjectionId": { "$ref": "#/$defs/identifier" },
+    "invocationProjectionHash": { "$ref": "#/$defs/hash" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "capabilitiesHash": { "$ref": "#/$defs/hash" },
+    "capabilityObservationHash": { "$ref": "#/$defs/hash" },
+    "providerRequestId": { "$ref": "#/$defs/identifier" },
+    "providerRequestHash": { "$ref": "#/$defs/hash" },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "integrationSurface": { "enum": ["skills", "mcp", "cli", "open_api"] },
+    "toolId": { "enum": ["security_tx_scan", "security_sig_scan", "wallet_history", "wallet_send"] },
+    "operationId": {
+      "enum": ["walletPrepareExecution", "walletApproveExecution", "walletReadExecution", "walletSubmitExecution"]
+    },
+    "exactInputHash": { "$ref": "#/$defs/hash" },
+    "toolContractHash": { "$ref": "#/$defs/hash" },
+    "decision": { "enum": ["STEP_UP", "DENY"] },
+    "reasonCodes": { "$ref": "#/$defs/reasonCodes" },
+    "preparedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "naturalLanguagePromptAllowed": { "const": false },
+    "genericMcpForwardingAllowed": { "const": false },
+    "shellCommandAllowed": { "const": false },
+    "rawArgumentsRetained": { "const": false },
+    "externalCallAllowed": { "const": false },
+    "executionAllowed": { "const": false },
+    "transactionsAllowed": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "okx_agentic_wallet_invocation_projection.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "reasonCodes": {
+      "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" }
+    }
+  }
+}

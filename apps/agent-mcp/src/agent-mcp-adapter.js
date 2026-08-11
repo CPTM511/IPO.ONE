@@ -114,7 +114,12 @@ export const AGENT_MCP_TOOLS = Object.freeze([
           properties: {
             challengeId: IDENTIFIER,
             accountId: { type: "string", minLength: 52, maxLength: 160 },
-            signature: { type: "string", pattern: "^0x[0-9a-fA-F]{130}$" }
+            signature: {
+              type: "string",
+              minLength: 132,
+              maxLength: 8194,
+              pattern: "^0x(?:[0-9a-fA-F]{2}){65,4096}$"
+            }
           }
         },
         idempotencyKey: IDEMPOTENCY,

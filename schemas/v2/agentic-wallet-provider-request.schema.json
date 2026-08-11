@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/agentic-wallet-provider-request.schema.json",
+  "title": "IPO.ONE Agentic Wallet Provider Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "requestHash",
+    "adapterId",
+    "operationId",
+    "descriptorHash",
+    "capabilitiesHash",
+    "contextEpoch",
+    "payload",
+    "createdAt",
+    "expiresAt",
+    "externalCallAllowed",
+    "fundsAuthority",
+    "schemaVersion"
+  ],
+  "properties": {
+    "requestId": { "$ref": "#/$defs/identifier" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "$ref": "#/$defs/identifier" },
+    "operationId": { "$ref": "#/$defs/operation" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "capabilitiesHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "payload": { "type": "object" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "externalCallAllowed": { "type": "boolean" },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "agentic_wallet_provider_request.v1" }
+  },
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "operationId": { "const": "walletDiscoverCapabilities" },
+            "capabilitiesHash": { "type": "null" },
+            "payload": { "$ref": "#/$defs/discoverPayload" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "enum": [
+                "walletPrepareGrant",
+                "walletActivateGrant",
+                "walletReadGrant",
+                "walletRevokeGrant"
+              ]
+            },
+            "capabilitiesHash": { "$ref": "#/$defs/hash" },
+            "payload": { "$ref": "#/$defs/grantPayload" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletPrepareExecution" },
+            "capabilitiesHash": { "$ref": "#/$defs/hash" },
+            "payload": { "$ref": "#/$defs/executionPayload" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletApproveExecution" },
+            "capabilitiesHash": { "$ref": "#/$defs/hash" },
+            "payload": { "$ref": "#/$defs/approvalPayload" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletSubmitExecution" },
+            "capabilitiesHash": { "$ref": "#/$defs/hash" },
+            "payload": { "$ref": "#/$defs/submissionPayload" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletReadExecution" },
+            "capabilitiesHash": { "$ref": "#/$defs/hash" },
+            "payload": { "$ref": "#/$defs/readExecutionPayload" }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "operation": {
+      "enum": [
+        "walletDiscoverCapabilities",
+        "walletPrepareGrant",
+        "walletActivateGrant",
+        "walletReadGrant",
+        "walletRevokeGrant",
+        "walletPrepareExecution",
+        "walletApproveExecution",
+        "walletSubmitExecution",
+        "walletReadExecution"
+      ]
+    },
+    "discoverPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chainId", "accountRefHash", "contextEpoch"],
+      "properties": {
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "accountRefHash": { "$ref": "#/$defs/hash" },
+        "contextEpoch": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "grantPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grant", "permissionProjection"],
+      "properties": {
+        "grant": { "$ref": "delegated-wallet-grant.schema.json" },
+        "permissionProjection": { "$ref": "external-wallet-permission-projection.schema.json" }
+      }
+    },
+    "executionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preparedExecution", "preflightReceipt"],
+      "properties": {
+        "preparedExecution": { "$ref": "prepared-execution.schema.json" },
+        "preflightReceipt": { "$ref": "transaction-preflight-receipt.schema.json" }
+      }
+    },
+    "approvalPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preparedExecution", "preflightReceipt", "approvalRequestHash"],
+      "properties": {
+        "preparedExecution": { "$ref": "prepared-execution.schema.json" },
+        "preflightReceipt": { "$ref": "transaction-preflight-receipt.schema.json" },
+        "approvalRequestHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "submissionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preparedExecution", "preflightReceipt"],
+      "properties": {
+        "preparedExecution": { "$ref": "prepared-execution.schema.json" },
+        "preflightReceipt": { "$ref": "transaction-preflight-receipt.schema.json" },
+        "approvalArtifactHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "readExecutionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionId", "preparedExecutionHash", "externalExecutionRefHash"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" },
+        "preparedExecutionHash": { "$ref": "#/$defs/hash" },
+        "externalExecutionRefHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

@@ -69,6 +69,8 @@ function applyFixtureMutation(source, mutation) {
 const [
   staticCatalog,
   fixtures,
+  walletExecutionFixtures,
+  venueExecutionFixtures,
   handoffFixtures,
   capabilityManifestFixtures,
   workflowReceiptFixtures,
@@ -85,6 +87,14 @@ const [
   readFile(join(root, "api", "tenant-protocol", "ipo-one.tenant-protocol.v1.json"), "utf8").then(JSON.parse),
   readFile(
     join(root, "api", "tenant-protocol", "conformance", "tenant-protocol.v1.fixtures.json"),
+    "utf8"
+  ).then(JSON.parse),
+  readFile(
+    join(root, "api", "tenant-protocol", "conformance", "wallet-execution.v1.fixtures.json"),
+    "utf8"
+  ).then(JSON.parse),
+  readFile(
+    join(root, "api", "tenant-protocol", "conformance", "venue-execution.v1.fixtures.json"),
     "utf8"
   ).then(JSON.parse),
   readFile(
@@ -284,16 +294,37 @@ for (const forbiddenMcpOperation of [
     `Agent MCP exposed a forbidden operation: ${forbiddenMcpOperation}`);
 }
 
-for (const fixture of fixtures.validRequests ?? []) {
+const validRequests = [
+  ...(fixtures.validRequests ?? []),
+  ...(walletExecutionFixtures.validRequests ?? []),
+  ...(venueExecutionFixtures.validRequests ?? [])
+];
+const invalidRequests = [
+  ...(fixtures.invalidRequests ?? []),
+  ...(walletExecutionFixtures.invalidRequests ?? []),
+  ...(venueExecutionFixtures.invalidRequests ?? [])
+];
+const validResults = [
+  ...(fixtures.validResults ?? []),
+  ...(walletExecutionFixtures.validResults ?? []),
+  ...(venueExecutionFixtures.validResults ?? [])
+];
+const invalidResults = [
+  ...(fixtures.invalidResults ?? []),
+  ...(walletExecutionFixtures.invalidResults ?? []),
+  ...(venueExecutionFixtures.invalidResults ?? [])
+];
+
+for (const fixture of validRequests) {
   fail(isTenantProtocolRequest(fixture), `valid request fixture failed: ${fixture.operationId ?? "unknown"}`);
 }
-for (const fixture of fixtures.invalidRequests ?? []) {
+for (const fixture of invalidRequests) {
   fail(!isTenantProtocolRequest(fixture), `invalid request fixture passed: ${fixture.operationId ?? "unknown"}`);
 }
-for (const fixture of fixtures.validResults ?? []) {
+for (const fixture of validResults) {
   fail(isTenantProtocolResult(fixture), `valid result fixture failed: ${fixture.operationId ?? "unknown"}`);
 }
-for (const fixture of fixtures.invalidResults ?? []) {
+for (const fixture of invalidResults) {
   fail(!isTenantProtocolResult(fixture), `invalid result fixture passed: ${fixture.operationId ?? "unknown"}`);
 }
 for (const fixture of handoffFixtures.valid ?? []) {
@@ -302,8 +333,8 @@ for (const fixture of handoffFixtures.valid ?? []) {
 for (const fixture of handoffFixtures.invalid ?? []) {
   fail(!isAgentHandoffManifest(fixture), `invalid Agent handoff fixture passed: ${fixture.status ?? "unknown"}`);
 }
-fail((fixtures.validRequests ?? []).length === TENANT_PROTOCOL_OPERATIONS.length, "valid request coverage drifted");
-fail((fixtures.validResults ?? []).length === TENANT_PROTOCOL_OPERATIONS.length, "valid result coverage drifted");
+fail(validRequests.length === TENANT_PROTOCOL_OPERATIONS.length, "valid request coverage drifted");
+fail(validResults.length === TENANT_PROTOCOL_OPERATIONS.length, "valid result coverage drifted");
 fail((handoffFixtures.valid ?? []).length === 3, "Agent handoff valid fixture coverage drifted");
 fail((handoffFixtures.invalid ?? []).length >= 4, "Agent handoff invalid fixture coverage drifted");
 for (const fixture of capabilityManifestFixtures.valid ?? []) {

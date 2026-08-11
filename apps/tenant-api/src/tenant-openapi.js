@@ -1,8 +1,19 @@
 import tenantProtocolRequestSchema from "../../../schemas/v2/tenant-protocol-request.schema.json" with { type: "json" };
 import tenantProtocolResultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
+import { TENANT_PROTOCOL_OPERATIONS } from "../../../packages/api-contract/src/index.js";
 
 export const TENANT_OPENAPI_SCHEMA_VERSION = "tenant_openapi.v1";
 export const AGENT_HTTPS_OPENAPI_SCHEMA_VERSION = "agent_https_openapi.v1";
+export const WALLET_EXECUTION_OPENAPI_OPERATION_IDS = Object.freeze(
+  TENANT_PROTOCOL_OPERATIONS
+    .map(({ operationId }) => operationId)
+    .filter((operationId) => operationId.startsWith("wallet"))
+);
+export const VENUE_EXECUTION_OPENAPI_OPERATION_IDS = Object.freeze(
+  TENANT_PROTOCOL_OPERATIONS
+    .map(({ operationId }) => operationId)
+    .filter((operationId) => operationId.startsWith("venue"))
+);
 
 const PROBLEM_DETAILS_SCHEMA = Object.freeze({
   type: "object",
@@ -132,6 +143,11 @@ export function createTenantOpenApiDocument(publicOrigin) {
     }),
     "x-ipo-one-schema-version": TENANT_OPENAPI_SCHEMA_VERSION,
     "x-ipo-one-profile": "closed_non_funds_pilot",
+    "x-ipo-one-wallet-operations": WALLET_EXECUTION_OPENAPI_OPERATION_IDS,
+    "x-ipo-one-wallet-submission-enabled": false,
+    "x-ipo-one-venue-operations": VENUE_EXECUTION_OPENAPI_OPERATION_IDS,
+    "x-ipo-one-venue-delegate-activation-enabled": false,
+    "x-ipo-one-venue-submission-enabled": false,
     "x-real-funds-enabled": false
   });
 }
@@ -250,6 +266,8 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
     }),
     "x-ipo-one-schema-version": AGENT_HTTPS_OPENAPI_SCHEMA_VERSION,
     "x-ipo-one-profile": "closed_non_funds_pilot",
+    "x-ipo-one-wallet-operations": WALLET_EXECUTION_OPENAPI_OPERATION_IDS,
+    "x-ipo-one-wallet-submission-enabled": false,
     "x-ipo-one-activation": "disabled_pending_named_deployment_approval",
     "x-ipo-one-safety": Object.freeze({
       remoteParticipantAccessEnabled: false,

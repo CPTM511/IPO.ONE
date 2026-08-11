@@ -170,7 +170,16 @@
         "tradingRunSettlement",
         "tradingReadSettlement",
         "tradingIssuePerformanceProof",
-        "tradingReadFacilityEvidence"
+        "tradingReadFacilityEvidence",
+        "walletDiscoverCapabilities",
+        "walletPrepareGrant",
+        "walletActivateGrant",
+        "walletReadGrant",
+        "walletRevokeGrant",
+        "walletPrepareExecution",
+        "walletApproveExecution",
+        "walletSubmitExecution",
+        "walletReadExecution"
       ],
       "properties": {
         "pilotAcceptCreditOffer": {
@@ -453,6 +462,33 @@
           "const": "mutation"
         },
         "tradingReadFacilityEvidence": {
+          "const": "read"
+        },
+        "walletDiscoverCapabilities": {
+          "const": "read"
+        },
+        "walletPrepareGrant": {
+          "const": "privileged"
+        },
+        "walletActivateGrant": {
+          "const": "privileged"
+        },
+        "walletReadGrant": {
+          "const": "read"
+        },
+        "walletRevokeGrant": {
+          "const": "privileged"
+        },
+        "walletPrepareExecution": {
+          "const": "economic"
+        },
+        "walletApproveExecution": {
+          "const": "privileged"
+        },
+        "walletSubmitExecution": {
+          "const": "economic"
+        },
+        "walletReadExecution": {
           "const": "read"
         }
       }

@@ -112,6 +112,16 @@ import {
   BreakGlassService,
   createBreakGlassRuntimeConfig
 } from "../../approval/src/index.js";
+import {
+  PostgresAgenticExecutionPreflightRepository,
+  PostgresAgenticExecutionRepository,
+  constructExactEvmPayload,
+  createExecutionTargetPolicy,
+  createPendingExposureReservation,
+  createSimulationReport,
+  evaluateTransactionPreflight,
+  normalizeExecutionEffects
+} from "../../agentic-execution/src/index.js";
 import { RailService, SandboxRailAdapter } from "../../rail/src/index.js";
 import {
   BASE_SEPOLIA_PROFILE,
@@ -129,6 +139,20 @@ import {
   SimulatedHyperliquidExchangeTransport,
   SimulatedIsolatedHyperliquidSigner
 } from "../../hyperliquid-execution/src/index.js";
+import {
+  HypercoreExecutionActionKind,
+  HypercoreDelegateStatus,
+  PostgresHypercoreDelegateRepository,
+  PostgresHypercoreTestnetSubmissionRepository,
+  authorizeHypercoreTestnetAction,
+  compileHypercoreExecutionAction,
+  createHypercoreAccountBinding,
+  createHypercoreTestnetFounderApproval,
+  createHypercoreTestnetProofPolicy,
+  createHypercoreTestnetSignerHandoff,
+  founderApprovalHumanConfirmation,
+  retireHypercoreTestnetSignerHandoff
+} from "../../hypercore-venue-adapter/src/index.js";
 import {
   HYPERLIQUID_TESTNET_RISK_POLICY_VERSION,
   HyperliquidTestnetRiskGuardian,
@@ -305,12 +329,31 @@ const TENANT_OWNED_TABLES = [
   "credit_profiles",
   "credit_registry_chain_observations",
   "credit_registry_chain_outbox_messages",
+  "delegated_wallet_grant_target_policies",
+  "delegated_wallet_grant_transitions",
+  "delegated_wallet_grants",
+  "delegated_wallet_pending_exposures",
   "domain_events",
   "evidence_chain_anchor_binding_repairs",
   "evidence_chain_anchor_observations",
   "evidence_chain_anchors",
   "evidence_envelopes",
+  "execution_account_binding_challenges",
+  "execution_account_binding_proof_attempts",
+  "execution_target_policies",
   "human_identity_references",
+  "hypercore_account_bindings",
+  "hypercore_api_wallet_delegates",
+  "hypercore_delegate_tombstones",
+  "hypercore_jit_venue_preflight_receipts",
+  "hypercore_stable_execution_intents",
+  "hypercore_stable_execution_transitions",
+  "hypercore_stable_founder_approvals",
+  "hypercore_testnet_founder_approvals",
+  "hypercore_testnet_nonce_heads",
+  "hypercore_testnet_signer_handoffs",
+  "hypercore_testnet_submission_attempts",
+  "hypercore_testnet_submission_transitions",
   "inbox_messages",
   "ledger_accounts",
   "ledger_entries",
@@ -372,6 +415,9 @@ const TENANT_OWNED_TABLES = [
   "trading_testnet_settlement_runs",
   "transfer_intents",
   "transfer_quotes",
+  "wallet_prepared_executions",
+  "wallet_simulation_reports",
+  "wallet_transaction_preflight_receipts",
   "workspace_continuation_receipts"
 ];
 
@@ -1089,12 +1135,28 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0050_canonical_credit_line_projection",
         "0051_durable_workspace_continuation_receipts",
         "0052_provider_bound_sandbox_execution_receipts",
-        "0053_workspace_continuation_tenant_guard"
+        "0053_workspace_continuation_tenant_guard",
+        "0054_universal_evm_signature_methods",
+        "0055_agentic_execution_grants",
+        "0056_agentic_execution_preflight",
+        "0057_hypercore_delegate_persistence",
+        "0058_hypercore_testnet_submission_closure",
+        "0059_hypercore_stable_intent_jit_preflight",
+        "0060_hypercore_stable_cancel_closure",
+        "0061_execution_account_bindings"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 53 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 61 }), [
+        "0061_execution_account_bindings",
+        "0060_hypercore_stable_cancel_closure",
+        "0059_hypercore_stable_intent_jit_preflight",
+        "0058_hypercore_testnet_submission_closure",
+        "0057_hypercore_delegate_persistence",
+        "0056_agentic_execution_preflight",
+        "0055_agentic_execution_grants",
+        "0054_universal_evm_signature_methods",
         "0053_workspace_continuation_tenant_guard",
         "0052_provider_bound_sandbox_execution_receipts",
         "0051_durable_workspace_continuation_receipts",
@@ -1202,10 +1264,26 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0050_canonical_credit_line_projection",
         "0051_durable_workspace_continuation_receipts",
         "0052_provider_bound_sandbox_execution_receipts",
-        "0053_workspace_continuation_tenant_guard"
+        "0053_workspace_continuation_tenant_guard",
+        "0054_universal_evm_signature_methods",
+        "0055_agentic_execution_grants",
+        "0056_agentic_execution_preflight",
+        "0057_hypercore_delegate_persistence",
+        "0058_hypercore_testnet_submission_closure",
+        "0059_hypercore_stable_intent_jit_preflight",
+        "0060_hypercore_stable_cancel_closure",
+        "0061_execution_account_bindings"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 51 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 59 }), [
+        "0061_execution_account_bindings",
+        "0060_hypercore_stable_cancel_closure",
+        "0059_hypercore_stable_intent_jit_preflight",
+        "0058_hypercore_testnet_submission_closure",
+        "0057_hypercore_delegate_persistence",
+        "0056_agentic_execution_preflight",
+        "0055_agentic_execution_grants",
+        "0054_universal_evm_signature_methods",
         "0053_workspace_continuation_tenant_guard",
         "0052_provider_bound_sandbox_execution_receipts",
         "0051_durable_workspace_continuation_receipts",
@@ -1322,7 +1400,15 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0050_canonical_credit_line_projection",
         "0051_durable_workspace_continuation_receipts",
         "0052_provider_bound_sandbox_execution_receipts",
-        "0053_workspace_continuation_tenant_guard"
+        "0053_workspace_continuation_tenant_guard",
+        "0054_universal_evm_signature_methods",
+        "0055_agentic_execution_grants",
+        "0056_agentic_execution_preflight",
+        "0057_hypercore_delegate_persistence",
+        "0058_hypercore_testnet_submission_closure",
+        "0059_hypercore_stable_intent_jit_preflight",
+        "0060_hypercore_stable_cancel_closure",
+        "0061_execution_account_bindings"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -2352,6 +2438,623 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       assert.equal(
         (await restartedRepository.getAccountBinding(fixture.accountBinding.accountBindingId)).purpose,
         AccountPurpose.EXECUTION
+      );
+    });
+
+    await t.test("EXEC-001 grant persistence is atomic, RLS-isolated, and race-safe", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const coreRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      await coreRepository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "exec-001-foundation-fixture",
+        commandHash: hashId("exec_001_foundation", { subjectId: fixture.subject.subjectId }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { created: true }
+      });
+
+      const targetPolicy = createExecutionTargetPolicy({
+        providerId: fixture.provider.providerId,
+        chainId: "eip155:84532",
+        targetAddress: "0x1111111111111111111111111111111111111111",
+        codeHash: hashId("exec_001_postgres_target_code", { version: 1 }),
+        allowedFunctionSelectors: ["0x12345678"],
+        validFrom: new Date(FIXED_NOW.getTime() - 1_000).toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 3_600_000).toISOString(),
+        now: FIXED_NOW
+      });
+      const grantCore = {
+        subjectId: fixture.subject.subjectId,
+        principalId: fixture.principal.principalId,
+        accountBindingId: fixture.accountBinding.accountBindingId,
+        executionDomain: "evm",
+        adapterId: "local_sandbox",
+        mandateId: fixture.mandate.mandateId,
+        mandateHash: fixture.mandate.mandateHash,
+        spendPolicyId: fixture.spendPolicy.spendPolicyId,
+        spendPolicyHash: fixture.spendPolicy.spendPolicyHash,
+        creditLineId: fixture.creditLine.creditLineId,
+        creditLineHash: hashId("exec_001_postgres_credit_line", { version: 1 }),
+        obligationId: fixture.obligation.obligationId,
+        obligationHash: fixture.obligation.obligationHash,
+        authorizationDecisionId: "authorization_decision_exec_001_postgres",
+        authorizationHash: hashId("exec_001_postgres_authorization", { version: 1 }),
+        sessionSignerRefHash: hashId("exec_001_postgres_session_signer", { epoch: 3 }),
+        providerId: fixture.provider.providerId,
+        chainIds: ["eip155:84532"],
+        assetIds: [ASSET.assetId],
+        allowedTargetPolicyIds: [targetPolicy.targetPolicyId],
+        perTxLimitMinor: "60000",
+        rolling24hLimitMinor: "100000",
+        aggregateLimitMinor: "100000",
+        obligationLimitMinor: "100000",
+        validFrom: FIXED_NOW.toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 1_800_000).toISOString(),
+        sessionEpoch: 3,
+        nonce: "exec-001-postgres-grant-nonce",
+        sandboxOnly: true,
+        productionAuthority: false,
+        fundsAuthority: false,
+        transactionsAllowed: false,
+        schemaVersion: "delegated_wallet_grant.v1"
+      };
+      const grantHash = hashId("delegated_wallet_grant", grantCore);
+      const prepared = {
+        grantId: `delegated_wallet_grant_${grantHash.slice(2)}`,
+        grantHash,
+        ...grantCore,
+        externalPermissionRefHash: null,
+        externalPolicyHash: null,
+        status: "prepared",
+        pendingExposureMinor: "0",
+        version: 1,
+        createdAt: FIXED_NOW.toISOString(),
+        updatedAt: FIXED_NOW.toISOString()
+      };
+      const eventRepository = new PostgresEventRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        clock: () => FIXED_NOW
+      });
+      const repository = new PostgresAgenticExecutionRepository({ eventRepository });
+      const created = await repository.create({
+        grant: prepared,
+        targetPolicies: [targetPolicy],
+        idempotencyKey: "exec-001-create-grant-0001",
+        correlationId: "exec-001-postgres-race",
+        actorId: "actor_exec_001_principal",
+        now: FIXED_NOW
+      });
+      assert.equal(created.replayed, false);
+
+      const active = {
+        ...prepared,
+        externalPermissionRefHash: hashId("exec_001_postgres_local_permission", { version: 1 }),
+        externalPolicyHash: hashId("exec_001_postgres_local_policy", { version: 1 }),
+        status: "active",
+        version: 2,
+        updatedAt: new Date(FIXED_NOW.getTime() + 1_000).toISOString()
+      };
+      await repository.activate({
+        currentGrant: prepared,
+        activation: {
+          value: active,
+          transition: {
+            previousStatus: "prepared",
+            nextStatus: "active",
+            reasonCode: "local_sandbox_permission_compiled",
+            authorizationDecisionId: "authorization_decision_exec_001_activate",
+            authorizationHash: hashId("exec_001_postgres_activation", { version: 1 }),
+            occurredAt: active.updatedAt
+          }
+        },
+        idempotencyKey: "exec-001-activate-grant-0001",
+        correlationId: "exec-001-postgres-race",
+        actorId: "actor_exec_001_principal",
+        now: new Date(FIXED_NOW.getTime() + 1_000)
+      });
+
+      const reservations = ["one", "two"].map((suffix, index) =>
+        createPendingExposureReservation({
+          grant: active,
+          targetPolicy,
+          amountMinor: "60000",
+          sessionEpoch: active.sessionEpoch,
+          idempotencyKey: `exec-001-pending-${suffix}-0001`,
+          expiresAt: new Date(FIXED_NOW.getTime() + 300_000).toISOString(),
+          now: new Date(FIXED_NOW.getTime() + 2_000 + index)
+        })
+      );
+      const race = await Promise.allSettled(reservations.map((reservation, index) =>
+        repository.reserve({
+          grant: active,
+          reservation,
+          idempotencyKey: `exec-001-reserve-command-${index + 1}`,
+          correlationId: "exec-001-postgres-race",
+          actorId: "actor_exec_001_principal",
+          now: new Date(FIXED_NOW.getTime() + 2_000 + index)
+        })
+      ));
+      assert.equal(race.filter(({ status }) => status === "fulfilled").length, 1);
+      assert.equal(race.filter(({ status }) => status === "rejected").length, 1);
+      assert.equal(
+        ["stale_aggregate_version", "agentic_execution_exposure_limit_exceeded"].includes(
+          race.find(({ status }) => status === "rejected").reason.code
+        ),
+        true
+      );
+
+      const durable = await repository.findById(active.grantId);
+      assert.equal(durable.grant.pendingExposureMinor, "60000");
+      assert.equal(durable.grant.version, 3);
+      assert.equal(durable.grant.transactionsAllowed, false);
+      const proof = await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+        `SELECT
+           (SELECT count(*)::INT FROM delegated_wallet_pending_exposures WHERE grant_id = $1) AS reservations,
+           (SELECT count(*)::INT FROM delegated_wallet_grant_transitions WHERE grant_id = $1) AS transitions,
+           (SELECT count(*)::INT FROM domain_events WHERE aggregate_type = 'delegated_wallet_grant' AND aggregate_id = $1) AS events,
+           (SELECT count(*)::INT FROM evidence_envelopes WHERE aggregate_type = 'delegated_wallet_grant' AND aggregate_id = $1) AS evidence,
+           (SELECT count(*)::INT FROM outbox_messages WHERE message_key = $1) AS outbox`,
+        [active.grantId]
+      ));
+      assert.deepEqual(proof.rows[0], {
+        reservations: 1,
+        transitions: 2,
+        events: 3,
+        evidence: 3,
+        outbox: 3
+      });
+
+      const rls = await pool.query(`
+        SELECT relname, relrowsecurity, relforcerowsecurity
+          FROM pg_class
+         WHERE relname IN (
+           'execution_target_policies',
+           'delegated_wallet_grants',
+           'delegated_wallet_grant_target_policies',
+           'delegated_wallet_grant_transitions',
+           'delegated_wallet_pending_exposures'
+         )
+         ORDER BY relname
+      `);
+      assert.equal(rls.rowCount, 5);
+      assert.equal(
+        rls.rows.every(({ relrowsecurity, relforcerowsecurity }) =>
+          relrowsecurity && relforcerowsecurity
+        ),
+        true
+      );
+    });
+
+    await t.test("EXEC-002 denied preflight Evidence is atomic, queryable, immutable, and RLS-isolated", async () => {
+      await resetCoreRuntime(pool);
+      const fixture = buildCoreFixture();
+      const coreRepository = new PostgresCoreRepository({ pool, tenantContext: TENANT_CONTEXT });
+      await coreRepository.commitCommand({
+        aggregateType: "subject",
+        aggregateId: fixture.subject.subjectId,
+        idempotencyKey: "exec-002-foundation-fixture",
+        commandHash: hashId("exec_002_foundation", { subjectId: fixture.subject.subjectId }),
+        events: fixture.events,
+        writes: fixture.writes,
+        response: { created: true }
+      });
+
+      const targetPolicy = createExecutionTargetPolicy({
+        providerId: fixture.provider.providerId,
+        chainId: "eip155:84532",
+        targetAddress: "0x1111111111111111111111111111111111111111",
+        codeHash: hashId("exec_002_postgres_target_code", { version: 1 }),
+        allowedFunctionSelectors: ["0x12345678"],
+        validFrom: new Date(FIXED_NOW.getTime() - 1_000).toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 3_600_000).toISOString(),
+        now: FIXED_NOW
+      });
+      const grantCore = {
+        subjectId: fixture.subject.subjectId,
+        principalId: fixture.principal.principalId,
+        accountBindingId: fixture.accountBinding.accountBindingId,
+        executionDomain: "evm",
+        adapterId: "local_sandbox",
+        mandateId: fixture.mandate.mandateId,
+        mandateHash: fixture.mandate.mandateHash,
+        spendPolicyId: fixture.spendPolicy.spendPolicyId,
+        spendPolicyHash: fixture.spendPolicy.spendPolicyHash,
+        creditLineId: fixture.creditLine.creditLineId,
+        creditLineHash: hashId("exec_002_postgres_credit_line", { version: 1 }),
+        obligationId: fixture.obligation.obligationId,
+        obligationHash: fixture.obligation.obligationHash,
+        authorizationDecisionId: "authorization_decision_exec_002_postgres",
+        authorizationHash: hashId("exec_002_postgres_authorization", { version: 1 }),
+        sessionSignerRefHash: hashId("exec_002_postgres_session_signer", { epoch: 4 }),
+        providerId: fixture.provider.providerId,
+        chainIds: ["eip155:84532"],
+        assetIds: [ASSET.assetId],
+        allowedTargetPolicyIds: [targetPolicy.targetPolicyId],
+        perTxLimitMinor: "60000",
+        rolling24hLimitMinor: "100000",
+        aggregateLimitMinor: "100000",
+        obligationLimitMinor: "100000",
+        validFrom: FIXED_NOW.toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 1_800_000).toISOString(),
+        sessionEpoch: 4,
+        nonce: "exec-002-postgres-grant-nonce",
+        sandboxOnly: true,
+        productionAuthority: false,
+        fundsAuthority: false,
+        transactionsAllowed: false,
+        schemaVersion: "delegated_wallet_grant.v1"
+      };
+      const grantHash = hashId("delegated_wallet_grant", grantCore);
+      const preparedGrant = {
+        grantId: `delegated_wallet_grant_${grantHash.slice(2)}`,
+        grantHash,
+        ...grantCore,
+        externalPermissionRefHash: null,
+        externalPolicyHash: null,
+        status: "prepared",
+        pendingExposureMinor: "0",
+        version: 1,
+        createdAt: FIXED_NOW.toISOString(),
+        updatedAt: FIXED_NOW.toISOString()
+      };
+      const eventRepository = new PostgresEventRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT,
+        clock: () => FIXED_NOW
+      });
+      const grantRepository = new PostgresAgenticExecutionRepository({ eventRepository });
+      await grantRepository.create({
+        grant: preparedGrant,
+        targetPolicies: [targetPolicy],
+        idempotencyKey: "exec-002-create-grant-0001",
+        correlationId: "exec-002-postgres",
+        actorId: "actor_exec_002_principal",
+        now: FIXED_NOW
+      });
+      const activeGrant = {
+        ...preparedGrant,
+        externalPermissionRefHash: hashId("exec_002_postgres_local_permission", { version: 1 }),
+        externalPolicyHash: hashId("exec_002_postgres_local_policy", { version: 1 }),
+        status: "active",
+        version: 2,
+        updatedAt: new Date(FIXED_NOW.getTime() + 1_000).toISOString()
+      };
+      await grantRepository.activate({
+        currentGrant: preparedGrant,
+        activation: {
+          value: activeGrant,
+          transition: {
+            previousStatus: "prepared",
+            nextStatus: "active",
+            reasonCode: "local_sandbox_permission_compiled",
+            authorizationDecisionId: "authorization_decision_exec_002_activate",
+            authorizationHash: hashId("exec_002_postgres_activation", { version: 1 }),
+            occurredAt: activeGrant.updatedAt
+          }
+        },
+        idempotencyKey: "exec-002-activate-grant-0001",
+        correlationId: "exec-002-postgres",
+        actorId: "actor_exec_002_principal",
+        now: new Date(FIXED_NOW.getTime() + 1_000)
+      });
+      const pending = createPendingExposureReservation({
+        grant: activeGrant,
+        targetPolicy,
+        amountMinor: "5000",
+        sessionEpoch: activeGrant.sessionEpoch,
+        idempotencyKey: "exec-002-pending-0001",
+        expiresAt: new Date(FIXED_NOW.getTime() + 300_000).toISOString(),
+        now: new Date(FIXED_NOW.getTime() + 2_000)
+      });
+      const reservation = pending;
+      const currentGrant = {
+        ...activeGrant,
+        pendingExposureMinor: pending.amountMinor,
+        version: activeGrant.version + 1,
+        updatedAt: pending.reservedAt
+      };
+      const payload = constructExactEvmPayload({
+        chainId: "eip155:84532",
+        accountRefHash: hashId("exec_002_postgres_account", { version: 1 }),
+        targetAddress: targetPolicy.targetAddress,
+        calldata: "0x12345678",
+        nativeValueMinor: "0"
+      });
+      const expectedEffects = normalizeExecutionEffects({
+        nativeDeltaMinor: "0",
+        assetDeltas: [{
+          assetId: ASSET.assetId,
+          accountRefHash: hashId("exec_002_postgres_effect_account", { version: 1 }),
+          deltaMinor: "-5000"
+        }],
+        allowanceDeltas: [],
+        withdrawal: false,
+        transfer: false
+      });
+      const preparedCore = {
+        subjectId: currentGrant.subjectId,
+        principalId: currentGrant.principalId,
+        accountBindingId: currentGrant.accountBindingId,
+        obligationId: currentGrant.obligationId,
+        transferIntentId: "transfer_intent_exec_002_postgres",
+        grantId: currentGrant.grantId,
+        grantHash: currentGrant.grantHash,
+        targetPolicyId: targetPolicy.targetPolicyId,
+        targetPolicyHash: targetPolicy.policyHash,
+        authorizationDecisionId: "authorization_decision_exec_002_prepare",
+        authorizationHash: hashId("exec_002_prepare_authorization", { version: 1 }),
+        reservationId: reservation.reservationId,
+        reservationHash: reservation.reservationHash,
+        sessionEpoch: currentGrant.sessionEpoch,
+        payload,
+        expectedEffects,
+        stepUpRequired: false,
+        validFrom: new Date(FIXED_NOW.getTime() + 3_000).toISOString(),
+        expiresAt: new Date(FIXED_NOW.getTime() + 180_000).toISOString(),
+        transactionsAllowed: false,
+        sandboxOnly: true,
+        productionAuthority: false,
+        fundsAuthority: false,
+        schemaVersion: "prepared_execution.v1"
+      };
+      const preparedExecutionHash = hashId("prepared_execution", preparedCore);
+      const preparedExecution = {
+        executionId: `wallet_execution_${preparedExecutionHash.slice(2)}`,
+        preparedExecutionHash,
+        ...preparedCore,
+        createdAt: preparedCore.validFrom
+      };
+      const simulationReport = createSimulationReport({
+        preparedExecution,
+        simulatorId: "local_deterministic_evm",
+        simulatorVersion: "exec002.v1",
+        result: {
+          status: "succeeded",
+          chainId: "eip155:84532",
+          blockNumber: "123456",
+          blockHash: hashId("exec_002_postgres_block", { version: 1 }),
+          observedCodeHash: targetPolicy.codeHash,
+          observedProxyImplementationHash: null,
+          effects: {
+            nativeDeltaMinor: expectedEffects.nativeDeltaMinor,
+            assetDeltas: expectedEffects.assetDeltas,
+            allowanceDeltas: expectedEffects.allowanceDeltas,
+            withdrawal: false,
+            transfer: false
+          },
+          threatCheckStatus: "passed",
+          revertReasonHash: null
+        },
+        expiresAt: new Date(FIXED_NOW.getTime() + 120_000).toISOString(),
+        now: new Date(FIXED_NOW.getTime() + 4_000)
+      });
+      const preflightReceipt = evaluateTransactionPreflight({
+        preparedExecution,
+        currentGrant,
+        targetPolicy,
+        reservation,
+        simulationReport,
+        currentChainId: "eip155:1952",
+        currentSessionEpoch: currentGrant.sessionEpoch,
+        now: new Date(FIXED_NOW.getTime() + 5_000)
+      });
+      assert.equal(preflightReceipt.decision, "DENY");
+      assert.ok(preflightReceipt.reasonCodes.includes("wrong_chain"));
+      const exposureEvent = createCreditEvent({
+        eventType: CreditEventType.DELEGATED_WALLET_PENDING_EXPOSURE_RESERVED,
+        subjectId: currentGrant.subjectId,
+        obligationId: currentGrant.obligationId,
+        payload: {
+          grantId: currentGrant.grantId,
+          grantHash: currentGrant.grantHash,
+          reservationId: reservation.reservationId,
+          reservationHash: reservation.reservationHash,
+          pendingExposureMinor: currentGrant.pendingExposureMinor,
+          transactionsAllowed: false,
+          productionAuthority: false,
+          fundsAuthority: false
+        },
+        now: new Date(FIXED_NOW.getTime() + 2_000)
+      });
+      const preparedEvent = createCreditEvent({
+        eventType: CreditEventType.WALLET_EXECUTION_PREPARED,
+        subjectId: preparedExecution.subjectId,
+        obligationId: preparedExecution.obligationId,
+        payload: {
+          executionId: preparedExecution.executionId,
+          preparedExecutionHash: preparedExecution.preparedExecutionHash,
+          exactPayloadHash: preparedExecution.payload.exactPayloadHash,
+          transactionsAllowed: false,
+          productionAuthority: false,
+          fundsAuthority: false
+        },
+        now: new Date(FIXED_NOW.getTime() + 3_000)
+      });
+      const preflightEvent = createCreditEvent({
+        eventType: CreditEventType.WALLET_EXECUTION_PREFLIGHTED,
+        subjectId: preparedExecution.subjectId,
+        obligationId: preparedExecution.obligationId,
+        payload: {
+          executionId: preparedExecution.executionId,
+          preparedExecutionHash: preparedExecution.preparedExecutionHash,
+          simulationHash: simulationReport.simulationHash,
+          preflightHash: preflightReceipt.preflightHash,
+          decision: preflightReceipt.decision,
+          transactionsAllowed: false,
+          productionAuthority: false,
+          fundsAuthority: false
+        },
+        now: new Date(FIXED_NOW.getTime() + 5_000)
+      });
+      const executionRecord = (recordType, record, eventId) => ({
+        type: CoreProjectionType.AGENTIC_EXECUTION_RECORD,
+        value: {
+          recordId: {
+            grant: record.grantId,
+            pending_exposure: record.reservationId,
+            prepared_execution: record.executionId,
+            simulation_report: record.simulationReportId,
+            preflight_receipt: record.preflightReceiptId
+          }[recordType],
+          recordType,
+          record
+        },
+        eventId
+      });
+      const atomicCommand = {
+        aggregateType: "wallet_execution",
+        aggregateId: preparedExecution.executionId,
+        idempotencyKey: "product-integration-001-atomic-execution-0001",
+        commandHash: hashId("product_integration_001_atomic_execution", {
+          preparedExecutionHash,
+          preflightHash: preflightReceipt.preflightHash
+        }),
+        events: [
+          {
+            aggregateType: "delegated_wallet_grant",
+            aggregateId: currentGrant.grantId,
+            expectedVersion: activeGrant.version,
+            event: exposureEvent
+          },
+          {
+            aggregateType: "wallet_execution",
+            aggregateId: preparedExecution.executionId,
+            expectedVersion: 0,
+            event: preparedEvent
+          },
+          {
+            aggregateType: "wallet_execution",
+            aggregateId: preparedExecution.executionId,
+            expectedVersion: 1,
+            event: preflightEvent
+          }
+        ],
+        writes: [
+          executionRecord("pending_exposure", reservation, exposureEvent.eventId),
+          executionRecord("grant", currentGrant, exposureEvent.eventId),
+          executionRecord("prepared_execution", preparedExecution, preparedEvent.eventId),
+          executionRecord("simulation_report", simulationReport, preflightEvent.eventId),
+          executionRecord("preflight_receipt", preflightReceipt, preflightEvent.eventId)
+        ],
+        response: {
+          executionId: preparedExecution.executionId,
+          preflightHash: preflightReceipt.preflightHash,
+          atomicGatewayCommit: true
+        }
+      };
+      const malformedWrite = structuredClone(atomicCommand.writes.at(-1));
+      malformedWrite.value.recordId = `${malformedWrite.value.recordId}-mismatch`;
+      await assert.rejects(
+        coreRepository.commitCommand({
+          ...atomicCommand,
+          writes: [...atomicCommand.writes.slice(0, -1), malformedWrite]
+        }),
+        (error) => error.code === "invalid_core_projection"
+      );
+      const rolledBack = await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+        `SELECT
+           (SELECT count(*)::INT FROM delegated_wallet_pending_exposures WHERE id = $1) AS reservations,
+           (SELECT count(*)::INT FROM wallet_prepared_executions WHERE id = $2) AS prepared,
+           (SELECT count(*)::INT FROM wallet_simulation_reports WHERE execution_id = $2) AS simulations,
+           (SELECT count(*)::INT FROM wallet_transaction_preflight_receipts WHERE execution_id = $2) AS receipts,
+           (SELECT version FROM delegated_wallet_grants WHERE id = $3) AS grant_version`,
+        [reservation.reservationId, preparedExecution.executionId, activeGrant.grantId]
+      ));
+      assert.deepEqual(rolledBack.rows[0], {
+        reservations: 0,
+        prepared: 0,
+        simulations: 0,
+        receipts: 0,
+        grant_version: String(activeGrant.version)
+      });
+      const recorded = await coreRepository.commitCommand(atomicCommand);
+      assert.equal(recorded.replayed, false);
+      assert.equal(recorded.response.atomicGatewayCommit, true);
+      const replay = await coreRepository.commitCommand(atomicCommand);
+      assert.equal(replay.replayed, true);
+
+      const preflightRepository = new PostgresAgenticExecutionPreflightRepository({ eventRepository });
+      const durable = await preflightRepository.findById(preparedExecution.executionId);
+      assert.equal(durable.preparedExecution.preparedExecutionHash, preparedExecutionHash);
+      assert.equal(durable.preflights.length, 1);
+      assert.equal(durable.preflights[0].preflightReceipt.decision, "DENY");
+      assert.equal(durable.preflights[0].simulationReport.externalCallPerformed, false);
+      const proof = await withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+        `SELECT
+           (SELECT count(*)::INT FROM wallet_prepared_executions WHERE id = $1) AS prepared,
+           (SELECT count(*)::INT FROM wallet_simulation_reports WHERE execution_id = $1) AS simulations,
+           (SELECT count(*)::INT FROM wallet_transaction_preflight_receipts WHERE execution_id = $1) AS receipts,
+           (SELECT count(*)::INT FROM domain_events WHERE aggregate_type = 'wallet_execution' AND aggregate_id = $1) AS events,
+           (SELECT count(*)::INT FROM evidence_envelopes WHERE aggregate_type = 'wallet_execution' AND aggregate_id = $1) AS evidence,
+           (SELECT count(*)::INT FROM outbox_messages WHERE message_key = $1) AS outbox`,
+        [preparedExecution.executionId]
+      ));
+      assert.deepEqual(proof.rows[0], {
+        prepared: 1,
+        simulations: 1,
+        receipts: 1,
+        events: 2,
+        evidence: 2,
+        outbox: 2
+      });
+      const rls = await pool.query(`
+        SELECT relname, relrowsecurity, relforcerowsecurity
+          FROM pg_class
+         WHERE relname IN (
+           'wallet_prepared_executions',
+           'wallet_simulation_reports',
+           'wallet_transaction_preflight_receipts'
+         )
+         ORDER BY relname
+      `);
+      assert.equal(rls.rowCount, 3);
+      assert.equal(rls.rows.every(({ relrowsecurity, relforcerowsecurity }) =>
+        relrowsecurity && relforcerowsecurity
+      ), true);
+      const rlsRole = "ipo_one_exec002_rls_test";
+      const dropRlsRole = async () => {
+        const exists = await pool.query("SELECT 1 FROM pg_roles WHERE rolname = $1", [rlsRole]);
+        if (exists.rowCount === 0) return;
+        await pool.query(`DROP OWNED BY ${rlsRole}`);
+        await pool.query(`DROP ROLE ${rlsRole}`);
+      };
+      await dropRlsRole();
+      try {
+        await pool.query(`CREATE ROLE ${rlsRole} NOLOGIN NOSUPERUSER NOBYPASSRLS`);
+        await pool.query(`GRANT USAGE ON SCHEMA public TO ${rlsRole}`);
+        await pool.query(
+          `GRANT SELECT ON wallet_prepared_executions,
+             wallet_simulation_reports,
+             wallet_transaction_preflight_receipts TO ${rlsRole}`
+        );
+        const isolated = await pool.connect();
+        try {
+          await isolated.query("BEGIN READ ONLY");
+          await isolated.query(`SET LOCAL ROLE ${rlsRole}`);
+          await setTenantTransactionContext(isolated, TENANT_TWO_CONTEXT);
+          assert.equal(
+            (await isolated.query(
+              "SELECT count(*)::INT AS count FROM wallet_prepared_executions WHERE id = $1",
+              [preparedExecution.executionId]
+            )).rows[0].count,
+            0
+          );
+          await isolated.query("ROLLBACK");
+        } finally {
+          isolated.release();
+        }
+      } finally {
+        await dropRlsRole();
+      }
+      await assert.rejects(
+        withTenantTransaction(pool, TENANT_CONTEXT, (client) => client.query(
+          "UPDATE wallet_transaction_preflight_receipts SET decision = 'DENY' WHERE id = $1",
+          [preflightReceipt.preflightReceiptId]
+        )),
+        (error) => error.code === "23514"
       );
     });
 
@@ -3497,6 +4200,15 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
       tc103Seed = { fixture, finalProposal };
     });
 
+    if (process.env.IPO_ONE_PERSIST_HYPERCORE_002D_TC102_FIXTURE === "true") {
+      assert.notEqual(
+        process.env.CI,
+        "true",
+        "the HYPERLIQUID-002D local fixture must never be persisted in CI"
+      );
+      return;
+    }
+
     await t.test("TC-103 synthetic Facility is durable, race-safe, monotonic, RLS-isolated, and restart-recoverable", async () => {
       assert.ok(tc103Seed, "TC-102 accepted-match foundation must be durable");
       const { fixture, finalProposal } = tc103Seed;
@@ -3811,6 +4523,602 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         expectedVersion: 0,
         now: new Date(facility.createdAt)
       }));
+
+      const hypercoreMasterAddress =
+        "0x1111111111111111111111111111111111111111";
+      const hypercoreSubaccountAddress =
+        "0x2222222222222222222222222222222222222222";
+      const hypercoreDelegateAddress =
+        "0x3333333333333333333333333333333333333333";
+      const hypercoreBinding = createHypercoreAccountBinding({
+        facilityId: facility.tradingFacilityId,
+        facilityHash: facility.facilityHash,
+        accountRole: "subaccount",
+        masterAccountAddress: hypercoreMasterAddress,
+        subaccountAddress: hypercoreSubaccountAddress,
+        bindingProofHash: hashId("hypercore_002b_binding_proof", {
+          facilityId: facility.tradingFacilityId
+        }),
+        bindingVersion: 1
+      });
+      const hypercoreRepository =
+        new PostgresHypercoreDelegateRepository({
+          coreRepository: repository
+        });
+      const durableHypercoreBinding = await hypercoreRepository.recordBinding({
+        binding: hypercoreBinding,
+        idempotencyKey: "hypercore-002b-binding-0001",
+        now: new Date("2026-07-25T01:12:01.000Z")
+      });
+      assert.deepEqual(durableHypercoreBinding, hypercoreBinding);
+      const delegateAddressHash = hashId(
+        "hypercore_account_address",
+        hypercoreDelegateAddress
+      );
+      const preparedHypercoreDelegate = await hypercoreRepository.prepare({
+        bindingId: hypercoreBinding.accountBindingId,
+        apiWalletAddressHash: delegateAddressHash,
+        signerReferenceHash: hashId("hypercore_002b_signer_reference", {
+          facilityId: facility.tradingFacilityId
+        }),
+        delegateNameHash: hashId("hypercore_delegate_name", "hypercore-002b"),
+        expiresAt: new Date("2026-07-26T01:12:02.000Z"),
+        idempotencyKey: "hypercore-002b-prepare-0001",
+        now: new Date("2026-07-25T01:12:02.000Z")
+      });
+      assert.equal(
+        preparedHypercoreDelegate.status,
+        HypercoreDelegateStatus.PREPARED
+      );
+      assert.equal(
+        JSON.stringify({
+          binding: durableHypercoreBinding,
+          delegate: preparedHypercoreDelegate
+        }).includes(hypercoreDelegateAddress),
+        false
+      );
+      const restartedHypercoreRepository =
+        new PostgresHypercoreDelegateRepository({
+          coreRepository: new PostgresCoreRepository({
+            pool,
+            tenantContext: TENANT_CONTEXT
+          })
+        });
+      assert.deepEqual(
+        await restartedHypercoreRepository.find(
+          preparedHypercoreDelegate.delegateId
+        ),
+        preparedHypercoreDelegate
+      );
+      const hypercore002dRiskSnapshot = {
+        accountBindingHash: hypercoreBinding.accountBindingHash,
+        metadataHash: hashId("hypercore_002d_market_metadata", {
+          market: "BTC",
+          assetIndex: 3
+        }),
+        metadataObservedAt: "2026-07-25T01:11:30.000Z",
+        observedAt: "2026-07-25T01:12:02.200Z",
+        status: "FRESH",
+        openOrdersCount: 0,
+        aggregateExposureUsd: "0",
+        positionNotionalUsd: "0",
+        unknownOutcomeCount: 0,
+        reconciliationStatus: "RECONCILED",
+        paused: false
+      };
+      hypercore002dRiskSnapshot.riskSnapshotHash = hashId(
+        "hypercore_testnet_risk_snapshot",
+        hypercore002dRiskSnapshot
+      );
+      const hypercore002dPolicy = createHypercoreTestnetProofPolicy({
+        policyId: "hypercore_testnet_btc_proof_002d_postgres",
+        accountBindingHash: hypercoreBinding.accountBindingHash,
+        delegateHash: preparedHypercoreDelegate.delegateHash,
+        signerReferenceHash: preparedHypercoreDelegate.signerReferenceHash,
+        metadataHash: hypercore002dRiskSnapshot.metadataHash,
+        assetIndex: 3,
+        sizeDecimals: 5,
+        priceDecimals: 1,
+        metadataObservedAt: hypercore002dRiskSnapshot.metadataObservedAt,
+        executionOwnerActorId: "actor_hypercore_execution_owner",
+        riskOwnerActorId: "actor_hypercore_risk_owner",
+        incidentOwnerActorId: "actor_ipo_one_founder",
+        approvedAt: "2026-07-25T01:12:02.100Z",
+        expiresAt: "2026-07-25T01:30:00.000Z"
+      });
+      const hypercore002dPreparedAction = compileHypercoreExecutionAction({
+        actionKind: HypercoreExecutionActionKind.ORDER,
+        action: {
+          assetIndex: 3,
+          side: "buy",
+          limitPx: "50000",
+          size: "0.0002",
+          reduceOnly: false,
+          timeInForce: "Alo",
+          cloid: "0x00000000000000000000000000000001"
+        },
+        sourceActionHash: hashId("hypercore_002d_source_action", {
+          facilityId: facility.tradingFacilityId
+        }),
+        policyDecisionHash: hashId("hypercore_002d_policy_decision", {
+          policyId: hypercore002dPolicy.policyId
+        }),
+        riskSnapshotHash: hypercore002dRiskSnapshot.riskSnapshotHash,
+        accountBindingHash: hypercoreBinding.accountBindingHash,
+        delegateHash: preparedHypercoreDelegate.delegateHash
+      });
+      const hypercore002dHandoff = createHypercoreTestnetSignerHandoff({
+        binding: hypercoreBinding,
+        delegate: preparedHypercoreDelegate,
+        registrationEvidenceHash: hashId(
+          "hypercore_002d_signer_registration_evidence",
+          { delegateId: preparedHypercoreDelegate.delegateId }
+        ),
+        verifiedAt: new Date("2026-07-25T01:12:02.100Z"),
+        expiresAt: new Date("2026-07-25T01:30:00.000Z")
+      });
+      const hypercore002dEvents = new PostgresEventRepository({
+        pool,
+        tenantContext: TENANT_CONTEXT
+      });
+      const hypercore002dRepository =
+        new PostgresHypercoreTestnetSubmissionRepository({
+          eventRepository: hypercore002dEvents
+        });
+      const restartedHypercore002dRepository =
+        new PostgresHypercoreTestnetSubmissionRepository({
+          eventRepository: new PostgresEventRepository({
+            pool,
+            tenantContext: TENANT_CONTEXT
+          })
+        });
+      assert.deepEqual(
+        await hypercore002dRepository.recordSignerHandoff(
+          hypercore002dHandoff
+        ),
+        hypercore002dHandoff
+      );
+      assert.deepEqual(
+        await restartedHypercore002dRepository.findSignerHandoff(
+          hypercore002dHandoff.handoffId
+        ),
+        hypercore002dHandoff
+      );
+      const concurrentPreparations = await Promise.all([
+        hypercore002dRepository.prepare({
+          binding: hypercoreBinding,
+          handoffId: hypercore002dHandoff.handoffId,
+          policy: hypercore002dPolicy,
+          preparedAction: hypercore002dPreparedAction,
+          idempotencyKey: "hypercore-002d-postgres-prepare-0001",
+          now: new Date("2026-07-25T01:12:02.300Z")
+        }),
+        restartedHypercore002dRepository.prepare({
+          binding: hypercoreBinding,
+          handoffId: hypercore002dHandoff.handoffId,
+          policy: hypercore002dPolicy,
+          preparedAction: hypercore002dPreparedAction,
+          idempotencyKey: "hypercore-002d-postgres-prepare-0001",
+          now: new Date("2026-07-25T01:12:02.300Z")
+        })
+      ]);
+      assert.deepEqual(
+        concurrentPreparations.map(({ replayed }) => replayed).sort(),
+        [false, true]
+      );
+      const hypercore002dAttempt = concurrentPreparations[0].attempt;
+      assert.deepEqual(concurrentPreparations[1].attempt, hypercore002dAttempt);
+      assert.deepEqual(
+        await restartedHypercore002dRepository.find(
+          hypercore002dAttempt.executionId
+        ),
+        hypercore002dAttempt
+      );
+      await assert.rejects(
+        () => restartedHypercore002dRepository.prepare({
+          binding: hypercoreBinding,
+          handoffId: hypercore002dHandoff.handoffId,
+          policy: hypercore002dPolicy,
+          preparedAction: hypercore002dPreparedAction,
+          idempotencyKey: "hypercore-002d-economic-replay-denied-0002",
+          now: new Date("2026-07-25T01:12:02.301Z")
+        }),
+        (error) => error.code === "23505"
+      );
+      const hypercore002dCancelAction = compileHypercoreExecutionAction({
+        actionKind: HypercoreExecutionActionKind.CANCEL,
+        action: { assetIndex: 3, orderId: 7 },
+        sourceActionHash: hashId("hypercore_002d_cancel_source_action", {
+          facilityId: facility.tradingFacilityId
+        }),
+        policyDecisionHash: hashId("hypercore_002d_policy_decision", {
+          policyId: hypercore002dPolicy.policyId
+        }),
+        riskSnapshotHash: hypercore002dRiskSnapshot.riskSnapshotHash,
+        accountBindingHash: hypercoreBinding.accountBindingHash,
+        delegateHash: preparedHypercoreDelegate.delegateHash
+      });
+      const hypercore002dNextAttempt = (await hypercore002dRepository.prepare({
+        binding: hypercoreBinding,
+        handoffId: hypercore002dHandoff.handoffId,
+        policy: hypercore002dPolicy,
+        preparedAction: hypercore002dCancelAction,
+        idempotencyKey: "hypercore-002d-next-nonce-0003",
+        now: new Date("2026-07-25T01:12:02.301Z")
+      })).attempt;
+      assert.equal(
+        hypercore002dNextAttempt.nonce,
+        hypercore002dAttempt.nonce + 1
+      );
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+          client.query(
+            `UPDATE hypercore_testnet_submission_attempts SET nonce = $2
+              WHERE id = $1`,
+            [hypercore002dNextAttempt.executionId, hypercore002dAttempt.nonce]
+          )
+        ),
+        (error) => error.code === "23514" || error.code === "23505"
+      );
+      const hypercore002dApproval = createHypercoreTestnetFounderApproval({
+        attempt: hypercore002dAttempt,
+        actorId: "actor_ipo_one_founder",
+        confirmationNonceHash: hashId(
+          "hypercore_002d_founder_confirmation_nonce",
+          { executionId: hypercore002dAttempt.executionId }
+        ),
+        approvedAt: new Date("2026-07-25T01:12:02.400Z"),
+        expiresAt: new Date("2026-07-25T01:17:00.000Z")
+      });
+      const hypercore002dApproved = await hypercore002dRepository.approve({
+        executionId: hypercore002dAttempt.executionId,
+        approval: hypercore002dApproval
+      });
+      assert.equal(hypercore002dApproved.state, "APPROVED");
+      assert.deepEqual(
+        await restartedHypercore002dRepository.findFounderApproval(
+          hypercore002dAttempt.executionId
+        ),
+        hypercore002dApproval
+      );
+      const hypercore002dAuthorization = authorizeHypercoreTestnetAction({
+        policy: hypercore002dPolicy,
+        preparedAction: hypercore002dPreparedAction,
+        riskSnapshot: hypercore002dRiskSnapshot,
+        proofState: {
+          proofId: "hypercore_testnet_proof_run_002d_postgres",
+          startedAt: "2026-07-25T01:12:02.150Z",
+          submissionCount: 0,
+          openOrderCount: 0,
+          aggregateExposureUsd: "0"
+        },
+        humanConfirmation: founderApprovalHumanConfirmation(
+          hypercore002dApproval
+        ),
+        now: new Date("2026-07-25T01:12:02.500Z")
+      });
+      const hypercore002dClaim = {
+        executionId: hypercore002dAttempt.executionId,
+        authorization: hypercore002dAuthorization,
+        requestBodyHash: hashId("hypercore_002d_request_body", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        signatureHash: hashId("hypercore_002d_ephemeral_signature", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        claimHash: hashId("hypercore_002d_submission_claim", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        now: new Date("2026-07-25T01:12:02.600Z")
+      };
+      const concurrentClaims = await Promise.allSettled([
+        hypercore002dRepository.claim(hypercore002dClaim),
+        restartedHypercore002dRepository.claim(hypercore002dClaim)
+      ]);
+      assert.equal(
+        concurrentClaims.filter(({ status }) => status === "fulfilled").length,
+        1
+      );
+      assert.equal(
+        concurrentClaims.filter(({ status }) => status === "rejected").length,
+        1
+      );
+      assert.equal(
+        (await restartedHypercore002dRepository.find(
+          hypercore002dAttempt.executionId
+        )).state,
+        "SUBMITTING"
+      );
+      const crashRecoveryRepository =
+        new PostgresHypercoreTestnetSubmissionRepository({
+          eventRepository: new PostgresEventRepository({
+            pool,
+            tenantContext: TENANT_CONTEXT
+          })
+        });
+      const hypercore002dUnknown = await crashRecoveryRepository.recoverUnknown({
+        executionId: hypercore002dAttempt.executionId,
+        reasonHash: hashId("hypercore_002d_lost_remote_outcome", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        now: new Date("2026-07-25T01:12:02.700Z")
+      });
+      assert.equal(hypercore002dUnknown.state, "UNKNOWN");
+      assert.equal(hypercore002dUnknown.retryAllowed, false);
+      await assert.rejects(
+        () => crashRecoveryRepository.claim({
+          ...hypercore002dClaim,
+          claimHash: hashId("hypercore_002d_replay_claim", {
+            executionId: hypercore002dAttempt.executionId
+          }),
+          now: new Date("2026-07-25T01:12:02.800Z")
+        }),
+        { code: "hypercore_testnet_submission_claim_denied" }
+      );
+      const hypercore002dReconciled = await crashRecoveryRepository.reconcile({
+        executionId: hypercore002dAttempt.executionId,
+        reconciliationHash: hashId("hypercore_002d_reconciliation", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        venueOrderStateHash: hashId("hypercore_002d_venue_order_state", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        venueAccountStateHash: hashId("hypercore_002d_venue_account_state", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        ledgerStateHash: hashId("hypercore_002d_ledger_state", {
+          executionId: hypercore002dAttempt.executionId
+        }),
+        obligationEvidenceHash: hashId(
+          "hypercore_002d_obligation_evidence",
+          { executionId: hypercore002dAttempt.executionId }
+        ),
+        now: new Date("2026-07-25T01:12:02.900Z")
+      });
+      assert.equal(hypercore002dReconciled.state, "RECONCILED");
+      const hypercoreRlsRole = "ipo_one_hypercore002b_rls_test";
+      const dropHypercoreRlsRole = async () => {
+        const exists = await pool.query(
+          "SELECT 1 FROM pg_roles WHERE rolname = $1",
+          [hypercoreRlsRole]
+        );
+        if (exists.rowCount === 0) return;
+        await pool.query(`DROP OWNED BY ${hypercoreRlsRole}`);
+        await pool.query(`DROP ROLE ${hypercoreRlsRole}`);
+      };
+      await dropHypercoreRlsRole();
+      await pool.query(
+        `CREATE ROLE ${hypercoreRlsRole}
+          NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT
+          NOREPLICATION NOBYPASSRLS`
+      );
+      await pool.query(`GRANT USAGE ON SCHEMA public TO ${hypercoreRlsRole}`);
+      await pool.query(
+        `GRANT SELECT ON hypercore_account_bindings,
+          hypercore_api_wallet_delegates, hypercore_delegate_tombstones,
+          hypercore_testnet_signer_handoffs, hypercore_testnet_nonce_heads,
+          hypercore_testnet_submission_attempts,
+          hypercore_testnet_founder_approvals,
+          hypercore_testnet_submission_transitions
+          TO ${hypercoreRlsRole}`
+      );
+      try {
+        const client = await pool.connect();
+        try {
+          await client.query("BEGIN");
+          await client.query(`SET LOCAL ROLE ${hypercoreRlsRole}`);
+          await setTenantTransactionContext(client, TENANT_TWO_CONTEXT);
+          assert.equal(
+            (await client.query(
+              "SELECT id FROM hypercore_api_wallet_delegates WHERE id = $1",
+              [preparedHypercoreDelegate.delegateId]
+            )).rowCount,
+            0
+          );
+          assert.equal(
+            (await client.query(
+              "SELECT id FROM hypercore_testnet_submission_attempts WHERE id = $1",
+              [hypercore002dAttempt.executionId]
+            )).rowCount,
+            0
+          );
+          await client.query("ROLLBACK");
+        } finally {
+          client.release();
+        }
+      } finally {
+        await dropHypercoreRlsRole();
+      }
+      const terminalHypercore = await restartedHypercoreRepository.terminate({
+        delegateId: preparedHypercoreDelegate.delegateId,
+        expectedDelegateHash: preparedHypercoreDelegate.delegateHash,
+        status: HypercoreDelegateStatus.REVOKED,
+        reason: "operator_request",
+        idempotencyKey: "hypercore-002b-terminate-0001",
+        now: new Date("2026-07-25T01:12:03.000Z")
+      });
+      assert.equal(
+        terminalHypercore.delegate.status,
+        HypercoreDelegateStatus.REVOKED
+      );
+      assert.equal(
+        await restartedHypercoreRepository.hasTombstone(delegateAddressHash),
+        true
+      );
+      assert.deepEqual(
+        await new PostgresHypercoreDelegateRepository({
+          coreRepository: new PostgresCoreRepository({
+            pool,
+            tenantContext: TENANT_CONTEXT
+          })
+        }).terminate({
+          delegateId: preparedHypercoreDelegate.delegateId,
+          expectedDelegateHash: preparedHypercoreDelegate.delegateHash,
+          status: HypercoreDelegateStatus.REVOKED,
+          reason: "operator_request",
+          idempotencyKey: "hypercore-002b-terminate-0001",
+          now: new Date("2026-07-25T01:12:03.000Z")
+        }),
+        terminalHypercore
+      );
+      const retiredHypercore002dHandoff =
+        retireHypercoreTestnetSignerHandoff({
+          handoff: hypercore002dHandoff,
+          retirementEvidenceHash: hashId(
+            "hypercore_002d_signer_retirement",
+            { tombstoneId: terminalHypercore.tombstone.tombstoneId }
+          ),
+          now: new Date("2026-07-25T01:12:03.100Z")
+        });
+      assert.deepEqual(
+        await crashRecoveryRepository.retireSignerHandoff(
+          retiredHypercore002dHandoff
+        ),
+        retiredHypercore002dHandoff
+      );
+      const closedHypercore002d = await crashRecoveryRepository.close({
+        executionId: hypercore002dAttempt.executionId,
+        now: new Date("2026-07-25T01:12:03.200Z")
+      });
+      assert.equal(closedHypercore002d.state, "CLOSED");
+      assert.equal(closedHypercore002d.retryAllowed, false);
+      assert.equal(closedHypercore002d.rawResponsePersisted, false);
+      assert.equal(closedHypercore002d.rawKeyPersisted, false);
+      assert.equal(closedHypercore002d.rawSignaturePersisted, false);
+      assert.deepEqual(
+        (await crashRecoveryRepository.history(
+          hypercore002dAttempt.executionId
+        )).map(({ nextState }) => nextState),
+        [
+          "PREPARED",
+          "APPROVED",
+          "SUBMITTING",
+          "UNKNOWN",
+          "RECONCILED",
+          "CLOSED"
+        ]
+      );
+      const hypercore002dDurableRows = await withTenantTransaction(
+        pool,
+        TENANT_CONTEXT,
+        async (client) => ({
+          attempts: Number((await client.query(
+            "SELECT COUNT(*) AS count FROM hypercore_testnet_submission_attempts WHERE id = $1",
+            [hypercore002dAttempt.executionId]
+          )).rows[0].count),
+          approvals: Number((await client.query(
+            "SELECT COUNT(*) AS count FROM hypercore_testnet_founder_approvals WHERE execution_id = $1",
+            [hypercore002dAttempt.executionId]
+          )).rows[0].count),
+          transitions: Number((await client.query(
+            "SELECT COUNT(*) AS count FROM hypercore_testnet_submission_transitions WHERE execution_id = $1",
+            [hypercore002dAttempt.executionId]
+          )).rows[0].count),
+          consumedApprovals: Number((await client.query(
+            `SELECT COUNT(*) AS count
+               FROM hypercore_testnet_founder_approvals
+              WHERE execution_id = $1 AND status = 'CONSUMED'`,
+            [hypercore002dAttempt.executionId]
+          )).rows[0].count)
+        })
+      );
+      assert.deepEqual(hypercore002dDurableRows, {
+        attempts: 1,
+        approvals: 1,
+        transitions: 6,
+        consumedApprovals: 1
+      });
+      for (const tableName of [
+        "hypercore_testnet_signer_handoffs",
+        "hypercore_testnet_submission_attempts",
+        "hypercore_testnet_founder_approvals",
+        "hypercore_testnet_submission_transitions"
+      ]) {
+        for (const rawValue of [
+          hypercoreMasterAddress,
+          hypercoreSubaccountAddress,
+          hypercoreDelegateAddress
+        ]) {
+          assert.equal(
+            (await withTenantTransaction(
+              pool,
+              TENANT_CONTEXT,
+              (client) => client.query(
+                `SELECT 1 FROM ${tableName}
+                  WHERE row_to_json(${tableName})::TEXT LIKE $1 LIMIT 1`,
+                [`%${rawValue}%`]
+              )
+            )).rowCount,
+            0
+          );
+        }
+      }
+      await assert.rejects(
+        () => restartedHypercoreRepository.prepare({
+          bindingId: hypercoreBinding.accountBindingId,
+          apiWalletAddressHash: delegateAddressHash,
+          signerReferenceHash: hashId("hypercore_002b_signer_reference", {
+            facilityId: facility.tradingFacilityId
+          }),
+          delegateNameHash: hashId("hypercore_delegate_name", "hypercore-002b-reuse"),
+          expiresAt: new Date("2026-07-26T01:12:04.000Z"),
+          idempotencyKey: "hypercore-002b-reuse-denied-0001",
+          now: new Date("2026-07-25T01:12:04.000Z")
+        }),
+        { code: "hypercore_delegate_address_reuse_denied" }
+      );
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+          client.query(
+            `DELETE FROM hypercore_delegate_tombstones WHERE id = $1`,
+            [terminalHypercore.tombstone.tombstoneId]
+          )
+        ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () => withTenantTransaction(pool, TENANT_CONTEXT, (client) =>
+          client.query(
+            `DELETE FROM hypercore_testnet_submission_transitions
+              WHERE execution_id = $1`,
+            [hypercore002dAttempt.executionId]
+          )
+        ),
+        (error) => error.code === "23514"
+      );
+      await assert.rejects(
+        () => migrateDown({ pool, steps: 4 }),
+        (error) => error.code === "23514"
+      );
+      assert.equal(
+        (await migrationStatus({ pool })).find(
+          ({ name }) => name === "0058_hypercore_testnet_submission_closure"
+        ).applied,
+        true
+      );
+      assert.equal(
+        (await migrationStatus({ pool })).find(
+          ({ name }) => name === "0059_hypercore_stable_intent_jit_preflight"
+        ).applied,
+        false
+      );
+      assert.equal(
+        (await migrationStatus({ pool })).find(
+          ({ name }) => name === "0060_hypercore_stable_cancel_closure"
+        ).applied,
+        false
+      );
+      assert.equal(
+        (await migrationStatus({ pool })).find(
+          ({ name }) => name === "0061_execution_account_bindings"
+        ).applied,
+        false
+      );
+      assert.deepEqual(await migrateUp({ pool }), [
+        "0059_hypercore_stable_intent_jit_preflight",
+        "0060_hypercore_stable_cancel_closure",
+        "0061_execution_account_bindings"
+      ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(
         facility,

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-testnet-action-authorization.schema.json",
+  "title": "HyperCore Testnet Action Authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorizationHash", "decision", "policyId", "policyHash",
+    "preparedActionHash", "riskSnapshotHash", "humanConfirmationHash",
+    "proofId", "actionKind", "accountBindingHash", "delegateHash",
+    "signerReferenceHash", "submissionOrdinal", "effectiveUntil", "singleUse",
+    "externalTestnetSubmissionAllowed", "mainnetAuthority",
+    "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "authorizationHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "ALLOW" },
+    "policyId": { "$ref": "#/$defs/identifier" },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "preparedActionHash": { "$ref": "#/$defs/hash" },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+    "humanConfirmationHash": { "$ref": "#/$defs/hash" },
+    "proofId": { "$ref": "#/$defs/identifier" },
+    "actionKind": { "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"] },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "delegateHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "submissionOrdinal": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "effectiveUntil": { "type": "string", "format": "date-time" },
+    "singleUse": { "const": true },
+    "externalTestnetSubmissionAllowed": { "const": true },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_testnet_action_authorization.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    }
+  }
+}

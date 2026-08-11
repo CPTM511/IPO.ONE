@@ -1,5 +1,6 @@
 import { createAgentSubjectHandlers } from "./agent-subject-handlers.js";
 import { createAgentAccountProofHandlers } from "./agent-account-proof-handlers.js";
+import { createExecutionAccountBindingHandlers } from "./execution-account-binding-handlers.js";
 import { createCreditIntentHandlers } from "./credit-intent-handlers.js";
 import { createCreditDecisionHandlers } from "./credit-decision-handlers.js";
 import { createCreditPassportHandlers } from "./credit-passport-handlers.js";
@@ -26,11 +27,20 @@ import { createTradingCapitalSettlementHandlers } from "./trading-capital-settle
 import { createWorkspaceResumeHandlers } from "./workspace-resume-handlers.js";
 import { createWorkspaceContinuationHandlers } from "./workspace-continuation-handlers.js";
 import { createCapitalPartnerHandlers } from "./capital-partner-handlers.js";
+import {
+  createUnavailableWalletExecutionApplication,
+  createWalletExecutionHandlers
+} from "./wallet-execution-handlers.js";
+import {
+  createUnavailableVenueExecutionApplication,
+  createVenueExecutionHandlers
+} from "./venue-execution-handlers.js";
 
 export function createTenantFoundationHandlers(options) {
   return Object.freeze([
     ...createAgentSubjectHandlers(),
     ...createAgentAccountProofHandlers(options),
+    ...createExecutionAccountBindingHandlers(options),
     ...createCreditDecisionHandlers(),
     ...createCreditPassportHandlers(),
     ...createCapitalPartnerHandlers(),
@@ -56,6 +66,14 @@ export function createTenantFoundationHandlers(options) {
     ...createTradingCapitalEvidenceHandlers(options),
     ...createTradingCapitalMatchingHandlers(),
     ...createTradingCapitalFacilityHandlers(),
-    ...createTradingCapitalSettlementHandlers()
+    ...createTradingCapitalSettlementHandlers(),
+    ...createWalletExecutionHandlers({
+      application: options?.walletExecutionApplication ??
+        createUnavailableWalletExecutionApplication()
+    }),
+    ...createVenueExecutionHandlers({
+      application: options?.venueExecutionApplication ??
+        createUnavailableVenueExecutionApplication()
+    })
   ]);
 }

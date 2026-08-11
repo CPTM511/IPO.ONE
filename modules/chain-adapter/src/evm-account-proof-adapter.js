@@ -172,6 +172,7 @@ export class EvmAccountProofAdapter {
       adapterVersion: this.signatureVerifier === undefined ? "1.0.0" : "1.1.0",
       proofStandard: "EIP-712",
       contractWalletSupport: this.signatureVerifier !== undefined,
+      counterfactualWalletSupport: this.signatureVerifier !== undefined,
       sandboxOnly: true,
       productionApproved: false,
       schemaVersion: "account_proof_adapter.v1"
@@ -198,6 +199,7 @@ export class EvmAccountProofAdapter {
       throw new DomainError("account_proof_challenge_mismatch", "typed-data challenge hash does not match durable state");
     }
     let verificationMethod = "eip712_eoa_v1";
+    let signatureType = "eoa";
     if (this.signatureVerifier === undefined) {
       assertLowS(signature);
       let valid = false;
@@ -226,8 +228,24 @@ export class EvmAccountProofAdapter {
         verification.chainId !== normalized.chainId ||
         !new Set([
           "eip712_eoa_v1",
-          "eip1271_eip712_v1"
+          "eip1271_eip712_v1",
+          "eip6492_eip712_v1"
         ]).has(verification.verificationMethod) ||
+        !new Set(["eoa", "erc1271", "erc6492"]).has(
+          verification.signatureType
+        ) ||
+        (
+          verification.verificationMethod === "eip712_eoa_v1" &&
+          verification.signatureType !== "eoa"
+        ) ||
+        (
+          verification.verificationMethod === "eip1271_eip712_v1" &&
+          verification.signatureType !== "erc1271"
+        ) ||
+        (
+          verification.verificationMethod === "eip6492_eip712_v1" &&
+          verification.signatureType !== "erc6492"
+        ) ||
         verification.authenticationEligible !== true ||
         verification.rawSignaturePersisted !== false ||
         verification.credentialsIncluded !== false ||
@@ -239,6 +257,7 @@ export class EvmAccountProofAdapter {
         );
       }
       verificationMethod = verification.verificationMethod;
+      signatureType = verification.signatureType;
     }
     return Object.freeze({
       accountId: normalized.accountId,
@@ -248,6 +267,7 @@ export class EvmAccountProofAdapter {
         typedDataHash: prepared.typedDataHash,
         signatureHash: hashId("signature", signature)
       }),
+      signatureType,
       verificationMethod,
       schemaVersion: "agent_account_proof_result.v1"
     });

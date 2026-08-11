@@ -669,6 +669,12 @@ export class PostgresReconciliationService {
         UNION ALL SELECT 'trading_match_proposal', id FROM trading_match_proposals
         UNION ALL SELECT 'trading_facility', id FROM trading_facilities
         UNION ALL SELECT 'trading_order_intent', id FROM trading_order_intents
+        UNION ALL SELECT 'hypercore_account_binding', id
+          FROM hypercore_account_bindings
+        UNION ALL SELECT 'hypercore_api_wallet_delegate', id
+          FROM hypercore_api_wallet_delegates
+        UNION ALL SELECT 'hypercore_delegate_tombstone', id
+          FROM hypercore_delegate_tombstones
         UNION ALL SELECT 'trading_facility_risk_evaluation', id
           FROM trading_facility_risk_evaluations
         UNION ALL SELECT 'trading_facility_close_request', id

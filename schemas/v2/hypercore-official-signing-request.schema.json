@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-official-signing-request.schema.json",
+  "title": "HyperCore Official Signing Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "signingRequestHash", "scheme", "purpose", "actionHash",
+    "preparedActionHash", "digestHash", "action", "typedData",
+    "signerReferenceHash", "canonicalAccountAddressHash", "nonce",
+    "expiresAfter", "vaultAddressPresent", "vaultAddressHash", "environment",
+    "referenceImplementation", "officialDigestComputed", "rawKeyAccepted",
+    "rawKeyPersisted", "rawSignaturePersisted", "reusableSignaturePersisted",
+    "mainnetAuthority", "productionAuthority", "fundsAuthority",
+    "secretsIncluded", "schemaVersion"
+  ],
+  "properties": {
+    "signingRequestHash": { "$ref": "#/$defs/hash" },
+    "scheme": { "enum": ["l1_action", "user_signed_action"] },
+    "purpose": {
+      "enum": ["hypercore_testnet_execution", "hypercore_testnet_delegate_provisioning"]
+    },
+    "actionHash": { "$ref": "#/$defs/hash" },
+    "preparedActionHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "digestHash": { "$ref": "#/$defs/hash" },
+    "action": { "type": "object" },
+    "typedData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "types", "primaryType", "message"],
+      "properties": {
+        "domain": { "type": "object" },
+        "types": { "type": "object" },
+        "primaryType": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "message": { "type": "object" }
+      }
+    },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "nonce": { "type": "integer", "minimum": 1 },
+    "expiresAfter": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }] },
+    "vaultAddressPresent": { "type": "boolean" },
+    "vaultAddressHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "environment": { "const": "hyperliquid_testnet" },
+    "referenceImplementation": {
+      "const": "hyperliquid-dex/hyperliquid-python-sdk:hyperliquid/utils/signing.py"
+    },
+    "officialDigestComputed": { "const": true },
+    "rawKeyAccepted": { "const": false },
+    "rawKeyPersisted": { "const": false },
+    "rawSignaturePersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "hypercore_official_signing_request.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+  }
+}

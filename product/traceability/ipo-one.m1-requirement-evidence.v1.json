@@ -1,10 +1,13 @@
 {
   "schemaVersion": "ipo_one_m1_requirement_evidence.v1",
   "auditId": "M1-A.1-20260804",
-  "status": "CANDIDATE_EVIDENCE_UNDER_FOUNDER_REVIEW",
+  "status": "CANDIDATE_EVIDENCE_WITH_V1_1_REQUIREMENT_CROSSWALK",
   "constitution": {
     "path": "docs/PRODUCT_CONSTITUTION.md",
-    "sha256": "c36e26a00c49868c418896a8c3a9920108b32ade1161c25104c6586513f5e653",
+    "sha256": "7093e0eeb097e9522bac1fc20cdd08f355a7f9d253d12187ed8ca950ff71f481",
+    "evidenceBaselineSha256": "c36e26a00c49868c418896a8c3a9920108b32ade1161c25104c6586513f5e653",
+    "compatibilityDecisionId": "DEC-AECL-INTEGRATION-001",
+    "compatibilityStatement": "v1.1 preserves all 44 requirement IDs and dispositions; PRODUCT-INTEGRATION-001 current acceptance Evidence is separate from this historical M1 evidence catalog.",
     "stableRequirementCount": 44
   },
   "classificationVocabulary": [

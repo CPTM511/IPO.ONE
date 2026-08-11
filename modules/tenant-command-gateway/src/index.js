@@ -1,5 +1,6 @@
 export * from "./agent-subject-handlers.js";
 export * from "./agent-account-proof-handlers.js";
+export * from "./execution-account-binding-handlers.js";
 export * from "./credit-intent-handlers.js";
 export * from "./credit-decision-handlers.js";
 export * from "./credit-passport-handlers.js";
@@ -34,3 +35,5 @@ export * from "./tenant-command-gateway.js";
 export * from "./tenant-command-handler-registry.js";
 export * from "./workspace-resume-handlers.js";
 export * from "./workspace-continuation-handlers.js";
+export * from "./wallet-execution-handlers.js";
+export * from "./venue-execution-handlers.js";

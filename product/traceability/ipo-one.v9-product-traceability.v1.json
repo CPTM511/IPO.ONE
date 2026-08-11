@@ -1543,6 +1543,467 @@
         "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
         "apps/web/test/capital-partner-presentation.test.js"
       ]
+    },
+    {
+      "operationId": "walletPrepareAccountBinding",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_binding_challenge_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/execution-account-binding-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/execution-account-binding.test.js",
+        "modules/tenant-command-gateway/test/execution-account-binding-handlers.test.js",
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "walletSubmitAccountBinding",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_binding_verified.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/execution-account-binding-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/chain-adapter/test/evm-execution-account-proof.test.js",
+        "modules/tenant-command-gateway/test/execution-account-binding-handlers.test.js",
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "walletReadAccountBindings",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_bindings_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/execution-account-binding-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/execution-account-binding-handlers.test.js",
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "walletRevokeAccountBinding",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_binding_revoked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/execution-account-binding-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/execution-account-binding.test.js",
+        "modules/tenant-command-gateway/test/execution-account-binding-handlers.test.js",
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "walletDiscoverCapabilities",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "wallet_capability_descriptor_list.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs",
+        "packages/sdk/test/wallet-execution-client.test.js",
+        "apps/agent-mcp/test/wallet-execution-mcp-adapter.test.js"
+      ]
+    },
+    {
+      "operationId": "walletPrepareGrant",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_prepared.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/agentic-execution/test/agentic-execution-grant.test.js",
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "walletActivateGrant",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_activated.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/agentic-execution/test/agentic-execution-grant.test.js",
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "walletReadGrant",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/wallet-execution-handlers.test.js",
+        "packages/sdk/test/wallet-execution-client.test.js"
+      ]
+    },
+    {
+      "operationId": "walletRevokeGrant",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_revoked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/agentic-execution/test/agentic-execution-grant.test.js",
+        "modules/tenant-command-gateway/test/wallet-execution-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "walletPrepareExecution",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_prepared.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-preflight-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/agentic-execution/test/agentic-execution-preflight.test.js",
+        "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "walletApproveExecution",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_approved.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-preflight-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/agentic-execution/test/agentic-execution-preflight.test.js",
+        "packages/sdk/test/wallet-execution-client.test.js"
+      ]
+    },
+    {
+      "operationId": "walletSubmitExecution",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_submission_blocked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-preflight-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/agentic-execution/test/agentic-execution-preflight.test.js",
+        "modules/tenant-command-gateway/test/wallet-execution-handlers.test.js"
+      ]
+    },
+    {
+      "operationId": "walletReadExecution",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/wallet-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/agentic-execution/src/postgres-agentic-execution-preflight-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/wallet-execution-client.js",
+        "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/wallet-execution-handlers.test.js",
+        "packages/sdk/test/wallet-execution-client.test.js"
+      ]
+    },
+    {
+      "operationId": "venueDiscoverCapabilities",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "venue_capability_descriptor_list.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+        "apps/tenant-api/test/venue-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "venueReadBinding",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_binding_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+        "packages/sdk/test/venue-execution-client.test.js"
+      ]
+    },
+    {
+      "operationId": "venuePrepareDelegate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_prepared.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/hypercore-venue-adapter/src/postgres-hypercore-delegate-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/hypercore-venue-adapter/test/postgres-venue-execution-application.test.js",
+        "apps/tenant-api/test/venue-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "venueActivateDelegate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_activation_blocked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/hypercore-venue-adapter/src/postgres-hypercore-delegate-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+        "packages/sdk/test/venue-execution-client.test.js"
+      ]
+    },
+    {
+      "operationId": "venueRevokeDelegate",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_revocation_blocked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js",
+        "modules/hypercore-venue-adapter/src/postgres-hypercore-delegate-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+        "packages/sdk/test/venue-execution-client.test.js"
+      ]
+    },
+    {
+      "operationId": "venuePrepareExecution",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_prepared.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+        "apps/tenant-api/test/venue-execution-transport-conformance.test.mjs"
+      ]
+    },
+    {
+      "operationId": "venueSubmitExecution",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_submission_blocked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+        "packages/sdk/test/venue-execution-client.test.js"
+      ]
+    },
+    {
+      "operationId": "venueReadExecution",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/venue-execution-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "packages/sdk/src/venue-execution-client.js",
+        "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+        "packages/sdk/test/venue-execution-client.test.js"
+      ]
     }
   ],
   "destinations": [
@@ -2627,6 +3088,86 @@
             "WALLET-001"
           ],
           "humanGateRequired": false
+        },
+        {
+          "actionId": "wallet_permissions.canonical_execution_protocol",
+          "label": "Prepare and inspect exact no-funds wallet execution through one canonical protocol",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "walletPrepareAccountBinding",
+            "walletSubmitAccountBinding",
+            "walletReadAccountBindings",
+            "walletRevokeAccountBinding",
+            "walletDiscoverCapabilities",
+            "walletPrepareGrant",
+            "walletActivateGrant",
+            "walletReadGrant",
+            "walletRevokeGrant",
+            "walletPrepareExecution",
+            "walletApproveExecution",
+            "walletSubmitExecution",
+            "walletReadExecution"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-038-agentic-execution-compatibility-layer.md",
+            "schemas/v2/transaction-preflight-receipt.schema.json"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js",
+            "packages/sdk/src/wallet-execution-client.js",
+            "apps/agent-mcp/src/wallet-execution-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "modules/agentic-execution/test/agentic-execution-preflight.test.js",
+            "modules/tenant-command-gateway/test/wallet-execution-handlers.test.js",
+            "apps/tenant-api/test/wallet-execution-transport-conformance.test.mjs",
+            "packages/sdk/test/wallet-execution-client.test.js",
+            "apps/agent-mcp/test/wallet-execution-mcp-adapter.test.js"
+          ],
+          "truthBoundary": "The local protocol constructs and preflights one exact TransferIntent-bound payload. Submission is always disabled after freshness and authority rechecks, and no adapter, signer, RPC, transaction, chain write, production or funds authority exists.",
+          "nextTaskIds": [
+            "EXEC-004"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "wallet_permissions.canonical_venue_protocol",
+          "label": "Prepare and inspect bounded no-funds Venue authority through one canonical protocol",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "venueDiscoverCapabilities",
+            "venueReadBinding",
+            "venuePrepareDelegate",
+            "venueActivateDelegate",
+            "venueRevokeDelegate",
+            "venuePrepareExecution",
+            "venueSubmitExecution",
+            "venueReadExecution"
+          ],
+          "authorityReferences": [
+            "docs/architecture/ADR-038-agentic-execution-compatibility-layer.md",
+            "docs/codex/tasks/HYPERLIQUID_002_HYPERCORE_VENUE_EXECUTION_ADAPTER.md"
+          ],
+          "uiAdapters": [
+            "apps/tenant-api/src/tenant-http-adapter.js",
+            "packages/sdk/src/venue-execution-client.js",
+            "apps/agent-mcp/src/venue-execution-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
+            "apps/tenant-api/test/venue-execution-transport-conformance.test.mjs",
+            "packages/sdk/test/venue-execution-client.test.js",
+            "apps/agent-mcp/test/venue-execution-mcp-adapter.test.js"
+          ],
+          "truthBoundary": "The local Venue protocol reads an exact binding and can prepare a hash-only delegate, while external activation, revocation and execution submission remain blocked. HyperCore is a distinct Venue account domain, not an EVM chain or wallet login, and no signer, Exchange write, production or funds authority exists.",
+          "nextTaskIds": [
+            "HYPERLIQUID-003"
+          ],
+          "humanGateRequired": true
         },
         {
           "actionId": "wallet_permissions.asset_and_session_key_grants",

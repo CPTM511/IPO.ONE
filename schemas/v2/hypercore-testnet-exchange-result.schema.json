@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-testnet-exchange-result.schema.json",
+  "title": "HyperCore Testnet Exchange Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "resultHash", "authorizationHash", "signingRequestHash", "requestBodyHash",
+    "signatureHash", "disposition", "unexpectedFillObserved", "responseHash", "statusCode",
+    "externalSystemQueried", "externalSubmissionAttempted", "retryAllowed",
+    "rawResponsePersisted", "reconciliationRequired", "mainnetAuthority",
+    "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "resultHash": { "$ref": "#/$defs/hash" },
+    "authorizationHash": { "$ref": "#/$defs/hash" },
+    "signingRequestHash": { "$ref": "#/$defs/hash" },
+    "requestBodyHash": { "$ref": "#/$defs/hash" },
+    "signatureHash": { "$ref": "#/$defs/hash" },
+    "disposition": { "enum": ["confirmed", "rejected", "unknown"] },
+    "unexpectedFillObserved": { "type": "boolean" },
+    "responseHash": { "$ref": "#/$defs/hash" },
+    "statusCode": { "oneOf": [{ "type": "integer", "minimum": 100, "maximum": 599 }, { "type": "null" }] },
+    "externalSystemQueried": { "const": true },
+    "externalSubmissionAttempted": { "const": true },
+    "retryAllowed": { "const": false },
+    "rawResponsePersisted": { "const": false },
+    "reconciliationRequired": { "type": "boolean" },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_testnet_exchange_result.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+  }
+}

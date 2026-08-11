@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/circle-managed-execution-projection.schema.json",
+  "title": "IPO.ONE Circle Managed Execution Projection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "circleManagedExecutionProjectionId", "circleManagedExecutionProjectionHash", "descriptorHash",
+    "capabilitiesHash", "capabilityObservationHash", "custodyConfigurationHash", "providerRequestId",
+    "providerRequestHash", "preparedExecutionHash", "preflightHash", "chainId", "contextEpoch",
+    "accountType", "canonicalPreflightDecision", "requiredCapabilityStatus", "exactManagedExecutionHash",
+    "decision", "reasonCodes", "preparedAt", "expiresAt",
+    "canonicalPreflightStillRequired", "managedCustodyReviewRequired", "credentialMaterialAccepted",
+    "credentialCiphertextAccepted", "rawSignatureRetained", "rawProviderResponseRetained",
+    "providerAdjustmentAllowed", "externalCallAllowed", "submissionAllowed", "custodyActivated",
+    "productionAuthority", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "circleManagedExecutionProjectionId": { "$ref": "#/$defs/identifier" },
+    "circleManagedExecutionProjectionHash": { "$ref": "#/$defs/hash" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "capabilitiesHash": { "$ref": "#/$defs/hash" },
+    "capabilityObservationHash": { "$ref": "#/$defs/hash" },
+    "custodyConfigurationHash": { "$ref": "#/$defs/hash" },
+    "providerRequestId": { "$ref": "#/$defs/identifier" },
+    "providerRequestHash": { "$ref": "#/$defs/hash" },
+    "preparedExecutionHash": { "$ref": "#/$defs/hash" },
+    "preflightHash": { "$ref": "#/$defs/hash" },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "accountType": { "enum": ["eoa", "sca", "unknown"] },
+    "canonicalPreflightDecision": { "enum": ["ALLOW", "STEP_UP", "DENY", "QUARANTINE"] },
+    "requiredCapabilityStatus": { "enum": ["supported", "unsupported", "unknown"] },
+    "exactManagedExecutionHash": { "$ref": "#/$defs/hash" },
+    "decision": { "enum": ["STEP_UP", "DENY", "QUARANTINE"] },
+    "reasonCodes": { "$ref": "#/$defs/reasonCodes" },
+    "preparedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "canonicalPreflightStillRequired": { "const": true },
+    "managedCustodyReviewRequired": { "const": true },
+    "credentialMaterialAccepted": { "const": false },
+    "credentialCiphertextAccepted": { "const": false },
+    "rawSignatureRetained": { "const": false },
+    "rawProviderResponseRetained": { "const": false },
+    "providerAdjustmentAllowed": { "const": false },
+    "externalCallAllowed": { "const": false },
+    "submissionAllowed": { "const": false },
+    "custodyActivated": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "circle_managed_execution_projection.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "reasonCodes": {
+      "type": "array", "minItems": 1, "maxItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" }
+    }
+  }
+}

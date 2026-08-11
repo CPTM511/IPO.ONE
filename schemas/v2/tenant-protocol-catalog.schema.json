@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 76,
-      "maxItems": 77,
+      "minItems": 98,
+      "maxItems": 98,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -149,6 +149,8 @@
         "tradingCapitalNoFundsEvidenceEnabled",
         "tradingCapitalNoFundsMatchingEnabled",
         "tradingCapitalNoFundsSettlementEnabled",
+        "agenticWalletPreflightEnabled",
+        "walletSubmissionEnabled",
         "productionIdentityEnabled",
         "rawPiiAllowed"
       ],
@@ -218,6 +220,12 @@
         },
         "tradingCapitalNoFundsSettlementEnabled": {
           "const": true
+        },
+        "agenticWalletPreflightEnabled": {
+          "const": true
+        },
+        "walletSubmissionEnabled": {
+          "const": false
         }
       }
     },
@@ -321,7 +329,28 @@
             "tradingRunSettlement",
             "tradingReadSettlement",
             "tradingIssuePerformanceProof",
-            "tradingReadFacilityEvidence"
+            "tradingReadFacilityEvidence",
+            "walletPrepareAccountBinding",
+            "walletSubmitAccountBinding",
+            "walletReadAccountBindings",
+            "walletRevokeAccountBinding",
+            "walletDiscoverCapabilities",
+            "walletPrepareGrant",
+            "walletActivateGrant",
+            "walletReadGrant",
+            "walletRevokeGrant",
+            "walletPrepareExecution",
+            "walletApproveExecution",
+            "walletSubmitExecution",
+            "walletReadExecution",
+            "venueDiscoverCapabilities",
+            "venueReadBinding",
+            "venuePrepareDelegate",
+            "venueActivateDelegate",
+            "venueRevokeDelegate",
+            "venuePrepareExecution",
+            "venueSubmitExecution",
+            "venueReadExecution"
           ]
         },
         "kind": {
@@ -373,7 +402,14 @@
             "trading_facility",
             "trading_order_intent",
             "trading_facility_close_request",
-            "trading_settlement"
+            "trading_settlement",
+            "wallet_adapter",
+            "delegated_wallet_grant",
+            "wallet_execution",
+            "venue_adapter",
+            "venue_binding",
+            "venue_delegate",
+            "venue_execution"
           ]
         },
         "requiredCapability": {
@@ -452,7 +488,28 @@
             "trading.settlement.run.worker",
             "trading.settlement.read.bound",
             "trading.performance_proof.issue.bound",
-            "trading.facility.evidence.read.bound"
+            "trading.facility.evidence.read.bound",
+            "wallet.account_binding.prepare.owned",
+            "wallet.account_binding.submit.owned",
+            "wallet.account_binding.read.owned",
+            "wallet.account_binding.revoke.owned",
+            "wallet.capabilities.discover",
+            "wallet.grant.prepare.owned",
+            "wallet.grant.activate.owned",
+            "wallet.grant.read.owned",
+            "wallet.grant.revoke.owned",
+            "wallet.execution.prepare.owned",
+            "wallet.execution.approve.owned",
+            "wallet.execution.submit.owned",
+            "wallet.execution.read.owned",
+            "venue.capabilities.discover",
+            "venue.binding.read.owned",
+            "venue.delegate.prepare.owned",
+            "venue.delegate.activate.owned",
+            "venue.delegate.revoke.owned",
+            "venue.execution.prepare.owned",
+            "venue.execution.submit.owned",
+            "venue.execution.read.owned"
           ]
         },
         "idempotency": {
@@ -552,7 +609,28 @@
             "tenant_trading_settlement_finalized.v1",
             "trading_settlement_view.v1",
             "tenant_trading_performance_proof_issued.v1",
-            "trading_facility_evidence.v1"
+            "trading_facility_evidence.v1",
+            "tenant_execution_account_binding_challenge_created.v1",
+            "tenant_execution_account_binding_verified.v1",
+            "tenant_execution_account_bindings_view.v1",
+            "tenant_execution_account_binding_revoked.v1",
+            "wallet_capability_descriptor_list.v1",
+            "tenant_wallet_grant_prepared.v1",
+            "tenant_wallet_grant_activated.v1",
+            "tenant_wallet_grant_view.v1",
+            "tenant_wallet_grant_revoked.v1",
+            "tenant_wallet_execution_prepared.v1",
+            "tenant_wallet_execution_approved.v1",
+            "tenant_wallet_execution_submission_blocked.v1",
+            "tenant_wallet_execution_view.v1",
+            "venue_capability_descriptor_list.v1",
+            "tenant_venue_binding_view.v1",
+            "tenant_venue_delegate_prepared.v1",
+            "tenant_venue_delegate_activation_blocked.v1",
+            "tenant_venue_delegate_revocation_blocked.v1",
+            "tenant_venue_execution_prepared.v1",
+            "tenant_venue_execution_submission_blocked.v1",
+            "tenant_venue_execution_view.v1"
           ]
         },
         "public": {
@@ -2919,6 +2997,226 @@
             "responseSchemaVersion": {
               "const": "tenant_trading_facility_flattened.v1"
             }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletPrepareAccountBinding" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "wallet.account_binding.prepare.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "credential" },
+            "responseSchemaVersion": { "const": "tenant_execution_account_binding_challenge_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletSubmitAccountBinding" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "wallet.account_binding.submit.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "credential" },
+            "responseSchemaVersion": { "const": "tenant_execution_account_binding_verified.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletReadAccountBindings" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "wallet.account_binding.read.owned" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_execution_account_bindings_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletRevokeAccountBinding" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "wallet.account_binding.revoke.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "credential" },
+            "responseSchemaVersion": { "const": "tenant_execution_account_binding_revoked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletDiscoverCapabilities" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "wallet_adapter" },
+            "requiredCapability": { "const": "wallet.capabilities.discover" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "wallet_capability_descriptor_list.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletPrepareGrant" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "wallet.grant.prepare.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_wallet_grant_prepared.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletActivateGrant" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "delegated_wallet_grant" },
+            "requiredCapability": { "const": "wallet.grant.activate.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_wallet_grant_activated.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletReadGrant" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "delegated_wallet_grant" },
+            "requiredCapability": { "const": "wallet.grant.read.owned" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_wallet_grant_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletRevokeGrant" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "delegated_wallet_grant" },
+            "requiredCapability": { "const": "wallet.grant.revoke.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_wallet_grant_revoked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletPrepareExecution" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "delegated_wallet_grant" },
+            "requiredCapability": { "const": "wallet.execution.prepare.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" },
+            "responseSchemaVersion": { "const": "tenant_wallet_execution_prepared.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletApproveExecution" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "wallet_execution" },
+            "requiredCapability": { "const": "wallet.execution.approve.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" },
+            "responseSchemaVersion": { "const": "tenant_wallet_execution_approved.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletSubmitExecution" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "wallet_execution" },
+            "requiredCapability": { "const": "wallet.execution.submit.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" },
+            "responseSchemaVersion": { "const": "tenant_wallet_execution_submission_blocked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "walletReadExecution" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "wallet_execution" },
+            "requiredCapability": { "const": "wallet.execution.read.owned" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_wallet_execution_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venueDiscoverCapabilities" }, "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "venue_adapter" },
+            "requiredCapability": { "const": "venue.capabilities.discover" }, "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "venue_capability_descriptor_list.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venueReadBinding" }, "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "venue_binding" },
+            "requiredCapability": { "const": "venue.binding.read.owned" }, "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "tenant_venue_binding_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venuePrepareDelegate" }, "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] }, "resourceType": { "const": "venue_binding" },
+            "requiredCapability": { "const": "venue.delegate.prepare.owned" }, "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" }, "responseSchemaVersion": { "const": "tenant_venue_delegate_prepared.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venueActivateDelegate" }, "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] }, "resourceType": { "const": "venue_delegate" },
+            "requiredCapability": { "const": "venue.delegate.activate.owned" }, "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" }, "responseSchemaVersion": { "const": "tenant_venue_delegate_activation_blocked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venueRevokeDelegate" }, "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] }, "resourceType": { "const": "venue_delegate" },
+            "requiredCapability": { "const": "venue.delegate.revoke.owned" }, "idempotency": { "const": "required" },
+            "quotaClass": { "const": "privileged" }, "responseSchemaVersion": { "const": "tenant_venue_delegate_revocation_blocked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venuePrepareExecution" }, "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "venue_delegate" },
+            "requiredCapability": { "const": "venue.execution.prepare.owned" }, "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" }, "responseSchemaVersion": { "const": "tenant_venue_execution_prepared.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venueSubmitExecution" }, "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "venue_execution" },
+            "requiredCapability": { "const": "venue.execution.submit.owned" }, "idempotency": { "const": "required" },
+            "quotaClass": { "const": "economic" }, "responseSchemaVersion": { "const": "tenant_venue_execution_submission_blocked.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "venueReadExecution" }, "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "venue_execution" },
+            "requiredCapability": { "const": "venue.execution.read.owned" }, "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "tenant_venue_execution_view.v1" }
           }
         }
       ]

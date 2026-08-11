@@ -89,7 +89,28 @@
         "tradingRunSettlement",
         "tradingReadSettlement",
         "tradingIssuePerformanceProof",
-        "tradingReadFacilityEvidence"
+        "tradingReadFacilityEvidence",
+        "walletPrepareAccountBinding",
+        "walletSubmitAccountBinding",
+        "walletReadAccountBindings",
+        "walletRevokeAccountBinding",
+        "walletDiscoverCapabilities",
+        "walletPrepareGrant",
+        "walletActivateGrant",
+        "walletReadGrant",
+        "walletRevokeGrant",
+        "walletPrepareExecution",
+        "walletApproveExecution",
+        "walletSubmitExecution",
+        "walletReadExecution",
+        "venueDiscoverCapabilities",
+        "venueReadBinding",
+        "venuePrepareDelegate",
+        "venueActivateDelegate",
+        "venueRevokeDelegate",
+        "venuePrepareExecution",
+        "venueSubmitExecution",
+        "venueReadExecution"
       ]
     },
     "replayed": {
@@ -103,6 +124,152 @@
     }
   },
   "oneOf": [
+    {
+      "properties": {
+        "operationId": { "const": "walletPrepareAccountBinding" },
+        "response": { "$ref": "#/$defs/executionAccountBindingChallengeResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletSubmitAccountBinding" },
+        "response": { "$ref": "#/$defs/executionAccountBindingMutationResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletReadAccountBindings" },
+        "response": { "$ref": "#/$defs/executionAccountBindingsViewResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletRevokeAccountBinding" },
+        "response": { "$ref": "#/$defs/executionAccountBindingMutationResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletDiscoverCapabilities" },
+        "response": { "$ref": "#/$defs/walletCapabilityDescriptorListResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletPrepareGrant" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/walletGrantResponse" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_wallet_grant_prepared.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletActivateGrant" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/walletGrantResponse" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_wallet_grant_activated.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletReadGrant" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/walletGrantResponse" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_wallet_grant_view.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletRevokeGrant" },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/walletGrantResponse" },
+            { "type": "object", "properties": { "schemaVersion": { "const": "tenant_wallet_grant_revoked.v1" } } }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletPrepareExecution" },
+        "response": { "$ref": "#/$defs/walletExecutionPreparedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletApproveExecution" },
+        "response": { "$ref": "#/$defs/walletExecutionApprovedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletSubmitExecution" },
+        "response": { "$ref": "#/$defs/walletExecutionSubmissionBlockedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "walletReadExecution" },
+        "response": { "$ref": "#/$defs/walletExecutionViewResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venueDiscoverCapabilities" },
+        "response": { "$ref": "#/$defs/venueCapabilityDescriptorListResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venueReadBinding" },
+        "response": { "$ref": "#/$defs/venueBindingViewResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venuePrepareDelegate" },
+        "response": { "$ref": "#/$defs/venueDelegatePreparedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venueActivateDelegate" },
+        "response": { "$ref": "#/$defs/venueDelegateActivationBlockedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venueRevokeDelegate" },
+        "response": { "$ref": "#/$defs/venueDelegateRevocationBlockedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venuePrepareExecution" },
+        "response": { "$ref": "#/$defs/venueExecutionPreparedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venueSubmitExecution" },
+        "response": { "$ref": "#/$defs/venueExecutionSubmissionBlockedResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "venueReadExecution" },
+        "response": { "$ref": "#/$defs/venueExecutionViewResponse" }
+      }
+    },
     {
       "properties": {
         "operationId": {
@@ -1091,6 +1258,349 @@
     }
   ],
   "$defs": {
+    "walletSafety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority"],
+      "properties": {
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false }
+      }
+    },
+    "walletCapabilityDescriptorListResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "count", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/evmWalletConnectorDescriptor" }
+        },
+        "count": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "wallet_capability_descriptor_list.v1" }
+      }
+    },
+    "executionAccountBindingView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accountBindingId", "subjectId", "accountHash", "chainId", "purpose",
+        "bindingKind", "proofHash", "verificationMethod", "status", "boundAt",
+        "protocolVersion", "createsAuthenticationSession", "createsExecutionAuthority"
+      ],
+      "properties": {
+        "accountBindingId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "accountHash": { "$ref": "#/$defs/hash" },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "purpose": { "const": "execution" },
+        "bindingKind": { "const": "execution" },
+        "proofHash": { "$ref": "#/$defs/hash" },
+        "verificationMethod": { "enum": ["eip712_eoa_v1", "eip1271_eip712_v1", "eip6492_eip712_v1"] },
+        "status": { "enum": ["active", "revoked"] },
+        "boundAt": { "$ref": "#/$defs/timestamp" },
+        "revokedAt": { "$ref": "#/$defs/timestamp" },
+        "protocolVersion": { "const": "1.2" },
+        "createsAuthenticationSession": { "const": false },
+        "createsExecutionAuthority": { "const": false }
+      }
+    },
+    "executionAccountBindingChallengeResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "challengeId", "subjectId", "chainId", "accountHash", "purpose", "nonce",
+        "issuedAt", "expiresAt", "protocolVersion", "typedDataHash", "typedData",
+        "createsAuthenticationSession", "createsExecutionAuthority", "oneUse", "schemaVersion"
+      ],
+      "properties": {
+        "challengeId": { "$ref": "#/$defs/identifier" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+        "accountHash": { "$ref": "#/$defs/hash" },
+        "purpose": { "const": "execution" },
+        "nonce": { "$ref": "#/$defs/hash" },
+        "issuedAt": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "protocolVersion": { "const": "1.2" },
+        "typedDataHash": { "$ref": "#/$defs/hash" },
+        "typedData": { "type": "object" },
+        "createsAuthenticationSession": { "const": false },
+        "createsExecutionAuthority": { "const": false },
+        "oneUse": { "const": true },
+        "schemaVersion": { "const": "tenant_execution_account_binding_challenge_created.v1" }
+      }
+    },
+    "executionAccountBindingMutationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectId", "accountBinding", "authenticationSessionChanged",
+        "executionAuthorityGranted", "schemaVersion"
+      ],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "accountBinding": { "$ref": "#/$defs/executionAccountBindingView" },
+        "challengeConsumed": { "const": true },
+        "authenticationSessionChanged": { "const": false },
+        "executionAuthorityGranted": { "const": false },
+        "productionAuthority": { "const": false },
+        "schemaVersion": {
+          "enum": [
+            "tenant_execution_account_binding_verified.v1",
+            "tenant_execution_account_binding_revoked.v1"
+          ]
+        }
+      }
+    },
+    "executionAccountBindingsViewResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectId", "accounts", "authenticationSessionChanged",
+        "executionAuthorityGranted", "schemaVersion"
+      ],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "accounts": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/executionAccountBindingView" }
+        },
+        "authenticationSessionChanged": { "const": false },
+        "executionAuthorityGranted": { "const": false },
+        "schemaVersion": { "const": "tenant_execution_account_bindings_view.v1" }
+      }
+    },
+    "evmWalletConnectorDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion", "providerId", "source", "name", "walletTransport",
+        "enabledChains", "explicitSelectionRequired", "capabilityNegotiated",
+        "rawProviderExposed", "arbitraryCalldataAccepted",
+        "preparedExecutionSubmission", "sandboxOnly", "productionApproved",
+        "fundsAuthority"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "evm_wallet_connector_descriptor.v1" },
+        "providerId": { "type": "string", "minLength": 3, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$" },
+        "source": { "enum": ["eip6963", "legacy_eip1193", "mobile_walletconnect"] },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "walletTransport": { "enum": ["eip1193", "walletconnect"] },
+        "enabledChains": {
+          "type": "array",
+          "prefixItems": [{ "const": "eip155:84532" }, { "const": "eip155:1952" }],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "explicitSelectionRequired": { "const": true },
+        "capabilityNegotiated": { "const": true },
+        "rawProviderExposed": { "const": false },
+        "arbitraryCalldataAccepted": { "const": false },
+        "preparedExecutionSubmission": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionApproved": { "const": false },
+        "fundsAuthority": { "const": false }
+      }
+    },
+    "walletGrantResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grantId", "grantHash", "status", "pendingExposureMinor", "version", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "grantId": { "$ref": "#/$defs/identifier" },
+        "grantHash": { "$ref": "#/$defs/hash" },
+        "status": { "enum": ["prepared", "active", "revoked", "expired", "quarantined"] },
+        "pendingExposureMinor": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,77})$" },
+        "version": { "type": "integer", "minimum": 1 },
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": {
+          "enum": [
+            "tenant_wallet_grant_prepared.v1",
+            "tenant_wallet_grant_activated.v1",
+            "tenant_wallet_grant_view.v1",
+            "tenant_wallet_grant_revoked.v1"
+          ]
+        }
+      }
+    },
+    "walletExecutionPreparedResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionId", "preparedExecutionHash", "exactPayloadHash", "preflightHash", "decision", "expiresAt", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" },
+        "preparedExecutionHash": { "$ref": "#/$defs/hash" },
+        "exactPayloadHash": { "$ref": "#/$defs/hash" },
+        "preflightHash": { "$ref": "#/$defs/hash" },
+        "decision": { "enum": ["ALLOW", "STEP_UP", "DENY", "QUARANTINE"] },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_wallet_execution_prepared.v1" }
+      }
+    },
+    "walletExecutionApprovedResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionId", "preflightHash", "approvalArtifactHash", "status", "approvedAt", "expiresAt", "submissionAllowed", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" },
+        "preflightHash": { "$ref": "#/$defs/hash" },
+        "approvalArtifactHash": { "$ref": "#/$defs/hash" },
+        "status": { "const": "recorded_local_no_funds" },
+        "approvedAt": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "submissionAllowed": { "const": false },
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_wallet_execution_approved.v1" }
+      }
+    },
+    "walletExecutionSubmissionBlockedResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionId", "preflightHash", "blocked", "reasonCode", "adapterInvoked", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" },
+        "preflightHash": { "$ref": "#/$defs/hash" },
+        "blocked": { "const": true },
+        "reasonCode": { "const": "execution_submission_disabled_l0_local_no_funds" },
+        "adapterInvoked": { "const": false },
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_wallet_execution_submission_blocked.v1" }
+      }
+    },
+    "walletExecutionViewResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionId", "preparedExecutionHash", "latestPreflightHash", "decision", "stale", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" },
+        "preparedExecutionHash": { "$ref": "#/$defs/hash" },
+        "latestPreflightHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+        "decision": { "oneOf": [{ "enum": ["ALLOW", "STEP_UP", "DENY", "QUARANTINE"] }, { "type": "null" }] },
+        "stale": { "type": "boolean" },
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_wallet_execution_view.v1" }
+      }
+    },
+    "venueCapabilityDescriptorListResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["items", "count", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "items": { "type": "array", "maxItems": 8, "items": { "type": "object" } },
+        "count": { "type": "integer", "minimum": 0, "maximum": 8 },
+        "transactionsAllowed": { "const": false }, "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false }, "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "venue_capability_descriptor_list.v1" }
+      }
+    },
+    "venueBindingViewResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingId", "status", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "bindingId": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["unverified", "verified", "revoked", "quarantined"] },
+        "transactionsAllowed": { "const": false }, "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false }, "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_venue_binding_view.v1" }
+      }
+    },
+    "venueDelegatePreparedResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["delegateId", "delegateHash", "status", "activationAllowed", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "delegateId": { "$ref": "#/$defs/identifier" }, "delegateHash": { "$ref": "#/$defs/hash" },
+        "status": { "const": "prepared" }, "activationAllowed": { "const": false },
+        "transactionsAllowed": { "const": false }, "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false }, "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_venue_delegate_prepared.v1" }
+      }
+    },
+    "venueDelegateActivationBlockedResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["delegateId", "blocked", "reasonCode", "adapterInvoked", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "delegateId": { "$ref": "#/$defs/identifier" }, "blocked": { "const": true },
+        "reasonCode": { "const": "venue_delegate_activation_disabled_l0_local_no_funds" },
+        "adapterInvoked": { "const": false }, "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true }, "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_venue_delegate_activation_blocked.v1" }
+      }
+    },
+    "venueDelegateRevocationBlockedResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["delegateId", "blocked", "reasonCode", "adapterInvoked", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "delegateId": { "$ref": "#/$defs/identifier" }, "blocked": { "const": true },
+        "reasonCode": { "const": "venue_delegate_revocation_disabled_l0_local_no_funds" },
+        "adapterInvoked": { "const": false }, "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true }, "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_venue_delegate_revocation_blocked.v1" }
+      }
+    },
+    "venueExecutionPreparedResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["executionId", "preparedExecutionHash", "orderIntentHash", "status", "submissionAllowed", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" },
+        "preparedExecutionHash": { "$ref": "#/$defs/hash" }, "orderIntentHash": { "$ref": "#/$defs/hash" },
+        "status": { "const": "prepared" }, "submissionAllowed": { "const": false },
+        "transactionsAllowed": { "const": false }, "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false }, "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_venue_execution_prepared.v1" }
+      }
+    },
+    "venueExecutionSubmissionBlockedResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["executionId", "preparedExecutionHash", "blocked", "reasonCode", "adapterInvoked", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" }, "preparedExecutionHash": { "$ref": "#/$defs/hash" },
+        "blocked": { "const": true },
+        "reasonCode": { "const": "venue_execution_submission_disabled_l0_local_no_funds" },
+        "adapterInvoked": { "const": false }, "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true }, "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_venue_execution_submission_blocked.v1" }
+      }
+    },
+    "venueExecutionViewResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["executionId", "preparedExecutionHash", "status", "submissionAllowed", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority", "schemaVersion"],
+      "properties": {
+        "executionId": { "$ref": "#/$defs/identifier" }, "preparedExecutionHash": { "$ref": "#/$defs/hash" },
+        "status": { "enum": ["prepared", "blocked", "submitted", "reconciled", "quarantined"] },
+        "submissionAllowed": { "const": false }, "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true }, "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "tenant_venue_execution_view.v1" }
+      }
+    },
     "identifier": {
       "type": "string",
       "minLength": 1,
@@ -3366,7 +3876,8 @@
         "verificationMethod": {
           "enum": [
             "eip712_eoa_v1",
-            "eip1271_eip712_v1"
+            "eip1271_eip712_v1",
+            "eip6492_eip712_v1"
           ]
         },
         "status": {

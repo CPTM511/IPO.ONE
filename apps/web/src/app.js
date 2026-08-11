@@ -76,7 +76,7 @@ const VIEW_META = {
   "capital-partners": { eyebrow: "Synthetic bilateral marketplace", title: "Capital Partners" },
   "capital-network": { eyebrow: "Provider sandbox boundary", title: "Provider Network" },
   "trading-capital": { eyebrow: "Hyperliquid MVP · local no-funds", title: "Trading Capital" },
-  "wallet-permissions": { eyebrow: "Authentication boundary", title: "Wallet & Permissions" },
+  "wallet-permissions": { eyebrow: "Authentication + execution boundaries", title: "Wallet & Permissions" },
   "activity-proofs": { eyebrow: "Protocol Evidence", title: "Activity & Proofs" },
   "credit-track-record": { eyebrow: "Evidence-derived record", title: "Credit Track Record" },
   "reports-exports": { eyebrow: "Artifact maturity", title: "Reports & Exports" },
@@ -319,6 +319,22 @@ const riskOperations = {
   queueHelper: "Risk or Operations access and recent phishing-resistant MFA are verified on every read.",
   queueError: false
 };
+const executionWalletPilot = {
+  catalogAvailable: false,
+  busy: false,
+  error: false,
+  connectedAccountId: null,
+  bindings: [],
+  activeBinding: null,
+  capabilities: null,
+  grant: null,
+  targetPolicies: [],
+  execution: null,
+  helper:
+    "Sign in to IPO.ONE first. Wallet connection and AccountBinding never replace authentication.",
+  executionHelper:
+    "Connect and bind an execution account. Current local runtime can prepare Evidence but cannot submit a transaction or move funds."
+};
 const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [tenantPilot, structuredClone(tenantPilot)],
   [capitalNetworkPilot, structuredClone(capitalNetworkPilot)],
@@ -332,7 +348,8 @@ const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [creditRegistryEvidence, structuredClone(creditRegistryEvidence)],
   [officialReportPilot, structuredClone(officialReportPilot)],
   [creditPassportPilot, structuredClone(creditPassportPilot)],
-  [riskOperations, structuredClone(riskOperations)]
+  [riskOperations, structuredClone(riskOperations)],
+  [executionWalletPilot, structuredClone(executionWalletPilot)]
 ]);
 const PROTECTIVE_REASON_CODES = new Set([
   "credential_compromise",
@@ -473,6 +490,20 @@ const walletAuthorityLifecycle = createWalletAuthorityLifecycle({
 function handleMaterialWalletContextChange(reasonCode) {
   accessState.walletAddress = null;
   accessState.connectedChainId = null;
+  executionWalletPilot.connectedAccountId = null;
+  executionWalletPilot.helper =
+    "Execution wallet context changed. The IPO.ONE login session and durable AccountBinding were not changed.";
+  if (
+    accessState.sessionActive !== true ||
+    accessState.sessionAuthenticationMethod !== "siwe"
+  ) {
+    renderAccess();
+    return Promise.resolve(Object.freeze({
+      authenticationSessionChanged: false,
+      executionAccountDisconnected: true,
+      reasonCode
+    }));
+  }
   const invalidation = walletAuthorityLifecycle.handleContextChange(reasonCode, {
     serverAuthorityActive: walletServerAuthorityActive()
   });
@@ -711,8 +742,8 @@ function clearWalletProviderEvents() {
 
 function bindSelectedWalletProviderEvents() {
   clearWalletProviderEvents();
-  const provider = walletProviderRegistry.getSelectedProvider();
-  if (!provider || typeof provider.on !== "function") return;
+  const connector = walletProviderRegistry.getSelectedConnector();
+  if (!connector) return;
   const accountsChanged = () => {
     handleMaterialWalletContextChange("wallet_account_changed");
   };
@@ -722,19 +753,12 @@ function bindSelectedWalletProviderEvents() {
   const disconnected = () => {
     handleMaterialWalletContextChange("wallet_provider_disconnected");
   };
-  provider.on("accountsChanged", accountsChanged);
-  provider.on("chainChanged", chainChanged);
-  provider.on("disconnect", disconnected);
-  walletProviderEventCleanup = () => {
-    const remove = typeof provider.removeListener === "function"
-      ? provider.removeListener.bind(provider)
-      : typeof provider.off === "function"
-        ? provider.off.bind(provider)
-        : null;
-    remove?.("accountsChanged", accountsChanged);
-    remove?.("chainChanged", chainChanged);
-    remove?.("disconnect", disconnected);
-  };
+  const removers = [
+    connector.subscribeAccountChanges(accountsChanged),
+    connector.subscribeChainChanges(chainChanged),
+    connector.subscribeDisconnect(disconnected)
+  ];
+  walletProviderEventCleanup = () => removers.forEach((remove) => remove());
 }
 
 const walletProviderRegistry = createWalletProviderRegistry({
@@ -882,25 +906,8 @@ async function probeAccessOptions() {
   }
 }
 
-async function switchWalletChain(provider, chain) {
-  try {
-    await provider.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: chain.chainIdHex }]
-    });
-  } catch (error) {
-    if (Number(error?.code) !== 4902) throw error;
-    await provider.request({
-      method: "wallet_addEthereumChain",
-      params: [{
-        chainId: chain.chainIdHex,
-        chainName: chain.name,
-        nativeCurrency: chain.nativeCurrency,
-        rpcUrls: [...chain.rpcUrls],
-        blockExplorerUrls: [...chain.blockExplorerUrls]
-      }]
-    });
-  }
+async function switchWalletChain(connector, chain) {
+  return connector.switchChain(`eip155:${chain.chainId}`);
 }
 
 async function connectApprovedNetwork({ authenticate = false } = {}) {
@@ -914,8 +921,8 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
     renderAccess();
     return;
   }
-  const provider = walletProviderRegistry.getSelectedProvider();
-  if (!provider) {
+  const connector = walletProviderRegistry.getSelectedConnector();
+  if (!connector) {
     accessState.helper = accessState.walletProviders.length > 0
       ? "Select one discovered wallet before requesting an account or network."
       : "No compatible EVM wallet was found. Install or open a browser wallet, then try again.";
@@ -926,15 +933,16 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
   accessState.helper = "Waiting for wallet approval…";
   renderAccess();
   try {
-    const accounts = await provider.request({ method: "eth_requestAccounts" });
-    const address = Array.isArray(accounts) ? accounts[0] : undefined;
+    const chain = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
+    const connection = await connector.connect({
+      chainId: `eip155:${chain.chainId}`
+    });
+    const account = connection.accounts[0];
+    const address = account?.address;
     if (!/^0x[0-9a-fA-F]{40}$/.test(address ?? "")) {
       throw new Error("The wallet did not return one valid EVM account.");
     }
-    const chain = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
-    await switchWalletChain(provider, chain);
-    const connectedChainHex = await provider.request({ method: "eth_chainId" });
-    const connectedChainId = Number.parseInt(String(connectedChainHex), 16);
+    const connectedChainId = Number(connection.chainId.split(":")[1]);
     if (connectedChainId !== chain.chainId) {
       throw new Error(`The wallet did not switch to ${chain.name}.`);
     }
@@ -956,9 +964,9 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
         body: { address, chainId: connectedChainId }
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
-      const signature = await provider.request({
-        method: "personal_sign",
-        params: [challenge.message, address]
+      const signature = await connector.signMessage({
+        accountId: account.accountId,
+        message: challenge.message
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       const authentication = await authJson("/auth/v1/wallet/verify", {
@@ -1042,7 +1050,7 @@ async function signOutAuthenticatedSession() {
     ) {
       throw new Error("The sign-out service returned an invalid result.");
     }
-    const selectedWalletProvider = walletProviderRegistry.getSelectedProvider();
+    const selectedWalletConnector = walletProviderRegistry.getSelectedConnector();
     const selectedWalletDescriptor = accessState.walletProviders.find(
       (item) => item.providerId === accessState.selectedWalletProviderId
     );
@@ -1057,7 +1065,7 @@ async function signOutAuthenticatedSession() {
     let walletRelease;
     try {
       walletRelease = await releaseSelectedWallet({
-        provider: selectedWalletProvider,
+        connector: selectedWalletConnector,
         source: selectedWalletDescriptor?.source
       });
       walletProviderRegistry.clearSelection();
@@ -1370,7 +1378,7 @@ function requestEconomicActionConfirmation({
   ) {
     return Promise.reject(new Error("The exact sandbox action could not be prepared."));
   }
-  const provider = walletProviderRegistry.getSelectedProvider();
+  const connector = walletProviderRegistry.getSelectedConnector();
   const sessionConfirmationMethod = accessState.sessionAuthenticationMethod;
   if (!new Set(["oidc_pkce_bff", "siwe"]).has(sessionConfirmationMethod)) {
     return Promise.reject(new Error(
@@ -1378,7 +1386,7 @@ function requestEconomicActionConfirmation({
     ));
   }
   const walletConfirmation = sessionConfirmationMethod === "siwe";
-  if (walletConfirmation && (!accessState.walletAddress || !provider)) {
+  if (walletConfirmation && (!accessState.walletAddress || !connector)) {
     return Promise.reject(new Error(
       "Reconnect the wallet used for this SIWE session before confirming the exact sandbox action."
     ));
@@ -1461,18 +1469,18 @@ async function confirmPendingEconomicAction() {
       requestNonce: pending.requestNonce
     }));
     if (pending.walletConfirmation) {
-      const provider = walletProviderRegistry.getSelectedProvider();
-      if (!provider || !accessState.walletAddress) {
+      const connector = walletProviderRegistry.getSelectedConnector();
+      if (!connector || !accessState.walletAddress) {
         throw new Error("The selected wallet is no longer available.");
       }
       walletAuthorityLifecycle.assertProtectedAvailable();
       const baseSepolia = SUPPORTED_WALLET_CHAINS[84532];
-      await switchWalletChain(provider, baseSepolia);
-      const chainId = Number.parseInt(String(
-        await provider.request({ method: "eth_chainId" })
-      ), 16);
-      const accounts = await provider.request({ method: "eth_accounts" });
-      const currentAddress = Array.isArray(accounts) ? accounts[0] : undefined;
+      await switchWalletChain(connector, baseSepolia);
+      const chain = await connector.getChain();
+      const accounts = await connector.getAccounts();
+      const chainId = Number(chain.chainId.split(":")[1]);
+      const currentAccount = accounts.accounts[0];
+      const currentAddress = currentAccount?.address;
       if (
         chainId !== 84532 ||
         currentAddress?.toLowerCase() !== accessState.walletAddress.toLowerCase()
@@ -1481,9 +1489,9 @@ async function confirmPendingEconomicAction() {
       }
       el("economicActionStatus").textContent =
         "Waiting for the exact wallet signature. No transaction or gas fee is requested.";
-      const signature = await provider.request({
-        method: "personal_sign",
-        params: [pending.message, currentAddress]
+      const signature = await connector.signMessage({
+        accountId: currentAccount.accountId,
+        message: pending.message
       });
       if (!/^0x[0-9a-fA-F]+$/.test(signature ?? "")) {
         throw new Error("The wallet returned an invalid signature.");
@@ -4533,6 +4541,386 @@ function renderWalletPermissionMatrix() {
   );
   el("walletPermissionBoundary").textContent =
     `Consent controls ${presentation.consentOperationsAvailable ? "available" : "unavailable"}; Mandate controls ${presentation.mandateOperationsAvailable ? "available" : "unavailable"}. No catalog entry grants token approval, arbitrary transaction, withdrawal, or funds authority.`;
+  renderExecutionWallet();
+}
+
+const EXECUTION_WALLET_OPERATION_IDS = Object.freeze([
+  "walletPrepareAccountBinding",
+  "walletSubmitAccountBinding",
+  "walletReadAccountBindings",
+  "walletRevokeAccountBinding",
+  "walletDiscoverCapabilities",
+  "walletPrepareGrant",
+  "walletActivateGrant",
+  "walletReadGrant",
+  "walletRevokeGrant",
+  "walletPrepareExecution",
+  "walletApproveExecution",
+  "walletSubmitExecution",
+  "walletReadExecution"
+]);
+
+function executionWalletSubjectId() {
+  const inputId = currentWorkspaceName() === "borrower"
+    ? "humanSubjectId"
+    : "agentAuthoritySubjectId";
+  const input = el(inputId);
+  return input && exactResourceId(input.value.trim()) ? input.value.trim() : null;
+}
+
+function executionWalletChain() {
+  return SUPPORTED_WALLET_CHAINS[accessState.selectedChainId] ?? null;
+}
+
+function executionWalletAddress() {
+  const accountId = executionWalletPilot.connectedAccountId;
+  const address = typeof accountId === "string" ? accountId.split(":").at(-1) : null;
+  return /^0x[0-9a-f]{40}$/.test(address ?? "") ? address : null;
+}
+
+function renderExecutionWallet() {
+  const subjectId = executionWalletSubjectId();
+  const chain = executionWalletChain();
+  const address = executionWalletAddress();
+  const binding = executionWalletPilot.activeBinding;
+  const grant = executionWalletPilot.grant;
+  const execution = executionWalletPilot.execution;
+  const preflight = execution?.preflightReceipt ??
+    execution?.preflights?.at(-1)?.preflightReceipt ?? null;
+  const allOperationsAvailable = EXECUTION_WALLET_OPERATION_IDS.every(
+    (operationId) => serverCatalogOperations.has(operationId)
+  );
+  executionWalletPilot.catalogAvailable = allOperationsAvailable;
+  const available = tenantPilot.connected && allOperationsAvailable;
+  const bindingCurrent = Boolean(
+    binding && binding.status === "active" && binding.subjectId === subjectId &&
+    binding.chainId === chain?.caip2
+  );
+  const grantPrepared = grant?.status === "prepared";
+  const grantActive = grant?.status === "active";
+  const busy = executionWalletPilot.busy;
+
+  el("executionAccountStatus").textContent = bindingCurrent
+    ? "Verified · zero authority"
+    : address
+      ? "Connected · proof required"
+      : "Not connected";
+  el("executionAccountStatus").className =
+    `state-pill ${bindingCurrent ? "" : "neutral"}`.trim();
+  el("executionAccountSubject").textContent = subjectId
+    ? compactOpaqueId(subjectId)
+    : "Create or recover a Subject";
+  el("executionAccountSubject").title = subjectId ?? "";
+  el("executionAccountAddress").textContent = address
+    ? shortWalletAddress(address)
+    : "Not connected";
+  el("executionAccountAddress").title = address ?? "";
+  el("executionAccountNetwork").textContent = chain?.name ?? "Not selected";
+  el("executionAccountBinding").textContent = bindingCurrent
+    ? `${titleize(binding.status)} · ${binding.verificationMethod}`
+    : "Not verified";
+  el("executionAccountBinding").title = binding?.accountBindingId ?? "";
+  el("executionAccountHelper").textContent = executionWalletPilot.helper;
+
+  el("executionConnectBtn").disabled =
+    busy || !available || !subjectId || !accessState.selectedWalletProviderId;
+  el("executionBindBtn").disabled = busy || !available || !subjectId || !address || bindingCurrent;
+  el("executionRefreshBindingsBtn").disabled = busy || !available || !subjectId;
+  el("executionDisconnectBtn").disabled = busy || !address;
+  el("executionRevokeBindingBtn").disabled = busy || !available || !bindingCurrent;
+  el("executionDiscoverBtn").disabled = busy || !available;
+  el("executionPrepareGrantBtn").disabled = busy || !available || !bindingCurrent || Boolean(grant);
+  el("executionActivateGrantBtn").disabled = busy || !available || !grantPrepared;
+  el("executionPrepareBtn").disabled = busy || !available || !grantActive ||
+    !exactResourceId(el("executionTransferIntentId").value.trim());
+  el("executionReadBtn").disabled = busy || !available || !execution?.preparedExecution?.executionId;
+  el("executionRevokeGrantBtn").disabled = busy || !available || !new Set(["prepared", "active"]).has(grant?.status);
+
+  el("boundedExecutionStatus").textContent = preflight
+    ? preflight.decision
+    : grantActive
+      ? "Bounded grant active"
+      : "No authority derived";
+  el("boundedExecutionStatus").className =
+    `state-pill ${preflight?.decision === "DENY" ? "warning" : grantActive || preflight ? "" : "warning"}`.trim();
+  el("boundedExecutionGrant").textContent = grant
+    ? `${titleize(grant.status)} · ${compactOpaqueId(grant.grantId)}`
+    : "Not prepared";
+  el("boundedExecutionGrant").title = grant?.grantId ?? "";
+  el("boundedExecutionCapacity").textContent = grant
+    ? `${usdMinorToMoney(grant.perTxLimitMinor)} per action · ${usdMinorToMoney(grant.aggregateLimitMinor)} aggregate`
+    : "Zero until derived";
+  el("boundedExecutionPreflight").textContent = preflight
+    ? `${preflight.decision} · ${preflight.reasonCodes.join(", ")}`
+    : "Not run";
+  el("boundedExecutionPreflight").title = preflight?.preflightHash ?? "";
+  el("boundedExecutionSubmission").textContent =
+    "Disabled · local no-funds · no transaction broadcast";
+  el("boundedExecutionHelper").textContent = executionWalletPilot.executionHelper;
+}
+
+async function runExecutionWalletAction(buttonId, busyMessage, operation, successMessage) {
+  if (executionWalletPilot.busy) return;
+  executionWalletPilot.busy = true;
+  executionWalletPilot.error = false;
+  executionWalletPilot.helper = busyMessage;
+  executionWalletPilot.executionHelper = busyMessage;
+  const button = el(buttonId);
+  button?.setAttribute("aria-busy", "true");
+  renderWalletPermissionMatrix();
+  try {
+    await operation();
+    executionWalletPilot.helper = successMessage;
+    executionWalletPilot.executionHelper = successMessage;
+    toast(successMessage);
+    announce(successMessage);
+  } catch (error) {
+    const requestSuffix = error.requestId ? ` Request ID: ${error.requestId}` : "";
+    const message = `${error.message}${requestSuffix}`;
+    executionWalletPilot.error = true;
+    executionWalletPilot.helper = message;
+    executionWalletPilot.executionHelper = message;
+    toast(message, "error");
+    announce(`Execution account operation failed. ${error.message}`);
+  } finally {
+    executionWalletPilot.busy = false;
+    button?.removeAttribute("aria-busy");
+    renderAccess();
+    renderWalletPermissionMatrix();
+  }
+}
+
+async function connectExecutionAccount() {
+  return runExecutionWalletAction(
+    "executionConnectBtn",
+    "Waiting for the selected wallet to connect one approved execution account…",
+    async () => {
+      const connector = walletProviderRegistry.getSelectedConnector();
+      const chain = executionWalletChain();
+      if (!connector || !chain) throw new Error("Select one discovered wallet and approved network first.");
+      const connection = await connector.connect({ chainId: chain.caip2 });
+      const account = connection.accounts[0];
+      if (!account || connection.chainId !== chain.caip2) {
+        throw new Error("The wallet did not return one account on the selected approved network.");
+      }
+      executionWalletPilot.connectedAccountId = account.accountId;
+      accessState.walletAddress = account.address;
+      accessState.connectedChainId = chain.chainId;
+    },
+    "Execution account connected. IPO.ONE authentication, Tenant, Actor, Role, and authority are unchanged."
+  );
+}
+
+async function refreshExecutionAccountBindings({ quiet = false } = {}) {
+  const subjectId = executionWalletSubjectId();
+  if (!subjectId) throw new Error("Create or recover the current workspace Subject first.");
+  const result = await tenantApi("walletReadAccountBindings", {
+    resource: { resourceType: "subject", resourceId: subjectId },
+    payload: {},
+    idempotent: false
+  });
+  executionWalletPilot.bindings = result.response.accounts;
+  const chainId = executionWalletChain()?.caip2;
+  executionWalletPilot.activeBinding = result.response.accounts.find(
+    (binding) => binding.status === "active" && binding.chainId === chainId
+  ) ?? null;
+  if (!quiet) {
+    executionWalletPilot.helper = executionWalletPilot.activeBinding
+      ? "Current server AccountBinding loaded. It grants zero execution authority by itself."
+      : "No active execution AccountBinding exists for the selected approved network.";
+  }
+  return result;
+}
+
+async function bindExecutionAccount() {
+  return runExecutionWalletAction(
+    "executionBindBtn",
+    "Preparing a one-use EIP-712 execution AccountBinding proof…",
+    async () => {
+      const connector = walletProviderRegistry.getSelectedConnector();
+      const subjectId = executionWalletSubjectId();
+      const accountId = executionWalletPilot.connectedAccountId;
+      if (!connector || !subjectId || !accountId) {
+        throw new Error("Connect one execution account to the current Subject first.");
+      }
+      const challenge = await tenantApi("walletPrepareAccountBinding", {
+        resource: { resourceType: "subject", resourceId: subjectId },
+        payload: { accountId }
+      });
+      const signature = await connector.signTypedData({
+        accountId,
+        typedData: challenge.response.typedData
+      });
+      const verified = await tenantApi("walletSubmitAccountBinding", {
+        resource: { resourceType: "subject", resourceId: subjectId },
+        payload: {
+          challengeId: challenge.response.challengeId,
+          accountId,
+          signature
+        }
+      });
+      executionWalletPilot.activeBinding = verified.response.accountBinding;
+      await refreshExecutionAccountBindings({ quiet: true });
+    },
+    "AccountBinding verified. It created no login session, Role, credit authority, or funds authority."
+  );
+}
+
+async function revokeExecutionAccountBindingAction() {
+  return runExecutionWalletAction(
+    "executionRevokeBindingBtn",
+    "Revoking the exact execution AccountBinding…",
+    async () => {
+      const subjectId = executionWalletSubjectId();
+      const binding = executionWalletPilot.activeBinding;
+      if (!subjectId || !binding) throw new Error("No active AccountBinding is selected.");
+      const result = await tenantApi("walletRevokeAccountBinding", {
+        resource: { resourceType: "subject", resourceId: subjectId },
+        payload: { accountBindingId: binding.accountBindingId }
+      });
+      executionWalletPilot.activeBinding = result.response.accountBinding;
+      executionWalletPilot.grant = null;
+      executionWalletPilot.execution = null;
+      await refreshExecutionAccountBindings({ quiet: true });
+    },
+    "Execution AccountBinding revoked. The IPO.ONE login session remains active."
+  );
+}
+
+function disconnectExecutionAccount() {
+  executionWalletPilot.connectedAccountId = null;
+  accessState.walletAddress = null;
+  accessState.connectedChainId = null;
+  executionWalletPilot.helper =
+    "Execution account disconnected from this product context. The IPO.ONE login session and durable AccountBinding remain unchanged.";
+  renderAccess();
+  renderWalletPermissionMatrix();
+}
+
+async function discoverExecutionCapabilities() {
+  return runExecutionWalletAction(
+    "executionDiscoverBtn",
+    "Reading the server execution capability descriptor…",
+    async () => {
+      const result = await tenantApi("walletDiscoverCapabilities", {
+        resource: { resourceType: "wallet_adapter", resourceId: "adapter_local_sandbox" },
+        payload: {},
+        idempotent: false
+      });
+      executionWalletPilot.capabilities = result.response;
+    },
+    "Local exact resolver available. External calls and transaction submission remain disabled."
+  );
+}
+
+async function prepareExecutionGrant() {
+  return runExecutionWalletAction(
+    "executionPrepareGrantBtn",
+    "Deriving bounded capacity from current Mandate, SpendPolicy, CreditLine, Obligation, and AccountBinding…",
+    async () => {
+      const subjectId = executionWalletSubjectId();
+      const binding = executionWalletPilot.activeBinding;
+      const providerId = el("executionProviderId").value.trim();
+      const chainId = executionWalletChain()?.caip2;
+      if (!subjectId || !binding || !exactResourceId(providerId) || !chainId) {
+        throw new Error("A current Subject, active AccountBinding, and exact approved Provider are required.");
+      }
+      const result = await tenantApi("walletPrepareGrant", {
+        resource: { resourceType: "subject", resourceId: subjectId },
+        payload: {
+          providerId,
+          accountBindingId: binding.accountBindingId,
+          chainId,
+          requestedExpiresAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+          sessionEpoch: 0,
+          nonce: tenantRequestToken("execution_grant_nonce")
+        }
+      });
+      executionWalletPilot.grant = result.response.grant;
+      executionWalletPilot.targetPolicies = result.response.targetPolicies;
+      executionWalletPilot.execution = null;
+    },
+    "Bounded grant prepared from canonical server authority. Wallet connection added no capacity."
+  );
+}
+
+async function activateExecutionGrant() {
+  return runExecutionWalletAction(
+    "executionActivateGrantBtn",
+    "Activating the exact local no-funds grant projection…",
+    async () => {
+      const grant = executionWalletPilot.grant;
+      if (!grant) throw new Error("Prepare one bounded grant first.");
+      const result = await tenantApi("walletActivateGrant", {
+        resource: { resourceType: "delegated_wallet_grant", resourceId: grant.grantId },
+        payload: { expectedGrantHash: grant.grantHash }
+      });
+      executionWalletPilot.grant = result.response.grant;
+    },
+    "Local grant active. Transactions remain disabled until a separately approved release profile exists."
+  );
+}
+
+async function prepareExactExecution() {
+  return runExecutionWalletAction(
+    "executionPrepareBtn",
+    "Resolving the authorized TransferIntent and atomically recording simulation and preflight Evidence…",
+    async () => {
+      const grant = executionWalletPilot.grant;
+      const transferIntentId = el("executionTransferIntentId").value.trim();
+      if (!grant || grant.status !== "active" || !exactResourceId(transferIntentId)) {
+        throw new Error("An active grant and exact authorized TransferIntent are required.");
+      }
+      const result = await tenantApi("walletPrepareExecution", {
+        resource: { resourceType: "delegated_wallet_grant", resourceId: grant.grantId },
+        payload: { transferIntentId }
+      });
+      executionWalletPilot.execution = result.response;
+      const refreshedGrant = await tenantApi("walletReadGrant", {
+        resource: { resourceType: "delegated_wallet_grant", resourceId: grant.grantId },
+        payload: {},
+        idempotent: false
+      });
+      executionWalletPilot.grant = refreshedGrant.response.grant;
+    },
+    "Exact execution prepared, simulated, and preflighted in one Gateway-owned atomic commit. No transaction was submitted."
+  );
+}
+
+async function readExactExecution() {
+  return runExecutionWalletAction(
+    "executionReadBtn",
+    "Reloading the exact durable execution receipt…",
+    async () => {
+      const executionId = executionWalletPilot.execution?.preparedExecution?.executionId;
+      if (!executionId) throw new Error("No prepared execution is selected.");
+      const result = await tenantApi("walletReadExecution", {
+        resource: { resourceType: "wallet_execution", resourceId: executionId },
+        payload: {},
+        idempotent: false
+      });
+      executionWalletPilot.execution = result.response;
+    },
+    "Durable prepared execution, simulation, and preflight receipt reloaded from server truth."
+  );
+}
+
+async function revokeExecutionGrantAction() {
+  return runExecutionWalletAction(
+    "executionRevokeGrantBtn",
+    "Revoking the exact bounded grant and releasing pending exposure…",
+    async () => {
+      const grant = executionWalletPilot.grant;
+      if (!grant) throw new Error("No current grant is selected.");
+      const result = await tenantApi("walletRevokeGrant", {
+        resource: { resourceType: "delegated_wallet_grant", resourceId: grant.grantId },
+        payload: {},
+        reasonCode: "operator_request"
+      });
+      executionWalletPilot.grant = result.response.grant;
+    },
+    "Bounded grant revoked. The login session and AccountBinding remain separate and unchanged."
+  );
 }
 
 function architectureCapabilityRow(destination) {
@@ -8664,8 +9052,8 @@ async function anchorOrRefreshOwnedEvidence() {
     await loadEvidenceAnchorStatus({ observe: true });
     return;
   }
-  const provider = walletProviderRegistry.getSelectedProvider();
-  if (!provider) {
+  const connector = walletProviderRegistry.getSelectedConnector();
+  if (!connector) {
     toast("Select and connect one wallet before anchoring Evidence.", "error");
     return;
   }
@@ -8674,67 +9062,24 @@ async function anchorOrRefreshOwnedEvidence() {
   renderEvidenceAnchor();
   const hashes = group.map(({ evidenceHash }) => evidenceHash);
   try {
-    const accounts = await provider.request({ method: "eth_accounts" });
-    const accountAddress = Array.isArray(accounts) ? accounts[0] : undefined;
+    const accounts = await connector.getAccounts();
+    const account = accounts.accounts[0];
+    const accountAddress = account?.address;
     if (!/^0x[0-9a-fA-F]{40}$/.test(accountAddress ?? "")) {
       throw new Error("The selected wallet has no connected EVM account.");
     }
     const baseSepolia = SUPPORTED_WALLET_CHAINS[84532];
-    await switchWalletChain(provider, baseSepolia);
-    const chainId = await provider.request({ method: "eth_chainId" });
-    if (Number.parseInt(String(chainId), 16) !== 84532) {
+    await switchWalletChain(connector, baseSepolia);
+    const chain = await connector.getChain();
+    if (chain.chainId !== "eip155:84532") {
       throw new Error("The wallet did not switch to Base Sepolia.");
     }
-    const prepared = await evidenceAnchorApi(
-      "/chain/v1/evidence-anchors/prepare",
-      {
-        body: {
-          obligationId,
-          evidenceHashes: hashes,
-          accountAddress,
-          confirmationMode: "wallet_transaction"
-        }
-      }
-    );
-    const transaction = prepared.transaction;
-    const exactPrepared =
-      transaction?.chainId === "eip155:84532" &&
-      transaction.from?.toLowerCase() === accountAddress.toLowerCase() &&
-      transaction.to?.toLowerCase() ===
-        evidenceAnchorPilot.config.contractAddress?.toLowerCase() &&
-      transaction.value === "0x0" &&
-      /^0x[0-9a-f]+$/.test(transaction.data ?? "") &&
-      JSON.stringify(transaction.evidenceHashes) === JSON.stringify(hashes);
-    if (!exactPrepared) {
-      throw new Error("The prepared Evidence transaction failed exact browser validation.");
-    }
-    const transactionHash = await provider.request({
-      method: "eth_sendTransaction",
-      params: [{
-        from: transaction.from,
-        to: transaction.to,
-        data: transaction.data,
-        value: "0x0"
-      }]
+    await connector.submitPreparedExecution({
+      accountId: account.accountId,
+      contextEpoch: connector.captureContext().contextEpoch,
+      purpose: "evidence_anchor",
+      evidenceHashes: hashes
     });
-    if (!/^0x[0-9a-fA-F]{64}$/.test(transactionHash ?? "")) {
-      throw new Error("The wallet did not return one valid transaction hash.");
-    }
-    await evidenceAnchorApi("/chain/v1/evidence-anchors/submit", {
-      body: {
-        obligationId,
-        evidenceHashes: hashes,
-        batchId: prepared.batchId,
-        transactionHash: transactionHash.toLowerCase(),
-        outcome: "broadcast"
-      }
-    });
-    toast("Evidence anchor submitted to Base Sepolia");
-    await evidenceAnchorApi("/chain/v1/evidence-anchors/observe", {
-      body: { obligationId, evidenceHashes: hashes }
-    });
-    evidenceAnchorPilot.busy = false;
-    await loadEvidenceAnchorStatus({ observe: true });
   } catch (error) {
     evidenceAnchorPilot.error = true;
     evidenceAnchorPilot.helper = Number(error?.code) === 4001
@@ -10033,6 +10378,32 @@ function bindActions() {
   el("googleSignInBtn").addEventListener("click", () => beginOidcSignIn("google"));
   el("emailSignInBtn").addEventListener("click", () => beginOidcSignIn("email"));
   el("walletSignInBtn").addEventListener("click", () => connectApprovedNetwork({ authenticate: true }));
+  el("executionConnectBtn").addEventListener("click", connectExecutionAccount);
+  el("executionBindBtn").addEventListener("click", bindExecutionAccount);
+  el("executionRefreshBindingsBtn").addEventListener("click", () =>
+    runExecutionWalletAction(
+      "executionRefreshBindingsBtn",
+      "Reading current execution AccountBindings from server truth…",
+      () => refreshExecutionAccountBindings({ quiet: true }),
+      "Current execution AccountBindings refreshed. No authority was inferred from a binding."
+    )
+  );
+  el("executionDisconnectBtn").addEventListener("click", disconnectExecutionAccount);
+  el("executionRevokeBindingBtn").addEventListener("click", revokeExecutionAccountBindingAction);
+  el("executionDiscoverBtn").addEventListener("click", discoverExecutionCapabilities);
+  el("executionPrepareGrantBtn").addEventListener("click", prepareExecutionGrant);
+  el("executionActivateGrantBtn").addEventListener("click", activateExecutionGrant);
+  el("executionPrepareBtn").addEventListener("click", prepareExactExecution);
+  el("executionReadBtn").addEventListener("click", readExactExecution);
+  el("executionRevokeGrantBtn").addEventListener("click", revokeExecutionGrantAction);
+  for (const input of [
+    el("executionProviderId"),
+    el("executionTransferIntentId"),
+    el("humanSubjectId"),
+    el("agentAuthoritySubjectId")
+  ]) {
+    input.addEventListener("input", renderExecutionWallet);
+  }
   el("continueAuthenticatedSessionBtn").addEventListener("click", continueAuthenticatedSession);
   el("signOutBtn").addEventListener("click", signOutAuthenticatedSession);
   el("openPrincipalWorkspaceLink").addEventListener("click", continueToPrincipalWorkspace);

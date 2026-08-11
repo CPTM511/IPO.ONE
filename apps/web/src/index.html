@@ -1581,9 +1581,9 @@
             <section class="v9-capability-page" aria-labelledby="walletPermissionsViewTitle">
               <div class="private-page-heading">
                 <div>
-                  <div class="v9-heading-badges"><p class="eyebrow">Authentication only</p><span class="v9-maturity-badge checking" data-v9-maturity="wallet-permissions">Checking server</span></div>
+                  <div class="v9-heading-badges"><p class="eyebrow">Authentication + bounded execution</p><span class="v9-maturity-badge checking" data-v9-maturity="wallet-permissions">Checking server</span></div>
                   <h2 id="walletPermissionsViewTitle">Wallet &amp; Permissions</h2>
-                  <p>Wallet connection proves account control for an authenticated session. It never grants credit, allowance, withdrawal, or arbitrary signing authority.</p>
+                  <p>IPO.ONE login identifies the Actor and workspace. A separate execution AccountBinding proves control of one external account; only canonical Mandate, CreditLine, Obligation, and risk state can derive bounded execution authority.</p>
                 </div>
                 <button class="primary" id="walletPermissionsAccessBtn" type="button">Review sign-in</button>
               </div>
@@ -1612,10 +1612,62 @@
                 </div>
                 <p id="walletPermissionBoundary">Only a current server session can authenticate a wallet. No catalog entry grants token approval, arbitrary transaction, withdrawal, or funds authority.</p>
               </section>
+              <section class="panel wallet-permission-matrix" aria-labelledby="executionAccountTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Execution account · not login</p><h3 id="executionAccountTitle">Connect &amp; bind an account</h3></div>
+                  <span id="executionAccountStatus" class="state-pill neutral">Not connected</span>
+                </div>
+                <p>Choose a discovered wallet and approved network in the existing sign-in panel, then connect it here to the current authenticated Human or Agent Subject. The proof is one-use EIP-712 and creates neither a login session nor economic authority.</p>
+                <dl class="credit-passport-facts">
+                  <div><dt>Authenticated Subject</dt><dd id="executionAccountSubject">Unavailable</dd></div>
+                  <div><dt>Connected account</dt><dd id="executionAccountAddress">Not connected</dd></div>
+                  <div><dt>Approved network</dt><dd id="executionAccountNetwork">Not selected</dd></div>
+                  <div><dt>AccountBinding</dt><dd id="executionAccountBinding">Not verified</dd></div>
+                </dl>
+                <div class="action-row execution-wallet-actions">
+                  <button class="secondary" id="executionConnectBtn" type="button">Connect execution account</button>
+                  <button class="primary" id="executionBindBtn" type="button" disabled>Bind account</button>
+                  <button class="secondary" id="executionRefreshBindingsBtn" type="button" disabled>Refresh bindings</button>
+                  <button class="secondary" id="executionDisconnectBtn" type="button" disabled>Disconnect execution account</button>
+                  <button class="danger" id="executionRevokeBindingBtn" type="button" disabled>Revoke binding</button>
+                </div>
+                <p id="executionAccountHelper" role="status" aria-live="polite">Sign in to IPO.ONE first. Wallet connection and AccountBinding never replace authentication.</p>
+              </section>
+              <section class="panel wallet-permission-matrix" aria-labelledby="boundedExecutionTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Canonical authority → exact execution</p><h3 id="boundedExecutionTitle">Prepare, simulate &amp; preflight</h3></div>
+                  <span id="boundedExecutionStatus" class="state-pill warning">No authority derived</span>
+                </div>
+                <p>The Gateway resolves the exact approved TransferIntent and constructs calldata and ExpectedEffects on the server. Browser-authored transaction payloads are never accepted.</p>
+                <dl class="credit-passport-facts">
+                  <div><dt>DelegatedWalletGrant</dt><dd id="boundedExecutionGrant">Not prepared</dd></div>
+                  <div><dt>Capacity</dt><dd id="boundedExecutionCapacity">Zero until derived</dd></div>
+                  <div><dt>Preflight</dt><dd id="boundedExecutionPreflight">Not run</dd></div>
+                  <div><dt>Submission</dt><dd id="boundedExecutionSubmission">Disabled · local no-funds</dd></div>
+                </dl>
+                <details class="protocol-disclosure">
+                  <summary>Exact server references</summary>
+                  <div class="form-grid">
+                    <label>Approved Provider ID<input id="executionProviderId" autocomplete="off" placeholder="Recovered from canonical workspace state"></label>
+                    <label>Authorized TransferIntent ID<input id="executionTransferIntentId" autocomplete="off" placeholder="Exact authorized TransferIntent"></label>
+                  </div>
+                  <p>These references are validated against current server projections. They do not let the browser choose an address, calldata, amount, asset, or effects.</p>
+                </details>
+                <div class="action-row execution-wallet-actions">
+                  <button class="secondary" id="executionDiscoverBtn" type="button" disabled>Check execution capability</button>
+                  <button class="secondary" id="executionPrepareGrantBtn" type="button" disabled>Derive bounded grant</button>
+                  <button class="secondary" id="executionActivateGrantBtn" type="button" disabled>Activate local grant</button>
+                  <button class="primary" id="executionPrepareBtn" type="button" disabled>Prepare + simulate</button>
+                  <button class="secondary" id="executionReadBtn" type="button" disabled>Refresh receipt</button>
+                  <button class="danger" id="executionRevokeGrantBtn" type="button" disabled>Revoke grant</button>
+                  <button type="button" disabled>Submit transaction · unavailable</button>
+                </div>
+                <p id="boundedExecutionHelper" role="status" aria-live="polite">Connect and bind an execution account. Current local runtime can prepare Evidence but cannot submit a transaction or move funds.</p>
+              </section>
               <div class="v9-maturity-grid">
-                <section class="panel"><span class="state-pill">Real local</span><h3>Human wallet authentication</h3><p>One-use SIWE, explicit Provider selection, approved Testnets, and server-side verification.</p></section>
-                <section class="panel"><span class="state-pill">Real local</span><h3>Authority invalidation</h3><p>Account, chain, Provider replacement, and disconnect changes quarantine every tab and invalidate server authority.</p></section>
-                <section class="panel"><span class="state-pill warning">Specified disabled</span><h3>Mobile / QR runtime</h3><p>The reviewed connector remains disabled pending its separate owner-managed runtime and release gate.</p></section>
+                <section class="panel"><span class="state-pill">Real local</span><h3>Authentication remains separate</h3><p>Existing OIDC/SIWE session, Tenant, Actor, Role, and recovery semantics are unchanged by execution account actions.</p></section>
+                <section class="panel"><span class="state-pill">Real local</span><h3>Human + Agent AccountBinding</h3><p>One dual-native proof contract binds an execution account to an existing Subject and grants zero authority by itself.</p></section>
+                <section class="panel"><span class="state-pill warning">Submission disabled</span><h3>Exact resolver &amp; Evidence</h3><p>Gateway-owned atomic persistence records reservation, prepared execution, simulation, preflight, Events, Evidence, and outbox without moving funds.</p></section>
               </div>
             </section>
           </section>

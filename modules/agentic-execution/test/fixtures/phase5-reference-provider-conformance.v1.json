@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "phase5_reference_provider_conformance_fixture.v1",
+  "deliveryMode": "L0_LOCAL_NO_FUNDS",
+  "providerArchitectures": [
+    { "adapterId": "metamask_agent_wallet_reference", "category": "browser_advanced_permission_wallet" },
+    { "adapterId": "okx_agentic_wallet_reference", "category": "wallet_cli_mcp_tee_reference" },
+    { "adapterId": "safe_institutional_wallet_reference", "category": "institutional_multisig_smart_account" },
+    { "adapterId": "circle_managed_agent_wallet_reference", "category": "managed_mpc_wallet" },
+    { "adapterId": "base_account_spend_permission_reference", "category": "native_smart_account_spend_permission" }
+  ],
+  "circleCases": [
+    { "caseId": "circle-supported", "capabilityStatus": "supported", "preflightDecision": "ALLOW", "expectedDecision": "STEP_UP" },
+    { "caseId": "circle-canonical-deny", "capabilityStatus": "supported", "preflightDecision": "DENY", "expectedDecision": "DENY" },
+    { "caseId": "circle-unknown", "capabilityStatus": "unknown", "preflightDecision": "ALLOW", "requestMustFailClosed": true }
+  ],
+  "baseCases": [
+    { "caseId": "base-exact-narrowing", "allowanceMinor": "4000", "periodSeconds": 86400, "expectedDecision": "STEP_UP" },
+    { "caseId": "base-amount-widened", "allowanceMinor": "4001", "periodSeconds": 86400, "expectedDecision": "DENY" },
+    { "caseId": "base-period-widened", "allowanceMinor": "4000", "periodSeconds": 604800, "expectedDecision": "DENY" }
+  ],
+  "externalCallsAllowed": false,
+  "transactionSubmissionAllowed": false,
+  "safeTestnetWorkDeferred": true
+}

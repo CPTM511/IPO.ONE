@@ -13,6 +13,29 @@ import {
   assertPolicyTransitionDoesNotBroaden
 } from "../src/index.js";
 
+test("HYPERLIQUID-002A keeps Venue delegate administration Human-MFA-only", () => {
+  const registry = new AuthorizationPolicyRegistry();
+  const principal = ROLE_BUNDLE_CAPABILITIES[RoleBundle.PRINCIPAL_CONTROLLER];
+  const agent = ROLE_BUNDLE_CAPABILITIES[RoleBundle.AGENT_RUNTIME];
+  for (const operationId of [
+    "venuePrepareDelegate", "venueActivateDelegate", "venueRevokeDelegate"
+  ]) {
+    const policy = registry.getAuthenticated(operationId);
+    assert.deepEqual(policy.allowedActorTypes, ["human"]);
+    assert.deepEqual(policy.requiresRecentMfaActorTypes, ["human"]);
+    assert.equal(principal.includes(policy.requiredCapability), true);
+    assert.equal(agent.includes(policy.requiredCapability), false);
+  }
+  for (const operationId of [
+    "venueDiscoverCapabilities", "venueReadBinding", "venuePrepareExecution",
+    "venueSubmitExecution", "venueReadExecution"
+  ]) {
+    const policy = registry.getAuthenticated(operationId);
+    assert.equal(policy.allowedActorTypes.includes("agent"), true);
+    assert.equal(agent.includes(policy.requiredCapability), true);
+  }
+});
+
 test("Capital Partner operator is a dedicated Human least-privilege role", () => {
   const capabilities = ROLE_BUNDLE_CAPABILITIES[RoleBundle.CAPITAL_PARTNER_OPERATOR];
   assert.deepEqual(capabilities, [
@@ -108,6 +131,19 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
   assert.deepEqual(humanBorrower, [
     PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
     PilotCapability.SUBJECT_READ_SELF,
+    PilotCapability.WALLET_ACCOUNT_BINDING_PREPARE_OWNED,
+    PilotCapability.WALLET_ACCOUNT_BINDING_SUBMIT_OWNED,
+    PilotCapability.WALLET_ACCOUNT_BINDING_READ_OWNED,
+    PilotCapability.WALLET_ACCOUNT_BINDING_REVOKE_OWNED,
+    PilotCapability.WALLET_GRANT_PREPARE_OWNED,
+    PilotCapability.WALLET_GRANT_ACTIVATE_OWNED,
+    PilotCapability.WALLET_GRANT_READ_OWNED,
+    PilotCapability.WALLET_GRANT_REVOKE_OWNED,
+    PilotCapability.WALLET_CAPABILITIES_DISCOVER,
+    PilotCapability.WALLET_EXECUTION_PREPARE_OWNED,
+    PilotCapability.WALLET_EXECUTION_APPROVE_OWNED,
+    PilotCapability.WALLET_EXECUTION_SUBMIT_OWNED,
+    PilotCapability.WALLET_EXECUTION_READ_OWNED,
     PilotCapability.CONSENT_CREATE_SELF,
     PilotCapability.CONSENT_READ_SELF,
     PilotCapability.CONSENT_REVOKE_SELF,
@@ -260,6 +296,27 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
       PilotCapability.MANDATE_DRAFT_CREATE,
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
+      PilotCapability.WALLET_GRANT_PREPARE_OWNED,
+      PilotCapability.WALLET_ACCOUNT_BINDING_PREPARE_OWNED,
+      PilotCapability.WALLET_ACCOUNT_BINDING_SUBMIT_OWNED,
+      PilotCapability.WALLET_ACCOUNT_BINDING_READ_OWNED,
+      PilotCapability.WALLET_ACCOUNT_BINDING_REVOKE_OWNED,
+      PilotCapability.WALLET_GRANT_ACTIVATE_OWNED,
+      PilotCapability.WALLET_GRANT_READ_OWNED,
+      PilotCapability.WALLET_GRANT_REVOKE_OWNED,
+      PilotCapability.WALLET_CAPABILITIES_DISCOVER,
+      PilotCapability.WALLET_EXECUTION_PREPARE_OWNED,
+      PilotCapability.WALLET_EXECUTION_APPROVE_OWNED,
+      PilotCapability.WALLET_EXECUTION_SUBMIT_OWNED,
+      PilotCapability.WALLET_EXECUTION_READ_OWNED,
+      PilotCapability.VENUE_CAPABILITIES_DISCOVER,
+      PilotCapability.VENUE_BINDING_READ_OWNED,
+      PilotCapability.VENUE_DELEGATE_PREPARE_OWNED,
+      PilotCapability.VENUE_DELEGATE_ACTIVATE_OWNED,
+      PilotCapability.VENUE_DELEGATE_REVOKE_OWNED,
+      PilotCapability.VENUE_EXECUTION_PREPARE_OWNED,
+      PilotCapability.VENUE_EXECUTION_SUBMIT_OWNED,
+      PilotCapability.VENUE_EXECUTION_READ_OWNED,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
@@ -312,6 +369,32 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     ROLE_BUNDLE_CAPABILITIES[RoleBundle.DEVELOPER].includes(PilotCapability.MANDATE_ACTIVATE_OWNED),
     false
   );
+  assert.equal(
+    ROLE_BUNDLE_CAPABILITIES[RoleBundle.AGENT_RUNTIME].includes(
+      PilotCapability.WALLET_GRANT_READ_OWNED
+    ),
+    true
+  );
+  for (const role of [
+    RoleBundle.AGENT_RUNTIME,
+    RoleBundle.DEVELOPER,
+    RoleBundle.PROVIDER_SERVICE,
+    RoleBundle.TENANT_OWNER,
+    RoleBundle.RISK_OPERATOR,
+    RoleBundle.OPERATIONS_OPERATOR
+  ]) {
+    for (const capability of [
+      PilotCapability.WALLET_GRANT_PREPARE_OWNED,
+      PilotCapability.WALLET_GRANT_ACTIVATE_OWNED,
+      PilotCapability.WALLET_GRANT_REVOKE_OWNED
+    ]) {
+      assert.equal(
+        ROLE_BUNDLE_CAPABILITIES[role].includes(capability),
+        false,
+        `${role} must not gain delegated wallet grant mutation ${capability}`
+      );
+    }
+  }
 
   const humanOperations = new Map([
     ["pilotCreateHumanSubject", PilotCapability.HUMAN_SUBJECT_CREATE_SELF],
@@ -351,6 +434,64 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
   assert.deepEqual(activateMandate.allowedActorTypes, ["human"]);
   assert.equal(activateMandate.requiredCapability, PilotCapability.MANDATE_ACTIVATE_OWNED);
   assert.deepEqual(activateMandate.liveChecks, ["mandate_activation_state"]);
+  const prepareGrant = registry.getAuthenticated("walletPrepareGrant");
+  assert.deepEqual(prepareGrant.allowedActorTypes, ["human"]);
+  assert.equal(prepareGrant.requiredCapability, PilotCapability.WALLET_GRANT_PREPARE_OWNED);
+  assert.equal(prepareGrant.resourceType, "subject");
+  assert.equal(prepareGrant.idempotencyRequirement, "required");
+  assert.deepEqual(prepareGrant.liveChecks, [
+    "subject_state",
+    "mandate",
+    "spend_policy",
+    "credit_line",
+    "obligation",
+    "account_binding",
+    "chain_policy"
+  ]);
+  const activateGrant = registry.getAuthenticated("walletActivateGrant");
+  assert.deepEqual(activateGrant.allowedActorTypes, ["human"]);
+  assert.equal(activateGrant.requiredCapability, PilotCapability.WALLET_GRANT_ACTIVATE_OWNED);
+  assert.equal(activateGrant.resourceType, "delegated_wallet_grant");
+  assert.deepEqual(activateGrant.liveChecks, [
+    "grant_state",
+    "mandate",
+    "spend_policy",
+    "credit_line",
+    "obligation",
+    "account_binding",
+    "chain_policy",
+    "freeze"
+  ]);
+  const readGrant = registry.getAuthenticated("walletReadGrant");
+  assert.deepEqual(readGrant.allowedActorTypes, ["human", "agent"]);
+  assert.equal(readGrant.requiredCapability, PilotCapability.WALLET_GRANT_READ_OWNED);
+  assert.equal(readGrant.idempotencyRequirement, "prohibited");
+  const revokeGrant = registry.getAuthenticated("walletRevokeGrant");
+  assert.deepEqual(revokeGrant.allowedActorTypes, ["human"]);
+  assert.equal(revokeGrant.requiredCapability, PilotCapability.WALLET_GRANT_REVOKE_OWNED);
+  assert.deepEqual(revokeGrant.reasonPolicy.allowedCodes, [
+    "credential_compromise",
+    "operator_request",
+    "security_incident"
+  ]);
+  const discoverWallet = registry.getAuthenticated("walletDiscoverCapabilities");
+  assert.deepEqual(discoverWallet.allowedActorTypes, ["human", "agent"]);
+  assert.equal(discoverWallet.requiredCapability, PilotCapability.WALLET_CAPABILITIES_DISCOVER);
+  assert.equal(discoverWallet.ownershipRule, "tenant");
+  const prepareExecution = registry.getAuthenticated("walletPrepareExecution");
+  assert.deepEqual(prepareExecution.allowedActorTypes, ["human", "agent"]);
+  assert.equal(prepareExecution.requiredCapability, PilotCapability.WALLET_EXECUTION_PREPARE_OWNED);
+  assert.equal(prepareExecution.resourceType, "delegated_wallet_grant");
+  const approveExecution = registry.getAuthenticated("walletApproveExecution");
+  assert.deepEqual(approveExecution.allowedActorTypes, ["human"]);
+  assert.equal(approveExecution.requiredCapability, PilotCapability.WALLET_EXECUTION_APPROVE_OWNED);
+  assert.deepEqual(approveExecution.requiresRecentMfaActorTypes, ["human"]);
+  const submitExecution = registry.getAuthenticated("walletSubmitExecution");
+  assert.deepEqual(submitExecution.allowedActorTypes, ["human", "agent"]);
+  assert.equal(submitExecution.requiredCapability, PilotCapability.WALLET_EXECUTION_SUBMIT_OWNED);
+  const readExecution = registry.getAuthenticated("walletReadExecution");
+  assert.deepEqual(readExecution.allowedActorTypes, ["human", "agent"]);
+  assert.equal(readExecution.requiredCapability, PilotCapability.WALLET_EXECUTION_READ_OWNED);
   const readCredit = registry.getAuthenticated("pilotReadCreditApplication");
   assert.deepEqual(readCredit.allowedActorTypes, ["human", "agent"]);
   assert.equal(readCredit.requiredCapability, PilotCapability.CREDIT_READ_SELF);

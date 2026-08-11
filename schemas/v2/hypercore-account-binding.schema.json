@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-account-binding.schema.json",
+  "title": "IPO.ONE HyperCore Account Binding v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "accountBindingId", "accountBindingHash", "facilityId", "facilityHash", "environment",
+    "accountRole", "masterAccountAddressHash", "subaccountAddressHash",
+    "canonicalAccountAddressHash", "queryAddressHash", "bindingProofHash", "bindingVersion",
+    "status", "signerAddressIsAccountIdentity", "apiWalletAddressAcceptedForInfo",
+    "externalBindingPerformed", "sandboxOnly", "testnetOnly", "mainnetAuthority",
+    "productionAuthority", "fundsAuthority", "secretsIncluded", "schemaVersion"
+  ],
+  "properties": {
+    "accountBindingId": { "$ref": "#/$defs/identifier" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "environment": { "const": "hyperliquid_testnet" },
+    "accountRole": { "enum": ["master", "subaccount"] },
+    "masterAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "subaccountAddressHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "queryAddressHash": { "$ref": "#/$defs/hash" },
+    "bindingProofHash": { "$ref": "#/$defs/hash" },
+    "bindingVersion": { "type": "integer", "minimum": 1 },
+    "status": { "const": "active" },
+    "signerAddressIsAccountIdentity": { "const": false },
+    "apiWalletAddressAcceptedForInfo": { "const": false },
+    "externalBindingPerformed": { "const": false },
+    "sandboxOnly": { "const": true },
+    "testnetOnly": { "const": true },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "hypercore_account_binding.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    }
+  }
+}

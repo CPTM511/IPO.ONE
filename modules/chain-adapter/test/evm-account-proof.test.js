@@ -111,6 +111,7 @@ test("account proof accepts only an eligible explicit ERC-1271 EIP-712 result", 
         schemaVersion: "wallet_signature_verification.v1",
         chainId: input.chainId,
         walletType: "contract",
+        signatureType: "erc1271",
         verificationMethod: "eip1271_eip712_v1",
         authenticationEligible: true,
         rawSignaturePersisted: false,
@@ -137,9 +138,43 @@ test("account proof accepts only an eligible explicit ERC-1271 EIP-712 result", 
   assert.equal(adapter.descriptor().contractWalletSupport, true);
   assert.equal(adapter.descriptor().adapterVersion, "1.1.0");
   assert.equal(result.verificationMethod, "eip1271_eip712_v1");
+  assert.equal(result.signatureType, "erc1271");
   assert.equal(calls.length, 1);
   assert.equal(calls[0].digest, durableChallenge.typedDataHash);
   assert.equal(calls[0].signature, signature);
+});
+
+test("account proof accepts one eligible ERC-6492 result through the same contract", async () => {
+  const adapter = new EvmAccountProofAdapter({
+    profile: BASE_SEPOLIA_PROFILE,
+    signatureVerifier: {
+      async verifyTypedData(input) {
+        return Object.freeze({
+          schemaVersion: "wallet_signature_verification.v1",
+          chainId: input.chainId,
+          walletType: "counterfactual",
+          signatureType: "erc6492",
+          verificationMethod: "eip6492_eip712_v1",
+          authenticationEligible: true,
+          rawSignaturePersisted: false,
+          credentialsIncluded: false,
+          productionFundsMoved: false
+        });
+      }
+    }
+  });
+  const account = privateKeyToAccount(PRIVATE_KEY);
+  const accountId = `${BASE_SEPOLIA_PROFILE.chainId}:${account.address}`;
+  const durableChallenge = challenge(adapter, accountId);
+  const result = await adapter.verify({
+    accountId,
+    signature: `0x${"66".repeat(128)}`,
+    challenge: durableChallenge,
+    now: NOW
+  });
+  assert.equal(result.signatureType, "erc6492");
+  assert.equal(result.verificationMethod, "eip6492_eip712_v1");
+  assert.equal(JSON.stringify(result).includes("66".repeat(32)), false);
 });
 
 test("account proof rejects contract-wallet evidence that is not authentication-eligible", async () => {
@@ -151,6 +186,7 @@ test("account proof rejects contract-wallet evidence that is not authentication-
           schemaVersion: "wallet_signature_verification.v1",
           chainId: input.chainId,
           walletType: "contract",
+          signatureType: "erc1271",
           verificationMethod: "eip1271_eip712_v1",
           authenticationEligible: false,
           rawSignaturePersisted: false,

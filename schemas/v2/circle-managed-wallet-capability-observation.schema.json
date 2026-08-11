@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/circle-managed-wallet-capability-observation.schema.json",
+  "title": "IPO.ONE Circle Managed Wallet Capability Observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observationHash", "adapterId", "descriptorHash", "chainId", "contextEpoch", "accountType",
+    "controlModel", "keyModel", "managedSupport", "custodyConfigurationHash", "source",
+    "vendorNetworkSupportAttested", "observedAt", "expiresAt", "unknownIsNonPermissive",
+    "externalCallPerformed", "authorizationGranted", "custodyActivated", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "observationHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "const": "circle_managed_agent_wallet_reference" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "accountType": { "enum": ["eoa", "sca", "unknown"] },
+    "controlModel": { "const": "developer_controlled" },
+    "keyModel": { "const": "mpc" },
+    "managedSupport": { "$ref": "#/$defs/managedSupport" },
+    "custodyConfigurationHash": { "$ref": "#/$defs/hash" },
+    "source": { "const": "local_synthetic_fixture" },
+    "vendorNetworkSupportAttested": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "unknownIsNonPermissive": { "const": true },
+    "externalCallPerformed": { "const": false },
+    "authorizationGranted": { "const": false },
+    "custodyActivated": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "circle_managed_wallet_capability_observation.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "status": { "enum": ["supported", "unsupported", "unknown"] },
+    "managedSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "developerControlledWallet", "mpcKeyManagement", "signingApi", "managedBroadcast",
+        "transactionStatus", "credentialIsolation"
+      ],
+      "properties": {
+        "developerControlledWallet": { "$ref": "#/$defs/status" },
+        "mpcKeyManagement": { "$ref": "#/$defs/status" },
+        "signingApi": { "$ref": "#/$defs/status" },
+        "managedBroadcast": { "$ref": "#/$defs/status" },
+        "transactionStatus": { "$ref": "#/$defs/status" },
+        "credentialIsolation": { "$ref": "#/$defs/status" }
+      }
+    }
+  }
+}

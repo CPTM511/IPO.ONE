@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/simulation-report.schema.json",
+  "title": "SimulationReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "simulationReportId", "simulationHash", "executionId",
+    "preparedExecutionHash", "exactPayloadHash", "simulatorId",
+    "simulatorVersion", "simulatorMode", "status", "chainId", "blockNumber",
+    "blockHash", "observedCodeHash", "observedProxyImplementationHash",
+    "simulatedEffects", "threatCheckStatus", "revertReasonHash", "simulatedAt",
+    "expiresAt", "externalCallPerformed", "sandboxOnly", "productionAuthority",
+    "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "simulationReportId": { "$ref": "prepared-execution.schema.json#/$defs/id" },
+    "simulationHash": { "$ref": "prepared-execution.schema.json#/$defs/hash" },
+    "executionId": { "$ref": "prepared-execution.schema.json#/$defs/id" },
+    "preparedExecutionHash": { "$ref": "prepared-execution.schema.json#/$defs/hash" },
+    "exactPayloadHash": { "$ref": "prepared-execution.schema.json#/$defs/hash" },
+    "simulatorId": { "$ref": "prepared-execution.schema.json#/$defs/id" },
+    "simulatorVersion": { "$ref": "prepared-execution.schema.json#/$defs/id" },
+    "simulatorMode": { "const": "local_deterministic" },
+    "status": { "enum": ["succeeded", "reverted", "unavailable"] },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "blockNumber": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,19})$" },
+    "blockHash": { "$ref": "prepared-execution.schema.json#/$defs/hash" },
+    "observedCodeHash": { "$ref": "prepared-execution.schema.json#/$defs/hash" },
+    "observedProxyImplementationHash": { "oneOf": [{ "type": "null" }, { "$ref": "prepared-execution.schema.json#/$defs/hash" }] },
+    "simulatedEffects": { "$ref": "prepared-execution.schema.json#/$defs/effects" },
+    "threatCheckStatus": { "enum": ["passed", "failed", "unavailable"] },
+    "revertReasonHash": { "oneOf": [{ "type": "null" }, { "$ref": "prepared-execution.schema.json#/$defs/hash" }] },
+    "simulatedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "externalCallPerformed": { "const": false },
+    "sandboxOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "simulation_report.v1" }
+  }
+}

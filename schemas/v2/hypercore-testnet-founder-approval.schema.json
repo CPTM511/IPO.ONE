@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-testnet-founder-approval.schema.json",
+  "title": "HyperCore Testnet Founder Approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "approvalId", "approvalHash", "executionId", "executionHash",
+    "economicActionHash", "actorId", "confirmationNonceHash",
+    "humanConfirmationHash", "accountBindingHash",
+    "canonicalAccountAddressHash", "handoffHash", "delegateHash",
+    "apiWalletAddressHash", "signerReferenceHash", "preparedActionHash",
+    "policyHash", "metadataHash", "riskSnapshotHash", "actionKind", "market",
+    "maxOrderNotionalUsd", "openingTimeInForce", "nonce", "status",
+    "approvedAt", "expiresAt", "consumedAt", "version",
+    "exactExecutionOnly", "oneUse", "mainnetAuthority",
+    "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "approvalId": { "$ref": "#/$defs/identifier" },
+    "approvalHash": { "$ref": "#/$defs/hash" },
+    "executionId": { "$ref": "#/$defs/identifier" },
+    "executionHash": { "$ref": "#/$defs/hash" },
+    "economicActionHash": { "$ref": "#/$defs/hash" },
+    "actorId": { "$ref": "#/$defs/identifier" },
+    "confirmationNonceHash": { "$ref": "#/$defs/hash" },
+    "humanConfirmationHash": { "$ref": "#/$defs/hash" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "handoffHash": { "$ref": "#/$defs/hash" },
+    "delegateHash": { "$ref": "#/$defs/hash" },
+    "apiWalletAddressHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "preparedActionHash": { "$ref": "#/$defs/hash" },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "metadataHash": { "$ref": "#/$defs/hash" },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+    "actionKind": {
+      "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+    },
+    "market": { "const": "BTC" },
+    "maxOrderNotionalUsd": { "const": "10" },
+    "openingTimeInForce": { "const": "Alo" },
+    "nonce": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["APPROVED", "CONSUMED", "EXPIRED", "REVOKED"] },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "consumedAt": { "$ref": "#/$defs/nullableTime" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2 },
+    "exactExecutionOnly": { "const": true },
+    "oneUse": { "const": true },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_testnet_founder_approval.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "nullableTime": {
+      "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    }
+  }
+}

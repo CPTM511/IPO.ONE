@@ -27,6 +27,9 @@ import {
   HyperliquidTestnetInfoAdapter
 } from "../../../modules/hyperliquid-info/src/index.js";
 import {
+  createPostgresVenueExecutionApplication
+} from "../../../modules/hypercore-venue-adapter/src/index.js";
+import {
   EVIDENCE_ANCHOR_HTTP_ROUTES,
   createEvidenceAnchorHttpHandler,
   createPostgresHumanAccessComposition,
@@ -35,6 +38,9 @@ import {
 import {
   EvmWalletSignatureVerifier
 } from "../../../modules/chain-adapter/src/index.js";
+import {
+  createPostgresWalletExecutionApplication
+} from "../../../modules/agentic-execution/src/index.js";
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";
 import { createAgentMcpHost } from "../../agent-mcp/src/index.js";
 import { createLocalPilotIdentities } from "./local-pilot-identities.js";
@@ -92,7 +98,9 @@ function createGateway(
       createTenantFoundationHandlers({
         hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
         hyperliquidBindingProofVerifier:
-          new HyperliquidBindingProofVerifier()
+          new HyperliquidBindingProofVerifier(),
+        walletExecutionApplication: createPostgresWalletExecutionApplication(),
+        venueExecutionApplication: createPostgresVenueExecutionApplication()
       })
     ),
     policyRegistry: authentication.policyRegistry,

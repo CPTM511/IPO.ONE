@@ -18,6 +18,9 @@ export const CoreProjectionType = Object.freeze({
   ACCOUNT_BINDING: "account_binding",
   AGENT_ACCOUNT_CHALLENGE: "agent_account_challenge",
   AGENT_ACCOUNT_PROOF_ATTEMPT: "agent_account_proof_attempt",
+  EXECUTION_ACCOUNT_BINDING_CHALLENGE: "execution_account_binding_challenge",
+  EXECUTION_ACCOUNT_BINDING_PROOF_ATTEMPT: "execution_account_binding_proof_attempt",
+  AGENTIC_EXECUTION_RECORD: "agentic_execution_record",
   MANDATE: "mandate",
   MANDATE_RESERVATION: "mandate_reservation",
   MANDATE_RELEASE: "mandate_release",
@@ -50,6 +53,9 @@ export const CoreProjectionType = Object.freeze({
   TRADING_MATCH_PROPOSAL: "trading_match_proposal",
   TRADING_FACILITY: "trading_facility",
   TRADING_ORDER_INTENT: "trading_order_intent",
+  HYPERCORE_ACCOUNT_BINDING: "hypercore_account_binding",
+  HYPERCORE_API_WALLET_DELEGATE: "hypercore_api_wallet_delegate",
+  HYPERCORE_DELEGATE_TOMBSTONE: "hypercore_delegate_tombstone",
   TRADING_FACILITY_RISK_EVALUATION: "trading_facility_risk_evaluation",
   TRADING_FACILITY_CLOSE_REQUEST: "trading_facility_close_request",
   TRADING_SETTLEMENT: "trading_settlement",
@@ -65,6 +71,9 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.ACCOUNT_BINDING]: "accountBindingId",
   [CoreProjectionType.AGENT_ACCOUNT_CHALLENGE]: "challengeId",
   [CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT]: "proofAttemptId",
+  [CoreProjectionType.EXECUTION_ACCOUNT_BINDING_CHALLENGE]: "challengeId",
+  [CoreProjectionType.EXECUTION_ACCOUNT_BINDING_PROOF_ATTEMPT]: "proofAttemptId",
+  [CoreProjectionType.AGENTIC_EXECUTION_RECORD]: "recordId",
   [CoreProjectionType.MANDATE]: "mandateId",
   [CoreProjectionType.MANDATE_RESERVATION]: "reservationId",
   [CoreProjectionType.MANDATE_RELEASE]: "releaseId",
@@ -97,6 +106,9 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.TRADING_MATCH_PROPOSAL]: "tradingMatchProposalId",
   [CoreProjectionType.TRADING_FACILITY]: "tradingFacilityId",
   [CoreProjectionType.TRADING_ORDER_INTENT]: "tradingOrderIntentId",
+  [CoreProjectionType.HYPERCORE_ACCOUNT_BINDING]: "accountBindingId",
+  [CoreProjectionType.HYPERCORE_API_WALLET_DELEGATE]: "delegateId",
+  [CoreProjectionType.HYPERCORE_DELEGATE_TOMBSTONE]: "tombstoneId",
   [CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION]:
     "tradingFacilityRiskEvaluationId",
   [CoreProjectionType.TRADING_FACILITY_CLOSE_REQUEST]:
@@ -396,7 +408,7 @@ function mapSubject(row, linkedAccountIds = []) {
 
 function mapAccountBinding(row) {
   if (!row) return undefined;
-  return {
+  const binding = {
     accountBindingId: row.id,
     subjectId: row.subject_id,
     accountHash: row.account_hash,
@@ -414,6 +426,12 @@ function mapAccountBinding(row) {
     revokedAt: row.revoked_at ? timestamp(row.revoked_at) : undefined,
     schemaVersion: row.schema_version
   };
+  if (row.schema_version === "account_binding.v3") {
+    binding.executionChallengeId = row.execution_challenge_id;
+    binding.controllerActorHash = row.controller_actor_hash;
+    binding.bindingKind = row.binding_kind;
+  }
+  return binding;
 }
 
 function mapAgentAccountChallenge(row) {
@@ -440,6 +458,45 @@ function mapAgentAccountChallenge(row) {
 }
 
 function mapAgentAccountProofAttempt(row) {
+  if (!row) return undefined;
+  return {
+    proofAttemptId: row.id,
+    challengeId: row.challenge_id,
+    subjectId: row.subject_id,
+    accountHash: row.account_hash,
+    chainId: row.chain_id,
+    proofHash: row.proof_hash,
+    verificationMethod: row.verification_method,
+    outcome: row.outcome,
+    attemptedAt: timestamp(row.attempted_at),
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapExecutionAccountBindingChallenge(row) {
+  if (!row) return undefined;
+  return {
+    challengeId: row.id,
+    subjectId: row.subject_id,
+    subjectHash: row.subject_hash,
+    tenantHash: row.tenant_hash,
+    controllerActorHash: row.controller_actor_hash,
+    actorType: row.actor_type,
+    chainId: row.chain_id,
+    accountHash: row.account_hash,
+    purpose: row.purpose,
+    nonce: row.nonce,
+    typedDataHash: row.typed_data_hash,
+    status: row.status,
+    issuedAt: timestamp(row.issued_at),
+    expiresAt: timestamp(row.expires_at),
+    consumedAt: row.consumed_at ? timestamp(row.consumed_at) : undefined,
+    protocolVersion: row.protocol_version,
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapExecutionAccountBindingProofAttempt(row) {
   if (!row) return undefined;
   return {
     proofAttemptId: row.id,
@@ -1364,6 +1421,18 @@ function mapTradingOrderIntent(row) {
   return row?.order_intent ? clone(row.order_intent) : undefined;
 }
 
+function mapHypercoreAccountBinding(row) {
+  return row?.binding ? clone(row.binding) : undefined;
+}
+
+function mapHypercoreApiWalletDelegate(row) {
+  return row?.delegate ? clone(row.delegate) : undefined;
+}
+
+function mapHypercoreDelegateTombstone(row) {
+  return row?.tombstone ? clone(row.tombstone) : undefined;
+}
+
 function mapTradingFacilityRiskEvaluation(row) {
   return row?.evaluation ? clone(row.evaluation) : undefined;
 }
@@ -2093,6 +2162,66 @@ export class PostgresCoreRepository {
     );
   }
 
+  async getExecutionAccountBindingChallenge(challengeId) {
+    return this.#getOne(
+      "challengeId",
+      challengeId,
+      "SELECT * FROM execution_account_binding_challenges WHERE id = $1",
+      mapExecutionAccountBindingChallenge
+    );
+  }
+
+  async getExecutionAccountBindingProofAttempt(proofAttemptId) {
+    return this.#getOne(
+      "proofAttemptId",
+      proofAttemptId,
+      "SELECT * FROM execution_account_binding_proof_attempts WHERE id = $1",
+      mapExecutionAccountBindingProofAttempt
+    );
+  }
+
+  async getAgenticExecutionRecord(recordId) {
+    assertString("recordId", recordId);
+    let recordType;
+    let statement;
+    let column;
+    if (recordId.startsWith("execution_target_policy_")) {
+      recordType = "target_policy";
+      statement = "SELECT policy AS record FROM execution_target_policies WHERE id = $1";
+      column = "record";
+    } else if (recordId.startsWith("delegated_wallet_grant_transition_")) {
+      recordType = "grant_transition";
+      statement = "SELECT transition AS record FROM delegated_wallet_grant_transitions WHERE id = $1";
+      column = "record";
+    } else if (recordId.startsWith("delegated_wallet_grant_")) {
+      recordType = "grant";
+      statement = "SELECT grant_record AS record FROM delegated_wallet_grants WHERE id = $1";
+      column = "record";
+    } else if (recordId.startsWith("pending_exposure_")) {
+      recordType = "pending_exposure";
+      statement = "SELECT reservation AS record FROM delegated_wallet_pending_exposures WHERE id = $1";
+      column = "record";
+    } else if (recordId.startsWith("wallet_execution_")) {
+      recordType = "prepared_execution";
+      statement = "SELECT prepared_execution AS record FROM wallet_prepared_executions WHERE id = $1";
+      column = "record";
+    } else if (recordId.startsWith("simulation_report_")) {
+      recordType = "simulation_report";
+      statement = "SELECT report AS record FROM wallet_simulation_reports WHERE id = $1";
+      column = "record";
+    } else if (recordId.startsWith("transaction_preflight_receipt_")) {
+      recordType = "preflight_receipt";
+      statement = "SELECT receipt AS record FROM wallet_transaction_preflight_receipts WHERE id = $1";
+      column = "record";
+    } else {
+      throw new DomainError("unsupported_projection_type", "agentic execution record identity is unsupported");
+    }
+    const result = await this.#tenantQuery(statement, [recordId]);
+    return result.rows[0]?.[column]
+      ? { recordId, recordType, record: result.rows[0][column] }
+      : undefined;
+  }
+
   async getAgentAccountChallengeInTransaction(client, challengeId, { lock = true } = {}) {
     assertQueryable(client);
     assertString("challengeId", challengeId);
@@ -2120,6 +2249,46 @@ export class PostgresCoreRepository {
     return mapAgentAccountChallenge(result.rows[0]);
   }
 
+  async findPendingExecutionAccountBindingChallengeForSubjectInTransaction(
+    client,
+    subjectId,
+    { lock = true } = {}
+  ) {
+    assertQueryable(client);
+    assertString("subjectId", subjectId);
+    const result = await client.query(
+      `SELECT * FROM execution_account_binding_challenges
+        WHERE subject_id = $1 AND status = 'pending'
+        ORDER BY issued_at DESC, id
+        LIMIT 2
+        ${lock ? "FOR UPDATE" : ""}`,
+      [subjectId]
+    );
+    if (result.rowCount > 1) {
+      throw new DomainError(
+        "projection_integrity_mismatch",
+        "Subject has more than one pending execution AccountBinding challenge"
+      );
+    }
+    return mapExecutionAccountBindingChallenge(result.rows[0]);
+  }
+
+  async listExecutionAccountBindingsForSubjectInTransaction(client, subjectId, { lock = false } = {}) {
+    assertQueryable(client);
+    assertString("subjectId", subjectId);
+    const result = await client.query(
+      `SELECT * FROM account_bindings
+        WHERE subject_id = $1 AND schema_version = 'account_binding.v3'
+        ORDER BY bound_at, id
+        ${lock ? "FOR SHARE" : ""}`,
+      [subjectId]
+    );
+    if (result.rowCount > 32) {
+      throw new DomainError("projection_integrity_mismatch", "Subject execution account list exceeds its bound");
+    }
+    return result.rows.map(mapAccountBinding);
+  }
+
   async findAccountBindingByHashInTransaction(client, accountHash, { lock = true } = {}) {
     assertQueryable(client);
     assertString("accountHash", accountHash);
@@ -2135,7 +2304,7 @@ export class PostgresCoreRepository {
     assertString("subjectId", subjectId);
     const result = await client.query(
       `SELECT * FROM account_bindings
-        WHERE subject_id = $1 AND status = 'active'
+        WHERE subject_id = $1 AND status = 'active' AND schema_version <> 'account_binding.v3'
         ORDER BY bound_at, id
         LIMIT 2
         ${lock ? "FOR SHARE" : ""}`,
@@ -4107,6 +4276,33 @@ export class PostgresCoreRepository {
     );
   }
 
+  async getHypercoreAccountBinding(accountBindingId) {
+    return this.#getOne(
+      "accountBindingId",
+      accountBindingId,
+      "SELECT binding FROM hypercore_account_bindings WHERE id = $1",
+      mapHypercoreAccountBinding
+    );
+  }
+
+  async getHypercoreApiWalletDelegate(delegateId) {
+    return this.#getOne(
+      "delegateId",
+      delegateId,
+      "SELECT delegate FROM hypercore_api_wallet_delegates WHERE id = $1",
+      mapHypercoreApiWalletDelegate
+    );
+  }
+
+  async getHypercoreDelegateTombstone(tombstoneId) {
+    return this.#getOne(
+      "tombstoneId",
+      tombstoneId,
+      "SELECT tombstone FROM hypercore_delegate_tombstones WHERE id = $1",
+      mapHypercoreDelegateTombstone
+    );
+  }
+
   async getTradingFacilityRiskEvaluation(tradingFacilityRiskEvaluationId) {
     return this.#getOne(
       "tradingFacilityRiskEvaluationId",
@@ -4191,6 +4387,15 @@ export class PostgresCoreRepository {
         break;
       case CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT:
         value = await this.getAgentAccountProofAttempt(entityId);
+        break;
+      case CoreProjectionType.EXECUTION_ACCOUNT_BINDING_CHALLENGE:
+        value = await this.getExecutionAccountBindingChallenge(entityId);
+        break;
+      case CoreProjectionType.EXECUTION_ACCOUNT_BINDING_PROOF_ATTEMPT:
+        value = await this.getExecutionAccountBindingProofAttempt(entityId);
+        break;
+      case CoreProjectionType.AGENTIC_EXECUTION_RECORD:
+        value = await this.getAgenticExecutionRecord(entityId);
         break;
       case CoreProjectionType.MANDATE:
         value = await this.getMandate(entityId);
@@ -4287,6 +4492,15 @@ export class PostgresCoreRepository {
         break;
       case CoreProjectionType.TRADING_ORDER_INTENT:
         value = await this.getTradingOrderIntent(entityId);
+        break;
+      case CoreProjectionType.HYPERCORE_ACCOUNT_BINDING:
+        value = await this.getHypercoreAccountBinding(entityId);
+        break;
+      case CoreProjectionType.HYPERCORE_API_WALLET_DELEGATE:
+        value = await this.getHypercoreApiWalletDelegate(entityId);
+        break;
+      case CoreProjectionType.HYPERCORE_DELEGATE_TOMBSTONE:
+        value = await this.getHypercoreDelegateTombstone(entityId);
         break;
       case CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION:
         value = await this.getTradingFacilityRiskEvaluation(entityId);
@@ -4388,6 +4602,12 @@ export class PostgresCoreRepository {
         return this.#writeAgentAccountChallenge(client, value);
       case CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT:
         return this.#writeAgentAccountProofAttempt(client, value);
+      case CoreProjectionType.EXECUTION_ACCOUNT_BINDING_CHALLENGE:
+        return this.#writeExecutionAccountBindingChallenge(client, value);
+      case CoreProjectionType.EXECUTION_ACCOUNT_BINDING_PROOF_ATTEMPT:
+        return this.#writeExecutionAccountBindingProofAttempt(client, value);
+      case CoreProjectionType.AGENTIC_EXECUTION_RECORD:
+        return this.#writeAgenticExecutionRecord(client, value, write.eventId);
       case CoreProjectionType.MANDATE:
         return this.#writeMandate(client, value);
       case CoreProjectionType.MANDATE_RESERVATION:
@@ -4452,6 +4672,12 @@ export class PostgresCoreRepository {
         return this.#writeTradingFacility(client, value);
       case CoreProjectionType.TRADING_ORDER_INTENT:
         return this.#writeTradingOrderIntent(client, value);
+      case CoreProjectionType.HYPERCORE_ACCOUNT_BINDING:
+        return this.#writeHypercoreAccountBinding(client, value, occurredAt);
+      case CoreProjectionType.HYPERCORE_API_WALLET_DELEGATE:
+        return this.#writeHypercoreApiWalletDelegate(client, value);
+      case CoreProjectionType.HYPERCORE_DELEGATE_TOMBSTONE:
+        return this.#writeHypercoreDelegateTombstone(client, value);
       case CoreProjectionType.TRADING_FACILITY_RISK_EVALUATION:
         return this.#writeTradingFacilityRiskEvaluation(client, value);
       case CoreProjectionType.TRADING_FACILITY_CLOSE_REQUEST:
@@ -4544,8 +4770,12 @@ export class PostgresCoreRepository {
       `INSERT INTO account_bindings(
          id, subject_id, account_hash, chain_id, account_ref, signature_hash,
          nonce, purpose, verification_method, status, bound_at, revoked_at, schema_version,
-         challenge_id, proof_hash, protocol_version
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         challenge_id, proof_hash, protocol_version, execution_challenge_id,
+         controller_actor_hash, binding_kind
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+         $17, $18, $19
+       )
        ON CONFLICT (id) DO UPDATE
          SET status = EXCLUDED.status, revoked_at = EXCLUDED.revoked_at
        WHERE account_bindings.subject_id = EXCLUDED.subject_id
@@ -4559,6 +4789,9 @@ export class PostgresCoreRepository {
          AND account_bindings.challenge_id IS NOT DISTINCT FROM EXCLUDED.challenge_id
          AND account_bindings.proof_hash IS NOT DISTINCT FROM EXCLUDED.proof_hash
          AND account_bindings.protocol_version IS NOT DISTINCT FROM EXCLUDED.protocol_version
+         AND account_bindings.execution_challenge_id IS NOT DISTINCT FROM EXCLUDED.execution_challenge_id
+         AND account_bindings.controller_actor_hash IS NOT DISTINCT FROM EXCLUDED.controller_actor_hash
+         AND account_bindings.binding_kind = EXCLUDED.binding_kind
        RETURNING id`,
       [
         value.accountBindingId,
@@ -4576,7 +4809,10 @@ export class PostgresCoreRepository {
         value.schemaVersion,
         value.challengeId ?? null,
         value.proofHash ?? null,
-        value.protocolVersion ?? null
+        value.protocolVersion ?? null,
+        value.executionChallengeId ?? null,
+        value.controllerActorHash ?? null,
+        value.bindingKind ?? (value.schemaVersion === "account_binding.v2" ? "agent_onboarding" : "legacy")
       ]
     );
     if (result.rowCount !== 1) throw projectionConflict(CoreProjectionType.ACCOUNT_BINDING, value.accountBindingId);
@@ -4658,6 +4894,441 @@ export class PostgresCoreRepository {
     if (result.rowCount !== 1) {
       throw projectionConflict(CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT, value.proofAttemptId);
     }
+  }
+
+  async #writeExecutionAccountBindingChallenge(client, value) {
+    const result = await client.query(
+      `INSERT INTO execution_account_binding_challenges(
+         id, subject_id, subject_hash, tenant_hash, controller_actor_hash,
+         actor_type, chain_id, account_hash, purpose, nonce, typed_data_hash,
+         status, issued_at, expires_at, consumed_at, protocol_version, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+       )
+       ON CONFLICT (id) DO UPDATE
+         SET status = EXCLUDED.status, consumed_at = EXCLUDED.consumed_at
+       WHERE execution_account_binding_challenges.subject_id = EXCLUDED.subject_id
+         AND execution_account_binding_challenges.subject_hash = EXCLUDED.subject_hash
+         AND execution_account_binding_challenges.tenant_hash = EXCLUDED.tenant_hash
+         AND execution_account_binding_challenges.controller_actor_hash = EXCLUDED.controller_actor_hash
+         AND execution_account_binding_challenges.actor_type = EXCLUDED.actor_type
+         AND execution_account_binding_challenges.chain_id = EXCLUDED.chain_id
+         AND execution_account_binding_challenges.account_hash = EXCLUDED.account_hash
+         AND execution_account_binding_challenges.purpose = EXCLUDED.purpose
+         AND execution_account_binding_challenges.nonce = EXCLUDED.nonce
+         AND execution_account_binding_challenges.typed_data_hash = EXCLUDED.typed_data_hash
+         AND execution_account_binding_challenges.issued_at = EXCLUDED.issued_at
+         AND execution_account_binding_challenges.expires_at = EXCLUDED.expires_at
+         AND execution_account_binding_challenges.protocol_version = EXCLUDED.protocol_version
+       RETURNING id`,
+      [
+        value.challengeId,
+        value.subjectId,
+        value.subjectHash,
+        value.tenantHash,
+        value.controllerActorHash,
+        value.actorType,
+        value.chainId,
+        value.accountHash,
+        value.purpose,
+        value.nonce,
+        value.typedDataHash,
+        value.status,
+        value.issuedAt,
+        value.expiresAt,
+        value.consumedAt ?? null,
+        value.protocolVersion,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.EXECUTION_ACCOUNT_BINDING_CHALLENGE, value.challengeId);
+    }
+  }
+
+  async #writeExecutionAccountBindingProofAttempt(client, value) {
+    const result = await client.query(
+      `INSERT INTO execution_account_binding_proof_attempts(
+         id, challenge_id, subject_id, account_hash, chain_id, proof_hash,
+         verification_method, outcome, attempted_at, schema_version
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.proofAttemptId,
+        value.challengeId,
+        value.subjectId,
+        value.accountHash,
+        value.chainId,
+        value.proofHash,
+        value.verificationMethod,
+        value.outcome,
+        value.attemptedAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.EXECUTION_ACCOUNT_BINDING_PROOF_ATTEMPT,
+        value.proofAttemptId
+      );
+    }
+  }
+
+  async #writeAgenticExecutionRecord(client, value, sourceEventId) {
+    if (
+      !value || typeof value !== "object" || Array.isArray(value) ||
+      typeof value.recordId !== "string" || typeof value.recordType !== "string" ||
+      !value.record || typeof value.record !== "object" || Array.isArray(value.record)
+    ) {
+      throw new DomainError("invalid_core_projection", "agentic execution record wrapper is invalid");
+    }
+    assertString("sourceEventId", sourceEventId);
+    const record = value.record;
+    const exactId = {
+      target_policy: record.targetPolicyId,
+      grant: record.grantId,
+      grant_transition: record.transitionId,
+      pending_exposure: record.reservationId,
+      prepared_execution: record.executionId,
+      simulation_report: record.simulationReportId,
+      preflight_receipt: record.preflightReceiptId
+    }[value.recordType];
+    if (exactId !== value.recordId) {
+      throw new DomainError("invalid_core_projection", "agentic execution record identity is inconsistent");
+    }
+    switch (value.recordType) {
+      case "target_policy":
+        return this.#writeAgenticExecutionTargetPolicy(client, record);
+      case "grant":
+        return this.#writeAgenticExecutionGrant(client, record);
+      case "grant_transition":
+        return this.#writeAgenticExecutionGrantTransition(client, record, sourceEventId);
+      case "pending_exposure":
+        return this.#writeAgenticExecutionPendingExposure(client, record, sourceEventId);
+      case "prepared_execution":
+        return this.#writeAgenticExecutionPrepared(client, record, sourceEventId);
+      case "simulation_report":
+        return this.#writeAgenticExecutionSimulation(client, record);
+      case "preflight_receipt":
+        return this.#writeAgenticExecutionPreflight(client, record, sourceEventId);
+      default:
+        throw new DomainError("invalid_core_projection", "agentic execution record type is unsupported");
+    }
+  }
+
+  async #writeAgenticExecutionTargetPolicy(client, policy) {
+    const result = await client.query(
+      `INSERT INTO execution_target_policies (
+         id, policy_hash, provider_id, chain_id, target_address, code_hash,
+         proxy_implementation_hash, allowed_function_selectors, valid_from,
+         expires_at, policy, version, sandbox_only, transactions_allowed,
+         production_authority, funds_authority, created_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8::JSONB, $9, $10, $11::JSONB, $12,
+         $13, $14, $15, $16, $17, $18
+       ) ON CONFLICT (tenant_id, id) DO NOTHING
+       RETURNING policy_hash`,
+      [
+        policy.targetPolicyId, policy.policyHash, policy.providerId, policy.chainId,
+        policy.targetAddress, policy.codeHash, policy.proxyImplementationHash,
+        json(policy.allowedFunctionSelectors), policy.validFrom, policy.expiresAt,
+        json(policy), policy.version, policy.sandboxOnly, policy.transactionsAllowed,
+        policy.productionAuthority, policy.fundsAuthority, policy.createdAt,
+        policy.schemaVersion
+      ]
+    );
+    if (result.rowCount === 0) {
+      const existing = await client.query(
+        "SELECT policy_hash FROM execution_target_policies WHERE id = $1",
+        [policy.targetPolicyId]
+      );
+      if (existing.rowCount !== 1 || existing.rows[0].policy_hash !== policy.policyHash) {
+        throw projectionConflict(CoreProjectionType.AGENTIC_EXECUTION_RECORD, policy.targetPolicyId);
+      }
+    }
+  }
+
+  async #writeAgenticExecutionGrant(client, grant) {
+    const existing = await client.query(
+      "SELECT version, grant_hash FROM delegated_wallet_grants WHERE id = $1 FOR UPDATE",
+      [grant.grantId]
+    );
+    if (existing.rowCount === 0) {
+      await client.query(
+        `INSERT INTO delegated_wallet_grants (
+           id, grant_hash, subject_id, principal_id, account_binding_id,
+           execution_domain, adapter_id, mandate_id, mandate_hash,
+           spend_policy_id, spend_policy_hash, credit_line_id, credit_line_hash,
+           obligation_id, obligation_hash, authorization_decision_id,
+           authorization_hash, session_signer_ref_hash, provider_id, chain_ids,
+           asset_ids, per_tx_limit_minor, rolling_24h_limit_minor,
+           aggregate_limit_minor, obligation_limit_minor, pending_exposure_minor,
+           valid_from, expires_at, session_epoch, nonce,
+           external_permission_ref_hash, external_policy_hash, status,
+           grant_record, version, sandbox_only, transactions_allowed,
+           production_authority, funds_authority, created_at, updated_at,
+           schema_version
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20::JSONB,
+           $21::JSONB, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+           $31, $32, $33, $34::JSONB, $35, $36, $37, $38, $39, $40,
+           $41, $42
+         )`,
+        [
+          grant.grantId, grant.grantHash, grant.subjectId, grant.principalId,
+          grant.accountBindingId, grant.executionDomain, grant.adapterId, grant.mandateId,
+          grant.mandateHash, grant.spendPolicyId, grant.spendPolicyHash, grant.creditLineId,
+          grant.creditLineHash, grant.obligationId, grant.obligationHash,
+          grant.authorizationDecisionId, grant.authorizationHash, grant.sessionSignerRefHash,
+          grant.providerId, json(grant.chainIds), json(grant.assetIds), grant.perTxLimitMinor,
+          grant.rolling24hLimitMinor, grant.aggregateLimitMinor, grant.obligationLimitMinor,
+          grant.pendingExposureMinor, grant.validFrom, grant.expiresAt, grant.sessionEpoch,
+          grant.nonce, grant.externalPermissionRefHash, grant.externalPolicyHash, grant.status,
+          json(grant), grant.version, grant.sandboxOnly, grant.transactionsAllowed,
+          grant.productionAuthority, grant.fundsAuthority, grant.createdAt, grant.updatedAt,
+          grant.schemaVersion
+        ]
+      );
+      for (const targetPolicyId of grant.allowedTargetPolicyIds) {
+        await client.query(
+          `INSERT INTO delegated_wallet_grant_target_policies(
+             grant_id, target_policy_id, created_at
+           ) VALUES ($1, $2, $3)`,
+          [grant.grantId, targetPolicyId, grant.createdAt]
+        );
+      }
+      return;
+    }
+    if (
+      existing.rows[0].grant_hash !== grant.grantHash ||
+      Number(existing.rows[0].version) + 1 !== grant.version
+    ) throw projectionConflict(CoreProjectionType.AGENTIC_EXECUTION_RECORD, grant.grantId);
+    const updated = await client.query(
+      `UPDATE delegated_wallet_grants
+          SET external_permission_ref_hash = $1,
+              external_policy_hash = $2,
+              status = $3,
+              pending_exposure_minor = $4,
+              grant_record = $5::JSONB,
+              version = $6,
+              updated_at = $7
+        WHERE id = $8 AND version = $9`,
+      [
+        grant.externalPermissionRefHash, grant.externalPolicyHash, grant.status,
+        grant.pendingExposureMinor, json(grant), grant.version, grant.updatedAt,
+        grant.grantId, grant.version - 1
+      ]
+    );
+    if (updated.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.AGENTIC_EXECUTION_RECORD, grant.grantId);
+    }
+  }
+
+  async #writeAgenticExecutionGrantTransition(client, transition, sourceEventId) {
+    const result = await client.query(
+      `INSERT INTO delegated_wallet_grant_transitions (
+         id, grant_id, transition_hash, event_id, previous_status, next_status,
+         reason_code, authorization_decision_id, authorization_hash, occurred_at,
+         transition, schema_version
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::JSONB, $12)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        transition.transitionId, transition.grantId, transition.transitionHash,
+        sourceEventId, transition.previousStatus, transition.nextStatus,
+        transition.reasonCode, transition.authorizationDecisionId,
+        transition.authorizationHash, transition.occurredAt, json(transition),
+        transition.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.AGENTIC_EXECUTION_RECORD, transition.transitionId);
+    }
+  }
+
+  async #writeAgenticExecutionPendingExposure(client, reservation, sourceEventId) {
+    const existing = await client.query(
+      "SELECT * FROM delegated_wallet_pending_exposures WHERE id = $1 FOR UPDATE",
+      [reservation.reservationId]
+    );
+    if (existing.rowCount === 1) {
+      const row = existing.rows[0];
+      if (
+        row.reservation_hash !== reservation.reservationHash ||
+        row.status !== "reserved" || reservation.status === "reserved"
+      ) throw projectionConflict(CoreProjectionType.AGENTIC_EXECUTION_RECORD, reservation.reservationId);
+      const updated = await client.query(
+        `UPDATE delegated_wallet_pending_exposures
+            SET status = $1, released_at = $2, release_reason_code = $3,
+                release_event_id = $4, reservation = $5::JSONB
+          WHERE id = $6 AND status = 'reserved'`,
+        [
+          reservation.status, reservation.releasedAt, reservation.releaseReasonCode,
+          sourceEventId, json(reservation), reservation.reservationId
+        ]
+      );
+      if (updated.rowCount !== 1) {
+        throw projectionConflict(CoreProjectionType.AGENTIC_EXECUTION_RECORD, reservation.reservationId);
+      }
+      return;
+    }
+    const authority = await client.query(
+      `SELECT g.*, a.status AS account_binding_status, c.status AS credit_line_status,
+              m.status AS mandate_status, p.expires_at AS target_expires_at
+         FROM delegated_wallet_grants g
+         JOIN account_bindings a ON a.tenant_id = g.tenant_id AND a.id = g.account_binding_id
+         JOIN credit_lines c ON c.tenant_id = g.tenant_id AND c.id = g.credit_line_id
+         JOIN mandates m ON m.tenant_id = g.tenant_id AND m.id = g.mandate_id
+         JOIN execution_target_policies p ON p.tenant_id = g.tenant_id AND p.id = $2
+        WHERE g.id = $1
+        FOR UPDATE OF g`,
+      [reservation.grantId, reservation.targetPolicyId]
+    );
+    const grant = authority.rows[0];
+    if (
+      authority.rowCount !== 1 || grant.status !== "active" ||
+      Number(grant.session_epoch) !== reservation.sessionEpoch ||
+      grant.account_binding_status !== "active" || grant.credit_line_status !== "approved" ||
+      grant.mandate_status !== "active" || new Date(grant.expires_at) <= new Date(reservation.reservedAt) ||
+      new Date(grant.target_expires_at) <= new Date(reservation.reservedAt)
+    ) throw new DomainError("agentic_execution_context_stale", "durable grant authority changed before reservation");
+    const exposure = await client.query(
+      `SELECT
+         COALESCE(SUM(amount_minor) FILTER (
+           WHERE grant_id = $1 AND status = 'reserved' AND reserved_at >= $3::TIMESTAMPTZ - INTERVAL '24 hours'
+         ), 0)::TEXT AS rolling_minor,
+         COALESCE(SUM(amount_minor) FILTER (
+           WHERE obligation_id = $2 AND status = 'reserved'
+         ), 0)::TEXT AS obligation_minor
+         FROM delegated_wallet_pending_exposures
+        WHERE grant_id = $1 OR obligation_id = $2`,
+      [reservation.grantId, reservation.obligationId, reservation.reservedAt]
+    );
+    const amount = BigInt(reservation.amountMinor);
+    if (
+      amount > BigInt(grant.per_tx_limit_minor) ||
+      BigInt(exposure.rows[0].rolling_minor) + amount > BigInt(grant.rolling_24h_limit_minor) ||
+      BigInt(grant.pending_exposure_minor) + amount > BigInt(grant.aggregate_limit_minor) ||
+      BigInt(exposure.rows[0].obligation_minor) + amount > BigInt(grant.obligation_limit_minor)
+    ) throw new DomainError("agentic_execution_exposure_limit_exceeded", "atomic pending exposure limit was exceeded");
+    await client.query(
+      `INSERT INTO delegated_wallet_pending_exposures (
+         id, reservation_hash, grant_id, target_policy_id, obligation_id,
+         event_id, asset_id, amount_minor, session_epoch, idempotency_key_hash,
+         reserved_at, expires_at, status, released_at, release_reason_code,
+         reservation, sandbox_only, transactions_allowed, production_authority,
+         funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+         $14, $15, $16::JSONB, $17, $18, $19, $20, $21
+       )`,
+      [
+        reservation.reservationId, reservation.reservationHash, reservation.grantId,
+        reservation.targetPolicyId, reservation.obligationId, sourceEventId,
+        reservation.assetId, reservation.amountMinor, reservation.sessionEpoch,
+        reservation.idempotencyKeyHash, reservation.reservedAt, reservation.expiresAt,
+        reservation.status, reservation.releasedAt, reservation.releaseReasonCode,
+        json(reservation), reservation.sandboxOnly, reservation.transactionsAllowed,
+        reservation.productionAuthority, reservation.fundsAuthority, reservation.schemaVersion
+      ]
+    );
+  }
+
+  async #writeAgenticExecutionPrepared(client, prepared, sourceEventId) {
+    await client.query(
+      `INSERT INTO wallet_prepared_executions (
+         id, prepared_execution_hash, transfer_intent_id, grant_id, target_policy_id,
+         reservation_id, authorization_hash, exact_payload_hash, chain_id,
+         target_address, function_selector, event_id, prepared_execution,
+         valid_from, expires_at, transactions_allowed, sandbox_only,
+         production_authority, funds_authority, schema_version, created_at
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::JSONB,
+         $14, $15, $16, $17, $18, $19, $20, $21
+       )`,
+      [
+        prepared.executionId, prepared.preparedExecutionHash, prepared.transferIntentId,
+        prepared.grantId, prepared.targetPolicyId, prepared.reservationId,
+        prepared.authorizationHash, prepared.payload.exactPayloadHash,
+        prepared.payload.chainId, prepared.payload.targetAddress,
+        prepared.payload.functionSelector, sourceEventId, json(prepared),
+        prepared.validFrom, prepared.expiresAt, prepared.transactionsAllowed,
+        prepared.sandboxOnly, prepared.productionAuthority, prepared.fundsAuthority,
+        prepared.schemaVersion, prepared.createdAt
+      ]
+    );
+  }
+
+  async #writeAgenticExecutionSimulation(client, report) {
+    await client.query(
+      `INSERT INTO wallet_simulation_reports (
+         id, simulation_hash, execution_id, exact_payload_hash, status,
+         chain_id, block_number, block_hash, observed_code_hash,
+         observed_proxy_implementation_hash, simulated_effects_hash, report,
+         simulated_at, expires_at, external_call_performed, sandbox_only,
+         production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::JSONB,
+         $13, $14, $15, $16, $17, $18, $19
+       )`,
+      [
+        report.simulationReportId, report.simulationHash, report.executionId,
+        report.exactPayloadHash, report.status, report.chainId, report.blockNumber,
+        report.blockHash, report.observedCodeHash, report.observedProxyImplementationHash,
+        report.simulatedEffects.effectsHash, json(report), report.simulatedAt,
+        report.expiresAt, report.externalCallPerformed, report.sandboxOnly,
+        report.productionAuthority, report.fundsAuthority, report.schemaVersion
+      ]
+    );
+  }
+
+  async #writeAgenticExecutionPreflight(client, receipt, sourceEventId) {
+    const context = await client.query(
+      `SELECT p.prepared_execution_hash, p.grant_id, p.exact_payload_hash,
+              p.expires_at, p.reservation_id, g.status AS grant_status,
+              g.grant_hash, g.session_epoch, r.status AS reservation_status,
+              r.reservation_hash, r.expires_at AS reservation_expires_at
+         FROM wallet_prepared_executions p
+         JOIN delegated_wallet_grants g ON g.tenant_id = p.tenant_id AND g.id = p.grant_id
+         JOIN delegated_wallet_pending_exposures r
+           ON r.tenant_id = p.tenant_id AND r.id = p.reservation_id
+        WHERE p.id = $1
+        FOR SHARE OF p, g, r`,
+      [receipt.executionId]
+    );
+    const row = context.rows[0];
+    const decisionMayContinue = new Set(["ALLOW", "STEP_UP"]).has(receipt.decision);
+    if (
+      context.rowCount !== 1 || row.grant_hash !== receipt.grantHash ||
+      row.reservation_hash !== receipt.reservationHash ||
+      row.exact_payload_hash !== receipt.exactPayloadHash ||
+      new Date(row.expires_at) <= new Date(receipt.createdAt) ||
+      (decisionMayContinue && (
+        row.grant_status !== "active" || row.reservation_status !== "reserved" ||
+        new Date(row.reservation_expires_at) <= new Date(receipt.createdAt)
+      ))
+    ) throw new DomainError("agentic_execution_context_stale", "preflight authority changed before atomic commit");
+    await client.query(
+      `INSERT INTO wallet_transaction_preflight_receipts (
+         id, preflight_hash, execution_id, simulation_report_id, grant_id,
+         reservation_hash, exact_payload_hash, decision, reason_codes,
+         event_id, receipt, created_at, expires_at, transactions_allowed,
+         sandbox_only, production_authority, funds_authority, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9::JSONB, $10, $11::JSONB,
+         $12, $13, $14, $15, $16, $17, $18
+       )`,
+      [
+        receipt.preflightReceiptId, receipt.preflightHash, receipt.executionId,
+        receipt.simulationSnapshot.simulationReportId, receipt.grantId,
+        receipt.reservationHash, receipt.exactPayloadHash, receipt.decision,
+        json(receipt.reasonCodes), sourceEventId, json(receipt), receipt.createdAt,
+        receipt.expiresAt, receipt.transactionsAllowed, receipt.sandboxOnly,
+        receipt.productionAuthority, receipt.fundsAuthority, receipt.schemaVersion
+      ]
+    );
   }
 
   async #writeMandate(client, value) {
@@ -6706,6 +7377,181 @@ export class PostgresCoreRepository {
       throw projectionConflict(
         CoreProjectionType.TRADING_ORDER_INTENT,
         value.tradingOrderIntentId
+      );
+    }
+  }
+
+  async #writeHypercoreAccountBinding(client, value, occurredAt) {
+    const result = await client.query(
+      `INSERT INTO hypercore_account_bindings(
+         id, account_binding_hash, facility_id, facility_hash, environment,
+         account_role, master_account_address_hash, subaccount_address_hash,
+         canonical_account_address_hash, query_address_hash, binding_proof_hash,
+         binding_version, status, binding, recorded_at,
+         signer_address_is_account_identity,
+         api_wallet_address_accepted_for_info, external_binding_performed,
+         sandbox_only, testnet_only, mainnet_authority, production_authority,
+         funds_authority, secrets_included, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.accountBindingId,
+        value.accountBindingHash,
+        value.facilityId,
+        value.facilityHash,
+        value.environment,
+        value.accountRole,
+        value.masterAccountAddressHash,
+        value.subaccountAddressHash,
+        value.canonicalAccountAddressHash,
+        value.queryAddressHash,
+        value.bindingProofHash,
+        value.bindingVersion,
+        value.status,
+        value,
+        occurredAt,
+        value.signerAddressIsAccountIdentity,
+        value.apiWalletAddressAcceptedForInfo,
+        value.externalBindingPerformed,
+        value.sandboxOnly,
+        value.testnetOnly,
+        value.mainnetAuthority,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.secretsIncluded,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.HYPERCORE_ACCOUNT_BINDING,
+        value.accountBindingId
+      );
+    }
+  }
+
+  async #writeHypercoreApiWalletDelegate(client, value) {
+    const result = await client.query(
+      `INSERT INTO hypercore_api_wallet_delegates(
+         id, delegate_hash, facility_id, facility_hash, environment,
+         account_binding_id, account_binding_hash,
+         canonical_account_address_hash, api_wallet_address_hash,
+         signer_reference_hash, delegate_name_hash, status, prepared_at,
+         activated_at, terminal_at, expires_at, terminal_reason,
+         lifecycle_version, delegate, external_approval_performed,
+         venue_registration_verified, raw_address_persisted, raw_key_accepted,
+         raw_key_persisted, reusable_signature_persisted,
+         withdrawal_authority, transfer_authority,
+         account_administration_authority, mainnet_authority,
+         production_authority, funds_authority, secrets_included,
+         schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25,
+         $26, $27, $28, $29, $30, $31, $32, $33
+       )
+       ON CONFLICT (id) DO UPDATE SET
+         delegate_hash = EXCLUDED.delegate_hash,
+         status = EXCLUDED.status,
+         activated_at = EXCLUDED.activated_at,
+         terminal_at = EXCLUDED.terminal_at,
+         terminal_reason = EXCLUDED.terminal_reason,
+         lifecycle_version = EXCLUDED.lifecycle_version,
+         delegate = EXCLUDED.delegate
+       WHERE hypercore_api_wallet_delegates.delegate_hash <>
+             EXCLUDED.delegate_hash
+       RETURNING id`,
+      [
+        value.delegateId,
+        value.delegateHash,
+        value.facilityId,
+        value.facilityHash,
+        value.environment,
+        value.accountBindingId,
+        value.accountBindingHash,
+        value.canonicalAccountAddressHash,
+        value.apiWalletAddressHash,
+        value.signerReferenceHash,
+        value.delegateNameHash,
+        value.status,
+        value.preparedAt,
+        value.activatedAt,
+        value.terminalAt,
+        value.expiresAt,
+        value.terminalReason,
+        value.lifecycleVersion,
+        value,
+        value.externalApprovalPerformed,
+        value.venueRegistrationVerified,
+        value.rawAddressPersisted,
+        value.rawKeyAccepted,
+        value.rawKeyPersisted,
+        value.reusableSignaturePersisted,
+        value.withdrawalAuthority,
+        value.transferAuthority,
+        value.accountAdministrationAuthority,
+        value.mainnetAuthority,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.secretsIncluded,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.HYPERCORE_API_WALLET_DELEGATE,
+        value.delegateId
+      );
+    }
+  }
+
+  async #writeHypercoreDelegateTombstone(client, value) {
+    const result = await client.query(
+      `INSERT INTO hypercore_delegate_tombstones(
+         id, tombstone_hash, delegate_id, delegate_hash, facility_id,
+         account_binding_id, api_wallet_address_hash, terminal_status,
+         terminal_reason, terminal_at, tombstone, address_reuse_allowed,
+         raw_address_persisted, raw_key_persisted,
+         reusable_signature_persisted, mainnet_authority,
+         production_authority, funds_authority, secrets_included,
+         schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+         $14, $15, $16, $17, $18, $19, $20
+       )
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [
+        value.tombstoneId,
+        value.tombstoneHash,
+        value.delegateId,
+        value.delegateHash,
+        value.facilityId,
+        value.accountBindingId,
+        value.apiWalletAddressHash,
+        value.terminalStatus,
+        value.terminalReason,
+        value.terminalAt,
+        value,
+        value.addressReuseAllowed,
+        value.rawAddressPersisted,
+        value.rawKeyPersisted,
+        value.reusableSignaturePersisted,
+        value.mainnetAuthority,
+        value.productionAuthority,
+        value.fundsAuthority,
+        value.secretsIncluded,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.HYPERCORE_DELEGATE_TOMBSTONE,
+        value.tombstoneId
       );
     }
   }

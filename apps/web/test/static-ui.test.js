@@ -26,6 +26,10 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     new URL("../src/wallet-provider-registry.js", import.meta.url),
     "utf8"
   );
+  const evmWalletConnector = await readFile(
+    new URL("../src/evm-wallet-connector.js", import.meta.url),
+    "utf8"
+  );
   const walletLifecycle = await readFile(
     new URL("../src/wallet-authority-lifecycle.js", import.meta.url),
     "utf8"
@@ -495,10 +499,11 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes("toggleAttribute(\"inert\""));
   assert.ok(js.includes("openPrincipalAgentAuthority"));
   for (const method of [
-    "eth_requestAccounts",
-    "wallet_switchEthereumChain",
-    "wallet_addEthereumChain",
-    "personal_sign"
+    "connector.connect",
+    "connector.switchChain",
+    "connector.signMessage",
+    "connector.getAccounts",
+    "connector.getChain"
   ]) {
     assert.ok(js.includes(method), `${method} wallet integration missing`);
   }
@@ -676,7 +681,16 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(walletRegistry.includes('"legacy:globalThis.ethereum"'));
   assert.ok(walletRegistry.includes("MAXIMUM_PROVIDERS = 16"));
   assert.ok(walletRegistry.includes("recordsById.has(record.descriptor.providerId)"));
-  assert.ok(walletRegistry.includes("providerIdsByReference.has(record.provider)"));
+  assert.ok(walletRegistry.includes("providerIdsByReference.has(providerReference)"));
+  assert.ok(walletRegistry.includes('from "./evm-wallet-connector.js"'));
+  assert.ok(evmWalletConnector.includes('"eth_requestAccounts"'));
+  assert.ok(evmWalletConnector.includes('method: "wallet_switchEthereumChain"'));
+  assert.ok(evmWalletConnector.includes('method: "wallet_addEthereumChain"'));
+  assert.ok(evmWalletConnector.includes('method: "personal_sign"'));
+  assert.equal(evmWalletConnector.includes("eth_sendTransaction"), false);
+  assert.equal(evmWalletConnector.includes("eth_signTransaction"), false);
+  assert.ok(evmWalletConnector.includes("submitPreparedExecution"));
+  assert.ok(evmWalletConnector.includes("prepared_execution_contract_unavailable"));
   assert.ok(walletRegistry.includes("eventTarget.removeEventListener"));
   assert.equal(walletRegistry.includes("localStorage"), false);
   assert.equal(walletRegistry.includes("sessionStorage"), false);
@@ -714,7 +728,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(walletLifecycle.includes("BroadcastChannel") === false);
   assert.ok(walletLifecycle.includes("retryInvalidation"));
   assert.ok(walletLifecycle.includes("assertProtectedAvailable"));
-  assert.ok(js.includes('provider.on("disconnect", disconnected)'));
+  assert.ok(js.includes("connector.subscribeDisconnect(disconnected)"));
   assert.ok(js.includes("walletAuthorityLifecycle.assertContextEpoch"));
   assert.ok(js.includes("walletAuthorityLifecycle.assertProtectedAvailable"));
   assert.ok(js.includes('"wallet_session_invalidation_request.v1"'));
@@ -896,6 +910,41 @@ test("Provider Network preserves the exact no-funds Provider boundary", async ()
   assert.ok(presentation.includes("productionFundsMoved: false"));
   assert.ok(presentation.includes("withdrawable: false"));
   assert.equal(presentation.includes("approved: true"), false);
+});
+
+test("PRODUCT-INTEGRATION-001 keeps login, AccountBinding, and execution authority distinct", async () => {
+  const [html, js, trust] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/v9-trust-surfaces.js", import.meta.url), "utf8")
+  ]);
+  const start = html.indexOf('data-view-panel="wallet-permissions"');
+  const end = html.indexOf('data-view-panel="obligations"', start);
+  const surface = html.slice(start, end);
+
+  assert.ok(start >= 0 && end > start, "native Wallet & Permissions surface missing");
+  assert.ok(surface.includes("Execution account · not login"));
+  assert.ok(surface.includes("Connect execution account"));
+  assert.ok(surface.includes("Bind account"));
+  assert.ok(surface.includes("Prepare + simulate"));
+  assert.ok(surface.includes("Submit transaction · unavailable"));
+  assert.ok(surface.includes("Browser-authored transaction payloads are never accepted"));
+  for (const operationId of [
+    "walletPrepareAccountBinding",
+    "walletSubmitAccountBinding",
+    "walletReadAccountBindings",
+    "walletRevokeAccountBinding",
+    "walletPrepareGrant",
+    "walletPrepareExecution",
+    "walletReadExecution"
+  ]) {
+    assert.ok(trust.includes(`"${operationId}"`));
+    assert.ok(js.includes(`"${operationId}"`));
+  }
+  assert.ok(js.includes("authenticationSessionChanged: false"));
+  assert.ok(js.includes("executionAccountDisconnected: true"));
+  assert.ok(js.includes("exact authorized TransferIntent"));
+  assert.equal(js.includes("eth_sendTransaction"), false);
 });
 
 test("WEB-014 separates product intent, access mode, and Provider operations", async () => {
