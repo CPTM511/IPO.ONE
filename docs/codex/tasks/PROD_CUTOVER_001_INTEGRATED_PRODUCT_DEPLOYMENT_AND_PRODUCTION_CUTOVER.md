@@ -1,6 +1,6 @@
 # PROD-CUTOVER-001 — Integrated Product Deployment and Production Cutover
 
-Status: `IN_PROGRESS — DEPLOYMENT PREFLIGHT; REAL-VALUE GATES LOCKED`
+Status: `BLOCKED — CANDIDATES BUILT; HEALTH UNVERIFIED; PRODUCTION GATES LOCKED`
 
 Owner: IPO.ONE Founder / Release Owner
 
@@ -238,6 +238,8 @@ an earlier missing approval.
 ## Completion Evidence
 
 Preflight Evidence is recorded in
-`docs/codex/audits/PROD-CUTOVER-001/preflight.md`. Deployment, invited-wallet
-signature, post-deployment acceptance, policy revision and exact real-value
-confirmation remain pending.
+`docs/codex/audits/PROD-CUTOVER-001/preflight.md`. Two exact, non-promoted
+Vercel candidates and their blocked health evidence are recorded in
+`docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md`. Stable alias
+promotion, invited-wallet signature, post-deployment acceptance, policy
+revision and exact real-value confirmation remain pending.
