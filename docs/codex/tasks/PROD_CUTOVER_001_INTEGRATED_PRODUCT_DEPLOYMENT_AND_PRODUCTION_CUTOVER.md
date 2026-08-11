@@ -1,6 +1,6 @@
 # PROD-CUTOVER-001 — Integrated Product Deployment and Production Cutover
 
-Status: `BLOCKED — CANDIDATES BUILT; HEALTH UNVERIFIED; PRODUCTION GATES LOCKED`
+Status: `BLOCKED — FOUNDER WALLET ACCEPTED; MANAGED DB MIGRATION 0054–0061 REQUIRED`
 
 Owner: IPO.ONE Founder / Release Owner
 
@@ -17,9 +17,11 @@ testnet USDC execution, reconciliation, dual-native AccountBinding, exact
 TransferIntent resolution and Gateway-owned atomic AECL persistence. This issue
 must not reopen those implementation phases.
 
-The accepted integrated product state is `PASS — L0_LOCAL_NO_FUNDS`. The only
-outstanding integrated-wallet check is one Founder/invited-wallet regression of
-the newly composed Human AccountBinding path.
+The accepted integrated product state is `PASS — L0_LOCAL_NO_FUNDS`. The
+Founder subsequently reported acceptance of the invited-wallet regression for
+the newly composed Human AccountBinding path. That acceptance is bounded to the
+local browser flow and does not substitute for deployed health or managed
+database Evidence.
 
 Initial cutover preflight on 2026-08-11 recorded:
 
@@ -43,8 +45,16 @@ The minimum successor candidate now binds integration commit
 `171ec9d9df83a01ba8a25cd40df1c5d8142221c6`. Repository tests passed
 899/899 and isolated PostgreSQL 17 tests passed 85/85. Browser preflight reached
 the real-wallet boundary with zero console errors; the controlled browser
-announced no compatible wallet Provider, so the invited-wallet signature and
-reload recovery remain pending without a synthetic substitution.
+announced no compatible wallet Provider. The Founder later reported acceptance
+of the invited-wallet signature and reload recovery without storing a raw
+wallet address, challenge or signature in repository Evidence.
+
+The exact Vercel Primary candidate built successfully, but runtime Cron logs
+then showed repeated HTTP 503 responses with PostgreSQL error `42P01`. Stable
+aliases were restored and the failing non-current Primary candidate was safely
+deleted so its Cron could not continue. The exact source and bundles remain
+recoverable. An owner-controlled managed PostgreSQL migration session, verified
+backup/PITR and ordered migration through `0061` are now the next release gate.
 
 The Founder cutover instruction authorizes this issue to perform read-only
 production inspection, exact-candidate preparation, approved no-funds
@@ -238,8 +248,12 @@ an earlier missing approval.
 ## Completion Evidence
 
 Preflight Evidence is recorded in
-`docs/codex/audits/PROD-CUTOVER-001/preflight.md`. Two exact, non-promoted
-Vercel candidates and their blocked health evidence are recorded in
-`docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md`. Stable alias
-promotion, invited-wallet signature, post-deployment acceptance, policy
+`docs/codex/audits/PROD-CUTOVER-001/preflight.md`. Candidate build, runtime
+failure and rollback containment are recorded in
+`docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md`. Founder-reported
+wallet acceptance is recorded in
+`docs/codex/audits/PROD-CUTOVER-001/founder-wallet-acceptance.md`. The guarded
+owner-run schema sequence is recorded in
+`docs/codex/audits/PROD-CUTOVER-001/managed-postgres-migration-handoff.md`.
+Managed database migration, post-migration deployment acceptance, policy
 revision and exact real-value confirmation remain pending.

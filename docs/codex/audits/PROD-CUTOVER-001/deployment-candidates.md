@@ -32,7 +32,7 @@ the explicit no-real-funds boundary.
 
 | Role | Project | Deployment ID | Candidate URL | Vercel state |
 | --- | --- | --- | --- | --- |
-| Primary | `ipo-one-internal` | `dpl_DQFnHLVvz51j8auKGihizRGjJeuu` | `https://ipo-one-internal-5zper8dyu-cptm-111-s-projects.vercel.app` | `READY` |
+| Primary | `ipo-one-internal` | `dpl_DQFnHLVvz51j8auKGihizRGjJeuu` | removed after runtime failure | `REMOVED` |
 | Risk | `ipo-one-internal-risk` | `dpl_uF2MjKp87zwKeN6tzkWY1SFVDgFB` | `https://ipo-one-internal-risk-hrv320td9-cptm-111-s-projects.vercel.app` | `READY` |
 
 The candidates were created with the Vercel production environment only so the
@@ -107,3 +107,38 @@ the controlled Agent credit profile remains release-disabled.
 4. Promote stable aliases only after those checks pass.
 5. Approve a named production profile and policy revision before any real-value
    configuration or transaction is considered.
+
+## 2026-08-11 follow-up and rollback containment
+
+The Founder subsequently reported acceptance of the invited-wallet
+AccountBinding signature and reload-recovery flow. That bounded acceptance is
+recorded in `founder-wallet-acceptance.md`; it does not substitute for deployed
+health or database Evidence.
+
+Authoritative Primary candidate logs then showed repeated Cron HTTP 503
+responses with PostgreSQL error `42P01` while the candidate reported the exact
+release SHA and `realFundsEnabled:false`. The candidate therefore requires an
+owner-run managed PostgreSQL migration through `0061` before it can be
+considered for promotion.
+
+Containment and rollback completed as follows:
+
+- all stable and team Primary aliases were restored to deployment
+  `dpl_7NhTtf5Px5nuP3maXowDeftJNQz5`;
+- all stable and team Risk aliases were restored to deployment
+  `dpl_5v3utf2uUXSH4G5m1QJ9e8Wyj2DR`;
+- failing non-current Primary candidate
+  `dpl_DQFnHLVvz51j8auKGihizRGjJeuu` was safely deleted so its scheduled Cron
+  could not continue; the exact source and local bundle remain recoverable;
+- Risk candidate `dpl_uF2MjKp87zwKeN6tzkWY1SFVDgFB` remains unaliased for
+  bounded post-migration health verification and has no Cron; and
+- no real funds, persistent production environment variable, DNS record or
+  custom domain was changed.
+
+A bounded 20-minute log query against the restored stable Primary deployment
+returned no events after containment. This confirms that no further candidate
+Cron failure was observed in that window; it is not a positive health or
+journey result for the prior stable release.
+
+The concrete next blocker and guarded execution sequence are recorded in
+`managed-postgres-migration-handoff.md`.
