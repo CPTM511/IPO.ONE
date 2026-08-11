@@ -33,6 +33,8 @@ the explicit no-real-funds boundary.
 | Role | Project | Deployment ID | Candidate URL | Vercel state |
 | --- | --- | --- | --- | --- |
 | Primary | `ipo-one-internal` | `dpl_DQFnHLVvz51j8auKGihizRGjJeuu` | removed after runtime failure | `REMOVED` |
+| Primary | `ipo-one-internal` | `dpl_BXmgubKV2HuuFrVzSZo45EMepLF7` | removed after migration/privilege diagnosis | `REMOVED` |
+| Primary | `ipo-one-internal` | `dpl_6gDN62RphEfXPAMMxas7cTw7jixe` | `https://ipo-one-internal-prmhekkkj-cptm-111-s-projects.vercel.app` | `READY / STAGED` |
 | Risk | `ipo-one-internal-risk` | `dpl_uF2MjKp87zwKeN6tzkWY1SFVDgFB` | `https://ipo-one-internal-risk-hrv320td9-cptm-111-s-projects.vercel.app` | `READY` |
 
 The candidates were created with the Vercel production environment only so the
@@ -79,10 +81,12 @@ checks could not be completed:
 - A separate Codex in-app browser remained at `about:blank` after an eight-
   second bounded navigation attempt to the Primary candidate.
 
-Consequently, the exact release ID, PostgreSQL reachability, migration head,
-runtime environment digest, Human/Agent/Risk journeys, Cron behavior and
-rollback behavior are not deployed-verified. The candidates must not be
-promoted while these signals are unavailable.
+Consequently, those probes do not establish the HTTP health contract,
+Human/Agent/Risk journeys or rollback behavior. Later serverless Cron Evidence
+does establish the exact release ID, PostgreSQL reachability, reconciliation
+and the no-real-funds boundary for the replacement Primary candidate, but does
+not substitute for the unavailable endpoint and journey checks. The candidates
+must not be promoted while those remaining signals are unavailable.
 
 ## Real-value state
 
@@ -142,3 +146,57 @@ journey result for the prior stable release.
 
 The concrete next blocker and guarded execution sequence are recorded in
 `managed-postgres-migration-handoff.md`.
+
+## 2026-08-11 migration and replacement-candidate continuation
+
+Neon owner migration `0054` through `0061` completed first on an ephemeral
+rehearsal branch and then on main, with matching stored checksums. The first
+post-migration Cron from Primary candidate
+`dpl_BXmgubKV2HuuFrVzSZo45EMepLF7` returned PostgreSQL `42501`, proving that
+the existing closed Gateway role had not inherited privileges on migration-new
+relations. The exact least-privilege repair was rehearsal-tested and
+Founder-approved before main execution. It added Gateway reads for 22 new
+relations and mutation access only for the ten relations already present in
+the reviewed production-bootstrap mutation allowlist; the authentication role
+received no new relation access.
+
+The next Cron from that candidate returned HTTP 200 with
+`reconciliationStatus:passed`, exact release
+`3320b7c62d59853a0adfed570cd6bbd8762950e3` and
+`realFundsEnabled:false`. Per Founder instruction, that formerly failing
+candidate was then safely deleted with `--safe`; it held no active alias. The
+previous stable deployment `dpl_7NhTtf5Px5nuP3maXowDeftJNQz5` remained
+`READY / PROMOTED` and retained the stable and team aliases.
+
+A replacement Primary candidate was built from the same sealed bundle:
+
+- deployment: `dpl_6gDN62RphEfXPAMMxas7cTw7jixe`;
+- URL:
+  `https://ipo-one-internal-prmhekkkj-cptm-111-s-projects.vercel.app`;
+- inspector:
+  `https://vercel.com/cptm-111-s-projects/ipo-one-internal/6gDN62RphEfXPAMMxas7cTw7jixe`;
+- state: `READY / STAGED`, production target, `--skip-domain`;
+- runtime: Node 24;
+- metadata release SHA:
+  `3320b7c62d59853a0adfed570cd6bbd8762950e3`; and
+- active aliases: none.
+
+The replacement candidate subsequently completed two scheduled Cron runs. Both
+reported `status:completed`,
+`reconciliationStatus:passed`, exact release
+`3320b7c62d59853a0adfed570cd6bbd8762950e3`,
+`realFundsEnabled:false`, and no `42P01` or `42501`; each run claimed and
+published one outbox message. This is positive serverless runtime, database and
+reconciliation Evidence for the replacement deployment.
+
+Protection-aware Vercel CLI requests to the replacement candidate's `/livez`
+and `/readyz` endpoints still timed out with zero response bytes from the
+current verification environment. The Vercel connector could not produce a
+shareable protected URL, and a bounded in-app browser navigation also timed
+out. These are reachability limitations, not positive health results and not
+proof of application failure. The replacement candidate therefore remains
+unpromoted pending deployed health/journey acceptance, Primary/Risk release
+parity, rollback acceptance and an explicit promotion decision. `ipo.one`
+remains unattached to this Vercel team. No DNS, custom domain, persistent
+secret, production signer, external Provider, Venue write or real-funds
+configuration changed.

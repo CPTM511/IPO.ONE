@@ -2,7 +2,62 @@
 
 Date: 2026-08-11
 
-Verdict: `BLOCKED — OWNER MIGRATION SESSION AND BACKUP EVIDENCE REQUIRED`
+Verdict: `PASS — MIGRATION 0061 AND RUNTIME PRIVILEGE REPAIR VERIFIED; RELEASE STILL GATED`
+
+## 2026-08-11 executed migration Evidence
+
+The Founder explicitly approved the owner-run migration and the exact
+least-privilege runtime-role repair. Execution used Neon project
+`falling-king-09359147`, PostgreSQL 17, with main branch
+`br-nameless-hill-avcw7qpp`. Neon reported a six-hour history-retention/PITR
+window, and a manual main-branch snapshot was created at
+`2026-08-11 13:05:46 UTC` before the migration.
+
+A one-day rehearsal branch,
+`prod-cutover-001-migration-rehearsal-20260811`
+(`br-curly-credit-avkrxxyp`), was created from main. The clean candidate
+worktree first proved the existing head and stored checksums through `0053`,
+then applied `0054` through `0061` in order. Final rehearsal status reported
+all migrations applied with matching checksums.
+
+The same guarded sequence then ran against main. Initial status again proved
+the exact `0053` head. Migrations `0054` through `0061` applied successfully;
+main recorded `0061` at `2026-08-11T13:49:08.947Z`, and the final status
+reported every migration applied with matching checksums.
+
+No owner URL, password or other raw credential was written to the repository
+or Evidence. Each mode-`0600` temporary owner-URL file was deleted before or
+immediately after its single use.
+
+## Post-migration runtime privilege repair
+
+The first post-migration Primary Cron moved from `42P01` to PostgreSQL
+`42501`. Owner-side inspection proved that the closed Gateway role
+`ipo_one_m1b_gateway` lacked `SELECT` on 22 relations created by migrations
+`0055` through `0061`; it also lacked the ten mutation grants already named by
+the reviewed `GATEWAY_MUTATION_TABLES` production-bootstrap allowlist. The
+authentication-only role had no access to these new relations.
+
+The repair was first applied to the rehearsal branch and then, after explicit
+Founder authorization, to main. Verification reported:
+
+- missing Gateway `SELECT` grants: `22 -> 0`;
+- missing allowlisted Gateway `INSERT/UPDATE/DELETE` grants: `10 -> 0`;
+- unexpected authentication-role `SELECT` grants: `0`; and
+- Gateway remained login-only, non-superuser, non-owner, non-inheriting and
+  `NOBYPASSRLS`.
+
+The existing staged Primary candidate's next Cron then returned HTTP 200 with
+`status:completed`, `reconciliationStatus:passed`, the exact release SHA and
+`realFundsEnabled:false`. This is runtime-role and reconciliation Evidence; it
+does not authorize alias promotion, private participants or real value.
+
+After the Founder-directed deletion of that candidate, replacement Primary
+deployment `dpl_6gDN62RphEfXPAMMxas7cTw7jixe` completed two scheduled Cron
+runs with the same exact release, clean reconciliation and no-real-funds
+signals. Endpoint health probes from the current verification environment
+timed out with zero bytes, so this runtime Evidence does not close the deployed
+health, journey, parity, rollback or promotion gates.
 
 ## Exact candidate and required migration range
 
@@ -19,7 +74,7 @@ updates durable AccountBinding state and applies owner-controlled row-security
 and trigger work. The least-privilege Gateway/Auth runtime URLs are not a
 substitute for a database-owner migration session.
 
-## Runtime finding and containment
+## Historical runtime finding and containment
 
 The exact Primary candidate built successfully, but its production Cron
 repeatedly returned HTTP 503. Vercel runtime logs recorded PostgreSQL error
@@ -94,6 +149,7 @@ Do not paste the value of `DATABASE_URL` into a command, commit, issue or chat.
   otherwise keep traffic paused and recover the database from the approved
   backup plan.
 
-No migration has been executed by this handoff. The current blocker is the
-absence of an owner migration session and verified backup/PITR evidence in the
-authorized scope.
+The owner migration and exact runtime privilege repair are complete. Remaining
+release gates are post-migration health/journey verification for the new
+unaliased candidate, same-release Primary/Risk parity, rollback acceptance and
+an explicit promotion decision. Real funds remain disabled.

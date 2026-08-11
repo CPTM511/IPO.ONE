@@ -1,6 +1,6 @@
 # PROD-CUTOVER-001 — Integrated Product Deployment and Production Cutover
 
-Status: `BLOCKED — FOUNDER WALLET ACCEPTED; MANAGED DB MIGRATION 0054–0061 REQUIRED`
+Status: `BLOCKED — POST-MIGRATION CANDIDATE CRON PASS; DEPLOYED ACCEPTANCE PENDING`
 
 Owner: IPO.ONE Founder / Release Owner
 
@@ -51,10 +51,20 @@ wallet address, challenge or signature in repository Evidence.
 
 The exact Vercel Primary candidate built successfully, but runtime Cron logs
 then showed repeated HTTP 503 responses with PostgreSQL error `42P01`. Stable
-aliases were restored and the failing non-current Primary candidate was safely
-deleted so its Cron could not continue. The exact source and bundles remain
-recoverable. An owner-controlled managed PostgreSQL migration session, verified
-backup/PITR and ordered migration through `0061` are now the next release gate.
+aliases were restored and the first failing non-current Primary candidate was
+safely deleted. Founder-authorized Neon migration rehearsal and main execution
+subsequently applied `0054` through `0061` with matching checksums and recorded
+backup/PITR Evidence. A second candidate exposed missing post-migration Gateway
+grants (`42501`); the exact reviewed privilege set was rehearsal-tested and
+Founder-approved before main repair. Its next Cron returned HTTP 200 with clean
+reconciliation and `realFundsEnabled:false`. That formerly failing candidate
+was deleted per Founder instruction, and replacement Primary deployment
+`dpl_6gDN62RphEfXPAMMxas7cTw7jixe` is now `READY / STAGED` without aliases.
+The replacement itself then completed two Cron runs with exact-release,
+database, reconciliation and `realFundsEnabled:false` Evidence. Health-endpoint
+requests from the current verification environment still timed out with zero
+response bytes, so deployed journey, Primary/Risk parity, rollback and alias
+promotion acceptance remain gated.
 
 The Founder cutover instruction authorizes this issue to perform read-only
 production inspection, exact-candidate preparation, approved no-funds
@@ -205,10 +215,12 @@ confirmation after all upstream gates are green.
 
 ## Data and migration impact
 
-Preflight adds documentation and Evidence only. No production schema or data
-migration is authorized by opening this issue. The integrated source currently
-defines migration 0061; deployment must prove the full ordered up/down set and
-the actual database head before traffic promotion.
+The Founder separately authorized the production owner migration and exact
+runtime-role privilege repair on 2026-08-11. Neon main now reports applied
+migrations through `0061` with matching checksums. The Gateway gained reads on
+22 migration-new relations and allowlisted mutation rights on ten of them; the
+authentication-only role gained no new relation access. No funds, signer,
+Provider, Venue, DNS or custom-domain configuration was changed.
 
 ## Rollback plan
 
@@ -255,5 +267,9 @@ wallet acceptance is recorded in
 `docs/codex/audits/PROD-CUTOVER-001/founder-wallet-acceptance.md`. The guarded
 owner-run schema sequence is recorded in
 `docs/codex/audits/PROD-CUTOVER-001/managed-postgres-migration-handoff.md`.
-Managed database migration, post-migration deployment acceptance, policy
-revision and exact real-value confirmation remain pending.
+Managed database migration and the exact runtime privilege repair are complete.
+The replacement candidate's own Cron passed twice with exact release,
+reconciliation and no-real-funds Evidence. Deployed health/journeys,
+same-release Primary/Risk parity, rollback acceptance and the alias-promotion
+decision remain pending. Policy revision and exact real-value confirmation
+remain separately gated; real funds are disabled.
