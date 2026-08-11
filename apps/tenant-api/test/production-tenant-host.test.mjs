@@ -146,6 +146,40 @@ test("production Host publishes the disabled remote Agent HTTPS contract behind 
   assert.equal(runtime.gatewayCalls, 0);
 });
 
+test("production Host publishes zero-funded real-value and Provider capability truth", async (t) => {
+  const runtime = await fixture();
+  t.after(() => runtime.host.close());
+
+  const response = await get(runtime.port, "/.well-known/ipo-one.json", {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https",
+    "x-ipo-edge": "approved"
+  });
+  assert.equal(response.status, 200);
+  const document = JSON.parse(response.body);
+  assert.equal(document.schemaVersion, "ipo_one_deployment_capability.v1");
+  assert.equal(document.deployment.hostingStatus, "PRODUCTION_HOSTED");
+  assert.equal(document.deployment.releaseId, "a".repeat(40));
+  assert.equal(document.interfaces.humanConsole, "https://ipo.one");
+  assert.equal(
+    document.realValue.supportStatus,
+    "SUPPORTED_INACTIVE_ZERO_FUNDED"
+  );
+  assert.equal(document.realValue.activationStatus, "DISABLED");
+  assert.equal(document.realValue.realFundsEnabled, false);
+  assert.equal(document.realValue.productionFundsMoved, false);
+  assert.equal(document.providers.providerSandbox, "AVAILABLE");
+  assert.equal(document.providers.externalProviderExecution, "DISABLED");
+  assert.equal(
+    document.providers.hyperCoreProductionExecution,
+    "BLOCKED_EXTERNAL_DEPENDENCY"
+  );
+  assert.equal(document.safety.productionSignerAuthorityEnabled, false);
+  assert.equal(document.safety.venueWriteAuthorityEnabled, false);
+  assert.equal(runtime.gatewayCalls, 0);
+});
+
 test("production Host requires all real authentication and edge adapters", () => {
   assert.throws(
     () => createProductionTenantHost({}),

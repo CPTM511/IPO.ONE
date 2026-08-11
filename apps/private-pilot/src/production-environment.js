@@ -41,6 +41,9 @@ const WALLET_KEYS = new Set(["clientId", "enabled", "issuer"]);
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 const EVM_ACCOUNT = /^0x[a-fA-F0-9]{40}$/;
 const VERCEL_SECRET_REFERENCE = /^vercel:\/\/environment\/production\/([A-Z][A-Z0-9_]{2,127})@sha256:([0-9a-f]{64})$/;
+const VERCEL_PRIMARY_CUSTOM_DOMAIN = "ipo.one";
+const VERCEL_PRIMARY_CUSTOM_DOMAIN_ACK =
+  "FOUNDER_AUTHORIZED_IPO_ONE_PRODUCTION_DOMAIN";
 
 function configError(message = "Production environment configuration is invalid") {
   return new DomainError("invalid_production_environment", message);
@@ -234,6 +237,34 @@ function safeVercelEdgeHeader(value, maximum) {
     value.length <= maximum &&
     !/[\r\n\0]/u.test(value)
   );
+}
+
+function assertVercelPublicOrigin(environment, browserOrigin) {
+  const projectUrlMatches =
+    browserOrigin.host === environment.VERCEL_PROJECT_PRODUCTION_URL;
+  const customDomain = environment.IPO_ONE_VERCEL_CUSTOM_DOMAIN;
+  const customDomainAck = environment.IPO_ONE_VERCEL_CUSTOM_DOMAIN_ACK;
+  const customConfigurationPresent =
+    customDomain !== undefined || customDomainAck !== undefined;
+
+  if (environment.IPO_ONE_VERCEL_PROJECT_ROLE === "risk") {
+    if (!projectUrlMatches || customConfigurationPresent) {
+      throw configError(
+        "Risk must use the Vercel production project URL without a custom domain"
+      );
+    }
+    return;
+  }
+  if (projectUrlMatches && !customConfigurationPresent) return;
+  if (
+    browserOrigin.host !== VERCEL_PRIMARY_CUSTOM_DOMAIN ||
+    customDomain !== VERCEL_PRIMARY_CUSTOM_DOMAIN ||
+    customDomainAck !== VERCEL_PRIMARY_CUSTOM_DOMAIN_ACK
+  ) {
+    throw configError(
+      "Primary custom origin requires the exact Founder-authorized ipo.one domain"
+    );
+  }
 }
 
 function verifyVercelEdgeRequest(request, environment) {
@@ -430,9 +461,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     required(environment, "IPO_ONE_PUBLIC_ORIGIN", /^https:\/\/.+$/u, 2_048),
     { originOnly: true }
   );
-  if (vercelSandbox && browserOrigin.host !== environment.VERCEL_PROJECT_PRODUCTION_URL) {
-    throw configError("IPO_ONE_PUBLIC_ORIGIN must match the Vercel production project URL");
-  }
+  if (vercelSandbox) assertVercelPublicOrigin(environment, browserOrigin);
   const referenceHashKey = await readKey(environment, {
     fileName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE",
     valueName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY",

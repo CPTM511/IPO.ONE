@@ -5,6 +5,7 @@
   "vercelTargetEnvironment": "production",
   "vercelTargetReason": "Vercel Cron invokes only production deployments",
   "productProductionClaim": false,
+  "productionHostingClaim": true,
   "releaseClaim": false,
   "realFundsEnabled": false,
   "protocolFeesEnabled": false,
@@ -51,6 +52,10 @@
     "releaseTagAuthorized": false,
     "paidExternalIntegrationAuthorized": false,
     "maximumVercelProjectsAuthorized": 2,
-    "customDomainAuthorized": false
+    "customDomainAuthorized": true,
+    "customDomain": "ipo.one",
+    "customDomainAuthorizationSource": "Founder instruction 2026-08-12",
+    "zeroFundedRealValueSupportAuthorized": true,
+    "realValueActivationAuthorized": false
   }
 }

@@ -156,6 +156,57 @@ test("Vercel Sandbox environment rejects preview and project-origin drift", asyn
   }
 });
 
+test("Vercel Primary accepts only the exact Founder-authorized ipo.one custom origin", async (t) => {
+  const primary = await loadProductionClosedPilotEnvironment(vercelEnvironment({
+    IPO_ONE_PUBLIC_ORIGIN: "https://ipo.one",
+    IPO_ONE_VERCEL_CUSTOM_DOMAIN: "ipo.one",
+    IPO_ONE_VERCEL_CUSTOM_DOMAIN_ACK:
+      "FOUNDER_AUTHORIZED_IPO_ONE_PRODUCTION_DOMAIN"
+  }));
+  t.after(() => Promise.allSettled([
+    primary.gatewayPool.end(),
+    primary.authenticationPool.end()
+  ]));
+  assert.equal(primary.browserOrigin, "https://ipo.one");
+
+  for (const overrides of [
+    {
+      IPO_ONE_PUBLIC_ORIGIN: "https://ipo.one",
+      IPO_ONE_VERCEL_CUSTOM_DOMAIN: "ipo.one"
+    },
+    {
+      IPO_ONE_PUBLIC_ORIGIN: "https://other.example",
+      IPO_ONE_VERCEL_CUSTOM_DOMAIN: "other.example",
+      IPO_ONE_VERCEL_CUSTOM_DOMAIN_ACK:
+        "FOUNDER_AUTHORIZED_IPO_ONE_PRODUCTION_DOMAIN"
+    },
+    {
+      IPO_ONE_VERCEL_CUSTOM_DOMAIN: "ipo.one",
+      IPO_ONE_VERCEL_CUSTOM_DOMAIN_ACK:
+        "FOUNDER_AUTHORIZED_IPO_ONE_PRODUCTION_DOMAIN"
+    }
+  ]) {
+    await assert.rejects(
+      () => loadProductionClosedPilotEnvironment(vercelEnvironment(overrides)),
+      (error) => error?.code === "invalid_production_environment"
+    );
+  }
+});
+
+test("Vercel Risk rejects every custom-domain configuration", async () => {
+  await assert.rejects(
+    () => loadProductionClosedPilotEnvironment(vercelEnvironment({
+      IPO_ONE_VERCEL_PROJECT_ROLE: "risk",
+      IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: undefined,
+      IPO_ONE_PUBLIC_ORIGIN: "https://ipo.one",
+      IPO_ONE_VERCEL_CUSTOM_DOMAIN: "ipo.one",
+      IPO_ONE_VERCEL_CUSTOM_DOMAIN_ACK:
+        "FOUNDER_AUTHORIZED_IPO_ONE_PRODUCTION_DOMAIN"
+    })),
+    (error) => error?.code === "invalid_production_environment"
+  );
+});
+
 test("Vercel Sandbox requires a valid public Agent account only on the primary project", async (t) => {
   for (const value of [undefined, "0x1234", `0x${"g".repeat(40)}`]) {
     await assert.rejects(
@@ -362,6 +413,12 @@ test("Vercel deployment config binds Pro five-minute Cron to the exact bounded f
   const risk = JSON.parse(await readFile("deploy/vercel/vercel.m1-b-sandbox-risk.json", "utf8"));
   assert.equal(config.fluid, true);
   assert.deepEqual(config.crons, [{ path: "/api/cron", schedule: "*/5 * * * *" }]);
+  assert.deepEqual(config.redirects, [{
+    source: "/(.*)",
+    has: [{ type: "host", value: "www.ipo.one" }],
+    destination: "https://ipo.one/$1",
+    permanent: true
+  }]);
   assert.equal(config.functions["api/vercel-sandbox-cron.mjs"].maxDuration, 30);
   assert.equal(Object.hasOwn(config, "env"), false);
   assert.equal(risk.fluid, true);
@@ -376,6 +433,7 @@ test("Vercel deployment manifest keeps every prohibited authority disabled", asy
   ));
   assert.deepEqual({
     production: manifest.productProductionClaim,
+    productionHosting: manifest.productionHostingClaim,
     release: manifest.releaseClaim,
     funds: manifest.realFundsEnabled,
     fees: manifest.protocolFeesEnabled,
@@ -384,6 +442,7 @@ test("Vercel deployment manifest keeps every prohibited authority disabled", asy
     venueWrite: manifest.venueWriteAuthorityEnabled
   }, {
     production: false,
+    productionHosting: true,
     release: false,
     funds: false,
     fees: false,
@@ -396,4 +455,8 @@ test("Vercel deployment manifest keeps every prohibited authority disabled", asy
     "principal_agent_automation",
     "risk_admin_read_freeze"
   ]);
+  assert.equal(manifest.authority.customDomainAuthorized, true);
+  assert.equal(manifest.authority.customDomain, "ipo.one");
+  assert.equal(manifest.authority.zeroFundedRealValueSupportAuthorized, true);
+  assert.equal(manifest.authority.realValueActivationAuthorized, false);
 });

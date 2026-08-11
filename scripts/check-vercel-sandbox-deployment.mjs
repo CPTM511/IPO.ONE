@@ -36,6 +36,7 @@ assert.equal(manifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v1");
 assert.equal(manifest.productProfile, "deployable_sandbox_vertical_slice");
 assert.equal(manifest.vercelTargetEnvironment, "production");
 assert.equal(manifest.vercelTargetReason, "Vercel Cron invokes only production deployments");
+assert.equal(manifest.productionHostingClaim, true);
 for (const boundary of [
   "productProductionClaim",
   "releaseClaim",
@@ -53,6 +54,10 @@ assert.equal(manifest.runtime.cronSchedule, "*/5 * * * *");
 assert.equal(manifest.authority.vercelProConfirmed, true);
 assert.equal(manifest.authority.rcBranchAuthorized, false);
 assert.equal(manifest.authority.releaseTagAuthorized, false);
+assert.equal(manifest.authority.customDomainAuthorized, true);
+assert.equal(manifest.authority.customDomain, "ipo.one");
+assert.equal(manifest.authority.zeroFundedRealValueSupportAuthorized, true);
+assert.equal(manifest.authority.realValueActivationAuthorized, false);
 
 assert.equal(deploymentPackage.engines.node, "24.x");
 assert.equal(vercel.fluid, true);
@@ -63,6 +68,12 @@ assert.deepEqual(vercel.crons[0], {
 });
 assert.equal(vercel.functions["api/vercel-sandbox.mjs"].maxDuration, 30);
 assert.equal(vercel.functions["api/vercel-sandbox-cron.mjs"].maxDuration, 30);
+assert.deepEqual(vercel.redirects, [{
+  source: "/(.*)",
+  has: [{ type: "host", value: "www.ipo.one" }],
+  destination: "https://ipo.one/$1",
+  permanent: true
+}]);
 assert.equal(Object.hasOwn(vercel, "env"), false);
 assert.equal(riskVercel.fluid, true);
 assert.equal(Object.hasOwn(riskVercel, "crons"), false);

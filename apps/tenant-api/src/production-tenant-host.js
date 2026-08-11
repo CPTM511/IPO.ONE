@@ -17,6 +17,7 @@ import {
 
 export const PRODUCTION_TENANT_ROUTES = Object.freeze({
   agentOpenApi: "/agent-openapi.json",
+  deploymentCapability: "/.well-known/ipo-one.json",
   operations: "/tenant/v1/operations",
   catalog: "/tenant/v1/catalog",
   health: "/tenant/v1/healthz",
@@ -178,6 +179,55 @@ function json(response, status, value, requestId, headOnly = false) {
   response.end(headOnly ? undefined : body);
 }
 
+function deploymentCapabilityDocument({ publicOrigin, releaseId }) {
+  return Object.freeze({
+    schemaVersion: "ipo_one_deployment_capability.v1",
+    protocol: "IPO.ONE",
+    deployment: Object.freeze({
+      hostingStatus: "PRODUCTION_HOSTED",
+      productProfile: "deployable_sandbox_vertical_slice",
+      releaseId
+    }),
+    interfaces: Object.freeze({
+      humanConsole: publicOrigin.origin,
+      agentApi: `${publicOrigin.origin}/tenant/v1/operations`,
+      openApi: `${publicOrigin.origin}${PRODUCTION_TENANT_ROUTES.agentOpenApi}`
+    }),
+    realValue: Object.freeze({
+      supportStatus: "SUPPORTED_INACTIVE_ZERO_FUNDED",
+      activationStatus: "DISABLED",
+      realFundsEnabled: false,
+      productionFundsMoved: false,
+      executionSubmissionEnabled: false,
+      humanCashCreditEnabled: false,
+      activationRequirements: Object.freeze([
+        "approved_provider",
+        "approved_chain_and_asset",
+        "approved_capital_and_custody",
+        "approved_signer_and_mandate",
+        "approved_risk_caps_and_loss_bearer",
+        "legal_security_operations_and_independent_review",
+        "transaction_specific_founder_confirmation"
+      ])
+    }),
+    providers: Object.freeze({
+      providerSandbox: "AVAILABLE",
+      externalProviderExecution: "DISABLED",
+      genericEvmProductionExecution: "BLOCKED_EXTERNAL_DEPENDENCY",
+      hyperCoreProductionExecution: "BLOCKED_EXTERNAL_DEPENDENCY",
+      unspecifiedProviderExecution: "DISABLED"
+    }),
+    safety: Object.freeze({
+      realFundsEnabled: false,
+      externalProviderExecutionEnabled: false,
+      productionSignerAuthorityEnabled: false,
+      withdrawalAuthorityEnabled: false,
+      venueWriteAuthorityEnabled: false,
+      syntheticOrRedactedDataOnly: true
+    })
+  });
+}
+
 export function createProductionTenantRequestHandler(input) {
   assertClosedConfig(input);
   const publicOrigin = exactPublicOrigin(input.publicOrigin);
@@ -274,6 +324,16 @@ export function createProductionTenantRequestHandler(input) {
           requestId,
           headOnly
         );
+      }
+      if (
+        new Set(["GET", "HEAD"]).has(request.method) &&
+        url.search === "" &&
+        url.pathname === PRODUCTION_TENANT_ROUTES.deploymentCapability
+      ) {
+        return json(response, 200, deploymentCapabilityDocument({
+          publicOrigin,
+          releaseId: input.releaseId
+        }), requestId, headOnly);
       }
       if (
         new Set(["GET", "HEAD"]).has(request.method) &&
