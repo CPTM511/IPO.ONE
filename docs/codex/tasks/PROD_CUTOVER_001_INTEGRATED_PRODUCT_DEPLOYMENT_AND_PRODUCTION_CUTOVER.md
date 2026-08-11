@@ -1,6 +1,6 @@
 # PROD-CUTOVER-001 — Integrated Product Deployment and Production Cutover
 
-Status: `IN_PROGRESS — CUTOVER PREFLIGHT; PRODUCTION AUTHORITY CONFLICT OPEN`
+Status: `IN_PROGRESS — DEPLOYMENT PREFLIGHT; REAL-VALUE GATES LOCKED`
 
 Owner: IPO.ONE Founder / Release Owner
 
@@ -21,7 +21,7 @@ The accepted integrated product state is `PASS — L0_LOCAL_NO_FUNDS`. The only
 outstanding integrated-wallet check is one Founder/invited-wallet regression of
 the newly composed Human AccountBinding path.
 
-Cutover preflight on 2026-08-11 records:
+Initial cutover preflight on 2026-08-11 recorded:
 
 - branch `codex/m1-b-deployable-sandbox` at `dfba8d7` with a materially dirty
   stacked worktree;
@@ -37,6 +37,14 @@ Cutover preflight on 2026-08-11 records:
   no-real-funds behavior and disable external wallet/Venue submission; and
 - the previously deployed Vercel stable URL timed out and `https://ipo.one`
   reset the connection from the current observation point.
+
+The minimum successor candidate now binds integration commit
+`285cc74aadd65e147fe223f032516635138979f5` and tree
+`171ec9d9df83a01ba8a25cd40df1c5d8142221c6`. Repository tests passed
+899/899 and isolated PostgreSQL 17 tests passed 85/85. Browser preflight reached
+the real-wallet boundary with zero console errors; the controlled browser
+announced no compatible wallet Provider, so the invited-wallet signature and
+reload recovery remain pending without a synthetic substitution.
 
 The Founder cutover instruction authorizes this issue to perform read-only
 production inspection, exact-candidate preparation, approved no-funds
@@ -229,4 +237,7 @@ an earlier missing approval.
 
 ## Completion Evidence
 
-Pending.
+Preflight Evidence is recorded in
+`docs/codex/audits/PROD-CUTOVER-001/preflight.md`. Deployment, invited-wallet
+signature, post-deployment acceptance, policy revision and exact real-value
+confirmation remain pending.

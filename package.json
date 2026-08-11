@@ -55,6 +55,7 @@
     "check:local-stack": "node scripts/check-local-stack.mjs",
     "check:local-rc:v1": "node scripts/check-local-release-candidate.mjs",
     "check:local-rc": "node scripts/check-local-release-candidate-v2.mjs",
+    "check:prod-cutover-rc": "node scripts/check-prod-cutover-release-candidate.mjs",
     "check:deploy": "node scripts/check-deploy.mjs",
     "check:launch-policy": "node scripts/check-launch-policy.mjs",
     "check:realvalue-decision-package": "node scripts/check-realvalue-decision-package.mjs",
