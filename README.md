@@ -34,9 +34,13 @@ The result is one auditable state machine for answering five questions:
 > This repository's commercial candidate is a closed, persistent,
 > **no-real-funds** product. It does not authorize lending, custody, withdrawals,
 > real payment execution, raw KYC/PII storage, or production underwriting. The
-> current `ipo.one` deployment is an older public sandbox release and is not the
-> durable commercial candidate described below. A new release must pass the
-> exact-commit gates in [`deploy/launch-policy.v1.json`](deploy/launch-policy.v1.json).
+> current [`ipo.one`](https://ipo.one) deployment hosts the zero-funded production
+> profile at release `d36ff20c2049b199ed3032e85752f36e36300312`. It supports the
+> versioned Human, Agent, Capital Partner and Developer/API surfaces while
+> `realFundsEnabled:false`, external Provider execution, signer authority and
+> value movement remain disabled. Any later activation must pass the exact-commit
+> gates in [`deploy/launch-policy.v1.json`](deploy/launch-policy.v1.json) and the
+> separately approved real-value gates.
 
 ## Product
 

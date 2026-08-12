@@ -1,6 +1,6 @@
 # PROD-CUTOVER-002 — Formal Domain and Zero-Funded Real-Value Support
 
-Status: `IN PROGRESS`
+Status: `COMPLETE`
 
 Owner: IPO.ONE Founder / Release Owner
 
@@ -15,11 +15,12 @@ does not supply or invent a production chain, asset, capital source, custodian,
 signer, Provider contract, numerical limits or loss bearer, and therefore does
 not authorize a value-moving transaction.
 
-The promoted Vercel candidate is healthy at the Cron/database boundary and
-keeps `realFundsEnabled:false`. Its runtime currently requires
-`IPO_ONE_PUBLIC_ORIGIN` to equal Vercel's generated project URL. A DNS cutover
-without a reviewed custom-origin exception would therefore make requests to
-`ipo.one` fail closed at the Host boundary.
+The promoted Vercel candidate was healthy at the Cron/database boundary and
+kept `realFundsEnabled:false`. Before this issue, its runtime required
+`IPO_ONE_PUBLIC_ORIGIN` to equal Vercel's generated project URL, so a DNS
+cutover without a reviewed custom-origin exception would have failed closed at
+the Host boundary. This issue added and verified that exact exception for the
+Primary project only.
 
 ## Scope
 
@@ -30,8 +31,11 @@ without a reviewed custom-origin exception would therefore make requests to
 4. Report Provider/Venue states independently without a false `AVAILABLE`
    claim.
 5. Build, test and deploy one exact clean Primary/Risk release.
-6. Bind `ipo.one` and `www.ipo.one` in Vercel and change only the GoDaddy root A
-   record required for cutover, preserving NS, MX, TXT and unrelated records.
+6. Bind `ipo.one` and `www.ipo.one` in Vercel and apply the exact live Vercel
+   DNS recommendation: root A records `216.150.1.1` and `216.150.16.1` while
+   preserving the existing `www -> ipo.one` CNAME after Vercel verified that
+   equivalent chain as configured correctly. Preserve NS, MX, TXT and unrelated
+   records.
 7. Verify HTTPS, health, release identity, database readiness, reconciliation,
    Primary/Risk parity, rollback and `realFundsEnabled:false`.
 
@@ -93,16 +97,16 @@ evidence only where source identity remains valid.
 
 ## Security checklist
 
-- [ ] Host/origin validation remains exact and HTTPS-only.
-- [ ] Custom-domain acknowledgement is Primary-only and fail closed.
-- [ ] Risk remains on its separate generated production URL.
-- [ ] Real funds, signer, fee, withdrawal and Venue-write authority remain off.
-- [ ] Provider status is independently queryable and never inferred from UI
+- [x] Host/origin validation remains exact and HTTPS-only.
+- [x] Custom-domain acknowledgement is Primary-only and fail closed.
+- [x] Risk remains on its separate generated production URL.
+- [x] Real funds, signer, fee, withdrawal and Venue-write authority remain off.
+- [x] Provider status is independently queryable and never inferred from UI
       availability.
-- [ ] Secrets, PII, wallet addresses and credentials are absent from repository
+- [x] Secrets, PII, wallet addresses and credentials are absent from repository
       Evidence and logs.
-- [ ] DNS mutation preserves mail, nameserver and unrelated records.
-- [ ] Rollback restores both the prior Vercel deployment and the prior root A
+- [x] DNS mutation preserves mail, nameserver and unrelated records.
+- [x] Rollback restores both the prior Vercel deployment and the prior root A
       record if post-cutover acceptance fails.
 
 ## Permission boundary
@@ -126,7 +130,9 @@ release metadata and external routing.
 - Promote the previous verified Vercel deployment for the affected project.
 - Restore the Primary public origin to the generated Vercel project URL.
 - Restore the GoDaddy root A record to the recorded pre-cutover value
-  `136.68.214.66`.
+  `136.68.214.66` and remove the second root A record added for Vercel.
+- Restore `www` to the preserved pre-cutover CNAME `ipo.one.` if it is changed
+  by any later operation.
 - Keep external Provider execution and all real-funds authority disabled.
 - Pause new exposure and reconcile without blind retry if any outcome is
   unknown.
@@ -145,4 +151,23 @@ release metadata and external routing.
 
 ## Completion Evidence
 
-Pending.
+Completed on 2026-08-12. The detailed record is
+[`docs/codex/audits/PROD-CUTOVER-002/audit.md`](../audits/PROD-CUTOVER-002/audit.md).
+
+- Exact source: commit `d36ff20c2049b199ed3032e85752f36e36300312`,
+  tree `9a47dbb359f0124131f907d2786ece34549cd84f`.
+- Primary: `dpl_2JBesAqB2MXZZBCEDypMq5Gzm7Ue`, Ready and promoted at
+  `ipo.one` and `ipo-one-internal.vercel.app`.
+- Risk: `dpl_62VpuVX2GRd2uMxpfYXZ7EYxKY7p`, Ready and promoted at the
+  separate internal Risk alias.
+- GoDaddy authoritative DNS returns both `216.150.1.1` and `216.150.16.1` for
+  the apex. Vercel reports both `ipo.one` and `www.ipo.one` configured correctly.
+- Vercel certificate `cert_kIsDJy71Q78FCMG88nTi6zS3` covers both names and has
+  automatic renewal enabled.
+- Public `livez`, `readyz`, discovery, product and OpenAPI routes return 200;
+  `www` returns 308 to `https://ipo.one/`.
+- Discovery reports `SUPPORTED_INACTIVE_ZERO_FUNDED`,
+  `activationStatus: DISABLED`, `realFundsEnabled:false` and
+  `productionFundsMoved:false`.
+- A production Cron run completed with reconciliation passed and
+  `realFundsEnabled:false`. No production funds moved.
