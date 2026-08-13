@@ -14,5 +14,5 @@ allowBuilds:
   "esbuild": true
 
 overrides:
-  fast-uri: "3.1.4"
+  fast-uri: "3.1.5"
   axios: "1.18.0"
