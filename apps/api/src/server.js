@@ -470,6 +470,9 @@ function discoveryDocument() {
     protocol: "IPO.ONE",
     serviceClass: runtimeConfig.deploymentMode,
     release: runtimeConfig.release,
+    canonicalProductTruth: runtimeConfig.canonicalProductTruth,
+    releaseEligible: runtimeConfig.releaseEligible,
+    stateDurability: runtimeConfig.stateDurability,
     interfaces: {
       humanConsole: runtimeConfig.publicOrigin,
       agentApi: `${runtimeConfig.publicOrigin}/v1`,
@@ -522,7 +525,10 @@ function handleSystemResource(request, response, pathname) {
       ok: true,
       service: "ipo-one-api",
       mode: runtimeConfig.deploymentMode,
-      release: runtimeConfig.release
+      release: runtimeConfig.release,
+      canonicalProductTruth: runtimeConfig.canonicalProductTruth,
+      releaseEligible: runtimeConfig.releaseEligible,
+      stateDurability: runtimeConfig.stateDurability
     });
     return true;
   }

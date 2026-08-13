@@ -2,21 +2,44 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "corepack enable && corepack prepare pnpm@11.1.3 --activate && pnpm install --frozen-lockfile",
+  "fluid": true,
   "functions": {
-    "api/index.mjs": {
-      "includeFiles": "{api/openapi/ipo-one.v1.json,apps/web/src/**}",
+    "api/vercel-sandbox.mjs": {
+      "includeFiles": "{apps/web/src/**,db/migrations/**}",
+      "maxDuration": 30
+    },
+    "api/vercel-sandbox-cron.mjs": {
+      "includeFiles": "db/migrations/**",
       "maxDuration": 30
     }
   },
-  "rewrites": [
+  "redirects": [
     {
       "source": "/(.*)",
-      "destination": "/api/index"
+      "has": [
+        {
+          "type": "host",
+          "value": "www.ipo.one"
+        }
+      ],
+      "destination": "https://ipo.one/$1",
+      "permanent": true
     }
   ],
-  "env": {
-    "IPO_ONE_DEPLOYMENT_MODE": "public_sandbox",
-    "IPO_ONE_PUBLIC_SANDBOX_ACK": "I_UNDERSTAND_NO_REAL_FUNDS",
-    "IPO_ONE_SECURITY_CONTACT": "https://github.com/CPTM511/IPO.ONE/security"
-  }
+  "rewrites": [
+    {
+      "source": "/api/cron",
+      "destination": "/api/vercel-sandbox-cron"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/vercel-sandbox"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }

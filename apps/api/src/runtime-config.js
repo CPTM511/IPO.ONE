@@ -186,6 +186,7 @@ export function loadRuntimeConfig(environment = process.env) {
 
   return Object.freeze({
     allowedHosts: hosts,
+    canonicalProductTruth: false,
     deploymentMode,
     hstsMaxAge,
     host,
@@ -195,7 +196,9 @@ export function loadRuntimeConfig(environment = process.env) {
     production,
     publicOrigin: origin,
     release,
+    releaseEligible: false,
     securityContact: contact,
+    stateDurability: "process_local_ephemeral",
     trustProxy
   });
 }

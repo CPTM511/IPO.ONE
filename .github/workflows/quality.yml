@@ -125,10 +125,10 @@ jobs:
             http://127.0.0.1:3001/.well-known/ipo-one.json)"
           node -e "const value = JSON.parse(process.argv[1]); if (value.safety.realFundsEnabled !== false || value.interfaces.agentApi !== 'https://ipo.one/v1') process.exit(1)" "$discovery"
 
-      - name: Run live API and UI smoke
+      - name: Run retained legacy demonstration compatibility smoke
         shell: bash
         run: |
-          pnpm run dev > "$RUNNER_TEMP/ipo-one-server.log" 2>&1 &
+          pnpm run dev:legacy-demo > "$RUNNER_TEMP/ipo-one-legacy-demo.log" 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid"' EXIT
           for attempt in {1..30}; do

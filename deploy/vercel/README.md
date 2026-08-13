@@ -1,18 +1,25 @@
-# IPO.ONE temporary Vercel internal-test deployment
+# IPO.ONE Vercel deployment surfaces
 
-This target publishes only the public, synthetic, no-real-funds sandbox. It
-does not publish the PostgreSQL closed pilot, private Tenant data, a production
-identity provider, real credit, mainnet funds, Hyperliquid Exchange writes, or
-an API Wallet.
+## Canonical M1-B no-funds product
 
-`api/index.mjs` is bundled locally from the reviewed root entrypoint before
-upload. `apps/web/src` and the public OpenAPI document are included as
-read-only runtime files. The temporary bundle uses Node 26 and has no runtime
-package installation.
+The root `vercel.json` and the reviewed M1-B bundle configurations select
+`api/vercel-sandbox.mjs` and `api/vercel-sandbox-cron.mjs`. Those entry points
+compose the Tenant Protocol and Tenant Command Gateway over the shared Human
+and Agent obligation kernel, with PostgreSQL as canonical state. Exact release
+bundles are built with `scripts/build-vercel-sandbox-bundle.mjs`; their source
+commit and every output artifact are recorded in the generated deployment
+artifact manifest.
 
-The public sandbox keeps bounded process-local sessions. Vercel Functions may
-replace an instance at any time, so internal testers must treat reset state as
-ephemeral and must not enter private or irreplaceable data.
+This hosted profile remains synthetic and no-funds. It does not enable real
+credit, mainnet funds, protocol fees, signer authority, withdrawals, or venue
+writes. Secrets and deployment environment values belong in the reviewed
+Vercel project configuration, never in a tracked Vercel file.
 
-The production `ipo.one` domain is intentionally not attached to this target.
-Use the generated `vercel.app` URL until a separately reviewed formal launch.
+## Legacy demonstration compatibility
+
+`api/index.mjs`, `deploy/vercel/vercel.bundle.json`, and
+`deploy/vercel/package.bundle.json` are preserved only for the older public
+demonstration and historical security tests. That surface keeps bounded
+process-local sessions, does not publish the PostgreSQL closed pilot, and is
+explicitly non-authoritative and non-release-eligible. It must not be used for
+an M1-B release or attached to the canonical product domain.

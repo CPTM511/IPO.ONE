@@ -28,6 +28,9 @@ test("local runtime defaults remain loopback-only and explicit", () => {
   assert.equal(config.deploymentMode, "local_sandbox");
   assert.equal(config.publicOrigin, "http://127.0.0.1:3000");
   assert.equal(config.production, false);
+  assert.equal(config.canonicalProductTruth, false);
+  assert.equal(config.releaseEligible, false);
+  assert.equal(config.stateDurability, "process_local_ephemeral");
   assert.equal(isAllowedRequestHost("localhost:3000", config), true);
   assert.equal(isAllowedRequestHost("attacker.invalid", config), false);
 });
@@ -36,6 +39,9 @@ test("production runtime accepts only the acknowledged HTTPS public sandbox cont
   const config = loadRuntimeConfig(productionEnvironment);
   assert.equal(config.production, true);
   assert.equal(config.publicOrigin, "https://ipo.one");
+  assert.equal(config.canonicalProductTruth, false);
+  assert.equal(config.releaseEligible, false);
+  assert.equal(config.stateDurability, "process_local_ephemeral");
   assert.deepEqual(config.allowedHosts, ["ipo.one", "www.ipo.one"]);
   assert.equal(isAllowedRequestHost("IPO.ONE", config), true);
   assert.equal(isAllowedRequestHost("127.0.0.1:8080", config), false);

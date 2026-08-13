@@ -163,8 +163,10 @@ pnpm run demo
 pnpm audit --prod
 ```
 
-The live browser and SDK smoke additionally run against `pnpm run dev`. The CI
-workflow repeats every command on the exact pushed commit with PostgreSQL 17.
+The retained process-local demonstration compatibility smoke additionally runs
+against `pnpm run dev:legacy-demo`. The canonical durable runtime is exercised
+by the PostgreSQL recovery suite and hardened production-container smoke. The
+CI workflow repeats every command on the exact pushed commit with PostgreSQL 17.
 
 ## References
 
