@@ -116,7 +116,10 @@ for (const requiredFixtureGuard of [
   "environment.CI !== \"true\"",
   "dirname(directory) !== runnerTemp",
   "DATABASE_URL must target a loopback CI test database",
-  "-c log_min_error_statement=fatal",
+  "CI_ONLY_NON_SECRET_GATEWAY_PASSWORD",
+  "CI_ONLY_NON_SECRET_AUTHENTICATION_PASSWORD",
+  "const gatewayPassword = CI_ONLY_NON_SECRET_GATEWAY_PASSWORD",
+  "const authenticationPassword = CI_ONLY_NON_SECRET_AUTHENTICATION_PASSWORD",
   "[REDACTED]"
 ]) {
   assert.ok(
@@ -124,6 +127,16 @@ for (const requiredFixtureGuard of [
     `missing isolated production container fixture guard: ${requiredFixtureGuard}`
   );
 }
+assert.doesNotMatch(
+  productionContainerSmoke,
+  /log_min_error_statement/,
+  "the CI service role cannot change privileged PostgreSQL logging settings"
+);
+assert.doesNotMatch(
+  productionContainerSmoke,
+  /const (?:gatewayPassword|authenticationPassword) = randomBytes\(/,
+  "role-management SQL must never receive generated credential material that PostgreSQL could log"
+);
 
 const manifest = JSON.parse(packageJson);
 assert.equal(manifest.engines?.node, ">=26.5.0 <27");

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -19,6 +19,32 @@ function outputStream() {
     value: () => Buffer.concat(chunks).toString("utf8")
   };
 }
+
+test("production container smoke role credentials are fixed non-secret CI fixtures", async () => {
+  const source = await readFile(
+    new URL("../../../scripts/prepare-production-container-smoke.mjs", import.meta.url),
+    "utf8"
+  );
+  const gateway = source.match(
+    /const CI_ONLY_NON_SECRET_GATEWAY_PASSWORD = "([^"]+)";/
+  )?.[1];
+  const authentication = source.match(
+    /const CI_ONLY_NON_SECRET_AUTHENTICATION_PASSWORD = "([^"]+)";/
+  )?.[1];
+
+  for (const value of [gateway, authentication]) {
+    assert.equal(typeof value, "string");
+    assert.ok(value.length >= 32 && value.length <= 128);
+    assert.doesNotMatch(value, /[\0\r\n]/);
+  }
+  assert.notEqual(gateway, authentication);
+  assert.match(source, /environment\.CI !== "true"/);
+  assert.match(source, /DATABASE_URL must target a loopback CI test database/);
+  assert.match(source, /const gatewayPassword = CI_ONLY_NON_SECRET_GATEWAY_PASSWORD;/);
+  assert.match(source, /const authenticationPassword = CI_ONLY_NON_SECRET_AUTHENTICATION_PASSWORD;/);
+  assert.doesNotMatch(source, /const (?:gatewayPassword|authenticationPassword) = randomBytes\(/);
+  assert.doesNotMatch(source, /log_min_error_statement/);
+});
 
 test("production container smoke rejects directories outside its dedicated boundary", async () => {
   const root = await mkdtemp(join(tmpdir(), "ipo-one-smoke-test-"));

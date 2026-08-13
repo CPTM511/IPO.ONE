@@ -12,6 +12,12 @@ const ROLE_NAME = /^ipo_smoke_(?:gateway|auth)_[0-9a-f]{12}$/;
 const RELEASE_SHA = /^[0-9a-f]{40}$/;
 const SECRET_MOUNT = "/run/ipo-one-smoke";
 const MAXIMUM_LOG_BYTES = 1024 * 1024;
+// These credentials are deliberately fixed and non-secret. PostgreSQL may log
+// role-management statements, so the CI-only smoke fixture must never put
+// generated secret material in a CREATE/ALTER ROLE statement. The fixture
+// boundary below restricts their use to ephemeral roles in a loopback test DB.
+const CI_ONLY_NON_SECRET_GATEWAY_PASSWORD = "ipo-one-ci-only-gateway-password-v1";
+const CI_ONLY_NON_SECRET_AUTHENTICATION_PASSWORD = "ipo-one-ci-only-authentication-password-v1";
 
 function smokeError(message) {
   const error = new Error(message);
@@ -185,12 +191,8 @@ export async function prepareProductionContainerSmoke({ directory: value, releas
     const containerAdminUrl = databaseUrl(sourceUrl.toString(), {
       hostname: "host.docker.internal"
     });
-    containerAdminUrl.searchParams.set(
-      "options",
-      "-c log_min_error_statement=fatal"
-    );
-    const gatewayPassword = randomBytes(32).toString("base64url");
-    const authenticationPassword = randomBytes(32).toString("base64url");
+    const gatewayPassword = CI_ONLY_NON_SECRET_GATEWAY_PASSWORD;
+    const authenticationPassword = CI_ONLY_NON_SECRET_AUTHENTICATION_PASSWORD;
     const referenceKey = randomBytes(32).toString("base64url");
     const encryptionKey = randomBytes(32).toString("base64url");
     const edgeAssertionKey = randomBytes(32).toString("base64url");
