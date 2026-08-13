@@ -18,7 +18,8 @@ const [
   closedPilotMigrationJob,
   closedPilotArmor,
   closedPilotPendingText,
-  closedPilotAudit
+  closedPilotAudit,
+  productionContainerSmoke
 ] = await Promise.all([
   source("Dockerfile"),
   source(".dockerignore"),
@@ -32,7 +33,8 @@ const [
   source("deploy/gcp/closed-pilot/cloud-run-migration-job.yaml.tmpl"),
   source("deploy/gcp/closed-pilot/cloud-armor-policy.yaml"),
   source("deploy/approvals/closed-non-funds-pilot.pending.json"),
-  source("scripts/audit-closed-pilot-cloud.mjs")
+  source("scripts/audit-closed-pilot-cloud.mjs"),
+  source("scripts/prepare-production-container-smoke.mjs")
 ]);
 
 assert.match(dockerfile, /node:26\.5\.0-bookworm-slim@sha256:[a-f0-9]{64}/);
@@ -69,6 +71,59 @@ assert.doesNotMatch(
 assert.doesNotMatch(service, /(PASSWORD|PRIVATE_KEY|API_TOKEN|DATABASE_URL)/);
 assert.match(workflow, /postgres:17\.10-alpine3\.23@sha256:[a-f0-9]{64}/);
 assert.equal(/uses:\s+[^\s]+@v\d/.test(workflow), false, "GitHub Actions must use immutable commits");
+for (const requiredContainerSmokeGuard of [
+  "prepare-production-container-smoke.mjs prepare",
+  "prepare-production-container-smoke.mjs cleanup",
+  "prepare-production-container-smoke.mjs redact",
+  "apps/private-pilot/src/bootstrap-production.js",
+  "--add-host host.docker.internal:host-gateway",
+  "--env-file \"$smoke_root/runtime.env\"",
+  "target=/run/ipo-one-smoke,readonly",
+  "docker run --detach --name ipo-one-ci",
+  "sudo chown -R 65532:65532 \"$smoke_root/secrets\"",
+  "sudo chown -R \"$(id -u):$(id -g)\" \"$smoke_root/secrets\"",
+  "docker logs ipo-one-ci",
+  "trap - EXIT",
+  "--write-out '%{http_code}'",
+  "= \"421\"",
+  "Production container did not become ready"
+]) {
+  assert.ok(
+    workflow.includes(requiredContainerSmokeGuard),
+    `missing production container smoke guard: ${requiredContainerSmokeGuard}`
+  );
+}
+assert.doesNotMatch(
+  workflow,
+  /--env IPO_ONE_DEPLOYMENT_MODE=public_sandbox/,
+  "the canonical production container cannot be smoked through the legacy public sandbox mode"
+);
+assert.doesNotMatch(
+  workflow,
+  /docker run --detach --rm --name ipo-one-ci/,
+  "the production smoke container must remain inspectable after an early crash"
+);
+for (const requiredFixtureGuard of [
+  "ipo_one_container_smoke_test_",
+  "ipo_one_production_bootstrap.v2",
+  "IPO_ONE_DEPLOYMENT_MODE: \"closed_pilot\"",
+  "IPO_ONE_AUTHENTICATION_MODE: \"closed_pilot\"",
+  "gateway and authentication URLs must remain distinct",
+  "DROP DATABASE IF EXISTS",
+  "DROP ROLE IF EXISTS",
+  "mode: 0o700",
+  "mode: 0o600",
+  "environment.CI !== \"true\"",
+  "dirname(directory) !== runnerTemp",
+  "DATABASE_URL must target a loopback CI test database",
+  "-c log_min_error_statement=fatal",
+  "[REDACTED]"
+]) {
+  assert.ok(
+    productionContainerSmoke.includes(requiredFixtureGuard),
+    `missing isolated production container fixture guard: ${requiredFixtureGuard}`
+  );
+}
 
 const manifest = JSON.parse(packageJson);
 assert.equal(manifest.engines?.node, ">=26.5.0 <27");
