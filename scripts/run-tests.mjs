@@ -34,8 +34,13 @@ if (testFiles.length === 0) {
   process.exit(1);
 }
 
+const testEnvironment = { ...process.env };
+delete testEnvironment.CI;
+delete testEnvironment.GITHUB_ACTIONS;
+
 const result = spawnSync(process.execPath, ["--test", ...testFiles], {
-  stdio: "inherit"
+  stdio: "inherit",
+  env: testEnvironment
 });
 
 process.exit(result.status ?? 1);

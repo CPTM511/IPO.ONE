@@ -32,6 +32,11 @@ assert.match(
   "CI must retain repository history for immutable release-evidence checks"
 );
 assert.match(
+  workflow,
+  /sudo install -d -m 1777 \/private\/tmp/,
+  "CI must provision the reviewed private temporary boundary used by testnet preflight checks"
+);
+assert.match(
   dockerfile,
   /npm install --global pnpm@11\.1\.3 --ignore-scripts/,
   "the Node 26 build image must install the reviewed pnpm version explicitly"

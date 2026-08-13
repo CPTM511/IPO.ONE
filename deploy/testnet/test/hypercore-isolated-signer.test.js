@@ -59,8 +59,11 @@ test("HyperCore signer provisioning fails closed without the exact marker and in
   const variable = "IPO_ONE_APPROVE_HYPERCORE_TESTNET_SIGNER";
   const previousApproval = process.env[variable];
   const previousCi = process.env.CI;
+  const previousGithubActions = process.env.GITHUB_ACTIONS;
   delete process.env[variable];
   try {
+    delete process.env.CI;
+    delete process.env.GITHUB_ACTIONS;
     await assert.rejects(
       provisionHypercoreIsolatedTestnetSigner(),
       /exact Testnet signer provisioning approval/
@@ -71,9 +74,17 @@ test("HyperCore signer provisioning fails closed without the exact marker and in
       provisionHypercoreIsolatedTestnetSigner(),
       /disabled in CI/
     );
+
+    delete process.env.CI;
+    process.env.GITHUB_ACTIONS = "true";
+    await assert.rejects(
+      provisionHypercoreIsolatedTestnetSigner(),
+      /disabled in CI/
+    );
   } finally {
     restore(variable, previousApproval);
     restore("CI", previousCi);
+    restore("GITHUB_ACTIONS", previousGithubActions);
   }
 });
 

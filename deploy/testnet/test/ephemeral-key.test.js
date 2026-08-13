@@ -31,20 +31,27 @@ test("ephemeral key stays owner-only outside the repository and is logically des
 test("ephemeral key provisioning refuses CI and repository paths", async () => {
   const previousApproval = process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
   const previousCi = process.env.CI;
+  const previousGithubActions = process.env.GITHUB_ACTIONS;
   process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = "CHAIN-001B";
-  process.env.CI = "true";
   try {
+    delete process.env.GITHUB_ACTIONS;
+    process.env.CI = "true";
     await assert.rejects(provisionEphemeralTestnetKey(), /disabled in CI/);
-  } finally {
-    if (previousCi === undefined) delete process.env.CI;
-    else process.env.CI = previousCi;
-  }
-  try {
+
+    delete process.env.CI;
+    process.env.GITHUB_ACTIONS = "true";
+    await assert.rejects(provisionEphemeralTestnetKey(), /disabled in CI/);
+
+    delete process.env.GITHUB_ACTIONS;
     await assert.rejects(
       provisionEphemeralTestnetKey({ keyPath: "/Users/cptmao/Documents/IPO.ONE/test.key" }),
       /dedicated private temporary/
     );
   } finally {
+    if (previousCi === undefined) delete process.env.CI;
+    else process.env.CI = previousCi;
+    if (previousGithubActions === undefined) delete process.env.GITHUB_ACTIONS;
+    else process.env.GITHUB_ACTIONS = previousGithubActions;
     if (previousApproval === undefined) delete process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
     else process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = previousApproval;
   }

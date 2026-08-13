@@ -58,6 +58,9 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare reviewed private temporary boundary
+        run: sudo install -d -m 1777 /private/tmp
+
       - name: Run repository quality gate
         run: pnpm run check
 
