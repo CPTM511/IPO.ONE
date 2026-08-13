@@ -888,7 +888,7 @@
           "const": "pilotReadCreditApplication"
         },
         "response": {
-          "$ref": "#/$defs/creditApplicationView"
+          "$ref": "#/$defs/creditApplicationViewV2"
         }
       }
     },
@@ -1128,7 +1128,7 @@
           "const": "pilotReadWorkspaceResume"
         },
         "response": {
-          "$ref": "#/$defs/workspaceResumeView"
+          "$ref": "#/$defs/workspaceResumeViewV2"
         }
       }
     },
@@ -3532,6 +3532,47 @@
         }
       }
     },
+    "creditApplicationViewV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditIntent",
+        "decision",
+        "offer",
+        "schemaVersion"
+      ],
+      "properties": {
+        "creditIntent": {
+          "$ref": "#/$defs/creditIntentSummary"
+        },
+        "decision": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/creditDecisionSummary"
+            }
+          ]
+        },
+        "offer": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/creditOfferSummary"
+            },
+            {
+              "$ref": "https://schemas.ipo.one/v2/credit-offer-v2.schema.json"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "tenant_credit_application_view.v2"
+        }
+      }
+    },
     "creditDecisionSummary": {
       "type": "object",
       "additionalProperties": false,
@@ -5049,6 +5090,102 @@
         "schemaVersion": {
           "const": "tenant_workspace_resume_view.v1"
         }
+      }
+    },
+    "workspaceResumeViewV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workspaceKind",
+        "resources",
+        "hasMore",
+        "serverTruth",
+        "schemaVersion"
+      ],
+      "properties": {
+        "workspaceKind": {
+          "enum": [
+            "human_borrower",
+            "principal_controller",
+            "agent_runtime"
+          ]
+        },
+        "resources": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/workspaceResumeResource"
+          }
+        },
+        "controlledAgentActorIds": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "continuationReceipts": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/workspaceContinuationReceiptView"
+          }
+        },
+        "humanOfferReview": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/humanOfferReviewRecovery" }
+          ]
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "serverTruth": {
+          "const": true
+        },
+        "schemaVersion": {
+          "const": "tenant_workspace_resume_view.v2"
+        }
+      }
+    },
+    "humanOfferReviewRecovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectId",
+        "consentId",
+        "creditIntent",
+        "decision",
+        "offer",
+        "offerSchemaVersion",
+        "offerAggregateVersion",
+        "serverTruth",
+        "nonAuthorizing",
+        "sandboxOnly",
+        "productionFundsApproved",
+        "fundsAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "consentId": { "$ref": "#/$defs/identifier" },
+        "creditIntent": { "$ref": "#/$defs/creditIntentSummary" },
+        "decision": { "$ref": "#/$defs/creditDecisionSummary" },
+        "offer": {
+          "oneOf": [
+            { "$ref": "#/$defs/creditOfferSummary" },
+            { "$ref": "https://schemas.ipo.one/v2/credit-offer-v2.schema.json" }
+          ]
+        },
+        "offerSchemaVersion": { "enum": ["credit_offer.v1", "credit_offer.v2"] },
+        "offerAggregateVersion": { "type": "integer", "minimum": 1 },
+        "serverTruth": { "const": true },
+        "nonAuthorizing": { "const": true },
+        "sandboxOnly": { "const": true },
+        "productionFundsApproved": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "const": "human_offer_review_recovery.v1" }
       }
     },
     "workspaceContinuationReceiptView": {

@@ -140,7 +140,7 @@
           "operationId": "pilotReadCreditApplication",
           "requestId": "request_human_offer:human-credit-offer-contract-fixture-0001:03",
           "replayed": false,
-          "responseSchemaVersion": "tenant_credit_application_view.v1"
+          "responseSchemaVersion": "tenant_credit_application_view.v2"
         },
         {
           "sequence": 4,

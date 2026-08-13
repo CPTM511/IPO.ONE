@@ -283,6 +283,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
   [RoleBundle.HUMAN_BORROWER]: Object.freeze([
     PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
     PilotCapability.SUBJECT_READ_SELF,
+    PilotCapability.WORKSPACE_RESUME_SELF,
     PilotCapability.WALLET_ACCOUNT_BINDING_PREPARE_OWNED,
     PilotCapability.WALLET_ACCOUNT_BINDING_SUBMIT_OWNED,
     PilotCapability.WALLET_ACCOUNT_BINDING_READ_OWNED,

@@ -51,11 +51,11 @@ function normalizeWorkspace(workspace) {
     !closedRecord(
       workspace,
       ["workspaceKind", "resources", "hasMore", "serverTruth", "schemaVersion"],
-      ["continuationReceipts", "controlledAgentActorIds"]
+      ["continuationReceipts", "controlledAgentActorIds", "humanOfferReview"]
     ) ||
     !WORKSPACE_KINDS.has(workspace.workspaceKind) ||
     workspace.serverTruth !== true ||
-    workspace.schemaVersion !== "tenant_workspace_resume_view.v1" ||
+    workspace.schemaVersion !== "tenant_workspace_resume_view.v2" ||
     typeof workspace.hasMore !== "boolean" ||
     !Array.isArray(workspace.resources) ||
     workspace.resources.length > 32

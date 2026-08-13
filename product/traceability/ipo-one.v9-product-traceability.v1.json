@@ -651,7 +651,7 @@
     {
       "operationId": "pilotReadCreditApplication",
       "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_credit_application_view.v1",
+      "responseSchemaVersion": "tenant_credit_application_view.v2",
       "handlerModule": "modules/tenant-command-gateway/src/credit-intent-handlers.js",
       "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
       "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
@@ -796,7 +796,7 @@
     {
       "operationId": "pilotReadWorkspaceResume",
       "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_workspace_resume_view.v1",
+      "responseSchemaVersion": "tenant_workspace_resume_view.v2",
       "handlerModule": "modules/tenant-command-gateway/src/workspace-resume-handlers.js",
       "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
       "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",

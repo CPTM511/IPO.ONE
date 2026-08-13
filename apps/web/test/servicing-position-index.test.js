@@ -28,7 +28,7 @@ function workspace(ids, extra = {}) {
     })),
     hasMore: false,
     serverTruth: true,
-    schemaVersion: "tenant_workspace_resume_view.v1",
+    schemaVersion: "tenant_workspace_resume_view.v2",
     ...extra
   };
 }
@@ -78,6 +78,24 @@ test("servicing position index exposes only reauthorized server-current values",
   );
   assert.equal(index.productionFundsMoved, false);
   assert.equal(deeplyFrozen(index), true);
+});
+
+test("Human Offer recovery metadata cannot become servicing balance authority", () => {
+  const id = "obligation_position_offer_recovery";
+  const index = createServicingPositionIndex({
+    workspace: workspace([id], {
+      humanOfferReview: {
+        serverTruth: true,
+        nonAuthorizing: true,
+        fundsAuthority: false
+      }
+    }),
+    views: [{ obligationId: id, view: viewFor(id) }]
+  });
+
+  assert.equal(index.positions[0].availability, "server_current");
+  assert.equal(index.positions[0].serverAuthoritative, true);
+  assert.equal(Object.hasOwn(index, "humanOfferReview"), false);
 });
 
 test("principal controller uses the same bounded index for Agent-owned obligations", () => {

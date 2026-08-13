@@ -175,7 +175,7 @@
           "enum": [
             "tenant_agent_subject_view.v2",
             "tenant_credit_intent_created.v1",
-            "tenant_credit_application_view.v1",
+            "tenant_credit_application_view.v2",
             "tenant_credit_application_evaluated.v2"
           ]
         }
@@ -218,7 +218,7 @@
             "sequence": { "const": 3 },
             "tool": { "const": "ipo_one_read_credit_application" },
             "operationId": { "const": "pilotReadCreditApplication" },
-            "responseSchemaVersion": { "const": "tenant_credit_application_view.v1" }
+            "responseSchemaVersion": { "const": "tenant_credit_application_view.v2" }
           }
         }
       ]

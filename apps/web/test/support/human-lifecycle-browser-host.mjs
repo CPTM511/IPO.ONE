@@ -617,7 +617,7 @@ function resultFor(command) {
       resources,
       hasMore: false,
       serverTruth: true,
-      schemaVersion: "tenant_workspace_resume_view.v1"
+      schemaVersion: "tenant_workspace_resume_view.v2"
     });
   }
   if (operationId === "pilotRequestCredit") {
@@ -631,7 +631,7 @@ function resultFor(command) {
       creditIntent: offerReceipt.creditIntent,
       decision: offerReceipt.decision,
       offer: offerReceipt.offer,
-      schemaVersion: "tenant_credit_application_view.v1"
+      schemaVersion: "tenant_credit_application_view.v2"
     });
   }
   if (operationId === "pilotEvaluateCreditApplication") {

@@ -168,7 +168,7 @@
           "enum": [
             "tenant_human_subject_view.v1",
             "tenant_credit_intent_created.v1",
-            "tenant_credit_application_view.v1",
+            "tenant_credit_application_view.v2",
             "tenant_credit_application_evaluated.v2"
           ]
         }
@@ -208,7 +208,7 @@
           "properties": {
             "sequence": { "const": 3 },
             "operationId": { "const": "pilotReadCreditApplication" },
-            "responseSchemaVersion": { "const": "tenant_credit_application_view.v1" }
+            "responseSchemaVersion": { "const": "tenant_credit_application_view.v2" }
           }
         }
       ]

@@ -72,7 +72,7 @@ function workflowInput() {
     creditIntent: { ...validReceipt.creditIntent, status: "submitted" },
     decision: null,
     offer: null,
-    schemaVersion: "tenant_credit_application_view.v1"
+    schemaVersion: "tenant_credit_application_view.v2"
   };
   const evaluationResponse = {
     creditIntent: validReceipt.creditIntent,

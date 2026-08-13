@@ -1,5 +1,14 @@
-import { DomainError } from "../../../packages/domain/src/index.js";
+import {
+  DomainError,
+  assertConsentAuthorizesCreditOfferAcceptance
+} from "../../../packages/domain/src/index.js";
 import { RoleBundle } from "../../authorization/src/index.js";
+import { CoreProjectionType } from "../../persistence/src/index.js";
+import {
+  summarizeCreditDecision,
+  summarizeCreditOffer
+} from "./credit-decision-handlers.js";
+import { summarizeCreditIntent } from "./credit-intent-handlers.js";
 
 const RESOURCE_TYPES = Object.freeze([
   "subject",
@@ -119,39 +128,234 @@ async function continuationReceiptsForWorkspace({
     .slice(0, 16);
 }
 
+async function actionableHumanOfferReview({
+  client,
+  coreRepository,
+  directory,
+  authenticationContext,
+  intentResource,
+  now
+}) {
+  try {
+    const intentState = await coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.CREDIT_INTENT,
+      intentResource.resourceId,
+      { lock: false }
+    );
+    const intent = intentState?.value;
+    if (
+      !intent ||
+      intent.creditIntentId !== intentResource.resourceId ||
+      intent.status !== "decided" ||
+      intent.authorityType !== "consent" ||
+      intent.sandboxOnly !== true ||
+      intent.productionFundsRequested !== false
+    ) return null;
+
+    const decision = await coreRepository.findRiskDecisionByCreditIntentInTransaction(
+      client,
+      intent.creditIntentId,
+      { lock: false }
+    );
+    const offer = await coreRepository.findCreditOfferByIntentInTransaction(
+      client,
+      intent.creditIntentId,
+      { lock: false }
+    );
+    const consentState = await coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.CONSENT_RECORD,
+      intent.authorityRef,
+      { lock: false }
+    );
+    if (!decision || !offer || !consentState?.value) return null;
+    const decisionState = await coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.RISK_DECISION,
+      decision.riskDecisionId,
+      { lock: false }
+    );
+    const offerState = await coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.CREDIT_OFFER,
+      offer.creditOfferId,
+      { lock: false }
+    );
+    const offerResource = await directory.resolveResource({
+      resourceType: "credit_offer",
+      resourceId: offer.creditOfferId,
+      tenantId: authenticationContext.tenantId,
+      actorId: authenticationContext.actorId
+    });
+    const subjectResource = await directory.resolveResource({
+      resourceType: "subject",
+      resourceId: intent.subjectId,
+      tenantId: authenticationContext.tenantId,
+      actorId: authenticationContext.actorId
+    });
+    const consent = consentState.value;
+    const consentResource = await directory.resolveResource({
+      resourceType: "consent",
+      resourceId: consent.consentId,
+      tenantId: authenticationContext.tenantId,
+      actorId: authenticationContext.actorId
+    });
+    const offerVersionMatchesTerms =
+      (offer.schemaVersion === "credit_offer.v1" && offer.termsVersion === "credit_terms.v1") ||
+      (offer.schemaVersion === "credit_offer.v2" && offer.termsVersion === "credit_terms.v2");
+    if (
+      decisionState?.value?.riskDecisionId !== decision.riskDecisionId ||
+      offerState?.value?.creditOfferId !== offer.creditOfferId ||
+      !Number.isSafeInteger(offerState.aggregateVersion) ||
+      offerState.aggregateVersion < 1 ||
+      offerResource?.status !== "active" ||
+      offerResource.actorAuthorized !== true ||
+      offerResource.bindingRelationship !== "owner" ||
+      subjectResource?.status !== "active" ||
+      subjectResource.actorAuthorized !== true ||
+      subjectResource.bindingRelationship !== "owner" ||
+      consentResource?.status !== "active" ||
+      consentResource.actorAuthorized !== true ||
+      consentResource.bindingRelationship !== "owner" ||
+      decision.status !== "approved" ||
+      decision.creditIntentId !== intent.creditIntentId ||
+      decision.subjectId !== intent.subjectId ||
+      decision.authorityType !== "consent" ||
+      decision.authorityRef !== intent.authorityRef ||
+      offer.status !== "offered" ||
+      offer.creditIntentId !== intent.creditIntentId ||
+      offer.riskDecisionId !== decision.riskDecisionId ||
+      offer.subjectId !== intent.subjectId ||
+      offer.assetId !== intent.assetId ||
+      offer.sandboxOnly !== true ||
+      offer.productionFundsApproved !== false ||
+      !offerVersionMatchesTerms ||
+      new Date(offer.validUntil).getTime() <= now.getTime()
+    ) return null;
+    assertConsentAuthorizesCreditOfferAcceptance(consent, { offer, intent, now });
+
+    return {
+      subjectId: intent.subjectId,
+      consentId: consent.consentId,
+      creditIntent: summarizeCreditIntent(intent),
+      decision: summarizeCreditDecision(decision),
+      offer: summarizeCreditOffer(offer),
+      offerSchemaVersion: offer.schemaVersion,
+      offerAggregateVersion: offerState.aggregateVersion,
+      serverTruth: true,
+      nonAuthorizing: true,
+      sandboxOnly: true,
+      productionFundsApproved: false,
+      fundsAuthority: false,
+      schemaVersion: "human_offer_review_recovery.v1"
+    };
+  } catch (error) {
+    if (error instanceof DomainError) return null;
+    throw error;
+  }
+}
+
+async function humanOfferReviewForWorkspace({
+  client,
+  coreRepository,
+  directory,
+  authenticationContext,
+  kind,
+  resources,
+  now
+}) {
+  if (kind !== "human_borrower") return undefined;
+  if (!coreRepository || !directory) return null;
+  const intents = resources.filter(({ resourceType }) => resourceType === "credit_intent");
+  const candidates = [];
+  for (const intentResource of intents) {
+    const candidate = await actionableHumanOfferReview({
+      client,
+      coreRepository,
+      directory,
+      authenticationContext,
+      intentResource,
+      now
+    });
+    if (candidate) candidates.push(candidate);
+    if (candidates.length > 1) return null;
+  }
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
 export function readWorkspaceResumeQueryHandler() {
   return Object.freeze({
     operationId: "pilotReadWorkspaceResume",
     kind: "query",
-    async execute({ client, coreRepository, payload, authenticationContext, now }) {
+    async execute({ client, coreRepository, directory, payload, authenticationContext, now }) {
       assertEmptyPayload(payload);
       const kind = workspaceKind(authenticationContext);
       const result = await client.query(
-        `SELECT b.resource_type, b.resource_id, b.relationship
-           FROM authorization_resource_bindings AS b
-           JOIN authorization_resources AS r
-             ON r.tenant_id = b.tenant_id
-            AND r.resource_type = b.resource_type
-            AND r.resource_id = b.resource_id
-          WHERE b.tenant_id = $1
-            AND b.actor_id = $2
-            AND b.status = 'active'
-            AND r.status = 'active'
-            AND b.resource_type = ANY($3::text[])
-          ORDER BY
-            ROW_NUMBER() OVER (
-              PARTITION BY b.resource_type
-              ORDER BY b.updated_at DESC, b.resource_id ASC
-            ) ASC,
-            b.updated_at DESC,
-            b.resource_type ASC,
-            b.resource_id ASC
+        `WITH authorized_resources AS (
+           SELECT b.resource_type, b.resource_id, b.relationship, b.updated_at,
+                  ROW_NUMBER() OVER (
+                    PARTITION BY b.resource_type
+                    ORDER BY b.updated_at DESC, b.resource_id ASC
+                  ) AS type_rank,
+                  b.resource_type = 'credit_intent' AND EXISTS (
+                    SELECT 1
+                      FROM credit_intents AS i
+                      JOIN risk_decisions AS d
+                        ON d.tenant_id = i.tenant_id
+                       AND d.credit_intent_id = i.id
+                       AND d.status = 'approved'
+                      JOIN credit_offers AS o
+                        ON o.tenant_id = i.tenant_id
+                       AND o.credit_intent_id = i.id
+                       AND o.risk_decision_id = d.id
+                       AND o.status = 'offered'
+                       AND o.valid_until > $5
+                      JOIN consent_records AS c
+                        ON c.tenant_id = i.tenant_id
+                       AND c.id = i.authority_ref
+                       AND c.status = 'active'
+                       AND c.valid_from <= $5
+                       AND c.expires_at > $5
+                      JOIN authorization_resources AS offer_r
+                        ON offer_r.tenant_id = o.tenant_id
+                       AND offer_r.resource_type = 'credit_offer'
+                       AND offer_r.resource_id = o.id
+                       AND offer_r.status = 'active'
+                      JOIN authorization_resource_bindings AS offer_b
+                        ON offer_b.tenant_id = offer_r.tenant_id
+                       AND offer_b.resource_type = offer_r.resource_type
+                       AND offer_b.resource_id = offer_r.resource_id
+                       AND offer_b.actor_id = $2
+                       AND offer_b.status = 'active'
+                     WHERE i.tenant_id = b.tenant_id
+                       AND i.id = b.resource_id
+                       AND i.status = 'decided'
+                       AND i.authority_type = 'consent'
+                  ) AS potentially_actionable
+             FROM authorization_resource_bindings AS b
+             JOIN authorization_resources AS r
+               ON r.tenant_id = b.tenant_id
+              AND r.resource_type = b.resource_type
+              AND r.resource_id = b.resource_id
+            WHERE b.tenant_id = $1
+              AND b.actor_id = $2
+              AND b.status = 'active'
+              AND r.status = 'active'
+              AND b.resource_type = ANY($3::text[])
+         )
+         SELECT resource_type, resource_id, relationship
+           FROM authorized_resources
+          WHERE potentially_actionable OR type_rank = 1
+          ORDER BY potentially_actionable DESC, type_rank ASC,
+                   updated_at DESC, resource_type ASC, resource_id ASC
           LIMIT $4`,
         [
           authenticationContext.tenantId,
           authenticationContext.actorId,
           RESOURCE_TYPES,
-          PAGE_SIZE + 1
+          PAGE_SIZE + 1,
+          now
         ]
       );
       const rows = result.rows.map(normalizeRow);
@@ -169,12 +373,23 @@ export function readWorkspaceResumeQueryHandler() {
         controlledAgents,
         now
       });
+      const resources = rows.slice(0, PAGE_SIZE);
+      const humanOfferReview = await humanOfferReviewForWorkspace({
+        client,
+        coreRepository,
+        directory,
+        authenticationContext,
+        kind,
+        resources,
+        now
+      });
       return {
         workspaceKind: kind,
-        resources: rows.slice(0, PAGE_SIZE),
+        resources,
         ...(kind === "principal_controller"
           ? { controlledAgentActorIds: controlledAgents }
           : {}),
+        ...(kind === "human_borrower" ? { humanOfferReview } : {}),
         continuationReceipts: continuationReceipts.map((receipt) => ({
           continuationReceiptId: receipt.continuationReceiptId,
           receiptHash: receipt.receiptHash,
@@ -190,7 +405,7 @@ export function readWorkspaceResumeQueryHandler() {
         })),
         hasMore: rows.length > PAGE_SIZE,
         serverTruth: true,
-        schemaVersion: "tenant_workspace_resume_view.v1"
+        schemaVersion: "tenant_workspace_resume_view.v2"
       };
     }
   });

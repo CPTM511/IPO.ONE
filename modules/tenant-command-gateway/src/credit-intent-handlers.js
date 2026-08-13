@@ -336,7 +336,7 @@ export function readCreditApplicationQueryHandler() {
         creditIntent: summarizeCreditIntent(intent),
         decision: summarizeCreditDecision(decision),
         offer: summarizeCreditOffer(offer),
-        schemaVersion: "tenant_credit_application_view.v1"
+        schemaVersion: "tenant_credit_application_view.v2"
       };
     }
   });

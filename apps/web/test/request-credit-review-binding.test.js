@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   assertRequestCreditReviewCurrent,
+  assertRecoveredHumanCreditReviewUnchanged,
+  createRecoveredHumanCreditReviewBinding,
   createRequestCreditReviewBinding,
   evaluateRequestCreditReviewBinding
 } from "../src/request-credit-review-binding.js";
@@ -121,6 +123,168 @@ test("review binding rejects server receipt safety and Offer drift", () => {
       entryMode: "agent",
       receipt: feeDrift
     }),
+    /invalid_request_credit_review_binding/
+  );
+});
+
+function recoveredHumanReview() {
+  const receipt = structuredClone(humanFixtures.valid[0]);
+  return {
+    subjectId: receipt.subjectId,
+    consentId: receipt.consentId,
+    creditIntent: receipt.creditIntent,
+    decision: receipt.decision,
+    offer: receipt.offer,
+    offerSchemaVersion: "credit_offer.v1",
+    offerAggregateVersion: 1,
+    serverTruth: true,
+    nonAuthorizing: true,
+    sandboxOnly: true,
+    productionFundsApproved: false,
+    fundsAuthority: false,
+    schemaVersion: "human_offer_review_recovery.v1"
+  };
+}
+
+test("fresh Human sessions rebuild an exact review binding only from closed server truth", () => {
+  const recovery = recoveredHumanReview();
+  const binding = createRecoveredHumanCreditReviewBinding(recovery, {
+    now: new Date("2026-07-15T03:00:00.000Z")
+  });
+
+  assert.equal(binding.schemaVersion, "request_credit_review_binding.v2");
+  assert.equal(binding.serverTruth, true);
+  assert.equal(binding.offerSchemaVersion, "credit_offer.v1");
+  assert.equal(binding.offerAggregateVersion, 1);
+  assert.equal(binding.serverReceipts.length, 0);
+  assert.equal(evaluateRequestCreditReviewBinding(binding, currentFrom(binding)).current, true);
+  assert.equal(
+    assertRecoveredHumanCreditReviewUnchanged(binding, structuredClone(recovery), {
+      now: new Date("2026-07-15T03:00:00.000Z")
+    }).offer.creditOfferId,
+    recovery.offer.creditOfferId
+  );
+});
+
+test("recovered Human review fails closed on changed versions, stale replacement, expiry, and invalid binding", () => {
+  const recovery = recoveredHumanReview();
+  const options = { now: new Date("2026-07-15T03:00:00.000Z") };
+  const binding = createRecoveredHumanCreditReviewBinding(recovery, options);
+
+  const changedVersion = structuredClone(recovery);
+  changedVersion.offerAggregateVersion = 2;
+  assert.throws(
+    () => assertRecoveredHumanCreditReviewUnchanged(binding, changedVersion, options),
+    /stale_request_credit_review:offer_version_changed/
+  );
+
+  const replacement = structuredClone(recovery);
+  replacement.offer.creditOfferId = "credit_offer_replacement";
+  assert.throws(
+    () => assertRecoveredHumanCreditReviewUnchanged(binding, replacement, options),
+    /stale_request_credit_review:offer_changed/
+  );
+
+  for (const [field, value] of [
+    ["annualRateBps", recovery.offer.annualRateBps + 1],
+    ["maturityAt", "2026-07-19T12:00:00.000Z"]
+  ]) {
+    const termsDrift = structuredClone(recovery);
+    termsDrift.offer[field] = value;
+    assert.throws(
+      () => assertRecoveredHumanCreditReviewUnchanged(binding, termsDrift, options),
+      /stale_request_credit_review:offer_changed/
+    );
+  }
+
+  const decisionDrift = structuredClone(recovery);
+  decisionDrift.decision.reasonCodes = [
+    ...decisionDrift.decision.reasonCodes,
+    "manual_review_required"
+  ];
+  assert.throws(
+    () => assertRecoveredHumanCreditReviewUnchanged(binding, decisionDrift, options),
+    /stale_request_credit_review:decision_changed/
+  );
+
+  assert.throws(
+    () => createRecoveredHumanCreditReviewBinding(recovery, {
+      now: new Date(recovery.offer.validUntil)
+    }),
+    /invalid_request_credit_review_binding/
+  );
+
+  const invalid = { ...structuredClone(recovery), accessToken: "prohibited" };
+  assert.throws(
+    () => createRecoveredHumanCreditReviewBinding(invalid, options),
+    /invalid_request_credit_review_binding/
+  );
+});
+
+test("recovered Human review preserves exact cent-denominated request economics", () => {
+  const recovery = recoveredHumanReview();
+  recovery.creditIntent.requestedPrincipalMinor = "12050";
+  recovery.decision.approvedPrincipalMinor = "12050";
+  recovery.offer.approvedPrincipalMinor = "12050";
+  const binding = createRecoveredHumanCreditReviewBinding(recovery, {
+    now: new Date("2026-07-15T03:00:00.000Z")
+  });
+
+  assert.equal(binding.creditRequest.requestedPrincipalMinor, "12050");
+  assert.equal(binding.offer.approvedPrincipalMinor, "12050");
+  assert.equal(evaluateRequestCreditReviewBinding(binding, currentFrom(binding)).current, true);
+});
+
+test("Capital Partner v2 recovery binds exact facility and Provider-authored terms", () => {
+  const recovery = recoveredHumanReview();
+  recovery.offerSchemaVersion = "credit_offer.v2";
+  recovery.offer = {
+    ...recovery.offer,
+    capitalPartnerId: "capital_partner_review_fixture",
+    capitalPartnerOperatorId: "actor_partner_operator_review_fixture",
+    creditPassportArtifactId: "credit_passport_review_fixture",
+    creditPassportArtifactHash: "0x" + "a".repeat(64),
+    creditPassportArtifactVersion: 2,
+    passportVerificationHash: "0x" + "b".repeat(64),
+    underwritingSnapshotHash: "0x" + "c".repeat(64),
+    facilityLimitMinor: "15000",
+    perDrawCapMinor: "12000",
+    permittedPurposeCode: recovery.creditIntent.purposeCode,
+    conditions: ["authority_current_at_acceptance"],
+    undrawnRevocationRule: "capital_partner_before_acceptance",
+    termsVersion: "credit_terms.v2",
+    schemaVersion: "credit_offer.v2"
+  };
+  const options = { now: new Date("2026-07-15T03:00:00.000Z") };
+  const binding = createRecoveredHumanCreditReviewBinding(recovery, options);
+
+  assert.equal(binding.offerSchemaVersion, "credit_offer.v2");
+  const sameVersionFacilityDrift = structuredClone(recovery);
+  sameVersionFacilityDrift.offer.facilityLimitMinor = "16000";
+  assert.throws(
+    () => assertRecoveredHumanCreditReviewUnchanged(
+      binding,
+      sameVersionFacilityDrift,
+      options
+    ),
+    /stale_request_credit_review:offer_changed/
+  );
+  for (const [field, value] of [
+    ["facilityLimitMinor", "11999"],
+    ["perDrawCapMinor", "11999"],
+    ["capitalPartnerOperatorId", ""]
+  ]) {
+    const drifted = structuredClone(recovery);
+    drifted.offer[field] = value;
+    assert.throws(
+      () => createRecoveredHumanCreditReviewBinding(drifted, options),
+      /invalid_request_credit_review_binding/
+    );
+  }
+  const decisionDrift = structuredClone(recovery);
+  decisionDrift.decision.approvedPrincipalMinor = "11999";
+  assert.throws(
+    () => createRecoveredHumanCreditReviewBinding(decisionDrift, options),
     /invalid_request_credit_review_binding/
   );
 });

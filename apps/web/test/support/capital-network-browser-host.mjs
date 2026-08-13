@@ -122,7 +122,7 @@ const host = createTenantHttpServer({
           resources: [],
           hasMore: false,
           serverTruth: true,
-          schemaVersion: "tenant_workspace_resume_view.v1"
+          schemaVersion: "tenant_workspace_resume_view.v2"
         });
       }
       assertExactAssignment(command);

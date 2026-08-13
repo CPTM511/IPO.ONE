@@ -1,5 +1,7 @@
 export const REQUEST_CREDIT_REVIEW_BINDING_SCHEMA_VERSION =
   "request_credit_review_binding.v1";
+export const RECOVERED_HUMAN_CREDIT_REVIEW_BINDING_SCHEMA_VERSION =
+  "request_credit_review_binding.v2";
 
 const INPUT_KEYS = Object.freeze(["entryMode", "receipt"]);
 const CURRENT_KEYS = Object.freeze([
@@ -57,6 +59,21 @@ const AGENT_RECEIPT_KEYS = Object.freeze([
   "transportProfile",
   "workflowId"
 ]);
+const HUMAN_RECOVERY_KEYS = Object.freeze([
+  "consentId",
+  "creditIntent",
+  "decision",
+  "fundsAuthority",
+  "nonAuthorizing",
+  "offer",
+  "offerAggregateVersion",
+  "offerSchemaVersion",
+  "productionFundsApproved",
+  "sandboxOnly",
+  "schemaVersion",
+  "serverTruth",
+  "subjectId"
+]);
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
 const HASH = /^0x[0-9a-f]{64}$/;
 const CANONICAL_MINOR = /^(0|[1-9][0-9]{0,77})$/;
@@ -95,7 +112,7 @@ const EXPECTED_STEPS = Object.freeze([
   }),
   Object.freeze({
     operationId: "pilotReadCreditApplication",
-    responseSchemaVersion: "tenant_credit_application_view.v1"
+    responseSchemaVersion: "tenant_credit_application_view.v2"
   }),
   Object.freeze({
     operationId: "pilotEvaluateCreditApplication",
@@ -126,6 +143,31 @@ function hasExactDataKeys(value, expected) {
   const required = [...expected].sort();
   return actual.length === required.length &&
     actual.every((key, index) => key === required[index]);
+}
+
+function sameClosedData(left, right) {
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => sameClosedData(value, right[index]));
+  }
+  if (
+    !left || typeof left !== "object" || Object.getPrototypeOf(left) !== Object.prototype ||
+    !right || typeof right !== "object" || Object.getPrototypeOf(right) !== Object.prototype
+  ) return false;
+  const leftKeys = Reflect.ownKeys(left);
+  const rightKeys = Reflect.ownKeys(right);
+  if (
+    leftKeys.some((key) => typeof key !== "string") ||
+    rightKeys.some((key) => typeof key !== "string") ||
+    leftKeys.length !== rightKeys.length
+  ) return false;
+  const rightKeySet = new Set(rightKeys);
+  return leftKeys.every((key) => (
+    rightKeySet.has(key) && sameClosedData(left[key], right[key])
+  ));
 }
 
 function invalidBinding() {
@@ -296,6 +338,170 @@ export function createRequestCreditReviewBinding(input) {
   return deepFreeze(binding);
 }
 
+function validTimestamp(value) {
+  return typeof value === "string" &&
+    /(?:Z|[+-][0-9]{2}:[0-9]{2})$/.test(value) &&
+    Number.isFinite(new Date(value).getTime());
+}
+
+function recoveredOfferCommon({ recovery, creditRequest, now }) {
+  const intent = recovery.creditIntent;
+  const decision = recovery.decision;
+  const offer = recovery.offer;
+  const expectedTermsVersion = recovery.offerSchemaVersion === "credit_offer.v1"
+    ? "credit_terms.v1"
+    : recovery.offerSchemaVersion === "credit_offer.v2"
+      ? "credit_terms.v2"
+      : undefined;
+  if (
+    recovery.schemaVersion !== "human_offer_review_recovery.v1" ||
+    recovery.serverTruth !== true ||
+    recovery.nonAuthorizing !== true ||
+    recovery.sandboxOnly !== true ||
+    recovery.productionFundsApproved !== false ||
+    recovery.fundsAuthority !== false ||
+    !IDENTIFIER.test(recovery.subjectId ?? "") ||
+    !IDENTIFIER.test(recovery.consentId ?? "") ||
+    !Number.isSafeInteger(recovery.offerAggregateVersion) ||
+    recovery.offerAggregateVersion < 1 ||
+    !validCreditRequest(creditRequest) ||
+    intent?.subjectId !== recovery.subjectId ||
+    intent.authorityType !== "consent" ||
+    intent.authorityId !== recovery.consentId ||
+    intent.status !== "decided" ||
+    intent.sandboxOnly !== true ||
+    intent.productionFundsRequested !== false ||
+    decision?.status !== "approved" ||
+    decision.subjectId !== recovery.subjectId ||
+    decision.authorityType !== "consent" ||
+    decision.authorityId !== recovery.consentId ||
+    decision.creditIntentId !== intent.creditIntentId ||
+    decision.assetId !== intent.assetId ||
+    decision.policyVersion !== "credit-application-rules.v1" ||
+    decision.sandboxOnly !== true ||
+    decision.productionAuthority !== false ||
+    !HASH.test(decision.decisionHash ?? "") ||
+    !HASH.test(decision.decisionPassport?.decisionPassportHash ?? "") ||
+    offer?.status !== "offered" ||
+    offer.subjectId !== recovery.subjectId ||
+    offer.creditIntentId !== intent.creditIntentId ||
+    offer.riskDecisionId !== decision.riskDecisionId ||
+    offer.assetId !== intent.assetId ||
+    offer.approvedPrincipalMinor !== decision.approvedPrincipalMinor ||
+    offer.termsVersion !== expectedTermsVersion ||
+    !POSITIVE_MINOR.test(offer.approvedPrincipalMinor ?? "") ||
+    BigInt(offer.approvedPrincipalMinor) > BigInt(intent.requestedPrincipalMinor) ||
+    !Number.isInteger(offer.annualRateBps) ||
+    offer.annualRateBps < 0 ||
+    !CANONICAL_MINOR.test(offer.originationFeeMinor ?? "") ||
+    offer.repaymentFrequency !== intent.repaymentFrequency ||
+    offer.installmentCount !== intent.installmentCount ||
+    !IDENTIFIER.test(offer.disclosureRef ?? "") ||
+    !HASH.test(offer.creditOfferHash ?? "") ||
+    !HASH.test(offer.termsHash ?? "") ||
+    offer.sandboxOnly !== true ||
+    offer.productionFundsApproved !== false ||
+    !validTimestamp(offer.validUntil) ||
+    new Date(offer.validUntil).getTime() <= now.getTime()
+  ) invalidBinding();
+  if (
+    recovery.offerSchemaVersion === "credit_offer.v2" &&
+    (
+      offer.schemaVersion !== "credit_offer.v2" ||
+      offer.permittedPurposeCode !== intent.purposeCode ||
+      !POSITIVE_MINOR.test(offer.facilityLimitMinor ?? "") ||
+      !POSITIVE_MINOR.test(offer.perDrawCapMinor ?? "") ||
+      BigInt(offer.approvedPrincipalMinor) > BigInt(offer.facilityLimitMinor) ||
+      BigInt(offer.approvedPrincipalMinor) > BigInt(offer.perDrawCapMinor) ||
+      !IDENTIFIER.test(offer.capitalPartnerId ?? "") ||
+      !IDENTIFIER.test(offer.capitalPartnerOperatorId ?? "") ||
+      !IDENTIFIER.test(offer.creditPassportArtifactId ?? "") ||
+      !HASH.test(offer.creditPassportArtifactHash ?? "") ||
+      !Number.isSafeInteger(offer.creditPassportArtifactVersion) ||
+      offer.creditPassportArtifactVersion < 1 ||
+      !HASH.test(offer.passportVerificationHash ?? "") ||
+      !HASH.test(offer.underwritingSnapshotHash ?? "")
+    )
+  ) invalidBinding();
+  return { decision, intent, offer };
+}
+
+export function createRecoveredHumanCreditReviewBinding(recovery, { now = new Date() } = {}) {
+  if (
+    !hasExactDataKeys(recovery, HUMAN_RECOVERY_KEYS) ||
+    !(now instanceof Date) ||
+    !Number.isFinite(now.getTime())
+  ) invalidBinding();
+  const creditRequest = creditRequestFromIntent(recovery.creditIntent ?? {});
+  const { decision, offer } = recoveredOfferCommon({ recovery, creditRequest, now });
+  const binding = structuredClone({
+    schemaVersion: RECOVERED_HUMAN_CREDIT_REVIEW_BINDING_SCHEMA_VERSION,
+    entryMode: "human",
+    subjectId: recovery.subjectId,
+    authorityType: "consent",
+    authorityId: recovery.consentId,
+    creditRequest,
+    decision: structuredClone(decision),
+    offer: structuredClone(offer),
+    offerSchemaVersion: recovery.offerSchemaVersion,
+    offerAggregateVersion: recovery.offerAggregateVersion,
+    serverReceipts: [],
+    serverTruth: true,
+    sandboxOnly: true,
+    productionFundsApproved: false,
+    fundsAuthority: false,
+    credentialsIncluded: false
+  });
+  return deepFreeze(binding);
+}
+
+export function assertRecoveredHumanCreditReviewUnchanged(binding, recovery, options) {
+  const current = createRecoveredHumanCreditReviewBinding(recovery, options);
+  if (
+    !hasExactDataKeys(binding, [
+      "authorityId",
+      "authorityType",
+      "credentialsIncluded",
+      "creditRequest",
+      "decision",
+      "entryMode",
+      "fundsAuthority",
+      "offer",
+      "offerAggregateVersion",
+      "offerSchemaVersion",
+      "productionFundsApproved",
+      "sandboxOnly",
+      "schemaVersion",
+      "serverReceipts",
+      "serverTruth",
+      "subjectId"
+    ]) ||
+    binding.schemaVersion !== RECOVERED_HUMAN_CREDIT_REVIEW_BINDING_SCHEMA_VERSION
+  ) {
+    throw new Error("stale_request_credit_review:review_binding_invalid");
+  }
+  if (binding.offerAggregateVersion !== current.offerAggregateVersion) {
+    throw new Error("stale_request_credit_review:offer_version_changed");
+  }
+  if (
+    binding.offerSchemaVersion !== current.offerSchemaVersion ||
+    !sameClosedData(binding.offer, current.offer)
+  ) {
+    throw new Error("stale_request_credit_review:offer_changed");
+  }
+  if (!sameClosedData(binding.decision, current.decision)) {
+    throw new Error("stale_request_credit_review:decision_changed");
+  }
+  if (
+    binding.subjectId !== current.subjectId ||
+    binding.authorityId !== current.authorityId ||
+    !sameCreditRequest(binding.creditRequest, current.creditRequest)
+  ) {
+    throw new Error("stale_request_credit_review:binding_changed");
+  }
+  return current;
+}
+
 function sameCreditRequest(left, right) {
   return CREDIT_REQUEST_KEYS.every((key) => left[key] === right[key]);
 }
@@ -303,7 +509,12 @@ function sameCreditRequest(left, right) {
 export function evaluateRequestCreditReviewBinding(binding, current) {
   if (
     !binding ||
-    binding.schemaVersion !== REQUEST_CREDIT_REVIEW_BINDING_SCHEMA_VERSION ||
+    ![
+      REQUEST_CREDIT_REVIEW_BINDING_SCHEMA_VERSION,
+      RECOVERED_HUMAN_CREDIT_REVIEW_BINDING_SCHEMA_VERSION
+    ].includes(binding.schemaVersion) ||
+    (binding.schemaVersion === RECOVERED_HUMAN_CREDIT_REVIEW_BINDING_SCHEMA_VERSION &&
+      binding.serverTruth !== true) ||
     binding.sandboxOnly !== true ||
     binding.productionFundsApproved !== false ||
     binding.fundsAuthority !== false ||

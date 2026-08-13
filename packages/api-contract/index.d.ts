@@ -332,7 +332,7 @@ export interface AgentCreditOfferWorkflowStep {
   responseSchemaVersion:
     | "tenant_agent_subject_view.v2"
     | "tenant_credit_intent_created.v1"
-    | "tenant_credit_application_view.v1"
+    | "tenant_credit_application_view.v2"
     | "tenant_credit_application_evaluated.v2";
 }
 
@@ -604,7 +604,7 @@ export interface HumanCreditOfferWorkflowStep {
   responseSchemaVersion:
     | "tenant_human_subject_view.v1"
     | "tenant_credit_intent_created.v1"
-    | "tenant_credit_application_view.v1"
+    | "tenant_credit_application_view.v2"
     | "tenant_credit_application_evaluated.v2";
 }
 
@@ -2045,12 +2045,21 @@ export interface CreditIntentCreatedResponse {
   schemaVersion: "tenant_credit_intent_created.v1";
 }
 
-export interface CreditApplicationViewResponse {
+export interface CreditApplicationViewResponseV1 {
   creditIntent: CreditIntentSummary;
   decision: CreditDecisionSummary | null;
   offer: CreditOfferSummary | null;
   schemaVersion: "tenant_credit_application_view.v1";
 }
+
+export interface CreditApplicationViewResponseV2 {
+  creditIntent: CreditIntentSummary;
+  decision: CreditDecisionSummary | null;
+  offer: CreditOfferSummary | CapitalPartnerCreditOffer | null;
+  schemaVersion: "tenant_credit_application_view.v2";
+}
+
+export type CreditApplicationViewResponse = CreditApplicationViewResponseV2;
 
 export interface CreditDecisionPassportSourceEvidence {
   role: "credit_intent" | "subject" | "principal" | "authority" | "human_identity_reference";
@@ -2126,6 +2135,22 @@ export interface CreditOfferSummary {
   status: "offered" | "accepted" | "declined" | "expired" | "superseded";
   createdAt: string;
   updatedAt: string;
+}
+
+export interface HumanOfferReviewRecovery {
+  subjectId: string;
+  consentId: string;
+  creditIntent: CreditIntentSummary;
+  decision: CreditDecisionSummary;
+  offer: CreditOfferSummary | CapitalPartnerCreditOffer;
+  offerSchemaVersion: "credit_offer.v1" | "credit_offer.v2";
+  offerAggregateVersion: number;
+  serverTruth: true;
+  nonAuthorizing: true;
+  sandboxOnly: true;
+  productionFundsApproved: false;
+  fundsAuthority: false;
+  schemaVersion: "human_offer_review_recovery.v1";
 }
 
 export interface CreditApplicationEvaluatedResponse {
@@ -2476,7 +2501,7 @@ export interface WorkspaceResumeResource {
   relationship: "owner" | "controller" | "subject";
 }
 
-export interface WorkspaceResumeViewResponse {
+export interface WorkspaceResumeViewResponseV1 {
   workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
   resources: WorkspaceResumeResource[];
   controlledAgentActorIds?: string[];
@@ -2485,6 +2510,19 @@ export interface WorkspaceResumeViewResponse {
   serverTruth: true;
   schemaVersion: "tenant_workspace_resume_view.v1";
 }
+
+export interface WorkspaceResumeViewResponseV2 {
+  workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
+  resources: WorkspaceResumeResource[];
+  controlledAgentActorIds?: string[];
+  continuationReceipts?: WorkspaceContinuationReceiptView[];
+  humanOfferReview?: HumanOfferReviewRecovery | null;
+  hasMore: boolean;
+  serverTruth: true;
+  schemaVersion: "tenant_workspace_resume_view.v2";
+}
+
+export type WorkspaceResumeViewResponse = WorkspaceResumeViewResponseV2;
 
 export interface TenantRiskPortfolioReferenceViewResponse {
   resource: { resourceType: "risk_portfolio"; resourceId: string } | null;
@@ -5078,7 +5116,7 @@ export type TenantProtocolOperation =
       "credit.read.self",
       "prohibited",
       "read",
-      "tenant_credit_application_view.v1"
+      "tenant_credit_application_view.v2"
     >
   | TenantProtocolOperationBase<
       "pilotReadConsent",
@@ -5108,7 +5146,7 @@ export type TenantProtocolOperation =
       "workspace.resume.self",
       "prohibited",
       "read",
-      "tenant_workspace_resume_view.v1"
+      "tenant_workspace_resume_view.v2"
     >
   | TenantProtocolOperationBase<
       "pilotReadTenantRiskPortfolioReference",

@@ -89,7 +89,7 @@ function exactContinuationReceiptView(value) {
 export function selectPrincipalAgentWorkspace(input = {}) {
   if (
     input?.serverTruth !== true ||
-    input?.schemaVersion !== "tenant_workspace_resume_view.v1" ||
+    input?.schemaVersion !== "tenant_workspace_resume_view.v2" ||
     input?.workspaceKind !== "principal_controller"
   ) return Object.freeze({ status: "unavailable" });
   if (!exactObject(input, new Set([

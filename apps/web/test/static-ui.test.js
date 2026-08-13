@@ -89,6 +89,11 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.equal(html.includes("data-legacy-demo-surface"), false);
   assert.equal(html.includes("Run Agent lifecycle"), false);
   assert.equal(html.includes("Reset Sandbox"), false);
+  assert.match(
+    html,
+    /id="humanCreditAmount"[^>]*step="0\.01"/,
+    "Human request recovery must preserve exact cent-denominated economics"
+  );
   assert.ok(
     js.includes("private-agent-subject-") && js.includes("pilotReadAgentAccountBinding"),
     "Agent Subject creation must be replay-safe and reload its durable binding"

@@ -275,7 +275,7 @@ export function createHumanCreditOfferWorkflowReceipt(input) {
   const readResult = assertStep(
     input.readStep,
     "pilotReadCreditApplication",
-    "tenant_credit_application_view.v1",
+    "tenant_credit_application_view.v2",
     correlationId
   );
   assertApplication(

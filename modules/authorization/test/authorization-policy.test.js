@@ -131,6 +131,7 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
   assert.deepEqual(humanBorrower, [
     PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
     PilotCapability.SUBJECT_READ_SELF,
+    PilotCapability.WORKSPACE_RESUME_SELF,
     PilotCapability.WALLET_ACCOUNT_BINDING_PREPARE_OWNED,
     PilotCapability.WALLET_ACCOUNT_BINDING_SUBMIT_OWNED,
     PilotCapability.WALLET_ACCOUNT_BINDING_READ_OWNED,

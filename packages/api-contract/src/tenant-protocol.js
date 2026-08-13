@@ -324,7 +324,7 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     idempotency: "prohibited",
     quotaClass: "read",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
-    responseSchemaVersion: "tenant_credit_application_view.v1",
+    responseSchemaVersion: "tenant_credit_application_view.v2",
     public: false,
     fundsAuthority: false
   },
@@ -363,7 +363,7 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     idempotency: "prohibited",
     quotaClass: "read",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
-    responseSchemaVersion: "tenant_workspace_resume_view.v1",
+    responseSchemaVersion: "tenant_workspace_resume_view.v2",
     public: false,
     fundsAuthority: false
   },

@@ -90,6 +90,7 @@ export function summarizeCreditDecision(decision) {
 
 export function summarizeCreditOffer(offer) {
   if (!offer) return null;
+  if (offer.schemaVersion === "credit_offer.v2") return structuredClone(offer);
   return {
     creditOfferId: offer.creditOfferId,
     creditOfferHash: offer.creditOfferHash,

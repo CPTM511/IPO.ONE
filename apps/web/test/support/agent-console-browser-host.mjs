@@ -403,7 +403,7 @@ function resultFor(command) {
         : [],
       hasMore: selectionScenario === "has-more",
       serverTruth: true,
-      schemaVersion: "tenant_workspace_resume_view.v1"
+      schemaVersion: "tenant_workspace_resume_view.v2"
     });
   }
   if (command.operationId === "pilotReadAgentAccountBinding") {

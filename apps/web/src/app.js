@@ -49,6 +49,8 @@ import { createHumanCreditOfferWorkflowReceipt } from "./human-credit-offer-work
 import { createHumanSandboxObligationWorkflowReceipt } from "./human-sandbox-obligation-workflow-receipt.js";
 import {
   assertRequestCreditReviewCurrent,
+  assertRecoveredHumanCreditReviewUnchanged,
+  createRecoveredHumanCreditReviewBinding,
   createRequestCreditReviewBinding,
   evaluateRequestCreditReviewBinding
 } from "./request-credit-review-binding.js";
@@ -2549,6 +2551,38 @@ function currentHumanCreditReviewInput() {
     entryMode: "human",
     subjectId: tenantInputValue("humanSubjectId")
   };
+}
+
+function restoreHumanCreditRequest(creditRequest) {
+  const principalMinor = /^[1-9][0-9]*$/.test(
+    creditRequest?.requestedPrincipalMinor ?? ""
+  )
+    ? BigInt(creditRequest.requestedPrincipalMinor)
+    : 0n;
+  if (
+    creditRequest?.assetId !== "urn:ipo-one:sandbox-asset:usd-cent" ||
+    principalMinor < 100n ||
+    principalMinor > 25000n ||
+    creditRequest.requestedTermDays < 1 ||
+    creditRequest.requestedTermDays > 90 ||
+    creditRequest.installmentCount < 1 ||
+    creditRequest.installmentCount > 3 ||
+    ![...el("humanCreditPurpose").options]
+      .some(({ value }) => value === creditRequest.purposeCode) ||
+    ![...el("humanRepaymentFrequency").options]
+      .some(({ value }) => value === creditRequest.repaymentFrequency)
+  ) {
+    throw new Error("invalid_request_credit_review_binding");
+  }
+  const wholeUnits = principalMinor / 100n;
+  const fractionalUnits = principalMinor % 100n;
+  el("humanCreditAmount").value = fractionalUnits === 0n
+    ? String(wholeUnits)
+    : `${wholeUnits}.${String(fractionalUnits).padStart(2, "0")}`;
+  el("humanCreditTerm").value = String(creditRequest.requestedTermDays);
+  el("humanInstallments").value = String(creditRequest.installmentCount);
+  el("humanCreditPurpose").value = creditRequest.purposeCode;
+  el("humanRepaymentFrequency").value = creditRequest.repaymentFrequency;
 }
 
 function humanCreditReviewState() {
@@ -8334,7 +8368,35 @@ async function recoverAuthenticatedWorkspace() {
       el("humanConsentId").value = consent.resourceId;
       rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, consent.resourceId);
     }
-    if (creditIntent) {
+    const recoveredOfferReview = recovery.humanOfferReview;
+    if (recoveredOfferReview) {
+      try {
+        const binding = createRecoveredHumanCreditReviewBinding(recoveredOfferReview);
+        const recoveredCreditIntent = resources.find((item) =>
+          item?.resourceType === "credit_intent" &&
+          item.resourceId === recoveredOfferReview.creditIntent.creditIntentId
+        );
+        if (!recoveredCreditIntent) {
+          throw new Error("invalid_request_credit_review_binding");
+        }
+        el("humanSubjectId").value = recoveredOfferReview.subjectId;
+        rememberOpaqueId(HUMAN_SUBJECT_STORAGE_KEY, recoveredOfferReview.subjectId);
+        el("humanConsentId").value = recoveredOfferReview.consentId;
+        rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, recoveredOfferReview.consentId);
+        restoreHumanCreditRequest(binding.creditRequest);
+        tenantPilot.intent = recoveredOfferReview.creditIntent;
+        tenantPilot.decision = recoveredOfferReview.decision;
+        tenantPilot.offer = recoveredOfferReview.offer;
+        tenantPilot.receipt = null;
+        tenantPilot.offerReview = binding;
+      } catch {
+        tenantPilot.intent = null;
+        tenantPilot.decision = null;
+        tenantPilot.offer = null;
+        tenantPilot.receipt = null;
+        tenantPilot.offerReview = null;
+      }
+    } else if (creditIntent) {
       try {
         const application = await tenantApi("pilotReadCreditApplication", {
           resource: {
@@ -9134,7 +9196,7 @@ async function acceptHumanCreditOffer() {
   await runTenantAction(
     el("acceptHumanOfferBtn"),
     async () => {
-      const offer = tenantPilot.offer;
+      let offer = tenantPilot.offer;
       if (!offer || offer.status !== "offered") {
         throw new Error("Complete a current deterministic Offer before acceptance.");
       }
@@ -9146,6 +9208,23 @@ async function acceptHumanCreditOffer() {
         tenantPilot.offerReview,
         currentHumanCreditReviewInput()
       );
+      if (tenantPilot.offerReview.schemaVersion === "request_credit_review_binding.v2") {
+        const currentWorkspace = await tenantApi("pilotReadWorkspaceResume", {
+          payload: {},
+          idempotent: false
+        });
+        const currentBinding = assertRecoveredHumanCreditReviewUnchanged(
+          tenantPilot.offerReview,
+          currentWorkspace.response.humanOfferReview
+        );
+        restoreHumanCreditRequest(currentBinding.creditRequest);
+        tenantPilot.workspaceResume = currentWorkspace.response;
+        tenantPilot.offerReview = currentBinding;
+        tenantPilot.intent = currentWorkspace.response.humanOfferReview.creditIntent;
+        tenantPilot.decision = currentWorkspace.response.humanOfferReview.decision;
+        tenantPilot.offer = currentWorkspace.response.humanOfferReview.offer;
+        offer = tenantPilot.offer;
+      }
       if (!el("humanOfferAcknowledge").checked) {
         throw new Error("Review and acknowledge the exact sandbox Offer terms first.");
       }

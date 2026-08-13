@@ -555,7 +555,7 @@
             "tenant_human_subject_created.v1",
             "tenant_credit_intent_created.v1",
             "tenant_credit_application_evaluated.v2",
-            "tenant_credit_application_view.v1",
+            "tenant_credit_application_view.v2",
             "tenant_credit_passport_artifact_created.v1",
             "tenant_owned_credit_passport_artifact_view.v1",
             "tenant_credit_passport_verification_result.v1",
@@ -589,7 +589,7 @@
             "provider_intent_view.v1",
             "provider_intent_acknowledgement.v1",
             "provider_sandbox_callback_result.v1",
-            "tenant_workspace_resume_view.v1",
+            "tenant_workspace_resume_view.v2",
             "tenant_risk_portfolio_reference_view.v1",
             "tenant_servicing_queue_reference_view.v1",
             "tenant_agent_continuation_receipt_persisted.v1",
@@ -1248,7 +1248,7 @@
               "const": "read"
             },
             "responseSchemaVersion": {
-              "const": "tenant_credit_application_view.v1"
+              "const": "tenant_credit_application_view.v2"
             }
           }
         },
@@ -1611,7 +1611,7 @@
               "const": "read"
             },
             "responseSchemaVersion": {
-              "const": "tenant_workspace_resume_view.v1"
+              "const": "tenant_workspace_resume_view.v2"
             }
           }
         },
