@@ -73,7 +73,7 @@ try {
   });
   await execFileAsync(
     "pnpm",
-    ["install", "--frozen-lockfile", "--prod", "--ignore-scripts"],
+    ["install", "--frozen-lockfile", "--ignore-scripts"],
     { cwd: trackedSource }
   );
   await mkdir(join(output, "api"), { recursive: true });

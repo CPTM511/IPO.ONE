@@ -109,7 +109,7 @@ assert.match(bundleSource, /--untracked-files=no/);
 assert.match(bundleSource, /sourceMaterialization: "tracked_git_archive"/);
 assert.match(bundleSource, /untrackedInputIncluded: false/);
 assert.match(bundleSource, /materializeTrackedGitSource/);
-assert.match(bundleSource, /"--frozen-lockfile", "--prod", "--ignore-scripts"/);
+assert.match(bundleSource, /"--frozen-lockfile", "--ignore-scripts"/);
 assert.match(bundleSource, /nodePaths: \[resolve\(trackedSource, "node_modules"\)\]/);
 assert.match(bundleSource, /target: "node24"/);
 assert.equal(runtimeMap.schemaVersion, "ipo.one.canonical-product-runtime/v1");
