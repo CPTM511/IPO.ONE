@@ -28,6 +28,10 @@ import {
   createReadyAgentHandoffManifest
 } from "../../../apps/web/src/agent-handoff-manifest.js";
 import { createHumanCreditOfferWorkflowReceipt } from "../../../apps/web/src/human-credit-offer-workflow-receipt.js";
+import {
+  createRecoveredHumanCreditReviewBinding,
+  evaluateRequestCreditReviewBinding
+} from "../../../apps/web/src/request-credit-review-binding.js";
 import { ActorType } from "../../authentication/src/index.js";
 import {
   PilotCapability,
@@ -975,6 +979,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [
           PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.CONSENT_CREATE_SELF,
           PilotCapability.CONSENT_READ_SELF,
           PilotCapability.CONSENT_REVOKE_SELF,
@@ -1021,6 +1026,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [
           PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.CONSENT_CREATE_SELF,
           PilotCapability.CONSENT_READ_SELF,
           PilotCapability.CONSENT_REVOKE_SELF,
@@ -1048,6 +1054,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [
           PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
           PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.WORKSPACE_RESUME_SELF,
           PilotCapability.CONSENT_CREATE_SELF,
           PilotCapability.CONSENT_READ_SELF,
           PilotCapability.CONSENT_REVOKE_SELF,
@@ -4054,10 +4061,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       });
       assert.equal(humanView.response.decision, null);
       assert.equal(humanView.response.offer, null);
-      assert.equal(humanView.response.schemaVersion, "tenant_credit_application_view.v1");
+      assert.equal(humanView.response.schemaVersion, "tenant_credit_application_view.v2");
       assert.equal(agentView.response.decision.riskDecisionId, agentWorkflow.decision.riskDecisionId);
       assert.equal(agentView.response.offer.creditOfferId, agentWorkflow.offer.creditOfferId);
-      assert.equal(agentView.response.schemaVersion, "tenant_credit_application_view.v1");
+      assert.equal(agentView.response.schemaVersion, "tenant_credit_application_view.v2");
 
       for (const denied of [
         () => tenantOneOtherBorrower.getCreditApplication({
@@ -4417,11 +4424,48 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(dualNativeParity.economics.offer.maturityOffsetMs, 60 * 86_400_000);
 
       const humanOffer = humanEvaluations[0].response.offer;
+      const freshHumanSession = humanClient(
+        gateway(appPool, harness),
+        identities.tenantOneBorrower.authenticationContext
+      );
+      const resumedHumanOffer = await freshHumanSession.resumeWorkspace({
+        requestId: `request-relogin-human-offer-${RUN_ID}`,
+        correlationId: `correlation-relogin-human-offer-${RUN_ID}`
+      });
+      assert.equal(resumedHumanOffer.response.workspaceKind, "human_borrower");
+      assert.equal(resumedHumanOffer.response.serverTruth, true);
+      assert.equal(
+        resumedHumanOffer.response.humanOfferReview.creditIntent.creditIntentId,
+        humanIntent.creditIntentId
+      );
+      assert.equal(
+        resumedHumanOffer.response.humanOfferReview.offer.creditOfferId,
+        humanOffer.creditOfferId
+      );
+      assert.equal(
+        resumedHumanOffer.response.humanOfferReview.offerSchemaVersion,
+        "credit_offer.v1"
+      );
+      assert.equal(resumedHumanOffer.response.humanOfferReview.offerAggregateVersion, 1);
+      assert.equal(resumedHumanOffer.response.humanOfferReview.nonAuthorizing, true);
+      assert.equal(resumedHumanOffer.response.humanOfferReview.fundsAuthority, false);
+      const freshHumanBrowserBinding = createRecoveredHumanCreditReviewBinding(
+        resumedHumanOffer.response.humanOfferReview
+      );
+      assert.equal(freshHumanBrowserBinding.serverReceipts.length, 0);
+      assert.equal(evaluateRequestCreditReviewBinding(freshHumanBrowserBinding, {
+        authorityId: consentId,
+        creditRequest: humanCreditRequest,
+        entryMode: "human",
+        subjectId: tenantOneHumanSubjectId
+      }).current, true);
       const humanAcceptanceCommand = {
-        creditOfferId: humanOffer.creditOfferId,
+        creditOfferId: resumedHumanOffer.response.humanOfferReview.offer.creditOfferId,
         payload: {
-          expectedOfferHash: humanOffer.creditOfferHash,
-          expectedTermsHash: humanOffer.termsHash,
+          expectedOfferHash:
+            resumedHumanOffer.response.humanOfferReview.offer.creditOfferHash,
+          expectedTermsHash:
+            resumedHumanOffer.response.humanOfferReview.offer.termsHash,
           acknowledgementHash: hashId("gateway_human_offer_acknowledgement", {
             offerHash: humanOffer.creditOfferHash,
             termsHash: humanOffer.termsHash
@@ -4432,7 +4476,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         correlationId: `correlation-accept-human-credit-${RUN_ID}`
       };
       const humanAcceptances = await executeConcurrentDuplicate(
-        () => tenantOneBorrower.acceptCreditOffer(humanAcceptanceCommand)
+        () => freshHumanSession.acceptCreditOffer(humanAcceptanceCommand)
       );
       assert.deepEqual(humanAcceptances.map((result) => result.replayed).sort(), [false, true]);
       assert.deepEqual(humanAcceptances[0].response, humanAcceptances[1].response);
@@ -5769,6 +5813,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           error.code === "P0001" &&
           error.message === "append-only rows cannot be updated or deleted"
       );
+
     });
 
     await t.test("Phase 2 Capital Partner marketplace closes Human, Agent, stale, and adverse no-funds paths", async () => {
@@ -6124,9 +6169,70 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(Object.hasOwn(humanInboxItem.summary, "selectedClaims"), false);
       assert.equal(passportInbox.response.fundsAuthority, false);
       assert.equal(passportInbox.response.readOnly, true);
+      const freshPhase2HumanSession = humanClient(
+        gateway(appPool, harness),
+        identities.tenantOnePhase2BorrowerA.authenticationContext
+      );
+      const resumedReplacementOffer = await freshPhase2HumanSession.resumeWorkspace({
+        requestId: `request-phase2-relogin-replacement-offer-${RUN_ID}`,
+        correlationId: `correlation-phase2-relogin-replacement-offer-${RUN_ID}`
+      });
+      assert.equal(
+        resumedReplacementOffer.response.humanOfferReview.creditIntent.creditIntentId,
+        humanApplication.creditIntent.creditIntentId
+      );
+      assert.equal(
+        resumedReplacementOffer.response.humanOfferReview.offer.creditOfferId,
+        humanUnderwriting.offer.creditOfferId
+      );
+      assert.equal(
+        resumedReplacementOffer.response.humanOfferReview.offerSchemaVersion,
+        "credit_offer.v2"
+      );
+      assert.equal(
+        resumedReplacementOffer.response.humanOfferReview.offer.schemaVersion,
+        "credit_offer.v2"
+      );
+      assert.notEqual(
+        resumedReplacementOffer.response.humanOfferReview.offer.creditOfferId,
+        humanApplication.preliminaryOffer.creditOfferId
+      );
+      const freshReplacementBrowserBinding = createRecoveredHumanCreditReviewBinding(
+        resumedReplacementOffer.response.humanOfferReview
+      );
+      assert.equal(freshReplacementBrowserBinding.offerSchemaVersion, "credit_offer.v2");
+      assert.equal(evaluateRequestCreditReviewBinding(freshReplacementBrowserBinding, {
+        authorityId: humanA.consentId,
+        creditRequest: {
+          assetId: humanApplication.creditIntent.assetId,
+          requestedPrincipalMinor: humanApplication.creditIntent.requestedPrincipalMinor,
+          purposeCode: humanApplication.creditIntent.purposeCode,
+          requestedTermDays: humanApplication.creditIntent.requestedTermDays,
+          repaymentFrequency: humanApplication.creditIntent.repaymentFrequency,
+          installmentCount: humanApplication.creditIntent.installmentCount
+        },
+        entryMode: "human",
+        subjectId: humanA.subjectId
+      }).current, true);
+      await assert.rejects(
+        () => freshPhase2HumanSession.acceptCreditOffer({
+          creditOfferId: humanApplication.preliminaryOffer.creditOfferId,
+          payload: {
+            expectedOfferHash: humanApplication.preliminaryOffer.creditOfferHash,
+            expectedTermsHash: humanApplication.preliminaryOffer.termsHash,
+            acknowledgementHash: hashId("gateway_phase2_replaced_offer_ack", {
+              offerId: humanApplication.preliminaryOffer.creditOfferId
+            })
+          },
+          idempotencyKey: `phase2-accept-replaced-offer-${RUN_ID}`,
+          requestId: `request-phase2-accept-replaced-offer-${RUN_ID}`,
+          correlationId: `correlation-phase2-relogin-replacement-offer-${RUN_ID}`
+        }),
+        (error) => ["authorization_denied", "offer_not_available"].includes(error.code)
+      );
       const humanObligation = await acceptExecute({
-        client: tenantOnePhase2BorrowerA,
-        offer: humanUnderwriting.offer,
+        client: freshPhase2HumanSession,
+        offer: resumedReplacementOffer.response.humanOfferReview.offer,
         label: "human-repaid"
       });
       await repayFully({
