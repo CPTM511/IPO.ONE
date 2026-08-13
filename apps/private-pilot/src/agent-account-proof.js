@@ -50,7 +50,12 @@ try {
   const agentKey = await loadLocalAgentKeyMaterial(
     process.env.IPO_ONE_LOCAL_AGENT_KEY_FILE || DEFAULT_AGENT_KEY_FILE
   );
-  runtime = await createPrivatePilotDurableAgentGateway(databaseUrl);
+  const basePort = process.env.IPO_ONE_PILOT_PORT === undefined
+    ? 8787
+    : Number(process.env.IPO_ONE_PILOT_PORT);
+  runtime = await createPrivatePilotDurableAgentGateway(databaseUrl, {
+    basePort
+  });
   const account = derivePrivatePilotAgentAccount(secret, {
     tenantId: runtime.authentication.profile.tenantId
   });

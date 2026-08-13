@@ -118,6 +118,30 @@ pnpm run local:down
 pnpm run local:vm:stop
 ```
 
+Normal local development labels the Pilot image as `local-stack`. That label is
+intentionally ineligible for M1-B exact-commit release Evidence. After P0-1
+through P0-4 produce one clean candidate, rebuild and verify the same local
+product with its exact lowercase commit SHA:
+
+```sh
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-40-character-sha> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:up
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-40-character-sha> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:acceptance
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-40-character-sha> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:restart
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-40-character-sha> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:acceptance
+```
+
+The exact-SHA mode fails before Compose if the SHA differs from `HEAD` or any
+tracked source differs from that commit. Untracked Founder work is preserved
+and excluded from Git source identity. The Docker build context is a fresh Git
+archive of tracked `HEAD`, so untracked files and local secrets cannot enter the
+exact image. `IPO_ONE_M1_B_PORT_BASE` is optional; it derives four consecutive
+review ports and leaves the normal 8787-8790 defaults unchanged when absent.
+Use the same port-base value on every `local:*` command for an isolated run.
+Acceptance checks the Pilot image plus the running Pilot and Worker OCI
+revision labels. This proves which local source was built and restart-tested;
+it does not prove a hosted deployment. Do not set the SHA variable for ordinary
+dirty-worktree development.
+
 `local:down` and `local:vm:stop` retain the PostgreSQL volume. Lima removes
 host forwarding when the guest listeners or VM stop. A later `local:up` returns
 to the same durable product state.

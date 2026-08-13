@@ -39,8 +39,13 @@ export async function createDurableLocalAgentSession({
     process.env.IPO_ONE_LOCAL_AGENT_KEY_FILE || DEFAULT_AGENT_KEY_FILE,
   networkSource = "local_reference_agent"
 }) {
+  const basePort = process.env.IPO_ONE_PILOT_PORT === undefined
+    ? 8787
+    : Number(process.env.IPO_ONE_PILOT_PORT);
   const agentKey = await loadLocalAgentKeyMaterial(agentKeyFile);
-  const runtime = await createPrivatePilotDurableAgentGateway(databaseUrl);
+  const runtime = await createPrivatePilotDurableAgentGateway(databaseUrl, {
+    basePort
+  });
   const agentIdentity = runtime.authentication.identities.agent;
   const verifyAgentSubjectBinding =
     createAgentSubjectBindingVerifier(runtime.pool);

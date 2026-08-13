@@ -21,7 +21,12 @@ const [
   localAgent,
   localProfile,
   evidenceAnchorCompose,
-  localEvidenceAnchor
+  localEvidenceAnchor,
+  localReleaseIdentity,
+  m1bAcceptanceVerifier,
+  m1bAcceptanceFileVerifier,
+  m1bAcceptanceContract,
+  m1bAcceptanceTask
 ] = await Promise.all([
   source("deploy/local/stack.v1.json"),
   source("deploy/local/compose.yaml"),
@@ -37,7 +42,12 @@ const [
   source("scripts/local-agent.mjs"),
   source("deploy/local/private-pilot-profile.v1.json"),
   source("deploy/local/evidence-anchor.compose.yaml"),
-  source("scripts/local-evidence-anchor.mjs")
+  source("scripts/local-evidence-anchor.mjs"),
+  source("scripts/local-release-identity.mjs"),
+  source("scripts/verify-m1-b-acceptance-evidence.mjs"),
+  source("scripts/m1-b-acceptance-evidence-files.mjs"),
+  source("packages/release-governance/src/m1-b-acceptance-evidence.js"),
+  source("docs/codex/tasks/M1_B_P0_5_EXACT_COMMIT_ACCEPTANCE.md")
 ]);
 
 const stack = parseLocalStack(stackText);
@@ -70,6 +80,10 @@ assert.match(
 );
 assert.match(privatePilotDatabase, /seedCapitalPartnerProfile/);
 assert.match(compose, /IPO_ONE_PILOT_PROFILE_FILE: \/app\/deploy\/local\/private-pilot-profile\.v1\.json/g);
+assert.match(
+  compose,
+  /BUILD_REVISION: \$\{IPO_ONE_M1_B_RELEASE_SHA:-local-stack\}/
+);
 const profile = JSON.parse(localProfile);
 assert.equal(profile.mode, "local_no_funds");
 assert.equal(profile.syntheticDataOnly, true);
@@ -96,10 +110,30 @@ assert.match(localStackScript, /lsof/);
 assert.match(localStackScript, /ipo_one_authentication_options\.v1/);
 assert.match(localStackScript, /authentication-server\.v1\.json/);
 assert.match(localStackScript, /agent-key\.v1\.json/);
+assert.match(localStackScript, /assertExactLocalReleaseSource/);
+assert.match(localStackScript, /IPO_ONE_M1_B_RELEASE_SHA=/);
+assert.match(localStackScript, /IPO_ONE_M1_B_PORT_BASE=/);
+assert.match(localStackScript, /IPO_ONE_M1_B_BUILD_CONTEXT=/);
+assert.match(localStackScript, /prepareLocalReleaseBuildContext/);
+assert.match(localReleaseIdentity, /requested SHA/);
+assert.match(localReleaseIdentity, /requires a clean source worktree/);
 assert.match(localAcceptance, /authenticationOptions\.profile,\s*"local_no_funds"/);
 assert.match(localAcceptance, /authenticationOptions\.sessionActive,\s*false/);
 assert.match(localAcceptance, /authenticationOptions\.walletAuthentication,\s*true/);
 assert.match(localAcceptance, /createLocalAgentProof/);
+assert.match(localAcceptance, /org\.opencontainers\.image\.revision/);
+assert.match(localAcceptance, /releaseIdentity\.exactCandidate/);
+assert.match(m1bAcceptanceVerifier, /verifyM1BAcceptanceEvidence/);
+assert.match(m1bAcceptanceVerifier, /--evidence-root/);
+assert.match(m1bAcceptanceVerifier, /verifyM1BArtifactFiles/);
+assert.match(m1bAcceptanceFileVerifier, /createReadStream/);
+assert.match(m1bAcceptanceFileVerifier, /--untracked-files=no/);
+assert.match(m1bAcceptanceVerifier, /verifyM1BHostedCapabilityDocument/);
+assert.match(m1bAcceptanceVerifier, /verifyM1BHostedReadinessDocument/);
+assert.match(m1bAcceptanceContract, /fixtureHost/);
+assert.match(m1bAcceptanceContract, /browserStorageAuthority/);
+assert.match(m1bAcceptanceContract, /operator_confirmed_invited_wallet_siwe/);
+assert.match(m1bAcceptanceTask, /No automated wallet signing/);
 assert.match(localAgent, /docker",\s*"compose"/);
 assert.match(localAgent, /--no-deps/);
 assert.match(localAgent, /CONTAINER_INPUT/);

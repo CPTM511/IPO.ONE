@@ -18,6 +18,11 @@ const AGENT_KEY_FILE = resolve(
   ROOT,
   ".ipo-one/local-stack/agent-key.v1.json"
 );
+const releaseSha = process.env.IPO_ONE_M1_B_RELEASE_SHA ?? "";
+const reviewPortBase = process.env.IPO_ONE_M1_B_PORT_BASE ?? "";
+const releaseBuildContext = /^[0-9a-f]{40}$/.test(releaseSha)
+  ? resolve(ROOT, ".ipo-one/local-stack/exact-source", releaseSha)
+  : ROOT;
 const CONTAINER_INPUT = "/run/input/ipo-one-agent-input.json";
 const CONTAINER_OFFER_RECEIPT =
   "/run/input/ipo-one-agent-offer-receipt.json";
@@ -129,6 +134,10 @@ const containerArguments = [
   "--workdir",
   ROOT,
   INSTANCE,
+  "env",
+  `IPO_ONE_M1_B_RELEASE_SHA=${releaseSha}`,
+  `IPO_ONE_M1_B_PORT_BASE=${reviewPortBase}`,
+  `IPO_ONE_M1_B_BUILD_CONTEXT=${releaseBuildContext}`,
   "docker",
   "compose",
   "--project-name",

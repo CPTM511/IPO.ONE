@@ -14,7 +14,11 @@ const [
   cronApiSource,
   cronSource,
   environmentSource,
-  bundleSource
+  bundleSource,
+  rootVercelText,
+  runtimeMapText,
+  legacyRuntimeSource,
+  legacyServerSource
 ] = await Promise.all([
   source("deploy/vercel/m1-b-sandbox.manifest.v1.json"),
   source("deploy/vercel/vercel.m1-b-sandbox.json"),
@@ -24,13 +28,19 @@ const [
   source("api/vercel-sandbox-cron.mjs"),
   source("apps/private-pilot/src/vercel-sandbox-cron.js"),
   source("apps/private-pilot/src/production-environment.js"),
-  source("scripts/build-vercel-sandbox-bundle.mjs")
+  source("scripts/build-vercel-sandbox-bundle.mjs"),
+  source("vercel.json"),
+  source("deploy/canonical-product-runtime.v1.json"),
+  source("apps/api/src/runtime-config.js"),
+  source("apps/api/src/server.js")
 ]);
 
 const manifest = JSON.parse(manifestText);
 const vercel = JSON.parse(vercelText);
 const riskVercel = JSON.parse(riskVercelText);
 const deploymentPackage = JSON.parse(packageText);
+const rootVercel = JSON.parse(rootVercelText);
+const runtimeMap = JSON.parse(runtimeMapText);
 
 assert.equal(manifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v1");
 assert.equal(manifest.productProfile, "deployable_sandbox_vertical_slice");
@@ -75,6 +85,12 @@ assert.deepEqual(vercel.redirects, [{
   permanent: true
 }]);
 assert.equal(Object.hasOwn(vercel, "env"), false);
+assert.ok(rootVercel.functions["api/vercel-sandbox.mjs"]);
+assert.ok(rootVercel.functions["api/vercel-sandbox-cron.mjs"]);
+assert.equal(rootVercel.functions["api/index.mjs"], undefined);
+assert.deepEqual(rootVercel.rewrites, vercel.rewrites);
+assert.deepEqual(rootVercel.redirects, vercel.redirects);
+assert.deepEqual(rootVercel.crons, vercel.crons);
 assert.equal(riskVercel.fluid, true);
 assert.equal(Object.hasOwn(riskVercel, "crons"), false);
 assert.equal(Object.hasOwn(riskVercel.functions, "api/vercel-sandbox-cron.mjs"), false);
@@ -89,7 +105,37 @@ assert.match(environmentSource, /VERCEL_PROJECT_PRODUCTION_URL/);
 assert.match(environmentSource, /x-vercel-deployment-url/);
 assert.match(environmentSource, /allowExitOnIdle: vercelSandbox/);
 assert.match(bundleSource, /Deployment bundles require a clean exact source worktree/);
+assert.match(bundleSource, /--untracked-files=no/);
+assert.match(bundleSource, /sourceMaterialization: "tracked_git_archive"/);
+assert.match(bundleSource, /untrackedInputIncluded: false/);
+assert.match(bundleSource, /materializeTrackedGitSource/);
+assert.match(bundleSource, /"--frozen-lockfile", "--prod", "--ignore-scripts"/);
+assert.match(bundleSource, /nodePaths: \[resolve\(trackedSource, "node_modules"\)\]/);
 assert.match(bundleSource, /target: "node24"/);
+assert.equal(runtimeMap.schemaVersion, "ipo.one.canonical-product-runtime/v1");
+assert.equal(runtimeMap.productTruth.transportBoundary, "tenant_protocol");
+assert.equal(runtimeMap.productTruth.commandBoundary, "tenant_command_gateway");
+assert.equal(runtimeMap.productTruth.kernel, "shared_human_agent_obligation_kernel");
+assert.equal(runtimeMap.productTruth.canonicalState, "postgresql");
+assert.equal(runtimeMap.local.canonicalProductTruth, true);
+assert.equal(runtimeMap.hosted.canonicalProductTruth, true);
+assert.equal(runtimeMap.hosted.rootConfiguration, "vercel.json");
+assert.equal(
+  runtimeMap.hosted.releaseBundleConfiguration,
+  "deploy/vercel/vercel.m1-b-sandbox.json"
+);
+assert.equal(
+  runtimeMap.hosted.exactBundleBuilder,
+  "scripts/build-vercel-sandbox-bundle.mjs"
+);
+assert.equal(runtimeMap.legacyDemo.canonicalProductTruth, false);
+assert.equal(runtimeMap.legacyDemo.releaseEligible, false);
+assert.equal(runtimeMap.legacyDemo.state, "process_local_ephemeral");
+assert.match(legacyRuntimeSource, /canonicalProductTruth:\s*false/);
+assert.match(legacyRuntimeSource, /releaseEligible:\s*false/);
+assert.match(legacyRuntimeSource, /stateDurability:\s*"process_local_ephemeral"/);
+assert.match(legacyServerSource, /canonicalProductTruth:\s*runtimeConfig\.canonicalProductTruth/);
+assert.match(legacyServerSource, /releaseEligible:\s*runtimeConfig\.releaseEligible/);
 assert.doesNotMatch(
   `${vercelText}\n${manifestText}`,
   /(?:PASSWORD|PRIVATE_KEY|DATABASE_URL|CRON_SECRET)\s*":\s*"[^"$]/

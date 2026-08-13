@@ -17,6 +17,12 @@ import {
 import {
   loadPrivatePilotProfile
 } from "../apps/private-pilot/src/private-pilot-profile.js";
+import {
+  assertExactLocalReleaseSource,
+  prepareLocalReleaseBuildContext,
+  resolveLocalReviewPorts,
+  resolveLocalReleaseIdentity
+} from "./local-release-identity.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTANCE = "ipo-one-local";
@@ -27,6 +33,37 @@ const AGENT_KEY_FILE = resolve(
   ROOT,
   ".ipo-one/local-stack/agent-key.v1.json"
 );
+const releaseIdentity = resolveLocalReleaseIdentity();
+assertExactLocalReleaseSource(releaseIdentity, { root: ROOT });
+const localReviewPorts = resolveLocalReviewPorts({ releaseIdentity });
+const releaseBuildContext = await prepareLocalReleaseBuildContext(
+  releaseIdentity,
+  { root: ROOT }
+);
+
+function docker(args, { capture = false } = {}) {
+  const result = spawnSync(
+    "limactl",
+    [
+      "shell",
+      "--workdir",
+      ROOT,
+      INSTANCE,
+      "docker",
+      ...args
+    ],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit"
+    }
+  );
+  if (result.error || result.status !== 0) {
+    if (capture && result.stderr) process.stderr.write(result.stderr);
+    throw new Error("local stack Docker command failed");
+  }
+  return capture ? result.stdout.trim() : "";
+}
 
 function compose(args, { capture = false } = {}) {
   const result = spawnSync(
@@ -36,6 +73,10 @@ function compose(args, { capture = false } = {}) {
       "--workdir",
       ROOT,
       INSTANCE,
+      "env",
+      `IPO_ONE_M1_B_RELEASE_SHA=${releaseIdentity.revision}`,
+      `IPO_ONE_M1_B_PORT_BASE=${localReviewPorts.basePort}`,
+      `IPO_ONE_M1_B_BUILD_CONTEXT=${releaseBuildContext}`,
       "docker",
       "compose",
       "--project-name",
@@ -79,8 +120,35 @@ async function waitForHttp(url, attempts = 30) {
 
 const stack = parseLocalStack(await readFile(CONTRACT_FILE, "utf8"));
 const migrations = await readMigrationSet();
+const revisionLabel = "{{ index .Config.Labels \"org.opencontainers.image.revision\" }}";
+const [pilotContainerId, workerContainerId] = ["pilot", "worker"].map(
+  (service) => compose(["ps", "--quiet", service], { capture: true })
+);
+assert.match(pilotContainerId, /^[0-9a-f]{64}$/);
+assert.match(workerContainerId, /^[0-9a-f]{64}$/);
+const runtimeRevisions = Object.freeze({
+  image: docker(
+    ["image", "inspect", stack.pilot.image, "--format", revisionLabel],
+    { capture: true }
+  ),
+  pilot: docker(
+    ["inspect", pilotContainerId, "--format", revisionLabel],
+    { capture: true }
+  ),
+  worker: docker(
+    ["inspect", workerContainerId, "--format", revisionLabel],
+    { capture: true }
+  )
+});
+for (const [surface, revision] of Object.entries(runtimeRevisions)) {
+  assert.equal(
+    revision,
+    releaseIdentity.revision,
+    `${surface} OCI revision must match the requested local release identity`
+  );
+}
 
-for (const port of stack.pilot.ports) {
+for (const port of localReviewPorts.ports) {
   const health = await waitForHttp(
     `http://127.0.0.1:${port}/tenant/v1/healthz`
   );
@@ -128,10 +196,10 @@ const agentProof = await createLocalAgentProof({
   tenantId: localProfile.tenantId,
   clientId: agentIdentity.clientId,
   policyVersion: agentIdentity.createContext().policyVersion,
-  audience: "urn:ipo.one:local:tenant-http:8788"
+  audience: `urn:ipo.one:local:tenant-http:${localReviewPorts.basePort + 1}`
 });
 const agentCatalog = await fetch(
-  "http://127.0.0.1:8788/tenant/v1/catalog",
+  `http://127.0.0.1:${localReviewPorts.basePort + 1}/tenant/v1/catalog`,
   {
     headers: {
       accept: "application/json",
@@ -315,8 +383,11 @@ const pendingOutbox = Number(
 );
 assert.equal(pendingOutbox, 0);
 
+const releaseScope = releaseIdentity.exactCandidate
+  ? `exact M1-B candidate ${releaseIdentity.revision}`
+  : "developer revision local-stack; this result cannot satisfy M1-B P0-5 exact-commit acceptance";
 process.stdout.write(
-  `LOCAL-STACK-001 live acceptance passed: PostgreSQL 17, ${migrations.length} ` +
+  `LOCAL-STACK-001 live acceptance passed for ${releaseScope}: PostgreSQL 17, ${migrations.length} ` +
     "migrations, wallet-gated Human/Principal/Risk/Capital Partner workspaces and a durable Agent proof through the " +
     "verified Lima host-agent loopback forwarding, least-privilege forced RLS, worker heartbeat, " +
     "reconciliation, failure-free one-to-one Evidence anchor coverage without fake transaction " +

@@ -21,6 +21,11 @@ const OUTPUT_DIRECTORY = resolve(
   ".ipo-one/local-stack/agent-workflows"
 );
 const CONTAINER_AGENT_KEY = "/run/secrets/agent-key.v1.json";
+const releaseSha = process.env.IPO_ONE_M1_B_RELEASE_SHA ?? "";
+const reviewPortBase = process.env.IPO_ONE_M1_B_PORT_BASE ?? "";
+const releaseBuildContext = /^[0-9a-f]{40}$/.test(releaseSha)
+  ? resolve(ROOT, ".ipo-one/local-stack/exact-source", releaseSha)
+  : ROOT;
 
 await mkdir(OUTPUT_DIRECTORY, { recursive: true, mode: 0o700 });
 const agentKeyPath = await realpath(AGENT_KEY_FILE);
@@ -31,6 +36,10 @@ const result = spawnSync(
     "--workdir",
     ROOT,
     INSTANCE,
+    "env",
+    `IPO_ONE_M1_B_RELEASE_SHA=${releaseSha}`,
+    `IPO_ONE_M1_B_PORT_BASE=${reviewPortBase}`,
+    `IPO_ONE_M1_B_BUILD_CONTEXT=${releaseBuildContext}`,
     "docker",
     "compose",
     "--project-name",

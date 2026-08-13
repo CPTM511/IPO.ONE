@@ -4,6 +4,7 @@ import { basename, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { build } from "esbuild";
+import { materializeTrackedGitSource } from "./tracked-git-source.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -45,71 +46,109 @@ const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"]);
 if (stdout.trim() !== releaseId) {
   throw new Error("--release must match the current Git HEAD");
 }
-const { stdout: status } = await execFileAsync("git", ["status", "--porcelain"]);
+const { stdout: status } = await execFileAsync(
+  "git",
+  ["status", "--porcelain", "--untracked-files=no"]
+);
 if (status.trim() !== "" && !allowDirtyTest) {
   throw new Error("Deployment bundles require a clean exact source worktree");
 }
+const { stdout: treeStdout } = await execFileAsync(
+  "git",
+  ["rev-parse", `${releaseId}^{tree}`]
+);
+const sourceTree = treeStdout.trim();
+if (!/^[0-9a-f]{40}$/.test(sourceTree)) {
+  throw new Error("Deployment bundle source tree is invalid");
+}
 
 await rm(output, { recursive: true, force: true });
-await mkdir(join(output, "api"), { recursive: true });
-const entryPoints = deploymentRole === "primary"
-  ? {
-      "vercel-sandbox": "api/vercel-sandbox.mjs",
-      "vercel-sandbox-cron": "api/vercel-sandbox-cron.mjs"
+const trackedSource = `${output}-tracked-source`;
+try {
+  await materializeTrackedGitSource({
+    root: process.cwd(),
+    revision: releaseId,
+    destination: trackedSource,
+    allowedParent: "/private/tmp"
+  });
+  await execFileAsync(
+    "pnpm",
+    ["install", "--frozen-lockfile", "--prod", "--ignore-scripts"],
+    { cwd: trackedSource }
+  );
+  await mkdir(join(output, "api"), { recursive: true });
+  const entryPoints = deploymentRole === "primary"
+    ? {
+        "vercel-sandbox": "api/vercel-sandbox.mjs",
+        "vercel-sandbox-cron": "api/vercel-sandbox-cron.mjs"
+      }
+    : { "vercel-sandbox": "api/vercel-sandbox.mjs" };
+  await build({
+    absWorkingDir: trackedSource,
+    nodePaths: [resolve(trackedSource, "node_modules")],
+    entryPoints,
+    outdir: join(output, "api"),
+    outExtension: { ".js": ".mjs" },
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    target: "node24",
+    sourcemap: "external",
+    sourcesContent: false,
+    legalComments: "none",
+    logLevel: "warning",
+    banner: {
+      js: "import { createRequire as __ipoOneCreateRequire } from 'node:module'; const require = __ipoOneCreateRequire(import.meta.url);"
+    },
+    define: {
+      "process.env.IPO_ONE_BUNDLED_RELEASE_ID": JSON.stringify(releaseId)
     }
-  : { "vercel-sandbox": "api/vercel-sandbox.mjs" };
-await build({
-  entryPoints,
-  outdir: join(output, "api"),
-  outExtension: { ".js": ".mjs" },
-  bundle: true,
-  platform: "node",
-  format: "esm",
-  target: "node24",
-  sourcemap: "external",
-  sourcesContent: false,
-  legalComments: "none",
-  logLevel: "warning",
-  banner: {
-    js: "import { createRequire as __ipoOneCreateRequire } from 'node:module'; const require = __ipoOneCreateRequire(import.meta.url);"
-  },
-  define: {
-    "process.env.IPO_ONE_BUNDLED_RELEASE_ID": JSON.stringify(releaseId)
-  }
-});
-await Promise.all([
-  cp("apps/web/src", join(output, "apps", "web", "src"), { recursive: true }),
-  cp("db/migrations", join(output, "db", "migrations"), { recursive: true }),
-  cp("deploy/vercel/package.m1-b-sandbox.json", join(output, "package.json")),
-  cp(
-    deploymentRole === "primary"
-      ? "deploy/vercel/vercel.m1-b-sandbox.json"
-      : "deploy/vercel/vercel.m1-b-sandbox-risk.json",
-    join(output, "vercel.json")
-  )
-]);
+  });
+  await Promise.all([
+    cp(join(trackedSource, "apps/web/src"), join(output, "apps", "web", "src"), { recursive: true }),
+    cp(join(trackedSource, "db/migrations"), join(output, "db", "migrations"), { recursive: true }),
+    cp(join(trackedSource, "deploy/vercel/package.m1-b-sandbox.json"), join(output, "package.json")),
+    cp(
+      join(
+        trackedSource,
+        deploymentRole === "primary"
+          ? "deploy/vercel/vercel.m1-b-sandbox.json"
+          : "deploy/vercel/vercel.m1-b-sandbox-risk.json"
+      ),
+      join(output, "vercel.json")
+    )
+  ]);
 
-const artifactFiles = await files(output);
-const artifacts = [];
-for (const path of artifactFiles) {
-  artifacts.push({ path, sha256: await sha256(join(output, path)) });
+  const artifactFiles = await files(output);
+  const artifacts = [];
+  for (const path of artifactFiles) {
+    artifacts.push({ path, sha256: await sha256(join(output, path)) });
+  }
+  await writeFile(join(output, "deployment-artifact-manifest.json"), `${JSON.stringify({
+    schemaVersion: "ipo.one.vercel-deployment-artifact/v1",
+    sourceCommit: releaseId,
+    sourceTree,
+    sourceMaterialization: "tracked_git_archive",
+    untrackedInputIncluded: false,
+    dirtyCompatibilityBuild: allowDirtyTest,
+    nodeRuntime: "24.x",
+    productProfile: "deployable_sandbox_vertical_slice",
+    deploymentRole,
+    releaseClaim: false,
+    realFundsEnabled: false,
+    artifacts
+  }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({
+    status: "built",
+    output,
+    sourceCommit: releaseId,
+    sourceTree,
+    sourceMaterialization: "tracked_git_archive",
+    untrackedInputIncluded: false,
+    deploymentRole,
+    dirtyCompatibilityBuild: allowDirtyTest,
+    artifactCount: artifacts.length
+  })}\n`);
+} finally {
+  await rm(trackedSource, { recursive: true, force: true });
 }
-await writeFile(join(output, "deployment-artifact-manifest.json"), `${JSON.stringify({
-  schemaVersion: "ipo.one.vercel-deployment-artifact/v1",
-  sourceCommit: releaseId,
-  dirtyCompatibilityBuild: allowDirtyTest,
-  nodeRuntime: "24.x",
-  productProfile: "deployable_sandbox_vertical_slice",
-  deploymentRole,
-  releaseClaim: false,
-  realFundsEnabled: false,
-  artifacts
-}, null, 2)}\n`);
-process.stdout.write(`${JSON.stringify({
-  status: "built",
-  output,
-  sourceCommit: releaseId,
-  deploymentRole,
-  dirtyCompatibilityBuild: allowDirtyTest,
-  artifactCount: artifacts.length
-})}\n`);

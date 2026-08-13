@@ -17,6 +17,12 @@ import {
   loadLocalAuthenticationInvitation,
   loadLocalAuthenticationServerMaterial
 } from "../apps/private-pilot/src/local-authentication-material.js";
+import {
+  assertExactLocalReleaseSource,
+  prepareLocalReleaseBuildContext,
+  resolveLocalReviewPorts,
+  resolveLocalReleaseIdentity
+} from "./local-release-identity.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTANCE = "ipo-one-local";
@@ -45,7 +51,10 @@ const AGENT_KEY_FILE = resolve(
   "agent-key.v1.json"
 );
 const LIMA_CONFIG = resolve(homedir(), ".lima", INSTANCE, "lima.yaml");
-const LOCAL_PORTS = Object.freeze([8787, 8788, 8789, 8790]);
+const releaseIdentity = resolveLocalReleaseIdentity();
+const localReviewPorts = resolveLocalReviewPorts({ releaseIdentity });
+const LOCAL_PORTS = localReviewPorts.ports;
+let releaseBuildContext = ROOT;
 
 function fail(message) {
   process.stderr.write(`LOCAL-STACK-001: ${message}\n`);
@@ -79,7 +88,7 @@ async function exists(path) {
 async function localPilotMarkerAvailable() {
   try {
     const response = await fetch(
-      "http://127.0.0.1:8787/auth/v1/options",
+      `http://127.0.0.1:${localReviewPorts.basePort}/auth/v1/options`,
       { signal: AbortSignal.timeout(500) }
     );
     if (!response.ok) return false;
@@ -144,7 +153,7 @@ async function ensureLoopbackForwarding() {
   }
   fail(
     "Lima host-agent loopback forwarding failed ownership or IPO.ONE marker checks; " +
-      "stop any other process using ports 8787-8790 and retry"
+      `stop any other process using ports ${LOCAL_PORTS[0]}-${LOCAL_PORTS[3]} and retry`
   );
 }
 
@@ -326,6 +335,10 @@ function compose(
       "--workdir",
       ROOT,
       INSTANCE,
+      "env",
+      `IPO_ONE_M1_B_RELEASE_SHA=${releaseIdentity.revision}`,
+      `IPO_ONE_M1_B_PORT_BASE=${localReviewPorts.basePort}`,
+      `IPO_ONE_M1_B_BUILD_CONTEXT=${releaseBuildContext}`,
       "docker",
       "compose",
       "--project-name",
@@ -359,6 +372,11 @@ function evidenceAnchorConfigured() {
 
 async function prepare() {
   parseLocalStack(await readFile(CONTRACT_FILE, "utf8"));
+  assertExactLocalReleaseSource(releaseIdentity, { root: ROOT });
+  releaseBuildContext = await prepareLocalReleaseBuildContext(
+    releaseIdentity,
+    { root: ROOT }
+  );
   await ensureLocalSecrets();
   await ensureLocalAuthentication({ required: true });
   await ensureLima();
@@ -401,7 +419,7 @@ switch (command) {
     compose(["up", "--detach", "--build", "--wait"]);
     await ensureLoopbackForwarding();
     process.stdout.write(
-      "IPO.ONE local stack is healthy at 127.0.0.1 ports 8787-8790.\n"
+      `IPO.ONE local stack is healthy at 127.0.0.1 ports ${LOCAL_PORTS[0]}-${LOCAL_PORTS[3]}.\n`
     );
     break;
   case "status":
