@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "ipo_one_m1_b_release_closure_checkpoint.v1",
+  "status": "P0_RELEASE_CLOSURE_IN_PROGRESS",
+  "milestone": "M1_B_RELEASE_CLOSURE",
+  "deliveryMode": "L1_PUBLIC_SANDBOX",
+  "authorization": {
+    "boundedNoFundsReleaseClosureAuthorized": true,
+    "productScopeExpansionAuthorized": false,
+    "realFundsEnabled": false,
+    "mainnetEnabled": false,
+    "candidateCommit": null,
+    "exactGreen": false,
+    "deploymentClosureClaimed": false
+  },
+  "orderedBaseline": {
+    "commit": "ae6a0571d9052028b2043437938ca37d15b96f6b",
+    "branch": "codex/m1-b-deployable-sandbox"
+  },
+  "historicalM1A1Evidence": {
+    "disposition": "IMMUTABLE_HISTORICAL_EVIDENCE_SUPERSEDED_FOR_AGGREGATE_CURRENT_STAGE_CHECK",
+    "checkpointCommit": "59dc448576553537b9bb4b702b308e461734dee3",
+    "checkpointTree": "78f213ba3f184191084b421e91d722ee1d9a5902",
+    "candidateContentRoot": "67f6f63aadbc4977a35968e379b3dff8da988e8d7a31b3be1c1061db581b881c",
+    "snapshotPath": "deploy/local/m1-a-1-candidate-snapshot.v1.json",
+    "snapshotCheckerPath": "scripts/check-m1-a-1-candidate-snapshot.mjs",
+    "aggregateCurrentStageGate": false,
+    "directHistoricalVerificationRetained": true
+  },
+  "historicalLocalReleaseCandidate": {
+    "disposition": "IMMUTABLE_LOCAL_RC_V2_SUPERSEDED_FOR_AGGREGATE_CURRENT_STAGE_CHECK",
+    "releaseCandidateId": "ipo-one-local-rc-20260731-004",
+    "manifestPath": "deploy/local/release-candidate.v2.json",
+    "checkerPath": "scripts/check-local-release-candidate-v2.mjs",
+    "boundBranch": "codex/checkpoint-20260727-pre-strategy",
+    "aggregateCurrentStageGate": false,
+    "directHistoricalVerificationRetained": true
+  },
+  "currentStageAuthority": {
+    "profilePath": "product/traceability/ipo-one.m1-b-gate-profile.v1.json",
+    "profileSchemaVersion": "ipo_one_m1_b_gate_profile.v1",
+    "profileStatus": "FOUNDER_APPROVED_M1_B_DEPLOYABLE_SANDBOX",
+    "requiredRequirementCount": 38,
+    "deferredRequirementCount": 6,
+    "aggregateCurrentStageGate": true,
+    "preflightManifestPath": "deploy/local/prod-cutover-001.release-candidate.v1.json",
+    "preflightCheckerPath": "scripts/check-prod-cutover-release-candidate.mjs",
+    "preflightVerdict": "BLOCKED — NOT PRODUCTION RELEASED"
+  },
+  "closureOrder": [
+    "P0-1_HUMAN_OFFER_CONTINUATION",
+    "P0-2_AGENT_CORE_MCP_EXECUTION",
+    "P0-3_CANONICAL_PRODUCT_TRUTH",
+    "P0-4_EXACT_GREEN_RELEASE_VERIFICATION",
+    "P0-5_EXACT_COMMIT_ACCEPTANCE_AND_RELEASE_CLOSURE"
+  ],
+  "completionBoundary": {
+    "candidateMayBeBoundOnlyAfterCleanCommitExists": true,
+    "exactGreenMayBeTrueOnlyAfterApplicableGatesPassOnCandidateCommit": true,
+    "deploymentEvidenceRequiredForDeploymentClosure": true,
+    "currentVerdict": "NOT_AN_M1_B_RELEASE_CANDIDATE"
+  }
+}

@@ -50,7 +50,7 @@ truth, authorization policy, Ledger, servicing model, and Evidence envelope.
 | Product surface | Implemented capability | Release state |
 | --- | --- | --- |
 | Human | Guided Subject and Consent creation, explainable Decision and Offer, exact acceptance, Obligation execution, repayment schedule, multi-position recovery, DPD/default/cure, servicing, and owner Evidence | Persistent local closed pilot; remote production access locked |
-| Agent | Principal-controlled Subject, one-use CAIP-10 account proof, bounded Mandate, credential-free handoff, 11 MCP tools, Offer acceptance, execution, repayment, servicing, and Evidence | Persistent local stdio pilot; remote production access locked |
+| Agent | Principal-controlled Subject, one-use CAIP-10 account proof, bounded Mandate, credential-free handoff, 12 core MCP tools, Offer acceptance, execution, repayment, servicing, and Evidence | Persistent local stdio pilot; remote production access locked |
 | Authentication | OIDC Authorization Code + PKCE BFF, standard-provider subject mapping, SIWE, durable Credentials, transactions, sessions and events, atomic deprovisioning, CSRF, DPoP/mTLS, revocation, and recent-MFA policy | Implementation and PostgreSQL tests complete; IdP registration, secret binding, hosted abuse controls, and production composition remain gates |
 | Authorization | Deny-by-default capabilities, Membership/client/controller binding, object ownership, AccessGrants, dual control, live revalidation, non-enumerating denial, and immutable audit | Durable local boundary; public exposure locked |
 | Credit kernel | One Human/Agent lifecycle for Intent, Decision, Offer, Obligation, execution, repayment, servicing, resolution, Ledger, and Evidence | Durable and restart-safe with synthetic or redacted inputs |
@@ -134,12 +134,12 @@ flowchart LR
 
 | Surface | Contract |
 | --- | --- |
-| Durable Human/Agent application protocol | [38-operation Tenant catalog](api/tenant-protocol/ipo-one.tenant-protocol.v1.json) |
-| Portable data contracts | [46 JSON Schemas](schemas/v2) |
+| Durable Human/Agent application protocol | [102-operation Tenant catalog](api/tenant-protocol/ipo-one.tenant-protocol.v1.json) |
+| Portable data contracts | [136 JSON Schemas](schemas/v2) |
 | Agent runtime | [Local MCP host](apps/agent-mcp) and [JavaScript SDK](packages/sdk) |
 | Human runtime | [Tenant HTTP boundary](apps/tenant-api) and [responsive web product](apps/web) |
 | Authentication | [Provider-neutral AuthN module](modules/authentication) |
-| Persistence | [25 reversible migrations](db/migrations) and [event runtime](modules/persistence) |
+| Persistence | [61 reversible migrations](db/migrations) and [event runtime](modules/persistence) |
 | Historical public contract | [OpenAPI 3.1.2](api/openapi/ipo-one.v1.json); retained for the current sandbox only, not the commercial Tenant protocol |
 
 All errors use stable machine codes. Private protocol requests and results are

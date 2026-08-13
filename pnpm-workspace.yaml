@@ -5,6 +5,14 @@ packages:
 
 verifyDepsBeforeRun: false
 
+# pnpm 11 fails closed when a dependency with an install script is not reviewed.
+# Keep this list exact: AppKit performs a local version-consistency check and
+# esbuild verifies/prepares its integrity-bound platform binary. No other
+# dependency lifecycle script is authorized.
+allowBuilds:
+  "@reown/appkit": true
+  "esbuild": true
+
 overrides:
   fast-uri: "3.1.4"
   axios: "1.18.0"

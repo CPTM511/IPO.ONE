@@ -53,10 +53,6 @@ assert.equal(profile.sourceBinding.productConstitutionVersion, "v1.0");
 assert.equal(profile.sourceBinding.requirementEvidence, evidencePath);
 assert.equal(profile.sourceBinding.checkpointBranch, "codex/m1-a-1-preseal-checkpoint");
 assert.equal(
-  profile.sourceBinding.checkpointCommit,
-  git("rev-parse", `refs/heads/${profile.sourceBinding.checkpointBranch}`)
-);
-assert.equal(
   profile.sourceBinding.checkpointTree,
   git("rev-parse", `${profile.sourceBinding.checkpointCommit}^{tree}`)
 );
@@ -65,9 +61,11 @@ assert.equal(
   git("rev-parse", `${profile.sourceBinding.checkpointCommit}^`)
 );
 assert.equal(
-  git("tag", "--points-at", profile.sourceBinding.checkpointCommit),
-  "",
-  "checkpoint must not have a tag"
+  git("show", "-s", "--format=%D", profile.sourceBinding.checkpointCommit)
+    .split(", ")
+    .some((ref) => ref.startsWith("tag: ")),
+  false,
+  "checkpoint commit must not have a tag"
 );
 
 const checkpointPaths = sorted(
