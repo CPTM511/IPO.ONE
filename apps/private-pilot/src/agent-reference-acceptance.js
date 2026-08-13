@@ -93,8 +93,11 @@ async function findCurrentReferenceSubject({
           AND agent_subject.resource_id = s.id
           AND agent_subject.actor_id = $2
           AND agent_subject.relationship = 'subject'
-          AND agent_subject.controller_actor_id = $1
           AND agent_subject.status = 'active'
+         JOIN memberships agent_membership
+           ON agent_membership.tenant_id = s.tenant_id
+          AND agent_membership.actor_id = agent_subject.actor_id
+          AND agent_membership.controller_actor_id = $1
     LEFT JOIN account_bindings account
            ON account.tenant_id = s.tenant_id
           AND account.subject_id = s.id
@@ -250,8 +253,11 @@ async function findCandidateLifecycle({
           AND mandate_agent.resource_id = m.id
           AND mandate_agent.actor_id = $2
           AND mandate_agent.relationship = 'subject'
-          AND mandate_agent.controller_actor_id = $1
           AND mandate_agent.status = 'active'
+         JOIN memberships agent_membership
+           ON agent_membership.tenant_id = m.tenant_id
+          AND agent_membership.actor_id = mandate_agent.actor_id
+          AND agent_membership.controller_actor_id = $1
     LEFT JOIN workspace_continuation_receipts receipt
            ON receipt.tenant_id = m.tenant_id
           AND receipt.mandate_id = m.id
