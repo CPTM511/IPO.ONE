@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import protocolFixtures from "../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json" with { type: "json" };
 import { hashId } from "../../../packages/domain/src/index.js";
 import {
+  createLocalAgentMcpTransport,
   createLocalAgentApplicationInput,
   createLocalAgentRuntimeInput,
   persistLocalAgentContinuationReceipt
@@ -17,6 +19,76 @@ const manifest = Object.freeze({
     aggregateLimitMinor: "100000"
   })
 });
+
+function protocolResult(operationId) {
+  return structuredClone(
+    protocolFixtures.validResults.find((result) => (
+      result.operationId === operationId
+    ))
+  );
+}
+
+function runtimeCommands() {
+  const common = {
+    schemaVersion: "tenant_protocol_request.v1",
+    correlationId: "correlation_agent_obligation:test:credit"
+  };
+  return [
+    {
+      ...common,
+      operationId: "pilotAcceptCreditOffer",
+      payload: {
+        expectedOfferHash: `0x${"1".repeat(64)}`,
+        expectedTermsHash: `0x${"2".repeat(64)}`,
+        acknowledgementHash: `0x${"3".repeat(64)}`
+      },
+      resource: {
+        resourceType: "credit_offer",
+        resourceId: "credit_offer_agent_reference"
+      },
+      idempotencyKey: "idempotency_agent_obligation:test:01",
+      requestId: "request_agent_obligation:test:01"
+    },
+    {
+      ...common,
+      operationId: "pilotExecuteSandboxObligation",
+      payload: {
+        providerId: "provider_gateway_compute",
+        providerCategory: "compute"
+      },
+      resource: {
+        resourceType: "obligation",
+        resourceId: "obligation_agent_reference"
+      },
+      idempotencyKey: "idempotency_agent_obligation:test:02",
+      requestId: "request_agent_obligation:test:02"
+    },
+    {
+      ...common,
+      operationId: "pilotPostSandboxRepayment",
+      payload: {
+        amountMinor: "7500",
+        sourceCode: "synthetic_revenue"
+      },
+      resource: {
+        resourceType: "obligation",
+        resourceId: "obligation_agent_reference"
+      },
+      idempotencyKey: "idempotency_agent_obligation:test:03",
+      requestId: "request_agent_obligation:test:03"
+    },
+    {
+      ...common,
+      operationId: "pilotReadOwnObligationEvidence",
+      payload: { limit: 50 },
+      resource: {
+        resourceType: "evidence",
+        resourceId: "obligation_agent_reference"
+      },
+      requestId: "request_agent_obligation:test:04"
+    }
+  ];
+}
 
 test("reference Agent application remains bounded by the smallest approved limit", () => {
   const input = createLocalAgentApplicationInput(manifest);
@@ -109,4 +181,178 @@ test("reference Agent rejects a malformed continuation before any command", asyn
     /not eligible for durable continuation/
   );
   assert.equal(called, false);
+});
+
+test("reference Agent runtime maps the exact closed lifecycle through MCP", async () => {
+  const calls = [];
+  const transport = createLocalAgentMcpTransport({
+    async handle(message) {
+      calls.push(structuredClone(message));
+      const operationId = {
+        ipo_one_accept_credit_offer: "pilotAcceptCreditOffer",
+        ipo_one_execute_sandbox_obligation: "pilotExecuteSandboxObligation",
+        ipo_one_post_sandbox_repayment: "pilotPostSandboxRepayment",
+        ipo_one_read_obligation_evidence: "pilotReadOwnObligationEvidence"
+      }[message.params.name];
+      return {
+        jsonrpc: "2.0",
+        id: message.id,
+        result: {
+          isError: false,
+          structuredContent: protocolResult(operationId)
+        }
+      };
+    }
+  });
+  const commands = runtimeCommands();
+  for (const command of commands) await transport.execute(command);
+
+  assert.deepEqual(calls.map(({ params }) => params.name), [
+    "ipo_one_accept_credit_offer",
+    "ipo_one_execute_sandbox_obligation",
+    "ipo_one_post_sandbox_repayment",
+    "ipo_one_read_obligation_evidence"
+  ]);
+  assert.deepEqual(calls[0].params.arguments, {
+    creditOfferId: "credit_offer_agent_reference",
+    payload: commands[0].payload,
+    idempotencyKey: commands[0].idempotencyKey,
+    requestId: commands[0].requestId,
+    correlationId: commands[0].correlationId
+  });
+  assert.deepEqual(calls[1].params.arguments, {
+    obligationId: "obligation_agent_reference",
+    providerId: "provider_gateway_compute",
+    providerCategory: "compute",
+    idempotencyKey: commands[1].idempotencyKey,
+    requestId: commands[1].requestId,
+    correlationId: commands[1].correlationId
+  });
+  assert.deepEqual(calls[2].params.arguments, {
+    obligationId: "obligation_agent_reference",
+    payload: commands[2].payload,
+    idempotencyKey: commands[2].idempotencyKey,
+    requestId: commands[2].requestId,
+    correlationId: commands[2].correlationId
+  });
+  assert.deepEqual(calls[3].params.arguments, {
+    obligationId: "obligation_agent_reference",
+    limit: 50,
+    requestId: commands[3].requestId,
+    correlationId: commands[3].correlationId
+  });
+  assert.equal(JSON.stringify(calls).includes("accessToken"), false);
+  assert.equal(JSON.stringify(calls).includes("authenticationContext"), false);
+  assert.equal(JSON.stringify(calls).includes("credential"), false);
+
+  const receipt = transport.createReceipt({
+    obligationId: "obligation_agent_reference",
+    providerId: "provider_gateway_compute",
+    providerCategory: "compute"
+  });
+  assert.equal(receipt.schemaVersion, "local_agent_mcp_transport_receipt.v1");
+  assert.equal(receipt.transportProfile, "mcp_stdio_local");
+  assert.equal(receipt.steps.length, 4);
+  assert.equal(receipt.steps[1].tool, "ipo_one_execute_sandbox_obligation");
+  assert.deepEqual(receipt.providerTarget, {
+    providerId: "provider_gateway_compute",
+    providerCategory: "compute"
+  });
+  assert.equal(receipt.credentialsIncluded, false);
+  assert.equal(receipt.productionFundsMoved, false);
+  assert.equal(receipt.fundsAuthority, false);
+  assert.equal(Object.isFrozen(receipt), true);
+  assert.equal(Object.isFrozen(receipt.steps), true);
+});
+
+test("reference Agent MCP transport rejects unsupported, widened, and incomplete commands", async () => {
+  let calls = 0;
+  const transport = createLocalAgentMcpTransport({
+    async handle() {
+      calls += 1;
+      assert.fail("invalid command reached the MCP Host");
+    }
+  });
+  const [accept] = runtimeCommands();
+  for (const command of [
+    { ...accept, operationId: "pilotCreateHumanSubject" },
+    { ...accept, accessToken: "prohibited" },
+    {
+      ...accept,
+      resource: { ...accept.resource, resourceType: "obligation" }
+    },
+    {
+      ...accept,
+      payload: { ...accept.payload, authorityId: "prohibited" }
+    }
+  ]) {
+    await assert.rejects(
+      () => transport.execute(command),
+      (error) => error.code === "invalid_local_agent_mcp_command"
+    );
+  }
+  assert.equal(calls, 0);
+  assert.throws(
+    () => transport.createReceipt({
+      obligationId: "obligation_agent_reference",
+      providerId: "provider_gateway_compute",
+      providerCategory: "compute"
+    }),
+    (error) => error.code === "incomplete_local_agent_mcp_receipt"
+  );
+});
+
+test("reference Agent MCP transport fails closed on Host and result drift", async () => {
+  const [accept] = runtimeCommands();
+  const hostFailure = createLocalAgentMcpTransport({
+    async handle() {
+      throw new Error("sensitive upstream detail");
+    }
+  });
+  await assert.rejects(
+    () => hostFailure.execute(accept),
+    (error) => (
+      error.code === "local_agent_mcp_transport_failed" &&
+      !error.message.includes("sensitive")
+    )
+  );
+
+  const toolFailure = createLocalAgentMcpTransport({
+    async handle(message) {
+      return {
+        jsonrpc: "2.0",
+        id: message.id,
+        error: { code: -32000, message: "credit_facility_scope_mismatch" }
+      };
+    }
+  });
+  await assert.rejects(
+    () => toolFailure.execute(accept),
+    (error) => error.code === "credit_facility_scope_mismatch"
+  );
+
+  for (const response of [
+    { jsonrpc: "2.0", id: "wrong", result: { isError: false } },
+    {
+      jsonrpc: "2.0",
+      id: `rpc_agent_runtime:${accept.requestId}`,
+      result: {
+        isError: false,
+        structuredContent: {
+          ...protocolResult("pilotAcceptCreditOffer"),
+          operationId: "pilotPostSandboxRepayment"
+        }
+      }
+    }
+  ]) {
+    const drifted = createLocalAgentMcpTransport({
+      async handle() {
+        return structuredClone(response);
+      }
+    });
+    await assert.rejects(
+      () => drifted.execute(accept),
+      (error) => error.code === "invalid_local_agent_mcp_response"
+    );
+  }
 });

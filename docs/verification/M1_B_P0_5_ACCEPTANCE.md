@@ -32,7 +32,10 @@ runtimes identify that exact commit, and real-browser artifacts are collected.
    target.
 3. Build and start the local stack with
    `IPO_ONE_M1_B_RELEASE_SHA=<exact-head> IPO_ONE_M1_B_PORT_BASE=18887`.
-4. Run local PostgreSQL and Agent acceptance before restart.
+4. Run local PostgreSQL acceptance, then run exact Agent acceptance with both
+   `IPO_ONE_M1_B_RELEASE_SHA=<exact-head>` and
+   `IPO_ONE_M1_B_ACCEPTANCE_PHASE=before_restart`. Preserve the private,
+   phase-specific acceptance receipt for the restart comparison.
 5. Use Playwright CLI or controlled Chrome against the real local four-role
    workspaces. Start a trace
    before the first interaction; use snapshots before element references; store
@@ -40,11 +43,18 @@ runtimes identify that exact commit, and real-browser artifacts are collected.
 6. Complete the four journeys and the complete browser/recovery matrix below.
 7. Run the Human Offer and Agent MCP fail-closed sets. Confirm zero additional
    economic effects and non-enumerating protected-resource denials.
-8. Run `pnpm run local:restart`, wait for healthy loopback forwarding, then
-   recover all four authenticated role workspaces from server truth.
-9. Repeat local acceptance and Agent acceptance. Confirm empty pending outbox
-   and no duplicate effects.
-10. Against the exact hosted candidate, repeat the applicable browser matrix,
+8. Run `pnpm run local:restart` with the same exact SHA and port base, wait for
+   healthy loopback forwarding, then recover all four authenticated role
+   workspaces from server truth.
+9. Repeat local acceptance, then run Agent acceptance with the same SHA and
+   `IPO_ONE_M1_B_ACCEPTANCE_PHASE=after_restart`. Confirm canonical recovery of
+   the exact pre-restart Agent lifecycle without onboarding or economic
+   mutation, a later PostgreSQL process start, an empty pending outbox, and no
+   duplicate effects. Authenticated read audit/replay bookkeeping may still be
+   recorded.
+10. Against the exact hosted candidate, repeat all eight checks for each
+    actually deployed surface: Principal Agent for `primary`, plus Risk /
+    Operations when the optional `risk` surface is deployed,
     record exact capability/readiness release identity, and collect redacted
     runtime/PostgreSQL receipts.
 11. Produce one canonical private Evidence JSON conforming to
@@ -61,14 +71,77 @@ Artifact paths are repository-relative `output/playwright/m1-b-p0-5/...`
 paths, so `--evidence-root` must identify the exact candidate repository root.
 The verifier is read-only. It checks current Git HEAD/tree/tracked cleanliness,
 opens and hashes every contained non-symlink artifact, the local exact-SHA claim,
-all four role journeys, all 32 browser role/check pairs, the complete negative
-set, restart recovery, artifact provenance/redaction, disabled authority, and
+all four role journeys, all 32 local browser role/check pairs, and all eight
+hosted pairs for each actually deployed surface role,
+the complete negative set, restart recovery, artifact provenance/redaction,
+disabled authority, and
 the live hosted release identity at the actually deployed primary surface and
 the Risk surface when that second reviewed project is deployed. Each browser
-row needs a real-browser artifact plus a runtime/PostgreSQL receipt; each
-journey step needs a runtime/PostgreSQL receipt; MCP execution additionally
+row needs a real-browser artifact plus a runtime/PostgreSQL receipt from that
+row's exact local or hosted runtime; each journey step needs a
+runtime/PostgreSQL receipt; MCP execution additionally
 needs an `agent_mcp_receipt`; negatives need `negative_receipt`; restart needs
 `restart_log` plus a local runtime/PostgreSQL receipt.
+
+Local runtime identity, the complete four-role journeys, all negative cases,
+and the two Agent phases must use `local_exact_commit` artifacts. The Evidence
+document's `runtime.local.agentAcceptance` linkage is not accepted on metadata
+alone: the CLI parses the referenced pre/post acceptance files, application MCP
+receipt, runtime MCP receipt, recovery receipt, and local OCI release-identity
+receipt, then compares their SHA, account, lifecycle IDs, modes, timestamps,
+Provider scope, and no-funds flags.
+Exact `pnpm run local:acceptance` writes the required local OCI receipt to
+`output/playwright/m1-b-p0-5/<sha>.local-release-identity.json`; hash and
+reference that file as the `release_identity` artifact.
+
+## Exact Agent two-phase contract
+
+The exact Agent drill is one candidate-bound lifecycle, not two generic Agent
+runs. Use the same lowercase 40-character SHA and local port base throughout:
+
+```sh
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> \
+IPO_ONE_M1_B_ACCEPTANCE_PHASE=before_restart \
+IPO_ONE_M1_B_PORT_BASE=18887 \
+pnpm run local:agent:acceptance
+
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> \
+IPO_ONE_M1_B_PORT_BASE=18887 \
+pnpm run local:restart
+
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> \
+IPO_ONE_M1_B_ACCEPTANCE_PHASE=after_restart \
+IPO_ONE_M1_B_PORT_BASE=18887 \
+pnpm run local:agent:acceptance
+```
+
+The pre-restart phase must identify the candidate-scoped Agent Subject
+(`IPO.ONE M1-B Agent <exact-clean-head>`), its deterministic tenant/account
+binding, and Mandate nonce `m1b.agent.<exact-clean-head>`. It must traverse the
+real local MCP bridge and durable Gateway for controlled Provider-scoped
+execution, Ledger posting, repayment, and Evidence. Its phase-specific receipt
+must contain the MCP receipt; direct SDK execution or a mocked MCP handler is
+not equivalent. The full private marker is
+`.ipo-one/local-stack/agent-workflows/<sha>.before-restart.acceptance.json`.
+
+The post-restart phase is recovery-only. It must perform fresh authenticated
+canonical lifecycle reads and contain the recovery receipt, with no onboarding
+or economic lifecycle mutation and no claim of a second MCP execution.
+Authenticated read audit/replay bookkeeping may still be recorded. The SHA,
+candidate marker, account binding, Subject, Mandate, Credit Intent, Credit
+Offer, Obligation, Facility, and CreditLine must equal the pre-restart
+identifiers, while the recovered PostgreSQL process start must be later.
+Missing phase linkage or any identifier mismatch fails closed. The successful
+full recovery marker is
+`.ipo-one/local-stack/agent-workflows/<sha>.after-restart.acceptance.json`.
+
+Extracted receipt names use
+`m1-b-<sha>.<before_restart|after_restart>.<mandate-hash-prefix>.<type>.json`,
+where the prefix is the first 24 lowercase hex characters of the SHA-256 digest
+of `mandateId`. The pre-restart set includes `mcp-receipt`; the post-restart set
+includes `recovery-receipt` and must omit MCP. These files are private staging
+material; only redacted, secret-free, session-free receipts may be copied under
+`output/playwright/m1-b-p0-5/` and referenced by the final Evidence JSON.
 
 ## Human journey
 
@@ -98,9 +171,9 @@ binding. Each must produce zero additional economic effects.
 | Mandate | `PENDING` | Exact bounded active Mandate and Principal Evidence |
 | Agent application / Offer | `PENDING` | Direct Agent-authenticated durable Gateway receipts |
 | Acceptance / Obligation | `PENDING` | Exact Offer/Mandate binding and shared Obligation |
-| MCP execution | `PENDING` | Provider ID/category through MCP to durable Ledger effect |
+| MCP execution | `PENDING` | Exact-SHA pre-restart MCP receipt; Provider ID/category through durable Gateway to Ledger effect |
 | Repayment / Evidence | `PENDING` | Full synthetic repayment and owner Evidence read |
-| Restart recovery | `PENDING` | Fresh Agent proof; same canonical lifecycle after restart |
+| Restart recovery | `PENDING` | Exact-SHA post-restart canonical recovery receipt; same IDs/account binding, later PostgreSQL start, no onboarding/economic mutation |
 
 Agent negative set: wrong Provider, wrong Provider category, stale Mandate,
 revoked Mandate, out-of-scope Facility, and replay-invalid execution. No check
@@ -126,10 +199,27 @@ may stop at a mocked MCP handler.
 | Protective control | `PENDING` | Explicit reason/acknowledgement and immutable freeze Event |
 | Audit Evidence | `PENDING` | Queryable protective action plus subsequent denial receipt |
 
-## Browser and recovery matrix
+## Local and hosted browser and recovery matrices
 
-Every role must pass all eight rows. One screenshot is insufficient; each result
-needs a trace/snapshot or browser audit plus the linked runtime receipt.
+Every role must pass all eight rows against the local exact-commit runtime. The
+hosted matrix covers only the actually deployed canonical surfaces: `primary`
+maps to Principal Agent, and optional `risk` maps to Risk / Operations. Human
+and Capital Partner are not invented as hosted surfaces. The Evidence JSON uses
+distinct `browser.localMatrix` and `browser.hostedMatrix` arrays: exactly 32
+local pairs and exactly eight hosted pairs per deployed surface role. One
+screenshot is insufficient; each result needs its own trace/snapshot or browser
+audit plus its own linked runtime/PostgreSQL receipt from the same exact runtime
+source. Every row must include at least one browser artifact and at least one
+runtime/PostgreSQL receipt unique to that row; shared extras do not substitute
+for either unique proof. Renaming or copying identical bytes does not create
+unique proof; row-bound browser and runtime artifacts must have distinct
+content digests. Principal Agent application, Offer, acceptance, execution,
+repayment, and Evidence rows must identify the `agent_mcp` transport and include
+an Agent MCP receipt.
+
+The following complete table is required for `local_exact_commit`. For
+`hosted_exact_commit`, require only the Principal Agent column for `primary` and
+the Risk / Operations column when `risk` is deployed:
 
 | Check | Human | Principal / Agent | Capital Partner | Risk / Operations |
 | --- | --- | --- | --- | --- |
@@ -165,9 +255,10 @@ All must remain `false`:
 
 - Local exact-SHA conformance: implemented and unit-verified.
 - P0-5 Evidence schema/verifier: implemented and unit-verified.
-- Exact clean candidate: pending P0-1 through P0-4 completion.
-- Current local browser/runtime Evidence: not accepted because the shared
-  developer runtime is generic `local-stack`, and its retained Agent credential
-  must be reconciled with the current source before rerunning acceptance.
+- Exact Agent two-phase, SHA-scoped harness: implemented; an exact pre-restart
+  MCP receipt and matching post-restart recovery receipt are pending the clean
+  P0-1 through P0-4 candidate.
+- Exact clean candidate and current local browser/runtime Evidence: pending;
+  generic `local-stack` or retained lifecycle Evidence is not accepted.
 - Hosted exact deployment and real-browser Evidence: pending; no external
   deployment was performed by this issue.

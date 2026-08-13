@@ -1,6 +1,8 @@
 const SHA = /^[0-9a-f]{40}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
+const HASH = /^0x[0-9a-f]{64}$/;
 const ID = /^[a-z][a-z0-9_]{2,63}$/;
+const RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/;
 const ARTIFACT_PATH = /^output\/playwright\/m1-b-p0-5\/[A-Za-z0-9][A-Za-z0-9._/-]{0,511}$/;
 
 const ROLES = Object.freeze([
@@ -100,8 +102,22 @@ const ARTIFACT_SOURCES = new Set([
   "local_exact_commit",
   "hosted_exact_commit"
 ]);
-const HOSTED_DEPLOYMENT_ROLES = Object.freeze(["primary", "risk"]);
+const HOSTED_ROLE_BY_DEPLOYMENT_ROLE = Object.freeze({
+  primary: "principal_agent",
+  risk: "risk_operations"
+});
+const HOSTED_DEPLOYMENT_ROLES = Object.freeze(
+  Object.keys(HOSTED_ROLE_BY_DEPLOYMENT_ROLE)
+);
 const REAL_BROWSER_DRIVERS = new Set(["playwright_cli", "chrome_control"]);
+const PRINCIPAL_AGENT_MCP_STEPS = new Set([
+  "agent_application",
+  "offer",
+  "acceptance",
+  "mcp_execution",
+  "repayment",
+  "evidence"
+]);
 const BROWSER_ARTIFACT_KINDS = new Set([
   "playwright_trace",
   "screenshot",
@@ -310,7 +326,152 @@ function validateRoleOrigins(origins, portBase, issues) {
   for (const role of ROLES) exact(origins[role], expected[role], `evidence.runtime.local.origins.${role}`, issues);
 }
 
-function validateRuntime(runtime, expectedCommitSha, issues) {
+function validateLocalAgentAcceptance(
+  acceptance,
+  expectedCommitSha,
+  artifactsById,
+  issues
+) {
+  const path = "evidence.runtime.local.agentAcceptance";
+  if (!exactKeys(acceptance, [
+    "schemaVersion",
+    "status",
+    "candidateReleaseId",
+    "candidateMarker",
+    "accountHash",
+    "subjectId",
+    "mandateId",
+    "creditIntentId",
+    "creditOfferId",
+    "obligationId",
+    "facilityId",
+    "creditLineId",
+    "beforeRestart",
+    "afterRestart"
+  ], path, issues)) return;
+  exact(
+    acceptance.schemaVersion,
+    "local_agent_release_acceptance_linkage.v1",
+    `${path}.schemaVersion`,
+    issues
+  );
+  exact(acceptance.status, "passed", `${path}.status`, issues);
+  exact(
+    acceptance.candidateReleaseId,
+    expectedCommitSha,
+    `${path}.candidateReleaseId`,
+    issues
+  );
+  exact(
+    acceptance.candidateMarker,
+    `m1b.agent.${expectedCommitSha}`,
+    `${path}.candidateMarker`,
+    issues
+  );
+  pattern(acceptance.accountHash, HASH, `${path}.accountHash`, issues);
+  for (const key of [
+    "subjectId",
+    "mandateId",
+    "creditIntentId",
+    "creditOfferId",
+    "obligationId",
+    "facilityId",
+    "creditLineId"
+  ]) pattern(acceptance[key], RESOURCE_ID, `${path}.${key}`, issues);
+
+  const beforePath = `${path}.beforeRestart`;
+  const afterPath = `${path}.afterRestart`;
+  if (exactKeys(acceptance.beforeRestart, [
+    "acceptanceMode",
+    "databaseStartedAt",
+    "acceptanceArtifactId",
+    "applicationMcpArtifactId",
+    "runtimeMcpArtifactId"
+  ], beforePath, issues)) {
+    exact(
+      acceptance.beforeRestart.acceptanceMode,
+      "before_restart_executed",
+      `${beforePath}.acceptanceMode`,
+      issues
+    );
+    timestamp(
+      acceptance.beforeRestart.databaseStartedAt,
+      `${beforePath}.databaseStartedAt`,
+      issues
+    );
+    artifactReferences(
+      [
+        acceptance.beforeRestart.acceptanceArtifactId,
+        acceptance.beforeRestart.applicationMcpArtifactId,
+        acceptance.beforeRestart.runtimeMcpArtifactId
+      ],
+      `${beforePath}.artifactIds`,
+      artifactsById,
+      issues,
+      {
+        requiredKindSets: [
+          RUNTIME_ARTIFACT_KINDS,
+          new Set(["agent_mcp_receipt"])
+        ],
+        allowedSources: new Set(["local_exact_commit"]),
+        requireSingleSource: true
+      }
+    );
+  }
+  if (exactKeys(acceptance.afterRestart, [
+    "acceptanceMode",
+    "databaseStartedAt",
+    "acceptanceArtifactId",
+    "recoveryReceiptArtifactId"
+  ], afterPath, issues)) {
+    exact(
+      acceptance.afterRestart.acceptanceMode,
+      "after_restart_recovered",
+      `${afterPath}.acceptanceMode`,
+      issues
+    );
+    timestamp(
+      acceptance.afterRestart.databaseStartedAt,
+      `${afterPath}.databaseStartedAt`,
+      issues
+    );
+    artifactReferences(
+      [
+        acceptance.afterRestart.acceptanceArtifactId,
+        acceptance.afterRestart.recoveryReceiptArtifactId
+      ],
+      `${afterPath}.artifactIds`,
+      artifactsById,
+      issues,
+      {
+        requiredKindSets: [RUNTIME_ARTIFACT_KINDS],
+        allowedSources: new Set(["local_exact_commit"]),
+        requireSingleSource: true
+      }
+    );
+  }
+  const beforeTime = Date.parse(acceptance.beforeRestart?.databaseStartedAt ?? "");
+  const afterTime = Date.parse(acceptance.afterRestart?.databaseStartedAt ?? "");
+  if (
+    Number.isFinite(beforeTime) &&
+    Number.isFinite(afterTime) &&
+    afterTime <= beforeTime
+  ) {
+    issues.push(`${afterPath}.databaseStartedAt must be later than the pre-restart PostgreSQL start.`);
+  }
+  const artifactIds = [
+    acceptance.beforeRestart?.acceptanceArtifactId,
+    acceptance.beforeRestart?.applicationMcpArtifactId,
+    acceptance.beforeRestart?.runtimeMcpArtifactId,
+    acceptance.afterRestart?.acceptanceArtifactId,
+    acceptance.afterRestart?.recoveryReceiptArtifactId
+  ].filter((value) => typeof value === "string");
+  if (new Set(artifactIds).size !== artifactIds.length) {
+    issues.push(`${path} must use distinct phase and MCP/recovery artifacts.`);
+  }
+}
+
+function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
   if (!exactKeys(runtime, ["canonicalProductTruth", "local", "hosted"], "evidence.runtime", issues)) return;
   exact(
     runtime.canonicalProductTruth,
@@ -328,8 +489,10 @@ function validateRuntime(runtime, expectedCommitSha, issues) {
     "portBase",
     "postgresBacked",
     "fixtureHost",
+    "releaseIdentityArtifactId",
     "beforeRestartAcceptance",
     "afterRestartAcceptance",
+    "agentAcceptance",
     "origins"
   ], "evidence.runtime.local", issues)) {
     exact(local.status, "passed", "evidence.runtime.local.status", issues);
@@ -345,8 +508,25 @@ function validateRuntime(runtime, expectedCommitSha, issues) {
     }
     exact(local.postgresBacked, true, "evidence.runtime.local.postgresBacked", issues);
     exact(local.fixtureHost, false, "evidence.runtime.local.fixtureHost", issues);
+    artifactReferences(
+      [local.releaseIdentityArtifactId],
+      "evidence.runtime.local.releaseIdentityArtifactId",
+      artifactsById,
+      issues,
+      {
+        requiredKindSets: [new Set(["release_identity"])],
+        allowedSources: new Set(["local_exact_commit"]),
+        requireSingleSource: true
+      }
+    );
     exact(local.beforeRestartAcceptance, "passed", "evidence.runtime.local.beforeRestartAcceptance", issues);
     exact(local.afterRestartAcceptance, "passed", "evidence.runtime.local.afterRestartAcceptance", issues);
+    validateLocalAgentAcceptance(
+      local.agentAcceptance,
+      expectedCommitSha,
+      artifactsById,
+      issues
+    );
     validateRoleOrigins(local.origins, local.portBase, issues);
   }
 
@@ -408,7 +588,15 @@ function validateRuntime(runtime, expectedCommitSha, issues) {
   }
 }
 
-function validateBrowser(browser, artifactsById, issues) {
+function hostedBrowserRoles(runtime) {
+  const surfaces = runtime?.hosted?.surfaces;
+  if (!Array.isArray(surfaces)) return [];
+  return [...new Set(surfaces
+    .map((surface) => HOSTED_ROLE_BY_DEPLOYMENT_ROLE[surface?.deploymentRole])
+    .filter(Boolean))];
+}
+
+function validateBrowser(browser, runtime, artifactsById, issues) {
   if (!exactKeys(browser, [
     "driver",
     "realBrowser",
@@ -417,7 +605,8 @@ function validateBrowser(browser, artifactsById, issues) {
     "browserStorageAuthority",
     "consoleErrors",
     "networkErrors",
-    "matrix"
+    "localMatrix",
+    "hostedMatrix"
   ], "evidence.browser", issues)) return;
   if (!REAL_BROWSER_DRIVERS.has(browser.driver)) {
     issues.push("evidence.browser.driver must be playwright_cli or chrome_control.");
@@ -433,17 +622,109 @@ function validateBrowser(browser, artifactsById, issues) {
   exact(browser.browserStorageAuthority, false, "evidence.browser.browserStorageAuthority", issues);
   exact(browser.consoleErrors, 0, "evidence.browser.consoleErrors", issues);
   exact(browser.networkErrors, 0, "evidence.browser.networkErrors", issues);
-  const expectedCount = ROLES.length * BROWSER_CHECKS.length;
-  if (!Array.isArray(browser.matrix) || browser.matrix.length !== expectedCount) {
-    issues.push(`evidence.browser.matrix must contain exactly ${expectedCount} role/check results.`);
+
+  validateBrowserMatrix(
+    browser.localMatrix,
+    "evidence.browser.localMatrix",
+    ROLES,
+    "local_exact_commit",
+    artifactsById,
+    issues
+  );
+  validateBrowserMatrix(
+    browser.hostedMatrix,
+    "evidence.browser.hostedMatrix",
+    hostedBrowserRoles(runtime),
+    "hosted_exact_commit",
+    artifactsById,
+    issues
+  );
+  validateCrossRuntimeBrowserProofContent(
+    browser.localMatrix,
+    browser.hostedMatrix,
+    artifactsById,
+    issues
+  );
+}
+
+function browserProofDigests(matrix, artifactsById) {
+  const digests = new Set();
+  if (!Array.isArray(matrix)) return digests;
+  for (const entry of matrix) {
+    if (!record(entry) || !Array.isArray(entry.artifactIds)) continue;
+    for (const artifactId of new Set(entry.artifactIds)) {
+      const artifact = artifactsById.get(artifactId);
+      if (!SHA256.test(artifact?.sha256 ?? "")) continue;
+      if (
+        BROWSER_ARTIFACT_KINDS.has(artifact.kind) ||
+        RUNTIME_ARTIFACT_KINDS.has(artifact.kind)
+      ) {
+        digests.add(artifact.sha256);
+      }
+    }
+  }
+  return digests;
+}
+
+function validateCrossRuntimeBrowserProofContent(
+  localMatrix,
+  hostedMatrix,
+  artifactsById,
+  issues
+) {
+  const local = browserProofDigests(localMatrix, artifactsById);
+  const hosted = browserProofDigests(hostedMatrix, artifactsById);
+  if ([...local].some((digest) => hosted.has(digest))) {
+    issues.push(
+      "evidence.browser must not reuse proof bytes across local and hosted runtimes."
+    );
+  }
+}
+
+function validateBrowserMatrix(
+  matrix,
+  matrixPath,
+  requiredRoles,
+  requiredSourceRuntime,
+  artifactsById,
+  issues
+) {
+  const expectedCount = requiredRoles.length * BROWSER_CHECKS.length;
+  if (!Array.isArray(matrix) || matrix.length !== expectedCount) {
+    issues.push(
+      `${matrixPath} must contain exactly ${expectedCount} role/check results for the deployed roles.`
+    );
     return;
   }
+  const artifactRowCounts = new Map();
+  const proofDigestRowCounts = new Map();
+  for (const entry of matrix) {
+    if (!record(entry) || !Array.isArray(entry.artifactIds)) continue;
+    for (const artifactId of new Set(entry.artifactIds)) {
+      artifactRowCounts.set(artifactId, (artifactRowCounts.get(artifactId) ?? 0) + 1);
+      const artifact = artifactsById.get(artifactId);
+      const proofFamily = BROWSER_ARTIFACT_KINDS.has(artifact?.kind)
+        ? "browser"
+        : RUNTIME_ARTIFACT_KINDS.has(artifact?.kind)
+          ? "runtime"
+          : undefined;
+      if (proofFamily && SHA256.test(artifact.sha256 ?? "")) {
+        const digestKey = `${proofFamily}:${artifact.sha256}`;
+        proofDigestRowCounts.set(
+          digestKey,
+          (proofDigestRowCounts.get(digestKey) ?? 0) + 1
+        );
+      }
+    }
+  }
   const observed = new Set();
-  browser.matrix.forEach((entry, index) => {
-    const path = `evidence.browser.matrix[${index}]`;
+  matrix.forEach((entry, index) => {
+    const path = `${matrixPath}[${index}]`;
     if (!exactKeys(entry, ["role", "check", "status", "artifactIds"], path, issues)) return;
     const key = `${entry.role}:${entry.check}`;
-    if (!ROLES.includes(entry.role)) issues.push(`${path}.role is invalid.`);
+    if (!requiredRoles.includes(entry.role)) {
+      issues.push(`${path}.role is not required by a deployed surface.`);
+    }
     if (!BROWSER_CHECKS.includes(entry.check)) issues.push(`${path}.check is invalid.`);
     if (observed.has(key)) issues.push(`${path} duplicates ${key}.`);
     observed.add(key);
@@ -455,14 +736,40 @@ function validateBrowser(browser, artifactsById, issues) {
       issues,
       {
         requiredKindSets: [BROWSER_ARTIFACT_KINDS, RUNTIME_ARTIFACT_KINDS],
+        allowedSources: new Set([requiredSourceRuntime]),
         requireSingleSource: true
       }
     );
+    if (Array.isArray(entry.artifactIds)) {
+      const referencedArtifacts = entry.artifactIds
+        .map((artifactId) => artifactsById.get(artifactId))
+        .filter(Boolean);
+      if (!referencedArtifacts.some(
+        (artifact) =>
+          BROWSER_ARTIFACT_KINDS.has(artifact.kind) &&
+          artifactRowCounts.get(artifact.id) === 1 &&
+          proofDigestRowCounts.get(`browser:${artifact.sha256}`) === 1
+      )) {
+        issues.push(
+          `${path}.artifactIds must include a browser artifact unique to this matrix row.`
+        );
+      }
+      if (!referencedArtifacts.some(
+        (artifact) =>
+          RUNTIME_ARTIFACT_KINDS.has(artifact.kind) &&
+          artifactRowCounts.get(artifact.id) === 1 &&
+          proofDigestRowCounts.get(`runtime:${artifact.sha256}`) === 1
+      )) {
+        issues.push(
+          `${path}.artifactIds must include a runtime/PostgreSQL receipt unique to this matrix row.`
+        );
+      }
+    }
   });
-  for (const role of ROLES) {
+  for (const role of requiredRoles) {
     for (const check of BROWSER_CHECKS) {
       if (!observed.has(`${role}:${check}`)) {
-        issues.push(`evidence.browser.matrix is missing ${role}:${check}.`);
+        issues.push(`${matrixPath} is missing ${role}:${check}.`);
       }
     }
   }
@@ -495,8 +802,10 @@ function validateJourneys(journeys, artifactsById, issues) {
       if (role !== "principal_agent" && entry.transport !== "human_web") {
         issues.push(`${path}.transport must be human_web for this role.`);
       }
-      if (entry.id === "mcp_execution" && entry.transport !== "agent_mcp") {
-        issues.push(`${path}.transport must prove direct agent_mcp execution.`);
+      const requiresAgentMcp = role === "principal_agent" &&
+        PRINCIPAL_AGENT_MCP_STEPS.has(entry.id);
+      if (requiresAgentMcp && entry.transport !== "agent_mcp") {
+        issues.push(`${path}.transport must prove the machine-facing agent_mcp path.`);
       }
       exact(entry.canonicalPersistence, "postgresql", `${path}.canonicalPersistence`, issues);
       exact(entry.fixtureUsed, false, `${path}.fixtureUsed`, issues);
@@ -506,10 +815,10 @@ function validateJourneys(journeys, artifactsById, issues) {
         artifactsById,
         issues,
         {
-          requiredKindSets: entry.id === "mcp_execution"
+          requiredKindSets: requiresAgentMcp
             ? [RUNTIME_ARTIFACT_KINDS, new Set(["agent_mcp_receipt"])]
             : [RUNTIME_ARTIFACT_KINDS],
-          allowedSources: new Set(["local_exact_commit", "hosted_exact_commit"]),
+          allowedSources: new Set(["local_exact_commit"]),
           requireSingleSource: true
         }
       );
@@ -547,6 +856,7 @@ function validateNegatives(negatives, artifactsById, issues) {
         issues,
         {
           requiredKindSets: [new Set(["negative_receipt"])],
+          allowedSources: new Set(["local_exact_commit"]),
           requireSingleSource: true
         }
       );
@@ -666,8 +976,8 @@ export function verifyM1BAcceptanceEvidence(
     exact(evidence.source.headMatchesCommit, true, "evidence.source.headMatchesCommit", issues);
   }
   const artifactsById = validateArtifacts(evidence.artifacts, issues);
-  validateRuntime(evidence.runtime, expectedCommitSha, issues);
-  validateBrowser(evidence.browser, artifactsById, issues);
+  validateRuntime(evidence.runtime, expectedCommitSha, artifactsById, issues);
+  validateBrowser(evidence.browser, evidence.runtime, artifactsById, issues);
   validateJourneys(evidence.journeys, artifactsById, issues);
   validateNegatives(evidence.negativeCases, artifactsById, issues);
   validateRestart(evidence.restart, artifactsById, issues);
@@ -677,7 +987,8 @@ export function verifyM1BAcceptanceEvidence(
     status: "verified",
     commitSha: expectedCommitSha,
     roleCount: ROLES.length,
-    browserCheckCount: ROLES.length * BROWSER_CHECKS.length,
+    browserCheckCount:
+      evidence.browser.localMatrix.length + evidence.browser.hostedMatrix.length,
     journeyStepCount: Object.values(JOURNEY_STEPS).flat().length,
     negativeCaseCount: Object.values(NEGATIVE_CASES).flat().length,
     artifactCount: evidence.artifacts.length,

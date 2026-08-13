@@ -1,5 +1,13 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import {
+  chmod,
+  lstat,
+  mkdir,
+  readFile,
+  rename,
+  unlink,
+  writeFile
+} from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -32,6 +40,10 @@ const CONTRACT_FILE = resolve(ROOT, "deploy/local/stack.v1.json");
 const AGENT_KEY_FILE = resolve(
   ROOT,
   ".ipo-one/local-stack/agent-key.v1.json"
+);
+const P0_5_OUTPUT_DIRECTORY = resolve(
+  ROOT,
+  "output/playwright/m1-b-p0-5"
 );
 const releaseIdentity = resolveLocalReleaseIdentity();
 assertExactLocalReleaseSource(releaseIdentity, { root: ROOT });
@@ -147,6 +159,8 @@ for (const [surface, revision] of Object.entries(runtimeRevisions)) {
     `${surface} OCI revision must match the requested local release identity`
   );
 }
+
+let releaseIdentityArtifactPath;
 
 for (const port of localReviewPorts.ports) {
   const health = await waitForHttp(
@@ -418,6 +432,50 @@ const pendingOutbox = Number(
 );
 assert.equal(pendingOutbox, 0);
 
+// Publish exact runtime identity only after every HTTP, authentication,
+// PostgreSQL, RLS, worker, reconciliation, Evidence, and outbox assertion has
+// passed. A failed acceptance run must not leave a verifier-eligible receipt.
+if (releaseIdentity.exactCandidate) {
+  const artifact = {
+    schemaVersion: "m1_b_local_release_identity.v1",
+    releaseId: releaseIdentity.revision,
+    imageRevision: runtimeRevisions.image,
+    pilotRevision: runtimeRevisions.pilot,
+    workerRevision: runtimeRevisions.worker,
+    postgresBacked: true,
+    fixtureHost: false
+  };
+  await mkdir(P0_5_OUTPUT_DIRECTORY, { recursive: true, mode: 0o700 });
+  const outputMetadata = await lstat(P0_5_OUTPUT_DIRECTORY);
+  assert.equal(
+    outputMetadata.isDirectory() && !outputMetadata.isSymbolicLink(),
+    true,
+    "P0-5 Evidence output must be one real directory"
+  );
+  await chmod(P0_5_OUTPUT_DIRECTORY, 0o700);
+  releaseIdentityArtifactPath = resolve(
+    P0_5_OUTPUT_DIRECTORY,
+    `${releaseIdentity.revision}.local-release-identity.json`
+  );
+  const temporaryPath = `${releaseIdentityArtifactPath}.${process.pid}.tmp`;
+  try {
+    await writeFile(
+      temporaryPath,
+      `${JSON.stringify(artifact, null, 2)}\n`,
+      { encoding: "utf8", flag: "wx", mode: 0o600 }
+    );
+    await rename(temporaryPath, releaseIdentityArtifactPath);
+    await chmod(releaseIdentityArtifactPath, 0o600);
+  } catch (error) {
+    try {
+      await unlink(temporaryPath);
+    } catch {
+      // Preserve the original artifact-write failure.
+    }
+    throw error;
+  }
+}
+
 const releaseScope = releaseIdentity.exactCandidate
   ? `exact M1-B candidate ${releaseIdentity.revision}`
   : "developer revision local-stack; this result cannot satisfy M1-B P0-5 exact-commit acceptance";
@@ -429,3 +487,8 @@ process.stdout.write(
     "hashes, and " +
     "an empty pending outbox.\n"
 );
+if (releaseIdentityArtifactPath) {
+  process.stdout.write(
+    `LOCAL-STACK-001 exact release identity receipt: ${releaseIdentityArtifactPath}\n`
+  );
+}

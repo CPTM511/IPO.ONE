@@ -123,10 +123,21 @@ assert.match(localAcceptance, /authenticationOptions\.walletAuthentication,\s*tr
 assert.match(localAcceptance, /createLocalAgentProof/);
 assert.match(localAcceptance, /org\.opencontainers\.image\.revision/);
 assert.match(localAcceptance, /releaseIdentity\.exactCandidate/);
+assert.match(localAcceptance, /m1_b_local_release_identity\.v1/);
+assert.match(localAcceptance, /local-release-identity\.json/);
+assert.match(localAcceptance, /P0-5 Evidence output must be one real directory/);
+assert.ok(
+  localAcceptance.indexOf("assert.equal(pendingOutbox, 0)") <
+    localAcceptance.indexOf("schemaVersion: \"m1_b_local_release_identity.v1\""),
+  "exact release identity must be published only after all live acceptance assertions pass"
+);
 assert.match(m1bAcceptanceVerifier, /verifyM1BAcceptanceEvidence/);
 assert.match(m1bAcceptanceVerifier, /--evidence-root/);
 assert.match(m1bAcceptanceVerifier, /verifyM1BArtifactFiles/);
+assert.match(m1bAcceptanceVerifier, /verifyM1BCriticalArtifactContents/);
 assert.match(m1bAcceptanceFileVerifier, /createReadStream/);
+assert.match(m1bAcceptanceFileVerifier, /local_agent_mcp_transport_receipt\.v1/);
+assert.match(m1bAcceptanceFileVerifier, /local_agent_reference_recovery_receipt\.v1/);
 assert.match(m1bAcceptanceFileVerifier, /--untracked-files=no/);
 assert.match(m1bAcceptanceVerifier, /verifyM1BHostedCapabilityDocument/);
 assert.match(m1bAcceptanceVerifier, /verifyM1BHostedReadinessDocument/);

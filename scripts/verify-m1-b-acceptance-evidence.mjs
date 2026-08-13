@@ -13,6 +13,7 @@ import {
   verifyM1BHostedReadinessDocument
 } from "../packages/release-governance/src/m1-b-acceptance-evidence.js";
 import {
+  verifyM1BCriticalArtifactContents,
   verifyM1BArtifactFiles,
   verifyM1BCurrentGitSource
 } from "./m1-b-acceptance-evidence-files.mjs";
@@ -82,6 +83,10 @@ try {
   });
   await verifyM1BArtifactFiles(evidence.artifacts, {
     evidenceRoot: values["evidence-root"]
+  });
+  await verifyM1BCriticalArtifactContents(evidence, {
+    evidenceRoot: values["evidence-root"],
+    expectedCommitSha
   });
   const hostedChecks = [];
   for (const surface of evidence.runtime.hosted.surfaces) {

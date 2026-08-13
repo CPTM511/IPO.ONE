@@ -29,11 +29,18 @@ credit, external execution, deployment, or real value.
 - Fail closed when an exact-SHA local run does not match clean `HEAD`.
 - Verify the running Pilot and Worker OCI revision labels before accepting local
   runtime Evidence.
+- Bind the durable Agent acceptance lifecycle to the exact candidate SHA with a
+  candidate-scoped Agent Subject, deterministic tenant/account binding, and
+  exact Mandate nonce. Run its economic lifecycle through the local MCP bridge
+  before restart, then prove the same PostgreSQL lifecycle through canonical
+  lifecycle recovery after restart; authenticated read audit/replay
+  bookkeeping may still be recorded.
 - Preserve generic `local-stack` developer operation while marking it
   ineligible for exact-commit release acceptance.
 - Define a machine-verifiable P0-5 Evidence contract bound to one exact commit,
-  one canonical PostgreSQL runtime, four authenticated roles, browser recovery,
-  restart recovery, negative authorization, and unchanged no-funds authority.
+  one canonical PostgreSQL product truth, four authenticated roles, distinct
+  complete local and hosted browser-recovery matrices, restart recovery,
+  negative authorization, and unchanged no-funds authority.
 - Require hosted Evidence to come from an HTTPS canonical runtime that reports
   the expected release identity. Reject loopback and browser fixture hosts as
   hosted/release Evidence.
@@ -58,8 +65,12 @@ credit, external execution, deployment, or real value.
 - `scripts/local-release-identity.mjs`
 - `scripts/local-stack.mjs`
 - `scripts/local-stack-acceptance.mjs`
+- `scripts/local-agent-reference-acceptance.mjs`
 - `scripts/check-local-stack.mjs`
 - `scripts/verify-m1-b-acceptance-evidence.mjs`
+- `apps/private-pilot/src/agent-reference-acceptance.js`
+- `apps/private-pilot/src/agent-reference-acceptance-scope.js`
+- `apps/private-pilot/test/agent-reference-acceptance.test.js`
 - `packages/deployment-topology/test/local-release-identity.test.js`
 - `packages/deployment-topology/test/m1-b-acceptance-evidence.test.js`
 - `deploy/local/README.md`
@@ -83,28 +94,58 @@ credit, external execution, deployment, or real value.
    worker/reconciliation state, and unchanged no-funds boundary.
 5. Given an acceptance Evidence document with a wrong SHA, dirty-source claim,
    fixture origin, loopback hosted origin, incomplete role journey, missing
-   desktop/mobile or recovery coverage, missing negative authorization,
-   missing restart pass, browser-storage authority, or enabled real-value flag,
-   when verified, then it fails closed.
+   local or applicable hosted desktop/mobile or recovery coverage, reused
+   browser/receipt artifacts, missing negative
+   authorization, missing restart pass, browser-storage authority, or enabled
+   real-value flag, when verified, then it fails closed.
 6. Given a complete canonical Evidence document, when verified against the
-   explicit expected SHA, then every browser artifact is classified as real
-   browser Evidence, every lifecycle receipt is PostgreSQL-backed, and hosted
-   release identity equals the exact SHA.
+   explicit expected SHA, then every local and hosted browser artifact is
+   classified as real-browser Evidence from its matching runtime, every
+   lifecycle receipt is PostgreSQL-backed, and hosted release identity equals
+   the exact SHA. Row-specific proof must also be byte-distinct; copied content
+   under new artifact IDs or paths is rejected.
+   Local OCI identity and both Agent phase linkages are also parsed from the
+   referenced artifact bodies; declarative artifact kinds and hashes alone are
+   insufficient.
 7. Given the wallet-gated Human roles, when sign-out/re-login is accepted, then
    a real invited wallet performs the ceremony; no repository-held key or
    synthetic login substitutes for it.
+8. Given the exact Agent acceptance command with
+   `IPO_ONE_M1_B_ACCEPTANCE_PHASE=before_restart`, when it succeeds, then the
+   Subject display marker, account binding, Mandate nonce, and returned
+   lifecycle are bound to the supplied candidate SHA, controlled execution
+   traverses the MCP bridge with the exact Provider ID and category, and the
+   resulting Ledger, repayment, and Evidence are PostgreSQL-backed and
+   no-funds.
+9. Given that exact pre-restart Agent acceptance and a complete local stack
+   restart, when the same SHA is accepted with
+   `IPO_ONE_M1_B_ACCEPTANCE_PHASE=after_restart`, then the harness performs
+   canonical lifecycle recovery with no onboarding or economic mutation,
+   returns the same Subject, Mandate, Intent, Offer, Obligation, Facility,
+   CreditLine, and account binding, and proves the PostgreSQL process started
+   after the pre-restart receipt. Authenticated read audit/replay bookkeeping
+   may be recorded; a missing or mismatched pre-restart receipt, candidate
+   lifecycle, phase, SHA, or canonical identifier fails closed.
+   The private phase markers are
+   `.ipo-one/local-stack/agent-workflows/<sha>.before-restart.acceptance.json`
+   and `<sha>.after-restart.acceptance.json`; post-restart acceptance reads the
+   former and writes the latter only after the linkage checks pass.
 
 ## Exact test commands
 
 ```text
 node --test packages/deployment-topology/test/local-release-identity.test.js
 node --test packages/deployment-topology/test/m1-b-acceptance-evidence.test.js
+node --test apps/private-pilot/test/agent-reference-acceptance.test.js
+node --test apps/private-pilot/test/agent-reference-workflows.test.js
 node scripts/check-local-stack.mjs
 pnpm run local:acceptance
 IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:up
 IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:acceptance
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> IPO_ONE_M1_B_ACCEPTANCE_PHASE=before_restart IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:agent:acceptance
 IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:restart
 IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:acceptance
+IPO_ONE_M1_B_RELEASE_SHA=<exact-clean-head> IPO_ONE_M1_B_ACCEPTANCE_PHASE=after_restart IPO_ONE_M1_B_PORT_BASE=18887 pnpm run local:agent:acceptance
 node scripts/verify-m1-b-acceptance-evidence.mjs --evidence <private-evidence.local.json> --evidence-root <repository-root> --expected-sha <exact-clean-head>
 pnpm test
 ```
@@ -116,6 +157,10 @@ pnpm test
       Founder work remains preserved and outside the Git-archive release bundle.
 - [ ] Runtime image and both long-lived product containers report that exact
       immutable source identity.
+- [ ] Agent pre-restart and post-restart receipts identify the same exact SHA,
+      candidate-scoped Subject/account/Mandate, canonical lifecycle IDs, and
+      retained PostgreSQL truth; only the pre-restart phase performs the MCP
+      economic workflow.
 - [ ] Fixture/scenario browser hosts cannot be classified as PostgreSQL or
       release Evidence.
 - [ ] Browser state, storage, URLs, screenshots, and operator attestations never
@@ -156,7 +201,16 @@ rollback must not delete the volume or authentication material.
 - exact clean commit and tree;
 - Pilot image, Pilot container, and Worker container revision labels;
 - local acceptance before and after complete PostgreSQL/Pilot/Worker restart;
-- real-browser trace/screenshots for all four roles at desktop and mobile;
+- the redacted local OCI identity receipt emitted by exact `local:acceptance`;
+- exact-SHA Agent pre-restart acceptance containing the MCP execution receipt,
+  Ledger, repayment, and Evidence, followed by exact-SHA post-restart canonical
+  lifecycle recovery containing the same identifiers and a later
+  PostgreSQL process start, with no onboarding or economic lifecycle mutation.
+  The pre-restart extracted set includes an MCP receipt; the post-restart set
+  includes a recovery receipt and omits MCP;
+- real-browser trace/screenshots for all four local roles at desktop and mobile,
+  plus the hosted Principal Agent surface and optional hosted Risk / Operations
+  surface when actually deployed;
 - reload, new context, Back/Forward, sign-out/re-login, and restart receipts;
 - Human and Agent full lifecycle receipts from PostgreSQL server truth;
 - Capital Partner author/replace/withdraw/current-Offer recovery receipts;
