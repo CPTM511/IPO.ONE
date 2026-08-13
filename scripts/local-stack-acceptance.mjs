@@ -249,6 +249,30 @@ const databaseEvidence = compose(
        'activeAuthenticationCredentialCount', (
          SELECT count(*) FROM authentication_credentials WHERE status = 'active'
        ),
+       'currentActiveAuthenticationCredentialCount', (
+         SELECT count(*)
+           FROM authentication_credentials
+          WHERE status = 'active'
+            AND issuer = ANY(ARRAY[
+              'https://127.0.0.1:${localReviewPorts.basePort}',
+              'https://127.0.0.1:${localReviewPorts.basePort + 1}',
+              'https://127.0.0.1:${localReviewPorts.basePort + 2}',
+              'https://127.0.0.1:${localReviewPorts.basePort + 3}',
+              'https://workload.local.ipo.one'
+            ]::text[])
+       ),
+       'currentActiveAuthenticationActorCount', (
+         SELECT count(DISTINCT actor_id)
+           FROM authentication_credentials
+          WHERE status = 'active'
+            AND issuer = ANY(ARRAY[
+              'https://127.0.0.1:${localReviewPorts.basePort}',
+              'https://127.0.0.1:${localReviewPorts.basePort + 1}',
+              'https://127.0.0.1:${localReviewPorts.basePort + 2}',
+              'https://127.0.0.1:${localReviewPorts.basePort + 3}',
+              'https://workload.local.ipo.one'
+            ]::text[])
+       ),
        'capitalPartnerProfileCount', (
          SELECT count(*) FROM capital_partner_profiles
        ),
@@ -314,7 +338,18 @@ assert.ok(Number(database.forcedRlsTables) > 0);
 assert.equal(database.appRoleSafe, true);
 assert.equal(database.authenticationRoleSafe, true);
 assert.ok(Number(database.authenticationCredentialCount) >= 5);
-assert.equal(Number(database.activeAuthenticationCredentialCount), 5);
+assert.ok(
+  Number(database.activeAuthenticationCredentialCount) >=
+    Number(database.currentActiveAuthenticationCredentialCount)
+);
+assert.equal(
+  Number(database.currentActiveAuthenticationCredentialCount),
+  Object.keys(localIdentities.identities).length
+);
+assert.equal(
+  Number(database.currentActiveAuthenticationActorCount),
+  Object.keys(localIdentities.identities).length
+);
 assert.equal(Number(database.capitalPartnerProfileCount), 1);
 assert.equal(
   Number(database.evidenceAnchorCount),

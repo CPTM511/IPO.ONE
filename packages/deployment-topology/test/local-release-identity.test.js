@@ -79,6 +79,8 @@ test("M1-B local review ports retain defaults and validate isolated bases", () =
 test("M1-B local acceptance verifies running OCI revision identity", () => {
   assert.match(acceptance, /org\.opencontainers\.image\.revision/);
   assert.match(acceptance, /releaseIdentity\.exactCandidate/);
+  assert.match(acceptance, /currentActiveAuthenticationCredentialCount/);
+  assert.match(acceptance, /currentActiveAuthenticationActorCount/);
   assert.match(acceptance, /cannot satisfy M1-B P0-5 exact-commit acceptance/);
 });
 
