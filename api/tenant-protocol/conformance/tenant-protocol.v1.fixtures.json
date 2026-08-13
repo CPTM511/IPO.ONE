@@ -31,6 +31,8 @@
     {
       "operationId": "pilotExecuteSandboxObligation",
       "payload": {
+        "providerId": "provider_gateway_compute",
+        "providerCategory": "compute",
         "actionConfirmation": {
           "actionType": "execute_obligation",
           "resourceId": "obligation_execution_fixture",

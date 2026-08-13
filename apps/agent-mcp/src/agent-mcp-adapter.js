@@ -15,6 +15,16 @@ const IDEMPOTENCY = {
   pattern: "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
 };
 const HASH = { type: "string", pattern: "^0x[0-9a-f]{64}$" };
+const PROVIDER_ID = {
+  type: "string",
+  minLength: 1,
+  maxLength: 256,
+  pattern: "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+};
+const PROVIDER_CATEGORY = {
+  type: "string",
+  pattern: "^[a-z][a-z0-9_.-]{1,95}$"
+};
 const EVIDENCE_CURSOR = {
   type: "string",
   minLength: 1,
@@ -200,13 +210,23 @@ export const AGENT_MCP_TOOLS = Object.freeze([
   }),
   Object.freeze({
     name: "ipo_one_execute_sandbox_obligation",
-    description: "Execute one exact self-owned sandbox Obligation through the non-redeemable sandbox rail.",
+    description:
+      "Execute one exact self-owned sandbox Obligation for an explicit Provider target through the non-redeemable sandbox rail.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["obligationId", "idempotencyKey", "requestId", "correlationId"],
+      required: [
+        "obligationId",
+        "providerId",
+        "providerCategory",
+        "idempotencyKey",
+        "requestId",
+        "correlationId"
+      ],
       properties: {
         obligationId: IDENTIFIER,
+        providerId: PROVIDER_ID,
+        providerCategory: PROVIDER_CATEGORY,
         idempotencyKey: IDEMPOTENCY,
         requestId: REQUEST_IDENTIFIER,
         correlationId: REQUEST_IDENTIFIER
@@ -325,8 +345,24 @@ export function createAgentMcpAdapter({ client }) {
         assertExactKeys(args.payload, ["expectedOfferHash", "expectedTermsHash", "acknowledgementHash"]);
         result = await client.acceptCreditOffer(args);
       } else if (name === "ipo_one_execute_sandbox_obligation") {
-        assertExactKeys(args, ["obligationId", "idempotencyKey", "requestId", "correlationId"]);
-        result = await client.executeSandboxObligation(args);
+        assertExactKeys(args, [
+          "obligationId",
+          "providerId",
+          "providerCategory",
+          "idempotencyKey",
+          "requestId",
+          "correlationId"
+        ]);
+        const {
+          providerId,
+          providerCategory,
+          ...command
+        } = args;
+        result = await client.executeSandboxObligation({
+          ...command,
+          providerId,
+          providerCategory
+        });
       } else if (name === "ipo_one_post_sandbox_repayment") {
         assertExactKeys(args, ["obligationId", "payload", "idempotencyKey", "requestId", "correlationId"]);
         assertExactKeys(args.payload, ["amountMinor", "sourceCode"]);

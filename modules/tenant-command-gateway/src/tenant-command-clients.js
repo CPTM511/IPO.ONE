@@ -1021,10 +1021,17 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
-  async executeSandboxObligation({ obligationId, payload = {}, idempotencyKey, requestId, correlationId }) {
+  async executeSandboxObligation({
+    obligationId,
+    providerId,
+    providerCategory,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
     return this.execute({
       operationId: "pilotExecuteSandboxObligation",
-      payload,
+      payload: { providerId, providerCategory },
       resource: { resourceType: "obligation", resourceId: obligationId },
       idempotencyKey,
       requestId,

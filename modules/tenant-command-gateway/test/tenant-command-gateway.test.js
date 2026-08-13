@@ -1837,6 +1837,43 @@ test("Human and Agent clients emit the same closed credit application protocol",
   assert.equal(calls.every((call) => Object.hasOwn(call, "actorId") === false), true);
 });
 
+test("Agent client emits exact Provider scope for sandbox execution", async () => {
+  const calls = [];
+  const agent = new AgentTenantCommandClient({
+    gateway: {
+      async execute(command) {
+        calls.push(command);
+        return { response: { accepted: true } };
+      }
+    },
+    authenticationContextProvider: async () =>
+      authenticationContext(ActorType.AGENT, "actor_credit_agent")
+  });
+
+  await agent.executeSandboxObligation({
+    obligationId: "obligation_credit_agent",
+    providerId: "provider_gateway_compute",
+    providerCategory: "compute",
+    idempotencyKey: "execute-agent-obligation-0001",
+    requestId: "request_execute_agent_obligation_001",
+    correlationId: "correlation_execute_agent_obligation_001"
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].operationId, "pilotExecuteSandboxObligation");
+  const { actionConfirmation, ...providerScope } = calls[0].payload;
+  assert.deepEqual(providerScope, {
+    providerId: "provider_gateway_compute",
+    providerCategory: "compute"
+  });
+  assert.equal(actionConfirmation.actionType, "execute_obligation");
+  assert.equal(actionConfirmation.resourceId, "obligation_credit_agent");
+  assert.deepEqual(calls[0].resource, {
+    resourceType: "obligation",
+    resourceId: "obligation_credit_agent"
+  });
+});
+
 test("TC-102 Human, Agent, and Provider clients expose only the six reviewed matching operations", async () => {
   const calls = [];
   const gateway = {

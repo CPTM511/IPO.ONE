@@ -27,7 +27,10 @@ Evidence page. EVIDENCE-001C separately returns a Tenant-authorized, read-only,
 synthetic Base Sepolia Registry observation; it is not an owned repayment
 record or credit authority. The three TRANSPORT-002 commands accept one self-owned Offer or
 Obligation and remain sandbox-only, non-withdrawable, and bound to an active
-runtime handoff.
+runtime handoff. `ipo_one_execute_sandbox_obligation` requires an explicit
+`providerId` and `providerCategory`; the authenticated Tenant Gateway rechecks
+both against the current active Mandate and derived Facility before any durable
+execution, Ledger, Lockbox, Event, or Evidence write.
 
 The embedding application must own the approved workload authentication path.
 Use the named `createAgentPilotHost(...)` composition below, or construct the

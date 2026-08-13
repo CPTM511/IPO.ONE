@@ -726,6 +726,41 @@ async function executeConcurrentDuplicate(operation) {
   return results;
 }
 
+async function callAgentMcpTool(host, { id, name, arguments: toolArguments }) {
+  return host.handle({
+    jsonrpc: "2.0",
+    id,
+    method: "tools/call",
+    params: { name, arguments: toolArguments }
+  });
+}
+
+async function executeConcurrentMcpDuplicate(host, call) {
+  const attempts = await Promise.all([
+    callAgentMcpTool(host, { ...call, id: `${call.id}-a` }),
+    callAgentMcpTool(host, { ...call, id: `${call.id}-b` })
+  ]);
+  const results = attempts.filter((attempt) => attempt?.result).map((attempt) => (
+    attempt.result.structuredContent
+  ));
+  const errors = attempts.filter((attempt) => attempt?.error);
+  assert.equal(
+    results.length >= 1,
+    true,
+    errors.map((attempt) => attempt.error.message).join(" | ")
+  );
+  assert.equal(
+    errors.every((attempt) => attempt.error.message === "idempotency_in_progress"),
+    true
+  );
+  if (results.length === 1) {
+    const replay = await callAgentMcpTool(host, { ...call, id: `${call.id}-replay` });
+    assert.equal(replay.error, undefined);
+    results.push(replay.result.structuredContent);
+  }
+  return results;
+}
+
 async function transitionProjection({
   pool,
   tenantId,
@@ -783,6 +818,90 @@ async function transitionProjection({
       eventId: event.eventId
     }],
     response: { entityType, entityId, status: nextStatus }
+  });
+}
+
+async function establishTerminalMandateFixture({
+  pool,
+  tenantId,
+  identity,
+  mandateId,
+  nextStatus,
+  label
+}) {
+  assert.equal(new Set(["revoked", "expired"]).has(nextStatus), true);
+  const context = createTenantSecurityContext({
+    tenantId,
+    actorId: identity.authenticationContext.actorId,
+    policyVersion: identity.authenticationContext.policyVersion,
+    source: "local_test"
+  });
+  const eventRepository = new PostgresEventRepository({ pool, tenantContext: context });
+  const coreRepository = new PostgresCoreRepository({ pool, eventRepository });
+  return coreRepository.withTenantTransaction(async (client) => {
+    const state = await coreRepository.getProjectionStateInTransaction(
+      client,
+      CoreProjectionType.MANDATE,
+      mandateId,
+      { lock: true }
+    );
+    assert.equal(state?.value.status, "active");
+    const now = new Date(Math.max(
+      Date.now(),
+      new Date(state.value.updatedAt).getTime() + 1
+    ));
+    const terminal = {
+      ...state.value,
+      capabilities: [...state.value.capabilities],
+      allowedProviderIds: [...state.value.allowedProviderIds],
+      allowedCategories: [...state.value.allowedCategories],
+      assetIds: [...state.value.assetIds],
+      status: nextStatus,
+      updatedAt: now.toISOString()
+    };
+    const event = createCreditEvent({
+      eventType: CreditEventType.MANDATE_STATUS_CHANGED,
+      subjectId: terminal.subjectId,
+      payload: {
+        mandateId,
+        mandateHash: terminal.mandateHash,
+        previousStatus: state.value.status,
+        nextStatus,
+        reasonCode: `test_fixture_${nextStatus}`,
+        actorId: identity.authenticationContext.actorId,
+        sandboxOnly: true,
+        productionAuthority: false
+      },
+      now
+    });
+    const committed = await coreRepository.commitCommandInTransaction(client, {
+      aggregateType: "mandate",
+      aggregateId: mandateId,
+      idempotencyKey: `fixture-terminal-mandate-${label}-${RUN_ID}`,
+      commandHash: hashId("gateway_terminal_mandate_fixture", {
+        mandateId,
+        nextStatus,
+        label
+      }),
+      events: [{
+        aggregateType: "mandate",
+        aggregateId: mandateId,
+        expectedVersion: state.aggregateVersion,
+        event
+      }],
+      writes: [{
+        type: CoreProjectionType.MANDATE,
+        value: terminal,
+        eventId: event.eventId
+      }],
+      response: {
+        mandateId,
+        status: nextStatus,
+        schemaVersion: "test_terminal_mandate_fixture.v1"
+      }
+    });
+    assert.equal(committed.replayed, false);
+    return terminal;
   });
 }
 
@@ -1018,6 +1137,25 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.OFFICIAL_REPORT_READ_OWNED,
           PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
           PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
+        ],
+        now: IDENTITY_NOW
+      }),
+      tenantOneRevocationAgent: harness.addIdentity({
+        tenantId: TENANT_ONE,
+        actorId: `actor_gateway_one_revocation_agent_${RUN_ID}`,
+        actorType: ActorType.AGENT,
+        roleBundle: RoleBundle.AGENT_RUNTIME,
+        capabilities: [
+          PilotCapability.SUBJECT_READ_SELF,
+          PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
+          PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
+          PilotCapability.CREDIT_REQUEST,
+          PilotCapability.CREDIT_READ_SELF,
+          PilotCapability.CREDIT_EVALUATE_SELF,
+          PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
+          PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+          PilotCapability.OBLIGATION_READ_OWNED,
+          PilotCapability.EVIDENCE_READ_OWNED
         ],
         now: IDENTITY_NOW
       }),
@@ -1354,6 +1492,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
     const tenantOneCreditAgent = agentClient(
       runtime,
       identities.tenantOneCreditAgent.authenticationContext
+    );
+    const tenantOneRevocationAgent = agentClient(
+      runtime,
+      identities.tenantOneRevocationAgent.authenticationContext
     );
     const tenantOneControllerAgent = agentClient(
       runtime,
@@ -3895,6 +4037,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       );
       assert.equal(creditAgentRuntimeHandoff.status, "ready");
       assert.equal(creditAgentRuntimeHandoff.authority.status, "active");
+      const creditAgentRuntimeMcpHost = createAgentMcpHost({
+        client: tenantOneCreditAgent,
+        manifest: creditAgentRuntimeHandoff
+      });
 
       const humanView = await tenantOneBorrower.getCreditApplication({
         creditIntentId: humanIntent.creditIntentId,
@@ -4946,16 +5092,28 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       );
       const agentExecutionCommand = {
         obligationId: agentAcceptance.obligation.obligationId,
-        payload: {
-          providerId: "provider_gateway_compute",
-          providerCategory: "compute"
-        },
+        providerId: "provider_gateway_compute",
+        providerCategory: "compute",
         idempotencyKey: `execute-agent-sandbox-credit-${RUN_ID}-0001`,
         requestId: `request-execute-agent-sandbox-credit-${RUN_ID}`,
         correlationId: `correlation-execute-agent-sandbox-credit-${RUN_ID}`
       };
+      const callAgentExecution = (argumentsValue, label) => callAgentMcpTool(
+        creditAgentRuntimeMcpHost,
+        {
+          id: `rpc-execute-agent-sandbox-credit-${label}-${RUN_ID}`,
+          name: "ipo_one_execute_sandbox_obligation",
+          arguments: argumentsValue
+        }
+      );
+      const missingProviderScope = await callAgentExecution({
+        obligationId: agentAcceptance.obligation.obligationId,
+        idempotencyKey: `execute-agent-sandbox-credit-missing-${RUN_ID}`,
+        requestId: `request-execute-agent-sandbox-credit-missing-${RUN_ID}`,
+        correlationId: `correlation-execute-agent-sandbox-credit-${RUN_ID}`
+      }, "missing");
+      assert.equal(missingProviderScope.error.message, "invalid_mcp_tool_arguments");
       for (const [label, payload] of [
-        ["missing", {}],
         ["provider", {
           providerId: "provider_not_allowlisted",
           providerCategory: "compute"
@@ -4965,19 +5123,42 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           providerCategory: "unrestricted"
         }]
       ]) {
-        await assert.rejects(
-          () => tenantOneCreditAgent.executeSandboxObligation({
+        const denied = await callAgentExecution({
             obligationId: agentAcceptance.obligation.obligationId,
-            payload,
+            providerId: payload.providerId,
+            providerCategory: payload.providerCategory,
             idempotencyKey: `execute-agent-sandbox-credit-${label}-${RUN_ID}`,
             requestId: `request-execute-agent-sandbox-credit-${label}-${RUN_ID}`,
             correlationId: `correlation-execute-agent-sandbox-credit-${RUN_ID}`
-          }),
-          (error) => error.code === "credit_facility_scope_mismatch"
-        );
+        }, label);
+        assert.equal(denied.error.message, "credit_facility_scope_mismatch");
       }
-      const agentExecutions = await executeConcurrentDuplicate(
-        () => tenantOneCreditAgent.executeSandboxObligation(agentExecutionCommand)
+      const outOfScopeFacility = await callAgentExecution({
+        ...agentExecutionCommand,
+        providerId: "provider_outside_derived_facility",
+        idempotencyKey: `execute-agent-sandbox-credit-facility-scope-${RUN_ID}`,
+        requestId: `request-execute-agent-sandbox-credit-facility-scope-${RUN_ID}`
+      }, "facility-scope");
+      assert.equal(outOfScopeFacility.error.message, "credit_facility_scope_mismatch");
+      const durableMcpNegativeCount = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM sandbox_execution_receipts
+             WHERE obligation_id = $1) AS executions,
+           (SELECT count(*)::int FROM ledger_transactions
+             WHERE reference_type = 'obligation' AND reference_id = $1) AS ledger_transactions`,
+        [agentAcceptance.obligation.obligationId]
+      );
+      assert.deepEqual(durableMcpNegativeCount.rows[0], {
+        executions: 0,
+        ledger_transactions: 0
+      });
+      const agentExecutions = await executeConcurrentMcpDuplicate(
+        creditAgentRuntimeMcpHost,
+        {
+          id: `rpc-execute-agent-sandbox-credit-${RUN_ID}`,
+          name: "ipo_one_execute_sandbox_obligation",
+          arguments: agentExecutionCommand
+        }
       );
       for (const executions of [humanExecutions, agentExecutions]) {
         assert.deepEqual(executions.map((result) => result.replayed).sort(), [false, true]);
@@ -5011,8 +5192,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-repay-agent-sandbox-credit-${RUN_ID}`,
         correlationId: `correlation-repay-agent-sandbox-credit-${RUN_ID}`
       };
-      const agentRepayments = await executeConcurrentDuplicate(
-        () => tenantOneCreditAgent.postSandboxRepayment(agentRepaymentCommand)
+      const agentRepayments = await executeConcurrentMcpDuplicate(
+        creditAgentRuntimeMcpHost,
+        {
+          id: `rpc-repay-agent-sandbox-credit-${RUN_ID}`,
+          name: "ipo_one_post_sandbox_repayment",
+          arguments: agentRepaymentCommand
+        }
       );
       for (const result of agentRepayments) {
         assert.equal(result.response.revenueCapture.capturedMinor, "3000");
@@ -5034,6 +5220,38 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         assert.equal(repayments[0].response.obligation.status, "partially_repaid");
         assert.equal(repayments[0].response.withdrawable, false);
       }
+
+      const agentMcpEvidence = await callAgentMcpTool(creditAgentRuntimeMcpHost, {
+        id: `rpc-read-agent-evidence-after-repayment-${RUN_ID}`,
+        name: "ipo_one_read_obligation_evidence",
+        arguments: {
+          obligationId: agentAcceptance.obligation.obligationId,
+          limit: 50,
+          requestId: `request-read-agent-evidence-after-repayment-${RUN_ID}`,
+          correlationId: `correlation-read-agent-evidence-after-repayment-${RUN_ID}`
+        }
+      });
+      assert.equal(agentMcpEvidence.error, undefined);
+      assert.equal(
+        agentMcpEvidence.result.structuredContent.response.schemaVersion,
+        "tenant_owned_obligation_evidence_view.v1"
+      );
+      const durableMcpEvidenceTypes = new Set(
+        agentMcpEvidence.result.structuredContent.response.items.map(({ eventType }) => eventType)
+      );
+      for (const eventType of [
+        "obligation_sandbox_executed",
+        "ledger_transaction_posted",
+        "repayment_posted"
+      ]) {
+        assert.equal(durableMcpEvidenceTypes.has(eventType), true, eventType);
+      }
+      const replayInvalidExecution = await callAgentExecution({
+        ...agentExecutionCommand,
+        providerId: "provider_replay_drift",
+        requestId: `request-execute-agent-sandbox-credit-replay-drift-${RUN_ID}`
+      }, "replay-drift");
+      assert.equal(replayInvalidExecution.error.message, "event_idempotency_conflict");
 
       const agentLockboxDurability = await ownerPool.query(
         `SELECT l.id, l.lockbox_hash, l.subject_id, l.principal_id,
@@ -5658,7 +5876,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           subjectId,
           authorityId,
           idempotencyKey: `phase2-request-${label}-${RUN_ID}`,
-          overrides: { requestedPrincipalMinor: amountMinor }
+          overrides: {
+            requestedPrincipalMinor: amountMinor,
+            ...(label === "agent-revoked-mcp" ? { requestedTermDays: 45 } : {})
+          }
         }));
         const creditIntent = requested.response.creditIntent;
         const evaluated = await client.evaluateCreditApplication({
@@ -5813,7 +6034,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         const executions = await executeConcurrentDuplicate(
           () => client.executeSandboxObligation({
             obligationId: obligation.obligationId,
-            payload: providerTarget ?? {},
+            providerId: providerTarget?.providerId,
+            providerCategory: providerTarget?.providerCategory,
             idempotencyKey: `phase2-execute-${label}-${RUN_ID}`,
             requestId: `request-phase2-execute-${label}-${RUN_ID}`,
             correlationId: `correlation-phase2-${label}-${RUN_ID}`
@@ -6390,6 +6612,202 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         leaked_signature: false,
         leaked_nonce: false
       }]);
+    });
+
+    await t.test("stale Agent MCP handoffs fail closed on revoked and expired durable Mandates", async () => {
+      await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneRevocationAgent, {
+        controllerActorId: identities.tenantOneController.authenticationContext.actorId
+      });
+      const subject = await tenantOneController.createAgentSubject(createCommand({
+        subjectActorId: identities.tenantOneRevocationAgent.authenticationContext.actorId,
+        displayName: "Tenant One Terminal Authority Agent",
+        idempotencyKey: `create-terminal-authority-agent-${RUN_ID}`
+      }));
+      await proveAndActivateAgentAccount({
+        controller: tenantOneController,
+        agent: tenantOneRevocationAgent,
+        subjectId: subject.response.subjectId,
+        privateKey: `0x${"66".repeat(32)}`,
+        label: "terminal-authority-agent"
+      });
+
+      const createPendingMcpFixture = async ({ label, requestedPrincipalMinor, requestedTermDays }) => {
+        const draft = await tenantOneController.createDraftMandate(createMandateCommand({
+          subjectId: subject.response.subjectId,
+          idempotencyKey: `create-${label}-mandate-${RUN_ID}`,
+          overrides: {
+            capabilities: [
+              "request_credit",
+              "accept_credit_offer",
+              "execute_sandbox_credit",
+              "provider_spend"
+            ],
+            allowedProviderIds: ["provider_gateway_compute"],
+            allowedCategories: ["compute"],
+            perActionLimitMinor: "5000",
+            aggregateLimitMinor: "5000"
+          }
+        }));
+        const mandateId = draft.response.mandateId;
+        const draftView = await tenantOneController.getMandate({
+          mandateId,
+          requestId: `request-read-${label}-mandate-${RUN_ID}`,
+          correlationId: `correlation-${label}-${RUN_ID}`
+        });
+        const requested = await tenantOneRevocationAgent.requestCredit(
+          requestCreditCommand({
+            subjectId: subject.response.subjectId,
+            authorityId: mandateId,
+            idempotencyKey: `request-${label}-credit-${RUN_ID}`,
+            overrides: { requestedPrincipalMinor, requestedTermDays }
+          })
+        );
+        const evaluated = await tenantOneRevocationAgent.evaluateCreditApplication({
+          creditIntentId: requested.response.creditIntent.creditIntentId,
+          idempotencyKey: `evaluate-${label}-credit-${RUN_ID}`,
+          requestId: `request-evaluate-${label}-credit-${RUN_ID}`,
+          correlationId: `correlation-${label}-${RUN_ID}`
+        });
+        const active = await tenantOneController.activateSandboxMandate({
+          mandateId,
+          payload: {
+            expectedMandateHash: draftView.response.mandate.mandateHash,
+            acknowledgedTermsHash: draftView.response.mandate.termsHash,
+            acknowledgementCode: "principal_authorizes_sandbox_credit_v1"
+          },
+          idempotencyKey: `activate-${label}-mandate-${RUN_ID}`,
+          requestId: `request-activate-${label}-mandate-${RUN_ID}`,
+          correlationId: `correlation-${label}-${RUN_ID}`
+        });
+        const host = createAgentMcpHost({
+          client: tenantOneRevocationAgent,
+          manifest: createReadyAgentHandoffManifest(active.response.mandate)
+        });
+        const accepted = await callAgentMcpTool(host, {
+          id: `rpc-accept-${label}-credit-${RUN_ID}`,
+          name: "ipo_one_accept_credit_offer",
+          arguments: {
+            creditOfferId: evaluated.response.offer.creditOfferId,
+            payload: {
+              expectedOfferHash: evaluated.response.offer.creditOfferHash,
+              expectedTermsHash: evaluated.response.offer.termsHash,
+              acknowledgementHash: hashId("gateway_terminal_authority_ack", {
+                creditOfferId: evaluated.response.offer.creditOfferId,
+                label
+              })
+            },
+            idempotencyKey: `accept-${label}-credit-${RUN_ID}`,
+            requestId: `request-accept-${label}-credit-${RUN_ID}`,
+            correlationId: `correlation-${label}-${RUN_ID}`
+          }
+        });
+        assert.equal(accepted.error, undefined);
+        return {
+          host,
+          mandateId,
+          obligationId: accepted.result.structuredContent.response.obligation.obligationId
+        };
+      };
+
+      for (const fixture of [
+        {
+          label: "revoked-authority",
+          nextStatus: "revoked",
+          requestedPrincipalMinor: "3000",
+          requestedTermDays: 45
+        },
+        {
+          label: "expired-authority",
+          nextStatus: "expired",
+          requestedPrincipalMinor: "3200",
+          requestedTermDays: 46
+        }
+      ]) {
+        const pending = await createPendingMcpFixture(fixture);
+        await establishTerminalMandateFixture({
+          pool: appPool,
+          tenantId: TENANT_ONE,
+          identity: identities.tenantOneController,
+          mandateId: pending.mandateId,
+          nextStatus: fixture.nextStatus,
+          label: fixture.label
+        });
+        const before = await ownerPool.query(
+          `SELECT
+             m.status AS mandate_status,
+             r.status AS mandate_resource_status,
+             o.status AS obligation_resource_status,
+             (SELECT count(*)::int FROM sandbox_execution_receipts
+               WHERE obligation_id = $3) AS execution_receipts,
+             (SELECT count(*)::int FROM ledger_transactions
+               WHERE reference_type = 'obligation' AND reference_id = $3)
+               AS ledger_transactions,
+             (SELECT count(*)::int FROM lockboxes
+               WHERE obligation_id = $3) AS lockboxes,
+             (SELECT count(*)::int FROM credit_events
+               WHERE obligation_id = $3) AS credit_events,
+             (SELECT count(*)::int FROM domain_events
+               WHERE aggregate_type = 'obligation' AND aggregate_id = $3)
+               AS obligation_events
+           FROM mandates m
+           JOIN authorization_resources r
+             ON r.tenant_id = m.tenant_id
+            AND r.resource_type = 'mandate'
+            AND r.resource_id = m.id
+           JOIN authorization_resources o
+             ON o.tenant_id = m.tenant_id
+            AND o.resource_type = 'obligation'
+            AND o.resource_id = $3
+          WHERE m.tenant_id = $1 AND m.id = $2`,
+          [TENANT_ONE, pending.mandateId, pending.obligationId]
+        );
+        assert.equal(before.rows[0].mandate_status, fixture.nextStatus);
+        assert.equal(before.rows[0].mandate_resource_status, "active");
+        assert.equal(before.rows[0].obligation_resource_status, "active");
+        assert.equal(before.rows[0].execution_receipts, 0);
+        assert.equal(before.rows[0].ledger_transactions, 0);
+        assert.equal(before.rows[0].lockboxes, 0);
+        const deniedCommandKey = `execute-agent-${fixture.label}-${RUN_ID}`;
+        const denied = await callAgentMcpTool(pending.host, {
+          id: `rpc-execute-agent-${fixture.label}-${RUN_ID}`,
+          name: "ipo_one_execute_sandbox_obligation",
+          arguments: {
+            obligationId: pending.obligationId,
+            providerId: "provider_gateway_compute",
+            providerCategory: "compute",
+            idempotencyKey: deniedCommandKey,
+            requestId: `request-execute-agent-${fixture.label}-${RUN_ID}`,
+            correlationId: `correlation-execute-agent-${fixture.label}-${RUN_ID}`
+          }
+        });
+        assert.equal(denied.error.message, "authority_not_current");
+        const after = await ownerPool.query(
+          `SELECT
+             (SELECT count(*)::int FROM sandbox_execution_receipts
+               WHERE obligation_id = $1) AS execution_receipts,
+             (SELECT count(*)::int FROM ledger_transactions
+               WHERE reference_type = 'obligation' AND reference_id = $1)
+               AS ledger_transactions,
+             (SELECT count(*)::int FROM lockboxes
+               WHERE obligation_id = $1) AS lockboxes,
+             (SELECT count(*)::int FROM credit_events
+               WHERE obligation_id = $1) AS credit_events,
+             (SELECT count(*)::int FROM domain_events
+               WHERE aggregate_type = 'obligation' AND aggregate_id = $1)
+               AS obligation_events,
+             (SELECT count(*)::int FROM command_idempotency
+               WHERE idempotency_key = $2) AS denied_command_rows`,
+          [pending.obligationId, deniedCommandKey]
+        );
+        assert.deepEqual(after.rows[0], {
+          execution_receipts: before.rows[0].execution_receipts,
+          ledger_transactions: before.rows[0].ledger_transactions,
+          lockboxes: before.rows[0].lockboxes,
+          credit_events: before.rows[0].credit_events,
+          obligation_events: before.rows[0].obligation_events,
+          denied_command_rows: 0
+        });
+      }
     });
 
     await t.test("full reconciliation remains clean after complete Gateway flows", async () => {

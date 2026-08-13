@@ -412,6 +412,8 @@ test("local Agent MCP publishes exactly the twelve approved bounded tools", asyn
       name: "ipo_one_execute_sandbox_obligation",
       arguments: {
         obligationId: "obligation_agent_fixture",
+        providerId: "provider_gateway_compute",
+        providerCategory: "compute",
         idempotencyKey: "idempotency-agent-execute-obligation-0001",
         requestId: "request-agent-execute-obligation-0001",
         correlationId: "correlation-agent-execute-obligation-0001"
@@ -419,6 +421,39 @@ test("local Agent MCP publishes exactly the twelve approved bounded tools", asyn
     }
   });
   assert.equal(executed.result.structuredContent.operationId, "pilotExecuteSandboxObligation");
+  assert.equal(
+    executed.result.structuredContent.input.providerId,
+    "provider_gateway_compute"
+  );
+  assert.equal(executed.result.structuredContent.input.providerCategory, "compute");
+
+  for (const [id, argumentsValue] of [
+    [81, {
+      obligationId: "obligation_agent_fixture",
+      providerId: "provider_gateway_compute",
+      idempotencyKey: "idempotency-agent-execute-missing-category-0001",
+      requestId: "request-agent-execute-missing-category-0001",
+      correlationId: "correlation-agent-execute-missing-category-0001"
+    }],
+    [82, {
+      obligationId: "obligation_agent_fixture",
+      providerCategory: "compute",
+      idempotencyKey: "idempotency-agent-execute-missing-provider-0001",
+      requestId: "request-agent-execute-missing-provider-0001",
+      correlationId: "correlation-agent-execute-missing-provider-0001"
+    }]
+  ]) {
+    const denied = await rpc({
+      jsonrpc: "2.0",
+      id,
+      method: "tools/call",
+      params: {
+        name: "ipo_one_execute_sandbox_obligation",
+        arguments: argumentsValue
+      }
+    });
+    assert.equal(denied.error.message, "invalid_mcp_tool_arguments");
+  }
 
   const repaid = await rpc({
     jsonrpc: "2.0",
