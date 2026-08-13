@@ -27,6 +27,11 @@ assert.match(
   "CI must resolve Node from the reviewed version file"
 );
 assert.match(
+  workflow,
+  /fetch-depth:\s*0/,
+  "CI must retain repository history for immutable release-evidence checks"
+);
+assert.match(
   dockerfile,
   /npm install --global pnpm@11\.1\.3 --ignore-scripts/,
   "the Node 26 build image must install the reviewed pnpm version explicitly"
