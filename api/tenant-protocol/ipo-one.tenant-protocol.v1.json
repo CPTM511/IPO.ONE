@@ -414,6 +414,22 @@
       "fundsAuthority": false
     },
     {
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "auditor"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "risk.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_portfolio_reference_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
       "operationId": "pilotReadTenantRisk",
       "kind": "query",
       "actorTypes": [
@@ -460,6 +476,22 @@
       "quotaClass": "read",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_pilot_feedback_summary_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadServicingQueueReference",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "servicing.queue.read",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_servicing_queue_reference_view.v1",
       "public": false,
       "fundsAuthority": false
     },
@@ -622,6 +654,36 @@
       "quotaClass": "mutation",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_credit_passport_artifact_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerSelf",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "capital_partner.portfolio.read.own",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_self_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPassportInbox",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "capital_partner.offer.create.own",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_passport_inbox_view.v1",
       "public": false,
       "fundsAuthority": false
     },
@@ -1445,60 +1507,129 @@
       "fundsAuthority": false
     },
     {
-      "operationId": "venueDiscoverCapabilities", "kind": "query",
-      "actorTypes": ["human", "agent"], "resourceType": "venue_adapter",
-      "requiredCapability": "venue.capabilities.discover", "idempotency": "prohibited",
-      "quotaClass": "read", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "venue_capability_descriptor_list.v1", "public": false, "fundsAuthority": false
+      "operationId": "venueDiscoverCapabilities",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_adapter",
+      "requiredCapability": "venue.capabilities.discover",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "venue_capability_descriptor_list.v1",
+      "public": false,
+      "fundsAuthority": false
     },
     {
-      "operationId": "venueReadBinding", "kind": "query",
-      "actorTypes": ["human", "agent"], "resourceType": "venue_binding",
-      "requiredCapability": "venue.binding.read.owned", "idempotency": "prohibited",
-      "quotaClass": "read", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_venue_binding_view.v1", "public": false, "fundsAuthority": false
+      "operationId": "venueReadBinding",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_binding",
+      "requiredCapability": "venue.binding.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_binding_view.v1",
+      "public": false,
+      "fundsAuthority": false
     },
     {
-      "operationId": "venuePrepareDelegate", "kind": "command",
-      "actorTypes": ["human"], "resourceType": "venue_binding",
-      "requiredCapability": "venue.delegate.prepare.owned", "idempotency": "required",
-      "quotaClass": "privileged", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_venue_delegate_prepared.v1", "public": false, "fundsAuthority": false
+      "operationId": "venuePrepareDelegate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "venue_binding",
+      "requiredCapability": "venue.delegate.prepare.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_prepared.v1",
+      "public": false,
+      "fundsAuthority": false
     },
     {
-      "operationId": "venueActivateDelegate", "kind": "command",
-      "actorTypes": ["human"], "resourceType": "venue_delegate",
-      "requiredCapability": "venue.delegate.activate.owned", "idempotency": "required",
-      "quotaClass": "privileged", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_venue_delegate_activation_blocked.v1", "public": false, "fundsAuthority": false
+      "operationId": "venueActivateDelegate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "venue_delegate",
+      "requiredCapability": "venue.delegate.activate.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_activation_blocked.v1",
+      "public": false,
+      "fundsAuthority": false
     },
     {
-      "operationId": "venueRevokeDelegate", "kind": "command",
-      "actorTypes": ["human"], "resourceType": "venue_delegate",
-      "requiredCapability": "venue.delegate.revoke.owned", "idempotency": "required",
-      "quotaClass": "privileged", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_venue_delegate_revocation_blocked.v1", "public": false, "fundsAuthority": false
+      "operationId": "venueRevokeDelegate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "venue_delegate",
+      "requiredCapability": "venue.delegate.revoke.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_revocation_blocked.v1",
+      "public": false,
+      "fundsAuthority": false
     },
     {
-      "operationId": "venuePrepareExecution", "kind": "command",
-      "actorTypes": ["human", "agent"], "resourceType": "venue_delegate",
-      "requiredCapability": "venue.execution.prepare.owned", "idempotency": "required",
-      "quotaClass": "economic", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_venue_execution_prepared.v1", "public": false, "fundsAuthority": false
+      "operationId": "venuePrepareExecution",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_delegate",
+      "requiredCapability": "venue.execution.prepare.owned",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_prepared.v1",
+      "public": false,
+      "fundsAuthority": false
     },
     {
-      "operationId": "venueSubmitExecution", "kind": "command",
-      "actorTypes": ["human", "agent"], "resourceType": "venue_execution",
-      "requiredCapability": "venue.execution.submit.owned", "idempotency": "required",
-      "quotaClass": "economic", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_venue_execution_submission_blocked.v1", "public": false, "fundsAuthority": false
+      "operationId": "venueSubmitExecution",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_execution",
+      "requiredCapability": "venue.execution.submit.owned",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_submission_blocked.v1",
+      "public": false,
+      "fundsAuthority": false
     },
     {
-      "operationId": "venueReadExecution", "kind": "query",
-      "actorTypes": ["human", "agent"], "resourceType": "venue_execution",
-      "requiredCapability": "venue.execution.read.owned", "idempotency": "prohibited",
-      "quotaClass": "read", "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_venue_execution_view.v1", "public": false, "fundsAuthority": false
+      "operationId": "venueReadExecution",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_execution",
+      "requiredCapability": "venue.execution.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_view.v1",
+      "public": false,
+      "fundsAuthority": false
     }
   ],
   "safety": {

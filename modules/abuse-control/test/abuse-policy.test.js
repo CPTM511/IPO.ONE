@@ -64,6 +64,14 @@ test("every authenticated operation has exactly one closed quota classification"
   ]));
   const byOperation = new Map(TENANT_ABUSE_OPERATION_POLICIES.map((item) => [item.operationId, item]));
   assert.equal(byOperation.get("pilotReadMandate").quotaClass, QuotaClass.READ);
+  assert.equal(
+    byOperation.get("pilotReadTenantRiskPortfolioReference").quotaClass,
+    QuotaClass.READ
+  );
+  assert.equal(
+    byOperation.get("pilotReadServicingQueueReference").quotaClass,
+    QuotaClass.READ
+  );
   assert.equal(byOperation.get("pilotRevokeDraftMandate").quotaClass, QuotaClass.MUTATION);
   assert.equal(byOperation.get("walletReadGrant").quotaClass, QuotaClass.READ);
   assert.equal(byOperation.get("walletDiscoverCapabilities").quotaClass, QuotaClass.READ);

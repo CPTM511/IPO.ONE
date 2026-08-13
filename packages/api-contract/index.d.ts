@@ -28,6 +28,10 @@ export type TenantProtocolOperationId =
   | "pilotReadConsent"
   | "pilotReadHumanSelf"
   | "pilotReadWorkspaceResume"
+  | "pilotReadCapitalPartnerSelf"
+  | "pilotReadCapitalPartnerPassportInbox"
+  | "pilotReadTenantRiskPortfolioReference"
+  | "pilotReadServicingQueueReference"
   | "pilotReadIdentityReference"
   | "pilotReadMandate"
   | "pilotReadTenantRisk"
@@ -1059,6 +1063,16 @@ export interface ReadWorkspaceResumeRequest extends TenantProtocolRequestBase {
   payload: Record<string, never>;
 }
 
+export interface ReadTenantRiskPortfolioReferenceRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadTenantRiskPortfolioReference";
+  payload: Record<string, never>;
+}
+
+export interface ReadServicingQueueReferenceRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadServicingQueueReference";
+  payload: Record<string, never>;
+}
+
 export interface ReadConsentRequest extends TenantProtocolRequestBase {
   operationId: "pilotReadConsent";
   payload: Record<string, never>;
@@ -1525,6 +1539,19 @@ export type CapitalPartnerOfferCondition =
   | "authority_current_at_acceptance"
   | "no_adverse_obligation_at_acceptance";
 
+export type CapitalPartnerSelfViewSchemaVersion = "tenant_capital_partner_self_view.v1";
+export type CapitalPartnerPassportInboxViewSchemaVersion = "tenant_capital_partner_passport_inbox_view.v1";
+
+export interface ReadCapitalPartnerSelfRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadCapitalPartnerSelf";
+  payload: Record<string, never>;
+}
+
+export interface ReadCapitalPartnerPassportInboxRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadCapitalPartnerPassportInbox";
+  payload: Record<string, never>;
+}
+
 export interface AuthorCapitalPartnerOfferRequest extends TenantProtocolRequestBase {
   operationId: "pilotAuthorCapitalPartnerOffer";
   payload: {
@@ -1811,6 +1838,8 @@ export type TenantProtocolRequest =
   | ReadConsentRequest
   | ReadHumanSelfRequest
   | ReadWorkspaceResumeRequest
+  | ReadTenantRiskPortfolioReferenceRequest
+  | ReadServicingQueueReferenceRequest
   | ReadHumanIdentityReferenceRequest
   | ReadMandateRequest
   | ReadTenantRiskRequest
@@ -1825,6 +1854,8 @@ export type TenantProtocolRequest =
   | RevokeConsentRequest
   | RevokeDraftMandateRequest
   | RevokeCreditPassportArtifactRequest
+  | ReadCapitalPartnerSelfRequest
+  | ReadCapitalPartnerPassportInboxRequest
   | AuthorCapitalPartnerOfferRequest
   | TransitionCapitalPartnerOfferRequest
   | ReadCapitalPartnerFacilityRequest
@@ -2453,6 +2484,20 @@ export interface WorkspaceResumeViewResponse {
   hasMore: boolean;
   serverTruth: true;
   schemaVersion: "tenant_workspace_resume_view.v1";
+}
+
+export interface TenantRiskPortfolioReferenceViewResponse {
+  resource: { resourceType: "risk_portfolio"; resourceId: string } | null;
+  serverTruth: true;
+  readOnly: true;
+  schemaVersion: "tenant_risk_portfolio_reference_view.v1";
+}
+
+export interface TenantServicingQueueReferenceViewResponse {
+  resource: { resourceType: "servicing_queue"; resourceId: string } | null;
+  serverTruth: true;
+  readOnly: true;
+  schemaVersion: "tenant_servicing_queue_reference_view.v1";
 }
 
 export interface WorkspaceContinuationReceiptView {
@@ -3130,6 +3175,47 @@ export interface CapitalPartnerFacilityViewResponse {
   schemaVersion: "tenant_capital_partner_facility_view.v1";
 }
 
+export interface CapitalPartnerSelfViewResponse {
+  resource: {
+    resourceType: "capital_partner_profile";
+    resourceId: string;
+  };
+  profile: {
+    capitalPartnerId: string;
+    displayName: string;
+  };
+  fundsAuthority: false;
+  serverTruth: true;
+  readOnly: true;
+  schemaVersion: "tenant_capital_partner_self_view.v1";
+}
+
+export interface CapitalPartnerPassportInboxViewResponse {
+  items: Array<{
+    resource: {
+      resourceType: "credit_passport_artifact";
+      resourceId: string;
+    };
+    reviewContext: {
+      creditIntentId: string;
+      artifactHash: string;
+      artifactVersion: number;
+    };
+    summary: {
+      claimCount: number;
+      purpose: "private_credit_review";
+      issuedAt: string;
+      expiresAt: string;
+    };
+  }>;
+  count: number;
+  hasMore: false;
+  fundsAuthority: false;
+  serverTruth: true;
+  readOnly: true;
+  schemaVersion: "tenant_capital_partner_passport_inbox_view.v1";
+}
+
 export interface CapitalPartnerPortfolioViewResponse {
   profile: {
     capitalPartnerId: string;
@@ -3150,7 +3236,11 @@ export interface CapitalPartnerPortfolioViewResponse {
     repaidMinor: string;
     overdueMinor: string;
     writtenOffMinor: string;
-    offers: Array<Record<string, unknown>>;
+    offers: Array<Record<string, unknown> & {
+      creditOfferId: string;
+      creditIntentId: string;
+      status: "offered" | "accepted" | "declined" | "expired" | "withdrawn" | "superseded";
+    }>;
     facilities: Array<Record<string, unknown>>;
     schemaVersion: "capital_partner_portfolio.v1";
     [key: string]: unknown;
@@ -4330,6 +4420,8 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotReadConsent", HumanConsentViewResponse>
   | TenantProtocolResultBase<"pilotReadHumanSelf", HumanSubjectViewResponse>
   | TenantProtocolResultBase<"pilotReadWorkspaceResume", WorkspaceResumeViewResponse>
+  | TenantProtocolResultBase<"pilotReadTenantRiskPortfolioReference", TenantRiskPortfolioReferenceViewResponse>
+  | TenantProtocolResultBase<"pilotReadServicingQueueReference", TenantServicingQueueReferenceViewResponse>
   | TenantProtocolResultBase<"pilotReadIdentityReference", HumanIdentityReferenceViewResponse>
   | TenantProtocolResultBase<"pilotReadMandate", MandateViewResponse>
   | TenantProtocolResultBase<"pilotReadTenantRisk", TenantRiskPortfolioViewResponse>
@@ -4344,6 +4436,8 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotRevokeConsent", HumanConsentRevokedResponse>
   | TenantProtocolResultBase<"pilotRevokeDraftMandate", DraftMandateRevokedResponse>
   | TenantProtocolResultBase<"pilotRevokeCreditPassportArtifact", CreditPassportArtifactRevokedResponse>
+  | TenantProtocolResultBase<"pilotReadCapitalPartnerSelf", CapitalPartnerSelfViewResponse>
+  | TenantProtocolResultBase<"pilotReadCapitalPartnerPassportInbox", CapitalPartnerPassportInboxViewResponse>
   | TenantProtocolResultBase<"pilotAuthorCapitalPartnerOffer", CapitalPartnerOfferAuthoredResponse>
   | TenantProtocolResultBase<"pilotTransitionCapitalPartnerOffer", CapitalPartnerOfferTransitionedResponse>
   | TenantProtocolResultBase<"pilotReadCapitalPartnerFacility", CapitalPartnerFacilityViewResponse>
@@ -5015,6 +5109,26 @@ export type TenantProtocolOperation =
       "prohibited",
       "read",
       "tenant_workspace_resume_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadTenantRiskPortfolioReference",
+      "query",
+      readonly ["risk_operator", "auditor"],
+      "workspace",
+      "risk.read.tenant",
+      "prohibited",
+      "read",
+      "tenant_risk_portfolio_reference_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadServicingQueueReference",
+      "query",
+      readonly ["risk_operator", "operations_operator"],
+      "workspace",
+      "servicing.queue.read",
+      "prohibited",
+      "read",
+      "tenant_servicing_queue_reference_view.v1"
     >
   | TenantProtocolOperationBase<
       "pilotPersistAgentContinuationReceipt",

@@ -281,10 +281,13 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     const script = await scriptBodyResponse.text();
     assert.match(script, /from "\.\/agent-console-presentation\.js"/);
     assert.match(script, /from "\.\/agent-handoff-manifest\.js"/);
+    assert.match(script, /from "\.\/agent-lifecycle-next-action\.js"/);
     assert.match(script, /from "\.\/agent-pilot-capability-manifest\.js"/);
+    assert.match(script, /from "\.\/authentication-availability-presentation\.js"/);
     assert.match(script, /from "\.\/capital-network-presentation\.js"/);
     assert.match(script, /from "\.\/capital-partner-presentation\.js"/);
     assert.match(script, /from "\.\/risk-operations-presentation\.js"/);
+    assert.match(script, /from "\.\/risk-workspace-selection\.js"/);
     assert.match(script, /from "\.\/credit-passport-presentation\.js"/);
     assert.match(script, /from "\.\/decision-passport-presentation\.js"/);
     assert.match(script, /from "\.\/evidence-receipt-presentation\.js"/);
@@ -294,6 +297,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(script, /from "\.\/official-report-download\.js"/);
     assert.match(script, /from "\.\/owned-evidence-presentation\.js"/);
     assert.match(script, /from "\.\/principal-workspace-access\.js"/);
+    assert.match(script, /from "\.\/principal-agent-workspace-selection\.js"/);
     assert.match(script, /from "\.\/request-credit-review-binding\.js"/);
     assert.match(script, /from "\.\/servicing-case-presentation\.js"/);
     assert.match(script, /from "\.\/servicing-position-index\.js"/);
@@ -301,6 +305,8 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(script, /from "\.\/wallet-authority-lifecycle\.js"/);
     assert.match(script, /from "\.\/wallet-provider-registry\.js"/);
     assert.match(script, /from "\.\/wallet-sign-out\.js"/);
+    assert.match(script, /from "\.\/workspace-navigation\.js"/);
+    assert.match(script, /from "\.\/workspace-surface-access\.js"/);
     assert.match(script, /from "\.\/v9-trust-surfaces\.js"/);
     assert.match(script, /tenantApi\("pilotReadEvidence"/);
     assert.match(script, /resourceType: "evidence"/);
@@ -310,9 +316,12 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.deepEqual(relativeModules.sort(), [
       "/agent-console-presentation.js",
       "/agent-handoff-manifest.js",
+      "/agent-lifecycle-next-action.js",
       "/agent-pilot-capability-manifest.js",
+      "/authentication-availability-presentation.js",
       "/capital-network-presentation.js",
       "/capital-partner-presentation.js",
+      "/capital-partner-workspace-selection.js",
       "/credit-passport-presentation.js",
       "/decision-passport-presentation.js",
       "/evidence-receipt-presentation.js",
@@ -321,16 +330,20 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/obligation-portfolio-presentation.js",
       "/official-report-download.js",
       "/owned-evidence-presentation.js",
+      "/principal-agent-workspace-selection.js",
       "/principal-workspace-access.js",
       "/request-credit-review-binding.js",
       "/risk-operations-presentation.js",
+      "/risk-workspace-selection.js",
       "/servicing-case-presentation.js",
       "/servicing-position-index.js",
       "/trading-capital-product-presentation.js",
       "/v9-trust-surfaces.js",
       "/wallet-authority-lifecycle.js",
       "/wallet-provider-registry.js",
-      "/wallet-sign-out.js"
+      "/wallet-sign-out.js",
+      "/workspace-navigation.js",
+      "/workspace-surface-access.js"
     ]);
     for (const modulePath of relativeModules) {
       const moduleResponse = await fetch(`${baseUrl}${modulePath}`);

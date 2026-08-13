@@ -59,9 +59,9 @@ Git-ignored `.ipo-one/local-stack/` directory and are never printed.
 
 Open:
 
-- Borrower: <http://127.0.0.1:8787/#human>
-- Principal / Agent Authority: <http://127.0.0.1:8788/#human>
-- Risk Operations: <http://127.0.0.1:8789/#risk>
+- Borrower: <http://127.0.0.1:8787/#request-credit>
+- Principal / Agent Authority: <http://127.0.0.1:8788/#request-credit>
+- Risk Operations: <http://127.0.0.1:8789/#risk-operations>
 - Capital Partner: <http://127.0.0.1:8790/#capital-partners>
 
 The local stack also imports the reviewed CHAIN-001E Base Sepolia observation
@@ -79,16 +79,22 @@ does not grant credit, account control, or funds authority.
 
 ### Agent account proof and runtime
 
-The PostgreSQL port stays inside the VM. After downloading an Agent account
-challenge into this repository, run its proof through an isolated one-off
-container:
+The normal local Principal journey stays in the browser: create or recover the
+Agent authority, use the explicit account-proof Refresh, run the registered
+reference-Agent application, activate the reviewed Mandate, then complete the
+synthetic runtime with the single next action shown by the product. No terminal,
+download, copied ID, or JSON handoff is required for that reviewed path.
+
+The PostgreSQL port stays inside the VM. Developers who need to inspect the
+machine-facing handoff can expand **Developer details** and run the isolated
+one-off helpers explicitly:
 
 ```sh
 pnpm run local:agent:prove -- .playwright-cli/ipo-one-agent-account-challenge.json
 ```
 
-After the Human Principal activates the exact Mandate and downloads its runtime
-handoff, start the local Agent stdio process the same way:
+After the Principal activates the exact Mandate, an API integrator may start the
+local Agent stdio process with the reviewed runtime handoff:
 
 ```sh
 pnpm run local:agent -- ./agent-handoff.json

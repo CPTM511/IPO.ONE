@@ -953,6 +953,24 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["credit_passport_verification_state"]
   }),
   tenantOperation({
+    operationId: "pilotReadCapitalPartnerSelf",
+    action: "capital_partner.portfolio.read.own",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "pilotReadCapitalPartnerPassportInbox",
+    action: "capital_partner.offer.create.own",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
     operationId: "pilotAuthorCapitalPartnerOffer",
     action: "capital_partner.offer.create.own",
     resourceType: "credit_passport_artifact",
@@ -1075,6 +1093,16 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["obligation_state", "lockbox_state", "repayment_waterfall", "freeze"]
   }),
   tenantOperation({
+    operationId: "pilotReadTenantRiskPortfolioReference",
+    action: "risk.read.tenant",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.RISK_READ_TENANT,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.AUDITOR]
+  }),
+  tenantOperation({
     operationId: "pilotReadTenantRisk",
     action: "risk.read.tenant",
     resourceType: "risk_portfolio",
@@ -1108,6 +1136,16 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
       ActorType.OPERATIONS_OPERATOR,
       ActorType.AUDITOR
     ]
+  }),
+  tenantOperation({
+    operationId: "pilotReadServicingQueueReference",
+    action: "servicing.queue.read",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.SERVICING_QUEUE_READ,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
   }),
   tenantOperation({
     operationId: "pilotReadServicingQueue",

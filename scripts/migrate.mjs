@@ -7,10 +7,10 @@ import pg from "pg";
 const { Pool } = pg;
 const MIGRATION_LOCK_NAMESPACE = "ipo.one";
 const MIGRATION_LOCK_NAME = "schema_migrations";
-// The sealed local RC removed one terminal blank line from 0043 and 0044 after
-// the identical SQL had been applied. Preserve those original durable
-// checksums as exact compatibility edges; every other migration and checksum
-// still fails closed.
+// Sealed local candidates removed one terminal blank line from 0043, 0044 and
+// 0054 after the identical SQL had been applied. Preserve those original
+// durable checksums as exact compatibility edges; every other migration and
+// checksum still fails closed.
 const LEGACY_MIGRATION_CHECKSUMS = Object.freeze({
   "0043_durable_credit_outcomes": Object.freeze({
     "0291b691521508c6bdca2ed6d5a456f0cd9b413d25a34060efd14851e641790a":
@@ -19,6 +19,10 @@ const LEGACY_MIGRATION_CHECKSUMS = Object.freeze({
   "0044_durable_tenant_command_pause": Object.freeze({
     "b0f7a42a00c8359c6b5778f54b09480f5da492b34a8038f15679a3e5b2d1bfbe":
       "b238c78daeb7eca7a8477f18cfc3f72650ccfcca21aec2f666900b82e8092c09"
+  }),
+  "0054_universal_evm_signature_methods": Object.freeze({
+    "46136f7b5cd60ef6cfc5df3411a318acb77206fe16e0f137540bb355a7a202a3":
+      "f41badbc345652956f026df914ba5751d88f03b86cc3323c6a278331866da534"
   })
 });
 

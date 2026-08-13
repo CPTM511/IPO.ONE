@@ -41,6 +41,10 @@
         "pilotReadConsent",
         "pilotReadHumanSelf",
         "pilotReadWorkspaceResume",
+        "pilotReadCapitalPartnerSelf",
+        "pilotReadCapitalPartnerPassportInbox",
+        "pilotReadTenantRiskPortfolioReference",
+        "pilotReadServicingQueueReference",
         "pilotReadIdentityReference",
         "pilotReadMandate",
         "pilotReadTenantRisk",
@@ -268,6 +272,18 @@
       "properties": {
         "operationId": { "const": "venueReadExecution" },
         "response": { "$ref": "#/$defs/venueExecutionViewResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadCapitalPartnerSelf" },
+        "response": { "$ref": "#/$defs/capitalPartnerSelfView" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadCapitalPartnerPassportInbox" },
+        "response": { "$ref": "#/$defs/capitalPartnerPassportInboxView" }
       }
     },
     {
@@ -1113,6 +1129,26 @@
         },
         "response": {
           "$ref": "#/$defs/workspaceResumeView"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadTenantRiskPortfolioReference"
+        },
+        "response": {
+          "$ref": "#/$defs/tenantRiskPortfolioReferenceView"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadServicingQueueReference"
+        },
+        "response": {
+          "$ref": "#/$defs/tenantServicingQueueReferenceView"
         }
       }
     },
@@ -2143,6 +2179,89 @@
         "schemaVersion": {
           "const": "tenant_credit_passport_artifact_revoked.v1"
         }
+      }
+    },
+    "capitalPartnerSelfView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resource", "profile", "fundsAuthority", "serverTruth", "readOnly", "schemaVersion"],
+      "properties": {
+        "resource": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["resourceType", "resourceId"],
+          "properties": {
+            "resourceType": { "const": "capital_partner_profile" },
+            "resourceId": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["capitalPartnerId", "displayName"],
+          "properties": {
+            "capitalPartnerId": { "$ref": "#/$defs/identifier" },
+            "displayName": { "type": "string", "minLength": 1, "maxLength": 256 }
+          }
+        },
+        "fundsAuthority": { "const": false },
+        "serverTruth": { "const": true },
+        "readOnly": { "const": true },
+        "schemaVersion": { "const": "tenant_capital_partner_self_view.v1" }
+      }
+    },
+    "capitalPartnerPassportInboxView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "count", "hasMore", "fundsAuthority", "serverTruth", "readOnly", "schemaVersion"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["resource", "reviewContext", "summary"],
+            "properties": {
+              "resource": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["resourceType", "resourceId"],
+                "properties": {
+                  "resourceType": { "const": "credit_passport_artifact" },
+                  "resourceId": { "$ref": "#/$defs/identifier" }
+                }
+              },
+              "reviewContext": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["creditIntentId", "artifactHash", "artifactVersion"],
+                "properties": {
+                  "creditIntentId": { "$ref": "#/$defs/identifier" },
+                  "artifactHash": { "$ref": "#/$defs/hash" },
+                  "artifactVersion": { "type": "integer", "minimum": 1 }
+                }
+              },
+              "summary": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["claimCount", "purpose", "issuedAt", "expiresAt"],
+                "properties": {
+                  "claimCount": { "type": "integer", "minimum": 1, "maximum": 9 },
+                  "purpose": { "const": "private_credit_review" },
+                  "issuedAt": { "$ref": "#/$defs/timestamp" },
+                  "expiresAt": { "$ref": "#/$defs/timestamp" }
+                }
+              }
+            }
+          }
+        },
+        "count": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "hasMore": { "const": false },
+        "fundsAuthority": { "const": false },
+        "serverTruth": { "const": true },
+        "readOnly": { "const": true },
+        "schemaVersion": { "const": "tenant_capital_partner_passport_inbox_view.v1" }
       }
     },
     "capitalPartnerOfferAuthored": {
@@ -5351,6 +5470,94 @@
         },
         "schemaVersion": {
           "const": "tenant_risk_portfolio_view.v1"
+        }
+      }
+    },
+    "tenantRiskPortfolioReferenceView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource",
+        "serverTruth",
+        "readOnly",
+        "schemaVersion"
+      ],
+      "properties": {
+        "resource": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "resourceType",
+                "resourceId"
+              ],
+              "properties": {
+                "resourceType": {
+                  "const": "risk_portfolio"
+                },
+                "resourceId": {
+                  "$ref": "#/$defs/identifier"
+                }
+              }
+            }
+          ]
+        },
+        "serverTruth": {
+          "const": true
+        },
+        "readOnly": {
+          "const": true
+        },
+        "schemaVersion": {
+          "const": "tenant_risk_portfolio_reference_view.v1"
+        }
+      }
+    },
+    "tenantServicingQueueReferenceView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource",
+        "serverTruth",
+        "readOnly",
+        "schemaVersion"
+      ],
+      "properties": {
+        "resource": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "resourceType",
+                "resourceId"
+              ],
+              "properties": {
+                "resourceType": {
+                  "const": "servicing_queue"
+                },
+                "resourceId": {
+                  "$ref": "#/$defs/identifier"
+                }
+              }
+            }
+          ]
+        },
+        "serverTruth": {
+          "const": true
+        },
+        "readOnly": {
+          "const": true
+        },
+        "schemaVersion": {
+          "const": "tenant_servicing_queue_reference_view.v1"
         }
       }
     },

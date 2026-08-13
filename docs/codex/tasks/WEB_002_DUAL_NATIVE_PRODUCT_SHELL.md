@@ -1,6 +1,7 @@
 # WEB-002: Dual-Native Product Shell and Borrow Journey
 
-Status: In progress. Aave.com was approved as the primary UI
+Status: Parent backlog; no active implementation ownership. Focused UX-006
+child issues own current product-experience increments. Aave.com was approved as the primary UI
 reference on 2026-07-15, and the project owner supplied three desktop captures
 covering the bright consumer hero, dark professional Borrow workspace, and
 market-summary/data-table application shell. The existing control plane remains

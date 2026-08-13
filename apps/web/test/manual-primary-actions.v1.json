@@ -97,9 +97,12 @@
       "view": "agent-console",
       "id": "agentOnlineRunBtn",
       "labels": [
+        "Run local Agent application",
         "Check for Agent Offer",
         "Review and activate this Mandate",
-        "Check for Agent Obligation"
+        "Complete sandbox Agent lifecycle",
+        "Check for Agent Obligation",
+        "Check Agent progress"
       ]
     },
     {
@@ -149,6 +152,48 @@
       "view": "credit-track-record",
       "id": "loadCreditTrackRecordBtn",
       "labels": ["Load verified record"]
+    },
+    {
+      "journey": "risk-read",
+      "view": "risk-operations",
+      "id": "refreshRiskWorkspaceBtn",
+      "labels": ["Refresh Risk workspace"]
+    },
+    {
+      "journey": "risk-read",
+      "view": "risk-operations",
+      "id": "applyServicingQueueFilterBtn",
+      "labels": ["Apply stage"]
+    },
+    {
+      "journey": "risk-read",
+      "view": "risk-operations",
+      "id": "loadRiskInsightsBtn",
+      "labels": ["Load supporting insights"]
+    },
+    {
+      "journey": "risk-protection",
+      "view": "risk-operations",
+      "id": "freezeRiskSubjectBtn",
+      "labels": ["Freeze Subject"]
+    },
+    {
+      "journey": "capital-partner",
+      "view": "capital-partners",
+      "id": "capitalPartnerRefreshWorkspaceBtn",
+      "labels": ["Refresh workspace"]
+    },
+    {
+      "journey": "capital-partner",
+      "view": "capital-partners",
+      "id": "capitalPartnerAuthorOfferBtn",
+      "labels": ["Issue exact sandbox Offer"]
+    },
+    {
+      "journey": "capital-partner",
+      "view": "capital-partners",
+      "id": "capitalPartnerWithdrawOfferBtn",
+      "labels": ["Withdraw unaccepted Offer"]
     }
   ]
 }

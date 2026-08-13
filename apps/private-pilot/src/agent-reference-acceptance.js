@@ -7,6 +7,7 @@ import {
   createReadyAgentHandoffManifest
 } from "../../web/src/agent-handoff-manifest.js";
 import {
+  persistLocalAgentContinuationReceipt,
   runLocalAgentApplicationWorkflow,
   runLocalAgentRuntimeWorkflow
 } from "./agent-reference-workflows.js";
@@ -115,6 +116,10 @@ try {
   });
   const offerReceipt = await runLocalAgentApplicationWorkflow({
     manifest: applicationHandoff,
+    session: agentSession
+  });
+  await persistLocalAgentContinuationReceipt({
+    receipt: offerReceipt,
     session: agentSession
   });
   await agentSession.close();

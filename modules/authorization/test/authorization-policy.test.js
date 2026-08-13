@@ -256,6 +256,36 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     servicingQueue.requiresRecentMfaActorTypes,
     ["risk_operator", "operations_operator"]
   );
+  const riskPortfolioReference = registry.getAuthenticated(
+    "pilotReadTenantRiskPortfolioReference"
+  );
+  assert.equal(riskPortfolioReference.requiredCapability, PilotCapability.RISK_READ_TENANT);
+  assert.equal(riskPortfolioReference.resourceType, "workspace");
+  assert.equal(riskPortfolioReference.ownershipRule, "none");
+  assert.equal(riskPortfolioReference.idempotencyRequirement, "prohibited");
+  assert.deepEqual(riskPortfolioReference.allowedActorTypes, ["risk_operator", "auditor"]);
+  assert.deepEqual(
+    riskPortfolioReference.requiresRecentMfaActorTypes,
+    ["risk_operator", "auditor"]
+  );
+  const servicingQueueReference = registry.getAuthenticated(
+    "pilotReadServicingQueueReference"
+  );
+  assert.equal(
+    servicingQueueReference.requiredCapability,
+    PilotCapability.SERVICING_QUEUE_READ
+  );
+  assert.equal(servicingQueueReference.resourceType, "workspace");
+  assert.equal(servicingQueueReference.ownershipRule, "none");
+  assert.equal(servicingQueueReference.idempotencyRequirement, "prohibited");
+  assert.deepEqual(
+    servicingQueueReference.allowedActorTypes,
+    ["risk_operator", "operations_operator"]
+  );
+  assert.deepEqual(
+    servicingQueueReference.requiresRecentMfaActorTypes,
+    ["risk_operator", "operations_operator"]
+  );
   assert.equal(
     ROLE_BUNDLE_CAPABILITIES[RoleBundle.RISK_OPERATOR].includes(
       PilotCapability.SERVICING_QUEUE_READ

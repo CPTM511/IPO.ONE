@@ -62,6 +62,28 @@ const creditPassportCreateFixture = tenantProtocolFixtures.validResults.find(
 const creditPassportRevokeFixture = tenantProtocolFixtures.validResults.find(
   ({ operationId }) => operationId === "pilotRevokeCreditPassportArtifact"
 );
+const supportedBrowserQaOperationIds = new Set([
+  "pilotCreateHumanSubject",
+  "pilotCreateConsent",
+  "pilotReadHumanSelf",
+  "pilotReadWorkspaceResume",
+  "pilotRequestCredit",
+  "pilotReadCreditApplication",
+  "pilotEvaluateCreditApplication",
+  "pilotCreateCreditPassportArtifact",
+  "pilotReadOwnCreditPassportArtifact",
+  "pilotVerifyCreditPassportArtifact",
+  "pilotRevokeCreditPassportArtifact",
+  "pilotAcceptCreditOffer",
+  "pilotExecuteSandboxObligation",
+  "pilotPostSandboxRepayment",
+  "pilotReadOwnObligation",
+  "pilotReadOwnObligationEvidence",
+  "pilotCreateOfficialReport",
+  "pilotReadOfficialReport",
+  "pilotRetrieveOfficialReport",
+  "pilotRevokeOfficialReport"
+]);
 
 const consent = Object.freeze({
   consentId: offerReceipt.consentId,
@@ -887,9 +909,11 @@ const authenticationContext = createAuthenticationContext({
   credentialId: "credential_human_lifecycle_browser_qa",
   credentialVersion: 1,
   policyVersion: "security_001.v1",
-  capabilities: TENANT_PROTOCOL_CATALOG.operations
-    .filter((operation) => operation.actorTypes.includes("human"))
-    .map((operation) => operation.requiredCapability),
+  capabilities: [...new Set(
+    TENANT_PROTOCOL_CATALOG.operations
+      .filter((operation) => supportedBrowserQaOperationIds.has(operation.operationId))
+      .map((operation) => operation.requiredCapability)
+  )],
   roles: ["borrower"],
   tokenJtiHash: "token_jti_hash_human_lifecycle_browser_qa_000000000000",
   authenticationMethod: ClientAuthenticationMethod.OIDC_PKCE_BFF,
@@ -985,7 +1009,8 @@ const host = createTenantHttpServer({
   createNetworkContext: async () => ({ source: "human_lifecycle_browser_qa" }),
   serveAuthentication,
   serveWebAsset: createTenantWebAssetHandler({
-    csrfTokenProvider: async () => browserSessionActive ? csrfToken : undefined
+    csrfTokenProvider: async () => browserSessionActive ? csrfToken : undefined,
+    workspaceNameProvider: async () => "borrower"
   })
 });
 

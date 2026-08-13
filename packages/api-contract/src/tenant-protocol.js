@@ -407,6 +407,19 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotReadTenantRiskPortfolioReference",
+    kind: "query",
+    actorTypes: ["risk_operator", "auditor"],
+    resourceType: "workspace",
+    requiredCapability: "risk.read.tenant",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_risk_portfolio_reference_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
     operationId: "pilotReadTenantRisk",
     kind: "query",
     actorTypes: ["risk_operator", "auditor"],
@@ -442,6 +455,19 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     quotaClass: "read",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
     responseSchemaVersion: "tenant_pilot_feedback_summary_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadServicingQueueReference",
+    kind: "query",
+    actorTypes: ["risk_operator", "operations_operator"],
+    resourceType: "workspace",
+    requiredCapability: "servicing.queue.read",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_servicing_queue_reference_view.v1",
     public: false,
     fundsAuthority: false
   },
@@ -578,6 +604,32 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     quotaClass: "mutation",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
     responseSchemaVersion: "tenant_credit_passport_artifact_revoked.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadCapitalPartnerSelf",
+    kind: "query",
+    actorTypes: ["human"],
+    resourceType: "workspace",
+    requiredCapability: "capital_partner.portfolio.read.own",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_capital_partner_self_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadCapitalPartnerPassportInbox",
+    kind: "query",
+    actorTypes: ["human"],
+    resourceType: "workspace",
+    requiredCapability: "capital_partner.offer.create.own",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_capital_partner_passport_inbox_view.v1",
     public: false,
     fundsAuthority: false
   },

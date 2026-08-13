@@ -247,9 +247,9 @@ export async function createPrivatePilotRuntime({
     source: "local_test"
   });
   const profiles = [
-    { name: "borrower", identity: authentication.identities.borrower, port: basePort, hash: "#human" },
-    { name: "controller", identity: authentication.identities.controller, port: basePort + 1, hash: "#human" },
-    { name: "risk", identity: authentication.identities.risk, port: basePort + 2, hash: "#risk" },
+    { name: "borrower", identity: authentication.identities.borrower, port: basePort, hash: "#request-credit" },
+    { name: "controller", identity: authentication.identities.controller, port: basePort + 1, hash: "#request-credit" },
+    { name: "risk", identity: authentication.identities.risk, port: basePort + 2, hash: "#risk-operations" },
     {
       name: "capitalPartner",
       identity: authentication.identities.capitalPartner,

@@ -55,7 +55,7 @@
               <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
               <span><strong>Trading Capital</strong><small id="tradingCapitalNavState">Hyperliquid MVP</small></span>
             </button>
-            <button class="nav-item nav-product" type="button" data-view="capital-partners">
+            <button class="nav-item nav-product" type="button" data-view="capital-partners" hidden>
               <svg aria-hidden="true"><use href="/icons.svg#server"></use></svg>
               <span><strong>Capital Partners</strong><small>Synthetic bilateral workspace</small></span>
             </button>
@@ -111,7 +111,7 @@
               <svg aria-hidden="true"><use href="/icons.svg#file-check"></use></svg>
               <span><strong>Reports &amp; Exports</strong><small data-v9-maturity="reports-exports">Checking server</small></span>
             </button>
-            <button class="nav-item" type="button" data-view="risk-operations">
+            <button class="nav-item" type="button" data-view="risk-operations" hidden>
               <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
               <span><strong>Risk &amp; Operations</strong><small data-v9-maturity="risk-operations">Checking server</small></span>
             </button>
@@ -196,16 +196,16 @@
               <div>
                 <p class="eyebrow">Private workspace</p>
                 <h2 id="signedOutPrivacyTitle">Choose how you want to use IPO.ONE</h2>
-                <p id="signedOutPrivacyCopy">Sign in once, then continue as a Human, connect an Agent, review Capital Partner access, or use the versioned API.</p>
+                <p id="signedOutPrivacyCopy">Sign in once, then continue in the exact workspace available on this host or use the versioned API.</p>
               </div>
             </div>
             <ul class="signed-out-role-list" aria-label="IPO.ONE access modes">
               <li><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg><span><strong>Human</strong><small>Request, manage, and repay purpose-bound credit.</small></span></li>
               <li><svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg><span><strong>Agent</strong><small>Use scoped authority through the same credit kernel.</small></span></li>
-              <li><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg><span><strong>Capital Partner</strong><small>Review verified credit evidence in an invited workspace.</small></span></li>
+              <li data-role-entry="capitalPartner" hidden><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg><span><strong>Capital Partner</strong><small>Review verified credit evidence in an invited workspace.</small></span></li>
               <li><svg aria-hidden="true"><use href="/icons.svg#code"></use></svg><span><strong>Developer / API</strong><small>Integrate through versioned, machine-readable interfaces.</small></span></li>
             </ul>
-            <p class="signed-out-privacy-note">Use the single <strong>Sign in</strong> action above. Private account, wallet, and credit data remain hidden until the Tenant workspace is verified.</p>
+            <p class="signed-out-privacy-note">Use the single <strong>Sign in</strong> action below. Private account, wallet, and credit data remain hidden until the Tenant workspace is verified.</p>
             <button id="signedOutPrivacyAction" class="primary" type="button" hidden>Sign in</button>
           </section>
 
@@ -281,7 +281,7 @@
                     </span>
                     <span class="product-entry-action">Open Trading Capital <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></span>
                   </button>
-                  <button class="product-entry-card capital-product" type="button" data-go-view="capital-partners">
+                  <button class="product-entry-card capital-product" type="button" data-go-view="capital-partners" hidden>
                     <span class="product-entry-card-top">
                       <span class="product-entry-icon"><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg></span>
                     </span>
@@ -460,20 +460,12 @@
                     <button class="secondary" id="createHumanSubjectBtn" type="button">Create Human Subject</button>
                     <button class="secondary" id="createHumanConsentBtn" type="button">Create scoped Consent</button>
                   </div>
-                  <details class="identity-reference-details">
-                    <summary id="humanIdentitySummary">Advanced: load existing identity references</summary>
-                    <div class="form-grid two">
-                      <div>
-                        <label for="humanSubjectId">Human Subject ID</label>
-                        <input id="humanSubjectId" autocomplete="off" spellcheck="false" placeholder="subject_…" required />
-                      </div>
-                      <div>
-                        <label for="humanConsentId">Consent ID</label>
-                        <input id="humanConsentId" autocomplete="off" spellcheck="false" placeholder="consent_…" required />
-                      </div>
-                    </div>
-                    <p class="identity-prerequisite"><strong>Synthetic identity prerequisite:</strong> the selected Consent must have a current encrypted identity reference provisioned by the pilot operator. Raw KYC/PII is never requested or rendered here.</p>
-                  </details>
+                  <div class="identity-reference-details" id="humanIdentitySummary" role="status" aria-live="polite">
+                    <span id="humanIdentitySummaryText">Advanced: load existing identity references</span>
+                  </div>
+                  <input id="humanSubjectId" type="hidden" />
+                  <input id="humanConsentId" type="hidden" />
+                  <p class="identity-prerequisite"><strong>Server-derived identity:</strong> Subject and Consent are created or recovered through the authenticated workspace. Raw KYC/PII and internal references are never requested here.</p>
 
                   <div class="workbench-step loan-step">
                     <span>02</span>
@@ -629,15 +621,20 @@
                         <div><dt>Outstanding</dt><dd id="humanObligationOutstanding">$0.00</dd></div>
                         <div><dt>Interest due</dt><dd id="humanObligationInterest">$0.00</dd></div>
                         <div><dt>Total repaid</dt><dd id="humanObligationRepaid">$0.00</dd></div>
-                        <div><dt>Obligation ID</dt><dd id="humanObligationId">—</dd></div>
-                        <div><dt>Sandbox rail receipt (offchain)</dt><dd id="humanExecutionReceipt">Not executed</dd></div>
                       </dl>
+                      <details class="offer-reference-details">
+                        <summary>Technical references</summary>
+                        <dl class="offer-terms">
+                          <div><dt>Obligation ID</dt><dd id="humanObligationId">—</dd></div>
+                          <div><dt>Sandbox rail receipt (offchain)</dt><dd id="humanExecutionReceipt">Not executed</dd></div>
+                        </dl>
+                      </details>
                     </div>
                     <div class="obligation-action-column">
                       <ol class="obligation-schedule" id="humanObligationSchedule" aria-label="Repayment schedule"></ol>
                       <div class="sandbox-obligation-actions">
                         <button class="primary" id="executeHumanObligationBtn" type="button" disabled>Confirm sandbox execution</button>
-                        <div class="sandbox-repayment-fields">
+                        <div class="sandbox-repayment-fields" id="humanRepaymentFields">
                           <label for="humanRepaymentAmount">Repayment (USD)<input id="humanRepaymentAmount" type="number" min="0.01" max="1000" step="0.01" value="25.00" inputmode="decimal" /></label>
                           <label for="humanRepaymentSource">Synthetic source<select id="humanRepaymentSource"><option value="synthetic_wallet">Wallet</option><option value="synthetic_bank">Bank</option><option value="synthetic_revenue">Revenue</option></select></label>
                         </div>
@@ -694,12 +691,13 @@
                     </div>
                   </section>
                 </section>
-                <section class="request-credit-receipts" aria-labelledby="humanServerReceiptsTitle">
+                <details class="request-credit-receipts">
+                  <summary><strong>Developer details</strong><span>Protocol receipts and operation names</span></summary>
                   <div class="request-credit-receipts-heading">
                     <span>Authenticated protocol results</span>
                     <strong id="humanServerReceiptsTitle">One server receipt per completed step</strong>
                   </div>
-                  <ol>
+                  <ol aria-labelledby="humanServerReceiptsTitle">
                     <li><span>01</span><div><strong>Authority preflight</strong><small>pilotReadHumanSelf</small></div><em id="humanReceiptPreflight">Waiting for server</em></li>
                     <li><span>02</span><div><strong>Credit Intent</strong><small>pilotRequestCredit</small></div><em id="humanReceiptIntent">Waiting for server</em></li>
                     <li><span>03</span><div><strong>Application read</strong><small>pilotReadCreditApplication</small></div><em id="humanReceiptApplication">Waiting for server</em></li>
@@ -707,7 +705,7 @@
                     <li><span>05</span><div><strong>Exact acceptance</strong><small>pilotAcceptCreditOffer</small></div><em id="humanReceiptAcceptance">Waiting for server</em></li>
                     <li><span>06</span><div><strong>No-funds execution</strong><small>pilotExecuteSandboxObligation</small></div><em id="humanReceiptExecution">Waiting for server</em></li>
                   </ol>
-                </section>
+                </details>
               </div>
             </section>
 
@@ -763,37 +761,33 @@
                 <form class="authority-form" id="agentAuthorityForm">
                   <div class="workbench-step">
                     <span>01</span>
-                    <div><strong>Create or load the Agent Subject</strong><small>Use the workload actor ID already assigned to the Agent runtime. This flow never creates a credential.</small></div>
+                    <div><strong>Use your assigned Agent</strong><small>IPO.ONE restores the exact Agent, Subject, and Mandate from your authenticated Principal workspace. You never need to copy an internal ID.</small></div>
                   </div>
-                  <div class="form-grid three">
-                    <div>
-                      <label for="agentAuthorityActorId">Agent actor ID</label>
-                      <input id="agentAuthorityActorId" autocomplete="off" spellcheck="false" value="actor_agent_pilot_alpha" />
-                    </div>
-                    <div>
-                      <label for="agentAuthorityDisplayName">Display name</label>
-                      <input id="agentAuthorityDisplayName" autocomplete="off" value="IPO.ONE Pilot Agent" />
-                    </div>
-                    <div>
-                      <label for="agentAuthorityJurisdiction">Jurisdiction</label>
-                      <input id="agentAuthorityJurisdiction" autocomplete="off" spellcheck="false" value="US" maxlength="32" />
-                    </div>
+                  <div class="agent-workspace-selection" role="status" aria-live="polite">
+                    <span>Authenticated Agent assignment</span>
+                    <strong id="agentWorkspaceSelectionStatus">Checking Agent assignment</strong>
+                    <small id="agentWorkspaceSelectionHelper">Only one server-authorized Agent can open this workflow. Empty or ambiguous assignments remain safely closed.</small>
                   </div>
-                  <div class="button-row authority-actions">
-                    <button class="secondary" id="createPrivateAgentSubjectBtn" type="button">Create Agent Subject</button>
-                    <span class="authority-path-note">New Subjects remain pending until the Agent proves control of its CAIP-10 account.</span>
-                  </div>
-                  <div class="form-grid two">
-                    <div>
-                      <label for="agentAuthoritySubjectId">Agent Subject ID</label>
-                      <input id="agentAuthoritySubjectId" autocomplete="off" spellcheck="false" placeholder="subject_…" />
+
+                  <div id="agentAuthoritySelectedWorkflow" hidden>
+                  <div id="agentSubjectCreationControls" hidden>
+                    <div class="form-grid two">
+                      <div>
+                        <label for="agentAuthorityDisplayName">Display name</label>
+                        <input id="agentAuthorityDisplayName" autocomplete="off" value="IPO.ONE Pilot Agent" />
+                      </div>
+                      <div>
+                        <label for="agentAuthorityJurisdiction">Jurisdiction</label>
+                        <input id="agentAuthorityJurisdiction" autocomplete="off" spellcheck="false" value="US" maxlength="32" />
+                      </div>
                     </div>
-                    <div>
-                      <label for="agentAuthorityMandateId">Mandate ID</label>
-                      <input id="agentAuthorityMandateId" autocomplete="off" spellcheck="false" placeholder="mandate_…" />
+                    <div class="button-row authority-actions">
+                      <button class="secondary" id="createPrivateAgentSubjectBtn" type="button">Create Agent Subject</button>
+                      <span class="authority-path-note">New Subjects remain pending until the Agent proves control of its CAIP-10 account.</span>
                     </div>
                   </div>
 
+                  <div id="agentAccountProofStage" hidden>
                   <div class="workbench-step account-proof-step">
                     <span>02</span>
                     <div><strong>Prove the Agent account</strong><small>Create a five-minute EIP-712 request. The registered test Agent can submit it online; external Agents use the protected API. This Human screen never receives a credential or signature.</small></div>
@@ -825,8 +819,6 @@
                     <div class="button-row authority-actions account-proof-actions">
                       <button class="secondary" id="createAccountChallengeBtn" type="button">Create signing request</button>
                       <button class="primary" id="proveAccountOnlineBtn" type="button" disabled>Ask registered test Agent to prove</button>
-                      <button class="secondary" id="downloadAccountChallengeBtn" type="button" disabled>Download proof request</button>
-                      <button class="secondary" id="copyAccountChallengeBtn" type="button" disabled>Copy proof request</button>
                       <button class="secondary" id="refreshAccountBindingBtn" type="button">Refresh binding</button>
                     </div>
                     <div class="account-proof-status" role="status">
@@ -836,11 +828,17 @@
                     </div>
                     <p class="account-proof-next-step" id="agentAccountProofNextStep">Create a signing request, then let the registered Agent Host submit the one-use proof.</p>
                     <details class="account-proof-request">
-                      <summary>Signing request preview</summary>
+                      <summary>Developer proof request</summary>
+                      <div class="button-row authority-actions">
+                        <button class="secondary" id="downloadAccountChallengeBtn" type="button" disabled>Download proof request</button>
+                        <button class="secondary" id="copyAccountChallengeBtn" type="button" disabled>Copy proof request</button>
+                      </div>
                       <pre><code id="agentAccountChallengePreview">Create a signing request to view the closed EIP-712 payload.</code></pre>
                     </details>
                   </div>
+                  </div>
 
+                  <div id="agentMandateStage" hidden>
                   <div class="workbench-step authority-scope-step">
                     <span>03</span>
                     <div><strong>Draft bounded sandbox authority</strong><small>The approved capability set is fixed here; limits and expiry remain explicit.</small></div>
@@ -864,9 +862,10 @@
                   </div>
                   <div class="button-row authority-actions">
                     <button class="secondary" id="createDraftMandateBtn" type="button">Create Draft Mandate</button>
-                    <button class="secondary" id="loadMandateBtn" type="button">Load exact Mandate</button>
+                  </div>
                   </div>
 
+                  <div id="agentApplicationStageSection" hidden>
                   <div class="workbench-step authority-application-step">
                     <span>04</span>
                     <div><strong>Run the Agent application</strong><small>Before activation, give the Draft application handoff to the registered Agent Host. The Agent requests credit, receives the deterministic Decision and Offer, and retains the returned workflow receipt.</small></div>
@@ -874,12 +873,14 @@
                   <div class="authority-application-card" id="agentApplicationStage" role="status">
                     <div>
                       <span>Draft-only application stage</span>
-                      <strong id="agentApplicationStageStatus">Create or load a Draft Mandate</strong>
+                      <strong id="agentApplicationStageStatus">Restore or create a Draft Mandate</strong>
                       <p id="agentApplicationStageCopy">Activation does not run the application. This screen opens the credential-free handoff but cannot execute the Agent or independently verify its Offer receipt.</p>
                     </div>
                     <button class="secondary" id="openAgentApplicationHandoffBtn" type="button" data-agent-guide-action="open-handoff" disabled>Open application handoff</button>
                   </div>
+                  </div>
 
+                  <div id="agentActivationStage" hidden>
                   <div class="workbench-step authority-review-step">
                     <span>05</span>
                     <div><strong>Review immutable hashes and activate</strong><small>Return after the Agent application produced its Offer workflow receipt. Activation unlocks acceptance of that existing Offer; it cannot start a new Credit Intent.</small></div>
@@ -889,35 +890,45 @@
                     <span>I confirm this exact sandbox Mandate and understand that activation unlocks runtime use of an existing Agent Offer; it does not create or evaluate a new application.</span>
                   </label>
                   <button class="primary authority-activate" id="activateMandateBtn" type="button">Activate exact Sandbox Mandate</button>
-                  <button class="primary authority-continue" id="continueAgentCreditBtn" type="button" data-agent-guide-action="open-agent-workspace" hidden>Open Agent workspace</button>
+                  </div>
+                  <div id="agentRuntimeStage" hidden>
+                    <div class="workbench-step">
+                      <span>05</span>
+                      <div><strong>Continue with the active Agent</strong><small>The exact Mandate is active. Open the Agent workspace to restore its Offer, Obligation, repayment, and Evidence from server truth.</small></div>
+                    </div>
+                    <button class="primary authority-continue" id="continueAgentCreditBtn" type="button" data-agent-guide-action="open-agent-workspace">Open Agent workspace</button>
+                  </div>
                   <p class="helper authority-helper" id="agentAuthorityHelper">Connect through the authenticated Human Principal session to begin.</p>
+                  </div>
                 </form>
 
-                <aside class="authority-review" aria-labelledby="mandateReviewTitle">
+                <aside class="authority-review" id="agentAuthorityReviewPanel" aria-labelledby="mandateReviewTitle" hidden>
                   <div class="offer-console-heading">
                     <div><span>06</span><p>Machine handoff</p></div>
                     <strong id="mandateReviewStatus">Awaiting draft</strong>
                   </div>
                   <h4 id="mandateReviewTitle">Exact Mandate review</h4>
-                  <dl class="authority-review-list">
-                    <div><dt>Principal</dt><dd id="agentAuthorityPrincipalId">—</dd></div>
-                    <div><dt>Subject</dt><dd id="agentAuthorityReviewSubjectId">—</dd></div>
-                    <div><dt>Account chain</dt><dd id="agentAuthorityAccountChain">—</dd></div>
-                    <div><dt>Account hash</dt><dd id="agentAuthorityAccountHash">—</dd></div>
-                    <div><dt>Proof hash</dt><dd id="agentAuthorityProofHash">—</dd></div>
-                    <div><dt>Mandate</dt><dd id="agentAuthorityReviewMandateId">—</dd></div>
-                    <div><dt>Mandate hash</dt><dd id="agentAuthorityMandateHash">—</dd></div>
-                    <div><dt>Terms hash</dt><dd id="agentAuthorityTermsHash">—</dd></div>
-                    <div><dt>Limits</dt><dd id="agentAuthorityLimits">—</dd></div>
-                    <div><dt>Expires</dt><dd id="agentAuthorityExpiry">—</dd></div>
-                    <div><dt>Evidence</dt><dd id="agentAuthorityEvidenceHash">—</dd></div>
-                  </dl>
+                  <details class="authority-technical-details">
+                    <summary>Technical details and receipts</summary>
+                    <dl class="authority-review-list">
+                      <div><dt>Principal</dt><dd id="agentAuthorityPrincipalId">—</dd></div>
+                      <div><dt>Subject</dt><dd id="agentAuthorityReviewSubjectId">—</dd></div>
+                      <div><dt>Account chain</dt><dd id="agentAuthorityAccountChain">—</dd></div>
+                      <div><dt>Account hash</dt><dd id="agentAuthorityAccountHash">—</dd></div>
+                      <div><dt>Proof hash</dt><dd id="agentAuthorityProofHash">—</dd></div>
+                      <div><dt>Mandate</dt><dd id="agentAuthorityReviewMandateId">—</dd></div>
+                      <div><dt>Mandate hash</dt><dd id="agentAuthorityMandateHash">—</dd></div>
+                      <div><dt>Terms hash</dt><dd id="agentAuthorityTermsHash">—</dd></div>
+                      <div><dt>Limits</dt><dd id="agentAuthorityLimits">—</dd></div>
+                      <div><dt>Expires</dt><dd id="agentAuthorityExpiry">—</dd></div>
+                      <div><dt>Evidence</dt><dd id="agentAuthorityEvidenceHash">—</dd></div>
+                    </dl>
+                  </details>
                   <div class="agent-handoff">
                     <span id="agentHandoffPhase">Agent API handoff</span>
-                    <strong id="agentHandoffScope">Subject ID + Mandate ID</strong>
-                    <p id="agentHandoffDescription">Load an eligible draft Mandate to create the application packet. Acceptance, sandbox execution, and repayment are available through the authenticated Tenant client.</p>
+                    <strong id="agentHandoffScope">Awaiting server authority</strong>
+                    <p id="agentHandoffDescription">A server-restored eligible Draft Mandate creates the application packet. Acceptance, sandbox execution, and repayment remain available only through the authenticated Tenant client.</p>
                   </div>
-                  <button class="authority-handoff-button" id="openAgentApiBtn" type="button" data-agent-guide-action="open-handoff" disabled>Open Agent handoff</button>
                   <p class="offer-boundary">Sandbox only · raw account and signature redacted · no credential creation or delivery · no public exposure · no funds authority.</p>
                 </aside>
               </div>
@@ -1022,10 +1033,13 @@
               <div class="credit-passport-workspace">
                 <section class="panel credit-passport-issue-card" aria-labelledby="creditPassportIssueTitle">
                   <div class="panel-heading">
-                    <div><p class="eyebrow">Owner / controller only</p><h3 id="creditPassportIssueTitle">Share the current Decision</h3></div>
+                    <div><p class="eyebrow">Optional advanced sharing</p><h3 id="creditPassportIssueTitle">Share the current Decision</h3></div>
                     <span class="state-pill">Private · expiring</span>
                   </div>
-                  <form id="creditPassportIssueForm" class="credit-passport-form">
+                  <p>Normal credit and Passport review need no internal identifier. Open this only when an invited same-Tenant reviewer has supplied its exact Actor reference.</p>
+                  <details class="credit-passport-advanced">
+                    <summary>Advanced: share with an exact invited reviewer</summary>
+                    <form id="creditPassportIssueForm" class="credit-passport-form">
                     <div class="credit-passport-source" aria-label="Current Decision source">
                       <div><span>Current Subject</span><code id="creditPassportSubjectSource">Not loaded</code></div>
                       <div><span>Current credit application</span><code id="creditPassportIntentSource">Not loaded</code></div>
@@ -1048,9 +1062,10 @@
                       <label><input type="checkbox" name="creditPassportClaim" value="reason_to_feature_lineage" />Reason-to-feature lineage</label>
                       <label><input type="checkbox" name="creditPassportClaim" value="source_evidence_lineage" />Source Evidence lineage</label>
                     </fieldset>
-                    <button id="issueCreditPassportBtn" class="primary" type="submit">Share private Passport</button>
-                  </form>
-                  <p id="creditPassportIssueHelper" class="risk-helper" role="status" aria-live="polite">Complete a current Decision first. The verifier is never discovered or suggested by the browser.</p>
+                      <button id="issueCreditPassportBtn" class="primary" type="submit">Share private Passport</button>
+                    </form>
+                    <p id="creditPassportIssueHelper" class="risk-helper" role="status" aria-live="polite">Complete a current Decision first. The verifier is never discovered or suggested by the browser.</p>
+                  </details>
                 </section>
 
                 <section class="panel credit-passport-artifact-card" aria-labelledby="creditPassportArtifactTitle">
@@ -1134,6 +1149,8 @@
               </div>
             </section>
 
+            <details class="agent-console-developer-details">
+              <summary>Developer Agent integration</summary>
             <section class="panel agent-console-contract" id="agentConsoleContract" tabindex="-1" aria-labelledby="agentConsoleContractTitle">
               <div class="agent-console-contract-heading">
                 <div>
@@ -1156,6 +1173,7 @@
               </div>
               <p class="agent-console-helper" id="agentConsoleHelper" role="status" aria-live="polite">Waiting for authenticated catalog and Principal state.</p>
             </section>
+            </details>
 
             <section class="panel agent-online-workflow" id="agentOnlineWorkflow" aria-labelledby="agentOnlineWorkflowTitle">
               <div class="panel-heading">
@@ -1219,6 +1237,8 @@
               </section>
             </div>
 
+            <details class="agent-console-developer-details">
+              <summary>Developer API and workflow details</summary>
             <div class="agent-console-runtime-grid">
               <section class="panel agent-console-registry" id="agentConsoleProtocol" tabindex="-1" aria-labelledby="agentConsoleRegistryTitle">
                 <div class="panel-heading">
@@ -1263,6 +1283,7 @@
                 <p>The document describes authentication requirements but contains no credential or production endpoint.</p>
               </section>
             </div>
+            </details>
 
             <section class="panel agent-console-unavailable" aria-labelledby="agentConsoleUnavailableTitle">
               <div class="panel-heading"><div><p class="eyebrow">Exact unavailable capabilities</p><h3 id="agentConsoleUnavailableTitle">Not hidden. Not implied. Not enabled.</h3></div><span class="state-pill warning">Disabled</span></div>
@@ -1309,16 +1330,22 @@
                     <div><p class="eyebrow">Exact authorized application</p><h3 id="capitalPartnerOfferTitle">Author sandbox terms</h3></div>
                     <span class="state-pill neutral" id="capitalPartnerOfferStatus">No Offer</span>
                   </div>
-                  <form id="capitalPartnerOfferForm" class="capital-partner-offer-form">
-                    <fieldset>
-                      <legend>Borrower-authorized Passport</legend>
-                      <div class="form-grid two">
-                        <label>Passport artifact ID<input id="capitalPartnerPassportId" autocomplete="off" maxlength="256" placeholder="credit_passport_artifact_…" required /></label>
-                        <label>Credit Intent ID<input id="capitalPartnerCreditIntentId" autocomplete="off" maxlength="256" placeholder="credit_intent_…" required /></label>
-                        <label>Passport hash<input id="capitalPartnerPassportHash" autocomplete="off" maxlength="66" placeholder="0x…" required /></label>
-                        <label>Passport version<input id="capitalPartnerPassportVersion" type="number" min="1" step="1" value="1" required /></label>
-                      </div>
-                    </fieldset>
+                  <section class="capital-partner-inbox" aria-labelledby="capitalPartnerInboxTitle">
+                    <div class="capital-partner-inbox-heading">
+                      <div><strong id="capitalPartnerInboxTitle">Authorized Passport Inbox</strong><small id="capitalPartnerInboxState">Restoring authorized applications…</small></div>
+                      <button class="secondary" id="capitalPartnerRefreshWorkspaceBtn" type="button">Refresh workspace</button>
+                    </div>
+                    <div id="capitalPartnerApplicationPicker" class="capital-partner-application-picker" role="radiogroup" aria-label="Borrower-authorized applications"></div>
+                    <details id="capitalPartnerApplicationDetails" class="technical-details" hidden>
+                      <summary>Technical authoring references</summary>
+                      <dl>
+                        <div><dt>Passport artifact</dt><dd id="capitalPartnerPassportTechnical">—</dd></div>
+                        <div><dt>Credit Intent</dt><dd id="capitalPartnerIntentTechnical">—</dd></div>
+                        <div><dt>Artifact proof</dt><dd id="capitalPartnerProofTechnical">—</dd></div>
+                      </dl>
+                    </details>
+                  </section>
+                  <form id="capitalPartnerOfferForm" class="capital-partner-offer-form" hidden>
                     <fieldset>
                       <legend>Transparent economic terms</legend>
                       <div class="form-grid three">
@@ -1335,23 +1362,29 @@
                     </fieldset>
                     <button class="primary" id="capitalPartnerAuthorOfferBtn" type="submit">Issue exact sandbox Offer</button>
                   </form>
-                  <p class="helper" id="capitalPartnerOfferHelper" role="status" aria-live="polite">Sign in through the invited Capital Partner workspace, then enter the exact Passport values supplied by the borrower.</p>
+                  <p class="helper" id="capitalPartnerOfferHelper" role="status" aria-live="polite">Sign in through the invited Capital Partner workspace to restore borrower-authorized applications from server truth.</p>
                 </section>
 
-                <section class="panel capital-partner-reporting" aria-labelledby="capitalPartnerReportingTitle">
+                <section class="panel capital-partner-reporting" id="capitalPartnerReportingPanel" aria-labelledby="capitalPartnerReportingTitle" hidden>
                   <div class="panel-heading">
                     <div><p class="eyebrow">Canonical Offer receipt</p><h3 id="capitalPartnerReportingTitle">Terms and authority</h3></div>
                     <span class="state-pill neutral">credit_offer.v2</span>
                   </div>
                   <dl id="capitalPartnerOfferReceipt">
-                    <div><dt>Capital Partner</dt><dd id="capitalPartnerProfileId">—</dd></div>
-                    <div><dt>Offer ID</dt><dd id="capitalPartnerOfferId">—</dd></div>
-                    <div><dt>Offer hash</dt><dd id="capitalPartnerOfferHash">—</dd></div>
-                    <div><dt>Terms hash</dt><dd id="capitalPartnerTermsHash">—</dd></div>
-                    <div><dt>Borrower</dt><dd id="capitalPartnerBorrowerRef">—</dd></div>
+                    <div><dt>Partner</dt><dd id="capitalPartnerProfileName">—</dd></div>
                     <div><dt>Validity</dt><dd id="capitalPartnerOfferValidity">—</dd></div>
                   </dl>
-                  <button class="secondary" id="capitalPartnerWithdrawOfferBtn" type="button" disabled>Withdraw unaccepted Offer</button>
+                  <details class="technical-details">
+                    <summary>Technical Offer receipt</summary>
+                    <dl>
+                      <div><dt>Profile</dt><dd id="capitalPartnerProfileId">—</dd></div>
+                      <div><dt>Offer ID</dt><dd id="capitalPartnerOfferId">—</dd></div>
+                      <div><dt>Offer hash</dt><dd id="capitalPartnerOfferHash">—</dd></div>
+                      <div><dt>Terms hash</dt><dd id="capitalPartnerTermsHash">—</dd></div>
+                      <div><dt>Borrower</dt><dd id="capitalPartnerBorrowerRef">—</dd></div>
+                    </dl>
+                  </details>
+                  <button class="secondary" id="capitalPartnerWithdrawOfferBtn" type="button" hidden>Withdraw unaccepted Offer</button>
                 </section>
               </div>
 
@@ -1360,10 +1393,6 @@
                   <div><p class="eyebrow">Server-composed read model</p><h3 id="capitalPartnerPortfolioTitle">Portfolio and Facility truth</h3></div>
                   <span class="state-pill neutral" id="capitalPartnerPortfolioStatus">Not loaded</span>
                 </div>
-                <form id="capitalPartnerPortfolioForm" class="capital-partner-portfolio-query">
-                  <label>Capital Partner profile ID<input id="capitalPartnerPortfolioId" autocomplete="off" maxlength="256" placeholder="capital_partner_…" required /></label>
-                  <button class="secondary" id="capitalPartnerLoadPortfolioBtn" type="submit">Refresh portfolio</button>
-                </form>
                 <div class="capital-partner-portfolio-metrics">
                   <div><span>Offers</span><strong id="capitalPartnerOfferCount">0</strong></div>
                   <div><span>Committed</span><strong id="capitalPartnerCommittedAmount">$0.00</strong></div>
@@ -1380,10 +1409,10 @@
                   <h3 id="capitalPartnerBoundaryTitle">Bilateral terms are enabled; money movement is not</h3>
                   <p>This workspace can review a bounded Passport, issue an exact synthetic Offer, and monitor canonical lifecycle truth. Public pools, deposits, custody, allocation, withdrawals, and real capital remain disabled.</p>
                 </div>
-                <div class="capital-partner-disabled-actions" aria-label="Unavailable Capital Partner actions">
-                  <button type="button" disabled>Deposit</button>
-                  <button type="button" disabled>Allocate funds</button>
-                  <button type="button" disabled>Withdraw</button>
+                <div class="unavailable-capability-list compact" role="list" aria-label="Unavailable Capital Partner capabilities">
+                  <span role="listitem"><strong>Deposit</strong><small>No real-capital or custody rail</small></span>
+                  <span role="listitem"><strong>Allocate funds</strong><small>Synthetic Offers create no balance</small></span>
+                  <span role="listitem"><strong>Withdraw</strong><small>No withdrawable capital exists</small></span>
                 </div>
               </section>
             </section>
@@ -1489,11 +1518,11 @@
                     <div><p class="eyebrow">Explicitly unavailable</p><h3 id="capitalNetworkDisabledTitle">Capital actions remain disabled</h3></div>
                     <span class="state-pill warning">Human gate required</span>
                   </div>
-                  <div>
-                    <button type="button" disabled>Join public pool</button>
-                    <button type="button" disabled>Fund facility</button>
-                    <button type="button" disabled>Withdraw</button>
-                    <button type="button" disabled>Set production pricing</button>
+                  <div class="unavailable-capability-list" role="list" aria-label="Unavailable Provider Network capabilities">
+                    <span role="listitem"><strong>Join public pool</strong><small>Public LP access is not enabled</small></span>
+                    <span role="listitem"><strong>Fund facility</strong><small>No Provider funding authority</small></span>
+                    <span role="listitem"><strong>Withdraw</strong><small>No withdrawable balance exists</small></span>
+                    <span role="listitem"><strong>Set production pricing</strong><small>Pricing policy requires human approval</small></span>
                   </div>
                   <p>No TVL, public LP, remote Provider, mainnet, real capital, custody, or withdrawable balance is enabled.</p>
                 </section>
@@ -1569,8 +1598,10 @@
                 <div>
                   <button class="primary" id="tradingCapitalRequestCloseBtn" type="button" disabled>Request close</button>
                   <button class="secondary" id="tradingCapitalIssueProofBtn" type="button" disabled>Issue Performance Proof</button>
-                  <button type="button" disabled>Run settlement · worker only</button>
-                  <button type="button" disabled>Withdraw · unavailable</button>
+                  <div class="unavailable-capability-list compact" role="list" aria-label="Unavailable Trading Capital capabilities">
+                    <span role="listitem"><strong>Run settlement</strong><small>Worker-controlled · synthetic only</small></span>
+                    <span role="listitem"><strong>Withdraw</strong><small>No withdrawal product path</small></span>
+                  </div>
                 </div>
                 <p>The settlement worker accepts no caller-supplied PnL, fee, cost, or price. It conserves synthetic contributions, creates no second Ledger, and cannot move production funds.</p>
               </section>
@@ -1660,7 +1691,9 @@
                   <button class="primary" id="executionPrepareBtn" type="button" disabled>Prepare + simulate</button>
                   <button class="secondary" id="executionReadBtn" type="button" disabled>Refresh receipt</button>
                   <button class="danger" id="executionRevokeGrantBtn" type="button" disabled>Revoke grant</button>
-                  <button type="button" disabled>Submit transaction · unavailable</button>
+                  <div class="unavailable-capability-list compact inline-boundary" role="list" aria-label="Unavailable execution capabilities">
+                    <span role="listitem"><strong>Submit transaction</strong><small>Unavailable · local no-funds runtime</small></span>
+                  </div>
                 </div>
                 <p id="boundedExecutionHelper" role="status" aria-live="polite">Connect and bind an execution account. Current local runtime can prepare Evidence but cannot submit a transaction or move funds.</p>
               </section>
@@ -1717,15 +1750,23 @@
                     </div>
                     <div class="obligation-detail-content" id="obligationDetailContent" hidden>
                       <div class="obligation-detail-heading">
-                        <div><p class="eyebrow">Shared obligation.v2</p><h4 id="obligationDetailIdentifier">—</h4></div>
+                        <div><p class="eyebrow">Shared obligation.v2</p><h4 id="obligationDetailIdentifier">Current position</h4></div>
                         <span class="state-pill neutral" id="obligationDetailStatus">—</span>
                       </div>
                       <div class="obligation-detail-facts">
-                        <div><span>Entry authority</span><strong id="obligationDetailAuthority">—</strong><small id="obligationDetailAuthorityId">—</small></div>
-                        <div><span>Execution rail</span><strong id="obligationDetailRail">—</strong><small id="obligationDetailRailRef">—</small></div>
-                        <div><span>State version</span><strong id="obligationDetailVersion">—</strong><small id="obligationDetailAsOf">—</small></div>
+                        <div><span>Entry authority</span><strong id="obligationDetailAuthority">—</strong></div>
+                        <div><span>Execution rail</span><strong id="obligationDetailRail">—</strong></div>
+                        <div><span>State freshness</span><strong id="obligationDetailAsOf">—</strong></div>
                         <div><span>Servicing</span><strong id="obligationDetailServicing">—</strong><small id="obligationDetailReason">—</small></div>
                       </div>
+                      <details class="offer-reference-details obligation-reference-details">
+                        <summary>Technical references</summary>
+                        <dl class="offer-terms">
+                          <div><dt>Obligation</dt><dd id="obligationDetailAuthorityId">—</dd></div>
+                          <div><dt>Execution receipt</dt><dd id="obligationDetailRailRef">—</dd></div>
+                          <div><dt>State version</dt><dd id="obligationDetailVersion">—</dd></div>
+                        </dl>
+                      </details>
                       <div class="obligation-detail-amounts">
                         <div><span>Outstanding principal</span><strong id="obligationDetailPrincipal">—</strong></div>
                         <div><span>Interest + fees</span><strong id="obligationDetailCharges">—</strong></div>
@@ -1783,10 +1824,10 @@
                   <p id="ownedPositionRefreshState" role="status" aria-live="polite">Refresh to load current balances and trusted-time servicing state for these authorized references.</p>
                   <p id="ownedPositionBoundary">Only Actor-bound opaque references are shown. Select one position to load its exact authorized state.</p>
                 </section>
-                <form class="owned-obligation-restore" id="ownedObligationRestore">
-                  <label for="ownedObligationId"><span>Exact owned Obligation</span><input id="ownedObligationId" name="obligationId" autocomplete="off" placeholder="obligation_…" maxlength="256" aria-describedby="ownedObligationRestoreHelper" /></label>
-                  <button class="secondary" id="loadOwnedObligationBtn" type="submit" disabled>Load case</button>
-                  <p id="ownedObligationRestoreHelper" role="status" aria-live="polite">Enter an exact Obligation ID or create one in Human Pilot.</p>
+                <form class="owned-obligation-restore" id="ownedObligationRestore" hidden>
+                  <input id="ownedObligationId" name="obligationId" type="hidden" />
+                  <button class="secondary" id="loadOwnedObligationBtn" type="submit" hidden>Load case</button>
+                  <p id="ownedObligationRestoreHelper" role="status" aria-live="polite">The selected Obligation is recovered from authenticated server truth.</p>
                 </form>
                 <div class="servicing-case-empty" id="servicingCaseEmpty">
                   <strong id="servicingCaseEmptyTitle">No active case</strong>
@@ -2091,14 +2132,17 @@
                   <div><p class="eyebrow">Aggregate exposure</p><h3 id="riskPortfolioTitle">Tenant portfolio posture</h3></div>
                   <span class="risk-as-of" id="riskPortfolioAsOf">No verified query yet.</span>
                 </div>
-                <form id="riskPortfolioForm" class="risk-portfolio-form">
-                  <div>
-                    <label for="riskPortfolioId">Exact portfolio ID</label>
-                    <input id="riskPortfolioId" name="portfolioId" autocomplete="off" placeholder="risk_portfolio_…" maxlength="256" aria-describedby="riskPortfolioHelper" />
-                  </div>
-                  <button id="loadRiskPortfolioBtn" class="primary icon-text" type="submit"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load posture</button>
-                </form>
-                <p id="riskPortfolioHelper" class="risk-helper" role="status" aria-live="polite">Use the portfolio ID provisioned to the invited Risk or Auditor operator. This page cannot enumerate portfolios; catalog presence does not grant access, and the Gateway verifies every read.</p>
+                <div class="risk-workspace-actions">
+                  <p id="riskPortfolioHelper" class="risk-helper" role="status" aria-live="polite">Restoring the authorized Tenant portfolio from server truth.</p>
+                  <button id="refreshRiskWorkspaceBtn" class="primary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Refresh Risk workspace</button>
+                </div>
+                <details id="riskWorkspaceTechnicalDetails" class="technical-details">
+                  <summary>Technical details</summary>
+                  <dl class="credit-passport-facts">
+                    <div><dt>Portfolio reference</dt><dd id="riskPortfolioReference">Not recovered</dd></div>
+                    <div><dt>Queue reference</dt><dd id="servicingQueueReference">Not recovered</dd></div>
+                  </dl>
+                </details>
 
                 <div class="risk-metric-grid" aria-label="Tenant risk exposure summary">
                   <div><span>Approved limits</span><strong id="riskExposureLimit">$0.00</strong><small id="riskCreditLineCount">0 credit lines</small></div>
@@ -2132,6 +2176,7 @@
                   <span id="pilotHealthStatus" class="state-pill neutral">Not loaded</span>
                 </div>
                 <p id="pilotHealthHelper" class="risk-helper" role="status" aria-live="polite">Load the Tenant portfolio to verify the product funnel.</p>
+                <button id="loadRiskInsightsBtn" class="secondary icon-text" type="button" hidden><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load supporting insights</button>
                 <div class="pilot-health-metrics" aria-label="Private pilot lifecycle summary">
                   <div><span>Applications</span><strong id="pilotHealthIntentCount">0</strong><small id="pilotHealthOfferConversion">0% offered</small></div>
                   <div><span>Accepted</span><strong id="pilotHealthAcceptedCount">0</strong><small id="pilotHealthAcceptanceConversion">0% of applications</small></div>
@@ -2178,11 +2223,7 @@
                   </div>
                   <span id="servicingQueueStatus" class="state-pill neutral">Not loaded</span>
                 </div>
-                <form id="servicingQueueForm" class="servicing-queue-form">
-                  <div class="servicing-queue-id-field">
-                    <label for="servicingQueueId">Exact queue ID</label>
-                    <input id="servicingQueueId" name="queueId" autocomplete="off" placeholder="servicing_queue_…" maxlength="256" aria-describedby="servicingQueueHelper" />
-                  </div>
+                <form id="servicingQueueFilterForm" class="servicing-queue-form" hidden>
                   <div>
                     <label for="servicingQueueClassification">Stage</label>
                     <select id="servicingQueueClassification" name="classification">
@@ -2194,7 +2235,7 @@
                       <option value="grace_period">Grace period</option>
                     </select>
                   </div>
-                  <button id="loadServicingQueueBtn" class="primary icon-text" type="submit"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load queue</button>
+                  <button id="applyServicingQueueFilterBtn" class="secondary icon-text" type="submit"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Apply stage</button>
                 </form>
                 <p id="servicingQueueHelper" class="risk-helper" role="status" aria-live="polite">Risk or Operations access and recent phishing-resistant MFA are verified on every read.</p>
 
@@ -2294,8 +2335,9 @@
                 <section class="panel protective-control-card" aria-labelledby="riskFreezeTitle">
                   <div class="panel-heading"><div><p class="eyebrow">Protective-only command</p><h3 id="riskFreezeTitle">Freeze Agent Subject</h3></div><span class="state-pill warning">Step-up control</span></div>
                   <p>Suspends one exact pending or active Agent Subject. This surface cannot unfreeze, increase limits, move funds, or expand authority.</p>
-                  <form id="riskFreezeForm" class="risk-freeze-form">
-                    <div><label for="riskFreezeSubjectId">Exact Agent Subject ID</label><input id="riskFreezeSubjectId" name="subjectId" autocomplete="off" placeholder="subject_…" maxlength="256" aria-describedby="riskFreezeHelper" /></div>
+                  <p id="riskFreezeSelectionState" class="risk-helper" role="status" aria-live="polite">Select an authorized queue case for protective review. Selecting a case does not freeze it.</p>
+                  <form id="riskFreezeForm" class="risk-freeze-form" hidden>
+                    <div class="risk-freeze-selection"><span>Selected queue case</span><strong id="riskFreezeSubjectLabel">No case selected</strong><input id="riskFreezeSubjectId" name="subjectId" type="hidden" /></div>
                     <div><label for="riskFreezeReason">Protective reason</label><select id="riskFreezeReason" name="reasonCode"><option value="">Select a reason</option><option value="credential_compromise">Credential compromise</option><option value="operator_request">Operator request</option><option value="provider_failure">Provider failure</option><option value="reconciliation_failure">Reconciliation failure</option><option value="risk_limit_breach">Risk limit breach</option><option value="security_incident">Security incident</option><option value="stop_loss_triggered">Stop-loss triggered</option></select></div>
                     <label class="risk-acknowledgement" for="riskFreezeAcknowledge"><input id="riskFreezeAcknowledge" type="checkbox" /><span>I confirm this is a protective suspension of the exact Agent Subject and will create immutable Evidence.</span></label>
                     <button id="freezeRiskSubjectBtn" class="danger-action icon-text" type="submit"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>Freeze Subject</button>
@@ -2515,22 +2557,50 @@
               <span id="accessMethodStep">Step 1</span>
               <div><h3 id="signInMethodTitle">Choose how to sign in</h3><p id="signInMethodCopy">One secure session across the Human and Agent workspaces.</p></div>
             </div>
+            <div class="access-method-list" id="oidcMethodList"></div>
             <div class="access-method-list">
-              <button class="access-method-button" id="googleSignInBtn" type="button" data-auth-provider="google">
-                <span><strong>Continue with Google</strong><small>Use your existing Google Account</small></span>
-                <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg>
-              </button>
-              <button class="access-method-button" id="emailSignInBtn" type="button" data-auth-provider="email">
-                <span><strong>Continue with email</strong><small>Passwordless email through the approved identity provider</small></span>
-                <svg aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg>
-              </button>
-              <button class="access-method-button wallet-method" id="walletSignInBtn" type="button">
+              <button class="access-method-button wallet-method" id="walletSignInBtn" type="button" hidden>
                 <span><strong>Connect &amp; sign in with wallet</strong><small>Select one wallet below · one-use SIWE signature · no transaction or fee</small></span>
                 <svg aria-hidden="true"><use href="/icons.svg#link"></use></svg>
               </button>
             </div>
             <p class="access-status" id="accessAuthStatus" role="status">Checking available sign-in methods…</p>
-            <div class="wallet-provider-picker" aria-labelledby="walletProviderTitle">
+            <div class="access-recovery" id="accessRecoveryPanel" hidden>
+              <div>
+                <strong id="accessRecoveryTitle">Sign-in check needs attention</strong>
+                <p id="accessRecoveryCopy">Check the server again or share a privacy-safe diagnostic through your original invitation channel.</p>
+              </div>
+              <div class="button-row">
+                <button class="primary" id="retryAccessOptionsBtn" type="button">Check sign-in again</button>
+              </div>
+            </div>
+            <div class="wallet-unavailable" id="walletUnavailablePanel" hidden>
+              <div>
+                <strong>No compatible wallet is open</strong>
+                <p>Open or install a compatible EVM browser wallet, then ask IPO.ONE to check this page again.</p>
+              </div>
+              <button class="secondary" id="rediscoverWalletsBtn" type="button">Check for wallets again</button>
+            </div>
+            <div class="access-recovery" id="walletAuthorityRecoveryPanel" hidden>
+              <div>
+                <strong>Secure session reset needs attention</strong>
+                <p>Protected actions remain blocked. Retry the same server-bound invalidation before starting a fresh wallet sign-in.</p>
+              </div>
+              <button class="primary" id="retryWalletAuthorityBtn" type="button">Retry secure session reset</button>
+            </div>
+            <div class="access-support" id="accessSupportPanel" hidden>
+              <div>
+                <strong>Need help with invited access?</strong>
+                <p>Copy a privacy-safe diagnostic and send it through your original IPO.ONE invitation channel. It excludes cookies, wallet addresses, tokens, and private resource IDs.</p>
+                <dl class="access-diagnostic-summary" aria-label="Access diagnostic summary">
+                  <div><dt>Error</dt><dd><code id="accessDiagnosticError">authentication_unavailable</code></dd></div>
+                  <div><dt>Request ID</dt><dd><code id="accessDiagnosticRequest">unavailable</code></dd></div>
+                  <div><dt>Observed</dt><dd><time id="accessDiagnosticObserved">unavailable</time></dd></div>
+                </dl>
+              </div>
+              <button class="secondary" id="copyAccessDiagnosticBtn" type="button">Copy access details</button>
+            </div>
+            <div class="wallet-provider-picker" id="walletProviderPicker" aria-labelledby="walletProviderTitle" hidden>
               <div>
                 <h3 id="walletProviderTitle">Available browser wallets</h3>
                 <p id="walletProviderStatus" role="status" aria-live="polite">Discovering browser wallets…</p>
@@ -2544,7 +2614,7 @@
             </div>
           </section>
 
-          <section class="access-networks" aria-labelledby="networkTitle">
+          <section class="access-networks" id="accessNetworkPanel" aria-labelledby="networkTitle" hidden>
             <div class="access-section-heading">
               <span>Step 2</span>
               <div><h3 id="networkTitle">Connect an approved network</h3><p>Both test networks use the same chain-agnostic Obligation kernel.</p></div>
@@ -2564,7 +2634,6 @@
               <div><span>Network</span><strong id="walletNetworkStatus">Base Sepolia selected</strong></div>
               <div><span>Funds mode</span><strong>No real funds</strong></div>
             </div>
-            <button class="primary access-network-button" id="connectNetworkBtn" type="button">Connect Base Sepolia</button>
             <p class="access-network-help" id="walletConnectionHelp">Your wallet will ask for account access and, if needed, permission to add or switch the selected test network.</p>
           </section>
         </div>

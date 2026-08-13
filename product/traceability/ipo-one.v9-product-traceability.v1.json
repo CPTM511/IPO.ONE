@@ -870,6 +870,27 @@
       ]
     },
     {
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_portfolio_reference_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/risk-workspace-reference-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/risk-workspace-reference-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/risk-workspace-selection.test.js"
+      ]
+    },
+    {
       "operationId": "pilotReadTenantRisk",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_risk_portfolio_view.v1",
@@ -924,6 +945,27 @@
       "testFiles": [
         "modules/tenant-command-gateway/test/pilot-feedback-handlers.test.js",
         "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadServicingQueueReference",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_servicing_queue_reference_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/risk-workspace-reference-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/risk-workspace-reference-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/risk-workspace-selection.test.js"
       ]
     },
     {
@@ -1542,6 +1584,50 @@
         "packages/domain/test/capital-partner-marketplace.test.js",
         "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
         "apps/web/test/capital-partner-presentation.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerSelf",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_self_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/capital-partner-workspace-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/capital-partner-workspace-selection.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/capital-partner-workspace-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/capital-partner-workspace-selection.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPassportInbox",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_passport_inbox_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/capital-partner-workspace-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/capital-partner-workspace-selection.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/capital-partner-workspace-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
+        "apps/web/test/capital-partner-workspace-selection.test.js"
       ]
     },
     {
@@ -2833,7 +2919,9 @@
             "pilotAuthorCapitalPartnerOffer",
             "pilotTransitionCapitalPartnerOffer",
             "pilotReadCapitalPartnerFacility",
-            "pilotReadCapitalPartnerPortfolio"
+            "pilotReadCapitalPartnerPortfolio",
+            "pilotReadCapitalPartnerSelf",
+            "pilotReadCapitalPartnerPassportInbox"
           ],
           "authorityReferences": [
             "docs/codex/tasks/CAPITAL_001_SYNTHETIC_BILATERAL_MARKETPLACE.md"
@@ -3591,9 +3679,11 @@
           "classification": "REAL_LOCAL",
           "authorityType": "tenant_protocol",
           "operationIds": [
+            "pilotReadTenantRiskPortfolioReference",
             "pilotReadTenantRisk",
             "pilotReadPilotHealth",
             "pilotReadPilotFeedbackSummary",
+            "pilotReadServicingQueueReference",
             "pilotReadServicingQueue"
           ],
           "authorityReferences": [],
@@ -3603,6 +3693,8 @@
           ],
           "testFiles": [
             "apps/web/test/risk-operations-presentation.test.js",
+            "apps/web/test/risk-workspace-selection.test.js",
+            "modules/tenant-command-gateway/test/risk-workspace-reference-handlers.test.js",
             "modules/tenant-command-gateway/test/pilot-health-query-handlers.test.js",
             "modules/tenant-command-gateway/test/servicing-queue-query-handlers.test.js"
           ],

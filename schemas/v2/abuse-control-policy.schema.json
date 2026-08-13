@@ -92,6 +92,10 @@
         "pilotCreateHumanSubject",
         "pilotReadHumanSelf",
         "pilotReadWorkspaceResume",
+        "pilotReadCapitalPartnerSelf",
+        "pilotReadCapitalPartnerPassportInbox",
+        "pilotReadTenantRiskPortfolioReference",
+        "pilotReadServicingQueueReference",
         "pilotCreateConsent",
         "pilotReadConsent",
         "pilotRevokeConsent",
@@ -179,7 +183,19 @@
         "walletPrepareExecution",
         "walletApproveExecution",
         "walletSubmitExecution",
-        "walletReadExecution"
+        "walletReadExecution",
+        "walletReadAccountBindings",
+        "venueDiscoverCapabilities",
+        "venueReadBinding",
+        "venueReadExecution",
+        "walletPrepareAccountBinding",
+        "walletSubmitAccountBinding",
+        "walletRevokeAccountBinding",
+        "venuePrepareExecution",
+        "venueSubmitExecution",
+        "venuePrepareDelegate",
+        "venueActivateDelegate",
+        "venueRevokeDelegate"
       ],
       "properties": {
         "pilotAcceptCreditOffer": {
@@ -226,6 +242,48 @@
         },
         "pilotReadWorkspaceResume": {
           "const": "read"
+        },
+        "pilotReadTenantRiskPortfolioReference": {
+          "const": "read"
+        },
+        "pilotReadServicingQueueReference": {
+          "const": "read"
+        },
+        "walletReadAccountBindings": {
+          "const": "read"
+        },
+        "venueDiscoverCapabilities": {
+          "const": "read"
+        },
+        "venueReadBinding": {
+          "const": "read"
+        },
+        "venueReadExecution": {
+          "const": "read"
+        },
+        "walletPrepareAccountBinding": {
+          "const": "credential"
+        },
+        "walletSubmitAccountBinding": {
+          "const": "credential"
+        },
+        "walletRevokeAccountBinding": {
+          "const": "credential"
+        },
+        "venuePrepareExecution": {
+          "const": "economic"
+        },
+        "venueSubmitExecution": {
+          "const": "economic"
+        },
+        "venuePrepareDelegate": {
+          "const": "privileged"
+        },
+        "venueActivateDelegate": {
+          "const": "privileged"
+        },
+        "venueRevokeDelegate": {
+          "const": "privileged"
         },
         "pilotCreateConsent": {
           "const": "mutation"
@@ -312,6 +370,12 @@
           "const": "mutation"
         },
         "pilotReadCapitalPartnerPortfolio": {
+          "const": "read"
+        },
+        "pilotReadCapitalPartnerSelf": {
+          "const": "read"
+        },
+        "pilotReadCapitalPartnerPassportInbox": {
           "const": "read"
         },
         "pilotReadCapitalPartnerFacility": {

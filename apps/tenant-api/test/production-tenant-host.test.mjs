@@ -62,6 +62,25 @@ async function fixture() {
   };
 }
 
+async function workspaceFixture(workspaceName) {
+  const port = await unusedPort();
+  const host = createProductionTenantHost({
+    gateway: { async execute() { throw new Error("not expected"); } },
+    humanBff: { async authenticateSession() { throw new Error("not expected"); } },
+    machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
+    createNetworkContext: async () => { throw new Error("not expected"); },
+    csrfTokenProvider: async () => undefined,
+    workspaceNameProvider: async () => workspaceName,
+    readinessCheck: async () => true,
+    verifyEdgeRequest: async () => true,
+    publicOrigin: "https://ipo.one",
+    port,
+    releaseId: "a".repeat(40)
+  });
+  await host.listen();
+  return { host, port };
+}
+
 test("production Host exposes bounded liveness/readiness without a DEMO route", async (t) => {
   const runtime = await fixture();
   t.after(() => runtime.host.close());
@@ -219,4 +238,38 @@ test("production Host injects only the configured public Agent account into the 
     response.body.match(/meta name="ipo-one-local-agent-account"/g)?.length,
     1
   );
+});
+
+for (const workspaceName of ["controller", "risk"]) {
+  test(`production Host injects one exact ${workspaceName} workspace name into the web shell`, async (t) => {
+    const runtime = await workspaceFixture(workspaceName);
+    t.after(() => runtime.host.close());
+    const response = await get(runtime.port, "/", {
+      host: "ipo.one",
+      "x-forwarded-host": "ipo.one",
+      "x-forwarded-proto": "https"
+    });
+    assert.equal(response.status, 200);
+    assert.match(
+      response.body,
+      new RegExp(`meta name="ipo-one-workspace-name" content="${workspaceName}"`)
+    );
+    assert.equal(
+      response.body.match(/meta name="ipo-one-workspace-name"/g)?.length,
+      1
+    );
+  });
+}
+
+test("production Host rejects an invalid injected workspace name", async (t) => {
+  const runtime = await workspaceFixture("unexpected workspace");
+  t.after(() => runtime.host.close());
+  const response = await get(runtime.port, "/", {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https"
+  });
+  assert.equal(response.status, 400);
+  assert.equal(JSON.parse(response.body).code, "invalid_tenant_workspace_bootstrap");
+  assert.equal(response.body.includes("unexpected workspace"), false);
 });

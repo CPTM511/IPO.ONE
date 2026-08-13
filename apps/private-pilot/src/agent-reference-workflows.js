@@ -60,6 +60,29 @@ export async function runLocalAgentApplicationWorkflow({
   );
 }
 
+export async function persistLocalAgentContinuationReceipt({
+  receipt,
+  session
+}) {
+  if (
+    receipt?.status !== "offer_ready" ||
+    typeof receipt?.offer?.creditOfferId !== "string" ||
+    !/^0x[0-9a-f]{64}$/.test(receipt?.offer?.creditOfferHash ?? "") ||
+    typeof receipt?.correlationId !== "string"
+  ) {
+    throw new Error("Agent Offer receipt is not eligible for durable continuation");
+  }
+  return session.client.persistContinuationReceipt({
+    creditOfferId: receipt.offer.creditOfferId,
+    receipt,
+    idempotencyKey:
+      `reference-agent-continuation-${receipt.offer.creditOfferHash}`,
+    requestId:
+      `request-reference-agent-persist-${receipt.offer.creditOfferHash.slice(2, 26)}`,
+    correlationId: receipt.correlationId
+  });
+}
+
 export async function runLocalAgentRuntimeWorkflow({
   manifest,
   offerReceipt,

@@ -92,6 +92,7 @@ async function serveAuthentication({ request, response, url, requestId }) {
     profile: "closed_non_funds_pilot",
     enabled: true,
     sessionActive: true,
+    sessionAuthenticationMethod: "oidc_pkce_bff",
     oidcProviders: [],
     walletAuthentication: false,
     supportedChains: ["eip155:84532", "eip155:1952"],

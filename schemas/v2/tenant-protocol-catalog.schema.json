@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 98,
-      "maxItems": 98,
+      "minItems": 102,
+      "maxItems": 102,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -281,6 +281,10 @@
             "pilotReadConsent",
             "pilotReadHumanSelf",
             "pilotReadWorkspaceResume",
+            "pilotReadCapitalPartnerSelf",
+            "pilotReadCapitalPartnerPassportInbox",
+            "pilotReadTenantRiskPortfolioReference",
+            "pilotReadServicingQueueReference",
             "pilotReadIdentityReference",
             "pilotReadMandate",
             "pilotReadTenantRisk",
@@ -557,6 +561,8 @@
             "tenant_credit_passport_verification_result.v1",
             "tenant_credit_passport_artifact_revoked.v1",
             "tenant_capital_partner_offer_authored.v1",
+            "tenant_capital_partner_self_view.v1",
+            "tenant_capital_partner_passport_inbox_view.v1",
             "tenant_capital_partner_offer_transitioned.v1",
             "tenant_capital_partner_facility_view.v1",
             "tenant_capital_partner_portfolio_view.v1",
@@ -584,6 +590,8 @@
             "provider_intent_acknowledgement.v1",
             "provider_sandbox_callback_result.v1",
             "tenant_workspace_resume_view.v1",
+            "tenant_risk_portfolio_reference_view.v1",
+            "tenant_servicing_queue_reference_view.v1",
             "tenant_agent_continuation_receipt_persisted.v1",
             "tenant_trading_account_binding_challenge_created.v2",
             "tenant_trading_history_imported.v2",
@@ -641,6 +649,30 @@
         }
       },
       "oneOf": [
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadCapitalPartnerSelf" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "workspace" },
+            "requiredCapability": { "const": "capital_partner.portfolio.read.own" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_capital_partner_self_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadCapitalPartnerPassportInbox" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "workspace" },
+            "requiredCapability": { "const": "capital_partner.offer.create.own" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_capital_partner_passport_inbox_view.v1" }
+          }
+        },
         {
           "properties": {
             "operationId": {
@@ -1580,6 +1612,68 @@
             },
             "responseSchemaVersion": {
               "const": "tenant_workspace_resume_view.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadTenantRiskPortfolioReference"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "auditor"
+              ]
+            },
+            "resourceType": {
+              "const": "workspace"
+            },
+            "requiredCapability": {
+              "const": "risk.read.tenant"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_risk_portfolio_reference_view.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadServicingQueueReference"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "operations_operator"
+              ]
+            },
+            "resourceType": {
+              "const": "workspace"
+            },
+            "requiredCapability": {
+              "const": "servicing.queue.read"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_servicing_queue_reference_view.v1"
             }
           }
         },

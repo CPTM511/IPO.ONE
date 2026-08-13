@@ -134,7 +134,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Create, review, and activate Agent authority",
     "Agent API handoff",
     "Reference Agent runner",
-    "Load an eligible draft Mandate to create the application packet",
+    "A server-restored eligible Draft Mandate creates the application packet",
     "Principal → Agent capability packet",
     "One manifest. Twelve local tools. No ambient authority.",
     "Approved local stdio MCP tools",
@@ -174,16 +174,17 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Freeze Agent Subject",
     "Protective-only command",
     "Closed permissions by design",
-    "catalog presence does not grant access",
+    "Restoring the authorized Tenant portfolio from server truth",
     "Access IPO.ONE",
     "Sign in. Connect.",
     "Stay in control.",
     "Authenticated session",
     "Continue to workspace",
     "Sign out",
-    "Continue with Google",
-    "Continue with email",
     "Connect &amp; sign in with wallet",
+    "Check sign-in again",
+    "Copy access details",
+    "Check for wallets again",
     "Available browser wallets",
     "Wallet names and icons are untrusted display metadata.",
     "Authentication is not credit authority.",
@@ -235,14 +236,24 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "walletPermissionsAccessBtn",
     "accessLayer",
     "accessCloseBtn",
-    "googleSignInBtn",
-    "emailSignInBtn",
+    "oidcMethodList",
     "walletSignInBtn",
+    "accessRecoveryPanel",
+    "accessSupportPanel",
+    "walletAuthorityRecoveryPanel",
+    "retryWalletAuthorityBtn",
+    "accessDiagnosticError",
+    "accessDiagnosticRequest",
+    "accessDiagnosticObserved",
+    "retryAccessOptionsBtn",
+    "copyAccessDiagnosticBtn",
+    "walletUnavailablePanel",
+    "rediscoverWalletsBtn",
+    "walletProviderPicker",
     "walletProviderTitle",
     "walletProviderStatus",
     "walletProviderList",
     "networkChoiceList",
-    "connectNetworkBtn",
     "humanGuide",
     "humanGuidePrimaryBtn",
     "humanGuideSecondaryBtn",
@@ -339,10 +350,8 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "copyAccountChallengeBtn",
     "refreshAccountBindingBtn",
     "createDraftMandateBtn",
-    "loadMandateBtn",
     "principalMandateAcknowledge",
     "activateMandateBtn",
-    "openAgentApiBtn",
     "downloadMcpHandoffBtn",
     "copyMcpHandoffBtn",
     "returnToAgentAuthorityBtn",
@@ -383,18 +392,18 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "privateEvidenceSurface",
     "privateEvidencePrimaryBtn",
     "privateRiskSurface",
-    "riskPortfolioForm",
-    "riskPortfolioId",
-    "loadRiskPortfolioBtn",
+    "refreshRiskWorkspaceBtn",
+    "riskWorkspaceTechnicalDetails",
+    "riskPortfolioReference",
+    "servicingQueueReference",
     "riskAssetRows",
     "pilotHealthStatus",
     "pilotHealthIntentCount",
     "pilotHealthDualNative",
     "pilotHealthPositions",
-    "servicingQueueForm",
-    "servicingQueueId",
+    "servicingQueueFilterForm",
     "servicingQueueClassification",
-    "loadServicingQueueBtn",
+    "applyServicingQueueFilterBtn",
     "servicingQueueRows",
     "loadMoreServicingQueueBtn",
     "riskFreezeForm",
@@ -459,7 +468,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
 
   assert.match(
     js,
-    /await loadPilotHealth\(\{ quiet: true \}\);\s*await loadPilotFeedbackSummary\(\{ quiet: true \}\);/,
+    /await loadPilotHealth\(\{ quiet: true \}\);[\s\S]*?await loadPilotFeedbackSummary\(\{ quiet: true \}\);/,
     "same-portfolio authenticated aggregate reads must remain sequential"
   );
 
@@ -618,9 +627,10 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     html.includes('value="0x1111111111111111111111111111111111111111"'),
     false
   );
-  assert.ok(js.includes("startAgentAccountBindingPolling()"));
-  assert.ok(js.includes("AGENT_ACCOUNT_BINDING_POLL_MAX_MS"));
-  assert.ok(js.includes("stopAgentAccountBindingPolling"));
+  assert.equal(js.includes("startAgentAccountBindingPolling"), false);
+  assert.equal(js.includes("AGENT_ACCOUNT_BINDING_POLL"), false);
+  assert.equal(js.includes("pollAgentAccountBinding"), false);
+  assert.ok(js.includes("No background polling is running."));
   assert.ok(js.includes('if (action === "human-evidence") loadOwnedEvidence();'));
   assert.ok(js.includes('button.dataset.goView === "activity-proofs"'));
   assert.ok(js.includes("await loadOwnedEvidence();"));
@@ -896,14 +906,10 @@ test("Provider Network preserves the exact no-funds Provider boundary", async ()
   assert.ok(surface.includes("Historical example only · unapproved"));
   assert.ok(surface.includes("Not pricing policy"));
   assert.ok(surface.includes("No Provider funding"));
-  assert.match(
-    surface,
-    /<button type="button" disabled>Fund facility<\/button>/
-  );
-  assert.match(
-    surface,
-    /<button type="button" disabled>Withdraw<\/button>/
-  );
+  assert.ok(surface.includes("Unavailable Provider Network capabilities"));
+  assert.ok(surface.includes("No Provider funding authority"));
+  assert.equal(/<button[^>]*>Fund facility<\/button>/.test(surface), false);
+  assert.equal(/<button[^>]*>Withdraw<\/button>/.test(surface), false);
   assert.ok(js.includes('purpose: "provider_intent_delivery"'));
   assert.ok(js.includes("capital_network_ack_"));
   assert.ok(presentation.includes("deployedCapital: false"));
@@ -927,7 +933,9 @@ test("PRODUCT-INTEGRATION-001 keeps login, AccountBinding, and execution authori
   assert.ok(surface.includes("Connect execution account"));
   assert.ok(surface.includes("Bind account"));
   assert.ok(surface.includes("Prepare + simulate"));
-  assert.ok(surface.includes("Submit transaction · unavailable"));
+  assert.ok(surface.includes("Unavailable execution capabilities"));
+  assert.ok(surface.includes("Unavailable · local no-funds runtime"));
+  assert.equal(/<button[^>]*>Submit transaction/.test(surface), false);
   assert.ok(surface.includes("Browser-authored transaction payloads are never accepted"));
   for (const operationId of [
     "walletPrepareAccountBinding",
@@ -986,11 +994,38 @@ test("WEB-014 separates product intent, access mode, and Provider operations", a
   const capitalSurface = html.slice(capitalStart, capitalEnd);
   assert.ok(capitalStart >= 0 && capitalEnd > capitalStart, "Capital Partners workspace missing");
   assert.ok(capitalSurface.includes("Author sandbox terms"));
+  assert.ok(capitalSurface.includes("Authorized Passport Inbox"));
+  assert.ok(capitalSurface.includes("Technical authoring references"));
   assert.ok(capitalSurface.includes("Portfolio and Facility truth"));
   assert.ok(capitalSurface.includes("No funds authority"));
-  assert.match(capitalSurface, /<button type="button" disabled>Deposit<\/button>/);
-  assert.match(capitalSurface, /<button type="button" disabled>Allocate funds<\/button>/);
-  assert.match(capitalSurface, /<button type="button" disabled>Withdraw<\/button>/);
+  assert.ok(capitalSurface.includes("Unavailable Capital Partner capabilities"));
+  assert.ok(capitalSurface.includes("No real-capital or custody rail"));
+  assert.ok(capitalSurface.includes("No withdrawable capital exists"));
+  assert.equal(/<button[^>]*>Deposit<\/button>/.test(capitalSurface), false);
+  assert.equal(/<button[^>]*>Allocate funds<\/button>/.test(capitalSurface), false);
+  for (const removedLocator of [
+    "capitalPartnerPassportId",
+    "capitalPartnerCreditIntentId",
+    "capitalPartnerPassportHash",
+    "capitalPartnerPassportVersion",
+    "capitalPartnerPortfolioId"
+  ]) {
+    assert.equal(
+      capitalSurface.includes(`id="${removedLocator}"`),
+      false,
+      `${removedLocator} must not remain an editable normal-journey locator`
+    );
+  }
+  assert.ok(js.includes('tenantApi("pilotReadCapitalPartnerSelf"'));
+  assert.ok(js.includes('tenantApi("pilotReadCapitalPartnerPassportInbox"'));
+  assert.ok(js.includes("sameCapitalPartnerApplication(selectedApplication, currentMatches[0])"));
+  assert.ok(js.includes("selectCapitalPartnerApplicationAt"));
+  assert.ok(js.includes('["ArrowRight"'));
+  assert.ok(js.includes('["ArrowDown"'));
+  assert.ok(js.includes('["Home", 0]'));
+  assert.ok(js.includes('["End", last]'));
+  assert.ok(js.includes("button.tabIndex = rovingTabStop ? 0 : -1"));
+  assert.equal(js.includes('el("capitalPartnerFacilityLimit").focus()'), false);
   assert.ok(capitalSurface.includes("Public pools, deposits, custody, allocation, withdrawals, and real capital remain disabled."));
 
   const tradingStart = html.indexOf('data-view-panel="trading-capital"');
@@ -1079,7 +1114,17 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   assert.ok(html.includes('id="signedOutPrivacyAction" class="primary" type="button" hidden'));
   assert.ok(html.includes('id="authenticatedRuntimeGateAction" class="primary" type="button" hidden'));
   assert.ok(js.includes("account session, wallet connection, and private browser state"));
-  assert.ok(js.includes('el("signedOutPrivacyAction").hidden = true'));
+  assert.ok(js.includes(
+    'el("signedOutPrivacyAction").hidden = !availability.showSignedOutPrimaryAction'
+  ));
+  assert.ok(js.includes('el("accessLayer").querySelector(".access-dialog")'));
+  assert.ok(js.includes("control.getClientRects().length > 0"));
+  assert.ok(js.includes('from "./authentication-availability-presentation.js"'));
+  assert.ok(js.includes('el("retryAccessOptionsBtn").addEventListener("click", retryAccessOptions)'));
+  assert.ok(js.includes('el("rediscoverWalletsBtn").addEventListener("click", rediscoverWalletProviders)'));
+  assert.ok(js.includes('el("retryWalletAuthorityBtn").addEventListener("click", retryWalletAuthorityInvalidation)'));
+  assert.equal(html.includes('id="googleSignInBtn"'), false);
+  assert.equal(html.includes('id="emailSignInBtn"'), false);
   assert.ok(js.includes(
     "gate.hidden = !workspaceRoleMismatch && (!authenticated || connected)"
   ));
@@ -1099,12 +1144,43 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   ));
 });
 
+test("Gate 2 keeps product history, document anchors, and sign-out landing distinct", async () => {
+  const [js, navigation, runtime] = await Promise.all([
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/workspace-navigation.js", import.meta.url), "utf8"),
+    readFile(new URL("../../private-pilot/src/private-pilot-runtime.js", import.meta.url), "utf8")
+  ]);
+
+  assert.ok(js.includes('history.pushState(null, "", canonicalHash)'));
+  assert.ok(js.includes('history.replaceState(null, "", canonicalHash)'));
+  assert.ok(js.includes('window.addEventListener("popstate", handleWorkspaceLocationChange)'));
+  assert.ok(js.includes('window.addEventListener("hashchange", handleWorkspaceLocationChange)'));
+  assert.ok(navigation.includes('const DOCUMENT_ANCHORS = new Set(["mainContent"])'));
+  assert.ok(js.includes('closeAccess({ restoreFocus: false })'));
+  assert.ok(js.includes('signedOutAction.focus({ preventScroll: true })'));
+  assert.ok(js.includes("rememberPostLoginViewIntent()"));
+  assert.ok(js.includes("consumePostLoginViewIntent()"));
+  assert.ok(js.includes("forgetPostLoginViewIntent()"));
+  assert.ok(js.includes('showView(postLoginView, { focus: false, historyMode: "replace" })'));
+  assert.equal(
+    /closeAccess\(\);\s*openAccess\(\);/.test(js),
+    false,
+    "successful sign-out must not reopen the access dialog"
+  );
+  assert.equal(runtime.includes('hash: "#human"'), false);
+  assert.equal(runtime.includes('hash: "#risk"'), false);
+  assert.ok(runtime.includes('hash: "#request-credit"'));
+  assert.ok(runtime.includes('hash: "#risk-operations"'));
+});
+
 test("WEB-020 routes Agent authority through the Principal workspace and explains proof handoff", async () => {
-  const [html, js, css, principalWorkspaceAccess] = await Promise.all([
+  const [html, js, css, principalWorkspaceAccess, agentLifecycle, workspaceSelection] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
     readFile(new URL("../src/app.js", import.meta.url), "utf8"),
     readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
-    readFile(new URL("../src/principal-workspace-access.js", import.meta.url), "utf8")
+    readFile(new URL("../src/principal-workspace-access.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/agent-lifecycle-next-action.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/principal-agent-workspace-selection.js", import.meta.url), "utf8")
   ]);
 
   for (const id of [
@@ -1113,7 +1189,17 @@ test("WEB-020 routes Agent authority through the Principal workspace and explain
     "agentAuthorityAccessCopy",
     "openPrincipalWorkspaceLink",
     "agentAuthorityWorkspaceContent",
-    "agentAccountProofNextStep"
+    "agentAccountProofNextStep",
+    "agentWorkspaceSelectionStatus",
+    "agentWorkspaceSelectionHelper",
+    "agentAuthoritySelectedWorkflow",
+    "agentAuthorityReviewPanel",
+    "agentSubjectCreationControls",
+    "agentAccountProofStage",
+    "agentMandateStage",
+    "agentApplicationStageSection",
+    "agentActivationStage",
+    "agentRuntimeStage"
   ]) {
     assert.ok(html.includes(`id="${id}"`), `${id} Principal entry control missing`);
   }
@@ -1122,6 +1208,37 @@ test("WEB-020 routes Agent authority through the Principal workspace and explain
     /class="authority-workbench-layout" id="agentAuthorityWorkspaceContent" hidden/,
     "Agent authority controls must start fail-closed"
   );
+  for (const removedId of [
+    "agentAuthorityActorId",
+    "agentAuthoritySubjectId",
+    "agentAuthorityMandateId",
+    "loadMandateBtn"
+  ]) {
+    assert.equal(
+      html.includes(`id="${removedId}"`),
+      false,
+      `${removedId} must not remain in the normal Principal form`
+    );
+  }
+  assert.match(html, /id="agentAuthoritySelectedWorkflow" hidden/);
+  assert.match(html, /id="agentAuthorityReviewPanel"[^>]+hidden/);
+  assert.match(
+    html,
+    /<details class="authority-technical-details">[\s\S]*?<dl class="authority-review-list">/
+  );
+  assert.ok(html.includes("You never need to copy an internal ID."));
+  assert.ok(js.includes("selectPrincipalAgentWorkspace(recovery)"));
+  assert.ok(js.includes("clearPrincipalAgentSelectionState()"));
+  assert.ok(js.includes("revalidatePrincipalAgentSelection()"));
+  assert.match(
+    js,
+    /if \(requireSelection\) await revalidatePrincipalAgentSelection\(\);[\s\S]*?await operation\(\);/,
+    "every Agent authority mutation must revalidate current server selection before dispatch"
+  );
+  assert.ok(js.includes("requireSelectedPrincipalAgent({ subjectId, mandateId: null })"));
+  assert.ok(js.includes('el("agentAccountProofStage").hidden = !subjectLoaded || accountBound'));
+  assert.ok(js.includes('el("agentMandateStage").hidden = !subjectLoaded || !accountBound || Boolean(mandateId)'));
+  assert.ok(js.includes('el("agentRuntimeStage").hidden = mandate?.status !== "active"'));
   assert.match(
     js,
     /principalWorkspaceAccess\(\{[\s\S]*?connected: tenantPilot\.connected,[\s\S]*?hostWorkspaceName: currentWorkspaceName\(\),[\s\S]*?serverWorkspaceKind: tenantPilot\.workspaceKind/,
@@ -1143,13 +1260,17 @@ test("WEB-020 routes Agent authority through the Principal workspace and explain
   assert.ok(js.includes('new Set(["127.0.0.1", "localhost"])'));
   assert.ok(js.includes("borrowerPort + 1"));
   assert.ok(js.includes("no Borrower permission will be widened"));
-  assert.ok(js.includes("controlledAgentActorIds"));
-  assert.ok(js.includes("Authenticated Principal workspace ready with one server-bound Agent"));
+  assert.ok(workspaceSelection.includes("controlledAgentActorIds"));
+  assert.ok(js.includes("selectExactAgentContinuation({ mandate, recovery })"));
+  assert.ok(agentLifecycle.includes("Number.isSafeInteger(continuation.offerAggregateVersion)"));
+  assert.ok(!js.includes("continuation.receipt?.offer?.aggregateVersion"));
+  assert.ok(js.includes("Authenticated Principal workspace ready with one server-assigned Agent"));
   assert.ok(
     js.includes('setMode("human");\n  showView("request-credit")'),
     "Principal-controlled Agent authority must open inside the visible Human Principal container"
   );
-  assert.ok(js.includes('["authority", "application", "principal_activation", "runtime_accept"]'));
+  assert.ok(js.includes('"active_recovery"'));
+  assert.ok(js.includes('"Check Agent progress"'));
   assert.match(
     js,
     /async function runAgentAuthorityAction[\s\S]*?if \(!hasPrincipalAgentAuthorityWorkspace\(\)\)/,
@@ -1221,13 +1342,8 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   ]) {
     assert.ok(html.includes(`id="${id}"`), `${id} Agent continuation control missing`);
   }
-  assert.match(
-    html,
-    /id="openAgentApiBtn"[^>]+data-agent-guide-action="open-handoff"/,
-    "post-activation handoff must not route to the Architecture page"
-  );
   assert.equal(
-    /id="openAgentApiBtn"[^>]+data-go-view="architecture"/.test(html),
+    html.includes('id="openAgentApiBtn"'),
     false
   );
   assert.match(
@@ -1241,8 +1357,9 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   assert.ok(js.includes("presentation?.identity?.applicationEligible === true"));
   assert.ok(js.includes("const runtimeReady = runtimeHandoff && economicOperationsAvailable"));
   assert.ok(js.includes('"Runtime ready · existing Offer required"'));
-  assert.ok(js.includes("this runtime cannot start a new Credit Intent"));
-  assert.ok(js.includes("create a new Draft application Mandate"));
+  assert.ok(js.includes("cannot start a new application or change active authority"));
+  assert.ok(js.includes("cannot start a new application or change active authority"));
+  assert.ok(js.includes('humanOfferReviewStateNode.hidden = !humanOfferContextVisible'));
   assert.ok(js.includes("Required input · agent_credit_offer_workflow_receipt.v1"));
   assert.ok(js.includes("new application request and evaluation are Draft-only"));
   assert.ok(js.includes('primary.dataset.agentGuideAction = "view-obligations"'));
@@ -1265,8 +1382,8 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
   assert.ok(js.includes('recovery.workspaceKind === "principal_controller"'));
   assert.match(
     js,
-    /if \(mandate\) \{[\s\S]*?await loadExactMandate\(mandate\.resourceId\);[\s\S]*?const recoveredPrincipalSubjectId = exactResourceId\([\s\S]*?agentAuthorityPilot\.mandate\?\.subjectId[\s\S]*?resourceId: recoveredPrincipalSubjectId/,
-    "Principal recovery must authorize the AccountBinding for the exact Subject linked by the recovered Mandate"
+    /if \(workspaceSelection\.mandateId\) \{[\s\S]*?await loadExactMandate\(workspaceSelection\.mandateId\);[\s\S]*?const recoveredPrincipalSubjectId = exactResourceId\([\s\S]*?agentAuthorityPilot\.mandate\?\.subjectId[\s\S]*?resourceId: recoveredPrincipalSubjectId/,
+    "Principal recovery must authorize the AccountBinding for the exact server-selected Subject and Mandate"
   );
   assert.ok(js.includes("selectedObligation && tenantPilot.obligationReadAvailable"));
   assert.ok(css.includes(".agent-credit-next"));
@@ -1357,11 +1474,17 @@ test("UX-002 keeps Human actions operable and Agent actions authority-truthful",
   }
   assert.ok(html.includes("Check authenticated Agent progress online"));
   assert.ok(html.includes("Check for Agent Offer"));
-  assert.equal(html.includes("Run Agent application online"), false);
+  assert.ok(js.includes('"Run local Agent application"'));
+  assert.ok(js.includes('"Complete sandbox Agent lifecycle"'));
   assert.ok(html.includes("The external Agent uses its own credential"));
   assert.ok(js.includes('"/local/v1/reference-agent/account-proof"'));
-  assert.equal(js.includes('"/local/v1/reference-agent/application"'), false);
+  assert.ok(js.includes('"/local/v1/reference-agent/application"'));
+  assert.ok(js.includes('"/local/v1/reference-agent/runtime"'));
   assert.equal(js.includes('"/local/v1/reference-agent/runtime-step"'), false);
+  assert.ok(js.includes("localReferenceAgentBrowserAvailable"));
+  assert.ok(js.includes("assertLocalReferenceAgentResult"));
+  assert.ok(js.includes("result.productionFundsMoved !== false"));
+  assert.ok(js.includes("result.credentialEnteredBrowser !== false"));
   assert.ok(js.includes("checkAgentContinuation"));
   assert.ok(js.includes("identity.applicationEligible"));
   assert.ok(js.includes("Early partial or full repayment is available now"));
@@ -1403,8 +1526,9 @@ test("TC-104 exposes eight authenticated Trading Capital views without funds cla
   assert.ok(js.includes('"tradingRequestClose"'));
   assert.ok(js.includes('"tradingIssuePerformanceProof"'));
   assert.ok(presentation.includes("TRADING_CAPITAL_OPERATION_IDS"));
-  assert.ok(html.includes("Run settlement · worker only"));
-  assert.ok(html.includes("Withdraw · unavailable"));
+  assert.ok(html.includes("Unavailable Trading Capital capabilities"));
+  assert.ok(html.includes("Worker-controlled · synthetic only"));
+  assert.ok(html.includes("No withdrawal product path"));
   assert.equal(html.includes("official redeemable settlement"), false);
 });
 
@@ -1472,10 +1596,13 @@ test("UX-003 exposes Human mutations and Principal-observable Agent progress", a
   assert.ok(html.includes("Start Human application"));
   assert.ok(html.includes("Request & evaluate credit"));
   assert.ok(js.includes('"Check for Agent Obligation"'));
+  assert.ok(js.includes('"Check Agent progress"'));
+  assert.ok(js.includes('"Complete sandbox Agent lifecycle"'));
   assert.ok(html.includes("Check Provider spend"));
   assert.ok(html.includes("Check automatic repayment"));
   assert.ok(html.includes("Check Agent Evidence"));
   assert.ok(html.includes("non-withdrawable sandbox rail"));
+  assert.ok(js.includes('"/local/v1/reference-agent/runtime"'));
   assert.equal(js.includes('"/local/v1/reference-agent/runtime-step"'), false);
   assert.ok(js.includes("checkAgentRuntimeProgress"));
   assert.ok(js.includes("function openBorrowingEntry"));
@@ -1585,7 +1712,7 @@ test("UX-004 keeps the user manual and primary browser actions in one operabilit
   assert.ok(html.includes("A BaseScan link appears only after"));
 });
 
-test("every enabled browser button has a discoverable action contract", async () => {
+test("every browser button has a discoverable action contract", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|auth-provider|trading-capital-view|scroll-target)=/;
@@ -1594,7 +1721,7 @@ test("every enabled browser button has a discoverable action contract", async ()
   );
   const missing = [];
   for (const button of buttons) {
-    if (genericAction.test(button) || /\bdisabled\b/.test(button)) continue;
+    if (genericAction.test(button)) continue;
     const id = button.match(/\bid="([^"]+)"/)?.[1];
     if (
       !id ||
@@ -1610,8 +1737,84 @@ test("every enabled browser button has a discoverable action contract", async ()
   assert.deepEqual(
     missing,
     [],
-    "enabled controls must not exist without a named or delegated action"
+    "browser buttons must not exist without a named or delegated action"
   );
+});
+
+test("permanently unavailable capabilities are exact non-interactive status lists", async () => {
+  const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
+  const expected = new Map([
+    ["Unavailable Capital Partner capabilities", [
+      ["Deposit", "No real-capital or custody rail"],
+      ["Allocate funds", "Synthetic Offers create no balance"],
+      ["Withdraw", "No withdrawable capital exists"]
+    ]],
+    ["Unavailable Provider Network capabilities", [
+      ["Join public pool", "Public LP access is not enabled"],
+      ["Fund facility", "No Provider funding authority"],
+      ["Withdraw", "No withdrawable balance exists"],
+      ["Set production pricing", "Pricing policy requires human approval"]
+    ]],
+    ["Unavailable Trading Capital capabilities", [
+      ["Run settlement", "Worker-controlled · synthetic only"],
+      ["Withdraw", "No withdrawal product path"]
+    ]],
+    ["Unavailable execution capabilities", [
+      ["Submit transaction", "Unavailable · local no-funds runtime"]
+    ]]
+  ]);
+  let total = 0;
+
+  for (const [label, itemLabels] of expected) {
+    const start = html.indexOf(`aria-label="${label}"`);
+    assert.notEqual(start, -1, `${label} status list is missing`);
+    const openingStart = html.lastIndexOf("<div", start);
+    const closingEnd = html.indexOf("</div>", start);
+    assert.ok(openingStart >= 0 && closingEnd > start, `${label} status list is malformed`);
+    const fragment = html.slice(openingStart, closingEnd + "</div>".length);
+    assert.match(fragment, /<div\b[^>]*\brole="list"/);
+    const items = [...fragment.matchAll(/<span\b[^>]*\brole="listitem"[^>]*>[\s\S]*?<strong>([^<]+)<\/strong>[\s\S]*?<small>([^<]+)<\/small>[\s\S]*?<\/span>/g)]
+      .map((match) => [match[1], match[2]]);
+    assert.deepEqual(items, itemLabels, `${label} must expose the exact reviewed capability and reason inventory`);
+    assert.doesNotMatch(fragment, /<(?:button|a|input|select|textarea)\b/i);
+    assert.doesNotMatch(fragment, /\brole="button"|\btabindex=|\bdata-[\w-]+=|\bon[a-z]+=/i);
+    total += items.length;
+  }
+
+  assert.equal(total, 10);
+});
+
+test("Risk workspace restores Portfolio and Queue locators from server truth", async () => {
+  const [html, js] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8")
+  ]);
+  for (const removedControl of [
+    "riskPortfolioId",
+    "loadRiskPortfolioBtn",
+    "servicingQueueId",
+    "loadServicingQueueBtn"
+  ]) {
+    assert.equal(html.includes(`id="${removedControl}"`), false, `${removedControl} must not ship`);
+  }
+  for (const operationId of [
+    "pilotReadTenantRiskPortfolioReference",
+    "pilotReadServicingQueueReference",
+    "pilotReadTenantRisk",
+    "pilotReadServicingQueue"
+  ]) {
+    assert.ok(js.includes(operationId), `${operationId} server-truth read missing`);
+  }
+  assert.match(js, /refreshRiskWorkspaceBtn"\)\.addEventListener\("click", refreshRiskWorkspace\)/);
+  assert.match(js, /servicingQueueFilterForm"\)\.addEventListener\("submit"/);
+  assert.match(js, /loadRiskInsightsBtn"\)\.addEventListener\("click", loadRiskSupportingInsights\)/);
+  assert.match(
+    js,
+    /browserLocatorRecoveryAllowed = new Set\(\["borrower", "controller"\]\)[\s\S]*?if \(browserLocatorRecoveryAllowed\)/,
+    "Risk recovery must never fall back to browser-held Human or Obligation locators"
+  );
+  assert.equal(js.includes("localStorage.getItem(RISK"), false);
+  assert.equal(js.includes("sessionStorage.getItem(RISK"), false);
 });
 
 test("public beta launch configuration is bounded and supply-chain pinned", async () => {

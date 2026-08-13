@@ -186,6 +186,7 @@ test("Facility and portfolio are composed from canonical Offer and Obligation tr
   assert.equal(portfolio.utilizedMinor, "10000");
   assert.equal(portfolio.repaidMinor, "10000");
   assert.equal(portfolio.completedFacilityCount, 1);
+  assert.equal(portfolio.offers[0].creditIntentId, accepted.creditIntentId);
   assert.equal(portfolio.facilities[0].evidenceCoverage.status, "complete");
 });
 

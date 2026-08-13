@@ -105,6 +105,8 @@ export function createWalletAuthorityLifecycle({
       reauthenticationRequired: status !== "available",
       protectedAuthorityAvailable: status === "available",
       canStartAuthentication: status === "available" || status === "invalidated",
+      canRetryInvalidation:
+        status === "unavailable" && activeIdempotencyKey !== undefined,
       ...(reason === undefined ? {} : { reason }),
       credentialsIncluded: false,
       fundsAuthority: false,

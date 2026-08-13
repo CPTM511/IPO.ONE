@@ -258,6 +258,24 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async getCapitalPartnerSelf({ requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadCapitalPartnerSelf",
+      payload: {},
+      requestId,
+      correlationId
+    });
+  }
+
+  async getCapitalPartnerPassportInbox({ requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadCapitalPartnerPassportInbox",
+      payload: {},
+      requestId,
+      correlationId
+    });
+  }
+
   async transitionCapitalPartnerOffer({
     creditOfferId,
     payload,
@@ -1559,6 +1577,15 @@ export class OperatorTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async getServicingQueueReference({ requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadServicingQueueReference",
+      payload: {},
+      requestId,
+      correlationId
+    });
+  }
+
   async restructureSandboxObligation({
     obligationId,
     payload,
@@ -1924,6 +1951,15 @@ export class RiskTenantQueryClient extends TenantProtocolClient {
     });
   }
 
+  async getPortfolioReference({ requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadTenantRiskPortfolioReference",
+      payload: {},
+      requestId,
+      correlationId
+    });
+  }
+
   async getPilotHealth({ portfolioId, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadPilotHealth",
@@ -1964,6 +2000,15 @@ export class RiskTenantQueryClient extends TenantProtocolClient {
       correlationId
     });
   }
+
+  async getServicingQueueReference({ requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadServicingQueueReference",
+      payload: {},
+      requestId,
+      correlationId
+    });
+  }
 }
 
 export class AuditorTenantQueryClient extends TenantProtocolClient {
@@ -1983,6 +2028,15 @@ export class AuditorTenantQueryClient extends TenantProtocolClient {
         resourceType: "credit_registry_evidence",
         resourceId: authorizationHash
       },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getPortfolioReference({ requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadTenantRiskPortfolioReference",
+      payload: {},
       requestId,
       correlationId
     });

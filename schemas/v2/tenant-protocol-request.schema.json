@@ -42,6 +42,10 @@
         "pilotReadConsent",
         "pilotReadHumanSelf",
         "pilotReadWorkspaceResume",
+        "pilotReadCapitalPartnerSelf",
+        "pilotReadCapitalPartnerPassportInbox",
+        "pilotReadTenantRiskPortfolioReference",
+        "pilotReadServicingQueueReference",
         "pilotReadIdentityReference",
         "pilotReadMandate",
         "pilotReadTenantRisk",
@@ -1665,6 +1669,38 @@
       }
     },
     {
+      "title": "Recover Capital Partner Self",
+      "properties": {
+        "operationId": { "const": "pilotReadCapitalPartnerSelf" },
+        "payload": { "$ref": "#/$defs/emptyPayload" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["resource"] },
+          { "required": ["idempotencyKey"] },
+          { "required": ["purpose"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] }
+        ]
+      }
+    },
+    {
+      "title": "Recover Capital Partner Passport Inbox",
+      "properties": {
+        "operationId": { "const": "pilotReadCapitalPartnerPassportInbox" },
+        "payload": { "$ref": "#/$defs/emptyPayload" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["resource"] },
+          { "required": ["idempotencyKey"] },
+          { "required": ["purpose"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] }
+        ]
+      }
+    },
+    {
       "title": "Read Own Capital Partner Portfolio",
       "required": [
         "resource"
@@ -1915,6 +1951,86 @@
       "properties": {
         "operationId": {
           "const": "pilotReadWorkspaceResume"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Recover Tenant Risk Portfolio Reference",
+      "properties": {
+        "operationId": {
+          "const": "pilotReadTenantRiskPortfolioReference"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "resource"
+            ]
+          },
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          },
+          {
+            "required": [
+              "purpose"
+            ]
+          },
+          {
+            "required": [
+              "approvalArtifact"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Recover Servicing Queue Reference",
+      "properties": {
+        "operationId": {
+          "const": "pilotReadServicingQueueReference"
         },
         "payload": {
           "$ref": "#/$defs/emptyPayload"

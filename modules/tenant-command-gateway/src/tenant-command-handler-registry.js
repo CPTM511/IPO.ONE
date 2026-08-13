@@ -18,7 +18,7 @@ export class TenantCommandHandlerRegistry {
   #handlers;
 
   constructor(handlers) {
-    if (!Array.isArray(handlers) || handlers.length === 0 || handlers.length > 104) {
+    if (!Array.isArray(handlers) || handlers.length === 0 || handlers.length > 106) {
       throw new DomainError(
         "invalid_tenant_command_handler",
         "tenant command handlers must be a non-empty bounded list"

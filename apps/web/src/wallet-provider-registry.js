@@ -286,6 +286,16 @@ export function createWalletProviderRegistry({
     return snapshot();
   }
 
+  function rediscover() {
+    if (!started || status === "disposed") return snapshot();
+    if (fallbackTimer !== undefined) clearTimer(fallbackTimer);
+    status = "discovering";
+    eventTarget.dispatchEvent(new Event(EIP6963_REQUEST_EVENT));
+    fallbackTimer = setTimer(finishDiscovery, legacyFallbackDelayMs);
+    notify();
+    return snapshot();
+  }
+
   function selectProvider(providerId) {
     if (status === "disposed" || typeof providerId !== "string" || !recordsById.has(providerId)) {
       return false;
@@ -353,6 +363,7 @@ export function createWalletProviderRegistry({
 
   return Object.freeze({
     start,
+    rediscover,
     finishDiscovery,
     getSnapshot: snapshot,
     getSelectedConnector: selectedConnector,

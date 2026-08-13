@@ -141,7 +141,7 @@ async function loadProfile(coreRepository, client, authenticationContext, { lock
   return profile;
 }
 
-async function loadPassport({
+export async function loadPassport({
   client,
   coreRepository,
   artifactId,

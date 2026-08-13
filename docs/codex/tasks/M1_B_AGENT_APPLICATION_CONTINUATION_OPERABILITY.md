@@ -1,6 +1,12 @@
 # M1-B Agent application continuation operability
 
-Status: In progress
+Status: Carried forward by UX-006 Gate 0.2
+
+The production-compatible continuation persistence and Principal recovery
+boundary delivered by this issue remain in force. UX-006 Gate 0.2 owns the
+remaining usability closure for active-Mandate recovery and the local Agent
+CLI persistence gap; only that successor may change the overlapping browser
+state machine while it is active.
 
 ## Context and baseline
 

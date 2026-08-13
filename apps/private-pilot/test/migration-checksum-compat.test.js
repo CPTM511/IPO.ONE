@@ -12,8 +12,13 @@ const PAUSE_LEGACY_CHECKSUM =
   "b0f7a42a00c8359c6b5778f54b09480f5da492b34a8038f15679a3e5b2d1bfbe";
 const PAUSE_RELEASE_CHECKSUM =
   "b238c78daeb7eca7a8477f18cfc3f72650ccfcca21aec2f666900b82e8092c09";
+const SIGNATURE_MIGRATION = "0054_universal_evm_signature_methods";
+const SIGNATURE_LEGACY_CHECKSUM =
+  "46136f7b5cd60ef6cfc5df3411a318acb77206fe16e0f137540bb355a7a202a3";
+const SIGNATURE_RELEASE_CHECKSUM =
+  "f41badbc345652956f026df914ba5751d88f03b86cc3323c6a278331866da534";
 
-test("the exact whitespace-only 0043 and 0044 legacy checksums remain compatible", () => {
+test("the exact whitespace-only 0043, 0044 and 0054 legacy checksums remain compatible", () => {
   assert.equal(
     migrationChecksumMatches({
       name: MIGRATION,
@@ -35,6 +40,14 @@ test("the exact whitespace-only 0043 and 0044 legacy checksums remain compatible
       name: PAUSE_MIGRATION,
       recordedChecksum: PAUSE_LEGACY_CHECKSUM,
       releaseChecksum: PAUSE_RELEASE_CHECKSUM
+    }),
+    true
+  );
+  assert.equal(
+    migrationChecksumMatches({
+      name: SIGNATURE_MIGRATION,
+      recordedChecksum: SIGNATURE_LEGACY_CHECKSUM,
+      releaseChecksum: SIGNATURE_RELEASE_CHECKSUM
     }),
     true
   );
@@ -62,6 +75,14 @@ test("migration checksum compatibility remains exact and fail-closed", () => {
       name: MIGRATION,
       recordedChecksum: RELEASE_CHECKSUM,
       releaseChecksum: LEGACY_CHECKSUM
+    }),
+    false
+  );
+  assert.equal(
+    migrationChecksumMatches({
+      name: SIGNATURE_MIGRATION,
+      recordedChecksum: SIGNATURE_RELEASE_CHECKSUM,
+      releaseChecksum: SIGNATURE_LEGACY_CHECKSUM
     }),
     false
   );

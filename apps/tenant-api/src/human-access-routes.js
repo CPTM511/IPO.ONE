@@ -336,7 +336,7 @@ export function createHumanAccessRouteHandler(input) {
     walletBff,
     clock = () => new Date(),
     profile = "closed_non_funds_pilot",
-    postLoginPath = "/#human"
+    postLoginPath = "/#request-credit"
   } = input;
   const browserOrigin = exactBrowserOrigin(input.browserOrigin);
   const providers = normalizeProviders(oidcProviders);

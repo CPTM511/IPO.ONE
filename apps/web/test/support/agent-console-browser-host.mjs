@@ -15,6 +15,24 @@ import {
 import { DomainError } from "../../../../packages/domain/src/index.js";
 
 const csrfToken = "agent_console_browser_qa_csrf_token_00000000001";
+const recoveryScenario =
+  process.env.IPO_ONE_BROWSER_QA_AGENT_RECOVERY_SCENARIO ?? "interactive";
+let selectionScenario =
+  process.env.IPO_ONE_BROWSER_QA_AGENT_SELECTION_SCENARIO ?? "single";
+const SELECTION_SCENARIOS = new Set(["single", "empty", "multiple", "has-more"]);
+if (!SELECTION_SCENARIOS.has(selectionScenario)) {
+  throw new Error("invalid_browser_qa_agent_selection_scenario");
+}
+const RECOVERY_SCENARIOS = new Set([
+  "interactive",
+  "active-neither",
+  "active-obligation-no-receipt",
+  "active-exact-continuation",
+  "draft-exact-continuation"
+]);
+if (!RECOVERY_SCENARIOS.has(recoveryScenario)) {
+  throw new Error("invalid_browser_qa_agent_recovery_scenario");
+}
 const evidenceScenario =
   process.env.IPO_ONE_BROWSER_QA_EVIDENCE_SCENARIO ?? "complete";
 const EVIDENCE_SCENARIOS = new Set([
@@ -58,6 +76,13 @@ function fixtureResult(operationId) {
 const bindingResult = fixtureResult("pilotReadAgentAccountBinding");
 const activationResult = fixtureResult("pilotActivateSandboxMandate");
 const activeMandate = structuredClone(activationResult.response.mandate);
+const fixtureNow = Date.now();
+const continuationExpiresAt = new Date(
+  fixtureNow + (60 * 60 * 1_000)
+).toISOString();
+activeMandate.expiresAt = new Date(
+  fixtureNow + (180 * 24 * 60 * 60 * 1_000)
+).toISOString();
 activeMandate.capabilities = [
   "request_credit",
   "accept_credit_offer",
@@ -67,9 +92,18 @@ activeMandate.capabilities = [
 const draftMandate = structuredClone(activeMandate);
 draftMandate.status = "draft";
 draftMandate.utilizedMinor = "0";
+delete draftMandate.activationAcknowledgement;
 delete draftMandate.activatedAt;
-let currentMandate = draftMandate;
-let runtimeStage = "none";
+let currentMandate = recoveryScenario.startsWith("active-")
+  ? structuredClone(activeMandate)
+  : structuredClone(draftMandate);
+let runtimeStage = recoveryScenario === "active-obligation-no-receipt"
+  ? "created"
+  : "none";
+let durableContinuationAvailable = new Set([
+  "active-exact-continuation",
+  "draft-exact-continuation"
+]).has(recoveryScenario);
 let failNextEvidenceRead = false;
 
 const offerReceipt = structuredClone(offerFixtures.valid[0]);
@@ -83,6 +117,49 @@ offerReceipt.decision.authorityType = "mandate";
 offerReceipt.decision.authorityId = activeMandate.mandateId;
 offerReceipt.offer.subjectId = activeMandate.subjectId;
 offerReceipt.offer.approvedPrincipalMinor = "10000";
+offerReceipt.offer.validUntil = new Date(
+  fixtureNow + (6 * 60 * 60 * 1_000)
+).toISOString();
+offerReceipt.offer.firstPaymentAt = new Date(
+  fixtureNow + (30 * 24 * 60 * 60 * 1_000)
+).toISOString();
+offerReceipt.offer.maturityAt = new Date(
+  fixtureNow + (60 * 24 * 60 * 60 * 1_000)
+).toISOString();
+
+const controlledAgentActorId = "actor_agent_console_controlled_qa";
+const continuationReceiptId =
+  "continuation_receipt_agent_console_browser_qa_0001";
+const continuationReceiptHash =
+  "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const supportedBrowserQaOperationIds = new Set([
+  "pilotActivateSandboxMandate",
+  "pilotReadAgentAccountBinding",
+  "pilotReadMandate",
+  "pilotReadOwnObligation",
+  "pilotReadOwnObligationEvidence",
+  "pilotReadWorkspaceResume"
+]);
+const browserQaOperationAudit = [];
+const browserQaReferenceRouteAudit = [];
+const browserQaAuthenticationAudit = [];
+let browserSessionActive = true;
+
+function exactContinuationReceiptView() {
+  return {
+    continuationReceiptId,
+    receiptHash: continuationReceiptHash,
+    subjectId: activeMandate.subjectId,
+    mandateId: activeMandate.mandateId,
+    creditOfferId: offerReceipt.offer.creditOfferId,
+    creditOfferHash: offerReceipt.offer.creditOfferHash,
+    offerAggregateVersion: 1,
+    expiresAt: continuationExpiresAt,
+    receipt: structuredClone(offerReceipt),
+    serverTruth: true,
+    schemaVersion: "workspace_continuation_receipt_view.v1"
+  };
+}
 
 const lifecycleReceipt = structuredClone(obligationFixtures.valid[0]);
 lifecycleReceipt.subjectId = activeMandate.subjectId;
@@ -142,7 +219,9 @@ function agentObligationAt(stage) {
   return obligation;
 }
 
-let currentAgentObligation = null;
+let currentAgentObligation = runtimeStage === "created"
+  ? agentObligationAt(runtimeStage)
+  : null;
 
 function agentObligationEvidence() {
   if (!currentAgentObligation) {
@@ -288,28 +367,41 @@ function protocolResult(operationId, response) {
 
 function resultFor(command) {
   if (command.operationId === "pilotReadWorkspaceResume") {
+    const selectionResources = selectionScenario === "empty"
+      ? []
+      : [
+          {
+            resourceType: "subject",
+            resourceId: activeMandate.subjectId,
+            relationship: "controller"
+          },
+          {
+            resourceType: "mandate",
+            resourceId: activeMandate.mandateId,
+            relationship: "controller"
+          }
+        ];
     return protocolResult(command.operationId, {
       workspaceKind: "principal_controller",
       resources: [
-        {
-          resourceType: "subject",
-          resourceId: activeMandate.subjectId,
-          relationship: "controller"
-        },
-        {
-          resourceType: "mandate",
-          resourceId: activeMandate.mandateId,
-          relationship: "controller"
-        },
-        ...(runtimeStage !== "none"
+        ...selectionResources,
+        ...(currentAgentObligation
           ? [{
               resourceType: "obligation",
-              resourceId: agentObligation.obligationId,
+              resourceId: currentAgentObligation.obligationId,
               relationship: "controller"
             }]
           : [])
       ],
-      hasMore: false,
+      controlledAgentActorIds: selectionScenario === "empty"
+        ? []
+        : selectionScenario === "multiple"
+          ? [controlledAgentActorId, "actor_agent_console_secondary_qa"]
+          : [controlledAgentActorId],
+      continuationReceipts: durableContinuationAvailable
+        ? [exactContinuationReceiptView()]
+        : [],
+      hasMore: selectionScenario === "has-more",
       serverTruth: true,
       schemaVersion: "tenant_workspace_resume_view.v1"
     });
@@ -376,9 +468,11 @@ const authenticationContext = createAuthenticationContext({
   credentialId: "credential_agent_console_browser_qa",
   credentialVersion: 1,
   policyVersion: "security_001.v1",
-  capabilities: TENANT_PROTOCOL_CATALOG.operations
-    .filter((operation) => operation.actorTypes.includes("human"))
-    .map((operation) => operation.requiredCapability),
+  capabilities: [...new Set(
+    TENANT_PROTOCOL_CATALOG.operations
+      .filter((operation) => supportedBrowserQaOperationIds.has(operation.operationId))
+      .map((operation) => operation.requiredCapability)
+  )],
   roles: ["principal_controller"],
   tokenJtiHash: "token_jti_hash_agent_console_browser_qa_0000000000000",
   authenticationMethod: ClientAuthenticationMethod.OIDC_PKCE_BFF,
@@ -390,14 +484,138 @@ const authenticationContext = createAuthenticationContext({
 });
 
 async function serveAuthentication({ request, response, url, requestId }) {
+  if (request.method === "GET" && url.pathname === "/__qa__/selection-scenario") {
+    const nextScenario = url.searchParams.get("value") ?? "";
+    if (!SELECTION_SCENARIOS.has(nextScenario)) {
+      throw new DomainError("invalid_tenant_command_payload", "QA selection scenario is invalid.");
+    }
+    selectionScenario = nextScenario;
+    const body = JSON.stringify({
+      selectionScenario,
+      schemaVersion: "agent_console_browser_qa_selection_scenario.v1"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (request.method === "GET" && url.pathname === "/__qa__/operation-audit") {
+    const operationIds = browserQaOperationAudit.map((entry) => entry.operationId);
+    const body = JSON.stringify({
+      selectionScenario,
+      operationIds,
+      readCount: operationIds.filter((operationId) => operationId.startsWith("pilotRead")).length,
+      mutationCount: operationIds.filter((operationId) => !operationId.startsWith("pilotRead")).length,
+      referenceAgentRequests: structuredClone(browserQaReferenceRouteAudit),
+      authenticationRequests: structuredClone(browserQaAuthenticationAudit),
+      sessionActive: browserSessionActive,
+      schemaVersion: "agent_console_browser_qa_operation_audit.v1"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (request.method === "POST" && url.pathname === "/auth/v1/logout") {
+    if (
+      request.headers["x-csrf-token"] !== csrfToken ||
+      typeof request.headers["idempotency-key"] !== "string"
+    ) {
+      throw new DomainError(
+        "authentication_rejected",
+        "The browser QA logout boundary rejected the request."
+      );
+    }
+    browserSessionActive = false;
+    browserQaAuthenticationAudit.push({
+      event: "logout_complete",
+      method: request.method,
+      pathname: url.pathname,
+      sessionActive: browserSessionActive
+    });
+    const body = JSON.stringify({
+      schemaVersion: "ipo_one_logout_result.v1",
+      status: "logged_out"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "set-cookie": [
+        "__Host-ipo_one_session=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0",
+        "__Host-ipo_one_csrf=; Path=/; Secure; SameSite=Strict; Max-Age=0"
+      ],
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/auth/v1/login" &&
+    url.searchParams.size === 1 &&
+    url.searchParams.get("provider") === "google"
+  ) {
+    browserQaAuthenticationAudit.push({
+      event: "oidc_login_started",
+      method: request.method,
+      pathname: url.pathname,
+      sessionActive: browserSessionActive
+    });
+    response.writeHead(303, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      location: "/__qa__/oidc-complete",
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end();
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/__qa__/oidc-complete" &&
+    url.search === ""
+  ) {
+    browserSessionActive = true;
+    browserQaAuthenticationAudit.push({
+      event: "oidc_login_completed",
+      method: request.method,
+      pathname: url.pathname,
+      sessionActive: browserSessionActive
+    });
+    response.writeHead(303, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      location: "/#request-credit",
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end();
+    return true;
+  }
   if (request.method !== "GET" || url.pathname !== "/auth/v1/options") return false;
   const body = JSON.stringify({
     schemaVersion: "ipo_one_authentication_options.v1",
-    profile: "closed_non_funds_pilot",
+    profile: "local_no_funds",
     enabled: true,
-    sessionActive: true,
-    sessionAuthenticationMethod: "oidc_pkce_bff",
-    oidcProviders: [],
+    sessionActive: browserSessionActive,
+    sessionAuthenticationMethod: browserSessionActive ? "oidc_pkce_bff" : null,
+    oidcProviders: ["google"],
     walletAuthentication: false,
     supportedChains: ["eip155:84532", "eip155:1952"],
     boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
@@ -422,14 +640,24 @@ const serveReferenceAgent = Object.freeze({
     runtimeStep: "/local/v1/reference-agent/runtime-step"
   }),
   async handle({ url, readJson, sendJson }) {
+    browserQaReferenceRouteAudit.push({
+      method: "authenticated_reference_route",
+      pathname: url.pathname
+    });
     if (url.pathname === this.routes.continuation) {
+      if (!durableContinuationAvailable) {
+        throw new DomainError(
+          "workspace_continuation_unavailable",
+          "No current server continuation receipt is available."
+        );
+      }
       return sendJson(200, {
         status: "offer_ready",
         mandateId: activeMandate.mandateId,
         subjectId: activeMandate.subjectId,
-        continuationReceiptId: "continuation-receipt-agent-console-browser-0001",
-        receiptHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        expiresAt: "2026-08-05T00:00:00.000Z",
+        continuationReceiptId,
+        receiptHash: continuationReceiptHash,
+        expiresAt: continuationExpiresAt,
         offerReceipt,
         serverTruth: true,
         sandboxOnly: true,
@@ -439,14 +667,15 @@ const serveReferenceAgent = Object.freeze({
       });
     }
     if (url.pathname === this.routes.application) {
+      durableContinuationAvailable = true;
       return sendJson(200, {
         status: "offer_ready",
         mandateId: activeMandate.mandateId,
         subjectId: activeMandate.subjectId,
         offerReceipt,
-        continuationReceiptId: "continuation-receipt-agent-console-browser-0001",
-        receiptHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        expiresAt: "2026-08-05T00:00:00.000Z",
+        continuationReceiptId,
+        receiptHash: continuationReceiptHash,
+        expiresAt: continuationExpiresAt,
         serverTruth: true,
         sandboxOnly: true,
         productionFundsMoved: false,
@@ -457,6 +686,7 @@ const serveReferenceAgent = Object.freeze({
     if (url.pathname === this.routes.runtimeStep) {
       const input = await readJson();
       if (input.action === "accept_offer") {
+        durableContinuationAvailable = false;
         runtimeStage = "created";
         currentAgentObligation = agentObligationAt(runtimeStage);
         return sendJson(200, {
@@ -593,6 +823,7 @@ const host = createTenantHttpServer({
   credentialSource: "local_test",
   gateway: {
     async execute(command) {
+      browserQaOperationAudit.push({ operationId: command.operationId });
       if (
         evidenceScenario === "slow-read" &&
         command.operationId === "pilotReadOwnObligationEvidence"
@@ -603,6 +834,12 @@ const host = createTenantHttpServer({
     }
   },
   resolveAuthenticationContext: async ({ request }) => {
+    if (!browserSessionActive) {
+      throw new DomainError(
+        "authentication_rejected",
+        "The browser QA Principal session is signed out."
+      );
+    }
     if (request.method === "POST" && request.headers["x-csrf-token"] !== csrfToken) {
       throw new Error("invalid_agent_console_qa_csrf");
     }
@@ -613,12 +850,16 @@ const host = createTenantHttpServer({
   serveReferenceAgent,
   serveWebAsset: createTenantWebAssetHandler({
     csrfTokenProvider: async () => csrfToken,
+    localAgentAccountProvider: async () =>
+      "0x1111111111111111111111111111111111111111",
     workspaceNameProvider: async () => "controller"
   })
 });
 
 const address = await host.listen();
 console.log(`AGENT_CONSOLE_BROWSER_QA_URL=http://${address.host}:${address.port}/#agent-console`);
+console.log(`AGENT_CONSOLE_BROWSER_QA_RECOVERY_SCENARIO=${recoveryScenario}`);
+console.log(`AGENT_CONSOLE_BROWSER_QA_SELECTION_SCENARIO=${selectionScenario}`);
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, async () => {

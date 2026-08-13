@@ -18,6 +18,7 @@ import {
   createReadyAgentHandoffManifest
 } from "../../web/src/agent-handoff-manifest.js";
 import {
+  persistLocalAgentContinuationReceipt,
   runLocalAgentApplicationWorkflow,
   runLocalAgentRuntimeWorkflow
 } from "./agent-reference-workflows.js";
@@ -521,12 +522,9 @@ export function createLocalReferenceAgentHttpService({
             manifest,
             session
           });
-          const persistence = await session.client.persistContinuationReceipt({
-            creditOfferId: offerReceipt.offer.creditOfferId,
+          const persistence = await persistLocalAgentContinuationReceipt({
             receipt: offerReceipt,
-            idempotencyKey: `reference-agent-continuation-${offerReceipt.offer.creditOfferHash}`,
-            requestId: identifier("request-reference-agent-persist-continuation"),
-            correlationId: offerReceipt.correlationId
+            session
           });
           return sendJson(200, {
             status: "offer_ready",

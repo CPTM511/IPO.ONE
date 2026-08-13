@@ -438,6 +438,94 @@ test("Tenant protocol fixtures enforce every closed request and result branch", 
   assert.equal(isTenantProtocolCatalog(TENANT_PROTOCOL_CATALOG), true);
 });
 
+test("Risk workspace recovery contracts expose only server-derived narrow references", () => {
+  const portfolioOperation = TENANT_PROTOCOL_CATALOG.operations.find(
+    ({ operationId }) => operationId === "pilotReadTenantRiskPortfolioReference"
+  );
+  assert.deepEqual(portfolioOperation, {
+    operationId: "pilotReadTenantRiskPortfolioReference",
+    kind: "query",
+    actorTypes: ["risk_operator", "auditor"],
+    resourceType: "workspace",
+    requiredCapability: "risk.read.tenant",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: "tenant_protocol_request.v1",
+    responseSchemaVersion: "tenant_risk_portfolio_reference_view.v1",
+    public: false,
+    fundsAuthority: false
+  });
+
+  const queueOperation = TENANT_PROTOCOL_CATALOG.operations.find(
+    ({ operationId }) => operationId === "pilotReadServicingQueueReference"
+  );
+  assert.deepEqual(queueOperation, {
+    operationId: "pilotReadServicingQueueReference",
+    kind: "query",
+    actorTypes: ["risk_operator", "operations_operator"],
+    resourceType: "workspace",
+    requiredCapability: "servicing.queue.read",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: "tenant_protocol_request.v1",
+    responseSchemaVersion: "tenant_servicing_queue_reference_view.v1",
+    public: false,
+    fundsAuthority: false
+  });
+
+  const validPortfolioRequest = fixtures.validRequests.find(
+    ({ operationId }) => operationId === portfolioOperation.operationId
+  );
+  const validQueueRequest = fixtures.validRequests.find(
+    ({ operationId }) => operationId === queueOperation.operationId
+  );
+  assert.equal(isTenantProtocolRequest(validPortfolioRequest), true);
+  assert.equal(isTenantProtocolRequest(validQueueRequest), true);
+  assert.equal(
+    isTenantProtocolRequest({
+      ...validPortfolioRequest,
+      resource: { resourceType: "risk_portfolio", resourceId: "caller_selected" }
+    }),
+    false
+  );
+  assert.equal(
+    isTenantProtocolRequest({
+      ...validQueueRequest,
+      payload: { tenantId: "caller_selected" }
+    }),
+    false
+  );
+
+  const validPortfolioResult = fixtures.validResults.find(
+    ({ operationId }) => operationId === portfolioOperation.operationId
+  );
+  const validQueueResult = fixtures.validResults.find(
+    ({ operationId }) => operationId === queueOperation.operationId
+  );
+  assert.equal(isTenantProtocolResult(validPortfolioResult), true);
+  assert.equal(isTenantProtocolResult(validQueueResult), true);
+  assert.equal(
+    isTenantProtocolResult({
+      ...validPortfolioResult,
+      response: {
+        ...validPortfolioResult.response,
+        resource: {
+          resourceType: "servicing_queue",
+          resourceId: "cross_resource_confusion"
+        }
+      }
+    }),
+    false
+  );
+  assert.equal(
+    isTenantProtocolResult({
+      ...validQueueResult,
+      response: { ...validQueueResult.response, tenantId: "authority_leak" }
+    }),
+    false
+  );
+});
+
 test("Tenant protocol validation is mutation-free and errors expose no validator internals", () => {
   const validRequest = structuredClone(fixtures.validRequests[0]);
   const requestBefore = structuredClone(validRequest);

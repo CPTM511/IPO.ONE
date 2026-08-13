@@ -45,7 +45,8 @@ const CONFIG_KEYS = new Set([
   "requestTimeoutMs",
   "serveAuthentication",
   "sessionHandleProvider",
-  "verifyEdgeRequest"
+  "verifyEdgeRequest",
+  "workspaceNameProvider"
 ]);
 
 function invalidConfig() {
@@ -247,6 +248,7 @@ export function createProductionTenantRequestHandler(input) {
     (input.serveAuthentication !== undefined && typeof input.serveAuthentication !== "function") ||
     (input.getTrustedMtlsEvidence !== undefined && typeof input.getTrustedMtlsEvidence !== "function") ||
     (input.sessionHandleProvider !== undefined && typeof input.sessionHandleProvider !== "function") ||
+    (input.workspaceNameProvider !== undefined && typeof input.workspaceNameProvider !== "function") ||
     !boundedInteger(port, 1_024, 65_535) ||
     !boundedInteger(requestTimeoutMs, 100, REQUEST_TIMEOUT_MS) ||
     !boundedInteger(maximumConcurrency, 1, MAX_CONCURRENCY) ||
@@ -263,7 +265,8 @@ export function createProductionTenantRequestHandler(input) {
   const serveWebAsset = createTenantWebAssetHandler({
     csrfTokenProvider: input.csrfTokenProvider,
     sessionHandleProvider: input.sessionHandleProvider,
-    localAgentAccountProvider: input.localAgentAccountProvider
+    localAgentAccountProvider: input.localAgentAccountProvider,
+    workspaceNameProvider: input.workspaceNameProvider
   });
   let active = 0;
   return async function handleProductionTenantRequest(request, response) {

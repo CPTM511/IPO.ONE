@@ -40,7 +40,36 @@
     "writtenOffMinor": { "$ref": "#/$defs/minor" },
     "offers": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "creditOfferId",
+          "creditIntentId",
+          "creditPassportArtifactId",
+          "subjectId",
+          "assetId",
+          "facilityLimitMinor",
+          "approvedPrincipalMinor",
+          "status",
+          "validUntil",
+          "updatedAt"
+        ],
+        "properties": {
+          "creditOfferId": { "$ref": "#/$defs/id" },
+          "creditIntentId": { "$ref": "#/$defs/id" },
+          "creditPassportArtifactId": { "$ref": "#/$defs/id" },
+          "subjectId": { "$ref": "#/$defs/id" },
+          "assetId": { "$ref": "#/$defs/id" },
+          "facilityLimitMinor": { "$ref": "#/$defs/minor" },
+          "approvedPrincipalMinor": { "$ref": "#/$defs/minor" },
+          "status": {
+            "enum": ["offered", "accepted", "withdrawn", "expired", "superseded", "declined"]
+          },
+          "validUntil": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      }
     },
     "facilities": {
       "type": "array",

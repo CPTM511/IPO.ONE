@@ -231,7 +231,7 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       }
     );
     assert.equal(callback.status, 303);
-    assert.equal(callback.headers.get("location"), "/#human");
+    assert.equal(callback.headers.get("location"), "/#request-credit");
     const callbackCookies = callback.headers.getSetCookie();
     assert.equal(callbackCookies.length, 3);
     assert.match(callbackCookies[0], /^__Host-ipo_one_session=/);

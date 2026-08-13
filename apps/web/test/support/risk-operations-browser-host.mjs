@@ -9,24 +9,377 @@ import {
   createTenantHttpServer,
   createTenantWebAssetHandler
 } from "../../../tenant-api/src/index.js";
+import { DomainError } from "../../../../packages/domain/src/index.js";
 
 const csrfToken = "risk_operations_browser_qa_csrf_token_000000001";
 const portfolioId = "risk_portfolio_browser_qa";
 const servicingQueueId = "servicing_queue_browser_qa";
-const subjectId = "agent_subject_browser_qa";
+const subjectId = "subject_case_17ad";
+let riskWorkspaceScenario =
+  process.env.IPO_ONE_BROWSER_QA_RISK_WORKSPACE_SCENARIO ?? "single";
+const RISK_WORKSPACE_SCENARIOS = new Set([
+  "single",
+  "empty",
+  "multiple",
+  "portfolio-denied",
+  "queue-denied",
+  "stale"
+]);
+if (!RISK_WORKSPACE_SCENARIOS.has(riskWorkspaceScenario)) {
+  throw new Error("invalid_browser_qa_risk_workspace_scenario");
+}
+const RISK_QUEUE_PAGINATION_SCENARIOS = new Set([
+  "single-page",
+  "has-more",
+  "append-denied"
+]);
+let riskQueuePaginationScenario =
+  process.env.IPO_ONE_BROWSER_QA_RISK_QUEUE_PAGINATION ?? "single-page";
+if (!RISK_QUEUE_PAGINATION_SCENARIOS.has(riskQueuePaginationScenario)) {
+  throw new Error("invalid_browser_qa_risk_queue_pagination_scenario");
+}
+const DELAYABLE_READ_OPERATIONS = new Set([
+  "pilotReadTenantRiskPortfolioReference",
+  "pilotReadTenantRisk",
+  "pilotReadServicingQueueReference",
+  "pilotReadServicingQueue"
+]);
+const RISK_CATALOG_SCENARIOS = new Map([
+  ["complete", null],
+  ["missing-portfolio-reference", "pilotReadTenantRiskPortfolioReference"],
+  ["missing-portfolio-detail", "pilotReadTenantRisk"],
+  ["missing-queue-reference", "pilotReadServicingQueueReference"],
+  ["missing-queue-detail", "pilotReadServicingQueue"]
+]);
+let riskCatalogScenario =
+  process.env.IPO_ONE_BROWSER_QA_RISK_CATALOG_SCENARIO ?? "complete";
+if (!RISK_CATALOG_SCENARIOS.has(riskCatalogScenario)) {
+  throw new Error("invalid_browser_qa_risk_catalog_scenario");
+}
+const browserQaOperationAudit = [];
+const browserQaAuthenticationAudit = [];
+const browserQaScenarioAudit = [];
+const browserQaQueuePaginationAudit = [];
+const browserQaOperationDelayAudit = [];
+const browserQaCatalogAudit = [];
+const browserQaCatalogScenarioAudit = [];
+let browserQaOperationDelay = null;
+let browserQaDelayedOperationCount = 0;
+let browserSessionActive = true;
 let subjectFrozen = false;
 
 async function serveAuthentication({ request, response, url, requestId }) {
-  if (url.pathname !== "/auth/v1/options") return false;
-  if (request.method !== "GET" && request.method !== "HEAD") return false;
+  if (
+    request.method === "GET" &&
+    url.pathname === "/__qa__/risk-workspace-scenario"
+  ) {
+    const nextScenario = url.searchParams.get("value") ?? "";
+    if (!RISK_WORKSPACE_SCENARIOS.has(nextScenario)) {
+      throw new DomainError(
+        "invalid_tenant_command_payload",
+        "QA Risk workspace scenario is invalid."
+      );
+    }
+    const previousScenario = riskWorkspaceScenario;
+    riskWorkspaceScenario = nextScenario;
+    browserQaScenarioAudit.push({
+      from: previousScenario,
+      to: nextScenario
+    });
+    const body = JSON.stringify({
+      riskWorkspaceScenario,
+      schemaVersion: "risk_operations_browser_qa_workspace_scenario.v1"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/__qa__/queue-pagination-scenario"
+  ) {
+    const nextScenario = url.searchParams.get("value") ?? "";
+    if (!RISK_QUEUE_PAGINATION_SCENARIOS.has(nextScenario)) {
+      throw new DomainError(
+        "invalid_tenant_command_payload",
+        "QA Risk queue pagination scenario is invalid."
+      );
+    }
+    const previousScenario = riskQueuePaginationScenario;
+    riskQueuePaginationScenario = nextScenario;
+    browserQaQueuePaginationAudit.push({
+      from: previousScenario,
+      to: nextScenario
+    });
+    const body = JSON.stringify({
+      riskQueuePaginationScenario,
+      schemaVersion: "risk_operations_browser_qa_queue_pagination_scenario.v1"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/__qa__/operation-delay"
+  ) {
+    const operationId = url.searchParams.get("operationId") ?? "";
+    const milliseconds = Number(url.searchParams.get("milliseconds"));
+    if (
+      !DELAYABLE_READ_OPERATIONS.has(operationId) ||
+      !Number.isSafeInteger(milliseconds) ||
+      milliseconds < 100 ||
+      milliseconds > 3_000
+    ) {
+      throw new DomainError(
+        "invalid_tenant_command_payload",
+        "QA operation delay must name an allowed read and be between 100 and 3000 milliseconds."
+      );
+    }
+    browserQaOperationDelay = { operationId, milliseconds };
+    browserQaOperationDelayAudit.push({
+      event: "configured",
+      operationId,
+      milliseconds
+    });
+    const body = JSON.stringify({
+      operationDelay: structuredClone(browserQaOperationDelay),
+      oneShot: true,
+      schemaVersion: "risk_operations_browser_qa_operation_delay.v1"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/__qa__/risk-catalog-scenario"
+  ) {
+    const nextScenario = url.searchParams.get("value") ?? "";
+    if (!RISK_CATALOG_SCENARIOS.has(nextScenario)) {
+      throw new DomainError(
+        "invalid_tenant_command_payload",
+        "QA Risk catalog scenario is invalid."
+      );
+    }
+    const previousScenario = riskCatalogScenario;
+    riskCatalogScenario = nextScenario;
+    browserQaCatalogScenarioAudit.push({
+      from: previousScenario,
+      to: nextScenario
+    });
+    const body = JSON.stringify({
+      riskCatalogScenario,
+      missingOperationId: RISK_CATALOG_SCENARIOS.get(riskCatalogScenario),
+      schemaVersion: "risk_operations_browser_qa_catalog_scenario.v1"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/tenant/v1/catalog" &&
+    url.search === ""
+  ) {
+    if (!browserSessionActive) {
+      throw new DomainError(
+        "authentication_rejected",
+        "The browser QA Risk session is signed out."
+      );
+    }
+    const missingOperationId = RISK_CATALOG_SCENARIOS.get(riskCatalogScenario);
+    const operations = TENANT_PROTOCOL_CATALOG.operations.filter(
+      (operation) => operation.operationId !== missingOperationId
+    );
+    browserQaCatalogAudit.push({
+      scenario: riskCatalogScenario,
+      missingOperationId,
+      operationCount: operations.length
+    });
+    const body = JSON.stringify({
+      ...TENANT_PROTOCOL_CATALOG,
+      operations
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (request.method === "GET" && url.pathname === "/__qa__/operation-audit") {
+    const operationIds = browserQaOperationAudit.map((entry) => entry.operationId);
+    const readCount = browserQaOperationAudit.filter(
+      (entry) => entry.kind === "query"
+    ).length;
+    const mutationCount = browserQaOperationAudit.length - readCount;
+    const body = JSON.stringify({
+      riskWorkspaceScenario,
+      riskQueuePaginationScenario,
+      riskCatalogScenario,
+      operationIds,
+      readCount,
+      mutationCount,
+      referenceReadCount: operationIds.filter((operationId) => new Set([
+        "pilotReadTenantRiskPortfolioReference",
+        "pilotReadServicingQueueReference"
+      ]).has(operationId)).length,
+      portfolioReadCount: operationIds.filter(
+        (operationId) => operationId === "pilotReadTenantRisk"
+      ).length,
+      queueReadCount: operationIds.filter(
+        (operationId) => operationId === "pilotReadServicingQueue"
+      ).length,
+      referenceAgentRequestCount: 0,
+      operations: structuredClone(browserQaOperationAudit),
+      scenarioTransitions: structuredClone(browserQaScenarioAudit),
+      queuePaginationTransitions: structuredClone(browserQaQueuePaginationAudit),
+      operationDelay: browserQaOperationDelay
+        ? structuredClone(browserQaOperationDelay)
+        : null,
+      delayedOperationCount: browserQaDelayedOperationCount,
+      operationDelayEvents: structuredClone(browserQaOperationDelayAudit),
+      catalogRequestCount: browserQaCatalogAudit.length,
+      catalogRequests: structuredClone(browserQaCatalogAudit),
+      catalogScenarioTransitions: structuredClone(browserQaCatalogScenarioAudit),
+      authenticationRequests: structuredClone(browserQaAuthenticationAudit),
+      sessionActive: browserSessionActive,
+      subjectFrozen,
+      schemaVersion: "risk_operations_browser_qa_operation_audit.v1"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (request.method === "POST" && url.pathname === "/auth/v1/logout") {
+    if (
+      request.headers["x-csrf-token"] !== csrfToken ||
+      typeof request.headers["idempotency-key"] !== "string"
+    ) {
+      throw new DomainError(
+        "authentication_rejected",
+        "The browser QA logout boundary rejected the request."
+      );
+    }
+    browserSessionActive = false;
+    browserQaAuthenticationAudit.push({
+      event: "logout_complete",
+      method: request.method,
+      pathname: url.pathname,
+      sessionActive: browserSessionActive
+    });
+    const body = JSON.stringify({
+      schemaVersion: "ipo_one_logout_result.v1",
+      status: "logged_out"
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "set-cookie": [
+        "__Host-ipo_one_session=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0",
+        "__Host-ipo_one_csrf=; Path=/; Secure; SameSite=Strict; Max-Age=0"
+      ],
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/auth/v1/login" &&
+    url.searchParams.size === 1 &&
+    url.searchParams.get("provider") === "google"
+  ) {
+    browserQaAuthenticationAudit.push({
+      event: "oidc_login_started",
+      method: request.method,
+      pathname: url.pathname,
+      sessionActive: browserSessionActive
+    });
+    response.writeHead(303, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      location: "/__qa__/oidc-complete",
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end();
+    return true;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/__qa__/oidc-complete" &&
+    url.search === ""
+  ) {
+    browserSessionActive = true;
+    browserQaAuthenticationAudit.push({
+      event: "oidc_login_completed",
+      method: request.method,
+      pathname: url.pathname,
+      sessionActive: browserSessionActive
+    });
+    response.writeHead(303, {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+      location: "/#risk-operations",
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end();
+    return true;
+  }
+  if (request.method !== "GET" || url.pathname !== "/auth/v1/options") return false;
   const body = JSON.stringify({
     schemaVersion: "ipo_one_authentication_options.v1",
     profile: "closed_non_funds_pilot",
-    enabled: false,
-    sessionActive: true,
-    oidcProviders: [],
+    enabled: true,
+    sessionActive: browserSessionActive,
+    sessionAuthenticationMethod: browserSessionActive ? "oidc_pkce_bff" : null,
+    oidcProviders: ["google"],
     walletAuthentication: false,
-    supportedChains: [84532, 1952],
+    supportedChains: ["eip155:84532", "eip155:1952"],
     boundary:
       "Authentication proves presence; internal policy and Mandates separately decide authority."
   });
@@ -48,6 +401,33 @@ function protocolResult(operationId, response) {
     response: structuredClone(response),
     schemaVersion: "tenant_protocol_result.v1"
   };
+}
+
+function referenceResponse(resourceType, resourceId) {
+  return {
+    resource: resourceId === null
+      ? null
+      : { resourceType, resourceId },
+    serverTruth: true,
+    readOnly: true,
+    schemaVersion: resourceType === "risk_portfolio"
+      ? "tenant_risk_portfolio_reference_view.v1"
+      : "tenant_servicing_queue_reference_view.v1"
+  };
+}
+
+function unavailableWorkspaceReference() {
+  throw new DomainError(
+    "workspace_recovery_unavailable",
+    "The authenticated workspace cannot be recovered."
+  );
+}
+
+function deniedWorkspaceReference() {
+  throw new DomainError(
+    "authorization_denied",
+    "The requested resource is unavailable or access is denied."
+  );
 }
 
 function riskPortfolio() {
@@ -259,9 +639,40 @@ function servicingQueue(command) {
     }
   ];
   const requested = command.payload.classifications;
-  const cases = requested
+  const matchingCases = requested
     ? allCases.filter((item) => requested.includes(item.servicingClassification))
     : allCases;
+  const cursor = command.payload.cursor;
+  let cases = matchingCases;
+  let page = { limit: command.payload.limit ?? 25, hasMore: false };
+  if (riskQueuePaginationScenario !== "single-page") {
+    const nextCursor = "servicing_queue_browser_qa_cursor_page_2";
+    if (cursor === undefined) {
+      cases = matchingCases.slice(0, 2);
+      page = matchingCases.length > 2
+        ? { limit: command.payload.limit ?? 25, hasMore: true, nextCursor }
+        : { limit: command.payload.limit ?? 25, hasMore: false };
+    } else {
+      if (cursor !== nextCursor) {
+        throw new DomainError(
+          "invalid_tenant_command_payload",
+          "The QA servicing queue cursor is invalid."
+        );
+      }
+      if (riskQueuePaginationScenario === "append-denied") {
+        throw new DomainError(
+          "tenant_resource_unavailable",
+          "The requested resource is unavailable or access is denied."
+        );
+      }
+      cases = matchingCases.slice(2);
+    }
+  } else if (cursor !== undefined) {
+    throw new DomainError(
+      "invalid_tenant_command_payload",
+      "The QA single-page servicing queue does not accept a cursor."
+    );
+  }
   return {
     queueId: servicingQueueId,
     asOf: "2026-07-17T08:30:00.000Z",
@@ -275,7 +686,7 @@ function servicingQueue(command) {
       ]
     },
     cases,
-    page: { limit: command.payload.limit ?? 25, hasMore: false },
+    page,
     safety: {
       readOnly: true,
       piiIncluded: false,
@@ -289,8 +700,36 @@ function servicingQueue(command) {
 }
 
 function resultFor(command) {
+  if (command.operationId === "pilotReadTenantRiskPortfolioReference") {
+    if (riskWorkspaceScenario === "multiple") unavailableWorkspaceReference();
+    if (riskWorkspaceScenario === "portfolio-denied") deniedWorkspaceReference();
+    return protocolResult(
+      command.operationId,
+      referenceResponse(
+        "risk_portfolio",
+        riskWorkspaceScenario === "empty" ? null : portfolioId
+      )
+    );
+  }
+  if (command.operationId === "pilotReadServicingQueueReference") {
+    if (riskWorkspaceScenario === "multiple") unavailableWorkspaceReference();
+    if (riskWorkspaceScenario === "queue-denied") deniedWorkspaceReference();
+    return protocolResult(
+      command.operationId,
+      referenceResponse(
+        "servicing_queue",
+        riskWorkspaceScenario === "empty" ? null : servicingQueueId
+      )
+    );
+  }
   if (command.operationId === "pilotReadTenantRisk") {
     if (command.resource?.resourceId !== portfolioId) throw new Error("risk_portfolio_browser_qa_unavailable");
+    if (riskWorkspaceScenario === "stale") {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is unavailable or access is denied."
+      );
+    }
     return protocolResult(command.operationId, riskPortfolio());
   }
   if (command.operationId === "pilotReadPilotHealth") {
@@ -395,6 +834,12 @@ function resultFor(command) {
   }
   if (command.operationId === "pilotReadServicingQueue") {
     if (command.resource?.resourceId !== servicingQueueId) throw new Error("servicing_queue_browser_qa_unavailable");
+    if (riskWorkspaceScenario === "stale") {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is unavailable or access is denied."
+      );
+    }
     return protocolResult(command.operationId, servicingQueue(command));
   }
   if (command.operationId === "pilotFreezeSubject") {
@@ -443,8 +888,43 @@ const authenticationContext = createAuthenticationContext({
 const host = createTenantHttpServer({
   environment: "development",
   credentialSource: "local_test",
-  gateway: { async execute(command) { return resultFor(command); } },
+  gateway: {
+    async execute(command) {
+      const operation = TENANT_PROTOCOL_CATALOG.operations.find(
+        (candidate) => candidate.operationId === command.operationId
+      );
+      browserQaOperationAudit.push({
+        operationId: command.operationId,
+        kind: operation?.kind ?? "unknown",
+        scenario: riskWorkspaceScenario,
+        resource: command.resource ? structuredClone(command.resource) : null
+      });
+      if (browserQaOperationDelay?.operationId === command.operationId) {
+        const delay = browserQaOperationDelay;
+        browserQaOperationDelay = null;
+        ++browserQaDelayedOperationCount;
+        browserQaOperationDelayAudit.push({
+          event: "started",
+          operationId: command.operationId,
+          milliseconds: delay.milliseconds
+        });
+        await new Promise((resolve) => setTimeout(resolve, delay.milliseconds));
+        browserQaOperationDelayAudit.push({
+          event: "completed",
+          operationId: command.operationId,
+          milliseconds: delay.milliseconds
+        });
+      }
+      return structuredClone(resultFor(command));
+    }
+  },
   resolveAuthenticationContext: async ({ request }) => {
+    if (!browserSessionActive) {
+      throw new DomainError(
+        "authentication_rejected",
+        "The browser QA Risk session is signed out."
+      );
+    }
     if (request.method === "POST" && request.headers["x-csrf-token"] !== csrfToken) {
       throw new Error("invalid_risk_browser_qa_csrf");
     }
@@ -452,11 +932,17 @@ const host = createTenantHttpServer({
   },
   createNetworkContext: async () => ({ source: "risk_operations_browser_qa" }),
   serveAuthentication,
-  serveWebAsset: createTenantWebAssetHandler({ csrfTokenProvider: async () => csrfToken })
+  serveWebAsset: createTenantWebAssetHandler({
+    csrfTokenProvider: async () => csrfToken,
+    workspaceNameProvider: async () => "risk"
+  })
 });
 
 const address = await host.listen();
 console.log(`RISK_OPERATIONS_BROWSER_QA_URL=http://${address.host}:${address.port}/#risk-operations`);
+console.log(`RISK_OPERATIONS_BROWSER_QA_SCENARIO=${riskWorkspaceScenario}`);
+console.log(`RISK_OPERATIONS_BROWSER_QA_QUEUE_PAGINATION=${riskQueuePaginationScenario}`);
+console.log(`RISK_OPERATIONS_BROWSER_QA_CATALOG_SCENARIO=${riskCatalogScenario}`);
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, async () => {

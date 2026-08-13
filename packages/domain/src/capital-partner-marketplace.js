@@ -493,6 +493,8 @@ export function createCapitalPartnerPortfolio({
       .map(({ outstandingMinor }) => outstandingMinor)),
     offers: offers.map((offer) => ({
       creditOfferId: offer.creditOfferId,
+      creditIntentId: offer.creditIntentId,
+      creditPassportArtifactId: offer.creditPassportArtifactId,
       subjectId: offer.subjectId,
       assetId: offer.assetId,
       facilityLimitMinor: offer.facilityLimitMinor,

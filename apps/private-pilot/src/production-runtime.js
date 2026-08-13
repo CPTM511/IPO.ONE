@@ -52,6 +52,15 @@ const CONFIG_KEYS = new Set([
   "wallet"
 ]);
 const EVM_ACCOUNT = /^0x[a-fA-F0-9]{40}$/;
+const DEPLOYMENT_ROLES = new Set(["container", "primary", "risk"]);
+const PRODUCTION_WORKSPACE_BY_DEPLOYMENT_ROLE = Object.freeze({
+  primary: "controller",
+  risk: "risk"
+});
+
+export function productionWorkspaceNameForDeploymentRole(deploymentRole) {
+  return PRODUCTION_WORKSPACE_BY_DEPLOYMENT_ROLE[deploymentRole];
+}
 
 function invalidConfig(message = "Production closed-pilot runtime configuration is invalid") {
   return new DomainError("invalid_production_runtime_config", message);
@@ -102,6 +111,7 @@ async function composeProductionClosedPilotRuntime(input) {
     !input.authenticationPool?.connect ||
     !input.authenticationPool?.query ||
     !input.machineResolver?.keyResolver ||
+    !DEPLOYMENT_ROLES.has(input.deploymentRole) ||
     (input.agentAccountAddress !== undefined &&
       !EVM_ACCOUNT.test(input.agentAccountAddress)) ||
     typeof input.createNetworkContext !== "function" ||
@@ -179,6 +189,12 @@ async function composeProductionClosedPilotRuntime(input) {
     publicOrigin: input.browserOrigin,
     port: input.port,
     releaseId: input.releaseId,
+    ...(productionWorkspaceNameForDeploymentRole(input.deploymentRole) === undefined
+      ? {}
+      : {
+          workspaceNameProvider: async () =>
+            productionWorkspaceNameForDeploymentRole(input.deploymentRole)
+        }),
     ...(input.clock === undefined ? {} : { clock: input.clock })
   });
 

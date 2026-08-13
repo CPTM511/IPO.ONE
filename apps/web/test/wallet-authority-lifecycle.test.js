@@ -119,6 +119,7 @@ test("network failure stays closed and retry reuses the exact idempotency key", 
     /network unavailable/
   );
   assert.equal(lifecycle.getSnapshot().status, "unavailable");
+  assert.equal(lifecycle.getSnapshot().canRetryInvalidation, true);
   assert.equal(lifecycle.getSnapshot().canStartAuthentication, false);
   assert.throws(
     () => lifecycle.assertProtectedAvailable(),
@@ -131,6 +132,31 @@ test("network failure stays closed and retry reuses the exact idempotency key", 
     "wallet-retry-idempotency-000000000000000001",
     "wallet-retry-idempotency-000000000000000001"
   ]);
+  assert.equal(lifecycle.getSnapshot().canRetryInvalidation, false);
+});
+
+test("a receiving tab cannot advertise a retry without the original idempotency key", async () => {
+  const hub = broadcastHub();
+  const sourceChannel = hub.channel();
+  let receiverCalls = 0;
+  const receiver = createWalletAuthorityLifecycle({
+    broadcastChannel: hub.channel(),
+    async invalidateSession() {
+      receiverCalls += 1;
+      return RESULT;
+    }
+  });
+  sourceChannel.postMessage({
+    schemaVersion: "wallet_authority_quarantine.v1",
+    type: "wallet_authority_status",
+    status: "unavailable",
+    reason: "wallet_provider_changed"
+  });
+  assert.equal(receiver.getSnapshot().status, "unavailable");
+  assert.equal(receiver.getSnapshot().canRetryInvalidation, false);
+  const result = await receiver.retryInvalidation();
+  assert.equal(result.status, "unavailable");
+  assert.equal(receiverCalls, 0);
 });
 
 test("a pre-session Provider event abandons the old challenge epoch without claiming server authority", async () => {

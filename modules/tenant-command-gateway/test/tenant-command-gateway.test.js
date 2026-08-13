@@ -21,6 +21,7 @@ import {
   OperatorTenantCommandClient,
   ProviderTenantCommandClient,
   RiskTenantQueryClient,
+  AuditorTenantQueryClient,
   TenantCommandHandlerRegistry,
   createAgentSubjectCommandHandler,
   createConsentCommandHandler,
@@ -167,7 +168,9 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotReadAgentAccountBinding",
     "pilotReadAgentSelf",
     "pilotReadCapitalPartnerFacility",
+    "pilotReadCapitalPartnerPassportInbox",
     "pilotReadCapitalPartnerPortfolio",
+    "pilotReadCapitalPartnerSelf",
     "pilotReadConsent",
     "pilotReadCreditApplication",
     "pilotReadCreditRegistryEvidence",
@@ -183,7 +186,9 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotReadPilotHealth",
     "pilotReadProviderIntent",
     "pilotReadServicingQueue",
+    "pilotReadServicingQueueReference",
     "pilotReadTenantRisk",
+    "pilotReadTenantRiskPortfolioReference",
     "pilotReadWorkspaceResume",
     "pilotRepurchaseSandboxObligation",
     "pilotRequestCredit",
@@ -1513,6 +1518,10 @@ test("Human, Operator, Risk, and Agent clients inject only their verified contex
     gateway,
     authenticationContextProvider: async () => auditorContext
   });
+  const auditor = new AuditorTenantQueryClient({
+    gateway,
+    authenticationContextProvider: async () => auditorContext
+  });
 
   await human.createAgentSubject({
     payload: { subjectActorId: "actor_agent_alpha", displayName: "Alpha" },
@@ -1567,6 +1576,22 @@ test("Human, Operator, Risk, and Agent clients inject only their verified contex
     requestId: "request_risk_001",
     correlationId: "correlation_risk_001"
   });
+  await risk.getPortfolioReference({
+    requestId: "request_risk_reference_001",
+    correlationId: "correlation_risk_reference_001"
+  });
+  await risk.getServicingQueueReference({
+    requestId: "request_risk_reference_002",
+    correlationId: "correlation_risk_reference_002"
+  });
+  await operator.getServicingQueueReference({
+    requestId: "request_operator_reference_001",
+    correlationId: "correlation_operator_reference_001"
+  });
+  await auditor.getPortfolioReference({
+    requestId: "request_auditor_reference_001",
+    correlationId: "correlation_auditor_reference_001"
+  });
   await risk.getPilotHealth({
     portfolioId: "risk_portfolio_alpha",
     requestId: "request_risk_002",
@@ -1597,12 +1622,24 @@ test("Human, Operator, Risk, and Agent clients inject only their verified contex
     resourceId: "risk_portfolio_alpha"
   });
   assert.deepEqual(calls[6].payload, {});
-  assert.equal(calls[7].operationId, "pilotReadPilotHealth");
-  assert.deepEqual(calls[7].resource, {
+  assert.equal(calls[7].operationId, "pilotReadTenantRiskPortfolioReference");
+  assert.equal(Object.hasOwn(calls[7], "resource"), false);
+  assert.deepEqual(calls[7].payload, {});
+  assert.equal(calls[8].operationId, "pilotReadServicingQueueReference");
+  assert.equal(Object.hasOwn(calls[8], "resource"), false);
+  assert.deepEqual(calls[8].payload, {});
+  assert.equal(calls[9].operationId, "pilotReadServicingQueueReference");
+  assert.equal(calls[9].authenticationContext, operatorContext);
+  assert.equal(Object.hasOwn(calls[9], "resource"), false);
+  assert.equal(calls[10].operationId, "pilotReadTenantRiskPortfolioReference");
+  assert.equal(calls[10].authenticationContext, auditorContext);
+  assert.equal(Object.hasOwn(calls[10], "resource"), false);
+  assert.equal(calls[11].operationId, "pilotReadPilotHealth");
+  assert.deepEqual(calls[11].resource, {
     resourceType: "risk_portfolio",
     resourceId: "risk_portfolio_alpha"
   });
-  assert.deepEqual(calls[7].payload, {});
+  assert.deepEqual(calls[11].payload, {});
   assert.equal(Object.hasOwn(calls[0], "tenantId"), false);
   assert.equal(Object.hasOwn(calls[5], "actorId"), false);
   assert.equal(calls.every((call) => call.schemaVersion === "tenant_protocol_request.v1"), true);
@@ -1622,7 +1659,7 @@ test("Human, Operator, Risk, and Agent clients inject only their verified contex
     (error) => error.code === "invalid_tenant_protocol_request"
   );
   assert.equal(authenticationContextLookups, lookupsBeforeInvalidRequest);
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, 12);
 
   const lookupsBeforeInvalidEconomicRequest = authenticationContextLookups;
   const networkLookupsBeforeInvalidEconomicRequest = networkContextLookups;
@@ -1646,7 +1683,7 @@ test("Human, Operator, Risk, and Agent clients inject only their verified contex
   );
   assert.equal(authenticationContextLookups, lookupsBeforeInvalidEconomicRequest);
   assert.equal(networkContextLookups, networkLookupsBeforeInvalidEconomicRequest);
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, 12);
 });
 
 test("Human client exposes the approved self-service Subject and Consent operations without caller authority fields", async () => {

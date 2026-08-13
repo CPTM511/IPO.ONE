@@ -2,7 +2,7 @@
 
 **版本：** v0.2 Draft
 
-**日期：** 2026-07-31
+**最后验证：** 2026-08-13
 
 **适用环境：** Local Closed Pilot / Synthetic Capital / No Real Funds
 
@@ -45,13 +45,18 @@ Obligation、repayment waterfall、servicing、Evidence 和信用记录。
 chain ID、真实 transaction hash、finality、indexer 和 reconciliation 状态时，
 才属于已验证的 Testnet 链上记录。
 
+页面会把当前阶段永久不可用的能力显示为非交互状态行，而不是灰色按钮。例如
+Deposit、Fund facility、Withdraw、生产定价、worker settlement 和 transaction
+submission 都不能点击，也不会触发隐藏请求；每一项会直接说明当前 no-funds
+边界。只有具备真实服务端前置条件、之后可以解锁的操作才会暂时 disabled。
+
 ## 3. 入口与角色
 
 | 地址 | 角色 | 用途 |
 | --- | --- | --- |
 | `http://127.0.0.1:8787/#overview` | Human Borrower | Human 申请、评估、Obligation、执行、还款和信用记录 |
-| `http://127.0.0.1:8788/#human` | Human Principal Controller | Agent Subject、account proof、Mandate 与受保护参考 Agent |
-| `http://127.0.0.1:8789/#risk` | Risk Operator | 风险、暂停、冻结和运营检查 |
+| `http://127.0.0.1:8788/#request-credit` | Human Principal Controller | Agent Subject、account proof、Mandate 与受保护参考 Agent |
+| `http://127.0.0.1:8789/#risk-operations` | Risk Operator | 风险、暂停、冻结和运营检查 |
 | `http://127.0.0.1:8790/#capital-partners` | Capital Partner Operator | 受邀资金方的 no-funds 工作区 |
 
 启动与检查：
@@ -68,11 +73,19 @@ pnpm run local:status
 ### Sign in
 
 1. 打开与自己角色对应的端口。
-2. 点击右上角 `Sign in`。
-3. 选择本地已配置的认证方式；使用钱包时选择测试网络并完成 SIWE 签名。
+2. 点击首屏卡片的 `Sign in`（右上角保留同一入口）。
+3. 页面只展示服务端已启用、且当前浏览器实际可用的认证方式；使用钱包时先选择已发现的钱包，再选择测试网络并完成 SIWE 签名。
 4. 顶部必须同时显示 `Signed in` 与 `Secure session active`。
 
 SIWE 是账户控制权签名，不是链上 transaction，也不会自动创建信用授权或贷款。
+
+如果没有可用钱包，页面不会显示灰色登录按钮。打开或安装兼容的 EVM
+钱包后，点击 `Check for wallets again`。如果认证服务检查失败，点击
+`Check sign-in again`；它只重新读取一次服务端可用性，不会自动循环。
+仍失败时可点击 `Copy access details`，将不含 Cookie、Token、钱包地址或
+私有资源 ID 的诊断信息通过原邀请渠道发给 Pilot 管理员。IPO.ONE 当前
+没有已批准的普通登录支持邮箱或 URL；命名支持渠道仍是 Closed Pilot
+前的单独门槛。
 
 ### Sign out
 
@@ -167,17 +180,24 @@ IPO.ONE 不替用户创建或托管 Agent。Agent 是用户，通过受保护 AP
 在 8788 登录 Human Principal Controller：
 
 1. 打开 `Credit` → `Configure Agent authority`。
-2. 填写 `Agent actor ID`、`Display name`、`Jurisdiction`。
-3. 点击 `Create Agent Subject`。
+2. 页面从已认证服务器工作区自动恢复唯一获授权的 Agent、Subject 与 Mandate；普通
+   用户不填写或复制内部 ID。若尚无 Subject，只填写 `Display name` 与 `Jurisdiction`。
+3. 仅在页面显示 `Assigned Agent ready` 时点击 `Create Agent Subject`；已有 Subject
+   会自动恢复并跳过该动作。
 4. 点击 `Create signing request`。
 5. Closed Pilot 点击 `Ask registered test Agent to prove`；外部 Agent 使用自己的
    Agent Host/API 提交同一 challenge。
 6. 成功状态必须为 `Proof verified` 与 `Subject active`。
 7. 填写 `Per action (USD)`、`Aggregate (USD)`、`Validity (days)`。
-8. 点击 `Create Draft Mandate`。
+8. 尚无 Mandate 时点击 `Create Draft Mandate`；已有 Mandate 会自动加载。
 
-`Download proof request` 与 `Refresh binding` 仍可用于外部或离线调试，但本地参考
-Agent 网页主路径不要求用户下载文件。
+当服务器返回零个 Agent 时，页面只显示联系邀请方完成配置的安全空态；返回多个
+Agent、多个 Subject/Mandate 或不完整分页时，页面保持关闭并等待授权选择器，不会
+自行选第一项。ID 与 hash 仅在折叠的 `Technical details and receipts` 中查询。
+
+外部或离线 Agent 可在技术集成面下载 proof request；普通网页主路径只显示当前阶段
+的主要动作，不要求用户下载文件。已完成的 proof、Mandate 与 activation 阶段会自动
+折叠，避免继续展示无法执行的旧按钮。
 
 ### 6.3 Agent 申请与评估
 
@@ -185,7 +205,8 @@ Agent 网页主路径不要求用户下载文件。
 2. 从 Home 点击 `Agent borrowing` → `Open Agent credit`，或打开左侧
    `Agent Console`。
 3. 在 `Check authenticated Agent progress online` 点击
-   `Check for Agent Offer`。
+   - 本地无资金环境：`Run local Agent application`；
+   - 其他已关闭试点环境：外部 Agent 完成申请后点击 `Check for Agent Offer`。
 4. 页面应显示：
    - `Decision completed`；
    - `Offered · $...`；
@@ -203,9 +224,16 @@ Obligation。Activate 不会自动借款，也不会自动花钱。
 Mandate 激活后，回到 `Agent Workspace` → `Open Agent credit`。页面现在提供四个
 相互独立的经济步骤，不再压缩成一个黑箱按钮：
 
+本地无资金环境可直接点击 `Complete sandbox Agent lifecycle`。这是一个明确标注的
+Agent 目标级调用：注册 Agent 使用服务器持有的可撤销 credential，在 exact active
+Mandate 内完成 Obligation、allowlisted sandbox use、synthetic repayment 与 Evidence
+read；不会移动真实资金。其他已关闭试点环境继续由外部 Agent 分步执行，Principal
+只使用下列 `Check ...` 动作读取服务器事实。
+
 | 顺序 | 按钮 | 功能 | 成功标志 |
 | --- | --- | --- | --- |
 | 1 | `Check for Agent Obligation` | Restore the shared Obligation after the external Agent accepts the exact Offer | `Obligation: Created` |
+| — | `Check Agent progress` | Read exact server truth when an active Mandate has no currently recovered Offer or Obligation | Exact Offer, exact Mandate-bound Obligation, or a stable waiting/unknown state; this action never creates a new application or changes authority |
 | 2 | `Check Provider spend` | Restore the current Mandate-approved Provider-spend state | `Provider spend: Allowlisted` |
 | 3 | `Check automatic repayment` | Restore the deterministic repayment projection after the external Agent posts synthetic revenue | `Revenue captured` and the remaining principal |
 | 4 | `Check Agent Evidence` | Restore the owner-authorized immutable Evidence timeline | `Lifecycle verified` and the verified event count |
@@ -287,10 +315,47 @@ Agent，handoff 文件也不包含 credential 或资金权限。
 1. 先完成或恢复一个 Decision。
 2. 打开 `Credit Passport`。
 3. 点击 `Load my latest Decision`。
-4. 选择允许披露的 factor/outcome、reviewer 和有效期。
-5. 点击 `Share private Passport`。
+4. 正常查看到此即完成，不需要输入任何内部 ID。
+5. 只有收到同 Tenant 受邀 reviewer 的 exact Actor reference 时，才展开高级分享区，选择允许披露的 factor/outcome、reviewer 和有效期。
+6. 点击 `Share private Passport`。
 
 Passport 不应包含 raw KYC/PII、Agent credential、私钥或完整策略数据。
+
+### Risk 工作区
+
+Risk Operator 登录 `http://127.0.0.1:8789/#risk-operations` 后，产品会从当前认证
+Tenant 的服务器真相自动恢复唯一的 Risk Portfolio 与 Servicing Queue，不再要求手输
+Portfolio ID 或 Queue ID。
+
+正常进入时系统只自动执行四个有界只读动作：恢复两个 locator、读取 Portfolio、读取
+Queue 首屏。locator 只是内部定位信息，随后两个详情读取仍会分别重新验证角色、capability、
+Tenant scope 与近期 phishing-resistant MFA。
+
+- `Refresh Risk workspace`：清除当前页面中的旧 Portfolio/Queue，再从服务器重新恢复并读取；
+- `Apply stage`：对已恢复 Queue 运行一次新的分类读取；
+- `Load supporting insights`：明确读取 lifecycle health 与 feedback aggregate，不在启动时静默增加请求。
+
+若资源为空、多条、畸形、过期、未授权或 catalog 不可用，页面不选择第一条、不读取浏览器缓存，
+而是显示安全恢复状态。技术 locator 只在折叠的 `Technical details` 中只读展示。
+
+`Freeze Subject` 仍是独立的保护性 mutation：必须先在当前授权 Queue 中明确选择一条 case，
+再选择原因并确认，并通过原有近期 MFA 与服务器授权。选择 Queue 行只准备保护性评审，
+不会自动触发 Freeze，也不要求操作员复制 Subject ID。
+
+### Capital Partner 工作区
+
+Capital Partner Operator 登录 `http://127.0.0.1:8790/#capital-partners` 后，产品会从当前认证
+Tenant 的服务器真相恢复自己的 Partner Profile、Portfolio，以及借款人明确授权给该 Partner 的
+当前 Passport Inbox。正常流程不再要求手输 Profile、Passport、Credit Intent、hash 或 version。
+
+- `Refresh workspace`：重新读取 Profile、授权 Inbox 与 Portfolio；失败时清除旧页面状态；
+- 单个授权申请会自动进入评审，多项时必须从有日期、到期时间和 claim 数量的标签中明确选择；
+- `Issue exact sandbox Offer`：只在一个当前授权申请已选择且提交前重新校验完全相同的 Passport、
+  Credit Intent、hash 与 version 后出现；它会创建 synthetic Offer，但不会移动生产资金；
+- `Withdraw unaccepted Offer`：仅在当前 Offer 仍为 offered 时显示，明确撤回尚未接受的 Offer。
+
+内部定位值仅在折叠的 Technical authoring references 中只读展示。空、过期、撤销、畸形、越权、
+多义或 catalog 不完整时，页面不会猜第一条、不会从浏览器缓存恢复，也不会显示经济表单。
 
 ## 8. Evidence 与链上状态
 
@@ -332,9 +397,12 @@ Passport 不应包含 raw KYC/PII、Agent credential、私钥或完整策略数�
 ### Agent
 
 - [ ] Agent Subject、account proof 和 Draft Mandate 可创建。
+- [ ] 本地无资金环境的 `Run local Agent application` 可完成申请并返回 exact Offer；credential 不进入浏览器。
 - [ ] `Check for Agent Offer` restores the persisted Decision and Offer.
 - [ ] exact Mandate 可由 Principal 激活。
+- [ ] 本地无资金环境的 `Complete sandbox Agent lifecycle` 可完成 Obligation、allowlisted use、synthetic repayment 与 Evidence read，且没有真实资金移动。
 - [ ] `Check for Agent Obligation` restores the current Obligation state.
+- [ ] `Check Agent progress` performs a bounded read-only recovery and never instructs the Principal to revoke or replace an active Mandate.
 - [ ] `Check Provider spend` restores the current execution state.
 - [ ] `Check automatic repayment` restores the current repayment state.
 - [ ] `Check Agent Evidence` restores the current Evidence state.

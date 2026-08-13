@@ -20,6 +20,7 @@ import { createProviderHandlers } from "./provider-handlers.js";
 import { createSandboxServicingHandlers } from "./servicing-handlers.js";
 import { createSubjectRiskHandlers } from "./subject-risk-handlers.js";
 import { createTenantRiskQueryHandlers } from "./tenant-risk-query-handlers.js";
+import { createRiskWorkspaceReferenceHandlers } from "./risk-workspace-reference-handlers.js";
 import { createTradingCapitalEvidenceHandlers } from "./trading-capital-evidence-handlers.js";
 import { createTradingCapitalMatchingHandlers } from "./trading-capital-matching-handlers.js";
 import { createTradingCapitalFacilityHandlers } from "./trading-capital-facility-handlers.js";
@@ -27,6 +28,7 @@ import { createTradingCapitalSettlementHandlers } from "./trading-capital-settle
 import { createWorkspaceResumeHandlers } from "./workspace-resume-handlers.js";
 import { createWorkspaceContinuationHandlers } from "./workspace-continuation-handlers.js";
 import { createCapitalPartnerHandlers } from "./capital-partner-handlers.js";
+import { createCapitalPartnerWorkspaceHandlers } from "./capital-partner-workspace-handlers.js";
 import {
   createUnavailableWalletExecutionApplication,
   createWalletExecutionHandlers
@@ -44,6 +46,7 @@ export function createTenantFoundationHandlers(options) {
     ...createCreditDecisionHandlers(),
     ...createCreditPassportHandlers(),
     ...createCapitalPartnerHandlers(),
+    ...createCapitalPartnerWorkspaceHandlers(),
     ...createCreditAcceptanceHandlers(),
     ...createCreditExecutionHandlers(options),
     ...createCreditRegistryEvidenceHandlers(),
@@ -62,6 +65,7 @@ export function createTenantFoundationHandlers(options) {
     ...createProviderHandlers(options),
     ...createSandboxServicingHandlers(),
     ...createSubjectRiskHandlers(),
+    ...createRiskWorkspaceReferenceHandlers(),
     ...createTenantRiskQueryHandlers(),
     ...createTradingCapitalEvidenceHandlers(options),
     ...createTradingCapitalMatchingHandlers(),

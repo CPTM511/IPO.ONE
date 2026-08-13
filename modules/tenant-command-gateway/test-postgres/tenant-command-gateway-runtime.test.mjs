@@ -1665,6 +1665,101 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       }
     });
 
+    await t.test("Risk workspace references recover exact Tenant resources without business mutation", async () => {
+      const businessState = async () => (await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM domain_events WHERE tenant_id IN ($1, $2)) AS events,
+           (SELECT count(*)::int FROM credit_events WHERE tenant_id IN ($1, $2)) AS credit_events,
+           (SELECT count(*)::int FROM evidence_envelopes WHERE tenant_id IN ($1, $2)) AS evidence,
+           (SELECT count(*)::int FROM projection_snapshots WHERE tenant_id IN ($1, $2)) AS projections,
+           (SELECT count(*)::int FROM tenant_command_executions WHERE tenant_id IN ($1, $2)) AS executions,
+           (SELECT count(*)::int FROM authorization_resource_bindings WHERE tenant_id IN ($1, $2)) AS bindings`,
+        [TENANT_ONE, TENANT_TWO]
+      )).rows[0];
+      const before = await businessState();
+
+      const riskPortfolioReference = await tenantOneRiskQuery.getPortfolioReference({
+        requestId: `request-risk-reference-risk-${RUN_ID}`,
+        correlationId: `correlation-risk-reference-risk-${RUN_ID}`
+      });
+      assert.deepEqual(riskPortfolioReference.response.resource, {
+        resourceType: "risk_portfolio",
+        resourceId: TENANT_ONE_RISK_PORTFOLIO
+      });
+      const auditorPortfolioReference = await tenantOneAuditorQuery.getPortfolioReference({
+        requestId: `request-risk-reference-auditor-${RUN_ID}`,
+        correlationId: `correlation-risk-reference-auditor-${RUN_ID}`
+      });
+      assert.equal(auditorPortfolioReference.response.resource.resourceId, TENANT_ONE_RISK_PORTFOLIO);
+      const riskQueueReference = await tenantOneRiskQuery.getServicingQueueReference({
+        requestId: `request-queue-reference-risk-${RUN_ID}`,
+        correlationId: `correlation-queue-reference-risk-${RUN_ID}`
+      });
+      assert.deepEqual(riskQueueReference.response.resource, {
+        resourceType: "servicing_queue",
+        resourceId: TENANT_ONE_SERVICING_QUEUE
+      });
+      const operationsQueueReference = await tenantOneOperations.getServicingQueueReference({
+        requestId: `request-queue-reference-operations-${RUN_ID}`,
+        correlationId: `correlation-queue-reference-operations-${RUN_ID}`
+      });
+      assert.equal(operationsQueueReference.response.resource.resourceId, TENANT_ONE_SERVICING_QUEUE);
+      const tenantTwoPortfolioReference = await tenantTwoRiskQuery.getPortfolioReference({
+        requestId: `request-risk-reference-two-${RUN_ID}`,
+        correlationId: `correlation-risk-reference-two-${RUN_ID}`
+      });
+      assert.equal(tenantTwoPortfolioReference.response.resource.resourceId, TENANT_TWO_RISK_PORTFOLIO);
+      const tenantTwoQueueReference = await tenantTwoRiskQuery.getServicingQueueReference({
+        requestId: `request-queue-reference-two-${RUN_ID}`,
+        correlationId: `correlation-queue-reference-two-${RUN_ID}`
+      });
+      assert.equal(tenantTwoQueueReference.response.resource.resourceId, TENANT_TWO_SERVICING_QUEUE);
+
+      await assert.rejects(
+        () => tenantOneStaleRiskQuery.getPortfolioReference({
+          requestId: `request-risk-reference-stale-${RUN_ID}`,
+          correlationId: `correlation-risk-reference-stale-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneStaleRiskQuery.getServicingQueueReference({
+          requestId: `request-queue-reference-stale-${RUN_ID}`,
+          correlationId: `correlation-queue-reference-stale-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneAuditorQuery.getServicingQueueReference({
+          requestId: `request-queue-reference-auditor-${RUN_ID}`,
+          correlationId: `correlation-queue-reference-auditor-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => runtime.execute({
+          authenticationContext: identities.tenantOneOperations.authenticationContext,
+          operationId: "pilotReadTenantRiskPortfolioReference",
+          payload: {},
+          requestId: `request-risk-reference-operations-${RUN_ID}`,
+          correlationId: `correlation-risk-reference-operations-${RUN_ID}`,
+          schemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneBorrower.execute({
+          operationId: "pilotReadTenantRiskPortfolioReference",
+          payload: {},
+          requestId: `request-risk-reference-borrower-${RUN_ID}`,
+          correlationId: `correlation-risk-reference-borrower-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+
+      assert.deepEqual(await businessState(), before);
+    });
+
     await t.test("Risk and Operations read an MFA-bound RLS-isolated Servicing queue", async () => {
       const riskView = await tenantOneRiskQuery.getServicingQueue({
         queueId: TENANT_ONE_SERVICING_QUEUE,
@@ -5766,6 +5861,47 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         amountMinor: "8000",
         label: "human-repaid"
       });
+      const capitalPartnerSelf = await tenantOneCapitalPartner.getCapitalPartnerSelf({
+        requestId: `request-phase2-capital-partner-self-${RUN_ID}`,
+        correlationId: `correlation-phase2-capital-partner-self-${RUN_ID}`
+      });
+      assert.deepEqual(capitalPartnerSelf.response.resource, {
+        resourceType: "capital_partner_profile",
+        resourceId: capitalPartnerProfile.capitalPartnerId
+      });
+      assert.deepEqual(capitalPartnerSelf.response.profile, {
+        capitalPartnerId: capitalPartnerProfile.capitalPartnerId,
+        displayName: capitalPartnerProfile.displayName
+      });
+      assert.equal(capitalPartnerSelf.response.fundsAuthority, false);
+      assert.equal(capitalPartnerSelf.response.readOnly, true);
+
+      const passportInbox = await tenantOneCapitalPartner.getCapitalPartnerPassportInbox({
+        requestId: `request-phase2-capital-partner-inbox-${RUN_ID}`,
+        correlationId: `correlation-phase2-capital-partner-inbox-${RUN_ID}`
+      });
+      const humanInboxItem = passportInbox.response.items.find(
+        ({ resource }) => (
+          resource.resourceId === humanUnderwriting.passport.creditPassportArtifactId
+        )
+      );
+      assert.ok(humanInboxItem);
+      assert.equal(
+        humanInboxItem.reviewContext.creditIntentId,
+        humanApplication.creditIntent.creditIntentId
+      );
+      assert.equal(
+        humanInboxItem.reviewContext.artifactHash,
+        humanUnderwriting.passport.artifactHash
+      );
+      assert.equal(
+        humanInboxItem.reviewContext.artifactVersion,
+        humanUnderwriting.passport.version
+      );
+      assert.equal(humanInboxItem.summary.claimCount, 4);
+      assert.equal(Object.hasOwn(humanInboxItem.summary, "selectedClaims"), false);
+      assert.equal(passportInbox.response.fundsAuthority, false);
+      assert.equal(passportInbox.response.readOnly, true);
       const humanObligation = await acceptExecute({
         client: tenantOnePhase2BorrowerA,
         offer: humanUnderwriting.offer,
@@ -6004,6 +6140,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(portfolio.response.portfolio.utilizedMinor, "19000");
       assert.equal(portfolio.response.portfolio.repaidMinor, "15000");
       assert.equal(portfolio.response.portfolio.outstandingMinor, "4000");
+      assert.equal(
+        portfolio.response.portfolio.offers.some((offer) => (
+          offer.creditIntentId === humanApplication.creditIntent.creditIntentId
+        )),
+        true
+      );
       const adverseFacility = portfolio.response.portfolio.facilities.find(
         ({ obligationId }) => obligationId === adverseObligation.obligationId
       );

@@ -137,6 +137,38 @@ test("no announced or legacy Provider reaches one empty ready registry", () => {
   assert.equal(fixture.registry.getSelectedConnector(), null);
 });
 
+test("user-triggered rediscovery emits one bounded Provider request without selecting authority", () => {
+  const target = new EventTarget();
+  const wallet = provider("late");
+  const fixture = registry(target);
+  let requests = 0;
+  target.addEventListener(EIP6963_REQUEST_EVENT, () => {
+    requests += 1;
+    if (requests === 2) {
+      announce(target, detail({
+        uuid: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        name: "Late Wallet",
+        rdns: "com.late.wallet"
+      }, wallet));
+    }
+  });
+
+  fixture.registry.start();
+  fixture.timer.run();
+  assert.equal(fixture.registry.getSnapshot().status, "ready");
+  assert.equal(fixture.registry.getSnapshot().providers.length, 0);
+
+  const rediscovering = fixture.registry.rediscover();
+  assert.equal(requests, 2);
+  assert.equal(rediscovering.status, "discovering");
+  assert.equal(rediscovering.providers.length, 1);
+  assert.equal(rediscovering.selectedProviderId, undefined);
+  assert.equal(fixture.registry.getSelectedConnector(), null);
+  assert.equal(wallet.requests.length, 0);
+  fixture.timer.run();
+  assert.equal(fixture.registry.getSnapshot().status, "ready");
+});
+
 test("one EIP-6963 Provider is discovered but never selected implicitly", () => {
   const target = new EventTarget();
   const wallet = provider("alpha");

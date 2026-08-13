@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import {
+  persistLocalAgentContinuationReceipt,
   runLocalAgentApplicationWorkflow,
   runLocalAgentRuntimeWorkflow
 } from "./agent-reference-workflows.js";
@@ -38,6 +39,7 @@ try {
       manifest,
       session
     });
+    await persistLocalAgentContinuationReceipt({ receipt, session });
     process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
   } else {
     const offerReceipt = JSON.parse(await readFile(offerReceiptPath, "utf8"));

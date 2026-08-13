@@ -222,6 +222,45 @@ test("Tenant risk portfolio is aggregate-only, bounded, MFA-gated, and private",
   assert.doesNotMatch(server, /pilotReadTenantRisk|tenant-risk-query-handlers|tenant-command-gateway/);
 });
 
+test("Risk workspace references are narrow, MFA-gated, PII-free locators", async () => {
+  const [catalogBody, policy, handler, server] = await Promise.all([
+    source("api/tenant-protocol/ipo-one.tenant-protocol.v1.json"),
+    source("modules/authorization/src/authorization-policy.js"),
+    source("modules/tenant-command-gateway/src/risk-workspace-reference-handlers.js"),
+    source("apps/api/src/server.js")
+  ]);
+  const catalog = JSON.parse(catalogBody);
+  const portfolio = catalog.operations.find(
+    ({ operationId }) => operationId === "pilotReadTenantRiskPortfolioReference"
+  );
+  const queue = catalog.operations.find(
+    ({ operationId }) => operationId === "pilotReadServicingQueueReference"
+  );
+  assert.deepEqual(portfolio.actorTypes, ["risk_operator", "auditor"]);
+  assert.equal(portfolio.resourceType, "workspace");
+  assert.equal(portfolio.requiredCapability, "risk.read.tenant");
+  assert.equal(portfolio.responseSchemaVersion, "tenant_risk_portfolio_reference_view.v1");
+  assert.deepEqual(queue.actorTypes, ["risk_operator", "operations_operator"]);
+  assert.equal(queue.resourceType, "workspace");
+  assert.equal(queue.requiredCapability, "servicing.queue.read");
+  assert.equal(queue.responseSchemaVersion, "tenant_servicing_queue_reference_view.v1");
+  for (const operation of [portfolio, queue]) {
+    assert.equal(operation.kind, "query");
+    assert.equal(operation.quotaClass, "read");
+    assert.equal(operation.idempotency, "prohibited");
+    assert.equal(operation.public, false);
+    assert.equal(operation.fundsAuthority, false);
+  }
+  assert.match(policy, /operationId: "pilotReadTenantRiskPortfolioReference"[\s\S]*?OwnershipRule\.NONE[\s\S]*?requiresRecentMfaActorTypes/);
+  assert.match(policy, /operationId: "pilotReadServicingQueueReference"[\s\S]*?OwnershipRule\.NONE[\s\S]*?requiresRecentMfaActorTypes/);
+  assert.match(handler, /FROM authorization_resources/);
+  assert.match(handler, /status = 'active'/);
+  assert.match(handler, /LIMIT 2/);
+  assert.doesNotMatch(handler, /authorization_resource_bindings/);
+  assert.doesNotMatch(handler, /tenantId|actorId|subjectId|displayName|kyc|kyp|evidence|hash/i);
+  assert.doesNotMatch(server, /pilotReadTenantRiskPortfolioReference|pilotReadServicingQueueReference|risk-workspace-reference-handlers/);
+});
+
 test("Pilot health analytics are aggregate-only, MFA-gated, tracker-free, and private", async () => {
   const [resultSchemaBody, catalogBody, policy, handler, server] = await Promise.all([
     source("schemas/v2/tenant-protocol-result.schema.json"),

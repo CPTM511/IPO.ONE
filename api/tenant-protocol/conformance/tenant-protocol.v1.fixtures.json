@@ -296,6 +296,20 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "payload": {},
+      "requestId": "request-fixture-read-risk-portfolio-reference",
+      "correlationId": "correlation-fixture-read-risk-portfolio-reference",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadServicingQueueReference",
+      "payload": {},
+      "requestId": "request-fixture-read-servicing-queue-reference",
+      "correlationId": "correlation-fixture-read-servicing-queue-reference",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotPersistAgentContinuationReceipt",
       "payload": {
         "receipt": {}
@@ -531,6 +545,20 @@
       "idempotencyKey": "fixture-revoke-credit-passport-0001",
       "requestId": "request-fixture-revoke-credit-passport",
       "correlationId": "correlation-fixture-revoke-credit-passport",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerSelf",
+      "payload": {},
+      "requestId": "request-fixture-read-capital-partner-self",
+      "correlationId": "correlation-fixture-capital-partner",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPassportInbox",
+      "payload": {},
+      "requestId": "request-fixture-read-capital-partner-passport-inbox",
+      "correlationId": "correlation-fixture-capital-partner",
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
@@ -1209,6 +1237,32 @@
     }
   ],
   "invalidRequests": [
+    {
+      "name": "Risk portfolio reference attempts caller-selected resource",
+      "value": {
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "payload": {},
+        "resource": {
+          "resourceType": "risk_portfolio",
+          "resourceId": "risk_portfolio_attacker"
+        },
+        "requestId": "request-invalid-risk-reference-resource",
+        "correlationId": "correlation-invalid-risk-reference-resource",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
+    {
+      "name": "Servicing queue reference attempts caller-selected scope",
+      "value": {
+        "operationId": "pilotReadServicingQueueReference",
+        "payload": {
+          "tenantId": "tenant_attacker"
+        },
+        "requestId": "request-invalid-queue-reference-scope",
+        "correlationId": "correlation-invalid-queue-reference-scope",
+        "schemaVersion": "tenant_protocol_request.v1"
+      }
+    },
     {
       "name": "caller authentication context",
       "value": {
@@ -2461,6 +2515,31 @@
         "hasMore": false,
         "serverTruth": true,
         "schemaVersion": "tenant_workspace_resume_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "replayed": false,
+      "response": {
+        "resource": {
+          "resourceType": "risk_portfolio",
+          "resourceId": "risk_portfolio_fixture"
+        },
+        "serverTruth": true,
+        "readOnly": true,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadServicingQueueReference",
+      "replayed": false,
+      "response": {
+        "resource": null,
+        "serverTruth": true,
+        "readOnly": true,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },
@@ -3808,6 +3887,57 @@
       "schemaVersion": "tenant_protocol_result.v1"
     },
     {
+      "operationId": "pilotReadCapitalPartnerSelf",
+      "replayed": false,
+      "response": {
+        "resource": {
+          "resourceType": "capital_partner_profile",
+          "resourceId": "capital_partner_fixture"
+        },
+        "profile": {
+          "capitalPartnerId": "capital_partner_fixture",
+          "displayName": "Pilot Capital Partner"
+        },
+        "fundsAuthority": false,
+        "serverTruth": true,
+        "readOnly": true,
+        "schemaVersion": "tenant_capital_partner_self_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPassportInbox",
+      "replayed": false,
+      "response": {
+        "items": [
+          {
+            "resource": {
+              "resourceType": "credit_passport_artifact",
+              "resourceId": "credit_passport_artifact_fixture"
+            },
+            "reviewContext": {
+              "creditIntentId": "credit_intent_capital_partner_fixture",
+              "artifactHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+              "artifactVersion": 1
+            },
+            "summary": {
+              "claimCount": 4,
+              "purpose": "private_credit_review",
+              "issuedAt": "2026-07-24T10:00:00.000Z",
+              "expiresAt": "2026-07-24T10:15:00.000Z"
+            }
+          }
+        ],
+        "count": 1,
+        "hasMore": false,
+        "fundsAuthority": false,
+        "serverTruth": true,
+        "readOnly": true,
+        "schemaVersion": "tenant_capital_partner_passport_inbox_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
       "operationId": "pilotAuthorCapitalPartnerOffer",
       "replayed": false,
       "response": {
@@ -3984,7 +4114,15 @@
           "offers": [
             {
               "creditOfferId": "credit_offer_capital_partner_fixture",
-              "status": "accepted"
+              "creditIntentId": "credit_intent_capital_partner_fixture",
+              "creditPassportArtifactId": "credit_passport_artifact_capital_partner_fixture",
+              "subjectId": "subject_human_fixture",
+              "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+              "facilityLimitMinor": "10000",
+              "approvedPrincipalMinor": "10000",
+              "status": "accepted",
+              "validUntil": "2026-07-31T00:00:00.000Z",
+              "updatedAt": "2026-07-30T01:00:00.000Z"
             }
           ],
           "facilities": [
@@ -6618,6 +6756,38 @@
     }
   ],
   "invalidResults": [
+    {
+      "name": "Risk portfolio reference returns a queue locator",
+      "value": {
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "replayed": false,
+        "response": {
+          "resource": {
+            "resourceType": "servicing_queue",
+            "resourceId": "servicing_queue_confused"
+          },
+          "serverTruth": true,
+          "readOnly": true,
+          "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
+    {
+      "name": "Servicing queue reference exposes authority metadata",
+      "value": {
+        "operationId": "pilotReadServicingQueueReference",
+        "replayed": false,
+        "response": {
+          "resource": null,
+          "tenantId": "tenant_leak",
+          "serverTruth": true,
+          "readOnly": true,
+          "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+        },
+        "schemaVersion": "tenant_protocol_result.v1"
+      }
+    },
     {
       "name": "unknown response field",
       "value": {
