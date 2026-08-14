@@ -78,6 +78,8 @@ const SECRET_DIRECTORY = resolve(ROOT, ".ipo-one/local-stack");
 const DATABASE_SECRET_FILE = resolve(SECRET_DIRECTORY, "private-pilot-db-secret");
 const AGENT_DIRECTORY = resolve(SECRET_DIRECTORY, "agent-workflows");
 const RUNTIME_READER = "apps/private-pilot/src/m1-b-operational-runtime-read.js";
+const RUNTIME_READER_COMPOSE_PROJECT = "ipo-one-m1-b-evidence-reader";
+const RUNTIME_READER_COMPOSE_SERVICE = "runtime-reader";
 const LIVE_NEGATIVE_CLI =
   "apps/private-pilot/src/m1-b-operational-live-negative-cli.js";
 const EXPIRED_OFFER_SETUP_CLI =
@@ -4277,6 +4279,14 @@ export function createM1BOperationalRuntimeReaderArguments({
     "ALL",
     "--security-opt",
     "no-new-privileges:true",
+    "--label",
+    `com.docker.compose.project=${RUNTIME_READER_COMPOSE_PROJECT}`,
+    "--label",
+    `com.docker.compose.service=${RUNTIME_READER_COMPOSE_SERVICE}`,
+    "--label",
+    `ipo.one.candidate=${candidateReleaseId}`,
+    "--label",
+    "ipo.one.evidence=m1-b-operational-runtime-read",
     "--mount",
     `type=bind,src=${databaseSecretFile},dst=/run/secrets/private-pilot-db-secret,readonly`,
     "--env",

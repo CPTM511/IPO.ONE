@@ -541,6 +541,17 @@ test("operational runtime reader argv is least-authority and executable in the d
   assert.equal(args[args.indexOf("--entrypoint") + 1], "/nodejs/bin/node");
   assert.equal(args.filter((value) => value === "--mount").length, 1);
   assert.equal(args.some((value) => /owner|password|authentication|agent-key/.test(value)), false);
+  const labels = args.flatMap((value, index) =>
+    value === "--label" ? [args[index + 1]] : []
+  );
+  assert.deepEqual(labels, [
+    "com.docker.compose.project=ipo-one-m1-b-evidence-reader",
+    "com.docker.compose.service=runtime-reader",
+    `ipo.one.candidate=${RELEASE_SHA}`,
+    "ipo.one.evidence=m1-b-operational-runtime-read"
+  ]);
+  assert.equal(labels.includes("com.docker.compose.project=ipo-one-local"), false);
+  assert.equal(labels.includes("com.docker.compose.service=pilot"), false);
   const environment = args.flatMap((value, index) =>
     value === "--env" ? [args[index + 1]] : []
   );
@@ -938,6 +949,38 @@ test("restart proof rejects recreation, extra start, and volume destruction", ()
     () => createM1BRestartContext(before, after, extraStart),
     /event binding/
   );
+  for (const action of ["start", "create", "destroy"]) {
+    const inheritedPilotLabelReader = JSON.stringify({
+      Action: action,
+      Actor: {
+        ID: "9".repeat(64),
+        Attributes: { "com.docker.compose.service": "pilot" }
+      }
+    });
+    assert.throws(
+      () => createM1BRestartEventSummary(before, after, {
+        containerLines: [...baseLines, inheritedPilotLabelReader],
+        volumeLines: []
+      }),
+      /pilot restart events do not bind the captured container/
+    );
+  }
+  for (const action of ["create", "destroy"]) {
+    const unexpectedProjectContainer = JSON.stringify({
+      Action: action,
+      Actor: {
+        ID: "8".repeat(64),
+        Attributes: { "com.docker.compose.service": "runtime-reader" }
+      }
+    });
+    assert.throws(
+      () => createM1BRestartEventSummary(before, after, {
+        containerLines: [...baseLines, unexpectedProjectContainer],
+        volumeLines: []
+      }),
+      /unexpected project container/
+    );
+  }
   assert.throws(
     () => createM1BRestartEventSummary(before, after, {
       containerLines: baseLines,
