@@ -9074,6 +9074,19 @@ body[data-interaction-mode="agent"] [data-view-panel="request-credit"] .request-
     padding: 18px;
   }
 
+  .human-workbench-actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    min-width: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .human-workbench-actions .secondary {
+    max-width: 100%;
+    white-space: normal;
+  }
+
   .form-grid.two,
   .form-grid.three {
     grid-template-columns: 1fr;

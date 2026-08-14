@@ -1619,9 +1619,10 @@ test("UX-003 exposes Human mutations and Principal-observable Agent progress", a
 });
 
 test("UX-005 opens a fresh Human application when a recovered Obligation exists", async () => {
-  const [html, js, manual] = await Promise.all([
+  const [html, js, css, manual] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
     readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
     readFile(
       new URL("../../../docs/user-guide/IPO_ONE_HUMAN_AGENT_USER_MANUAL_v0.2_DRAFT.md", import.meta.url),
       "utf8"
@@ -1640,6 +1641,14 @@ test("UX-005 opens a fresh Human application when a recovered Obligation exists"
   assert.doesNotMatch(
     js.match(/function startAnotherHumanApplication\(\)[\s\S]*?\n\}/)?.[0] ?? "",
     /humanSubjectId/
+  );
+  assert.match(
+    css,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.human-workbench-actions \{[\s\S]*?flex-wrap: wrap;[\s\S]*?width: 100%;/
+  );
+  assert.match(
+    css,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.human-workbench-actions \.secondary \{[\s\S]*?max-width: 100%;[\s\S]*?white-space: normal;/
   );
   assert.ok(manual.includes("Start a new Human loan"));
   assert.ok(manual.includes("必须创建"));
