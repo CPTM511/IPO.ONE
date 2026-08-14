@@ -10500,15 +10500,6 @@ button.capital-partner-application-choice[aria-checked="true"] {
     margin-inline: 6px;
   }
 
-  .borrowing-entry-strip {
-    grid-template-columns: 1fr;
-    margin-inline: 6px;
-  }
-
-  .borrowing-entry-actions {
-    grid-template-columns: 1fr;
-  }
-
   .product-section-heading,
   .capital-partner-boundary {
     align-items: stretch;
@@ -11744,6 +11735,29 @@ body.sidebar-tools-open .nav-item[data-view="risk-operations"] {
   font-size: 0.72rem;
   font-style: normal;
   font-weight: 850;
+}
+
+@media (max-width: 700px) {
+  .borrowing-entry-strip {
+    grid-template-columns: 1fr;
+    margin-inline: 6px;
+  }
+
+  .borrowing-entry-actions {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+
+  .borrowing-entry-action,
+  .borrowing-entry-action span {
+    min-width: 0;
+  }
+
+  .borrowing-entry-action strong,
+  .borrowing-entry-action small,
+  .borrowing-entry-action em {
+    overflow-wrap: anywhere;
+  }
 }
 
 .product-section-heading {

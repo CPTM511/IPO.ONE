@@ -1618,6 +1618,44 @@ test("UX-003 exposes Human mutations and Principal-observable Agent progress", a
   assert.ok(css.includes(".agent-online-stage-actions"));
 });
 
+test("Principal borrowing entry keeps its effective mobile layout after base declarations", async () => {
+  const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+  const stripBaseIndex = css.indexOf("\n.borrowing-entry-strip {\n  display: grid;");
+  const actionsBaseIndex = css.indexOf("\n.borrowing-entry-actions {\n  display: grid;");
+  const mobileOverrideIndex = css.indexOf(
+    "\n@media (max-width: 700px) {\n  .borrowing-entry-strip {",
+    Math.max(stripBaseIndex, actionsBaseIndex)
+  );
+
+  assert.ok(stripBaseIndex >= 0, "borrowing entry strip base rule missing");
+  assert.ok(actionsBaseIndex >= 0, "borrowing entry actions base rule missing");
+  assert.ok(
+    mobileOverrideIndex > Math.max(stripBaseIndex, actionsBaseIndex),
+    "mobile borrowing entry override must follow the base grid declarations"
+  );
+
+  const mobileOverrideEnd = css.indexOf("\n}\n\n.product-section-heading", mobileOverrideIndex);
+  assert.ok(mobileOverrideEnd > mobileOverrideIndex, "mobile borrowing entry override boundary missing");
+  const mobileOverride = css.slice(mobileOverrideIndex, mobileOverrideEnd);
+
+  assert.match(
+    mobileOverride,
+    /\.borrowing-entry-strip \{[\s\S]*?grid-template-columns: 1fr;/
+  );
+  assert.match(
+    mobileOverride,
+    /\.borrowing-entry-actions \{[\s\S]*?grid-template-columns: 1fr;[\s\S]*?min-width: 0;/
+  );
+  assert.match(
+    mobileOverride,
+    /\.borrowing-entry-action,[\s\S]*?\.borrowing-entry-action span \{[\s\S]*?min-width: 0;/
+  );
+  assert.match(
+    mobileOverride,
+    /\.borrowing-entry-action strong,[\s\S]*?\.borrowing-entry-action em \{[\s\S]*?overflow-wrap: anywhere;/
+  );
+});
+
 test("UX-005 opens a fresh Human application when a recovered Obligation exists", async () => {
   const [html, js, css, manual] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
