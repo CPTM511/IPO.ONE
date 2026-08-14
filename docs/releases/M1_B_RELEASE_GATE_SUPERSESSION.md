@@ -18,10 +18,15 @@ commit object, tree, parent, exact 67-path scope and content root. It does not
 require a checkout-local branch ref, because GitHub Actions checks out only the
 triggering ref by default.
 
-The aggregate `pnpm run check` now uses the Founder-approved M1-B Gate Profile
-and `deploy/local/m1-b-release-closure-checkpoint.v1.json` as its current-stage
-authority. This explicitly supersedes the branch-bound M1-A.1 checker only for
-the current aggregate gate; it does not supersede or relabel M1-A.1 history.
+The tracked M1-B Gate Profile is preserved as the historical source profile for
+the requirement registry and its original 38-required / 6-deferred decision.
+Its direct checker remains active so the source profile cannot drift, including
+its historical `deploymentAuthorized:true` field. That field is not inherited
+by current release closure. The sole effective current-stage authority is the
+2026-08-14 Founder overlay bound below, which explicitly overrides deployment
+and every related external release action to false. This supersedes the
+branch-bound M1-A.1 checker and the base profile only for the current aggregate
+gate; it does not rewrite or relabel either historical source.
 
 The sealed local RC v2 remains direct historical verification for its bound
 2026-07-31 branch and 48-migration state. Its `pnpm run check:local-rc` command
@@ -33,8 +38,43 @@ future P0-5 exact-green candidate.
 The M1-B checkpoint is intentionally not a release candidate. It keeps
 `candidateCommit` unset and `exactGreen`, `deploymentClosureClaimed`, real
 funds and mainnet false. P0-5 may bind a clean exact commit only after all
-applicable repository, security, transport, PostgreSQL, deployment and
-acceptance gates pass against that commit.
+applicable repository, security, transport, PostgreSQL and acceptance gates
+pass against that commit. Deployment may remain explicitly pending; in that
+state no deployed SHA or deployment-closure claim is permitted.
+
+## 2026-08-14 Founder release-closure overlay
+
+The immutable 38-required / 6-deferred M1-B Gate Profile and its direct checker
+remain unchanged. The Founder decision dated 2026-08-14 is recorded as a
+versioned current-closure overlay at
+`product/traceability/ipo-one.m1-b-release-closure-founder-overlay.2026-08-14.v1.json`.
+The aggregate checkpoint invokes its dedicated checker without rewriting or
+reclassifying the source profile or historical requirement Evidence. The
+checkpoint classifies the base Gate Profile and ancestor-bound cutover
+preflight as preserved historical inputs with `aggregateCurrentStageGate:false`;
+only this overlay has `soleEffectiveCurrentStageAuthority:true`.
+
+For current M1-B release closure, the overlay derives an effective 39-required /
+5-deferred gate. `REQ-UX-001` and `REQ-UX-003` require exact-candidate Human and
+Capital Partner acceptance. Full privileged `REQ-UX-004` becomes an M1-C / L2
+Closed Pilot gate because its recent phishing-resistant MFA topology is not
+currently composed.
+
+Risk security remains mandatory through the separate
+`M1_B_RISK_SIWE_ONLY_FAIL_CLOSED` gate. Exact-candidate Evidence must prove that
+a SIWE-only session cannot reach operations requiring recent phishing-resistant
+MFA, no weak-auth fallback exists, authorization policy is unchanged, no Risk
+surface lacking that assurance is newly exposed or promoted, and the privileged
+mutation count is zero.
+
+Final SHA, tree, counts, runtime identity, artifact hashes, rollback target and
+deployment status bind through external private exact-commit Evidence and the
+PR #20 release report. The tracked checkpoint does not self-reference a commit
+hash and is not updated after acceptance as a metadata-only seal. If deployment
+is pending, the older deployed SHA remains historical state and cannot be used
+as current-candidate Evidence. This overlay does not authorize merge,
+deployment, deployment Evidence collection requiring a deployment action,
+promotion, alias or DNS mutation, custom-domain mutation, tag, or seal.
 
 ## Dependency build policy
 
@@ -61,4 +101,6 @@ README tool, operation, schema and migration counts are derived and checked by
   Provider, MCP or funds path changes.
 - No M1-B completion, deployment, production, real-value or mainnet claim.
 - No historical evidence mutation.
-- The final exact-green commit and deployment Evidence remain P0-5 work.
+- The final exact-green commit and P0-5 acceptance/deployment-status Evidence
+  remain pending; deployed Evidence is conditional on separate deployment
+  authorization.

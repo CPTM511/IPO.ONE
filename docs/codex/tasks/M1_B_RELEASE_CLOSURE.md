@@ -19,6 +19,13 @@ The Product Constitution v1.1 is the highest product-truth authority. The
 Product Engineering and Experience Standard v1.0 governs implementation and
 acceptance. This issue supersedes the obsolete use of the M1-A.1 dirty-worktree
 snapshot as a current-stage gate without rewriting that historical Evidence.
+The Founder release-closure amendment dated 2026-08-14 further defines current
+P0-5 acceptance: Human, Principal/Agent, and Capital Partner remain positive
+M1-B journeys, while the full privileged Risk/Operations journey is deferred
+to `M1_C_L2_CLOSED_NO_FUNDS`. M1-B retains a mandatory exact-candidate Risk
+security boundary proving exhaustive SIWE-only failure at the unchanged recent
+phishing-resistant MFA policy, with no mutation, fallback, or hosted Risk
+surface. This overlay does not rewrite the historical Gate Profile or Evidence.
 
 ## Scope
 
@@ -100,7 +107,12 @@ contains a backlog gap.
 10. Hosted Evidence, if separately authorized and executable, reports the same
     release SHA and configuration. If external mutation authority is required,
     execution stops with exact requested authority and rollback consequence.
-11. Funds, signer, withdrawal, Venue-write, production-credit, and real Human
+11. Every Risk/Operations policy operation requiring recent phishing-resistant
+    MFA rejects an exact-runtime SIWE-only session non-enumeratingly, preserves
+    protected state across restart, performs zero privileged mutations, and
+    exposes no weak-auth fallback or hosted Risk surface. A successful
+    privileged Risk journey is not an M1-B requirement.
+12. Funds, signer, withdrawal, Venue-write, production-credit, and real Human
     lending authority remain false.
 
 ## Test Commands
@@ -117,10 +129,20 @@ pnpm run local:restart
 pnpm run local:acceptance
 pnpm run local:agent:acceptance
 pnpm run check:vercel-sandbox
-pnpm run launch:verify -- --evidence <exact-private-evidence> --profile public_sandbox --expected-sha <exact-green-sha>
+pnpm run check:launch-policy
+node scripts/check-m1-b-release-closure-founder-overlay.mjs
+node scripts/check-m1-b-release-closure-checkpoint.mjs
+node scripts/verify-m1-b-acceptance-evidence.mjs --evidence <private-v2-evidence> --evidence-root <repository-root> --expected-sha <exact-green-sha>
+# Only after separate deployment authorization and exact hosted Evidence exists:
+pnpm run launch:verify -- --evidence <exact-private-deployment-evidence> --profile public_sandbox --expected-sha <exact-green-sha>
 ```
 
-Targeted P0 task documents may add narrower failing and regression commands.
+The P0-5 v2 verifier, current overlay, and checkpoint are the strict
+`deployment_pending` closure path. `launch:verify --profile public_sandbox`
+requires deployed cloud, protected-environment, and DNS-cutover Evidence; it is
+conditional on separate deployment authorization and must not run as an
+implied current-closure step. Targeted P0 task documents may add narrower
+failing and regression commands.
 
 ## Security Checklist
 
@@ -137,20 +159,27 @@ Targeted P0 task documents may add narrower failing and regression commands.
 - [ ] Dependency build-script permission is a closed reviewed allowlist.
 - [ ] Historical release Evidence is not rewritten to impersonate current
       approval.
+- [ ] The current v2 Risk boundary is bound to the exact candidate and
+      post-restart PostgreSQL start, exhaustively covers the policy-derived
+      Risk/Operations recent-MFA operation set, and proves zero privileged
+      state change, fallback, or surface exposure.
 - [ ] All real-value and production-authority flags remain false.
 
 ## Permission Boundary
 
-The Founder order authorizes bounded M1-B source changes, commits, exact-green
-candidate construction, deployment Evidence collection, and closure of the
-existing no-funds release. It does not authorize mainnet, real funds, a
-production signer, arbitrary withdrawals, Venue writes, real Human lending,
-production fees, new credentials beyond the already reviewed deployment
-workflow, or product-scope expansion.
+The Founder order authorizes bounded M1-B source changes, one exact candidate
+commit, local exact-candidate acceptance, and correction of release truth. It
+does not currently authorize merge, deployment, deployment Evidence collection
+that requires an external deployment action, promotion, alias mutation, DNS or
+custom-domain mutation, a release tag or seal, mainnet, real funds, a production
+signer, arbitrary withdrawals, Venue writes, real Human lending, production
+fees, new credentials, or product-scope expansion.
 
-Any external action requiring authority not already present in the reviewed
-release workflow must stop and report the exact evidence, requested authority,
-target/network/asset/action, and rollback consequence.
+Read-only observation of already-existing historical deployments may be
+recorded only as historical context. Any merge, deployment, promotion, hosting,
+alias, DNS, custom-domain, tag, seal, credential, or other external mutation
+must stop and request separate authority with the exact target, action,
+Evidence need, and rollback consequence.
 
 ## Data and Migration Impact
 
@@ -175,7 +204,8 @@ Browser/process-local state cannot replace PostgreSQL truth.
 - Current-stage M1-B candidate manifest/checker without M1-A.1 mutation.
 - Exact aggregate gate counts and PostgreSQL/restart results.
 - Desktop/mobile/reload/fresh-session/Back/Forward/re-login browser Evidence.
-- Human, Agent, Capital Partner and Risk/Operations journey receipts.
+- Human, Agent, and Capital Partner positive-journey receipts plus the separate
+  exhaustive SIWE-only Risk/Operations fail-closed boundary receipt.
 - Exact canonical runtime and deployment configuration.
 - Hosted SHA/readiness/launch evidence or the exact external authority blocker.
 - Explicit unchanged-authority confirmation.

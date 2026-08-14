@@ -189,6 +189,7 @@ async function composeProductionClosedPilotRuntime(input) {
     publicOrigin: input.browserOrigin,
     port: input.port,
     releaseId: input.releaseId,
+    deploymentRole: input.deploymentRole,
     ...(productionWorkspaceNameForDeploymentRole(input.deploymentRole) === undefined
       ? {}
       : {

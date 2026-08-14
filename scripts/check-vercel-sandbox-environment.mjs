@@ -18,34 +18,22 @@ for (const name of Object.keys(process.env)) {
     throw new Error(`prohibited Vercel Sandbox runtime variable is present: ${name}`);
   }
 }
-assert.ok(
-  new Set(["primary", "risk"]).has(process.env.IPO_ONE_VERCEL_PROJECT_ROLE),
-  "IPO_ONE_VERCEL_PROJECT_ROLE must be primary or risk"
+assert.equal(
+  process.env.IPO_ONE_VERCEL_PROJECT_ROLE,
+  "primary",
+  "current M1-B v2 environment certification is Primary-only; Risk remains a deferred M1-C/L2 interface"
 );
-if (process.env.IPO_ONE_VERCEL_PROJECT_ROLE === "primary") {
-  assert.match(
-    process.env.IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS ?? "",
-    /^0x[a-fA-F0-9]{40}$/,
-    "Primary IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS must be one public EVM address"
-  );
-  assert.ok(
-    typeof process.env.CRON_SECRET === "string" &&
-    process.env.CRON_SECRET.length >= 16 &&
-    process.env.CRON_SECRET.length <= 256,
-    "Primary CRON_SECRET must contain 16-256 characters"
-  );
-} else {
-  assert.equal(
-    process.env.IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS,
-    undefined,
-    "Risk project must not contain IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS"
-  );
-  assert.equal(
-    process.env.CRON_SECRET,
-    undefined,
-    "Risk project must not contain CRON_SECRET"
-  );
-}
+assert.match(
+  process.env.IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS ?? "",
+  /^0x[a-fA-F0-9]{40}$/,
+  "Primary IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS must be one public EVM address"
+);
+assert.ok(
+  typeof process.env.CRON_SECRET === "string" &&
+  process.env.CRON_SECRET.length >= 16 &&
+  process.env.CRON_SECRET.length <= 256,
+  "Primary CRON_SECRET must contain 16-256 characters"
+);
 assert.notEqual(
   process.env.IPO_ONE_GATEWAY_DATABASE_URL,
   process.env.IPO_ONE_AUTH_DATABASE_URL,

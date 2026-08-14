@@ -2,12 +2,18 @@
 
 ## Status
 
-Status: `PREPARED_PENDING_EXACT_DEPLOYMENT_EVIDENCE`
+Status: `DEPLOYMENT_PENDING_FINAL_FOUNDER_AUTHORIZATION`
 
-This runbook deploys one role-isolated invitation-only no-real-funds Sandbox
-through two Vercel projects and one canonical database. It does not
-create an RC, release tag, custom domain, paid integration, signer, mainnet
-operation, real-funds path, or production financial claim.
+This runbook describes a future, separately authorized deployment of one
+invitation-only no-real-funds Sandbox through the Primary Vercel project and
+one canonical database. A separate Risk project is conditional on a later,
+separately approved phishing-resistant authentication topology. This is not
+current deployment authority and does not authorize a merge, deployment,
+promotion, alias, DNS or custom-domain change, tag, seal, RC, paid integration,
+signer, mainnet operation, real-funds path, or production financial claim. The
+current machine-readable topology is
+`deploy/vercel/m1-b-sandbox.manifest.v2.json`; v1 is preserved historical
+two-project context only.
 
 ## Fixed target
 
@@ -16,13 +22,21 @@ operation, real-funds path, or production financial claim.
 | Vercel team | `cptm-111-s-projects` |
 | Primary Vercel project | `ipo-one-internal` |
 | Primary project ID | `prj_KLyAPHnFCtQAxIbUjdJa012gAq7Y` |
-| Risk Vercel project | `ipo-one-internal-risk` (create only after exact commit) |
+| Risk Vercel project | `ipo-one-internal-risk`; historical baseline only during current closure |
 | Runtime | Node.js 24.x, Fluid Compute |
 | Database | One Neon PostgreSQL 17 project through Vercel Marketplace |
 | Cron | Primary project only: `/api/cron`, `*/5 * * * *`, authenticated by `CRON_SECRET` |
 | Public label | M1-B Deployable Sandbox; never a production financial claim |
 
 ## Exact source gate
+
+The current release truth is
+`docs/releases/M1_B_CURRENT_RELEASE_TRUTH.md`. The exact candidate SHA, tree, and
+final test counts are bound only after the candidate commit exists, in PR #20
+and private P0-5 Evidence. While deployment remains pending, the required
+identity relationship is `source = tested = accepted` and `deployed = null`.
+The following sequence may continue into deployment only after final Founder
+authorization:
 
 1. Stage only the approved M1-B implementation and deployment evidence paths.
 2. Preserve the three protected Founder work-in-progress test files and all
@@ -31,8 +45,10 @@ operation, real-funds path, or production financial claim.
    `codex/m1-b-deployable-sandbox`; do not create an RC branch or tag.
 4. Record commit and tree SHA.
 5. Run all static, unit, PostgreSQL, serverless, and local acceptance gates.
-6. Build the primary and Risk deployment bundles only from the same exact clean
-   export of that commit.
+6. Build the primary deployment bundle only from the exact clean export of that
+   commit. Build a Risk bundle only after separate authorization confirms that
+   the required phishing-resistant authentication is composed; SIWE alone is
+   insufficient.
 
 Required commands:
 
@@ -46,6 +62,8 @@ pnpm run check:migrations
 pnpm run check:tenant-protocol
 pnpm run check:m1-requirements
 node scripts/check-m1-b-gate-profile.mjs
+node scripts/check-m1-b-release-closure-founder-overlay.mjs
+pnpm run check:m1-b-release-checkpoint
 pnpm run check:web-bundle
 pnpm run check:vercel-sandbox
 pnpm test
@@ -64,12 +82,16 @@ an artifact is never deployable evidence.
    integration IDs without credentials.
 3. Use the Neon owner credential only from an owner-controlled temporary
    environment for one-shot bootstrap.
-4. Apply all 53 ordered migration pairs with exact checksums.
+4. Apply all 61 ordered migration pairs through
+   `0061_execution_account_bindings` with exact checksums.
 5. Create separate forced-RLS Gateway and authentication roles.
-6. Seed only the reviewed synthetic Tenant, system Actor, invited Founder
-   Principal Controller, DPoP-bound Agent runtime, Provider, and Founder Risk
-   Operator identities required by the Golden Flow. The two Human credentials
-   use distinct Vercel issuers/client IDs; the Agent uses `agent_dpop`.
+6. Seed only the reviewed synthetic Tenant, system Actor, invited Principal
+   Controller, DPoP-bound Agent runtime, Provider, and other identities named by
+   the separately authorized Primary acceptance profile. Seed or deploy a Risk
+   operator only under the separately approved phishing-resistant
+   authentication topology; SIWE-only Risk remains a fail-closed local
+   security-boundary test, not a hosted M1-B surface. The Agent uses
+   `agent_dpop`.
 7. Record migration and seed results without values.
 8. Remove the owner/bootstrap credential from the Vercel runtime environment.
 
@@ -77,16 +99,23 @@ Runtime Functions receive only the two least-privilege database URLs.
 
 ## Vercel environment and deploy
 
+Do not execute this section during current M1-B closure. It begins only after
+final Founder deployment authorization names the exact accepted candidate and
+the freshly revalidated rollback baselines.
+
 1. Enable Vercel system environment variables.
 2. Add only the variables in
-   `docs/deployment/VERCEL_ENVIRONMENT_VARIABLES.md` for each project's
-   production target. Configure `CRON_SECRET` only on the primary project.
+   `docs/deployment/VERCEL_ENVIRONMENT_VARIABLES.md` for each authorized
+   project's production target. Configure `CRON_SECRET` only on the primary
+   project.
 3. Verify immutable secret digests locally without printing values.
-4. Build exact `primary` and `risk` deployment bundles.
-5. Deploy the primary bundle to `ipo-one-internal` and the Risk bundle to
-   `ipo-one-internal-risk` using pinned Vercel CLI `58.5.1`.
-6. Record both deployment IDs, deployment URLs, stable project URLs, exact
-   shared source commit/tree, both artifact manifest hashes, build output,
+4. Build the exact `primary` deployment bundle and, only when separately
+   authorized and strongly authenticated, the `risk` deployment bundle.
+5. Deploy the primary bundle to `ipo-one-internal` using pinned Vercel CLI
+   `58.5.1`. Do not deploy or promote `ipo-one-internal-risk` while
+   phishing-resistant Risk authentication remains unavailable.
+6. Record every applicable deployment ID, deployment URL, stable project URL,
+   exact shared source commit/tree, artifact manifest hash, build output,
    Function runtime, and the primary-only Cron registration.
 7. Do not attach a custom domain.
 
@@ -95,17 +124,20 @@ UI labels, and evidence continue to identify the product as Sandbox.
 
 ## Health and smoke checks
 
-Verify without authentication on both project origins:
+Verify without authentication on the Primary origin and on the Risk origin only
+when that surface is separately authorized and deployed:
 
 ```text
 GET /livez  -> 200, exact release ID
 GET /readyz -> 200, PostgreSQL and migration head ready
 ```
 
-Verify Principal operations on the primary origin, Agent operations with
-short-lived DPoP-bound JWTs on the primary origin, and Risk/Admin operations on
-the Risk origin. The Agent authentication private key stays only in the
-external evidence runner and is never uploaded to Vercel.
+Verify Principal operations on the primary origin and Agent operations with
+short-lived DPoP-bound JWTs on the primary origin. Verify Risk/Admin operations
+only on a separately authorized Risk origin with the required phishing-resistant
+authentication. SIWE-only Risk access must remain unavailable and fail closed.
+The Agent authentication private key stays only in the external evidence runner
+and is never uploaded to Vercel.
 
 Verify through invitation-only authentication:
 
@@ -127,14 +159,27 @@ Vercel scheduled invocation -> 200 and structured log
 
 ## Golden Flow and serverless evidence
 
-Execute the 15-test matrix in
-`docs/verification/M1_B_VERCEL_GOLDEN_FLOW.md`. Preserve Playwright trace,
-screenshots, deployment logs, Event IDs, database row counts and hashes,
-reconciliation IDs, duplicate-delivery results, restart results, and rollback
-result. Evidence must bind to one deployed commit.
+Current M1-B release closure is governed by the v2 contract in
+`docs/verification/M1_B_P0_5_ACCEPTANCE.md`. If Primary deployment is separately
+authorized, collect exactly its eight Principal/Agent hosted rows—desktop,
+mobile, reload, fresh browser context, Back/Forward, sign-out/re-login, negative
+authorization, and restart recovery—and bind every row to the exact deployed
+candidate and PostgreSQL runtime. A hosted Risk row or surface is rejected.
+
+The older 15-test matrix in
+`docs/verification/M1_B_VERCEL_GOLDEN_FLOW.md` and its Risk-host expectations are
+supplemental historical evidence only. They do not define current v2 coverage,
+authorize a Risk deployment, or substitute for the exact eight-row Primary
+matrix.
+
+Until deployment is authorized, hosted rows remain explicitly pending and do
+not borrow Evidence from the older `d36ff20c2049b199ed3032e85752f36e36300312`
+baseline.
 
 ## Stop rules
 
-Stop without expanding architecture if a paid Neon plan is required, canonical
-semantics must change, outbox correctness fails, a continuous process is
-unavoidable, or any real-funds/signer/withdrawal/venue-write credential appears.
+Stop without expanding architecture if final Founder deployment authorization
+is absent, a paid Neon plan is required, canonical semantics must change, outbox
+correctness fails, a continuous process is unavoidable, or any
+real-funds/signer/withdrawal/venue-write credential appears. Do not merge,
+promote, bind an alias, change DNS, tag, or seal as an implied runbook step.

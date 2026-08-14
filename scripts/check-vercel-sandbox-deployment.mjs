@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
+function exactKeys(value, keys) {
+  assert.deepEqual(Object.keys(value).sort(), [...keys].sort());
+}
+
 const [
   manifestText,
+  historicalManifestText,
   vercelText,
   riskVercelText,
   packageText,
@@ -20,6 +26,7 @@ const [
   legacyRuntimeSource,
   legacyServerSource
 ] = await Promise.all([
+  source("deploy/vercel/m1-b-sandbox.manifest.v2.json"),
   source("deploy/vercel/m1-b-sandbox.manifest.v1.json"),
   source("deploy/vercel/vercel.m1-b-sandbox.json"),
   source("deploy/vercel/vercel.m1-b-sandbox-risk.json"),
@@ -36,19 +43,53 @@ const [
 ]);
 
 const manifest = JSON.parse(manifestText);
+const historicalManifest = JSON.parse(historicalManifestText);
 const vercel = JSON.parse(vercelText);
 const riskVercel = JSON.parse(riskVercelText);
 const deploymentPackage = JSON.parse(packageText);
 const rootVercel = JSON.parse(rootVercelText);
 const runtimeMap = JSON.parse(runtimeMapText);
 
-assert.equal(manifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v1");
+exactKeys(manifest, [
+  "schemaVersion",
+  "status",
+  "productProfile",
+  "deliveryMode",
+  "vercelTargetEnvironment",
+  "vercelTargetReason",
+  "productionTargetConfigured",
+  "deploymentStatus",
+  "deployedReleaseId",
+  "productProductionClaim",
+  "productionHostingClaim",
+  "releaseClaim",
+  "realFundsEnabled",
+  "protocolFeesEnabled",
+  "signerAuthorityEnabled",
+  "withdrawalAuthorityEnabled",
+  "venueWriteAuthorityEnabled",
+  "topology",
+  "runtime",
+  "database",
+  "authority",
+  "conditionalInterfaces",
+  "historicalManifest"
+]);
+assert.equal(manifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v2");
+assert.equal(
+  manifest.status,
+  "current_release_closure_configuration_deployment_pending"
+);
 assert.equal(manifest.productProfile, "deployable_sandbox_vertical_slice");
+assert.equal(manifest.deliveryMode, "L1_PUBLIC_SANDBOX");
 assert.equal(manifest.vercelTargetEnvironment, "production");
-assert.equal(manifest.vercelTargetReason, "Vercel Cron invokes only production deployments");
-assert.equal(manifest.productionHostingClaim, true);
+assert.match(manifest.vercelTargetReason, /configuration, not hosting or deployment authority/);
+assert.equal(manifest.productionTargetConfigured, true);
+assert.equal(manifest.deploymentStatus, "DEPLOYMENT_PENDING_AUTHORIZATION");
+assert.equal(manifest.deployedReleaseId, null);
 for (const boundary of [
   "productProductionClaim",
+  "productionHostingClaim",
   "releaseClaim",
   "realFundsEnabled",
   "protocolFeesEnabled",
@@ -57,17 +98,106 @@ for (const boundary of [
   "venueWriteAuthorityEnabled"
 ]) assert.equal(manifest[boundary], false, `${boundary} must remain false`);
 assert.equal(manifest.topology.continuousWorker, false);
-assert.equal(manifest.topology.projectCount, 2);
+exactKeys(manifest.topology, [
+  "projectCount",
+  "projectRoles",
+  "primaryProtocolCapabilities",
+  "hostedBrowserAcceptanceRoles",
+  "riskProjectIncluded",
+  "riskProjectDeploymentTarget",
+  "web",
+  "api",
+  "automation",
+  "canonicalState",
+  "durability",
+  "continuousWorker",
+  "externalQueue",
+  "externalCache"
+]);
+assert.equal(manifest.topology.projectCount, 1);
+assert.deepEqual(manifest.topology.projectRoles, [
+  "primary_product_and_bounded_automation"
+]);
+assert.deepEqual(manifest.topology.primaryProtocolCapabilities, [
+  "human_borrower",
+  "principal_agent",
+  "capital_partner",
+  "bounded_automation"
+]);
+assert.deepEqual(manifest.topology.hostedBrowserAcceptanceRoles, [
+  "principal_agent"
+]);
+assert.equal(manifest.topology.riskProjectIncluded, false);
+assert.equal(manifest.topology.riskProjectDeploymentTarget, false);
 assert.equal(manifest.topology.externalQueue, false);
 assert.equal(manifest.topology.externalCache, false);
 assert.equal(manifest.runtime.cronSchedule, "*/5 * * * *");
-assert.equal(manifest.authority.vercelProConfirmed, true);
-assert.equal(manifest.authority.rcBranchAuthorized, false);
-assert.equal(manifest.authority.releaseTagAuthorized, false);
-assert.equal(manifest.authority.customDomainAuthorized, true);
-assert.equal(manifest.authority.customDomain, "ipo.one");
-assert.equal(manifest.authority.zeroFundedRealValueSupportAuthorized, true);
-assert.equal(manifest.authority.realValueActivationAuthorized, false);
+assert.equal(
+  manifest.authority.currentAuthoritySource,
+  "product/traceability/ipo-one.m1-b-release-closure-founder-overlay.2026-08-14.v1.json"
+);
+exactKeys(manifest.authority, [
+  "currentAuthoritySource",
+  "historicalV1DeploymentAuthorityInherited",
+  "mergeAuthorized",
+  "deploymentAuthorized",
+  "deploymentEvidenceCollectionAuthorized",
+  "deploymentPromotionAuthorized",
+  "aliasMutationAuthorized",
+  "dnsMutationAuthorized",
+  "customDomainAuthorized",
+  "customDomain",
+  "releaseTagAuthorized",
+  "releaseSealAuthorized",
+  "paidExternalIntegrationAuthorized",
+  "zeroFundedRealValueSupportAuthorized",
+  "realValueActivationAuthorized",
+  "maximumVercelProjectsAuthorizedForDeployment"
+]);
+for (const boundary of [
+  "historicalV1DeploymentAuthorityInherited",
+  "mergeAuthorized",
+  "deploymentAuthorized",
+  "deploymentEvidenceCollectionAuthorized",
+  "deploymentPromotionAuthorized",
+  "aliasMutationAuthorized",
+  "dnsMutationAuthorized",
+  "customDomainAuthorized",
+  "releaseTagAuthorized",
+  "releaseSealAuthorized",
+  "paidExternalIntegrationAuthorized",
+  "zeroFundedRealValueSupportAuthorized",
+  "realValueActivationAuthorized"
+]) {
+  assert.equal(
+    manifest.authority[boundary],
+    false,
+    `${boundary} must remain false in the current Vercel manifest`
+  );
+}
+assert.equal(manifest.authority.customDomain, null);
+assert.equal(manifest.authority.maximumVercelProjectsAuthorizedForDeployment, 0);
+
+exactKeys(manifest.conditionalInterfaces, ["riskProject"]);
+assert.deepEqual(manifest.conditionalInterfaces.riskProject, {
+  targetMilestone: "M1_C_L2_CLOSED_NO_FUNDS",
+  configurationPath: "deploy/vercel/vercel.m1-b-sandbox-risk.json",
+  bundleBuilderRole: "risk",
+  disposition: "PRESERVED_CONDITIONAL_FUTURE_COMPATIBILITY_ASSET",
+  activeForM1B: false,
+  deploymentTarget: false,
+  deploymentAuthorized: false,
+  requiredAssurance: "RECENT_PHISHING_RESISTANT_MFA",
+  requiresSeparateFounderAuthorization: true
+});
+assert.equal(historicalManifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v1");
+assert.deepEqual(manifest.historicalManifest, {
+  path: "deploy/vercel/m1-b-sandbox.manifest.v1.json",
+  schemaVersion: historicalManifest.schemaVersion,
+  sha256: createHash("sha256").update(historicalManifestText).digest("hex"),
+  currentAuthority: false,
+  preservedUnmodified: true
+});
 
 assert.equal(deploymentPackage.engines.node, "24.x");
 assert.equal(vercel.fluid, true);
@@ -94,6 +224,9 @@ assert.deepEqual(rootVercel.crons, vercel.crons);
 assert.equal(riskVercel.fluid, true);
 assert.equal(Object.hasOwn(riskVercel, "crons"), false);
 assert.equal(Object.hasOwn(riskVercel.functions, "api/vercel-sandbox-cron.mjs"), false);
+assert.equal(manifest.conditionalInterfaces.riskProject.activeForM1B, false);
+assert.equal(manifest.conditionalInterfaces.riskProject.deploymentTarget, false);
+assert.equal(manifest.conditionalInterfaces.riskProject.deploymentAuthorized, false);
 
 assert.match(apiSource, /handleVercelSandboxRequest/);
 assert.match(cronApiSource, /CRON_SECRET/);
@@ -137,11 +270,12 @@ assert.match(legacyRuntimeSource, /stateDurability:\s*"process_local_ephemeral"/
 assert.match(legacyServerSource, /canonicalProductTruth:\s*runtimeConfig\.canonicalProductTruth/);
 assert.match(legacyServerSource, /releaseEligible:\s*runtimeConfig\.releaseEligible/);
 assert.doesNotMatch(
-  `${vercelText}\n${manifestText}`,
+  `${vercelText}\n${manifestText}\n${historicalManifestText}`,
   /(?:PASSWORD|PRIVATE_KEY|DATABASE_URL|CRON_SECRET)\s*":\s*"[^"$]/
 );
 
 process.stdout.write(
-  "Vercel M1-B Sandbox static gate passed: Pro five-minute Cron, Node 24 " +
-  "Functions, PostgreSQL durability, exact bundle provenance, and no-real-funds boundaries are explicit.\n"
+  "Vercel M1-B Sandbox static gate passed: current Primary-only configuration " +
+  "is deployment-pending, all external authority is false, the Risk bundle is " +
+  "a deferred interface, and no-real-funds boundaries are explicit.\n"
 );

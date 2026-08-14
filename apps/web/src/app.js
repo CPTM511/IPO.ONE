@@ -82,6 +82,9 @@ import { createWalletAuthorityLifecycle } from "./wallet-authority-lifecycle.js"
 import { createWalletProviderRegistry } from "./wallet-provider-registry.js";
 import { releaseSelectedWallet } from "./wallet-sign-out.js";
 import {
+  installM1BOperationalOfferDenialConfirmationBridge
+} from "./m1-b-operational-denial-confirmation-bridge.js";
+import {
   V9_DESTINATION_OPERATION_MAP,
   createArchitectureCapabilityPresentation,
   createWalletPermissionPresentation
@@ -12655,6 +12658,25 @@ function bindActions() {
 }
 
 async function boot() {
+  if (
+    window.location.protocol === "http:" &&
+    new Set(["127.0.0.1", "localhost"]).has(window.location.hostname)
+  ) {
+    installM1BOperationalOfferDenialConfirmationBridge({
+      globalObject: globalThis,
+      location: window.location,
+      getRuntimeState: () => Object.freeze({
+        connected: tenantPilot.connected,
+        authenticationMethod: accessState.sessionAuthenticationMethod,
+        authenticationProfile: accessState.authenticationProfile,
+        workspaceKind: tenantPilot.workspaceKind,
+        walletAuthorityAvailable:
+          walletAuthorityLifecycle.getSnapshot().protectedAuthorityAvailable
+      }),
+      requestEconomicActionConfirmation,
+      sha256Hex
+    });
+  }
   applyWorkspaceSurfaceAccess();
   bindActions();
   const localAgentAccount = localPilotAgentAccount();

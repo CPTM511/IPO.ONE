@@ -1,0 +1,168 @@
+{
+  "schemaVersion": "ipo_one_m1_b_release_closure_founder_overlay.v1",
+  "status": "FOUNDER_APPROVED_EFFECTIVE_FOR_M1_B_RELEASE_CLOSURE",
+  "decisionDate": "2026-08-14",
+  "deliveryMode": "L1_PUBLIC_SANDBOX",
+  "baseProfile": {
+    "path": "product/traceability/ipo-one.m1-b-gate-profile.v1.json",
+    "checkerPath": "scripts/check-m1-b-gate-profile.mjs",
+    "schemaVersion": "ipo_one_m1_b_gate_profile.v1",
+    "sha256": "851c1675b27567cd634dd1cbb06c3e14ec0c70586cb0f4e66e01c40a566ea64f",
+    "preservedUnmodified": true
+  },
+  "amendment": {
+    "path": "docs/releases/M1_B_FOUNDER_RELEASE_CLOSURE_AMENDMENT_2026_08_14.md",
+    "historicalEvidenceRewritten": false
+  },
+  "authorizationBoundary": {
+    "baseProfileDeploymentAuthorizationInherited": false,
+    "productScopeExpansionAuthorized": false,
+    "runtimeFeatureExpansionAuthorized": false,
+    "authorizationPolicyChangeAuthorized": false,
+    "requiresRecentMfaActorTypesChangeAuthorized": false,
+    "authenticationBypassAuthorized": false,
+    "riskSurfacePromotionAuthorized": false,
+    "mergeAuthorized": false,
+    "deploymentAuthorized": false,
+    "deploymentEvidenceCollectionAuthorized": false,
+    "deploymentPromotionAuthorized": false,
+    "aliasMutationAuthorized": false,
+    "dnsMutationAuthorized": false,
+    "customDomainAuthorized": false,
+    "releaseTagAuthorized": false,
+    "releaseSealAuthorized": false,
+    "realFundsEnabled": false,
+    "mainnetEnabled": false
+  },
+  "requirementDispositionOverrides": [
+    {
+      "requirementId": "REQ-UX-001",
+      "gate_disposition": "M1_B_HUMAN_EXACT_CANDIDATE_BLOCKER",
+      "required_for_m1_b": true,
+      "required_level": "VERIFIED_SANDBOX",
+      "target_milestone": "M1_B",
+      "blocking_reason": "M1-B requires the complete authenticated Human no-funds lifecycle, exact Offer recovery and acceptance, repayment, Evidence, and reload, re-login, and restart recovery against one exact candidate.",
+      "evidence_required": [
+        "Invited-wallet SIWE through Human Subject, Consent, Credit Intent, deterministic Decision and Offer, exact acceptance, Obligation, controlled sandbox execution, repayment, and owner Evidence.",
+        "Exact current Offer recovery from authenticated PostgreSQL truth after reload, re-login, and complete runtime restart, with browser storage non-authorizing and no authentication bypass."
+      ],
+      "deferral_authority": "No deferral is granted for the M1-B Human no-funds lifecycle; production Human lending, dispute, appeal, KYC, privacy, legal, and real-value gates remain separate.",
+      "non_goal_boundary": "No real Human lending, real KYC or PII, dispute or appeal workflow, complaint or legal process, separate Human kernel, or browser-held lifecycle authority."
+    },
+    {
+      "requirementId": "REQ-UX-003",
+      "gate_disposition": "M1_B_CAPITAL_PARTNER_EXACT_CANDIDATE_BLOCKER",
+      "required_for_m1_b": true,
+      "required_level": "VERIFIED_SANDBOX",
+      "target_milestone": "M1_B",
+      "blocking_reason": "M1-B requires the existing synthetic Capital Partner workspace to prove borrower-authorized Passport review, bilateral Offer authoring, replacement, withdrawal, and borrower recovery of the exact current Offer.",
+      "evidence_required": [
+        "Authenticated synthetic Capital Partner workspace and borrower-authorized, recipient-scoped Credit Passport review against the exact candidate.",
+        "Versioned lender-authored Offer creation, replacement, withdrawal, stale-Offer denial, and borrower recovery of only the exact current PostgreSQL Offer."
+      ],
+      "deferral_authority": "No deferral is granted for the existing synthetic M1-B Capital Partner acceptance path; real capital, matching, allocation, settlement, pricing policy, and public marketplace expansion remain separately gated.",
+      "non_goal_boundary": "No real funding, capital pool, public marketplace, automated matching, settlement, custody, withdrawal, or new Capital Partner product capability."
+    },
+    {
+      "requirementId": "REQ-UX-004",
+      "gate_disposition": "DEFERRED_BY_FOUNDER_STRONG_MFA_TO_M1_C_L2",
+      "required_for_m1_b": false,
+      "required_level": "NOT_REQUIRED_FOR_M1_B",
+      "target_milestone": "M1_C_L2_CLOSED_NO_FUNDS",
+      "blocking_reason": "The full privileged Risk or Operations browser journey requires a deployed phishing-resistant OIDC or WebAuthn assurance topology and is deferred from M1-B rather than weakened, emulated, or fabricated.",
+      "evidence_required": [
+        "Before M1-C or L2, compose and verify the separately approved phishing-resistant identity topology, recent-MFA session assurance, private Risk surface, portfolio and queue reads, protective controls, immutable audit, restart recovery, and negative authorization.",
+        "Preserve the existing strong-MFA authorization policy and prove that lower-assurance sessions never receive privileged Risk mutation authority."
+      ],
+      "deferral_authority": "Founder release-closure decision dated 2026-08-14; full privileged Risk or Operations topology is an M1-C and L2 Closed Pilot security gate.",
+      "non_goal_boundary": "Do not weaken requiresRecentMfaActorTypes, add a weak-auth fallback, fabricate assurance, expose an under-assured Risk surface, or introduce privileged Risk mutation during M1-B."
+    }
+  ],
+  "effectiveGate": {
+    "requiredRequirementCount": 39,
+    "deferredRequirementCount": 5,
+    "proposedBlockingRequirementIds": [
+      "REQ-CREDIT-009",
+      "REQ-UX-001",
+      "REQ-UX-003",
+      "REQ-UX-005"
+    ],
+    "deferredRequirementIds": [
+      "REQ-PAY-002",
+      "REQ-PILOT-001",
+      "REQ-PILOT-002",
+      "REQ-TRADE-002",
+      "REQ-UX-004"
+    ]
+  },
+  "mandatoryRiskSecurityBoundary": {
+    "gateId": "M1_B_RISK_SIWE_ONLY_FAIL_CLOSED",
+    "requiredForM1B": true,
+    "requiredStatus": "VERIFIED_FAIL_CLOSED",
+    "sessionAssuranceUnderTest": "SIWE_ONLY",
+    "requiredPrivilegedAssurance": "RECENT_PHISHING_RESISTANT_MFA",
+    "weakAuthenticationFallbackAllowed": false,
+    "riskSurfacePromotionAuthorized": false,
+    "maximumPrivilegedMutationCount": 0,
+    "fullPrivilegedJourneyTarget": "M1_C_L2_CLOSED_NO_FUNDS",
+    "requiredEvidence": [
+      "Every exported Risk or Operations operation whose authorization policy requires recent phishing-resistant MFA is covered by exact-source fail-closed Evidence; separate post-restart live SIWE-only Risk runtime Evidence proves exposed protected read and mutation denial with zero protected-state change.",
+      "The rejection is non-enumerating, no weak-auth fallback or alternate privileged route exists, and authorization policy configuration is unchanged.",
+      "Queryable before-and-after PostgreSQL or immutable audit Evidence proves zero privileged Risk mutations and zero additional economic effects."
+    ]
+  },
+  "operationalNegativeEvidenceBoundary": {
+    "gateId": "M1_B_16_CASE_SPLIT_PROVENANCE",
+    "requiredForM1B": true,
+    "requiredCaseCount": 16,
+    "caseDefinitionHashRequired": true,
+    "sameCandidateShaTreeAndImageRequired": true,
+    "uniqueCaseReceiptAndIdentifiersRequired": true,
+    "fixtureOrMockAllowed": false,
+    "provenanceRelabelingAllowed": false,
+    "sourceModes": {
+      "live_post_restart": [
+        "human:expired_offer",
+        "human:replaced_stale_offer",
+        "human:unauthorized_subject",
+        "authorization:cross_role_private_read"
+      ],
+      "exact_source_disposable_postgres": [
+        "human:duplicate_acceptance",
+        "human:wrong_tenant",
+        "human:invalid_acceptance_binding",
+        "agent:wrong_provider",
+        "agent:wrong_provider_category",
+        "agent:stale_mandate",
+        "agent:revoked_mandate",
+        "agent:out_of_scope_facility",
+        "agent:replay_invalid_execution",
+        "authorization:wrong_tenant_private_read"
+      ],
+      "exact_source_ui_binding": [
+        "human:changed_version"
+      ],
+      "exact_source_transport": [
+        "authorization:signed_out_private_read"
+      ]
+    },
+    "requiredEvidence": [
+      "All 16 semantic cases remain mandatory. live_post_restart is limited to the four cases that can be exercised without destroying or replacing retained canonical state or replaying captured wallet or session material.",
+      "The ten replay-sensitive, wrong-Tenant, invalid-binding, or destructive and terminal cases execute from the same exact tracked source and exact OCI image against fresh disposable PostgreSQL with the application role, captured TAP result, exact source digests, before-and-after protected-state proof, and zero additional effects.",
+      "The changed-version case executes through exact_source_ui_binding because the production acceptance payload has no client version field: exact tracked browser binding must reject the stale version before submission, prove the gateway is not reached, and claim no Tenant audit.",
+      "The signed-out private read executes at the exact-source HTTP transport boundary without a cookie, proves the gateway is not reached, and must not claim a Tenant audit or PostgreSQL mutation proof.",
+      "Duplicate acceptance is disposable exact-source Evidence, never captured-wallet replay: the current closed definition requires status 200 exact idempotent replay with no second command, event, ledger, or economic effect."
+    ]
+  },
+  "releaseEvidenceBinding": {
+    "mode": "EXTERNAL_PRIVATE_EXACT_COMMIT_EVIDENCE",
+    "privateEvidenceRoot": "output/playwright/m1-b-p0-5/",
+    "sourceShaMustEqualTestedSha": true,
+    "sourceShaMustEqualAcceptedSha": true,
+    "deployedShaMustEqualAcceptedShaWhenDeployed": true,
+    "deploymentMayRemainExplicitlyPending": true,
+    "pendingDeploymentMayClaimDeployedSha": false,
+    "trackedCheckpointSelfReferenceAllowed": false,
+    "postAcceptanceTrackedSealAuthorized": false
+  }
+}

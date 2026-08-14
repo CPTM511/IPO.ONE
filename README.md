@@ -34,10 +34,18 @@ The result is one auditable state machine for answering five questions:
 > This repository's commercial candidate is a closed, persistent,
 > **no-real-funds** product. It does not authorize lending, custody, withdrawals,
 > real payment execution, raw KYC/PII storage, or production underwriting. The
-> current [`ipo.one`](https://ipo.one) deployment hosts the zero-funded production
-> profile at release `d36ff20c2049b199ed3032e85752f36e36300312`. It supports the
-> versioned Human, Agent, Capital Partner and Developer/API surfaces while
-> `realFundsEnabled:false`, external Provider execution, signer authority and
+> last recorded read-only observation on 2026-08-13, documented in
+> [`docs/codex/audits/UX-006/README.md`](docs/codex/audits/UX-006/README.md),
+> reported the live [`ipo.one`](https://ipo.one) origin on older hosted baseline
+> `d36ff20c2049b199ed3032e85752f36e36300312`. That dated observation is not a
+> timeless current-state claim, and the deployment is not the
+> current M1-B candidate and is not current-candidate acceptance or deployment
+> Evidence. Deployment of the exact M1-B candidate is pending final Founder
+> authorization. Its SHA, tree, test counts, and acceptance binding remain
+> pending and will be recorded in PR #20 and private P0-5 Evidence only after
+> the final candidate is cut, as described in the
+> [current release truth](docs/releases/M1_B_CURRENT_RELEASE_TRUTH.md).
+> `realFundsEnabled:false`, external Provider execution, signer authority, and
 > value movement remain disabled. Any later activation must pass the exact-commit
 > gates in [`deploy/launch-policy.v1.json`](deploy/launch-policy.v1.json) and the
 > separately approved real-value gates.
@@ -54,7 +62,7 @@ truth, authorization policy, Ledger, servicing model, and Evidence envelope.
 | Authentication | OIDC Authorization Code + PKCE BFF, standard-provider subject mapping, SIWE, durable Credentials, transactions, sessions and events, atomic deprovisioning, CSRF, DPoP/mTLS, revocation, and recent-MFA policy | Implementation and PostgreSQL tests complete; IdP registration, secret binding, hosted abuse controls, and production composition remain gates |
 | Authorization | Deny-by-default capabilities, Membership/client/controller binding, object ownership, AccessGrants, dual control, live revalidation, non-enumerating denial, and immutable audit | Durable local boundary; public exposure locked |
 | Credit kernel | One Human/Agent lifecycle for Intent, Decision, Offer, Obligation, execution, repayment, servicing, resolution, Ledger, and Evidence | Durable and restart-safe with synthetic or redacted inputs |
-| Operations | Risk portfolio, servicing queue, protective freeze, reconciliation, bounded alert state, health metrics, feedback aggregates, and runbooks | Local operator surfaces; protected scheduling/on-call integration remain gates |
+| Operations | Risk portfolio, servicing queue, protective freeze, reconciliation, bounded alert state, health metrics, feedback aggregates, and runbooks | Privileged UI and policies are implemented, but SIWE-only M1-B sessions fail closed; the surface is not promoted, and strong-MFA operation is deferred to M1-C/L2 |
 | Networks | CAIP-2/CAIP-10 adapters, Base Sepolia (`eip155:84532`) primary profile, X Layer Testnet (`eip155:1952`) portability profile, finality/reorg/replay tests | Test networks only; no mainnet, asset, bridge, or capital commitment |
 
 ### Human lifecycle
@@ -180,11 +188,12 @@ pnpm run local:acceptance
 ```
 
 The launcher migrates the database, creates a non-owner `NOBYPASSRLS` runtime
-role, and binds three loopback-only workspaces:
+role, and binds four loopback-only workspaces:
 
-- Human Borrower: `http://127.0.0.1:8787/#human`
-- Principal / Agent Authority: `http://127.0.0.1:8788/#human`
-- Risk Operations: `http://127.0.0.1:8789/#risk`
+- Human Borrower: `http://127.0.0.1:8787/#request-credit`
+- Principal / Agent Authority: `http://127.0.0.1:8788/#request-credit`
+- Risk Operations: `http://127.0.0.1:8789/#risk-operations`
+- Capital Partner: `http://127.0.0.1:8790/#capital-partners`
 
 The local launcher uses explicitly synthetic identities and no real value. It
 is for deterministic product verification, not a substitute for the gated OIDC,

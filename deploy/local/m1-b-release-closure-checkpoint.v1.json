@@ -5,7 +5,17 @@
   "deliveryMode": "L1_PUBLIC_SANDBOX",
   "authorization": {
     "boundedNoFundsReleaseClosureAuthorized": true,
+    "baseProfileDeploymentAuthorizationInherited": false,
     "productScopeExpansionAuthorized": false,
+    "mergeAuthorized": false,
+    "deploymentAuthorized": false,
+    "deploymentEvidenceCollectionAuthorized": false,
+    "deploymentPromotionAuthorized": false,
+    "aliasMutationAuthorized": false,
+    "dnsMutationAuthorized": false,
+    "customDomainAuthorized": false,
+    "releaseTagAuthorized": false,
+    "releaseSealAuthorized": false,
     "realFundsEnabled": false,
     "mainnetEnabled": false,
     "candidateCommit": null,
@@ -35,16 +45,38 @@
     "aggregateCurrentStageGate": false,
     "directHistoricalVerificationRetained": true
   },
-  "currentStageAuthority": {
+  "historicalBaseGateProfile": {
+    "disposition": "PRESERVED_HISTORICAL_BASE_SUPERSEDED_BY_FOUNDER_OVERLAY_FOR_CURRENT_CLOSURE",
     "profilePath": "product/traceability/ipo-one.m1-b-gate-profile.v1.json",
     "profileSchemaVersion": "ipo_one_m1_b_gate_profile.v1",
     "profileStatus": "FOUNDER_APPROVED_M1_B_DEPLOYABLE_SANDBOX",
     "requiredRequirementCount": 38,
     "deferredRequirementCount": 6,
-    "aggregateCurrentStageGate": true,
+    "baseEffectiveFieldRetained": true,
+    "baseDeploymentAuthorizedFieldRetained": true,
+    "deploymentAuthorizationInherited": false,
+    "aggregateCurrentStageGate": false,
+    "directHistoricalVerificationRetained": true,
     "preflightManifestPath": "deploy/local/prod-cutover-001.release-candidate.v1.json",
     "preflightCheckerPath": "scripts/check-prod-cutover-release-candidate.mjs",
-    "preflightVerdict": "BLOCKED — NOT PRODUCTION RELEASED"
+    "preflightVerdict": "BLOCKED — NOT PRODUCTION RELEASED",
+    "preflightDisposition": "HISTORICAL_ANCESTOR_BOUND_BLOCKED_PREFLIGHT"
+  },
+  "founderReleaseClosureOverlay": {
+    "path": "product/traceability/ipo-one.m1-b-release-closure-founder-overlay.2026-08-14.v1.json",
+    "checkerPath": "scripts/check-m1-b-release-closure-founder-overlay.mjs",
+    "amendmentPath": "docs/releases/M1_B_FOUNDER_RELEASE_CLOSURE_AMENDMENT_2026_08_14.md",
+    "schemaVersion": "ipo_one_m1_b_release_closure_founder_overlay.v1",
+    "status": "FOUNDER_APPROVED_EFFECTIVE_FOR_M1_B_RELEASE_CLOSURE",
+    "baseProfileRequiredRequirementCount": 38,
+    "baseProfileDeferredRequirementCount": 6,
+    "effectiveRequiredRequirementCount": 39,
+    "effectiveDeferredRequirementCount": 5,
+    "mandatoryRiskSecurityGateId": "M1_B_RISK_SIWE_ONLY_FAIL_CLOSED",
+    "baseProfileDeploymentAuthorizationInherited": false,
+    "deploymentAuthorized": false,
+    "soleEffectiveCurrentStageAuthority": true,
+    "aggregateCurrentStageGate": true
   },
   "closureOrder": [
     "P0-1_HUMAN_OFFER_CONTINUATION",
@@ -57,6 +89,11 @@
     "candidateMayBeBoundOnlyAfterCleanCommitExists": true,
     "exactGreenMayBeTrueOnlyAfterApplicableGatesPassOnCandidateCommit": true,
     "deploymentEvidenceRequiredForDeploymentClosure": true,
+    "candidateBindingMode": "EXTERNAL_PRIVATE_EXACT_COMMIT_EVIDENCE",
+    "trackedCheckpointSelfReferenceAllowed": false,
+    "deploymentMayRemainExplicitlyPending": true,
+    "pendingDeploymentMayClaimDeployedSha": false,
+    "postAcceptanceTrackedSealAuthorized": false,
     "currentVerdict": "NOT_AN_M1_B_RELEASE_CANDIDATE"
   }
 }

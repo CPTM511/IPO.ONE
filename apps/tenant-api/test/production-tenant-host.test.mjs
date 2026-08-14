@@ -37,7 +37,7 @@ function get(port, path, headers = {}) {
   });
 }
 
-async function fixture() {
+async function fixture({ deploymentRole = "primary" } = {}) {
   const port = await unusedPort();
   let ready = true;
   let gatewayCalls = 0;
@@ -47,6 +47,7 @@ async function fixture() {
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
     createNetworkContext: async () => { throw new Error("not expected"); },
     csrfTokenProvider: async () => undefined,
+    deploymentRole,
     readinessCheck: async () => ready,
     verifyEdgeRequest: async (request) => request.headers["x-ipo-edge"] === "approved",
     publicOrigin: "https://ipo.one",
@@ -70,6 +71,7 @@ async function workspaceFixture(workspaceName) {
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
     createNetworkContext: async () => { throw new Error("not expected"); },
     csrfTokenProvider: async () => undefined,
+    deploymentRole: "primary",
     workspaceNameProvider: async () => workspaceName,
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,
@@ -103,7 +105,14 @@ test("production Host exposes bounded liveness/readiness without a DEMO route", 
     "x-ipo-edge": "approved"
   });
   assert.equal(ready.status, 503);
-  assert.equal(JSON.parse(ready.body).status, "unavailable");
+  assert.deepEqual(JSON.parse(ready.body), {
+    status: "unavailable",
+    releaseId: "a".repeat(40),
+    deploymentRole: "primary",
+    profile: "closed_non_funds_pilot",
+    realFundsEnabled: false,
+    schemaVersion: "production_readiness.v1"
+  });
   assert.match(ready.headers["strict-transport-security"], /max-age=63072000/);
 
   const demo = await get(runtime.port, "/v1/demo/reset", {
@@ -179,6 +188,7 @@ test("production Host publishes zero-funded real-value and Provider capability t
   const document = JSON.parse(response.body);
   assert.equal(document.schemaVersion, "ipo_one_deployment_capability.v1");
   assert.equal(document.deployment.hostingStatus, "PRODUCTION_HOSTED");
+  assert.equal(document.deployment.deploymentRole, "primary");
   assert.equal(document.deployment.releaseId, "a".repeat(40));
   assert.equal(document.interfaces.humanConsole, "https://ipo.one");
   assert.equal(
@@ -199,6 +209,23 @@ test("production Host publishes zero-funded real-value and Provider capability t
   assert.equal(runtime.gatewayCalls, 0);
 });
 
+test("production Host publishes the exact configured deployment role", async (t) => {
+  const runtime = await fixture({ deploymentRole: "risk" });
+  t.after(() => runtime.host.close());
+
+  const capability = await get(runtime.port, "/.well-known/ipo-one.json", {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https",
+    "x-ipo-edge": "approved"
+  });
+  const readiness = await get(runtime.port, "/readyz", {
+    host: `127.0.0.1:${runtime.port}`
+  });
+  assert.equal(JSON.parse(capability.body).deployment.deploymentRole, "risk");
+  assert.equal(JSON.parse(readiness.body).deploymentRole, "risk");
+});
+
 test("production Host requires all real authentication and edge adapters", () => {
   assert.throws(
     () => createProductionTenantHost({}),
@@ -215,6 +242,7 @@ test("production Host injects only the configured public Agent account into the 
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
     createNetworkContext: async () => { throw new Error("not expected"); },
     csrfTokenProvider: async () => undefined,
+    deploymentRole: "primary",
     localAgentAccountProvider: async () => account,
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,

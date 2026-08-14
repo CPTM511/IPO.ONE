@@ -25,8 +25,24 @@ const [
   localReleaseIdentity,
   m1bAcceptanceVerifier,
   m1bAcceptanceFileVerifier,
+  m1bOperationalEvidenceFileVerifier,
   m1bAcceptanceContract,
-  m1bAcceptanceTask
+  m1bAcceptanceTask,
+  m1bAcceptancePostgres,
+  humanCapitalPartnerFoundation,
+  humanCapitalPartnerProducer,
+  humanCapitalPartnerCli,
+  humanCapitalPartnerWrapper,
+  expiredOfferSetupProducer,
+  expiredOfferSetupCli,
+  operationalBrowserMeasurement,
+  operationalRuntimeRead,
+  operationalEvidenceBuilder,
+  liveNegativeProducer,
+  operationalNegativeProducer,
+  liveNegativeCli,
+  riskBoundaryProducer,
+  riskBoundaryWrapper
 ] = await Promise.all([
   source("deploy/local/stack.v1.json"),
   source("deploy/local/compose.yaml"),
@@ -46,8 +62,24 @@ const [
   source("scripts/local-release-identity.mjs"),
   source("scripts/verify-m1-b-acceptance-evidence.mjs"),
   source("scripts/m1-b-acceptance-evidence-files.mjs"),
+  source("scripts/m1-b-operational-evidence-files.mjs"),
   source("packages/release-governance/src/m1-b-acceptance-evidence.js"),
-  source("docs/codex/tasks/M1_B_P0_5_EXACT_COMMIT_ACCEPTANCE.md")
+  source("docs/codex/tasks/M1_B_P0_5_EXACT_COMMIT_ACCEPTANCE.md"),
+  source("apps/private-pilot/src/m1-b-acceptance-postgres.js"),
+  source("apps/private-pilot/src/m1-b-human-capital-partner-acceptance.js"),
+  source("apps/private-pilot/src/m1-b-human-capital-partner-producer.js"),
+  source("apps/private-pilot/src/m1-b-human-capital-partner-acceptance-cli.js"),
+  source("scripts/local-human-capital-partner-acceptance.mjs"),
+  source("apps/private-pilot/src/m1-b-expired-offer-setup.js"),
+  source("apps/private-pilot/src/m1-b-expired-offer-setup-cli.js"),
+  source("apps/private-pilot/src/m1-b-operational-browser-measurement.js"),
+  source("apps/private-pilot/src/m1-b-operational-runtime-read.js"),
+  source("scripts/m1-b-operational-evidence-builder.mjs"),
+  source("apps/private-pilot/src/m1-b-operational-live-negative-acceptance.js"),
+  source("apps/private-pilot/src/m1-b-operational-negative-acceptance.js"),
+  source("apps/private-pilot/src/m1-b-operational-live-negative-cli.js"),
+  source("apps/private-pilot/src/m1-b-risk-mfa-boundary-acceptance.js"),
+  source("scripts/local-risk-mfa-boundary-acceptance.mjs")
 ]);
 
 const stack = parseLocalStack(stackText);
@@ -135,16 +167,137 @@ assert.match(m1bAcceptanceVerifier, /verifyM1BAcceptanceEvidence/);
 assert.match(m1bAcceptanceVerifier, /--evidence-root/);
 assert.match(m1bAcceptanceVerifier, /verifyM1BArtifactFiles/);
 assert.match(m1bAcceptanceVerifier, /verifyM1BCriticalArtifactContents/);
+assert.match(m1bAcceptanceVerifier, /verifyM1BOperationalArtifactContents/);
 assert.match(m1bAcceptanceFileVerifier, /createReadStream/);
 assert.match(m1bAcceptanceFileVerifier, /local_agent_mcp_transport_receipt\.v1/);
 assert.match(m1bAcceptanceFileVerifier, /local_agent_reference_recovery_receipt\.v1/);
+assert.match(m1bAcceptanceFileVerifier, /m1_b_risk_mfa_boundary_receipt\.v2/);
 assert.match(m1bAcceptanceFileVerifier, /--untracked-files=no/);
+assert.match(
+  m1bOperationalEvidenceFileVerifier,
+  /createM1BOperationalExactSourceRunFromTap/
+);
+assert.match(
+  m1bOperationalEvidenceFileVerifier,
+  /m1_b_operational_exact_source_negative_run_receipt\.v2/
+);
+assert.match(
+  m1bOperationalEvidenceFileVerifier,
+  /validateM1BExpiredOfferSetupReceipt/
+);
+assert.match(expiredOfferSetupProducer, /createM1BExpiredOfferCriticalBinding/);
+assert.match(expiredOfferSetupProducer, /validateM1BExpiredOfferSetupReceipt/);
+assert.match(expiredOfferSetupCli, /produceM1BExpiredOfferSetupReceipt/);
+assert.match(expiredOfferSetupCli, /credentials:\s*"same-origin"/);
+assert.match(
+  operationalBrowserMeasurement,
+  /m1_b_operational_browser_measurement_prompt\.v1/
+);
+assert.match(operationalBrowserMeasurement, /chrome_control/);
+assert.match(
+  operationalBrowserMeasurement,
+  /validateM1BOperationalBrowserPng/
+);
+assert.match(
+  operationalRuntimeRead,
+  /m1_b_operational_browser_app_role_read\.v1/
+);
+assert.match(operationalRuntimeRead, /result\.rowCount !== 2/);
+assert.match(
+  operationalRuntimeRead,
+  /matching_invitation_registration_count/
+);
+assert.match(
+  operationalRuntimeRead,
+  /BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY/
+);
+assert.match(operationalEvidenceBuilder, /runM1BOperationalEvidenceBuilder/);
+assert.match(
+  operationalEvidenceBuilder,
+  /collectM1BOperationalBrowserMeasurements/
+);
+assert.match(operationalEvidenceBuilder, /runtimeBrowserAppRoleRead/);
+for (const mode of [
+  "restart-begin",
+  "restart-complete",
+  "expired-offer-setup",
+  "negative-run",
+  "live-negative",
+  "collect-pre-risk",
+  "finalize"
+]) assert.match(operationalEvidenceBuilder, new RegExp(`"${mode}"`));
+assert.match(liveNegativeProducer, /captureM1BOperationalLiveDenialBoundary/);
+assert.match(liveNegativeProducer, /credentials:\s*"same-origin"/);
+assert.match(
+  operationalNegativeProducer,
+  /export async function captureM1BOperationalLiveNegativeProof/
+);
+assert.match(liveNegativeCli, /captureM1BOperationalLiveNegativeProof/);
 assert.match(m1bAcceptanceVerifier, /verifyM1BHostedCapabilityDocument/);
 assert.match(m1bAcceptanceVerifier, /verifyM1BHostedReadinessDocument/);
 assert.match(m1bAcceptanceContract, /fixtureHost/);
 assert.match(m1bAcceptanceContract, /browserStorageAuthority/);
 assert.match(m1bAcceptanceContract, /operator_confirmed_invited_wallet_siwe/);
+assert.match(m1bAcceptanceContract, /ipo\.one\.m1-b-p0-5-acceptance-evidence\/v2/);
+assert.match(m1bAcceptanceContract, /m1_b_risk_boundary_linkage\.v1/);
+assert.match(m1bAcceptanceContract, /M1_C_L2_CLOSED_NO_FUNDS/);
+assert.match(m1bAcceptanceContract, /verifyM1BAcceptanceEvidenceV1Historical/);
 assert.match(m1bAcceptanceTask, /No automated wallet signing/);
+assert.match(riskBoundaryProducer, /exact_source_authorization_service/);
+assert.match(riskBoundaryProducer, /local_exact_commit_post_restart/);
+assert.match(m1bAcceptancePostgres, /BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY/);
+assert.match(m1bAcceptancePostgres, /setTenantTransactionContext/);
+assert.match(m1bAcceptancePostgres, /assertTenantDatabaseRole/);
+assert.match(m1bAcceptancePostgres, /ipo_one_private_pilot_app/);
+assert.match(riskBoundaryProducer, /withM1BAcceptanceTenantRead as withTenantRead/);
+assert.match(riskBoundaryProducer, /createM1BAcceptanceAppPool/);
+assert.match(riskBoundaryProducer, /M1_B_RISK_MFA_PROTECTED_STATE_MINIMUMS/);
+assert.doesNotMatch(riskBoundaryProducer, /\bpool\.query\s*\(/);
+assert.doesNotMatch(riskBoundaryProducer, /SELECT\s+\*/i);
+assert.doesNotMatch(
+  riskBoundaryProducer,
+  /\b(session_ref_hash|csrf_ref_hash|address_ciphertext|message_ciphertext|signature_hash)\b/i
+);
+assert.match(
+  riskBoundaryProducer,
+  /audit\.token_jti_hash === session\.token_jti_ref_hash/
+);
+assert.match(
+  riskBoundaryProducer,
+  /audit\.correlation_id === request\.correlationId/
+);
+assert.match(m1bAcceptancePostgres, /exactReadOnlyMount/);
+assert.match(humanCapitalPartnerFoundation, /captureM1BCapitalPartnerDenialBoundary/);
+assert.match(humanCapitalPartnerFoundation, /readM1BHumanEconomicReadBack/);
+assert.match(humanCapitalPartnerProducer, /produceM1BHumanCriticalReceipt/);
+assert.match(humanCapitalPartnerProducer, /produceM1BCapitalPartnerCriticalReceipt/);
+assert.match(humanCapitalPartnerCli, /m1_b_acceptance_operator_response\.v1/);
+assert.match(humanCapitalPartnerCli, /denial_response_ready/);
+assert.match(humanCapitalPartnerCli, /pg_postmaster_start_time/);
+assert.match(humanCapitalPartnerCli, /credentials:\"same-origin\"/);
+assert.doesNotMatch(humanCapitalPartnerCli, /document\.cookie|localStorage|sessionStorage/);
+assert.match(humanCapitalPartnerWrapper, /assertExactLocalReleaseSource/);
+assert.match(humanCapitalPartnerWrapper, /after-restart\.acceptance\.json/);
+assert.match(humanCapitalPartnerWrapper, /serviceIdentities/);
+assert.match(humanCapitalPartnerWrapper, /stdio: \[\"inherit\", \"pipe\", \"inherit\"\]/);
+assert.match(humanCapitalPartnerWrapper, /flag: \"wx\", mode: 0o600/);
+assert.doesNotMatch(humanCapitalPartnerWrapper, /raw-response|response-capture\.json/);
+assert.doesNotMatch(
+  riskBoundaryProducer,
+  /loadOrCreatePrivatePilotDatabaseSecret/
+);
+assert.match(riskBoundaryWrapper, /assertExactLocalReleaseSource/);
+assert.match(riskBoundaryWrapper, /after-restart\.acceptance\.json/);
+assert.match(riskBoundaryWrapper, /--test-name-pattern/);
+assert.match(riskBoundaryWrapper, /spawnSync\(\s*process\.execPath/);
+assert.match(riskBoundaryWrapper, /IPO_ONE_M1_B_AUTH_SOURCE_DIGESTS_JSON/);
+assert.match(riskBoundaryWrapper, /org\.opencontainers\.image\.revision/);
+assert.match(riskBoundaryWrapper, /compose\(baseArgs, \["build", "pilot"\]/);
+assert.match(riskBoundaryWrapper, /containerImageId !== runtimeImageId/);
+assert.match(riskBoundaryWrapper, /assertReviewedDatabaseSecretMountSource/);
+assert.match(riskBoundaryWrapper, /flag: "wx", mode: 0o600/);
+assert.match(riskBoundaryWrapper, /await link\(temporaryPath, path\)/);
+assert.match(riskBoundaryWrapper, /will not be overwritten/);
 assert.match(localAgent, /docker",\s*"compose"/);
 assert.match(localAgent, /--no-deps/);
 assert.match(localAgent, /CONTAINER_INPUT/);
@@ -163,6 +316,18 @@ assert.equal(
   "node scripts/local-agent.mjs prove"
 );
 assert.equal(manifest.scripts["local:agent"], "node scripts/local-agent.mjs run");
+assert.equal(
+  manifest.scripts["local:risk:mfa-boundary"],
+  "node scripts/local-risk-mfa-boundary-acceptance.mjs"
+);
+assert.equal(
+  manifest.scripts["acceptance:m1-b:human-capital-partner"],
+  "node scripts/local-human-capital-partner-acceptance.mjs"
+);
+assert.equal(
+  manifest.scripts["acceptance:m1-b:operational"],
+  "node scripts/m1-b-operational-evidence-builder.mjs"
+);
 assert.equal(
   manifest.scripts["local:evidence-attestor:init"],
   "node scripts/local-evidence-anchor.mjs init"

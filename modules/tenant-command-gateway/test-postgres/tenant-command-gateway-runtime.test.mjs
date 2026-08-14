@@ -16,6 +16,7 @@ import {
 import {
   TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
   assertDualNativeCreditOfferParity,
+  createProblemDetails,
   isHumanCreditOfferWorkflowReceipt
 } from "../../../packages/api-contract/src/index.js";
 import {
@@ -765,6 +766,397 @@ async function executeConcurrentMcpDuplicate(host, call) {
   return results;
 }
 
+const M1_B_POSTGRES_NEGATIVE_DIAGNOSTIC_PREFIX =
+  "M1_B_POSTGRES_NEGATIVE_CASE_DIAGNOSTIC_V2=";
+
+function m1bCanonicalJson(value) {
+  if (value === null) return "null";
+  if (typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return `[${value.map(m1bCanonicalJson).join(",")}]`;
+  }
+  return `{${Object.keys(value).sort().map((key) => (
+    `${JSON.stringify(key)}:${m1bCanonicalJson(value[key])}`
+  )).join(",")}}`;
+}
+
+function m1bManifestHash(value) {
+  return `0x${createHash("sha256")
+    .update(m1bCanonicalJson(value))
+    .digest("hex")}`;
+}
+
+async function captureM1BProblem(operation, requestId) {
+  let error;
+  try {
+    await operation();
+  } catch (caught) {
+    error = caught;
+  }
+  assert.ok(error, "M1-B negative operation unexpectedly succeeded");
+  const problem = createProblemDetails(error, { requestId });
+  return Object.freeze({
+    error,
+    outwardBody: Object.freeze({
+      type: problem.type,
+      title: problem.title,
+      status: problem.status,
+      code: problem.code,
+      requestId: problem.requestId
+    })
+  });
+}
+
+const M1_B_PROTECTED_STATE_QUERIES = Object.freeze([
+  Object.freeze({
+    table: "command_idempotency",
+    sql: `SELECT tenant_id, idempotency_key, command_hash, aggregate_type,
+                 aggregate_id, status::text, event_id, response_hash
+            FROM command_idempotency
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, idempotency_key`
+  }),
+  Object.freeze({
+    table: "command_events",
+    sql: `SELECT tenant_id, idempotency_key, sequence::text, event_id,
+                 aggregate_type, aggregate_id, aggregate_version::text
+            FROM command_events
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, idempotency_key, sequence`
+  }),
+  Object.freeze({
+    table: "tenant_command_executions",
+    sql: `SELECT tenant_id, idempotency_key, operation_id, actor_id, actor_type,
+                 client_ref_hash, command_payload_hash, command_hash,
+                 authorization_decision_id, admission_id, business_event_id,
+                 response_hash, version::text, schema_version
+            FROM tenant_command_executions
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, idempotency_key`
+  }),
+  Object.freeze({
+    table: "mandates",
+    sql: `SELECT tenant_id, id, mandate_hash, terms_hash, principal_id,
+                 subject_id, capabilities, allowed_provider_ids,
+                 allowed_categories, asset_ids, per_action_limit_minor::text,
+                 aggregate_limit_minor::text, utilized_minor::text,
+                 status::text, sandbox_only, production_authority,
+                 activation_acknowledgement, schema_version
+            FROM mandates
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "authorization_resources",
+    sql: `SELECT tenant_id, resource_type, resource_id, status,
+                 version::text, schema_version
+            FROM authorization_resources
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, resource_type, resource_id`
+  }),
+  Object.freeze({
+    table: "authorization_resource_bindings",
+    sql: `SELECT tenant_id, resource_type, resource_id, actor_id,
+                 relationship, status, version::text, schema_version
+            FROM authorization_resource_bindings
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, resource_type, resource_id, actor_id`
+  }),
+  Object.freeze({
+    table: "domain_events",
+    sql: `SELECT tenant_id, id, event_type, aggregate_type, aggregate_id,
+                 aggregate_version::text, subject_id, obligation_id,
+                 source_finality, payload_hash, schema_version
+            FROM domain_events
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "credit_events",
+    sql: `SELECT tenant_id, id, event_type, subject_id, obligation_id,
+                 payload_hash, finality_status
+            FROM credit_events
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "evidence_envelopes",
+    sql: `SELECT tenant_id, id, evidence_hash, event_type, aggregate_type,
+                 aggregate_id, aggregate_version::text, subject_id,
+                 obligation_id, causation_id, correlation_id, idempotency_key,
+                 source_system, source_finality, payload_hash, schema_version
+            FROM evidence_envelopes
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "projection_registry",
+    sql: `SELECT tenant_id, entity_type, entity_id, entity_hash,
+                 root_aggregate_type, root_aggregate_id,
+                 aggregate_version::text, last_event_id
+            FROM projection_registry
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, entity_type, entity_id`
+  }),
+  Object.freeze({
+    table: "projection_snapshots",
+    sql: `SELECT tenant_id, id, write_sequence::text, entity_type, entity_id,
+                 entity_hash, root_aggregate_type, root_aggregate_id,
+                 aggregate_version::text, source_event_id
+            FROM projection_snapshots
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, write_sequence, id`
+  }),
+  Object.freeze({
+    table: "credit_offers",
+    sql: `SELECT tenant_id, id, offer_hash, terms_hash, credit_intent_id,
+                 subject_id, risk_decision_id, asset_id,
+                 approved_principal_minor::text, annual_rate_bps::text,
+                 origination_fee_minor::text, repayment_frequency,
+                 installment_count::text, terms_version, sandbox_only,
+                 production_funds_approved, status, schema_version,
+                 acceptance_id, capital_partner_id,
+                 capital_partner_operator_id, credit_passport_artifact_id,
+                 credit_passport_artifact_hash,
+                 credit_passport_artifact_version::text,
+                 passport_verification_hash, underwriting_snapshot_hash,
+                 facility_limit_minor::text, per_draw_cap_minor::text,
+                 permitted_purpose_code, undrawn_revocation_rule,
+                 superseding_offer_id
+            FROM credit_offers
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "credit_offer_acceptances",
+    sql: `SELECT tenant_id, id, acceptance_hash, credit_offer_id,
+                 credit_offer_hash, terms_hash, credit_intent_id,
+                 risk_decision_id, subject_id, principal_id, authority_type,
+                 authority_ref, consent_id, mandate_id, acknowledgement_hash,
+                 accepted_by_actor_hash, sandbox_only, production_authority,
+                 schema_version
+            FROM credit_offer_acceptances
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "obligations",
+    sql: `SELECT tenant_id, id, obligation_hash, subject_id, principal_id,
+                 mandate_id, asset_id, amount_minor::text,
+                 outstanding_minor::text, spend_policy_id, cashflow_route_id,
+                 status::text, accrued_fees_minor::text,
+                 repaid_amount_minor::text, repayment_priority::text,
+                 schema_version, credit_intent_id, risk_decision_id,
+                 credit_offer_id, acceptance_id, authority_type, authority_ref,
+                 consent_id, annual_rate_bps::text, origination_fee_minor::text,
+                 accrued_interest_minor::text, outstanding_interest_minor::text,
+                 outstanding_fees_minor::text, total_repaid_minor::text,
+                 repayment_frequency, installment_count::text, schedule_version,
+                 schedule_hash, execution_status, sandbox_only,
+                 production_funds_moved, sandbox_execution_receipt_id,
+                 interest_accrual_remainder::text, withdrawable,
+                 servicing_classification, days_past_due::text,
+                 oldest_unpaid_installment_id, servicing_reason_code,
+                 servicing_policy_version, schedule_sequence::text,
+                 servicing_owner_code, resolution_type, resolution_reason_code,
+                 written_off_principal_minor::text,
+                 written_off_interest_minor::text,
+                 written_off_fees_minor::text
+            FROM obligations
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "obligation_installments",
+    sql: `SELECT tenant_id, id, obligation_id, installment_number::text,
+                 scheduled_principal_minor::text,
+                 scheduled_interest_minor::text, scheduled_fee_minor::text,
+                 paid_principal_minor::text, paid_interest_minor::text,
+                 paid_fee_minor::text, status, schedule_version,
+                 schedule_sequence::text, schema_version
+            FROM obligation_installments
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, obligation_id, schedule_sequence,
+                    installment_number, id`
+  }),
+  Object.freeze({
+    table: "ledger_accounts",
+    sql: `SELECT tenant_id, id, account_hash, owner_type, owner_id, asset_id,
+                 account_type, normal_side::text, status::text, schema_version
+            FROM ledger_accounts
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "ledger_transactions",
+    sql: `SELECT tenant_id, id, transaction_hash, idempotency_key,
+                 transaction_type, asset_id, reference_type, reference_id,
+                 metadata_hash, debit_total_minor::text,
+                 credit_total_minor::text, entry_count::text, schema_version
+            FROM ledger_transactions
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "ledger_entries",
+    sql: `SELECT tenant_id, id, transaction_id, account_id, direction::text,
+                 amount_minor::text, sequence::text, schema_version
+            FROM ledger_entries
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, transaction_id, sequence, id`
+  }),
+  Object.freeze({
+    table: "sandbox_execution_receipts",
+    sql: `SELECT tenant_id, id, receipt_hash, obligation_id, subject_id,
+                 asset_id, amount_minor::text, adapter_id, adapter_version,
+                 adapter_key_id, adapter_message_hash, sandbox_only,
+                 production_funds_moved, withdrawable, schema_version,
+                 provider_id, provider_category, purpose_code
+            FROM sandbox_execution_receipts
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "repayment_events",
+    sql: `SELECT tenant_id, id, obligation_id, subject_id, amount_minor::text,
+                 asset_id, remaining_minor::text, schema_version,
+                 repayment_hash, requested_minor::text, applied_minor::text,
+                 applied_fee_minor::text, applied_interest_minor::text,
+                 applied_principal_minor::text, surplus_minor::text,
+                 remaining_principal_minor::text,
+                 remaining_interest_minor::text, remaining_fees_minor::text,
+                 source_code, actor_hash, accrued_interest_minor::text,
+                 accrual_days::text, ledger_transaction_id,
+                 interest_ledger_transaction_id, sandbox_only,
+                 production_funds_moved
+            FROM repayment_events
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "lockboxes",
+    sql: `SELECT tenant_id, id, lockbox_hash, subject_id, principal_id,
+                 mandate_id, credit_intent_id, credit_offer_id, obligation_id,
+                 credit_line_id, account_binding_id, chain_id, asset_id,
+                 purpose_code, allowed_provider_ids, ledger_account_id,
+                 revenue_ledger_account_id, repayment_ledger_account_id,
+                 status::text, sandbox_only, production_funds_moved,
+                 withdrawable, custody_authority,
+                 unrestricted_transfers_allowed, schema_version
+            FROM lockboxes
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  }),
+  Object.freeze({
+    table: "credit_lines",
+    sql: `SELECT tenant_id, id, subject_id, principal_id, mandate_id, asset_id,
+                 limit_minor::text, utilized_minor::text, status,
+                 risk_snapshot_id, projection_hash, exposure_hash,
+                 authority_terms_hash, facility_id, facility_hash,
+                 credit_intent_id, credit_intent_hash, risk_decision_id,
+                 decision_hash, policy_hash, credit_offer_id,
+                 credit_offer_hash, terms_hash, acceptance_id,
+                 acceptance_hash, obligation_id, purpose_code,
+                 allowed_provider_ids, sandbox_only, production_authority,
+                 schema_version
+            FROM credit_lines
+           WHERE tenant_id = ANY($1::text[])
+           ORDER BY tenant_id, id`
+  })
+]);
+
+async function readM1BProtectedState(ownerPool, tenantIds) {
+  assert.equal(Array.isArray(tenantIds), true);
+  assert.equal(tenantIds.length >= 1, true);
+  assert.equal(new Set(tenantIds).size, tenantIds.length);
+  const tableResults = await Promise.all(M1_B_PROTECTED_STATE_QUERIES.map(
+    ({ sql }) => ownerPool.query(sql, [tenantIds])
+  ));
+  return Object.freeze(Object.fromEntries(
+    M1_B_PROTECTED_STATE_QUERIES.map(({ table }, index) => {
+      const rows = tableResults[index].rows;
+      return [table, Object.freeze({
+        rowCount: rows.length,
+        manifestHash: m1bManifestHash(rows)
+      })];
+    })
+  ));
+}
+
+async function readM1BAuditSet(ownerPool, tenantId, requestId) {
+  const result = await ownerPool.query(
+    `SELECT id, request_id, correlation_id, operation_id,
+            authorization_decision, reason_code
+       FROM authorization_audit_events
+      WHERE tenant_id = $1 AND request_id = $2
+      ORDER BY occurred_at, id`,
+    [tenantId, requestId]
+  );
+  const rows = result.rows.map((row) => Object.freeze({
+    eventId: row.id,
+    requestId: row.request_id,
+    correlationId: row.correlation_id,
+    operationId: row.operation_id,
+    authorizationDecision: row.authorization_decision,
+    reasonCode: row.reason_code
+  }));
+  return Object.freeze({
+    rows: Object.freeze(rows),
+    rowCount: rows.length,
+    auditSetHash: m1bManifestHash(rows)
+  });
+}
+
+function emitM1BPostgresNegativeDiagnostic(testContext, {
+  group,
+  id,
+  requestId,
+  correlationId,
+  outwardBody,
+  auditSet,
+  authorizationAuditEventId = null,
+  authorizationDecision,
+  authorizationReasonCode,
+  protectedStateBefore,
+  protectedStateAfter,
+  duplicateSemantics = null
+}) {
+  assert.deepEqual(protectedStateAfter, protectedStateBefore);
+  const protectedStateBeforeHash = m1bManifestHash(protectedStateBefore);
+  const protectedStateAfterHash = m1bManifestHash(protectedStateAfter);
+  const diagnostic = {
+    schemaVersion: "m1_b_postgres_negative_case_diagnostic.v2",
+    group,
+    id,
+    capturedAt: new Date().toISOString(),
+    requestId,
+    correlationId,
+    outwardStatus: outwardBody.status,
+    outwardCode: outwardBody.code,
+    outwardBody,
+    outwardResponseHash: m1bManifestHash(outwardBody),
+    authorizationAuditEventId,
+    authorizationDecision,
+    authorizationReasonCode,
+    authorizationAuditRows: auditSet.rowCount,
+    authorizationAuditEvents: auditSet.rows,
+    authorizationAuditSetHash: auditSet.auditSetHash,
+    protectedStateBefore,
+    protectedStateAfter,
+    protectedStateBeforeHash,
+    protectedStateAfterHash,
+    additionalEffectCount: 0,
+    duplicateSemantics,
+    databaseProof: "disposable_postgres_owner_readback"
+  };
+  testContext.diagnostic(
+    `${M1_B_POSTGRES_NEGATIVE_DIAGNOSTIC_PREFIX}${Buffer.from(
+      m1bCanonicalJson(diagnostic)
+    ).toString("base64url")}`
+  );
+  return Object.freeze(diagnostic);
+}
+
 async function transitionProjection({
   pool,
   tenantId,
@@ -1270,6 +1662,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.CREDIT_REQUEST,
           PilotCapability.CREDIT_READ_SELF,
           PilotCapability.CREDIT_EVALUATE_SELF,
+          PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
           PilotCapability.OBLIGATION_READ_OWNED,
           PilotCapability.EVIDENCE_READ_OWNED,
           PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
@@ -2401,19 +2794,26 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(afterDenied.rows[0].count, 2);
     });
 
-    await t.test("cross-Tenant object reads fail closed and commit only bounded denial audit", async () => {
+    await t.test("cross-Tenant object reads fail closed and commit only bounded denial audit", async (caseTest) => {
+      const negativeRequestId = `request-cross-tenant-${RUN_ID}`;
+      const negativeCorrelationId = `correlation-cross-tenant-${RUN_ID}`;
+      const protectedStateBefore = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE, TENANT_TWO]
+      );
       const before = await ownerPool.query(
         "SELECT count(*)::int AS count FROM projection_snapshots WHERE tenant_id = $1",
         [TENANT_TWO]
       );
-      await assert.rejects(
+      const captured = await captureM1BProblem(
         () => tenantTwoAgent.getSelf({
           subjectId: tenantOneSubjectId,
-          requestId: `request-cross-tenant-${RUN_ID}`,
-          correlationId: `correlation-cross-tenant-${RUN_ID}`
+          requestId: negativeRequestId,
+          correlationId: negativeCorrelationId
         }),
-        (error) => error.code === "authorization_denied"
+        negativeRequestId
       );
+      assert.equal(captured.error.code, "authorization_denied");
       const after = await ownerPool.query(
         "SELECT count(*)::int AS count FROM projection_snapshots WHERE tenant_id = $1",
         [TENANT_TWO]
@@ -2430,6 +2830,29 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(denial.rows[0].reason_code, "resource_access_denied");
       assert.match(denial.rows[0].client_ref_hash, /^[A-Za-z0-9_-]{43}$/);
       assert.notEqual(denial.rows[0].client_ref_hash, identities.tenantTwoAgent.authenticationContext.clientId);
+      const protectedStateAfter = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE, TENANT_TWO]
+      );
+      const auditSet = await readM1BAuditSet(
+        ownerPool,
+        TENANT_TWO,
+        negativeRequestId
+      );
+      assert.equal(auditSet.rowCount, 1);
+      emitM1BPostgresNegativeDiagnostic(caseTest, {
+        group: "authorization",
+        id: "wrong_tenant_private_read",
+        requestId: negativeRequestId,
+        correlationId: negativeCorrelationId,
+        outwardBody: captured.outwardBody,
+        auditSet,
+        authorizationAuditEventId: auditSet.rows[0].eventId,
+        authorizationDecision: auditSet.rows[0].authorizationDecision,
+        authorizationReasonCode: auditSet.rows[0].reasonCode,
+        protectedStateBefore,
+        protectedStateAfter
+      });
     });
 
     await t.test("cross-Tenant, same-Tenant controller, and Agent Mandate management fail closed", async () => {
@@ -3729,7 +4152,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       }]);
     });
 
-    await t.test("Human and Agent persist one restart-safe no-funds Credit Intent protocol with retry-safe credit Outcomes", async () => {
+    await t.test("Human and Agent persist one restart-safe no-funds Credit Intent protocol with retry-safe credit Outcomes", async (caseTest) => {
       const humanWorkflowId = `human-credit-offer-postgres-${RUN_ID}`;
       const humanWorkflowCorrelationId = `correlation_human_credit_offer_${RUN_ID}`;
       const consentCreated = await tenantOneBorrower.createConsent(createConsentCommand({
@@ -4449,6 +4872,74 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(resumedHumanOffer.response.humanOfferReview.offerAggregateVersion, 1);
       assert.equal(resumedHumanOffer.response.humanOfferReview.nonAuthorizing, true);
       assert.equal(resumedHumanOffer.response.humanOfferReview.fundsAuthority, false);
+      const wrongTenantRequestId =
+        `request-accept-human-credit-wrong-tenant-${RUN_ID}`;
+      const wrongTenantCorrelationId =
+        `correlation-accept-human-credit-wrong-tenant-${RUN_ID}`;
+      const wrongTenantAcceptanceBefore = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE, TENANT_TWO]
+      );
+      const wrongTenantCaptured = await captureM1BProblem(
+        () => tenantTwoBorrower.acceptCreditOffer({
+          creditOfferId: resumedHumanOffer.response.humanOfferReview.offer.creditOfferId,
+          payload: {
+            expectedOfferHash:
+              resumedHumanOffer.response.humanOfferReview.offer.creditOfferHash,
+            expectedTermsHash:
+              resumedHumanOffer.response.humanOfferReview.offer.termsHash,
+            acknowledgementHash: hashId("gateway_wrong_tenant_offer_acknowledgement", {
+              offerHash:
+                resumedHumanOffer.response.humanOfferReview.offer.creditOfferHash,
+              termsHash:
+                resumedHumanOffer.response.humanOfferReview.offer.termsHash
+            })
+          },
+          idempotencyKey: `accept-human-credit-wrong-tenant-${RUN_ID}`,
+          requestId: wrongTenantRequestId,
+          correlationId: wrongTenantCorrelationId
+        }),
+        wrongTenantRequestId
+      );
+      assert.equal(wrongTenantCaptured.error.code, "authorization_denied");
+      assert.equal(
+        wrongTenantCaptured.error.message,
+        "The requested operation is not available."
+      );
+      const wrongTenantAcceptanceAfter = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE, TENANT_TWO]
+      );
+      const wrongTenantAcceptanceAudit = await ownerPool.query(
+        `SELECT authorization_decision, reason_code
+           FROM authorization_audit_events
+          WHERE tenant_id = $1 AND request_id = $2`,
+        [TENANT_TWO, `request-accept-human-credit-wrong-tenant-${RUN_ID}`]
+      );
+      assert.deepEqual(wrongTenantAcceptanceAudit.rows, [{
+        authorization_decision: "deny",
+        reason_code: "resource_access_denied"
+      }]);
+      const wrongTenantAuditSet = await readM1BAuditSet(
+        ownerPool,
+        TENANT_TWO,
+        wrongTenantRequestId
+      );
+      assert.equal(wrongTenantAuditSet.rowCount, 1);
+      emitM1BPostgresNegativeDiagnostic(caseTest, {
+        group: "human",
+        id: "wrong_tenant",
+        requestId: wrongTenantRequestId,
+        correlationId: wrongTenantCorrelationId,
+        outwardBody: wrongTenantCaptured.outwardBody,
+        auditSet: wrongTenantAuditSet,
+        authorizationAuditEventId: wrongTenantAuditSet.rows[0].eventId,
+        authorizationDecision:
+          wrongTenantAuditSet.rows[0].authorizationDecision,
+        authorizationReasonCode: wrongTenantAuditSet.rows[0].reasonCode,
+        protectedStateBefore: wrongTenantAcceptanceBefore,
+        protectedStateAfter: wrongTenantAcceptanceAfter
+      });
       const freshHumanBrowserBinding = createRecoveredHumanCreditReviewBinding(
         resumedHumanOffer.response.humanOfferReview
       );
@@ -4480,6 +4971,61 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       );
       assert.deepEqual(humanAcceptances.map((result) => result.replayed).sort(), [false, true]);
       assert.deepEqual(humanAcceptances[0].response, humanAcceptances[1].response);
+      const duplicateStateBefore = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE]
+      );
+      const duplicateAuditBefore = await readM1BAuditSet(
+        ownerPool,
+        TENANT_ONE,
+        humanAcceptanceCommand.requestId
+      );
+      const exactHumanReplay = await freshHumanSession.acceptCreditOffer(
+        humanAcceptanceCommand
+      );
+      assert.equal(exactHumanReplay.replayed, true);
+      assert.deepEqual(exactHumanReplay.response, humanAcceptances[0].response);
+      const duplicateStateAfter = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE]
+      );
+      const duplicateAuditAfter = await readM1BAuditSet(
+        ownerPool,
+        TENANT_ONE,
+        humanAcceptanceCommand.requestId
+      );
+      assert.deepEqual(duplicateAuditAfter, duplicateAuditBefore);
+      assert.equal(duplicateAuditAfter.rowCount, 2);
+      assert.equal(
+        duplicateAuditAfter.rows.every(
+          ({ authorizationDecision }) => authorizationDecision === "allow"
+        ),
+        true
+      );
+      emitM1BPostgresNegativeDiagnostic(caseTest, {
+        group: "human",
+        id: "duplicate_acceptance",
+        requestId: humanAcceptanceCommand.requestId,
+        correlationId: humanAcceptanceCommand.correlationId,
+        outwardBody: Object.freeze({
+          status: 200,
+          code: "idempotent_replay",
+          requestId: humanAcceptanceCommand.requestId,
+          replayed: exactHumanReplay.replayed,
+          responseSchemaVersion: exactHumanReplay.response.schemaVersion,
+          responseHash: hashId(
+            "m1_b_negative_duplicate_response",
+            exactHumanReplay.response
+          )
+        }),
+        auditSet: duplicateAuditAfter,
+        authorizationAuditEventId: null,
+        authorizationDecision: "idempotent_replay",
+        authorizationReasonCode: "exact_replay_no_second_effects",
+        protectedStateBefore: duplicateStateBefore,
+        protectedStateAfter: duplicateStateAfter,
+        duplicateSemantics: "exact_replay_status_200_no_second_effects"
+      });
 
       const agentAcceptanceCommand = {
         creditOfferId: agentWorkflow.offer.creditOfferId,
@@ -5157,6 +5703,50 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         correlationId: `correlation-execute-agent-sandbox-credit-${RUN_ID}`
       }, "missing");
       assert.equal(missingProviderScope.error.message, "invalid_mcp_tool_arguments");
+      const emitAgentExecutionNegative = async ({ id, payload }) => {
+        const label = id.replaceAll("_", "-");
+        const requestId = `request-m1b-agent-${label}-${RUN_ID}`;
+        const correlationId = `correlation-m1b-agent-${label}-${RUN_ID}`;
+        const protectedStateBefore = await readM1BProtectedState(
+          ownerPool,
+          [TENANT_ONE]
+        );
+        const captured = await captureM1BProblem(
+          () => tenantOneCreditAgent.executeSandboxObligation({
+            obligationId: agentAcceptance.obligation.obligationId,
+            providerId: payload.providerId,
+            providerCategory: payload.providerCategory,
+            idempotencyKey: `m1b-agent-${label}-${RUN_ID}`,
+            requestId,
+            correlationId
+          }),
+          requestId
+        );
+        assert.equal(captured.error.code, "credit_facility_scope_mismatch");
+        const protectedStateAfter = await readM1BProtectedState(
+          ownerPool,
+          [TENANT_ONE]
+        );
+        const auditSet = await readM1BAuditSet(
+          ownerPool,
+          TENANT_ONE,
+          requestId
+        );
+        assert.equal(auditSet.rowCount, 0);
+        emitM1BPostgresNegativeDiagnostic(caseTest, {
+          group: "agent",
+          id,
+          requestId,
+          correlationId,
+          outwardBody: captured.outwardBody,
+          auditSet,
+          authorizationAuditEventId: null,
+          authorizationDecision: "domain_rejected",
+          authorizationReasonCode: captured.error.code,
+          protectedStateBefore,
+          protectedStateAfter
+        });
+      };
       for (const [label, payload] of [
         ["provider", {
           providerId: "provider_not_allowlisted",
@@ -5176,6 +5766,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
             correlationId: `correlation-execute-agent-sandbox-credit-${RUN_ID}`
         }, label);
         assert.equal(denied.error.message, "credit_facility_scope_mismatch");
+        await emitAgentExecutionNegative({
+          id: label === "provider"
+            ? "wrong_provider"
+            : "wrong_provider_category",
+          payload
+        });
       }
       const outOfScopeFacility = await callAgentExecution({
         ...agentExecutionCommand,
@@ -5184,6 +5780,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-execute-agent-sandbox-credit-facility-scope-${RUN_ID}`
       }, "facility-scope");
       assert.equal(outOfScopeFacility.error.message, "credit_facility_scope_mismatch");
+      await emitAgentExecutionNegative({
+        id: "out_of_scope_facility",
+        payload: {
+          providerId: "provider_outside_derived_facility",
+          providerCategory: agentExecutionCommand.providerCategory
+        }
+      });
       const durableMcpNegativeCount = await ownerPool.query(
         `SELECT
            (SELECT count(*)::int FROM sandbox_execution_receipts
@@ -5296,6 +5899,50 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-execute-agent-sandbox-credit-replay-drift-${RUN_ID}`
       }, "replay-drift");
       assert.equal(replayInvalidExecution.error.message, "event_idempotency_conflict");
+      const replayInvalidRequestId =
+        `request-m1b-agent-replay-invalid-execution-${RUN_ID}`;
+      const replayInvalidCorrelationId =
+        `correlation-m1b-agent-replay-invalid-execution-${RUN_ID}`;
+      const replayInvalidStateBefore = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE]
+      );
+      const replayInvalidCaptured = await captureM1BProblem(
+        () => tenantOneCreditAgent.executeSandboxObligation({
+          ...agentExecutionCommand,
+          providerId: "provider_replay_drift",
+          requestId: replayInvalidRequestId,
+          correlationId: replayInvalidCorrelationId
+        }),
+        replayInvalidRequestId
+      );
+      assert.equal(
+        replayInvalidCaptured.error.code,
+        "event_idempotency_conflict"
+      );
+      const replayInvalidStateAfter = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE]
+      );
+      const replayInvalidAuditSet = await readM1BAuditSet(
+        ownerPool,
+        TENANT_ONE,
+        replayInvalidRequestId
+      );
+      assert.equal(replayInvalidAuditSet.rowCount, 0);
+      emitM1BPostgresNegativeDiagnostic(caseTest, {
+        group: "agent",
+        id: "replay_invalid_execution",
+        requestId: replayInvalidRequestId,
+        correlationId: replayInvalidCorrelationId,
+        outwardBody: replayInvalidCaptured.outwardBody,
+        auditSet: replayInvalidAuditSet,
+        authorizationAuditEventId: null,
+        authorizationDecision: "domain_rejected",
+        authorizationReasonCode: replayInvalidCaptured.error.code,
+        protectedStateBefore: replayInvalidStateBefore,
+        protectedStateAfter: replayInvalidStateAfter
+      });
 
       const agentLockboxDurability = await ownerPool.query(
         `SELECT l.id, l.lockbox_hash, l.subject_id, l.principal_id,
@@ -5816,7 +6463,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
 
     });
 
-    await t.test("Phase 2 Capital Partner marketplace closes Human, Agent, stale, and adverse no-funds paths", async () => {
+    await t.test("Phase 2 Capital Partner marketplace closes Human, Agent, stale, and adverse no-funds paths", async (caseTest) => {
       const capitalPartnerActorId =
         identities.tenantOneCapitalPartner.authenticationContext.actorId;
       const setupHumanBorrower = async ({ client, identity, label }) => {
@@ -6311,7 +6958,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         amountMinor: "6000",
         label: "stale"
       });
-      await assert.rejects(
+      const invalidBindingRequestId = `request-phase2-stale-hash-${RUN_ID}`;
+      const invalidBindingCorrelationId = `correlation-phase2-stale-${RUN_ID}`;
+      const invalidBindingStateBefore = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE]
+      );
+      const invalidBindingCaptured = await captureM1BProblem(
         () => tenantOnePhase2BorrowerA.acceptCreditOffer({
           creditOfferId: staleUnderwriting.offer.creditOfferId,
           payload: {
@@ -6324,11 +6977,35 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
             })
           },
           idempotencyKey: `phase2-stale-hash-${RUN_ID}`,
-          requestId: `request-phase2-stale-hash-${RUN_ID}`,
-          correlationId: `correlation-phase2-stale-${RUN_ID}`
+          requestId: invalidBindingRequestId,
+          correlationId: invalidBindingCorrelationId
         }),
-        (error) => error.code === "offer_terms_mismatch"
+        invalidBindingRequestId
       );
+      assert.equal(invalidBindingCaptured.error.code, "offer_terms_mismatch");
+      const invalidBindingStateAfter = await readM1BProtectedState(
+        ownerPool,
+        [TENANT_ONE]
+      );
+      const invalidBindingAuditSet = await readM1BAuditSet(
+        ownerPool,
+        TENANT_ONE,
+        invalidBindingRequestId
+      );
+      assert.equal(invalidBindingAuditSet.rowCount, 0);
+      emitM1BPostgresNegativeDiagnostic(caseTest, {
+        group: "human",
+        id: "invalid_acceptance_binding",
+        requestId: invalidBindingRequestId,
+        correlationId: invalidBindingCorrelationId,
+        outwardBody: invalidBindingCaptured.outwardBody,
+        auditSet: invalidBindingAuditSet,
+        authorizationAuditEventId: null,
+        authorizationDecision: "domain_rejected",
+        authorizationReasonCode: invalidBindingCaptured.error.code,
+        protectedStateBefore: invalidBindingStateBefore,
+        protectedStateAfter: invalidBindingStateAfter
+      });
       await tenantOnePhase2BorrowerA.revokeCreditPassportArtifact({
         artifactId: staleUnderwriting.passport.creditPassportArtifactId,
         reasonCode: "owner_withdrawal",
@@ -6720,7 +7397,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       }]);
     });
 
-    await t.test("stale Agent MCP handoffs fail closed on revoked and expired durable Mandates", async () => {
+    await t.test("stale Agent MCP handoffs fail closed on revoked and expired durable Mandates", async (caseTest) => {
       await seedIdentity(ownerPool, TENANT_ONE, identities.tenantOneRevocationAgent, {
         controllerActorId: identities.tenantOneController.authenticationContext.actorId
       });
@@ -6912,6 +7589,53 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           credit_events: before.rows[0].credit_events,
           obligation_events: before.rows[0].obligation_events,
           denied_command_rows: 0
+        });
+        const caseId = fixture.nextStatus === "expired"
+          ? "stale_mandate"
+          : "revoked_mandate";
+        const diagnosticLabel = caseId.replaceAll("_", "-");
+        const diagnosticRequestId =
+          `request-m1b-agent-${diagnosticLabel}-${RUN_ID}`;
+        const diagnosticCorrelationId =
+          `correlation-m1b-agent-${diagnosticLabel}-${RUN_ID}`;
+        const protectedStateBefore = await readM1BProtectedState(
+          ownerPool,
+          [TENANT_ONE]
+        );
+        const captured = await captureM1BProblem(
+          () => tenantOneRevocationAgent.executeSandboxObligation({
+            obligationId: pending.obligationId,
+            providerId: "provider_gateway_compute",
+            providerCategory: "compute",
+            idempotencyKey: `m1b-agent-${diagnosticLabel}-${RUN_ID}`,
+            requestId: diagnosticRequestId,
+            correlationId: diagnosticCorrelationId
+          }),
+          diagnosticRequestId
+        );
+        assert.equal(captured.error.code, "authority_not_current");
+        const protectedStateAfter = await readM1BProtectedState(
+          ownerPool,
+          [TENANT_ONE]
+        );
+        const auditSet = await readM1BAuditSet(
+          ownerPool,
+          TENANT_ONE,
+          diagnosticRequestId
+        );
+        assert.equal(auditSet.rowCount, 0);
+        emitM1BPostgresNegativeDiagnostic(caseTest, {
+          group: "agent",
+          id: caseId,
+          requestId: diagnosticRequestId,
+          correlationId: diagnosticCorrelationId,
+          outwardBody: captured.outwardBody,
+          auditSet,
+          authorizationAuditEventId: null,
+          authorizationDecision: "domain_rejected",
+          authorizationReasonCode: captured.error.code,
+          protectedStateBefore,
+          protectedStateAfter
         });
       }
     });

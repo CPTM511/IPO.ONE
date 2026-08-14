@@ -13,10 +13,13 @@ import {
   verifyM1BHostedReadinessDocument
 } from "../packages/release-governance/src/m1-b-acceptance-evidence.js";
 import {
+  assertM1BEvidenceRootMatchesRepository,
   verifyM1BCriticalArtifactContents,
   verifyM1BArtifactFiles,
   verifyM1BCurrentGitSource
 } from "./m1-b-acceptance-evidence-files.mjs";
+import { verifyM1BOperationalArtifactContents } from
+  "./m1-b-operational-evidence-files.mjs";
 
 async function readBoundedUtf8(path, label) {
   let handle;
@@ -78,13 +81,21 @@ try {
   const result = verifyM1BAcceptanceEvidence(evidence, {
     expectedCommitSha
   });
+  const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+  await assertM1BEvidenceRootMatchesRepository(values["evidence-root"], {
+    repositoryRoot
+  });
   verifyM1BCurrentGitSource(evidence, expectedCommitSha, {
-    root: resolve(fileURLToPath(new URL("..", import.meta.url)))
+    root: repositoryRoot
   });
   await verifyM1BArtifactFiles(evidence.artifacts, {
     evidenceRoot: values["evidence-root"]
   });
   await verifyM1BCriticalArtifactContents(evidence, {
+    evidenceRoot: values["evidence-root"],
+    expectedCommitSha
+  });
+  await verifyM1BOperationalArtifactContents(evidence, {
     evidenceRoot: values["evidence-root"],
     expectedCommitSha
   });
@@ -112,8 +123,13 @@ try {
       capabilityResponse.json(),
       readinessResponse.json()
     ]);
-    verifyM1BHostedCapabilityDocument(capability, { expectedCommitSha });
-    verifyM1BHostedReadinessDocument(readiness, { expectedCommitSha });
+    const hostedIdentityOptions = {
+      expectedCommitSha,
+      expectedDeploymentRole: surface.deploymentRole,
+      evidenceSchemaVersion: evidence.schemaVersion
+    };
+    verifyM1BHostedCapabilityDocument(capability, hostedIdentityOptions);
+    verifyM1BHostedReadinessDocument(readiness, hostedIdentityOptions);
     hostedChecks.push({
       deploymentRole: surface.deploymentRole,
       origin: surface.origin,

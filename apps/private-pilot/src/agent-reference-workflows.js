@@ -246,6 +246,8 @@ function workflowSuffix(manifest) {
   return manifest.mandateHash.slice(2, 26);
 }
 
+const EXACT_CANDIDATE_SHA = /^[0-9a-f]{40}$/;
+
 export function createLocalAgentApplicationInput(manifest) {
   const principal = [
     BigInt(manifest.authority.perActionLimitMinor),
@@ -263,6 +265,22 @@ export function createLocalAgentApplicationInput(manifest) {
     },
     workflowId: `local-agent-application-${workflowSuffix(manifest)}`
   };
+}
+
+export function createM1BAgentForeignOfferApplicationInput(
+  manifest,
+  candidateReleaseId
+) {
+  if (!EXACT_CANDIDATE_SHA.test(candidateReleaseId ?? "")) {
+    throw new DomainError(
+      "invalid_m1_b_agent_foreign_offer_candidate",
+      "Exact candidate SHA is required for the foreign Agent Offer workflow"
+    );
+  }
+  return Object.freeze({
+    ...createLocalAgentApplicationInput(manifest),
+    workflowId: `m1b-agent-foreign-offer-${candidateReleaseId}`
+  });
 }
 
 export function createLocalAgentRuntimeInput(
@@ -294,6 +312,21 @@ export async function runLocalAgentApplicationWorkflow({
   });
   return client.runCreditOfferWorkflow(
     createLocalAgentApplicationInput(manifest)
+  );
+}
+
+export async function runM1BAgentForeignOfferApplicationWorkflow({
+  candidateReleaseId,
+  manifest,
+  session
+}) {
+  const client = new IpoOneAgentMcpClient({
+    handle: session.host.handle,
+    manifest,
+    transportProfile: "mcp_stdio_local"
+  });
+  return client.runCreditOfferWorkflow(
+    createM1BAgentForeignOfferApplicationInput(manifest, candidateReleaseId)
   );
 }
 

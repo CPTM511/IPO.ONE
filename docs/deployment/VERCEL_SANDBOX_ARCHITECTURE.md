@@ -2,10 +2,15 @@
 
 ## Status and authority
 
-Status: `IMPLEMENTED_LOCALLY_PENDING_DEPLOYED_EVIDENCE`
+Status: `PRIMARY_DEPLOYMENT_PENDING_RISK_TOPOLOGY_DEFERRED`
 
-This architecture implements the Founder-authorized M1-B Deployable Sandbox
-Vertical Slice. It does not authorize or claim an RC, release, paid pilot,
+This architecture describes the configured M1-B Deployable Sandbox Vertical
+Slice. The current machine-readable topology is
+`deploy/vercel/m1-b-sandbox.manifest.v2.json`; it is Primary-only and records
+deployment pending with every external release authority false. The v1 manifest
+is preserved as historical two-project context and is not current authority.
+This document does not authorize or claim an RC, release, merge, deployment,
+promotion, alias or DNS mutation, custom-domain mutation, tag, seal, paid pilot,
 mainnet operation, production financial service, real funds, custody, protocol
 fees, external signer, withdrawal, transfer, or venue-write authority.
 
@@ -13,28 +18,23 @@ The Vercel target environment is `production` only because Vercel Cron invokes
 production deployments. The IPO.ONE product profile remains an invitation-only,
 synthetic, no-real-funds sandbox.
 
-## Two-project role-isolated topology
+## Current M1-B Primary topology and deferred Risk topology
 
 ```text
 Invited Founder wallet                         DPoP-bound Agent workload
         |                                                |
         v                                                v
-Primary Vercel Project: Principal/Agent/Automation (Node.js Functions)
-  - Web assets and Principal authentication routes
+Primary Vercel Project: Human / Principal-Agent / Capital Partner / Automation
+  (Node.js Functions)
+  - one shared bundle retaining Human, Principal-Agent, and Capital Partner
+    protocol capabilities
+  - current hosted browser acceptance: Principal-Agent only
   - /tenant/v1/operations
   - /livez, /readyz, /tenant/v1/healthz
   - /api/cron (authenticated, bounded recovery cycle)
         |
-        |     Same invited Founder wallet
-        |               |
-        |               v
-        |     Risk Vercel Project: Risk/Admin (Node.js Functions)
-        |       - separate SIWE issuer and client binding
-        |       - Risk views and freeze operations
-        |       - no Cron registration
-        |               |
-        +---------------+
-                        v
+        |
+        v
 Neon PostgreSQL 17 through Vercel Marketplace
   - canonical domain state and projections
   - sessions and continuation receipts
@@ -42,12 +42,19 @@ Neon PostgreSQL 17 through Vercel Marketplace
   - idempotency, reconciliation, CreditLine, Lockbox
 ```
 
-The second project is required because one fixed SIWE issuer/client binding
-cannot map the same wallet to both Principal Controller and Risk Operator
-without a broad authentication redesign. Both projects deploy the same exact
-source commit and share one canonical database. No continuous worker, external
-queue, Redis, Kafka, second database, object store, or Edge runtime is
+M1-B does not deploy a Risk project. The earlier two-project design is retained
+as historical architecture context only: a future private Risk surface may use
+a second project, but only after a separately approved phishing-resistant OIDC
+or WebAuthn topology satisfies the existing strong-MFA policy. SIWE-only Risk
+access remains local, unavailable, and fail closed. No continuous worker,
+external queue, Redis, Kafka, second database, object store, or Edge runtime is
 introduced.
+
+The Primary bundle retains the shared Human and Capital Partner protocol
+capabilities for one-kernel compatibility, but the current production workspace
+binding and eight-row hosted v2 acceptance cover Principal-Agent only. Human and
+Capital Partner positive acceptance remain local exact-candidate gates; this
+topology makes no hosted Human or Capital Partner browser-surface claim.
 
 ## Process conversion
 
@@ -73,8 +80,8 @@ version, and current status. CreditLine remains a derived projection and never
 independently authorizes exposure. A stale or inconsistent projection fails
 closed.
 
-The two browser roles authenticate through invitation-only SIWE with distinct
-project origins and client bindings. The Agent authenticates with the existing
+The deployed Primary browser roles authenticate through the reviewed
+invitation-only configuration. The Agent authenticates with the existing
 asymmetric `private_key_jwt` and DPoP sender-constraint model. Vercel stores
 only the public workload JWKS. The workload authentication private key remains
 outside Vercel and cannot sign transactions, transfers, withdrawals, or venue
@@ -141,14 +148,18 @@ outbox work eligible for retry after lease expiry.
   time and are never canonical state.
 - Existing Base Sepolia and X Layer profiles remain read-only or synthetic
   unless separately authorized. No chain signer is deployed.
-- The primary project is the only Cron target. The Risk project cannot invoke
-  scheduled automation through Vercel Cron configuration.
+- The Primary project is the only Cron target. No Risk project is an M1-B
+  deployment target.
 
 ## Intentionally deferred
 
 - Protocol fee runtime (`REQ-PAY-002`); UI states that fees are disabled.
-- Full Human dispute and appeal workflow (`REQ-UX-001`).
-- Capital Partner browser workspace (`REQ-UX-003`).
+- Full Human dispute and appeal workflow beyond the required synthetic M1-B
+  credit lifecycle.
+- Broader Capital Partner marketplace expansion beyond the required synthetic
+  workspace, Passport, Offer author/replace/withdraw, and borrower recovery.
+- Privileged Risk/Operations browser journey (`REQ-UX-004`) until the M1-C/L2
+  phishing-resistant authentication gate is separately approved and composed.
 - External account signer or transaction authority (`REQ-TRADE-002`).
 - Controlled-pilot prerequisites (`REQ-PILOT-001`, `REQ-PILOT-002`).
 - Real funds, custody, mainnet, KYC vendor, production lending, withdrawals,
@@ -157,7 +168,7 @@ outbox work eligible for retry after lease expiry.
 ## Expected monthly cost
 
 - Vercel Pro: the Founder-confirmed team already has the Pro platform fee and
-  included usage credit. Both projects remain inside that team. Expected
+  included usage credit. The Primary project remains inside that team. Expected
   incremental M1-B cost is USD 0 at the invitation-only test volume, subject
   to metered usage and actual invoice evidence.
 - Neon Free: expected USD 0/month within the current Free allowance, including

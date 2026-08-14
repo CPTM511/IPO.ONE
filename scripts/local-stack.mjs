@@ -23,6 +23,9 @@ import {
   resolveLocalReviewPorts,
   resolveLocalReleaseIdentity
 } from "./local-release-identity.mjs";
+import {
+  ensureM1BOperationalOutputDirectory
+} from "./m1-b-operational-evidence-builder.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTANCE = "ipo-one-local";
@@ -49,6 +52,14 @@ const AUTHENTICATION_INVITATION_FILE = resolve(
 const AGENT_KEY_FILE = resolve(
   SECRET_DIRECTORY,
   "agent-key.v1.json"
+);
+const OPERATIONAL_EVIDENCE_SCRIPT = resolve(
+  ROOT,
+  "scripts/m1-b-operational-evidence-builder.mjs"
+);
+const OPERATIONAL_EVIDENCE_OUTPUT = resolve(
+  ROOT,
+  "output/playwright/m1-b-p0-5"
 );
 const LIMA_CONFIG = resolve(homedir(), ".lima", INSTANCE, "lima.yaml");
 const releaseIdentity = resolveLocalReleaseIdentity();
@@ -370,6 +381,46 @@ function evidenceAnchorConfigured() {
   ) === "enabled";
 }
 
+async function operationalRestartEvidence(mode) {
+  if (!releaseIdentity.exactCandidate) return;
+  await ensureM1BOperationalOutputDirectory(OPERATIONAL_EVIDENCE_OUTPUT);
+  const pilotContainerId = compose(
+    ["ps", "--quiet", "pilot"],
+    { capture: true }
+  );
+  if (!/^[0-9a-f]{12,64}$/.test(pilotContainerId)) {
+    fail("the exact-candidate Pilot container is unavailable for restart Evidence");
+  }
+  const pilotImageId = run(
+    "limactl",
+    [
+      "shell",
+      "--workdir",
+      ROOT,
+      INSTANCE,
+      "docker",
+      "inspect",
+      pilotContainerId,
+      "--format",
+      "{{.Image}}"
+    ],
+    { capture: true }
+  );
+  if (!/^sha256:[0-9a-f]{64}$/.test(pilotImageId)) {
+    fail("the exact-candidate Pilot image is invalid for restart Evidence");
+  }
+  run(process.execPath, [
+    OPERATIONAL_EVIDENCE_SCRIPT,
+    mode,
+    "--candidate-release-id",
+    releaseIdentity.revision,
+    "--pilot-image-id",
+    pilotImageId,
+    "--output-root",
+    "output/playwright/m1-b-p0-5"
+  ]);
+}
+
 async function prepare() {
   parseLocalStack(await readFile(CONTRACT_FILE, "utf8"));
   assertExactLocalReleaseSource(releaseIdentity, { root: ROOT });
@@ -445,6 +496,7 @@ switch (command) {
     await prepare();
     {
       const preserveEvidenceAnchor = evidenceAnchorConfigured();
+      await operationalRestartEvidence("restart-begin");
       compose(
         ["stop", "worker", "pilot"],
         { evidenceAnchor: preserveEvidenceAnchor }
@@ -457,8 +509,20 @@ switch (command) {
       );
     }
     await ensureLoopbackForwarding();
+    await operationalRestartEvidence("restart-complete");
     process.stdout.write(
       "IPO.ONE local database, pilot and worker restarted successfully.\n"
+    );
+    break;
+  case "restart-complete-only":
+    if (!releaseIdentity.exactCandidate) {
+      fail("restart-complete-only requires IPO_ONE_M1_B_RELEASE_SHA");
+    }
+    await prepare();
+    await ensureLoopbackForwarding();
+    await operationalRestartEvidence("restart-complete");
+    process.stdout.write(
+      "IPO.ONE sealed the already-completed sole restart; no service stop or restart was issued.\n"
     );
     break;
   case "vm-stop":

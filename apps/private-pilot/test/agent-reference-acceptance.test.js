@@ -16,6 +16,10 @@ const recoverySource = source.slice(
   source.indexOf("async function recoverCurrentReferenceAcceptance"),
   source.indexOf("const humanRuntime")
 );
+const foreignSetupSource = source.slice(
+  source.indexOf("async function readM1BAgentForeignOfferSetupState"),
+  source.indexOf("async function findCurrentReferenceSubject")
+);
 
 test("reference Agent acceptance locates one current v2 lifecycle read-only", () => {
   assert.match(source, /BEGIN READ ONLY/);
@@ -98,6 +102,50 @@ test("exact pre-restart Agent acceptance always crosses MCP and re-queries its l
   assert.match(source, /lifecycle\.mcpReceipt/);
   assert.match(source, /databaseStartedAt: completedCandidate\.databaseStartedAt/);
   assert.match(source, /accountHash: reference\.expectedAccountHash/);
+});
+
+test("exact pre-restart acceptance creates the distinct foreign Offer before canonical activation", () => {
+  const setupCall = source.indexOf(
+    "const foreignOfferSetup = await createOrReconcileM1BAgentForeignOfferSetup"
+  );
+  const activation = source.indexOf("const activation = mandate.status");
+  assert.ok(setupCall > 0);
+  assert.ok(activation > setupCall);
+  assert.match(
+    foreignSetupSource,
+    /runM1BAgentForeignOfferApplicationWorkflow\(\{/
+  );
+  assert.match(
+    foreignSetupSource,
+    /foreignOfferMandateNonce\(scope\.candidateReleaseId\)/
+  );
+  assert.doesNotMatch(
+    foreignSetupSource,
+    /persistLocalAgentContinuationReceipt|runLocalAgentRuntimeWorkflow|activateSandboxMandate/
+  );
+});
+
+test("foreign offered-v1 setup proves Agent ownership and zero downstream economic rows", () => {
+  for (const resourceType of [
+    "subject",
+    "mandate",
+    "credit_intent",
+    "credit_offer"
+  ]) {
+    assert.match(foreignSetupSource, new RegExp(`\\["${resourceType}"`));
+  }
+  for (const table of [
+    "credit_offer_acceptances",
+    "obligations",
+    "sandbox_execution_receipts",
+    "repayment_events",
+    "ledger_transactions"
+  ]) {
+    assert.match(foreignSetupSource, new RegExp(table));
+  }
+  assert.match(source, /m1_b_agent_foreign_offer_reconciliation\.v1/);
+  assert.match(source, /canonicalLifecycleReadOnly: true/);
+  assert.match(source, /lifecycleMutationPerformed: false/);
 });
 
 test("active-Mandate retry consumes the persisted Offer without inventing an application handoff", () => {

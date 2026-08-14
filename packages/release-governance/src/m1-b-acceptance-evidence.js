@@ -4,12 +4,18 @@ const HASH = /^0x[0-9a-f]{64}$/;
 const ID = /^[a-z][a-z0-9_]{2,63}$/;
 const RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/;
 const ARTIFACT_PATH = /^output\/playwright\/m1-b-p0-5\/[A-Za-z0-9][A-Za-z0-9._/-]{0,511}$/;
+const CURRENT_V2_ARTIFACT_PATH = /^(?:output\/playwright\/m1-b-p0-5|\.ipo-one\/local-stack\/agent-workflows)\/[A-Za-z0-9][A-Za-z0-9._/-]{0,511}$/;
 
-const ROLES = Object.freeze([
+const TOPOLOGY_ROLES = Object.freeze([
   "human",
   "principal_agent",
   "capital_partner",
   "risk_operations"
+]);
+const POSITIVE_JOURNEY_ROLES = Object.freeze([
+  "human",
+  "principal_agent",
+  "capital_partner"
 ]);
 const BROWSER_CHECKS = Object.freeze([
   "desktop",
@@ -21,7 +27,7 @@ const BROWSER_CHECKS = Object.freeze([
   "negative_authorization",
   "restart_recovery"
 ]);
-const JOURNEY_STEPS = Object.freeze({
+const POSITIVE_JOURNEY_STEPS = Object.freeze({
   human: Object.freeze([
     "sign_in",
     "subject_consent",
@@ -55,7 +61,10 @@ const JOURNEY_STEPS = Object.freeze({
     "replace_offer",
     "withdraw_offer",
     "borrower_recovers_current_offer"
-  ]),
+  ])
+});
+const HISTORICAL_V1_JOURNEY_STEPS = Object.freeze({
+  ...POSITIVE_JOURNEY_STEPS,
   risk_operations: Object.freeze([
     "risk_sign_in",
     "portfolio_queue_recovery",
@@ -98,17 +107,176 @@ const ARTIFACT_KINDS = new Set([
   "agent_mcp_receipt",
   "release_identity"
 ]);
+const CURRENT_V2_ARTIFACT_KINDS = new Set([
+  ...ARTIFACT_KINDS,
+  "tap_log",
+  "negative_source_proof"
+]);
 const ARTIFACT_SOURCES = new Set([
   "local_exact_commit",
   "hosted_exact_commit"
 ]);
-const HOSTED_ROLE_BY_DEPLOYMENT_ROLE = Object.freeze({
+const HISTORICAL_V1_HOSTED_ROLE_BY_DEPLOYMENT_ROLE = Object.freeze({
   primary: "principal_agent",
   risk: "risk_operations"
 });
-const HOSTED_DEPLOYMENT_ROLES = Object.freeze(
-  Object.keys(HOSTED_ROLE_BY_DEPLOYMENT_ROLE)
-);
+const M1_B_HOSTED_ROLE_BY_DEPLOYMENT_ROLE = Object.freeze({
+  primary: "principal_agent"
+});
+const RISK_MFA_OPERATION_IDS = Object.freeze([
+  "pilotCancelApproval",
+  "pilotDecideApproval",
+  "pilotFreezeSubject",
+  "pilotIncreaseCreditLimit",
+  "pilotProposeApproval",
+  "pilotReadApproval",
+  "pilotReadCreditRegistryEvidence",
+  "pilotReadPilotFeedbackSummary",
+  "pilotReadPilotHealth",
+  "pilotReadServicingQueue",
+  "pilotReadServicingQueueReference",
+  "pilotReadTenantRisk",
+  "pilotReadTenantRiskPortfolioReference",
+  "pilotReduceCreditLimit",
+  "pilotRepurchaseSandboxObligation",
+  "pilotRestructureSandboxObligation",
+  "pilotUnfreezeSubject",
+  "pilotWriteOffSandboxObligation",
+  "tradingEvaluateRisk",
+  "tradingFlattenFacility",
+  "tradingPauseNewRisk"
+]);
+const RISK_MFA_LIVE_OPERATION_IDS = Object.freeze([
+  "pilotReadTenantRiskPortfolioReference",
+  "pilotFreezeSubject"
+]);
+const RISK_MFA_PROTECTED_STATE_TABLES = Object.freeze([
+  "access_grants",
+  "account_bindings",
+  "aggregate_stream_heads",
+  "approval_decisions",
+  "approval_executions",
+  "approval_proposals",
+  "authorization_resource_bindings",
+  "authorization_resources",
+  "break_glass_custodian_decisions",
+  "break_glass_incidents",
+  "break_glass_reviews",
+  "capital_partner_profiles",
+  "command_events",
+  "command_idempotency",
+  "consent_records",
+  "credit_events",
+  "credit_intents",
+  "credit_lines",
+  "credit_offer_acceptances",
+  "credit_offers",
+  "credit_outcomes",
+  "credit_passport_artifacts",
+  "credit_profiles",
+  "delegated_wallet_grant_target_policies",
+  "delegated_wallet_grant_transitions",
+  "delegated_wallet_grants",
+  "delegated_wallet_pending_exposures",
+  "domain_events",
+  "evidence_envelopes",
+  "execution_account_binding_challenges",
+  "execution_account_binding_proof_attempts",
+  "execution_target_policies",
+  "human_identity_references",
+  "hypercore_account_bindings",
+  "hypercore_api_wallet_delegates",
+  "hypercore_delegate_tombstones",
+  "hypercore_jit_venue_preflight_receipts",
+  "hypercore_stable_execution_intents",
+  "hypercore_stable_execution_transitions",
+  "hypercore_stable_founder_approvals",
+  "hypercore_testnet_founder_approvals",
+  "hypercore_testnet_nonce_heads",
+  "hypercore_testnet_signer_handoffs",
+  "hypercore_testnet_submission_attempts",
+  "hypercore_testnet_submission_transitions",
+  "ledger_accounts",
+  "ledger_entries",
+  "ledger_transactions",
+  "lockboxes",
+  "mandate_releases",
+  "mandate_reservations",
+  "mandates",
+  "obligation_installments",
+  "obligations",
+  "official_report_artifacts",
+  "outbox_messages",
+  "pilot_feedback_records",
+  "principals",
+  "provider_callback_inbox",
+  "provider_intent_acknowledgements",
+  "provider_intent_deliveries",
+  "repayment_events",
+  "risk_decisions",
+  "sandbox_execution_receipts",
+  "sandbox_servicing_actions",
+  "settlement_receipts",
+  "spend_policies",
+  "spend_requests",
+  "subjects",
+  "tenant_command_executions",
+  "tenant_command_pauses",
+  "trading_capital_requests",
+  "trading_credit_profiles",
+  "trading_execution_nonce_heads",
+  "trading_facilities",
+  "trading_facility_close_requests",
+  "trading_facility_risk_evaluations",
+  "trading_match_proposals",
+  "trading_order_intents",
+  "trading_performance_proofs",
+  "trading_provider_mandates",
+  "trading_settlements",
+  "trading_testnet_execution_records",
+  "trading_testnet_execution_transitions",
+  "trading_testnet_facility_funding_controls",
+  "trading_testnet_protective_controls",
+  "trading_testnet_protective_transitions",
+  "trading_testnet_settlement_runs",
+  "transfer_intents",
+  "transfer_quotes",
+  "wallet_prepared_executions",
+  "wallet_simulation_reports",
+  "wallet_transaction_preflight_receipts",
+  "workspace_continuation_receipts"
+]);
+const RISK_MFA_PROTECTED_STATE_MINIMUMS = Object.freeze({
+  aggregate_stream_heads: 1,
+  authorization_resources: 3,
+  credit_lines: 1,
+  domain_events: 1,
+  evidence_envelopes: 1,
+  obligations: 1,
+  outbox_messages: 1,
+  subjects: 1,
+  tenant_command_executions: 1
+});
+const HISTORICAL_V1_PROFILE = Object.freeze({
+  schemaVersion: "ipo.one.m1-b-p0-5-acceptance-evidence/v1",
+  journeyRoles: TOPOLOGY_ROLES,
+  journeySteps: HISTORICAL_V1_JOURNEY_STEPS,
+  localBrowserRoles: TOPOLOGY_ROLES,
+  hostedRoleByDeploymentRole: HISTORICAL_V1_HOSTED_ROLE_BY_DEPLOYMENT_ROLE,
+  restartRiskKey: "riskRecovered",
+  riskBoundaryRequired: false,
+  deploymentPendingAllowed: false
+});
+const CURRENT_V2_PROFILE = Object.freeze({
+  schemaVersion: "ipo.one.m1-b-p0-5-acceptance-evidence/v2",
+  journeyRoles: POSITIVE_JOURNEY_ROLES,
+  journeySteps: POSITIVE_JOURNEY_STEPS,
+  localBrowserRoles: POSITIVE_JOURNEY_ROLES,
+  hostedRoleByDeploymentRole: M1_B_HOSTED_ROLE_BY_DEPLOYMENT_ROLE,
+  restartRiskKey: "riskFailClosedAfterRestart",
+  riskBoundaryRequired: true,
+  deploymentPendingAllowed: true
+});
 const REAL_BROWSER_DRIVERS = new Set(["playwright_cli", "chrome_control"]);
 const PRINCIPAL_AGENT_MCP_STEPS = new Set([
   "agent_application",
@@ -269,7 +437,7 @@ function sameOriginPath(value, origin, pathname, path, issues) {
   }
 }
 
-function validateArtifacts(artifacts, issues) {
+function validateArtifacts(artifacts, issues, profile) {
   const artifactsById = new Map();
   const paths = new Set();
   if (!Array.isArray(artifacts) || artifacts.length < 1 || artifacts.length > 512) {
@@ -293,8 +461,16 @@ function validateArtifacts(artifacts, issues) {
     pattern(artifact.id, ID, `${path}.id`, issues);
     if (artifactsById.has(artifact.id)) issues.push(`${path}.id duplicates ${artifact.id}.`);
     artifactsById.set(artifact.id, artifact);
-    if (!ARTIFACT_KINDS.has(artifact.kind)) issues.push(`${path}.kind is not accepted.`);
-    pattern(artifact.relativePath, ARTIFACT_PATH, `${path}.relativePath`, issues);
+    const acceptedKinds = profile === CURRENT_V2_PROFILE
+      ? CURRENT_V2_ARTIFACT_KINDS
+      : ARTIFACT_KINDS;
+    if (!acceptedKinds.has(artifact.kind)) issues.push(`${path}.kind is not accepted.`);
+    pattern(
+      artifact.relativePath,
+      profile === CURRENT_V2_PROFILE ? CURRENT_V2_ARTIFACT_PATH : ARTIFACT_PATH,
+      `${path}.relativePath`,
+      issues
+    );
     if (artifact.relativePath.includes("..") || artifact.relativePath.includes("//")) {
       issues.push(`${path}.relativePath must not traverse or contain empty segments.`);
     }
@@ -316,14 +492,16 @@ function validateArtifacts(artifacts, issues) {
 }
 
 function validateRoleOrigins(origins, portBase, issues) {
-  if (!exactKeys(origins, ROLES, "evidence.runtime.local.origins", issues)) return;
+  if (!exactKeys(origins, TOPOLOGY_ROLES, "evidence.runtime.local.origins", issues)) return;
   const expected = {
     human: `http://127.0.0.1:${portBase}/`,
     principal_agent: `http://127.0.0.1:${portBase + 1}/`,
     capital_partner: `http://127.0.0.1:${portBase + 3}/`,
     risk_operations: `http://127.0.0.1:${portBase + 2}/`
   };
-  for (const role of ROLES) exact(origins[role], expected[role], `evidence.runtime.local.origins.${role}`, issues);
+  for (const role of TOPOLOGY_ROLES) {
+    exact(origins[role], expected[role], `evidence.runtime.local.origins.${role}`, issues);
+  }
 }
 
 function validateLocalAgentAcceptance(
@@ -471,7 +649,177 @@ function validateLocalAgentAcceptance(
   }
 }
 
-function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
+function validateLocalHumanAcceptance(
+  acceptance,
+  expectedCommitSha,
+  expectedDatabaseStartedAt,
+  artifactsById,
+  issues
+) {
+  const path = "evidence.runtime.local.humanAcceptance";
+  if (!exactKeys(acceptance, [
+    "schemaVersion",
+    "status",
+    "candidateReleaseId",
+    "databaseStartedAt",
+    "subjectId",
+    "consentId",
+    "creditIntentId",
+    "riskDecisionId",
+    "creditOfferId",
+    "creditOfferHash",
+    "termsHash",
+    "offerAggregateVersion",
+    "creditOfferAcceptanceId",
+    "obligationId",
+    "repaymentId",
+    "artifactId"
+  ], path, issues)) return;
+  exact(
+    acceptance.schemaVersion,
+    "local_human_release_acceptance_linkage.v1",
+    `${path}.schemaVersion`,
+    issues
+  );
+  exact(acceptance.status, "passed", `${path}.status`, issues);
+  exact(acceptance.candidateReleaseId, expectedCommitSha, `${path}.candidateReleaseId`, issues);
+  exact(
+    acceptance.databaseStartedAt,
+    expectedDatabaseStartedAt,
+    `${path}.databaseStartedAt`,
+    issues
+  );
+  for (const key of [
+    "subjectId",
+    "consentId",
+    "creditIntentId",
+    "riskDecisionId",
+    "creditOfferId",
+    "creditOfferAcceptanceId",
+    "obligationId",
+    "repaymentId"
+  ]) pattern(acceptance[key], RESOURCE_ID, `${path}.${key}`, issues);
+  pattern(acceptance.creditOfferHash, HASH, `${path}.creditOfferHash`, issues);
+  pattern(acceptance.termsHash, HASH, `${path}.termsHash`, issues);
+  if (!Number.isSafeInteger(acceptance.offerAggregateVersion) || acceptance.offerAggregateVersion < 1) {
+    issues.push(`${path}.offerAggregateVersion must be a positive safe integer.`);
+  }
+  artifactReferences(
+    [acceptance.artifactId],
+    `${path}.artifactId`,
+    artifactsById,
+    issues,
+    {
+      requiredKindSets: [new Set(["postgres_receipt"])],
+      allowedSources: new Set(["local_exact_commit"]),
+      requireSingleSource: true
+    }
+  );
+}
+
+function validateLocalCapitalPartnerAcceptance(
+  acceptance,
+  expectedCommitSha,
+  expectedDatabaseStartedAt,
+  artifactsById,
+  issues
+) {
+  const path = "evidence.runtime.local.capitalPartnerAcceptance";
+  if (!exactKeys(acceptance, [
+    "schemaVersion",
+    "status",
+    "candidateReleaseId",
+    "databaseStartedAt",
+    "capitalPartnerId",
+    "currentLineage",
+    "withdrawalLineage",
+    "artifactId"
+  ], path, issues)) return;
+  exact(
+    acceptance.schemaVersion,
+    "local_capital_partner_release_acceptance_linkage.v1",
+    `${path}.schemaVersion`,
+    issues
+  );
+  exact(acceptance.status, "passed", `${path}.status`, issues);
+  exact(acceptance.candidateReleaseId, expectedCommitSha, `${path}.candidateReleaseId`, issues);
+  exact(
+    acceptance.databaseStartedAt,
+    expectedDatabaseStartedAt,
+    `${path}.databaseStartedAt`,
+    issues
+  );
+  pattern(acceptance.capitalPartnerId, RESOURCE_ID, `${path}.capitalPartnerId`, issues);
+  const currentPath = `${path}.currentLineage`;
+  if (exactKeys(acceptance.currentLineage, [
+    "creditIntentId",
+    "creditPassportArtifactId",
+    "preliminaryOfferId",
+    "currentOfferId",
+    "currentOfferHash",
+    "currentTermsHash",
+    "currentOfferAggregateVersion"
+  ], currentPath, issues)) {
+    for (const key of [
+      "creditIntentId",
+      "creditPassportArtifactId",
+      "preliminaryOfferId",
+      "currentOfferId"
+    ]) pattern(acceptance.currentLineage[key], RESOURCE_ID, `${currentPath}.${key}`, issues);
+    pattern(
+      acceptance.currentLineage.currentOfferHash,
+      HASH,
+      `${currentPath}.currentOfferHash`,
+      issues
+    );
+    pattern(
+      acceptance.currentLineage.currentTermsHash,
+      HASH,
+      `${currentPath}.currentTermsHash`,
+      issues
+    );
+    if (
+      !Number.isSafeInteger(acceptance.currentLineage.currentOfferAggregateVersion) ||
+      acceptance.currentLineage.currentOfferAggregateVersion < 1
+    ) {
+      issues.push(`${currentPath}.currentOfferAggregateVersion must be a positive safe integer.`);
+    }
+    if (acceptance.currentLineage.preliminaryOfferId === acceptance.currentLineage.currentOfferId) {
+      issues.push(`${currentPath} must identify distinct preliminary and current Offers.`);
+    }
+  }
+  const withdrawalPath = `${path}.withdrawalLineage`;
+  if (exactKeys(acceptance.withdrawalLineage, [
+    "creditIntentId",
+    "creditPassportArtifactId",
+    "withdrawnOfferId"
+  ], withdrawalPath, issues)) {
+    for (const key of ["creditIntentId", "creditPassportArtifactId", "withdrawnOfferId"]) {
+      pattern(acceptance.withdrawalLineage[key], RESOURCE_ID, `${withdrawalPath}.${key}`, issues);
+    }
+    if (
+      acceptance.withdrawalLineage.creditIntentId === acceptance.currentLineage?.creditIntentId ||
+      acceptance.withdrawalLineage.creditPassportArtifactId ===
+        acceptance.currentLineage?.creditPassportArtifactId ||
+      acceptance.withdrawalLineage.withdrawnOfferId === acceptance.currentLineage?.currentOfferId
+    ) {
+      issues.push(`${withdrawalPath} must be distinct from the current-Offer lineage.`);
+    }
+  }
+  artifactReferences(
+    [acceptance.artifactId],
+    `${path}.artifactId`,
+    artifactsById,
+    issues,
+    {
+      requiredKindSets: [new Set(["postgres_receipt"])],
+      allowedSources: new Set(["local_exact_commit"]),
+      requireSingleSource: true
+    }
+  );
+}
+
+function validateRuntime(runtime, expectedCommitSha, artifactsById, issues, profile) {
   if (!exactKeys(runtime, ["canonicalProductTruth", "local", "hosted"], "evidence.runtime", issues)) return;
   exact(
     runtime.canonicalProductTruth,
@@ -480,7 +828,7 @@ function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
     issues
   );
   const local = runtime.local;
-  if (exactKeys(local, [
+  const localKeys = [
     "status",
     "releaseId",
     "imageRevision",
@@ -493,8 +841,12 @@ function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
     "beforeRestartAcceptance",
     "afterRestartAcceptance",
     "agentAcceptance",
+    ...(profile === CURRENT_V2_PROFILE
+      ? ["humanAcceptance", "capitalPartnerAcceptance"]
+      : []),
     "origins"
-  ], "evidence.runtime.local", issues)) {
+  ];
+  if (exactKeys(local, localKeys, "evidence.runtime.local", issues)) {
     exact(local.status, "passed", "evidence.runtime.local.status", issues);
     for (const key of ["releaseId", "imageRevision", "pilotRevision", "workerRevision"]) {
       exact(local[key], expectedCommitSha, `evidence.runtime.local.${key}`, issues);
@@ -527,6 +879,32 @@ function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
       artifactsById,
       issues
     );
+    if (profile === CURRENT_V2_PROFILE) {
+      const postRestartDatabaseStartedAt = local.agentAcceptance?.afterRestart?.databaseStartedAt;
+      validateLocalHumanAcceptance(
+        local.humanAcceptance,
+        expectedCommitSha,
+        postRestartDatabaseStartedAt,
+        artifactsById,
+        issues
+      );
+      validateLocalCapitalPartnerAcceptance(
+        local.capitalPartnerAcceptance,
+        expectedCommitSha,
+        postRestartDatabaseStartedAt,
+        artifactsById,
+        issues
+      );
+      const criticalArtifactIds = [
+        local.humanAcceptance?.artifactId,
+        local.capitalPartnerAcceptance?.artifactId,
+        local.agentAcceptance?.beforeRestart?.acceptanceArtifactId,
+        local.agentAcceptance?.afterRestart?.acceptanceArtifactId
+      ].filter((value) => typeof value === "string");
+      if (new Set(criticalArtifactIds).size !== criticalArtifactIds.length) {
+        issues.push("evidence.runtime.local critical role receipts must use distinct artifacts.");
+      }
+    }
     validateRoleOrigins(local.origins, local.portBase, issues);
   }
 
@@ -539,22 +917,40 @@ function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
     "fixtureHost",
     "surfaces"
   ], "evidence.runtime.hosted", issues)) return;
-  exact(hosted.status, "passed", "evidence.runtime.hosted.status", issues);
-  exact(hosted.releaseId, expectedCommitSha, "evidence.runtime.hosted.releaseId", issues);
+  const deploymentPending =
+    profile.deploymentPendingAllowed && hosted.status === "deployment_pending";
+  if (!deploymentPending) {
+    exact(hosted.status, "passed", "evidence.runtime.hosted.status", issues);
+  }
   exact(
     hosted.productProfile,
     "deployable_sandbox_vertical_slice",
     "evidence.runtime.hosted.productProfile",
     issues
   );
-  exact(hosted.postgresBacked, true, "evidence.runtime.hosted.postgresBacked", issues);
   exact(hosted.fixtureHost, false, "evidence.runtime.hosted.fixtureHost", issues);
+  if (deploymentPending) {
+    exact(hosted.releaseId, null, "evidence.runtime.hosted.releaseId", issues);
+    exact(hosted.postgresBacked, false, "evidence.runtime.hosted.postgresBacked", issues);
+    if (!Array.isArray(hosted.surfaces) || hosted.surfaces.length !== 0) {
+      issues.push(
+        "evidence.runtime.hosted.surfaces must be empty while deployment is pending."
+      );
+    }
+    return;
+  }
+  exact(hosted.releaseId, expectedCommitSha, "evidence.runtime.hosted.releaseId", issues);
+  exact(hosted.postgresBacked, true, "evidence.runtime.hosted.postgresBacked", issues);
+  const deploymentRoles = Object.keys(profile.hostedRoleByDeploymentRole);
   if (
     !Array.isArray(hosted.surfaces) ||
     hosted.surfaces.length < 1 ||
-    hosted.surfaces.length > HOSTED_DEPLOYMENT_ROLES.length
+    hosted.surfaces.length > deploymentRoles.length
   ) {
-    issues.push("evidence.runtime.hosted.surfaces must contain one or two actually deployed canonical surfaces.");
+    issues.push(
+      `evidence.runtime.hosted.surfaces must contain one to ${deploymentRoles.length} ` +
+        "actually deployed canonical surfaces."
+    );
     return;
   }
   const seen = new Set();
@@ -569,7 +965,7 @@ function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
       "fixtureHost",
       "postgresBacked"
     ], path, issues)) return;
-    if (!HOSTED_DEPLOYMENT_ROLES.includes(surface.deploymentRole)) {
+    if (!deploymentRoles.includes(surface.deploymentRole)) {
       issues.push(`${path}.deploymentRole is invalid.`);
     }
     if (seen.has(surface.deploymentRole)) {
@@ -588,15 +984,15 @@ function validateRuntime(runtime, expectedCommitSha, artifactsById, issues) {
   }
 }
 
-function hostedBrowserRoles(runtime) {
+function hostedBrowserRoles(runtime, profile) {
   const surfaces = runtime?.hosted?.surfaces;
   if (!Array.isArray(surfaces)) return [];
   return [...new Set(surfaces
-    .map((surface) => HOSTED_ROLE_BY_DEPLOYMENT_ROLE[surface?.deploymentRole])
+    .map((surface) => profile.hostedRoleByDeploymentRole[surface?.deploymentRole])
     .filter(Boolean))];
 }
 
-function validateBrowser(browser, runtime, artifactsById, issues) {
+function validateBrowser(browser, runtime, artifactsById, issues, profile) {
   if (!exactKeys(browser, [
     "driver",
     "realBrowser",
@@ -626,7 +1022,7 @@ function validateBrowser(browser, runtime, artifactsById, issues) {
   validateBrowserMatrix(
     browser.localMatrix,
     "evidence.browser.localMatrix",
-    ROLES,
+    profile.localBrowserRoles,
     "local_exact_commit",
     artifactsById,
     issues
@@ -634,7 +1030,7 @@ function validateBrowser(browser, runtime, artifactsById, issues) {
   validateBrowserMatrix(
     browser.hostedMatrix,
     "evidence.browser.hostedMatrix",
-    hostedBrowserRoles(runtime),
+    hostedBrowserRoles(runtime, profile),
     "hosted_exact_commit",
     artifactsById,
     issues
@@ -775,11 +1171,11 @@ function validateBrowserMatrix(
   }
 }
 
-function validateJourneys(journeys, artifactsById, issues) {
-  if (!exactKeys(journeys, ROLES, "evidence.journeys", issues)) return;
-  for (const role of ROLES) {
+function validateJourneys(journeys, artifactsById, issues, profile) {
+  if (!exactKeys(journeys, profile.journeyRoles, "evidence.journeys", issues)) return;
+  for (const role of profile.journeyRoles) {
     const entries = journeys[role];
-    const expected = JOURNEY_STEPS[role];
+    const expected = profile.journeySteps[role];
     if (!Array.isArray(entries) || entries.length !== expected.length) {
       issues.push(`evidence.journeys.${role} must contain the exact ${expected.length}-step journey.`);
       continue;
@@ -826,7 +1222,7 @@ function validateJourneys(journeys, artifactsById, issues) {
   }
 }
 
-function validateNegatives(negatives, artifactsById, issues) {
+function validateNegatives(negatives, artifactsById, issues, profile) {
   const groups = Object.keys(NEGATIVE_CASES);
   if (!exactKeys(negatives, groups, "evidence.negativeCases", issues)) return;
   for (const group of groups) {
@@ -846,9 +1242,16 @@ function validateNegatives(negatives, artifactsById, issues) {
         "artifactIds"
       ], path, issues)) return;
       exact(entry.id, expected[index], `${path}.id`, issues);
-      exact(entry.status, "passed_fail_closed", `${path}.status`, issues);
+      const exactReplay = profile === CURRENT_V2_PROFILE &&
+        group === "human" && entry.id === "duplicate_acceptance";
+      exact(
+        entry.status,
+        exactReplay ? "passed_exact_replay" : "passed_fail_closed",
+        `${path}.status`,
+        issues
+      );
       exact(entry.additionalEffectCount, 0, `${path}.additionalEffectCount`, issues);
-      exact(entry.nonEnumerating, true, `${path}.nonEnumerating`, issues);
+      exact(entry.nonEnumerating, !exactReplay, `${path}.nonEnumerating`, issues);
       artifactReferences(
         entry.artifactIds,
         `${path}.artifactIds`,
@@ -864,7 +1267,98 @@ function validateNegatives(negatives, artifactsById, issues) {
   }
 }
 
-function validateRestart(restart, artifactsById, issues) {
+function validateRiskBoundary(
+  boundary,
+  expectedCommitSha,
+  artifactsById,
+  issues
+) {
+  const path = "evidence.riskBoundary";
+  if (!exactKeys(boundary, [
+    "schemaVersion",
+    "status",
+    "releaseLevel",
+    "candidateReleaseId",
+    "surfaceDisposition",
+    "hostedSurfaceDeployed",
+    "strongMfaTopologyComposed",
+    "siweOnlySessionObserved",
+    "requiresRecentMfaPolicyPreserved",
+    "weakAuthFallbackAvailable",
+    "weakAuthFallbackUsed",
+    "protectedReadDecision",
+    "protectedMutationDecision",
+    "denialReasonCode",
+    "privilegedMutationCount",
+    "postRestartFailClosed",
+    "deferredGate",
+    "artifactId"
+  ], path, issues)) return;
+  exact(
+    boundary.schemaVersion,
+    "m1_b_risk_boundary_linkage.v1",
+    `${path}.schemaVersion`,
+    issues
+  );
+  exact(boundary.status, "passed_fail_closed", `${path}.status`, issues);
+  exact(boundary.releaseLevel, "L1_PUBLIC_SANDBOX", `${path}.releaseLevel`, issues);
+  exact(
+    boundary.candidateReleaseId,
+    expectedCommitSha,
+    `${path}.candidateReleaseId`,
+    issues
+  );
+  exact(
+    boundary.surfaceDisposition,
+    "private_unavailable",
+    `${path}.surfaceDisposition`,
+    issues
+  );
+  for (const key of [
+    "hostedSurfaceDeployed",
+    "strongMfaTopologyComposed",
+    "weakAuthFallbackAvailable",
+    "weakAuthFallbackUsed"
+  ]) exact(boundary[key], false, `${path}.${key}`, issues);
+  for (const key of [
+    "siweOnlySessionObserved",
+    "requiresRecentMfaPolicyPreserved",
+    "postRestartFailClosed"
+  ]) exact(boundary[key], true, `${path}.${key}`, issues);
+  exact(boundary.protectedReadDecision, "deny", `${path}.protectedReadDecision`, issues);
+  exact(
+    boundary.protectedMutationDecision,
+    "deny",
+    `${path}.protectedMutationDecision`,
+    issues
+  );
+  exact(
+    boundary.denialReasonCode,
+    "actor_capability_rejected",
+    `${path}.denialReasonCode`,
+    issues
+  );
+  exact(boundary.privilegedMutationCount, 0, `${path}.privilegedMutationCount`, issues);
+  exact(
+    boundary.deferredGate,
+    "M1_C_L2_CLOSED_NO_FUNDS",
+    `${path}.deferredGate`,
+    issues
+  );
+  artifactReferences(
+    [boundary.artifactId],
+    `${path}.artifactId`,
+    artifactsById,
+    issues,
+    {
+      requiredKindSets: [new Set(["negative_receipt"])],
+      allowedSources: new Set(["local_exact_commit"]),
+      requireSingleSource: true
+    }
+  );
+}
+
+function validateRestart(restart, artifactsById, issues, profile, riskBoundary) {
   if (!exactKeys(restart, [
     "databaseRetained",
     "pilotRestarted",
@@ -872,7 +1366,7 @@ function validateRestart(restart, artifactsById, issues) {
     "humanRecovered",
     "agentRecovered",
     "capitalPartnerRecovered",
-    "riskRecovered",
+    profile.restartRiskKey,
     "outboxDuplicateEffects",
     "artifactIds"
   ], "evidence.restart", issues)) return;
@@ -883,7 +1377,7 @@ function validateRestart(restart, artifactsById, issues) {
     "humanRecovered",
     "agentRecovered",
     "capitalPartnerRecovered",
-    "riskRecovered"
+    profile.restartRiskKey
   ]) exact(restart[key], true, `evidence.restart.${key}`, issues);
   exact(restart.outboxDuplicateEffects, 0, "evidence.restart.outboxDuplicateEffects", issues);
   artifactReferences(
@@ -899,6 +1393,14 @@ function validateRestart(restart, artifactsById, issues) {
       allowedSources: new Set(["local_exact_commit"])
     }
   );
+  if (
+    profile.riskBoundaryRequired &&
+    !restart.artifactIds?.includes(riskBoundary?.artifactId)
+  ) {
+    issues.push(
+      "evidence.restart.artifactIds must include the post-restart Risk boundary receipt."
+    );
+  }
 }
 
 function validateAuthority(authority, issues) {
@@ -917,9 +1419,10 @@ function validateAuthority(authority, issues) {
   for (const key of keys) exact(authority[key], false, `evidence.authority.${key}`, issues);
 }
 
-export function verifyM1BAcceptanceEvidence(
+function verifyM1BAcceptanceEvidenceForProfile(
   evidence,
-  { expectedCommitSha }
+  { expectedCommitSha },
+  profile
 ) {
   const issues = [];
   if (!SHA.test(expectedCommitSha ?? "")) {
@@ -927,7 +1430,7 @@ export function verifyM1BAcceptanceEvidence(
       "expectedCommitSha must be one lowercase 40-character Git SHA."
     ]);
   }
-  if (!exactKeys(evidence, [
+  const evidenceKeys = [
     "schemaVersion",
     "status",
     "capturedAt",
@@ -939,12 +1442,14 @@ export function verifyM1BAcceptanceEvidence(
     "restart",
     "authority",
     "artifacts"
-  ], "evidence", issues)) {
+  ];
+  if (profile.riskBoundaryRequired) evidenceKeys.splice(8, 0, "riskBoundary");
+  if (!exactKeys(evidence, evidenceKeys, "evidence", issues)) {
     throw new M1BAcceptanceEvidenceError(issues);
   }
   exact(
     evidence.schemaVersion,
-    "ipo.one.m1-b-p0-5-acceptance-evidence/v1",
+    profile.schemaVersion,
     "evidence.schemaVersion",
     issues
   );
@@ -975,37 +1480,89 @@ export function verifyM1BAcceptanceEvidence(
     exact(evidence.source.trackedWorktreeClean, true, "evidence.source.trackedWorktreeClean", issues);
     exact(evidence.source.headMatchesCommit, true, "evidence.source.headMatchesCommit", issues);
   }
-  const artifactsById = validateArtifacts(evidence.artifacts, issues);
-  validateRuntime(evidence.runtime, expectedCommitSha, artifactsById, issues);
-  validateBrowser(evidence.browser, evidence.runtime, artifactsById, issues);
-  validateJourneys(evidence.journeys, artifactsById, issues);
-  validateNegatives(evidence.negativeCases, artifactsById, issues);
-  validateRestart(evidence.restart, artifactsById, issues);
+  const artifactsById = validateArtifacts(evidence.artifacts, issues, profile);
+  validateRuntime(evidence.runtime, expectedCommitSha, artifactsById, issues, profile);
+  validateBrowser(evidence.browser, evidence.runtime, artifactsById, issues, profile);
+  validateJourneys(evidence.journeys, artifactsById, issues, profile);
+  validateNegatives(evidence.negativeCases, artifactsById, issues, profile);
+  if (profile.riskBoundaryRequired) {
+    validateRiskBoundary(
+      evidence.riskBoundary,
+      expectedCommitSha,
+      artifactsById,
+      issues
+    );
+  }
+  validateRestart(
+    evidence.restart,
+    artifactsById,
+    issues,
+    profile,
+    evidence.riskBoundary
+  );
   validateAuthority(evidence.authority, issues);
   if (issues.length > 0) throw new M1BAcceptanceEvidenceError(issues);
   return Object.freeze({
     status: "verified",
     commitSha: expectedCommitSha,
-    roleCount: ROLES.length,
+    roleCount: TOPOLOGY_ROLES.length,
+    positiveJourneyRoleCount: profile.journeyRoles.length,
     browserCheckCount:
       evidence.browser.localMatrix.length + evidence.browser.hostedMatrix.length,
-    journeyStepCount: Object.values(JOURNEY_STEPS).flat().length,
+    journeyStepCount: Object.values(profile.journeySteps).flat().length,
     negativeCaseCount: Object.values(NEGATIVE_CASES).flat().length,
+    riskBoundaryCheckCount: profile.riskBoundaryRequired ? 4 : 0,
     artifactCount: evidence.artifacts.length,
     canonicalProductTruth: evidence.runtime.canonicalProductTruth,
+    deploymentStatus: evidence.runtime.hosted.status,
     realFundsEnabled: evidence.authority.realFundsEnabled
   });
 }
 
+export function verifyM1BAcceptanceEvidence(
+  evidence,
+  options
+) {
+  return verifyM1BAcceptanceEvidenceForProfile(
+    evidence,
+    options,
+    CURRENT_V2_PROFILE
+  );
+}
+
+export function verifyM1BAcceptanceEvidenceV1Historical(
+  evidence,
+  options
+) {
+  return verifyM1BAcceptanceEvidenceForProfile(
+    evidence,
+    options,
+    HISTORICAL_V1_PROFILE
+  );
+}
+
 export function verifyM1BHostedCapabilityDocument(
   document,
-  { expectedCommitSha }
+  {
+    expectedCommitSha,
+    expectedDeploymentRole = "primary",
+    evidenceSchemaVersion = CURRENT_V2_PROFILE.schemaVersion
+  }
 ) {
   const issues = [];
   if (!record(document)) {
     throw new M1BAcceptanceEvidenceError(["Hosted capability document must be an object."]);
   }
   exact(document.schemaVersion, "ipo_one_deployment_capability.v1", "capability.schemaVersion", issues);
+  if (evidenceSchemaVersion === CURRENT_V2_PROFILE.schemaVersion) {
+    exact(expectedDeploymentRole, "primary", "surface.deploymentRole", issues);
+    exact(
+      document.deployment?.deploymentRole,
+      expectedDeploymentRole,
+      "capability.deployment.deploymentRole",
+      issues
+    );
+  }
   exact(document.deployment?.releaseId, expectedCommitSha, "capability.deployment.releaseId", issues);
   exact(
     document.deployment?.productProfile,
@@ -1029,13 +1586,26 @@ export function verifyM1BHostedCapabilityDocument(
 
 export function verifyM1BHostedReadinessDocument(
   document,
-  { expectedCommitSha }
+  {
+    expectedCommitSha,
+    expectedDeploymentRole = "primary",
+    evidenceSchemaVersion = CURRENT_V2_PROFILE.schemaVersion
+  }
 ) {
   const issues = [];
   if (!record(document)) {
     throw new M1BAcceptanceEvidenceError(["Hosted readiness document must be an object."]);
   }
   exact(document.schemaVersion, "production_readiness.v1", "readiness.schemaVersion", issues);
+  if (evidenceSchemaVersion === CURRENT_V2_PROFILE.schemaVersion) {
+    exact(expectedDeploymentRole, "primary", "surface.deploymentRole", issues);
+    exact(
+      document.deploymentRole,
+      expectedDeploymentRole,
+      "readiness.deploymentRole",
+      issues
+    );
+  }
   exact(document.status, "ready", "readiness.status", issues);
   exact(document.releaseId, expectedCommitSha, "readiness.releaseId", issues);
   exact(document.realFundsEnabled, false, "readiness.realFundsEnabled", issues);
@@ -1043,7 +1613,14 @@ export function verifyM1BHostedReadinessDocument(
   return true;
 }
 
-export const M1_B_ACCEPTANCE_ROLES = ROLES;
+export const M1_B_ACCEPTANCE_ROLES = POSITIVE_JOURNEY_ROLES;
+export const M1_B_TOPOLOGY_ROLES = TOPOLOGY_ROLES;
 export const M1_B_BROWSER_CHECKS = BROWSER_CHECKS;
-export const M1_B_JOURNEY_STEPS = JOURNEY_STEPS;
+export const M1_B_JOURNEY_STEPS = POSITIVE_JOURNEY_STEPS;
 export const M1_B_NEGATIVE_CASES = NEGATIVE_CASES;
+export const M1_B_RISK_MFA_OPERATION_IDS = RISK_MFA_OPERATION_IDS;
+export const M1_B_RISK_MFA_LIVE_OPERATION_IDS = RISK_MFA_LIVE_OPERATION_IDS;
+export const M1_B_RISK_MFA_PROTECTED_STATE_TABLES =
+  RISK_MFA_PROTECTED_STATE_TABLES;
+export const M1_B_RISK_MFA_PROTECTED_STATE_MINIMUMS =
+  RISK_MFA_PROTECTED_STATE_MINIMUMS;
