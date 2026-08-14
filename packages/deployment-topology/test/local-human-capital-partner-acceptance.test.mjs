@@ -31,7 +31,7 @@ const IMAGE = `sha256:${"b".repeat(64)}`;
 const START = "2026-08-14T00:00:00.000Z";
 
 test("wrapper argv binds exact candidate, restart, image, and private output", () => {
-  const parsed = parseM1BHumanCapitalPartnerAcceptanceArguments([
+  const directArguments = [
     "--candidate-release-id",
     SHA,
     "--database-started-at",
@@ -40,14 +40,27 @@ test("wrapper argv binds exact candidate, restart, image, and private output", (
     IMAGE,
     "--output-root",
     "output/playwright/m1-b-p0-5"
-  ], { root: ROOT });
+  ];
+  const parsed = parseM1BHumanCapitalPartnerAcceptanceArguments(
+    directArguments,
+    { root: ROOT }
+  );
   assert.equal(parsed.candidateReleaseId, SHA);
   assert.equal(parsed.databaseStartedAt, START);
   assert.equal(parsed.pilotImageId, IMAGE);
   assert.equal(parsed.outputRoot, resolve(ROOT, "output/playwright/m1-b-p0-5"));
+  assert.deepEqual(
+    parseM1BHumanCapitalPartnerAcceptanceArguments(
+      ["--", ...directArguments],
+      { root: ROOT }
+    ),
+    parsed
+  );
 
   for (const bad of [
     [],
+    ["--", "--", ...directArguments],
+    [...directArguments.slice(0, 2), "--", ...directArguments.slice(2)],
     [
       "--candidate-release-id", SHA,
       "--candidate-release-id", SHA,

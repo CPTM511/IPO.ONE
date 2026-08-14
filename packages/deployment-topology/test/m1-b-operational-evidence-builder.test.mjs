@@ -2133,6 +2133,7 @@ test("pre-Risk chronology rejects Risk-order inversions and negative-run CLI is 
     /requires completed restart/
   );
   const parsed = parseM1BOperationalEvidenceArguments([
+    "--",
     "negative-run",
     "--candidate-release-id",
     RELEASE_SHA,
@@ -2143,6 +2144,7 @@ test("pre-Risk chronology rejects Risk-order inversions and negative-run CLI is 
   ]);
   assert.equal(parsed.mode, "negative-run");
   const live = parseM1BOperationalEvidenceArguments([
+    "--",
     "live-negative",
     "--candidate-release-id",
     RELEASE_SHA,
@@ -2157,6 +2159,25 @@ test("pre-Risk chronology rejects Risk-order inversions and negative-run CLI is 
     group: "authorization",
     id: "cross_role_private_read"
   });
+  for (const badSeparatorArguments of [
+    [
+      "--", "--", "negative-run",
+      "--candidate-release-id", RELEASE_SHA,
+      "--pilot-image-id", IMAGE_ID,
+      "--output-root", "output/playwright/m1-b-exact-negative"
+    ],
+    [
+      "negative-run",
+      "--candidate-release-id", RELEASE_SHA,
+      "--", "--pilot-image-id", IMAGE_ID,
+      "--output-root", "output/playwright/m1-b-exact-negative"
+    ]
+  ]) {
+    assert.throws(
+      () => parseM1BOperationalEvidenceArguments(badSeparatorArguments),
+      { code: "operational_arguments_invalid" }
+    );
+  }
   assert.throws(
     () => parseM1BOperationalEvidenceArguments([
       "live-negative",

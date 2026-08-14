@@ -7327,7 +7327,11 @@ function deriveAvailableNegativeProofs(critical, {
 }
 
 export function parseM1BOperationalEvidenceArguments(argv, { root = ROOT } = {}) {
-  const mode = argv[0];
+  if (!Array.isArray(argv)) {
+    fail("operational_arguments_invalid", "Operational arguments are invalid.");
+  }
+  const args = argv[0] === "--" ? argv.slice(1) : argv;
+  const mode = args[0];
   if (!new Set([
     "restart-begin",
     "restart-complete",
@@ -7348,13 +7352,13 @@ export function parseM1BOperationalEvidenceArguments(argv, { root = ROOT } = {})
     "--output-root",
     ...(mode === "live-negative" ? ["--negative-case"] : [])
   ]);
-  if (argv.length !== 1 + names.size * 2) {
+  if (args.length !== 1 + names.size * 2) {
     fail("operational_arguments_invalid", "Exact candidate, image, and output arguments are required.");
   }
   const values = new Map();
-  for (let index = 1; index < argv.length; index += 2) {
-    const name = argv[index];
-    const value = argv[index + 1];
+  for (let index = 1; index < args.length; index += 2) {
+    const name = args[index];
+    const value = args[index + 1];
     if (!names.has(name) || values.has(name) || typeof value !== "string" || value === "") {
       fail("operational_arguments_invalid", "Operational arguments are invalid.");
     }

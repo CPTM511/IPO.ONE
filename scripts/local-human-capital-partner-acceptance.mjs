@@ -69,17 +69,18 @@ export function parseM1BHumanCapitalPartnerAcceptanceArguments(argv, {
   root = ROOT
 } = {}) {
   assert.equal(Array.isArray(argv), true);
+  const args = argv[0] === "--" ? argv.slice(1) : argv;
   const names = new Set([
     "--candidate-release-id",
     "--database-started-at",
     "--pilot-image-id",
     "--output-root"
   ]);
-  assert.equal(argv.length, names.size * 2);
+  assert.equal(args.length, names.size * 2);
   const values = new Map();
-  for (let index = 0; index < argv.length; index += 2) {
-    const name = argv[index];
-    const value = argv[index + 1];
+  for (let index = 0; index < args.length; index += 2) {
+    const name = args[index];
+    const value = args[index + 1];
     assert.equal(names.has(name), true);
     assert.equal(values.has(name), false);
     assert.equal(typeof value === "string" && value.length > 0, true);
