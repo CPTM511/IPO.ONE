@@ -41,7 +41,8 @@ test("M1-B exact Agent wrapper binds both restart phases to one lifecycle", () =
 test("M1-B exact Agent wrapper separates MCP execution from recovery", () => {
   assert.match(wrapper, /local_agent_mcp_transport_receipt\.v1/);
   assert.match(wrapper, /receipt\.transportProfile === "mcp_stdio_local"/);
-  assert.match(wrapper, /mcpReceipt !== undefined/);
+  assert.match(wrapper, /const mcpReceipt = acceptance\.lifecycle\?\.mcpReceipt/);
+  assert.match(wrapper, /createM1BAgentPhaseArtifactPlan/);
   assert.match(wrapper, /canonicalLifecycleReadOnly !== true/);
   assert.match(wrapper, /lifecycleMutationPerformed !== false/);
   assert.match(wrapper, /Object\.hasOwn\(acceptance, "lifecycle"\)/);

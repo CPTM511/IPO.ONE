@@ -6,6 +6,7 @@ import test from "node:test";
 import { hashId } from "../../../packages/domain/src/index.js";
 import {
   createM1BAgentForeignOfferSetupReceipt,
+  createM1BAgentPhaseArtifactPlan,
   createM1BAgentPhaseReceipt,
   m1BAgentPhaseJsonBytes,
   validateM1BAgentPhaseReceipt,
@@ -188,6 +189,131 @@ test("Agent phase receipts bind exact before and recovery-only after completion"
       databaseStartedAt: "2026-08-15T00:10:00.000Z"
     }).acceptanceArtifact.sha256,
     DIGEST
+  );
+});
+
+test("Agent phase receipts keep host and PostgreSQL clock domains separate", () => {
+  const before = receipt();
+  const databaseClockAheadOfHost = {
+    ...before,
+    foreignOfferSetupArtifact: {
+      ...before.foreignOfferSetupArtifact,
+      completedAt: "2026-08-15T00:02:00.500Z"
+    }
+  };
+  assert.equal(
+    validateM1BAgentPhaseReceipt(databaseClockAheadOfHost).acceptancePhase,
+    "before_restart"
+  );
+  const databaseClockBehindHost = {
+    ...before,
+    foreignOfferSetupArtifact: {
+      ...before.foreignOfferSetupArtifact,
+      completedAt: "2026-08-15T00:00:30.000Z"
+    }
+  };
+  assert.equal(
+    validateM1BAgentPhaseReceipt(databaseClockBehindHost).acceptancePhase,
+    "before_restart"
+  );
+
+  const setupBeforeDatabaseGeneration = {
+    ...before,
+    foreignOfferSetupArtifact: {
+      ...before.foreignOfferSetupArtifact,
+      completedAt: "2026-08-14T23:59:59.999Z"
+    }
+  };
+  assert.throws(
+    () => validateM1BAgentPhaseReceipt(setupBeforeDatabaseGeneration),
+    /predates the pre-restart PostgreSQL generation/
+  );
+
+  const after = receipt("after_restart");
+  const setupInsidePostRestartGeneration = {
+    ...after,
+    foreignOfferSetupArtifact: {
+      ...after.foreignOfferSetupArtifact,
+      completedAt: after.databaseStartedAt
+    }
+  };
+  assert.throws(
+    () => validateM1BAgentPhaseReceipt(setupInsidePostRestartGeneration),
+    /does not predate the post-restart PostgreSQL generation/
+  );
+});
+
+test("Agent artifact plan uses the production before and after shapes", () => {
+  const base = {
+    applicationHandoff: { status: "ready" },
+    offerReceipt: { status: "offer_ready" },
+    runtimeHandoff: { status: "ready" }
+  };
+  const before = createM1BAgentPhaseArtifactPlan({
+    acceptancePhase: "before_restart",
+    acceptance: {
+      ...base,
+      lifecycle: {
+        status: "evidence_read",
+        mcpReceipt: { status: "evidence_read" }
+      }
+    },
+    foreignOfferSetupReceipt: { status: "offered" }
+  });
+  assert.deepEqual(
+    before.map(({ suffix }) => suffix.replaceAll("-", "_")),
+    [
+      "application_handoff",
+      "offer_receipt",
+      "runtime_handoff",
+      "lifecycle_result",
+      "mcp_receipt",
+      "agent_foreign_offer_setup"
+    ]
+  );
+  assert.equal(before.at(-1).property, "foreignOfferSetupPath");
+
+  const after = createM1BAgentPhaseArtifactPlan({
+    acceptancePhase: "after_restart",
+    acceptance: {
+      ...base,
+      canonicalRecovery: { status: "recovered" },
+      recoveryReceipt: { status: "recovered" }
+    }
+  });
+  assert.deepEqual(
+    after.map(({ suffix }) => suffix.replaceAll("-", "_")),
+    [
+      "application_handoff",
+      "offer_receipt",
+      "runtime_handoff",
+      "canonical_recovery",
+      "recovery_receipt"
+    ]
+  );
+
+  assert.throws(
+    () => createM1BAgentPhaseArtifactPlan({
+      acceptancePhase: "before_restart",
+      acceptance: { ...base, lifecycle: { status: "evidence_read" } },
+      foreignOfferSetupReceipt: { status: "offered" }
+    }),
+    /closed phase contract/
+  );
+  assert.throws(
+    () => createM1BAgentPhaseArtifactPlan({
+      acceptancePhase: "before_restart",
+      acceptance: {
+        ...base,
+        lifecycle: {
+          status: "evidence_read",
+          mcpReceipt: { status: "evidence_read" }
+        },
+        canonicalRecovery: { status: "unexpected" }
+      },
+      foreignOfferSetupReceipt: { status: "offered" }
+    }),
+    /closed phase contract/
   );
 });
 

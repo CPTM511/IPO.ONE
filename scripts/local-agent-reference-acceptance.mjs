@@ -21,6 +21,7 @@ import {
 } from "./local-release-identity.mjs";
 import {
   assertM1BAgentPhaseTargetAbsent,
+  createM1BAgentPhaseArtifactPlan,
   createM1BAgentForeignOfferSetupReceipt,
   createM1BAgentPhaseReceipt,
   m1BAgentPhaseJsonBytes,
@@ -529,51 +530,31 @@ const acceptancePath = exactRelease
       `${releaseSha}.${acceptancePhase.replace("_", "-")}.acceptance.json`
     )
   : resolve(OUTPUT_DIRECTORY, "latest-reference-acceptance.json");
-const artifactEntries = [
-  ["applicationHandoffPath", "application-handoff", acceptance.applicationHandoff],
-  ["offerReceiptPath", "offer-receipt", acceptance.offerReceipt],
-  ["runtimeHandoffPath", "runtime-handoff", acceptance.runtimeHandoff]
-];
-if (acceptance.lifecycle !== undefined) {
-  artifactEntries.push([
-    "lifecycleResultPath",
-    "lifecycle-result",
-    acceptance.lifecycle
-  ]);
-}
-if (acceptance.canonicalRecovery !== undefined) {
-  artifactEntries.push([
-    "canonicalRecoveryPath",
-    "canonical-recovery",
-    acceptance.canonicalRecovery
-  ]);
-}
-if (mcpReceipt !== undefined) {
-  artifactEntries.push(["mcpReceiptPath", "mcp-receipt", mcpReceipt]);
-}
-if (acceptance.recoveryReceipt !== undefined) {
-  artifactEntries.push([
-    "recoveryReceiptPath",
-    "recovery-receipt",
-    acceptance.recoveryReceipt
-  ]);
-}
+const artifactEntries = exactRelease
+  ? createM1BAgentPhaseArtifactPlan({
+      acceptancePhase,
+      acceptance,
+      foreignOfferSetupReceipt
+    })
+  : [
+      ["applicationHandoffPath", "application-handoff", acceptance.applicationHandoff],
+      ["offerReceiptPath", "offer-receipt", acceptance.offerReceipt],
+      ["runtimeHandoffPath", "runtime-handoff", acceptance.runtimeHandoff],
+      ["lifecycleResultPath", "lifecycle-result", acceptance.lifecycle],
+      ["canonicalRecoveryPath", "canonical-recovery", acceptance.canonicalRecovery],
+      ["mcpReceiptPath", "mcp-receipt", mcpReceipt],
+      ["recoveryReceiptPath", "recovery-receipt", acceptance.recoveryReceipt]
+    ].filter(([, , value]) => value !== undefined).map(
+      ([property, suffix, value]) => ({ property, suffix, value })
+    );
 const extractedArtifacts = {};
 const sealedArtifacts = [];
-for (const [property, suffix, value] of artifactEntries) {
-  if (value === undefined) continue;
-  const path = resolve(OUTPUT_DIRECTORY, `${artifactPrefix}.${suffix}.json`);
+for (const { property, suffix, value } of artifactEntries) {
+  const path = exactRelease && suffix === "agent-foreign-offer-setup"
+    ? foreignOfferSetupPath
+    : resolve(OUTPUT_DIRECTORY, `${artifactPrefix}.${suffix}.json`);
   extractedArtifacts[property] = path;
   sealedArtifacts.push({ property, suffix, path, value });
-}
-if (exactRelease && acceptancePhase === "before_restart") {
-  extractedArtifacts.foreignOfferSetupPath = foreignOfferSetupPath;
-  sealedArtifacts.push({
-    property: "foreignOfferSetupPath",
-    suffix: "agent-foreign-offer-setup",
-    path: foreignOfferSetupPath,
-    value: foreignOfferSetupReceipt
-  });
 }
 
 if (exactRelease) {

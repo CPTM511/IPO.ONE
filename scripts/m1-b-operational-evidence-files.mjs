@@ -860,9 +860,7 @@ export async function verifyM1BOperationalRestartArtifacts(
     pending.agentBeforePhaseReceipt.completedAt !== beforePhase.completedAt ||
     pending.agentForeignOfferSetupArtifact.sha256 !== foreignArtifact.sha256 ||
     pending.agentForeignOfferSetupArtifact.completedAt !==
-      foreign.createdBeforeRestartAt ||
-    Date.parse(foreign.createdBeforeRestartAt ?? "") >
-      Date.parse(beforePhase.completedAt ?? "")
+      foreign.createdBeforeRestartAt
   ) fail("Operational restart provenance does not bind Agent before and foreign setup.");
 
   const restart = Object.freeze({
@@ -1503,8 +1501,7 @@ export async function verifyM1BAgentPhaseArtifacts(
       "m1_b_agent_foreign_offer_reconciliation.v1" ||
     reconciliation.databaseStartedAt !== after.databaseStartedAt ||
     !canonicalIso(reconciliation.observedAt) ||
-    Date.parse(reconciliation.observedAt) < Date.parse(after.startedAt) ||
-    Date.parse(reconciliation.observedAt) > Date.parse(after.completedAt) ||
+    Date.parse(reconciliation.observedAt) < Date.parse(after.databaseStartedAt) ||
     canonicalJson(reconciliation.references) !==
       canonicalJson(foreignOfferSetup.references) ||
     canonicalJson(reconciliation.ownershipProof) !==

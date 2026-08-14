@@ -4645,8 +4645,6 @@ function restartReceiptDocument({
     agentForeignOfferSetupArtifact.id !== "agent_foreign_offer_setup" ||
     !SHA256.test(agentForeignOfferSetupArtifact.sha256 ?? "") ||
     !Number.isFinite(Date.parse(agentForeignOfferSetupArtifact.completedAt ?? "")) ||
-    Date.parse(agentForeignOfferSetupArtifact.completedAt) >
-      Date.parse(agentBeforePhaseReceipt.completedAt) ||
     Date.parse(agentBeforePhaseReceipt.completedAt) >=
       Date.parse(restart.eventWindow.engineBeforeAt)
   ) fail("operational_restart_invalid", "Restart receipt provenance is invalid.");

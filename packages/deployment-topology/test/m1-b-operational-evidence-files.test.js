@@ -2067,7 +2067,7 @@ test("operational verifier cross-binds private Agent phase receipts and extracte
       foreignOfferSetupReconciliation: {
         schemaVersion: "m1_b_agent_foreign_offer_reconciliation.v1",
         databaseStartedAt: "2026-08-15T00:10:00.000Z",
-        observedAt: "2026-08-15T00:10:45.000Z",
+        observedAt: "2026-08-15T00:11:00.500Z",
         references: receipt.references,
         ownershipProof: receipt.ownershipProof,
         offer: receipt.offer,
@@ -2517,7 +2517,7 @@ test("operational verifier reconstructs the sole restart journal and linkage", a
       completedAt: "2026-08-15T00:11:00.000Z"
     };
     const foreign = {
-      createdBeforeRestartAt: "2026-08-15T00:01:30.000Z"
+      createdBeforeRestartAt: "2026-08-15T00:02:00.500Z"
     };
     const pending = {
       schemaVersion: "m1_b_operational_restart_pending.v2",

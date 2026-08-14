@@ -317,15 +317,27 @@ export function validateM1BAgentPhaseReceipt(receipt, {
     Object.values(receipt.redaction).some((value) => value !== false) ||
     acceptanceBinding.id !== (phase === "before_restart" ? "agent_before" : "agent_after") ||
     foreignOfferSetupBinding.id !== "agent_foreign_offer_setup" ||
-    (phase === "before_restart"
-      ? (
-          Date.parse(foreignOfferSetupBinding.completedAt) < Date.parse(startedAt) ||
-          Date.parse(foreignOfferSetupBinding.completedAt) > Date.parse(completedAt)
-        )
-      : Date.parse(foreignOfferSetupBinding.completedAt) > Date.parse(startedAt)) ||
     !Array.isArray(receipt.extractedArtifacts) ||
     receipt.extractedArtifacts.length !== PHASE_ARTIFACT_IDS[phase]?.length
   ) fail("agent_phase_receipt_invalid", "Agent phase receipt truth is invalid");
+  if (
+    phase === "before_restart" &&
+    Date.parse(foreignOfferSetupBinding.completedAt) < Date.parse(databaseStart)
+  ) {
+    fail(
+      "agent_phase_receipt_invalid",
+      "Foreign Offer setup predates the pre-restart PostgreSQL generation"
+    );
+  }
+  if (
+    phase === "after_restart" &&
+    Date.parse(foreignOfferSetupBinding.completedAt) >= Date.parse(databaseStart)
+  ) {
+    fail(
+      "agent_phase_receipt_invalid",
+      "Foreign Offer setup does not predate the post-restart PostgreSQL generation"
+    );
+  }
   const extracted = receipt.extractedArtifacts.map((entry, index) =>
     artifact(entry, `extracted artifact ${index + 1}`)
   );
@@ -352,6 +364,68 @@ export function validateM1BAgentPhaseReceipt(receipt, {
     foreignOfferSetupArtifact: foreignOfferSetupBinding,
     extractedArtifacts: Object.freeze(extracted)
   });
+}
+
+export function createM1BAgentPhaseArtifactPlan({
+  acceptancePhase,
+  acceptance,
+  foreignOfferSetupReceipt
+}) {
+  if (!Object.hasOwn(PHASE_ARTIFACT_IDS, acceptancePhase)) {
+    fail("agent_phase_receipt_invalid", "Agent phase artifact plan phase is invalid");
+  }
+  const candidates = [
+    {
+      property: "applicationHandoffPath",
+      suffix: "application-handoff",
+      value: acceptance?.applicationHandoff
+    },
+    {
+      property: "offerReceiptPath",
+      suffix: "offer-receipt",
+      value: acceptance?.offerReceipt
+    },
+    {
+      property: "runtimeHandoffPath",
+      suffix: "runtime-handoff",
+      value: acceptance?.runtimeHandoff
+    },
+    {
+      property: "lifecycleResultPath",
+      suffix: "lifecycle-result",
+      value: acceptance?.lifecycle
+    },
+    {
+      property: "canonicalRecoveryPath",
+      suffix: "canonical-recovery",
+      value: acceptance?.canonicalRecovery
+    },
+    {
+      property: "mcpReceiptPath",
+      suffix: "mcp-receipt",
+      value: acceptance?.lifecycle?.mcpReceipt
+    },
+    {
+      property: "recoveryReceiptPath",
+      suffix: "recovery-receipt",
+      value: acceptance?.recoveryReceipt
+    },
+    {
+      property: "foreignOfferSetupPath",
+      suffix: "agent-foreign-offer-setup",
+      value: acceptancePhase === "before_restart"
+        ? foreignOfferSetupReceipt
+        : undefined
+    }
+  ].filter(({ value }) => value !== undefined);
+  const ids = candidates.map(({ suffix }) => suffix.replaceAll("-", "_"));
+  if (ids.join("\0") !== PHASE_ARTIFACT_IDS[acceptancePhase].join("\0")) {
+    fail(
+      "agent_phase_receipt_invalid",
+      "Agent phase artifact plan does not match the closed phase contract"
+    );
+  }
+  return Object.freeze(candidates.map((entry) => Object.freeze(entry)));
 }
 
 export function createM1BAgentPhaseReceipt(input) {
