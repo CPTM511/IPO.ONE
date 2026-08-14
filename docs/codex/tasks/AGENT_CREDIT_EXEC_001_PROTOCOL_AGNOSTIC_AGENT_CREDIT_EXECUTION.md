@@ -338,24 +338,26 @@ Executable verification:
 |---|---:|---:|---:|---:|
 | `pnpm test:agent-credit` | PASS | 41 | 0 | 0 |
 | `pnpm test:venue:hyperliquid` | PASS | 79 | 0 | 0 |
-| `pnpm test:venue:policy` | PASS | 63 | 0 | 0 |
+| `pnpm test:venue:policy` | PASS | 69 | 0 | 0 |
 | `pnpm test:e2e:agent-credit` | PASS | 2 | 0 | 0 |
 | `pnpm test:e2e:agent-credit:negative` | PASS | 34 | 0 | 0 |
 | `pnpm test:e2e:agent-credit:restart` | PASS | 2 | 0 | 0 |
-| `pnpm test` | PASS | 1,074 | 0 | 0 |
+| `pnpm test` | PASS | 1,080 | 0 | 0 |
 | `pnpm lint` | PASS | 717 JS modules + boundary rules | 0 | 0 |
 | `pnpm typecheck` | PASS | 3 surfaces / 72 exports | 0 | 0 |
 | `pnpm check:schemas` | PASS | 136 contracts | 0 | 0 |
 | `pnpm check:openapi` | PASS | 21 paths / 21 operations | 0 | 0 |
 | `pnpm check:tenant-protocol` | PASS | 102 operations | 0 | 0 |
 | `pnpm check:product-traceability` | PASS | 102 bound operations | 0 | 0 |
-| `pnpm check` | PASS | aggregate gates + 1,074 tests | 0 | 0 |
+| `pnpm check` | PASS | aggregate gates + 1,080 tests | 0 | 0 |
 | `git diff --check` | PASS | working diff | 0 | 0 |
 
 L3 command truth:
 
-- `pnpm testnet:hyperliquid:preflight`: PASS,
-  `READY_FOR_L3_APPROVAL`, no external request;
+- `pnpm testnet:hyperliquid:preflight` without explicit venue, environment and
+  origin: expected `BLOCKED`, no external request;
+- the same preflight with the exact explicit Hyperliquid Testnet environment:
+  PASS, `READY_FOR_L3_APPROVAL`, no external request;
 - `run-once`: expected fail-closed because run ID, exact approval, account,
   distinct signer reference and allowlisted action are absent;
 - `reconcile`: expected fail-closed for the same unapproved run binding;
@@ -375,3 +377,32 @@ Founder review experience: `http://127.0.0.1:4177/`. Browser verification
 proved the page loads without console errors and both healthy and loss controls
 render the expected current L0 outcomes. The loopback process remains available
 for review; it is not a deployment or L3/real-value authorization.
+
+## PRE-L3 security seal correction — 2026-08-14
+
+Founder approval permits one correction over base candidate
+`ead36574b65820154415bd958e96534d906a0c4d`: remove implicit L3 execution
+environment defaults and bind the exact environment authority into immutable
+preparation and idempotency identity.
+
+The corrected boundary requires the operator to provide all three exact values:
+
+- venue `hyperliquid`;
+- environment `testnet`;
+- origin `https://api.hyperliquid-testnet.xyz`.
+
+Missing, empty, unknown, malformed, case-ambiguous, or mainnet values deny both
+preflight and write-operation gates. The environment, account, Facility,
+Obligation, Authorization, policy, action, market, notional, leverage, expiry,
+signer reference, and run bind one immutable no-write preparation identity.
+Submission-bound revalidation rejects environment drift as
+`EXECUTION_ENVIRONMENT_DRIFT` and other bound-field drift as
+`EXECUTION_PREPARATION_DRIFT`; neither path creates a signature, invokes an
+adapter, submits externally, mutates economics, expands authority, or retries.
+
+The incomplete pre-fix L3 handoff in the local stash is stale and non-
+authoritative. It must not be restored as execution input. A later handoff must
+be regenerated from the new pushed security candidate after a separate Founder
+approval. This correction does not register a signer, activate L3, move an
+asset, submit a venue request, execute an order, settle, merge, or broaden
+`REQ-TRADE-005`.
