@@ -1654,6 +1654,31 @@ test("UX-005 opens a fresh Human application when a recovered Obligation exists"
   assert.ok(manual.includes("必须创建"));
 });
 
+test("Human reload prioritizes one actionable recovered Offer over prior position hydration", async () => {
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const recoveryStart = js.indexOf("async function recoverAuthenticatedWorkspace()");
+  const recoveryEnd = js.indexOf("async function restoreLatestCreditPassport()", recoveryStart);
+  const recovery = js.slice(recoveryStart, recoveryEnd);
+
+  assert.ok(recoveryStart >= 0 && recoveryEnd > recoveryStart);
+  assert.match(
+    recovery,
+    /let actionableHumanOfferRecovered = false;[\s\S]*?tenantPilot\.offerReview = binding;[\s\S]*?actionableHumanOfferRecovered = true;/
+  );
+  assert.match(
+    recovery,
+    /if \(actionableHumanOfferRecovered\) \{[\s\S]*?humanNewApplicationMode = true;[\s\S]*?resetHumanObligationWorkflow\(\);[\s\S]*?\} else if \(selectedObligation && tenantPilot\.obligationReadAvailable\) \{[\s\S]*?loadOwnedObligation/
+  );
+  assert.doesNotMatch(
+    recovery,
+    /\n    if \(selectedObligation && tenantPilot\.obligationReadAvailable\) \{/
+  );
+  assert.match(
+    js,
+    /tenantPilot\.connected &&[\s\S]*?!tenantPilot\.obligation &&[\s\S]*?!tenantPilot\.offerReview &&[\s\S]*?rememberedObligationId/
+  );
+});
+
 test("UX-004 keeps the user manual and primary browser actions in one operability contract", async () => {
   const [html, js, css, manual, contract, inventorySource] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),

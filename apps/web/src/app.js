@@ -8369,6 +8369,7 @@ async function recoverAuthenticatedWorkspace() {
       rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, consent.resourceId);
     }
     const recoveredOfferReview = recovery.humanOfferReview;
+    let actionableHumanOfferRecovered = false;
     if (recoveredOfferReview) {
       try {
         const binding = createRecoveredHumanCreditReviewBinding(recoveredOfferReview);
@@ -8389,6 +8390,7 @@ async function recoverAuthenticatedWorkspace() {
         tenantPilot.offer = recoveredOfferReview.offer;
         tenantPilot.receipt = null;
         tenantPilot.offerReview = binding;
+        actionableHumanOfferRecovered = true;
       } catch {
         tenantPilot.intent = null;
         tenantPilot.decision = null;
@@ -8426,7 +8428,14 @@ async function recoverAuthenticatedWorkspace() {
     const selectedObligation = workspaceObligations.find(
       (item) => item.resourceId === rememberedObligationId
     ) ?? obligation;
-    if (selectedObligation && tenantPilot.obligationReadAvailable) {
+    if (actionableHumanOfferRecovered) {
+      humanNewApplicationMode = true;
+      resetHumanObligationWorkflow();
+      el("ownedObligationId").value = "";
+      tenantPilot.obligationHydrationHelper =
+        "Actionable Offer recovered from server truth. Existing positions remain available from the authenticated workspace index.";
+    } else if (selectedObligation && tenantPilot.obligationReadAvailable) {
+      humanNewApplicationMode = false;
       el("ownedObligationId").value = selectedObligation.resourceId;
       await loadOwnedObligation({ obligationId: selectedObligation.resourceId, quiet: true });
     }
@@ -8959,7 +8968,12 @@ async function runTenantPilotProbe(probeOwner) {
         el("humanConsentId").value = rememberedHumanConsentId;
       }
       const rememberedObligationId = rememberedOwnedObligationId();
-      if (tenantPilot.connected && !tenantPilot.obligation && rememberedObligationId) {
+      if (
+        tenantPilot.connected &&
+        !tenantPilot.obligation &&
+        !tenantPilot.offerReview &&
+        rememberedObligationId
+      ) {
         el("ownedObligationId").value = rememberedObligationId;
         await loadOwnedObligation({ obligationId: rememberedObligationId, quiet: true });
         if (!isCurrentTenantPilotProbe(probeOwner)) return;
