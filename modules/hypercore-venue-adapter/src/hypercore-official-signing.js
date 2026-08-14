@@ -27,7 +27,8 @@ const APPROVED_L1_ACTION_TYPES = new Set([
   "order",
   "cancel",
   "cancelByCloid",
-  "batchModify"
+  "batchModify",
+  "scheduleCancel"
 ]);
 const MAX_MESSAGEPACK_BYTES = 64 * 1024;
 const MAX_STRING_BYTES = 16 * 1024;
@@ -360,7 +361,7 @@ export function createHypercoreL1SigningRequest({
   ) {
     fail(
       "hypercore_signing_action_denied",
-      "only closed order/cancel/modify L1 actions are signable"
+      "only closed order/cancel/modify/scheduleCancel L1 actions are signable"
     );
   }
   const actionHash = computeOfficialHyperliquidActionHash({

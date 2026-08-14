@@ -105,11 +105,11 @@ const profileRequirementIds = sorted(
   profile.requirements.map(({ requirementId }) => requirementId)
 );
 
-assert.equal(constitutionRequirementIds.length, 44);
-assert.equal(new Set(constitutionRequirementIds).size, 44);
+assert.equal(constitutionRequirementIds.length, 45);
+assert.equal(new Set(constitutionRequirementIds).size, 45);
 assert.deepEqual(evidenceRequirementIds, constitutionRequirementIds);
 assert.deepEqual(profileRequirementIds, constitutionRequirementIds);
-assert.equal(new Set(profileRequirementIds).size, 44);
+assert.equal(new Set(profileRequirementIds).size, 45);
 
 const evidenceLevels = new Map(
   evidence.requirements.map(({ requirementId, classification }) => [
@@ -157,7 +157,7 @@ const deferred = profile.requirements.filter(({ required_for_m1_b }) => !require
 assert.equal(required.length, profile.gateDefinition.requiredRequirementCount);
 assert.equal(deferred.length, profile.gateDefinition.deferredRequirementCount);
 assert.equal(required.length, 38);
-assert.equal(deferred.length, 6);
+assert.equal(deferred.length, 7);
 assert.deepEqual(
   sorted(deferred.map(({ requirementId }) => requirementId)),
   [
@@ -165,6 +165,7 @@ assert.deepEqual(
     "REQ-PILOT-001",
     "REQ-PILOT-002",
     "REQ-TRADE-002",
+    "REQ-TRADE-005",
     "REQ-UX-001",
     "REQ-UX-003"
   ]
@@ -176,6 +177,7 @@ assert.deepEqual(
     "REQ-PILOT-001",
     "REQ-PILOT-002",
     "REQ-TRADE-002",
+    "REQ-TRADE-005",
     "REQ-UX-001",
     "REQ-UX-003"
   ]
@@ -238,6 +240,13 @@ assert.equal(byId.get("REQ-TRADE-002").required_for_m1_b, false);
 assert.match(byId.get("REQ-TRADE-002").non_goal_boundary, /No signer/i);
 
 assert.equal(
+  byId.get("REQ-TRADE-005").gate_disposition,
+  "DEFERRED_RUNTIME_GATED_AGENT_VENUE_EXECUTION"
+);
+assert.equal(byId.get("REQ-TRADE-005").required_for_m1_b, false);
+assert.match(byId.get("REQ-TRADE-005").non_goal_boundary, /No M1-B signer/i);
+
+assert.equal(
   byId.get("REQ-PILOT-001").gate_disposition,
   "DEFERRED_FOUNDER_STATE_MACHINE"
 );
@@ -256,7 +265,7 @@ const currentLevelCounts = profile.requirements.reduce((counts, requirement) => 
 }, {});
 assert.deepEqual(currentLevelCounts, {
   VERIFIED_SANDBOX: 35,
-  IMPLEMENTED_UNVERIFIED: 8,
+  IMPLEMENTED_UNVERIFIED: 9,
   NOT_IMPLEMENTED: 1
 });
 
@@ -264,7 +273,7 @@ console.log("M1-B Gate Profile validation passed.");
 console.log(`Checkpoint commit: ${profile.sourceBinding.checkpointCommit}`);
 console.log(`Checkpoint tree: ${profile.sourceBinding.checkpointTree}`);
 console.log(`Checkpoint 67-path content root: ${checkpointContentRoot}`);
-console.log(`Requirement coverage: ${profile.requirements.length}/44`);
+console.log(`Requirement coverage: ${profile.requirements.length}/45`);
 console.log(`Required for M1-B: ${required.length}`);
 console.log(`Deferred beyond M1-B: ${deferred.length}`);
 console.log(`Profile SHA-256: ${sha256(profileBytes)}`);

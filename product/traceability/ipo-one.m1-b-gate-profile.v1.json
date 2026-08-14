@@ -25,7 +25,7 @@
     "milestone": "M1_B_DEPLOYABLE_SANDBOX_VERTICAL_SLICE",
     "deliveryMode": "L1_PUBLIC_SANDBOX",
     "requiredRequirementCount": 38,
-    "deferredRequirementCount": 6,
+    "deferredRequirementCount": 7,
     "proposedBlockingRequirementIds": [
       "REQ-CREDIT-009",
       "REQ-UX-004",
@@ -36,6 +36,7 @@
       "REQ-PILOT-001",
       "REQ-PILOT-002",
       "REQ-TRADE-002",
+      "REQ-TRADE-005",
       "REQ-UX-001",
       "REQ-UX-003"
     ],
@@ -546,6 +547,21 @@
       "evidence_required": ["Re-run synthetic Facility, order intent, risk, pause, reduce-only, reconciliation, close, settlement, and conservation Evidence."],
       "deferral_authority": "No deferral is granted for the local sandbox level; numerical production policy remains separately gated.",
       "non_goal_boundary": "No venue order, signer, real asset, real loss, or production risk policy."
+    },
+    {
+      "requirementId": "REQ-TRADE-005",
+      "current_level": "IMPLEMENTED_UNVERIFIED",
+      "gate_disposition": "DEFERRED_RUNTIME_GATED_AGENT_VENUE_EXECUTION",
+      "required_for_m1_b": false,
+      "required_level": "NOT_REQUIRED_FOR_M1_B",
+      "target_milestone": "L3_LIVE_TESTNET",
+      "blocking_reason": "Product Constitution v1.2 adds this architecture-approved capability after the M1-B gate was authorized; L3 runtime remains separately gated and no venue write is current M1-B authority.",
+      "evidence_required": [
+        "A separately approved signer, account, numerical profile, exact run and redacted end-to-end Hyperliquid Testnet Evidence.",
+        "Proof that mainnet, real funds, Agent custody, withdrawal, transfer, arbitrary signing and automatic promotion remain unavailable."
+      ],
+      "deferral_authority": "Product Constitution v1.2 and DEC-AGENT-VENUE-EXEC-001 explicitly set earliest mode L3 and require a separate exact approval for every signer, account and run.",
+      "non_goal_boundary": "No M1-B signer, venue write, testnet asset movement, mainnet, real-value capital, production credential or runtime feature expansion."
     },
     {
       "requirementId": "REQ-PRIV-001",

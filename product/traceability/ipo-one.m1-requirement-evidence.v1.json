@@ -1,14 +1,14 @@
 {
   "schemaVersion": "ipo_one_m1_requirement_evidence.v1",
   "auditId": "M1-A.1-20260804",
-  "status": "CANDIDATE_EVIDENCE_WITH_V1_1_REQUIREMENT_CROSSWALK",
+  "status": "CANDIDATE_EVIDENCE_WITH_V1_2_REQUIREMENT_CROSSWALK",
   "constitution": {
     "path": "docs/PRODUCT_CONSTITUTION.md",
-    "sha256": "7093e0eeb097e9522bac1fc20cdd08f355a7f9d253d12187ed8ca950ff71f481",
+    "sha256": "84e108240b4ea593b0e4c822adcc2f659c659ce772952e3cce8e377cae262557",
     "evidenceBaselineSha256": "c36e26a00c49868c418896a8c3a9920108b32ade1161c25104c6586513f5e653",
-    "compatibilityDecisionId": "DEC-AECL-INTEGRATION-001",
-    "compatibilityStatement": "v1.1 preserves all 44 requirement IDs and dispositions; PRODUCT-INTEGRATION-001 current acceptance Evidence is separate from this historical M1 evidence catalog.",
-    "stableRequirementCount": 44
+    "compatibilityDecisionId": "DEC-AGENT-VENUE-EXEC-001",
+    "compatibilityStatement": "v1.2 preserves all 44 prior requirement IDs and dispositions, adds runtime-gated REQ-TRADE-005, and keeps current Agent Credit Execution Evidence separate from the historical M1 evidence catalog.",
+    "stableRequirementCount": 45
   },
   "classificationVocabulary": [
     "NOT_IMPLEMENTED",
@@ -157,6 +157,7 @@
     {"requirementId":"REQ-TRADE-002","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Signer-free venue binding and imported history persist locally, but no current approved external venue read was executed."}],"blockers":["Current live external read and account UI evidence are absent; no signer authority exists."]},
     {"requirementId":"REQ-TRADE-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Capital request, provider mandate, compatible match, and bilateral acceptance paths execute durably without funds."}],"blockers":["No real funding authority."]},
     {"requirementId":"REQ-TRADE-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Synthetic Facility, order, risk, unknown, reconciliation, close, and settlement paths execute durably."}],"blockers":["Numerical production policy is unapproved."]},
+    {"requirementId":"REQ-TRADE-005","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["modules/agent-credit-execution/src/runtime.js","modules/hypercore-venue-adapter/src/hypercore-action.js","deploy/testnet/agent-credit-hyperliquid-l3-gate.mjs"],"evidenceBindings":[],"blockers":["L3 requires a newly provisioned isolated signer, reviewed account/action artifacts, and an exact Founder-approved run; no external write or durable PostgreSQL proof was performed."]},
     {"requirementId":"REQ-PRIV-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Forced RLS, Tenant isolation, hash-only authentication records, and offchain identity references execute in PostgreSQL."}],"blockers":["No real KYC or production privacy approval."]},
     {"requirementId":"REQ-AUTO-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Durable command, outbox, inbox, retry, replay, pause, reconciliation, and exact authority paths execute fail closed."}],"blockers":["Production automation authority is absent."]},
     {"requirementId":"REQ-PILOT-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No durable dispute, appeal, correction case domain, operation, authorization policy, persistence, UI, or runtime evidence exists."]},

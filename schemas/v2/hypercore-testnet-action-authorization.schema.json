@@ -21,7 +21,7 @@
     "riskSnapshotHash": { "$ref": "#/$defs/hash" },
     "humanConfirmationHash": { "$ref": "#/$defs/hash" },
     "proofId": { "$ref": "#/$defs/identifier" },
-    "actionKind": { "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"] },
+    "actionKind": { "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify", "scheduleCancel"] },
     "accountBindingHash": { "$ref": "#/$defs/hash" },
     "delegateHash": { "$ref": "#/$defs/hash" },
     "signerReferenceHash": { "$ref": "#/$defs/hash" },

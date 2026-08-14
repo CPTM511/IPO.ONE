@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "agent_credit_execution_policy.v1",
+  "policyVersion": "agent_credit_hyperliquid_testnet.v1",
+  "authorizationVersion": "agent_credit_authorization.v1",
+  "facilityType": "TRADING_CAPITAL",
+  "mode": "L0_LOCAL_NO_FUNDS",
+  "venue": {
+    "provider": "hyperliquid",
+    "environment": "testnet",
+    "origin": "https://api.hyperliquid-testnet.xyz",
+    "networkAvailable": false
+  },
+  "asset": {
+    "settlementAsset": "urn:ipo-one:sandbox-asset:usd-cent"
+  },
+  "execution": {
+    "allowedMarkets": ["BTC"],
+    "btcAssetIndex": 3,
+    "maxConcurrentPositions": 1,
+    "maxOrderNotionalMinor": "1000",
+    "maxFacilityExposureMinor": "1000",
+    "maxLeverage": 1,
+    "allowedActions": [
+      "order",
+      "cancel",
+      "cancelByCloid",
+      "modify",
+      "scheduleCancel"
+    ]
+  },
+  "risk": {
+    "maxDrawdownMinor": "1000",
+    "failClosedOnStaleState": true,
+    "failClosedOnUnreconciledState": true
+  },
+  "withdrawal": { "allowed": false },
+  "externalTransfer": { "allowed": false },
+  "agentCustody": { "allowed": false },
+  "mainnetAuthority": false,
+  "productionAuthority": false,
+  "fundsAuthority": false,
+  "realFunds": false
+}

@@ -14,14 +14,15 @@
   ],
   "properties": {
     "preparedActionHash": { "$ref": "#/$defs/hash" },
-    "actionKind": { "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"] },
+    "actionKind": { "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify", "scheduleCancel"] },
     "signingScheme": { "const": "l1_action" },
     "hyperliquidAction": {
       "oneOf": [
         { "$ref": "#/$defs/orderAction" },
         { "$ref": "#/$defs/cancelAction" },
         { "$ref": "#/$defs/cancelByCloidAction" },
-        { "$ref": "#/$defs/modifyAction" }
+        { "$ref": "#/$defs/modifyAction" },
+        { "$ref": "#/$defs/scheduleCancelAction" }
       ]
     },
     "sourceActionHash": { "$ref": "#/$defs/hash" },
@@ -105,6 +106,13 @@
             }
           }
         }
+      }
+    },
+    "scheduleCancelAction": {
+      "type": "object", "additionalProperties": false, "required": ["type", "time"],
+      "properties": {
+        "type": { "const": "scheduleCancel" },
+        "time": { "type": "integer", "minimum": 1 }
       }
     },
     "modifyAction": {

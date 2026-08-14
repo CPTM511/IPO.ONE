@@ -245,7 +245,7 @@ test("rotation retires the old delegate and requires a fresh never-used address"
   );
 });
 
-test("exact HyperCore action compiler covers only the five approved action classes", () => {
+test("exact HyperCore action compiler covers only the six approved action classes", () => {
   const cases = [
     [HypercoreExecutionActionKind.ORDER, ORDER, "order"],
     [
@@ -267,6 +267,11 @@ test("exact HyperCore action compiler covers only the five approved action class
       HypercoreExecutionActionKind.MODIFY,
       { orderId: 123, replacement: { ...ORDER, side: "sell", reduceOnly: true } },
       "batchModify"
+    ],
+    [
+      HypercoreExecutionActionKind.SCHEDULE_CANCEL,
+      { time: NOW.getTime() + 10_000 },
+      "scheduleCancel"
     ]
   ];
   for (const [kind, action, type] of cases) {

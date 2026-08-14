@@ -58,7 +58,7 @@ and unrelated untracked work remained outside the index and checkpoint commit.
 | Index content root | PASS | Matches `67f6f63aadbc4977a35968e379b3dff8da988e8d7a31b3be1c1061db581b881c` |
 | Source lint | PASS | `560` JavaScript modules parsed; boundary lint passed |
 | Contract typecheck | PASS | `3` package export surfaces and `68` runtime value exports matched parseable declarations |
-| Requirement evidence check | PASS | Exact `44` Constitution IDs; `35 VERIFIED_SANDBOX`, `8 IMPLEMENTED_UNVERIFIED`, `1 NOT_IMPLEMENTED` |
+| Requirement evidence check | PASS | Exact `45` Constitution IDs after the v1.2 crosswalk; `35 VERIFIED_SANDBOX`, `9 IMPLEMENTED_UNVERIFIED`, `1 NOT_IMPLEMENTED` |
 | Unit suite | PASS | `698` passed, `0` failed, `0` skipped |
 | `git diff --check` | FAIL | Existing Markdown hard-break trailing spaces are present in approved checkpoint content; M1-A.2 did not modify or normalize them |
 | M1-A.1 snapshot checker before branch creation | PASS | Original branch, HEAD, tree, file hashes, and content root matched the dirty-worktree snapshot |
@@ -222,7 +222,7 @@ Run from the repository root with the pinned runtime:
 node scripts/check-m1-b-gate-profile.mjs
 ```
 
-The checker fails if the Constitution, 44-ID registry, current classifications,
+The checker fails if the Constitution, 45-ID registry, current classifications,
 checkpoint commit, checkpoint tree, exact 67-path commit scope, content root,
 authorization flags, blocker set, deferral set, or required fields drift.
 

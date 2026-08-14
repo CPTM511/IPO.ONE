@@ -1,12 +1,14 @@
 # IPO.ONE Product Constitution
 
-Version: v1.1
+Version: v1.2
 
-Effective date: 2026-08-11
+Effective date: 2026-08-14
 
 Status: Founder-directed and ratified for current product-truth governance
 
 Decision owner: IPO.ONE Founder / Product / Governance
+
+Supersedes: Product Constitution v1.1 effective 2026-08-11
 
 Milestone: GOVERNANCE-001 / Recovery M0
 
@@ -142,6 +144,7 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-TRADE-002 | signer-free venue binding/history Evidence | ARCHITECTURE_APPROVED_RUNTIME_GATED | L3_LIVE_TESTNET | ADR-035 | no signer, transfer, withdrawal, key approval, or venue write authority |
 | REQ-TRADE-003 | bilateral capital request/mandate/matching | APPROVED_PHASE_2 | L0_LOCAL_NO_FUNDS | Product Optimization Measure v1.0 section 2 | exact bilateral acceptance; no real funding |
 | REQ-TRADE-004 | synthetic Trading Facility/order/risk lifecycle | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-036 | conservative state machine; exact numerical policy separately approved |
+| REQ-TRADE-005 | purpose-bound delegated external venue execution for an Agent Trading Capital Facility | ARCHITECTURE_APPROVED_RUNTIME_GATED | L3_LIVE_TESTNET | DEC-AGENT-VENUE-EXEC-001 in section 7 | external Agent and shared kernel remain independent; controlled capital account and policy signer only; every signer, account and run separately approved; mainnet and real value prohibited |
 | REQ-PRIV-001 | offchain sensitive-data and least-privilege boundary | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 6 | no raw KYC/PII/credentials/onchain sensitive record |
 | REQ-AUTO-001 | queryable fail-closed automation | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Engineering and Experience Standard v1.0 section 5 | A3/A4 authority must be exact; AI never authorizes credit or mutation |
 | REQ-PILOT-001 | dispute/appeal/correction case workflow | REQUIRED_BEFORE_CLOSED_PILOT | L2_CLOSED_NO_FUNDS | DEC-DISPUTE-001 in section 7 | no claim of legal complaint handling; immutable Evidence and correction linkage |
@@ -275,6 +278,56 @@ AccountBinding while preserving that onboarding lifecycle as a distinct
 subtype. `REQ-EXEC-001`, `REQ-EXEC-002` and `REQ-EVID-002` retain their original
 capabilities and gain the exact resolver and single-transaction invariants
 above. All other v1.0 requirement IDs and dispositions are unchanged.
+
+### DEC-AGENT-VENUE-EXEC-001 — delegated execution is not Agent custody
+
+Founder direction on 2026-08-14 approves the target architecture for
+purpose-bound delegated external venue execution under `REQ-TRADE-005`, while
+retaining an explicit runtime gate.
+
+1. An independent wallet-capable economic Agent may use IPO.ONE as a
+   `CreditProvider` and an approved external venue through a replaceable
+   `ExecutionVenue` adapter. The Agent is not an IPO.ONE-native strategy or
+   custody process.
+2. The existing shared Subject, PrincipalRelationship, Mandate, Credit Intent,
+   Offer, Authorization, Obligation, Facility, Ledger, repayment, servicing,
+   Event, Evidence, Credit State and reconciliation kernel remains canonical.
+   A Trading Loan, Hyperliquid Loan, Trading Ledger or other parallel economic
+   truth is prohibited.
+3. `economicAgentWallet`, `capitalController`, `venueApiSigner` and
+   `ipoOneSubject` are distinct identities. A financed Agent receives only an
+   opaque, purpose-bound execution capability. It receives no controller key,
+   venue signer key, arbitrary signing, withdrawal, transfer or residual-release
+   authority.
+4. The controlled capital account retains custody and repayment/release
+   authority under `capitalController`. A Policy Signer may sign only a closed,
+   versioned action allowlist after current server-derived venue, account,
+   market, notional, leverage, drawdown, expiry, Mandate, Facility, Tenant and
+   reconciliation checks. Unknown, stale, ambiguous or unreconciled state
+   denies before signing.
+5. The first reference venue profile is Hyperliquid Testnet with bounded BTC
+   execution. Hyperliquid-specific types and credential semantics remain behind
+   the adapter and signer boundary and cannot enter the canonical credit kernel.
+6. Repayment and release follow canonical Ledger truth: close, cancel remaining
+   orders, reconcile, repay the exact outstanding amount available, then release
+   only an entitled residual. Venue balance or HTTP success cannot replace
+   canonical settlement truth. Loss and partial repayment remain outstanding
+   and adverse rather than being manufactured as settled.
+7. `REQ-TRADE-005` grants architecture approval only. L0 deterministic no-funds
+   implementation may proceed under current local authority. Each L3 account,
+   signer, numerical profile and run requires its own exact approval. L4/L5,
+   mainnet, real-value funds, production custody, production credentials and
+   automatic promotion remain prohibited.
+
+### v1.1 to v1.2 requirement crosswalk
+
+Product Constitution v1.2 adds only `REQ-TRADE-005` and
+`DEC-AGENT-VENUE-EXEC-001`. No v1.1 requirement ID is deleted, repurposed,
+downgraded or broadened. `REQ-TRADE-001..004` retain their existing meaning and
+gates. The new requirement records a previously missing architecture-approved,
+runtime-gated capability for delegated external venue execution; it does not
+claim implementation, verification, hosting, testnet execution, real value or
+production readiness.
 
 ## 8. Explicit current non-goals and gates
 

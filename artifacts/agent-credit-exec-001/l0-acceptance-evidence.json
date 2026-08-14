@@ -1,0 +1,73 @@
+{
+  "issueId": "AGENT-CREDIT-EXEC-001",
+  "mode": "L0_LOCAL_NO_FUNDS",
+  "capturedAt": "2026-08-14T08:00:00.000Z",
+  "implementation": {
+    "externalAgentProtocolIndependent": true,
+    "canonicalObligationKernelReused": true,
+    "canonicalLedgerReused": true,
+    "secondTradingLedgerCreated": false,
+    "fourIdentitySeparationProven": true,
+    "agentCustody": false,
+    "withdrawalAuthority": false,
+    "transferAuthority": false,
+    "arbitrarySigningAuthority": false
+  },
+  "healthyScenario": {
+    "requestedPrincipalMinor": "1000",
+    "finalEquityMinor": "1100",
+    "executionCount": 2,
+    "reconciliationStatus": "RECONCILED",
+    "appliedPrincipalMinor": "1000",
+    "outstandingPrincipalMinor": "0",
+    "residualReleaseMinor": "100",
+    "residualReleasedAfterRepayment": true,
+    "creditState": "REPAID",
+    "finalStage": "SETTLED",
+    "evidenceCount": 10
+  },
+  "lossScenario": {
+    "requestedPrincipalMinor": "1000",
+    "finalEquityMinor": "960",
+    "executionCount": 2,
+    "reconciliationStatus": "RECONCILED",
+    "appliedPrincipalMinor": "960",
+    "outstandingPrincipalMinor": "40",
+    "residualReleaseMinor": "0",
+    "residualReleasedAfterRepayment": true,
+    "creditState": "LOSS_OUTSTANDING",
+    "riskState": "NEW_CAPACITY_HELD",
+    "finalStage": "PARTIAL_REPAYMENT",
+    "evidenceCount": 10
+  },
+  "negativeProof": {
+    "deniedBeforeSigner": true,
+    "adapterInvoked": false,
+    "externalExecution": false,
+    "economicMutation": false,
+    "authorityExpanded": false,
+    "silentRetry": false,
+    "mainnetDenied": true,
+    "unknownActionDenied": true,
+    "staleAuthorityDenied": true,
+    "replayDenied": true,
+    "emergencyNewRiskDenied": true,
+    "emergencyReduceOnlyClosePermitted": true,
+    "emergencyResidualReleaseHeld": true
+  },
+  "sensitiveMaterial": {
+    "rawWalletPersisted": false,
+    "rawPrivateKeyPersisted": false,
+    "rawSignaturePersisted": false,
+    "rawResponsePersisted": false,
+    "seedOrMnemonicPersisted": false
+  },
+  "fundsTruth": {
+    "externalRequestPerformed": false,
+    "realFundsMoved": false,
+    "mainnetInteraction": false,
+    "testnetAssetUsed": false
+  },
+  "sourceTest": "modules/agent-credit-execution/test/agent-credit-execution.e2e.test.js",
+  "schemaVersion": "agent_credit_exec_001_l0_acceptance_evidence.v1"
+}

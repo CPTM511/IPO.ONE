@@ -45,7 +45,7 @@
     "metadataHash": { "$ref": "#/$defs/hash" },
     "riskSnapshotHash": { "$ref": "#/$defs/hash" },
     "actionKind": {
-      "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+      "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify", "scheduleCancel"]
     },
     "market": { "const": "BTC" },
     "maxOrderNotionalUsd": { "const": "10" },

@@ -15,7 +15,8 @@ export const HypercoreExecutionActionKind = Object.freeze({
   REDUCE_ONLY_ORDER: "reduceOnlyOrder",
   CANCEL: "cancel",
   CANCEL_BY_CLOID: "cancelByCloid",
-  MODIFY: "modify"
+  MODIFY: "modify",
+  SCHEDULE_CANCEL: "scheduleCancel"
 });
 
 const ALLOWED_ACTIONS = new Set(Object.values(HypercoreExecutionActionKind));
@@ -93,6 +94,13 @@ function asset(value) {
 function orderId(value) {
   if (!Number.isSafeInteger(value) || value < 1) {
     fail("hypercore_action_denied", "order ID is invalid");
+  }
+  return value;
+}
+
+function scheduledCancelTime(value) {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    fail("hypercore_action_denied", "scheduled cancel time is invalid");
   }
   return value;
 }
@@ -247,6 +255,13 @@ export function compileHypercoreExecutionAction(input) {
             order: compileOrder(input.action.replacement)
           }
         ]
+      };
+      break;
+    case HypercoreExecutionActionKind.SCHEDULE_CANCEL:
+      exactShape("HyperCore scheduled cancel", input.action, ["time"]);
+      action = {
+        type: "scheduleCancel",
+        time: scheduledCancelTime(input.action.time)
       };
       break;
     default:

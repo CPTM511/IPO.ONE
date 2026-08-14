@@ -40,7 +40,7 @@
     "profileSchemaVersion": "ipo_one_m1_b_gate_profile.v1",
     "profileStatus": "FOUNDER_APPROVED_M1_B_DEPLOYABLE_SANDBOX",
     "requiredRequirementCount": 38,
-    "deferredRequirementCount": 6,
+    "deferredRequirementCount": 7,
     "aggregateCurrentStageGate": true,
     "preflightManifestPath": "deploy/local/prod-cutover-001.release-candidate.v1.json",
     "preflightCheckerPath": "scripts/check-prod-cutover-release-candidate.mjs",

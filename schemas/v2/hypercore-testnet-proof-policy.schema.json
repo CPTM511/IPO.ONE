@@ -35,7 +35,7 @@
     "priceDecimals": { "const": 1 },
     "metadataObservedAt": { "type": "string", "format": "date-time" },
     "allowedActionKinds": {
-      "const": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+      "const": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify", "scheduleCancel"]
     },
     "openingTimeInForce": { "const": "Alo" },
     "maxOrderNotionalUsd": { "const": "10" },
