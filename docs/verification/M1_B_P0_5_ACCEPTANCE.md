@@ -272,7 +272,18 @@ metadata alone is insufficient.
 6. Restart Pilot, Worker, and PostgreSQL exactly once with the same candidate,
    port base, and retained PostgreSQL volume. Record the new exact PostgreSQL
    start time and re-run local acceptance. Do not perform a second restart
-   anywhere in this P0-5 sequence.
+   anywhere in this P0-5 sequence. The first completion attempt must seal a
+   private, non-Evidence restart observation containing only the exact after
+   snapshot and allowlisted lifecycle-event projection after the exact lifecycle
+   projection is complete and before downstream restart-context validation. If
+   Docker history no longer contains that exact lifecycle projection on the
+   first completion attempt, do not seal an observation: fail and recut the
+   candidate. If later completion work is interrupted, only
+   `pnpm run local:restart:complete-only` may consume that
+   candidate/pending-bound observation and must prove the current runtime is
+   unchanged. A missing or
+   invalid observation, or a stopped Lima VM, requires a new candidate; the
+   completion-only path must never start the VM or any service.
 7. Run exact Agent `after_restart` recovery first. This is the Principal/Agent
    canonical recovery step and must perform no onboarding or economic mutation.
 8. Against that same post-restart database and image, run the candidate-bound

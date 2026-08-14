@@ -77,6 +77,10 @@ const CONTRACT_FILE = resolve(ROOT, "deploy/local/stack.v1.json");
 const SECRET_DIRECTORY = resolve(ROOT, ".ipo-one/local-stack");
 const DATABASE_SECRET_FILE = resolve(SECRET_DIRECTORY, "private-pilot-db-secret");
 const AGENT_DIRECTORY = resolve(SECRET_DIRECTORY, "agent-workflows");
+const RESTART_OBSERVATION_DIRECTORY = resolve(
+  SECRET_DIRECTORY,
+  "m1-b-restart-observations"
+);
 const RUNTIME_READER = "apps/private-pilot/src/m1-b-operational-runtime-read.js";
 const RUNTIME_READER_COMPOSE_PROJECT = "ipo-one-m1-b-evidence-reader";
 const RUNTIME_READER_COMPOSE_SERVICE = "runtime-reader";
@@ -1730,13 +1734,19 @@ function validateRestartContext(restart) {
       }
       iso(identity.startedAt);
     }
-    if (
-      service.before.containerId !== service.after.containerId ||
-      service.before.imageId !== service.after.imageId ||
-      service.before.configHash !== service.after.configHash ||
-      service.before.startedAt === service.after.startedAt ||
-      Date.parse(service.after.startedAt) <= Date.parse(service.before.startedAt)
-    ) fail("operational_restart_invalid", "Each existing service must restart exactly once without recreation or configuration drift.");
+    const identityDrift = [
+      ["containerId", service.before.containerId !== service.after.containerId],
+      ["imageId", service.before.imageId !== service.after.imageId],
+      ["configHash", service.before.configHash !== service.after.configHash],
+      [
+        "startedAt",
+        Date.parse(service.after.startedAt) <= Date.parse(service.before.startedAt)
+      ]
+    ].filter(([, changed]) => changed).map(([field]) => field);
+    if (identityDrift.length > 0) fail(
+      "operational_restart_invalid",
+      `Each existing service must restart exactly once without recreation or configuration drift; ${service.service} changed ${identityDrift.join(", ")}.`
+    );
   }
   const serviceByName = Object.fromEntries(
     restart.services.map((service) => [service.service, service])
@@ -4158,6 +4168,36 @@ async function runInteractiveLiveNegative(arguments_) {
   });
 }
 
+export function canonicalizeM1BServiceMountSummary(value) {
+  if (typeof value !== "string") {
+    fail("operational_runtime_identity_invalid", "Service mount summary is invalid.");
+  }
+  const mounts = value.split(";").filter(Boolean).map((entry) => {
+    const fields = entry.split("|");
+    if (
+      fields.length !== 4 ||
+      !IDENTIFIER.test(fields[0] ?? "") ||
+      fields[1] !== "" && !IDENTIFIER.test(fields[1]) ||
+      !/^\/[A-Za-z0-9._/@%:+-]+(?:\/[A-Za-z0-9._/@%:+-]+)*$/.test(fields[2] ?? "") ||
+      !new Set(["true", "false"]).has(fields[3])
+    ) fail(
+      "operational_runtime_identity_invalid",
+      "Service mount summary is invalid."
+    );
+    return Object.freeze({
+      type: fields[0],
+      name: fields[1],
+      destination: fields[2],
+      readWrite: fields[3] === "true"
+    });
+  });
+  return Object.freeze(mounts.sort((left, right) => {
+    const leftKey = canonicalJson(left);
+    const rightKey = canonicalJson(right);
+    return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+  }));
+}
+
 function serviceIdentity(baseArgs, service) {
   const containerId = compose(baseArgs, ["ps", "--quiet", service], `${service} container unavailable`);
   if (!/^[0-9a-f]{12,64}$/.test(containerId)) {
@@ -4208,7 +4248,7 @@ function serviceIdentity(baseArgs, service) {
     typeof composeLabels.configHash !== "string" ||
     composeLabels.configHash === ""
   ) fail("operational_runtime_identity_invalid", `${service} does not bind the reviewed Compose project/configuration.`);
-  const mountSummary = docker(
+  const mountSummary = canonicalizeM1BServiceMountSummary(docker(
     [
       "inspect",
       containerId,
@@ -4216,7 +4256,7 @@ function serviceIdentity(baseArgs, service) {
       "{{range .Mounts}}{{printf \"%s|%s|%s|%t;\" .Type .Name .Destination .RW}}{{end}}"
     ],
     `${service} mount summary unavailable`
-  );
+  ));
   return Object.freeze({
     containerId,
     imageId,
@@ -4520,8 +4560,11 @@ function restartEventLines(before, after) {
     "type=container",
     "--filter",
     `label=com.docker.compose.project=${INSTANCE}`,
+    ...["start", "stop", "kill", "die", "restart", "create", "destroy"].flatMap(
+      (event) => ["--filter", `event=${event}`]
+    ),
     "--format",
-    "{{json .}}"
+    '{"action":{{json .Action}},"containerId":{{json .Actor.ID}},"project":{{json (index .Actor.Attributes "com.docker.compose.project")}},"service":{{json (index .Actor.Attributes "com.docker.compose.service")}},"timeNano":{{json (printf "%d" .TimeNano)}}}'
   ], "Docker container restart event history unavailable");
   const volumeText = docker([
     "events",
@@ -4533,8 +4576,12 @@ function restartEventLines(before, after) {
     "type=volume",
     "--filter",
     `volume=${before.volume.name}`,
+    "--filter",
+    "event=create",
+    "--filter",
+    "event=destroy",
     "--format",
-    "{{json .}}"
+    '{"action":{{json .Action}},"volumeName":{{json .Actor.ID}},"timeNano":{{json (printf "%d" .TimeNano)}}}'
   ], "Docker volume event history unavailable");
   return Object.freeze({
     containerLines: containerText.split(/\r?\n/).filter(Boolean),
@@ -4542,8 +4589,214 @@ function restartEventLines(before, after) {
   });
 }
 
+export function createM1BRestartObservation({
+  candidateReleaseId,
+  sourceTreeHash,
+  runtimeImageId,
+  pendingSha256,
+  before,
+  after,
+  eventLines
+}) {
+  const observation = Object.freeze({
+    schemaVersion: "m1_b_operational_restart_observation.v1",
+    candidateReleaseId,
+    sourceTreeHash,
+    runtimeImageId,
+    sourceRuntime: "local_exact_commit",
+    pendingSha256,
+    capturedAt: after?.capturedAt,
+    after,
+    eventLines,
+    containsSecrets: false,
+    containsRawPii: false,
+    containsSessionMaterial: false
+  });
+  return validateM1BRestartObservation(observation, {
+    candidateReleaseId,
+    sourceTreeHash,
+    runtimeImageId,
+    pendingSha256,
+    before
+  });
+}
+
+function validateM1BOperationalRuntimeSnapshot(snapshot, runtimeImageId) {
+  if (
+    !exactKeys(snapshot, [
+      "capturedAt",
+      "databaseStartedAt",
+      "engine",
+      "volume",
+      "services"
+    ]) ||
+    !exactKeys(snapshot.engine, ["observedAt", "receipt"]) ||
+    snapshot.engine.observedAt !== snapshot.capturedAt ||
+    !exactKeys(snapshot.engine.receipt, [
+      "engineIdHash",
+      "serverVersion",
+      "securityOptionsHash",
+      "rootless"
+    ]) ||
+    !/^0x[0-9a-f]{64}$/.test(snapshot.engine.receipt.engineIdHash ?? "") ||
+    !IDENTIFIER.test(snapshot.engine.receipt.serverVersion ?? "") ||
+    !/^0x[0-9a-f]{64}$/.test(
+      snapshot.engine.receipt.securityOptionsHash ?? ""
+    ) ||
+    snapshot.engine.receipt.rootless !== true ||
+    !exactKeys(snapshot.volume, ["name", "receipt"]) ||
+    !IDENTIFIER.test(snapshot.volume.name ?? "") ||
+    !exactKeys(snapshot.volume.receipt, [
+      "name",
+      "driver",
+      "createdAt",
+      "scope",
+      "labelsHash",
+      "optionsHash",
+      "destination",
+      "readWrite",
+      "metadataHash"
+    ]) ||
+    snapshot.volume.receipt.name !== snapshot.volume.name ||
+    !IDENTIFIER.test(snapshot.volume.receipt.driver ?? "") ||
+    !IDENTIFIER.test(snapshot.volume.receipt.scope ?? "") ||
+    !/^0x[0-9a-f]{64}$/.test(snapshot.volume.receipt.labelsHash ?? "") ||
+    !/^0x[0-9a-f]{64}$/.test(snapshot.volume.receipt.optionsHash ?? "") ||
+    snapshot.volume.receipt.destination !== "/var/lib/postgresql/data" ||
+    snapshot.volume.receipt.readWrite !== true ||
+    !/^0x[0-9a-f]{64}$/.test(snapshot.volume.receipt.metadataHash ?? "") ||
+    !exactKeys(snapshot.services, ["postgres", "pilot", "worker"])
+  ) fail(
+    "operational_restart_invalid",
+    "The sealed restart runtime snapshot is invalid."
+  );
+  for (const timestamp of [
+    snapshot.capturedAt,
+    snapshot.databaseStartedAt,
+    snapshot.volume.receipt.createdAt
+  ]) iso(timestamp);
+  for (const [service, identity] of Object.entries(snapshot.services)) {
+    if (
+      !exactKeys(identity, ["containerId", "imageId", "startedAt", "configHash"]) ||
+      !/^[0-9a-f]{12,64}$/.test(identity.containerId ?? "") ||
+      !IMAGE_ID.test(identity.imageId ?? "") ||
+      !/^0x[0-9a-f]{64}$/.test(identity.configHash ?? "") ||
+      (service === "pilot" || service === "worker") &&
+        identity.imageId !== runtimeImageId
+    ) fail(
+      "operational_restart_invalid",
+      "The sealed restart service identity is invalid."
+    );
+    iso(identity.startedAt);
+  }
+  return snapshot;
+}
+
+function projectM1BOperationalRuntimeSnapshot(snapshot) {
+  return {
+    capturedAt: snapshot?.capturedAt,
+    databaseStartedAt: snapshot?.databaseStartedAt,
+    engine: snapshot?.engine,
+    volume: snapshot?.volume,
+    services: snapshot?.services
+  };
+}
+
+function assertCompleteM1BRestartEventSummary(summary) {
+  if (
+    summary.volumeCreateDestroyCount !== 0 ||
+    !exactKeys(summary.services, ["postgres", "pilot", "worker"]) ||
+    Object.values(summary.services).some((events) =>
+      events.start !== 1 || events.die !== 1 ||
+      events.create !== 0 || events.destroy !== 0
+    )
+  ) fail(
+    "operational_restart_invalid",
+    "The first completion attempt does not contain the exact restart lifecycle events."
+  );
+  return summary;
+}
+
+export function validateM1BRestartObservation(observation, {
+  candidateReleaseId,
+  sourceTreeHash,
+  runtimeImageId,
+  pendingSha256,
+  before
+}) {
+  if (
+    !exactKeys(observation, [
+      "schemaVersion",
+      "candidateReleaseId",
+      "sourceTreeHash",
+      "runtimeImageId",
+      "sourceRuntime",
+      "pendingSha256",
+      "capturedAt",
+      "after",
+      "eventLines",
+      "containsSecrets",
+      "containsRawPii",
+      "containsSessionMaterial"
+    ]) ||
+    observation.schemaVersion !== "m1_b_operational_restart_observation.v1" ||
+    !SHA.test(candidateReleaseId ?? "") ||
+    !SHA.test(sourceTreeHash ?? "") ||
+    !IMAGE_ID.test(runtimeImageId ?? "") ||
+    !SHA256.test(pendingSha256 ?? "") ||
+    observation.candidateReleaseId !== candidateReleaseId ||
+    observation.sourceTreeHash !== sourceTreeHash ||
+    observation.runtimeImageId !== runtimeImageId ||
+    observation.sourceRuntime !== "local_exact_commit" ||
+    observation.pendingSha256 !== pendingSha256 ||
+    observation.capturedAt !== observation.after?.capturedAt ||
+    !exactKeys(observation.eventLines, ["containerLines", "volumeLines"]) ||
+    !Array.isArray(observation.eventLines.containerLines) ||
+    !Array.isArray(observation.eventLines.volumeLines) ||
+    [...observation.eventLines.containerLines, ...observation.eventLines.volumeLines]
+      .some((line) => typeof line !== "string" || line.length === 0 || line.length > 64 * 1024) ||
+    Buffer.byteLength(JSON.stringify(observation.eventLines)) > 4 * 1024 * 1024 ||
+    observation.containsSecrets !== false ||
+    observation.containsRawPii !== false ||
+    observation.containsSessionMaterial !== false
+  ) fail(
+    "operational_restart_invalid",
+    "The sealed restart observation does not match the exact candidate and pending journal."
+  );
+  iso(observation.capturedAt);
+  const beforeSnapshot = projectM1BOperationalRuntimeSnapshot(before);
+  validateM1BOperationalRuntimeSnapshot(beforeSnapshot, runtimeImageId);
+  validateM1BOperationalRuntimeSnapshot(observation.after, runtimeImageId);
+  assertCompleteM1BRestartEventSummary(
+    createM1BRestartEventSummary(
+      beforeSnapshot,
+      observation.after,
+      observation.eventLines
+    )
+  );
+  return observation;
+}
+
+export function assertM1BRestartObservationRuntimeStable(observedAfter, current) {
+  const runtimeImageId = observedAfter?.services?.pilot?.imageId;
+  validateM1BOperationalRuntimeSnapshot(observedAfter, runtimeImageId);
+  validateM1BOperationalRuntimeSnapshot(current, runtimeImageId);
+  if (
+    observedAfter.databaseStartedAt !== current.databaseStartedAt ||
+    canonicalJson(observedAfter.engine?.receipt) !== canonicalJson(current.engine?.receipt) ||
+    canonicalJson(observedAfter.volume) !== canonicalJson(current.volume) ||
+    canonicalJson(observedAfter.services) !== canonicalJson(current.services)
+  ) fail(
+    "operational_restart_invalid",
+    "Runtime drifted after the sealed sole-restart observation."
+  );
+  return true;
+}
+
 export function createM1BRestartEventSummary(before, after, eventLines) {
   const eventNames = ["start", "stop", "kill", "die", "restart", "create", "destroy"];
+  const beforeNano = BigInt(Date.parse(before.capturedAt)) * 1_000_000n;
+  const afterNano = (BigInt(Date.parse(after.capturedAt)) + 1n) * 1_000_000n - 1n;
   const serviceByContainer = new Map(
     Object.entries(before.services).map(([service, identity]) => [identity.containerId, service])
   );
@@ -4560,13 +4813,25 @@ export function createM1BRestartEventSummary(before, after, eventLines) {
     } catch {
       fail("operational_restart_invalid", "Docker restart event history is invalid.");
     }
-    const action = event.Action ?? event.status;
-    const containerId = event.Actor?.ID ?? event.id;
-    const service = event.Actor?.Attributes?.["com.docker.compose.service"];
-    if (new Set(["create", "destroy"]).has(action) && !Object.hasOwn(counts, service)) {
-      fail("operational_restart_invalid", "An unexpected project container was created or destroyed during restart.");
+    if (
+      !exactKeys(event, ["action", "containerId", "project", "service", "timeNano"]) ||
+      event.project !== INSTANCE ||
+      !/^[0-9a-f]{12,64}$/.test(event.containerId ?? "") ||
+      !IDENTIFIER.test(event.service ?? "") ||
+      !eventNames.includes(event.action) ||
+      !/^[0-9]{16,20}$/.test(event.timeNano ?? "") ||
+      BigInt(event.timeNano) < beforeNano ||
+      BigInt(event.timeNano) > afterNano
+    ) fail(
+      "operational_restart_invalid",
+      "Docker restart event history is not one closed safe projection."
+    );
+    const action = event.action;
+    const containerId = event.containerId;
+    const service = event.service;
+    if (!Object.hasOwn(counts, service)) {
+      fail("operational_restart_invalid", "An unexpected project container lifecycle event occurred during restart.");
     }
-    if (!Object.hasOwn(counts, service) || !eventNames.includes(action)) continue;
     if (serviceByContainer.get(containerId) !== service) {
       fail("operational_restart_invalid", `${service} restart events do not bind the captured container.`);
     }
@@ -4580,7 +4845,18 @@ export function createM1BRestartEventSummary(before, after, eventLines) {
     } catch {
         fail("operational_restart_invalid", "Docker volume event history is invalid.");
     }
-    const action = event.Action ?? event.status;
+    if (
+      !exactKeys(event, ["action", "volumeName", "timeNano"]) ||
+      event.volumeName !== before.volume.name ||
+      !new Set(["create", "destroy"]).has(event.action) ||
+      !/^[0-9]{16,20}$/.test(event.timeNano ?? "") ||
+      BigInt(event.timeNano) < beforeNano ||
+      BigInt(event.timeNano) > afterNano
+    ) fail(
+      "operational_restart_invalid",
+      "Docker volume event history is not one closed safe projection."
+    );
+    const action = event.action;
     if (new Set(["create", "destroy"]).has(action)) {
       volumeCreateDestroyCount += 1;
     }
@@ -4733,6 +5009,16 @@ async function privateJson(path, description) {
   } catch {
     fail("operational_critical_artifact_invalid", `${description} is not valid JSON.`);
   }
+}
+
+async function privateJsonIfPresent(path, description) {
+  try {
+    await lstat(path);
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+  return privateJson(path, description);
 }
 
 async function readBoundOperationalArtifact(reference, {
@@ -7335,6 +7621,7 @@ export function parseM1BOperationalEvidenceArguments(argv, { root = ROOT } = {})
   if (!new Set([
     "restart-begin",
     "restart-complete",
+    "restart-complete-only",
     "expired-offer-setup",
     "negative-run",
     "live-negative",
@@ -7343,7 +7630,7 @@ export function parseM1BOperationalEvidenceArguments(argv, { root = ROOT } = {})
   ]).has(mode)) {
     fail(
       "operational_arguments_invalid",
-      "Mode must be restart-begin, restart-complete, expired-offer-setup, negative-run, live-negative, collect-pre-risk, or finalize."
+      "Mode must be restart-begin, restart-complete, restart-complete-only, expired-offer-setup, negative-run, live-negative, collect-pre-risk, or finalize."
     );
   }
   const names = new Set([
@@ -7558,6 +7845,64 @@ async function writeCheckpoint(path, document) {
   }]);
 }
 
+export async function writeM1BPrivateRuntimeDocumentExclusive(
+  path,
+  document,
+  { secretDirectory = SECRET_DIRECTORY } = {}
+) {
+  const directory = dirname(path);
+  const secretMetadata = await lstat(secretDirectory);
+  if (
+    !secretMetadata.isDirectory() || secretMetadata.isSymbolicLink() ||
+    (secretMetadata.mode & 0o777) !== 0o700
+  ) fail(
+    "operational_restart_invalid",
+    "The private local runtime directory is invalid."
+  );
+  try {
+    await mkdir(directory, { mode: 0o700 });
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+  }
+  const [secretReal, directoryReal, directoryMetadata] = await Promise.all([
+    realpath(secretDirectory),
+    realpath(directory),
+    lstat(directory)
+  ]);
+  const relation = relative(secretReal, directoryReal);
+  if (
+    relation.startsWith("..") || isAbsolute(relation) ||
+    !directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink() ||
+    (directoryMetadata.mode & 0o777) !== 0o700
+  ) fail(
+    "operational_restart_invalid",
+    "The private restart observation directory is invalid."
+  );
+  const temporary = `${path}.${process.pid}.${randomBytes(8).toString("hex")}.tmp`;
+  try {
+    await writeFile(temporary, jsonBytes(document), { flag: "wx", mode: 0o600 });
+    const temporaryMetadata = await lstat(temporary);
+    if (
+      !temporaryMetadata.isFile() || temporaryMetadata.isSymbolicLink() ||
+      (temporaryMetadata.mode & 0o777) !== 0o600
+    ) fail(
+      "operational_restart_invalid",
+      "The private restart observation temporary file is invalid."
+    );
+    await link(temporary, path);
+    const targetMetadata = await lstat(path);
+    if (
+      !targetMetadata.isFile() || targetMetadata.isSymbolicLink() ||
+      (targetMetadata.mode & 0o777) !== 0o600
+    ) fail(
+      "operational_restart_invalid",
+      "The private restart observation is not one exclusive 0600 file."
+    );
+  } finally {
+    await unlink(temporary).catch(() => {});
+  }
+}
+
 export async function runM1BOperationalEvidenceBuilder({
   argv = process.argv.slice(2)
 } = {}) {
@@ -7671,7 +8016,7 @@ export async function runM1BOperationalEvidenceBuilder({
     before.sourceTreeHash !== runtime.sourceTreeHash ||
     before.runtimeImageId !== runtime.runtimeImageId
   ) fail("operational_restart_invalid", "Pending restart journal does not match candidate.");
-  if (options.mode === "restart-complete") {
+  if (new Set(["restart-complete", "restart-complete-only"]).has(options.mode)) {
     const foreignOfferSetupPath = resolve(
       AGENT_DIRECTORY,
       `${options.candidateReleaseId}.agent-foreign-offer-setup.receipt.v1.json`
@@ -7697,23 +8042,68 @@ export async function runM1BOperationalEvidenceBuilder({
       "operational_restart_invalid",
       "Foreign Agent offered-v1 setup changed across the exact restart."
     );
-    const after = await runtimeSnapshot({
-      baseArgs: runtime.baseArgs,
-      runtimeImageId: runtime.runtimeImageId,
-      candidateReleaseId: options.candidateReleaseId,
-      localStack: runtime.stack
-    });
+    const pendingSha256 = sha256(await readFile(pendingPath));
+    const observationPath = resolve(
+      RESTART_OBSERVATION_DIRECTORY,
+      `${options.candidateReleaseId}.restart-observation.v1.json`
+    );
+    const storedObservation = await privateJsonIfPresent(
+      observationPath,
+      "sealed restart observation"
+    );
+    let observation = null;
+    if (storedObservation !== null) {
+      observation = validateM1BRestartObservation(
+        storedObservation,
+        {
+          candidateReleaseId: options.candidateReleaseId,
+          sourceTreeHash: runtime.sourceTreeHash,
+          runtimeImageId: runtime.runtimeImageId,
+          pendingSha256,
+          before
+        }
+      );
+      const current = await runtimeSnapshot({
+        baseArgs: runtime.baseArgs,
+        runtimeImageId: runtime.runtimeImageId,
+        candidateReleaseId: options.candidateReleaseId,
+        localStack: runtime.stack
+      });
+      assertM1BRestartObservationRuntimeStable(observation.after, current);
+    } else {
+      if (options.mode === "restart-complete-only") fail(
+        "operational_restart_invalid",
+        "Completion-only requires the sealed first-attempt restart observation."
+      );
+      const after = await runtimeSnapshot({
+        baseArgs: runtime.baseArgs,
+        runtimeImageId: runtime.runtimeImageId,
+        candidateReleaseId: options.candidateReleaseId,
+        localStack: runtime.stack
+      });
+      observation = createM1BRestartObservation({
+        candidateReleaseId: options.candidateReleaseId,
+        sourceTreeHash: runtime.sourceTreeHash,
+        runtimeImageId: runtime.runtimeImageId,
+        pendingSha256,
+        before,
+        after,
+        eventLines: restartEventLines(before, after)
+      });
+      await writeM1BPrivateRuntimeDocumentExclusive(observationPath, observation);
+    }
+    const after = observation.after;
     const restartEvents = createM1BRestartEventSummary(
       before,
       after,
-      restartEventLines(before, after)
+      observation.eventLines
     );
     const restart = createM1BRestartContext(before, after, restartEvents);
     const document = restartReceiptDocument({
       candidateReleaseId: options.candidateReleaseId,
       sourceTreeHash: runtime.sourceTreeHash,
       runtimeImageId: runtime.runtimeImageId,
-      pendingSha256: sha256(await readFile(pendingPath)),
+      pendingSha256,
       agentBeforeSha256: before.agentBeforeSha256,
       agentBeforePhaseReceipt: before.agentBeforePhaseReceipt,
       agentForeignOfferSetupArtifact: before.agentForeignOfferSetupArtifact,

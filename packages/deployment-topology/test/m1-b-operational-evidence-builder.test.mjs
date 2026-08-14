@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash, webcrypto } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { lstat, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { chmod, lstat, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { relative, resolve } from "node:path";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
@@ -18,6 +19,8 @@ import {
   assertM1BCanonicalOperationalArtifactSet,
   assertM1BOperationalPreRiskArtifactSet,
   assertM1BOperationalRuntimeMatchesRestart,
+  assertM1BRestartObservationRuntimeStable,
+  canonicalizeM1BServiceMountSummary,
   collectM1BOperationalBrowserMeasurements,
   collectM1BExpiredOfferSetupOutput,
   collectM1BBrowserRuntimeObservation,
@@ -36,6 +39,7 @@ import {
   createM1BOperationalRuntimeReaderArguments,
   createM1BRestartContext,
   createM1BRestartEventSummary,
+  createM1BRestartObservation,
   ensureM1BOperationalOutputDirectory,
   missingM1BDerivedNegativeCases,
   parseM1BOperationalEvidenceArguments,
@@ -48,7 +52,9 @@ import {
   validateM1BOperationalJourneyReceipts,
   validateM1BOperationalNegativeCaseReceipt,
   validateM1BOperationalNegativeCaseManifest,
+  validateM1BRestartObservation,
   validateM1BExpiredOfferSetupSafetyLatch,
+  writeM1BPrivateRuntimeDocumentExclusive,
   writeM1BOperationalDocumentsAtomic
 } from "../../../scripts/m1-b-operational-evidence-builder.mjs";
 import {
@@ -65,6 +71,9 @@ const ROOT = resolve(import.meta.dirname, "../../..");
 const RELEASE_SHA = "a".repeat(40);
 const IMAGE_ID = `sha256:${"b".repeat(64)}`;
 const HASH = `0x${"c".repeat(64)}`;
+const RESTART_EVENT_TIME_NANO = (
+  BigInt(Date.parse("2026-08-15T00:05:00.000Z")) * 1_000_000n
+).toString();
 
 function browserPhaseToken(phase) {
   return {
@@ -501,11 +510,11 @@ function snapshot(phase) {
 
 function containerEvent(service, action) {
   return JSON.stringify({
-    Action: action,
-    Actor: {
-      ID: identity(service, "before").containerId,
-      Attributes: { "com.docker.compose.service": service }
-    }
+    action,
+    containerId: identity(service, "before").containerId,
+    project: "ipo-one-local",
+    service,
+    timeNano: RESTART_EVENT_TIME_NANO
   });
 }
 
@@ -567,6 +576,29 @@ test("operational runtime reader argv is least-authority and executable in the d
       databaseUrl: "postgresql://owner:secret@127.0.0.2:55432/ipo_one_private_pilot"
     }),
     /credential-free/
+  );
+});
+
+test("service mount identity is invariant to Docker inspect ordering", () => {
+  const first = [
+    "bind||/run/secrets/private-pilot-db-secret|false",
+    "volume|ipo-one-local-postgres-data|/var/lib/postgresql/data|true",
+    "bind||/run/secrets/agent-key|false"
+  ];
+  const second = [first[2], first[0], first[1]];
+  assert.deepEqual(
+    canonicalizeM1BServiceMountSummary(`${first.join(";")};`),
+    canonicalizeM1BServiceMountSummary(`${second.join(";")};`)
+  );
+  assert.notDeepEqual(
+    canonicalizeM1BServiceMountSummary(`${first.join(";")};`),
+    canonicalizeM1BServiceMountSummary(
+      `${first.map((entry) => entry.replace("|false", "|true")).join(";")};`
+    )
+  );
+  assert.throws(
+    () => canonicalizeM1BServiceMountSummary("bind|name|relative/path|false;"),
+    /mount summary/
   );
 });
 
@@ -936,6 +968,140 @@ test("restart receipt binds same containers, later starts, exact events, Engine,
   assert.equal(assertM1BOperationalRuntimeMatchesRestart(receipt, after), true);
 });
 
+test("restart completion seals one exact observation and rejects later runtime drift", () => {
+  const before = snapshot("before");
+  const after = snapshot("after");
+  const eventLines = {
+    containerLines: ["postgres", "pilot", "worker"].flatMap((service) =>
+      ["kill", "die", "stop", "start"].map((action) =>
+        containerEvent(service, action)
+      )
+    ),
+    volumeLines: []
+  };
+  const context = {
+    candidateReleaseId: RELEASE_SHA,
+    sourceTreeHash: "d".repeat(40),
+    runtimeImageId: IMAGE_ID,
+    pendingSha256: "e".repeat(64),
+    before
+  };
+  const observation = createM1BRestartObservation({
+    ...context,
+    after,
+    eventLines
+  });
+  assert.equal(
+    validateM1BRestartObservation(observation, context),
+    observation
+  );
+  const current = structuredClone(after);
+  current.capturedAt = "2026-08-15T00:12:00.000Z";
+  current.engine.observedAt = current.capturedAt;
+  assert.equal(
+    assertM1BRestartObservationRuntimeStable(observation.after, current),
+    true
+  );
+  const drifted = structuredClone(current);
+  drifted.services.worker.startedAt = "2026-08-15T00:12:01.000Z";
+  assert.throws(
+    () => assertM1BRestartObservationRuntimeStable(observation.after, drifted),
+    /Runtime drifted/
+  );
+  assert.throws(
+    () => validateM1BRestartObservation(observation, {
+      ...context,
+      pendingSha256: "f".repeat(64)
+    }),
+    /pending journal/
+  );
+  for (const [field, value] of [
+    ["candidateReleaseId", "bad"],
+    ["sourceTreeHash", "bad"],
+    ["runtimeImageId", "bad"],
+    ["pendingSha256", "bad"]
+  ]) {
+    const malformed = structuredClone(observation);
+    malformed[field] = value;
+    assert.throws(
+      () => validateM1BRestartObservation(malformed, {
+        ...context,
+        [field]: value
+      }),
+      /exact candidate and pending journal/
+    );
+  }
+  const unclosed = structuredClone(observation);
+  unclosed.after.unexpected = "unsafe-unclosed-field";
+  assert.throws(
+    () => validateM1BRestartObservation(unclosed, context),
+    /runtime snapshot/
+  );
+  assert.throws(
+    () => createM1BRestartObservation({
+      ...context,
+      after,
+      eventLines: { containerLines: [], volumeLines: [] }
+    }),
+    /exact restart lifecycle events/
+  );
+  const runtimeDrifts = [
+    (value) => { value.databaseStartedAt = "2026-08-15T00:10:11.000Z"; },
+    (value) => { value.engine.receipt.serverVersion = "28.3.4"; },
+    (value) => { value.volume.receipt.metadataHash = `0x${"f".repeat(64)}`; },
+    (value) => { value.services.worker.containerId = "9".repeat(64); },
+    (value) => {
+      value.services.postgres.imageId = `sha256:${"f".repeat(64)}`;
+    },
+    (value) => { value.services.worker.configHash = `0x${"f".repeat(64)}`; },
+    (value) => { value.services.worker.startedAt = "2026-08-15T00:12:01.000Z"; }
+  ];
+  for (const mutate of runtimeDrifts) {
+    const changed = structuredClone(current);
+    mutate(changed);
+    assert.throws(
+      () => assertM1BRestartObservationRuntimeStable(observation.after, changed),
+      /Runtime drifted/
+    );
+  }
+  const summary = createM1BRestartEventSummary(before, after, observation.eventLines);
+  assert.equal(createM1BRestartContext(before, after, summary).services.length, 3);
+  const unsafeEvent = structuredClone(observation.eventLines);
+  unsafeEvent.containerLines[0] = JSON.stringify({
+    ...JSON.parse(unsafeEvent.containerLines[0]),
+    labels: { secret: "must-not-be-sealed" }
+  });
+  assert.throws(
+    () => createM1BRestartEventSummary(before, after, unsafeEvent),
+    /closed safe projection/
+  );
+});
+
+test("private restart observation writes atomically as one non-overwriting 0600 file", async () => {
+  const secretDirectory = await mkdtemp(
+    resolve(tmpdir(), "ipo-one-restart-observation-test-")
+  );
+  await chmod(secretDirectory, 0o700);
+  const path = resolve(secretDirectory, "observations", "observation.json");
+  const document = { schemaVersion: "test_restart_observation.v1", safe: true };
+  try {
+    await writeM1BPrivateRuntimeDocumentExclusive(path, document, {
+      secretDirectory
+    });
+    assert.equal((await lstat(path)).mode & 0o777, 0o600);
+    assert.deepEqual(JSON.parse(await readFile(path, "utf8")), document);
+    await assert.rejects(
+      writeM1BPrivateRuntimeDocumentExclusive(path, document, {
+        secretDirectory
+      }),
+      (error) => error?.code === "EEXIST"
+    );
+    assert.deepEqual(JSON.parse(await readFile(path, "utf8")), document);
+  } finally {
+    await rm(secretDirectory, { recursive: true, force: true });
+  }
+});
+
 test("restart proof rejects recreation, extra start, and volume destruction", () => {
   const { before, after } = restartEvidence();
   const baseLines = ["postgres", "pilot", "worker"].flatMap((service) =>
@@ -951,11 +1117,11 @@ test("restart proof rejects recreation, extra start, and volume destruction", ()
   );
   for (const action of ["start", "create", "destroy"]) {
     const inheritedPilotLabelReader = JSON.stringify({
-      Action: action,
-      Actor: {
-        ID: "9".repeat(64),
-        Attributes: { "com.docker.compose.service": "pilot" }
-      }
+      action,
+      containerId: "9".repeat(64),
+      project: "ipo-one-local",
+      service: "pilot",
+      timeNano: RESTART_EVENT_TIME_NANO
     });
     assert.throws(
       () => createM1BRestartEventSummary(before, after, {
@@ -967,11 +1133,11 @@ test("restart proof rejects recreation, extra start, and volume destruction", ()
   }
   for (const action of ["create", "destroy"]) {
     const unexpectedProjectContainer = JSON.stringify({
-      Action: action,
-      Actor: {
-        ID: "8".repeat(64),
-        Attributes: { "com.docker.compose.service": "runtime-reader" }
-      }
+      action,
+      containerId: "8".repeat(64),
+      project: "ipo-one-local",
+      service: "runtime-reader",
+      timeNano: RESTART_EVENT_TIME_NANO
     });
     assert.throws(
       () => createM1BRestartEventSummary(before, after, {
@@ -981,10 +1147,52 @@ test("restart proof rejects recreation, extra start, and volume destruction", ()
       /unexpected project container/
     );
   }
+  for (const mutation of [
+    { project: "other-project" },
+    { action: "exec_start" },
+    { service: "runtime-reader" },
+    { timeNano: "1000000000000000" }
+  ]) {
+    const invalidProjection = JSON.stringify({
+      ...JSON.parse(containerEvent("pilot", "start")),
+      ...mutation
+    });
+    assert.throws(
+      () => createM1BRestartEventSummary(before, after, {
+        containerLines: [...baseLines, invalidProjection],
+        volumeLines: []
+      }),
+      /closed safe projection|unexpected project container/
+    );
+  }
+  for (const mutation of [
+    { volumeName: "other-volume" },
+    { action: "start" },
+    { timeNano: "1000000000000000" },
+    { unexpected: true }
+  ]) {
+    const invalidProjection = JSON.stringify({
+      action: "destroy",
+      volumeName: before.volume.name,
+      timeNano: RESTART_EVENT_TIME_NANO,
+      ...mutation
+    });
+    assert.throws(
+      () => createM1BRestartEventSummary(before, after, {
+        containerLines: baseLines,
+        volumeLines: [invalidProjection]
+      }),
+      /closed safe projection/
+    );
+  }
   assert.throws(
     () => createM1BRestartEventSummary(before, after, {
       containerLines: baseLines,
-      volumeLines: [JSON.stringify({ Action: "destroy" })]
+      volumeLines: [JSON.stringify({
+        action: "destroy",
+        volumeName: before.volume.name,
+        timeNano: RESTART_EVENT_TIME_NANO
+      })]
     }),
     /created or destroyed/
   );
@@ -2786,6 +2994,15 @@ test("operational arguments are exact and artifacts are 0600 non-overwriting", a
       relative(ROOT, outputRoot)
     ]);
     assert.equal(parsed.outputRoot, outputRoot);
+    assert.equal(parseM1BOperationalEvidenceArguments([
+      "restart-complete-only",
+      "--candidate-release-id",
+      RELEASE_SHA,
+      "--pilot-image-id",
+      IMAGE_ID,
+      "--output-root",
+      relative(ROOT, outputRoot)
+    ]).mode, "restart-complete-only");
     const document = { schemaVersion: "test.v1", safe: true };
     const relativePath = relative(ROOT, resolve(outputRoot, "receipt.json"));
     const entry = {
@@ -2849,9 +3066,18 @@ test("exact local restart owns pending-before-stop and completion-after-health",
     source.indexOf('case "restart-complete-only"'),
     source.indexOf('case "vm-stop"')
   );
+  assert.match(completionOnly, /prepareRestartCompletionOnly/);
+  assert.doesNotMatch(completionOnly, /await prepare\(\)/);
   assert.match(completionOnly, /ensureLoopbackForwarding/);
-  assert.match(completionOnly, /operationalRestartEvidence\("restart-complete"\)/);
+  assert.match(completionOnly, /operationalRestartEvidence\("restart-complete-only"\)/);
   assert.doesNotMatch(completionOnly, /compose\(\["(?:stop|restart|up)"/);
+  const completionPreflight = source.slice(
+    source.indexOf("async function prepareRestartCompletionOnly"),
+    source.indexOf("function compose(")
+  );
+  assert.match(completionPreflight, /instance\.status !== "Running"/);
+  assert.match(completionPreflight, /existing rootless Docker engine/);
+  assert.doesNotMatch(completionPreflight, /limactl[\s\S]*"start"/);
 });
 
 test("restart pending and completion bind the sealed foreign Agent offered-v1 setup", async () => {
@@ -2872,6 +3098,20 @@ test("restart pending and completion bind the sealed foreign Agent offered-v1 se
   );
   assert.match(restart, /Foreign Agent offered-v1 setup changed across the exact restart/);
   assert.match(restart, /createdBeforeRestartAt/);
+  const eventCapture = source.slice(
+    source.indexOf("function restartEventLines"),
+    source.indexOf("export function createM1BRestartEventSummary")
+  );
+  assert.match(eventCapture, /event=\$\{event\}/);
+  assert.match(eventCapture, /containerId/);
+  assert.match(eventCapture, /volumeName/);
+  assert.doesNotMatch(eventCapture, /\{\{json \.\}\}/);
+  assert.equal(
+    restart.indexOf("writeM1BPrivateRuntimeDocumentExclusive") <
+      restart.indexOf("createM1BRestartContext"),
+    true
+  );
+  assert.match(restart, /assertM1BRestartObservationRuntimeStable/);
 });
 
 test("foreign Agent setup is a supporting PostgreSQL receipt without widening the critical set", async () => {

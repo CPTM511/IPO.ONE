@@ -254,6 +254,19 @@ UI-binding, or transport proof must never be relabeled as live. A second restart
 invalidates the timeline and requires the operator to start P0-5 collection
 again from a clean candidate.
 
+The first restart-completion attempt seals one private, non-Evidence
+candidate/pending-bound observation only after the exact lifecycle projection
+is complete and before downstream restart-context validation. It contains only
+the exact after snapshot and allowlisted Engine lifecycle-event fields; raw
+Docker labels are not retained. If Docker history no longer contains the exact
+lifecycle projection on that first completion attempt, no observation may be
+sealed and the candidate must be recut. `local:restart:complete-only` may reuse
+only an already sealed observation and must re-prove that container IDs,
+images, canonical configuration hashes, start times, PostgreSQL start, Engine,
+and volume are unchanged. If the observation is absent or invalid, or the Lima
+VM is not already Running, fail and recut; completion-only must never start the
+VM or a service.
+
 The operational output root must be one existing real `0700` direct child of
 `output/playwright/`. The `expired-offer-setup` mode arms a separate `0600`,
 non-overwriting safety latch immediately before its first authoring browser

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import {
   chmod,
+  lstat,
   mkdir,
   readFile,
   stat,
@@ -335,6 +336,69 @@ async function ensureLima() {
   }
 }
 
+async function prepareRestartCompletionOnly() {
+  parseLocalStack(await readFile(CONTRACT_FILE, "utf8"));
+  assertExactLocalReleaseSource(releaseIdentity, { root: ROOT });
+  releaseBuildContext = ROOT;
+  if (!(await exists(LIMA_CONFIG))) {
+    fail("restart completion requires the existing reviewed Lima VM");
+  }
+  const instance = readLimaInstance();
+  if (
+    instance.name !== INSTANCE ||
+    instance.cpus !== 4 ||
+    instance.memory !== 6 * 1024 ** 3 ||
+    instance.disk !== 40 * 1024 ** 3 ||
+    instance.status !== "Running"
+  ) fail(
+    "restart completion requires the existing Running 4 CPU / 6 GiB / 40 GiB Lima VM"
+  );
+  if (!(await Promise.all([
+    exists(SECRET_DIRECTORY),
+    exists(ENV_FILE),
+    exists(PILOT_SECRET_FILE)
+  ])).every(Boolean)) {
+    fail("restart completion requires the existing reviewed local secret files");
+  }
+  const [directory, environmentFile, secretFile] = await Promise.all([
+    lstat(SECRET_DIRECTORY),
+    lstat(ENV_FILE),
+    lstat(PILOT_SECRET_FILE)
+  ]);
+  if (
+    !directory.isDirectory() || directory.isSymbolicLink() ||
+    (directory.mode & 0o777) !== 0o700 ||
+    !environmentFile.isFile() || environmentFile.isSymbolicLink() ||
+    (environmentFile.mode & 0o777) !== 0o600 ||
+    !secretFile.isFile() || secretFile.isSymbolicLink() ||
+    (secretFile.mode & 0o777) !== 0o644
+  ) fail("restart completion requires the existing reviewed local secret files");
+  const environment = parseEnvironment(await readFile(ENV_FILE, "utf8"));
+  const pilotSecret = (await readFile(PILOT_SECRET_FILE, "utf8")).trim();
+  if (
+    !/^[A-Za-z0-9_-]{43}$/.test(
+      environment.IPO_ONE_LOCAL_POSTGRES_PASSWORD ?? ""
+    ) ||
+    environment.IPO_ONE_LOCAL_SECRET_DIR !== SECRET_DIRECTORY ||
+    Object.keys(environment).some(
+      (key) => !new Set([
+        "IPO_ONE_LOCAL_POSTGRES_PASSWORD",
+        "IPO_ONE_LOCAL_SECRET_DIR"
+      ]).has(key)
+    ) ||
+    !/^[A-Za-z0-9_-]{43}$/.test(pilotSecret)
+  ) fail("restart completion local secrets do not match the closed contract");
+  const engine = run(
+    "limactl",
+    ["shell", INSTANCE, "docker", "info", "--format", "{{.SecurityOptions}}"],
+    { capture: true }
+  );
+  if (!engine.includes("rootless")) {
+    fail("restart completion requires the existing rootless Docker engine");
+  }
+  compose(["config", "--quiet"]);
+}
+
 function compose(
   args,
   { evidenceAnchor = false, ...runOptions } = {}
@@ -383,7 +447,15 @@ function evidenceAnchorConfigured() {
 
 async function operationalRestartEvidence(mode) {
   if (!releaseIdentity.exactCandidate) return;
-  await ensureM1BOperationalOutputDirectory(OPERATIONAL_EVIDENCE_OUTPUT);
+  if (mode === "restart-begin") {
+    await ensureM1BOperationalOutputDirectory(OPERATIONAL_EVIDENCE_OUTPUT);
+  } else {
+    const outputMetadata = await lstat(OPERATIONAL_EVIDENCE_OUTPUT);
+    if (
+      !outputMetadata.isDirectory() || outputMetadata.isSymbolicLink() ||
+      (outputMetadata.mode & 0o777) !== 0o700
+    ) fail("the existing private operational Evidence output is invalid");
+  }
   const pilotContainerId = compose(
     ["ps", "--quiet", "pilot"],
     { capture: true }
@@ -518,9 +590,9 @@ switch (command) {
     if (!releaseIdentity.exactCandidate) {
       fail("restart-complete-only requires IPO_ONE_M1_B_RELEASE_SHA");
     }
-    await prepare();
+    await prepareRestartCompletionOnly();
     await ensureLoopbackForwarding();
-    await operationalRestartEvidence("restart-complete");
+    await operationalRestartEvidence("restart-complete-only");
     process.stdout.write(
       "IPO.ONE sealed the already-completed sole restart; no service stop or restart was issued.\n"
     );

@@ -220,6 +220,7 @@ assert.match(operationalEvidenceBuilder, /runtimeBrowserAppRoleRead/);
 for (const mode of [
   "restart-begin",
   "restart-complete",
+  "restart-complete-only",
   "expired-offer-setup",
   "negative-run",
   "live-negative",
