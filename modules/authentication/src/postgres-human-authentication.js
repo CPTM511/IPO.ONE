@@ -1480,17 +1480,28 @@ export class PostgresHumanSessionStore {
       );
       const row = selected.rows[0];
       if (!row || row.status !== "active") return { rejected: true };
-      const expired = new Date(row.absolute_expires_at) <= now || new Date(row.idle_expires_at) <= now;
+      const effectiveNow = new Date(Math.max(
+        now.getTime(),
+        new Date(row.last_seen_at).getTime()
+      ));
+      const expired = new Date(row.absolute_expires_at) <= effectiveNow ||
+        new Date(row.idle_expires_at) <= effectiveNow;
       if (expired) {
         const updated = await client.query(
           `UPDATE authentication_sessions
               SET status = 'expired', expired_at = $3, end_reason_code = 'session_expired'
             WHERE tenant_id = $1 AND session_ref_hash = $2
           RETURNING *`,
-          [this.tenantId, sessionRefHash, now]
+          [this.tenantId, sessionRefHash, effectiveNow]
         );
         const session = sessionFromRow(updated.rows[0]);
-        await this.#sessionEvent(client, AuthenticationEventType.SESSION_EXPIRED, session, "session_expired", now);
+        await this.#sessionEvent(
+          client,
+          AuthenticationEventType.SESSION_EXPIRED,
+          session,
+          "session_expired",
+          effectiveNow
+        );
         return { rejected: true };
       }
       const clientIds = row.bound_client_ids
@@ -1506,7 +1517,8 @@ export class PostgresHumanSessionStore {
         ? jsonList(row.bound_membership_capabilities, "membership capabilities")
         : [];
       const session = sessionFromRow(row);
-      const credentialExpired = row.bound_credential_expires_at && new Date(row.bound_credential_expires_at) <= now;
+      const credentialExpired = row.bound_credential_expires_at &&
+        new Date(row.bound_credential_expires_at) <= effectiveNow;
       if (
         row.bound_tenant_status !== "active" ||
         row.bound_credential_status !== CredentialStatus.ACTIVE ||
@@ -1527,7 +1539,7 @@ export class PostgresHumanSessionStore {
                   end_reason_code = 'credential_no_longer_active'
             WHERE tenant_id = $1 AND session_ref_hash = $2
           RETURNING *`,
-          [this.tenantId, sessionRefHash, now]
+          [this.tenantId, sessionRefHash, effectiveNow]
         );
         const session = sessionFromRow(updated.rows[0]);
         await this.#sessionEvent(
@@ -1535,7 +1547,7 @@ export class PostgresHumanSessionStore {
           AuthenticationEventType.SESSION_REVOKED,
           session,
           "credential_no_longer_active",
-          now
+          effectiveNow
         );
         return { rejected: true };
       }
@@ -1543,7 +1555,7 @@ export class PostgresHumanSessionStore {
         throw authenticationError("csrf_token_rejected", "CSRF token is invalid");
       }
       const nextIdleExpiresAt = new Date(Math.min(
-        now.getTime() + this.idleTimeoutMs,
+        effectiveNow.getTime() + this.idleTimeoutMs,
         new Date(row.absolute_expires_at).getTime()
       ));
       const updated = await client.query(
@@ -1551,14 +1563,14 @@ export class PostgresHumanSessionStore {
             SET last_seen_at = $3, idle_expires_at = $4
           WHERE tenant_id = $1 AND session_ref_hash = $2
         RETURNING *`,
-        [this.tenantId, sessionRefHash, now, nextIdleExpiresAt]
+        [this.tenantId, sessionRefHash, effectiveNow, nextIdleExpiresAt]
       );
       return { session: sessionFromRow(updated.rows[0]) };
     });
     if (!result.session) {
       throw authenticationError("authentication_session_rejected", "session is not active");
     }
-    return this.#context(result.session, now);
+    return this.#context(result.session, new Date(result.session.lastSeenAt));
   }
 
   async rotate({ sessionHandle, reasonCode = "session_rotation", now = new Date() }) {

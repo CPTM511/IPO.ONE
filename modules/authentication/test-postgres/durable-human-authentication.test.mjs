@@ -703,8 +703,8 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
     });
 
     await t.test("sessions survive restart, rotate atomically, and revoke immediately", async () => {
-      const createStore = () => new PostgresHumanSessionStore({
-        eventRepository: repository,
+      const createStore = (eventRepository = repository) => new PostgresHumanSessionStore({
+        eventRepository,
         tenantId: TENANT_ID,
         referenceHasher: createReferenceHasher(referenceKey),
         origin: ORIGIN,
@@ -730,6 +730,66 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
         now: new Date(NOW.getTime() + 1_000)
       });
       assert.equal(contextAfterRestart.actorId, HUMAN_ACTOR_ID);
+
+      const queued = await restarted.create(
+        sessionInput(oidcCredential, new Date(NOW.getTime() + 100))
+      );
+      let releaseQueuedAuthenticate;
+      let signalQueuedAuthenticate;
+      const queuedAuthenticateEntered = new Promise((resolve) => {
+        signalQueuedAuthenticate = resolve;
+      });
+      const queuedAuthenticateRelease = new Promise((resolve) => {
+        releaseQueuedAuthenticate = resolve;
+      });
+      const queuedRepository = {
+        tenantContext: repository.tenantContext,
+        withTenantRead: (...args) => repository.withTenantRead(...args),
+        withTenantWrite: async (...args) => {
+          signalQueuedAuthenticate();
+          await queuedAuthenticateRelease;
+          return repository.withTenantWrite(...args);
+        }
+      };
+      const queuedStore = createStore(queuedRepository);
+      const queuedAuthentication = queuedStore.authenticate({
+        sessionHandle: queued.cookie.value,
+        requestMethod: "GET",
+        now: new Date(NOW.getTime() + 1_100)
+      });
+      await queuedAuthenticateEntered;
+      let currentContext;
+      try {
+        currentContext = await restarted.authenticate({
+          sessionHandle: queued.cookie.value,
+          requestMethod: "GET",
+          now: new Date(NOW.getTime() + 1_200)
+        });
+      } finally {
+        releaseQueuedAuthenticate();
+      }
+      const queuedContext = await queuedAuthentication;
+      const expectedObservation = new Date(NOW.getTime() + 1_200).toISOString();
+      assert.equal(currentContext.authenticatedAt, expectedObservation);
+      assert.equal(queuedContext.authenticatedAt, expectedObservation);
+      const queuedSession = await repository.withTenantRead((client) => client.query(
+        `SELECT status, last_seen_at, idle_expires_at, absolute_expires_at
+           FROM authentication_sessions
+          WHERE tenant_id = $1 AND session_ref_hash = $2`,
+        [TENANT_ID, referenceHasher.hash("session.handle", queued.cookie.value)]
+      ));
+      assert.equal(queuedSession.rowCount, 1);
+      assert.equal(queuedSession.rows[0].status, "active");
+      assert.equal(queuedSession.rows[0].last_seen_at.toISOString(), expectedObservation);
+      assert.equal(
+        queuedSession.rows[0].idle_expires_at.toISOString(),
+        new Date(NOW.getTime() + 61_200).toISOString()
+      );
+      assert.equal(
+        queuedSession.rows[0].absolute_expires_at.toISOString(),
+        new Date(NOW.getTime() + 120_100).toISOString()
+      );
+
       await assert.rejects(
         () => restarted.authenticate({
           sessionHandle: issued.cookie.value,
