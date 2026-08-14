@@ -20,6 +20,7 @@ import {
   resolveLocalReviewPorts,
   resolveLocalReleaseIdentity
 } from "./local-release-identity.mjs";
+import { validateM1BAgentPhaseReceipt } from "./m1-b-agent-phase-receipt.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTANCE = "ipo-one-local";
@@ -43,7 +44,8 @@ const SOURCE_PATHS = Object.freeze([
   "apps/private-pilot/src/m1-b-human-capital-partner-acceptance.js",
   "apps/private-pilot/src/m1-b-human-capital-partner-producer.js",
   PRODUCER_SCRIPT,
-  "scripts/local-human-capital-partner-acceptance.mjs"
+  "scripts/local-human-capital-partner-acceptance.mjs",
+  "scripts/m1-b-agent-phase-receipt.mjs"
 ]);
 const SHA = /^[0-9a-f]{40}$/;
 const IMAGE_ID = /^sha256:[0-9a-f]{64}$/;
@@ -292,24 +294,64 @@ function compose(baseArgs, args, { description }) {
   return result.stdout.trim();
 }
 
-function assertRunningServiceImageIds(baseArgs, runtimeImageId) {
+export function resolveHumanCapitalPartnerRuntimeImageIdentity({
+  candidateReleaseId,
+  expectedImageId,
+  containerIdForService,
+  imageIdForContainer,
+  taggedImageId,
+  revisionForImage
+}) {
+  assert.match(candidateReleaseId, SHA);
+  assert.match(expectedImageId, IMAGE_ID);
+  assert.equal(containerIdForService instanceof Function, true);
+  assert.equal(imageIdForContainer instanceof Function, true);
+  assert.equal(taggedImageId instanceof Function, true);
+  assert.equal(revisionForImage instanceof Function, true);
+  const serviceImageIds = {};
   for (const service of ["pilot", "worker"]) {
-    const containerId = compose(baseArgs, ["ps", "--quiet", service], {
-      description: `the running ${service} container is unavailable`
-    });
-    if (!/^[0-9a-f]{12,64}$/.test(containerId)) {
-      fail(`the running ${service} container ID is invalid`);
-    }
-    const containerImageId = docker(
-      ["inspect", containerId, "--format", "{{.Image}}"],
-      { description: `the running ${service} image ID is unavailable` }
-    );
-    if (containerImageId !== runtimeImageId) {
-      fail(
-        `the running ${service} does not use the exact tracked-source image; restart once and repeat Agent-after recovery`
-      );
-    }
+    const containerId = containerIdForService(service);
+    assert.match(containerId, /^[0-9a-f]{12,64}$/);
+    const containerImageId = imageIdForContainer(containerId);
+    assert.match(containerImageId, IMAGE_ID);
+    assert.equal(containerImageId, expectedImageId);
+    serviceImageIds[service] = containerImageId;
   }
+  assert.equal(serviceImageIds.pilot, serviceImageIds.worker);
+  assert.equal(taggedImageId(), expectedImageId);
+  const revision = revisionForImage(expectedImageId);
+  assert.equal(revision, candidateReleaseId);
+  return Object.freeze({ imageId: expectedImageId, revision });
+}
+
+function runningRuntimeImageIdentity(baseArgs, localStack, options) {
+  return resolveHumanCapitalPartnerRuntimeImageIdentity({
+    candidateReleaseId: options.candidateReleaseId,
+    expectedImageId: options.pilotImageId,
+    containerIdForService: (service) => compose(
+      baseArgs,
+      ["ps", "--quiet", service],
+      { description: `the running ${service} container is unavailable` }
+    ),
+    imageIdForContainer: (containerId) => docker(
+      ["inspect", containerId, "--format", "{{.Image}}"],
+      { description: "the running service image ID is unavailable" }
+    ),
+    taggedImageId: () => docker(
+      ["image", "inspect", localStack.pilot.image, "--format", "{{.Id}}"],
+      { description: "the exact-candidate image tag is unavailable" }
+    ),
+    revisionForImage: (imageId) => docker(
+      [
+        "image",
+        "inspect",
+        imageId,
+        "--format",
+        "{{ index .Config.Labels \"org.opencontainers.image.revision\" }}"
+      ],
+      { description: "the running exact-candidate OCI image is unavailable" }
+    )
+  });
 }
 
 function serviceIdentity(baseArgs, service) {
@@ -604,26 +646,17 @@ export async function runLocalHumanCapitalPartnerAcceptance({
     localReviewPorts,
     releaseBuildContext
   );
-  compose(baseArgs, ["build", "pilot"], {
-    description: "the exact tracked-source Pilot image rebuild failed"
-  });
-  const revisionLabel =
-    "{{ index .Config.Labels \"org.opencontainers.image.revision\" }}";
-  const imageRevision = docker(
-    ["image", "inspect", localStack.pilot.image, "--format", revisionLabel],
-    { description: "the exact-candidate OCI image is unavailable" }
-  );
-  if (imageRevision !== releaseIdentity.revision) {
-    fail("the local OCI image revision does not match the requested candidate");
+  let runtimeImageIdentity;
+  try {
+    runtimeImageIdentity = runningRuntimeImageIdentity(
+      baseArgs,
+      localStack,
+      options
+    );
+  } catch {
+    fail("the Pilot image tag or running service image identity is invalid");
   }
-  const runtimeImageId = docker(
-    ["image", "inspect", localStack.pilot.image, "--format", "{{.Id}}"],
-    { description: "the rebuilt exact-candidate image ID is unavailable" }
-  );
-  if (!IMAGE_ID.test(runtimeImageId) || runtimeImageId !== options.pilotImageId) {
-    fail("the rebuilt exact-candidate image ID does not match --pilot-image-id");
-  }
-  assertRunningServiceImageIds(baseArgs, runtimeImageId);
+  const runtimeImageId = runtimeImageIdentity.imageId;
   const servicesBefore = serviceIdentities(baseArgs);
 
   const releaseIdentityPath = resolve(
@@ -669,6 +702,25 @@ export async function runLocalHumanCapitalPartnerAcceptance({
     fail("the exact post-restart Agent marker or --database-started-at is invalid");
   }
   try {
+    validateM1BAgentPhaseReceipt(
+      await readPrivateJson(
+        resolve(
+          AGENT_WORKFLOW_DIRECTORY,
+          `${releaseIdentity.revision}.after-restart.phase-receipt.v2.json`
+        ),
+        "the exact post-restart Agent phase receipt"
+      ),
+      {
+        candidateReleaseId: releaseIdentity.revision,
+        runtimeImageId,
+        acceptancePhase: "after_restart",
+        databaseStartedAt: options.databaseStartedAt
+      }
+    );
+  } catch {
+    fail("the exact post-restart Agent phase receipt is invalid");
+  }
+  try {
     await assertReviewedDatabaseSecretMountSource();
   } catch {
     fail("the reviewed read-only database secret mount source is invalid");
@@ -687,7 +739,14 @@ export async function runLocalHumanCapitalPartnerAcceptance({
   } catch (error) {
     fail(error?.message ?? "the Human/Capital Partner producer failed");
   }
-  assertRunningServiceImageIds(baseArgs, runtimeImageId);
+  try {
+    assert.deepEqual(
+      runningRuntimeImageIdentity(baseArgs, localStack, options),
+      runtimeImageIdentity
+    );
+  } catch {
+    fail("the Pilot image tag or running service image changed during acceptance");
+  }
   try {
     assertHumanCapitalPartnerServiceContinuity(
       servicesBefore,

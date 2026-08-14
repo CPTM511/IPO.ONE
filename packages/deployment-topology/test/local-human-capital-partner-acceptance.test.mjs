@@ -18,7 +18,8 @@ import {
   assertM1BPrivateAcceptanceOutputDirectory,
   collectM1BProducerOutput,
   createHumanCapitalPartnerProducerArguments,
-  parseM1BHumanCapitalPartnerAcceptanceArguments
+  parseM1BHumanCapitalPartnerAcceptanceArguments,
+  resolveHumanCapitalPartnerRuntimeImageIdentity
 } from "../../../scripts/local-human-capital-partner-acceptance.mjs";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
@@ -108,6 +109,52 @@ test("producer argv uses exact container, credential-free DB URL, and interactiv
   ]);
 });
 
+test("wrapper binds the mutable tag and both running services to the Agent-after image", () => {
+  const calls = [];
+  const containers = {
+    pilot: "a".repeat(64),
+    worker: "c".repeat(64)
+  };
+  const resolveIdentity = ({
+    expectedImageId = IMAGE,
+    workerImageId = IMAGE,
+    taggedImageId = IMAGE,
+    revision = SHA
+  } = {}) => resolveHumanCapitalPartnerRuntimeImageIdentity({
+    candidateReleaseId: SHA,
+    expectedImageId,
+    containerIdForService: (service) => {
+      calls.push(["container", service]);
+      return containers[service];
+    },
+    imageIdForContainer: (containerId) => {
+      calls.push(["image", containerId]);
+      return containerId === containers.worker ? workerImageId : IMAGE;
+    },
+    taggedImageId: () => {
+      calls.push(["tag"]);
+      return taggedImageId;
+    },
+    revisionForImage: (imageId) => {
+      calls.push(["revision", imageId]);
+      return revision;
+    }
+  });
+  assert.deepEqual(resolveIdentity(), { imageId: IMAGE, revision: SHA });
+  assert.deepEqual(calls, [
+    ["container", "pilot"], ["image", containers.pilot],
+    ["container", "worker"], ["image", containers.worker],
+    ["tag"], ["revision", IMAGE]
+  ]);
+  for (const mutation of [
+    { workerImageId: `sha256:${"d".repeat(64)}` },
+    { taggedImageId: `sha256:${"e".repeat(64)}` },
+    { revision: "f".repeat(40) }
+  ]) {
+    assert.throws(() => resolveIdentity(mutation));
+  }
+});
+
 test("wrapper rejects same-image container replacement or restart", () => {
   const before = [{
     service: "pilot",
@@ -175,9 +222,13 @@ test("wrapper source preserves same-process input and atomic private-only receip
   assert.match(source, /capital-partner-critical-receipt\.json/);
   assert.match(source, /assertExactLocalReleaseSource/);
   assert.match(source, /after-restart\.acceptance\.json/);
-  assert.match(source, /assertRunningServiceImageIds/);
+  assert.match(source, /after-restart\.phase-receipt\.v2\.json/);
+  assert.match(source, /resolveHumanCapitalPartnerRuntimeImageIdentity/);
+  assert.match(source, /taggedImageId/);
+  assert.match(source, /validateM1BAgentPhaseReceipt/);
   assert.match(source, /serviceIdentities/);
   assert.match(source, /assertM1BPrivateAcceptanceOutputDirectory/);
+  assert.doesNotMatch(source, /compose\(baseArgs, \["build", "pilot"\]/);
   assert.match(source, /PostgreSQL, Pilot, or Worker changed before Evidence persistence/);
 });
 

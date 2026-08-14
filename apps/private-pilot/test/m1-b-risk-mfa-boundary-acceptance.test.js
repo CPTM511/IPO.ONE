@@ -25,13 +25,15 @@ import {
 import {
   assertRiskProducerArguments,
   assertRiskProducerSourceDigestsUnchanged,
-  createRiskProducerArguments
+  createRiskProducerArguments,
+  resolveRiskRuntimeImageIdentity
 } from "../../../scripts/local-risk-mfa-boundary-acceptance.mjs";
 
 const REGRESSION_SOURCE_PATHS = Object.freeze([
   "apps/private-pilot/src/m1-b-risk-mfa-boundary-acceptance.js",
   "apps/private-pilot/src/m1-b-acceptance-postgres.js",
   "scripts/local-risk-mfa-boundary-acceptance.mjs",
+  "scripts/m1-b-agent-phase-receipt.mjs",
   "modules/authorization/src/authorization-policy.js",
   "modules/authorization/src/authorization-service.js",
   "modules/authorization/test/authorization-service.test.js"
@@ -140,7 +142,7 @@ test("Risk MFA producer executes the exact-source exhaustive AuthorizationServic
   assert.equal(regression.allowCount, 0);
   assert.equal(regression.passed, true);
   assert.match(regression.resultSha256, /^[0-9a-f]{64}$/);
-  assert.equal(regression.sourceFiles.length, 6);
+  assert.equal(regression.sourceFiles.length, 7);
   assert.equal(regression.denials.every((denial) =>
     denial.authorizationDecision === "deny" &&
     denial.reasonCode === "actor_capability_rejected" &&
@@ -588,13 +590,12 @@ test("producer and wrapper source statically exclude authentication handles and 
   assert.doesNotMatch(producer, /loadOrCreatePrivatePilotDatabaseSecret/);
   assert.match(wrapper, /spawnSync\(\s*process\.execPath/);
   assert.match(wrapper, /org\.opencontainers\.image\.revision/);
-  assert.match(wrapper, /compose\(baseArgs, \["build", "pilot"\]/);
-  assert.match(wrapper, /"\{\{\.Id\}\}"/);
-  assert.match(wrapper, /containerImageId !== runtimeImageId/);
-  assert.match(
-    wrapper,
-    /assertRunningServiceImageIds\(baseArgs, runtimeImageId\);\s*try \{\s*assertExactLocalReleaseSource\(releaseIdentity, \{ root: ROOT \}\);\s*assertRiskProducerSourceDigestsUnchanged\(\s*sourceFiles,\s*await regressionSourceDigests\(\)/
-  );
+  assert.doesNotMatch(wrapper, /compose\(baseArgs, \["build", "pilot"\]/);
+  assert.match(wrapper, /resolveRiskRuntimeImageIdentity/);
+  assert.match(wrapper, /taggedImageId/);
+  assert.match(wrapper, /validateM1BAgentPhaseReceipt/);
+  assert.match(wrapper, /after-restart\.phase-receipt\.v2\.json/);
+  assert.match(wrapper, /runningRiskRuntimeImageIdentity/g);
   assert.match(wrapper, /after-restart\.acceptance\.json/);
   assert.match(wrapper, /IPO_ONE_M1_B_AUTH_SOURCE_DIGESTS_JSON/);
   assert.match(wrapper, /\["DATABASE_URL", producerDatabaseUrl\.toString\(\)\]/);
@@ -604,6 +605,35 @@ test("producer and wrapper source statically exclude authentication handles and 
   assert.match(wrapper, /flag: "wx", mode: 0o600/);
   assert.match(wrapper, /await link\(temporaryPath, path\)/);
   assert.match(wrapper, /will not be overwritten/);
+});
+
+test("Risk wrapper binds the mutable tag and both services to Agent-after", () => {
+  const releaseSha = "a".repeat(40);
+  const imageId = `sha256:${"b".repeat(64)}`;
+  const pilotContainer = "c".repeat(64);
+  const workerContainer = "d".repeat(64);
+  const resolveIdentity = ({
+    workerImageId = imageId,
+    tagImageId = imageId,
+    revision = releaseSha
+  } = {}) => resolveRiskRuntimeImageIdentity({
+    candidateReleaseId: releaseSha,
+    expectedImageId: imageId,
+    containerIdForService: (service) =>
+      service === "pilot" ? pilotContainer : workerContainer,
+    imageIdForContainer: (containerId) =>
+      containerId === workerContainer ? workerImageId : imageId,
+    taggedImageId: () => tagImageId,
+    revisionForImage: () => revision
+  });
+  assert.deepEqual(resolveIdentity(), { imageId, revision: releaseSha });
+  assert.throws(() => resolveIdentity({
+    workerImageId: `sha256:${"e".repeat(64)}`
+  }));
+  assert.throws(() => resolveIdentity({
+    tagImageId: `sha256:${"f".repeat(64)}`
+  }));
+  assert.throws(() => resolveIdentity({ revision: "0".repeat(40) }));
 });
 
 test("Risk wrapper constructs exact secret-free Compose producer argv", () => {

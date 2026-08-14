@@ -214,10 +214,12 @@ policy has a Tenant Gateway handler, so the receipt must not claim 21 live
 browser denials.
 
 The reviewed producer is available as `pnpm run local:risk:mfa-boundary`. It
-runs the named authorization test from the clean tracked host source, rebuilds
-the Pilot image from the materialized tracked Git archive, requires the
-long-lived Pilot and Worker to use that same content-addressed image ID, binds
-the image ID and prior release-identity artifact digest into the receipt,
+runs the named authorization test from the clean tracked host source without
+rebuilding or retagging the image after the sole restart. It requires the
+Agent-after phase receipt, the long-lived Pilot and Worker, and the current
+Compose Pilot tag to bind the same content-addressed image ID and exact OCI
+revision before and after collection, then binds that image ID and the prior
+release-identity artifact digest into the receipt,
 passes a closed digest manifest into that exact candidate image, and reruns the
 21-operation `AuthorizationService` regression there. It uses the
 least-privilege application role for transaction-local tenant-scoped,

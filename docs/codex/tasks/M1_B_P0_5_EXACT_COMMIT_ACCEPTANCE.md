@@ -168,12 +168,14 @@ credit, external execution, deployment, or real value.
     audit binds to the submitted correlation ID and fresh session token-JTI
     reference without emitting either hash; the nontrivial protected-state hash
     is unchanged; no command/economic effect occurs; and the active Risk
-    credential set contains only SIWE. Before collection, the wrapper rebuilds
-    the Pilot image from the materialized tracked Git archive, requires both
-    long-lived product containers to use that content-addressed image ID, and
-    binds the image ID plus prior release-identity artifact digest into the
-    receipt. The ephemeral producer receives a credential-free database
-    endpoint and derives the application-role connection only from the existing
+    credential set contains only SIWE. Before and after collection, the wrapper
+    must not rebuild or retag the post-restart image; it requires the sealed
+    Agent-after phase receipt, both long-lived product containers, and the
+    current Compose Pilot tag to bind the same content-addressed image ID and
+    exact OCI revision, then binds that image ID plus the prior release-identity
+    artifact digest into the receipt. The ephemeral producer receives a
+    credential-free database endpoint and derives the application-role
+    connection only from the existing
     read-only role-secret mount. An incomplete source regression, two
     simulated live denials, or a unit-test-only claim cannot close the runtime
     Evidence requirement; nor may the receipt falsely claim all 21 operations

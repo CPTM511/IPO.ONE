@@ -54,6 +54,7 @@ const REGRESSION_SOURCE_PATHS = Object.freeze([
   "apps/private-pilot/src/m1-b-risk-mfa-boundary-acceptance.js",
   "apps/private-pilot/src/m1-b-acceptance-postgres.js",
   "scripts/local-risk-mfa-boundary-acceptance.mjs",
+  "scripts/m1-b-agent-phase-receipt.mjs",
   "modules/authorization/src/authorization-policy.js",
   "modules/authorization/src/authorization-service.js",
   "modules/authorization/test/authorization-service.test.js"

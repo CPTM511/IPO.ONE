@@ -25,6 +25,7 @@ import {
   resolveLocalReviewPorts,
   resolveLocalReleaseIdentity
 } from "./local-release-identity.mjs";
+import { validateM1BAgentPhaseReceipt } from "./m1-b-agent-phase-receipt.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTANCE = "ipo-one-local";
@@ -50,6 +51,7 @@ const REGRESSION_SOURCE_PATHS = Object.freeze([
   "apps/private-pilot/src/m1-b-risk-mfa-boundary-acceptance.js",
   "apps/private-pilot/src/m1-b-acceptance-postgres.js",
   "scripts/local-risk-mfa-boundary-acceptance.mjs",
+  "scripts/m1-b-agent-phase-receipt.mjs",
   "modules/authorization/src/authorization-policy.js",
   "modules/authorization/src/authorization-service.js",
   REGRESSION_TEST_PATH
@@ -189,24 +191,64 @@ function compose(baseArgs, args, { description }) {
   return result.stdout.trim();
 }
 
-function assertRunningServiceImageIds(baseArgs, runtimeImageId) {
+export function resolveRiskRuntimeImageIdentity({
+  candidateReleaseId,
+  expectedImageId,
+  containerIdForService,
+  imageIdForContainer,
+  taggedImageId,
+  revisionForImage
+}) {
+  assert.match(candidateReleaseId, /^[0-9a-f]{40}$/);
+  assert.match(expectedImageId, /^sha256:[0-9a-f]{64}$/);
+  assert.equal(containerIdForService instanceof Function, true);
+  assert.equal(imageIdForContainer instanceof Function, true);
+  assert.equal(taggedImageId instanceof Function, true);
+  assert.equal(revisionForImage instanceof Function, true);
+  const serviceImageIds = {};
   for (const service of ["pilot", "worker"]) {
-    const containerId = compose(baseArgs, ["ps", "--quiet", service], {
-      description: `the running ${service} container is unavailable`
-    });
-    if (!/^[0-9a-f]{12,64}$/.test(containerId)) {
-      fail(`the running ${service} container ID is invalid`);
-    }
-    const containerImageId = docker(
-      ["inspect", containerId, "--format", "{{.Image}}"],
-      { description: `the running ${service} image ID is unavailable` }
-    );
-    if (containerImageId !== runtimeImageId) {
-      fail(
-        `the running ${service} does not use the rebuilt tracked-source image; restart the exact stack and repeat recovery first`
-      );
-    }
+    const containerId = containerIdForService(service);
+    assert.match(containerId, /^[0-9a-f]{12,64}$/);
+    const containerImageId = imageIdForContainer(containerId);
+    assert.match(containerImageId, /^sha256:[0-9a-f]{64}$/);
+    assert.equal(containerImageId, expectedImageId);
+    serviceImageIds[service] = containerImageId;
   }
+  assert.equal(serviceImageIds.pilot, serviceImageIds.worker);
+  assert.equal(taggedImageId(), expectedImageId);
+  const revision = revisionForImage(expectedImageId);
+  assert.equal(revision, candidateReleaseId);
+  return Object.freeze({ imageId: expectedImageId, revision });
+}
+
+function runningRiskRuntimeImageIdentity(baseArgs, localStack, context) {
+  return resolveRiskRuntimeImageIdentity({
+    candidateReleaseId: context.candidateReleaseId,
+    expectedImageId: context.expectedImageId,
+    containerIdForService: (service) => compose(
+      baseArgs,
+      ["ps", "--quiet", service],
+      { description: `the running ${service} container is unavailable` }
+    ),
+    imageIdForContainer: (containerId) => docker(
+      ["inspect", containerId, "--format", "{{.Image}}"],
+      { description: "the running service image ID is unavailable" }
+    ),
+    taggedImageId: () => docker(
+      ["image", "inspect", localStack.pilot.image, "--format", "{{.Id}}"],
+      { description: "the exact-candidate image tag is unavailable" }
+    ),
+    revisionForImage: (imageId) => docker(
+      [
+        "image",
+        "inspect",
+        imageId,
+        "--format",
+        "{{ index .Config.Labels \"org.opencontainers.image.revision\" }}"
+      ],
+      { description: "the running exact-candidate OCI image is unavailable" }
+    )
+  });
 }
 
 function runRegressionTest() {
@@ -556,27 +598,6 @@ const baseArgs = baseLimaArguments(
   releaseBuildContext
 );
 
-compose(baseArgs, ["build", "pilot"], {
-  description: "the exact tracked-source Pilot image rebuild failed"
-});
-
-const revisionLabel = "{{ index .Config.Labels \"org.opencontainers.image.revision\" }}";
-const imageRevision = docker(
-  ["image", "inspect", localStack.pilot.image, "--format", revisionLabel],
-  { description: "the exact-candidate OCI image is unavailable" }
-);
-if (imageRevision !== releaseIdentity.revision) {
-  fail("the local OCI image revision does not match the requested candidate");
-}
-const runtimeImageId = docker(
-  ["image", "inspect", localStack.pilot.image, "--format", "{{.Id}}"],
-  { description: "the rebuilt exact-candidate image ID is unavailable" }
-);
-if (!/^sha256:[0-9a-f]{64}$/.test(runtimeImageId)) {
-  fail("the rebuilt exact-candidate image ID is invalid");
-}
-assertRunningServiceImageIds(baseArgs, runtimeImageId);
-
 const releaseIdentityPath = resolve(
   OUTPUT_DIRECTORY,
   `${releaseIdentity.revision}.local-release-identity.json`
@@ -624,6 +645,40 @@ if (
 ) {
   fail("the post-restart Agent acceptance marker is invalid");
 }
+let afterRestartPhase;
+try {
+  afterRestartPhase = validateM1BAgentPhaseReceipt(
+    await readPrivateJson(
+      resolve(
+        AGENT_WORKFLOW_DIRECTORY,
+        `${releaseIdentity.revision}.after-restart.phase-receipt.v2.json`
+      ),
+      "the exact post-restart Agent phase receipt"
+    ),
+    {
+      candidateReleaseId: releaseIdentity.revision,
+      acceptancePhase: "after_restart",
+      databaseStartedAt: new Date(afterRestart.databaseStartedAt).toISOString()
+    }
+  );
+} catch {
+  fail("the exact post-restart Agent phase receipt is invalid");
+}
+const runtimeIdentityContext = Object.freeze({
+  candidateReleaseId: releaseIdentity.revision,
+  expectedImageId: afterRestartPhase.runtimeImageId
+});
+let runtimeImageIdentity;
+try {
+  runtimeImageIdentity = runningRiskRuntimeImageIdentity(
+    baseArgs,
+    localStack,
+    runtimeIdentityContext
+  );
+} catch {
+  fail("the Agent-bound Pilot image tag or running service identity is invalid");
+}
+const runtimeImageId = runtimeImageIdentity.imageId;
 
 const testOutputSha256 = runRegressionTest();
 const sourceFiles = await regressionSourceDigests();
@@ -650,15 +705,22 @@ try {
 } catch (error) {
   fail(error?.message ?? "the Risk boundary producer failed");
 }
-assertRunningServiceImageIds(baseArgs, runtimeImageId);
 try {
+  assert.deepEqual(
+    runningRiskRuntimeImageIdentity(
+      baseArgs,
+      localStack,
+      runtimeIdentityContext
+    ),
+    runtimeImageIdentity
+  );
   assertExactLocalReleaseSource(releaseIdentity, { root: ROOT });
   assertRiskProducerSourceDigestsUnchanged(
     sourceFiles,
     await regressionSourceDigests()
   );
 } catch {
-  fail("the exact candidate source changed while Risk Evidence was collected");
+  fail("the exact candidate image or source changed while Risk Evidence was collected");
 }
 
 let receipt;
