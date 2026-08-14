@@ -270,6 +270,9 @@ async function seedIdentity(ownerPool, identity, profile, now) {
     policyVersion: "security_001.v1",
     source: "local_test"
   });
+  // Restart-safe Evidence hashes the membership version, so an identical seed
+  // must be a true no-op. Mutable authority drift versions the row; immutable
+  // controller or status drift still reaches the database trigger and fails closed.
   await withTenantTransaction(ownerPool, context, (client) => client.query(
     `INSERT INTO memberships(
        id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
@@ -286,7 +289,12 @@ async function seedIdentity(ownerPool, identity, profile, now) {
        controller_actor_id = EXCLUDED.controller_actor_id,
        status = 'active',
        updated_at = EXCLUDED.updated_at,
-       version = memberships.version + 1`,
+       version = memberships.version + 1
+     WHERE memberships.capabilities IS DISTINCT FROM EXCLUDED.capabilities
+        OR memberships.client_ids IS DISTINCT FROM EXCLUDED.client_ids
+        OR memberships.policy_version IS DISTINCT FROM EXCLUDED.policy_version
+        OR memberships.controller_actor_id IS DISTINCT FROM EXCLUDED.controller_actor_id
+        OR memberships.status IS DISTINCT FROM EXCLUDED.status`,
     [
       identity.membershipId,
       hashId("private_pilot_membership", identity.membershipId),
