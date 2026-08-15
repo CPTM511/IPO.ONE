@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   ActorType,
@@ -29,6 +30,36 @@ import {
 } from "../src/private-pilot-profile.js";
 
 const ACCOUNT_PROOF_NOW = new Date("2026-07-17T04:00:00.000Z");
+
+test("private pilot bootstrap closes membership versioning to exact authority drift", async () => {
+  const source = await readFile(
+    new URL("../src/private-pilot-database.js", import.meta.url),
+    "utf8"
+  );
+  const membershipUpsert = source.match(
+    /INSERT INTO memberships\([\s\S]*?version = memberships\.version \+ 1[\s\S]*?`,/
+  )?.[0] ?? "";
+  const expectedFields = [
+    "capabilities",
+    "client_ids",
+    "policy_version",
+    "controller_actor_id",
+    "status"
+  ];
+  const predicate = membershipUpsert.slice(membershipUpsert.lastIndexOf("\n     WHERE "));
+  const actualFields = [...predicate.matchAll(
+    /memberships\.([a-z_]+) IS DISTINCT FROM EXCLUDED\.\1/g
+  )].map((match) => match[1]);
+  assert.deepEqual(actualFields, expectedFields);
+  assert.doesNotMatch(
+    predicate,
+    /memberships\.(?:id|membership_hash|role_bundle|valid_from|expires_at|created_at|updated_at|schema_version)/
+  );
+  assert.equal(
+    (membershipUpsert.match(/version = memberships\.version \+ 1/g) ?? []).length,
+    1
+  );
+});
 
 async function localAuthenticationResponse({
   cookie,

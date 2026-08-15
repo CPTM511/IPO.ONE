@@ -28,10 +28,12 @@ export const PRODUCTION_TENANT_ROUTES = Object.freeze({
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_CONCURRENCY = 64;
 const REQUEST_TIMEOUT_MS = 30_000;
+const DEPLOYMENT_ROLES = new Set(["container", "primary", "risk"]);
 const CONFIG_KEYS = new Set([
   "clock",
   "createNetworkContext",
   "csrfTokenProvider",
+  "deploymentRole",
   "gateway",
   "getTrustedMtlsEvidence",
   "humanBff",
@@ -180,13 +182,14 @@ function json(response, status, value, requestId, headOnly = false) {
   response.end(headOnly ? undefined : body);
 }
 
-function deploymentCapabilityDocument({ publicOrigin, releaseId }) {
+function deploymentCapabilityDocument({ publicOrigin, releaseId, deploymentRole }) {
   return Object.freeze({
     schemaVersion: "ipo_one_deployment_capability.v1",
     protocol: "IPO.ONE",
     deployment: Object.freeze({
       hostingStatus: "PRODUCTION_HOSTED",
       productProfile: "deployable_sandbox_vertical_slice",
+      deploymentRole,
       releaseId
     }),
     interfaces: Object.freeze({
@@ -239,6 +242,7 @@ export function createProductionTenantRequestHandler(input) {
     !input.gateway?.execute ||
     !input.humanBff?.authenticateSession ||
     !input.machineAuthenticator?.authenticate ||
+    !DEPLOYMENT_ROLES.has(input.deploymentRole) ||
     typeof input.createNetworkContext !== "function" ||
     typeof input.csrfTokenProvider !== "function" ||
     (input.localAgentAccountProvider !== undefined &&
@@ -304,6 +308,7 @@ export function createProductionTenantRequestHandler(input) {
         return json(response, ready ? 200 : 503, {
           status: ready ? "ready" : "unavailable",
           releaseId: input.releaseId,
+          deploymentRole: input.deploymentRole,
           profile: "closed_non_funds_pilot",
           realFundsEnabled: false,
           schemaVersion: "production_readiness.v1"
@@ -335,7 +340,8 @@ export function createProductionTenantRequestHandler(input) {
       ) {
         return json(response, 200, deploymentCapabilityDocument({
           publicOrigin,
-          releaseId: input.releaseId
+          releaseId: input.releaseId,
+          deploymentRole: input.deploymentRole
         }), requestId, headOnly);
       }
       if (
@@ -352,6 +358,7 @@ export function createProductionTenantRequestHandler(input) {
         return json(response, ready ? 200 : 503, {
           status: ready ? "ready" : "unavailable",
           releaseId: input.releaseId,
+          deploymentRole: input.deploymentRole,
           profile: "closed_non_funds_pilot",
           realFundsEnabled: false,
           schemaVersion: "production_readiness.v1"

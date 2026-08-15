@@ -2,12 +2,15 @@
 
 ## Rules
 
-Apply these variables only to the Vercel `production` targets used by the M1-B
-Sandbox. The primary and Risk projects use distinct public origins and identity
-configurations while sharing the same least-privilege PostgreSQL URLs and
-cryptographic reference/encryption keys. Do not commit values, print values in
-logs, include values in evidence, or expose values to browser code. Enable
-Vercel system environment variables.
+Apply these variables only to an explicitly authorized Vercel `production`
+target used by the M1-B Sandbox. The current M1-B topology is Primary-only. A
+separate Risk project remains conditional on later authorization and a reviewed
+phishing-resistant strong-MFA topology; it is not an M1-B deployment target.
+If that later topology is approved, the Primary and Risk projects use distinct
+public origins and identity configurations while sharing only the reviewed
+least-privilege PostgreSQL URLs and cryptographic reference/encryption keys.
+Do not commit values, print values in logs, include values in Evidence, or
+expose values to browser code. Enable Vercel system environment variables.
 
 Every secret value must be generated independently. Secret references contain
 the variable name and SHA-256 digest, never the secret value:
@@ -38,7 +41,7 @@ value and fails closed on drift.
 | `NODE_ENV` | `production` |
 | `IPO_ONE_DEPLOYMENT_PROFILE` | `vercel_sandbox` |
 | `IPO_ONE_DEPLOYMENT_MODE` | `vercel_sandbox` |
-| `IPO_ONE_VERCEL_PROJECT_ROLE` | `primary` on `ipo-one-internal`; `risk` on `ipo-one-internal-risk` |
+| `IPO_ONE_VERCEL_PROJECT_ROLE` | M1-B: `primary` on `ipo-one-internal`; a later separately authorized Risk project would use `risk` on `ipo-one-internal-risk` |
 | `IPO_ONE_NO_REAL_FUNDS_ACK` | `I_UNDERSTAND_DEPLOYABLE_SANDBOX_NO_REAL_FUNDS` |
 | `IPO_ONE_PUBLIC_ORIGIN` | Exact project-specific `https://${VERCEL_PROJECT_PRODUCTION_URL}` |
 | `IPO_ONE_TENANT_ID` | Exact seeded sandbox Tenant |
@@ -77,20 +80,23 @@ value and fails closed on drift.
 
 The primary identity configuration binds the Founder wallet to the Principal
 Controller credential and sets the Agent workload audience to the primary
-origin. The Risk identity configuration binds the same invited wallet to the
-Risk Operator credential through a different issuer/client tuple. Both
-configurations contain the same reviewed public workload JWKS and no private
-key material.
+origin. M1-B does not configure or deploy a hosted Risk identity. If a later
+Risk project is separately authorized, its identity configuration must bind the
+reviewed Risk Operator credential through a distinct issuer/client tuple and
+must satisfy the separately approved phishing-resistant strong-MFA boundary.
+Any approved configurations may contain only the reviewed public workload JWKS
+and no private-key material.
 
 The primary project also renders `IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS` as a
-public account-proof input. The Risk project must not define it. This value is
-non-authorizing and contains no private key, signature, transaction capability,
-or funds authority.
+public account-proof input. A later authorized Risk project must not define it.
+This value is non-authorizing and contains no private key, signature,
+transaction capability, or funds authority.
 
 The workload private key is held only by the external Golden Flow runner. It is
 an authentication key for short-lived access JWT and DPoP proof signatures; it
 has no transaction, transfer, withdrawal, custody, or venue-write authority.
-No variable containing that private key may be added to either Vercel project.
+No variable containing that private key may be added to the Primary project or
+to any later authorized Risk project.
 
 ## Prohibited variables
 
@@ -108,6 +114,14 @@ Run before deployment:
 ```bash
 pnpm run check:vercel-sandbox
 ```
+
+That command validates the current Primary-only v2 topology. After separate
+deployment authorization and Primary environment configuration, run
+`pnpm run check:vercel-sandbox-env` inside an owner-controlled environment. The
+current M1-B environment checker intentionally rejects
+`IPO_ONE_VERCEL_PROJECT_ROLE=risk`; the runtime and bundle adapter retain that
+role only as a dormant M1-C/L2 compatibility interface, not as a current M1-B
+deployment target.
 
 After configuring Vercel, pull values only into an owner-only temporary path,
 validate names and digests without printing values, then delete the temporary
