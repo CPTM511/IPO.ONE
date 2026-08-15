@@ -344,6 +344,9 @@ test("production runtime enforces the approved public ingress contract", async (
   const document = discovery.json();
   assert.equal(document.interfaces.humanConsole, "https://ipo.one");
   assert.equal(document.interfaces.agentApi, "https://ipo.one/v1");
+  assert.equal(document.canonicalProductTruth, false);
+  assert.equal(document.releaseEligible, false);
+  assert.equal(document.stateDurability, "process_local_ephemeral");
   assert.equal(document.safety.realFundsEnabled, false);
   assert.equal(document.safety.humanCreditEnabled, false);
 

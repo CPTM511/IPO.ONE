@@ -1,0 +1,121 @@
+{
+  "artifactVersion": "ipo-one.hyperliquid-002d.stable-cancel-preparation.v1",
+  "artifactId": "hyperliquid-002d-stable-cancel-preparation-20260810T130016Z",
+  "issueId": "HYPERLIQUID-002D",
+  "adr": "ADR-039-Closure-Addendum",
+  "environment": "HYPERLIQUID_TESTNET",
+  "decision": "READY_FOR_EXACT_CANCEL_APPROVAL",
+  "exactApprovalMarker": "HYPERLIQUID-002D-CANCEL:0x1b81500360937c75dcae6a5d764076a19db7336c2484b7866350381b0dfc1b06",
+  "intent": {
+    "intentId": "hypercore_stable_cancel_intent_1b81500360937c75dcae6a5d764076a19db7336c2484b7866350381b0dfc1b06",
+    "intentHash": "0x1b81500360937c75dcae6a5d764076a19db7336c2484b7866350381b0dfc1b06",
+    "parentIntentHash": "0x62d522423fb1583e530851a950291598a4e369f91dab11f7efbf31ef43fbdea5",
+    "targetOrderHash": "0x923a8e9fcf60061291b0c1bd99eb2582f16e379a567922579509e362eae3c88c",
+    "payloadHash": "0x4013b5cdd5ab8e355c993dbe067f92fce62b55c32d992edb4dd8ea7286ad6f44",
+    "policyConstraintHash": "0x5a8db04ff4262c9d6a35776e98a12deac8593534150276a530c6008d9e46fbc3",
+    "facilityHash": "0x33d88540b53c8384d197bb58559b07137863a981e714e341e0b266511f5d54bd",
+    "accountBindingHash": "0x21398d62dfc114228399ce00543ecbe2a4721b7d06fc8db3017f5e0ca17f4be8",
+    "canonicalAccountAddressHash": "0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038",
+    "delegateHash": "0x2d98609ff479184904e4cbfd75962bd90f4c2fbbd1727f1dc071711a686f97da",
+    "handoffHash": "0x1914e382c7b84315c9ec81300240bf305369810805e261bd0efa6519c20fa82f",
+    "signerReferenceHash": "0x8d51f324c056a411552c4945e30d1091e4c2036790e90022417c230ad38f5be3",
+    "apiWalletAddressHash": "0x1d1911fcbdb3809a1530f1e0740e23e04ff795239f0b497674a2c756322acea1",
+    "durableNonce": 1786366816193,
+    "state": "PREPARED",
+    "preparedAt": "2026-08-10T13:00:16.193Z",
+    "approvalExpiresAt": "2026-08-10T13:30:16.193Z",
+    "stableApprovalWindowMs": 1800000,
+    "jitRiskWindowMs": 10000,
+    "replayed": false,
+    "schemaVersion": "hypercore_stable_cancel_intent.v1"
+  },
+  "targetOrder": {
+    "market": "BTC",
+    "assetIndex": 3,
+    "side": "buy",
+    "limitPx": "62500",
+    "size": "0.00016",
+    "reduceOnly": false,
+    "cloid": "0x3ec931145cbe6e36213621b50521a704",
+    "venueOrderId": 57670774189,
+    "targetOrderHash": "0x923a8e9fcf60061291b0c1bd99eb2582f16e379a567922579509e362eae3c88c"
+  },
+  "proposedAction": {
+    "type": "cancelByCloid",
+    "cancels": [
+      {
+        "asset": 3,
+        "cloid": "0x3ec931145cbe6e36213621b50521a704"
+      }
+    ]
+  },
+  "readOnlyObservation": {
+    "origin": "https://api.hyperliquid-testnet.xyz",
+    "path": "/info",
+    "requestTypes": [
+      "userRole",
+      "clearinghouseState",
+      "openOrders",
+      "orderStatus",
+      "meta"
+    ],
+    "observedAt": "2026-08-10T13:00:16.193Z",
+    "masterRole": "user",
+    "apiWalletRole": "agent",
+    "openOrderCount": 1,
+    "positionCount": 0,
+    "targetOrderHash": "0x923a8e9fcf60061291b0c1bd99eb2582f16e379a567922579509e362eae3c88c",
+    "metadataHash": "0x8ba26482776a31e608422cd924fad0faf48a262a35a67723117155870b9e2040",
+    "metaResponseSha256": "5d5ac211381a32407ba71406b83ec3be4fd08148d505b56863a2ab66b7c2ba51",
+    "ordersResponseSha256": "291735686009d6297c79b28e50dbd19c97fe84ed399243a715747e21aeba3e1e",
+    "orderStatusResponseSha256": "94703f49f50c8e1783ccabcaf7a3ef7321b7b98dd55c116ac32797e6bdb0d0d5",
+    "rawResponsePersisted": false,
+    "exchangeWritePerformed": false,
+    "schemaVersion": "hypercore_testnet_cancel_target_observation.v1"
+  },
+  "durableReadback": {
+    "migration0059Checksum": "65abf036e4962eb907e0f87fe2a45d8d300379528b9ac231e9acc2785f1cb89a",
+    "migration0060Checksum": "a4982fca841d7f704596f486e49243e408a32e8cace5cb16f53279a0b265f28c",
+    "cancelIntentCountForMarker": 1,
+    "transitionCount": 1,
+    "founderApprovalCount": 0,
+    "jitReceiptCount": 0,
+    "externalSubmissionAttempted": false,
+    "retryAllowed": false
+  },
+  "verification": {
+    "cancelDomainTests": "7/7 passed",
+    "combinedFocusedTests": "21/21 passed",
+    "cancelPreparationTests": "6/6 passed including JSONB field-order revalidation",
+    "focusedPostgresTests": "2/2 passed",
+    "completePostgresTests": "85/85 passed",
+    "completeUnitTests": "870/870 passed",
+    "schemaContracts": "128/128 passed",
+    "migrationPairs": "60/60 passed",
+    "populatedCancelRollback": "denied with SQLSTATE 23514 as required",
+    "diffCheck": "passed",
+    "completeCheck": "reached the pre-existing M1 candidate snapshot branch assertion; current branch codex/checkpoint-20260727-pre-strategy differs from required codex/m1-b-deployable-sandbox"
+  },
+  "preparationObservations": {
+    "firstReadAttempt": "aborted before persistence after a read timeout",
+    "secondReadAttempt": "completed after read-timeout separation from the unchanged ten-second JIT risk lifetime",
+    "automaticRetryUsed": false,
+    "venueSubmissionRetried": false
+  },
+  "safety": {
+    "signatureCreated": false,
+    "exchangeWriteAttempted": false,
+    "exchangeEndpointCalled": false,
+    "approvalCreated": false,
+    "jitReceiptCreated": false,
+    "rawAddressPersisted": false,
+    "rawKeyPersisted": false,
+    "rawSignaturePersisted": false,
+    "rawResponsePersisted": false,
+    "automaticSubmissionRetry": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false
+  },
+  "nextGate": "A separate exact Founder approval of this cancel marker is required before one Testnet /exchange cancellation submission."
+}

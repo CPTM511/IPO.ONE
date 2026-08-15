@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "safe_agentic_wallet_conformance_fixture.v1",
+  "adapterId": "safe_institutional_wallet_reference",
+  "chainIds": ["eip155:84532", "eip155:1952"],
+  "cases": [
+    {
+      "caseId": "module_free_supported_call",
+      "operation": "CALL",
+      "requiredCapabilityStatus": "supported",
+      "moduleCount": 0,
+      "preflightDecision": "ALLOW",
+      "expectedDecision": "STEP_UP",
+      "expectedReasonCode": "safe_threshold_approval_required"
+    },
+    {
+      "caseId": "enabled_module_quarantined",
+      "operation": "CALL",
+      "requiredCapabilityStatus": "supported",
+      "moduleCount": 1,
+      "preflightDecision": "ALLOW",
+      "expectedDecision": "QUARANTINE",
+      "expectedReasonCode": "safe_modules_require_separate_review"
+    },
+    {
+      "caseId": "unknown_required_capability_quarantined",
+      "operation": "CALL",
+      "requiredCapabilityStatus": "unknown",
+      "moduleCount": 0,
+      "preflightDecision": "ALLOW",
+      "expectedDecision": "QUARANTINE",
+      "expectedReasonCode": "safe_required_capability_unknown"
+    },
+    {
+      "caseId": "unsupported_required_capability_denied",
+      "operation": "CALL",
+      "requiredCapabilityStatus": "unsupported",
+      "moduleCount": 0,
+      "preflightDecision": "ALLOW",
+      "expectedDecision": "DENY",
+      "expectedReasonCode": "safe_required_capability_unsupported"
+    },
+    {
+      "caseId": "delegatecall_denied",
+      "operation": "DELEGATECALL",
+      "requiredCapabilityStatus": "supported",
+      "moduleCount": 0,
+      "preflightDecision": "ALLOW",
+      "expectedDecision": "DENY",
+      "expectedReasonCode": "safe_delegatecall_forbidden"
+    },
+    {
+      "caseId": "canonical_denial_preserved",
+      "operation": "CALL",
+      "requiredCapabilityStatus": "supported",
+      "moduleCount": 0,
+      "preflightDecision": "DENY",
+      "expectedDecision": "DENY",
+      "expectedReasonCode": "canonical_preflight_not_permissive"
+    }
+  ]
+}

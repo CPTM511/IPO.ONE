@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/provider-sandbox-callback.schema.json",
+  "title": "IPO.ONE Signed Provider Sandbox Callback v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "callbackId", "transferIntentId", "providerId", "deliveryHash", "outcome",
+    "reasonCode", "providerEventRefHash", "nonce", "issuedAt", "expiresAt",
+    "keyId", "sandboxOnly", "productionFundsMoved", "withdrawable",
+    "schemaVersion", "payloadHash", "signature"
+  ],
+  "properties": {
+    "callbackId": { "$ref": "#/$defs/identifier" },
+    "transferIntentId": { "$ref": "#/$defs/identifier" },
+    "providerId": { "$ref": "#/$defs/identifier" },
+    "deliveryHash": { "$ref": "#/$defs/hash" },
+    "outcome": { "enum": ["accepted", "rejected"] },
+    "reasonCode": { "enum": ["provider_accepted", "provider_policy_rejected"] },
+    "providerEventRefHash": { "$ref": "#/$defs/hash" },
+    "nonce": { "$ref": "#/$defs/identifier" },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "keyId": { "$ref": "#/$defs/identifier" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "withdrawable": { "const": false },
+    "schemaVersion": { "const": "provider_sandbox_callback.v1" },
+    "payloadHash": { "$ref": "#/$defs/hash" },
+    "signature": { "type": "string", "pattern": "^[A-Za-z0-9_-]{86}$" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "outcome": { "const": "accepted" } } },
+      "then": { "type": "object", "properties": { "reasonCode": { "const": "provider_accepted" } } },
+      "else": { "type": "object", "properties": { "reasonCode": { "const": "provider_policy_rejected" } } }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+  }
+}

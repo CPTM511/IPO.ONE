@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-const roots = ["packages", "modules", "apps"];
+const roots = ["packages", "modules", "apps", "contracts", "deploy/testnet/test"];
 
 async function collectTests(dir) {
   const files = [];
@@ -34,8 +34,13 @@ if (testFiles.length === 0) {
   process.exit(1);
 }
 
+const testEnvironment = { ...process.env };
+delete testEnvironment.CI;
+delete testEnvironment.GITHUB_ACTIONS;
+
 const result = spawnSync(process.execPath, ["--test", ...testFiles], {
-  stdio: "inherit"
+  stdio: "inherit",
+  env: testEnvironment
 });
 
 process.exit(result.status ?? 1);

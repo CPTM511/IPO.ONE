@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/okx-tee-execution-reference.schema.json",
+  "title": "IPO.ONE OKX TEE Execution Reference v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "teeExecutionReferenceHash", "invocationProjectionHash", "teeClaimStatus", "attestationStatus",
+    "executionStatus", "externalExecutionRefHash", "decision", "reasonCodes", "source", "observedAt",
+    "teeAttestationVerified", "externalCallPerformed", "canonicalExecutionConfirmed",
+    "canonicalSettlementConfirmed", "canonicalMutationAllowed", "reconciliationRequired", "retryAllowed",
+    "productionAuthority", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "teeExecutionReferenceHash": { "$ref": "#/$defs/hash" },
+    "invocationProjectionHash": { "$ref": "#/$defs/hash" },
+    "teeClaimStatus": { "enum": ["claimed", "unavailable", "unknown"] },
+    "attestationStatus": { "enum": ["unverified", "invalid", "unknown"] },
+    "executionStatus": { "enum": ["not_submitted", "pending", "succeeded", "failed", "unknown"] },
+    "externalExecutionRefHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "decision": { "const": "QUARANTINE" },
+    "reasonCodes": { "$ref": "#/$defs/reasonCodes" },
+    "source": { "const": "local_synthetic_fixture" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "teeAttestationVerified": { "const": false },
+    "externalCallPerformed": { "const": false },
+    "canonicalExecutionConfirmed": { "const": false },
+    "canonicalSettlementConfirmed": { "const": false },
+    "canonicalMutationAllowed": { "const": false },
+    "reconciliationRequired": { "type": "boolean" },
+    "retryAllowed": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "okx_tee_execution_reference.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "reasonCodes": {
+      "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" }
+    }
+  }
+}

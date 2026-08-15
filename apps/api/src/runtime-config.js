@@ -70,13 +70,13 @@ function securityContact(value) {
   return parsed.href;
 }
 
-function allowedHosts(value, originHostname, production) {
+function allowedHosts(value, originHostname, production, runtimeHosts = []) {
   const configured = (value ?? "")
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
   const hosts = new Set(production ? [] : ["127.0.0.1", "localhost", "::1"]);
-  for (const entry of configured) {
+  for (const entry of [...configured, ...runtimeHosts]) {
     if (entry === "*" || entry.includes("/")) {
       throw configurationError("IPO_ONE_ALLOWED_HOSTS must contain explicit hostnames, never wildcards or paths");
     }
@@ -94,42 +94,86 @@ export function loadRuntimeConfig(environment = process.env) {
     throw configurationError("NODE_ENV must be development, test, or production");
   }
   const production = nodeEnvironment === "production";
-  const deploymentMode = environment.IPO_ONE_DEPLOYMENT_MODE ?? (production ? undefined : "local_sandbox");
+  const managedVercel = environment.VERCEL === "1";
+  const vercelRuntimeHosts = managedVercel
+    ? [
+        environment.VERCEL_URL,
+        environment.VERCEL_BRANCH_URL,
+        environment.VERCEL_PROJECT_PRODUCTION_URL
+      ].filter((value) => value !== undefined)
+    : [];
+  for (const runtimeHost of vercelRuntimeHosts) {
+    if (!normalizedHostname(runtimeHost)) {
+      throw configurationError("Vercel supplied an invalid runtime hostname");
+    }
+  }
+  const deploymentMode = environment.IPO_ONE_DEPLOYMENT_MODE ?? (
+    production
+      ? (managedVercel ? "public_sandbox" : undefined)
+      : "local_sandbox"
+  );
   if (!DEPLOYMENT_MODES.has(deploymentMode)) {
     throw configurationError("IPO_ONE_DEPLOYMENT_MODE must be local_sandbox or public_sandbox");
   }
 
   const port = boundedInteger("PORT", environment.PORT ?? 3000, { minimum: 1, maximum: 65535 });
   const host = environment.HOST ?? (production ? "0.0.0.0" : "127.0.0.1");
+  const vercelOriginHost = normalizedHostname(
+    environment.VERCEL_PROJECT_PRODUCTION_URL ?? environment.VERCEL_URL
+  );
   const origin = publicOrigin(
-    environment.IPO_ONE_PUBLIC_ORIGIN ?? `http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`
+    environment.IPO_ONE_PUBLIC_ORIGIN ??
+      (managedVercel && vercelOriginHost
+        ? `https://${vercelOriginHost}`
+        : `http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`)
   );
   const originHostname = new URL(origin).hostname.toLowerCase();
-  const trustProxy = strictBoolean("IPO_ONE_TRUST_PROXY", environment.IPO_ONE_TRUST_PROXY, false);
-  const hstsMaxAge = boundedInteger("IPO_ONE_HSTS_MAX_AGE", environment.IPO_ONE_HSTS_MAX_AGE ?? 0, {
+  const trustProxy = strictBoolean(
+    "IPO_ONE_TRUST_PROXY",
+    environment.IPO_ONE_TRUST_PROXY,
+    managedVercel
+  );
+  const hstsMaxAge = boundedInteger("IPO_ONE_HSTS_MAX_AGE", environment.IPO_ONE_HSTS_MAX_AGE ?? (
+    managedVercel && production ? 86_400 : 0
+  ), {
     minimum: 0,
     maximum: 63_072_000
   });
-  const release = environment.IPO_ONE_RELEASE_SHA ?? environment.K_REVISION ?? "local";
+  const platformRelease = [
+    environment.VERCEL_GIT_COMMIT_SHA,
+    environment.VERCEL_DEPLOYMENT_ID,
+    environment.K_REVISION
+  ].find((value) => typeof value === "string" && SAFE_RELEASE_PATTERN.test(value));
+  const release = environment.IPO_ONE_RELEASE_SHA ?? platformRelease ?? (
+    managedVercel ? "vercel_runtime" : "local"
+  );
   if (!SAFE_RELEASE_PATTERN.test(release)) {
     throw configurationError("IPO_ONE_RELEASE_SHA must be a bounded safe release identifier");
   }
   const contact = securityContact(
     environment.IPO_ONE_SECURITY_CONTACT ?? "https://github.com/CPTM511/IPO.ONE/security"
   );
-  const hosts = allowedHosts(environment.IPO_ONE_ALLOWED_HOSTS, originHostname, production);
+  const hosts = allowedHosts(
+    environment.IPO_ONE_ALLOWED_HOSTS,
+    originHostname,
+    production,
+    vercelRuntimeHosts
+  );
 
   if (production) {
     if (deploymentMode !== "public_sandbox") {
       throw configurationError("production currently supports only the explicitly bounded public_sandbox mode");
     }
-    if (environment.IPO_ONE_PUBLIC_SANDBOX_ACK !== PUBLIC_SANDBOX_ACKNOWLEDGEMENT) {
+    if (
+      !managedVercel &&
+      environment.IPO_ONE_PUBLIC_SANDBOX_ACK !== PUBLIC_SANDBOX_ACKNOWLEDGEMENT
+    ) {
       throw configurationError("production public sandbox acknowledgement is missing");
     }
     if (new URL(origin).protocol !== "https:") {
       throw configurationError("production IPO_ONE_PUBLIC_ORIGIN must use HTTPS");
     }
-    if (host !== "0.0.0.0") {
+    if (!managedVercel && host !== "0.0.0.0") {
       throw configurationError("production HOST must be 0.0.0.0 for the managed container ingress contract");
     }
     if (!trustProxy) {
@@ -142,15 +186,19 @@ export function loadRuntimeConfig(environment = process.env) {
 
   return Object.freeze({
     allowedHosts: hosts,
+    canonicalProductTruth: false,
     deploymentMode,
     hstsMaxAge,
     host,
+    managedVercel,
     nodeEnvironment,
     port,
     production,
     publicOrigin: origin,
     release,
+    releaseEligible: false,
     securityContact: contact,
+    stateDurability: "process_local_ephemeral",
     trustProxy
   });
 }

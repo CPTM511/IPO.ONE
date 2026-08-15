@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/base-account-capability-observation.schema.json",
+  "title": "IPO.ONE Base Account Capability Observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observationHash", "adapterId", "descriptorHash", "chainId", "contextEpoch", "accountSupport",
+    "accountConfigurationHash", "source", "vendorNetworkSupportAttested", "observedAt", "expiresAt",
+    "unknownIsNonPermissive", "externalCallPerformed", "authorizationGranted", "fundsAuthority",
+    "schemaVersion"
+  ],
+  "properties": {
+    "observationHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "const": "base_account_spend_permission_reference" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "chainId": { "const": "eip155:84532" },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "accountSupport": { "$ref": "#/$defs/accountSupport" },
+    "accountConfigurationHash": { "$ref": "#/$defs/hash" },
+    "source": { "const": "local_synthetic_fixture" },
+    "vendorNetworkSupportAttested": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "unknownIsNonPermissive": { "const": true },
+    "externalCallPerformed": { "const": false },
+    "authorizationGranted": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "base_account_capability_observation.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "status": { "enum": ["supported", "unsupported", "unknown"] },
+    "accountSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "smartAccount", "spendPermission", "spendPermissionRevoke", "subAccounts",
+        "walletSendCalls", "walletGetCallsStatus", "autoSpendPermission"
+      ],
+      "properties": {
+        "smartAccount": { "$ref": "#/$defs/status" },
+        "spendPermission": { "$ref": "#/$defs/status" },
+        "spendPermissionRevoke": { "$ref": "#/$defs/status" },
+        "subAccounts": { "$ref": "#/$defs/status" },
+        "walletSendCalls": { "$ref": "#/$defs/status" },
+        "walletGetCallsStatus": { "$ref": "#/$defs/status" },
+        "autoSpendPermission": { "$ref": "#/$defs/status" }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+^D$ node scripts/local-agent-reference-acceptance.mjs
+ Container ipo-one-local-pilot-run-5decc8a1367c Creating 
+ Container ipo-one-local-pilot-run-5decc8a1367c Created 
+Local Agent acceptance failed: no active Agent Subject with a verified account binding is available
+
+LOCAL-STACK-001 Agent acceptance exited with status 1
+[ELIFECYCLE] Command failed with exit code 1.

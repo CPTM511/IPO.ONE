@@ -64,6 +64,8 @@ export async function verifyPinnedJwt({
   expectedType,
   allowedClaimFields,
   requiredClaims,
+  requiredNumericDateClaims = ["iat", "nbf", "exp"],
+  requireJti = true,
   maximumLifetimeSeconds,
   clockToleranceSeconds = 30,
   now = new Date()
@@ -100,18 +102,25 @@ export async function verifyPinnedJwt({
   }
 
   const payload = verified.payload;
-  for (const name of ["iat", "nbf", "exp"]) assertNumericDate(name, payload[name]);
-  if (payload.nbf > payload.exp || payload.iat > payload.exp || payload.exp - payload.iat > maximumLifetimeSeconds) {
+  for (const name of requiredNumericDateClaims) assertNumericDate(name, payload[name]);
+  if (payload.nbf !== undefined) assertNumericDate("nbf", payload.nbf);
+  if (
+    (payload.nbf !== undefined && payload.nbf > payload.exp) ||
+    payload.iat > payload.exp ||
+    payload.exp - payload.iat > maximumLifetimeSeconds
+  ) {
     throw authenticationError("authentication_lifetime_rejected", "JWT lifetime is not allowed");
   }
   if (payload.iat > epochSeconds(now) + clockToleranceSeconds) {
     throw authenticationError("authentication_lifetime_rejected", "JWT issue time is not allowed");
   }
-  assertBoundedString("jti", payload.jti, {
-    minimum: 16,
-    maximum: 256,
-    pattern: /^[A-Za-z0-9][A-Za-z0-9._:-]+$/
-  });
+  if (requireJti || payload.jti !== undefined) {
+    assertBoundedString("jti", payload.jti, {
+      minimum: 16,
+      maximum: 256,
+      pattern: /^[A-Za-z0-9][A-Za-z0-9._:-]+$/
+    });
+  }
   deepFreeze(payload);
   return Object.freeze({ payload, protectedHeader: deepFreeze(verified.protectedHeader) });
 }

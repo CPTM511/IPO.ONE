@@ -1,0 +1,77 @@
+{
+  "chainId": "eip155:84532",
+  "providerSlot": "primary",
+  "runIdHash": "0xd129974ac2d83eb91d65c1871eac4d8062b9c6437ddd4eb9f2b468a1784d3db0",
+  "operatorIdHash": "0xf18537b9ba7c3bad751de8c2a78e9aac1ae8566c38d0e687ce8c57e315509219",
+  "deployerAddress": "0xCF6B1928D0f12568b80C8B270e88CE653a42cca8",
+  "contractAddress": "0x88926c11185E94bd8e9dE33959b6316CDA7c3e4A",
+  "runtimeBytecodeHash": "0xf01105c20957a30852ed1e3acce9c589d8c716060ce74eb1400825164b2b6a3d",
+  "creationBytecodeHash": "0x9a1ff4fae8ebc189b7385d9d086fa3efaf1ca57ce67e98b3a32457375a09727f",
+  "authorizationHash": "0x218a06527a138313936e9a199104dfbabe73f1f1d16e7e5c8189a0ff2edca088",
+  "subjectAccountHash": "0xce6b79b5e191071cbe255845a3b0ade0c368cb0155061ef688395675d668a55f",
+  "acceptedOfferHash": "0xeaf8b4c2557d74e52b18f53371d158b908dc722f5da577ea06a10d222c07ac14",
+  "policyHash": "0xfc00371a1809ac0ca125220c4d12f1c53d0d8262ac19a0e849373b3098cefb37",
+  "providerScopeHash": "0xdbd1f60fda9c9fce88ac99d7ffcf31c352a9daa0862598d3391334c1fcd4588d",
+  "initialCreditStateHash": "0x6fc26fba4240d10c68ac3e9714d70a2d9122cac7de0e622c352b1cb6e22ccba5",
+  "repaidCreditStateHash": "0xf243fe95910fc6f20f96135aad7ea884482bc8ac09e768913c45e55dc5bdb5cb",
+  "initialObligationProofHash": "0x4d4e8e6433ef4ae5f72588f50fa98fddb38d71f6ade61a485e438626f89233d7",
+  "repaymentProofHash": "0x862e2874c344a4280eba3db32a0a7f33d1c8031034850a8d11f396713bec51ce",
+  "settledObligationProofHash": "0xa79fa153f8147410677835c08de0a7c7b1623edbd1fafb70299a36b6d3cc256d",
+  "deploymentTransactionHash": "0x2594e6ca6cc060a3a2d422d9c333d27294e7baa21545622a75d12142a4ce9d1d",
+  "publicationTransactionHash": "0x83e9a16305a4a67edebeb5ee5bdb4eb66e5bb3de0a4d7bd46595660f47835074",
+  "proofUpdateTransactionHash": "0x9b9aba1d38c2c72983ccf16a37b530786aa52cd087e3bbc17806bb6863974730",
+  "closeTransactionHash": "0xc8ce4334520f8e133bae26306ae6f9191d1aa0cb869b065124f989b0998dfc03",
+  "pauseTransactionHash": "0x2b6c4f01b2e6b3e7f4af8383976ef85cf3605bbce96b9c7c4e61047078a42c17",
+  "receiptBlocks": [
+    {
+      "number": "44734260",
+      "hash": "0x0814bd524b285e648bb98130634f09fc16c5d6094a8960aa17fa6b387d38eb67"
+    },
+    {
+      "number": "44734389",
+      "hash": "0x8012f2c190d219709abd8d9571ea51459953040238f9f4ce0ab71085a3889569"
+    },
+    {
+      "number": "44734583",
+      "hash": "0xe0c272eaaba1c4aee8dc35dc881374639f6802a0dba50517e05471d096163027"
+    },
+    {
+      "number": "44734585",
+      "hash": "0xdf65548bc77f15634ff48820f879f8322187836ca886f5ee7afed6e9c28cb780"
+    },
+    {
+      "number": "44734587",
+      "hash": "0x5dbae92d1357772bca354fa554b421d730a7066c23b38670f75ad55c17919642"
+    }
+  ],
+  "safeBlockNumber": "44734636",
+  "safeBlockHash": "0xe44c8c666259fa591eb66258b1dd35e9fa8deb4e9ae4e7c7387e6b7bd50c664c",
+  "finalityProofHash": "0xe168dcf79d78657d337182255e0a034c467cc2751bad160dc2a033798fffbab4",
+  "finalStatus": "closed",
+  "finalVersion": 3,
+  "registryPaused": true,
+  "authorizationActive": false,
+  "reconciliation": {
+    "authorizationHash": "0x218a06527a138313936e9a199104dfbabe73f1f1d16e7e5c8189a0ff2edca088",
+    "chainId": "eip155:84532",
+    "stateVersion": 3,
+    "status": "closed",
+    "differences": [],
+    "reconciled": true,
+    "schemaVersion": "credit_authorization_reconciliation.v1"
+  },
+  "transactionCount": 5,
+  "valueTransferredWei": "0",
+  "gasSpentTestnetWei": "8558040000000",
+  "syntheticOnly": true,
+  "privateKeyIncluded": false,
+  "rawSignatureIncluded": false,
+  "rawPiiIncluded": false,
+  "realProductAccountIncluded": false,
+  "productionFundsMoved": false,
+  "realAssetMoved": false,
+  "liveTestnetExecution": true,
+  "schemaVersion": "credit_registry_live_run_receipt.v1",
+  "keyLogicallyDestroyed": true,
+  "storageMediumSecureEraseClaimed": false
+}

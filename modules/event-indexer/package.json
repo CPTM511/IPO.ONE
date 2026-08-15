@@ -1,0 +1,15 @@
+{
+  "name": "@ipo-one/event-indexer",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.js"
+    }
+  },
+  "dependencies": {
+    "@ipo-one/chain-adapter": "workspace:*",
+    "@ipo-one/domain": "workspace:*"
+  }
+}

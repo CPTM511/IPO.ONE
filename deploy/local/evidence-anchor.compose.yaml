@@ -1,0 +1,10 @@
+services:
+  worker:
+    environment:
+      IPO_ONE_EVIDENCE_ANCHOR_CONTRACT_ADDRESS: 0x78ba26d4a9211e8d4b0158c9e5443305278c1df0
+      IPO_ONE_EVIDENCE_ANCHOR_PROVIDER_SLOT: secondary
+      IPO_ONE_EVIDENCE_ATTESTOR_ACK: I_UNDERSTAND_BASE_SEPOLIA_ZERO_VALUE_HASH_ANCHORS
+      IPO_ONE_EVIDENCE_ATTESTOR_KEY_FILE: /private/tmp/ipo-one-chain-001f/evidence-attestor.key
+      IPO_ONE_LOCAL_WORKER_INTERVAL_MS: "1000"
+    volumes:
+      - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/evidence-attestor.key:/private/tmp/ipo-one-chain-001f/evidence-attestor.key:ro

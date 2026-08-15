@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/evm-wallet-connector-descriptor.schema.json",
+  "title": "IPO.ONE EVM wallet connector descriptor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "providerId",
+    "source",
+    "name",
+    "walletTransport",
+    "enabledChains",
+    "explicitSelectionRequired",
+    "capabilityNegotiated",
+    "rawProviderExposed",
+    "arbitraryCalldataAccepted",
+    "preparedExecutionSubmission",
+    "sandboxOnly",
+    "productionApproved",
+    "fundsAuthority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "evm_wallet_connector_descriptor.v1" },
+    "providerId": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$"
+    },
+    "source": {
+      "enum": ["eip6963", "legacy_eip1193", "mobile_walletconnect"]
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "walletTransport": { "enum": ["eip1193", "walletconnect"] },
+    "enabledChains": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "eip155:84532" },
+        { "const": "eip155:1952" }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "explicitSelectionRequired": { "const": true },
+    "capabilityNegotiated": { "const": true },
+    "rawProviderExposed": { "const": false },
+    "arbitraryCalldataAccepted": { "const": false },
+    "preparedExecutionSubmission": { "const": false },
+    "sandboxOnly": { "const": true },
+    "productionApproved": { "const": false },
+    "fundsAuthority": { "const": false }
+  }
+}

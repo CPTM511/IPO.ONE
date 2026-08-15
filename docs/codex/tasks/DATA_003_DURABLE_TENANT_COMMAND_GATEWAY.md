@@ -1,9 +1,12 @@
 # DATA-003: Durable Tenant Command Gateway
 
-Status: Authorized for local non-funds implementation by SECURITY-001 and
-now sequenced after the completed APPROVAL-001 and ABUSE-001 boundaries. This
-is the next independent local implementation issue; it is not implemented or
-deployment-approved.
+Status: In progress for the SECURITY-001 local non-funds boundary. The durable
+transaction foundation, Human Agent-Subject creation, Human-controlled draft
+Mandate creation, bounded Agent self-read, and protective Agent Subject freeze
+plus an aggregate Risk/Auditor Tenant portfolio read are implemented and
+verified. Remaining Agent Lockbox, worker, approval, unfreeze/limit, and
+administrative mutation/detail handlers are not yet composed. No public
+route or deployment is approved.
 
 ## Context
 
@@ -40,6 +43,70 @@ API would turn a safe demo into shared unauthenticated customer state.
 - Expose separate Human BFF and Agent API clients over the same tenant-scoped
   protocol commands.
 - Keep the current no-auth public sandbox isolated and clearly labelled.
+
+## Implemented Foundation
+
+- Migration `0008_durable_tenant_command_gateway` adds versioned Membership
+  client/policy facts, immutable Human-to-Agent controller assignment,
+  versioned AccessGrants, authorization resources, multi-Actor resource
+  bindings, append-only authorization audit, and append-only command execution
+  authority with forced RLS. Legacy Memberships fail closed until explicitly
+  provisioned to a client.
+- `TenantCommandGateway` acquires a distributed admission before lookup and
+  owns the serializable transaction through admission completion.
+- Existing event/core repositories support caller-owned transaction methods;
+  the legacy standalone transaction API remains compatible.
+- Exact payload hashes now bind authorization decisions, revalidation, and
+  approval command hashes.
+- Human, Operator, and Agent protocol clients share one closed handler
+  registry. The reviewed operations implement `pilotCreateAgentSubject`,
+  `pilotCreateDraftMandate`, `pilotReadMandate`,
+  `pilotRevokeDraftMandate`, `pilotReadAgentSelf`, `pilotFreezeSubject`, and
+  `pilotReadTenantRisk`.
+- API-002 publishes closed `tenant_protocol_request.v1`,
+  `tenant_protocol_result.v1`, and `tenant_protocol_catalog.v1` contracts for
+  exactly those seven operations. Caller validation precedes trusted AuthN/
+  network-context injection and admission; result validation precedes command
+  commit. The request schema version is part of exact command identity.
+- Repository conformance proves catalog parity with handlers, authorization,
+  abuse classification, fixtures, and public-sandbox isolation. TypeScript
+  discriminated unions expose the same operation/result mapping without adding
+  a network endpoint.
+- Migration `0009_durable_identity_resource_capacity` adds conservative Agent
+  Subject and Mandate resource ceilings. Handler baseline loaders reconcile
+  durable Tenant counts during pre-lookup admission and again inside the
+  business transaction before a new projection commits.
+- Two-Tenant, same-Tenant controller-confusion, concurrent Membership
+  revocation, Subject-state race, Principal nonce/revocation races, replay after
+  authorization-resource closure, protective draft revocation under inactive
+  Subject/Principal state, conflicting reuse, persistent-capacity boundary,
+  denial-only audit, append-only tamper, bounded-read, and reconciliation tests
+  pass.
+- DATA-003C composes `pilotFreezeSubject` for Risk/Operations Operators with
+  strong recent MFA, a reviewed protective reason, privileged admission,
+  row-locked live state, atomic Event/Evidence/projection/audit completion,
+  exact replay, Agent visibility, and concurrent single-transition proof.
+- DATA-003D composes `pilotReadTenantRisk` for Risk Operators and Auditors with
+  recent phishing-resistant authentication, a Tenant-owned authorization
+  resource, serializable forced-RLS aggregation, complete Agent-only totals,
+  a deterministic 50-asset bound, identity/PII minimization, and read-only
+  audit/admission evidence. Real PostgreSQL tests cover nonzero exact amounts,
+  empty and cross-Tenant portfolios, stale MFA, role denial, and cleanup-safe
+  reconciliation.
+- ADR-022 records transaction ownership, replay ordering, advisory/row lock,
+  and public-sandbox isolation decisions.
+
+## Remaining Composition
+
+- Signed Mandate activation, active-Mandate lifecycle, and verified CAIP-10
+  binding setup under AUTH-002.
+- Agent credit request, allowlisted spend, Lockbox revenue capture, automated
+  repayment, and associated live-state adapters.
+- Worker, approval, unfreeze/limit risk, audit/export, and reconciliation
+  command handlers over the same Gateway protocol.
+- Complete two-Tenant negative coverage for each newly composed operation.
+- Deployment-specific IdP, Credential persistence/provisioning, least-
+  privilege role manifest, retention jobs, alerting, and edge controls.
 
 ## Non-Goals
 
@@ -82,8 +149,9 @@ pnpm run smoke:api
 ## Security Checklist
 
 - [x] SECURITY-001 local non-funds approval is recorded.
-- [ ] Tenant derives from verified context, never request data.
-- [ ] Object ownership and RLS both fail closed.
-- [ ] No token, secret, signature, raw account proof, or PII is persisted.
-- [ ] Public sandbox and tenant command routes use separate state boundaries.
+- [x] Tenant derives from verified context, never request data.
+- [x] Implemented object ownership and RLS both fail closed.
+- [x] No token, secret, signature, raw account proof, or PII is persisted by
+  the Gateway.
+- [x] Public sandbox and Tenant Gateway use separate state boundaries.
 - [ ] Production activation remains a separate deployment approval.

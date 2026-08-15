@@ -5,6 +5,8 @@ const root = process.cwd();
 const requiredModules = [
   "authentication",
   "authorization",
+  "chain-adapter",
+  "event-indexer",
   "event-audit",
   "identity",
   "ledger",
@@ -18,7 +20,9 @@ const requiredModules = [
   "plugin-registry",
   "rail",
   "settlement",
-  "admin"
+  "admin",
+  "operations-control",
+  "tenant-command-gateway"
 ];
 
 async function exists(path) {

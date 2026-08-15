@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/agentic-wallet-provider-capabilities.schema.json",
+  "title": "IPO.ONE Agentic Wallet Provider Capabilities v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capabilitiesHash",
+    "adapterId",
+    "descriptorHash",
+    "chainId",
+    "contextEpoch",
+    "operationSupport",
+    "permissionModel",
+    "executionTransport",
+    "providerSimulation",
+    "providerThreatScreening",
+    "observedAt",
+    "expiresAt",
+    "unknownIsNonPermissive",
+    "authorizationGranted",
+    "fundsAuthority",
+    "schemaVersion"
+  ],
+  "properties": {
+    "capabilitiesHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "$ref": "#/$defs/identifier" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "operationSupport": { "$ref": "#/$defs/operationSupport" },
+    "permissionModel": { "enum": ["none", "erc7715", "erc7710", "vendor_native", "unknown"] },
+    "executionTransport": { "enum": ["none", "wallet_rpc", "vendor_api", "mcp", "cli", "tee", "unknown"] },
+    "providerSimulation": { "$ref": "#/$defs/status" },
+    "providerThreatScreening": { "$ref": "#/$defs/status" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "unknownIsNonPermissive": { "const": true },
+    "authorizationGranted": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "agentic_wallet_provider_capabilities.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "status": { "enum": ["supported", "unsupported", "unknown"] },
+    "operationSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "walletDiscoverCapabilities",
+        "walletPrepareGrant",
+        "walletActivateGrant",
+        "walletReadGrant",
+        "walletRevokeGrant",
+        "walletPrepareExecution",
+        "walletApproveExecution",
+        "walletSubmitExecution",
+        "walletReadExecution"
+      ],
+      "properties": {
+        "walletDiscoverCapabilities": { "$ref": "#/$defs/status" },
+        "walletPrepareGrant": { "$ref": "#/$defs/status" },
+        "walletActivateGrant": { "$ref": "#/$defs/status" },
+        "walletReadGrant": { "$ref": "#/$defs/status" },
+        "walletRevokeGrant": { "$ref": "#/$defs/status" },
+        "walletPrepareExecution": { "$ref": "#/$defs/status" },
+        "walletApproveExecution": { "$ref": "#/$defs/status" },
+        "walletSubmitExecution": { "$ref": "#/$defs/status" },
+        "walletReadExecution": { "$ref": "#/$defs/status" }
+      }
+    }
+  }
+}

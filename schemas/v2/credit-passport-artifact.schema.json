@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/credit-passport-artifact.schema.json",
+  "title": "IPO.ONE private Credit Passport artifact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "creditPassportArtifactId",
+    "artifactHash",
+    "sourceRiskDecisionId",
+    "sourceRiskDecisionPassportId",
+    "sourceDecisionHash",
+    "sourceDecisionPassportHash",
+    "sourceFeatureSnapshotHash",
+    "subjectId",
+    "authorityType",
+    "controllerActorRefHash",
+    "verifierActorRefHash",
+    "purpose",
+    "selectedClaims",
+    "disclosures",
+    "claimManifestHash",
+    "issuer",
+    "issuedAt",
+    "expiresAt",
+    "status",
+    "effectiveStatus",
+    "version",
+    "onlineVerificationRequired",
+    "sameTenantOnly",
+    "pointInTime",
+    "nonAuthorizing",
+    "sandboxOnly",
+    "productionAuthority",
+    "piiIncluded",
+    "rawTransactionDataIncluded",
+    "scoreAuthoritative",
+    "asOf",
+    "schemaVersion"
+  ],
+  "properties": {
+    "creditPassportArtifactId": { "$ref": "#/$defs/identifier" },
+    "artifactHash": { "$ref": "#/$defs/hash" },
+    "sourceRiskDecisionId": { "$ref": "#/$defs/identifier" },
+    "sourceRiskDecisionPassportId": { "$ref": "#/$defs/identifier" },
+    "sourceDecisionHash": { "$ref": "#/$defs/hash" },
+    "sourceDecisionPassportHash": { "$ref": "#/$defs/hash" },
+    "sourceFeatureSnapshotHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "authorityType": { "enum": ["consent", "mandate"] },
+    "controllerActorRefHash": { "$ref": "#/$defs/hash" },
+    "verifierActorRefHash": { "$ref": "#/$defs/hash" },
+    "purpose": { "const": "private_credit_review" },
+    "selectedClaims": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "disclosures": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 9,
+      "items": { "$ref": "#/$defs/disclosure" }
+    },
+    "claimManifestHash": { "$ref": "#/$defs/hash" },
+    "issuer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version"],
+      "properties": {
+        "type": { "const": "ipo_one_tenant_gateway" },
+        "version": { "const": "ipo-one-credit-passport-local-no-funds.v1" }
+      }
+    },
+    "issuedAt": { "$ref": "#/$defs/timestamp" },
+    "expiresAt": { "$ref": "#/$defs/timestamp" },
+    "status": { "enum": ["active", "revoked"] },
+    "effectiveStatus": { "enum": ["active", "revoked", "expired", "superseded"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "supersedesArtifactHash": { "$ref": "#/$defs/hash" },
+    "supersedesVersion": { "type": "integer", "minimum": 1 },
+    "revokedAt": { "$ref": "#/$defs/timestamp" },
+    "revocationReasonCode": {
+      "enum": [
+        "owner_withdrawal",
+        "verifier_access_no_longer_required",
+        "source_disclosure_error",
+        "security_concern"
+      ]
+    },
+    "onlineVerificationRequired": { "const": true },
+    "sameTenantOnly": { "const": true },
+    "pointInTime": { "const": true },
+    "nonAuthorizing": { "const": true },
+    "sandboxOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "piiIncluded": { "const": false },
+    "rawTransactionDataIncluded": { "const": false },
+    "scoreAuthoritative": { "const": false },
+    "asOf": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "credit_passport_artifact.v1" }
+  },
+  "dependentRequired": {
+    "supersedesArtifactHash": ["supersedesVersion"],
+    "supersedesVersion": ["supersedesArtifactHash"]
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "revoked" } }, "required": ["status"] },
+      "then": { "required": ["revokedAt", "revocationReasonCode"] },
+      "else": {
+        "not": {
+          "anyOf": [
+            { "required": ["revokedAt"] },
+            { "required": ["revocationReasonCode"] }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "code": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 96,
+      "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
+    },
+    "claim": {
+      "enum": [
+        "decision_outcome",
+        "factor_authority",
+        "factor_subject_principal",
+        "factor_identity_or_principal_binding",
+        "factor_adverse_obligation",
+        "factor_sandbox_policy_fit",
+        "canonical_reason_codes",
+        "reason_to_feature_lineage",
+        "source_evidence_lineage"
+      ]
+    },
+    "reasonLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reasonCode", "featureKeys", "sourceRoles"],
+      "properties": {
+        "reasonCode": { "$ref": "#/$defs/code" },
+        "featureKeys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "sourceRoles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "evidenceLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "role",
+        "evidenceHash",
+        "entityHash",
+        "aggregateVersion",
+        "sourceFinality"
+      ],
+      "properties": {
+        "kind": { "enum": ["evidence", "risk_state_attestation"] },
+        "role": { "$ref": "#/$defs/identifier" },
+        "evidenceHash": { "$ref": "#/$defs/hash" },
+        "entityHash": { "$ref": "#/$defs/hash" },
+        "aggregateVersion": { "type": "integer", "minimum": 1 },
+        "sourceFinality": { "const": "finalized" }
+      }
+    },
+    "disclosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim",
+        "grade",
+        "value",
+        "reasonCodes",
+        "reasonLineage",
+        "evidenceLineage"
+      ],
+      "properties": {
+        "claim": { "$ref": "#/$defs/claim" },
+        "grade": {
+          "enum": ["verified", "not_verified", "not_applicable", "not_disclosed"]
+        },
+        "value": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1, "maxLength": 96 },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": { "$ref": "#/$defs/code" }
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": { "$ref": "#/$defs/reasonLineage" }
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": { "$ref": "#/$defs/evidenceLineage" }
+            }
+          ]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/code" }
+        },
+        "reasonLineage": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/reasonLineage" }
+        },
+        "evidenceLineage": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/evidenceLineage" }
+        }
+      }
+    }
+  }
+}

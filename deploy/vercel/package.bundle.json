@@ -1,0 +1,8 @@
+{
+  "name": "ipo-one-internal",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "26.x"
+  }
+}

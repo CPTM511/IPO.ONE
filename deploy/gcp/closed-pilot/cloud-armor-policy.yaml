@@ -1,0 +1,78 @@
+name: ipo-one-closed-pilot-edge-policy
+description: IPO.ONE closed non-funds pilot edge policy
+type: CLOUD_ARMOR
+rules:
+  - priority: 100
+    action: deny(403)
+    description: Deny hosts outside ipo.one and www.ipo.one
+    preview: false
+    match:
+      expr:
+        expression: "!request.headers['host'].matches('(?i)^(?:ipo[.]one|www[.]ipo[.]one)(?::[0-9]{1,5})?$')"
+  - priority: 150
+    action: throttle
+    description: Bound anonymous OIDC initiation and SIWE challenge requests
+    preview: false
+    match:
+      expr:
+        expression: "request.path.matches('^/auth/v1/(?:login|wallet/challenge)$')"
+    rateLimitOptions:
+      conformAction: allow
+      exceedAction: deny(429)
+      enforceOnKey: IP
+      rateLimitThreshold:
+        count: 20
+        intervalSec: 600
+  - priority: 160
+    action: throttle
+    description: Bound OIDC callback and SIWE verification attempts
+    preview: false
+    match:
+      expr:
+        expression: "request.path.matches('^/auth/v1/(?:callback|wallet/verify)$')"
+    rateLimitOptions:
+      conformAction: allow
+      exceedAction: deny(429)
+      enforceOnKey: IP
+      rateLimitThreshold:
+        count: 10
+        intervalSec: 600
+  - priority: 200
+    action: throttle
+    description: Per-client closed pilot throttle
+    preview: false
+    match:
+      versionedExpr: SRC_IPS_V1
+      config:
+        srcIpRanges:
+          - "*"
+    rateLimitOptions:
+      conformAction: allow
+      exceedAction: deny(429)
+      enforceOnKey: IP
+      rateLimitThreshold:
+        count: 300
+        intervalSec: 60
+  - priority: 300
+    action: deny(403)
+    description: Enforce OWASP SQL injection rule set
+    preview: false
+    match:
+      expr:
+        expression: "evaluatePreconfiguredWaf('sqli-v33-stable')"
+  - priority: 310
+    action: deny(403)
+    description: Enforce OWASP cross-site scripting rule set
+    preview: false
+    match:
+      expr:
+        expression: "evaluatePreconfiguredWaf('xss-v33-stable')"
+  - priority: 2147483647
+    action: allow
+    description: Default allow after exact controls
+    preview: false
+    match:
+      versionedExpr: SRC_IPS_V1
+      config:
+        srcIpRanges:
+          - "*"

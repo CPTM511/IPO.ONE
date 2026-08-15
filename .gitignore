@@ -11,4 +11,9 @@ output/playwright/
 .env
 .env.*
 !.env.example
+.ipo-one/
 deploy/approvals/*.local.json
+/schemas/v2/risk-decision.schema 2.json
+
+# Independent experimental repository; checkpointed and bundled separately.
+/cdp-app-react/

@@ -1,4 +1,4 @@
-import { AuthenticationEventType } from "./constants.js";
+import { AuthenticationEventType, ClientAuthenticationMethod } from "./constants.js";
 import { createAuthenticationContext } from "./authentication-context.js";
 import {
   assertBoundedString,
@@ -7,9 +7,19 @@ import {
   constantTimeEqual,
   randomOpaqueValue
 } from "./security-utils.js";
+import {
+  assertWalletSessionInvalidationIdempotencyKey,
+  assertWalletSessionInvalidationReason,
+  walletSessionInvalidationResult
+} from "./wallet-session-invalidation.js";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const SESSION_COOKIE_NAME = "__Host-ipo_one_session";
+const CSRF_BOOTSTRAP_COOKIE_NAME = "__Host-ipo_one_csrf_bootstrap";
+const HUMAN_AUTHENTICATION_METHODS = new Set([
+  ClientAuthenticationMethod.OIDC_PKCE_BFF,
+  ClientAuthenticationMethod.SIWE
+]);
 
 function exactOrigin(value) {
   let parsed;
@@ -51,6 +61,24 @@ function cookie(value, expiresAt) {
   });
 }
 
+export function csrfBootstrapCookie(value, expiresAt) {
+  const token = assertBoundedString("csrfToken", value, {
+    minimum: 32,
+    maximum: 128,
+    pattern: /^[A-Za-z0-9_-]+$/
+  });
+  return Object.freeze({
+    name: CSRF_BOOTSTRAP_COOKIE_NAME,
+    value: token,
+    secure: true,
+    httpOnly: true,
+    sameSite: "Strict",
+    path: "/",
+    domain: undefined,
+    expiresAt
+  });
+}
+
 export function expiredSessionCookie() {
   return Object.freeze({
     name: SESSION_COOKIE_NAME,
@@ -65,8 +93,23 @@ export function expiredSessionCookie() {
   });
 }
 
+export function expiredCsrfBootstrapCookie() {
+  return Object.freeze({
+    name: CSRF_BOOTSTRAP_COOKIE_NAME,
+    value: "",
+    secure: true,
+    httpOnly: true,
+    sameSite: "Strict",
+    path: "/",
+    domain: undefined,
+    maxAge: 0,
+    expiresAt: "1970-01-01T00:00:00.000Z"
+  });
+}
+
 export class InMemoryHumanSessionStore {
   #sessions = new Map();
+  #invalidations = new Map();
 
   constructor({
     referenceHasher,
@@ -111,6 +154,7 @@ export class InMemoryHumanSessionStore {
       actorId: assertSafeIdentifier("actorId", input.actorId),
       actorType: assertSafeIdentifier("actorType", input.actorType),
       clientId: assertSafeIdentifier("clientId", input.clientId),
+      authenticationMethod: input.authenticationMethod ?? ClientAuthenticationMethod.OIDC_PKCE_BFF,
       credentialId: assertSafeIdentifier("credentialId", input.credentialId),
       credentialVersion: input.credentialVersion,
       policyVersion: assertSafeIdentifier("policyVersion", input.policyVersion),
@@ -128,6 +172,9 @@ export class InMemoryHumanSessionStore {
     };
     if (!Number.isSafeInteger(session.credentialVersion) || session.credentialVersion < 1) {
       throw authenticationError("invalid_authentication_input", "credentialVersion is invalid");
+    }
+    if (!HUMAN_AUTHENTICATION_METHODS.has(session.authenticationMethod)) {
+      throw authenticationError("invalid_authentication_input", "Human authentication method is invalid");
     }
     this.#event(AuthenticationEventType.SESSION_CREATED, session, "human_login", now);
     this.#sessions.set(sessionRefHash, session);
@@ -193,6 +240,74 @@ export class InMemoryHumanSessionStore {
     return true;
   }
 
+  invalidate({
+    sessionHandle,
+    requestOrigin,
+    csrfToken,
+    idempotencyKey,
+    reasonCode,
+    now = new Date()
+  }) {
+    if (requestOrigin !== this.origin) {
+      throw authenticationError("csrf_origin_rejected", "request origin is not allowed");
+    }
+    const checkedReason = assertWalletSessionInvalidationReason(reasonCode);
+    const idempotencyRefHash = this.referenceHasher.hash(
+      "session.invalidation.idempotency",
+      assertWalletSessionInvalidationIdempotencyKey(idempotencyKey)
+    );
+    const csrfRefHash = this.referenceHasher.hash(
+      "session.csrf",
+      assertBoundedString("csrfToken", csrfToken, { minimum: 32, maximum: 128 })
+    );
+    const suppliedSessionRefHash = sessionHandle === undefined
+      ? undefined
+      : this.referenceHasher.hash(
+          "session.handle",
+          assertBoundedString("sessionHandle", sessionHandle, { minimum: 32, maximum: 128 })
+        );
+    const replay = this.#invalidations.get(idempotencyRefHash);
+    if (replay) {
+      const session = this.#sessions.get(replay.sessionRefHash);
+      if (
+        !session ||
+        replay.reasonCode !== checkedReason ||
+        (suppliedSessionRefHash !== undefined && suppliedSessionRefHash !== replay.sessionRefHash) ||
+        !constantTimeEqual(csrfRefHash, session.csrfRefHash)
+      ) {
+        throw authenticationError(
+          "authentication_session_rejected",
+          "session is not active"
+        );
+      }
+      return walletSessionInvalidationResult();
+    }
+    if (suppliedSessionRefHash === undefined) {
+      throw authenticationError("authentication_session_rejected", "session is not active");
+    }
+    const session = this.#sessions.get(suppliedSessionRefHash);
+    if (
+      !session ||
+      session.status !== "active" ||
+      new Date(session.absoluteExpiresAt) <= now ||
+      new Date(session.lastSeenAt).getTime() + this.idleTimeoutMs <= now.getTime()
+    ) {
+      throw authenticationError("authentication_session_rejected", "session is not active");
+    }
+    if (!constantTimeEqual(csrfRefHash, session.csrfRefHash)) {
+      throw authenticationError("csrf_token_rejected", "CSRF token is invalid");
+    }
+    session.status = "revoked";
+    session.revokedAt = now.toISOString();
+    session.endReasonCode = checkedReason;
+    this.#invalidations.set(idempotencyRefHash, {
+      sessionRefHash: suppliedSessionRefHash,
+      reasonCode: checkedReason
+    });
+    this.#event(AuthenticationEventType.SESSION_REVOKED, session, checkedReason, now);
+    return walletSessionInvalidationResult();
+  }
+
   revokeByCredential({ credentialId, reasonCode = "credential_revoked", now = new Date() }) {
     const revoked = [];
     for (const [reference, session] of this.#sessions) {
@@ -212,15 +327,15 @@ export class InMemoryHumanSessionStore {
       assertBoundedString("sessionHandle", handle, { minimum: 32, maximum: 128 })
     );
     const session = this.#sessions.get(reference);
-    const expired = session && (
+    if (!session || session.status !== "active") {
+      throw authenticationError("authentication_session_rejected", "session is not active");
+    }
+    const expired =
       new Date(session.absoluteExpiresAt) <= now ||
-      new Date(session.lastSeenAt).getTime() + this.idleTimeoutMs <= now.getTime()
-    );
-    if (!session || expired || session.status !== "active") {
-      if (session) {
-        this.#sessions.delete(reference);
-        if (expired) this.#event(AuthenticationEventType.SESSION_EXPIRED, session, "session_expired", now);
-      }
+      new Date(session.lastSeenAt).getTime() + this.idleTimeoutMs <= now.getTime();
+    if (expired) {
+      this.#sessions.delete(reference);
+      this.#event(AuthenticationEventType.SESSION_EXPIRED, session, "session_expired", now);
       throw authenticationError("authentication_session_rejected", "session is not active");
     }
     return session;
@@ -238,7 +353,7 @@ export class InMemoryHumanSessionStore {
       capabilities: session.capabilities,
       roles: session.roles,
       tokenJtiHash: session.tokenJtiHash,
-      authenticationMethod: "oidc_pkce_bff",
+      authenticationMethod: session.authenticationMethod,
       senderConstraintMethod: "host_session",
       authenticatedAt: now,
       authTime: session.authTime,
@@ -274,6 +389,17 @@ export class InMemoryHumanSessionStore {
 
   #prune(now) {
     for (const [reference, session] of this.#sessions) {
+      if (session.status !== "active") {
+        if (new Date(session.absoluteExpiresAt) <= now) {
+          this.#sessions.delete(reference);
+          for (const [idempotencyRefHash, invalidation] of this.#invalidations) {
+            if (invalidation.sessionRefHash === reference) {
+              this.#invalidations.delete(idempotencyRefHash);
+            }
+          }
+        }
+        continue;
+      }
       if (
         new Date(session.absoluteExpiresAt) <= now ||
         new Date(session.lastSeenAt).getTime() + this.idleTimeoutMs <= now.getTime()
@@ -285,4 +411,4 @@ export class InMemoryHumanSessionStore {
   }
 }
 
-export { SESSION_COOKIE_NAME };
+export { CSRF_BOOTSTRAP_COOKIE_NAME, SESSION_COOKIE_NAME };

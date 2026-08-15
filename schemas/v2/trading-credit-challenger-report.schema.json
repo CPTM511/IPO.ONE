@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-credit-challenger-report.schema.json",
+  "title": "IPO.ONE Trading Credit Challenger Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "challengerReportId",
+    "challengerReportHash",
+    "candidateVersion",
+    "baselinePolicyHash",
+    "assetId",
+    "sourceOutcomeHashes",
+    "completedOutcomeCount",
+    "defaultCount",
+    "lateOrModifiedCount",
+    "posteriorDefaultBps",
+    "calibrationBands",
+    "recommendation",
+    "proposedCapacityMultiplierBps",
+    "shadowOnly",
+    "promotionAllowed",
+    "autoApplied",
+    "autoLooseningAllowed",
+    "requiresNamedHumanReview",
+    "authorizing",
+    "fundsAuthority",
+    "economicStateMutation",
+    "productionAuthority",
+    "evaluatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "challengerReportId": { "$ref": "#/$defs/id" },
+    "challengerReportHash": { "$ref": "#/$defs/hash" },
+    "candidateVersion": { "$ref": "#/$defs/id" },
+    "baselinePolicyHash": { "$ref": "#/$defs/hash" },
+    "assetId": { "$ref": "#/$defs/assetId" },
+    "sourceOutcomeHashes": {
+      "type": "array",
+      "maxItems": 100000,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "completedOutcomeCount": { "$ref": "#/$defs/count" },
+    "defaultCount": { "$ref": "#/$defs/count" },
+    "lateOrModifiedCount": { "$ref": "#/$defs/count" },
+    "posteriorDefaultBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "calibrationBands": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/calibrationBand" }
+    },
+    "recommendation": {
+      "enum": [
+        "insufficient_sample",
+        "hold_review",
+        "tighten_review"
+      ]
+    },
+    "proposedCapacityMultiplierBps": {
+      "type": "integer",
+      "enum": [8000, 10000]
+    },
+    "shadowOnly": { "const": true },
+    "promotionAllowed": { "const": false },
+    "autoApplied": { "const": false },
+    "autoLooseningAllowed": { "const": false },
+    "requiresNamedHumanReview": { "const": true },
+    "authorizing": { "const": false },
+    "fundsAuthority": { "const": false },
+    "economicStateMutation": { "const": false },
+    "productionAuthority": { "const": false },
+    "evaluatedAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": {
+      "const": "trading_credit_challenger_report.v1"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+:[A-Za-z0-9._%-]+/[a-z0-9-]+:[A-Za-z0-9._%:-]+$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "calibrationBand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bandId",
+        "completedCount",
+        "defaultCount",
+        "posteriorDefaultBps",
+        "schemaVersion"
+      ],
+      "properties": {
+        "bandId": {
+          "enum": ["0_3999", "4000_5999", "6000_7999", "8000_10000"]
+        },
+        "completedCount": { "$ref": "#/$defs/count" },
+        "defaultCount": { "$ref": "#/$defs/count" },
+        "posteriorDefaultBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "schemaVersion": {
+          "const": "trading_credit_calibration_band.v1"
+        }
+      }
+    }
+  }
+}

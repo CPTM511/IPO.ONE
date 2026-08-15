@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "ipo.one.canonical-product-runtime/v1",
+  "releaseStage": "m1_b_deployable_public_no_funds_sandbox",
+  "productTruth": {
+    "transportBoundary": "tenant_protocol",
+    "commandBoundary": "tenant_command_gateway",
+    "kernel": "shared_human_agent_obligation_kernel",
+    "canonicalState": "postgresql",
+    "browserStateCanonical": false
+  },
+  "local": {
+    "command": "pnpm dev",
+    "implementation": "node scripts/local-stack.mjs up",
+    "runtimeEntry": "apps/private-pilot/src/start.js",
+    "profile": "local_no_funds",
+    "canonicalProductTruth": true
+  },
+  "hosted": {
+    "rootConfiguration": "vercel.json",
+    "releaseBundleConfiguration": "deploy/vercel/vercel.m1-b-sandbox.json",
+    "exactBundleBuilder": "scripts/build-vercel-sandbox-bundle.mjs",
+    "requestEntry": "api/vercel-sandbox.mjs",
+    "cronEntry": "api/vercel-sandbox-cron.mjs",
+    "composition": "apps/private-pilot/src/production-runtime.js",
+    "profile": "deployable_sandbox_vertical_slice",
+    "canonicalProductTruth": true
+  },
+  "legacyDemo": {
+    "entry": "apps/api/src/server.js",
+    "bundleConfiguration": "deploy/vercel/vercel.bundle.json",
+    "compatibilityCommand": "pnpm dev:legacy-demo",
+    "state": "process_local_ephemeral",
+    "canonicalProductTruth": false,
+    "releaseEligible": false,
+    "preservationReason": "Isolated historical demonstration and API compatibility surface; it is not product or release truth."
+  },
+  "authority": {
+    "realFundsEnabled": false,
+    "externalFundsMovementEnabled": false,
+    "productionCreditEnabled": false,
+    "realHumanLendingEnabled": false,
+    "mainnetEnabled": false,
+    "protocolFeesEnabled": false,
+    "signerAuthorityEnabled": false,
+    "withdrawalAuthorityEnabled": false,
+    "venueWriteAuthorityEnabled": false
+  }
+}

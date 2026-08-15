@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "ipo_one_chain_001f_evidence_catchup_checkpoint.v1",
+  "checkpointId": "CHAIN-001F-EVIDENCE-CATCHUP-20260729-001",
+  "status": "finalized",
+  "chainId": "eip155:84532",
+  "registry": {
+    "contractAddress": "0x78ba26d4a9211e8d4b0158c9e5443305278c1df0",
+    "deploymentTransactionHash": "0x13f9aebe194ffe4aaac7d31a4a01e2540ed44c06e68d08809bbf339138caab72",
+    "runtimeBytecodeHash": "0x3f7d98dc8e6f49e4cfc77fde97fffcc398f6e850154608b99eb271aae23a040c"
+  },
+  "attestor": {
+    "accountId": "eip155:84532:0x66f0acF3457e7B73845FD33c764947fC5A220f2a",
+    "fundingTransactionHash": "0x6ecc7c5e82e1090e1e99290656fa015ac84d1f28632465629358d1fb2edf3375",
+    "fundingAmountWei": "2000000000000000",
+    "maximumBalanceWei": "10000000000000000"
+  },
+  "snapshot": {
+    "firstRequestedAt": "2026-07-27T14:55:00.681Z",
+    "lastRequestedAt": "2026-07-29T13:35:03.979Z",
+    "finalizedAt": "2026-07-29T13:53:55.299Z",
+    "minimumAttestorNonce": 0,
+    "maximumAttestorNonce": 621,
+    "distinctAttestorNonces": 622,
+    "evidenceCount": 622,
+    "transactionCount": 622,
+    "finalizedCount": 622,
+    "errorCount": 0,
+    "missingAnchorCount": 0,
+    "orphanAnchorCount": 0,
+    "fakeTransactionHashCount": 0,
+    "unprovedFinalizedCount": 0
+  },
+  "firstAnchor": {
+    "evidenceHash": "0x9c5af42ce7347e092eeb71530e0bc01e7c8a16fed4f99c86c882397e36bb6d70",
+    "transactionHash": "0x8d68c224199f1144f4be9d31b27af86850ba40c4006fc6864daaa568dae4195e",
+    "blockNumber": 44778430,
+    "blockHash": "0x1edfc6824ab5af96493471027307ce3f972afb5e7acca6fad76fd138ff136d31",
+    "logIndex": 49,
+    "anchoredAt": "2026-07-29T11:39:08.000Z",
+    "finalizedAt": "2026-07-29T12:02:26.764Z"
+  },
+  "lastSnapshotAnchor": {
+    "evidenceHash": "0x404fd95c0769281c2b81933829ad780a254eb4260c472bdf8133c3c888d661fe",
+    "transactionHash": "0x84957c847e6d645a23eee9ce2ebcda1fc4348b4f01aa9086588a158f1841eb2c",
+    "blockNumber": 44781921,
+    "blockHash": "0xd95f20820e6ee05a8bdb1085799c5361514f2bd6b0c34f162a7f910d431e4c78",
+    "logIndex": 46,
+    "anchoredAt": "2026-07-29T13:35:30.000Z",
+    "finalizedAt": "2026-07-29T13:53:55.299Z"
+  },
+  "compatibilityRepair": {
+    "migration": "0047_chain_001f_anchor_binding_repair",
+    "auditRecordCount": 1,
+    "scope": "exact_first_live_transaction_only",
+    "reversibleAfterLiveRepair": false
+  },
+  "continuousOperation": {
+    "enabled": true,
+    "snapshotExcludesLaterEvidence": true,
+    "laterEvidencePolicy": "automatically_anchor_and_observe_to_finality"
+  },
+  "safety": {
+    "hashOnly": true,
+    "nativeValuePerAnchor": "0",
+    "rawEvidencePersistedOnchain": false,
+    "rawPrivateKeyIncluded": false,
+    "rawSignatureIncluded": false,
+    "productionFundsMoved": false,
+    "mainnetAuthority": false
+  }
+}

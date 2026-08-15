@@ -1,0 +1,801 @@
+{
+  "schemaVersion": "real_value_pilot_decision_package.v1",
+  "packageId": "REALVALUE-001-DECISION-PACKAGE-001",
+  "taskId": "REALVALUE-001",
+  "preparedAt": "2026-07-26T12:39:13.000Z",
+  "packageStatus": "COMPLETE_FOR_HUMAN_DECISION_LAUNCH_REJECTED_LOCKED",
+  "sourceRelease": {
+    "status": "IMPLEMENTED_UNVERIFIED",
+    "baselineCommit": "de5e72d5a912d2d55c2ce86570408f37c07d4a4f",
+    "candidateArtifactSetHash": "0x88b8fccd24a4ecab4d3e2ba90bfed0fab641773398c1ea9cbe8ecd0f978c895d",
+    "acceptanceMatrixSha256": "1260226d1316bea2f6894acef15c725300b8bd9e9e2fae3a012b7d0e85e9a381",
+    "openP0Count": 0,
+    "openP1Count": 0,
+    "openP2FindingIds": [
+      "TC403-REV-P2-002"
+    ],
+    "unverifiedClaimsPreserved": true
+  },
+  "safetyBoundary": {
+    "decisionPackageOnly": true,
+    "codexApprovalAuthority": "NONE",
+    "launchPolicyRevisionAuthorized": false,
+    "realFundsAuthorized": false,
+    "mainnetAuthorized": false,
+    "productionSignerAuthorized": false,
+    "exchangeWriteAuthorized": false,
+    "deploymentAuthorized": false,
+    "withdrawalsOrTransfersAuthorized": false,
+    "capitalMovementAuthorized": false
+  },
+  "decisions": [
+    {
+      "decisionId": "RV-P0-01",
+      "domain": "capital_source",
+      "title": "Name and evidence the pilot capital source",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Finance and source-of-funds reviewer",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Legal Counsel",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject the named beneficial owner, source of funds, committed amount, term, and use restrictions?",
+      "evidenceRequirements": [
+        "Capital provider legal identity and beneficial ownership",
+        "Source-of-funds and sanctions evidence",
+        "Signed facility commitment with currency, amount, term and permitted uses"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [],
+      "residualRisks": [
+        "Unlawful or unavailable capital",
+        "Undisclosed redemption, seniority or control rights"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "real_funds",
+        "capital_movement",
+        "facility_funding"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-02",
+      "domain": "loss_bearer",
+      "title": "Name the loss bearer and maximum committed loss",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Capital Risk Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject the named first and ultimate loss bearers, maximum loss, replenishment rule, and no-guarantee disclosure?",
+      "evidenceRequirements": [
+        "Signed loss-allocation and maximum-loss schedule",
+        "Board or beneficial-owner authority for the committed loss",
+        "Accounting treatment and no-guarantee disclosure"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [],
+      "residualRisks": [
+        "Loss shifted to an unauthorized party",
+        "Implicit guarantee or uncapped recourse"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "real_funds",
+        "credit_exposure",
+        "loss_allocation"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-03",
+      "domain": "legal_jurisdiction",
+      "title": "Approve the legal entities, roles and jurisdictions",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Legal Counsel",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Privacy and Compliance Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject the entity, lender or capital-provider, platform, servicer, Provider, custody, data and complaint roles in every jurisdiction?",
+      "evidenceRequirements": [
+        "Signed legal memorandum covering product and regulatory classification",
+        "Entity, jurisdiction, licensing and contracting map",
+        "Privacy, sanctions, AML, tax, complaint and record-retention obligations"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [],
+      "residualRisks": [
+        "Unlicensed regulated activity",
+        "Unenforceable obligations or unlawful data processing"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "real_value_launch",
+        "participant_onboarding",
+        "production_data"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-04",
+      "domain": "custody_fund_path",
+      "title": "Approve custody, safeguarding and the end-to-end fund path",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Custody and Treasury Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Legal Counsel",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject every custody, settlement, reconciliation, safeguarding, withdrawal and recovery account and authority?",
+      "evidenceRequirements": [
+        "End-to-end source-to-custody-to-venue-to-settlement fund-flow diagram",
+        "Named account owners, withdrawal authorities and dual-control policy",
+        "Custodian contract, safeguarding treatment and reconciliation procedure"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [],
+      "residualRisks": [
+        "Commingling, unauthorized withdrawal or asset loss",
+        "Ledger-to-custody divergence"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "custody",
+        "facility_funding",
+        "withdrawal",
+        "external_transfer"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-05",
+      "domain": "signer_governance",
+      "title": "Approve production signer technology and credential governance",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Production Signer Custodian",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Security Reviewer",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject signer isolation, HSM or MPC technology, action allowlist, nonce store, rotation, revocation, destruction, recovery and address non-reuse?",
+      "evidenceRequirements": [
+        "Signer architecture and privileged action threat model",
+        "Independent signer ceremony, rotation, loss and destruction exercise",
+        "Durable nonce, unknown-outcome and retired-address non-reuse evidence"
+      ],
+      "evidenceStatus": "UNVERIFIED",
+      "evidenceRefs": [
+        "docs/architecture/ADR-035-hyperliquid-adapter-signer-custody-action-and-nonce-boundary.md"
+      ],
+      "residualRisks": [
+        "Credential theft or signing beyond approved actions",
+        "Nonce collision, replay or uncertain-outcome duplication"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "production_signer",
+        "api_wallet",
+        "exchange_write"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-06",
+      "domain": "chain_asset_accounts",
+      "title": "Approve one chain, asset and bounded account topology",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Chain and Venue Risk Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Legal Counsel",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject the exact production chain, asset, venue, master account, subaccount isolation, contract and finality profile?",
+      "evidenceRequirements": [
+        "Exact CAIP-2 chain and asset identifier with issuer and bridge risk",
+        "Founder-controlled master and isolated subaccount ownership proof",
+        "Venue terms, finality, oracle, RPC, indexer and outage assessment"
+      ],
+      "evidenceStatus": "UNVERIFIED",
+      "evidenceRefs": [
+        "docs/codex/audits/RELEASE-001/acceptance-matrix.md"
+      ],
+      "residualRisks": [
+        "Wrong-chain, bridge, issuer, venue or account-control failure",
+        "Testnet evidence misrepresented as production evidence"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "mainnet",
+        "production_chain",
+        "production_asset",
+        "production_accounts"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-07",
+      "domain": "participants_providers",
+      "title": "Approve Providers, Traders and the initial Agent cohort",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Provider and Participant Risk Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Compliance Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject each named Provider, Trader and Agent under signed eligibility, KYP or KYB, sanctions, SLA, concentration and termination criteria?",
+      "evidenceRequirements": [
+        "Named allowlist with identity, ownership and eligibility evidence",
+        "Provider contract, SLA, settlement and incident obligations",
+        "Agent and Trader mandate, monitoring, concentration and removal criteria"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [],
+      "residualRisks": [
+        "Fraudulent or unsuitable participant",
+        "Provider concentration, conflict or operational failure"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "participant_onboarding",
+        "provider_execution",
+        "agent_credit"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-08",
+      "domain": "exposure_caps",
+      "title": "Approve hard exposure and concentration caps",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Risk Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject numeric total, per-Facility, per-Agent, per-Trader, per-Provider, per-asset, per-chain and daily-change caps?",
+      "evidenceRequirements": [
+        "Canonical minor-unit cap schedule with currency and effective period",
+        "Stress loss and concentration analysis",
+        "Fail-closed admission, dual-control decrease and no-automatic-increase policy"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [],
+      "residualRisks": [
+        "Exposure exceeds loss capacity",
+        "Correlated concentration across Agents, Providers or assets"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "credit_exposure",
+        "facility_activation",
+        "risk_limit_change"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-09",
+      "domain": "collateral_waterfall",
+      "title": "Approve first-loss, collateral and settlement waterfall",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Capital Risk Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Finance and Accounting Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject eligible collateral, haircuts, first-loss amount, margin treatment, liquidation rights and the exact realized-income and loss waterfall?",
+      "evidenceRequirements": [
+        "Eligible collateral, valuation, haircut and custody schedule",
+        "Signed first-loss and settlement waterfall",
+        "No synthetic profit, no guaranteed return and actual-realized-income accounting proof"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [
+        "docs/architecture/ADR-037-trading-capital-settlement-incident-ownership-and-recovery.md"
+      ],
+      "residualRisks": [
+        "Collateral shortfall or valuation failure",
+        "Incorrect priority, synthetic income or implied guarantee"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "collateral_contribution",
+        "facility_funding",
+        "real_settlement"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-10",
+      "domain": "risk_stop_loss",
+      "title": "Approve deterministic risk, staleness and stop-loss controls",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Risk Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Operations Incident Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject numeric admission, leverage, concentration, drawdown, staleness, stop-loss, REDUCE_ONLY, FLATTEN and recovery-hysteresis thresholds?",
+      "evidenceRequirements": [
+        "Versioned deterministic risk policy with units, windows and data max age",
+        "Historical, stress and failure-mode validation",
+        "Protective action, dual-control recovery and venue-outage exercise"
+      ],
+      "evidenceStatus": "PARTIAL",
+      "evidenceRefs": [
+        "docs/architecture/ADR-036-trading-capital-evidence-factor-risk-staleness-and-state-machine.md",
+        "docs/security/IPO_ONE_TRADING_CAPITAL_THREAT_MODEL_v0.1_PROPOSED.md"
+      ],
+      "residualRisks": [
+        "Loss accelerates before protective action",
+        "Stale data or automatic recovery reopens risk"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "facility_activation",
+        "new_risk",
+        "exchange_write"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-11",
+      "domain": "pricing_accounting",
+      "title": "Approve pricing, fees, tax and production accounting",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Finance and Accounting Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Legal Counsel",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject the payer, APR or return, fees, realized-income basis, tax, disclosures, chart of accounts and reconciliation ownership?",
+      "evidenceRequirements": [
+        "Versioned pricing and fee schedule with payer and calculation examples",
+        "Legal, tax and disclosure review",
+        "Production chart of accounts and custody-to-Ledger reconciliation sign-off"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [],
+      "residualRisks": [
+        "Unlawful, misleading or economically unsustainable pricing",
+        "Incorrect revenue, tax, loss or customer balance accounting"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "production_pricing",
+        "real_settlement",
+        "revenue_recognition"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-12",
+      "domain": "operations_incident",
+      "title": "Approve production SLO, on-call and incident ownership",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Operations Incident Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Risk On-call Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject named 24-hour ownership, SLOs, alert thresholds, recipients, escalation, incident commander, venue and custody contacts, and exercise evidence?",
+      "evidenceRequirements": [
+        "Named rota, escalation tree, SLO and notification delivery evidence",
+        "Incident runbooks for signer, venue, custody, data, reconciliation and security failures",
+        "Tabletop and live-safe exercise with closure evidence"
+      ],
+      "evidenceStatus": "PARTIAL",
+      "evidenceRefs": [
+        "docs/operations/TRADING_CAPITAL_TESTNET_OPERABILITY_RUNBOOK.md",
+        "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+      ],
+      "residualRisks": [
+        "No accountable responder during loss or outage",
+        "TC403-REV-P2-002 runtime alert provenance remains open"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "production_operations",
+        "real_value_launch",
+        "facility_activation"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-13",
+      "domain": "independent_security",
+      "title": "Obtain independent production value-path security acceptance",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Security Reviewer",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject the exact content-addressed release only after independent custody, signer, Exchange, funds, infrastructure and application review has zero unresolved P0 or P1?",
+      "evidenceRequirements": [
+        "Independently attributable report and attestation bound to exact artifact and policy hashes",
+        "Custody, signer, nonce, Exchange action, Tenant and funds-path penetration assessment",
+        "Finding register with zero unresolved P0 or P1 and retest evidence"
+      ],
+      "evidenceStatus": "UNVERIFIED",
+      "evidenceRefs": [
+        "docs/codex/audits/RELEASE-001/acceptance-matrix.md"
+      ],
+      "residualRisks": [
+        "Self-review misses critical value-path defects",
+        "RELEASE-001 external review waiver is not production assurance"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "production_release",
+        "real_value_launch",
+        "production_signer"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-14",
+      "domain": "rollback_wind_down",
+      "title": "Approve rollback, wind-down and capital-recovery procedures",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Operations Incident Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Custody and Treasury Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject pause, cancel, REDUCE_ONLY, FLATTEN, settlement, capital recovery, signer compromise, unknown outcome, rollback and participant notification procedures?",
+      "evidenceRequirements": [
+        "Versioned rollback and wind-down plan with authority matrix",
+        "No-uncertain-retry, reconciliation and append-only correction procedure",
+        "Recovery exercise covering venue, signer, database, custody and deployment failure"
+      ],
+      "evidenceStatus": "PARTIAL",
+      "evidenceRefs": [
+        "docs/architecture/ADR-037-trading-capital-settlement-incident-ownership-and-recovery.md",
+        "docs/operations/TRADING_CAPITAL_TESTNET_OPERABILITY_RUNBOOK.md"
+      ],
+      "residualRisks": [
+        "Capital trapped or duplicated during uncertain outcome",
+        "Rollback restores code but not economic truth"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "production_release",
+        "facility_funding",
+        "exchange_write"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-15",
+      "domain": "production_infrastructure",
+      "title": "Approve production identity, data and deployment infrastructure",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Production Infrastructure Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Privacy and Security Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject production IdP, credentials, database, backups, disaster recovery, secrets, RPC, indexer, monitoring, privacy, retention, hosting and deployment controls?",
+      "evidenceRequirements": [
+        "Production architecture and data-flow review",
+        "Identity, secrets, least privilege, RLS, backup, restore and disaster-recovery evidence",
+        "Deployment provenance, monitoring, privacy, retention and rollback acceptance"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [
+        "docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md"
+      ],
+      "residualRisks": [
+        "Sandbox controls are mistaken for production controls",
+        "Credential, data, availability or recovery failure"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "production_deployment",
+        "production_data",
+        "production_identity"
+      ]
+    },
+    {
+      "decisionId": "RV-P0-16",
+      "domain": "final_launch_authorization",
+      "title": "Issue an exact-release multi-owner go or no-go decision",
+      "severity": "P0",
+      "accountableOwner": "IPO.ONE Founder",
+      "requiredApprovers": [
+        {
+          "role": "IPO.ONE Founder and Release Owner",
+          "assignee": "IPO.ONE Founder",
+          "assignmentStatus": "ASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Legal Counsel",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Security Reviewer",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Independent Risk Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        },
+        {
+          "role": "Operations Incident Owner",
+          "assignee": null,
+          "assignmentStatus": "UNASSIGNED",
+          "approvalStatus": "PENDING"
+        }
+      ],
+      "decisionStatus": "REJECT_LOCKED",
+      "approveRejectPrompt": "Approve or reject one exact artifact, policy, chain, asset, account set, capital amount, cap schedule, participant allowlist and validity window after RV-P0-01 through RV-P0-15 are independently approved?",
+      "evidenceRequirements": [
+        "All prior P0 approval records current and bound to exact evidence",
+        "Zero unresolved P0 or P1 and explicit disposition of every P2",
+        "Separate reviewed launch-policy revision and exact-release multi-owner signatures"
+      ],
+      "evidenceStatus": "MISSING",
+      "evidenceRefs": [
+        "deploy/launch-policy.v1.json"
+      ],
+      "residualRisks": [
+        "Approval drift across release, policy, accounts, limits or validity period",
+        "Evidence or an earlier approval is incorrectly treated as launch authority"
+      ],
+      "approvalRecord": null,
+      "blockedCapabilities": [
+        "launch_policy_revision",
+        "production_release",
+        "real_value_launch"
+      ]
+    }
+  ],
+  "overallGate": {
+    "launchDecision": "REJECT_LOCKED",
+    "launchAllowed": false,
+    "allP0Approved": false,
+    "unresolvedP0Count": 16,
+    "verifiedP0Count": 0,
+    "policyRevisionRequired": true,
+    "blockingReasons": [
+      "All 16 P0 decisions remain REJECT_LOCKED and have no approval record",
+      "Required independent legal, security, risk, custody, finance, compliance, infrastructure and operations owners are unassigned",
+      "RELEASE-001 retains UNVERIFIED evidence and TC403-REV-P2-002 remains open",
+      "The controlled_agent_credit_pilot launch-policy profile remains releaseEnabled=false",
+      "Codex has no authority to approve, revise policy, provision, deploy, sign, write to Exchange or move capital"
+    ]
+  }
+}

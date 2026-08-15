@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/wallet-provider-registry.schema.json",
+  "title": "IPO.ONE wallet Provider registry snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "selectionRequired",
+    "providers",
+    "nonAuthorizing",
+    "credentialsIncluded",
+    "fundsAuthority",
+    "storage"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "wallet_provider_registry.v1" },
+    "status": { "enum": ["discovering", "ready", "disposed"] },
+    "selectionRequired": { "type": "boolean" },
+    "selectedProviderId": { "$ref": "#/$defs/providerId" },
+    "providers": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/provider" }
+    },
+    "nonAuthorizing": { "const": true },
+    "credentialsIncluded": { "const": false },
+    "fundsAuthority": { "const": false },
+    "storage": { "const": "memory_only" }
+  },
+  "$defs": {
+    "providerId": {
+      "type": "string",
+      "minLength": 17,
+      "maxLength": 44,
+      "pattern": "^(?:eip6963:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy:globalThis\\.ethereum|walletconnect:mobile-v2\\.23\\.10)$"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerId", "source", "name"],
+      "properties": {
+        "providerId": { "$ref": "#/$defs/providerId" },
+        "source": {
+          "enum": ["eip6963", "legacy_eip1193", "mobile_walletconnect"]
+        },
+        "uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "iconDataUri": {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 32768,
+          "pattern": "^data:image/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2}$"
+        },
+        "rdns": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 253,
+          "pattern": "^[a-z0-9](?:[a-z0-9.-]{1,251})[a-z0-9]$"
+        },
+        "connectorVersion": {
+          "const": "2.23.10"
+        },
+        "storage": {
+          "const": "memory_only"
+        }
+      }
+    }
+  }
+}

@@ -7,9 +7,38 @@ import pg from "pg";
 const { Pool } = pg;
 const MIGRATION_LOCK_NAMESPACE = "ipo.one";
 const MIGRATION_LOCK_NAME = "schema_migrations";
+// Sealed local candidates removed one terminal blank line from 0043, 0044 and
+// 0054 after the identical SQL had been applied. Preserve those original
+// durable checksums as exact compatibility edges; every other migration and
+// checksum still fails closed.
+const LEGACY_MIGRATION_CHECKSUMS = Object.freeze({
+  "0043_durable_credit_outcomes": Object.freeze({
+    "0291b691521508c6bdca2ed6d5a456f0cd9b413d25a34060efd14851e641790a":
+      "c255594e3d419fc9f10bce2f9e6b959c466191c2c16ff8fddb94f4f0fdfe0449"
+  }),
+  "0044_durable_tenant_command_pause": Object.freeze({
+    "b0f7a42a00c8359c6b5778f54b09480f5da492b34a8038f15679a3e5b2d1bfbe":
+      "b238c78daeb7eca7a8477f18cfc3f72650ccfcca21aec2f666900b82e8092c09"
+  }),
+  "0054_universal_evm_signature_methods": Object.freeze({
+    "46136f7b5cd60ef6cfc5df3411a318acb77206fe16e0f137540bb355a7a202a3":
+      "f41badbc345652956f026df914ba5751d88f03b86cc3323c6a278331866da534"
+  })
+});
 
 function checksum(sql) {
   return createHash("sha256").update(sql).digest("hex");
+}
+
+export function migrationChecksumMatches({
+  name,
+  recordedChecksum,
+  releaseChecksum
+}) {
+  if (recordedChecksum === releaseChecksum) return true;
+  return (
+    LEGACY_MIGRATION_CHECKSUMS[name]?.[recordedChecksum] === releaseChecksum
+  );
 }
 
 export async function readMigrationSet(directory = join(process.cwd(), "db", "migrations")) {
@@ -38,7 +67,11 @@ function assertMigrationHistory(migrations, appliedRows) {
     if (!expected || actual.name !== expected.name) {
       throw new Error("migration history is not a contiguous prefix of this build");
     }
-    if (actual.checksum !== expected.checksum) {
+    if (!migrationChecksumMatches({
+      name: actual.name,
+      recordedChecksum: actual.checksum,
+      releaseChecksum: expected.checksum
+    })) {
       throw new Error(`migration checksum mismatch: ${actual.name}`);
     }
   }
@@ -86,7 +119,11 @@ export async function migrateUp({ pool, directory } = {}) {
     for (const migration of migrations) {
       const existingChecksum = applied.get(migration.name);
       if (existingChecksum) {
-        if (existingChecksum !== migration.checksum) {
+        if (!migrationChecksumMatches({
+          name: migration.name,
+          recordedChecksum: existingChecksum,
+          releaseChecksum: migration.checksum
+        })) {
           throw new Error(`migration checksum mismatch: ${migration.name}`);
         }
         continue;
@@ -122,7 +159,13 @@ export async function migrateDown({ pool, directory, steps = 1 } = {}) {
     for (const row of selectedRows) {
       const migration = byName.get(row.name);
       if (!migration) throw new Error(`down migration file not found: ${row.name}`);
-      if (migration.checksum !== row.checksum) throw new Error(`migration checksum mismatch: ${row.name}`);
+      if (!migrationChecksumMatches({
+        name: row.name,
+        recordedChecksum: row.checksum,
+        releaseChecksum: migration.checksum
+      })) {
+        throw new Error(`migration checksum mismatch: ${row.name}`);
+      }
       await client.query("BEGIN");
       try {
         await client.query(migration.down);

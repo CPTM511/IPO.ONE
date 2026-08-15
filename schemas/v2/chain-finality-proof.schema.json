@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/chain-finality-proof.schema.json",
+  "title": "IPO.ONE Chain Finality Proof v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finalityProofId",
+    "finalityProofHash",
+    "chainId",
+    "transactionHash",
+    "eventOrdinal",
+    "obligationId",
+    "paymentId",
+    "canonicalPaymentRef",
+    "assetId",
+    "amountMinor",
+    "observationStatus",
+    "sourceFinality",
+    "confirmations",
+    "eventKey",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "observedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "finalityProofId": { "$ref": "#/$defs/hash" },
+    "finalityProofHash": { "$ref": "#/$defs/hash" },
+    "chainId": { "type": "string", "pattern": "^[a-z0-9-]+:[A-Za-z0-9-]+$" },
+    "transactionHash": { "$ref": "#/$defs/hash" },
+    "eventOrdinal": { "type": "integer", "minimum": 0 },
+    "blockNumber": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "blockHash": { "$ref": "#/$defs/hash" },
+    "obligationId": { "type": "string", "minLength": 1 },
+    "paymentId": { "type": "string", "minLength": 1 },
+    "canonicalPaymentRef": { "$ref": "#/$defs/hash" },
+    "assetId": { "type": "string", "minLength": 1 },
+    "amountMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+    "observationStatus": { "enum": ["submitted", "included", "safe", "finalized", "invalidated"] },
+    "sourceFinality": { "enum": ["pending", "confirmed", "finalized", "reorged", "invalidated"] },
+    "confirmations": { "type": "integer", "minimum": 0 },
+    "invalidationReason": { "type": "string", "minLength": 1 },
+    "eventKey": { "$ref": "#/$defs/hash" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": { "const": "chain_finality_proof.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+  }
+}

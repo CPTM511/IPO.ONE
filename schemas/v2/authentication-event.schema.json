@@ -41,6 +41,10 @@
       "properties": {
         "actorType": { "type": "string" },
         "clientAuthenticationMethod": { "type": "string" },
+        "invitationRefHash": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
         "senderConstraintMethod": { "type": "string" },
         "version": { "type": "integer", "minimum": 1 },
         "status": { "type": "string" },

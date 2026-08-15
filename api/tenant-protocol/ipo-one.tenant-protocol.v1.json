@@ -1,0 +1,1662 @@
+{
+  "protocol": "IPO.ONE",
+  "protocolVersion": "tenant_protocol.v1",
+  "maturity": "local_non_funds",
+  "availability": {
+    "enabledTransports": [
+      "local_in_process",
+      "authenticated_http_loopback",
+      "mcp_stdio_local"
+    ],
+    "publicEndpointEnabled": false,
+    "authenticatedHttpEnabled": true,
+    "authenticatedHttpProfile": "loopback_test_only",
+    "mcpStdioLocalEnabled": true,
+    "mcpA2aEnabled": false,
+    "authenticationContextSource": "trusted_transport_adapter",
+    "networkContextSource": "trusted_ingress_adapter"
+  },
+  "compatibility": {
+    "acceptedRequestSchemaVersions": [
+      "tenant_protocol_request.v1"
+    ],
+    "emittedResultSchemaVersions": [
+      "tenant_protocol_result.v1"
+    ],
+    "unknownFieldsRejected": true,
+    "unknownOperationsRejected": true,
+    "breakingChangeRequiresNewSchemaVersion": true,
+    "minimumProductionDeprecationDays": 90
+  },
+  "operations": [
+    {
+      "operationId": "pilotAcceptCreditOffer",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "credit_offer",
+      "requiredCapability": "credit.offer.accept.self",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_offer_accepted.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotExecuteSandboxObligation",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "credit.execute.sandbox.self",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_executed.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotPostSandboxRepayment",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "repayment.post.sandbox.self",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_repayment_posted.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRestructureSandboxObligation",
+      "kind": "command",
+      "actorTypes": [
+        "operations_operator"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "servicing.restructure.sandbox",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_restructured.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRepurchaseSandboxObligation",
+      "kind": "command",
+      "actorTypes": [
+        "operations_operator"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "servicing.repurchase.sandbox",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_repurchased.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotWriteOffSandboxObligation",
+      "kind": "command",
+      "actorTypes": [
+        "operations_operator"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "servicing.writeoff.sandbox",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_obligation_written_off.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "workerAdvanceSandboxServicing",
+      "kind": "command",
+      "actorTypes": [
+        "system_worker"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "servicing.advance.sandbox",
+      "idempotency": "required",
+      "quotaClass": "worker",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_servicing_advanced.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateAgentAccountChallenge",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "agent_account.challenge.create.owned",
+      "idempotency": "required",
+      "quotaClass": "credential",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_account_challenge_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotActivateSandboxMandate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "mandate",
+      "requiredCapability": "mandate.activate.owned",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_mandate_activated.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateAgentSubject",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "agent.create",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateConsent",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "consent.create.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_consent_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateHumanSubject",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "human_subject.create.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_human_subject_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateDraftMandate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "mandate.draft.create",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_draft_mandate_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotEvaluateCreditApplication",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "credit_intent",
+      "requiredCapability": "credit.evaluate.self",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_application_evaluated.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotFreezeSubject",
+      "kind": "command",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "risk.freeze",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_frozen.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRequestCredit",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "credit.request",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_intent_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadAgentSelf",
+      "kind": "query",
+      "actorTypes": [
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "subject.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_subject_view.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadAgentAccountBinding",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "agent_account.binding.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_account_binding_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCreditApplication",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "credit_intent",
+      "requiredCapability": "credit.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_application_view.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadConsent",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "consent",
+      "requiredCapability": "consent.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_consent_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadHumanSelf",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "subject.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_human_subject_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadWorkspaceResume",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "workspace.resume.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_workspace_resume_view.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotPersistAgentContinuationReceipt",
+      "kind": "command",
+      "actorTypes": [
+        "agent"
+      ],
+      "resourceType": "credit_offer",
+      "requiredCapability": "workspace.resume.self",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_continuation_receipt_persisted.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadIdentityReference",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "human_identity_reference",
+      "requiredCapability": "identity_reference.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_human_identity_reference_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadMandate",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "mandate",
+      "requiredCapability": "integration.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_mandate_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "auditor"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "risk.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_portfolio_reference_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadTenantRisk",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "auditor"
+      ],
+      "resourceType": "risk_portfolio",
+      "requiredCapability": "risk.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_portfolio_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadPilotHealth",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator",
+        "auditor"
+      ],
+      "resourceType": "risk_portfolio",
+      "requiredCapability": "pilot.health.read",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_health_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadPilotFeedbackSummary",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator",
+        "auditor"
+      ],
+      "resourceType": "risk_portfolio",
+      "requiredCapability": "pilot.feedback.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_feedback_summary_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadServicingQueueReference",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "servicing.queue.read",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_servicing_queue_reference_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadServicingQueue",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator"
+      ],
+      "resourceType": "servicing_queue",
+      "requiredCapability": "servicing.queue.read",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_servicing_queue_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCreditRegistryEvidence",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent",
+        "risk_operator",
+        "operations_operator",
+        "auditor"
+      ],
+      "resourceType": "credit_registry_evidence",
+      "requiredCapability": "credit_registry.evidence.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_registry_evidence_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadEvidence",
+      "kind": "query",
+      "actorTypes": [
+        "auditor"
+      ],
+      "resourceType": "evidence",
+      "requiredCapability": "evidence.read",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_obligation_evidence_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadOwnObligationEvidence",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "evidence",
+      "requiredCapability": "evidence.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_obligation_evidence_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadOwnObligation",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "obligation.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_obligation_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRevokeConsent",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "consent",
+      "requiredCapability": "consent.revoke.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_consent_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateCreditPassportArtifact",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "credit_passport.create.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_passport_artifact_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadOwnCreditPassportArtifact",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "credit_passport_artifact",
+      "requiredCapability": "credit_passport.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_credit_passport_artifact_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotVerifyCreditPassportArtifact",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent",
+        "risk_operator",
+        "operations_operator",
+        "auditor"
+      ],
+      "resourceType": "credit_passport_artifact",
+      "requiredCapability": "credit_passport.verify.bound",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_passport_verification_result.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRevokeCreditPassportArtifact",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "credit_passport_artifact",
+      "requiredCapability": "credit_passport.revoke.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_credit_passport_artifact_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerSelf",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "capital_partner.portfolio.read.own",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_self_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPassportInbox",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "workspace",
+      "requiredCapability": "capital_partner.offer.create.own",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_passport_inbox_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotAuthorCapitalPartnerOffer",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "credit_passport_artifact",
+      "requiredCapability": "capital_partner.offer.create.own",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_offer_authored.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotTransitionCapitalPartnerOffer",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "credit_offer",
+      "requiredCapability": "capital_partner.offer.manage.own",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_offer_transitioned.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerFacility",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "capital_partner.facility.read.own",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_facility_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadCapitalPartnerPortfolio",
+      "kind": "query",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "capital_partner_profile",
+      "requiredCapability": "capital_partner.portfolio.read.own",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_capital_partner_portfolio_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotCreateOfficialReport",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "official_report.create.owned",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadOfficialReport",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "official_report",
+      "requiredCapability": "official_report.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRetrieveOfficialReport",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "official_report",
+      "requiredCapability": "official_report.retrieve.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_retrieval.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRevokeOfficialReport",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "official_report",
+      "requiredCapability": "official_report.revoke.owned",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_official_report_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotSubmitPilotFeedback",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "pilot.feedback.submit.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_feedback_recorded.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotRevokeDraftMandate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "mandate",
+      "requiredCapability": "mandate.draft.revoke",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_draft_mandate_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotSubmitAgentAccountProof",
+      "kind": "command",
+      "actorTypes": [
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "agent_account.proof.submit.self",
+      "idempotency": "required",
+      "quotaClass": "credential",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_account_proof_verified.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadProviderIntent",
+      "kind": "query",
+      "actorTypes": [
+        "provider"
+      ],
+      "resourceType": "transfer_intent",
+      "requiredCapability": "provider.intent.read",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "provider_intent_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotAcknowledgeProviderIntent",
+      "kind": "command",
+      "actorTypes": [
+        "provider"
+      ],
+      "resourceType": "transfer_intent",
+      "requiredCapability": "provider.intent.acknowledge",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "provider_intent_acknowledgement.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "workerProcessInbox",
+      "kind": "command",
+      "actorTypes": [
+        "system_worker"
+      ],
+      "resourceType": "inbox_message",
+      "requiredCapability": "worker.inbox.process",
+      "idempotency": "required",
+      "quotaClass": "worker",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "provider_sandbox_callback_result.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingCreateAccountBindingChallenge",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "trading.account_challenge.create.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_account_binding_challenge_created.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingImportHyperliquidHistory",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_credit_profile",
+      "requiredCapability": "trading.history_import.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_history_imported.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingFinalizeEvidenceSnapshot",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_credit_profile",
+      "requiredCapability": "trading.evidence_finalize.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_evidence_snapshot_finalized.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingReadCreditProfile",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_credit_profile",
+      "requiredCapability": "trading.credit_profile.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_credit_profile_view.v2",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingCreateCapitalRequest",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_credit_profile",
+      "requiredCapability": "trading.capital_request.create.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_capital_request_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingCreateProviderMandate",
+      "kind": "command",
+      "actorTypes": [
+        "provider"
+      ],
+      "resourceType": "provider",
+      "requiredCapability": "trading.provider_mandate.create.owned",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_provider_mandate_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingListCompatibleMandates",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_capital_request",
+      "requiredCapability": "trading.compatible_mandate.list.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_compatible_mandate_list.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingCreateMatchProposal",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_capital_request",
+      "requiredCapability": "trading.match_proposal.create.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_match_proposal_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingAcceptMatchAsProvider",
+      "kind": "command",
+      "actorTypes": [
+        "provider"
+      ],
+      "resourceType": "trading_match_proposal",
+      "requiredCapability": "trading.match.accept.provider",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_match_provider_accepted.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingAcceptMatchAsSubject",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_match_proposal",
+      "requiredCapability": "trading.match.accept.subject",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_match_subject_accepted.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingCreateFacility",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_match_proposal",
+      "requiredCapability": "trading.facility.create.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingContributeSubjectCollateral",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.collateral.record.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_subject_collateral_recorded.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingRecordProviderFunding",
+      "kind": "command",
+      "actorTypes": [
+        "provider"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.funding.record.provider",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_provider_funding_recorded.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingActivateFacility",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.activate.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_activated.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingSubmitOrderIntent",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.order_intent.submit.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_order_intent_submitted.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingCancelOrderIntent",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_order_intent",
+      "requiredCapability": "trading.order_intent.cancel.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_order_intent_canceled.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingReadFacilityState",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent",
+        "provider"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.read.bound",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_facility_state.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingEvaluateRisk",
+      "kind": "command",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.risk.evaluate.tenant",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_risk_evaluated.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingPauseNewRisk",
+      "kind": "command",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.pause.tenant",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_new_risk_paused.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingFlattenFacility",
+      "kind": "command",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.flatten.tenant",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_flattened.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingRequestClose",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.close_request.self",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_facility_close_requested.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingRunSettlement",
+      "kind": "command",
+      "actorTypes": [
+        "system_worker"
+      ],
+      "resourceType": "trading_facility_close_request",
+      "requiredCapability": "trading.settlement.run.worker",
+      "idempotency": "required",
+      "quotaClass": "worker",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_settlement_finalized.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingReadSettlement",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent",
+        "provider"
+      ],
+      "resourceType": "trading_settlement",
+      "requiredCapability": "trading.settlement.read.bound",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_settlement_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingIssuePerformanceProof",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent",
+        "provider"
+      ],
+      "resourceType": "trading_settlement",
+      "requiredCapability": "trading.performance_proof.issue.bound",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_trading_performance_proof_issued.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "tradingReadFacilityEvidence",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent",
+        "provider"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "trading.facility.evidence.read.bound",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "trading_facility_evidence.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletPrepareAccountBinding",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "wallet.account_binding.prepare.owned",
+      "idempotency": "required",
+      "quotaClass": "credential",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_binding_challenge_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletSubmitAccountBinding",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "wallet.account_binding.submit.owned",
+      "idempotency": "required",
+      "quotaClass": "credential",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_binding_verified.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletReadAccountBindings",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "wallet.account_binding.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_bindings_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletRevokeAccountBinding",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "wallet.account_binding.revoke.owned",
+      "idempotency": "required",
+      "quotaClass": "credential",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_execution_account_binding_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletDiscoverCapabilities",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "wallet_adapter",
+      "requiredCapability": "wallet.capabilities.discover",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "wallet_capability_descriptor_list.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletPrepareGrant",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "wallet.grant.prepare.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_prepared.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletActivateGrant",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "delegated_wallet_grant",
+      "requiredCapability": "wallet.grant.activate.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_activated.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletReadGrant",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "delegated_wallet_grant",
+      "requiredCapability": "wallet.grant.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletRevokeGrant",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "delegated_wallet_grant",
+      "requiredCapability": "wallet.grant.revoke.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_grant_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletPrepareExecution",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "delegated_wallet_grant",
+      "requiredCapability": "wallet.execution.prepare.owned",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_prepared.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletApproveExecution",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "wallet_execution",
+      "requiredCapability": "wallet.execution.approve.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_approved.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletSubmitExecution",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "wallet_execution",
+      "requiredCapability": "wallet.execution.submit.owned",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_submission_blocked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "walletReadExecution",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "wallet_execution",
+      "requiredCapability": "wallet.execution.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_wallet_execution_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venueDiscoverCapabilities",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_adapter",
+      "requiredCapability": "venue.capabilities.discover",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "venue_capability_descriptor_list.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venueReadBinding",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_binding",
+      "requiredCapability": "venue.binding.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_binding_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venuePrepareDelegate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "venue_binding",
+      "requiredCapability": "venue.delegate.prepare.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_prepared.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venueActivateDelegate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "venue_delegate",
+      "requiredCapability": "venue.delegate.activate.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_activation_blocked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venueRevokeDelegate",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "venue_delegate",
+      "requiredCapability": "venue.delegate.revoke.owned",
+      "idempotency": "required",
+      "quotaClass": "privileged",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_delegate_revocation_blocked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venuePrepareExecution",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_delegate",
+      "requiredCapability": "venue.execution.prepare.owned",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_prepared.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venueSubmitExecution",
+      "kind": "command",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_execution",
+      "requiredCapability": "venue.execution.submit.owned",
+      "idempotency": "required",
+      "quotaClass": "economic",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_submission_blocked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "venueReadExecution",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "venue_execution",
+      "requiredCapability": "venue.execution.read.owned",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_venue_execution_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    }
+  ],
+  "safety": {
+    "realFundsEnabled": false,
+    "productionCreditEnabled": false,
+    "humanCreditEnabled": false,
+    "humanCreditIntentEnabled": true,
+    "agentCreditIntentEnabled": true,
+    "humanCreditDecisionEnabled": true,
+    "agentCreditDecisionEnabled": true,
+    "offerAcceptanceEnabled": true,
+    "sandboxExecutionEnabled": true,
+    "sandboxRepaymentEnabled": true,
+    "sandboxServicingEnabled": true,
+    "sandboxResolutionEnabled": true,
+    "agentAccountProofEnabled": true,
+    "mandateActivationEnabled": true,
+    "providerSandboxEnabled": true,
+    "creditPassportArtifactsEnabled": true,
+    "officialReportArtifactsEnabled": true,
+    "tradingCapitalNoFundsEvidenceEnabled": true,
+    "tradingCapitalNoFundsMatchingEnabled": true,
+    "tradingCapitalNoFundsSettlementEnabled": true,
+    "agenticWalletPreflightEnabled": true,
+    "walletSubmissionEnabled": false,
+    "productionIdentityEnabled": false,
+    "rawPiiAllowed": false
+  },
+  "schemaVersion": "tenant_protocol_catalog.v1"
+}

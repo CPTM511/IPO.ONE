@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/okx-agentic-wallet-risk-receipt.schema.json",
+  "title": "IPO.ONE OKX Agentic Wallet Risk Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "riskReceiptHash", "adapterId", "descriptorHash", "capabilitiesHash", "capabilityObservationHash",
+    "invocationProjectionHash", "simulationStatus", "riskGrade", "identityStatus", "interceptionStatus",
+    "externalOutcomeStatus", "decision", "reasonCodes", "observedAt", "expiresAt",
+    "canonicalPreflightStillRequired", "submissionAllowed", "externalCallPerformed", "reconciliationRequired",
+    "retryAllowed", "rawVendorResponseRetained", "productionAuthority", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "riskReceiptHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "const": "okx_agentic_wallet_reference" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "capabilitiesHash": { "$ref": "#/$defs/hash" },
+    "capabilityObservationHash": { "$ref": "#/$defs/hash" },
+    "invocationProjectionHash": { "$ref": "#/$defs/hash" },
+    "simulationStatus": { "enum": ["passed", "failed", "unknown"] },
+    "riskGrade": { "enum": ["low", "medium", "high", "critical", "unknown"] },
+    "identityStatus": { "enum": ["verified", "step_up", "failed", "unknown"] },
+    "interceptionStatus": { "enum": ["clear", "blocked", "unknown"] },
+    "externalOutcomeStatus": { "enum": ["not_submitted", "pending", "succeeded", "failed", "unknown"] },
+    "decision": { "enum": ["ALLOW", "STEP_UP", "DENY", "QUARANTINE"] },
+    "reasonCodes": { "$ref": "#/$defs/reasonCodes" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "canonicalPreflightStillRequired": { "const": true },
+    "submissionAllowed": { "const": false },
+    "externalCallPerformed": { "const": false },
+    "reconciliationRequired": { "type": "boolean" },
+    "retryAllowed": { "const": false },
+    "rawVendorResponseRetained": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "okx_agentic_wallet_risk_receipt.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "reasonCodes": {
+      "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" }
+    }
+  }
+}

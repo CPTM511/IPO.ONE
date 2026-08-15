@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/facility-view.schema.json",
+  "title": "IPO.ONE Composed Facility View v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "facilityId",
+    "capitalPartnerId",
+    "creditOfferId",
+    "obligationId",
+    "subjectId",
+    "assetId",
+    "facilityLimitMinor",
+    "utilizedMinor",
+    "outstandingMinor",
+    "repaidMinor",
+    "availableMinor",
+    "status",
+    "servicingClassification",
+    "daysPastDue",
+    "nextPayment",
+    "scheduleHash",
+    "evidenceCoverage",
+    "asOf",
+    "sandboxOnly",
+    "productionFundsMoved",
+    "schemaVersion"
+  ],
+  "properties": {
+    "facilityId": { "$ref": "#/$defs/id" },
+    "capitalPartnerId": { "$ref": "#/$defs/id" },
+    "creditOfferId": { "$ref": "#/$defs/id" },
+    "obligationId": { "$ref": "#/$defs/id" },
+    "subjectId": { "$ref": "#/$defs/id" },
+    "assetId": { "$ref": "#/$defs/id" },
+    "facilityLimitMinor": { "$ref": "#/$defs/minor" },
+    "utilizedMinor": { "$ref": "#/$defs/minor" },
+    "outstandingMinor": { "$ref": "#/$defs/minor" },
+    "repaidMinor": { "$ref": "#/$defs/minor" },
+    "availableMinor": { "$ref": "#/$defs/minor" },
+    "status": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "servicingClassification": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "daysPastDue": { "type": "integer", "minimum": 0 },
+    "nextPayment": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "object" }
+      ]
+    },
+    "scheduleHash": { "$ref": "#/$defs/hash" },
+    "lockboxId": { "$ref": "#/$defs/id" },
+    "lockboxStatus": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "lockboxBalanceMinor": { "$ref": "#/$defs/minor" },
+    "latestServicingActionId": { "$ref": "#/$defs/id" },
+    "evidenceCoverage": { "type": "object" },
+    "asOf": { "type": "string", "format": "date-time" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "schemaVersion": { "const": "facility_view.v1" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "minor": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" }
+  }
+}

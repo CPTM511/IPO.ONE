@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { extname, isAbsolute, join, normalize, relative, sep } from "node:path";
+import { extname, isAbsolute, join, normalize, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ApiBoundaryError,
@@ -30,7 +30,9 @@ try {
   process.exit(78);
 }
 
-const rootDir = fileURLToPath(new URL("../../..", import.meta.url));
+const rootDir = runtimeConfig.managedVercel
+  ? process.cwd()
+  : fileURLToPath(new URL("../../..", import.meta.url));
 const webDir = join(rootDir, "apps", "web", "src");
 const openApiPath = join(rootDir, "api", "openapi", "ipo-one.v1.json");
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -48,6 +50,7 @@ const DISCOVERY_PATHS = new Set([
   "/.well-known/security.txt",
   "/robots.txt"
 ]);
+const PUBLIC_AUTH_PATHS = new Set(["/auth/v1/options"]);
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -432,9 +435,33 @@ function routeCategory(pathname) {
   if (OPERATIONAL_PATHS.has(pathname)) return `operational:${pathname.slice(1)}`;
   if (DISCOVERY_PATHS.has(pathname)) return "discovery";
   if (pathname === "/openapi.json") return "openapi";
+  if (PUBLIC_AUTH_PATHS.has(pathname)) return "authentication:discovery";
   if (pathname.startsWith("/v1/")) return "api:v1";
   if (pathname === "/" || contentTypes[extname(pathname)] || pathname === "/favicon.ico") return "web";
   return "other";
+}
+
+function handlePublicAuthenticationDiscovery(request, response, pathname) {
+  if (!PUBLIC_AUTH_PATHS.has(pathname)) return false;
+  if (!new Set(["GET", "HEAD"]).has(request.method)) {
+    throw new ApiBoundaryError("method_not_allowed", "Only GET and HEAD are available for this resource.", {
+      status: 405,
+      headers: { allow: "GET, HEAD" }
+    });
+  }
+  response.ipoOneHeadOnly = request.method === "HEAD";
+  sendJson(response, 200, {
+    schemaVersion: "ipo_one_authentication_options.v1",
+    profile: "public_sandbox",
+    enabled: false,
+    sessionActive: false,
+    sessionAuthenticationMethod: null,
+    oidcProviders: [],
+    walletAuthentication: false,
+    supportedChains: ["eip155:84532", "eip155:1952"],
+    boundary: "Account sign-in is available only in an approved closed-pilot deployment."
+  });
+  return true;
 }
 
 function discoveryDocument() {
@@ -443,6 +470,9 @@ function discoveryDocument() {
     protocol: "IPO.ONE",
     serviceClass: runtimeConfig.deploymentMode,
     release: runtimeConfig.release,
+    canonicalProductTruth: runtimeConfig.canonicalProductTruth,
+    releaseEligible: runtimeConfig.releaseEligible,
+    stateDurability: runtimeConfig.stateDurability,
     interfaces: {
       humanConsole: runtimeConfig.publicOrigin,
       agentApi: `${runtimeConfig.publicOrigin}/v1`,
@@ -495,7 +525,10 @@ function handleSystemResource(request, response, pathname) {
       ok: true,
       service: "ipo-one-api",
       mode: runtimeConfig.deploymentMode,
-      release: runtimeConfig.release
+      release: runtimeConfig.release,
+      canonicalProductTruth: runtimeConfig.canonicalProductTruth,
+      releaseEligible: runtimeConfig.releaseEligible,
+      stateDurability: runtimeConfig.stateDurability
     });
     return true;
   }
@@ -715,6 +748,10 @@ const server = createServer({
       handleSystemResource(request, response, url.pathname);
       return;
     }
+    if (PUBLIC_AUTH_PATHS.has(url.pathname)) {
+      handlePublicAuthenticationDiscovery(request, response, url.pathname);
+      return;
+    }
 
     const isApiResource = url.pathname.startsWith("/v1/");
     if (isApiResource) {
@@ -804,19 +841,33 @@ function shutdown(signal) {
   setTimeout(() => process.exit(1), 5_000).unref();
 }
 
-process.once("SIGINT", () => shutdown("SIGINT"));
-process.once("SIGTERM", () => shutdown("SIGTERM"));
-
 server.on("error", (error) => {
   logEvent("fatal", "server_error", { errorName: error?.name ?? "Error", errorCode: error?.code });
   process.exitCode = 1;
 });
 
-server.listen(runtimeConfig.port, runtimeConfig.host, () => {
-  logEvent("info", "server_started", {
-    host: runtimeConfig.host,
-    port: runtimeConfig.port,
-    mode: runtimeConfig.deploymentMode,
-    nodeEnvironment: runtimeConfig.nodeEnvironment
+const directlyExecuted =
+  typeof process.argv[1] === "string" &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (directlyExecuted) {
+  process.once("SIGINT", () => shutdown("SIGINT"));
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  server.listen(runtimeConfig.port, runtimeConfig.host, () => {
+    logEvent("info", "server_started", {
+      host: runtimeConfig.host,
+      port: runtimeConfig.port,
+      mode: runtimeConfig.deploymentMode,
+      nodeEnvironment: runtimeConfig.nodeEnvironment
+    });
   });
-});
+}
+
+export function handleIpoOneRequest(request, response) {
+  return new Promise((resolveRequest) => {
+    const complete = () => resolveRequest();
+    response.once("finish", complete);
+    response.once("close", complete);
+    server.emit("request", request, response);
+  });
+}

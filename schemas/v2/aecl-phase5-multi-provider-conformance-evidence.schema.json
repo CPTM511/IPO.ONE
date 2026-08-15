@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/aecl-phase5-multi-provider-conformance-evidence.schema.json",
+  "title": "IPO.ONE AECL Phase 5 Multi-Provider Conformance Evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "conformanceEvidenceId", "conformanceEvidenceHash", "phase", "result", "providerCount",
+    "commonSpiOperationCount", "spiContractHash", "adapterSetHash", "referenceProviders",
+    "commonAeclSemanticsProviderNeutral", "unsupportedCapabilitiesFailClosed",
+    "externalPermissionsNarrowOnly", "providerSecurityDataNormalized", "adaptersIndependentlyDisableable",
+    "secondAuthorizationKernelCreated", "secondEconomicKernelCreated", "canonicalKernelChanged",
+    "futureProviderRequiresKernelChange", "futureProviderPrimaryWork", "safeTestnetWorkDeferred",
+    "externalCallPerformed", "transactionSubmissionPerformed", "productionAuthority", "fundsAuthority",
+    "observedAt", "expiresAt", "schemaVersion"
+  ],
+  "properties": {
+    "conformanceEvidenceId": { "$ref": "#/$defs/identifier" },
+    "conformanceEvidenceHash": { "$ref": "#/$defs/hash" },
+    "phase": { "const": "PHASE_5" },
+    "result": { "const": "PASS" },
+    "providerCount": { "const": 5 },
+    "commonSpiOperationCount": { "const": 9 },
+    "spiContractHash": { "$ref": "#/$defs/hash" },
+    "adapterSetHash": { "$ref": "#/$defs/hash" },
+    "referenceProviders": {
+      "type": "array", "minItems": 5, "maxItems": 5,
+      "items": { "$ref": "#/$defs/provider" }
+    },
+    "commonAeclSemanticsProviderNeutral": { "const": true },
+    "unsupportedCapabilitiesFailClosed": { "const": true },
+    "externalPermissionsNarrowOnly": { "const": true },
+    "providerSecurityDataNormalized": { "const": true },
+    "adaptersIndependentlyDisableable": { "const": true },
+    "secondAuthorizationKernelCreated": { "const": false },
+    "secondEconomicKernelCreated": { "const": false },
+    "canonicalKernelChanged": { "const": false },
+    "futureProviderRequiresKernelChange": { "const": false },
+    "futureProviderPrimaryWork": { "const": "adapter_and_conformance" },
+    "safeTestnetWorkDeferred": { "const": true },
+    "externalCallPerformed": { "const": false },
+    "transactionSubmissionPerformed": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": { "const": "aecl_phase5_multi_provider_conformance_evidence.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapterId", "providerFamily", "architectureCategory", "descriptorHash", "capabilitiesHash",
+        "referenceReceiptHash", "referenceDecision", "operationCount", "independentlyDisabled",
+        "externalCallsEnabled", "unsupportedCapabilitiesFailClosed", "externalPermissionWideningAllowed",
+        "providerSecurityDataNormalized", "secondAuthorizationKernelCreated", "secondEconomicKernelCreated",
+        "canonicalKernelChanged", "rawSecretsRetained", "productionAuthority", "fundsAuthority"
+      ],
+      "properties": {
+        "adapterId": { "$ref": "#/$defs/identifier" },
+        "providerFamily": { "$ref": "#/$defs/identifier" },
+        "architectureCategory": { "$ref": "#/$defs/identifier" },
+        "descriptorHash": { "$ref": "#/$defs/hash" },
+        "capabilitiesHash": { "$ref": "#/$defs/hash" },
+        "referenceReceiptHash": { "$ref": "#/$defs/hash" },
+        "referenceDecision": { "enum": ["STEP_UP", "DENY", "QUARANTINE"] },
+        "operationCount": { "const": 9 },
+        "independentlyDisabled": { "const": true },
+        "externalCallsEnabled": { "const": false },
+        "unsupportedCapabilitiesFailClosed": { "const": true },
+        "externalPermissionWideningAllowed": { "const": false },
+        "providerSecurityDataNormalized": { "const": true },
+        "secondAuthorizationKernelCreated": { "const": false },
+        "secondEconomicKernelCreated": { "const": false },
+        "canonicalKernelChanged": { "const": false },
+        "rawSecretsRetained": { "const": false },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false }
+      }
+    }
+  }
+}

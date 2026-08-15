@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/wallet-003-erc1271-deployment-decision.schema.json",
+  "title": "IPO.ONE WALLET-003 ERC-1271 deployment decision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decisionId",
+    "decision",
+    "approverRole",
+    "approvedAt",
+    "approvalExpiresAt",
+    "decisionPackSha256",
+    "amendedAt",
+    "decisionAmendmentSha256",
+    "chainId",
+    "ownerAddress",
+    "deployerAddress",
+    "contractExpiresAt",
+    "caps",
+    "e2e",
+    "roles",
+    "artifact",
+    "deploymentAuthorized",
+    "productionFundsMoved"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "wallet_003_erc1271_deployment_decision.v1"
+    },
+    "decisionId": {
+      "const": "WALLET-003-ERC1271-DEPLOY-001"
+    },
+    "decision": {
+      "const": "APPROVE"
+    },
+    "approverRole": {
+      "const": "IPO.ONE Founder"
+    },
+    "approvedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "approvalExpiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decisionPackSha256": {
+      "const": "4d015b8f0d3a91ba1fc8397496449698d25fa80dbaba340cc9262c09c7d915ae"
+    },
+    "amendedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decisionAmendmentSha256": {
+      "const": "179768eae10af3004b3c980677bc20554625226cd1c24800dc8274511edf7d9e"
+    },
+    "chainId": {
+      "const": "eip155:84532"
+    },
+    "ownerAddress": {
+      "$ref": "#/$defs/address"
+    },
+    "deployerAddress": {
+      "$ref": "#/$defs/address"
+    },
+    "contractExpiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "caps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deploymentCount",
+        "transactionValueWei",
+        "gasLimit",
+        "maxFeePerGasWei",
+        "maximumFaucetBalanceWei"
+      ],
+      "properties": {
+        "deploymentCount": {
+          "const": 1
+        },
+        "transactionValueWei": {
+          "const": "0"
+        },
+        "gasLimit": {
+          "type": "integer",
+          "minimum": 100000,
+          "maximum": 500000
+        },
+        "maxFeePerGasWei": {
+          "type": "string",
+          "pattern": "^(?:[1-9][0-9]{0,8}|[1-4][0-9]{9}|5000000000)$"
+        },
+        "maximumFaucetBalanceWei": {
+          "type": "string",
+          "pattern": "^(?:[1-9][0-9]{0,17}|1000000000000000000)$"
+        }
+      }
+    },
+    "e2e": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["humanEip191", "agentEip712"],
+      "properties": {
+        "humanEip191": {
+          "type": "boolean"
+        },
+        "agentEip712": {
+          "type": "boolean"
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "humanEip191": { "const": true }
+          }
+        },
+        {
+          "properties": {
+            "agentEip712": { "const": true }
+          }
+        }
+      ]
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "humanWalletOperator",
+        "deployerOperator",
+        "evidenceCustodian",
+        "credentialDestructionOwner"
+      ],
+      "properties": {
+        "humanWalletOperator": { "$ref": "#/$defs/role" },
+        "deployerOperator": { "$ref": "#/$defs/role" },
+        "evidenceCustodian": { "$ref": "#/$defs/role" },
+        "credentialDestructionOwner": { "$ref": "#/$defs/role" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceSha256",
+        "creationBytecodeKeccak256",
+        "deployedBytecodeKeccak256"
+      ],
+      "properties": {
+        "sourceSha256": {
+          "const": "sha256:d622a3c841ec5d022ae3aa1dec312459da3492b5897e4bc05532a4e214190787"
+        },
+        "creationBytecodeKeccak256": {
+          "const": "0xfc8b0043879c1f3868149fb616a1f11f939b4c96f423d18265f5be46a24217d2"
+        },
+        "deployedBytecodeKeccak256": {
+          "const": "0x24fbe2a0332e8b875babde91f1995ceab8e0fb500b66de8047658adca0459de1"
+        }
+      }
+    },
+    "deploymentAuthorized": {
+      "const": true
+    },
+    "productionFundsMoved": {
+      "const": false
+    }
+  },
+  "$defs": {
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]{40}$"
+    },
+    "role": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._:/()-]*$"
+    }
+  }
+}

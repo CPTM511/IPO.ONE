@@ -1,0 +1,15 @@
+{
+  "name": "@ipo-one/chain-adapter",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.js"
+    }
+  },
+  "dependencies": {
+    "@ipo-one/api-contract": "workspace:*",
+    "@ipo-one/domain": "workspace:*"
+  }
+}

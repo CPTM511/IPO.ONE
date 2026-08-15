@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-api-wallet-delegate.schema.json",
+  "title": "IPO.ONE HyperCore API Wallet Delegate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "delegateId", "delegateHash", "facilityId", "facilityHash", "environment",
+    "accountBindingId", "accountBindingHash", "canonicalAccountAddressHash",
+    "apiWalletAddressHash", "signerReferenceHash", "delegateNameHash", "status",
+    "preparedAt", "activatedAt", "terminalAt", "expiresAt", "terminalReason",
+    "lifecycleVersion", "externalApprovalPerformed", "venueRegistrationVerified",
+    "rawAddressPersisted", "rawKeyAccepted", "rawKeyPersisted",
+    "reusableSignaturePersisted", "withdrawalAuthority", "transferAuthority",
+    "accountAdministrationAuthority", "mainnetAuthority", "productionAuthority",
+    "fundsAuthority", "secretsIncluded", "schemaVersion"
+  ],
+  "properties": {
+    "delegateId": { "$ref": "#/$defs/identifier" },
+    "delegateHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "environment": { "const": "hyperliquid_testnet" },
+    "accountBindingId": { "$ref": "#/$defs/identifier" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "apiWalletAddressHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "delegateNameHash": { "$ref": "#/$defs/hash" },
+    "status": {
+      "enum": ["PREPARED", "SIMULATED_ACTIVE", "REVOKED", "EXPIRED", "COMPROMISED", "RETIRED"]
+    },
+    "preparedAt": { "type": "string", "format": "date-time" },
+    "activatedAt": { "$ref": "#/$defs/nullableTime" },
+    "terminalAt": { "$ref": "#/$defs/nullableTime" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "terminalReason": {
+      "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+    },
+    "lifecycleVersion": { "type": "integer", "minimum": 1 },
+    "externalApprovalPerformed": { "const": false },
+    "venueRegistrationVerified": { "const": false },
+    "rawAddressPersisted": { "const": false },
+    "rawKeyAccepted": { "const": false },
+    "rawKeyPersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "withdrawalAuthority": { "const": false },
+    "transferAuthority": { "const": false },
+    "accountAdministrationAuthority": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "hypercore_api_wallet_delegate.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "nullableTime": {
+      "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    }
+  }
+}

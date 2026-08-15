@@ -1,0 +1,668 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hyperliquid-testnet-protective-control.schema.json",
+  "title": "IPO.ONE Hyperliquid Testnet Simulated Protective Control v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "controlId",
+    "controlHash",
+    "requestHash",
+    "idempotencyKeyHash",
+    "facilityId",
+    "facilityHash",
+    "facilityVersion",
+    "riskSnapshotHash",
+    "beforeVenueStateHash",
+    "targetRiskState",
+    "riskSnapshot",
+    "beforeVenueState",
+    "actions",
+    "actionResults",
+    "verification",
+    "status",
+    "resultHash",
+    "version",
+    "createdAt",
+    "startedAt",
+    "resolvedAt",
+    "updatedAt",
+    "environment",
+    "simulationOnly",
+    "simulationFixtureOnly",
+    "productionPolicyApproved",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "liveTransportApproved",
+    "liveSignerApproved",
+    "apiWalletApproved",
+    "withdrawalAuthority",
+    "transferAuthority",
+    "accountAdministrationAuthority",
+    "strategyAuthority",
+    "economicRepricingAuthority",
+    "automaticRecovery",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "controlId": { "$ref": "#/$defs/identifier" },
+    "controlHash": { "$ref": "#/$defs/hash" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "facilityVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+    "beforeVenueStateHash": { "$ref": "#/$defs/hash" },
+    "targetRiskState": { "$ref": "#/$defs/riskState" },
+    "riskSnapshot": { "$ref": "#/$defs/riskSnapshot" },
+    "beforeVenueState": { "$ref": "#/$defs/venueState" },
+    "actions": {
+      "type": "array",
+      "maxItems": 71,
+      "items": { "$ref": "#/$defs/protectiveAction" }
+    },
+    "actionResults": {
+      "type": "array",
+      "maxItems": 71,
+      "items": { "$ref": "#/$defs/actionResult" }
+    },
+    "verification": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/verification" }
+      ]
+    },
+    "status": {
+      "enum": ["PLANNED", "EXECUTING", "VERIFIED", "INCOMPLETE", "UNKNOWN"]
+    },
+    "resultHash": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "startedAt": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "resolvedAt": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "environment": { "const": "hyperliquid_testnet" },
+    "simulationOnly": { "const": true },
+    "simulationFixtureOnly": { "const": true },
+    "productionPolicyApproved": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "externalOrderSubmitted": { "const": false },
+    "liveTransportApproved": { "const": false },
+    "liveSignerApproved": { "const": false },
+    "apiWalletApproved": { "const": false },
+    "withdrawalAuthority": { "const": false },
+    "transferAuthority": { "const": false },
+    "accountAdministrationAuthority": { "const": false },
+    "strategyAuthority": { "const": false },
+    "economicRepricingAuthority": { "const": false },
+    "automaticRecovery": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "hyperliquid_testnet_simulated_protective_control.v1"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "PLANNED" }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "version": { "const": 1 },
+          "actionResults": { "type": "array", "maxItems": 0 },
+          "verification": { "type": "null" },
+          "resultHash": { "type": "null" },
+          "startedAt": { "type": "null" },
+          "resolvedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "EXECUTING" }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "version": { "const": 2 },
+          "actionResults": { "type": "array", "maxItems": 0 },
+          "verification": { "type": "null" },
+          "resultHash": { "type": "null" },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "resolvedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["VERIFIED", "INCOMPLETE", "UNKNOWN"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "version": { "const": 3 },
+          "verification": { "$ref": "#/$defs/verification" },
+          "resultHash": { "$ref": "#/$defs/hash" },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "resolvedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "cloid": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{32}$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^(0\\.(0*[1-9][0-9]*|[0-9]*[1-9]0*)|[1-9][0-9]{0,30}(\\.[0-9]{1,18})?)$"
+    },
+    "riskState": {
+      "enum": ["NORMAL", "WARNING", "REDUCE_ONLY", "FLATTEN", "SETTLEMENT"]
+    },
+    "reasonCodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z0-9][a-z0-9:_-]*$"
+      }
+    },
+    "openOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetIndex", "orderId", "cloid", "riskIncreasing"],
+      "properties": {
+        "assetIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "orderId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "cloid": {
+          "anyOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/cloid" }
+          ]
+        },
+        "riskIncreasing": { "type": "boolean" }
+      }
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetIndex", "side", "size", "protectiveLimitPx"],
+      "properties": {
+        "assetIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "side": { "enum": ["long", "short"] },
+        "size": { "$ref": "#/$defs/decimal" },
+        "protectiveLimitPx": { "$ref": "#/$defs/decimal" }
+      }
+    },
+    "venueState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "venueStateHash",
+        "facilityId",
+        "facilityHash",
+        "sourceInfoSnapshotHash",
+        "observedAt",
+        "serverReceivedAt",
+        "maximumAgeMs",
+        "freshness",
+        "openOrders",
+        "positions",
+        "environment",
+        "simulationOnly",
+        "simulationFixtureOnly",
+        "productionPolicyApproved",
+        "externalSystemQueried",
+        "externalOrderSubmitted",
+        "liveTransportApproved",
+        "liveSignerApproved",
+        "apiWalletApproved",
+        "withdrawalAuthority",
+        "transferAuthority",
+        "accountAdministrationAuthority",
+        "strategyAuthority",
+        "economicRepricingAuthority",
+        "automaticRecovery",
+        "mainnetAuthority",
+        "productionAuthority",
+        "fundsAuthority",
+        "piiIncluded",
+        "secretsIncluded",
+        "schemaVersion"
+      ],
+      "properties": {
+        "venueStateHash": { "$ref": "#/$defs/hash" },
+        "facilityId": { "$ref": "#/$defs/identifier" },
+        "facilityHash": { "$ref": "#/$defs/hash" },
+        "sourceInfoSnapshotHash": { "$ref": "#/$defs/hash" },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "serverReceivedAt": { "type": "string", "format": "date-time" },
+        "maximumAgeMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600000
+        },
+        "freshness": { "enum": ["FRESH", "STALE", "UNKNOWN"] },
+        "openOrders": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/openOrder" }
+        },
+        "positions": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/position" }
+        },
+        "environment": { "const": "hyperliquid_testnet" },
+        "simulationOnly": { "const": true },
+        "simulationFixtureOnly": { "const": true },
+        "productionPolicyApproved": { "const": false },
+        "externalSystemQueried": { "const": false },
+        "externalOrderSubmitted": { "const": false },
+        "liveTransportApproved": { "const": false },
+        "liveSignerApproved": { "const": false },
+        "apiWalletApproved": { "const": false },
+        "withdrawalAuthority": { "const": false },
+        "transferAuthority": { "const": false },
+        "accountAdministrationAuthority": { "const": false },
+        "strategyAuthority": { "const": false },
+        "economicRepricingAuthority": { "const": false },
+        "automaticRecovery": { "const": false },
+        "mainnetAuthority": { "const": false },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "piiIncluded": { "const": false },
+        "secretsIncluded": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_simulated_venue_state.v1"
+        }
+      }
+    },
+    "riskSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskSnapshotHash",
+        "facilityId",
+        "facilityHash",
+        "facilityVersion",
+        "venueStateHash",
+        "sourceInfoSnapshotHash",
+        "venueObservedAt",
+        "venueMaximumAgeMs",
+        "freshness",
+        "evaluatedRiskState",
+        "effectiveRiskState",
+        "reasonCodes",
+        "riskIncreasingKillSwitchOpen",
+        "externalWriteState",
+        "riskPolicyVersion",
+        "riskPolicyHash",
+        "serverEvaluatedAt",
+        "monotonicProtection",
+        "authorizingProductionRisk",
+        "callerTimeAccepted",
+        "environment",
+        "simulationOnly",
+        "simulationFixtureOnly",
+        "productionPolicyApproved",
+        "externalSystemQueried",
+        "externalOrderSubmitted",
+        "liveTransportApproved",
+        "liveSignerApproved",
+        "apiWalletApproved",
+        "withdrawalAuthority",
+        "transferAuthority",
+        "accountAdministrationAuthority",
+        "strategyAuthority",
+        "economicRepricingAuthority",
+        "automaticRecovery",
+        "mainnetAuthority",
+        "productionAuthority",
+        "fundsAuthority",
+        "piiIncluded",
+        "secretsIncluded",
+        "schemaVersion"
+      ],
+      "properties": {
+        "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+        "facilityId": { "$ref": "#/$defs/identifier" },
+        "facilityHash": { "$ref": "#/$defs/hash" },
+        "facilityVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "venueStateHash": { "$ref": "#/$defs/hash" },
+        "sourceInfoSnapshotHash": { "$ref": "#/$defs/hash" },
+        "venueObservedAt": { "type": "string", "format": "date-time" },
+        "venueMaximumAgeMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600000
+        },
+        "freshness": { "enum": ["FRESH", "STALE", "UNKNOWN"] },
+        "evaluatedRiskState": { "$ref": "#/$defs/riskState" },
+        "effectiveRiskState": { "$ref": "#/$defs/riskState" },
+        "reasonCodes": { "$ref": "#/$defs/reasonCodes" },
+        "riskIncreasingKillSwitchOpen": { "type": "boolean" },
+        "externalWriteState": { "enum": ["RECONCILED", "UNKNOWN"] },
+        "riskPolicyVersion": {
+          "const": "hyperliquid_testnet_risk_simulation_fixture.v1"
+        },
+        "riskPolicyHash": { "$ref": "#/$defs/hash" },
+        "serverEvaluatedAt": { "type": "string", "format": "date-time" },
+        "monotonicProtection": { "const": true },
+        "authorizingProductionRisk": { "const": false },
+        "callerTimeAccepted": { "const": false },
+        "environment": { "const": "hyperliquid_testnet" },
+        "simulationOnly": { "const": true },
+        "simulationFixtureOnly": { "const": true },
+        "productionPolicyApproved": { "const": false },
+        "externalSystemQueried": { "const": false },
+        "externalOrderSubmitted": { "const": false },
+        "liveTransportApproved": { "const": false },
+        "liveSignerApproved": { "const": false },
+        "apiWalletApproved": { "const": false },
+        "withdrawalAuthority": { "const": false },
+        "transferAuthority": { "const": false },
+        "accountAdministrationAuthority": { "const": false },
+        "strategyAuthority": { "const": false },
+        "economicRepricingAuthority": { "const": false },
+        "automaticRecovery": { "const": false },
+        "mainnetAuthority": { "const": false },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false },
+        "piiIncluded": { "const": false },
+        "secretsIncluded": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_simulated_risk_snapshot.v1"
+        }
+      }
+    },
+    "warningAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionId",
+        "ordinal",
+        "kind",
+        "reasonCodes",
+        "actionHash",
+        "simulationOnly",
+        "withdrawalAuthority",
+        "transferAuthority",
+        "strategyAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "actionId": { "$ref": "#/$defs/identifier" },
+        "ordinal": { "type": "integer", "minimum": 1, "maximum": 71 },
+        "kind": { "const": "warningNotification" },
+        "reasonCodes": { "$ref": "#/$defs/reasonCodes" },
+        "actionHash": { "$ref": "#/$defs/hash" },
+        "simulationOnly": { "const": true },
+        "withdrawalAuthority": { "const": false },
+        "transferAuthority": { "const": false },
+        "strategyAuthority": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_protective_action.v1"
+        }
+      }
+    },
+    "cancelAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionId",
+        "ordinal",
+        "kind",
+        "assetIndex",
+        "orderId",
+        "cloid",
+        "actionHash",
+        "simulationOnly",
+        "withdrawalAuthority",
+        "transferAuthority",
+        "strategyAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "actionId": { "$ref": "#/$defs/identifier" },
+        "ordinal": { "type": "integer", "minimum": 1, "maximum": 71 },
+        "kind": { "const": "cancel" },
+        "assetIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "orderId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "cloid": {
+          "anyOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/cloid" }
+          ]
+        },
+        "actionHash": { "$ref": "#/$defs/hash" },
+        "simulationOnly": { "const": true },
+        "withdrawalAuthority": { "const": false },
+        "transferAuthority": { "const": false },
+        "strategyAuthority": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_protective_action.v1"
+        }
+      }
+    },
+    "reduceOnlyCloseAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionId",
+        "ordinal",
+        "kind",
+        "assetIndex",
+        "side",
+        "size",
+        "limitPx",
+        "timeInForce",
+        "reduceOnly",
+        "actionHash",
+        "simulationOnly",
+        "withdrawalAuthority",
+        "transferAuthority",
+        "strategyAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "actionId": { "$ref": "#/$defs/identifier" },
+        "ordinal": { "type": "integer", "minimum": 1, "maximum": 71 },
+        "kind": { "const": "reduceOnlyClose" },
+        "assetIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "side": { "enum": ["buy", "sell"] },
+        "size": { "$ref": "#/$defs/decimal" },
+        "limitPx": { "$ref": "#/$defs/decimal" },
+        "timeInForce": { "const": "Ioc" },
+        "reduceOnly": { "const": true },
+        "actionHash": { "$ref": "#/$defs/hash" },
+        "simulationOnly": { "const": true },
+        "withdrawalAuthority": { "const": false },
+        "transferAuthority": { "const": false },
+        "strategyAuthority": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_protective_action.v1"
+        }
+      }
+    },
+    "protectiveAction": {
+      "oneOf": [
+        { "$ref": "#/$defs/warningAction" },
+        { "$ref": "#/$defs/cancelAction" },
+        { "$ref": "#/$defs/reduceOnlyCloseAction" }
+      ]
+    },
+    "actionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionId",
+        "actionHash",
+        "disposition",
+        "responseHash",
+        "actionResultHash",
+        "simulationOnly",
+        "externalSystemQueried",
+        "externalOrderSubmitted",
+        "schemaVersion"
+      ],
+      "properties": {
+        "actionId": { "$ref": "#/$defs/identifier" },
+        "actionHash": { "$ref": "#/$defs/hash" },
+        "disposition": { "enum": ["confirmed", "rejected", "unknown"] },
+        "responseHash": { "$ref": "#/$defs/hash" },
+        "actionResultHash": { "$ref": "#/$defs/hash" },
+        "simulationOnly": { "const": true },
+        "externalSystemQueried": { "const": false },
+        "externalOrderSubmitted": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_protective_action_result.v1"
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "controlHash",
+        "targetRiskState",
+        "beforeVenueStateHash",
+        "afterVenueStateHash",
+        "riskIncreasingOpenOrderCount",
+        "openOrderCount",
+        "positionCount",
+        "outcome",
+        "verifiedAt",
+        "verificationHash",
+        "simulationOnly",
+        "externalSystemQueried",
+        "automaticRecovery",
+        "schemaVersion"
+      ],
+      "properties": {
+        "controlHash": { "$ref": "#/$defs/hash" },
+        "targetRiskState": { "$ref": "#/$defs/riskState" },
+        "beforeVenueStateHash": { "$ref": "#/$defs/hash" },
+        "afterVenueStateHash": {
+          "anyOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "riskIncreasingOpenOrderCount": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0, "maximum": 50 }
+          ]
+        },
+        "openOrderCount": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0, "maximum": 50 }
+          ]
+        },
+        "positionCount": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "integer", "minimum": 0, "maximum": 20 }
+          ]
+        },
+        "outcome": { "enum": ["VERIFIED", "INCOMPLETE", "UNKNOWN"] },
+        "verifiedAt": { "type": "string", "format": "date-time" },
+        "verificationHash": { "$ref": "#/$defs/hash" },
+        "simulationOnly": { "const": true },
+        "externalSystemQueried": { "const": false },
+        "automaticRecovery": { "const": false },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_protective_verification.v1"
+        }
+      }
+    }
+  }
+}

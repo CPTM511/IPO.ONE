@@ -1,0 +1,43 @@
+{
+  "fixtureVersion": "hypercore_venue_conformance.v1",
+  "environment": "hyperliquid_testnet",
+  "operations": [
+    "venueDiscoverCapabilities",
+    "venueReadBinding",
+    "venuePrepareDelegate",
+    "venueActivateDelegate",
+    "venueRevokeDelegate",
+    "venuePrepareExecution",
+    "venueSubmitExecution",
+    "venueReadExecution"
+  ],
+  "signingSchemes": ["l1_action", "user_signed_action"],
+  "allowedActionClasses": [
+    "order",
+    "reduceOnlyOrder",
+    "cancel",
+    "cancelByCloid",
+    "modify"
+  ],
+  "deniedActionClasses": [
+    "withdraw3",
+    "usdSend",
+    "spotSend",
+    "sendAsset",
+    "usdClassTransfer",
+    "vaultTransfer",
+    "approveAgent",
+    "approveBuilderFee",
+    "updateLeverage",
+    "updateIsolatedMargin",
+    "unknownFutureAction"
+  ],
+  "externalCallsEnabled": false,
+  "approveAgentEnabled": false,
+  "officialSigningEnabled": false,
+  "exchangeSubmissionEnabled": false,
+  "testnetWriteAuthority": false,
+  "mainnetAuthority": false,
+  "productionAuthority": false,
+  "fundsAuthority": false
+}

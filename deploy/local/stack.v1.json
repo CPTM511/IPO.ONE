@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "ipo.one.local-stack/v1",
+  "decisionId": "LOCAL-STACK-001",
+  "status": "implemented_local_only",
+  "profile": "local_no_funds",
+  "launchBlocked": true,
+  "virtualization": {
+    "provider": "lima",
+    "instance": "ipo-one-local",
+    "cpus": 4,
+    "memoryGiB": 6,
+    "diskGiB": 40,
+    "containerEngine": "docker_rootless",
+    "compose": "v2",
+    "portForwarding": "lima_hostagent_loopback_only"
+  },
+  "database": {
+    "image": "postgres@sha256:4f736ae292687621d4dbe0d499ffd024a36bd2ee7d8ca6f2ccd4c800f047b394",
+    "majorVersion": 17,
+    "patchVersion": "17.10",
+    "database": "ipo_one_private_pilot",
+    "guestAddress": "127.0.0.2",
+    "guestPort": 55432,
+    "macHostPublished": false,
+    "persistentVolume": true,
+    "ownerRuntimeUse": "bootstrap_only"
+  },
+  "pilot": {
+    "image": "ipo-one-local:node-26.5.0",
+    "nodeVersion": "26.5.0",
+    "entrypoint": "apps/private-pilot/src/start.js",
+    "hostBinding": "127.0.0.1",
+    "ports": [
+      8787,
+      8788,
+      8789,
+      8790
+    ],
+    "syntheticDataOnly": true,
+    "processLocalCanonicalStateAllowed": false
+  },
+  "worker": {
+    "image": "ipo-one-local:node-26.5.0",
+    "entrypoint": "apps/private-pilot/src/local-worker.js",
+    "shape": "separate_container",
+    "syntheticOutboxSink": true,
+    "leaseAndIdempotencyRequired": true,
+    "reconciliationRequired": true,
+    "signerEnabled": false
+  },
+  "authority": {
+    "remoteAccessEnabled": false,
+    "realFundsEnabled": false,
+    "humanCreditEnabled": false,
+    "testnetWritesEnabled": false,
+    "externalProviderExecutionEnabled": false,
+    "venueSignerEnabled": false,
+    "publicSignupEnabled": false,
+    "cloudMutationEnabled": false
+  },
+  "acceptance": {
+    "databaseMigrations": true,
+    "leastPrivilegeRlsRole": true,
+    "humanWorkspace": true,
+    "agentControllerWorkspace": true,
+    "riskWorkspace": true,
+    "capitalPartnerWorkspace": true,
+    "workerHeartbeat": true,
+    "outboxDelivery": true,
+    "reconciliation": true,
+    "restartRecovery": true,
+    "repositoryQualityGate": true
+  }
+}

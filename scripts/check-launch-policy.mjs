@@ -13,14 +13,19 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-const [policyText, templateText, schemaText] = await Promise.all([
+const [policyText, templateText, closedPilotTemplateText, schemaText] = await Promise.all([
   source("deploy/launch-policy.v1.json"),
   source("deploy/approvals/public-sandbox.pending.json"),
+  source("deploy/approvals/closed-non-funds-pilot.pending.json"),
   source("deploy/launch-evidence.v1.schema.json")
 ]);
 
 const policy = validateLaunchPolicy(parseCanonicalJson(policyText, "Launch policy"));
 const template = parseCanonicalJson(templateText, "Pending launch evidence template");
+const closedPilotTemplate = parseCanonicalJson(
+  closedPilotTemplateText,
+  "Pending closed-pilot launch evidence template"
+);
 const schema = parseCanonicalJson(schemaText, "Launch evidence schema");
 
 assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
@@ -40,6 +45,18 @@ assert.throws(
   (error) =>
     error instanceof LaunchEvidenceError &&
     error.issues.some((issue) => issue.includes("status must be approved"))
+);
+assert.throws(
+  () =>
+    verifyLaunchEvidence(closedPilotTemplate, {
+      policy,
+      expectedProfile: "closed_non_funds_pilot",
+      expectedCommitSha: "b".repeat(40),
+      now: new Date("2026-07-18T12:00:00.000Z")
+    }),
+  (error) =>
+    error instanceof LaunchEvidenceError &&
+    error.issues.some((issue) => issue.includes("policy-locked"))
 );
 
 const cliResult = spawnSync(

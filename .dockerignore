@@ -2,6 +2,7 @@
 .github
 .env
 .env.*
+.ipo-one
 .DS_Store
 node_modules
 **/node_modules
@@ -14,9 +15,15 @@ output
 *.db-wal
 docs
 security
-scripts
+scripts/*
+!scripts/migrate.mjs
 **/test
 **/tests
 **/*.test.js
 **/*.test.mjs
 deploy
+!deploy/
+deploy/*
+!deploy/local/
+deploy/local/*
+!deploy/local/private-pilot-profile.v1.json

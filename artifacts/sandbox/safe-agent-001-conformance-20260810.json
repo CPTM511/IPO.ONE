@@ -1,0 +1,89 @@
+{
+  "artifactVersion": "ipo-one.safe-agent-001.conformance.v1",
+  "artifactId": "safe-agent-001-conformance-20260810",
+  "issueId": "SAFE-AGENT-001",
+  "program": "AECL",
+  "phase": 5,
+  "deliveryMode": "L0_LOCAL_NO_FUNDS",
+  "decision": "VERIFIED_SANDBOX_DISABLED_REFERENCE_ADAPTER",
+  "observedAt": "2026-08-10T15:03:47.000Z",
+  "adapter": {
+    "adapterId": "safe_institutional_wallet_reference",
+    "providerFamily": "safe",
+    "spiVersion": "agentic_wallet_provider_descriptor.v1",
+    "enabled": false,
+    "externalCallsEnabled": false,
+    "dynamicallyLoaded": false,
+    "onchainConfigurationReadEnabled": false,
+    "transactionServiceEnabled": false,
+    "moduleExecutionEnabled": false,
+    "delegateCallEnabled": false,
+    "signatureCollectionEnabled": false,
+    "transactionSubmissionEnabled": false,
+    "productionAuthority": false,
+    "fundsAuthority": false
+  },
+  "canonicalSemantics": {
+    "creditChanged": false,
+    "obligationChanged": false,
+    "mandateChanged": false,
+    "ledgerChanged": false,
+    "tenantProtocolOperationsChanged": false,
+    "openApiChanged": false,
+    "sdkChanged": false,
+    "mcpChanged": false
+  },
+  "securityAcceptance": {
+    "unknownCapabilityNonPermissive": true,
+    "staleObservationDenied": true,
+    "enabledModuleDecision": "QUARANTINE",
+    "delegateCallDecision": "DENY",
+    "configurationDriftDecision": "QUARANTINE",
+    "cleanCallDecision": "STEP_UP",
+    "canonicalPreflightRequired": true,
+    "providerAdjustmentAllowed": false,
+    "rawCalldataRetained": false,
+    "rawSignatureRetained": false,
+    "rawProviderResponseRetained": false
+  },
+  "verification": {
+    "focusedSafeTests": { "passed": 9, "failed": 0 },
+    "agenticExecutionTests": { "passed": 51, "failed": 0 },
+    "repositoryUnitTests": { "passed": 880, "failed": 0 },
+    "transportParityTests": { "passed": 74, "failed": 0 },
+    "isolatedPostgresTests": { "passed": 85, "failed": 0 },
+    "schemaContracts": { "passed": 131, "failed": 0 },
+    "migrationPairs": { "passed": 60, "failed": 0 },
+    "sourceModulesParsed": { "passed": 654, "failed": 0 },
+    "typeExportSurfaces": { "passed": 3, "runtimeExports": 72, "failed": 0 },
+    "boundaryLint": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "diagnostics": {
+    "initialPostgresReuseResult": "FAILED_ENVIRONMENT_ISOLATION",
+    "initialPostgresPassed": 83,
+    "initialPostgresFailed": 2,
+    "initialFailureCode": "2BP01",
+    "initialFailureCause": "reused_cluster_global_role_referenced_by_another_database",
+    "resolution": "fresh_isolated_cluster",
+    "finalPostgresResult": "PASS"
+  },
+  "artifactSha256": {
+    "adapter": "11e4014273a53bb7517c333ea4a6c6251544995a703c3eb62123783db51badea",
+    "tests": "8e4d71ed629052d0e90db501172f5f4350f4c2e030dd27eb97a3e3fa7c7946c4",
+    "conformanceFixture": "94aee8ad96a8f423948ad5d08635e1a45cdad7c75ac7da98525bcd1af6028188",
+    "capabilitySchema": "6d9d06887f408ffa17b5abb3578fbe8f4f5b2d81166ee81c1154974fdaf6f627",
+    "transactionProjectionSchema": "d0d32663dda08010dc406be4070f6537f9695e9bca69cbca1aeff4b368abf6d8",
+    "configurationComparisonSchema": "ef352fa378a3cececbff038a8951aa17bae5f21e76627129f762561312306837"
+  },
+  "boundaries": {
+    "realProviderEvidence": false,
+    "testnetEvidence": false,
+    "hostedEvidence": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false,
+    "externalCredentialAuthority": false,
+    "custodyAuthority": false
+  }
+}

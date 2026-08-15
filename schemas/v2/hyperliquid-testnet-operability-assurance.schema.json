@@ -1,0 +1,503 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hyperliquid-testnet-operability-assurance.schema.json",
+  "title": "IPO.ONE Hyperliquid Testnet Operability Assurance v1",
+  "description": "Closed local/Testnet disaster-recovery, failure-safety, alert, capacity, finding, and independent-review gate. It grants no runtime or funds authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "assuranceId",
+    "assuranceHash",
+    "facilityId",
+    "facilityHash",
+    "releaseCommit",
+    "artifactSetHash",
+    "policyVersion",
+    "policyHash",
+    "owners",
+    "objectives",
+    "restoreResult",
+    "failureDrills",
+    "alertRoutes",
+    "capacityResult",
+    "findings",
+    "independentReview",
+    "missingFailureScenarios",
+    "failedFailureScenarios",
+    "missingAlertRoutes",
+    "openP0Count",
+    "openP1Count",
+    "implementationStatus",
+    "releaseStatus",
+    "launchBlocked",
+    "blockerReasonCodes",
+    "completedAt",
+    "automaticRecoveryEnabled",
+    "automaticUnfreezeEnabled",
+    "automaticKeyOperationEnabled",
+    "notificationDeliveryEnabled",
+    "protectedSchedulingEnabled",
+    "exchangeWritesEnabled",
+    "apiWalletOperationsEnabled",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "realFunds",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "assuranceId": { "$ref": "#/$defs/identifier" },
+    "assuranceHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "releaseCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "artifactSetHash": { "$ref": "#/$defs/hash" },
+    "policyVersion": { "const": "tc_403_testnet_operability.v1" },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "owners": { "$ref": "#/$defs/owners" },
+    "objectives": { "$ref": "#/$defs/objectives" },
+    "restoreResult": { "$ref": "#/$defs/restoreResult" },
+    "failureDrills": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/failureDrill" }
+    },
+    "alertRoutes": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/alertRoute" }
+    },
+    "capacityResult": { "$ref": "#/$defs/capacityResult" },
+    "findings": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "independentReview": { "$ref": "#/$defs/independentReview" },
+    "missingFailureScenarios": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "failedFailureScenarios": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "missingAlertRoutes": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/code" }
+    },
+    "openP0Count": { "type": "integer", "minimum": 0, "maximum": 256 },
+    "openP1Count": { "type": "integer", "minimum": 0, "maximum": 256 },
+    "implementationStatus": {
+      "enum": ["IMPLEMENTED_UNVERIFIED", "BLOCKED"]
+    },
+    "releaseStatus": {
+      "enum": [
+        "READY_FOR_HUMAN_ACCEPTANCE",
+        "BLOCKED_ASSURANCE",
+        "BLOCKED_FINDINGS",
+        "BLOCKED_INDEPENDENT_REVIEW"
+      ]
+    },
+    "launchBlocked": { "const": true },
+    "blockerReasonCodes": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/code" }
+    },
+    "completedAt": { "type": "string", "format": "date-time" },
+    "automaticRecoveryEnabled": { "const": false },
+    "automaticUnfreezeEnabled": { "const": false },
+    "automaticKeyOperationEnabled": { "const": false },
+    "notificationDeliveryEnabled": { "const": false },
+    "protectedSchedulingEnabled": { "const": false },
+    "exchangeWritesEnabled": { "const": false },
+    "apiWalletOperationsEnabled": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realFunds": { "const": false },
+    "productionFundsMoved": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "hyperliquid_testnet_operability_assurance.v1"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96,
+      "pattern": "^[a-z0-9][a-z0-9_]*$"
+    },
+    "owners": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incidentOwner",
+        "recoveryOwner",
+        "signerLifecycleOwner",
+        "evidenceCustodian",
+        "independentReviewCommissioningOwner",
+        "independentReviewer",
+        "independentReviewerType"
+      ],
+      "properties": {
+        "incidentOwner": { "$ref": "#/$defs/identifier" },
+        "recoveryOwner": { "$ref": "#/$defs/identifier" },
+        "signerLifecycleOwner": { "$ref": "#/$defs/identifier" },
+        "evidenceCustodian": { "$ref": "#/$defs/identifier" },
+        "independentReviewCommissioningOwner": { "$ref": "#/$defs/identifier" },
+        "independentReviewer": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/identifier" }
+          ]
+        },
+        "independentReviewerType": {
+          "oneOf": [
+            { "type": "null" },
+            { "const": "external_human_or_organization" }
+          ]
+        }
+      }
+    },
+    "objectives": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskDataWarningAfterMs",
+        "riskDataCriticalAfterMs",
+        "unknownOutcomeWarningAfterMs",
+        "unknownOutcomeCriticalAfterMs",
+        "reconciliationWarningAfterMs",
+        "reconciliationCriticalAfterMs",
+        "backupMaximumAgeMs",
+        "localRestoreExerciseRtoMs",
+        "localRestoreExerciseRpoMs"
+      ],
+      "properties": {
+        "riskDataWarningAfterMs": { "$ref": "#/$defs/positiveMs" },
+        "riskDataCriticalAfterMs": { "$ref": "#/$defs/positiveMs" },
+        "unknownOutcomeWarningAfterMs": { "$ref": "#/$defs/positiveMs" },
+        "unknownOutcomeCriticalAfterMs": { "$ref": "#/$defs/positiveMs" },
+        "reconciliationWarningAfterMs": { "$ref": "#/$defs/positiveMs" },
+        "reconciliationCriticalAfterMs": { "$ref": "#/$defs/positiveMs" },
+        "backupMaximumAgeMs": { "$ref": "#/$defs/positiveMs" },
+        "localRestoreExerciseRtoMs": { "$ref": "#/$defs/positiveMs" },
+        "localRestoreExerciseRpoMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400000
+        }
+      }
+    },
+    "positiveMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 86400000
+    },
+    "restoreResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "sourceManifestHash",
+        "restoredManifestHash",
+        "comparedFields",
+        "mismatchFields",
+        "exactMatch",
+        "durationMs",
+        "completedAt",
+        "rawDataIncluded",
+        "sourceManifest",
+        "restoredManifest",
+        "schemaVersion"
+      ],
+      "properties": {
+        "status": { "enum": ["EXACT_MATCH", "MISMATCH"] },
+        "sourceManifestHash": { "$ref": "#/$defs/hash" },
+        "restoredManifestHash": { "$ref": "#/$defs/hash" },
+        "comparedFields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "mismatchFields": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "exactMatch": { "type": "boolean" },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400000
+        },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "rawDataIncluded": { "const": false },
+        "sourceManifest": { "$ref": "#/$defs/restoreManifest" },
+        "restoredManifest": { "$ref": "#/$defs/restoreManifest" },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_restore_comparison.v1"
+        }
+      }
+    },
+    "restoreManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "databaseFingerprint",
+        "facilityFingerprint",
+        "ledgerFingerprint",
+        "evidenceFingerprint",
+        "executionFingerprint",
+        "riskFingerprint",
+        "reconciliationFingerprint",
+        "fundingFingerprint",
+        "settlementFingerprint",
+        "facilityCount",
+        "ledgerTransactionCount",
+        "ledgerEntryCount",
+        "evidenceCount",
+        "settlementCount",
+        "capturedAt",
+        "manifestHash",
+        "schemaVersion"
+      ],
+      "properties": {
+        "databaseFingerprint": { "$ref": "#/$defs/hash" },
+        "facilityFingerprint": { "$ref": "#/$defs/hash" },
+        "ledgerFingerprint": { "$ref": "#/$defs/hash" },
+        "evidenceFingerprint": { "$ref": "#/$defs/hash" },
+        "executionFingerprint": { "$ref": "#/$defs/hash" },
+        "riskFingerprint": { "$ref": "#/$defs/hash" },
+        "reconciliationFingerprint": { "$ref": "#/$defs/hash" },
+        "fundingFingerprint": { "$ref": "#/$defs/hash" },
+        "settlementFingerprint": { "$ref": "#/$defs/hash" },
+        "facilityCount": { "type": "integer", "minimum": 1 },
+        "ledgerTransactionCount": { "type": "integer", "minimum": 1 },
+        "ledgerEntryCount": { "type": "integer", "minimum": 1 },
+        "evidenceCount": { "type": "integer", "minimum": 1 },
+        "settlementCount": { "type": "integer", "minimum": 1 },
+        "capturedAt": { "type": "string", "format": "date-time" },
+        "manifestHash": { "$ref": "#/$defs/hash" },
+        "schemaVersion": {
+          "const": "hyperliquid_testnet_restore_manifest.v1"
+        }
+      }
+    },
+    "failureDrill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario",
+        "status",
+        "safeState",
+        "newRiskBlocked",
+        "uncertainEffectRetried",
+        "historyPreserved",
+        "externalWriteSubmitted",
+        "credentialOperationPerformed",
+        "runnerId",
+        "artifactSetHash",
+        "outputHash",
+        "startedAt",
+        "evidenceHash",
+        "completedAt"
+      ],
+      "properties": {
+        "scenario": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["PASSED", "FAILED"] },
+        "safeState": {
+          "enum": ["WARNING", "REDUCE_ONLY", "FLATTEN", "SETTLEMENT"]
+        },
+        "newRiskBlocked": { "type": "boolean" },
+        "uncertainEffectRetried": { "type": "boolean" },
+        "historyPreserved": { "type": "boolean" },
+        "externalWriteSubmitted": { "type": "boolean" },
+        "credentialOperationPerformed": { "type": "boolean" },
+        "runnerId": { "$ref": "#/$defs/identifier" },
+        "artifactSetHash": { "$ref": "#/$defs/hash" },
+        "outputHash": { "$ref": "#/$defs/hash" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "evidenceHash": { "$ref": "#/$defs/hash" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "alertRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signalType", "owner", "runbookRef", "configured"],
+      "properties": {
+        "signalType": { "$ref": "#/$defs/code" },
+        "owner": { "$ref": "#/$defs/identifier" },
+        "runbookRef": { "$ref": "#/$defs/identifier" },
+        "configured": { "type": "boolean" }
+      }
+    },
+    "capacityResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probeKind",
+        "attemptedEvaluations",
+        "completedEvaluations",
+        "rejectedOversizeInputs",
+        "configuredConcurrencyCeiling",
+        "bounded",
+        "failClosed",
+        "evidenceHash"
+      ],
+      "properties": {
+        "probeKind": { "const": "boundary_arithmetic_self_test" },
+        "attemptedEvaluations": { "type": "integer", "minimum": 0 },
+        "completedEvaluations": { "type": "integer", "minimum": 0 },
+        "rejectedOversizeInputs": { "type": "integer", "minimum": 0 },
+        "configuredConcurrencyCeiling": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bounded": { "type": "boolean" },
+        "failClosed": { "type": "boolean" },
+        "evidenceHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "findingId",
+        "severity",
+        "status",
+        "summary",
+        "evidenceHash",
+        "retestEvidenceHash"
+      ],
+      "properties": {
+        "findingId": {
+          "type": "string",
+          "pattern": "^[A-Z0-9][A-Z0-9_-]{0,95}$"
+        },
+        "severity": { "enum": ["P0", "P1", "P2", "P3"] },
+        "status": {
+          "enum": [
+            "open",
+            "accepted_launch_blocker",
+            "resolved",
+            "not_applicable"
+          ]
+        },
+        "summary": { "$ref": "#/$defs/identifier" },
+        "evidenceHash": { "$ref": "#/$defs/hash" },
+        "retestEvidenceHash": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        }
+      }
+    },
+    "independentReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reviewerId",
+        "reviewerType",
+        "reportHash",
+        "attestationHash",
+        "reviewedAt",
+        "reviewedReleaseCommit",
+        "reviewedArtifactSetHash",
+        "reviewedPolicyHash",
+        "findingsHash",
+        "independentFromCommissioningOwner"
+      ],
+      "properties": {
+        "status": { "enum": ["NOT_PERFORMED", "PASSED", "FAILED"] },
+        "reviewerId": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/identifier" }
+          ]
+        },
+        "reviewerType": {
+          "oneOf": [
+            { "type": "null" },
+            { "const": "external_human_or_organization" }
+          ]
+        },
+        "reportHash": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "attestationHash": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "reviewedAt": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "format": "date-time" }
+          ]
+        },
+        "reviewedReleaseCommit": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          ]
+        },
+        "reviewedArtifactSetHash": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "reviewedPolicyHash": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "findingsHash": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "independentFromCommissioningOwner": { "type": "boolean" }
+      }
+    }
+  }
+}

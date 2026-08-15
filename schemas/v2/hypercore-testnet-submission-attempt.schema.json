@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-testnet-submission-attempt.schema.json",
+  "title": "HyperCore Testnet Submission Attempt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executionId", "executionHash", "economicActionHash", "idempotencyKeyHash",
+    "facilityId", "accountBindingId", "accountBindingHash",
+    "canonicalAccountAddressHash", "handoffId", "handoffHash", "delegateId",
+    "delegateHash", "apiWalletAddressHash", "signerReferenceHash",
+    "preparedActionHash", "preparedAction", "policyHash", "metadataHash",
+    "riskSnapshotHash", "actionKind", "market", "maxOrderNotionalUsd",
+    "openingTimeInForce", "nonce", "founderApprovalId", "founderApprovalHash",
+    "humanConfirmationHash", "actionAuthorizationHash", "requestBodyHash",
+    "signatureHash", "claimHash", "disposition", "responseHash",
+    "reconciliationHash", "venueOrderStateHash", "venueAccountStateHash",
+    "ledgerStateHash", "obligationEvidenceHash", "signerRetirementHash",
+    "state", "version", "preparedAt", "expiresAt", "approvedAt", "claimedAt",
+    "resolvedAt", "reconciledAt", "closedAt", "externalSubmissionAttempted",
+    "retryAllowed", "rawActionEvidencePersisted", "rawResponsePersisted",
+    "rawKeyPersisted", "rawSignaturePersisted", "mainnetAuthority",
+    "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "executionId": { "$ref": "#/$defs/identifier" },
+    "executionHash": { "$ref": "#/$defs/hash" },
+    "economicActionHash": { "$ref": "#/$defs/hash" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "accountBindingId": { "$ref": "#/$defs/identifier" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "handoffId": { "$ref": "#/$defs/identifier" },
+    "handoffHash": { "$ref": "#/$defs/hash" },
+    "delegateId": { "$ref": "#/$defs/identifier" },
+    "delegateHash": { "$ref": "#/$defs/hash" },
+    "apiWalletAddressHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "preparedActionHash": { "$ref": "#/$defs/hash" },
+    "preparedAction": {
+      "$ref": "https://schemas.ipo.one/v2/hypercore-prepared-action.schema.json"
+    },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "metadataHash": { "$ref": "#/$defs/hash" },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+    "actionKind": {
+      "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+    },
+    "market": { "const": "BTC" },
+    "maxOrderNotionalUsd": { "const": "10" },
+    "openingTimeInForce": { "const": "Alo" },
+    "nonce": { "type": "integer", "minimum": 1 },
+    "founderApprovalId": { "$ref": "#/$defs/nullableIdentifier" },
+    "founderApprovalHash": { "$ref": "#/$defs/nullableHash" },
+    "humanConfirmationHash": { "$ref": "#/$defs/nullableHash" },
+    "actionAuthorizationHash": { "$ref": "#/$defs/nullableHash" },
+    "requestBodyHash": { "$ref": "#/$defs/nullableHash" },
+    "signatureHash": { "$ref": "#/$defs/nullableHash" },
+    "claimHash": { "$ref": "#/$defs/nullableHash" },
+    "disposition": {
+      "oneOf": [{ "enum": ["confirmed", "rejected", "unknown"] }, { "type": "null" }]
+    },
+    "responseHash": { "$ref": "#/$defs/nullableHash" },
+    "reconciliationHash": { "$ref": "#/$defs/nullableHash" },
+    "venueOrderStateHash": { "$ref": "#/$defs/nullableHash" },
+    "venueAccountStateHash": { "$ref": "#/$defs/nullableHash" },
+    "ledgerStateHash": { "$ref": "#/$defs/nullableHash" },
+    "obligationEvidenceHash": { "$ref": "#/$defs/nullableHash" },
+    "signerRetirementHash": { "$ref": "#/$defs/nullableHash" },
+    "state": { "$ref": "#/$defs/state" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 6 },
+    "preparedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "approvedAt": { "$ref": "#/$defs/nullableTime" },
+    "claimedAt": { "$ref": "#/$defs/nullableTime" },
+    "resolvedAt": { "$ref": "#/$defs/nullableTime" },
+    "reconciledAt": { "$ref": "#/$defs/nullableTime" },
+    "closedAt": { "$ref": "#/$defs/nullableTime" },
+    "externalSubmissionAttempted": { "type": "boolean" },
+    "retryAllowed": { "const": false },
+    "rawActionEvidencePersisted": { "const": false },
+    "rawResponsePersisted": { "const": false },
+    "rawKeyPersisted": { "const": false },
+    "rawSignaturePersisted": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_testnet_submission_attempt.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "nullableHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "nullableIdentifier": {
+      "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+    },
+    "nullableTime": {
+      "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    },
+    "state": {
+      "enum": [
+        "PREPARED", "APPROVED", "SUBMITTING", "SUBMITTED", "REJECTED",
+        "UNKNOWN", "RECONCILED", "CLOSED"
+      ]
+    }
+  }
+}

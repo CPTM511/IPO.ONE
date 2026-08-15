@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WALLET-002 browser lifecycle fixture</title>
+  </head>
+  <body>
+    <output id="status">booting</output>
+    <output id="epoch">0</output>
+    <output id="protected">unchecked</output>
+    <output id="challenge">idle</output>
+    <button id="account-change" type="button">Account changed</button>
+    <button id="resolve-invalidation" type="button">Resolve invalidation</button>
+    <button id="protected-action" type="button">Protected action</button>
+    <button id="start-challenge" type="button">Start challenge</button>
+    <button id="pre-session-change" type="button">Pre-session context change</button>
+    <button id="finish-challenge" type="button">Finish challenge</button>
+    <script type="module">
+      import {
+        createWalletAuthorityLifecycle
+      } from "../../src/wallet-authority-lifecycle.js";
+
+      const exactResult = Object.freeze({
+        schemaVersion: "wallet_session_invalidation_result.v1",
+        status: "invalidated",
+        reauthenticationRequired: true,
+        authorityAvailable: false,
+        credentialsIncluded: false,
+        fundsAuthority: false
+      });
+      let resolveInvalidation;
+      let challengeEpoch;
+      const channel = new BroadcastChannel("ipo-one-wallet-authority-browser-e2e-v1");
+      const lifecycle = createWalletAuthorityLifecycle({
+        broadcastChannel: channel,
+        createIdempotencyKey: () =>
+          "wallet_invalidation_browser_002_fixed_key",
+        invalidateSession: () =>
+          new Promise((resolve) => {
+            resolveInvalidation = () => resolve(exactResult);
+          }),
+        onChange(snapshot) {
+          document.querySelector("#status").textContent = snapshot.status;
+          document.querySelector("#epoch").textContent = String(snapshot.contextEpoch);
+          document.body.dataset.reason = snapshot.reason ?? "";
+        }
+      });
+
+      document.querySelector("#account-change").addEventListener("click", () => {
+        lifecycle.handleContextChange("wallet_account_changed", {
+          serverAuthorityActive: true
+        }).catch(() => {});
+      });
+      document.querySelector("#resolve-invalidation").addEventListener("click", () => {
+        resolveInvalidation?.();
+      });
+      document.querySelector("#protected-action").addEventListener("click", () => {
+        try {
+          lifecycle.assertProtectedAvailable();
+          document.querySelector("#protected").textContent = "allowed";
+        } catch (error) {
+          document.querySelector("#protected").textContent = error.code;
+        }
+      });
+      document.querySelector("#start-challenge").addEventListener("click", () => {
+        challengeEpoch = lifecycle.getSnapshot().contextEpoch;
+        document.querySelector("#challenge").textContent = "started";
+      });
+      document.querySelector("#pre-session-change").addEventListener("click", () => {
+        lifecycle.handleContextChange("wallet_chain_changed", {
+          serverAuthorityActive: false
+        });
+      });
+      document.querySelector("#finish-challenge").addEventListener("click", () => {
+        try {
+          lifecycle.assertContextEpoch(challengeEpoch);
+          document.querySelector("#challenge").textContent = "accepted";
+        } catch (error) {
+          document.querySelector("#challenge").textContent = error.code;
+        }
+      });
+      window.addEventListener("pagehide", () => lifecycle.dispose(), { once: true });
+    </script>
+  </body>
+</html>

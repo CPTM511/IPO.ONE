@@ -1,0 +1,246 @@
+{
+  "openapi": "3.1.2",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "IPO.ONE Remote Agent HTTPS Contract",
+    "version": "1.0.0",
+    "description": "Invite-only, sender-constrained HTTPS access to the durable no-real-funds Tenant protocol. Publishing this contract does not activate a remote endpoint."
+  },
+  "servers": [
+    {
+      "url": "https://closed-pilot.invalid",
+      "description": "Non-routable contract publication origin; deployment remains disabled."
+    }
+  ],
+  "security": [
+    {
+      "workloadBearer": [],
+      "mutualTls": []
+    }
+  ],
+  "paths": {
+    "/tenant/v1/operations": {
+      "post": {
+        "operationId": "executeAgentTenantOperation",
+        "summary": "Execute one authorized Agent Tenant operation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          }
+        ],
+        "security": [
+          {
+            "workloadBearer": [],
+            "mutualTls": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../schemas/v2/tenant-protocol-request.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validated Tenant protocol result for the same operation",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../schemas/v2/tenant-protocol-result.schema.json"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "421": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-ipo-one-idempotency": {
+          "mutationsRequireIdempotencyKey": true,
+          "replayUsesOriginalRequest": true,
+          "unknownOutcomeMustNotUseNewIdempotencyKey": true
+        },
+        "x-ipo-one-timeout-outcome": "unknown_after_submission"
+      }
+    },
+    "/tenant/v1/catalog": {
+      "get": {
+        "operationId": "getAgentTenantOperationCatalog",
+        "summary": "Read the versioned closed Tenant operation catalog",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          }
+        ],
+        "security": [
+          {
+            "workloadBearer": [],
+            "mutualTls": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned Tenant protocol catalog"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "421": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "RequestId": {
+        "name": "X-Request-ID",
+        "in": "header",
+        "required": true,
+        "description": "Must equal the requestId inside the Tenant protocol envelope.",
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]+$"
+        }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "Bounded RFC 9457-compatible Problem Details",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "workloadBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Issuer- and audience-bound access token with a maximum five-minute lifetime and an x5t#S256 confirmation claim."
+      },
+      "mutualTls": {
+        "type": "mutualTLS",
+        "description": "The trusted edge must bind the client certificate thumbprint to the access token and active internal Credential."
+      }
+    },
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code",
+          "requestId",
+          "schemaVersion"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^urn:ipo-one:problem:[a-z][a-z0-9_]{1,95}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "instance": {
+            "type": "string",
+            "pattern": "^urn:ipo-one:request:"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,95}$"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]+$"
+          },
+          "retryAfterClass": {
+            "enum": [
+              "manual",
+              "short",
+              "long"
+            ]
+          },
+          "schemaVersion": {
+            "const": "problem_details.v1"
+          }
+        }
+      }
+    }
+  },
+  "x-ipo-one-schema-version": "agent_https_openapi.v1",
+  "x-ipo-one-profile": "closed_non_funds_pilot",
+  "x-ipo-one-activation": "disabled_pending_named_deployment_approval",
+  "x-ipo-one-safety": {
+    "remoteParticipantAccessEnabled": false,
+    "realFundsEnabled": false,
+    "humanCreditEnabled": false,
+    "testnetWritesEnabled": false,
+    "venueSignerEnabled": false,
+    "arbitraryWithdrawalEnabled": false
+  }
+}

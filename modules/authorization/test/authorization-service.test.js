@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ActorType } from "../../authentication/src/index.js";
+import { hashId } from "../../../packages/domain/src/index.js";
 import {
+  ActorType,
+  ClientAuthenticationMethod,
+  SenderConstraintMethod
+} from "../../authentication/src/index.js";
+import { createAuthenticationContext } from "../../authentication/src/authentication-context.js";
+import {
+  AUTHORIZATION_POLICY_VERSION,
   AccessGrantCapability,
   MembershipStatus,
   PilotCapability,
@@ -21,6 +28,107 @@ async function denied(operation) {
       error.message === "authorization_denied: The requested operation is not available."
   );
 }
+
+test("SIWE-only Risk and Operations sessions fail closed for every recent-MFA policy", async () => {
+  const harness = createAuthorizationHarness();
+  const protectedPolicies = harness.policyRegistry.list().filter((policy) =>
+    policy.requiresRecentMfaActorTypes.some((actorType) =>
+      [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR].includes(actorType)
+    )
+  );
+  const actorProfiles = [
+    {
+      actorType: ActorType.RISK_OPERATOR,
+      roleBundle: RoleBundle.RISK_OPERATOR,
+      actorId: "actor_risk_siwe_boundary",
+      walletAddress: `0x${"1".repeat(40)}`
+    },
+    {
+      actorType: ActorType.OPERATIONS_OPERATOR,
+      roleBundle: RoleBundle.OPERATIONS_OPERATOR,
+      actorId: "actor_operations_siwe_boundary",
+      walletAddress: `0x${"2".repeat(40)}`
+    }
+  ];
+  const contexts = new Map();
+
+  for (const profile of actorProfiles) {
+    const assignedPolicies = protectedPolicies.filter((policy) =>
+      policy.requiresRecentMfaActorTypes.includes(profile.actorType)
+    );
+    const capabilities = [...new Set(assignedPolicies.map((policy) => policy.requiredCapability))];
+    const tenantId = "tenant_siwe_risk_boundary";
+    const clientId = `client_${profile.actorId}`;
+    harness.actorDirectory.register({ actorId: profile.actorId, actorType: profile.actorType });
+    const credential = harness.credentialRegistry.register({
+      tenantId,
+      actorId: profile.actorId,
+      actorType: profile.actorType,
+      issuer: "https://issuer.local.test",
+      externalSubject: `eip155:84532:${profile.walletAddress}`,
+      clientId,
+      clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
+      senderConstraint: {
+        method: SenderConstraintMethod.HOST_SESSION,
+        thumbprint: "t".repeat(43)
+      },
+      roles: [profile.roleBundle],
+      allowedCapabilities: capabilities,
+      policyVersion: AUTHORIZATION_POLICY_VERSION,
+      performedByActorId: "actor_security_admin",
+      reasonCode: "local_authorization_fixture",
+      now: FIXED_NOW
+    });
+    harness.directory.registerMembership({
+      tenantId,
+      actorId: profile.actorId,
+      actorType: profile.actorType,
+      roleBundle: profile.roleBundle,
+      capabilities,
+      clientIds: [clientId],
+      policyVersion: AUTHORIZATION_POLICY_VERSION,
+      validFrom: FIXED_NOW,
+      now: FIXED_NOW
+    });
+    contexts.set(profile.actorType, createAuthenticationContext({
+      tenantId,
+      actorId: profile.actorId,
+      actorType: profile.actorType,
+      clientId,
+      credentialId: credential.credentialId,
+      credentialVersion: credential.version,
+      policyVersion: AUTHORIZATION_POLICY_VERSION,
+      capabilities,
+      roles: [profile.roleBundle],
+      tokenJtiHash: harness.referenceHasher.hash("token.jti", `jti_${profile.actorId}`),
+      authenticationMethod: ClientAuthenticationMethod.SIWE,
+      senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
+      authenticatedAt: FIXED_NOW,
+      authTime: FIXED_NOW,
+      acr: "urn:ipo.one:acr:wallet",
+      amr: ["wallet", "siwe", "eip191_eoa_v1"]
+    }));
+  }
+
+  assert.equal(protectedPolicies.length, 21);
+  for (const policy of protectedPolicies) {
+    const actorType = policy.requiresRecentMfaActorTypes.includes(ActorType.RISK_OPERATOR)
+      ? ActorType.RISK_OPERATOR
+      : ActorType.OPERATIONS_OPERATOR;
+    await denied(() => harness.service.authorize(authorizationRequest(
+      contexts.get(actorType),
+      policy.operationId
+    )));
+    const denial = harness.auditStore.list().at(-1);
+    assert.equal(denial.operationId, policy.operationId);
+    assert.equal(denial.authorizationDecision, "deny");
+    assert.equal(denial.reasonCode, "actor_capability_rejected");
+  }
+  assert.equal(
+    harness.auditStore.list({ authorizationDecision: "allow" }).length,
+    0
+  );
+});
 
 test("Human and Agent commands use one branded deny-by-default authorization decision", async () => {
   const harness = createAuthorizationHarness();
@@ -44,7 +152,7 @@ test("Human and Agent commands use one branded deny-by-default authorization dec
   assert.equal(decision.authorizationDecision, "allow");
   assert.equal(decision.revalidationCount, 0);
   assert.equal(decision.resourceVersion, 0);
-  assert.equal(decision.schemaVersion, "authorization_decision.v1");
+  assert.equal(decision.schemaVersion, "authorization_decision.v2");
   assert.throws(
     () => assertAuthorizationDecision(structuredClone(decision)),
     (error) => error.code === "authorization_decision_required"
@@ -63,6 +171,45 @@ test("Human and Agent commands use one branded deny-by-default authorization dec
     { idempotencyKey: "public-route-not-authority-1" }
   )));
   assert.equal(harness.auditStore.list().at(-1).reasonCode, "route_contract_rejected");
+});
+
+test("the Human Borrower boundary is Human-only and grants credit only when explicitly issued", async () => {
+  const harness = createAuthorizationHarness();
+  const borrower = harness.addIdentity({
+    tenantId: "tenant_human_pilot",
+    actorId: "actor_human_borrower",
+    actorType: ActorType.HUMAN,
+    roleBundle: RoleBundle.HUMAN_BORROWER,
+    capabilities: [PilotCapability.HUMAN_SUBJECT_CREATE_SELF]
+  });
+  const allowed = await harness.service.authorize(authorizationRequest(
+    borrower.authenticationContext,
+    "pilotCreateHumanSubject",
+    { idempotencyKey: "create-human-subject-0001" }
+  ));
+  assert.equal(allowed.authorizationDecision, "allow");
+  assert.equal(allowed.requiredCapability, PilotCapability.HUMAN_SUBJECT_CREATE_SELF);
+
+  await denied(() => harness.service.authorize(authorizationRequest(
+    borrower.authenticationContext,
+    "pilotRequestCredit",
+    {
+      resource: { resourceType: "subject", resourceId: "subject_human_borrower" },
+      idempotencyKey: "human-credit-capability-not-issued"
+    }
+  )));
+  assert.equal(harness.auditStore.list().at(-1).reasonCode, "actor_capability_rejected");
+
+  assert.throws(
+    () => harness.addIdentity({
+      tenantId: "tenant_agent_pilot",
+      actorId: "actor_agent_with_human_role",
+      actorType: ActorType.AGENT,
+      roleBundle: RoleBundle.HUMAN_BORROWER,
+      capabilities: [PilotCapability.HUMAN_SUBJECT_CREATE_SELF]
+    }),
+    (error) => error.code === "invalid_authorization_input"
+  );
 });
 
 test("horizontal, vertical, and missing-object denials share one non-enumerating contract", async () => {
@@ -531,6 +678,73 @@ test("protective actions require reason and idempotency while increases require 
       proposalVersion: 3
     }
   }));
+});
+
+test("command payload hash binds authorization and prevents stale approval reuse", async () => {
+  let approvedCommandHash;
+  const approvalVerifier = {
+    async assertApproved({ approvalArtifact }) {
+      return {
+        proposalId: approvalArtifact.proposalId,
+        proposalVersion: approvalArtifact.proposalVersion,
+        approvalIds: ["approval_risk_payload", "approval_security_payload"],
+        approverActorIds: ["actor_risk_approver", "actor_security_approver"],
+        commandHash: approvedCommandHash
+      };
+    }
+  };
+  const harness = createAuthorizationHarness({ approvalVerifier });
+  const risk = harness.addIdentity({
+    tenantId: "tenant_payload_binding",
+    actorId: "actor_risk_payload_binding",
+    actorType: ActorType.RISK_OPERATOR,
+    roleBundle: RoleBundle.RISK_OPERATOR,
+    capabilities: [PilotCapability.RISK_LIMIT_INCREASE]
+  });
+  harness.directory.registerResource({
+    tenantId: "tenant_payload_binding",
+    resourceType: "credit_line",
+    resourceId: "credit_line_payload_binding",
+    now: FIXED_NOW
+  });
+  harness.livePolicyAdapter.register({
+    tenantId: "tenant_payload_binding",
+    operationId: "pilotIncreaseCreditLimit",
+    resourceType: "credit_line",
+    resourceId: "credit_line_payload_binding",
+    checks: ["risk", "cap", "credit_line_state", "stop_loss"],
+    allowed: true
+  });
+  const firstPayloadHash = hashId("authorization_test_payload", { limitMinor: "10000" });
+  const changedPayloadHash = hashId("authorization_test_payload", { limitMinor: "25000" });
+  const request = authorizationRequest(risk.authenticationContext, "pilotIncreaseCreditLimit", {
+    resource: { resourceType: "credit_line", resourceId: "credit_line_payload_binding" },
+    reasonCode: "approved_exposure_change",
+    idempotencyKey: "increase-credit-payload-bound-0001",
+    commandPayloadHash: firstPayloadHash
+  });
+  const preparation = await harness.service.prepareApproval(request);
+  approvedCommandHash = preparation.commandHash;
+  assert.equal(preparation.schemaVersion, "approval_preparation.v2");
+  assert.equal(preparation.commandPayloadHash, firstPayloadHash);
+
+  const approvalArtifact = {
+    proposalId: "approval_proposal_payload_bound",
+    proposalVersion: 1
+  };
+  const approved = await harness.service.authorize({ ...request, approvalArtifact });
+  assert.equal(approved.commandHash, preparation.commandHash);
+  assert.equal(approved.commandPayloadHash, firstPayloadHash);
+
+  await denied(() => harness.service.authorize({
+    ...request,
+    commandPayloadHash: changedPayloadHash,
+    approvalArtifact
+  }));
+  assert.notEqual(
+    harness.auditStore.list().at(-1).commandHash,
+    preparation.commandHash
+  );
 });
 
 test("audit exhaustion fails closed and audit records contain no credential material", async () => {

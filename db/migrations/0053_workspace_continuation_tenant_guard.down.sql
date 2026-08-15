@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS tenant_context_guard_workspace_continuation_receipts
+  ON workspace_continuation_receipts;

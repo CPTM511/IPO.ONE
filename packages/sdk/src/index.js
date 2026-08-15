@@ -1,5 +1,17 @@
 const CYCLE_TYPES = new Set(["healthy", "risky", "recovery"]);
 
+export * from "./agent-mcp-client.js";
+export * from "./agent-evidence-client.js";
+export * from "./agent-registry-evidence-client.js";
+export * from "./agent-feedback-client.js";
+export * from "./agent-obligation-client.js";
+export * from "./agent-sandbox-obligation-client.js";
+export * from "./trading-capital-client.js";
+export * from "./wallet-execution-client.js";
+export * from "./venue-execution-client.js";
+export { runSandboxObligationPortabilityConformance } from "@ipo-one/chain-adapter";
+export { createAgentPilotCapabilityManifest } from "@ipo-one/api-contract";
+
 function createRequestId() {
   return `sdk_${globalThis.crypto.randomUUID()}`;
 }

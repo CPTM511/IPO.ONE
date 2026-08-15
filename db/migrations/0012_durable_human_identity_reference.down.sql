@@ -1,0 +1,16 @@
+DROP INDEX IF EXISTS human_identity_references_tenant_consent_idx;
+DROP INDEX IF EXISTS human_identity_references_tenant_subject_status_expiry_idx;
+DROP INDEX IF EXISTS human_identity_references_tenant_subject_created_idx;
+
+DROP TRIGGER IF EXISTS tenant_context_guard_human_identity_references ON human_identity_references;
+DROP POLICY IF EXISTS tenant_isolation_human_identity_references ON human_identity_references;
+ALTER TABLE human_identity_references DISABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS human_identity_references_consent_guard ON human_identity_references;
+DROP TRIGGER IF EXISTS human_identity_references_projection_guard ON human_identity_references;
+
+DROP TABLE IF EXISTS human_identity_references;
+DROP FUNCTION IF EXISTS guard_human_identity_reference_consent();
+DROP FUNCTION IF EXISTS guard_human_identity_reference_projection();
+
+ALTER TABLE consent_records
+  DROP CONSTRAINT IF EXISTS consent_records_tenant_subject_principal_hash_key;

@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-match-proposal.schema.json",
+  "title": "IPO.ONE No-Funds Trading Match Proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tradingMatchProposalId",
+    "proposalHash",
+    "capitalRequestId",
+    "requestHash",
+    "requestVersion",
+    "providerMandateId",
+    "mandateHash",
+    "mandateVersion",
+    "subjectId",
+    "principalId",
+    "subjectType",
+    "providerId",
+    "subjectActorHash",
+    "providerActorHash",
+    "compatibilityHash",
+    "termsHash",
+    "createdAt",
+    "expiresAt",
+    "matchingPolicyVersion",
+    "terms",
+    "hardFilterReasonCodes",
+    "status",
+    "providerAcceptance",
+    "subjectAcceptance",
+    "version",
+    "updatedAt",
+    "immutableTerms",
+    "autoAccepted",
+    "bilateralAcceptanceRequired",
+    "requestAndMandateRevalidationRequired",
+    "sandboxOnly",
+    "syntheticOnly",
+    "productionAuthority",
+    "fundsAuthority",
+    "realPricing",
+    "realFunding",
+    "externalSystemQueried",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "tradingMatchProposalId": { "$ref": "#/$defs/identifier" },
+    "proposalHash": { "$ref": "#/$defs/hash" },
+    "capitalRequestId": { "$ref": "#/$defs/identifier" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "requestVersion": { "const": 1 },
+    "providerMandateId": { "$ref": "#/$defs/identifier" },
+    "mandateHash": { "$ref": "#/$defs/hash" },
+    "mandateVersion": { "const": 1 },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "principalId": { "$ref": "#/$defs/identifier" },
+    "subjectType": { "enum": ["human", "agent"] },
+    "providerId": { "$ref": "#/$defs/identifier" },
+    "subjectActorHash": { "$ref": "#/$defs/hash" },
+    "providerActorHash": { "$ref": "#/$defs/hash" },
+    "compatibilityHash": { "$ref": "#/$defs/hash" },
+    "termsHash": { "$ref": "#/$defs/hash" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "matchingPolicyVersion": { "const": "trading_matching_policy.v1" },
+    "terms": { "$ref": "https://schemas.ipo.one/v2/trading-capital-request.schema.json#/$defs/terms" },
+    "hardFilterReasonCodes": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "active_and_unexpired",
+          "template_compatible",
+          "synthetic_asset_compatible",
+          "amount_range_compatible",
+          "duration_range_compatible",
+          "subject_type_compatible",
+          "strategy_class_compatible",
+          "server_evidence_eligible"
+        ]
+      }
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "provider_accepted",
+        "subject_accepted",
+        "bilaterally_accepted"
+      ]
+    },
+    "providerAcceptance": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/providerAcceptance" }
+      ]
+    },
+    "subjectAcceptance": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/subjectAcceptance" }
+      ]
+    },
+    "version": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "immutableTerms": { "const": true },
+    "autoAccepted": { "const": false },
+    "bilateralAcceptanceRequired": { "const": true },
+    "requestAndMandateRevalidationRequired": { "const": true },
+    "sandboxOnly": { "const": true },
+    "syntheticOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realPricing": { "const": false },
+    "realFunding": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "trading_match_proposal.v1" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "proposed" } } },
+      "then": {
+        "properties": {
+          "providerAcceptance": { "type": "null" },
+          "subjectAcceptance": { "type": "null" },
+          "version": { "const": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "provider_accepted" } } },
+      "then": {
+        "properties": {
+          "providerAcceptance": { "$ref": "#/$defs/providerAcceptance" },
+          "subjectAcceptance": { "type": "null" },
+          "version": { "const": 2 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "subject_accepted" } } },
+      "then": {
+        "properties": {
+          "providerAcceptance": { "type": "null" },
+          "subjectAcceptance": { "$ref": "#/$defs/subjectAcceptance" },
+          "version": { "const": 2 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "bilaterally_accepted" } }
+      },
+      "then": {
+        "properties": {
+          "providerAcceptance": { "$ref": "#/$defs/providerAcceptance" },
+          "subjectAcceptance": { "$ref": "#/$defs/subjectAcceptance" },
+          "version": { "const": 3 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptanceId",
+        "actorHash",
+        "proposalHash",
+        "termsHash",
+        "acceptedAt",
+        "exactTerms",
+        "automatic",
+        "fundsAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "acceptanceId": { "$ref": "#/$defs/identifier" },
+        "actorHash": { "$ref": "#/$defs/hash" },
+        "proposalHash": { "$ref": "#/$defs/hash" },
+        "termsHash": { "$ref": "#/$defs/hash" },
+        "acceptedAt": { "type": "string", "format": "date-time" },
+        "exactTerms": { "const": true },
+        "automatic": { "const": false },
+        "fundsAuthority": { "const": false },
+        "schemaVersion": { "type": "string" }
+      }
+    },
+    "providerAcceptance": {
+      "allOf": [
+        { "$ref": "#/$defs/acceptance" },
+        {
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": "trading_match_provider_acceptance.v1"
+            }
+          }
+        }
+      ]
+    },
+    "subjectAcceptance": {
+      "allOf": [
+        { "$ref": "#/$defs/acceptance" },
+        {
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": "trading_match_subject_acceptance.v1"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,4 +1,6 @@
 import {
+  createCipheriv,
+  createDecipheriv,
   createHash,
   createHmac,
   randomBytes,
@@ -106,6 +108,64 @@ export function createReferenceHasher(secret) {
         .update("\0")
         .update(value)
         .digest("base64url");
+    }
+  });
+}
+
+export function createAuthenticationSecretBox(secret) {
+  const material = Buffer.from(secret ?? []);
+  if (material.length < 32) {
+    throw authenticationError(
+      "invalid_authentication_configuration",
+      "authentication encryption key must contain at least 32 bytes"
+    );
+  }
+  const key = createHash("sha256")
+    .update("IPO_ONE_AUTHN_ENCRYPTION_V1")
+    .update("\0")
+    .update(material)
+    .digest();
+
+  function aad(namespace) {
+    return Buffer.from(assertBoundedString("encryption namespace", namespace, {
+      maximum: 64,
+      pattern: /^[a-z][a-z0-9_.-]+$/
+    }));
+  }
+
+  return Object.freeze({
+    seal(namespace, plaintext) {
+      const value = assertBoundedString("authentication secret", plaintext, { maximum: 16_384 });
+      const iv = randomBytes(12);
+      const cipher = createCipheriv("aes-256-gcm", key, iv);
+      cipher.setAAD(aad(namespace));
+      const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+      const tag = cipher.getAuthTag();
+      return `v1.${iv.toString("base64url")}.${encrypted.toString("base64url")}.${tag.toString("base64url")}`;
+    },
+    open(namespace, envelope) {
+      try {
+        const encoded = assertBoundedString("authentication ciphertext", envelope, {
+          maximum: 24_000,
+          pattern: /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
+        });
+        const [, encodedIv, encodedCiphertext, encodedTag] = encoded.split(".");
+        const iv = Buffer.from(encodedIv, "base64url");
+        const ciphertext = Buffer.from(encodedCiphertext, "base64url");
+        const tag = Buffer.from(encodedTag, "base64url");
+        if (iv.length !== 12 || tag.length !== 16 || ciphertext.length < 1 || ciphertext.length > 16_384) {
+          throw new Error("invalid encrypted envelope");
+        }
+        const decipher = createDecipheriv("aes-256-gcm", key, iv);
+        decipher.setAAD(aad(namespace));
+        decipher.setAuthTag(tag);
+        return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
+      } catch {
+        throw authenticationError(
+          "authentication_secret_rejected",
+          "authentication secret could not be recovered"
+        );
+      }
     }
   });
 }

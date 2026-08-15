@@ -1,0 +1,86 @@
+{
+  "artifactVersion": "ipo-one.hyperliquid-002d.stable-once-result.v2",
+  "artifactId": "hyperliquid-002d-stable-once-result-20260810T121811Z",
+  "issueId": "HYPERLIQUID-002D",
+  "adr": "ADR-039",
+  "environment": "HYPERLIQUID_TESTNET",
+  "decision": "CONFIRMED_RESTING_ORDER_STOPPED_BEFORE_SECOND_WRITE",
+  "intentId": "hypercore_stable_intent_62d522423fb1583e530851a950291598a4e369f91dab11f7efbf31ef43fbdea5",
+  "intentHash": "0x62d522423fb1583e530851a950291598a4e369f91dab11f7efbf31ef43fbdea5",
+  "exactApprovalMarker": "HYPERLIQUID-002D:0x62d522423fb1583e530851a950291598a4e369f91dab11f7efbf31ef43fbdea5",
+  "payloadHash": "0xa19ebc903e06826486c85db24f487eee2d1e1957a9638cb82ba5cbbc009d850a",
+  "founderApprovalHash": "0x41aab5ad528672c866bbddf59ada47e608993aa8c247c35b0080b5e88637719f",
+  "preflightReceiptHash": "0xa420c753722d82d34a42f198daabdeb85814f1834bd871e8202ed69b663a2a37",
+  "riskSnapshotHash": "0xdd85c4b8e19cd3f6a7c063b7c5c771303aefc6325cf5aa3dae1ed51acae599f7",
+  "actionAuthorizationHash": "0x4173ee045b0b80835b0818e0620b068d9ab17ddffff07b07e34fa542a8667a98",
+  "requestBodyHash": "0xe4559bea31bca1002f4106fa134b087f4431b383f47dfbda7cecc5176e8bbf7a",
+  "signatureHash": "0x0d98cbc23a0671158a9a5a51231b5f7ff3364031c4428626ec10cac4589244e1",
+  "claimHash": "0xd18d2b23d377aeb73037ebecb09899b892e583be3c81f14255d49e5b89457b2e",
+  "responseHash": "0xe70f5c46e7252a94ce6ffb65b2ac904bda339c7685aa4c278dc771ad5ef2b137",
+  "submission": {
+    "disposition": "confirmed",
+    "state": "SUBMITTED",
+    "version": 5,
+    "externalSubmissionAttempted": true,
+    "retryAllowed": false,
+    "jitObservedAt": "2026-08-10T12:15:39.465Z",
+    "jitExpiresAt": "2026-08-10T12:15:49.465Z",
+    "jitRiskWindowMs": 10000,
+    "jitPostOnlyDistanceBps": 414
+  },
+  "durableReadback": {
+    "founderApprovalStatus": "CONSUMED",
+    "jitReceiptCount": 1,
+    "transitionCount": 5,
+    "externalSubmissionAttempted": true,
+    "retryAllowed": false,
+    "rawKeyPersisted": false,
+    "rawSignaturePersisted": false,
+    "rawResponsePersisted": false
+  },
+  "readOnlyVenueReconciliation": {
+    "accountRole": "user",
+    "orderStatus": "order",
+    "openOrderCount": 1,
+    "matchedClientOrderId": "0x3ec931145cbe6e36213621b50521a704",
+    "venueOrderId": 57670774189,
+    "order": {
+      "coin": "BTC",
+      "side": "B",
+      "limitPrice": "62500.0",
+      "size": "0.00016",
+      "reduceOnly": false,
+      "timeInForce": "ALO",
+      "limitNotionalUsd": "10"
+    },
+    "positionCount": 0,
+    "totalPositionNotionalUsd": "0.0",
+    "totalMarginUsedUsd": "0.0",
+    "accountValueUsd": "999.0",
+    "withdrawableUsd": "998.5",
+    "responseSha256": {
+      "userRole": "0x6b3061507ef8cc2ca95320f790a9f9ccb3c850ae081df4b6f6e56e40d57203e4",
+      "openOrders": "0x291735686009d6297c79b28e50dbd19c97fe84ed399243a715747e21aeba3e1e",
+      "orderStatus": "0x94703f49f50c8e1783ccabcaf7a3ef7321b7b98dd55c116ac32797e6bdb0d0d5",
+      "clearinghouseState": "0xe0fb38a9656a265edb7b5740d88d34750a919963acda3d7a2e444e0a7648ae70"
+    }
+  },
+  "closure": {
+    "orderTerminal": false,
+    "reconciliationComplete": false,
+    "secondExchangeWriteAuthorized": false,
+    "automaticCancelAttempted": false,
+    "nextGate": "SEPARATE_EXACT_CANCEL_INTENT_AND_FOUNDER_APPROVAL_OR_READ_ONLY_NATURAL_TERMINAL_RECONCILIATION"
+  },
+  "safety": {
+    "exchangeWriteAttemptsForIntent": 1,
+    "automaticRetry": false,
+    "rawAddressPersisted": false,
+    "rawKeyPersisted": false,
+    "rawSignaturePersisted": false,
+    "rawResponsePersisted": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false
+  }
+}

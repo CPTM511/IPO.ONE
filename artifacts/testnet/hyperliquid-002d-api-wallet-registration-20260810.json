@@ -1,0 +1,54 @@
+{
+  "artifactVersion": "ipo-one.hyperliquid-002d.api-wallet-registration.v1",
+  "artifactId": "hyperliquid-002d-api-wallet-registration-20260810",
+  "issueId": "HYPERLIQUID-002D",
+  "environment": "HYPERLIQUID_TESTNET",
+  "registrationEvidenceHash": "0x1be84ec5ebbf22e1d0165fb700e3d06bc4cecbda801c1063a6f7fc1ea7276538",
+  "registration": {
+    "requestHash": "0x7903ed662ca1b3225ba4e57f53fac4d1fa4a289a68f05bc18df4a1fe1d30bf0a",
+    "status": "REGISTERED",
+    "responseHash": "0x22119acf0e830b7d016c8e6e83cd7bec9d28ed1de43abe4aa98817d8a8243e48",
+    "resultHash": "0x43da2fcc5a5ac69f2062317ea66f9edaf0af5da07a2cb117c9f46296905974fc",
+    "authorizationHash": "0x6709ce6218fb213463ed9e5e524b8ee368cfd6d675e4cdead1936edfc7ddbbf2",
+    "completedAt": "2026-08-10T09:25:33.666Z",
+    "accountAddressHash": "0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038",
+    "apiWalletAddressHash": "0x1d1911fcbdb3809a1530f1e0740e23e04ff795239f0b497674a2c756322acea1",
+    "signerReferenceHash": "0x8d51f324c056a411552c4945e30d1091e4c2036790e90022417c230ad38f5be3",
+    "requestedAgentName": "ipo-one-002d",
+    "submissionCount": 1,
+    "automaticRetry": false
+  },
+  "roleObservation": {
+    "role": "agent",
+    "registered": true,
+    "responseHash": "0xf9d66338c3b7ac452721b716d3f1327a2563efe5ea4adc5a29cf7ba4ba57fd81",
+    "observedAt": "2026-08-10T09:53:18.282Z"
+  },
+  "masterAccountObservation": {
+    "role": "user",
+    "accountValue": "999.0",
+    "withdrawable": "999.0",
+    "positionCount": 0,
+    "openOrderCount": 0,
+    "roleResponseHash": "0xd17eb67d01e932e4eb2090d9703402195afadbc289b3622f3426f76923b09c4f",
+    "stateResponseHash": "0x6f766f2a095828b7d57a0a83045be0f02c255d5157e20b32650a982356f7f2c4",
+    "ordersResponseHash": "0x30dc0e28880b5c06c381faa7c4e31bb00330c76a28064a33207ee515d0f1ade5",
+    "observedAt": "2026-08-10T09:53:18.282Z"
+  },
+  "decision": "REGISTERED_AND_ACCOUNT_QUALIFIED",
+  "safety": {
+    "registrationWriteCount": 1,
+    "registrationAuthorizationConsumed": true,
+    "registrationRetryPerformed": false,
+    "exchangeOrderWritePerformed": false,
+    "orderSubmitted": false,
+    "fundsMoved": false,
+    "rawAccountAddressStored": false,
+    "rawApiWalletAddressStored": false,
+    "rawSignatureStored": false,
+    "rawResponseStored": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false
+  }
+}

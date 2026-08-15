@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/operational-alert-policy.schema.json",
+  "title": "IPO.ONE Operational Alert Policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "policyVersion",
+    "environment",
+    "mode",
+    "delivery",
+    "safetyBoundary",
+    "rules"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "operational_alert_policy.v1" },
+    "policyVersion": { "const": "ops_001b.v1" },
+    "environment": { "const": "closed-pilot" },
+    "mode": { "const": "no-real-funds" },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notificationTargetStatus", "namedOwnerStatus"],
+      "properties": {
+        "notificationTargetStatus": { "const": "unconfigured" },
+        "namedOwnerStatus": { "const": "unconfigured" }
+      }
+    },
+    "safetyBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "automaticActionsEnabled",
+        "realFundsActionsEnabled",
+        "productionReleaseAuthority"
+      ],
+      "properties": {
+        "automaticActionsEnabled": { "const": false },
+        "realFundsActionsEnabled": { "const": false },
+        "productionReleaseAuthority": { "const": false }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "signalType",
+          "alertType",
+          "severity",
+          "route",
+          "ownerRole",
+          "readinessEffect",
+          "runbookRef",
+          "actionCodes"
+        ],
+        "properties": {
+          "signalType": {
+            "enum": [
+              "reconciliation_failed",
+              "chain_payment_invalidated",
+              "break_glass_activated",
+              "admission_control_unavailable",
+              "synthetic_lifecycle_failed",
+              "servicing_defaulted",
+              "servicing_written_off"
+            ]
+          },
+          "alertType": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 96,
+            "pattern": "^[a-z][a-z0-9_]+$"
+          },
+          "severity": { "enum": ["critical", "high", "medium", "low"] },
+          "route": { "enum": ["page", "operations_queue", "risk_queue"] },
+          "ownerRole": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 96,
+            "pattern": "^[A-Za-z][A-Za-z/ -]+$"
+          },
+          "readinessEffect": { "enum": ["fail_closed", "review_required", "observe"] },
+          "runbookRef": {
+            "type": "string",
+            "pattern": "^OPS-RUNBOOK-[A-Z0-9-]{3,80}$"
+          },
+          "actionCodes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "preserve_evidence",
+                "stop_affected_writes",
+                "open_incident",
+                "run_reconciliation",
+                "verify_chain_finality",
+                "review_break_glass_scope",
+                "review_admission_store",
+                "run_synthetic_diagnostics",
+                "open_servicing_case",
+                "review_servicing_options",
+                "confirm_dual_control_evidence"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

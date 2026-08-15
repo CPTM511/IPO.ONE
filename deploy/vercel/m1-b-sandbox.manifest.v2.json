@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "ipo.one.vercel-m1-b-sandbox/v2",
+  "status": "current_release_closure_configuration_deployment_pending",
+  "productProfile": "deployable_sandbox_vertical_slice",
+  "deliveryMode": "L1_PUBLIC_SANDBOX",
+  "vercelTargetEnvironment": "production",
+  "vercelTargetReason": "Vercel Cron can invoke only production-target deployments; this is configuration, not hosting or deployment authority",
+  "productionTargetConfigured": true,
+  "deploymentStatus": "DEPLOYMENT_PENDING_AUTHORIZATION",
+  "deployedReleaseId": null,
+  "productProductionClaim": false,
+  "productionHostingClaim": false,
+  "releaseClaim": false,
+  "realFundsEnabled": false,
+  "protocolFeesEnabled": false,
+  "signerAuthorityEnabled": false,
+  "withdrawalAuthorityEnabled": false,
+  "venueWriteAuthorityEnabled": false,
+  "topology": {
+    "projectCount": 1,
+    "projectRoles": [
+      "primary_product_and_bounded_automation"
+    ],
+    "primaryProtocolCapabilities": [
+      "human_borrower",
+      "principal_agent",
+      "capital_partner",
+      "bounded_automation"
+    ],
+    "hostedBrowserAcceptanceRoles": [
+      "principal_agent"
+    ],
+    "riskProjectIncluded": false,
+    "riskProjectDeploymentTarget": false,
+    "web": "vercel_function_asset_handler",
+    "api": "vercel_node_function",
+    "automation": "vercel_cron_bounded_function",
+    "canonicalState": "neon_postgresql",
+    "durability": "postgresql_outbox_inbox_leases_idempotency_reconciliation",
+    "continuousWorker": false,
+    "externalQueue": false,
+    "externalCache": false
+  },
+  "runtime": {
+    "buildNode": "26.5.0",
+    "deployedNode": "24.x",
+    "functionMaximumDurationSeconds": 30,
+    "fluidCompute": true,
+    "cronSchedule": "*/5 * * * *"
+  },
+  "database": {
+    "provider": "neon_via_vercel_marketplace",
+    "plan": "lowest_available_non_paid_or_founder_approved_plan",
+    "requiredMajorVersion": 17,
+    "gatewayPoolMaximumPerInstance": 1,
+    "authenticationPoolMaximumPerInstance": 1,
+    "cronPoolMaximumPerInvocation": 2,
+    "runtimeMigrationsAllowed": false,
+    "runtimeSeedingAllowed": false
+  },
+  "authority": {
+    "currentAuthoritySource": "docs/PRODUCT_CONSTITUTION.md",
+    "mergeAuthorized": false,
+    "deploymentAuthorized": false,
+    "deploymentEvidenceCollectionAuthorized": false,
+    "deploymentPromotionAuthorized": false,
+    "aliasMutationAuthorized": false,
+    "dnsMutationAuthorized": false,
+    "customDomainAuthorized": false,
+    "customDomain": null,
+    "releaseTagAuthorized": false,
+    "releaseSealAuthorized": false,
+    "paidExternalIntegrationAuthorized": false,
+    "zeroFundedRealValueSupportAuthorized": false,
+    "realValueActivationAuthorized": false,
+    "maximumVercelProjectsAuthorizedForDeployment": 0
+  },
+  "conditionalInterfaces": {
+    "riskProject": {
+      "targetMilestone": "M1_C_L2_CLOSED_NO_FUNDS",
+      "configurationPath": "deploy/vercel/vercel.m1-b-sandbox-risk.json",
+      "bundleBuilderRole": "risk",
+      "disposition": "PRESERVED_CONDITIONAL_FUTURE_COMPATIBILITY_ASSET",
+      "activeForCurrentRelease": false,
+      "deploymentTarget": false,
+      "deploymentAuthorized": false,
+      "requiredAssurance": "RECENT_PHISHING_RESISTANT_MFA",
+      "requiresSeparateFounderAuthorization": true
+    }
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "fixtureVersion": "hyperliquid_official_info_fixture.v1",
+  "source": {
+    "apiDocumentation": "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api",
+    "infoDocumentation": "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint",
+    "perpetualsDocumentation": "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/perpetuals",
+    "capturedAt": "2026-07-25T10:13:42.775Z",
+    "targetProfile": "hyperliquid_testnet_info.v1",
+    "documentationExamplesOnly": true
+  },
+  "accountAddress": "0x8c967e73e6b15087c42a10d344cff4c96d877f1d",
+  "accountRole": "master",
+  "fillWindowStartMs": 1735969000000,
+  "fillWindowEndMs": 1735969714000,
+  "responses": {
+    "userRole": {
+      "role": "user"
+    },
+    "clearinghouseState": {
+      "assetPositions": [
+        {
+          "position": {
+            "coin": "ETH",
+            "cumFunding": {
+              "allTime": "514.085417",
+              "sinceChange": "0.0",
+              "sinceOpen": "0.0"
+            },
+            "entryPx": "2986.3",
+            "leverage": {
+              "rawUsd": "-95.059824",
+              "type": "isolated",
+              "value": 20
+            },
+            "liquidationPx": "2866.26936529",
+            "marginUsed": "4.967826",
+            "maxLeverage": 50,
+            "positionValue": "100.02765",
+            "returnOnEquity": "-0.0026789",
+            "szi": "0.0335",
+            "unrealizedPnl": "-0.0134"
+          },
+          "type": "oneWay"
+        }
+      ],
+      "crossMaintenanceMarginUsed": "0.0",
+      "crossMarginSummary": {
+        "accountValue": "13104.514502",
+        "totalMarginUsed": "0.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "13104.514502"
+      },
+      "marginSummary": {
+        "accountValue": "13109.482328",
+        "totalMarginUsed": "4.967826",
+        "totalNtlPos": "100.02765",
+        "totalRawUsd": "13104.514502"
+      },
+      "withdrawable": "13104.514502",
+      "time": 1733968369395
+    },
+    "frontendOpenOrders": [
+      {
+        "coin": "ETH",
+        "isPositionTpsl": false,
+        "isTrigger": false,
+        "limitPx": "2412.7",
+        "oid": 1,
+        "orderType": "Market",
+        "origSz": "0.0076",
+        "reduceOnly": true,
+        "side": "A",
+        "sz": "0.0",
+        "timestamp": 1724361546645,
+        "triggerCondition": "N/A",
+        "triggerPx": "0.0"
+      }
+    ],
+    "userFillsByTime": [
+      {
+        "closedPnl": "8722.988077",
+        "coin": "@107",
+        "crossed": true,
+        "dir": "Sell",
+        "fee": "0.304521",
+        "feeToken": "USDC",
+        "hash": "0x2222138cc516e3fe746c0411dd733f02e60086f43205af2ae37c93f6a792430b",
+        "oid": 59071663721,
+        "px": "18.62041381",
+        "side": "A",
+        "startPosition": "10659.65434798",
+        "sz": "43.84",
+        "tid": 907359904431134,
+        "time": 1735969713869
+      }
+    ],
+    "subAccounts": [
+      {
+        "name": "Test",
+        "subAccountUser": "0x035605fc2f24d65300227189025e90a0d947f16c",
+        "master": "0x8c967e73e6b15087c42a10d344cff4c96d877f1d",
+        "clearinghouseState": {
+          "marginSummary": {
+            "accountValue": "29.78001",
+            "totalNtlPos": "0.0",
+            "totalRawUsd": "29.78001",
+            "totalMarginUsed": "0.0"
+          },
+          "assetPositions": [],
+          "time": 1733968369395
+        }
+      }
+    ]
+  }
+}

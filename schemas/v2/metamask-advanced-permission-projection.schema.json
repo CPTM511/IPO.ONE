@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/metamask-advanced-permission-projection.schema.json",
+  "title": "IPO.ONE MetaMask Advanced Permission Projection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metaMaskPermissionProjectionId", "metaMaskPermissionProjectionHash", "permissionProjectionHash",
+    "descriptorHash", "capabilitiesHash", "capabilityObservationHash", "sessionEpoch", "rpcMethod", "chainId",
+    "chainIdHex", "accountRefHash", "sessionAccountRefHash", "requestedPermissionType", "permissionDataHash",
+    "expiryTimestamp", "isAdjustmentAllowed", "decision", "reasonCodes", "preparedAt", "expiresAt",
+    "providerProvisioningReady", "activationAllowed", "externalCallAllowed", "externalProvisioningPerformed",
+    "rawParamsRetained", "transactionsAllowed", "productionAuthority", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "metaMaskPermissionProjectionId": { "$ref": "#/$defs/identifier" },
+    "metaMaskPermissionProjectionHash": { "$ref": "#/$defs/hash" },
+    "permissionProjectionHash": { "$ref": "#/$defs/hash" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "capabilitiesHash": { "$ref": "#/$defs/hash" },
+    "capabilityObservationHash": { "$ref": "#/$defs/hash" },
+    "sessionEpoch": { "type": "integer", "minimum": 0 },
+    "rpcMethod": { "const": "wallet_requestExecutionPermissions" },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "chainIdHex": { "enum": ["0x14a34", "0x7a0"] },
+    "accountRefHash": { "$ref": "#/$defs/hash" },
+    "sessionAccountRefHash": { "$ref": "#/$defs/hash" },
+    "requestedPermissionType": { "$ref": "#/$defs/identifier" },
+    "permissionDataHash": { "$ref": "#/$defs/hash" },
+    "expiryTimestamp": { "type": "integer", "minimum": 1 },
+    "isAdjustmentAllowed": { "const": false },
+    "decision": { "enum": ["DENY", "STEP_UP"] },
+    "reasonCodes": {
+      "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,95}$" }
+    },
+    "preparedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "providerProvisioningReady": { "const": false },
+    "activationAllowed": { "const": false },
+    "externalCallAllowed": { "const": false },
+    "externalProvisioningPerformed": { "const": false },
+    "rawParamsRetained": { "const": false },
+    "transactionsAllowed": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "metamask_advanced_permission_projection.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    }
+  }
+}

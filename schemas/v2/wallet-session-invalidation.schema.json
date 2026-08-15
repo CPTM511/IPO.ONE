@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/wallet-session-invalidation.schema.json",
+  "title": "IPO.ONE wallet session invalidation result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "reauthenticationRequired",
+    "authorityAvailable",
+    "credentialsIncluded",
+    "fundsAuthority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "wallet_session_invalidation_result.v1" },
+    "status": { "const": "invalidated" },
+    "reauthenticationRequired": { "const": true },
+    "authorityAvailable": { "const": false },
+    "credentialsIncluded": { "const": false },
+    "fundsAuthority": { "const": false }
+  }
+}

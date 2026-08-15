@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "release_001_hyperliquid_live_read_evidence.v1",
+  "capturedAt": "2026-07-26T06:01:49.973Z",
+  "commandApproval": "TC-201",
+  "profileId": "hyperliquid_testnet_info.v1",
+  "environment": "testnet",
+  "origin": "https://api.hyperliquid-testnet.xyz",
+  "path": "/info",
+  "method": "POST",
+  "queryTypes": [
+    "userRole",
+    "clearinghouseState",
+    "frontendOpenOrders",
+    "userFillsByTime",
+    "subAccounts"
+  ],
+  "accountAddressHash": "0x33f3e57d9b277d619442e82c878dde2b4935d27ebea086a0bff710393f950f2b",
+  "verifiedMasterAddressHash": "0x33f3e57d9b277d619442e82c878dde2b4935d27ebea086a0bff710393f950f2b",
+  "accountRoleVerified": true,
+  "returnedRole": "user",
+  "freshness": "stale",
+  "sourceResponseHashes": {
+    "userRole": "0x0a08b37ed1bd84ff62c9e9731577f12e4e357cb5ffd256ac0c52b8d378e2e427",
+    "clearinghouseState": "0xfc57c17eb7563802d4161a2b9ba46f4ccba3cde7773063840d3448f80ce82b0d",
+    "frontendOpenOrders": "0xe7beb3c8df4bc703d68ef6e3ff0321eaf5e7eacd9440cc7f0feda558ae4981d5",
+    "userFillsByTime": "0x362d671d134207e197c1d4e2135159389acf8a90f2dca9188467d979dcb53131",
+    "subAccounts": "0x020c53066a5bcc049e16916e0a9afe8ec66a9b9c5e133b858e94867798d13a87"
+  },
+  "sourceBundleHash": "0x43d5cc93d3c90f31e3b12e1159ec82fc65eba4a9f536695dd015490e7d183ad4",
+  "snapshotHash": "0x8251557c3436dcf97fdf0321a41e651a0db32674861f3f3bc560d1eb36fa2092",
+  "counts": {
+    "positions": 0,
+    "openOrders": 0,
+    "fills": 0,
+    "subaccounts": 0
+  },
+  "outcome": "snapshot_created",
+  "readOnly": true,
+  "testnetOnly": true,
+  "externalOrderSubmitted": false,
+  "signerAvailable": false,
+  "exchangeEndpointAvailable": false,
+  "credentialsUsed": false,
+  "productionAuthority": false,
+  "fundsAuthority": false,
+  "releaseInterpretation": "READ_ONLY_REACHABILITY_PASS_MASTER_SUBACCOUNT_AND_NONEMPTY_HISTORY_UNVERIFIED"
+}

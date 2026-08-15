@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/pending-exposure-reservation.schema.json",
+  "title": "IPO.ONE Pending Exposure Reservation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reservationId", "reservationHash", "grantId", "targetPolicyId",
+    "obligationId", "assetId", "amountMinor", "sessionEpoch",
+    "idempotencyKeyHash", "reservedAt", "expiresAt", "status", "releasedAt",
+    "releaseReasonCode", "sandboxOnly", "transactionsAllowed",
+    "productionAuthority", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "reservationId": { "type": "string", "pattern": "^pending_exposure_[0-9a-f]{64}$" },
+    "reservationHash": { "$ref": "#/$defs/bytes32" },
+    "grantId": { "type": "string", "pattern": "^delegated_wallet_grant_[0-9a-f]{64}$" },
+    "targetPolicyId": { "type": "string", "pattern": "^execution_target_policy_[0-9a-f]{64}$" },
+    "obligationId": { "$ref": "#/$defs/id" },
+    "assetId": { "$ref": "#/$defs/id" },
+    "amountMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+    "sessionEpoch": { "type": "integer", "minimum": 0 },
+    "idempotencyKeyHash": { "$ref": "#/$defs/bytes32" },
+    "reservedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["reserved", "released", "expired", "quarantined"] },
+    "releasedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "releaseReasonCode": { "oneOf": [{ "enum": ["cancelled_before_submission", "grant_revoked", "reservation_expired", "security_quarantine"] }, { "type": "null" }] },
+    "sandboxOnly": { "const": true },
+    "transactionsAllowed": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "pending_exposure_reservation.v1" }
+  },
+  "$defs": {
+    "bytes32": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$" }
+  }
+}

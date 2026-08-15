@@ -85,6 +85,11 @@ function createAuthorizationDecision(input, facts) {
       input.authorizationRequestHash,
       { minimum: 32, maximum: 128, pattern: /^[A-Za-z0-9_-]+$/ }
     ),
+    commandPayloadHash: assertAuthorizationString("commandPayloadHash", input.commandPayloadHash, {
+      minimum: 66,
+      maximum: 66,
+      pattern: /^0x[0-9a-f]{64}$/
+    }),
     commandHash: assertAuthorizationString("commandHash", input.commandHash, {
       minimum: 66,
       maximum: 66,
@@ -146,6 +151,11 @@ function createApprovalPreparation(input) {
     liveStateVersion: decisionVersion("liveStateVersion", input.liveStateVersion),
     policyVersion: assertAuthorizationIdentifier("policyVersion", input.policyVersion),
     reasonCode: assertReasonCode("reasonCode", input.reasonCode),
+    commandPayloadHash: assertAuthorizationString("commandPayloadHash", input.commandPayloadHash, {
+      minimum: 66,
+      maximum: 66,
+      pattern: /^0x[0-9a-f]{64}$/
+    }),
     commandHash: assertAuthorizationString("commandHash", input.commandHash, {
       minimum: 66,
       maximum: 66,
@@ -158,7 +168,7 @@ function createApprovalPreparation(input) {
     ),
     preparedAt: preparedAt.toISOString(),
     expiresAt: expiresAt.toISOString(),
-    schemaVersion: "approval_preparation.v1"
+    schemaVersion: "approval_preparation.v2"
   });
   trustedApprovalPreparations.add(preparation);
   return preparation;
@@ -216,7 +226,8 @@ class AuthorizationAuditUnavailable extends Error {}
 async function stage(reasonCode, operation) {
   try {
     return await operation();
-  } catch {
+  } catch (error) {
+    if (error?.code === "40001" || error?.code === "40P01") throw error;
     throw new AuthorizationStageError(reasonCode);
   }
 }
@@ -235,7 +246,13 @@ function compareCredential(context, credential) {
 
 function normalizeRequest(input) {
   assertAuthorizationShape("authorization request", input, {
-    required: ["authenticationContext", "operationId", "requestId", "correlationId"],
+    required: [
+      "authenticationContext",
+      "operationId",
+      "requestId",
+      "correlationId",
+      "commandPayloadHash"
+    ],
     optional: [
       "resource",
       "purpose",
@@ -262,6 +279,11 @@ function normalizeRequest(input) {
     operationId: assertAuthorizationIdentifier("operationId", input.operationId),
     requestId: assertAuthorizationIdentifier("requestId", input.requestId),
     correlationId: assertAuthorizationIdentifier("correlationId", input.correlationId),
+    commandPayloadHash: assertAuthorizationString("commandPayloadHash", input.commandPayloadHash, {
+      minimum: 66,
+      maximum: 66,
+      pattern: /^0x[0-9a-f]{64}$/
+    }),
     resource,
     purpose: input.purpose === undefined ? undefined : assertAuthorizationIdentifier("purpose", input.purpose),
     reasonCode: input.reasonCode === undefined ? undefined : assertReasonCode("reasonCode", input.reasonCode),
@@ -390,6 +412,7 @@ export class AuthorizationService {
     let accessGrant;
     let liveStateVersion = 0;
     let approval = { approvalIds: [] };
+    let commandHash;
     try {
       policy = await stage("route_contract_rejected", async () => {
         const resolved = this.policyRegistry.getAuthenticated(normalized.operationId);
@@ -482,7 +505,7 @@ export class AuthorizationService {
           : this.referenceHasher.hash("authorization.idempotency", normalized.idempotencyKey);
       });
 
-      const commandHash = hashId("authorization_command", {
+      commandHash = hashId("authorization_command", {
         tenantId: context.tenantId,
         actorId: context.actorId,
         operationId: policy.operationId,
@@ -493,6 +516,7 @@ export class AuthorizationService {
         liveStateVersion,
         reasonCode: normalized.reasonCode ?? null,
         idempotencyKeyHash: idempotencyKeyHash ?? null,
+        commandPayloadHash: normalized.commandPayloadHash,
         policyVersion: context.policyVersion
       });
       const authorizationRequestHash = this.referenceHasher.hash(
@@ -528,6 +552,7 @@ export class AuthorizationService {
           liveStateVersion,
           policyVersion: context.policyVersion,
           reasonCode: normalized.reasonCode,
+          commandPayloadHash: normalized.commandPayloadHash,
           commandHash,
           idempotencyKeyHash,
           preparedAt: normalized.now,
@@ -542,7 +567,9 @@ export class AuthorizationService {
           accessGrant,
           decision: AuthorizationDecisionValue.DENY,
           reasonCode: "approval_required",
-          approvalIds: []
+          approvalIds: [],
+          commandPayloadHash: normalized.commandPayloadHash,
+          commandHash
         });
         return preparation;
       }
@@ -561,7 +588,8 @@ export class AuthorizationService {
         reasonCode: normalized.reasonCode,
         idempotencyKey: normalized.idempotencyKey,
         approvalArtifact: normalized.approvalArtifact,
-        sourceNetworkRefHash: normalized.sourceNetworkRefHash
+        sourceNetworkRefHash: normalized.sourceNetworkRefHash,
+        commandPayloadHash: normalized.commandPayloadHash
       });
       const decision = createAuthorizationDecision({
         tenantId: context.tenantId,
@@ -584,6 +612,7 @@ export class AuthorizationService {
         accessGrantVersion: accessGrant?.version,
         tokenJtiHash: context.tokenJtiHash,
         authorizationRequestHash,
+        commandPayloadHash: normalized.commandPayloadHash,
         commandHash,
         idempotencyKeyHash,
         approvalIds: approval.approvalIds,
@@ -603,10 +632,14 @@ export class AuthorizationService {
         reasonCode: normalized.reasonCode ?? "authorization_allowed",
         approvalIds: approval.approvalIds,
         approvalProposalId: approval.proposalId,
-        approvalProposalVersion: approval.proposalVersion
+        approvalProposalVersion: approval.proposalVersion,
+        authorizationDecisionId: decision.decisionId,
+        commandPayloadHash: normalized.commandPayloadHash,
+        commandHash
       });
       return decision;
     } catch (error) {
+      if (error?.code === "40001" || error?.code === "40P01") throw error;
       if (error instanceof AuthorizationAuditUnavailable) {
         throw authorizationError("authorization_unavailable", "Authorization is temporarily unavailable.");
       }
@@ -628,7 +661,9 @@ export class AuthorizationService {
           accessGrant,
           decision: AuthorizationDecisionValue.DENY,
           reasonCode,
-          approvalIds: []
+          approvalIds: [],
+          commandPayloadHash: commandHash ? normalized.commandPayloadHash : undefined,
+          commandHash
         });
       } catch {
         throw authorizationError("authorization_unavailable", "Authorization is temporarily unavailable.");
@@ -650,7 +685,11 @@ export class AuthorizationService {
     if (!normalized.resource || normalized.resource.resourceType !== policy.resourceType) {
       throw new Error("resource reference is invalid");
     }
-    const resource = await this.directory.resolveResource(normalized.resource);
+    const resource = await this.directory.resolveResource({
+      ...normalized.resource,
+      tenantId: context.tenantId,
+      actorId: context.actorId
+    });
     if (
       !resource ||
       resource.resourceType !== policy.resourceType ||
@@ -660,7 +699,10 @@ export class AuthorizationService {
       throw new Error("resource is unavailable");
     }
     if (policy.ownershipRule === OwnershipRule.ACTOR) {
-      if (resource.tenantId !== context.tenantId || resource.ownerActorId !== context.actorId) {
+      if (
+        resource.tenantId !== context.tenantId ||
+        (resource.ownerActorId !== context.actorId && resource.actorAuthorized !== true)
+      ) {
         throw new Error("actor does not own resource");
       }
       return { resource, accessGrant: undefined };
@@ -773,7 +815,10 @@ export class AuthorizationService {
     reasonCode,
     approvalIds,
     approvalProposalId,
-    approvalProposalVersion
+    approvalProposalVersion,
+    authorizationDecisionId,
+    commandPayloadHash,
+    commandHash
   }) {
     try {
       await this.auditStore.append({
@@ -800,7 +845,10 @@ export class AuthorizationService {
         ...(accessGrant ? { accessGrantId: accessGrant.accessGrantId } : {}),
         ...(normalized.sourceNetworkRefHash
           ? { sourceNetworkRefHash: normalized.sourceNetworkRefHash }
-          : {})
+          : {}),
+        ...(authorizationDecisionId ? { authorizationDecisionId } : {}),
+        ...(commandPayloadHash ? { commandPayloadHash } : {}),
+        ...(commandHash ? { commandHash } : {})
       });
     } catch {
       throw new AuthorizationAuditUnavailable();

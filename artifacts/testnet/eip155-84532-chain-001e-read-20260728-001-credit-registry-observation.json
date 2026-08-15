@@ -1,0 +1,98 @@
+{
+  "observation": {
+    "chainId": "eip155:84532",
+    "providerSlot": "primary",
+    "contractAddress": "0x88926c11185E94bd8e9dE33959b6316CDA7c3e4A",
+    "authorizationHash": "0x218a06527a138313936e9a199104dfbabe73f1f1d16e7e5c8189a0ff2edca088",
+    "accountReferenceHash": "0x241bdcfd40be75c0b489f60d05c989ab39a8ec44b7778bef5d040628738cd787",
+    "subjectAccountHash": "0xce6b79b5e191071cbe255845a3b0ade0c368cb0155061ef688395675d668a55f",
+    "acceptedOfferHash": "0xeaf8b4c2557d74e52b18f53371d158b908dc722f5da577ea06a10d222c07ac14",
+    "policyHash": "0xfc00371a1809ac0ca125220c4d12f1c53d0d8262ac19a0e849373b3098cefb37",
+    "providerScopeHash": "0xdbd1f60fda9c9fce88ac99d7ffcf31c352a9daa0862598d3391334c1fcd4588d",
+    "finalCreditStateHash": "0xf243fe95910fc6f20f96135aad7ea884482bc8ac09e768913c45e55dc5bdb5cb",
+    "finalObligationProofHash": "0xa79fa153f8147410677835c08de0a7c7b1623edbd1fafb70299a36b6d3cc256d",
+    "validUntil": "2026-07-28T13:11:00.000Z",
+    "finalStatus": "closed",
+    "finalVersion": 3,
+    "registryPaused": true,
+    "authorizationActive": false,
+    "transactions": [
+      {
+        "kind": "publication",
+        "transactionHash": "0x83e9a16305a4a67edebeb5ee5bdb4eb66e5bb3de0a4d7bd46595660f47835074",
+        "blockNumber": "44734389",
+        "blockHash": "0x8012f2c190d219709abd8d9571ea51459953040238f9f4ce0ab71085a3889569",
+        "transactionIndex": "17",
+        "eventOrdinal": "30",
+        "observationStatus": "finalized",
+        "confirmations": 1672
+      },
+      {
+        "kind": "proof_update",
+        "transactionHash": "0x9b9aba1d38c2c72983ccf16a37b530786aa52cd087e3bbc17806bb6863974730",
+        "blockNumber": "44734583",
+        "blockHash": "0xe0c272eaaba1c4aee8dc35dc881374639f6802a0dba50517e05471d096163027",
+        "transactionIndex": "5",
+        "eventOrdinal": "12",
+        "observationStatus": "finalized",
+        "confirmations": 1478
+      },
+      {
+        "kind": "close",
+        "transactionHash": "0xc8ce4334520f8e133bae26306ae6f9191d1aa0cb869b065124f989b0998dfc03",
+        "blockNumber": "44734585",
+        "blockHash": "0xdf65548bc77f15634ff48820f879f8322187836ca886f5ee7afed6e9c28cb780",
+        "transactionIndex": "10",
+        "eventOrdinal": "25",
+        "observationStatus": "finalized",
+        "confirmations": 1476
+      },
+      {
+        "kind": "pause",
+        "transactionHash": "0x2b6c4f01b2e6b3e7f4af8383976ef85cf3605bbce96b9c7c4e61047078a42c17",
+        "blockNumber": "44734587",
+        "blockHash": "0x5dbae92d1357772bca354fa554b421d730a7066c23b38670f75ad55c17919642",
+        "transactionIndex": "6",
+        "eventOrdinal": "63",
+        "observationStatus": "finalized",
+        "confirmations": 1474
+      }
+    ],
+    "safeBlock": {
+      "number": "44735888",
+      "hash": "0xa0505a1da069ee7b0105ce191189625a17ebb859074c9f8d5c66c6b21910c073"
+    },
+    "finalizedBlock": {
+      "number": "44735458",
+      "hash": "0x9b8602ff7867481ad335debf973e7fecb17e3aaf36f147daefbaab9c1dc287a5"
+    },
+    "finalityProofHash": "0xaa6732ab8a27a1ad6f243a201f9dcd897a7167fd55f865745f4a826e5f8ca3c1",
+    "observedAt": "2026-07-28T12:06:50.311Z",
+    "readOnly": true,
+    "liveTestnetObservation": true,
+    "rawAccountPersisted": false,
+    "rawProviderPayloadPersisted": false,
+    "syntheticOnly": true,
+    "productionFundsMoved": false,
+    "schemaVersion": "credit_registry_live_observation.v1",
+    "observationHash": "0x1954e6182034e12f71d0551f7b2a698b1f44bcf5dc46102ac8a05a62115be94f"
+  },
+  "providerAgreement": {
+    "providers": [
+      "primary",
+      "secondary"
+    ],
+    "observationHash": "0x1954e6182034e12f71d0551f7b2a698b1f44bcf5dc46102ac8a05a62115be94f",
+    "agreed": true,
+    "rawProviderPayloadPersisted": false,
+    "schemaVersion": "credit_registry_provider_agreement.v1"
+  },
+  "runId": "chain-001e-read-20260728-001",
+  "readOnly": true,
+  "liveTestnetObservation": true,
+  "syntheticOnly": true,
+  "productionFundsMoved": false,
+  "signerUsed": false,
+  "transactionBroadcast": false,
+  "schemaVersion": "credit_registry_cross_provider_observation_receipt.v1"
+}

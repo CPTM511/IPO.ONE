@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-signing-request.schema.json",
+  "title": "IPO.ONE HyperCore Signing Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "signingRequestHash", "scheme", "purpose", "actionHash", "signerReferenceHash",
+    "canonicalAccountAddressHash", "vaultAddressHash", "nonce", "expiresAfter",
+    "environment", "digestDomain", "referenceImplementation", "referenceReviewStatus",
+    "officialDigestComputed", "signingAllowed", "externalSubmissionAllowed", "rawKeyAccepted",
+    "rawSignaturePersisted", "reusableSignaturePersisted", "mainnetAuthority",
+    "productionAuthority", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "signingRequestHash": { "$ref": "#/$defs/hash" },
+    "scheme": { "enum": ["l1_action", "user_signed_action"] },
+    "purpose": { "enum": ["venue_execution", "delegate_lifecycle_projection"] },
+    "actionHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "vaultAddressHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "nonce": { "type": "integer", "minimum": 1 },
+    "expiresAfter": { "type": "integer", "minimum": 1 },
+    "environment": { "const": "hyperliquid_testnet" },
+    "digestDomain": { "enum": ["hyperliquid_l1_action_phantom_agent", "hyperliquid_user_signed_action_eip712"] },
+    "referenceImplementation": { "const": "hyperliquid_official_sdk_or_reviewed_reference_required" },
+    "referenceReviewStatus": { "const": "contract_reviewed_live_implementation_not_composed" },
+    "officialDigestComputed": { "const": false },
+    "signingAllowed": { "const": false },
+    "externalSubmissionAllowed": { "const": false },
+    "rawKeyAccepted": { "const": false },
+    "rawSignaturePersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_signing_request.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" }
+  }
+}

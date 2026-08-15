@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-testnet-signer-handoff.schema.json",
+  "title": "HyperCore Testnet Signer Handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "handoffId", "handoffHash", "accountBindingId", "accountBindingHash",
+    "canonicalAccountAddressHash", "delegateId", "delegateHash",
+    "apiWalletAddressHash", "signerReferenceHash", "registrationEvidenceHash",
+    "status", "verifiedAt", "expiresAt", "retiredAt",
+    "retirementEvidenceHash", "version", "rawAddressPersisted",
+    "rawKeyAccepted", "rawKeyPersisted", "rawSignaturePersisted",
+    "mainnetAuthority", "productionAuthority", "realFundsAuthority",
+    "schemaVersion"
+  ],
+  "properties": {
+    "handoffId": { "$ref": "#/$defs/identifier" },
+    "handoffHash": { "$ref": "#/$defs/hash" },
+    "accountBindingId": { "$ref": "#/$defs/identifier" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "canonicalAccountAddressHash": { "$ref": "#/$defs/hash" },
+    "delegateId": { "$ref": "#/$defs/identifier" },
+    "delegateHash": { "$ref": "#/$defs/hash" },
+    "apiWalletAddressHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "registrationEvidenceHash": { "$ref": "#/$defs/hash" },
+    "status": { "enum": ["VERIFIED", "RETIRED"] },
+    "verifiedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "retiredAt": { "$ref": "#/$defs/nullableTime" },
+    "retirementEvidenceHash": { "$ref": "#/$defs/nullableHash" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2 },
+    "rawAddressPersisted": { "const": false },
+    "rawKeyAccepted": { "const": false },
+    "rawKeyPersisted": { "const": false },
+    "rawSignaturePersisted": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_testnet_signer_handoff.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "nullableHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "nullableTime": {
+      "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    }
+  }
+}

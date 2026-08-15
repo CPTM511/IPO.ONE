@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "ipo.one.prod-cutover-release-candidate/v1",
+  "releaseCandidateId": "prod-cutover-001-20260811-001",
+  "status": "preflight_sealed",
+  "productProfile": "deployable_sandbox_vertical_slice",
+  "sourceBinding": {
+    "integratedSourceCommit": "285cc74aadd65e147fe223f032516635138979f5",
+    "integratedSourceTree": "171ec9d9df83a01ba8a25cd40df1c5d8142221c6",
+    "branchAtIntegrationSeal": "codex/m1-b-deployable-sandbox",
+    "candidateMode": "manifest_commit_or_descendant_with_clean_exact_tree",
+    "deploymentArtifactMustRecordExactHead": true,
+    "dirtyCompatibilityBuildAllowed": false
+  },
+  "verification": {
+    "verifiedOn": "2026-08-11",
+    "runtime": {
+      "nodeVersion": "26.5.0",
+      "pnpmVersion": "11.1.3",
+      "postgresMajorVersion": 17
+    },
+    "repositoryTests": {
+      "command": "pnpm test",
+      "passed": 899,
+      "failed": 0
+    },
+    "postgresTests": {
+      "command": "DATABASE_URL=<isolated-postgresql-17-url> pnpm run test:postgres",
+      "passed": 85,
+      "failed": 0,
+      "isolatedDatabase": true,
+      "founderDataTouched": false
+    },
+    "focusedGates": {
+      "runtime": "pass",
+      "lint": "pass",
+      "typecheck": "pass",
+      "schemas": "pass_136",
+      "openapi": "pass_21_of_21",
+      "migrations": "pass_61_up_down",
+      "tenantProtocol": "pass_98_operations",
+      "productTraceability": "pass_98_bound_operations",
+      "security": "pass_33_of_33",
+      "transport": "pass_75_of_75"
+    },
+    "historicalAggregateCheck": {
+      "command": "pnpm run check",
+      "status": "stopped_at_historical_m1_a_1_snapshot_branch_binding",
+      "reason": "The historical snapshot expects codex/checkpoint-20260727-pre-strategy and is not a current integration release seal."
+    }
+  },
+  "browserPreflight": {
+    "url": "http://127.0.0.1:8787/#wallet-permissions",
+    "pageTitle": "IPO.ONE Product Workspace",
+    "signInEntryOperable": true,
+    "authOptionsStatus": 200,
+    "consoleErrors": 0,
+    "compatibleWalletProvidersDiscovered": 0,
+    "realSignatureRegression": "pending_founder_invited_wallet",
+    "syntheticSignatureSubstitutionAllowed": false
+  },
+  "deploymentAuthority": {
+    "allowedProfile": "public_sandbox",
+    "generatedVercelAppInternalUrlAllowed": true,
+    "customDomainAuthorized": false,
+    "realFundsEnabled": false,
+    "externalProviderExecutionEnabled": false,
+    "productionSignerAuthorityEnabled": false,
+    "venueWriteAuthorityEnabled": false,
+    "productionFundsMoved": false
+  },
+  "productionAuthorityState": {
+    "founderCutoverInstructionReceived": true,
+    "constitutionL4ControlledRealValueEnabled": false,
+    "constitutionL5ProductionApproved": false,
+    "launchPolicyControlledAgentCreditReleaseEnabled": false,
+    "realTransactionAuthorized": false
+  },
+  "providerActivation": {
+    "genericEvm": "production_blocked",
+    "walletConnect": "production_blocked",
+    "metaMask": "disabled",
+    "okx": "disabled",
+    "safe": "disabled",
+    "circle": "disabled",
+    "baseAccount": "disabled",
+    "hyperCore": "production_blocked"
+  },
+  "excludedWorkingCopyChanges": [
+    "apps/web/test/support/capital-network-browser-host.mjs",
+    "apps/web/test/support/risk-operations-browser-host.mjs",
+    "CURRENT_STATE_CAPABILITY_MATRIX.md",
+    "GOLDEN_FLOW_GAP_ANALYSIS.md",
+    "RECOVERY_EXEC_PLAN.md",
+    "SPEC_CONTRADICTIONS.md",
+    "TRACEABILITY_MATRIX.md",
+    "artifacts/m1-a-1/",
+    "artifacts/m1-a/",
+    "deploy/local/m1-a-1-candidate-snapshot.v1.json",
+    "docs/marketing/",
+    "output/",
+    "prototypes/"
+  ],
+  "rollback": {
+    "deployment": "retain_and_restore_previous_verified_alias",
+    "configuration": "restore_reviewed_no_funds_profile",
+    "providerFailure": "disable_provider_independently",
+    "unknownExecutionOutcome": "pause_new_exposure_and_reconcile_without_resend"
+  },
+  "cutoverVerdictAtSeal": "BLOCKED — NOT PRODUCTION RELEASED",
+  "blockingConditions": [
+    "Founder invited-wallet signed AccountBinding reload regression is pending.",
+    "No reachable and verified current IPO.ONE deployment has passed post-deploy acceptance.",
+    "Product Constitution L4 is disabled and L5 is not approved.",
+    "Controlled real-value launch policy is disabled pending a named policy revision.",
+    "Production provider, chain, asset, capital, custody, signer, numerical limits and loss bearer are not approved as one exact profile.",
+    "No exact real-value transaction has reached transaction-specific Founder confirmation."
+  ]
+}

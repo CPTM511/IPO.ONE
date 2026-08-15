@@ -57,6 +57,9 @@ for (const profile of Object.values(QUOTA_PROFILES)) {
   for (const [metric, value] of Object.entries(profile.metrics)) {
     fail(value <= HARD_CEILINGS.metrics[metric], `${profile.quotaClass}.${metric} exceeds metric ceiling`);
   }
+  for (const [kind, value] of Object.entries(profile.resources)) {
+    fail(value <= HARD_CEILINGS.resources[kind], `${profile.quotaClass}.${kind} exceeds resource ceiling`);
+  }
   fail(profile.admissionLeaseMs <= HARD_CEILINGS.admissionLeaseMs,
     `${profile.quotaClass} lease exceeds ceiling`);
   fail(profile.maxAutomaticRetries <= HARD_CEILINGS.automaticRetries,

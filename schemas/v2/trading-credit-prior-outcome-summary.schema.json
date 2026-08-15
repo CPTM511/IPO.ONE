@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-credit-prior-outcome-summary.schema.json",
+  "title": "IPO.ONE Trading Credit Prior Outcome Summary v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "summaryId",
+    "summaryHash",
+    "subjectId",
+    "principalId",
+    "assetId",
+    "asOf",
+    "sourceOutcomeHashes",
+    "completedCount",
+    "onTimeRepaidCount",
+    "lateOrModifiedRepaidCount",
+    "writtenOffCount",
+    "totalPrincipalMinor",
+    "totalLossMinor",
+    "finalizedOutcomesOnly",
+    "authorizing",
+    "fundsAuthority",
+    "economicStateMutation",
+    "schemaVersion"
+  ],
+  "properties": {
+    "summaryId": { "$ref": "#/$defs/id" },
+    "summaryHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/id" },
+    "principalId": { "$ref": "#/$defs/id" },
+    "assetId": { "$ref": "#/$defs/assetId" },
+    "asOf": { "type": "string", "format": "date-time" },
+    "sourceOutcomeHashes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "completedCount": { "$ref": "#/$defs/count" },
+    "onTimeRepaidCount": { "$ref": "#/$defs/count" },
+    "lateOrModifiedRepaidCount": { "$ref": "#/$defs/count" },
+    "writtenOffCount": { "$ref": "#/$defs/count" },
+    "totalPrincipalMinor": { "$ref": "#/$defs/minor" },
+    "totalLossMinor": { "$ref": "#/$defs/minor" },
+    "finalizedOutcomesOnly": { "const": true },
+    "authorizing": { "const": false },
+    "fundsAuthority": { "const": false },
+    "economicStateMutation": { "const": false },
+    "schemaVersion": {
+      "const": "trading_credit_prior_outcome_summary.v1"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+:[A-Za-z0-9._%-]+/[a-z0-9-]+:[A-Za-z0-9._%:-]+$"
+    },
+    "minor": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,77})$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    }
+  }
+}

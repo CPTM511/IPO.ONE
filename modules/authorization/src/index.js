@@ -5,3 +5,5 @@ export * from "./authorization-policy.js";
 export * from "./authorization-service.js";
 export * from "./live-policy-adapter.js";
 export * from "./mandate-service.js";
+export * from "./postgres-authorization-audit-store.js";
+export * from "./postgres-authorization-directory.js";

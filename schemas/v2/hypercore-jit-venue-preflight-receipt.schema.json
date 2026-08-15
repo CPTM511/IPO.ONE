@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-jit-venue-preflight-receipt.schema.json",
+  "title": "HyperCore JIT Venue Preflight Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receiptId", "receiptHash", "intentId", "intentHash", "approvalHash",
+    "payloadHash", "accountBindingHash", "delegateHash", "signerReferenceHash",
+    "metadataHash", "riskSnapshotHash", "riskSnapshot", "observation",
+    "postOnlyDistanceBps",
+    "observedAt", "expiresAt", "exactPayloadUnchanged", "strictlyNoRiskIncrease",
+    "rawAddressPersisted", "rawResponsePersisted", "rawSignaturePersisted",
+    "mainnetAuthority", "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "receiptId": { "$ref": "#/$defs/id" }, "receiptHash": { "$ref": "#/$defs/hash" },
+    "intentId": { "$ref": "#/$defs/id" }, "intentHash": { "$ref": "#/$defs/hash" },
+    "approvalHash": { "$ref": "#/$defs/hash" }, "payloadHash": { "$ref": "#/$defs/hash" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" }, "delegateHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" }, "metadataHash": { "$ref": "#/$defs/hash" },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+    "riskSnapshot": { "type": "object" }, "observation": { "type": "object" },
+    "postOnlyDistanceBps": { "type": "integer", "minimum": 50, "maximum": 3500 },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "exactPayloadUnchanged": { "const": true }, "strictlyNoRiskIncrease": { "const": true },
+    "rawAddressPersisted": { "const": false }, "rawResponsePersisted": { "const": false },
+    "rawSignaturePersisted": { "const": false }, "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false }, "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_jit_venue_preflight_receipt.v2" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$" }
+  }
+}

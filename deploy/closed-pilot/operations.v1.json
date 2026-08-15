@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "ipo.one.closed-pilot-operations/v1",
+  "decisionId": "OPS-004",
+  "status": "local_preflight_pending_named_approval",
+  "profile": "closed_non_funds_pilot",
+  "launchBlocked": true,
+  "sourceRelease": {
+    "releaseCandidateId": "ipo-one-local-rc-20260730-003",
+    "commitSha": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
+    "manifestPath": "deploy/local/release-candidate.v1.json",
+    "manifestSha256": "5afc8932e2be7e3a4acb5420e1c873b5e76a34b0f5fa7dd62df6bf0b8c90bdc6"
+  },
+  "authority": {
+    "cloudMutationEnabled": false,
+    "remoteParticipantAccessEnabled": false,
+    "scheduleActivationEnabled": false,
+    "notificationDeliveryEnabled": false,
+    "secretWriteEnabled": false,
+    "realFundsEnabled": false,
+    "humanCreditEnabled": false,
+    "externalProviderExecutionEnabled": false,
+    "venueSignerEnabled": false,
+    "publicSignupEnabled": false
+  },
+  "databaseRecovery": {
+    "providerDecisionState": "founder_approval_required",
+    "automatedBackupsRequired": true,
+    "pointInTimeRecoveryRequired": true,
+    "destructiveRestoreIntoCanonicalDatabaseAllowed": false,
+    "restoreTarget": "ephemeral_isolated_database",
+    "restoreDrillActivation": "disabled",
+    "restoreEvidenceRequired": true,
+    "rpoMinutes": null,
+    "rtoMinutes": null,
+    "objectivesDecisionState": "founder_approval_required"
+  },
+  "workerOperations": {
+    "activation": "disabled",
+    "scheduleProviderDecisionState": "founder_approval_required",
+    "responsibilities": [
+      "outbox",
+      "reconciliation",
+      "synthetics",
+      "evidence_finalization",
+      "credit_outcome_materialization",
+      "alert_delivery"
+    ],
+    "leaseAndIdempotencyRequired": true,
+    "overlappingRunsAllowed": false,
+    "automaticRepairAllowed": false,
+    "boundedRetryRequired": true
+  },
+  "reconciliation": {
+    "scheduleActivation": "disabled",
+    "canonicalState": "postgresql",
+    "unknownOutcomeResolutionRequired": true,
+    "manualRepairApprovalRequired": true,
+    "immutableEvidenceRequired": true
+  },
+  "synthetics": {
+    "scheduleActivation": "disabled",
+    "scopes": [
+      "human_full_lifecycle",
+      "agent_full_lifecycle",
+      "reconciliation"
+    ],
+    "syntheticOnly": true,
+    "noFunds": true,
+    "failureBlocksLaunch": true
+  },
+  "alerting": {
+    "deliveryActivation": "disabled",
+    "providerDecisionState": "founder_approval_required",
+    "namedRecipientsConfigured": false,
+    "incidentOwnerConfigured": false,
+    "restoreOwnerConfigured": false,
+    "acknowledgementAndResolutionAuthorityEnabled": false,
+    "piiFreeLowCardinalitySignalsRequired": true
+  },
+  "secrets": {
+    "managerDecisionState": "founder_approval_required",
+    "browserSecretExposureAllowed": false,
+    "vercelDirectDatabaseSecretAllowed": false,
+    "runtimeSecretInjectionActivation": "disabled",
+    "rotationActivation": "disabled",
+    "rotationDrillRequired": true,
+    "longLivedCloudKeyAllowed": false
+  },
+  "rollback": {
+    "activation": "disabled",
+    "strategy": "redeploy_previous_immutable_commit",
+    "previousCommit": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
+    "databaseRollbackStrategy": "forward_only_reviewed_migration",
+    "automaticDatabaseRollbackAllowed": false,
+    "preserveCanonicalEvents": true,
+    "preserveEvidence": true,
+    "preserveIdempotency": true,
+    "rollbackReceiptRequired": true
+  },
+  "approvalInputs": [
+    "pilot_region",
+    "monthly_cost_ceiling_usd",
+    "billing_owner",
+    "provider_account_owner",
+    "public_tls_database_risk_acceptance",
+    "rpo_minutes",
+    "rto_minutes",
+    "restore_drill_owner",
+    "incident_owner",
+    "alert_delivery_provider",
+    "notification_recipients",
+    "secret_manager",
+    "credential_rotation_owner",
+    "rollback_owner"
+  ],
+  "activationGates": [
+    "DEPLOY-001B-FOUNDER-APPROVAL",
+    "OPS-004-NAMED-OWNERS",
+    "OPS-004-RESTORE-DRILL",
+    "OPS-004-RECONCILIATION-DRILL",
+    "OPS-004-SYNTHETIC-DRILL",
+    "OPS-004-ALERT-DELIVERY-DRILL",
+    "OPS-004-KEY-ROTATION-DRILL",
+    "OPS-004-ROLLBACK-DRILL",
+    "SECURITY-INDEPENDENT-REVIEW",
+    "PRIVACY-PILOT-REVIEW",
+    "DEPLOYMENT-HUMAN-APPROVAL",
+    "LAUNCH-POLICY-REVISION"
+  ],
+  "satisfiedActivationGates": [],
+  "runbooks": {
+    "operations": "docs/security/IPO_ONE_CLOSED_PILOT_OPERATIONS_RUNBOOK_v0.1.md",
+    "task": "docs/codex/tasks/OPS_004_HOSTED_OPERATIONS_RECOVERY_BASELINE.md"
+  }
+}

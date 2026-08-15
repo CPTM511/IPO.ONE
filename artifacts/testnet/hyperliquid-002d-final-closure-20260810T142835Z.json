@@ -1,0 +1,110 @@
+{
+  "artifactVersion": "ipo-one.hyperliquid-002d.final-closure.v1",
+  "artifactId": "hyperliquid-002d-final-closure-20260810T142835Z",
+  "issueId": "HYPERLIQUID-002D",
+  "adrs": ["ADR-038", "ADR-039"],
+  "environment": "HYPERLIQUID_TESTNET",
+  "decision": "VERIFIED_TESTNET_CLOSED",
+  "closedAt": "2026-08-10T14:28:35.240Z",
+  "parentExecution": {
+    "intentHash": "0x62d522423fb1583e530851a950291598a4e369f91dab11f7efbf31ef43fbdea5",
+    "targetOrderHash": "0x923a8e9fcf60061291b0c1bd99eb2582f16e379a567922579509e362eae3c88c",
+    "state": "CLOSED",
+    "version": 7,
+    "externalSubmissionAttempted": true,
+    "retryAllowed": false,
+    "reconciliationHash": "0xb998b5cc8610af5c3193824bef9bb9434557e8e6449608f1946b3ad27c448d15"
+  },
+  "exactCancel": {
+    "approvalMarker": "HYPERLIQUID-002D-CANCEL:0x773eb0c6262e91681ba2f526d0ece54e1397b70b8d76224361d5020fc77dc381",
+    "intentHash": "0x773eb0c6262e91681ba2f526d0ece54e1397b70b8d76224361d5020fc77dc381",
+    "parentIntentHash": "0x62d522423fb1583e530851a950291598a4e369f91dab11f7efbf31ef43fbdea5",
+    "targetOrderHash": "0x923a8e9fcf60061291b0c1bd99eb2582f16e379a567922579509e362eae3c88c",
+    "payloadHash": "0x4013b5cdd5ab8e355c993dbe067f92fce62b55c32d992edb4dd8ea7286ad6f44",
+    "founderApprovalHash": "0x13f779d2874f200d78cd7980749f4f429b5ca139ede5ae2f28e6cccad9d5353d",
+    "jitPreflightReceiptHash": "0xff7e9e6b2c9072ec82b8fa1ff9c5f81b0abc4ffd82390b400fbe1c4ab4b781d1",
+    "riskSnapshotHash": "0xb255251cb18ed32fede5c9b660b360eb000de7b94d4c351d3d1df4d102eeb87f",
+    "actionAuthorizationHash": "0x6418548ec94ea90bdace1389575aa7448e51c7a89a7cfea6c4b79366bbef76ff",
+    "requestBodyHash": "0x839b2e239ec5747d19ef4946f64388707d3697d07bf9d2ae3cc11237144453d3",
+    "signatureHash": "0x5a9d01501098626dffde6147a1edcad87f614ab78b66da1b4e27745198f346cf",
+    "claimHash": "0x7aae1d58bdb2835b98b72c58e7161c5fa621b24491a3bcf8980fbab52452059d",
+    "responseHash": "0x6178947c300756eb0b6302de0faf2d78b0c9bdc73ef8979df01c57078c25805b",
+    "submissionDisposition": "confirmed",
+    "state": "CLOSED",
+    "version": 7,
+    "externalSubmissionAttempted": true,
+    "retryAllowed": false,
+    "jitObservedAt": "2026-08-10T14:19:21.420Z",
+    "jitRiskWindowMs": 10000,
+    "reconciliationHash": "0xcba2f583d8594550d50de24d9b722788e19509ae24408db719271677ffd0c906"
+  },
+  "terminalReadOnlyVenueObservation": {
+    "observedAt": "2026-08-10T14:28:31.017Z",
+    "masterRole": "user",
+    "openOrderCount": 0,
+    "positionCount": 0,
+    "accountValueTestnetUsdc": "999.0",
+    "withdrawableTestnetUsdc": "999.0",
+    "order": {
+      "coin": "BTC",
+      "side": "B",
+      "limitPrice": "62500",
+      "size": "0.00016",
+      "venueOrderId": 57670774189,
+      "clientOrderId": "0x3ec931145cbe6e36213621b50521a704",
+      "status": "canceled"
+    },
+    "sourceHashes": {
+      "masterRole": "0xd17eb67d01e932e4eb2090d9703402195afadbc289b3622f3426f76923b09c4f",
+      "apiWalletRole": "0xf9d66338c3b7ac452721b716d3f1327a2563efe5ea4adc5a29cf7ba4ba57fd81",
+      "accountState": "0x0dfac5a53750f1a1e12009c49d4c06083f8e4b4d86cb6d62f2d42caba5ee269b",
+      "openOrders": "0x30dc0e28880b5c06c381faa7c4e31bb00330c76a28064a33207ee515d0f1ade5",
+      "orderStatus": "0x108d6149226a67409c3e8ae1784c9090c88e06c26e27693fb5210a4372fff3c5"
+    }
+  },
+  "canonicalClosure": {
+    "venueOrderStateHash": "0x8932b5d758d8f666d94ed899bbbca6751ae9795ff0c36c1ef5d12b5356febd20",
+    "venueAccountStateHash": "0x1fce7c4511cf0556cc6a41779a1ce343c5dfd1b88d8c0096752f0b0ea80f92ab",
+    "ledgerStateHash": "0x18042bf6f5a4500f0cb1b0de2c87c5002b4dc9751f2f535a8f9a2feb0bed3fa0",
+    "obligationEvidenceHash": "0xc2e57557099425de36d4868ebbb076e6a9164dfc49a727ba4320bd89240d43e0"
+  },
+  "signerRetirement": {
+    "state": "RETIRED",
+    "retirementEvidenceHash": "0x629679a48d85ed291a60ff05f053cc478e3a0e3ca2f801da20544bfe86e5c4a0",
+    "delegateTombstoneHash": "0x48f1d524f09ba7ffb8793f5fae52301864c7c221968dfc86893d0f5fefbafff6",
+    "terminalReason": "bounded_testnet_execution_closed",
+    "addressReuseAllowed": false,
+    "keyPathHash": "0xa26b653c0f5a1d1353550b837c70527f537b664d595a8e9c0164cbe07ae2dbbf",
+    "keyLogicallyDestroyed": true,
+    "keyFileAbsentAfterDestruction": true,
+    "storageMediumSecureEraseClaimed": false,
+    "externalApiWalletDeregistrationPerformed": false
+  },
+  "durableReadback": {
+    "closedIntentCount": 2,
+    "closureTransitionCount": 4,
+    "delegateTombstoneCount": 1,
+    "retiredHandoffCount": 1
+  },
+  "verification": {
+    "unitTests": {"passed": 871, "failed": 0},
+    "postgresTests": {"passed": 85, "failed": 0},
+    "focusedClosureTests": {"passed": 24, "failed": 0},
+    "schemaContracts": {"passed": 128, "failed": 0},
+    "migrationPairs": {"passed": 60, "failed": 0}
+  },
+  "safety": {
+    "totalExchangeWriteAttemptsForBoundedProof": 2,
+    "orderWriteAttempts": 1,
+    "cancelWriteAttempts": 1,
+    "exchangeWritePerformedDuringPostCancelClosure": false,
+    "automaticRetry": false,
+    "rawAddressPersisted": false,
+    "rawKeyPersisted": false,
+    "rawSignaturePersisted": false,
+    "rawResponsePersisted": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false
+  }
+}

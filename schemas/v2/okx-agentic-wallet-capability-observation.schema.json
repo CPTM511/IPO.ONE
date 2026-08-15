@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/okx-agentic-wallet-capability-observation.schema.json",
+  "title": "IPO.ONE OKX Agentic Wallet Capability Observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observationHash", "adapterId", "descriptorHash", "chainId", "contextEpoch",
+    "integrationSurfaceSupport", "toolSupport", "securityCapabilities", "source", "vendorClaimsAttested",
+    "observedAt", "expiresAt", "unknownIsNonPermissive", "externalCallPerformed",
+    "authorizationGranted", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "observationHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "const": "okx_agentic_wallet_reference" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "integrationSurfaceSupport": { "$ref": "#/$defs/integrationSurfaceSupport" },
+    "toolSupport": { "$ref": "#/$defs/toolSupport" },
+    "securityCapabilities": { "$ref": "#/$defs/securityCapabilities" },
+    "source": { "const": "local_synthetic_fixture" },
+    "vendorClaimsAttested": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "unknownIsNonPermissive": { "const": true },
+    "externalCallPerformed": { "const": false },
+    "authorizationGranted": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "okx_agentic_wallet_capability_observation.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "status": { "enum": ["supported", "unsupported", "unknown"] },
+    "integrationSurfaceSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skills", "mcp", "cli", "open_api"],
+      "properties": {
+        "skills": { "$ref": "#/$defs/status" },
+        "mcp": { "$ref": "#/$defs/status" },
+        "cli": { "$ref": "#/$defs/status" },
+        "open_api": { "$ref": "#/$defs/status" }
+      }
+    },
+    "toolSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["security_tx_scan", "security_sig_scan", "wallet_history", "wallet_send"],
+      "properties": {
+        "security_tx_scan": { "$ref": "#/$defs/status" },
+        "security_sig_scan": { "$ref": "#/$defs/status" },
+        "wallet_history": { "$ref": "#/$defs/status" },
+        "wallet_send": { "$ref": "#/$defs/status" }
+      }
+    },
+    "securityCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "teeKeyIsolation", "transactionSimulation", "riskScoring", "criticalBlocking", "identityVerification"
+      ],
+      "properties": {
+        "teeKeyIsolation": { "$ref": "#/$defs/status" },
+        "transactionSimulation": { "$ref": "#/$defs/status" },
+        "riskScoring": { "$ref": "#/$defs/status" },
+        "criticalBlocking": { "$ref": "#/$defs/status" },
+        "identityVerification": { "$ref": "#/$defs/status" }
+      }
+    }
+  }
+}

@@ -54,7 +54,7 @@
     },
     "tokenJtiHash": { "type": "string", "minLength": 32, "maxLength": 128 },
     "authenticationMethod": {
-      "enum": ["oidc_pkce_bff", "private_key_jwt", "mtls"]
+      "enum": ["oidc_pkce_bff", "siwe", "private_key_jwt", "mtls"]
     },
     "senderConstraintMethod": {
       "enum": ["host_session", "dpop", "mtls"]

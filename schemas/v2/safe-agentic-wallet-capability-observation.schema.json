@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/safe-agentic-wallet-capability-observation.schema.json",
+  "title": "IPO.ONE Safe Agentic Wallet Capability Observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observationHash", "adapterId", "descriptorHash", "chainId", "contextEpoch", "safeVersion",
+    "interfaceSupport", "accountConfiguration", "source", "onchainConfigurationVerified",
+    "observedAt", "expiresAt", "unknownIsNonPermissive", "externalCallPerformed",
+    "authorizationGranted", "fundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "observationHash": { "$ref": "#/$defs/hash" },
+    "adapterId": { "const": "safe_institutional_wallet_reference" },
+    "descriptorHash": { "$ref": "#/$defs/hash" },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "safeVersion": { "$ref": "#/$defs/version" },
+    "interfaceSupport": { "$ref": "#/$defs/interfaceSupport" },
+    "accountConfiguration": { "$ref": "#/$defs/accountConfiguration" },
+    "source": { "const": "local_synthetic_fixture" },
+    "onchainConfigurationVerified": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "unknownIsNonPermissive": { "const": true },
+    "externalCallPerformed": { "const": false },
+    "authorizationGranted": { "const": false },
+    "fundsAuthority": { "const": false },
+    "schemaVersion": { "const": "safe_agentic_wallet_capability_observation.v1" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "version": {
+      "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[A-Za-z0-9.-]+)?$"
+    },
+    "status": { "enum": ["supported", "unsupported", "unknown"] },
+    "interfaceSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eip1271", "eip712", "safeTransaction", "transactionService"],
+      "properties": {
+        "eip1271": { "$ref": "#/$defs/status" },
+        "eip712": { "$ref": "#/$defs/status" },
+        "safeTransaction": { "$ref": "#/$defs/status" },
+        "transactionService": { "$ref": "#/$defs/status" }
+      }
+    },
+    "accountConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementationCodeHash", "singletonHash", "ownerSetHash", "threshold", "safeNonce",
+        "enabledModulesHash", "moduleCount", "guardHash", "fallbackHandlerHash"
+      ],
+      "properties": {
+        "implementationCodeHash": { "$ref": "#/$defs/hash" },
+        "singletonHash": { "$ref": "#/$defs/hash" },
+        "ownerSetHash": { "$ref": "#/$defs/hash" },
+        "threshold": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "safeNonce": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,77})$" },
+        "enabledModulesHash": { "$ref": "#/$defs/hash" },
+        "moduleCount": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "guardHash": { "$ref": "#/$defs/hash" },
+        "fallbackHandlerHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

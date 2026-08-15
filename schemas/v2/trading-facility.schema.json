@@ -1,0 +1,335 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-facility.schema.json",
+  "title": "IPO.ONE Synthetic Non-redeemable Trading Facility v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tradingFacilityId",
+    "facilityHash",
+    "stateHash",
+    "matchProposalId",
+    "proposalHash",
+    "proposalVersion",
+    "obligationId",
+    "obligationHash",
+    "subjectId",
+    "principalId",
+    "providerId",
+    "subjectActorHash",
+    "providerActorHash",
+    "templateType",
+    "termsHash",
+    "assetId",
+    "syntheticPrincipalMinor",
+    "requiredSubjectCollateralMinor",
+    "requiredProviderFundingMinor",
+    "subjectCollateralMinor",
+    "providerFundingMinor",
+    "syntheticCapitalMinor",
+    "syntheticExposureMinor",
+    "syntheticEquityMinor",
+    "openOrderCount",
+    "subjectCollateralRecorded",
+    "providerFundingRecorded",
+    "lifecycleStatus",
+    "riskState",
+    "riskReasonCodes",
+    "latestRiskEvaluationId",
+    "latestRiskEvaluationHash",
+    "riskObservation",
+    "activationDeadlineAt",
+    "maturityAt",
+    "activatedAt",
+    "flattenedAt",
+    "linkedCanonicalObligation",
+    "secondLedgerCreated",
+    "callerEquityAccepted",
+    "createdByActorHash",
+    "createdAt",
+    "updatedAt",
+    "version",
+    "facilityPolicyVersion",
+    "riskPolicyVersion",
+    "sandboxOnly",
+    "syntheticOnly",
+    "nonRedeemable",
+    "withdrawable",
+    "transferable",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "productionAuthority",
+    "fundsAuthority",
+    "realCollateral",
+    "realFunding",
+    "realEquity",
+    "realPricing",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "tradingFacilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "stateHash": { "$ref": "#/$defs/hash" },
+    "matchProposalId": { "$ref": "#/$defs/identifier" },
+    "proposalHash": { "$ref": "#/$defs/hash" },
+    "proposalVersion": { "const": 3 },
+    "obligationId": { "$ref": "#/$defs/identifier" },
+    "obligationHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "principalId": { "$ref": "#/$defs/identifier" },
+    "providerId": { "$ref": "#/$defs/identifier" },
+    "subjectActorHash": { "$ref": "#/$defs/hash" },
+    "providerActorHash": { "$ref": "#/$defs/hash" },
+    "templateType": {
+      "enum": ["credit", "performance_participation", "hybrid"]
+    },
+    "termsHash": { "$ref": "#/$defs/hash" },
+    "assetId": { "const": "urn:ipo-one:sandbox-asset:usd-cent" },
+    "syntheticPrincipalMinor": { "$ref": "#/$defs/positiveMinor" },
+    "requiredSubjectCollateralMinor": { "$ref": "#/$defs/positiveMinor" },
+    "requiredProviderFundingMinor": { "$ref": "#/$defs/positiveMinor" },
+    "subjectCollateralMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "providerFundingMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "syntheticCapitalMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "syntheticExposureMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "syntheticEquityMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "openOrderCount": { "type": "integer", "minimum": 0, "maximum": 20 },
+    "subjectCollateralRecorded": { "type": "boolean" },
+    "providerFundingRecorded": { "type": "boolean" },
+    "lifecycleStatus": {
+      "enum": [
+        "awaiting_contributions",
+        "awaiting_subject_collateral",
+        "awaiting_provider_funding",
+        "ready_for_activation",
+        "active",
+        "flattened"
+      ]
+    },
+    "riskState": {
+      "enum": ["NORMAL", "WARNING", "REDUCE_ONLY", "FLATTEN", "SETTLEMENT"]
+    },
+    "riskReasonCodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z0-9:_-]+$"
+      }
+    },
+    "latestRiskEvaluationId": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/identifier" }
+      ]
+    },
+    "latestRiskEvaluationHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/hash" }
+      ]
+    },
+    "riskObservation": { "$ref": "#/$defs/riskObservation" },
+    "activationDeadlineAt": { "type": "string", "format": "date-time" },
+    "maturityAt": { "type": "string", "format": "date-time" },
+    "activatedAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "flattenedAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "linkedCanonicalObligation": { "const": true },
+    "secondLedgerCreated": { "const": false },
+    "callerEquityAccepted": { "const": false },
+    "createdByActorHash": { "$ref": "#/$defs/hash" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 10000 },
+    "facilityPolicyVersion": {
+      "const": "trading_no_funds_facility_policy.v1"
+    },
+    "riskPolicyVersion": { "const": "trading_shadow_risk_policy.v1" },
+    "sandboxOnly": { "const": true },
+    "syntheticOnly": { "const": true },
+    "nonRedeemable": { "const": true },
+    "withdrawable": { "const": false },
+    "transferable": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "externalOrderSubmitted": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realCollateral": { "const": false },
+    "realFunding": { "const": false },
+    "realEquity": { "const": false },
+    "realPricing": { "const": false },
+    "productionFundsMoved": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "trading_facility.v1" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "lifecycleStatus": { "const": "awaiting_contributions" }
+        }
+      },
+      "then": {
+        "properties": {
+          "subjectCollateralRecorded": { "const": false },
+          "providerFundingRecorded": { "const": false },
+          "subjectCollateralMinor": { "const": "0" },
+          "providerFundingMinor": { "const": "0" },
+          "syntheticCapitalMinor": { "const": "0" },
+          "activatedAt": { "type": "null" },
+          "flattenedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycleStatus": { "const": "awaiting_subject_collateral" }
+        }
+      },
+      "then": {
+        "properties": {
+          "subjectCollateralRecorded": { "const": false },
+          "providerFundingRecorded": { "const": true },
+          "subjectCollateralMinor": { "const": "0" },
+          "activatedAt": { "type": "null" },
+          "flattenedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycleStatus": { "const": "awaiting_provider_funding" }
+        }
+      },
+      "then": {
+        "properties": {
+          "subjectCollateralRecorded": { "const": true },
+          "providerFundingRecorded": { "const": false },
+          "providerFundingMinor": { "const": "0" },
+          "activatedAt": { "type": "null" },
+          "flattenedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycleStatus": { "const": "ready_for_activation" }
+        }
+      },
+      "then": {
+        "properties": {
+          "subjectCollateralRecorded": { "const": true },
+          "providerFundingRecorded": { "const": true },
+          "activatedAt": { "type": "null" },
+          "flattenedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "lifecycleStatus": { "const": "active" } } },
+      "then": {
+        "properties": {
+          "subjectCollateralRecorded": { "const": true },
+          "providerFundingRecorded": { "const": true },
+          "activatedAt": { "type": "string", "format": "date-time" },
+          "flattenedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "lifecycleStatus": { "const": "flattened" } } },
+      "then": {
+        "properties": {
+          "subjectCollateralRecorded": { "const": true },
+          "providerFundingRecorded": { "const": true },
+          "activatedAt": { "type": "string", "format": "date-time" },
+          "flattenedAt": { "type": "string", "format": "date-time" },
+          "riskState": { "enum": ["FLATTEN", "SETTLEMENT"] },
+          "syntheticExposureMinor": { "const": "0" },
+          "openOrderCount": { "const": 0 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "positiveMinor": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,77}$"
+    },
+    "nonNegativeMinor": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,77})$"
+    },
+    "riskObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observationHash",
+        "facilityId",
+        "facilityVersion",
+        "syntheticCapitalMinor",
+        "syntheticExposureMinor",
+        "syntheticEquityMinor",
+        "openOrderCount",
+        "observedAt",
+        "source",
+        "complete",
+        "reconciled",
+        "callerEquityAccepted",
+        "schemaVersion"
+      ],
+      "properties": {
+        "observationHash": { "$ref": "#/$defs/hash" },
+        "facilityId": { "$ref": "#/$defs/identifier" },
+        "facilityVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "syntheticCapitalMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+        "syntheticExposureMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+        "syntheticEquityMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+        "openOrderCount": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "source": { "const": "local_synthetic_facility" },
+        "complete": { "const": true },
+        "reconciled": { "const": true },
+        "callerEquityAccepted": { "const": false },
+        "schemaVersion": {
+          "const": "trading_facility_risk_observation.v1"
+        }
+      }
+    }
+  }
+}

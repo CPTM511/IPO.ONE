@@ -1,0 +1,18 @@
+DROP INDEX IF EXISTS provider_callback_inbox_tenant_intent_idx;
+DROP INDEX IF EXISTS provider_intent_deliveries_tenant_status_idx;
+
+DROP TRIGGER IF EXISTS tenant_context_guard_provider_callback_inbox ON provider_callback_inbox;
+DROP TRIGGER IF EXISTS tenant_context_guard_provider_intent_acknowledgements ON provider_intent_acknowledgements;
+DROP TRIGGER IF EXISTS tenant_context_guard_provider_intent_deliveries ON provider_intent_deliveries;
+DROP TRIGGER IF EXISTS provider_callback_inbox_immutable ON provider_callback_inbox;
+DROP TRIGGER IF EXISTS provider_intent_acknowledgements_immutable ON provider_intent_acknowledgements;
+DROP TRIGGER IF EXISTS provider_intent_deliveries_delete_guard ON provider_intent_deliveries;
+DROP TRIGGER IF EXISTS provider_intent_deliveries_transition_guard ON provider_intent_deliveries;
+
+DROP FUNCTION IF EXISTS protect_provider_delivery_transition();
+
+DROP TABLE IF EXISTS provider_callback_inbox;
+DROP TABLE IF EXISTS provider_intent_acknowledgements;
+DROP TABLE IF EXISTS provider_intent_deliveries;
+
+DROP TYPE IF EXISTS provider_delivery_status;

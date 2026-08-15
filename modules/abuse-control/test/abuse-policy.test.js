@@ -8,6 +8,7 @@ import {
   QUOTA_PROFILES,
   QuotaClass,
   RequestMetric,
+  ResourceKind,
   TENANT_ABUSE_OPERATION_POLICIES
 } from "../src/index.js";
 
@@ -45,15 +46,60 @@ test("every authenticated operation has exactly one closed quota classification"
     .filter((item) => item.quotaClass === QuotaClass.ECONOMIC)
     .map((item) => item.operationId));
   assert.deepEqual(economic, new Set([
+    "pilotAcceptCreditOffer",
+    "pilotAuthorCapitalPartnerOffer",
+    "pilotExecuteSandboxObligation",
+    "pilotPostSandboxRepayment",
     "pilotRequestCredit",
+    "pilotEvaluateCreditApplication",
+    "pilotPersistAgentContinuationReceipt",
     "pilotSubmitSpend",
     "pilotCaptureRevenue",
     "pilotAutoRepay",
-    "workerAutoRepay"
+    "workerAutoRepay",
+    "walletPrepareExecution",
+    "walletSubmitExecution",
+    "venuePrepareExecution",
+    "venueSubmitExecution"
   ]));
+  const byOperation = new Map(TENANT_ABUSE_OPERATION_POLICIES.map((item) => [item.operationId, item]));
+  assert.equal(byOperation.get("pilotReadMandate").quotaClass, QuotaClass.READ);
+  assert.equal(
+    byOperation.get("pilotReadTenantRiskPortfolioReference").quotaClass,
+    QuotaClass.READ
+  );
+  assert.equal(
+    byOperation.get("pilotReadServicingQueueReference").quotaClass,
+    QuotaClass.READ
+  );
+  assert.equal(byOperation.get("pilotRevokeDraftMandate").quotaClass, QuotaClass.MUTATION);
+  assert.equal(byOperation.get("walletReadGrant").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("walletDiscoverCapabilities").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("walletReadExecution").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("venueDiscoverCapabilities").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("venueReadBinding").quotaClass, QuotaClass.READ);
+  assert.equal(byOperation.get("venueReadExecution").quotaClass, QuotaClass.READ);
+  for (const operationId of [
+    "walletPrepareGrant",
+    "walletActivateGrant",
+    "walletRevokeGrant",
+    "walletApproveExecution"
+  ]) {
+    assert.equal(byOperation.get(operationId).quotaClass, QuotaClass.PRIVILEGED);
+    assert.equal(byOperation.get(operationId).profile.idempotencyRequired, true);
+  }
+  for (const operationId of [
+    "venuePrepareDelegate", "venueActivateDelegate", "venueRevokeDelegate"
+  ]) {
+    assert.equal(byOperation.get(operationId).quotaClass, QuotaClass.PRIVILEGED);
+    assert.equal(byOperation.get(operationId).profile.idempotencyRequired, true);
+  }
 });
 
 test("all configured values remain within immutable hard ceilings", () => {
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.AGENT_SUBJECTS], 500);
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.MANDATES], 1_000);
+  assert.equal(HARD_CEILINGS.resources[ResourceKind.CREDIT_DECISIONS], 1_000);
   for (const profile of Object.values(QUOTA_PROFILES)) {
     assert.ok(profile.windowMs <= HARD_CEILINGS.rate.windowMs);
     for (const [scope, value] of Object.entries(profile.rate)) {
@@ -64,6 +110,9 @@ test("all configured values remain within immutable hard ceilings", () => {
     }
     for (const [metric, value] of Object.entries(profile.metrics)) {
       assert.ok(value <= HARD_CEILINGS.metrics[metric], `${profile.quotaClass}.${metric}`);
+    }
+    for (const [kind, value] of Object.entries(profile.resources)) {
+      assert.ok(value <= HARD_CEILINGS.resources[kind], `${profile.quotaClass}.${kind}`);
     }
     assert.ok(profile.admissionLeaseMs <= HARD_CEILINGS.admissionLeaseMs);
     assert.ok(profile.maxAutomaticRetries <= HARD_CEILINGS.automaticRetries);

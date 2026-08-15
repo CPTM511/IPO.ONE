@@ -1,0 +1,360 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hyperliquid-testnet-reconciliation-record.schema.json",
+  "title": "Hyperliquid Testnet Simulated Reconciliation Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reconciliationId",
+    "reconciliationHash",
+    "requestHash",
+    "idempotencyKeyHash",
+    "executionId",
+    "executionHash",
+    "executionNonceState",
+    "nonce",
+    "actionKind",
+    "actionHash",
+    "cloid",
+    "facilityId",
+    "facilityHash",
+    "facilityStateHash",
+    "facilityVersion",
+    "orderIntentId",
+    "orderIntentHash",
+    "orderIntentStateHash",
+    "orderIntentVersion",
+    "subjectId",
+    "obligationId",
+    "accountBindingHash",
+    "signerReferenceHash",
+    "requestedSize",
+    "requestedNotionalMinor",
+    "canonicalLedgerStateHash",
+    "ledgerTransactionCount",
+    "riskSnapshotHash",
+    "effectiveRiskState",
+    "initialKernelSnapshotHash",
+    "latestKernelSnapshotHash",
+    "authorizationDecisionHash",
+    "admissionDecisionHash",
+    "authorizedActorHash",
+    "status",
+    "outcome",
+    "reconciledOrderState",
+    "cumulativeFilledSize",
+    "cumulativeFillNotionalMinor",
+    "latestEconomicDeltaNotionalMinor",
+    "processedObservationCount",
+    "latestSourceEvidenceHash",
+    "adapterFailureCount",
+    "pollAttemptCount",
+    "circuitBreakerOpen",
+    "manualSafeStop",
+    "newRiskBlocked",
+    "reconciled",
+    "incidentReasonCodes",
+    "resultHash",
+    "version",
+    "createdAt",
+    "updatedAt",
+    "resolvedAt",
+    "environment",
+    "simulationOnly",
+    "protectedTestnetE2EOnly",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "liveTransportApproved",
+    "liveSignerApproved",
+    "apiWalletApproved",
+    "canonicalLedger",
+    "ledgerPostingRequired",
+    "ledgerMutationCreated",
+    "ledgerPostingAuthority",
+    "secondLedgerCreated",
+    "facilityMutationCreated",
+    "facilityMutationAuthority",
+    "riskRecoveryAuthority",
+    "withdrawalAuthority",
+    "transferAuthority",
+    "accountAdministrationAuthority",
+    "mainnetAuthority",
+    "productionAuthority",
+    "fundsAuthority",
+    "rawResponsePersisted",
+    "reusableSignaturePersisted",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "reconciliationId": { "$ref": "#/$defs/identifier" },
+    "reconciliationHash": { "$ref": "#/$defs/hash" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "idempotencyKeyHash": { "$ref": "#/$defs/hash" },
+    "executionId": { "$ref": "#/$defs/identifier" },
+    "executionHash": { "$ref": "#/$defs/hash" },
+    "executionNonceState": {
+      "enum": ["SUBMITTED", "CONFIRMED", "REJECTED", "UNKNOWN"]
+    },
+    "nonce": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "actionKind": {
+      "enum": ["order", "reduceOnlyOrder", "cancel", "cancelByCloid", "modify"]
+    },
+    "actionHash": { "$ref": "#/$defs/hash" },
+    "cloid": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^0x[0-9a-f]{32}$" }
+      ]
+    },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "facilityStateHash": { "$ref": "#/$defs/hash" },
+    "facilityVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "orderIntentId": { "$ref": "#/$defs/identifier" },
+    "orderIntentHash": { "$ref": "#/$defs/hash" },
+    "orderIntentStateHash": { "$ref": "#/$defs/hash" },
+    "orderIntentVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "obligationId": { "$ref": "#/$defs/identifier" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" },
+    "requestedSize": { "$ref": "#/$defs/nonNegativeDecimal" },
+    "requestedNotionalMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "canonicalLedgerStateHash": { "$ref": "#/$defs/hash" },
+    "ledgerTransactionCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" },
+    "effectiveRiskState": { "$ref": "#/$defs/riskState" },
+    "initialKernelSnapshotHash": { "$ref": "#/$defs/hash" },
+    "latestKernelSnapshotHash": { "$ref": "#/$defs/hash" },
+    "authorizationDecisionHash": { "$ref": "#/$defs/hash" },
+    "admissionDecisionHash": { "$ref": "#/$defs/hash" },
+    "authorizedActorHash": { "$ref": "#/$defs/hash" },
+    "status": {
+      "enum": [
+        "PENDING",
+        "PARTIAL",
+        "UNKNOWN",
+        "RECONCILED",
+        "REJECTED",
+        "INCIDENT",
+        "SAFE_STOPPED"
+      ]
+    },
+    "outcome": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "enum": [
+            "partial",
+            "unknown",
+            "confirmed",
+            "canceled",
+            "rejected",
+            "incident",
+            "safe_stopped"
+          ]
+        }
+      ]
+    },
+    "reconciledOrderState": {
+      "enum": [
+        "PENDING",
+        "OPEN",
+        "PARTIALLY_FILLED",
+        "FILLED",
+        "CANCELED",
+        "REJECTED",
+        "UNKNOWN",
+        "INCIDENT",
+        "SAFE_STOPPED"
+      ]
+    },
+    "cumulativeFilledSize": { "$ref": "#/$defs/nonNegativeDecimal" },
+    "cumulativeFillNotionalMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "latestEconomicDeltaNotionalMinor": {
+      "$ref": "#/$defs/nonNegativeMinor"
+    },
+    "processedObservationCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "latestSourceEvidenceHash": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/hash" }]
+    },
+    "adapterFailureCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "pollAttemptCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "circuitBreakerOpen": { "type": "boolean" },
+    "manualSafeStop": { "type": "boolean" },
+    "newRiskBlocked": { "type": "boolean" },
+    "reconciled": { "type": "boolean" },
+    "incidentReasonCodes": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9_]{0,95}$"
+      }
+    },
+    "resultHash": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/hash" }]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "resolvedAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "environment": { "const": "hyperliquid_testnet" },
+    "simulationOnly": { "const": true },
+    "protectedTestnetE2EOnly": { "const": true },
+    "externalSystemQueried": { "const": false },
+    "externalOrderSubmitted": { "const": false },
+    "liveTransportApproved": { "const": false },
+    "liveSignerApproved": { "const": false },
+    "apiWalletApproved": { "const": false },
+    "canonicalLedger": { "const": true },
+    "ledgerPostingRequired": { "const": false },
+    "ledgerMutationCreated": { "const": false },
+    "ledgerPostingAuthority": { "const": false },
+    "secondLedgerCreated": { "const": false },
+    "facilityMutationCreated": { "const": false },
+    "facilityMutationAuthority": { "const": false },
+    "riskRecoveryAuthority": { "const": false },
+    "withdrawalAuthority": { "const": false },
+    "transferAuthority": { "const": false },
+    "accountAdministrationAuthority": { "const": false },
+    "mainnetAuthority": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "rawResponsePersisted": { "const": false },
+    "reusableSignaturePersisted": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": {
+      "const": "hyperliquid_testnet_simulated_reconciliation.v1"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "nonNegativeMinor": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,77})$"
+    },
+    "nonNegativeDecimal": {
+      "type": "string",
+      "pattern": "^(?:0|0\\.[0-9]{1,18}|[1-9][0-9]{0,30}(?:\\.[0-9]{1,18})?)$"
+    },
+    "riskState": {
+      "enum": ["NORMAL", "WARNING", "REDUCE_ONLY", "FLATTEN", "SETTLEMENT"]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["RECONCILED", "REJECTED", "INCIDENT", "SAFE_STOPPED"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "resultHash": { "$ref": "#/$defs/hash" },
+          "resolvedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "else": {
+        "properties": {
+          "resultHash": { "type": "null" },
+          "resolvedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "PENDING" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "outcome": { "type": "null" },
+          "reconciledOrderState": { "const": "PENDING" },
+          "processedObservationCount": { "const": 0 },
+          "latestSourceEvidenceHash": { "type": "null" },
+          "version": { "const": 1 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "UNKNOWN" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "outcome": { "const": "unknown" },
+          "reconciled": { "const": false },
+          "newRiskBlocked": { "const": true }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "SAFE_STOPPED" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "outcome": { "const": "safe_stopped" },
+          "manualSafeStop": { "const": true },
+          "circuitBreakerOpen": { "const": true },
+          "newRiskBlocked": { "const": true },
+          "reconciled": { "const": false }
+        }
+      }
+    }
+  ]
+}

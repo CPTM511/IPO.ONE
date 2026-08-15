@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "hyperliquid_testnet_operability_policy.v1",
+  "policyVersion": "tc_403_testnet_operability.v1",
+  "environment": "hyperliquid_testnet",
+  "mode": "simulation_and_local_drill_only",
+  "accountability": {
+    "incidentOwner": "ipo_one_founder",
+    "recoveryOwner": "ipo_one_founder",
+    "signerLifecycleOwner": "ipo_one_founder",
+    "evidenceCustodian": "ipo_one_founder",
+    "independentReviewCommissioningOwner": "ipo_one_founder",
+    "independentReviewer": null,
+    "independentReviewerType": null
+  },
+  "objectives": {
+    "riskDataWarningAfterMs": 30000,
+    "riskDataCriticalAfterMs": 120000,
+    "unknownOutcomeWarningAfterMs": 30000,
+    "unknownOutcomeCriticalAfterMs": 120000,
+    "reconciliationWarningAfterMs": 30000,
+    "reconciliationCriticalAfterMs": 120000,
+    "backupMaximumAgeMs": 86400000,
+    "localRestoreExerciseRtoMs": 900000,
+    "localRestoreExerciseRpoMs": 0
+  },
+  "capacity": {
+    "maximumAssuranceInputBytes": 2097152,
+    "maximumFindings": 256,
+    "maximumAlertRoutes": 16,
+    "maximumFailureDrills": 16,
+    "maximumConcurrentEvaluations": 8,
+    "loadProbeEvaluations": 2048
+  },
+  "requiredFailureScenarios": [
+    "application_process_restart",
+    "database_process_restart",
+    "database_backup_restore",
+    "signer_loss",
+    "venue_outage",
+    "adapter_staleness",
+    "unknown_exchange_outcome"
+  ],
+  "alerts": [
+    {
+      "signalType": "risk_data_stale",
+      "severity": "critical",
+      "owner": "ipo_one_founder",
+      "runbookRef": "TC403-RUNBOOK-RISK-DATA",
+      "blocksNewRisk": true
+    },
+    {
+      "signalType": "reconciliation_slo_breached",
+      "severity": "critical",
+      "owner": "ipo_one_founder",
+      "runbookRef": "TC403-RUNBOOK-RECONCILIATION",
+      "blocksNewRisk": true
+    },
+    {
+      "signalType": "unknown_exchange_outcome_aging",
+      "severity": "critical",
+      "owner": "ipo_one_founder",
+      "runbookRef": "TC403-RUNBOOK-UNKNOWN-OUTCOME",
+      "blocksNewRisk": true
+    },
+    {
+      "signalType": "signer_unavailable_or_revoked",
+      "severity": "critical",
+      "owner": "ipo_one_founder",
+      "runbookRef": "TC403-RUNBOOK-SIGNER",
+      "blocksNewRisk": true
+    },
+    {
+      "signalType": "venue_adapter_unavailable",
+      "severity": "critical",
+      "owner": "ipo_one_founder",
+      "runbookRef": "TC403-RUNBOOK-VENUE",
+      "blocksNewRisk": true
+    },
+    {
+      "signalType": "restore_integrity_mismatch",
+      "severity": "critical",
+      "owner": "ipo_one_founder",
+      "runbookRef": "TC403-RUNBOOK-RESTORE",
+      "blocksNewRisk": true
+    },
+    {
+      "signalType": "capacity_boundary_exceeded",
+      "severity": "high",
+      "owner": "ipo_one_founder",
+      "runbookRef": "TC403-RUNBOOK-CAPACITY",
+      "blocksNewRisk": true
+    }
+  ],
+  "safetyBoundary": {
+    "automaticRecoveryEnabled": false,
+    "automaticUnfreezeEnabled": false,
+    "automaticKeyOperationEnabled": false,
+    "notificationDeliveryEnabled": false,
+    "protectedSchedulingEnabled": false,
+    "exchangeWritesEnabled": false,
+    "apiWalletOperationsEnabled": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "fundsAuthority": false,
+    "realFunds": false
+  }
+}

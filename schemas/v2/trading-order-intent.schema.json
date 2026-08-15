@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-order-intent.schema.json",
+  "title": "IPO.ONE Synthetic Trading Order Intent v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tradingOrderIntentId",
+    "orderIntentHash",
+    "orderStateHash",
+    "facilityId",
+    "facilityHash",
+    "subjectId",
+    "principalId",
+    "submittedByActorHash",
+    "direction",
+    "syntheticNotionalMinor",
+    "createdAt",
+    "orderPolicyVersion",
+    "status",
+    "cancelReasonCode",
+    "canceledAt",
+    "flattenedAt",
+    "version",
+    "updatedAt",
+    "serverRiskEvaluated",
+    "rawVenueActionAccepted",
+    "sandboxOnly",
+    "syntheticOnly",
+    "nonRedeemable",
+    "withdrawable",
+    "transferable",
+    "externalSystemQueried",
+    "externalOrderSubmitted",
+    "productionAuthority",
+    "fundsAuthority",
+    "realCollateral",
+    "realFunding",
+    "realEquity",
+    "realPricing",
+    "productionFundsMoved",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "tradingOrderIntentId": { "$ref": "#/$defs/identifier" },
+    "orderIntentHash": { "$ref": "#/$defs/hash" },
+    "orderStateHash": { "$ref": "#/$defs/hash" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "principalId": { "$ref": "#/$defs/identifier" },
+    "submittedByActorHash": { "$ref": "#/$defs/hash" },
+    "direction": { "enum": ["long", "short"] },
+    "syntheticNotionalMinor": { "$ref": "#/$defs/positiveMinor" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "orderPolicyVersion": {
+      "const": "trading_no_funds_facility_policy.v1"
+    },
+    "status": { "enum": ["open", "canceled", "flattened"] },
+    "cancelReasonCode": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z0-9:_-]+$"
+        }
+      ]
+    },
+    "canceledAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "flattenedAt": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ]
+    },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2 },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "serverRiskEvaluated": { "const": true },
+    "rawVenueActionAccepted": { "const": false },
+    "sandboxOnly": { "const": true },
+    "syntheticOnly": { "const": true },
+    "nonRedeemable": { "const": true },
+    "withdrawable": { "const": false },
+    "transferable": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "externalOrderSubmitted": { "const": false },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realCollateral": { "const": false },
+    "realFunding": { "const": false },
+    "realEquity": { "const": false },
+    "realPricing": { "const": false },
+    "productionFundsMoved": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "trading_order_intent.v1" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "open" } } },
+      "then": {
+        "properties": {
+          "version": { "const": 1 },
+          "cancelReasonCode": { "type": "null" },
+          "canceledAt": { "type": "null" },
+          "flattenedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "canceled" } } },
+      "then": {
+        "properties": {
+          "version": { "const": 2 },
+          "cancelReasonCode": { "type": "string" },
+          "canceledAt": { "type": "string", "format": "date-time" },
+          "flattenedAt": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "flattened" } } },
+      "then": {
+        "properties": {
+          "version": { "const": 2 },
+          "cancelReasonCode": { "type": "string" },
+          "canceledAt": { "type": "null" },
+          "flattenedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "positiveMinor": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,77}$"
+    }
+  }
+}

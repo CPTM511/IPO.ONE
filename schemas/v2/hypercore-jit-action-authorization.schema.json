@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/hypercore-jit-action-authorization.schema.json",
+  "title": "HyperCore JIT Action Authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorizationHash", "decision", "intentId", "intentHash",
+    "founderApprovalHash", "preflightReceiptHash", "riskSnapshotHash",
+    "metadataHash", "payloadHash", "preparedActionHash", "signingRequestHash",
+    "accountBindingHash", "delegateHash", "signerReferenceHash", "nonce",
+    "effectiveUntil", "singleUse", "externalTestnetSubmissionAllowed",
+    "mainnetAuthority", "productionAuthority", "realFundsAuthority", "schemaVersion"
+  ],
+  "properties": {
+    "authorizationHash": { "$ref": "#/$defs/hash" }, "decision": { "const": "ALLOW" },
+    "intentId": { "$ref": "#/$defs/id" }, "intentHash": { "$ref": "#/$defs/hash" },
+    "founderApprovalHash": { "$ref": "#/$defs/hash" },
+    "preflightReceiptHash": { "$ref": "#/$defs/hash" },
+    "riskSnapshotHash": { "$ref": "#/$defs/hash" }, "metadataHash": { "$ref": "#/$defs/hash" },
+    "payloadHash": { "$ref": "#/$defs/hash" }, "preparedActionHash": { "$ref": "#/$defs/hash" },
+    "signingRequestHash": { "$ref": "#/$defs/hash" },
+    "accountBindingHash": { "$ref": "#/$defs/hash" }, "delegateHash": { "$ref": "#/$defs/hash" },
+    "signerReferenceHash": { "$ref": "#/$defs/hash" }, "nonce": { "type": "integer", "minimum": 1 },
+    "effectiveUntil": { "type": "string", "format": "date-time" },
+    "singleUse": { "const": true }, "externalTestnetSubmissionAllowed": { "const": true },
+    "mainnetAuthority": { "const": false }, "productionAuthority": { "const": false },
+    "realFundsAuthority": { "const": false },
+    "schemaVersion": { "const": "hypercore_jit_action_authorization.v2" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$" }
+  }
+}

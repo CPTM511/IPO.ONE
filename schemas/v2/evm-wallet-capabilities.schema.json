@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/evm-wallet-capabilities.schema.json",
+  "title": "IPO.ONE normalized EVM wallet capabilities v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "providerId",
+    "chainId",
+    "contextEpoch",
+    "walletTransport",
+    "accountType",
+    "signatures",
+    "calls",
+    "delegation",
+    "accountAbstraction",
+    "humanStepUp",
+    "walletSimulation",
+    "walletThreatScreening",
+    "unknownIsNonPermissive",
+    "authorizationGranted",
+    "preparedExecutionAvailable",
+    "fundsAuthority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "evm_wallet_capabilities.v1" },
+    "providerId": { "type": "string", "minLength": 3, "maxLength": 128 },
+    "chainId": { "enum": ["eip155:84532", "eip155:1952"] },
+    "contextEpoch": { "type": "integer", "minimum": 0 },
+    "walletTransport": { "enum": ["eip1193", "walletconnect"] },
+    "accountType": {
+      "enum": ["eoa", "contract", "counterfactual", "delegated", "unknown"]
+    },
+    "signatures": { "$ref": "#/$defs/signatures" },
+    "calls": { "$ref": "#/$defs/calls" },
+    "delegation": { "$ref": "#/$defs/delegation" },
+    "accountAbstraction": { "$ref": "#/$defs/accountAbstraction" },
+    "humanStepUp": { "$ref": "#/$defs/humanStepUp" },
+    "walletSimulation": { "$ref": "#/$defs/status" },
+    "walletThreatScreening": { "$ref": "#/$defs/status" },
+    "unknownIsNonPermissive": { "const": true },
+    "authorizationGranted": { "const": false },
+    "preparedExecutionAvailable": { "const": false },
+    "fundsAuthority": { "const": false }
+  },
+  "$defs": {
+    "status": { "enum": ["supported", "unsupported", "unknown"] },
+    "signatures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eip712", "erc1271", "erc6492"],
+      "properties": {
+        "eip712": { "$ref": "#/$defs/status" },
+        "erc1271": { "$ref": "#/$defs/status" },
+        "erc6492": { "$ref": "#/$defs/status" }
+      }
+    },
+    "calls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["single", "batch", "atomicBatch"],
+      "properties": {
+        "single": { "$ref": "#/$defs/status" },
+        "batch": { "$ref": "#/$defs/status" },
+        "atomicBatch": { "$ref": "#/$defs/status" }
+      }
+    },
+    "delegation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["erc7715", "erc7710", "vendorNative"],
+      "properties": {
+        "erc7715": { "$ref": "#/$defs/status" },
+        "erc7710": { "$ref": "#/$defs/status" },
+        "vendorNative": { "$ref": "#/$defs/status" }
+      }
+    },
+    "accountAbstraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eip7702", "erc4337", "vendorNative"],
+      "properties": {
+        "eip7702": { "$ref": "#/$defs/status" },
+        "erc4337": { "$ref": "#/$defs/status" },
+        "vendorNative": { "$ref": "#/$defs/status" }
+      }
+    },
+    "humanStepUp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["wallet", "mobile", "email", "external"],
+      "properties": {
+        "wallet": { "$ref": "#/$defs/status" },
+        "mobile": { "$ref": "#/$defs/status" },
+        "email": { "$ref": "#/$defs/status" },
+        "external": { "$ref": "#/$defs/status" }
+      }
+    }
+  }
+}

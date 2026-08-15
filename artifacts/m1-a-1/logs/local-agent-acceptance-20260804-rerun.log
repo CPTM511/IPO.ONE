@@ -1,0 +1,18 @@
+^D$ node scripts/local-agent-reference-acceptance.mjs
+{
+  "schemaVersion": "local_agent_reference_acceptance.v1",
+  "status": "passed",
+  "subjectId": "subject_34e295de-98ef-4fd8-a9a2-d3324513fbf7",
+  "mandateId": "mandate_58f6c51c-4f49-45b3-a50a-18c2135f49b8",
+  "obligationId": "obligation_e28493a5-6ece-4a08-8e83-fb2631e82e6f",
+  "evidenceEventCount": 13,
+  "acceptancePath": "/Users/cptmao/Documents/IPO.ONE/.ipo-one/local-stack/agent-workflows/latest-reference-acceptance.json",
+  "artifacts": {
+    "applicationHandoffPath": "/Users/cptmao/Documents/IPO.ONE/.ipo-one/local-stack/agent-workflows/175ef9c3608bc763329c186e.application-handoff.json",
+    "offerReceiptPath": "/Users/cptmao/Documents/IPO.ONE/.ipo-one/local-stack/agent-workflows/175ef9c3608bc763329c186e.offer-receipt.json",
+    "runtimeHandoffPath": "/Users/cptmao/Documents/IPO.ONE/.ipo-one/local-stack/agent-workflows/175ef9c3608bc763329c186e.runtime-handoff.json",
+    "lifecycleResultPath": "/Users/cptmao/Documents/IPO.ONE/.ipo-one/local-stack/agent-workflows/175ef9c3608bc763329c186e.lifecycle-result.json"
+  },
+  "sandboxOnly": true,
+  "productionFundsMoved": false
+}

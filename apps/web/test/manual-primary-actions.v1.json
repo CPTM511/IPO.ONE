@@ -1,0 +1,199 @@
+{
+  "schemaVersion": "manual_primary_actions.v1",
+  "manual": "docs/user-guide/IPO_ONE_HUMAN_AGENT_USER_MANUAL_v0.2_DRAFT.md",
+  "actions": [
+    {
+      "journey": "human",
+      "view": "overview",
+      "id": "homeHumanBorrowBtn",
+      "labels": ["Start Human application"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "createHumanSubjectBtn",
+      "labels": ["Create Human Subject"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "createHumanConsentBtn",
+      "labels": ["Create scoped Consent"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "submitHumanCreditBtn",
+      "labels": ["Request & evaluate credit"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "newHumanApplicationBtn",
+      "labels": ["Start a new Human loan"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "acceptHumanOfferBtn",
+      "labels": ["Confirm & create sandbox Obligation"]
+    },
+    {
+      "journey": "shared-confirmation",
+      "view": "global",
+      "id": "economicActionConfirmBtn",
+      "labels": ["Confirm with account"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "executeHumanObligationBtn",
+      "labels": ["Confirm sandbox execution"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "postHumanRepaymentBtn",
+      "labels": ["Confirm early or scheduled repayment"]
+    },
+    {
+      "journey": "human",
+      "view": "request-credit",
+      "id": "loadOwnedEvidenceBtn",
+      "labels": ["Load timeline"]
+    },
+    {
+      "journey": "agent",
+      "view": "overview",
+      "id": "homeAgentBorrowBtn",
+      "labels": ["Open Agent credit"]
+    },
+    {
+      "journey": "agent-authority",
+      "view": "request-credit",
+      "id": "createAccountChallengeBtn",
+      "labels": ["Create signing request"]
+    },
+    {
+      "journey": "agent-authority",
+      "view": "request-credit",
+      "id": "proveAccountOnlineBtn",
+      "labels": ["Ask registered test Agent to prove"]
+    },
+    {
+      "journey": "agent-authority",
+      "view": "request-credit",
+      "id": "createDraftMandateBtn",
+      "labels": ["Create Draft Mandate"]
+    },
+    {
+      "journey": "agent-authority",
+      "view": "request-credit",
+      "id": "activateMandateBtn",
+      "labels": ["Activate exact Sandbox Mandate"]
+    },
+    {
+      "journey": "agent",
+      "view": "agent-console",
+      "id": "agentOnlineRunBtn",
+      "labels": [
+        "Run local Agent application",
+        "Check for Agent Offer",
+        "Review and activate this Mandate",
+        "Complete sandbox Agent lifecycle",
+        "Check for Agent Obligation",
+        "Check Agent progress"
+      ]
+    },
+    {
+      "journey": "agent",
+      "view": "agent-console",
+      "id": "agentOnlineExecuteBtn",
+      "labels": ["Check Provider spend"]
+    },
+    {
+      "journey": "agent",
+      "view": "agent-console",
+      "id": "agentOnlineRepayBtn",
+      "labels": ["Check automatic repayment"]
+    },
+    {
+      "journey": "agent",
+      "view": "agent-console",
+      "id": "agentOnlineEvidenceBtn",
+      "labels": ["Check Agent Evidence"]
+    },
+    {
+      "journey": "agent",
+      "view": "agent-console",
+      "id": "agentOnlineReviewBtn",
+      "labels": ["Review Agent obligations"]
+    },
+    {
+      "journey": "shared-obligation",
+      "view": "obligations",
+      "id": "privateCreditPrimaryBtn",
+      "labels": ["Refresh owned positions"]
+    },
+    {
+      "journey": "shared-passport",
+      "view": "credit-passport",
+      "id": "restoreCreditPassportBtn",
+      "labels": ["Load my latest Decision"]
+    },
+    {
+      "journey": "shared-passport",
+      "view": "credit-passport",
+      "id": "issueCreditPassportBtn",
+      "labels": ["Share private Passport"]
+    },
+    {
+      "journey": "shared-record",
+      "view": "credit-track-record",
+      "id": "loadCreditTrackRecordBtn",
+      "labels": ["Load verified record"]
+    },
+    {
+      "journey": "risk-read",
+      "view": "risk-operations",
+      "id": "refreshRiskWorkspaceBtn",
+      "labels": ["Refresh Risk workspace"]
+    },
+    {
+      "journey": "risk-read",
+      "view": "risk-operations",
+      "id": "applyServicingQueueFilterBtn",
+      "labels": ["Apply stage"]
+    },
+    {
+      "journey": "risk-read",
+      "view": "risk-operations",
+      "id": "loadRiskInsightsBtn",
+      "labels": ["Load supporting insights"]
+    },
+    {
+      "journey": "risk-protection",
+      "view": "risk-operations",
+      "id": "freezeRiskSubjectBtn",
+      "labels": ["Freeze Subject"]
+    },
+    {
+      "journey": "capital-partner",
+      "view": "capital-partners",
+      "id": "capitalPartnerRefreshWorkspaceBtn",
+      "labels": ["Refresh workspace"]
+    },
+    {
+      "journey": "capital-partner",
+      "view": "capital-partners",
+      "id": "capitalPartnerAuthorOfferBtn",
+      "labels": ["Issue exact sandbox Offer"]
+    },
+    {
+      "journey": "capital-partner",
+      "view": "capital-partners",
+      "id": "capitalPartnerWithdrawOfferBtn",
+      "labels": ["Withdraw unaccepted Offer"]
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "valid": [
+    {
+      "schemaVersion": "sandbox_obligation_portability_receipt.v1",
+      "status": "conformant",
+      "entryMode": "human",
+      "sourceReceiptSchemaVersion": "human_sandbox_obligation_workflow_receipt.v1",
+      "obligationId": "obligation_human_contract_fixture",
+      "paymentId": "repayment_human_contract_fixture",
+      "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+      "amountMinor": "3000",
+      "principalLedgerTransactionId": "ledger_transaction_human_execution_fixture",
+      "paymentLedgerTransactionId": "ledger_transaction_human_repayment_fixture",
+      "canonicalPaymentRef": "0xbe9bd6bf681225ce28c9d7ecb92b6c6dc203188bb447373aba0338d239de4553",
+      "kernelInvariantHash": "0x7dc0e59bef633d7c4772233f930a3284cc79928bc41a28b21871de5f2417a9a6",
+      "profiles": [
+        {
+          "profileId": "base_sepolia_execution_test_v1",
+          "displayName": "Base Sepolia",
+          "role": "primary_execution_test",
+          "chainId": "eip155:84532",
+          "adapterVersion": "1.0.0",
+          "profileHash": "0x55b810d5189c175110e91e4ca4d2b381d2c7d49b25f70ab62d306bcafea5e3f1",
+          "canonicalPaymentRef": "0xbe9bd6bf681225ce28c9d7ecb92b6c6dc203188bb447373aba0338d239de4553",
+          "finalityProofHash": "0x30acc8a0450d5f6929597266d29ec22d1a6f6b91abfe4c5ad2b088e6be5d0521",
+          "evidenceHash": "0x9341db14a4be1b1c1b6619a18dc345c717022cce47a87a5b14c0bd18a346160d",
+          "sourceFinality": "finalized",
+          "selectedProviderSlot": "secondary",
+          "duplicateDisposition": "duplicate",
+          "deterministicReplay": true,
+          "reorgInvalidation": true,
+          "providerFailover": true,
+          "executionCapFailsClosed": true,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "networkCallsMade": false
+        },
+        {
+          "profileId": "x_layer_testnet_portability_v1",
+          "displayName": "X Layer Testnet",
+          "role": "portability_conformance",
+          "chainId": "eip155:1952",
+          "adapterVersion": "1.0.0",
+          "profileHash": "0x17231c9a1bc20d3d3c64803e6e6c149e8db5cecb927c860b78d6ceaf6d20216a",
+          "canonicalPaymentRef": "0xbe9bd6bf681225ce28c9d7ecb92b6c6dc203188bb447373aba0338d239de4553",
+          "finalityProofHash": "0x674b8d081c7faccb847d2ce4a6c9c066986e8f89d48794c25f8de06a5bc7d12b",
+          "evidenceHash": "0xdfa854d90a8a9a3cba421c747ead268046aafa5517c3b3d1ea3541a92be73985",
+          "sourceFinality": "finalized",
+          "selectedProviderSlot": "secondary",
+          "duplicateDisposition": "duplicate",
+          "deterministicReplay": true,
+          "reorgInvalidation": true,
+          "providerFailover": true,
+          "executionCapFailsClosed": true,
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "networkCallsMade": false
+        }
+      ],
+      "invariants": {
+        "canonicalPaymentChainNeutral": true,
+        "obligationKernelUnchanged": true,
+        "ledgerReferencesBound": true,
+        "explicitFinality": true,
+        "deterministicReplay": true,
+        "reorgInvalidation": true,
+        "providerFailover": true,
+        "executionCapFailsClosed": true
+      },
+      "nonAuthorizing": true,
+      "sandboxOnly": true,
+      "productionFundsMoved": false,
+      "withdrawable": false,
+      "fundsAuthority": false,
+      "networkCallsMade": false,
+      "liveTestnetExecution": false,
+      "credentialsIncluded": false,
+      "privateKeysIncluded": false,
+      "publicEndpointEnabled": false,
+      "remoteMcpEnabled": false,
+      "receiptHash": "0x1b7f595d5b6da76e789affc8d0fba55461dcaeca942b75bfbc6d2bf2ad7cb4a6"
+    }
+  ],
+  "invalidMutations": [
+    {
+      "name": "production funds claim",
+      "path": ["productionFundsMoved"],
+      "value": true
+    },
+    {
+      "name": "entry and source mismatch",
+      "path": ["sourceReceiptSchemaVersion"],
+      "value": "agent_sandbox_obligation_workflow_receipt.v1"
+    },
+    {
+      "name": "unapproved chain identity",
+      "path": ["profiles", 0, "chainId"],
+      "value": "eip155:8453"
+    },
+    {
+      "name": "profile canonical payment drift",
+      "path": ["profiles", 1, "canonicalPaymentRef"],
+      "value": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "receipt integrity drift",
+      "path": ["receiptHash"],
+      "value": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}

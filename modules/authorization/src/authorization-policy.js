@@ -109,6 +109,258 @@ export const PUBLIC_SANDBOX_OPERATION_POLICIES = Object.freeze([
 
 export const TENANT_OPERATION_POLICIES = Object.freeze([
   tenantOperation({
+    operationId: "tradingCreateAccountBindingChallenge",
+    action: "trading.account_challenge.create.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_ACCOUNT_CHALLENGE_CREATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingImportHyperliquidHistory",
+    action: "trading.history_import.self",
+    resourceType: "trading_credit_profile",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_HISTORY_IMPORT_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingFinalizeEvidenceSnapshot",
+    action: "trading.evidence_finalize.self",
+    resourceType: "trading_credit_profile",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_EVIDENCE_FINALIZE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingReadCreditProfile",
+    action: "trading.credit_profile.read.self",
+    resourceType: "trading_credit_profile",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_CREDIT_PROFILE_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "tradingCreateCapitalRequest",
+    action: "trading.capital_request.create.self",
+    resourceType: "trading_credit_profile",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_CAPITAL_REQUEST_CREATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingCreateProviderMandate",
+    action: "trading.provider_mandate.create.owned",
+    resourceType: "provider",
+    allowedActorTypes: [ActorType.PROVIDER],
+    requiredCapability: PilotCapability.TRADING_PROVIDER_MANDATE_CREATE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingListCompatibleMandates",
+    action: "trading.compatible_mandate.list.self",
+    resourceType: "trading_capital_request",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_COMPATIBLE_MANDATE_LIST_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "tradingCreateMatchProposal",
+    action: "trading.match_proposal.create.self",
+    resourceType: "trading_capital_request",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_MATCH_PROPOSAL_CREATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingAcceptMatchAsProvider",
+    action: "trading.match.accept.provider",
+    resourceType: "trading_match_proposal",
+    allowedActorTypes: [ActorType.PROVIDER],
+    requiredCapability: PilotCapability.TRADING_MATCH_ACCEPT_PROVIDER,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingAcceptMatchAsSubject",
+    action: "trading.match.accept.subject",
+    resourceType: "trading_match_proposal",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_MATCH_ACCEPT_SUBJECT,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingCreateFacility",
+    action: "trading.facility.create.self",
+    resourceType: "trading_match_proposal",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_FACILITY_CREATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingContributeSubjectCollateral",
+    action: "trading.facility.collateral.record.self",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability:
+      PilotCapability.TRADING_FACILITY_COLLATERAL_RECORD_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingRecordProviderFunding",
+    action: "trading.facility.funding.record.provider",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.PROVIDER],
+    requiredCapability:
+      PilotCapability.TRADING_FACILITY_FUNDING_RECORD_PROVIDER,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingActivateFacility",
+    action: "trading.facility.activate.self",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_FACILITY_ACTIVATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingSubmitOrderIntent",
+    action: "trading.order_intent.submit.self",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_ORDER_INTENT_SUBMIT_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingCancelOrderIntent",
+    action: "trading.order_intent.cancel.self",
+    resourceType: "trading_order_intent",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.TRADING_ORDER_INTENT_CANCEL_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingReadFacilityState",
+    action: "trading.facility.read.bound",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT, ActorType.PROVIDER],
+    requiredCapability: PilotCapability.TRADING_FACILITY_READ_BOUND,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "tradingEvaluateRisk",
+    action: "trading.facility.risk.evaluate.tenant",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability:
+      PilotCapability.TRADING_FACILITY_RISK_EVALUATE_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["risk", "reconciliation"],
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR
+    ]
+  }),
+  tenantOperation({
+    operationId: "tradingPauseNewRisk",
+    action: "trading.facility.pause.tenant",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.TRADING_FACILITY_PAUSE_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: PROTECTIVE_REASON_CODES,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    approvalRequirement: ApprovalRequirement.PROTECTIVE,
+    liveChecks: ["risk", "reconciliation"],
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR
+    ]
+  }),
+  tenantOperation({
+    operationId: "tradingFlattenFacility",
+    action: "trading.facility.flatten.tenant",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.TRADING_FACILITY_FLATTEN_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: PROTECTIVE_REASON_CODES,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    approvalRequirement: ApprovalRequirement.PROTECTIVE,
+    liveChecks: ["risk", "reconciliation"],
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR
+    ]
+  }),
+  tenantOperation({
+    operationId: "tradingRequestClose",
+    action: "trading.facility.close_request.self",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability:
+      PilotCapability.TRADING_FACILITY_CLOSE_REQUEST_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingRunSettlement",
+    action: "trading.settlement.run.worker",
+    resourceType: "trading_facility_close_request",
+    allowedActorTypes: [ActorType.SYSTEM_WORKER],
+    requiredCapability: PilotCapability.TRADING_SETTLEMENT_RUN_WORKER,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["risk", "reconciliation"],
+    worker: true
+  }),
+  tenantOperation({
+    operationId: "tradingReadSettlement",
+    action: "trading.settlement.read.bound",
+    resourceType: "trading_settlement",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT, ActorType.PROVIDER],
+    requiredCapability: PilotCapability.TRADING_SETTLEMENT_READ_BOUND,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "tradingIssuePerformanceProof",
+    action: "trading.performance_proof.issue.bound",
+    resourceType: "trading_settlement",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT, ActorType.PROVIDER],
+    requiredCapability:
+      PilotCapability.TRADING_PERFORMANCE_PROOF_ISSUE_BOUND,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "tradingReadFacilityEvidence",
+    action: "trading.facility.evidence.read.bound",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT, ActorType.PROVIDER],
+    requiredCapability:
+      PilotCapability.TRADING_FACILITY_EVIDENCE_READ_BOUND,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
     operationId: "pilotProposeApproval",
     action: "approval.propose",
     resourceType: "approval_proposal",
@@ -159,6 +411,115 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.REQUIRED
   }),
   tenantOperation({
+    operationId: "pilotCreateAgentAccountChallenge",
+    action: "agent_account.challenge.create.owned",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.AGENT_ACCOUNT_CHALLENGE_CREATE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "pilotSubmitAgentAccountProof",
+    action: "agent_account.proof.submit.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.AGENT],
+    requiredCapability: PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "pilotReadAgentAccountBinding",
+    action: "agent_account.binding.read.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotCreateHumanSubject",
+    action: "human_subject.create.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.HUMAN_SUBJECT_CREATE_SELF,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "pilotReadHumanSelf",
+    action: "subject.read.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.SUBJECT_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotReadWorkspaceResume",
+    action: "workspace.resume.self",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WORKSPACE_RESUME_SELF,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "pilotPersistAgentContinuationReceipt",
+    action: "workspace.resume.self",
+    resourceType: "credit_offer",
+    allowedActorTypes: [ActorType.AGENT],
+    requiredCapability: PilotCapability.WORKSPACE_RESUME_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_offer_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotCreateConsent",
+    action: "consent.create.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CONSENT_CREATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["subject_state", "principal_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadConsent",
+    action: "consent.read.self",
+    resourceType: "consent",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CONSENT_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotRevokeConsent",
+    action: "consent.revoke.self",
+    resourceType: "consent",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CONSENT_REVOKE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: ["human_withdrawal"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["consent_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadIdentityReference",
+    action: "identity_reference.read.self",
+    resourceType: "human_identity_reference",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.IDENTITY_REFERENCE_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotActivateSandboxMandate",
+    action: "mandate.activate.owned",
+    resourceType: "mandate",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.MANDATE_ACTIVATE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["mandate_activation_state"]
+  }),
+  tenantOperation({
     operationId: "pilotCreateDraftMandate",
     action: "mandate.draft.create",
     resourceType: "subject",
@@ -169,6 +530,274 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["subject_state"]
   }),
   tenantOperation({
+    operationId: "pilotReadMandate",
+    action: "mandate.read",
+    resourceType: "mandate",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.INTEGRATION_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "walletPrepareAccountBinding",
+    action: "wallet.account_binding.prepare.owned",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_ACCOUNT_BINDING_PREPARE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["subject_state", "chain_policy"]
+  }),
+  tenantOperation({
+    operationId: "walletSubmitAccountBinding",
+    action: "wallet.account_binding.submit.owned",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_ACCOUNT_BINDING_SUBMIT_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["subject_state", "chain_policy"]
+  }),
+  tenantOperation({
+    operationId: "walletReadAccountBindings",
+    action: "wallet.account_binding.read.owned",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_ACCOUNT_BINDING_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["subject_state"]
+  }),
+  tenantOperation({
+    operationId: "walletRevokeAccountBinding",
+    action: "wallet.account_binding.revoke.owned",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_ACCOUNT_BINDING_REVOKE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["subject_state", "account_binding"]
+  }),
+  tenantOperation({
+    operationId: "walletPrepareGrant",
+    action: "wallet.grant.prepare.owned",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.WALLET_GRANT_PREPARE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: [
+      "subject_state",
+      "mandate",
+      "spend_policy",
+      "credit_line",
+      "obligation",
+      "account_binding",
+      "chain_policy"
+    ],
+    requiresRecentMfaActorTypes: [ActorType.HUMAN]
+  }),
+  tenantOperation({
+    operationId: "walletActivateGrant",
+    action: "wallet.grant.activate.owned",
+    resourceType: "delegated_wallet_grant",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.WALLET_GRANT_ACTIVATE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: [
+      "grant_state",
+      "mandate",
+      "spend_policy",
+      "credit_line",
+      "obligation",
+      "account_binding",
+      "chain_policy",
+      "freeze"
+    ],
+    requiresRecentMfaActorTypes: [ActorType.HUMAN]
+  }),
+  tenantOperation({
+    operationId: "walletReadGrant",
+    action: "wallet.grant.read.owned",
+    resourceType: "delegated_wallet_grant",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_GRANT_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["grant_state"]
+  }),
+  tenantOperation({
+    operationId: "walletRevokeGrant",
+    action: "wallet.grant.revoke.owned",
+    resourceType: "delegated_wallet_grant",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.WALLET_GRANT_REVOKE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: [
+      "credential_compromise",
+      "operator_request",
+      "security_incident"
+    ],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["grant_state"],
+    requiresRecentMfaActorTypes: [ActorType.HUMAN]
+  }),
+  tenantOperation({
+    operationId: "walletDiscoverCapabilities",
+    action: "wallet.capabilities.discover",
+    resourceType: "wallet_adapter",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_CAPABILITIES_DISCOVER,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["adapter_state", "chain_policy"]
+  }),
+  tenantOperation({
+    operationId: "walletPrepareExecution",
+    action: "wallet.execution.prepare.owned",
+    resourceType: "delegated_wallet_grant",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_EXECUTION_PREPARE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: [
+      "grant_state", "mandate", "spend_policy", "credit_line", "obligation",
+      "account_binding", "adapter_state", "chain_policy", "freeze"
+    ]
+  }),
+  tenantOperation({
+    operationId: "walletApproveExecution",
+    action: "wallet.execution.approve.owned",
+    resourceType: "wallet_execution",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.WALLET_EXECUTION_APPROVE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["execution_state", "grant_state", "freeze"],
+    requiresRecentMfaActorTypes: [ActorType.HUMAN]
+  }),
+  tenantOperation({
+    operationId: "walletSubmitExecution",
+    action: "wallet.execution.submit.owned",
+    resourceType: "wallet_execution",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_EXECUTION_SUBMIT_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: [
+      "execution_state", "grant_state", "mandate", "spend_policy", "credit_line",
+      "obligation", "account_binding", "adapter_state", "chain_policy", "freeze"
+    ]
+  }),
+  tenantOperation({
+    operationId: "walletReadExecution",
+    action: "wallet.execution.read.owned",
+    resourceType: "wallet_execution",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.WALLET_EXECUTION_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["execution_state"]
+  }),
+  tenantOperation({
+    operationId: "venueDiscoverCapabilities",
+    action: "venue.capabilities.discover",
+    resourceType: "venue_adapter",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.VENUE_CAPABILITIES_DISCOVER,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["adapter_state", "venue_policy"]
+  }),
+  tenantOperation({
+    operationId: "venueReadBinding",
+    action: "venue.binding.read.owned",
+    resourceType: "venue_binding",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.VENUE_BINDING_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["binding_state"]
+  }),
+  tenantOperation({
+    operationId: "venuePrepareDelegate",
+    action: "venue.delegate.prepare.owned",
+    resourceType: "venue_binding",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.VENUE_DELEGATE_PREPARE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["binding_state", "mandate", "facility", "venue_policy", "freeze"],
+    requiresRecentMfaActorTypes: [ActorType.HUMAN]
+  }),
+  tenantOperation({
+    operationId: "venueActivateDelegate",
+    action: "venue.delegate.activate.owned",
+    resourceType: "venue_delegate",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.VENUE_DELEGATE_ACTIVATE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["delegate_state", "binding_state", "mandate", "facility", "venue_policy", "freeze"],
+    requiresRecentMfaActorTypes: [ActorType.HUMAN]
+  }),
+  tenantOperation({
+    operationId: "venueRevokeDelegate",
+    action: "venue.delegate.revoke.owned",
+    resourceType: "venue_delegate",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.VENUE_DELEGATE_REVOKE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: [
+      "credential_compromise", "operator_request", "security_incident",
+      "scheduled_rotation", "delegate_expired"
+    ],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["delegate_state", "binding_state", "freeze"],
+    requiresRecentMfaActorTypes: [ActorType.HUMAN]
+  }),
+  tenantOperation({
+    operationId: "venuePrepareExecution",
+    action: "venue.execution.prepare.owned",
+    resourceType: "venue_delegate",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.VENUE_EXECUTION_PREPARE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["delegate_state", "binding_state", "mandate", "facility", "order_intent", "venue_policy", "freeze"]
+  }),
+  tenantOperation({
+    operationId: "venueSubmitExecution",
+    action: "venue.execution.submit.owned",
+    resourceType: "venue_execution",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.VENUE_EXECUTION_SUBMIT_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["execution_state", "delegate_state", "binding_state", "mandate", "facility", "order_intent", "venue_policy", "freeze"]
+  }),
+  tenantOperation({
+    operationId: "venueReadExecution",
+    action: "venue.execution.read.owned",
+    resourceType: "venue_execution",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.VENUE_EXECUTION_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["execution_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotRevokeDraftMandate",
+    action: "mandate.draft.revoke",
+    resourceType: "mandate",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.MANDATE_DRAFT_REVOKE,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: ["credential_compromise", "operator_request", "security_incident"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["mandate_state"]
+  }),
+  tenantOperation({
     operationId: "pilotReadAgentSelf",
     action: "subject.read.self",
     resourceType: "subject",
@@ -177,14 +806,261 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     ownershipRule: OwnershipRule.ACTOR
   }),
   tenantOperation({
+    operationId: "pilotSubmitPilotFeedback",
+    action: "pilot.feedback.submit.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
     operationId: "pilotRequestCredit",
     action: "credit.request",
     resourceType: "subject",
-    allowedActorTypes: [ActorType.AGENT],
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
     requiredCapability: PilotCapability.CREDIT_REQUEST,
     ownershipRule: OwnershipRule.ACTOR,
     idempotencyRequirement: IdempotencyRequirement.REQUIRED,
-    liveChecks: ["mandate", "risk", "cap", "freeze"]
+    liveChecks: ["credit_authority", "risk", "cap", "freeze"]
+  }),
+  tenantOperation({
+    operationId: "pilotEvaluateCreditApplication",
+    action: "credit.evaluate.self",
+    resourceType: "credit_intent",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_EVALUATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_intent_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotAcceptCreditOffer",
+    action: "credit.offer.accept.self",
+    resourceType: "credit_offer",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_offer_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotExecuteSandboxObligation",
+    action: "credit.execute.sandbox.self",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["obligation_execution_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotPostSandboxRepayment",
+    action: "repayment.post.sandbox.self",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["obligation_repayment_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadOwnObligation",
+    action: "obligation.read.owned",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.OBLIGATION_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotRestructureSandboxObligation",
+    action: "servicing.restructure.sandbox",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.SERVICING_RESTRUCTURE_SANDBOX,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: ["sandbox_hardship_restructure"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    approvalRequirement: ApprovalRequirement.DUAL_CONTROL,
+    liveChecks: ["servicing_resolution_state"],
+    requiresRecentMfaActorTypes: [ActorType.OPERATIONS_OPERATOR]
+  }),
+  tenantOperation({
+    operationId: "pilotRepurchaseSandboxObligation",
+    action: "servicing.repurchase.sandbox",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.SERVICING_REPURCHASE_SANDBOX,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: ["sandbox_contractual_repurchase"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    approvalRequirement: ApprovalRequirement.DUAL_CONTROL,
+    liveChecks: ["servicing_resolution_state"],
+    requiresRecentMfaActorTypes: [ActorType.OPERATIONS_OPERATOR]
+  }),
+  tenantOperation({
+    operationId: "pilotWriteOffSandboxObligation",
+    action: "servicing.writeoff.sandbox",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.SERVICING_WRITEOFF_SANDBOX,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: ["sandbox_uncollectible_writeoff"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    approvalRequirement: ApprovalRequirement.DUAL_CONTROL,
+    liveChecks: ["servicing_resolution_state"],
+    requiresRecentMfaActorTypes: [ActorType.OPERATIONS_OPERATOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadCreditApplication",
+    action: "credit.read.self",
+    resourceType: "credit_intent",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotCreateCreditPassportArtifact",
+    action: "credit_passport.create.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CREDIT_PASSPORT_CREATE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_passport_source_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadOwnCreditPassportArtifact",
+    action: "credit_passport.read.self",
+    resourceType: "credit_passport_artifact",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_PASSPORT_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotVerifyCreditPassportArtifact",
+    action: "credit_passport.verify.bound",
+    resourceType: "credit_passport_artifact",
+    allowedActorTypes: [
+      ActorType.HUMAN,
+      ActorType.AGENT,
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ],
+    requiredCapability: PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+    ownershipRule: OwnershipRule.ACTOR,
+    liveChecks: ["credit_passport_verification_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadCapitalPartnerSelf",
+    action: "capital_partner.portfolio.read.own",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "pilotReadCapitalPartnerPassportInbox",
+    action: "capital_partner.offer.create.own",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "pilotAuthorCapitalPartnerOffer",
+    action: "capital_partner.offer.create.own",
+    resourceType: "credit_passport_artifact",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_CREATE_OWN,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: [
+      "credit_passport_verification_state",
+      "credit_intent_state",
+      "capital_partner_profile_state",
+      "pause"
+    ]
+  }),
+  tenantOperation({
+    operationId: "pilotTransitionCapitalPartnerOffer",
+    action: "capital_partner.offer.manage.own",
+    resourceType: "credit_offer",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_OFFER_MANAGE_OWN,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_offer_state", "capital_partner_profile_state", "pause"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadCapitalPartnerPortfolio",
+    action: "capital_partner.portfolio.read.own",
+    resourceType: "capital_partner_profile",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_PORTFOLIO_READ_OWN,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotReadCapitalPartnerFacility",
+    action: "capital_partner.facility.read.own",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CAPITAL_PARTNER_FACILITY_READ_OWN,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotRevokeCreditPassportArtifact",
+    action: "credit_passport.revoke.self",
+    resourceType: "credit_passport_artifact",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.CREDIT_PASSPORT_REVOKE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: [
+      "owner_withdrawal",
+      "verifier_access_no_longer_required",
+      "source_disclosure_error",
+      "security_concern"
+    ],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["credit_passport_revocation_state"]
+  }),
+  tenantOperation({
+    operationId: "pilotCreateOfficialReport",
+    action: "official_report.create.owned",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "pilotReadOfficialReport",
+    action: "official_report.read.owned",
+    resourceType: "official_report",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotRetrieveOfficialReport",
+    action: "official_report.retrieve.owned",
+    resourceType: "official_report",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
+    operationId: "pilotRevokeOfficialReport",
+    action: "official_report.revoke.owned",
+    resourceType: "official_report",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    reasonCodes: ["owner_withdrawal", "source_disclosure_error", "security_concern"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
   }),
   tenantOperation({
     operationId: "pilotSubmitSpend",
@@ -217,6 +1093,16 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["obligation_state", "lockbox_state", "repayment_waterfall", "freeze"]
   }),
   tenantOperation({
+    operationId: "pilotReadTenantRiskPortfolioReference",
+    action: "risk.read.tenant",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.RISK_READ_TENANT,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.AUDITOR]
+  }),
+  tenantOperation({
     operationId: "pilotReadTenantRisk",
     action: "risk.read.tenant",
     resourceType: "risk_portfolio",
@@ -224,6 +1110,51 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     requiredCapability: PilotCapability.RISK_READ_TENANT,
     ownershipRule: OwnershipRule.TENANT,
     requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.AUDITOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadPilotHealth",
+    action: "pilot.health.read",
+    resourceType: "risk_portfolio",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.PILOT_HEALTH_READ,
+    ownershipRule: OwnershipRule.TENANT,
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ]
+  }),
+  tenantOperation({
+    operationId: "pilotReadPilotFeedbackSummary",
+    action: "pilot.feedback.read.tenant",
+    resourceType: "risk_portfolio",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.PILOT_FEEDBACK_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ]
+  }),
+  tenantOperation({
+    operationId: "pilotReadServicingQueueReference",
+    action: "servicing.queue.read",
+    resourceType: "workspace",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.SERVICING_QUEUE_READ,
+    ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadServicingQueue",
+    action: "servicing.queue.read",
+    resourceType: "servicing_queue",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.SERVICING_QUEUE_READ,
+    ownershipRule: OwnershipRule.TENANT,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
   }),
   tenantOperation({
     operationId: "pilotFreezeSubject",
@@ -301,6 +1232,27 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     liveChecks: ["provider_assignment", "provider_state", "transfer_intent_state"]
   }),
   tenantOperation({
+    operationId: "pilotReadCreditRegistryEvidence",
+    action: "credit_registry.evidence.read.tenant",
+    resourceType: "credit_registry_evidence",
+    allowedActorTypes: [
+      ActorType.HUMAN,
+      ActorType.AGENT,
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ],
+    requiredCapability:
+      PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ]
+  }),
+  tenantOperation({
     operationId: "pilotReadEvidence",
     action: "evidence.read",
     resourceType: "evidence",
@@ -310,6 +1262,14 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     accessGrantCapability: AccessGrantCapability.SCOPED_AUDIT_READ,
     purposePolicy: "grant_only",
     requiresRecentMfaActorTypes: [ActorType.AUDITOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadOwnObligationEvidence",
+    action: "evidence.read.owned",
+    resourceType: "evidence",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.EVIDENCE_READ_OWNED,
+    ownershipRule: OwnershipRule.ACTOR
   }),
   tenantOperation({
     operationId: "pilotExportAudit",
@@ -366,6 +1326,18 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     ownershipRule: OwnershipRule.TENANT,
     idempotencyRequirement: IdempotencyRequirement.REQUIRED,
     liveChecks: ["obligation_state", "lockbox_state", "repayment_waterfall", "freeze"],
+    worker: true
+  }),
+  tenantOperation({
+    operationId: "workerAdvanceSandboxServicing",
+    action: "servicing.advance.sandbox",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.SYSTEM_WORKER],
+    requiredCapability: PilotCapability.SERVICING_ADVANCE_SANDBOX,
+    ownershipRule: OwnershipRule.TENANT,
+    reasonCodes: ["servicing_clock_tick"],
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["servicing_clock_state"],
     worker: true
   }),
   tenantOperation({

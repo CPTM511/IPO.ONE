@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/risk-decision.schema.json",
+  "title": "IPO.ONE Evidence-Derived Shared Risk Decision v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "riskDecisionId",
+    "decisionHash",
+    "creditIntentId",
+    "subjectId",
+    "principalId",
+    "authorityType",
+    "authorityRef",
+    "assetId",
+    "status",
+    "modelVersion",
+    "policyHash",
+    "riskFeatureSnapshotId",
+    "featureSnapshotHash",
+    "limitMinor",
+    "utilizationMinor",
+    "action",
+    "reasons",
+    "riskFeatureSnapshot",
+    "decisionPassport",
+    "sandboxOnly",
+    "productionAuthority",
+    "createdAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "riskDecisionId": { "$ref": "#/$defs/identifier" },
+    "decisionHash": { "$ref": "#/$defs/hash" },
+    "creditIntentId": { "$ref": "#/$defs/identifier" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "principalId": { "$ref": "#/$defs/identifier" },
+    "authorityType": { "enum": ["consent", "mandate"] },
+    "authorityRef": { "$ref": "#/$defs/identifier" },
+    "consentId": { "$ref": "#/$defs/identifier" },
+    "mandateId": { "$ref": "#/$defs/identifier" },
+    "assetId": { "$ref": "#/$defs/identifier" },
+    "status": { "enum": ["approved", "rejected", "frozen"] },
+    "modelVersion": { "const": "credit-application-rules.v1" },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "riskFeatureSnapshotId": { "pattern": "^risk_feature_snapshot_[0-9a-f]{64}$" },
+    "featureSnapshotHash": { "$ref": "#/$defs/hash" },
+    "limitMinor": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "utilizationMinor": { "const": "0" },
+    "action": { "const": "credit_application_evaluation" },
+    "reasons": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code"],
+        "properties": { "code": { "$ref": "#/$defs/reasonCode" } }
+      }
+    },
+    "riskFeatureSnapshot": { "$ref": "#/$defs/riskFeatureSnapshot" },
+    "decisionPassport": { "$ref": "#/$defs/decisionPassport" },
+    "sandboxOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "createdAt": { "$ref": "#/$defs/timestamp" },
+    "schemaVersion": { "const": "risk_decision.v3" }
+  },
+  "oneOf": [
+    {
+      "required": ["consentId"],
+      "not": { "required": ["mandateId"] },
+      "properties": { "authorityType": { "const": "consent" } }
+    },
+    {
+      "required": ["mandateId"],
+      "not": { "required": ["consentId"] },
+      "properties": { "authorityType": { "const": "mandate" } }
+    }
+  ],
+  "$defs": {
+    "identifier": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "reasonCode": {
+      "enum": [
+        "authority_scope_current",
+        "principal_and_subject_eligible",
+        "identity_evidence_current",
+        "principal_binding_current",
+        "no_adverse_obligation",
+        "within_sandbox_policy_cap",
+        "sandbox_rules_v1_approved",
+        "application_not_eligible",
+        "authority_not_current",
+        "identity_evidence_not_current",
+        "adverse_obligation_open",
+        "credit_state_frozen",
+        "sandbox_cap_exceeded",
+        "unsupported_sandbox_asset",
+        "invalid_requested_schedule"
+      ]
+    },
+    "sourceRole": {
+      "enum": [
+        "credit_intent",
+        "subject",
+        "principal",
+        "authority",
+        "human_identity_reference"
+      ]
+    },
+    "lineageSourceRole": {
+      "enum": [
+        "credit_intent",
+        "subject",
+        "principal",
+        "authority",
+        "human_identity_reference",
+        "risk_state_attestation"
+      ]
+    },
+    "featureKey": {
+      "enum": [
+        "assetSupported",
+        "principalWithinCap",
+        "termWithinCap",
+        "scheduleValid",
+        "subjectEligible",
+        "subjectSuspended",
+        "principalEligible",
+        "authorityCurrent",
+        "identityEvidenceCurrent",
+        "principalBindingCurrent",
+        "adverseObligationCount",
+        "frozenCreditLineCount",
+        "allRequiredFeaturesSatisfied"
+      ]
+    },
+    "sourceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "entityType",
+        "entityIdHash",
+        "entityHash",
+        "aggregateVersion",
+        "eventId",
+        "evidenceHash",
+        "sourceFinality"
+      ],
+      "properties": {
+        "role": { "$ref": "#/$defs/sourceRole" },
+        "entityType": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "entityIdHash": { "$ref": "#/$defs/hash" },
+        "entityHash": { "$ref": "#/$defs/hash" },
+        "aggregateVersion": { "type": "integer", "minimum": 1 },
+        "eventId": { "$ref": "#/$defs/identifier" },
+        "evidenceHash": { "$ref": "#/$defs/hash" },
+        "sourceFinality": { "const": "finalized" }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetSupported",
+        "principalWithinCap",
+        "termWithinCap",
+        "scheduleValid",
+        "subjectEligible",
+        "subjectSuspended",
+        "principalEligible",
+        "authorityCurrent",
+        "identityEvidenceCurrent",
+        "principalBindingCurrent",
+        "adverseObligationCount",
+        "frozenCreditLineCount",
+        "allRequiredFeaturesSatisfied"
+      ],
+      "properties": {
+        "assetSupported": { "type": "boolean" },
+        "principalWithinCap": { "type": "boolean" },
+        "termWithinCap": { "type": "boolean" },
+        "scheduleValid": { "type": "boolean" },
+        "subjectEligible": { "type": "boolean" },
+        "subjectSuspended": { "type": "boolean" },
+        "principalEligible": { "type": "boolean" },
+        "authorityCurrent": { "type": "boolean" },
+        "identityEvidenceCurrent": { "type": ["boolean", "null"] },
+        "principalBindingCurrent": { "type": ["boolean", "null"] },
+        "adverseObligationCount": { "type": "integer", "minimum": 0 },
+        "frozenCreditLineCount": { "type": "integer", "minimum": 0 },
+        "allRequiredFeaturesSatisfied": { "type": "boolean" }
+      }
+    },
+    "riskStateAttestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queryVersion",
+        "stateHash",
+        "liveStateVersion",
+        "adverseObligationCount",
+        "frozenCreditLineCount"
+      ],
+      "properties": {
+        "queryVersion": { "const": "credit-application-risk-state.v1" },
+        "stateHash": { "$ref": "#/$defs/hash" },
+        "liveStateVersion": { "type": "integer", "minimum": 1 },
+        "adverseObligationCount": { "type": "integer", "minimum": 0 },
+        "frozenCreditLineCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "riskFeatureSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskFeatureSnapshotId",
+        "featureSnapshotHash",
+        "creditIntentIdHash",
+        "authorityType",
+        "assetId",
+        "requestedPrincipalMinor",
+        "requestedTermDays",
+        "repaymentFrequency",
+        "installmentCount",
+        "featureSetVersion",
+        "policyVersion",
+        "policyHash",
+        "features",
+        "sourceEvidence",
+        "riskStateAttestation",
+        "asOf",
+        "sandboxOnly",
+        "productionAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "riskFeatureSnapshotId": { "pattern": "^risk_feature_snapshot_[0-9a-f]{64}$" },
+        "featureSnapshotHash": { "$ref": "#/$defs/hash" },
+        "creditIntentIdHash": { "$ref": "#/$defs/hash" },
+        "authorityType": { "enum": ["consent", "mandate"] },
+        "assetId": { "$ref": "#/$defs/identifier" },
+        "requestedPrincipalMinor": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+        "requestedTermDays": { "type": "integer", "minimum": 1, "maximum": 3660 },
+        "repaymentFrequency": { "enum": ["weekly", "biweekly", "monthly", "end_of_term"] },
+        "installmentCount": { "type": "integer", "minimum": 1, "maximum": 520 },
+        "featureSetVersion": { "const": "credit-application-evidence-features.v1" },
+        "policyVersion": { "const": "credit-application-rules.v1" },
+        "policyHash": { "$ref": "#/$defs/hash" },
+        "features": { "$ref": "#/$defs/features" },
+        "sourceEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/sourceEvidence" }
+        },
+        "riskStateAttestation": { "$ref": "#/$defs/riskStateAttestation" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "schemaVersion": { "const": "risk_feature_snapshot.v1" }
+      }
+    },
+    "reasonLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reasonCode", "featureKeys", "sourceRoles"],
+      "properties": {
+        "reasonCode": { "$ref": "#/$defs/reasonCode" },
+        "featureKeys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 13,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/featureKey" }
+        },
+        "sourceRoles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/lineageSourceRole" }
+        }
+      }
+    },
+    "decisionPassport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskDecisionPassportId",
+        "decisionPassportHash",
+        "riskDecisionId",
+        "decisionHash",
+        "riskFeatureSnapshotId",
+        "featureSnapshotHash",
+        "featureSetVersion",
+        "policyVersion",
+        "policyHash",
+        "reasonLineage",
+        "asOf",
+        "nonAuthorizing",
+        "sandboxOnly",
+        "productionAuthority",
+        "schemaVersion"
+      ],
+      "properties": {
+        "riskDecisionPassportId": { "pattern": "^risk_decision_passport_[0-9a-f]{64}$" },
+        "decisionPassportHash": { "$ref": "#/$defs/hash" },
+        "riskDecisionId": { "$ref": "#/$defs/identifier" },
+        "decisionHash": { "$ref": "#/$defs/hash" },
+        "riskFeatureSnapshotId": { "pattern": "^risk_feature_snapshot_[0-9a-f]{64}$" },
+        "featureSnapshotHash": { "$ref": "#/$defs/hash" },
+        "featureSetVersion": { "const": "credit-application-evidence-features.v1" },
+        "policyVersion": { "const": "credit-application-rules.v1" },
+        "policyHash": { "$ref": "#/$defs/hash" },
+        "reasonLineage": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/reasonLineage" }
+        },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "nonAuthorizing": { "const": true },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "schemaVersion": { "const": "risk_decision_passport.v1" }
+      }
+    }
+  }
+}

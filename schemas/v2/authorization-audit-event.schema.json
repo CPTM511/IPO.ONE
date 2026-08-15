@@ -73,10 +73,25 @@
       "maxLength": 128,
       "pattern": "^[A-Za-z0-9_-]+$"
     },
-    "schemaVersion": { "const": "authorization_audit_event.v1" }
+    "authorizationDecisionId": { "type": "string", "minLength": 2, "maxLength": 256 },
+    "commandPayloadHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "commandHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "schemaVersion": { "const": "authorization_audit_event.v2" }
   },
   "dependentRequired": {
     "approvalProposalId": ["approvalProposalVersion"],
-    "approvalProposalVersion": ["approvalProposalId"]
-  }
+    "approvalProposalVersion": ["approvalProposalId"],
+    "commandPayloadHash": ["commandHash"],
+    "commandHash": ["commandPayloadHash"]
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "authorizationDecision": { "const": "allow" } },
+        "required": ["authorizationDecision"]
+      },
+      "then": { "required": ["authorizationDecisionId", "commandPayloadHash", "commandHash"] },
+      "else": { "not": { "required": ["authorizationDecisionId"] } }
+    }
+  ]
 }

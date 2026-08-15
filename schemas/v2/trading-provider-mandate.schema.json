@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/trading-provider-mandate.schema.json",
+  "title": "IPO.ONE No-Funds Trading Provider Mandate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tradingProviderMandateId",
+    "mandateHash",
+    "providerId",
+    "providerHash",
+    "providerActorHash",
+    "supportedTemplateTypes",
+    "allowedSubjectTypes",
+    "allowedStrategyClasses",
+    "assetId",
+    "minAmountMinor",
+    "maxAmountMinor",
+    "minDurationDays",
+    "maxDurationDays",
+    "evidenceEligibilityClass",
+    "createdAt",
+    "expiresAt",
+    "policyVersion",
+    "status",
+    "version",
+    "hardFiltersOnly",
+    "selfDeclaredRiskClassAccepted",
+    "providerRankingAuthority",
+    "autoAccept",
+    "sandboxOnly",
+    "syntheticOnly",
+    "productionAuthority",
+    "fundsAuthority",
+    "realPricing",
+    "realFunding",
+    "externalSystemQueried",
+    "piiIncluded",
+    "secretsIncluded",
+    "schemaVersion"
+  ],
+  "properties": {
+    "tradingProviderMandateId": { "$ref": "#/$defs/identifier" },
+    "mandateHash": { "$ref": "#/$defs/hash" },
+    "providerId": { "$ref": "#/$defs/identifier" },
+    "providerHash": { "$ref": "#/$defs/hash" },
+    "providerActorHash": { "$ref": "#/$defs/hash" },
+    "supportedTemplateTypes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/templateType" }
+    },
+    "allowedSubjectTypes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["human", "agent"] }
+    },
+    "allowedStrategyClasses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/strategyClass" }
+    },
+    "assetId": { "const": "urn:ipo-one:sandbox-asset:usd-cent" },
+    "minAmountMinor": { "$ref": "#/$defs/positiveMinor" },
+    "maxAmountMinor": { "$ref": "#/$defs/positiveMinor" },
+    "minDurationDays": { "type": "integer", "minimum": 7, "maximum": 365 },
+    "maxDurationDays": { "type": "integer", "minimum": 7, "maximum": 365 },
+    "evidenceEligibilityClass": { "const": "synthetic_restricted" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "policyVersion": { "const": "trading_matching_policy.v1" },
+    "status": { "const": "open" },
+    "version": { "const": 1 },
+    "hardFiltersOnly": { "const": true },
+    "selfDeclaredRiskClassAccepted": { "const": false },
+    "providerRankingAuthority": { "const": false },
+    "autoAccept": { "const": false },
+    "sandboxOnly": { "const": true },
+    "syntheticOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "realPricing": { "const": false },
+    "realFunding": { "const": false },
+    "externalSystemQueried": { "const": false },
+    "piiIncluded": { "const": false },
+    "secretsIncluded": { "const": false },
+    "schemaVersion": { "const": "trading_provider_mandate.v1" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "positiveMinor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 78,
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "templateType": {
+      "enum": ["credit", "performance_participation", "hybrid"]
+    },
+    "strategyClass": {
+      "enum": ["market_neutral", "directional", "liquidity_provision"]
+    }
+  }
+}
