@@ -1,0 +1,167 @@
+{
+  "artifactVersion": "ipo-one.agent-credit-exec-001.l3-verified.v1",
+  "artifactId": "agent-credit-exec-001-l3-verified-20260815",
+  "evidenceHash": "0x19e563e9c8ebe5557d019b4e0a737df725dc39e83ce95a9f3ac181d13bcf5caf",
+  "evidenceHashScope": "hashId agent_credit_exec_001_l3_verified_artifact over canonical artifact before evidenceHash fields",
+  "issueId": "AGENT-CREDIT-EXEC-001",
+  "runId": "agent-credit-exec-001-l3-20260815-003",
+  "previousCommit": "e512913dad95662dc9a1a22448596503995101b0",
+  "candidateCommit": "b78f37a1f8dfd12c6011b23722874b740aed33be",
+  "environment": "HYPERLIQUID_TESTNET",
+  "origin": "https://api.hyperliquid-testnet.xyz",
+  "decision": "L3_VERIFIED",
+  "runtimeEvidenceHash": "0xf04ac66059becd27664f7e21017ec8d54819d67f4f3ce1fddfd34d3bbaeb07a0",
+  "preparation": {
+    "preparationHash": "0x6e48868c00707317813b4053c54de582b2f757cb9d86c2cda9e7799881bbe8a1",
+    "handoffHash": "0x4835cdcf40732f1e1ef2bcf9ec9a372bc00775469c5b1d6cb73d2d0a4841e56f",
+    "idempotencyIdentity": "0x427d56926be1cd082705c4ad89c806abcf409668a443af1d6e10cf20cbedd66d",
+    "policyVersion": "agent_credit_hyperliquid_testnet.v2",
+    "authorizationVersion": "agent_credit_authorization.v1",
+    "maximumNotionalUsd": "12",
+    "maximumLeverage": 1,
+    "maximumConcurrentPositions": 1,
+    "tradeCycles": 1,
+    "dryRunStatus": "DRY_RUN_PASS"
+  },
+  "identity": {
+    "accountAddressHash": "0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038",
+    "apiWalletAddress": "0x8e6f1d77b0e33471e82ba537c83b6505c3b00db1",
+    "apiWalletAddressHash": "0x6e49ad0515f4f039ebaf623cb5cff6f22d052e7ca6844f3828f890a2e49bfac9",
+    "signerReferenceHash": "0x5b73d650e47693395834581eb1631d9c140fc34290c038ffc8035e516f952f08",
+    "apiWalletRole": "agent",
+    "registeredBeforeRun": true,
+    "newApiWalletRegistered": false,
+    "existingIsolatedSignerReused": true,
+    "rawPrivateKeyStored": false
+  },
+  "capitalAllocation": {
+    "semantics": "CONTROLLED_ACCOUNT_ALLOCATION",
+    "amountMinor": "1200",
+    "externalAssetTransfer": false,
+    "custodyTransferredToAgent": false
+  },
+  "execution": {
+    "market": "BTC",
+    "openingOrder": {
+      "cloid": "0x3ff80109ccbc58b72cde488e375cf98c",
+      "venueOrderId": 57888299875,
+      "limitPrice": "63642",
+      "quantity": "0.00016",
+      "limitNotionalUsd": "10.18272",
+      "disposition": "FILLED",
+      "requestBodyHash": "0x26f717ee7b872ac2282fb9989dcd1f62400ef3c4ffd05b6127445886f5c4a819",
+      "signatureHash": "0x4e4cddf95db929c9ad5efaf55ae05451a6980769f31e2ab2419b6700f7440c47",
+      "responseHash": "0x7f7c6a3a87a7d3d76698cc53b7742ddd649e9dc0fc95826af7f89daca0268879"
+    },
+    "openingFill": {
+      "price": "63011.0",
+      "quantity": "0.00016",
+      "feeUsd": "0.004536",
+      "closedPnlUsd": "0.0",
+      "fillHash": "0x2c318627231baec4175a605ae49ba3076ec4f039f2f891f22e8c342c196cdeb3"
+    },
+    "positionObservation": {
+      "observed": true,
+      "coin": "BTC",
+      "size": "0.00016",
+      "entryPrice": "63011.0",
+      "positionValueUsd": "10.08032",
+      "unrealizedPnlUsd": "-0.00144",
+      "venueLeverageMode": "cross",
+      "venueLeverageSetting": 20,
+      "facilityAllocationLeverage": "0.84002667",
+      "actualFacilityLeverageExceededOne": false
+    },
+    "reduceOnlyClose": {
+      "cloid": "0x2496883f670b85868bb7ea3447657171",
+      "venueOrderId": 57888300643,
+      "limitPrice": "62370",
+      "quantity": "0.00016",
+      "reduceOnly": true,
+      "disposition": "FILLED",
+      "fillPrice": "63001.0",
+      "feeUsd": "0.004536",
+      "closedPnlUsd": "-0.0016",
+      "requestBodyHash": "0xc3a794e9ac019eba4e84ace359b24a0b4530e49687ecc5824ecc93a7865db15b",
+      "signatureHash": "0xa125489c0d72f0bf0d6e2204610112251512d8394647483ae7567c142f33ef46",
+      "responseHash": "0xdc1b4094949da3e9d4561de77b40967f96ed7ba3ea0c9a6ab6869bbe614fabe0",
+      "fillHash": "0xa68c996f33a5c2f185bdcff7e05b34763fb3fc5483f798b50b597a09100bc37f"
+    },
+    "automaticRetry": false,
+    "automaticSecondRun": false
+  },
+  "reconciliation": {
+    "status": "RECONCILED",
+    "accountValueTestnetUsdc": "998.989328",
+    "withdrawableTestnetUsdc": "998.989328",
+    "positionsCount": 0,
+    "openOrdersCount": 0,
+    "openOrderStatus": "filled",
+    "closeOrderStatus": "filled",
+    "runFillCount": 2,
+    "runtimeObservedAt": "2026-08-15T14:24:23.542Z",
+    "runtimeSourceHashes": {
+      "accountState": "0x9ca69f33d62603652669422a2b63ed0269b1820234f52294c8cecdbc53344ff1",
+      "openOrders": "0x7ec21ce55a39dde4fa1a1eb42f9a93b9c3568e674d42bfbfbc04494517d42f1a",
+      "fills": "0xf90fab75fedd443bf99e9d8ca6e2750fc6de546cfe0b283c06a68004b9df36db"
+    },
+    "independentReadSourceHashes": {
+      "apiWalletRole": "0x0591a084d67174f0ec82359a5198b511d3153d8145663a791c01b95500afe732",
+      "accountState": "0xc9685e0fa3f76e4042b38f658a2610aadf7f504de3708f5d747825740285734a",
+      "openOrders": "0x4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fills": "0x0de3c36a69d0bc9f5f9460d679bc2fd9b8bd0e29f1d67335be377335398d4279",
+      "openOrderStatus": "0x71ece9d1d8da96b3228600f2297dd853a5c2c176e4e572e37a1371d2cca34775",
+      "closeOrderStatus": "0x96f9c1fb7b60bc28d0b820a4638c6d7402049c26cc3e1d1a0fdcba10329e9963"
+    }
+  },
+  "settlement": {
+    "principalMinor": "1200",
+    "closedPnlUsd": "-0.00160000",
+    "feeUsd": "0.00907200",
+    "realizedPnlUsd": "-0.01067200",
+    "realizedPnlMinor": "-1",
+    "availableMinor": "1199",
+    "repaymentMinor": "1199",
+    "outstandingMinor": "1",
+    "residualMinor": "0"
+  },
+  "repayment": {
+    "semantics": "CONTROLLED_ACCOUNT_REPAYMENT_ALLOCATION",
+    "repaymentEventId": "repayment_c4d199a8e81436093869c0934b8583b032d0ce3dc7b9fe295d0615d2ab253642",
+    "repaymentHash": "0xc4d199a8e81436093869c0934b8583b032d0ce3dc7b9fe295d0615d2ab253642",
+    "ledgerTransactionId": "ledger_transaction_308c63ae-84d0-4392-a6ea-f512e57490c6",
+    "appliedPrincipalMinor": "1199",
+    "outstandingPrincipalMinor": "1",
+    "externalAssetTransfer": false
+  },
+  "creditState": {
+    "state": "LOSS_OUTSTANDING",
+    "obligationStatus": "partially_repaid",
+    "outstandingPrincipalMinor": "1",
+    "totalRepaidMinor": "1199",
+    "realOutstandingDebtCreated": false
+  },
+  "verification": {
+    "fullRepositoryTests": {
+      "passed": 1095,
+      "failed": 0,
+      "skipped": 0
+    },
+    "permanentSizingTestsAdded": 6,
+    "gitDiffCheck": "PASS"
+  },
+  "terminalTruth": {
+    "l3Status": "L3_VERIFIED",
+    "completeTradeCycleVerified": true,
+    "testnetAssetsMoved": true,
+    "realFundsMoved": false,
+    "mainnetInteraction": false,
+    "withdrawalPerformed": false,
+    "transferPerformed": false,
+    "agentCustodyCreated": false,
+    "externalFundingTransfer": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false
+  },
+  "completedAt": "2026-08-15T14:24:23.547Z"
+}
