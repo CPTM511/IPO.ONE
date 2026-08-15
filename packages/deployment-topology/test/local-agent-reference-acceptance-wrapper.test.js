@@ -41,8 +41,7 @@ test("M1-B exact Agent wrapper binds both restart phases to one lifecycle", () =
 test("M1-B exact Agent wrapper separates MCP execution from recovery", () => {
   assert.match(wrapper, /local_agent_mcp_transport_receipt\.v1/);
   assert.match(wrapper, /receipt\.transportProfile === "mcp_stdio_local"/);
-  assert.match(wrapper, /const mcpReceipt = acceptance\.lifecycle\?\.mcpReceipt/);
-  assert.match(wrapper, /createM1BAgentPhaseArtifactPlan/);
+  assert.match(wrapper, /mcpReceipt !== undefined/);
   assert.match(wrapper, /canonicalLifecycleReadOnly !== true/);
   assert.match(wrapper, /lifecycleMutationPerformed !== false/);
   assert.match(wrapper, /Object\.hasOwn\(acceptance, "lifecycle"\)/);
@@ -50,25 +49,9 @@ test("M1-B exact Agent wrapper separates MCP execution from recovery", () => {
   assert.match(wrapper, /canonical-recovery/);
 });
 
-test("M1-B Agent wrapper seals and post-restart reconciles the foreign offered-v1 setup", () => {
-  assert.match(wrapper, /agent-foreign-offer-setup\.receipt\.v1\.json/);
-  assert.match(wrapper, /createM1BAgentForeignOfferSetupReceipt/);
-  assert.match(wrapper, /validateM1BAgentForeignOfferSetupReceipt/);
-  assert.match(wrapper, /id: "agent_foreign_offer_setup"/);
-  assert.match(wrapper, /createdBeforeRestartAt/);
-  assert.match(wrapper, /post-restart foreign Agent Offer reconciliation changed sealed truth/);
-  assert.match(
-    wrapper,
-    /assertM1BAgentPhaseTargetAbsent\(foreignOfferSetupPath\)/
-  );
-});
-
 test("M1-B Agent artifacts are atomically replaced with private permissions", () => {
   assert.match(wrapper, /flag: "wx", mode: 0o600/);
   assert.match(wrapper, /await rename\(temporaryPath, path\)/);
   assert.match(wrapper, /await chmod\(path, 0o600\)/);
   assert.match(wrapper, /await chmod\(OUTPUT_DIRECTORY, 0o700\)/);
-  assert.match(wrapper, /assertM1BAgentPhaseTargetAbsent\(phaseReceiptPath\)/);
-  assert.match(wrapper, /writeM1BAgentPhaseArtifactSetNonOverwriting/);
-  assert.match(wrapper, /createM1BAgentPhaseReceipt/);
 });

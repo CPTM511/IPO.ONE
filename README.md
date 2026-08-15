@@ -39,12 +39,10 @@ The result is one auditable state machine for answering five questions:
 > reported the live [`ipo.one`](https://ipo.one) origin on older hosted baseline
 > `d36ff20c2049b199ed3032e85752f36e36300312`. That dated observation is not a
 > timeless current-state claim, and the deployment is not the
-> current M1-B candidate and is not current-candidate acceptance or deployment
-> Evidence. Deployment of the exact M1-B candidate is pending final Founder
-> authorization. Its SHA, tree, test counts, and acceptance binding remain
-> pending and will be recorded in PR #20 and private P0-5 Evidence only after
-> the final candidate is cut, as described in the
-> [current release truth](docs/releases/M1_B_CURRENT_RELEASE_TRUTH.md).
+> closed M1-B implementation and is not current-candidate acceptance or
+> deployment evidence. Remote deployment remains pending separate Founder
+> authorization. The retained product capabilities and disabled authorities
+> are summarized in the [M1-B release record](docs/releases/M1_B_RELEASE.md).
 > `realFundsEnabled:false`, external Provider execution, signer authority, and
 > value movement remain disabled. Any later activation must pass the exact-commit
 > gates in [`deploy/launch-policy.v1.json`](deploy/launch-policy.v1.json) and the

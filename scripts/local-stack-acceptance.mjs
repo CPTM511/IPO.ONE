@@ -450,7 +450,7 @@ if (releaseIdentity.exactCandidate) {
   assert.equal(
     outputMetadata.isDirectory() && !outputMetadata.isSymbolicLink(),
     true,
-    "P0-5 Evidence output must be one real directory"
+    "exact-candidate output must be one real directory"
   );
   await chmod(P0_5_OUTPUT_DIRECTORY, 0o700);
   releaseIdentityArtifactPath = resolve(

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 async function source(path) {
@@ -12,7 +11,6 @@ function exactKeys(value, keys) {
 
 const [
   manifestText,
-  historicalManifestText,
   vercelText,
   riskVercelText,
   packageText,
@@ -27,7 +25,6 @@ const [
   legacyServerSource
 ] = await Promise.all([
   source("deploy/vercel/m1-b-sandbox.manifest.v2.json"),
-  source("deploy/vercel/m1-b-sandbox.manifest.v1.json"),
   source("deploy/vercel/vercel.m1-b-sandbox.json"),
   source("deploy/vercel/vercel.m1-b-sandbox-risk.json"),
   source("deploy/vercel/package.m1-b-sandbox.json"),
@@ -43,7 +40,6 @@ const [
 ]);
 
 const manifest = JSON.parse(manifestText);
-const historicalManifest = JSON.parse(historicalManifestText);
 const vercel = JSON.parse(vercelText);
 const riskVercel = JSON.parse(riskVercelText);
 const deploymentPackage = JSON.parse(packageText);
@@ -72,8 +68,7 @@ exactKeys(manifest, [
   "runtime",
   "database",
   "authority",
-  "conditionalInterfaces",
-  "historicalManifest"
+  "conditionalInterfaces"
 ]);
 assert.equal(manifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v2");
 assert.equal(
@@ -134,11 +129,10 @@ assert.equal(manifest.topology.externalCache, false);
 assert.equal(manifest.runtime.cronSchedule, "*/5 * * * *");
 assert.equal(
   manifest.authority.currentAuthoritySource,
-  "product/traceability/ipo-one.m1-b-release-closure-founder-overlay.2026-08-14.v1.json"
+  "docs/PRODUCT_CONSTITUTION.md"
 );
 exactKeys(manifest.authority, [
   "currentAuthoritySource",
-  "historicalV1DeploymentAuthorityInherited",
   "mergeAuthorized",
   "deploymentAuthorized",
   "deploymentEvidenceCollectionAuthorized",
@@ -155,7 +149,6 @@ exactKeys(manifest.authority, [
   "maximumVercelProjectsAuthorizedForDeployment"
 ]);
 for (const boundary of [
-  "historicalV1DeploymentAuthorityInherited",
   "mergeAuthorized",
   "deploymentAuthorized",
   "deploymentEvidenceCollectionAuthorized",
@@ -184,21 +177,12 @@ assert.deepEqual(manifest.conditionalInterfaces.riskProject, {
   configurationPath: "deploy/vercel/vercel.m1-b-sandbox-risk.json",
   bundleBuilderRole: "risk",
   disposition: "PRESERVED_CONDITIONAL_FUTURE_COMPATIBILITY_ASSET",
-  activeForM1B: false,
+  activeForCurrentRelease: false,
   deploymentTarget: false,
   deploymentAuthorized: false,
   requiredAssurance: "RECENT_PHISHING_RESISTANT_MFA",
   requiresSeparateFounderAuthorization: true
 });
-assert.equal(historicalManifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v1");
-assert.deepEqual(manifest.historicalManifest, {
-  path: "deploy/vercel/m1-b-sandbox.manifest.v1.json",
-  schemaVersion: historicalManifest.schemaVersion,
-  sha256: createHash("sha256").update(historicalManifestText).digest("hex"),
-  currentAuthority: false,
-  preservedUnmodified: true
-});
-
 assert.equal(deploymentPackage.engines.node, "24.x");
 assert.equal(vercel.fluid, true);
 assert.equal(vercel.crons.length, 1);
@@ -224,7 +208,7 @@ assert.deepEqual(rootVercel.crons, vercel.crons);
 assert.equal(riskVercel.fluid, true);
 assert.equal(Object.hasOwn(riskVercel, "crons"), false);
 assert.equal(Object.hasOwn(riskVercel.functions, "api/vercel-sandbox-cron.mjs"), false);
-assert.equal(manifest.conditionalInterfaces.riskProject.activeForM1B, false);
+assert.equal(manifest.conditionalInterfaces.riskProject.activeForCurrentRelease, false);
 assert.equal(manifest.conditionalInterfaces.riskProject.deploymentTarget, false);
 assert.equal(manifest.conditionalInterfaces.riskProject.deploymentAuthorized, false);
 
@@ -270,12 +254,12 @@ assert.match(legacyRuntimeSource, /stateDurability:\s*"process_local_ephemeral"/
 assert.match(legacyServerSource, /canonicalProductTruth:\s*runtimeConfig\.canonicalProductTruth/);
 assert.match(legacyServerSource, /releaseEligible:\s*runtimeConfig\.releaseEligible/);
 assert.doesNotMatch(
-  `${vercelText}\n${manifestText}\n${historicalManifestText}`,
+  `${vercelText}\n${manifestText}`,
   /(?:PASSWORD|PRIVATE_KEY|DATABASE_URL|CRON_SECRET)\s*":\s*"[^"$]/
 );
 
 process.stdout.write(
-  "Vercel M1-B Sandbox static gate passed: current Primary-only configuration " +
+  "Vercel Sandbox static gate passed: current Primary-only configuration " +
   "is deployment-pending, all external authority is false, the Risk bundle is " +
   "a deferred interface, and no-real-funds boundaries are explicit.\n"
 );

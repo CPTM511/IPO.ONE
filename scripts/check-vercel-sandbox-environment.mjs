@@ -21,7 +21,7 @@ for (const name of Object.keys(process.env)) {
 assert.equal(
   process.env.IPO_ONE_VERCEL_PROJECT_ROLE,
   "primary",
-  "current M1-B v2 environment certification is Primary-only; Risk remains a deferred M1-C/L2 interface"
+  "current environment certification is Primary-only; Risk remains a deferred M1-C/L2 interface"
 );
 assert.match(
   process.env.IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS ?? "",

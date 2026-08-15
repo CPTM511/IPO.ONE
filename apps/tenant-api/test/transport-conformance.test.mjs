@@ -293,11 +293,6 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(script, /from "\.\/evidence-receipt-presentation\.js"/);
     assert.match(script, /from "\.\/human-credit-offer-workflow-receipt\.js"/);
     assert.match(script, /from "\.\/human-sandbox-obligation-workflow-receipt\.js"/);
-    assert.match(script, /from "\.\/m1-b-expired-offer-preparation\.js"/);
-    assert.match(script, /from "\.\/m1-b-operational-browser-measurement-console\.js"/);
-    assert.match(script, /from "\.\/m1-b-operational-live-negative-response-capture-panel\.js"/);
-    assert.match(script, /from "\.\/m1-b-risk-boundary-response-capture-panel\.js"/);
-    assert.match(script, /from "\.\/m1-b-risk-boundary-response-capture\.js"/);
     assert.match(script, /from "\.\/obligation-portfolio-presentation\.js"/);
     assert.match(script, /from "\.\/official-report-download\.js"/);
     assert.match(script, /from "\.\/owned-evidence-presentation\.js"/);
@@ -332,16 +327,6 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/evidence-receipt-presentation.js",
       "/human-credit-offer-workflow-receipt.js",
       "/human-sandbox-obligation-workflow-receipt.js",
-      "/m1-b-acceptance-denial-response-capture-panel.js",
-      "/m1-b-acceptance-denial-response-capture.js",
-      "/m1-b-acceptance-normal-response-capture-panel.js",
-      "/m1-b-expired-offer-preparation.js",
-      "/m1-b-operational-browser-measurement-console.js",
-      "/m1-b-operational-denial-confirmation-bridge.js",
-      "/m1-b-operational-live-negative-response-capture-panel.js",
-      "/m1-b-operational-live-negative-response-capture.js",
-      "/m1-b-risk-boundary-response-capture-panel.js",
-      "/m1-b-risk-boundary-response-capture.js",
       "/obligation-portfolio-presentation.js",
       "/official-report-download.js",
       "/owned-evidence-presentation.js",
@@ -364,44 +349,6 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       const moduleResponse = await fetch(`${baseUrl}${modulePath}`);
       assert.equal(moduleResponse.status, 200, `${modulePath} is missing from the fixed asset allowlist`);
       assert.match(moduleResponse.headers.get("content-type"), /^text\/javascript/);
-    }
-    for (const [modulePath, marker] of [
-      [
-        "/m1-b-acceptance-normal-response-capture.js",
-        "m1_b_acceptance_normal_response_arm.v1"
-      ],
-      [
-        "/m1-b-expired-offer-preparation.js",
-        "Expired-Offer preparation is unavailable"
-      ],
-      [
-        "/m1-b-operational-live-negative-response-capture.js",
-        "m1_b_operational_live_negative_arm.v1"
-      ],
-      [
-        "/m1-b-operational-live-negative-response-capture-panel.js",
-        "m1BOperationalLiveNegativeControls"
-      ],
-      [
-        "/m1-b-risk-boundary-response-capture.js",
-        "m1_b_risk_boundary_response_arm.v1"
-      ],
-      [
-        "/m1-b-risk-boundary-response-capture-panel.js",
-        "m1BRiskBoundaryControls"
-      ]
-    ]) {
-      const transitiveResponse = await fetch(`${baseUrl}${modulePath}`);
-      assert.equal(
-        transitiveResponse.status,
-        200,
-        `${modulePath} is missing from the fixed asset allowlist`
-      );
-      assert.match(
-        transitiveResponse.headers.get("content-type"),
-        /^text\/javascript/
-      );
-      assert.match(await transitiveResponse.text(), new RegExp(marker));
     }
 
     const handoffResponse = await fetch(`${baseUrl}/agent-handoff-manifest.js`);

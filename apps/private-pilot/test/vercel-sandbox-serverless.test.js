@@ -474,7 +474,6 @@ test("current Vercel manifest is Primary-only and keeps every external authority
   assert.equal(manifest.topology.riskProjectIncluded, false);
   assert.equal(manifest.topology.riskProjectDeploymentTarget, false);
   for (const boundary of [
-    "historicalV1DeploymentAuthorityInherited",
     "mergeAuthorized",
     "deploymentAuthorized",
     "deploymentEvidenceCollectionAuthorized",
@@ -495,7 +494,7 @@ test("current Vercel manifest is Primary-only and keeps every external authority
     configurationPath: "deploy/vercel/vercel.m1-b-sandbox-risk.json",
     bundleBuilderRole: "risk",
     disposition: "PRESERVED_CONDITIONAL_FUTURE_COMPATIBILITY_ASSET",
-    activeForM1B: false,
+    activeForCurrentRelease: false,
     deploymentTarget: false,
     deploymentAuthorized: false,
     requiredAssurance: "RECENT_PHISHING_RESISTANT_MFA",
@@ -503,7 +502,7 @@ test("current Vercel manifest is Primary-only and keeps every external authority
   });
 });
 
-test("current M1-B Vercel environment checker rejects the deferred Risk role before composition", () => {
+test("current Vercel environment checker rejects the deferred Risk role before composition", () => {
   const result = spawnSync(
     process.execPath,
     ["scripts/check-vercel-sandbox-environment.mjs"],
@@ -516,7 +515,7 @@ test("current M1-B Vercel environment checker rejects the deferred Risk role bef
   assert.notEqual(result.status, 0);
   assert.match(
     result.stderr,
-    /current M1-B v2 environment certification is Primary-only/
+    /current environment certification is Primary-only/
   );
   assert.doesNotMatch(result.stderr, /ECONN|database|PostgreSQL/i);
 });

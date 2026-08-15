@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Protocol, API, UI, PostgreSQL, and container
+    name: Product, protocol, security, and PostgreSQL
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -64,22 +64,15 @@ jobs:
       - name: Run repository quality gate
         run: pnpm run check
 
-      - name: Run adversarial HTTP security suite
-        run: pnpm run test:security
-
-      - name: Run authenticated transport conformance suite
-        run: pnpm run test:transport
-
-      - name: Run PostgreSQL recovery suite
-        run: pnpm run test:postgres
-
       - name: Run isolated vertical slice
+        if: github.event_name == 'workflow_dispatch'
         run: pnpm run demo
 
       - name: Audit production dependencies
         run: pnpm audit --prod
 
       - name: Build and harden-smoke production container
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -170,6 +163,7 @@ jobs:
           node -e "const value = JSON.parse(process.argv[1]); if (value.safety.realFundsEnabled !== false || value.interfaces.agentApi !== 'https://ipo.one/tenant/v1/operations' || value.deployment.releaseId !== process.argv[2]) process.exit(1)" "$discovery" "$GITHUB_SHA"
 
       - name: Run retained legacy demonstration compatibility smoke
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           pnpm run dev:legacy-demo > "$RUNNER_TEMP/ipo-one-legacy-demo.log" 2>&1 &

@@ -12,8 +12,9 @@ current deployment authority and does not authorize a merge, deployment,
 promotion, alias, DNS or custom-domain change, tag, seal, RC, paid integration,
 signer, mainnet operation, real-funds path, or production financial claim. The
 current machine-readable topology is
-`deploy/vercel/m1-b-sandbox.manifest.v2.json`; v1 is preserved historical
-two-project context only.
+`deploy/vercel/m1-b-sandbox.manifest.v2.json`. The M1-B name in that compatibility
+asset is retained because the canonical deployment runtime references it; it is
+not a milestone-specific Evidence gate.
 
 ## Fixed target
 
@@ -30,17 +31,14 @@ two-project context only.
 
 ## Exact source gate
 
-The current release truth is
-`docs/releases/M1_B_CURRENT_RELEASE_TRUTH.md`. The exact candidate SHA, tree, and
-final test counts are bound only after the candidate commit exists, in PR #20
-and private P0-5 Evidence. While deployment remains pending, the required
-identity relationship is `source = tested = accepted` and `deployed = null`.
+The closed milestone record is `docs/releases/M1_B_RELEASE.md`. While deployment
+remains pending, the required identity relationship is
+`source = tested = accepted` and `deployed = null`.
 The following sequence may continue into deployment only after final Founder
 authorization:
 
-1. Stage only the approved M1-B implementation and deployment evidence paths.
-2. Preserve the three protected Founder work-in-progress test files and all
-   unrelated audit, marketing, prototype, and output paths.
+1. Stage only the approved implementation and deployment paths.
+2. Preserve unrelated audit, marketing, prototype, and output paths.
 3. Create one normal implementation commit on
    `codex/m1-b-deployable-sandbox`; do not create an RC branch or tag.
 4. Record commit and tree SHA.
@@ -60,14 +58,15 @@ pnpm run check:schemas
 pnpm run check:openapi
 pnpm run check:migrations
 pnpm run check:tenant-protocol
-pnpm run check:m1-requirements
-node scripts/check-m1-b-gate-profile.mjs
-node scripts/check-m1-b-release-closure-founder-overlay.mjs
-pnpm run check:m1-b-release-checkpoint
+pnpm run test:security
+pnpm run test:transport
+DATABASE_URL='<fresh-postgresql-17-test-url>' pnpm run test:postgres
+pnpm run check:deploy-topology
+pnpm run check:local-stack
+pnpm run check:launch-policy
 pnpm run check:web-bundle
 pnpm run check:vercel-sandbox
 pnpm test
-DATABASE_URL='<fresh-postgresql-17-test-url>' pnpm run test:postgres
 ```
 
 Never deploy a dirty compatibility bundle. The build script rejects a dirty
@@ -157,24 +156,12 @@ POST /api/cron with exact credential -> bounded result
 Vercel scheduled invocation -> 200 and structured log
 ```
 
-## Golden Flow and serverless evidence
+## Product smoke
 
-Current M1-B release closure is governed by the v2 contract in
-`docs/verification/M1_B_P0_5_ACCEPTANCE.md`. If Primary deployment is separately
-authorized, collect exactly its eight Principal/Agent hosted rows—desktop,
-mobile, reload, fresh browser context, Back/Forward, sign-out/re-login, negative
-authorization, and restart recovery—and bind every row to the exact deployed
-candidate and PostgreSQL runtime. A hosted Risk row or surface is rejected.
-
-The older 15-test matrix in
-`docs/verification/M1_B_VERCEL_GOLDEN_FLOW.md` and its Risk-host expectations are
-supplemental historical evidence only. They do not define current v2 coverage,
-authorize a Risk deployment, or substitute for the exact eight-row Primary
-matrix.
-
-Until deployment is authorized, hosted rows remain explicitly pending and do
-not borrow Evidence from the older `d36ff20c2049b199ed3032e85752f36e36300312`
-baseline.
+If a Primary deployment is separately authorized, run one focused smoke of the
+Human Offer recovery path, the Agent durable MCP lifecycle, the Capital Partner
+current-Offer view, and the SIWE-only privileged-operation denial. Do not turn
+browser screenshots, traces, or temporary receipts into release authority.
 
 ## Stop rules
 

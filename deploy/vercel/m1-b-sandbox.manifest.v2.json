@@ -59,8 +59,7 @@
     "runtimeSeedingAllowed": false
   },
   "authority": {
-    "currentAuthoritySource": "product/traceability/ipo-one.m1-b-release-closure-founder-overlay.2026-08-14.v1.json",
-    "historicalV1DeploymentAuthorityInherited": false,
+    "currentAuthoritySource": "docs/PRODUCT_CONSTITUTION.md",
     "mergeAuthorized": false,
     "deploymentAuthorized": false,
     "deploymentEvidenceCollectionAuthorized": false,
@@ -82,18 +81,11 @@
       "configurationPath": "deploy/vercel/vercel.m1-b-sandbox-risk.json",
       "bundleBuilderRole": "risk",
       "disposition": "PRESERVED_CONDITIONAL_FUTURE_COMPATIBILITY_ASSET",
-      "activeForM1B": false,
+      "activeForCurrentRelease": false,
       "deploymentTarget": false,
       "deploymentAuthorized": false,
       "requiredAssurance": "RECENT_PHISHING_RESISTANT_MFA",
       "requiresSeparateFounderAuthorization": true
     }
-  },
-  "historicalManifest": {
-    "path": "deploy/vercel/m1-b-sandbox.manifest.v1.json",
-    "schemaVersion": "ipo.one.vercel-m1-b-sandbox/v1",
-    "sha256": "1cecb152e67d4e7c265bd79cb8c8d6a9de3f9ea688bc01d70a924fcdc3fe1744",
-    "currentAuthority": false,
-    "preservedUnmodified": true
   }
 }

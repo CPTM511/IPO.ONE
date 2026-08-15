@@ -5,7 +5,6 @@ import { hashId } from "../../../packages/domain/src/index.js";
 import {
   createLocalAgentMcpTransport,
   createLocalAgentApplicationInput,
-  createM1BAgentForeignOfferApplicationInput,
   createLocalAgentRuntimeInput,
   persistLocalAgentContinuationReceipt
 } from "../src/agent-reference-workflows.js";
@@ -103,27 +102,6 @@ test("reference Agent application remains bounded by the smallest approved limit
   assert.equal(input.workflowId, `local-agent-application-${"a".repeat(24)}`);
   assert.equal(Object.hasOwn(input, "credential"), false);
   assert.equal(Object.hasOwn(input, "tenantId"), false);
-});
-
-test("M1-B foreign Agent Offer uses one distinct candidate-bound application workflow", () => {
-  const candidateReleaseId = "c".repeat(40);
-  const canonical = createLocalAgentApplicationInput(manifest);
-  const foreign = createM1BAgentForeignOfferApplicationInput(
-    manifest,
-    candidateReleaseId
-  );
-
-  assert.deepEqual(foreign.creditRequest, canonical.creditRequest);
-  assert.equal(
-    foreign.workflowId,
-    `m1b-agent-foreign-offer-${candidateReleaseId}`
-  );
-  assert.notEqual(foreign.workflowId, canonical.workflowId);
-  assert.equal(Object.isFrozen(foreign), true);
-  assert.throws(
-    () => createM1BAgentForeignOfferApplicationInput(manifest, "not-a-sha"),
-    (error) => error.code === "invalid_m1_b_agent_foreign_offer_candidate"
-  );
 });
 
 test("reference Agent runtime binds acceptance and repayment to the exact Offer", () => {
