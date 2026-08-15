@@ -22,11 +22,7 @@ const [
   localProfile,
   evidenceAnchorCompose,
   localEvidenceAnchor,
-  localReleaseIdentity,
-  m1bAcceptanceVerifier,
-  m1bAcceptanceFileVerifier,
-  m1bAcceptanceContract,
-  m1bAcceptanceTask
+  localReleaseIdentity
 ] = await Promise.all([
   source("deploy/local/stack.v1.json"),
   source("deploy/local/compose.yaml"),
@@ -43,11 +39,7 @@ const [
   source("deploy/local/private-pilot-profile.v1.json"),
   source("deploy/local/evidence-anchor.compose.yaml"),
   source("scripts/local-evidence-anchor.mjs"),
-  source("scripts/local-release-identity.mjs"),
-  source("scripts/verify-m1-b-acceptance-evidence.mjs"),
-  source("scripts/m1-b-acceptance-evidence-files.mjs"),
-  source("packages/release-governance/src/m1-b-acceptance-evidence.js"),
-  source("docs/codex/tasks/M1_B_P0_5_EXACT_COMMIT_ACCEPTANCE.md")
+  source("scripts/local-release-identity.mjs")
 ]);
 
 const stack = parseLocalStack(stackText);
@@ -125,26 +117,12 @@ assert.match(localAcceptance, /org\.opencontainers\.image\.revision/);
 assert.match(localAcceptance, /releaseIdentity\.exactCandidate/);
 assert.match(localAcceptance, /m1_b_local_release_identity\.v1/);
 assert.match(localAcceptance, /local-release-identity\.json/);
-assert.match(localAcceptance, /P0-5 Evidence output must be one real directory/);
+assert.match(localAcceptance, /exact-candidate output must be one real directory/);
 assert.ok(
   localAcceptance.indexOf("assert.equal(pendingOutbox, 0)") <
     localAcceptance.indexOf("schemaVersion: \"m1_b_local_release_identity.v1\""),
   "exact release identity must be published only after all live acceptance assertions pass"
 );
-assert.match(m1bAcceptanceVerifier, /verifyM1BAcceptanceEvidence/);
-assert.match(m1bAcceptanceVerifier, /--evidence-root/);
-assert.match(m1bAcceptanceVerifier, /verifyM1BArtifactFiles/);
-assert.match(m1bAcceptanceVerifier, /verifyM1BCriticalArtifactContents/);
-assert.match(m1bAcceptanceFileVerifier, /createReadStream/);
-assert.match(m1bAcceptanceFileVerifier, /local_agent_mcp_transport_receipt\.v1/);
-assert.match(m1bAcceptanceFileVerifier, /local_agent_reference_recovery_receipt\.v1/);
-assert.match(m1bAcceptanceFileVerifier, /--untracked-files=no/);
-assert.match(m1bAcceptanceVerifier, /verifyM1BHostedCapabilityDocument/);
-assert.match(m1bAcceptanceVerifier, /verifyM1BHostedReadinessDocument/);
-assert.match(m1bAcceptanceContract, /fixtureHost/);
-assert.match(m1bAcceptanceContract, /browserStorageAuthority/);
-assert.match(m1bAcceptanceContract, /operator_confirmed_invited_wallet_siwe/);
-assert.match(m1bAcceptanceTask, /No automated wallet signing/);
 assert.match(localAgent, /docker",\s*"compose"/);
 assert.match(localAgent, /--no-deps/);
 assert.match(localAgent, /CONTAINER_INPUT/);

@@ -55,7 +55,7 @@ Primary project only.
 - `apps/private-pilot/test/vercel-sandbox-serverless.test.js`
 - `apps/tenant-api/src/production-tenant-host.js`
 - `apps/tenant-api/test/production-tenant-host.test.mjs`
-- `deploy/vercel/m1-b-sandbox.manifest.v1.json`
+- `deploy/vercel/m1-b-sandbox.manifest.v2.json`
 - `docs/codex/tasks/PROD_CUTOVER_002_FORMAL_DOMAIN_AND_ZERO_FUNDED_REAL_VALUE_SUPPORT.md`
 - `docs/codex/audits/PROD-CUTOVER-002/`
 

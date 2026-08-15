@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Readable } from "node:stream";
@@ -272,6 +273,7 @@ test("production request handler runs without opening a listening socket", async
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
     createNetworkContext: async () => { throw new Error("not expected"); },
     csrfTokenProvider: async () => undefined,
+    deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,
     publicOrigin: "https://ipo.one",
@@ -293,6 +295,7 @@ test("serverless request handler fails closed on missing Vercel edge headers", a
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
     createNetworkContext: configuration.createNetworkContext,
     csrfTokenProvider: async () => undefined,
+    deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: configuration.verifyEdgeRequest,
     publicOrigin: configuration.browserOrigin,
@@ -347,6 +350,7 @@ function requestHandlerFixture(overrides = {}) {
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
     createNetworkContext: async () => { throw new Error("not expected"); },
     csrfTokenProvider: async () => undefined,
+    deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,
     publicOrigin: "https://ipo.one",
@@ -408,7 +412,7 @@ test("Cron handler rejects unsupported methods before authentication", async () 
   assert.equal(response.headers.allow, "GET, POST");
 });
 
-test("Vercel deployment config binds Pro five-minute Cron to the exact bounded function", async () => {
+test("Vercel Primary config binds the bounded Cron while the Risk bundle remains conditional", async () => {
   const config = JSON.parse(await readFile("deploy/vercel/vercel.m1-b-sandbox.json", "utf8"));
   const risk = JSON.parse(await readFile("deploy/vercel/vercel.m1-b-sandbox-risk.json", "utf8"));
   assert.equal(config.fluid, true);
@@ -426,12 +430,14 @@ test("Vercel deployment config binds Pro five-minute Cron to the exact bounded f
   assert.equal(Object.hasOwn(risk.functions, "api/vercel-sandbox-cron.mjs"), false);
 });
 
-test("Vercel deployment manifest keeps every prohibited authority disabled", async () => {
+test("current Vercel manifest is Primary-only and keeps every external authority disabled", async () => {
   const manifest = JSON.parse(await readFile(
-    "deploy/vercel/m1-b-sandbox.manifest.v1.json",
+    "deploy/vercel/m1-b-sandbox.manifest.v2.json",
     "utf8"
   ));
   assert.deepEqual({
+    status: manifest.deploymentStatus,
+    deployedReleaseId: manifest.deployedReleaseId,
     production: manifest.productProductionClaim,
     productionHosting: manifest.productionHostingClaim,
     release: manifest.releaseClaim,
@@ -441,8 +447,10 @@ test("Vercel deployment manifest keeps every prohibited authority disabled", asy
     withdrawal: manifest.withdrawalAuthorityEnabled,
     venueWrite: manifest.venueWriteAuthorityEnabled
   }, {
+    status: "DEPLOYMENT_PENDING_AUTHORIZATION",
+    deployedReleaseId: null,
     production: false,
-    productionHosting: true,
+    productionHosting: false,
     release: false,
     funds: false,
     fees: false,
@@ -450,13 +458,64 @@ test("Vercel deployment manifest keeps every prohibited authority disabled", asy
     withdrawal: false,
     venueWrite: false
   });
-  assert.equal(manifest.topology.projectCount, 2);
+  assert.equal(manifest.topology.projectCount, 1);
   assert.deepEqual(manifest.topology.projectRoles, [
-    "principal_agent_automation",
-    "risk_admin_read_freeze"
+    "primary_product_and_bounded_automation"
   ]);
-  assert.equal(manifest.authority.customDomainAuthorized, true);
-  assert.equal(manifest.authority.customDomain, "ipo.one");
-  assert.equal(manifest.authority.zeroFundedRealValueSupportAuthorized, true);
-  assert.equal(manifest.authority.realValueActivationAuthorized, false);
+  assert.deepEqual(manifest.topology.primaryProtocolCapabilities, [
+    "human_borrower",
+    "principal_agent",
+    "capital_partner",
+    "bounded_automation"
+  ]);
+  assert.deepEqual(manifest.topology.hostedBrowserAcceptanceRoles, [
+    "principal_agent"
+  ]);
+  assert.equal(manifest.topology.riskProjectIncluded, false);
+  assert.equal(manifest.topology.riskProjectDeploymentTarget, false);
+  for (const boundary of [
+    "mergeAuthorized",
+    "deploymentAuthorized",
+    "deploymentEvidenceCollectionAuthorized",
+    "deploymentPromotionAuthorized",
+    "aliasMutationAuthorized",
+    "dnsMutationAuthorized",
+    "customDomainAuthorized",
+    "releaseTagAuthorized",
+    "releaseSealAuthorized",
+    "paidExternalIntegrationAuthorized",
+    "zeroFundedRealValueSupportAuthorized",
+    "realValueActivationAuthorized"
+  ]) assert.equal(manifest.authority[boundary], false);
+  assert.equal(manifest.authority.customDomain, null);
+  assert.equal(manifest.authority.maximumVercelProjectsAuthorizedForDeployment, 0);
+  assert.deepEqual(manifest.conditionalInterfaces.riskProject, {
+    targetMilestone: "M1_C_L2_CLOSED_NO_FUNDS",
+    configurationPath: "deploy/vercel/vercel.m1-b-sandbox-risk.json",
+    bundleBuilderRole: "risk",
+    disposition: "PRESERVED_CONDITIONAL_FUTURE_COMPATIBILITY_ASSET",
+    activeForCurrentRelease: false,
+    deploymentTarget: false,
+    deploymentAuthorized: false,
+    requiredAssurance: "RECENT_PHISHING_RESISTANT_MFA",
+    requiresSeparateFounderAuthorization: true
+  });
+});
+
+test("current Vercel environment checker rejects the deferred Risk role before composition", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/check-vercel-sandbox-environment.mjs"],
+    {
+      cwd: process.cwd(),
+      env: { IPO_ONE_VERCEL_PROJECT_ROLE: "risk" },
+      encoding: "utf8"
+    }
+  );
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /current environment certification is Primary-only/
+  );
+  assert.doesNotMatch(result.stderr, /ECONN|database|PostgreSQL/i);
 });

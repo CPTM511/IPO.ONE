@@ -34,6 +34,8 @@ importers:
 
   apps/api: {}
 
+  modules/agent-credit-execution: {}
+
   modules/chain-adapter:
     dependencies:
       '@ipo-one/api-contract':
@@ -61,6 +63,8 @@ importers:
   packages/domain: {}
 
   packages/mvp-flow: {}
+
+  packages/reference-economic-agent: {}
 
   packages/sdk:
     dependencies:

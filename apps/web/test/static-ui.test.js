@@ -1897,6 +1897,10 @@ test("Risk workspace restores Portfolio and Queue locators from server truth", a
 test("public beta launch configuration is bounded and supply-chain pinned", async () => {
   const server = await readFile(new URL("../../api/src/server.js", import.meta.url), "utf8");
   const workflow = await readFile(new URL("../../../.github/workflows/quality.yml", import.meta.url), "utf8");
+  const packageJson = JSON.parse(await readFile(
+    new URL("../../../package.json", import.meta.url),
+    "utf8"
+  ));
 
   for (const header of [
     "content-security-policy",
@@ -1921,9 +1925,11 @@ test("public beta launch configuration is bounded and supply-chain pinned", asyn
   assert.match(workflow, /actions\/setup-node@[a-f0-9]{40}/);
   assert.match(workflow, /pnpm\/action-setup@[a-f0-9]{40}/);
   assert.equal(/uses:\s+[^\s]+@v\d/.test(workflow), false, "CI actions must be pinned to immutable SHAs");
-  assert.ok(workflow.includes("pnpm run test:postgres"));
-  assert.ok(workflow.includes("pnpm run test:security"));
-  assert.ok(workflow.includes("pnpm run test:transport"));
+  assert.ok(workflow.includes("pnpm run check"));
+  assert.ok(packageJson.scripts.check.includes("pnpm run test:postgres"));
+  assert.ok(packageJson.scripts.check.includes("pnpm run test:security"));
+  assert.ok(packageJson.scripts.check.includes("pnpm run test:transport"));
   assert.ok(workflow.includes("pnpm run smoke:api"));
+  assert.ok(workflow.includes("github.event_name == 'workflow_dispatch'"));
   assert.ok(workflow.includes("pnpm audit --prod"));
 });

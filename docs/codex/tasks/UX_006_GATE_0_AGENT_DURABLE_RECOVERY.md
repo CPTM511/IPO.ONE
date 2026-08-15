@@ -23,8 +23,8 @@ correctly omitted from continuation recovery after an Obligation exists. The
 current browser nevertheless checks the missing receipt before the recovered
 Obligation and therefore misclassifies a healthy resumed lifecycle as broken.
 
-The predecessor `M1_B_AGENT_APPLICATION_CONTINUATION_OPERABILITY` is carried
-forward here so only this issue owns the overlapping browser state machine.
+The earlier M1-B continuation work is historical; this issue is the sole active
+owner of the overlapping browser state machine.
 
 ## Scope
 
@@ -172,8 +172,8 @@ remain unchanged.
 ## Dependencies and sequencing
 
 - Gate 0.1 role topology truth must be closed first.
-- `M1_B_AGENT_APPLICATION_CONTINUATION_OPERABILITY` is carried forward here;
-  it must not remain a second active implementation issue.
+- Earlier M1-B continuation work remains historical and is not a second active
+  implementation issue.
 - API-wide activation hardening remains a separately reviewed follow-up.
 
 ## Completion Evidence
