@@ -10,6 +10,7 @@ import {
 } from "../hypercore-isolated-signer.mjs";
 import {
   authorizeAgentCreditHyperliquidRegistration,
+  classifyHyperliquidRegistrationError,
   createAgentCreditHyperliquidHandoffProfile,
   createHypercore002dHandoffSession
 } from "../start-hypercore-002d-handoff.mjs";
@@ -114,7 +115,7 @@ test("Agent Credit handoff binds the exact run, candidate and separate registrat
     assert.equal(prepared.issueId, "AGENT-CREDIT-EXEC-001");
     assert.equal(prepared.runId, runId);
     assert.equal(prepared.candidateCommit, candidateCommit);
-    assert.equal(prepared.typedData.message.agentName, "ipo-one-credit-001");
+    assert.equal(prepared.typedData.message.agentName, "ipo1-l3-002");
     assert.equal(
       prepared.exactApprovalMarker,
       `AGENT-CREDIT-EXEC-001:${runId}:${candidateCommit}:AGENT:${prepared.signingRequestHash}`
@@ -142,6 +143,106 @@ test("Agent Credit handoff binds the exact run, candidate and separate registrat
     if (approvalPath) await unlink(approvalPath).catch(() => {});
     await destroyHypercoreIsolatedTestnetSigner(keyPath).catch(() => {});
   }
+});
+
+test("Agent Credit registration uses the official POST shape and persists only normalized rejection evidence", async () => {
+  const runId = `agent-credit-exec-001-l3-rejection-${process.pid}-${Date.now()}`;
+  const candidateCommit = "ffbcae38fedcb6dbcc4b2da538a2636df0836fde";
+  const keyPath = `/private/tmp/ipo-one-agent-credit-exec-001/${runId}.key`;
+  let consumedPath;
+  let resultPath;
+  let exchangeCalls = 0;
+  let exchangeBody;
+  const fetchImpl = async (url, options) => {
+    if (url === "https://api.hyperliquid-testnet.xyz/info") {
+      return fetchFixture()(url, options);
+    }
+    assert.equal(url, "https://api.hyperliquid-testnet.xyz/exchange");
+    exchangeCalls += 1;
+    exchangeBody = JSON.parse(options.body);
+    return json({ status: "err", response: "Agent name is invalid" });
+  };
+  try {
+    await provisionAgentCreditHyperliquidTestnetSigner({
+      keyPath,
+      runId,
+      env: { IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_RUN: runId }
+    });
+    const profile = createAgentCreditHyperliquidHandoffProfile({
+      runId,
+      candidateCommit
+    });
+    const session = createHypercore002dHandoffSession({
+      signerKeyPath: keyPath,
+      fetchImpl,
+      clock: () => new Date(NOW),
+      profile
+    });
+    await session.inspectMaster({ masterAccountAddress: MASTER.address });
+    const prepared = await session.prepareRegistration();
+    await authorizeAgentCreditHyperliquidRegistration({
+      requestHash: prepared.signingRequestHash,
+      runId,
+      candidateCommit,
+      env: {
+        IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_REGISTRATION:
+          prepared.exactApprovalMarker
+      }
+    });
+    const stem = prepared.signingRequestHash.slice(2);
+    consumedPath = `/private/tmp/ipo-one-agent-credit-exec-001/approvals/${stem}.consumed`;
+    resultPath = `/private/tmp/ipo-one-agent-credit-exec-001/approvals/${stem}.result.json`;
+    const signature = await MASTER.signTypedData(prepared.typedData);
+    const result = await session.registerAgent({
+      signingRequestHash: prepared.signingRequestHash,
+      signature
+    });
+    assert.equal(exchangeCalls, 1);
+    assert.deepEqual(Object.keys(exchangeBody), [
+      "action",
+      "nonce",
+      "signature",
+      "vaultAddress",
+      "expiresAfter"
+    ]);
+    assert.equal(exchangeBody.action.nonce, exchangeBody.nonce);
+    assert.equal(exchangeBody.vaultAddress, null);
+    assert.equal(exchangeBody.expiresAfter, null);
+    assert.equal(result.status, "REJECTED");
+    assert.equal(result.venueErrorClass, "INVALID_AGENT_NAME");
+    const persisted = JSON.parse(await readFile(resultPath, "utf8"));
+    assert.deepEqual(Object.keys(persisted).sort(), [
+      "actionHash",
+      "httpStatus",
+      "nonce",
+      "observedAt",
+      "requestHash",
+      "venueErrorClass",
+      "venueErrorHash"
+    ]);
+    assert.equal(persisted.httpStatus, 200);
+    assert.equal(persisted.venueErrorClass, "INVALID_AGENT_NAME");
+    assert.equal(JSON.stringify(persisted).includes("Agent name is invalid"), false);
+  } finally {
+    if (consumedPath) await unlink(consumedPath).catch(() => {});
+    if (resultPath) await unlink(resultPath).catch(() => {});
+    await destroyHypercoreIsolatedTestnetSigner(keyPath).catch(() => {});
+  }
+});
+
+test("registration rejection classifier is closed and deterministic", () => {
+  assert.equal(
+    classifyHyperliquidRegistrationError({ status: "err", response: "invalid signature" }),
+    "INVALID_SIGNATURE"
+  );
+  assert.equal(
+    classifyHyperliquidRegistrationError({ status: "err", response: "nonce too low" }),
+    "INVALID_NONCE"
+  );
+  assert.equal(
+    classifyHyperliquidRegistrationError({ status: "err", response: "unclassified venue failure" }),
+    "UNKNOWN_VENUE_REJECTION"
+  );
 });
 
 test("002D handoff rejects an unqualified or non-master account", async () => {

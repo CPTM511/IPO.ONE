@@ -419,7 +419,7 @@ test("user-signed provisioning request cannot enter the Exchange execution trans
   const context = authorize();
   const request = createHypercoreApproveAgentSigningRequest({
     agentAddress: ACCOUNT.address.toLowerCase(),
-    agentName: "ipo-one-proof-002c",
+    agentName: "ipo1-proof-002c",
     nonce: NOW.getTime(),
     signerReferenceHash: context.proofPolicy.signerReferenceHash,
     canonicalAccountAddressHash: h("canonical_account")

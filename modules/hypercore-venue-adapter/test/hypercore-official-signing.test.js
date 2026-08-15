@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { hashTypedData, recoverTypedDataAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -8,6 +9,7 @@ import {
   IsolatedHypercoreTypedDataSigner,
   compileHypercoreExecutionAction,
   computeOfficialHyperliquidActionHash,
+  createHypercoreApproveAgentExchangePayload,
   createHypercoreApproveAgentSigningRequest,
   createHypercoreL1SigningRequest,
   verifyHypercoreOfficialSigningRequest
@@ -119,7 +121,7 @@ test("closed L1 request binds the prepared action, subaccount and expiry", () =>
 test("approveAgent typed data is Testnet-only and wallet-transport compatible", async () => {
   const request = createHypercoreApproveAgentSigningRequest({
     agentAddress: OFFICIAL_VECTOR_ACCOUNT.address.toLowerCase(),
-    agentName: "ipo-one-proof-002c",
+    agentName: "ipo1-proof-002c",
     nonce: 1786130409000,
     signerReferenceHash: h("master_signer"),
     canonicalAccountAddressHash: h("master_account")
@@ -151,6 +153,62 @@ test("approveAgent typed data is Testnet-only and wallet-transport compatible", 
     OFFICIAL_VECTOR_ACCOUNT.address.toLowerCase()
   );
   assert.equal(Object.hasOwn(request, "privateKey"), false);
+});
+
+test("approveAgent exactly matches the offline Python SDK 0.24.0 oracle", async () => {
+  const oracle = JSON.parse(await readFile(
+    new URL("./fixtures/hyperliquid-python-sdk-0.24.0-approve-agent.json", import.meta.url),
+    "utf8"
+  ));
+  const master = privateKeyToAccount(`0x${"01".repeat(32)}`);
+  const request = createHypercoreApproveAgentSigningRequest({
+    agentAddress: oracle.apiWalletAddress,
+    agentName: oracle.agentName,
+    nonce: oracle.nonce,
+    signerReferenceHash: h("python_sdk_0_24_0_signer"),
+    canonicalAccountAddressHash: h("python_sdk_0_24_0_master")
+  });
+  assert.deepEqual(request.action, oracle.action);
+  assert.equal(request.action.nonce, request.nonce);
+  assert.deepEqual(request.typedData.domain, {
+    name: "HyperliquidSignTransaction",
+    version: "1",
+    chainId: 421614,
+    verifyingContract: "0x0000000000000000000000000000000000000000"
+  });
+  assert.deepEqual(
+    request.typedData.types["HyperliquidTransaction:ApproveAgent"],
+    [
+      { name: "hyperliquidChain", type: "string" },
+      { name: "agentAddress", type: "address" },
+      { name: "agentName", type: "string" },
+      { name: "nonce", type: "uint64" }
+    ]
+  );
+  assert.equal(request.digestHash, oracle.digestHash);
+  const signature = await master.signTypedData(request.typedData);
+  assert.equal(signature, oracle.signatureHex);
+  assert.equal(
+    (await recoverTypedDataAddress({ ...request.typedData, signature })).toLowerCase(),
+    oracle.recoveredAddress
+  );
+  assert.deepEqual(
+    createHypercoreApproveAgentExchangePayload({
+      signingRequest: request,
+      signature
+    }),
+    oracle.postBody
+  );
+});
+
+test("approveAgent rejects names outside the official named-wallet boundary", () => {
+  assert.throws(() => createHypercoreApproveAgentSigningRequest({
+    agentAddress: OFFICIAL_VECTOR_ACCOUNT.address.toLowerCase(),
+    agentName: "ipo-one-credit-001",
+    nonce: 1786130409000,
+    signerReferenceHash: h("too_long_signer"),
+    canonicalAccountAddressHash: h("too_long_master")
+  }), { code: "invalid_hypercore_official_signing_input" });
 });
 
 test("isolated signer recovers the exact approved identity and returns no raw key", async () => {

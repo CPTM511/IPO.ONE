@@ -404,13 +404,13 @@ export function createHypercoreApproveAgentSigningRequest({
   const trustedAgentAddress = address("agentAddress", agentAddress);
   if (
     typeof agentName !== "string" ||
-    agentName.length < 8 ||
-    agentName.length > 48 ||
-    !/^[a-z0-9][a-z0-9_-]+$/.test(agentName)
+    agentName.length < 1 ||
+    agentName.length > 16 ||
+    !/^[a-z0-9][a-z0-9_-]{0,15}$/.test(agentName)
   ) {
     fail(
       "invalid_hypercore_official_signing_input",
-      "agentName must be a bounded stable Testnet name"
+      "agentName must be a stable 1-16 character Testnet name"
     );
   }
   safeUint64("nonce", nonce);
@@ -447,6 +447,48 @@ export function createHypercoreApproveAgentSigningRequest({
     nonce,
     expiresAfter: null,
     vaultAddress: null
+  });
+}
+
+export function createHypercoreApproveAgentExchangePayload({
+  signingRequest,
+  signature
+}) {
+  const hasRuntimeDescriptor = Boolean(
+    signingRequest &&
+      (Object.hasOwn(signingRequest, "apiWalletAddressHash") ||
+        Object.hasOwn(signingRequest, "isolatedSignerReference"))
+  );
+  let officialRequest = signingRequest;
+  if (hasRuntimeDescriptor) {
+    const {
+      apiWalletAddressHash,
+      isolatedSignerReference,
+      ...core
+    } = signingRequest;
+    bytes32("apiWalletAddressHash", apiWalletAddressHash);
+    identifier("isolatedSignerReference", isolatedSignerReference);
+    officialRequest = core;
+  }
+  verifyHypercoreOfficialSigningRequest(officialRequest);
+  if (
+    officialRequest.scheme !== HypercoreSigningScheme.USER_SIGNED_ACTION ||
+    officialRequest.action?.type !== "approveAgent" ||
+    officialRequest.action?.signatureChainId !== "0x66eee" ||
+    officialRequest.action?.hyperliquidChain !== "Testnet" ||
+    officialRequest.action?.nonce !== officialRequest.nonce
+  ) {
+    fail(
+      "invalid_hypercore_approve_agent_payload",
+      "approveAgent action and outer nonce must match the official Testnet shape"
+    );
+  }
+  return cloneFreeze({
+    action: officialRequest.action,
+    nonce: officialRequest.nonce,
+    signature: signatureComponents(signature),
+    vaultAddress: null,
+    expiresAfter: null
   });
 }
 

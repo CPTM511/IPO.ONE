@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { unlink } from "node:fs/promises";
 import test from "node:test";
 import { privateKeyToAccount } from "viem/accounts";
@@ -15,7 +16,10 @@ import {
   selectBoundedBtcIocAction
 } from "../agent-credit-hyperliquid-l3-live.mjs";
 
-const CANDIDATE = "ffbcae38fedcb6dbcc4b2da538a2636df0836fde";
+const CANDIDATE = execFileSync("git", ["rev-parse", "HEAD"], {
+  cwd: process.cwd(),
+  encoding: "utf8"
+}).trim();
 const MASTER = privateKeyToAccount(
   "0x2222222222222222222222222222222222222222222222222222222222222222"
 ).address.toLowerCase();

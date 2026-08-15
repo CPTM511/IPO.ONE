@@ -16,6 +16,7 @@ import { recoverTypedDataAddress } from "viem";
 import { hashId } from "../../packages/domain/src/index.js";
 import { parseStrictJson } from "../../modules/authentication/src/strict-json.js";
 import {
+  createHypercoreApproveAgentExchangePayload,
   createHypercoreApproveAgentSigningRequest
 } from "../../modules/hypercore-venue-adapter/src/index.js";
 import {
@@ -30,7 +31,6 @@ const INFO_ENDPOINT = "https://api.hyperliquid-testnet.xyz/info";
 const EXCHANGE_ENDPOINT = "https://api.hyperliquid-testnet.xyz/exchange";
 const ADDRESS = /^0x(?!0{40}$)[0-9a-f]{40}$/;
 const HASH = /^0x[0-9a-f]{64}$/;
-const SIGNATURE = /^0x[0-9a-fA-F]{130}$/;
 const APPROVAL_DIRECTORY = "/private/tmp/ipo-one-hypercore-002d/approvals";
 const AGENT_CREDIT_APPROVAL_DIRECTORY =
   "/private/tmp/ipo-one-agent-credit-exec-001/approvals";
@@ -50,9 +50,15 @@ export const HYPERCORE_002D_HANDOFF_PROFILE = Object.freeze({
 
 export function createAgentCreditHyperliquidHandoffProfile({
   runId,
-  candidateCommit
+  candidateCommit,
+  agentName = "ipo1-l3-002"
 }) {
-  if (!RUN_ID.test(runId ?? "") || !COMMIT.test(candidateCommit ?? "")) {
+  if (
+    !RUN_ID.test(runId ?? "") ||
+    !COMMIT.test(candidateCommit ?? "") ||
+    typeof agentName !== "string" ||
+    !/^[a-z0-9][a-z0-9_-]{0,15}$/.test(agentName)
+  ) {
     fail(
       "invalid_agent_credit_handoff_profile",
       "An exact Agent Credit run and candidate commit are required."
@@ -62,7 +68,7 @@ export function createAgentCreditHyperliquidHandoffProfile({
     issueId: "AGENT-CREDIT-EXEC-001",
     runId,
     candidateCommit,
-    agentName: "ipo-one-credit-001",
+    agentName,
     approvalDirectory: AGENT_CREDIT_APPROVAL_DIRECTORY,
     approvalMarkerPrefix:
       `AGENT-CREDIT-EXEC-001:${runId}:${candidateCommit}:AGENT`,
@@ -157,6 +163,49 @@ async function postJson(fetchImpl, endpoint, body, code) {
   }), code);
 }
 
+async function postJsonWithStatus(fetchImpl, endpoint, body, code) {
+  const response = await fetchImpl(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000)
+  });
+  if (!response || !Number.isSafeInteger(response.status)) {
+    fail(code, "Hyperliquid Testnet returned no HTTP status.");
+  }
+  const text = await response.text();
+  if (Buffer.byteLength(text) > 64 * 1_024) {
+    fail(code, "Hyperliquid Testnet returned an oversized response.");
+  }
+  try {
+    return Object.freeze({
+      httpStatus: response.status,
+      body: JSON.parse(text)
+    });
+  } catch {
+    fail(code, "Hyperliquid Testnet returned invalid JSON.");
+  }
+}
+
+export function classifyHyperliquidRegistrationError(response) {
+  const normalized = JSON.stringify(response ?? null).toLowerCase();
+  if (/agent.?name|name.{0,24}(?:length|long|short|invalid)/.test(normalized)) {
+    return "INVALID_AGENT_NAME";
+  }
+  if (/(?:agent|api wallet).{0,30}(?:limit|maximum|max|too many)|(?:limit|maximum|max).{0,30}(?:agent|api wallet)/.test(normalized)) {
+    return "AGENT_LIMIT";
+  }
+  if (/signature|signer|recover/.test(normalized)) return "INVALID_SIGNATURE";
+  if (/nonce|timestamp/.test(normalized)) return "INVALID_NONCE";
+  if (/agent.?address|invalid agent|api wallet address/.test(normalized)) {
+    return "INVALID_AGENT";
+  }
+  if (/deposit|account|user does not exist|missing user|insufficient/.test(normalized)) {
+    return "ACCOUNT_STATE";
+  }
+  return "UNKNOWN_VENUE_REJECTION";
+}
+
 function approvalPaths(requestHash, approvalDirectory = APPROVAL_DIRECTORY) {
   if (!HASH.test(requestHash)) {
     fail("invalid_hypercore_002d_registration_hash", "The registration hash is invalid.");
@@ -183,22 +232,6 @@ async function approved(requestHash, profile = HYPERCORE_002D_HANDOFF_PROFILE) {
   const paths = approvalPaths(requestHash, profile.approvalDirectory);
   if (!(await regularOwnerOnly(paths.authorized))) return false;
   return (await readFile(paths.authorized, "utf8")).trim() === requestHash;
-}
-
-function signatureParts(signature) {
-  if (!SIGNATURE.test(signature)) {
-    fail("invalid_hypercore_002d_master_signature", "The wallet signature is invalid.");
-  }
-  const recovery = Number.parseInt(signature.slice(130, 132), 16);
-  const v = recovery >= 27 ? recovery : recovery + 27;
-  if (v !== 27 && v !== 28) {
-    fail("invalid_hypercore_002d_master_signature", "The recovery bit is invalid.");
-  }
-  return {
-    r: signature.slice(0, 66).toLowerCase(),
-    s: `0x${signature.slice(66, 130)}`.toLowerCase(),
-    v
-  };
 }
 
 export async function authorizeHypercore002dAgentRegistration(requestHash) {
@@ -493,46 +526,90 @@ export function createHypercore002dHandoffSession({
     );
     await rename(paths.authorized, paths.consumed);
     await chmod(paths.consumed, 0o600);
-    const requestBody = {
-      action: registrationRequest.action,
-      nonce: registrationRequest.nonce,
-      signature: signatureParts(input.signature)
-    };
-    let response;
-    let status = "UNKNOWN";
+    const requestBody = createHypercoreApproveAgentExchangePayload({
+      signingRequest: registrationRequest,
+      signature: input.signature
+    });
+    let exchange;
     try {
-      response = await postJson(
+      exchange = await postJsonWithStatus(
         fetchImpl,
         EXCHANGE_ENDPOINT,
         requestBody,
         "hypercore_002d_agent_registration_transport_failed"
       );
-      status = response?.status === "ok" ? "REGISTERED" : "REJECTED";
     } catch (error) {
-      const result = {
+      const persistedError = {
         requestHash: registrationRequest.signingRequestHash,
-        status,
-        errorCode: error?.code ?? "hypercore_002d_agent_registration_unknown",
+        actionHash: registrationRequest.actionHash,
+        nonce: registrationRequest.nonce,
         observedAt: clock().toISOString(),
-        automaticRetry: false,
-        rawSignaturePersisted: false,
-        rawResponsePersisted: false,
-        schemaVersion: "hypercore_002d_agent_registration_result.v1"
+        httpStatus: null,
+        venueErrorClass: "TRANSPORT_UNKNOWN",
+        venueErrorHash: hashId("hypercore_registration_venue_error", {
+          code: error?.code ?? "hypercore_002d_agent_registration_unknown"
+        })
       };
-      await writeFile(paths.result, `${JSON.stringify(result)}\n`, {
+      await writeFile(paths.result, `${JSON.stringify(persistedError)}\n`, {
         mode: 0o600,
         flag: "wx"
       });
       registrationResult = Object.freeze({
-        ...result,
-        registrationResultHash: hashId("hypercore_002d_agent_registration_result", result)
+        ...persistedError,
+        status: "UNKNOWN",
+        automaticRetry: false,
+        rawSignaturePersisted: false,
+        rawResponsePersisted: false,
+        registrationResultHash: hashId(
+          "hypercore_002d_agent_registration_result",
+          persistedError
+        )
       });
       throw error;
+    }
+    const status =
+      exchange.httpStatus >= 200 &&
+      exchange.httpStatus < 300 &&
+      exchange.body?.status === "ok"
+        ? "REGISTERED"
+        : "REJECTED";
+    if (status === "REJECTED") {
+      const persistedError = {
+        requestHash: registrationRequest.signingRequestHash,
+        actionHash: registrationRequest.actionHash,
+        nonce: registrationRequest.nonce,
+        observedAt: clock().toISOString(),
+        httpStatus: exchange.httpStatus,
+        venueErrorClass: classifyHyperliquidRegistrationError(exchange.body),
+        venueErrorHash: hashId("hypercore_registration_venue_error", {
+          httpStatus: exchange.httpStatus,
+          response: exchange.body
+        })
+      };
+      await writeFile(paths.result, `${JSON.stringify(persistedError)}\n`, {
+        mode: 0o600,
+        flag: "wx"
+      });
+      registrationResult = Object.freeze({
+        ...persistedError,
+        status,
+        automaticRetry: false,
+        rawSignaturePersisted: false,
+        rawResponsePersisted: false,
+        registrationResultHash: hashId(
+          "hypercore_002d_agent_registration_result",
+          persistedError
+        )
+      });
+      return registrationResult;
     }
     const result = {
       requestHash: registrationRequest.signingRequestHash,
       status,
-      responseHash: hashId("hypercore_002d_agent_registration_response", response),
+      actionHash: registrationRequest.actionHash,
+      nonce: registrationRequest.nonce,
+      httpStatus: exchange.httpStatus,
+      responseHash: hashId("hypercore_002d_agent_registration_response", exchange.body),
       observedAt: clock().toISOString(),
       automaticRetry: false,
       rawSignaturePersisted: false,
