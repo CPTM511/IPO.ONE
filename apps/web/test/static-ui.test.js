@@ -1789,9 +1789,142 @@ test("UX-004 keeps the user manual and primary browser actions in one operabilit
   assert.ok(html.includes("A BaseScan link appears only after"));
 });
 
+test("M1-B Risk boundary is a visible fixed two-denial tenantApi path", async () => {
+  const [html, js, controller, panel] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(
+      new URL("../src/m1-b-risk-boundary-response-capture.js", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL(
+        "../src/m1-b-risk-boundary-response-capture-panel.js",
+        import.meta.url
+      ),
+      "utf8"
+    )
+  ]);
+  for (const id of [
+    "m1BRiskBoundaryControls",
+    "m1BRiskBoundaryArmToken",
+    "m1BRiskBoundaryArmBtn",
+    "m1BRiskBoundaryRunBtn",
+    "m1BRiskBoundaryStatus"
+  ]) {
+    assert.equal((html.match(new RegExp(`id="${id}"`, "g")) ?? []).length, 1);
+  }
+  assert.match(
+    html,
+    /Attempt protected read and Subject freeze \(expect denial\)/
+  );
+  assert.match(
+    js,
+    /from "\.\/m1-b-risk-boundary-response-capture-panel\.js"/
+  );
+  assert.match(
+    js,
+    /from "\.\/m1-b-risk-boundary-response-capture\.js"/
+  );
+  assert.doesNotMatch(controller, /\bfetch\s*\(|navigator\.clipboard|localStorage|sessionStorage/);
+  assert.doesNotMatch(panel, /\bfetch\s*\(|navigator\.clipboard|localStorage|sessionStorage/);
+  assert.match(controller, /responseRequestIdHeader === requestId/);
+  assert.match(controller, /deriveM1BRiskBoundaryFreezeIdempotencyKey/);
+
+  const performStart = js.indexOf("async function performM1BRiskBoundary(");
+  const performEnd = js.indexOf("function providerResourceUnavailable", performStart);
+  const performBoundary = js.slice(performStart, performEnd);
+  assert.ok(performStart >= 0 && performEnd > performStart);
+  const readExpected = performBoundary.indexOf(
+    "m1bRiskBoundaryExpectedDenial: \"read\""
+  );
+  const freezeExpected = performBoundary.indexOf(
+    "m1bRiskBoundaryExpectedDenial: \"freeze\""
+  );
+  assert.ok(readExpected >= 0 && freezeExpected > readExpected);
+  assert.match(performBoundary, /responseRequestIdHeader/);
+  assert.doesNotMatch(performBoundary, /clipboard|localStorage|sessionStorage/);
+
+  const installStart = js.indexOf(
+    "m1BRiskBoundaryResponseCapture =\n      " +
+      "installM1BRiskBoundaryResponseCapturePanel({"
+  );
+  const installEnd = js.indexOf(
+    "installM1BOperationalBrowserMeasurementConsole",
+    installStart
+  );
+  const installBoundary = js.slice(installStart, installEnd);
+  assert.ok(installStart >= 0 && installEnd > installStart);
+  for (const field of [
+    "connected",
+    "authenticationMethod",
+    "authenticationProfile",
+    "hostWorkspaceName"
+  ]) assert.match(installBoundary, new RegExp(`${field}:`));
+  assert.doesNotMatch(installBoundary, /workspaceKind|walletAuthorityAvailable/);
+});
+
+test("M1-B normal response capture binds one post-arm request permit before fetch", async () => {
+  const [js, controller] = await Promise.all([
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(
+      new URL("../src/m1-b-acceptance-normal-response-capture.js", import.meta.url),
+      "utf8"
+    )
+  ]);
+  const start = js.indexOf("async function tenantApi(");
+  const end = js.indexOf("async function evidenceAnchorApi(", start);
+  const tenant = js.slice(start, end);
+  const acquire = tenant.indexOf(".acquireRequestPermit(operationId)");
+  const fetchStart = tenant.indexOf('fetch("/tenant/v1/operations"');
+  assert.ok(start >= 0 && end > start && acquire >= 0 && fetchStart > acquire);
+  assert.equal(
+    (tenant.match(/\.acquireRequestPermit\(operationId\)/g) ?? []).length,
+    1
+  );
+  assert.ok(
+    (tenant.match(/rejectM1BNormalResponseRequest\(\);/g) ?? []).length >= 7
+  );
+  assert.match(
+    tenant,
+    /observeTenantApiResult\(\{[\s\S]*?requestPermit: m1bNormalResponseRequestPermit/
+  );
+  assert.match(controller, /requestPermit !== inFlight\.permit/);
+  assert.match(controller, /responseRequestIdHeader !== requestId/);
+  assert.doesNotMatch(
+    controller,
+    /responseRequestIdHeader\s*\?\?\s*requestId/
+  );
+});
+
 test("every browser button has a discoverable action contract", async () => {
-  const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
-  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const [html, js, measurementConsole, liveNegativePanel, riskBoundaryPanel] = await Promise.all([
+    readFile(new URL("../src/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/app.js", import.meta.url), "utf8"),
+    readFile(
+      new URL(
+        "../src/m1-b-operational-browser-measurement-console.js",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+    readFile(
+      new URL(
+        "../src/m1-b-operational-live-negative-response-capture-panel.js",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+    readFile(
+      new URL(
+        "../src/m1-b-risk-boundary-response-capture-panel.js",
+        import.meta.url
+      ),
+      "utf8"
+    )
+  ]);
+  const actionSources =
+    `${js}\n${measurementConsole}\n${liveNegativePanel}\n${riskBoundaryPanel}`;
   const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|auth-provider|trading-capital-view|scroll-target)=/;
   const buttons = [...html.matchAll(/<button\b[^>]*>/g)].map(
     (match) => match[0]
@@ -1803,9 +1936,12 @@ test("every browser button has a discoverable action contract", async () => {
     if (
       !id ||
       (
-        !js.includes(`el("${id}")`) &&
-        !js.includes(`#${id}`) &&
-        !js.includes(`getElementById("${id}")`)
+        !actionSources.includes(`el("${id}")`) &&
+        !actionSources.includes(`#${id}`) &&
+        !actionSources.includes(`getElementById("${id}")`) &&
+        !measurementConsole.includes(`"${id}"`) &&
+        !liveNegativePanel.includes(`"${id}"`) &&
+        !riskBoundaryPanel.includes(`"${id}"`)
       )
     ) {
       missing.push(id ?? button);

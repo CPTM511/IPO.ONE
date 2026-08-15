@@ -328,6 +328,10 @@ function humanCapture() {
       requestId: `request-human-capture-${index + 1}`,
       correlationId: "correlation-human-capture",
       responseSchemaVersion,
+      armIssuedAt: new Date(
+        Date.parse(START) + ((index + 1) * 60_000) - 1_000
+      ).toISOString(),
+      armClockDomain: "lima_exact_pilot_vm_system_clock",
       capturedAt: new Date(Date.parse(START) + ((index + 1) * 60_000)).toISOString(),
       response: { schemaVersion: responseSchemaVersion, sandboxOnly: true }
     }))
@@ -590,6 +594,10 @@ test("Capital Partner producer assembles two exact lineages and staged denial pr
             : `request-cp-producer-${index + 1}`,
         correlationId: `correlation-cp-producer-${index + 1}`,
         responseSchemaVersion,
+        ...(!requestProjection ? {
+          armIssuedAt: new Date(Date.parse(times[index]) - 1_000).toISOString(),
+          armClockDomain: "lima_exact_pilot_vm_system_clock"
+        } : {}),
         capturedAt: times[index],
         ...(requestProjection ? {
           requestProjection,
@@ -645,7 +653,8 @@ test("Capital Partner producer assembles two exact lineages and staged denial pr
       occurredAt: times[index],
       authorizationAudits: [1, 2].map((sequence) => ({
         eventId: `authorization_query_${index}_${sequence}`,
-        actorRefHash: actorHash(actorId)
+        actorRefHash: actorHash(actorId),
+        occurredAt: times[index]
       }))
     });
   }
@@ -696,9 +705,13 @@ test("Capital Partner producer assembles two exact lineages and staged denial pr
         resourceId: exactOffer.creditOfferId,
         actorRefHash: actorHash(capitalPartnerActorId),
         authorizationAuditEventId: `authorization_command_${index}_2`,
-        authorizationAudits: [1, 2].map((sequence) => ({ eventId: `authorization_command_${index}_${sequence}` })),
+        authorizationAudits: [1, 2].map((sequence) => ({
+          eventId: `authorization_command_${index}_${sequence}`,
+          occurredAt: times[index]
+        })),
         businessEventId: exactEvent.eventId,
         occurredAt: times[index],
+        completedAt: times[index],
         capturedAt: times[index],
         eventManifest: [exactEvent]
       };
@@ -759,9 +772,13 @@ test("Capital Partner producer assembles two exact lineages and staged denial pr
       resourceId: exactOffer.creditPassportArtifactId,
       actorRefHash: actorHash(capitalPartnerActorId),
       authorizationAuditEventId: `authorization_command_${index}_2`,
-      authorizationAudits: [1, 2].map((sequence) => ({ eventId: `authorization_command_${index}_${sequence}` })),
+      authorizationAudits: [1, 2].map((sequence) => ({
+        eventId: `authorization_command_${index}_${sequence}`,
+        occurredAt: times[index]
+      })),
       businessEventId: replacementEvent.eventId,
       occurredAt: times[index],
+      completedAt: times[index],
       capturedAt: times[index],
       eventManifest: [replacementEvent, createdEvent]
     };
@@ -1369,6 +1386,8 @@ test("Human producer assembles the full EOA personal-sign lifecycle through its 
       requestId: requestIds[index],
       correlationId,
       responseSchemaVersion,
+      armIssuedAt: new Date(Date.parse(operationTimes[index]) - 1_000).toISOString(),
+      armClockDomain: "lima_exact_pilot_vm_system_clock",
       capturedAt: operationTimes[index],
       response: rawResponses[index]
     }))
@@ -1895,6 +1914,81 @@ test("Human producer assembles the full EOA personal-sign lifecycle through its 
       expectedDatabaseStartedAt: START
     }),
     true
+  );
+
+  const staleQueryDependencies = {
+    ...dependencies,
+    queryProof: async (_client, input) => {
+      const proof = structuredClone(queryProofs.get(input.requestId));
+      if (input.operationId === "pilotReadWorkspaceResume") {
+        proof.authorizationAudits[0].occurredAt = new Date(
+          Date.parse(capture.responses[0].armIssuedAt) - 1
+        ).toISOString();
+      }
+      return proof;
+    }
+  };
+  await assert.rejects(
+    produceM1BHumanFixtureReceiptForTest({
+      client: {},
+      tenantId,
+      actorId,
+      candidateReleaseId: SHA,
+      databaseStartedAt: START,
+      capture,
+      dependencies: staleQueryDependencies
+    }),
+    (error) => error?.code === "normal_response_chronology_invalid"
+  );
+
+  const staleCommandDependencies = {
+    ...dependencies,
+    commandProof: async (_client, input) => {
+      const proof = structuredClone(commandProofs.get(input.requestId));
+      if (input.operationId === "pilotAcceptCreditOffer") {
+        proof.authorizationAudits[0].occurredAt = new Date(
+          Date.parse(capture.responses[1].armIssuedAt) - 1
+        ).toISOString();
+      }
+      return proof;
+    }
+  };
+  await assert.rejects(
+    produceM1BHumanFixtureReceiptForTest({
+      client: {},
+      tenantId,
+      actorId,
+      candidateReleaseId: SHA,
+      databaseStartedAt: START,
+      capture,
+      dependencies: staleCommandDependencies
+    }),
+    (error) => error?.code === "normal_response_chronology_invalid"
+  );
+
+  const futureCommandDependencies = {
+    ...dependencies,
+    commandProof: async (_client, input) => {
+      const proof = structuredClone(commandProofs.get(input.requestId));
+      if (input.operationId === "pilotAcceptCreditOffer") {
+        proof.authorizationAudits[0].occurredAt = new Date(
+          Date.parse(capture.responses[1].capturedAt) + 1
+        ).toISOString();
+      }
+      return proof;
+    }
+  };
+  await assert.rejects(
+    produceM1BHumanFixtureReceiptForTest({
+      client: {},
+      tenantId,
+      actorId,
+      candidateReleaseId: SHA,
+      databaseStartedAt: START,
+      capture,
+      dependencies: futureCommandDependencies
+    }),
+    (error) => error?.code === "normal_response_chronology_invalid"
   );
 
   await assert.rejects(

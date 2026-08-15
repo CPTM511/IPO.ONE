@@ -53,10 +53,25 @@ The local browser matrix contains exactly 24 distinct rows: each of those three
 positive roles must pass desktop, mobile, reload, fresh browser context,
 Back/Forward, sign-out/re-login, negative authorization, and restart recovery.
 The tracked collector emits 33 unique phase challenges for those rows and seals
-one challenge-bound, decodable, viewport-matched `0600` PNG per phase. Together
-the 24 runtime receipts, 24 browser audits, and 33 PNGs form the exact 81 browser
-artifacts. Renamed, copied, arbitrary, or operator-described bytes do not
+one challenge-bound, decodable, viewport-matched `0600` raw Chrome JPEG per
+phase. Together the 24 runtime receipts, 24 browser audits, and 33 JPEGs form
+the exact 81 browser artifacts. Each file must remain the unconverted
+quality-80 baseline bytes captured by Chrome control, with `.jpg`,
+`image/jpeg`, and `chrome_jpeg_quality_80_baseline_420` bound end to end.
+Renamed, converted, copied, arbitrary, or operator-described bytes do not
 establish a phase or row.
+
+Here `fresh browser context` has the narrow Web-platform meaning of a new
+top-level browsing context created by Chrome `tabs.new()` with initial URL
+`about:blank`, then navigated to the exact role origin. It does not mean, and
+must not be reported as, a fresh or isolated Chrome profile, cookie jar,
+session, or storage partition. The closed Chrome-control claim is supplementary
+and binds the prompt, challenge, role, phase, opaque context hash, controller
+observation time, and deterministic lineage hash. Its signed-out and freshly
+authenticated phases must share the same lineage; no claim, a normal popup,
+ordinary sign-out/re-login, a forged lineage, or an isolation claim fails
+closed. The authenticated phase additionally requires fresh SIWE in that same
+top-level context after its signed-out observation.
 
 For each authenticated phase, the safe response projection is a supplementary
 Chrome runtime measurement reconciled to the exact request/correlation pair,
@@ -263,7 +278,19 @@ metadata alone is insufficient.
    Offer must remain unexpired and physically offered through the later
    `human:unauthorized_subject` live denial. If it expires before that attempt,
    fail and recut the candidate; do not reissue it after Mandate activation or
-   weaken the denial case.
+   weaken the denial case. Still before `restart-begin`, generate only Human
+   `desktop` and `mobile` prompts with the tracked browser-prompt factory into
+   the dedicated `0700`
+   `output/playwright/m1-b-jpeg-canary-<exact-clean-head>` directory. Bind the
+   exact clean SHA/tree and sealed before-phase image/database start. Through
+   the visible console and actual `1440x900` / `390x720` windows, take the two
+   unconverted Chrome quality-80 JPEG screenshots and validate their response
+   viewport, baseline profile, full entropy, and decoded prompt challenge with
+   `validateM1BOperationalBrowserJpeg`. Keep the `0600`, non-overwriting canary
+   outside the canonical Evidence root and counts. It may issue only its two
+   authenticated reads. Any failure after a one-shot begins abandons the SHA
+   before restart; fix and recut rather than converting, renaming, overwriting,
+   or reusing canary bytes.
 5. Before any restart, record only the safe, server-derived retained anchors
    required to prove later recovery: the preserved current Human Offer and the
    current Capital Partner profile/authorized Passport reference when present.
@@ -313,31 +340,68 @@ pnpm run acceptance:m1-b:human-capital-partner -- \
 
    The command is an interactive, response-only NDJSON collector. Complete
    the five Human prompts and then the ten Capital Partner prompts in the
-   emitted order. Return only each prompt's request ID, correlation ID, and
-   response body; do not supply `capturedAt`, request headers or bodies,
-   cookies, CSRF values, wallet signatures, session material, credentials, or
-   PII. The CLI assigns the observation timestamp. For Capital Partner denial
-   steps 4 and 9, wait for `denial_response_ready`: the CLI has already
+   emitted order. For each of the thirteen non-denial prompts, copy only the
+   emitted `armToken` into the visible **Local M1-B safe response capture**
+   panel on the named signed-in loopback workspace and select **Arm one
+   response**. Arming does not send a request. Select **Run armed read** for a
+   query, or use the existing normal product button and confirmation for a
+   mutation. Once **Copy safe response** is enabled, select it and submit the
+   copied single NDJSON line to the waiting command. It contains only the
+   one-time `armChallenge`, exact `armIssuedAt`, fixed
+   `armClockDomain=lima_exact_pilot_vm_system_clock`, request ID, correlation
+   ID, and exact operation response. The app obtains one object-identity permit
+   from the armed controller immediately before its real `tenantApi` fetch; a
+   pre-arm request, stale/replaced permit, or concurrent request fails closed.
+   The CLI validates the arm time/domain and strips the challenge before
+   retaining the receipt entry. Do not paste or supply `capturedAt`, a request, headers,
+   cookies, CSRF values, idempotency keys, action confirmations, wallet
+   signatures, session material, credentials, or PII. Do not use DevTools,
+   JavaScript URLs, evaluated expressions, raw CDP, or a direct `fetch` for a
+   successful prompt. The panel fails closed on the wrong role, mismatch,
+   rejection, replay, expiry, unsafe response, second copy, or reused
+   challenge. The exact-image CLI assigns `capturedAt` in the same Lima VM
+   system-clock domain. The producer and filesystem verifier bind the exact
+   request/correlation pair, two allow audits, command/events/completion, and
+   capture to `armIssuedAt..capturedAt`; the first arm is no earlier than the
+   retained database start and each later arm is no earlier than the preceding
+   capture.
+
+   For Capital Partner denial steps 4 and 9, wait for
+   `denial_response_ready`: the CLI has already
    generated the request identifiers/idempotency key, resolved the proven
    invited Human SIWE client, and taken the tenant-scoped application-role
-   PostgreSQL baseline before it emits the exact same-origin
-   `browserExpression`. Paste that expression only into the correct signed-in
-   Human origin. The loopback-only bridge opens the existing economic-action
-   modal and requires a fresh explicit wallet click and `wallet_personal_sign`
-   bound to the exact Offer hashes, request ID, and five-minute instruction.
-   Rejecting the modal or wallet request submits nothing. The expression keeps
-   CSRF and the connector in page memory and prints only the contract-valid
-   redacted request projection (the confirmation contains hashes and
-   `rawSignaturePersisted:false`, never the signature) plus the safe problem
-   response. The collector recomputes the action-payload, acknowledgement, and
-   request-projection hashes and cross-binds them to PostgreSQL state, audit,
-   and zero effects. The wrapper performs no restart and rejects any
-   PostgreSQL start or Pilot/Worker container identity drift.
+   PostgreSQL baseline before it emits a closed, single-use, fifteen-minute
+   `armToken`. In the correct signed-in Human loopback workspace, paste only
+   that token into the visible denied Offer branch and select **Arm denied
+   Offer**. Arming submits nothing. Select **Run armed denial probe**, then
+   approve the exact economic-action modal and `wallet_personal_sign` bound to
+   the protected Offer hashes and request. Rejecting either step submits
+   nothing and consumes the challenge. After the exact 404
+   `authorization_denied` result, select **Copy denial receipt** and submit the
+   copied NDJSON line. This branch calls the already-installed confirmation
+   bridge and existing `tenantApi`; do not use DevTools, JavaScript URLs,
+   evaluated expressions, raw CDP, or direct `fetch`. The page never displays
+   the request projection or response. The copied receipt contains the
+   already-required contract-valid redacted request projection, including its
+   derived one-use idempotency identifier, confirmation hashes, and
+   `rawSignaturePersisted:false`, plus the safe problem response and challenge;
+   it never contains CSRF, cookies, headers, connector/session material, or a
+   raw signature. Copy removes it before Clipboard access. The CLI validates
+   and strips the challenge, then recomputes and cross-binds the action-payload,
+   acknowledgement, request-projection, PostgreSQL state, audit, and zero
+   effects. The wrapper performs no restart and rejects any PostgreSQL start or
+   Pilot/Worker container identity drift.
 
    Focused producer checks:
 
 ```sh
-node --test apps/private-pilot/test/m1-b-acceptance-postgres.test.js apps/private-pilot/test/m1-b-human-capital-partner-acceptance.test.js apps/private-pilot/test/m1-b-human-capital-partner-acceptance-cli.test.js packages/deployment-topology/test/local-human-capital-partner-acceptance.test.mjs
+node --test apps/web/test/m1-b-acceptance-normal-response-capture.test.js apps/web/test/m1-b-acceptance-normal-response-capture-panel.test.js apps/web/test/m1-b-acceptance-denial-response-capture.test.js apps/web/test/m1-b-acceptance-denial-response-capture-panel.test.js apps/private-pilot/test/m1-b-acceptance-postgres.test.js apps/private-pilot/test/m1-b-human-capital-partner-acceptance.test.js apps/private-pilot/test/m1-b-human-capital-partner-acceptance-cli.test.js packages/deployment-topology/test/local-human-capital-partner-acceptance.test.mjs
+node --test apps/web/test/m1-b-expired-offer-preparation.test.js apps/web/test/m1-b-operational-live-negative-response-capture.test.js apps/web/test/m1-b-operational-live-negative-response-capture-panel.test.js apps/private-pilot/test/m1-b-expired-offer-setup.test.js apps/private-pilot/test/m1-b-operational-live-negative-acceptance.test.js packages/deployment-topology/test/m1-b-operational-evidence-builder.test.mjs packages/deployment-topology/test/m1-b-operational-evidence-files.test.js
+node --test apps/private-pilot/test/m1-b-operational-browser-jpeg.test.js apps/private-pilot/test/m1-b-operational-browser-measurement.test.js apps/web/test/m1-b-operational-browser-measurement-console.test.js apps/web/test/static-ui.test.js
+pnpm run test:transport
+node scripts/check-local-stack.mjs
+pnpm run check:web-bundle
+git diff --check
 ```
 9. Use the tracked operational builder in the exact order below. Its output
    root must already be one real `0700` direct child of `output/playwright/`:
@@ -386,7 +450,36 @@ pnpm run acceptance:m1-b:operational -- collect-pre-risk \
    unrecoverable ambiguity: do not retry the action; recut the candidate. A
    matching latch and receipt makes duplicate invocation a read-only refusal.
 
+   The collector emits no browser expression. For Capital Partner sequence 1,
+   paste only its normal-response `armToken` into **Local M1-B safe response
+   capture**, select **Arm one response**, **Run armed read**, and **Copy safe
+   response**, then select the one fresh Passport C from server truth. For
+   sequence 2, arm the new token on that same page, select **Prepare 105-second
+   expiry**, review the terms, and use the existing **Issue exact sandbox
+   Offer** button. The preparation reads exact loopback server time through an
+   app-owned credential-omitted no-store health request, sets validity to server
+   time plus 105 seconds, and binds the arm epoch, selected Passport, and
+   unchanged field. It never authors the Offer itself. A stale binding or a
+   validity window outside 90 to 120 seconds fails closed. Both normal
+   responses retain their exact arm-issued time and Lima VM clock domain, with
+   the same PostgreSQL lower-bound chronology as the Human/Capital Partner
+   collector. Copy the authored response from the normal panel and submit that
+   single NDJSON line.
+
    The three `live-negative` commands collect the only interactive live cases.
+   For each command, paste only its `armToken` into **Three operational live
+   negatives**, select **Arm live-negative case**, then **Run exact denial
+   probe**. The expired and unauthorized Human Offer cases reuse the installed
+   economic-action modal, wallet confirmation, and exact expected-denial
+   `tenantApi` seam. The Capital Partner cross-role case issues only the fixed
+   read-only `pilotReadOwnObligation` expected-problem request with an empty
+   payload and no idempotency key. After the exact 404
+   `authorization_denied` response, select **Copy safe denial receipt** and
+   submit the one NDJSON line. The challenge is single-use, its safe envelope
+   has a two-minute copy window, and the page consumes it before Clipboard
+   access without displaying or accepting executable code, headers, CSRF,
+   cookies, raw signatures, or session material.
+
    `human:replaced_stale_offer` is derived byte-for-byte from the sealed Capital
    Partner critical receipt and must not be replayed in a browser. `negative-run`
    executes the ten destructive, replay-sensitive, or retained-state-impossible
@@ -398,22 +491,65 @@ pnpm run acceptance:m1-b:operational -- collect-pre-risk \
 
    Finally, `collect-pre-risk` validates all 16 unique negative receipts and
    interactively collects the exact 24 browser rows through 33 builder-issued
-   prompt/expression challenges. The browser returns only the closed safe
-   measurement for the current prompt; the builder owns every timestamp,
-   immediately reconciles each authenticated private read to its exact two
-   PostgreSQL allow audits and SIWE binding, and seals one real `0600` PNG for
-   every phase. Never feed request headers/bodies, cookies, CSRF material,
-   session data, wallet signatures, credentials, or PII. Journey receipts take
-   no operator steps or timestamps: the Human and Capital Partner steps are
-   derived from their critical receipts, while the first ten Principal/Agent
-   steps bind the exact pre-restart Agent acceptance plus application/runtime
-   MCP receipts and are only reconciled read-only after restart. Those economic
-   actions are not replayed. All other positive actions are post-restart. The
-   exact pre-Risk set is 148 artifacts, including 81 browser artifacts; the
-   canonical set is exactly 151 after adding the pre-Risk receipt, Risk receipt,
-   and final closure receipt. All cases bind the same candidate SHA, tree,
-   image, closed registry, and source digests, and no disposable, UI-binding,
-   or transport Evidence is relabeled as live. Do not restart again.
+   closed prompt challenges. For each stdout prompt line:
+
+   1. Navigate Chrome to the prompt's exact role origin. If the current actual
+      viewport is wrong, use the visible same-origin desktop/mobile window
+      helper before loading the prompt; no viewport emulation or scripted resize
+      is accepted. For `reload`, perform a real reload before loading. For
+      `back_forward`, let the trusted app perform its deterministic same-document
+      history sequence.
+   2. Paste the complete prompt JSON into **Visible M1-B browser measurement
+      console** and select **Load closed prompt**. The app accepts data only and
+      never evaluates code; do not use DevTools, a JavaScript URL, a main-world
+      expression, Playwright evaluation, or raw CDP.
+   3. For `fresh_browser_context`, first have Chrome control create a new tab
+      whose initial URL is `about:blank`, record only an opaque hash of the tab
+      handle and the controller observation time, then navigate that same tab to
+      the role origin. Paste the closed `chrome_control_tabs_new` claim and
+      select **Load tabs.new claim**. Use the same context hash, observation time,
+      and deterministic lineage for signed-out and authenticated phases. Do not
+      claim isolated cookies, profile, session, or storage. Capture signed-out
+      first, then complete fresh SIWE in that same tab before authenticated.
+   4. Select **Check page without private read**. A wrong role, origin,
+      workspace, challenge, authentication state, actual viewport, navigation,
+      replay, missing context claim, or open technical/dialog surface blocks
+      without consuming the prompt or issuing the private Tenant read. Correct
+      the page and retry preflight.
+   5. Select **Run one-shot measurement** exactly once. Signed-out phases issue
+      no private Tenant read. Authenticated phases use the trusted existing
+      `tenantApi` for the prompt's exact request/correlation pair and retain only
+      the role-safe projection and hash. Once that request is issued, failure is
+      terminal for the prompt.
+   6. When the visible challenge marker appears, use external Chrome control to
+      capture the screenshot at the prompt's exact path. Then select
+      **Screenshot captured externally** and **Copy closed response**, and send
+      the copied single JSON line to the waiting builder. The click only records
+      external-capture acknowledgement; the builder still validates the raw
+      Chrome quality-80 baseline JPEG.
+
+   The browser response contains only the closed safe measurement for the
+   current prompt. The builder owns every timestamp, immediately reconciles each
+   authenticated private read to its exact two PostgreSQL allow audits and SIWE
+   binding, and seals one real `0600` `.jpg` for every phase. It independently
+   validates `image/jpeg`, the exact codec profile and viewport, and decodes the
+   prompt challenge from aligned luma blocks. Never convert, transcode, or only
+   rename the Chrome bytes. Never feed request
+   headers/bodies, cookies, CSRF material, session data, wallet signatures,
+   credentials, or PII. Runtime telemetry is limited to errors and unhandled
+   rejections observed during the trusted app measurement interval and exact
+   measurement-request failures; it is not Chrome console or network logging.
+   Journey receipts take no operator steps or timestamps: the Human and Capital
+   Partner steps are derived from their critical receipts, while the first ten Principal/Agent
+   steps bind the exact pre-restart Agent acceptance plus
+   application/runtime MCP receipts and are only reconciled read-only after
+   restart. Those economic actions are not replayed. All other positive actions
+   are post-restart. The exact pre-Risk set is 148 artifacts, including 81
+   browser artifacts; the canonical set is exactly 151 after adding the pre-Risk
+   receipt, Risk receipt, and final closure receipt. All cases bind the same
+   candidate SHA, tree, image, closed registry, and source digests, and no
+   disposable, UI-binding, or transport Evidence is relabeled as live. Do not
+   restart again.
 10. From the clean exact candidate and the same post-restart port base, run the
     tracked Risk producer, complete the prompted fresh SIWE ceremony in the
     existing Risk origin, and collect its split-provenance post-restart
@@ -425,7 +561,42 @@ IPO_ONE_M1_B_PORT_BASE=<same-port-base> \
 pnpm run local:risk:mfa-boundary
 ```
 
-   Do not hand-author the receipt or expose hosted Risk.
+   Run this only after the 148-artifact pre-Risk set is immutable. The producer
+   prints one closed `m1_b_risk_boundary_response_arm.v1` JSON token with a
+   fifteen-minute lifetime. It contains only the fixed Risk role/runtime scope,
+   exact producer-owned Subject and `security_incident` reason, ordered
+   `pilotReadTenantRiskPortfolioReference`/`pilotFreezeSubject` operation IDs,
+   and exact request/correlation identities. It contains no cookie, CSRF value,
+   session, credential, signature, response, or raw freeze idempotency key; the
+   app derives that key from the one-use challenge.
+
+   In the existing loopback Risk origin, first sign out if necessary and
+   complete a fresh invited-wallet SIWE sign-in. Expand **Local M1-B Risk
+   fail-closed boundary**, paste only the token, and select **Arm Risk
+   boundary**. Arming sends no request. Then select **Attempt protected read
+   and Subject freeze (expect denial)** exactly once. The visible app uses its
+   existing authenticated `tenantApi` path, issues only the empty non-idempotent
+   portfolio-reference read followed by the exact reason-bound idempotent
+   Subject-freeze attempt, and requires both responses to be exact 404
+   `problem_details.v1` `authorization_denied` results whose raw
+   `x-request-id` header exactly echoes the submitted request ID. A wrong role,
+   operation, order, Subject, reason, request identity, header, body, expired or
+   altered token, or replay fails closed. The UI consumes the challenge once,
+   discards both responses, and exposes no copy action, response body, header,
+   cookie, CSRF value, session, credential, or wallet signature.
+
+   Do not send any browser response back to the producer. It continues polling
+   PostgreSQL and seals the receipt only after independently matching the two
+   live denial audits, fresh SIWE session, unchanged protected-state hash, and
+   zero command/economic effects. Do not use DevTools, a JavaScript URL, an
+   evaluated expression, raw CDP, or a copied `fetch`. Do not hand-author the
+   receipt or expose hosted Risk.
+
+   Focused Risk bridge checks:
+
+```sh
+node --test apps/private-pilot/test/m1-b-risk-mfa-boundary-acceptance.test.js apps/web/test/m1-b-risk-boundary-response-capture.test.js apps/web/test/m1-b-risk-boundary-response-capture-panel.test.js
+```
 11. If Primary is separately authorized and deployed, collect its eight
     exact-SHA hosted Principal/Agent rows. Otherwise
     record the strict `deployment_pending` state with no deployed SHA.

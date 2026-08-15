@@ -21,6 +21,9 @@ const SHA = /^[0-9a-f]{40}$/;
 const IMAGE_ID = /^sha256:[0-9a-f]{64}$/;
 const MAX_LINE_BYTES = 256 * 1024;
 const MAX_INPUT_BYTES = 1024 * 1024;
+const LIVE_NEGATIVE_ARM_TTL_MS = 15 * 60_000;
+const LIVE_NEGATIVE_CHALLENGE =
+  /^m1_b_live_negative_response_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const LIVE_CASES = new Set([
   "human:expired_offer",
   "human:unauthorized_subject",
@@ -675,7 +678,19 @@ export async function readM1BOperationalLiveDenialAudit(client, {
   });
 }
 
-export function createM1BOperationalLiveNegativeBrowserExpression({
+export function deriveM1BOperationalLiveNegativeIdempotencyKey(challenge) {
+  assert(
+    LIVE_NEGATIVE_CHALLENGE.test(challenge ?? ""),
+    "operational_live_negative_arm_invalid",
+    "Live negative arm challenge is invalid"
+  );
+  return challenge.replace(
+    "m1_b_live_negative_response_",
+    "idempotency_m1b_live_negative_"
+  );
+}
+
+export function createM1BOperationalLiveNegativeArmToken({
   group,
   id,
   operationId,
@@ -686,7 +701,9 @@ export function createM1BOperationalLiveNegativeBrowserExpression({
   disclosureRef = null,
   requestId,
   correlationId,
-  idempotencyKey = null
+  idempotencyKey = null,
+  issuedAt = new Date(),
+  challenge = `m1_b_live_negative_response_${randomUUID()}`
 }) {
   const caseKey = `${group}:${id}`;
   const offerCommand = operationId === "pilotAcceptCreditOffer";
@@ -697,55 +714,51 @@ export function createM1BOperationalLiveNegativeBrowserExpression({
     IDENTIFIER.test(resourceId ?? "") &&
     REQUEST_IDENTIFIER.test(requestId ?? "") &&
     REQUEST_IDENTIFIER.test(correlationId ?? "") &&
+    LIVE_NEGATIVE_CHALLENGE.test(challenge ?? "") &&
     (idempotencyKey === null || REQUEST_IDENTIFIER.test(idempotencyKey)),
     "operational_live_negative_request_invalid",
-    "Live negative browser request is invalid"
+    "Live negative arm request is invalid"
   );
   assert(
     offerCommand
       ? HASH.test(expectedOfferHash ?? "") &&
         HASH.test(expectedTermsHash ?? "") &&
         IDENTIFIER.test(disclosureRef ?? "") &&
-        REQUEST_IDENTIFIER.test(idempotencyKey ?? "")
+        REQUEST_IDENTIFIER.test(idempotencyKey ?? "") &&
+        idempotencyKey ===
+          deriveM1BOperationalLiveNegativeIdempotencyKey(challenge)
       : operationId === "pilotReadOwnObligation" &&
         expectedOfferHash === null && expectedTermsHash === null &&
         disclosureRef === null && idempotencyKey === null,
     "operational_live_negative_request_invalid",
     "Live negative business binding is invalid"
   );
-  const request = {
-    operationId,
-    resource: { resourceType, resourceId },
-    payload: {},
-    requestId,
-    correlationId,
-    ...(idempotencyKey === null ? {} : { idempotencyKey }),
-    schemaVersion: "tenant_protocol_request.v1"
-  };
-  const envelope = {
-    schemaVersion: "m1_b_operational_live_negative_response.v2",
+  const issued = iso(issuedAt, "arm issuedAt");
+  return Object.freeze({
+    schemaVersion: "m1_b_operational_live_negative_arm.v1",
+    challenge,
+    issuedAt: issued,
+    expiresAt: new Date(
+      Date.parse(issued) + LIVE_NEGATIVE_ARM_TTL_MS
+    ).toISOString(),
+    flow: "operational_live_negative",
     group,
     id,
-    requestId,
-    correlationId
-  };
-  if (!offerCommand) {
-    return `(async()=>{const c=document.querySelector('meta[name="ipo-one-csrf-token"]')?.content;if(!/^[A-Za-z0-9_-]{32,128}$/.test(c??""))throw new Error("Fresh exact-role SIWE session required");const q=${JSON.stringify(request)};const r=await fetch("/tenant/v1/operations",{method:"POST",credentials:"same-origin",headers:{accept:"application/json, application/problem+json","content-type":"application/json","x-csrf-token":c,"x-request-id":q.requestId},body:JSON.stringify(q)});const b=await r.json();if(r.status!==404||b?.schemaVersion!=="problem_details.v1"||b?.code!=="authorization_denied"||b?.requestId!==q.requestId)throw new Error("Operation did not fail closed");const e={...${JSON.stringify(envelope)},requestProjection:q,response:b};console.log(JSON.stringify(e));return e;})()`;
-  }
-  const confirmationInput = {
-    schemaVersion: "m1_b_operational_offer_denial_confirmation_request.v1",
+    actorRole: offerCommand ? "human" : "capital_partner",
     operationId,
+    responseSchemaVersion: "problem_details.v1",
+    expectedStatus: 404,
+    resourceType,
     resourceId,
     expectedOfferHash,
     expectedTermsHash,
     disclosureRef,
-    requestId
-  };
-  return `(async()=>{const c=document.querySelector('meta[name="ipo-one-csrf-token"]')?.content;if(!/^[A-Za-z0-9_-]{32,128}$/.test(c??""))throw new Error("Fresh exact-role SIWE session required");const f=globalThis.__ipoOneM1BOperationalOfferDenialConfirmation;if(typeof f!=="function")throw new Error("Local wallet confirmation bridge unavailable");const i=${JSON.stringify(confirmationInput)};const a=await f(i);const h=async v=>{const d=await globalThis.crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return "0x"+[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("")};const k=await h(JSON.stringify({acknowledgementVersion:"human_credit_offer_acknowledgement.v1",creditOfferHash:i.expectedOfferHash,termsHash:i.expectedTermsHash,disclosureRef:i.disclosureRef,actionConfirmationMethod:a.confirmationMethod,actionConfirmationHash:a.confirmationHash,actionConfirmationMessageHash:a.messageHash,sandboxOnly:true,productionFundsAuthority:false}));const q={...${JSON.stringify(request)},payload:{expectedOfferHash:i.expectedOfferHash,expectedTermsHash:i.expectedTermsHash,acknowledgementHash:k,actionConfirmation:a}};const r=await fetch("/tenant/v1/operations",{method:"POST",credentials:"same-origin",headers:{accept:"application/json, application/problem+json","content-type":"application/json","x-csrf-token":c,"x-request-id":q.requestId},body:JSON.stringify(q)});const b=await r.json();if(r.status!==404||b?.schemaVersion!=="problem_details.v1"||b?.code!=="authorization_denied"||b?.requestId!==q.requestId)throw new Error("Operation did not fail closed");const e={...${JSON.stringify(envelope)},requestProjection:q,response:b};console.log(JSON.stringify(e));return e;})()`;
+    requestId,
+    correlationId
+  });
 }
 
-export function parseM1BOperationalLiveNegativeResponseLine(line, {
-  group,
+export function inspectM1BOperationalLiveNegativeResponse(value, {
   id,
   requestId,
   correlationId,
@@ -757,25 +770,14 @@ export function parseM1BOperationalLiveNegativeResponseLine(line, {
   idempotencyKey = null,
   observedAt = new Date()
 }) {
-  let value;
-  try {
-    value = JSON.parse(line);
-  } catch {
-    assert(false, "operational_live_negative_response_invalid", "Live negative response is invalid JSON");
-  }
   assert(
-    exactKeys(value, [
-      "schemaVersion", "group", "id", "requestId", "correlationId",
-      "requestProjection", "response"
-    ]) &&
-    value.schemaVersion === "m1_b_operational_live_negative_response.v2" &&
-    value.group === group && value.id === id &&
-    value.requestId === requestId && value.correlationId === correlationId,
+    exactKeys(value, ["requestProjection", "response"]),
     "operational_live_negative_response_invalid",
-    "Live negative response envelope is invalid"
+    "Live negative sealed response shape is invalid"
   );
+  const { requestProjection, response } = value;
   try {
-    assertTenantProtocolRequest(value.requestProjection);
+    assertTenantProtocolRequest(requestProjection);
   } catch {
     assert(
       false,
@@ -786,7 +788,7 @@ export function parseM1BOperationalLiveNegativeResponseLine(line, {
   const expectedOperation = id === "cross_role_private_read"
     ? "pilotReadOwnObligation"
     : "pilotAcceptCreditOffer";
-  const request = value.requestProjection;
+  const request = requestProjection;
   const confirmation = request.payload?.actionConfirmation;
   const offerCommand = expectedOperation === "pilotAcceptCreditOffer";
   const expectedActionPayloadHash = offerCommand
@@ -838,7 +840,7 @@ export function parseM1BOperationalLiveNegativeResponseLine(line, {
   const responseProjection = projectM1BSafeResponse(
     expectedOperation,
     "problem_details.v1",
-    value.response
+    response
   );
   assert(
     responseProjection.status === 404 &&
@@ -849,10 +851,60 @@ export function parseM1BOperationalLiveNegativeResponseLine(line, {
   );
   return Object.freeze({
     capturedAt: iso(observedAt, "response observedAt"),
-    requestProjection: Object.freeze(structuredClone(value.requestProjection)),
-    requestProjectionHash: hashM1BAcceptanceManifest(value.requestProjection),
+    requestProjection: Object.freeze(structuredClone(requestProjection)),
+    requestProjectionHash: hashM1BAcceptanceManifest(requestProjection),
     responseProjection,
     responseHash: hashM1BAcceptanceManifest(responseProjection)
+  });
+}
+
+export function parseM1BOperationalLiveNegativeResponseLine(line, {
+  group,
+  id,
+  requestId,
+  correlationId,
+  resourceType,
+  resourceId,
+  expectedOfferHash = null,
+  expectedTermsHash = null,
+  disclosureRef = null,
+  idempotencyKey = null,
+  armChallenge,
+  observedAt = new Date()
+}) {
+  let value;
+  try {
+    value = JSON.parse(line);
+  } catch {
+    assert(false, "operational_live_negative_response_invalid", "Live negative response is invalid JSON");
+  }
+  assert(
+    exactKeys(value, [
+      "schemaVersion", "group", "id", "requestId", "correlationId",
+      "armChallenge", "requestProjection", "response"
+    ]) &&
+    value.schemaVersion === "m1_b_operational_live_negative_response.v2" &&
+    value.group === group && value.id === id &&
+    value.requestId === requestId && value.correlationId === correlationId &&
+    LIVE_NEGATIVE_CHALLENGE.test(armChallenge ?? "") &&
+    value.armChallenge === armChallenge,
+    "operational_live_negative_response_invalid",
+    "Live negative response envelope is invalid"
+  );
+  return inspectM1BOperationalLiveNegativeResponse({
+    requestProjection: value.requestProjection,
+    response: value.response
+  }, {
+    id,
+    requestId,
+    correlationId,
+    resourceType,
+    resourceId,
+    expectedOfferHash,
+    expectedTermsHash,
+    disclosureRef,
+    idempotencyKey,
+    observedAt
   });
 }
 
@@ -1105,6 +1157,7 @@ export async function captureM1BOperationalLiveDenialBoundary({
         })
       });
     });
+    const armChallenge = `m1_b_live_negative_response_${randomUUID()}`;
     const attempt = createM1BOperationalLiveAttempt({
       tenantId,
       actorId,
@@ -1114,7 +1167,11 @@ export async function captureM1BOperationalLiveDenialBoundary({
       operationId: expectation.operationId,
       resourceType,
       resourceId,
-      command: expectation.command
+      command: expectation.command,
+      ...(expectation.command ? {
+        idempotencyKey:
+          deriveM1BOperationalLiveNegativeIdempotencyKey(armChallenge)
+      } : {})
     });
     const capture = await captureLiveDenialBoundaryCore({
       caseDefinition: definition,
@@ -1124,7 +1181,7 @@ export async function captureM1BOperationalLiveDenialBoundary({
       readAttempt: readTenant,
       async performDenial(_attempt, baselineState) {
         const offer = baselineState.manifest?.offer;
-        const browserExpression = createM1BOperationalLiveNegativeBrowserExpression({
+        const armToken = createM1BOperationalLiveNegativeArmToken({
           group,
           id,
           operationId: expectation.operationId,
@@ -1135,16 +1192,21 @@ export async function captureM1BOperationalLiveDenialBoundary({
           disclosureRef: expectation.command ? offer?.disclosureRef : null,
           requestId: attempt.requestId,
           correlationId: attempt.correlationId,
-          idempotencyKey: attempt.idempotencyKey
+          idempotencyKey: attempt.idempotencyKey,
+          challenge: armChallenge
         });
         operator.prompt({
-          schemaVersion: "m1_b_operational_live_negative_prompt.v2",
+          schemaVersion: "m1_b_operational_live_negative_prompt.v3",
           kind: "live_denial_response_ready",
           group,
           id,
+          actorRole: armToken.actorRole,
           operationId: expectation.operationId,
           resourceType,
-          browserExpression
+          armToken: JSON.stringify(armToken),
+          instruction: expectation.command
+            ? "Paste only armToken into the visible local M1-B live-negative panel, select Arm live-negative case, Run exact denial probe, approve the exact wallet confirmation, then Copy safe denial receipt. Do not paste or execute code or expose transport/session material."
+            : "In the exact signed-in Capital Partner page, paste only armToken into the visible local M1-B live-negative panel, select Arm live-negative case, Run exact denial probe for the fixed read-only case, then Copy safe denial receipt. Do not paste or execute code or expose transport/session material."
         });
         return parseM1BOperationalLiveNegativeResponseLine(
           await operator.nextLine(),
@@ -1159,6 +1221,7 @@ export async function captureM1BOperationalLiveDenialBoundary({
             expectedTermsHash: expectation.command ? offer?.termsHash : null,
             disclosureRef: expectation.command ? offer?.disclosureRef : null,
             idempotencyKey: attempt.idempotencyKey,
+            armChallenge,
             observedAt: new Date()
           }
         );
@@ -1219,8 +1282,19 @@ export function createM1BOperationalLiveAttempt({
   operationId,
   resourceType,
   resourceId,
-  command
+  command,
+  idempotencyKey
 }) {
+  const commandIdempotencyKey = command
+    ? idempotencyKey ?? requestToken(`idempotency_m1b_${id}`)
+    : null;
+  assert(
+    typeof command === "boolean" && (command
+      ? REQUEST_IDENTIFIER.test(commandIdempotencyKey ?? "")
+      : idempotencyKey === undefined),
+    "operational_live_negative_attempt_invalid",
+    "Live negative idempotency binding is invalid"
+  );
   return Object.freeze({
     tenantId,
     actorId,
@@ -1232,6 +1306,6 @@ export function createM1BOperationalLiveAttempt({
     resourceId,
     requestId: requestToken(`request_m1b_${id}`),
     correlationId: requestToken(`correlation_m1b_${id}`),
-    idempotencyKey: command ? requestToken(`idempotency_m1b_${id}`) : null
+    idempotencyKey: commandIdempotencyKey
   });
 }

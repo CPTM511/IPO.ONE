@@ -15,7 +15,8 @@ import {
 import {
   M1BRiskMfaBoundaryAcceptanceError,
   captureM1BRiskProtectedState,
-  createM1BRiskBrowserCeremonyScript,
+  createM1BRiskBoundaryResponseArm,
+  deriveM1BRiskBoundaryFreezeIdempotencyKey,
   hashM1BRiskProtectedStateSnapshots,
   loadM1BRiskAcceptanceBaseline,
   readM1BRiskLiveObservation,
@@ -213,35 +214,51 @@ test("live observation polling completes, times out, and propagates producer cra
   );
 });
 
-test("browser ceremony keeps CSRF and wallet session material inside same-origin fetch", () => {
-  const script = createM1BRiskBrowserCeremonyScript({
-    read: {
-      operationId: "pilotReadTenantRiskPortfolioReference",
-      payload: {},
-      requestId: "request_m1_b_risk_read_00000000-0000-4000-8000-000000000001",
-      correlationId: "correlation_m1_b_risk_00000000-0000-4000-8000-000000000001",
-      schemaVersion: "tenant_protocol_request.v1"
-    },
-    freeze: {
-      operationId: "pilotFreezeSubject",
-      payload: {},
-      resource: {
-        resourceType: "subject",
-        resourceId: "subject_00000000-0000-4000-8000-000000000001"
-      },
-      reasonCode: "security_incident",
-      idempotencyKey: "idempotency_m1_b_risk_00000000-0000-4000-8000-000000000001",
-      requestId: "request_m1_b_risk_freeze_00000000-0000-4000-8000-000000000001",
-      correlationId: "correlation_m1_b_risk_00000000-0000-4000-8000-000000000002",
-      schemaVersion: "tenant_protocol_request.v1"
-    }
+test("Risk ceremony emits one closed arm token for the exact visible two-probe boundary", () => {
+  const uuids = [
+    "01234567-89ab-4def-8123-456789abcdef",
+    "11234567-89ab-4def-8123-456789abcdef",
+    "21234567-89ab-4def-8123-456789abcdef",
+    "31234567-89ab-4def-8123-456789abcdef",
+    "41234567-89ab-4def-8123-456789abcdef"
+  ];
+  const { requestPlan, armToken } = createM1BRiskBoundaryResponseArm({
+    subjectId: "subject_00000000-0000-4000-8000-000000000001",
+    now: new Date("2026-08-15T01:00:00.000Z"),
+    createUuid: () => uuids.shift()
   });
-  assert.match(script, /credentials:"same-origin"/);
-  assert.match(script, /ipo-one-csrf-token/);
-  assert.match(script, /authorization_denied/);
-  assert.match(script, /pilotReadTenantRiskPortfolioReference/);
-  assert.match(script, /pilotFreezeSubject/);
-  assert.doesNotMatch(script, /document\.cookie|set-cookie|session_ref_hash/i);
+  assert.equal(armToken.schemaVersion, "m1_b_risk_boundary_response_arm.v1");
+  assert.equal(armToken.issuedAt, "2026-08-15T01:00:00.000Z");
+  assert.equal(armToken.expiresAt, "2026-08-15T01:15:00.000Z");
+  assert.deepEqual(armToken.operationIds, [
+    "pilotReadTenantRiskPortfolioReference",
+    "pilotFreezeSubject"
+  ]);
+  assert.equal(requestPlan.read.operationId, armToken.operationIds[0]);
+  assert.equal(requestPlan.freeze.operationId, armToken.operationIds[1]);
+  assert.equal(requestPlan.freeze.resource.resourceId, armToken.subjectId);
+  assert.equal(requestPlan.freeze.reasonCode, armToken.reasonCode);
+  assert.equal(requestPlan.read.requestId, armToken.readRequestId);
+  assert.equal(requestPlan.freeze.requestId, armToken.freezeRequestId);
+  assert.equal(
+    requestPlan.freeze.idempotencyKey,
+    "idempotency_m1b_risk_freeze_01234567-89ab-4def-8123-456789abcdef"
+  );
+  assert.equal(Object.hasOwn(armToken, "idempotencyKey"), false);
+  const serialized = JSON.stringify(armToken);
+  assert.doesNotMatch(
+    serialized,
+    /document\.cookie|csrf|session_ref_hash|signature|private.?key|\beval\b/i
+  );
+  assert.equal(
+    deriveM1BRiskBoundaryFreezeIdempotencyKey(armToken.challenge),
+    requestPlan.freeze.idempotencyKey
+  );
+  assert.throws(
+    () => deriveM1BRiskBoundaryFreezeIdempotencyKey("m1_b_risk_boundary_wrong"),
+    (error) => error instanceof M1BRiskMfaBoundaryAcceptanceError &&
+      error.code === "risk_boundary_challenge_invalid"
+  );
 });
 
 test("database secret reader accepts only 0600 or the exact read-only 0644 compatibility mount", async () => {

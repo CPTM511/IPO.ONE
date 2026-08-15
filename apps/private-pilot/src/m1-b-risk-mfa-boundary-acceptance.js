@@ -62,6 +62,12 @@ const REGRESSION_SOURCE_PATHS = Object.freeze([
 const FIXED_REGRESSION_TIME = new Date("2026-08-14T00:00:00.000Z");
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1_000;
 const DEFAULT_POLL_INTERVAL_MS = 500;
+const RISK_BOUNDARY_ARM_TTL_MS = 15 * 60 * 1_000;
+const RISK_BOUNDARY_CHALLENGE =
+  /^m1_b_risk_boundary_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+export const M1_B_RISK_BOUNDARY_RESPONSE_ARM_SCHEMA_VERSION =
+  "m1_b_risk_boundary_response_arm.v1";
 
 export class M1BRiskMfaBoundaryAcceptanceError extends Error {
   constructor(code, message) {
@@ -572,34 +578,94 @@ export async function captureM1BRiskProtectedState(pool, tenantContext) {
   });
 }
 
-function requestToken(prefix) {
-  return `${prefix}_${randomUUID()}`;
+function requestToken(prefix, createUuid = randomUUID) {
+  return `${prefix}_${createUuid()}`;
 }
 
-function createLiveRequestPlan({ subjectId }) {
+export function deriveM1BRiskBoundaryFreezeIdempotencyKey(challenge) {
+  assert(
+    RISK_BOUNDARY_CHALLENGE.test(challenge ?? ""),
+    "risk_boundary_challenge_invalid",
+    "Risk boundary arm challenge is invalid"
+  );
+  return challenge.replace(
+    "m1_b_risk_boundary_",
+    "idempotency_m1b_risk_freeze_"
+  );
+}
+
+export function createM1BRiskBoundaryResponseArm({
+  subjectId,
+  now = new Date(),
+  createUuid = randomUUID
+} = {}) {
+  assert(
+    IDENTIFIER.test(subjectId ?? "") && typeof createUuid === "function",
+    "risk_boundary_scope_invalid",
+    "Risk boundary arm requires the exact reviewed Subject"
+  );
+  const issuedAt = iso(now);
+  const challenge = `m1_b_risk_boundary_${createUuid()}`;
+  assert(
+    RISK_BOUNDARY_CHALLENGE.test(challenge),
+    "risk_boundary_challenge_invalid",
+    "Risk boundary arm challenge is invalid"
+  );
   const read = Object.freeze({
     operationId: "pilotReadTenantRiskPortfolioReference",
-    payload: {},
-    requestId: requestToken("request_m1_b_risk_read"),
-    correlationId: requestToken("correlation_m1_b_risk_boundary"),
+    payload: Object.freeze({}),
+    requestId: requestToken("request_m1_b_risk_read", createUuid),
+    correlationId: requestToken("correlation_m1_b_risk_boundary", createUuid),
     schemaVersion: "tenant_protocol_request.v1"
   });
   const freeze = Object.freeze({
     operationId: "pilotFreezeSubject",
-    payload: {},
-    resource: { resourceType: "subject", resourceId: subjectId },
+    payload: Object.freeze({}),
+    resource: Object.freeze({ resourceType: "subject", resourceId: subjectId }),
     reasonCode: "security_incident",
-    idempotencyKey: requestToken("idempotency_m1_b_risk_freeze"),
-    requestId: requestToken("request_m1_b_risk_freeze"),
-    correlationId: requestToken("correlation_m1_b_risk_boundary"),
+    idempotencyKey: deriveM1BRiskBoundaryFreezeIdempotencyKey(challenge),
+    requestId: requestToken("request_m1_b_risk_freeze", createUuid),
+    correlationId: requestToken("correlation_m1_b_risk_boundary", createUuid),
     schemaVersion: "tenant_protocol_request.v1"
   });
-  return Object.freeze({ read, freeze });
-}
-
-export function createM1BRiskBrowserCeremonyScript(requestPlan) {
-  const requests = JSON.stringify([requestPlan.read, requestPlan.freeze]);
-  return `(async()=>{const c=document.querySelector('meta[name="ipo-one-csrf-token"]')?.content;if(!/^[A-Za-z0-9_-]{32,128}$/.test(c??""))throw new Error("Fresh Risk SIWE session required");for(const q of ${requests}){const r=await fetch("/tenant/v1/operations",{method:"POST",credentials:"same-origin",headers:{accept:"application/json, application/problem+json","content-type":"application/json","x-csrf-token":c,"x-request-id":q.requestId},body:JSON.stringify(q)});const b=await r.json();console.log(q.operationId,r.status,b.code??"no_code",b.requestId??q.requestId);if(r.ok||b.code!=="authorization_denied")throw new Error(q.operationId+" did not fail closed");}})();`;
+  const requestIdentities = [
+    read.requestId,
+    read.correlationId,
+    freeze.requestId,
+    freeze.correlationId
+  ];
+  assert(
+    requestIdentities.every((value) => IDENTIFIER.test(value)) &&
+      new Set(requestIdentities).size === requestIdentities.length,
+    "risk_boundary_request_identity_invalid",
+    "Risk boundary request and correlation identities must be valid and distinct"
+  );
+  const requestPlan = Object.freeze({ read, freeze });
+  const armToken = Object.freeze({
+    schemaVersion: M1_B_RISK_BOUNDARY_RESPONSE_ARM_SCHEMA_VERSION,
+    challenge,
+    issuedAt,
+    expiresAt: new Date(
+      Date.parse(issuedAt) + RISK_BOUNDARY_ARM_TTL_MS
+    ).toISOString(),
+    flow: "risk_mfa_boundary",
+    actorRole: "risk_operations",
+    authenticationMethod: "siwe",
+    authenticationProfile: "local_no_funds",
+    hostWorkspaceName: "risk",
+    responseSchemaVersion: "problem_details.v1",
+    operationIds: Object.freeze([
+      read.operationId,
+      freeze.operationId
+    ]),
+    subjectId,
+    reasonCode: freeze.reasonCode,
+    readRequestId: read.requestId,
+    readCorrelationId: read.correlationId,
+    freezeRequestId: freeze.requestId,
+    freezeCorrelationId: freeze.correlationId
+  });
+  return Object.freeze({ requestPlan, armToken });
 }
 
 export async function waitForM1BRiskBoundaryObservation({
@@ -1031,9 +1097,18 @@ export async function produceM1BRiskMfaBoundaryReceipt({
     subjectId,
     tenantContext
   });
-  const requestPlan = createLiveRequestPlan(baseline);
+  const { requestPlan, armToken } = createM1BRiskBoundaryResponseArm({
+    subjectId: baseline.subjectId
+  });
   const protectedBefore = await captureM1BRiskProtectedState(pool, tenantContext);
-  announce(`Open the exact-candidate Risk workspace, complete a fresh invited-wallet SIWE sign-in, then run this same-origin browser expression. It uses the page's CSRF value only inside fetch and never prints or exports it:\n${createM1BRiskBrowserCeremonyScript(requestPlan)}`);
+  announce(
+    "Open the exact-candidate loopback Risk workspace and complete a fresh " +
+    "invited-wallet SIWE sign-in. Paste the following one-use 15-minute arm " +
+    "token into the visible M1-B Risk boundary controls. Arm submits no " +
+    "request; then click Run two fail-closed probes once. Do not use " +
+    "DevTools, eval, or a copied fetch expression:\n" +
+    JSON.stringify(armToken)
+  );
   const live = await waitForM1BRiskBoundaryObservation({
     timeoutMs,
     readObservation: () => readM1BRiskLiveObservation(

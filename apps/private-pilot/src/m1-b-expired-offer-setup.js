@@ -25,6 +25,11 @@ const IMAGE_ID = /^sha256:[0-9a-f]{64}$/;
 const HASH = /^0x[0-9a-f]{64}$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{1,255}$/;
 const REQUEST_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
+const NORMAL_RESPONSE_CHALLENGE =
+  /^m1_b_normal_response_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+export const M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN =
+  "lima_exact_pilot_vm_system_clock";
+const NORMAL_RESPONSE_MAX_OBSERVATION_MS = 17 * 60_000;
 const MIN_VALIDITY_MS = 90_000;
 const MAX_VALIDITY_MS = 120_000;
 const MAX_EXPIRY_WAIT_MS = 125_000;
@@ -327,6 +332,8 @@ function assertCaptureEntry(entry, index) {
       "requestId",
       "correlationId",
       "responseSchemaVersion",
+      "armIssuedAt",
+      "armClockDomain",
       "capturedAt",
       "rawResponseHash",
       "response"
@@ -337,7 +344,13 @@ function assertCaptureEntry(entry, index) {
       entry.responseSchemaVersion === responseSchemaVersion &&
       REQUEST_IDENTIFIER.test(entry.requestId ?? "") &&
       REQUEST_IDENTIFIER.test(entry.correlationId ?? "") &&
+      entry.armClockDomain ===
+        M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN &&
+      Number.isFinite(Date.parse(entry.armIssuedAt ?? "")) &&
       Number.isFinite(Date.parse(entry.capturedAt ?? "")) &&
+      Date.parse(entry.armIssuedAt) <= Date.parse(entry.capturedAt) &&
+      Date.parse(entry.capturedAt) <= Date.parse(entry.armIssuedAt) +
+        NORMAL_RESPONSE_MAX_OBSERVATION_MS &&
       HASH.test(entry.rawResponseHash ?? "") &&
       plainObject(entry.response),
     "expired_offer_capture_invalid",
@@ -359,6 +372,9 @@ function assertCaptureEntry(entry, index) {
 
 export function parseM1BExpiredOfferSetupResponseLine(line, {
   sequence,
+  armChallenge,
+  armIssuedAt,
+  armClockDomain,
   observedAt = new Date()
 }) {
   assert(
@@ -376,6 +392,8 @@ export function parseM1BExpiredOfferSetupResponseLine(line, {
   }
   const [actorRole, operationId, responseSchemaVersion] =
     M1_B_EXPIRED_OFFER_SETUP_RESPONSE_SEQUENCE[sequence - 1];
+  const capturedAt = iso(observedAt);
+  const expectedArmIssuedAt = iso(armIssuedAt);
   assert(
     exactKeys(value, [
       "schemaVersion",
@@ -383,11 +401,22 @@ export function parseM1BExpiredOfferSetupResponseLine(line, {
       "sequence",
       "requestId",
       "correlationId",
+      "armChallenge",
+      "armIssuedAt",
+      "armClockDomain",
       "response"
     ]) &&
       value.schemaVersion === "m1_b_acceptance_operator_response.v1" &&
       value.flow === "expired_offer_setup" &&
       value.sequence === sequence &&
+      NORMAL_RESPONSE_CHALLENGE.test(armChallenge ?? "") &&
+      value.armChallenge === armChallenge &&
+      value.armIssuedAt === expectedArmIssuedAt &&
+      value.armClockDomain === M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN &&
+      armClockDomain === M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN &&
+      Date.parse(expectedArmIssuedAt) <= Date.parse(capturedAt) &&
+      Date.parse(capturedAt) <= Date.parse(expectedArmIssuedAt) +
+        NORMAL_RESPONSE_MAX_OBSERVATION_MS &&
       REQUEST_IDENTIFIER.test(value.requestId ?? "") &&
       REQUEST_IDENTIFIER.test(value.correlationId ?? "") &&
       plainObject(value.response),
@@ -406,7 +435,9 @@ export function parseM1BExpiredOfferSetupResponseLine(line, {
     requestId: value.requestId,
     correlationId: value.correlationId,
     responseSchemaVersion,
-    capturedAt: iso(observedAt),
+    armIssuedAt: expectedArmIssuedAt,
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+    capturedAt,
     rawResponseHash: inspected.rawResponseHash,
     response: Object.freeze(structuredClone(inspected.response))
   });
@@ -433,8 +464,13 @@ export function createM1BExpiredOfferSetupCapture({
   const inspected = responses.map((entry, index) => assertCaptureEntry(entry, index));
   assert(
     Date.parse(databaseStartedAt) < Date.parse(preparationObservedAt) &&
-      Date.parse(preparationObservedAt) < Date.parse(responses[0].capturedAt) &&
-      Date.parse(responses[0].capturedAt) <= Date.parse(responses[1].capturedAt) &&
+      Date.parse(preparationObservedAt) < Date.parse(responses[0].armIssuedAt) &&
+      Date.parse(responses[0].armIssuedAt) <=
+        Date.parse(responses[0].capturedAt) &&
+      Date.parse(responses[0].capturedAt) <=
+        Date.parse(responses[1].armIssuedAt) &&
+      Date.parse(responses[1].armIssuedAt) <=
+        Date.parse(responses[1].capturedAt) &&
       new Set(responses.flatMap(({ requestId, correlationId }) => [
         requestId,
         correlationId
@@ -1247,8 +1283,11 @@ export function validateM1BExpiredOfferSetupReceipt(receipt, {
       "schemaVersion",
       "captureHash",
       "preparationObservedAt",
+      "inboxArmIssuedAt",
       "inboxCapturedAt",
+      "authorArmIssuedAt",
       "authorCapturedAt",
+      "armClockDomain",
       "capturedAt",
       "responseCount",
       "responseOnly"
@@ -1257,14 +1296,22 @@ export function validateM1BExpiredOfferSetupReceipt(receipt, {
       HASH.test(captureBinding.captureHash ?? "") &&
       iso(captureBinding.preparationObservedAt) ===
         captureBinding.preparationObservedAt &&
+      iso(captureBinding.inboxArmIssuedAt) === captureBinding.inboxArmIssuedAt &&
       iso(captureBinding.inboxCapturedAt) === captureBinding.inboxCapturedAt &&
+      iso(captureBinding.authorArmIssuedAt) === captureBinding.authorArmIssuedAt &&
       iso(captureBinding.authorCapturedAt) === captureBinding.authorCapturedAt &&
+      captureBinding.armClockDomain ===
+        M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN &&
       iso(captureBinding.capturedAt) === captureBinding.capturedAt &&
       Date.parse(binding.capturedAt) <
         Date.parse(captureBinding.preparationObservedAt) &&
       Date.parse(captureBinding.preparationObservedAt) <
+        Date.parse(captureBinding.inboxArmIssuedAt) &&
+      Date.parse(captureBinding.inboxArmIssuedAt) <=
         Date.parse(captureBinding.inboxCapturedAt) &&
       Date.parse(captureBinding.inboxCapturedAt) <=
+        Date.parse(captureBinding.authorArmIssuedAt) &&
+      Date.parse(captureBinding.authorArmIssuedAt) <=
         Date.parse(captureBinding.authorCapturedAt) &&
       captureBinding.authorCapturedAt === captureBinding.capturedAt &&
       Date.parse(captureBinding.capturedAt) <= Date.parse(receipt.startedAt) &&
@@ -1709,6 +1756,27 @@ export function validateM1BExpiredOfferSetupReceipt(receipt, {
   const [consentCommand, requestCommand, evaluateCommand,
     passportCommand, authorCommand] = commands;
   const [humanSelfQuery, creditApplicationQuery, inboxQuery] = queries;
+  assert(
+    queryAuditGroups[2].every(({ occurredAt }) =>
+      Date.parse(occurredAt) >= Date.parse(captureBinding.inboxArmIssuedAt)
+    ) &&
+      Date.parse(inboxQuery.occurredAt) >=
+        Date.parse(captureBinding.inboxArmIssuedAt) &&
+      commandAuditGroups[4].every(({ occurredAt }) =>
+        Date.parse(occurredAt) >= Date.parse(captureBinding.authorArmIssuedAt)
+      ) &&
+      Date.parse(authorCommand.occurredAt) >=
+        Date.parse(captureBinding.authorArmIssuedAt) &&
+      Date.parse(authorCommand.completedAt) >=
+        Date.parse(captureBinding.authorArmIssuedAt) &&
+      authorCommand.eventIds.every((eventId) => {
+        const event = events.find((candidate) => candidate.eventId === eventId);
+        return Date.parse(event?.occurredAt ?? "") >=
+          Date.parse(captureBinding.authorArmIssuedAt);
+      }),
+    "expired_offer_receipt_chronology_invalid",
+    "Expired-Offer PostgreSQL proof predates its normal-response arm"
+  );
   const replacementEvent = events.find(({ eventId }) =>
     eventId === offer.replacementEventId
   );
@@ -2176,13 +2244,18 @@ async function assembleM1BExpiredOfferSetupReceipt({
         Date.parse(safeCapture.preparationObservedAt) &&
       Date.parse(safeCapture.preparationObservedAt) <=
         Math.min(...inboxAuditTimes) &&
+      Math.min(...inboxAuditTimes) >= Date.parse(inboxEntry.armIssuedAt) &&
       Math.max(...inboxAuditTimes) <= Date.parse(inboxProof.occurredAt) &&
       inboxProof.occurredAt === inboxEntry.capturedAt &&
       Date.parse(inboxEntry.capturedAt) <= Math.min(...authorAuditTimes) &&
+      Math.min(...authorAuditTimes) >= Date.parse(authorEntry.armIssuedAt) &&
       Math.max(...authorAuditTimes) <= Date.parse(authorProof.occurredAt) &&
       primaryAuthorAudit.occurredAt === authorProof.occurredAt &&
       Date.parse(authorProof.occurredAt) <= Date.parse(authorProof.completedAt) &&
-      Date.parse(authorProof.completedAt) <= Date.parse(authorEntry.capturedAt),
+      Date.parse(authorProof.completedAt) <= Date.parse(authorEntry.capturedAt) &&
+      authorProof.eventManifest.every(({ occurredAt }) =>
+        Date.parse(occurredAt) >= Date.parse(authorEntry.armIssuedAt)
+      ),
     "expired_offer_lineage_chronology_invalid",
     "Expired-Offer durable Human, inbox, author, and capture proofs are out of order"
   );
@@ -2429,8 +2502,11 @@ async function assembleM1BExpiredOfferSetupReceipt({
       schemaVersion: safeCapture.schemaVersion,
       captureHash: hashM1BAcceptanceManifest(safeCapture),
       preparationObservedAt: safeCapture.preparationObservedAt,
+      inboxArmIssuedAt: safeCapture.responses[0].armIssuedAt,
       inboxCapturedAt: safeCapture.responses[0].capturedAt,
+      authorArmIssuedAt: safeCapture.responses[1].armIssuedAt,
       authorCapturedAt: safeCapture.responses[1].capturedAt,
+      armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
       capturedAt: safeCapture.capturedAt,
       responseCount: safeCapture.responses.length,
       responseOnly: true

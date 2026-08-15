@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
-import { createHash, webcrypto } from "node:crypto";
+import { createHash } from "node:crypto";
 import test from "node:test";
-import { runInNewContext } from "node:vm";
-import { deflateSync } from "node:zlib";
 import { assertTenantProtocolRequest } from "../../../packages/api-contract/src/tenant-protocol.js";
 import {
   M1_B_OPERATIONAL_BROWSER_MEASUREMENT_PHASES,
-  createM1BOperationalBrowserExpression,
+  M1_B_OPERATIONAL_BROWSER_PIXEL_CHALLENGE,
+  createM1BOperationalBrowserContextLineageProjection,
   createM1BOperationalBrowserMeasurementPrompts,
+  createM1BOperationalBrowserPixelChallengeBits,
   deriveM1BOperationalBrowserRow,
   parseM1BOperationalBrowserMeasurementResponseLine,
   validateM1BOperationalBrowserMeasurementPrompt,
   validateM1BOperationalBrowserMeasurementResponse,
-  validateM1BOperationalBrowserPng
+  validateM1BOperationalBrowserJpeg
 } from "../src/m1-b-operational-browser-measurement.js";
 
 const RELEASE = "a".repeat(40);
@@ -30,6 +30,29 @@ function canonicalJson(value) {
 
 function projectionHash(value) {
   return `0x${createHash("sha256").update(canonicalJson(value)).digest("hex")}`;
+}
+
+function measurementContextClaim(prompt) {
+  if (prompt.check !== "fresh_browser_context") return null;
+  const claim = {
+    schemaVersion: "m1_b_operational_browser_context_claim.v1",
+    promptId: prompt.promptId,
+    challenge: prompt.capture.challenge,
+    role: prompt.role,
+    check: prompt.check,
+    phase: prompt.phase,
+    createdVia: "chrome_control_tabs_new",
+    initialUrl: "about:blank",
+    topLevelContextKind: "fresh_top_level_browsing_context",
+    contextHash: `0x${"d".repeat(64)}`,
+    lineageHash: `0x${"0".repeat(64)}`,
+    controllerObservedAt: "2026-08-15T00:10:11.000Z",
+    isolatedStorageClaimed: false
+  };
+  claim.lineageHash = projectionHash(
+    createM1BOperationalBrowserContextLineageProjection(prompt, claim)
+  );
+  return claim;
 }
 
 function promptSet() {
@@ -144,50 +167,209 @@ function response(prompt) {
     },
     browserControl: {
       driver: "chrome_control",
-      consoleErrorCount: 0,
-      failedNetworkRequestCount: 0
+      surface: "visible_loopback_measurement_console",
+      promptTransport: "visible_paste_and_load",
+      executionControl: "visible_click_once",
+      responseTransport: "visible_clipboard_copy_button",
+      screenshotControl: "external_chrome_control_jpeg_quality_80",
+      telemetrySource: "trusted_app_measurement_interval",
+      screenshotStatus:
+        "external_capture_acknowledged_pending_builder_validation",
+      contextClaim: measurementContextClaim(prompt),
+      runtimeErrorCount: 0,
+      unhandledRejectionCount: 0,
+      measurementRequestFailureCount: 0
     }
   };
 }
 
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n += 1) {
-    let c = n;
-    for (let k = 0; k < 8; k += 1) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
+const JPEG_Q80_LUMA = Object.freeze([
+  6, 4, 5, 6, 5, 4, 6, 6, 5, 6, 7, 7, 6, 8, 10, 16,
+  10, 10, 9, 9, 10, 20, 14, 15, 12, 16, 23, 20, 24, 24, 23, 20,
+  22, 22, 26, 29, 37, 31, 26, 27, 35, 28, 22, 22, 32, 44, 32, 35,
+  38, 39, 41, 42, 41, 25, 31, 45, 48, 45, 40, 48, 37, 40, 41, 40
+]);
+const JPEG_Q80_CHROMA = Object.freeze([
+  7, 7, 7, 10, 8, 10, 19, 10, 10, 19, 40, 26, 22, 26, 40, 40,
+  ...Array(48).fill(40)
+]);
+const JPEG_DC_COUNTS = Object.freeze([0, 0, 0, 12, ...Array(12).fill(0)]);
+const JPEG_DC_SYMBOLS = Object.freeze(Array.from({ length: 12 }, (_, index) => index));
+const JPEG_AC_COUNTS = Object.freeze([0, 2, ...Array(14).fill(0)]);
+const JPEG_AC_SYMBOLS = Object.freeze([0, 1]);
 
-function crc32(bytes) {
-  let crc = 0xffffffff;
-  for (const byte of bytes) crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function chunk(type, data) {
-  const name = Buffer.from(type);
-  const output = Buffer.alloc(12 + data.length);
-  output.writeUInt32BE(data.length, 0);
-  name.copy(output, 4);
-  data.copy(output, 8);
-  output.writeUInt32BE(crc32(Buffer.concat([name, data])), 8 + data.length);
+function jpegSegment(marker, data) {
+  const output = Buffer.alloc(data.length + 4);
+  output[0] = 0xff;
+  output[1] = marker;
+  output.writeUInt16BE(data.length + 2, 2);
+  data.copy(output, 4);
   return output;
 }
 
-function png(width, height, idatBytes = null) {
-  const header = Buffer.alloc(13);
-  header.writeUInt32BE(width, 0);
-  header.writeUInt32BE(height, 4);
-  header[8] = 8;
-  header[9] = 6;
-  const scanlines = Buffer.alloc((1 + width * 4) * height);
+function jpegDht(tableClass, tableId, counts, symbols) {
+  return jpegSegment(0xc4, Buffer.from([
+    tableClass * 16 + tableId,
+    ...counts,
+    ...symbols
+  ]));
+}
+
+function canonicalCodes(counts, symbols) {
+  const codes = new Map();
+  let code = 0;
+  let offset = 0;
+  for (let length = 1; length <= 16; length += 1) {
+    for (let index = 0; index < counts[length - 1]; index += 1) {
+      codes.set(symbols[offset++], { code, length });
+      code += 1;
+    }
+    code *= 2;
+  }
+  return codes;
+}
+
+function jpegBitWriter() {
+  const bytes = [];
+  let current = 0;
+  let count = 0;
+  return {
+    write(value, length) {
+      for (let bit = length - 1; bit >= 0; bit -= 1) {
+        current = current * 2 + ((value >>> bit) & 1);
+        count += 1;
+        if (count === 8) {
+          bytes.push(current);
+          if (current === 0xff) bytes.push(0x00);
+          current = 0;
+          count = 0;
+        }
+      }
+    },
+    finish() {
+      if (count > 0) this.write((1 << (8 - count)) - 1, 8 - count);
+      return Buffer.from(bytes);
+    }
+  };
+}
+
+function jpegValueBits(value) {
+  if (value === 0) return { category: 0, encoded: 0 };
+  const category = Math.floor(Math.log2(Math.abs(value))) + 1;
+  return {
+    category,
+    encoded: value > 0 ? value : value + (2 ** category - 1)
+  };
+}
+
+function baselineJpeg(width, height, {
+  challengeHash = null,
+  devicePixelRatio = 1,
+  oversubscribedHuffman = false,
+  completeHuffman = false,
+  iccProfilePayload = null,
+  markerAcNonZero = false
+} = {}) {
+  const specification = M1_B_OPERATIONAL_BROWSER_PIXEL_CHALLENGE;
+  const challengeBits = challengeHash === null
+    ? null
+    : createM1BOperationalBrowserPixelChallengeBits(challengeHash);
+  const dcCodes = canonicalCodes(JPEG_DC_COUNTS, JPEG_DC_SYMBOLS);
+  const acCodes = canonicalCodes(JPEG_AC_COUNTS, JPEG_AC_SYMBOLS);
+  const writer = jpegBitWriter();
+  const predictors = new Map([[1, 0], [2, 0], [3, 0]]);
+  const markerOffsetX = specification.offsetX * devicePixelRatio;
+  const markerOffsetY = specification.offsetY * devicePixelRatio;
+  const markerCellSize = specification.cellSize * devicePixelRatio;
+
+  function lumaDc(blockX, blockY) {
+    if (challengeBits === null) return 0;
+    const pixelX = blockX * 8;
+    const pixelY = blockY * 8;
+    const column = Math.floor((pixelX - markerOffsetX) / markerCellSize);
+    const row = Math.floor((pixelY - markerOffsetY) / markerCellSize);
+    if (
+      column < 0 || column >= specification.columns ||
+      row < 0 || row >= specification.rows
+    ) return -171;
+    return challengeBits[row * specification.columns + column] === 1 ? -171 : 169;
+  }
+
+  function block(componentId, dc, nonzeroAc = false) {
+    const difference = dc - predictors.get(componentId);
+    predictors.set(componentId, dc);
+    const value = jpegValueBits(difference);
+    const dcCode = dcCodes.get(value.category);
+    writer.write(dcCode.code, dcCode.length);
+    writer.write(value.encoded, value.category);
+    if (nonzeroAc) {
+      const coefficient = acCodes.get(1);
+      writer.write(coefficient.code, coefficient.length);
+      writer.write(1, 1);
+    }
+    const eob = acCodes.get(0);
+    writer.write(eob.code, eob.length);
+  }
+
+  for (let mcuY = 0; mcuY < Math.ceil(height / 16); mcuY += 1) {
+    for (let mcuX = 0; mcuX < Math.ceil(width / 16); mcuX += 1) {
+      for (let vertical = 0; vertical < 2; vertical += 1) {
+        for (let horizontal = 0; horizontal < 2; horizontal += 1) {
+          const blockX = mcuX * 2 + horizontal;
+          const blockY = mcuY * 2 + vertical;
+          block(
+            1,
+            lumaDc(blockX, blockY),
+            markerAcNonZero &&
+              blockX === specification.offsetX * devicePixelRatio / 8 &&
+              blockY === specification.offsetY * devicePixelRatio / 8
+          );
+        }
+      }
+      block(2, 0);
+      block(3, 0);
+    }
+  }
+
+  const app0 = jpegSegment(0xe0, Buffer.from([
+    0x4a, 0x46, 0x49, 0x46, 0x00, 1, 1, 0, 0, 1, 0, 1, 0, 0
+  ]));
+  const app2 = iccProfilePayload === null ? [] : [jpegSegment(
+    0xe2,
+    Buffer.concat([
+      Buffer.from("ICC_PROFILE\0", "ascii"),
+      Buffer.from([1, 1]),
+      Buffer.from(iccProfilePayload)
+    ])
+  )];
+  const dqt0 = jpegSegment(0xdb, Buffer.from([0, ...JPEG_Q80_LUMA]));
+  const dqt1 = jpegSegment(0xdb, Buffer.from([1, ...JPEG_Q80_CHROMA]));
+  const sof0 = jpegSegment(0xc0, Buffer.from([
+    8, height >>> 8, height & 0xff, width >>> 8, width & 0xff, 3,
+    1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1
+  ]));
+  const badCounts = [3, ...Array(15).fill(0)];
+  const completeCounts = [2, ...Array(15).fill(0)];
+  const dht0 = jpegDht(
+    0,
+    0,
+    oversubscribedHuffman ? badCounts
+      : completeHuffman ? completeCounts : JPEG_DC_COUNTS,
+    oversubscribedHuffman ? [0, 1, 2]
+      : completeHuffman ? [0, 1] : JPEG_DC_SYMBOLS
+  );
+  const sos = jpegSegment(0xda, Buffer.from([
+    3, 1, 0x00, 2, 0x11, 3, 0x11, 0, 63, 0
+  ]));
   return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    chunk("IHDR", header),
-    chunk("IDAT", idatBytes ?? deflateSync(scanlines)),
-    chunk("IEND", Buffer.alloc(0))
+    Buffer.from([0xff, 0xd8]), app0, ...app2, dqt0, dqt1, sof0,
+    dht0,
+    jpegDht(1, 0, JPEG_AC_COUNTS, JPEG_AC_SYMBOLS),
+    jpegDht(0, 1, JPEG_DC_COUNTS, JPEG_DC_SYMBOLS),
+    jpegDht(1, 1, JPEG_AC_COUNTS, JPEG_AC_SYMBOLS),
+    sos,
+    writer.finish(),
+    Buffer.from([0xff, 0xd9])
   ]);
 }
 
@@ -196,16 +378,23 @@ test("closed prompts cover all 33 phases and carry contract-valid safe private r
   assert.equal(prompts.length, 33);
   assert.equal(new Set(prompts.map(({ promptId }) => promptId)).size, 33);
   assert.equal(new Set(prompts.map(({ capture }) => capture.relativePath)).size, 33);
+  assert.equal(prompts.every(({ capture, browserControl }) =>
+    capture.relativePath.endsWith(".jpg") &&
+    capture.mediaType === "image/jpeg" &&
+    capture.codecProfile === "chrome_jpeg_quality_80_baseline_420" &&
+    browserControl.screenshotControl ===
+      "external_chrome_control_jpeg_quality_80"), true);
   for (const prompt of prompts.filter(({ readRequest }) => readRequest !== null)) {
     assert.equal(assertTenantProtocolRequest(prompt.readRequest).operationId, prompt.readRequest.operationId);
-    assert.match(prompt.browserExpression, /__ipoOneM1BControlledBrowserMeasurement/);
-    assert.doesNotMatch(prompt.browserExpression, /consoleErrorCount:0/);
+    assert.equal(prompt.browserControl.surface, "visible_loopback_measurement_console");
+    assert.equal(prompt.browserControl.executionControl, "visible_click_once");
+    assert.equal(Object.hasOwn(prompt, "browserExpression"), false);
+    assert.equal(Object.hasOwn(prompt, "browserExpressionHash"), false);
   }
-  const cp = prompts.find(({ role, check }) => role === "capital_partner" && check === "desktop");
-  assert.match(cp.browserExpression, /b\.resource\?\.resourceType/);
-  const human = prompts.find(({ role, check }) => role === "human" && check === "desktop");
-  assert.match(human.browserExpression, /Array\.isArray\(b\.resources\)/);
-  assert.doesNotMatch(human.browserExpression, /b\.resourceCount/);
+  const serialized = JSON.stringify(prompts);
+  assert.doesNotMatch(serialized, /browserExpression|\beval\b|new Function/);
+  assert.match(serialized, /fresh_browser_context_required/);
+  assert.match(serialized, /actual_same_origin_mobile_window/);
 });
 
 test("prompt generation rejects identifier collisions and output-root drift", () => {
@@ -236,34 +425,32 @@ test("prompt generation rejects identifier collisions and output-root drift", ()
   );
 });
 
-test("serialized prompts deterministically reconstruct the tracked browser expression", () => {
+test("serialized prompts reject executable fields, control drift, and challenge drift", () => {
   const prompt = promptSet()[0];
-  const { browserExpression, ...base } = prompt;
-  const serialized = {
-    ...base,
-    browserExpressionHash: projectionHash(browserExpression)
-  };
   assert.equal(
-    createM1BOperationalBrowserExpression(serialized),
-    browserExpression
-  );
-  assert.equal(
-    validateM1BOperationalBrowserMeasurementPrompt(serialized),
-    serialized
-  );
-  assert.throws(
-    () => createM1BOperationalBrowserExpression({
-      ...serialized,
-      browserExpressionHash: `0x${"0".repeat(64)}`
-    }),
-    /expression hash/
+    validateM1BOperationalBrowserMeasurementPrompt(prompt),
+    prompt
   );
   assert.throws(
     () => validateM1BOperationalBrowserMeasurementPrompt({
       ...prompt,
-      browserExpression: `${browserExpression} `
+      browserExpression: "globalThis.fetch('/private')"
     }),
-    /expression does not match/
+    /not exact/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserMeasurementPrompt({
+      ...prompt,
+      browserControl: { ...prompt.browserControl, surface: "hidden_bridge" }
+    }),
+    /not exact/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserMeasurementPrompt({
+      ...prompt,
+      capture: { ...prompt.capture, challengeHash: `0x${"0".repeat(64)}` }
+    }),
+    /challenge hash/
   );
 });
 
@@ -297,6 +484,32 @@ test("response validation binds prompt, projection, DOM, navigation, and phase o
       check === "fresh_browser_context" && phase === "signed_out"
   );
   const signedOut = response(signedOutPrompt);
+  assert.throws(
+    () => validateM1BOperationalBrowserMeasurementResponse({
+      ...signedOut,
+      browserControl: {
+        ...signedOut.browserControl,
+        contextClaim: {
+          ...signedOut.browserControl.contextClaim,
+          lineageHash: `0x${"f".repeat(64)}`
+        }
+      }
+    }, signedOutPrompt),
+    /lineage hash/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserMeasurementResponse({
+      ...signedOut,
+      browserControl: {
+        ...signedOut.browserControl,
+        contextClaim: {
+          ...signedOut.browserControl.contextClaim,
+          isolatedStorageClaimed: true
+        }
+      }
+    }, signedOutPrompt),
+    /invalid/
+  );
   for (const documentChange of [
     { connectionState: "Secure session active" },
     { runtimeGateState: "visible" },
@@ -314,7 +527,7 @@ test("response validation binds prompt, projection, DOM, navigation, and phase o
         document: { ...signedOut.measurement.document, ...documentChange }
       }
     }, signedOutPrompt),
-    /Signed-out privacy boundary/
+    /invalid/
   );
   const reloginPrompts = prompts.filter(
     ({ role, check }) => role === "human" && check === "sign_out_relogin"
@@ -329,7 +542,7 @@ test("response validation binds prompt, projection, DOM, navigation, and phase o
     "before_sign_out", "signed_out", "authenticated"
   ]);
   assert.equal(row.visualArtifacts.length, 3);
-  assert.equal(row.visualArtifacts.every(({ relativePath }) => relativePath.endsWith(".png")), true);
+  assert.equal(row.visualArtifacts.every(({ relativePath }) => relativePath.endsWith(".jpg")), true);
   assert.throws(
     () => deriveM1BOperationalBrowserRow({
       prompts: [reloginPrompts[1], reloginPrompts[0], reloginPrompts[2]],
@@ -349,163 +562,250 @@ test("response validation binds prompt, projection, DOM, navigation, and phase o
   );
 });
 
-function browserHarness(prompt) {
-  let popstate;
-  const element = ({ hidden = false, dataset = {}, textContent = "" } = {}) => ({
-    hidden,
-    disabled: false,
-    dataset,
-    textContent,
-    style: {},
-    remove() {},
-    removeAttribute() {},
-    getClientRects: () => hidden ? [] : [{}]
-  });
-  const marker = element();
-  const primary = element();
-  const surface = element();
-  const active = element({ dataset: { viewPanel: prompt.expected.activeView } });
-  const connection = element({ textContent: prompt.expected.authentication.active
-    ? "Secure session active"
-    : "Sign-in required" });
-  const shield = element({ hidden: prompt.expected.authentication.active });
-  const gate = element({ hidden: true });
-  const mobile = element({ hidden: prompt.expected.viewportClass !== "mobile" });
-  const elements = new Map([
-    [prompt.expected.primaryActionCode, primary],
-    ["signedOutPrivacyShield", shield],
-    ["authenticatedRuntimeGate", gate],
-    ["connectionStatus", connection],
-    ["mobileMenuBtn", mobile]
-  ]);
-  const location = { origin: new URL(prompt.origin).origin, hash: "#overview" };
-  const history = {
-    replaceState(_state, _title, hash) { location.hash = hash; },
-    pushState(_state, _title, hash) { location.hash = hash; },
-    back() { location.hash = prompt.role === "capital_partner" ? "#capital-partners" : "#overview"; popstate?.(); },
-    forward() { location.hash = prompt.role === "capital_partner" ? "#mainContent" : "#request-credit"; popstate?.(); }
-  };
-  const workspace = prompt.role === "capital_partner"
-    ? {
-        schemaVersion: "tenant_capital_partner_self_view.v1",
-        resource: { resourceType: "capital_partner_profile", resourceId: "not_projected" },
-        profile: { displayName: "not_projected" },
-        serverTruth: true,
-        readOnly: true,
-        fundsAuthority: false
-      }
-    : {
-        schemaVersion: "tenant_workspace_resume_view.v2",
-        workspaceKind: prompt.expected.workspaceKind,
-        resources: [{}],
-        continuationReceipts: [{}],
-        controlledAgentActorIds: prompt.role === "principal_agent" ? ["not_projected"] : undefined,
-        humanOfferReview: prompt.role === "human" ? {} : undefined,
-        hasMore: false,
-        serverTruth: true
-      };
-  return {
-    crypto: webcrypto,
-    TextEncoder,
-    URL,
-    location,
-    history,
-    performance: { getEntriesByType: () => [{ type: prompt.check === "reload" ? "reload" : "navigate" }] },
-    innerWidth: prompt.expected.viewportClass === "mobile" ? 390 : 1280,
-    innerHeight: 720,
-    devicePixelRatio: 1,
-    setTimeout,
-    addEventListener(_type, callback) { popstate = callback; },
-    document: {
-      documentElement: {
-        clientWidth: prompt.expected.viewportClass === "mobile" ? 390 : 1280,
-        scrollWidth: prompt.expected.viewportClass === "mobile" ? 390 : 1280
-      },
-      body: { append(value) { elements.set(value.id, value); } },
-      createElement: () => marker,
-      getElementById: (id) => elements.get(id) ?? null,
-      querySelector(selector) {
-        if (selector.includes("ipo-one-workspace-name")) {
-          return { content: prompt.expected.workspaceName };
-        }
-        if (selector.includes("ipo-one-csrf-token")) return { content: "Abcdefghijklmnopqrstuvwxyz_0123456789-ABCDE" };
-        if (selector === "[data-view-panel].active") return active;
-        if (selector === ".capital-partners-page" || selector === "#privatePortfolioSurface") {
-          return prompt.expected.authentication.active ? surface : element({ hidden: true });
-        }
-        return null;
-      },
-      querySelectorAll: () => []
-    },
-    fetch: async (path, options) => path === "/auth/v1/options"
-      ? {
-          json: async () => ({
-            sessionActive: prompt.expected.authentication.active,
-            sessionAuthenticationMethod: prompt.expected.authentication.method
-          })
-        }
-      : {
-          status: 200,
-          headers: { get: () => JSON.parse(options.body).requestId },
-          json: async () => workspace
-        },
-    console: { log() {} },
-    __ipoOneM1BControlledBrowserMeasurement: {
-      driver: "chrome_control",
-      consoleErrorCount: 0,
-      failedNetworkRequestCount: 0
-    }
-  };
-}
-
-test("tracked browser expressions execute for each role projection and exact history sequence", async () => {
-  const prompts = promptSet().filter(({ phase, check }) =>
-    phase === "authenticated" && new Set(["desktop", "back_forward"]).has(check)
-  );
-  for (const prompt of prompts) {
-    const measured = JSON.parse(JSON.stringify(
-      await runInNewContext(prompt.browserExpression, browserHarness(prompt))
-    ));
-    const expected = response(prompt);
-    assert.deepEqual(measured, expected, `${prompt.role}:${prompt.check}`);
-    assert.equal(
-      validateM1BOperationalBrowserMeasurementResponse(measured, prompt),
-      measured
-    );
-    assert.equal(Object.hasOwn(measured.measurement.privateRead.projection, "profile"), false);
-    assert.equal(Object.hasOwn(measured.measurement.privateRead.projection, "resources"), false);
-  }
-});
-
-test("PNG validator requires exact CRC, chunks, viewport dimensions, and no trailing bytes", () => {
+test("baseline JPEG validator binds exact quality-80 structure, viewport, and challenge", () => {
   const viewport = {
     innerWidth: 1280,
     innerHeight: 720,
     devicePixelRatio: 1
   };
-  const bytes = png(1280, 720);
+  const challengeHash = `0x${"a1".repeat(32)}`;
+  const bytes = baselineJpeg(1280, 720, { challengeHash });
   assert.deepEqual(
-    validateM1BOperationalBrowserPng(bytes, viewport),
+    validateM1BOperationalBrowserJpeg(bytes, viewport, challengeHash),
     {
       width: 1280,
       height: 720,
-      idatCount: 1,
+      jfifVersion: "1.01",
+      iccProfileSegmentCount: 0,
+      iccProfileBytes: 0,
+      quality: 80,
+      subsampling: "4:2:0",
+      mcuCount: 3600,
+      decodedChallengeHash: challengeHash,
       sha256: createHash("sha256").update(bytes).digest("hex")
     }
   );
   assert.throws(
-    () => validateM1BOperationalBrowserPng(Buffer.concat([bytes, Buffer.from([0])]), viewport),
-    /trailing/
-  );
-  assert.throws(
-    () => validateM1BOperationalBrowserPng(
-      png(1280, 720, Buffer.from([1])),
+    () => validateM1BOperationalBrowserJpeg(
+      Buffer.concat([bytes, Buffer.from([0])]),
       viewport
     ),
-    /cannot be decoded/
+    /trailing/
   );
-  const corrupt = Buffer.from(bytes);
-  corrupt[corrupt.length - 1] ^= 1;
-  assert.throws(() => validateM1BOperationalBrowserPng(corrupt, viewport), /invalid/);
-  assert.throws(() => validateM1BOperationalBrowserPng(png(1279, 720), viewport), /dimensions/);
+  const corruptEntropy = Buffer.from(bytes);
+  const sos = corruptEntropy.indexOf(Buffer.from([0xff, 0xda]));
+  const scanStart = sos + 2 + corruptEntropy.readUInt16BE(sos + 2);
+  corruptEntropy[scanStart] ^= 0x80;
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(corruptEntropy, viewport),
+    /entropy|Huffman|MCU/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      baselineJpeg(1279, 720, { challengeHash }),
+      viewport,
+      challengeHash
+    ),
+    /dimensions/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      baselineJpeg(1280, 720),
+      viewport,
+      challengeHash
+    ),
+    /pixel challenge/
+  );
+  const wrongChallengeHash = `0x${"b2".repeat(32)}`;
+  const wrongButSelfConsistent = baselineJpeg(1280, 720, {
+    challengeHash: wrongChallengeHash
+  });
+  assert.equal(
+    validateM1BOperationalBrowserJpeg(wrongButSelfConsistent, viewport)
+      .decodedChallengeHash,
+    wrongChallengeHash
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      wrongButSelfConsistent,
+      viewport,
+      challengeHash
+    ),
+    /expected prompt/
+  );
+  for (const devicePixelRatio of [1, 2, 3, 4]) {
+    const retinaViewport = {
+      innerWidth: 390,
+      innerHeight: 180,
+      devicePixelRatio
+    };
+    const retinaBytes = baselineJpeg(
+      390 * devicePixelRatio,
+      180 * devicePixelRatio,
+      { challengeHash, devicePixelRatio }
+    );
+    assert.equal(
+      validateM1BOperationalBrowserJpeg(
+        retinaBytes,
+        retinaViewport,
+        challengeHash
+      ).decodedChallengeHash,
+      challengeHash
+    );
+  }
+  const desktopDpr4Viewport = {
+    innerWidth: 1_440,
+    innerHeight: 900,
+    devicePixelRatio: 4
+  };
+  assert.equal(
+    validateM1BOperationalBrowserJpeg(
+      baselineJpeg(5_760, 3_600, {
+        challengeHash,
+        devicePixelRatio: 4
+      }),
+      desktopDpr4Viewport,
+      challengeHash
+    ).decodedChallengeHash,
+    challengeHash
+  );
+  const retinaViewport = {
+    innerWidth: 390,
+    innerHeight: 180,
+    devicePixelRatio: 2
+  };
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      baselineJpeg(390, 180, { challengeHash }),
+      retinaViewport,
+      challengeHash
+    ),
+    /dimensions/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(bytes, {
+      ...viewport,
+      devicePixelRatio: 1.5
+    }, challengeHash),
+    /viewport/
+  );
+  const withIccProfile = baselineJpeg(1280, 720, {
+    challengeHash,
+    iccProfilePayload: [1, 2, 3, 4]
+  });
+  const iccMetadata = validateM1BOperationalBrowserJpeg(
+    withIccProfile,
+    viewport,
+    challengeHash
+  );
+  assert.equal(iccMetadata.iccProfileSegmentCount, 1);
+  assert.equal(iccMetadata.iccProfileBytes, 4);
+});
+
+test("baseline JPEG validator rejects progressive, unknown, raw high-bit, and unsafe Huffman forms", () => {
+  const viewport = { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 };
+  const challengeHash = `0x${"c3".repeat(32)}`;
+  const bytes = baselineJpeg(1280, 720, { challengeHash });
+  const sof = bytes.indexOf(Buffer.from([0xff, 0xc0]));
+  const sos = bytes.indexOf(Buffer.from([0xff, 0xda]));
+  const progressive = Buffer.from(bytes);
+  progressive[sof + 1] = 0xc2;
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(progressive, viewport, challengeHash),
+    /Progressive/
+  );
+  const quantizationDrift = Buffer.from(bytes);
+  const dqt = quantizationDrift.indexOf(Buffer.from([0xff, 0xdb]));
+  quantizationDrift[dqt + 5] += 1;
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      quantizationDrift,
+      viewport,
+      challengeHash
+    ),
+    /quality-80/
+  );
+  const samplingDrift = Buffer.from(bytes);
+  samplingDrift[sof + 11] = 0x11;
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(samplingDrift, viewport, challengeHash),
+    /4:2:0/
+  );
+  const unknown = Buffer.concat([
+    bytes.subarray(0, 20),
+    Buffer.from([0xff, 0xfe, 0x00, 0x03, 0x00]),
+    bytes.subarray(20)
+  ]);
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(unknown, viewport, challengeHash),
+    /unknown|forbidden/
+  );
+  const firstDqtLength = 2 + bytes.readUInt16BE(dqt + 2);
+  const duplicateDqt = Buffer.concat([
+    bytes.subarray(0, sof),
+    bytes.subarray(dqt, dqt + firstDqtLength),
+    bytes.subarray(sof)
+  ]);
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      duplicateDqt,
+      viewport,
+      challengeHash
+    ),
+    /DQT|duplicated/
+  );
+  const highBitStripped = Buffer.from(bytes);
+  highBitStripped[3] = 0x60;
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      highBitStripped,
+      viewport,
+      challengeHash
+    ),
+    /unknown|marker/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      baselineJpeg(1280, 720, { challengeHash, oversubscribedHuffman: true }),
+      viewport,
+      challengeHash
+    ),
+    /oversubscribed/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      baselineJpeg(1280, 720, { challengeHash, completeHuffman: true }),
+      viewport,
+      challengeHash
+    ),
+    /complete|all-ones/
+  );
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(
+      baselineJpeg(1280, 720, { challengeHash, markerAcNonZero: true }),
+      viewport,
+      challengeHash
+    ),
+    /nonzero AC/
+  );
+  const dri = Buffer.concat([
+    bytes.subarray(0, sos),
+    jpegSegment(0xdd, Buffer.from([0, 1])),
+    bytes.subarray(sos)
+  ]);
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(dri, viewport, challengeHash),
+    /DRI|restart/
+  );
+  const extraScan = Buffer.concat([
+    bytes.subarray(0, -2),
+    jpegSegment(0xda, Buffer.from([
+      3, 1, 0x00, 2, 0x11, 3, 0x11, 0, 63, 0
+    ])),
+    bytes.subarray(-2)
+  ]);
+  assert.throws(
+    () => validateM1BOperationalBrowserJpeg(extraScan, viewport, challengeHash),
+    /extra scan|unexpected marker/
+  );
 });

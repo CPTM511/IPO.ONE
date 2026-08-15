@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createInterface } from "node:readline";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,6 +32,14 @@ import {
 const SHA = /^[0-9a-f]{40}$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:@/%-]{1,255}$/;
 const REQUEST_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
+const NORMAL_RESPONSE_CHALLENGE =
+  /^m1_b_normal_response_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const DENIAL_RESPONSE_CHALLENGE =
+  /^m1_b_denial_response_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const NORMAL_RESPONSE_ARM_TTL_MS = 15 * 60_000;
+const NORMAL_RESPONSE_COPY_TTL_MS = 2 * 60_000;
+export const M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN =
+  "lima_exact_pilot_vm_system_clock";
 const MAX_LINE_BYTES = 256 * 1024;
 const MAX_INPUT_BYTES = 1024 * 1024;
 
@@ -177,16 +185,64 @@ function parseLine(line) {
   return parsed;
 }
 
+function sha256Json(value) {
+  return `0x${createHash("sha256")
+    .update(JSON.stringify(value))
+    .digest("hex")}`;
+}
+
+function assertDenialResponseHashBinding(requestProjection, armToken) {
+  const confirmation = requestProjection.payload?.actionConfirmation;
+  const expectedPayloadHash = sha256Json({
+    expectedOfferHash: armToken.expectedOfferHash,
+    expectedTermsHash: armToken.expectedTermsHash,
+    disclosureRef: armToken.disclosureRef,
+    sandboxOnly: true,
+    productionFundsAuthority: false
+  });
+  const expectedAcknowledgementHash = sha256Json({
+    acknowledgementVersion: "human_credit_offer_acknowledgement.v1",
+    creditOfferHash: armToken.expectedOfferHash,
+    termsHash: armToken.expectedTermsHash,
+    disclosureRef: armToken.disclosureRef,
+    actionConfirmationMethod: confirmation?.confirmationMethod,
+    actionConfirmationHash: confirmation?.confirmationHash,
+    actionConfirmationMessageHash: confirmation?.messageHash,
+    sandboxOnly: true,
+    productionFundsAuthority: false
+  });
+  assert(
+    armToken?.schemaVersion === "m1_b_acceptance_denial_response_arm.v1" &&
+      requestProjection.idempotencyKey ===
+        deriveM1BDenialResponseIdempotencyKey(armToken.challenge) &&
+      requestProjection.resource?.resourceId === armToken.resourceId &&
+      requestProjection.requestId === armToken.requestId &&
+      requestProjection.correlationId === armToken.correlationId &&
+      requestProjection.payload?.expectedOfferHash === armToken.expectedOfferHash &&
+      requestProjection.payload?.expectedTermsHash === armToken.expectedTermsHash &&
+      confirmation?.payloadHash === expectedPayloadHash &&
+      requestProjection.payload?.acknowledgementHash === expectedAcknowledgementHash,
+    "acceptance_operator_denial_request_invalid",
+    "Denied Offer request hashes are not bound to the exact arm token"
+  );
+}
+
 export function parseM1BOperatorResponseLine(line, {
   flow,
   sequence,
   operationId,
   responseSchemaVersion,
   actorRole,
+  armChallenge,
+  armIssuedAt,
+  armClockDomain,
+  denialArmToken,
   observedAt
 }) {
   const parsed = parseLine(line);
   const denialResponse = responseSchemaVersion === "problem_details.v1";
+  const capturedAt = iso(observedAt);
+  const expectedArmIssuedAt = denialResponse ? null : iso(armIssuedAt);
   assert(
     exactKeys(parsed, denialResponse ? [
       "schemaVersion",
@@ -194,6 +250,7 @@ export function parseM1BOperatorResponseLine(line, {
       "sequence",
       "requestId",
       "correlationId",
+      "armChallenge",
       "requestProjection",
       "response"
     ] : [
@@ -202,6 +259,9 @@ export function parseM1BOperatorResponseLine(line, {
       "sequence",
       "requestId",
       "correlationId",
+      "armChallenge",
+      "armIssuedAt",
+      "armClockDomain",
       "response"
     ]) &&
       parsed.schemaVersion === "m1_b_acceptance_operator_response.v1" &&
@@ -209,6 +269,18 @@ export function parseM1BOperatorResponseLine(line, {
       parsed.sequence === sequence &&
       REQUEST_IDENTIFIER.test(parsed.requestId ?? "") &&
       REQUEST_IDENTIFIER.test(parsed.correlationId ?? "") &&
+      (denialResponse
+        ? DENIAL_RESPONSE_CHALLENGE.test(armChallenge ?? "")
+        : NORMAL_RESPONSE_CHALLENGE.test(armChallenge ?? "")) &&
+      parsed.armChallenge === armChallenge &&
+      (denialResponse || (
+        parsed.armIssuedAt === expectedArmIssuedAt &&
+        parsed.armClockDomain === M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN &&
+        armClockDomain === M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN &&
+        Date.parse(expectedArmIssuedAt) <= Date.parse(capturedAt) &&
+        Date.parse(capturedAt) <= Date.parse(expectedArmIssuedAt) +
+          NORMAL_RESPONSE_ARM_TTL_MS + NORMAL_RESPONSE_COPY_TTL_MS
+      )) &&
       plainObject(parsed.response),
     "acceptance_operator_response_invalid",
     `Operator response ${flow}:${sequence} is invalid`
@@ -242,6 +314,12 @@ export function parseM1BOperatorResponseLine(line, {
       "acceptance_operator_denial_request_invalid",
       "Denied Offer request projection is not bound to the fresh wallet confirmation"
     );
+    assert(
+      denialArmToken?.challenge === armChallenge,
+      "acceptance_operator_denial_request_invalid",
+      "Denied Offer response is not bound to the exact arm token"
+    );
+    assertDenialResponseHashBinding(requestProjection, denialArmToken);
   }
   inspectM1BResponseOnlyOperation({
     operationId,
@@ -255,12 +333,121 @@ export function parseM1BOperatorResponseLine(line, {
     requestId: parsed.requestId,
     correlationId: parsed.correlationId,
     responseSchemaVersion,
-    capturedAt: iso(observedAt),
+    ...(expectedArmIssuedAt ? { armIssuedAt: expectedArmIssuedAt } : {}),
+    ...(expectedArmIssuedAt ? {
+      armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN
+    } : {}),
+    capturedAt,
     ...(requestProjection ? {
       requestProjection,
       requestProjectionHash: hashM1BAcceptanceManifest(requestProjection)
     } : {}),
     response: Object.freeze(structuredClone(parsed.response))
+  });
+}
+
+function normalResponseDefinition(flow, sequence) {
+  const definitions = flow === "human"
+    ? M1_B_HUMAN_OPERATOR_SEQUENCE
+    : flow === "capital_partner"
+      ? M1_B_CAPITAL_PARTNER_OPERATOR_SEQUENCE
+      : undefined;
+  const definition = definitions?.[sequence - 1];
+  return definition?.[2] === "problem_details.v1" ? undefined : definition;
+}
+
+export function createM1BNormalResponseArmToken({
+  flow,
+  sequence,
+  actorRole,
+  operationId,
+  responseSchemaVersion,
+  issuedAt = new Date(),
+  challenge = `m1_b_normal_response_${randomUUID()}`
+}) {
+  const expected = normalResponseDefinition(flow, sequence);
+  assert(
+    expected?.[0] === actorRole &&
+      expected?.[1] === operationId &&
+      expected?.[2] === responseSchemaVersion &&
+      NORMAL_RESPONSE_CHALLENGE.test(challenge),
+    "acceptance_operator_arm_invalid",
+    "Normal-response arm token does not match the closed operator sequence"
+  );
+  const issued = iso(issuedAt);
+  return Object.freeze({
+    schemaVersion: "m1_b_acceptance_normal_response_arm.v1",
+    challenge,
+    clockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
+    issuedAt: issued,
+    expiresAt: new Date(
+      Date.parse(issued) + NORMAL_RESPONSE_ARM_TTL_MS
+    ).toISOString(),
+    flow,
+    sequence,
+    actorRole,
+    operationId,
+    responseSchemaVersion
+  });
+}
+
+export function deriveM1BDenialResponseIdempotencyKey(challenge) {
+  assert(
+    DENIAL_RESPONSE_CHALLENGE.test(challenge ?? ""),
+    "acceptance_operator_denial_arm_invalid",
+    "Denial-response challenge is invalid"
+  );
+  return challenge.replace(
+    "m1_b_denial_response_",
+    "idempotency_m1b_cp_denial_"
+  );
+}
+
+export function createM1BDenialResponseArmToken({
+  sequence,
+  expectedStatus,
+  resourceId,
+  expectedOfferHash,
+  expectedTermsHash,
+  disclosureRef,
+  requestId,
+  correlationId,
+  issuedAt = new Date(),
+  challenge = `m1_b_denial_response_${randomUUID()}`
+}) {
+  assert(
+    new Set([4, 9]).has(sequence) &&
+      expectedStatus === (sequence === 4 ? "declined" : "withdrawn") &&
+      IDENTIFIER.test(resourceId ?? "") &&
+      /^0x[0-9a-f]{64}$/.test(expectedOfferHash ?? "") &&
+      /^0x[0-9a-f]{64}$/.test(expectedTermsHash ?? "") &&
+      IDENTIFIER.test(disclosureRef ?? "") && disclosureRef.length <= 512 &&
+      REQUEST_IDENTIFIER.test(requestId ?? "") &&
+      REQUEST_IDENTIFIER.test(correlationId ?? "") &&
+      DENIAL_RESPONSE_CHALLENGE.test(challenge),
+    "acceptance_operator_denial_arm_invalid",
+    "Denial-response arm token does not match the closed operator sequence"
+  );
+  const issued = iso(issuedAt);
+  return Object.freeze({
+    schemaVersion: "m1_b_acceptance_denial_response_arm.v1",
+    challenge,
+    issuedAt: issued,
+    expiresAt: new Date(
+      Date.parse(issued) + NORMAL_RESPONSE_ARM_TTL_MS
+    ).toISOString(),
+    flow: "capital_partner",
+    sequence,
+    actorRole: "human",
+    operationId: "pilotAcceptCreditOffer",
+    responseSchemaVersion: "problem_details.v1",
+    expectedStatus,
+    resourceId,
+    expectedOfferHash,
+    expectedTermsHash,
+    disclosureRef,
+    requestId,
+    correlationId
   });
 }
 
@@ -320,6 +507,13 @@ class OperatorNdjson {
 
   async response(flow, sequence, definition) {
     const [actorRole, operationId, responseSchemaVersion] = definition;
+    const armToken = createM1BNormalResponseArmToken({
+      flow,
+      sequence,
+      actorRole,
+      operationId,
+      responseSchemaVersion
+    });
     this.prompt({
       schemaVersion: "m1_b_acceptance_operator_prompt.v1",
       kind: "response",
@@ -327,7 +521,10 @@ class OperatorNdjson {
       sequence,
       actorRole,
       operationId,
-      responseSchemaVersion
+      responseSchemaVersion,
+      armToken: JSON.stringify(armToken),
+      instruction:
+        "Paste only armToken into the visible local M1-B capture panel and click Arm. Use Run armed read for a query or the existing normal product control for a mutation, then click Copy safe response. Never paste a request, header, cookie, CSRF value, idempotency key, action confirmation, signature, or session material."
     });
     const line = await this.nextLine();
     const observedAt = new Date();
@@ -337,6 +534,9 @@ class OperatorNdjson {
       operationId,
       responseSchemaVersion,
       actorRole,
+      armChallenge: armToken.challenge,
+      armIssuedAt: armToken.issuedAt,
+      armClockDomain: armToken.clockDomain,
       observedAt
     });
   }
@@ -514,47 +714,6 @@ function requestToken(prefix) {
   return `${prefix}_${randomUUID()}`;
 }
 
-export function createM1BCapitalPartnerDenialBrowserExpression({
-  sequence,
-  creditOfferId,
-  expectedOfferHash,
-  expectedTermsHash,
-  disclosureRef,
-  requestId,
-  correlationId,
-  idempotencyKey
-}) {
-  assert(
-    new Set([4, 9]).has(sequence) &&
-      IDENTIFIER.test(creditOfferId ?? "") &&
-      /^0x[0-9a-f]{64}$/.test(expectedOfferHash ?? "") &&
-      /^0x[0-9a-f]{64}$/.test(expectedTermsHash ?? "") &&
-      IDENTIFIER.test(disclosureRef ?? "") &&
-      REQUEST_IDENTIFIER.test(requestId ?? "") &&
-      REQUEST_IDENTIFIER.test(correlationId ?? "") &&
-      REQUEST_IDENTIFIER.test(idempotencyKey ?? ""),
-    "acceptance_operator_denial_request_invalid",
-    "Denial browser expression input is invalid"
-  );
-  const confirmationRequest = {
-    schemaVersion: "m1_b_operational_offer_denial_confirmation_request.v1",
-    operationId: "pilotAcceptCreditOffer",
-    resourceId: creditOfferId,
-    expectedOfferHash,
-    expectedTermsHash,
-    disclosureRef,
-    requestId
-  };
-  const envelope = {
-    schemaVersion: "m1_b_acceptance_operator_response.v1",
-    flow: "capital_partner",
-    sequence,
-    requestId,
-    correlationId
-  };
-  return `(async()=>{const c=document.querySelector('meta[name="ipo-one-csrf-token"]')?.content;if(!/^[A-Za-z0-9_-]{32,128}$/.test(c??""))throw new Error("Fresh invited Human SIWE session required");const f=globalThis.__ipoOneM1BOperationalOfferDenialConfirmation;if(typeof f!=="function")throw new Error("Local wallet confirmation bridge unavailable");const i=${JSON.stringify(confirmationRequest)};const a=await f(i);const h=async v=>{const d=await globalThis.crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return "0x"+[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("")};const k=await h(JSON.stringify({acknowledgementVersion:"human_credit_offer_acknowledgement.v1",creditOfferHash:i.expectedOfferHash,termsHash:i.expectedTermsHash,disclosureRef:i.disclosureRef,actionConfirmationMethod:a.confirmationMethod,actionConfirmationHash:a.confirmationHash,actionConfirmationMessageHash:a.messageHash,sandboxOnly:true,productionFundsAuthority:false}));const q={operationId:i.operationId,resource:{resourceType:"credit_offer",resourceId:i.resourceId},payload:{expectedOfferHash:i.expectedOfferHash,expectedTermsHash:i.expectedTermsHash,acknowledgementHash:k,actionConfirmation:a},requestId:i.requestId,correlationId:${JSON.stringify(correlationId)},idempotencyKey:${JSON.stringify(idempotencyKey)},schemaVersion:"tenant_protocol_request.v1"};const r=await fetch("/tenant/v1/operations",{method:"POST",credentials:"same-origin",headers:{accept:"application/json, application/problem+json","content-type":"application/json","x-csrf-token":c,"x-request-id":q.requestId},body:JSON.stringify(q)});const b=await r.json();if(r.status!==404||b?.schemaVersion!=="problem_details.v1"||b?.code!=="authorization_denied"||b?.requestId!==q.requestId)throw new Error("Offer acceptance did not fail closed");const e={...${JSON.stringify(envelope)},requestProjection:q,response:b};console.log(JSON.stringify(e));return e;})()`;
-}
-
 async function captureOneDenial({
   operator,
   sequence,
@@ -565,11 +724,12 @@ async function captureOneDenial({
   humanActorId,
   clientId
 }) {
+  const armChallenge = `m1_b_denial_response_${randomUUID()}`;
   const request = Object.freeze({
     requestId: requestToken("request_m1b_cp_denial"),
     correlationId: requestToken("correlation_m1b_cp_denial"),
     clientId,
-    idempotencyKey: requestToken("idempotency_m1b_cp_denial")
+    idempotencyKey: deriveM1BDenialResponseIdempotencyKey(armChallenge)
   });
   const target = Object.freeze({
     creditOfferId,
@@ -592,6 +752,17 @@ async function captureOneDenial({
         "acceptance_operator_denial_target_invalid",
         "Denied Offer confirmation is not bound to the protected PostgreSQL Offer"
       );
+      const armToken = createM1BDenialResponseArmToken({
+        sequence,
+        expectedStatus,
+        resourceId: creditOfferId,
+        expectedOfferHash: protectedOffer.creditOfferHash,
+        expectedTermsHash: protectedOffer.termsHash,
+        disclosureRef: protectedOffer.disclosureRef,
+        requestId: request.requestId,
+        correlationId: request.correlationId,
+        challenge: armChallenge
+      });
       operator.prompt({
         schemaVersion: "m1_b_acceptance_operator_prompt.v1",
         kind: "denial_response_ready",
@@ -602,16 +773,9 @@ async function captureOneDenial({
         responseSchemaVersion: "problem_details.v1",
         creditOfferId,
         expectedStatus,
-        browserExpression: createM1BCapitalPartnerDenialBrowserExpression({
-          sequence,
-          creditOfferId,
-          expectedOfferHash: protectedOffer.creditOfferHash,
-          expectedTermsHash: protectedOffer.termsHash,
-          disclosureRef: protectedOffer.disclosureRef,
-          requestId: request.requestId,
-          correlationId: request.correlationId,
-          idempotencyKey: request.idempotencyKey
-        })
+        armToken: JSON.stringify(armToken),
+        instruction:
+          "Paste only armToken into the visible Human-workspace denied Offer panel and click Arm denied Offer. Click Run armed denial probe, approve the exact wallet confirmation, then click Copy denial receipt. Do not use DevTools, evaluated expressions, JavaScript URLs, raw CDP, or direct fetch."
       });
       const line = await operator.nextLine();
       const observedAt = new Date();
@@ -621,6 +785,8 @@ async function captureOneDenial({
         operationId: "pilotAcceptCreditOffer",
         responseSchemaVersion: "problem_details.v1",
         actorRole: "human",
+        armChallenge,
+        denialArmToken: armToken,
         observedAt
       });
       assert(

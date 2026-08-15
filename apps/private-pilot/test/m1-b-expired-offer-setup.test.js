@@ -4,6 +4,7 @@ import { hashId } from "../../../packages/domain/src/index.js";
 import {
   M1_B_EXPIRED_OFFER_SETUP_HUMAN_PREPARATION,
   M1_B_EXPIRED_OFFER_SETUP_LIMITS,
+  M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
   M1_B_EXPIRED_OFFER_SETUP_RESPONSE_SEQUENCE,
   createM1BExpiredOfferCriticalBinding,
   createM1BExpiredOfferSetupCapture,
@@ -16,6 +17,10 @@ import {
   hashM1BAcceptanceManifest,
   inspectM1BResponseOnlyOperation
 } from "../src/m1-b-human-capital-partner-acceptance.js";
+import {
+  createM1BExpiredOfferSetupArmToken,
+  readM1BExpiredOfferFreshInboxItem
+} from "../src/m1-b-expired-offer-setup-cli.js";
 
 const SHA = "a".repeat(40);
 const TREE = "b".repeat(40);
@@ -41,6 +46,10 @@ const VALID_UNTIL = "2026-08-15T00:02:20.000Z";
 const BASELINE_AT = "2026-08-15T00:00:40.000Z";
 const EXPIRED_AT = "2026-08-15T00:02:20.000Z";
 const FINAL_AT = "2026-08-15T00:02:21.000Z";
+const ARM_CHALLENGE_1 =
+  "m1_b_normal_response_01234567-89ab-4def-8123-456789abcdef";
+const ARM_CHALLENGE_2 =
+  "m1_b_normal_response_11234567-89ab-4def-8123-456789abcdef";
 
 function actorHash(actorId) {
   return hashId("m1_b_acceptance_actor_reference", { actorId });
@@ -156,6 +165,10 @@ function capturedEntry(sequence, response) {
     requestId: `request-expired-offer-${sequence}`,
     correlationId: `correlation-expired-offer-${sequence}`,
     responseSchemaVersion,
+    armIssuedAt: sequence === 1
+      ? "2026-08-15T00:00:29.000Z"
+      : "2026-08-15T00:00:35.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     capturedAt: sequence === 1
       ? "2026-08-15T00:00:30.000Z"
       : "2026-08-15T00:00:36.000Z",
@@ -723,10 +736,16 @@ test("response-only parser timestamps safe SIWE page results and rejects raw sig
     sequence: 1,
     requestId: "request-expired-offer-1",
     correlationId: "correlation-expired-offer-1",
+    armChallenge: ARM_CHALLENGE_1,
+    armIssuedAt: "2026-08-15T00:00:29.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     response: inboxResponse()
   });
   const parsed = parseM1BExpiredOfferSetupResponseLine(line, {
     sequence: 1,
+    armChallenge: ARM_CHALLENGE_1,
+    armIssuedAt: "2026-08-15T00:00:29.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     observedAt: "2026-08-15T00:00:30.000Z"
   });
   assert.equal(parsed.operationId, "pilotReadCapitalPartnerPassportInbox");
@@ -737,6 +756,9 @@ test("response-only parser timestamps safe SIWE page results and rejects raw sig
     response: { ...inboxResponse(), email: "alice@example.com" }
   }), {
     sequence: 1,
+    armChallenge: ARM_CHALLENGE_1,
+    armIssuedAt: "2026-08-15T00:00:29.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     observedAt: "2026-08-15T00:00:30.000Z"
   });
   assert.equal(Object.hasOwn(projected.response, "email"), false);
@@ -745,8 +767,58 @@ test("response-only parser timestamps safe SIWE page results and rejects raw sig
     () => parseM1BExpiredOfferSetupResponseLine(JSON.stringify({
       ...JSON.parse(line),
       response: { ...inboxResponse(), rawSignature: `0x${"a".repeat(130)}` }
-    }), { sequence: 1 }),
+    }), {
+      sequence: 1,
+      armChallenge: ARM_CHALLENGE_1,
+      armIssuedAt: "2026-08-15T00:00:29.000Z",
+      armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+      observedAt: "2026-08-15T00:00:30.000Z"
+    }),
     (error) => error?.code === "acceptance_capture_sensitive_key"
+  );
+  assert.throws(
+    () => parseM1BExpiredOfferSetupResponseLine(line, {
+      sequence: 1,
+      armChallenge: ARM_CHALLENGE_2,
+      armIssuedAt: "2026-08-15T00:00:29.000Z",
+      armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+      observedAt: "2026-08-15T00:00:30.000Z"
+    }),
+    (error) => error?.code === "expired_offer_response_line_invalid"
+  );
+});
+
+test("expired-Offer response arms are closed, expiring, and bind the fresh inbox item", () => {
+  const arm = createM1BExpiredOfferSetupArmToken({
+    sequence: 2,
+    issuedAt: "2026-08-15T00:00:00.000Z",
+    challenge: ARM_CHALLENGE_2
+  });
+  assert.deepEqual(arm, {
+    schemaVersion: "m1_b_acceptance_normal_response_arm.v1",
+    challenge: ARM_CHALLENGE_2,
+    clockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+    issuedAt: "2026-08-15T00:00:00.000Z",
+    expiresAt: "2026-08-15T00:15:00.000Z",
+    flow: "expired_offer_setup",
+    sequence: 2,
+    actorRole: "capital_partner",
+    operationId: "pilotAuthorCapitalPartnerOffer",
+    responseSchemaVersion: "tenant_capital_partner_offer_authored.v1"
+  });
+  assert.equal(
+    readM1BExpiredOfferFreshInboxItem(
+      inboxResponse(),
+      createM1BExpiredOfferCriticalBinding(criticalReceipt(), { sha256: DIGEST })
+    ).resource.resourceId,
+    PASSPORT_C
+  );
+  assert.throws(
+    () => createM1BExpiredOfferSetupArmToken({
+      sequence: 3,
+      challenge: ARM_CHALLENGE_2
+    }),
+    (error) => error?.code === "expired_offer_cli_arm_invalid"
   );
 });
 
@@ -764,9 +836,15 @@ test("response-only capture strips the real Offer author displayName without los
     sequence: 1,
     requestId: "request-expired-offer-real-inbox",
     correlationId: "correlation-expired-offer-real-inbox",
+    armChallenge: ARM_CHALLENGE_1,
+    armIssuedAt: "2026-08-15T00:00:29.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     response: inboxResponse()
   }), {
     sequence: 1,
+    armChallenge: ARM_CHALLENGE_1,
+    armIssuedAt: "2026-08-15T00:00:29.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     observedAt: "2026-08-15T00:00:30.000Z"
   });
   const parsedAuthor = parseM1BExpiredOfferSetupResponseLine(JSON.stringify({
@@ -775,9 +853,15 @@ test("response-only capture strips the real Offer author displayName without los
     sequence: 2,
     requestId: "request-expired-offer-real-author",
     correlationId: "correlation-expired-offer-real-author",
+    armChallenge: ARM_CHALLENGE_2,
+    armIssuedAt: "2026-08-15T00:00:35.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     response: rawAuthorResponse
   }), {
     sequence: 2,
+    armChallenge: ARM_CHALLENGE_2,
+    armIssuedAt: "2026-08-15T00:00:35.000Z",
+    armClockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
     observedAt: "2026-08-15T00:00:36.000Z"
   });
   const projectedAuthorHash = inspectM1BResponseOnlyOperation({

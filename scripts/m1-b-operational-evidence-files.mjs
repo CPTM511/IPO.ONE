@@ -26,11 +26,11 @@ import {
 import {
   M1_B_OPERATIONAL_BROWSER_MEASUREMENT_PHASES,
   deriveM1BOperationalBrowserRow,
-  validateM1BOperationalBrowserPng
+  validateM1BOperationalBrowserJpeg
 } from
   "../apps/private-pilot/src/m1-b-operational-browser-measurement.js";
 import {
-  parseM1BOperationalLiveNegativeResponseLine
+  inspectM1BOperationalLiveNegativeResponse
 } from
   "../apps/private-pilot/src/m1-b-operational-live-negative-acceptance.js";
 import {
@@ -500,34 +500,44 @@ export async function verifyM1BOperationalBrowserArtifacts(
           visualId,
           "screenshot"
         );
+        if (
+          screenshotPaths.has(visualArtifact.relativePath) ||
+          screenshotDigests.has(visualArtifact.sha256)
+        ) fail(`Operational browser ${role}:${check}:${phase} screenshot is reused.`);
         const visualBytes = await readArtifactBytes(
           visualArtifact,
           root,
           MAX_SCREENSHOT_BYTES
         );
-        let png;
+        const prompt = measurement.prompt;
+        const response = measurement.response;
+        let jpeg;
         try {
-          const decoded = validateM1BOperationalBrowserPng(
+          const decoded = validateM1BOperationalBrowserJpeg(
             visualBytes,
-            measurement.response.measurement?.viewport
+            response.measurement?.viewport,
+            prompt.capture?.challengeHash
           );
-          png = Object.freeze({
+          if (decoded.sha256 !== visualArtifact.sha256) {
+            fail(`Operational browser ${role}:${check}:${phase} JPEG digest is invalid.`);
+          }
+          jpeg = Object.freeze({
             width: decoded.width,
             height: decoded.height,
-            idatCount: decoded.idatCount
+            jfifVersion: decoded.jfifVersion,
+            iccProfileSegmentCount: decoded.iccProfileSegmentCount,
+            iccProfileBytes: decoded.iccProfileBytes,
+            quality: decoded.quality,
+            subsampling: decoded.subsampling,
+            mcuCount: decoded.mcuCount,
+            decodedChallengeHash: decoded.decodedChallengeHash
           });
         } catch (error) {
-          fail(`Operational browser ${role}:${check}:${phase} PNG is invalid: ${error.message}`);
+          fail(`Operational browser ${role}:${check}:${phase} JPEG is invalid: ${error.message}`);
         }
-        if (
-          screenshotPaths.has(visualArtifact.relativePath) ||
-          screenshotDigests.has(visualArtifact.sha256)
-        ) fail(`Operational browser ${role}:${check}:${phase} screenshot is reused.`);
         screenshotPaths.add(visualArtifact.relativePath);
         screenshotDigests.add(visualArtifact.sha256);
 
-        const prompt = measurement.prompt;
-        const response = measurement.response;
         reserve(prompt.promptId, "prompt ID");
         reserve(prompt.capture?.challenge, "capture challenge");
         if (prompt.readRequest !== null) {
@@ -554,8 +564,10 @@ export async function verifyM1BOperationalBrowserArtifacts(
           kind: visualArtifact.kind,
           relativePath: visualArtifact.relativePath,
           sha256: visualArtifact.sha256,
+          mediaType: prompt.capture?.mediaType,
+          codecProfile: prompt.capture?.codecProfile,
           challengeHash: prompt.capture?.challengeHash,
-          png
+          jpeg
         }));
       }
 
@@ -1876,16 +1888,10 @@ export async function verifyM1BOperationalNegativeArtifacts(
     if (offerCommand && context.disclosureRef !== null) {
       let parsed;
       try {
-        parsed = parseM1BOperationalLiveNegativeResponseLine(JSON.stringify({
-          schemaVersion: "m1_b_operational_live_negative_response.v2",
-          group: definition.group,
-          id: definition.id,
-          requestId: request.requestId,
-          correlationId: request.correlationId,
+        parsed = inspectM1BOperationalLiveNegativeResponse({
           requestProjection: request,
           response: attemptReceipt.outwardResponse
-        }), {
-          group: definition.group,
+        }, {
           id: definition.id,
           requestId: request.requestId,
           correlationId: request.correlationId,

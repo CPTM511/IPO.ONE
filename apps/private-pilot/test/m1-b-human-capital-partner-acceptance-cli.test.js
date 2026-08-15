@@ -1,14 +1,28 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import test from "node:test";
-import { assertTenantProtocolRequest } from "../../../packages/api-contract/src/tenant-protocol.js";
+import {
+  M1_B_ACCEPTANCE_NORMAL_RESPONSE_CLOCK_DOMAIN,
+  M1_B_ACCEPTANCE_NORMAL_RESPONSE_DEFINITIONS
+} from "../../web/src/m1-b-acceptance-normal-response-capture.js";
+import {
+  deriveM1BAcceptanceDenialIdempotencyKey
+} from "../../web/src/m1-b-acceptance-denial-response-capture.js";
+import {
+  M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+  M1_B_EXPIRED_OFFER_SETUP_RESPONSE_SEQUENCE
+} from "../src/m1-b-expired-offer-setup.js";
 import {
   M1BHumanCapitalPartnerCliError,
   M1_B_CAPITAL_PARTNER_OPERATOR_SEQUENCE,
   M1_B_HUMAN_OPERATOR_SEQUENCE,
+  M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
   assertM1BDatabasePostmasterStart,
-  createM1BCapitalPartnerDenialBrowserExpression,
+  createM1BDenialResponseArmToken,
+  createM1BNormalResponseArmToken,
+  deriveM1BDenialResponseIdempotencyKey,
   parseM1BOperatorResponseLine,
   readM1BHumanCapitalPartnerCliEnvironment
 } from "../src/m1-b-human-capital-partner-acceptance-cli.js";
@@ -20,6 +34,16 @@ const CLI = resolve(
 );
 const SHA = "a".repeat(40);
 const OBSERVED_AT = "2026-08-14T01:02:03.004Z";
+const ARM_CHALLENGE =
+  "m1_b_normal_response_01234567-89ab-4def-8123-456789abcdef";
+const DENIAL_ARM_CHALLENGE =
+  "m1_b_denial_response_11234567-89ab-4def-8123-456789abcdef";
+
+function sha256Json(value) {
+  return `0x${createHash("sha256")
+    .update(JSON.stringify(value))
+    .digest("hex")}`;
+}
 
 function responseLine(overrides = {}) {
   return JSON.stringify({
@@ -28,6 +52,9 @@ function responseLine(overrides = {}) {
     sequence: 1,
     requestId: "request-human-cli-0001",
     correlationId: "correlation-human-cli-0001",
+    armChallenge: ARM_CHALLENGE,
+    armIssuedAt: OBSERVED_AT,
+    armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
     response: {
       workspaceKind: "human_borrower",
       humanOfferReview: null,
@@ -46,6 +73,9 @@ test("operator response chronology is owned by the CLI observation clock", () =>
     actorRole: "human",
     operationId: "pilotReadWorkspaceResume",
     responseSchemaVersion: "tenant_workspace_resume_view.v2",
+    armChallenge: ARM_CHALLENGE,
+    armIssuedAt: OBSERVED_AT,
+    armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
     observedAt: OBSERVED_AT
   });
   assert.equal(parsed.capturedAt, OBSERVED_AT);
@@ -60,6 +90,9 @@ test("operator response chronology is owned by the CLI observation clock", () =>
         actorRole: "human",
         operationId: "pilotReadWorkspaceResume",
         responseSchemaVersion: "tenant_workspace_resume_view.v2",
+        armChallenge: ARM_CHALLENGE,
+        armIssuedAt: OBSERVED_AT,
+        armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
         observedAt: OBSERVED_AT
       }
     ),
@@ -78,51 +111,153 @@ test("operator response rejects sensitive material before any DB reconciliation"
       actorRole: "human",
       operationId: "pilotReadWorkspaceResume",
       responseSchemaVersion: "tenant_workspace_resume_view.v2",
+      armChallenge: ARM_CHALLENGE,
+      armIssuedAt: OBSERVED_AT,
+      armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
       observedAt: OBSERVED_AT
     }),
     (error) => error.code === "acceptance_capture_sensitive_key"
   );
 });
 
-test("denial browser expression obtains a fresh wallet confirmation and submits a contract-valid response-only probe", async () => {
+test("normal response arm token is closed, expiring, challenge-bound, and never retained in the receipt entry", () => {
+  const token = createM1BNormalResponseArmToken({
+    flow: "human",
+    sequence: 1,
+    actorRole: "human",
+    operationId: "pilotReadWorkspaceResume",
+    responseSchemaVersion: "tenant_workspace_resume_view.v2",
+    issuedAt: new Date(OBSERVED_AT),
+    challenge: ARM_CHALLENGE
+  });
+  assert.deepEqual(Object.keys(token), [
+    "schemaVersion",
+    "challenge",
+    "clockDomain",
+    "issuedAt",
+    "expiresAt",
+    "flow",
+    "sequence",
+    "actorRole",
+    "operationId",
+    "responseSchemaVersion"
+  ]);
+  assert.equal(
+    M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
+    M1_B_ACCEPTANCE_NORMAL_RESPONSE_CLOCK_DOMAIN
+  );
+  assert.equal(
+    M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+    M1_B_ACCEPTANCE_NORMAL_RESPONSE_CLOCK_DOMAIN
+  );
+  assert.equal(Date.parse(token.expiresAt) - Date.parse(token.issuedAt), 15 * 60_000);
+  assert.throws(
+    () => createM1BNormalResponseArmToken({
+      ...token,
+      sequence: 4
+    }),
+    (error) => error.code === "acceptance_operator_arm_invalid"
+  );
+  assert.throws(
+    () => parseM1BOperatorResponseLine(responseLine({
+      armChallenge:
+        "m1_b_normal_response_11234567-89ab-4def-8123-456789abcdef"
+    }), {
+      flow: "human",
+      sequence: 1,
+      actorRole: "human",
+      operationId: "pilotReadWorkspaceResume",
+      responseSchemaVersion: "tenant_workspace_resume_view.v2",
+      armChallenge: ARM_CHALLENGE,
+      armIssuedAt: OBSERVED_AT,
+      armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
+      observedAt: OBSERVED_AT
+    }),
+    (error) => error.code === "acceptance_operator_response_invalid"
+  );
+  const parsed = parseM1BOperatorResponseLine(responseLine(), {
+    flow: "human",
+    sequence: 1,
+    actorRole: "human",
+    operationId: "pilotReadWorkspaceResume",
+    responseSchemaVersion: "tenant_workspace_resume_view.v2",
+    armChallenge: ARM_CHALLENGE,
+    armIssuedAt: OBSERVED_AT,
+    armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
+    observedAt: OBSERVED_AT
+  });
+  assert.equal(Object.hasOwn(parsed, "armChallenge"), false);
+  assert.equal(parsed.armIssuedAt, OBSERVED_AT);
+  assert.equal(parsed.armClockDomain, M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN);
+
+  for (const [line, options] of [
+    [responseLine({ armIssuedAt: "2026-08-14T01:02:03.003Z" }), {}],
+    [responseLine({ armClockDomain: "host_process_clock" }), {}],
+    [responseLine(), { observedAt: "2026-08-14T01:02:03.003Z" }],
+    [responseLine(), { observedAt: "2026-08-14T01:19:03.005Z" }]
+  ]) {
+    assert.throws(
+      () => parseM1BOperatorResponseLine(line, {
+        flow: "human",
+        sequence: 1,
+        actorRole: "human",
+        operationId: "pilotReadWorkspaceResume",
+        responseSchemaVersion: "tenant_workspace_resume_view.v2",
+        armChallenge: ARM_CHALLENGE,
+        armIssuedAt: OBSERVED_AT,
+        armClockDomain: M1_B_NORMAL_RESPONSE_CLOCK_DOMAIN,
+        observedAt: options.observedAt ?? OBSERVED_AT
+      }),
+      (error) => error.code === "acceptance_operator_response_invalid"
+    );
+  }
+});
+
+test("denial arm token is closed, challenge-bound, and its visible-panel receipt remains contract-valid", () => {
   const expectedOfferHash = `0x${"a".repeat(64)}`;
   const expectedTermsHash = `0x${"b".repeat(64)}`;
-  const expression = createM1BCapitalPartnerDenialBrowserExpression({
+  const token = createM1BDenialResponseArmToken({
     sequence: 4,
-    creditOfferId: "credit_offer_declined_candidate",
+    expectedStatus: "declined",
+    resourceId: "credit_offer_declined_candidate",
     expectedOfferHash,
     expectedTermsHash,
     disclosureRef: "urn:ipo.one:sandbox:credit-offer-disclosure:v1",
     requestId: "request-m1b-denial-0001",
     correlationId: "correlation-m1b-denial-0001",
-    idempotencyKey: "idempotency-m1b-denial-0001"
+    issuedAt: new Date(OBSERVED_AT),
+    challenge: DENIAL_ARM_CHALLENGE
   });
-  assert.match(expression, /ipo-one-csrf-token/);
-  assert.match(expression, /credentials:"same-origin"/);
-  assert.match(expression, /__ipoOneM1BOperationalOfferDenialConfirmation/);
-  assert.match(expression, /acknowledgementVersion/);
-  assert.match(expression, /r\.status!==404/);
-  assert.match(expression, /authorization_denied/);
-  assert.match(expression, /console\.log\(JSON\.stringify\(e\)\)/);
-  assert.doesNotMatch(expression, /document\.cookie|localStorage|sessionStorage/);
-
-  const secretCsrf = "z".repeat(43);
-  const calls = [];
-  const logs = [];
-  const execute = new Function(
-    "document",
-    "fetch",
-    "console",
-    `return ${expression}`
+  assert.deepEqual(Object.keys(token), [
+    "schemaVersion", "challenge", "issuedAt", "expiresAt", "flow", "sequence",
+    "actorRole", "operationId", "responseSchemaVersion", "expectedStatus",
+    "resourceId", "expectedOfferHash", "expectedTermsHash", "disclosureRef",
+    "requestId", "correlationId"
+  ]);
+  assert.equal(
+    deriveM1BDenialResponseIdempotencyKey(DENIAL_ARM_CHALLENGE),
+    "idempotency_m1b_cp_denial_11234567-89ab-4def-8123-456789abcdef"
   );
-  const bridgeName = "__ipoOneM1BOperationalOfferDenialConfirmation";
-  const previousBridge = globalThis[bridgeName];
-  globalThis[bridgeName] = async (input) => ({
+  assert.equal(
+    deriveM1BAcceptanceDenialIdempotencyKey(DENIAL_ARM_CHALLENGE),
+    deriveM1BDenialResponseIdempotencyKey(DENIAL_ARM_CHALLENGE)
+  );
+  assert.throws(
+    () => createM1BDenialResponseArmToken({ ...token, expectedStatus: "withdrawn" }),
+    (error) => error.code === "acceptance_operator_denial_arm_invalid"
+  );
+  const actionConfirmation = {
     actionType: "accept_offer",
-    resourceId: input.resourceId,
-    resourceHash: input.expectedOfferHash,
-    payloadHash: `0x${"c".repeat(64)}`,
-    requestId: input.requestId,
+    resourceId: token.resourceId,
+    resourceHash: expectedOfferHash,
+    payloadHash: sha256Json({
+      expectedOfferHash,
+      expectedTermsHash,
+      disclosureRef: token.disclosureRef,
+      sandboxOnly: true,
+      productionFundsAuthority: false
+    }),
+    requestId: token.requestId,
     requestNonce: "human_action_confirmation_01234567-89ab-4def-8123-456789abcdef",
     requestedAt: "2026-08-15T00:00:00.000Z",
     confirmedAt: "2026-08-15T00:00:01.000Z",
@@ -133,51 +268,99 @@ test("denial browser expression obtains a fresh wallet confirmation and submits 
     rawSignaturePersisted: false,
     blockchainTransactionSubmitted: false,
     schemaVersion: "economic_action_confirmation_result.v1"
+  };
+  const requestProjection = {
+    operationId: token.operationId,
+    resource: { resourceType: "credit_offer", resourceId: token.resourceId },
+    payload: {
+      expectedOfferHash,
+      expectedTermsHash,
+      acknowledgementHash: sha256Json({
+        acknowledgementVersion: "human_credit_offer_acknowledgement.v1",
+        creditOfferHash: expectedOfferHash,
+        termsHash: expectedTermsHash,
+        disclosureRef: token.disclosureRef,
+        actionConfirmationMethod: actionConfirmation.confirmationMethod,
+        actionConfirmationHash: actionConfirmation.confirmationHash,
+        actionConfirmationMessageHash: actionConfirmation.messageHash,
+        sandboxOnly: true,
+        productionFundsAuthority: false
+      }),
+      actionConfirmation
+    },
+    requestId: token.requestId,
+    correlationId: token.correlationId,
+    idempotencyKey: deriveM1BDenialResponseIdempotencyKey(token.challenge),
+    schemaVersion: "tenant_protocol_request.v1"
+  };
+  const line = JSON.stringify({
+    schemaVersion: "m1_b_acceptance_operator_response.v1",
+    flow: "capital_partner",
+    sequence: 4,
+    requestId: token.requestId,
+    correlationId: token.correlationId,
+    armChallenge: token.challenge,
+    requestProjection,
+    response: {
+      status: 404,
+      code: "authorization_denied",
+      requestId: token.requestId,
+      schemaVersion: "problem_details.v1"
+    }
   });
-  let result;
-  try {
-    result = await execute(
-      {
-        querySelector(selector) {
-          assert.equal(selector, 'meta[name="ipo-one-csrf-token"]');
-          return { content: secretCsrf };
-        }
-      },
-      async (url, options) => {
-        calls.push({ url, options });
-        return {
-          status: 404,
-          async json() {
-            return {
-              status: 404,
-              code: "authorization_denied",
-              requestId: "request-m1b-denial-0001",
-              schemaVersion: "problem_details.v1"
-            };
-          }
-        };
-      },
-      { log(value) { logs.push(value); } }
+  const parsed = parseM1BOperatorResponseLine(line, {
+    flow: "capital_partner",
+    sequence: 4,
+    actorRole: "human",
+    operationId: "pilotAcceptCreditOffer",
+    responseSchemaVersion: "problem_details.v1",
+    armChallenge: token.challenge,
+    denialArmToken: token,
+    observedAt: OBSERVED_AT
+  });
+  assert.equal(Object.hasOwn(parsed, "armChallenge"), false);
+  assert.deepEqual(parsed.requestProjection, requestProjection);
+  assert.throws(
+    () => parseM1BOperatorResponseLine(line, {
+      flow: "capital_partner",
+      sequence: 4,
+      actorRole: "human",
+      operationId: "pilotAcceptCreditOffer",
+      responseSchemaVersion: "problem_details.v1",
+      armChallenge:
+        "m1_b_denial_response_21234567-89ab-4def-8123-456789abcdef",
+      denialArmToken: token,
+      observedAt: OBSERVED_AT
+    }),
+    (error) => error.code === "acceptance_operator_response_invalid"
+  );
+
+  for (const mutate of [
+    (value) => {
+      value.requestProjection.payload.actionConfirmation.payloadHash =
+        `0x${"1".repeat(64)}`;
+    },
+    (value) => {
+      value.requestProjection.payload.acknowledgementHash =
+        `0x${"2".repeat(64)}`;
+    }
+  ]) {
+    const mismatched = JSON.parse(line);
+    mutate(mismatched);
+    assert.throws(
+      () => parseM1BOperatorResponseLine(JSON.stringify(mismatched), {
+        flow: "capital_partner",
+        sequence: 4,
+        actorRole: "human",
+        operationId: "pilotAcceptCreditOffer",
+        responseSchemaVersion: "problem_details.v1",
+        armChallenge: token.challenge,
+        denialArmToken: token,
+        observedAt: OBSERVED_AT
+      }),
+      (error) => error.code === "acceptance_operator_denial_request_invalid"
     );
-  } finally {
-    if (previousBridge === undefined) delete globalThis[bridgeName];
-    else globalThis[bridgeName] = previousBridge;
   }
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "/tenant/v1/operations");
-  assert.equal(calls[0].options.credentials, "same-origin");
-  assert.equal(calls[0].options.headers["x-csrf-token"], secretCsrf);
-  const submitted = JSON.parse(calls[0].options.body);
-  assertTenantProtocolRequest(submitted);
-  assert.equal(submitted.payload.expectedOfferHash, expectedOfferHash);
-  assert.equal(submitted.payload.expectedTermsHash, expectedTermsHash);
-  assert.equal(submitted.payload.actionConfirmation.confirmationMethod, "wallet_personal_sign");
-  assert.equal(submitted.payload.actionConfirmation.rawSignaturePersisted, false);
-  assert.deepEqual(result.requestProjection, submitted);
-  assert.equal(result.response.code, "authorization_denied");
-  assert.equal(logs.length, 1);
-  assert.equal(logs[0].includes(secretCsrf), false);
-  assert.equal(logs[0].includes("x-csrf-token"), false);
 });
 
 test("CLI environment is credential-free and binds exact actors/restart", () => {
@@ -239,6 +422,47 @@ test("CLI exposes the exact five-step Human and ten-step CP protocols", () => {
       "pilotAcceptCreditOffer",
       "pilotReadWorkspaceResume"
     ]
+  );
+});
+
+test("web normal-response arm policy cannot drift from the CLI's thirteen non-denial prompts", () => {
+  const cli = [
+    ...M1_B_HUMAN_OPERATOR_SEQUENCE.map((definition, index) => [
+      "human",
+      index + 1,
+      ...definition
+    ]),
+    ...M1_B_CAPITAL_PARTNER_OPERATOR_SEQUENCE.map((definition, index) => [
+      "capital_partner",
+      index + 1,
+      ...definition
+    ])
+  ].filter(([, , , , responseSchemaVersion]) =>
+    responseSchemaVersion !== "problem_details.v1"
+  );
+  const web = M1_B_ACCEPTANCE_NORMAL_RESPONSE_DEFINITIONS
+    .filter(({ flow }) => new Set(["human", "capital_partner"]).has(flow))
+    .map((definition) => [
+      definition.flow,
+      definition.sequence,
+      definition.actorRole,
+      definition.operationId,
+      definition.responseSchemaVersion
+    ]);
+  assert.equal(cli.length, 13);
+  assert.deepEqual(web, cli);
+});
+
+test("web expired-Offer arm policy cannot drift from its exact two-step setup", () => {
+  assert.deepEqual(
+    M1_B_ACCEPTANCE_NORMAL_RESPONSE_DEFINITIONS
+      .filter(({ flow }) => flow === "expired_offer_setup")
+      .map(({ actorRole, operationId, responseSchemaVersion }) => [
+        actorRole,
+        operationId,
+        responseSchemaVersion
+      ]),
+    M1_B_EXPIRED_OFFER_SETUP_RESPONSE_SEQUENCE
   );
 });
 

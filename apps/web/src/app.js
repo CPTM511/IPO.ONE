@@ -85,6 +85,35 @@ import {
   installM1BOperationalOfferDenialConfirmationBridge
 } from "./m1-b-operational-denial-confirmation-bridge.js";
 import {
+  installM1BAcceptanceNormalResponseCapturePanel
+} from "./m1-b-acceptance-normal-response-capture-panel.js";
+import {
+  installM1BAcceptanceDenialResponseCapturePanel
+} from "./m1-b-acceptance-denial-response-capture-panel.js";
+import {
+  isExactM1BAcceptanceExpectedDenialTransport
+} from "./m1-b-acceptance-denial-response-capture.js";
+import {
+  createM1BExpiredOfferPreparation
+} from "./m1-b-expired-offer-preparation.js";
+import {
+  isExactM1BOperationalLiveNegativeProblem
+} from "./m1-b-operational-live-negative-response-capture.js";
+import {
+  installM1BOperationalLiveNegativeResponseCapturePanel
+} from "./m1-b-operational-live-negative-response-capture-panel.js";
+import {
+  isExactM1BRiskBoundaryDeniedTransport
+} from "./m1-b-risk-boundary-response-capture.js";
+import {
+  installM1BRiskBoundaryResponseCapturePanel
+} from "./m1-b-risk-boundary-response-capture-panel.js";
+import {
+  canonicalM1BOperationalBrowserJson,
+  installM1BOperationalBrowserMeasurementConsole,
+  validateM1BOperationalBrowserResponseRequestId
+} from "./m1-b-operational-browser-measurement-console.js";
+import {
   V9_DESTINATION_OPERATION_MAP,
   createArchitectureCapabilityPresentation,
   createWalletPermissionPresentation
@@ -96,6 +125,14 @@ import {
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const percent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+const M1_B_RISK_READ_REQUEST_ID =
+  /^request_m1_b_risk_read_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const M1_B_RISK_FREEZE_REQUEST_ID =
+  /^request_m1_b_risk_freeze_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const M1_B_RISK_CORRELATION_ID =
+  /^correlation_m1_b_risk_boundary_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const M1_B_RISK_FREEZE_IDEMPOTENCY_KEY =
+  /^idempotency_m1b_risk_freeze_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 const VIEW_META = {
   overview: { eyebrow: "Private credit workspace", title: "Your portfolio overview" },
@@ -122,6 +159,14 @@ let authenticatedDataEpoch = 0;
 let tenantPilotProbeOwner = null;
 let tenantPilotProbePromise = null;
 let tenantPilotProbeSerial = 0;
+let m1BAcceptanceNormalResponseCapture = null;
+let m1BAcceptanceDenialResponseCapture = null;
+let m1BOperationalOfferDenialConfirmation = null;
+let m1BExpiredOfferPreparation = null;
+let m1BExpiredOfferPreparationBusy = false;
+let m1BExpiredOfferPreparationMessage = null;
+let m1BOperationalLiveNegativeResponseCapture = null;
+let m1BRiskBoundaryResponseCapture = null;
 let riskRequestSerial = 0;
 const riskRequestOwners = {
   catalog: null,
@@ -945,6 +990,11 @@ function renderAccess() {
     }
   }
   if (document.readyState !== "loading") renderV9ShellStates();
+  m1BAcceptanceNormalResponseCapture?.refreshRuntime();
+  m1BAcceptanceDenialResponseCapture?.refreshRuntime();
+  m1BOperationalLiveNegativeResponseCapture?.refreshRuntime();
+  m1BRiskBoundaryResponseCapture?.refreshRuntime();
+  renderM1BExpiredOfferPreparation();
 }
 
 function clearWalletProviderEvents() {
@@ -2031,9 +2081,105 @@ async function tenantApi(operationId, {
   correlationId = tenantRequestToken("web_tenant_correlation"),
   requestId = tenantRequestToken("web_tenant_request"),
   idempotencyKey,
-  includeTransportMeta = false
+  includeTransportMeta = false,
+  m1bExpectedDenial = false,
+  m1bExpectedProblem = null,
+  m1bRiskBoundaryExpectedDenial = null,
+  m1bExactResponseRequestId = false
 } = {}) {
   const requestDataEpoch = authenticatedDataEpoch;
+  const m1bCrossRoleExpectedProblem =
+    m1bExpectedProblem === "cross_role_private_read";
+  const m1bRiskReadExpectedDenial =
+    m1bRiskBoundaryExpectedDenial === "read";
+  const m1bRiskFreezeExpectedDenial =
+    m1bRiskBoundaryExpectedDenial === "freeze";
+  const m1bRiskExpectedDenial =
+    m1bRiskReadExpectedDenial || m1bRiskFreezeExpectedDenial;
+  if (
+    m1bExpectedProblem !== null && !m1bCrossRoleExpectedProblem
+  ) {
+    throw new Error("The M1-B expected-problem tenant operation is invalid.");
+  }
+  if (
+    m1bRiskBoundaryExpectedDenial !== null && !m1bRiskExpectedDenial
+  ) {
+    throw new Error("The M1-B Risk boundary expected denial is invalid.");
+  }
+  if (
+    m1bExpectedDenial &&
+    (
+      m1bExpectedProblem !== null || m1bRiskExpectedDenial ||
+      operationId !== "pilotAcceptCreditOffer" ||
+      !includeTransportMeta || !idempotent
+    )
+  ) {
+    throw new Error("The M1-B expected-denial tenant operation is invalid.");
+  }
+  if (
+    m1bCrossRoleExpectedProblem &&
+    (
+      m1bExpectedDenial || m1bRiskExpectedDenial ||
+      operationId !== "pilotReadOwnObligation" ||
+      !includeTransportMeta || idempotent ||
+      resource?.resourceType !== "obligation" ||
+      typeof resource?.resourceId !== "string" ||
+      resource.resourceId.length < 2 ||
+      !payload || typeof payload !== "object" || Array.isArray(payload) ||
+      Object.keys(payload).length !== 0 || purpose !== undefined ||
+      reasonCode !== undefined || idempotencyKey !== undefined
+    )
+  ) {
+    throw new Error("The M1-B cross-role expected problem is invalid.");
+  }
+  const emptyM1BRiskPayload =
+    payload && typeof payload === "object" && !Array.isArray(payload) &&
+    Object.keys(payload).length === 0;
+  if (
+    m1bRiskReadExpectedDenial &&
+    (
+      m1bExpectedDenial || m1bExpectedProblem !== null ||
+      operationId !== "pilotReadTenantRiskPortfolioReference" ||
+      !includeTransportMeta || idempotent || resource !== undefined ||
+      !emptyM1BRiskPayload || purpose !== undefined || reasonCode !== undefined ||
+      idempotencyKey !== undefined ||
+      !M1_B_RISK_READ_REQUEST_ID.test(requestId) ||
+      !M1_B_RISK_CORRELATION_ID.test(correlationId)
+    )
+  ) {
+    throw new Error("The M1-B Risk read denial probe is invalid.");
+  }
+  if (
+    m1bRiskFreezeExpectedDenial &&
+    (
+      m1bExpectedDenial || m1bExpectedProblem !== null ||
+      operationId !== "pilotFreezeSubject" || !includeTransportMeta ||
+      !idempotent || !emptyM1BRiskPayload ||
+      !resource || typeof resource !== "object" || Array.isArray(resource) ||
+      Object.keys(resource).length !== 2 || resource.resourceType !== "subject" ||
+      typeof resource.resourceId !== "string" || resource.resourceId.length < 2 ||
+      resource.resourceId.length > 256 || purpose !== undefined ||
+      reasonCode !== "security_incident" ||
+      !M1_B_RISK_FREEZE_IDEMPOTENCY_KEY.test(idempotencyKey ?? "") ||
+      !M1_B_RISK_FREEZE_REQUEST_ID.test(requestId) ||
+      !M1_B_RISK_CORRELATION_ID.test(correlationId)
+    )
+  ) {
+    throw new Error("The M1-B Risk freeze denial probe is invalid.");
+  }
+  if (
+    m1bExactResponseRequestId &&
+    (
+      m1bExpectedDenial || m1bExpectedProblem !== null || m1bRiskExpectedDenial ||
+      !includeTransportMeta || idempotent ||
+      !new Set([
+        "pilotReadWorkspaceResume",
+        "pilotReadCapitalPartnerSelf"
+      ]).has(operationId)
+    )
+  ) {
+    throw new Error("The M1-B exact-response tenant read is invalid.");
+  }
   walletAuthorityLifecycle.assertProtectedAvailable();
   const csrfToken = tenantCsrfToken();
   if (!csrfToken) throw new Error("The authenticated Human session is missing its CSRF bootstrap token.");
@@ -2051,6 +2197,13 @@ async function tenantApi(operationId, {
     protocolRequest.idempotencyKey = idempotencyKey ?? tenantRequestToken("web_tenant_idempotency");
   }
 
+  const m1bNormalResponseRequestPermit =
+    m1BAcceptanceNormalResponseCapture?.acquireRequestPermit(operationId) ?? null;
+  const rejectM1BNormalResponseRequest = () =>
+    m1BAcceptanceNormalResponseCapture?.noteRejectedOperation({
+      requestedOperationId: operationId,
+      requestPermit: m1bNormalResponseRequestPermit
+    });
   let response;
   try {
     response = await fetch("/tenant/v1/operations", {
@@ -2065,14 +2218,37 @@ async function tenantApi(operationId, {
       body: JSON.stringify(protocolRequest)
     });
   } catch (cause) {
+    rejectM1BNormalResponseRequest();
     const error = new Error("The authenticated Human pilot gateway is unavailable.", { cause });
     error.requestId = requestId;
     throw error;
   }
 
-  const responseRequestId = response.headers.get("x-request-id") ?? requestId;
-  const text = await response.text();
+  const responseRequestIdHeader = response.headers.get("x-request-id");
+  const normalCaptureResponseIdRejected =
+    responseRequestIdHeader !== requestId &&
+    rejectM1BNormalResponseRequest() === true;
+  if (m1bExactResponseRequestId) {
+    try {
+      validateM1BOperationalBrowserResponseRequestId({
+        expectedRequestId: requestId,
+        responseRequestIdHeader
+      });
+    } catch (error) {
+      rejectM1BNormalResponseRequest();
+      throw error;
+    }
+  }
+  const responseRequestId = responseRequestIdHeader ?? requestId;
+  let text;
+  try {
+    text = await response.text();
+  } catch (cause) {
+    rejectM1BNormalResponseRequest();
+    throw new Error("The private gateway response could not be read.", { cause });
+  }
   if (requestDataEpoch !== authenticatedDataEpoch) {
+    rejectM1BNormalResponseRequest();
     throw Object.assign(
       new Error("The authenticated session ended before this response completed."),
       { code: "authenticated_session_ended", requestId: responseRequestId }
@@ -2082,6 +2258,7 @@ async function tenantApi(operationId, {
   try {
     result = text ? JSON.parse(text) : undefined;
   } catch {
+    rejectM1BNormalResponseRequest();
     const error = new Error("The private gateway returned an invalid response.");
     error.requestId = responseRequestId;
     recordRequest({ method: "POST", path: `/tenant:${operationId}`, status: response.status, requestId: responseRequestId });
@@ -2089,6 +2266,50 @@ async function tenantApi(operationId, {
   }
   recordRequest({ method: "POST", path: `/tenant:${operationId}`, status: response.status, requestId: responseRequestId });
   if (!response.ok) {
+    rejectM1BNormalResponseRequest();
+    if (
+      (
+        m1bExpectedDenial &&
+        isExactM1BAcceptanceExpectedDenialTransport({
+          requestId,
+          responseStatus: response.status,
+          responseRequestIdHeader,
+          response: result
+        })
+      ) || (
+        m1bCrossRoleExpectedProblem &&
+        isExactM1BOperationalLiveNegativeProblem({
+          requestId,
+          responseStatus: response.status,
+          responseRequestIdHeader,
+          response: result
+        })
+      ) || (
+        m1bRiskExpectedDenial &&
+        isExactM1BRiskBoundaryDeniedTransport({
+          requestId,
+          responseStatus: response.status,
+          responseRequestIdHeader,
+          response: result
+        })
+      )
+    ) {
+      walletAuthorityLifecycle.assertProtectedAvailable();
+      if (m1bRiskExpectedDenial) {
+        return Object.freeze({
+          requestProjection: Object.freeze(structuredClone(protocolRequest)),
+          responseStatus: response.status,
+          responseRequestIdHeader,
+          response: Object.freeze(structuredClone(result))
+        });
+      }
+      return Object.freeze({
+        correlationId,
+        requestId: responseRequestId,
+        requestProjection: Object.freeze(structuredClone(protocolRequest)),
+        response: Object.freeze(structuredClone(result))
+      });
+    }
     const error = new Error(result?.detail ?? "The private operation was rejected.");
     error.code = result?.code ?? "unknown_tenant_error";
     error.status = response.status;
@@ -2096,9 +2317,36 @@ async function tenantApi(operationId, {
     quarantineRejectedAuthenticationSession(error);
     throw error;
   }
-  walletAuthorityLifecycle.assertProtectedAvailable();
+  if (m1bRiskExpectedDenial) {
+    rejectM1BNormalResponseRequest();
+    throw Object.assign(
+      new Error("The M1-B Risk boundary probe was unexpectedly allowed."),
+      { code: "m1_b_risk_boundary_unexpected_allow", requestId: responseRequestId }
+    );
+  }
+  try {
+    walletAuthorityLifecycle.assertProtectedAvailable();
+  } catch (error) {
+    rejectM1BNormalResponseRequest();
+    throw error;
+  }
+  if (!normalCaptureResponseIdRejected) {
+    m1BAcceptanceNormalResponseCapture?.observeTenantApiResult({
+      requestedOperationId: operationId,
+      requestPermit: m1bNormalResponseRequestPermit,
+      requestId,
+      responseRequestIdHeader,
+      correlationId,
+      result
+    });
+  }
   return includeTransportMeta
-    ? Object.freeze({ correlationId, requestId: responseRequestId, result })
+    ? Object.freeze({
+        correlationId,
+        requestId: responseRequestId,
+        ...(m1bExactResponseRequestId ? { responseRequestIdHeader } : {}),
+        result
+      })
     : result;
 }
 
@@ -6621,6 +6869,71 @@ function ensureCapitalPartnerDateDefaults() {
   }
 }
 
+function exactM1BExpiredOfferAuthorArm(state) {
+  return state?.phase === "armed" && state.runtimeAvailable === true &&
+    state.flow === "expired_offer_setup" && state.sequence === 2 &&
+    state.operationId === "pilotAuthorCapitalPartnerOffer" &&
+    state.readOnly === false;
+}
+
+function renderM1BExpiredOfferPreparation() {
+  const controls = el("m1BExpiredOfferPreparationControls");
+  const button = el("m1BExpiredOfferPrepareBtn");
+  const status = el("m1BExpiredOfferPrepareStatus");
+  if (!controls || !button || !status) return;
+  const captureState = m1BAcceptanceNormalResponseCapture?.snapshot();
+  const preparation = m1BExpiredOfferPreparation?.snapshot();
+  const armed = exactM1BExpiredOfferAuthorArm(captureState);
+  const selectedPassportId =
+    capitalPartnerPilot.selectedApplication?.resource.resourceId ?? null;
+  let controlValidUntil = null;
+  try {
+    controlValidUntil = el("capitalPartnerValidUntil")?.value
+      ? new Date(el("capitalPartnerValidUntil").value).toISOString()
+      : null;
+  } catch {
+    controlValidUntil = null;
+  }
+  const preparationCurrent = preparation?.ready === true &&
+    preparation.passportId === selectedPassportId &&
+    preparation.validUntil === controlValidUntil;
+  controls.hidden = !armed && preparation?.ready !== true;
+  button.disabled = m1BExpiredOfferPreparationBusy || !armed || !selectedPassportId;
+  button.toggleAttribute("aria-busy", m1BExpiredOfferPreparationBusy);
+  button.textContent = m1BExpiredOfferPreparationBusy
+    ? "Reading loopback server time…"
+    : "Prepare 105-second expiry";
+  status.textContent = m1BExpiredOfferPreparationBusy
+    ? "Reading exact app-owned loopback server time. No Offer is submitted."
+    : m1BExpiredOfferPreparationMessage
+      ?? (preparationCurrent
+        ? "105-second expiry prepared for this Passport. Review the terms, then use Issue exact sandbox Offer."
+        : preparation?.ready
+          ? "The previous expiry no longer matches this Passport or field. Prepare it again; submission otherwise fails closed."
+          : armed && selectedPassportId
+            ? "Prepare the exact 105-second server-time validity, then submit with the existing Offer button."
+            : "Select the fresh authorized Passport before preparing the expiry.");
+}
+
+async function prepareM1BExpiredOfferValidity() {
+  if (m1BExpiredOfferPreparationBusy || !m1BExpiredOfferPreparation) return;
+  m1BExpiredOfferPreparationBusy = true;
+  m1BExpiredOfferPreparationMessage = null;
+  renderM1BExpiredOfferPreparation();
+  try {
+    await m1BExpiredOfferPreparation.prepare();
+    announce(
+      "105-second expired-Offer validity prepared from exact loopback server time. No Offer was submitted."
+    );
+  } catch (error) {
+    m1BExpiredOfferPreparationMessage = error.message;
+    announce(`Expired-Offer preparation failed. ${error.message}`);
+  } finally {
+    m1BExpiredOfferPreparationBusy = false;
+    renderM1BExpiredOfferPreparation();
+  }
+}
+
 function capitalPartnerFacilityRow(facility) {
   const row = document.createElement("article");
   row.className = "capital-partner-facility-row";
@@ -6834,6 +7147,7 @@ function renderCapitalPartner() {
   authorButton.textContent = waiting
     ? "Submitting exact terms…"
     : "Issue exact sandbox Offer";
+  renderM1BExpiredOfferPreparation();
   const withdrawButton = el("capitalPartnerWithdrawOfferBtn");
   withdrawButton.hidden = offer?.status !== "offered" || !transitionOperational;
   withdrawButton.disabled = waiting;
@@ -6998,6 +7312,18 @@ async function authorCapitalPartnerOffer() {
       throw new Error(
         "The authorized application changed. Nothing was submitted; choose the current application and review the terms again."
       );
+    }
+    const expiredCaptureState =
+      m1BAcceptanceNormalResponseCapture?.snapshot();
+    const expiredPreparationState = m1BExpiredOfferPreparation?.snapshot();
+    if (
+      exactM1BExpiredOfferAuthorArm(expiredCaptureState) ||
+      expiredPreparationState?.ready === true
+    ) {
+      if (!m1BExpiredOfferPreparation) {
+        throw new Error("Expired-Offer preparation is unavailable.");
+      }
+      m1BExpiredOfferPreparation.consumeForSubmission();
     }
     const passportId = selectedApplication.resource.resourceId;
     const {
@@ -7187,6 +7513,183 @@ async function refreshCapitalPartnerWorkspace() {
       renderCapitalPartner();
     }
   }
+}
+
+async function performM1BAcceptanceNormalResponseRead(operationId) {
+  if (operationId === "pilotReadWorkspaceResume") {
+    await recoverAuthenticatedWorkspace();
+    renderTenantPilot();
+    return;
+  }
+  if (
+    new Set([
+      "pilotReadCapitalPartnerSelf",
+      "pilotReadCapitalPartnerPassportInbox"
+    ]).has(operationId)
+  ) {
+    await recoverCapitalPartnerWorkspace();
+    return;
+  }
+  if (operationId === "pilotReadOwnObligationEvidence") {
+    if (!tenantPilot.obligation?.obligationId) {
+      throw new Error("Restore the owned Obligation before running its Evidence read.");
+    }
+    await loadOwnedEvidence({ refreshAnchor: false });
+    return;
+  }
+  throw new Error("The armed operation is not an approved read-only UI action.");
+}
+
+async function performM1BAcceptanceDenialResponse(attempt) {
+  if (typeof m1BOperationalOfferDenialConfirmation !== "function") {
+    throw new Error("The local denied Offer confirmation bridge is unavailable.");
+  }
+  const actionConfirmation = await m1BOperationalOfferDenialConfirmation({
+    schemaVersion: "m1_b_operational_offer_denial_confirmation_request.v1",
+    operationId: attempt.operationId,
+    resourceId: attempt.resourceId,
+    expectedOfferHash: attempt.expectedOfferHash,
+    expectedTermsHash: attempt.expectedTermsHash,
+    disclosureRef: attempt.disclosureRef,
+    requestId: attempt.requestId
+  });
+  const acknowledgementHash = await sha256Hex(JSON.stringify({
+    acknowledgementVersion: "human_credit_offer_acknowledgement.v1",
+    creditOfferHash: attempt.expectedOfferHash,
+    termsHash: attempt.expectedTermsHash,
+    disclosureRef: attempt.disclosureRef,
+    actionConfirmationMethod: actionConfirmation.confirmationMethod,
+    actionConfirmationHash: actionConfirmation.confirmationHash,
+    actionConfirmationMessageHash: actionConfirmation.messageHash,
+    sandboxOnly: true,
+    productionFundsAuthority: false
+  }));
+  const result = await tenantApi(attempt.operationId, {
+    resource: { resourceType: "credit_offer", resourceId: attempt.resourceId },
+    payload: {
+      expectedOfferHash: attempt.expectedOfferHash,
+      expectedTermsHash: attempt.expectedTermsHash,
+      acknowledgementHash,
+      actionConfirmation
+    },
+    correlationId: attempt.correlationId,
+    requestId: attempt.requestId,
+    idempotencyKey: attempt.idempotencyKey,
+    includeTransportMeta: true,
+    m1bExpectedDenial: true
+  });
+  return Object.freeze({
+    requestProjection: result.requestProjection,
+    response: result.response
+  });
+}
+
+async function performM1BOperationalLiveNegativeResponse(attempt) {
+  if (attempt?.kind === "offer_denial") {
+    return performM1BAcceptanceDenialResponse(attempt);
+  }
+  if (
+    attempt?.kind !== "cross_role_read_denial" ||
+    attempt.operationId !== "pilotReadOwnObligation" ||
+    attempt.resourceType !== "obligation" ||
+    attempt.idempotencyKey !== null ||
+    attempt.expectedOfferHash !== null ||
+    attempt.expectedTermsHash !== null ||
+    attempt.disclosureRef !== null
+  ) {
+    throw new Error("The fixed cross-role live-negative probe is invalid.");
+  }
+  const result = await tenantApi("pilotReadOwnObligation", {
+    resource: {
+      resourceType: "obligation",
+      resourceId: attempt.resourceId
+    },
+    payload: {},
+    idempotent: false,
+    correlationId: attempt.correlationId,
+    requestId: attempt.requestId,
+    includeTransportMeta: true,
+    m1bExpectedProblem: "cross_role_private_read"
+  });
+  return Object.freeze({
+    requestProjection: result.requestProjection,
+    response: result.response
+  });
+}
+
+async function performM1BRiskBoundary(attempt) {
+  const read = attempt?.read;
+  const freeze = attempt?.freeze;
+  const exactRead =
+    attempt && typeof attempt === "object" && !Array.isArray(attempt) &&
+    Object.keys(attempt).sort().join(",") === "freeze,read" &&
+    read && typeof read === "object" && !Array.isArray(read) &&
+    Object.keys(read).sort().join(",") ===
+      "correlationId,operationId,payload,requestId,schemaVersion" &&
+    read.operationId === "pilotReadTenantRiskPortfolioReference" &&
+    read.payload && typeof read.payload === "object" &&
+    !Array.isArray(read.payload) && Object.keys(read.payload).length === 0 &&
+    M1_B_RISK_READ_REQUEST_ID.test(read.requestId ?? "") &&
+    M1_B_RISK_CORRELATION_ID.test(read.correlationId ?? "") &&
+    read.schemaVersion === "tenant_protocol_request.v1";
+  const exactFreeze =
+    freeze && typeof freeze === "object" && !Array.isArray(freeze) &&
+    Object.keys(freeze).sort().join(",") ===
+      "correlationId,idempotencyKey,operationId,payload,reasonCode,requestId,resource,schemaVersion" &&
+    freeze.operationId === "pilotFreezeSubject" &&
+    freeze.payload && typeof freeze.payload === "object" &&
+    !Array.isArray(freeze.payload) && Object.keys(freeze.payload).length === 0 &&
+    freeze.resource && typeof freeze.resource === "object" &&
+    !Array.isArray(freeze.resource) &&
+    Object.keys(freeze.resource).sort().join(",") === "resourceId,resourceType" &&
+    freeze.resource.resourceType === "subject" &&
+    typeof freeze.resource.resourceId === "string" &&
+    freeze.resource.resourceId.length >= 2 && freeze.resource.resourceId.length <= 256 &&
+    freeze.reasonCode === "security_incident" &&
+    M1_B_RISK_FREEZE_IDEMPOTENCY_KEY.test(freeze.idempotencyKey ?? "") &&
+    M1_B_RISK_FREEZE_REQUEST_ID.test(freeze.requestId ?? "") &&
+    M1_B_RISK_CORRELATION_ID.test(freeze.correlationId ?? "") &&
+    freeze.schemaVersion === "tenant_protocol_request.v1" &&
+    read?.requestId !== freeze.requestId &&
+    read?.correlationId !== freeze.correlationId;
+  if (!exactRead || !exactFreeze) {
+    throw new Error("The fixed M1-B Risk boundary attempt is invalid.");
+  }
+  const readResult = await tenantApi(read.operationId, {
+    payload: {},
+    idempotent: false,
+    correlationId: read.correlationId,
+    requestId: read.requestId,
+    includeTransportMeta: true,
+    m1bRiskBoundaryExpectedDenial: "read"
+  });
+  const freezeResult = await tenantApi(freeze.operationId, {
+    resource: {
+      resourceType: freeze.resource.resourceType,
+      resourceId: freeze.resource.resourceId
+    },
+    payload: {},
+    reasonCode: freeze.reasonCode,
+    correlationId: freeze.correlationId,
+    requestId: freeze.requestId,
+    idempotencyKey: freeze.idempotencyKey,
+    includeTransportMeta: true,
+    m1bRiskBoundaryExpectedDenial: "freeze"
+  });
+  return Object.freeze({
+    read: Object.freeze({
+      requestProjection: readResult.requestProjection,
+      responseStatus: readResult.responseStatus,
+      responseRequestIdHeader: readResult.responseRequestIdHeader,
+      response: readResult.response
+    }),
+    freeze: Object.freeze({
+      requestProjection: freezeResult.requestProjection,
+      responseStatus: freezeResult.responseStatus,
+      responseRequestIdHeader: freezeResult.responseRequestIdHeader,
+      response: freezeResult.response
+    })
+  });
 }
 
 function providerResourceUnavailable(error) {
@@ -12183,6 +12686,10 @@ function bindActions() {
     "click",
     refreshCapitalPartnerWorkspace
   );
+  el("m1BExpiredOfferPrepareBtn").addEventListener(
+    "click",
+    prepareM1BExpiredOfferValidity
+  );
   for (const control of el("capitalPartnerOfferForm").querySelectorAll(
     "input, select"
   )) {
@@ -12662,19 +13169,170 @@ async function boot() {
     window.location.protocol === "http:" &&
     new Set(["127.0.0.1", "localhost"]).has(window.location.hostname)
   ) {
-    installM1BOperationalOfferDenialConfirmationBridge({
-      globalObject: globalThis,
+    m1BOperationalOfferDenialConfirmation =
+      installM1BOperationalOfferDenialConfirmationBridge({
+        globalObject: globalThis,
+        location: window.location,
+        getRuntimeState: () => Object.freeze({
+          connected: tenantPilot.connected,
+          authenticationMethod: accessState.sessionAuthenticationMethod,
+          authenticationProfile: accessState.authenticationProfile,
+          workspaceKind: tenantPilot.workspaceKind,
+          walletAuthorityAvailable:
+            walletAuthorityLifecycle.getSnapshot().protectedAuthorityAvailable
+        }),
+        requestEconomicActionConfirmation,
+        sha256Hex
+      });
+    if (
+      !el("m1BAcceptanceArmBtn") ||
+      !el("m1BAcceptanceRunReadBtn") ||
+      !el("m1BAcceptanceCopyResponseBtn") ||
+      !el("m1BAcceptanceDenialArmBtn") ||
+      !el("m1BAcceptanceRunDenialBtn") ||
+      !el("m1BAcceptanceCopyDenialBtn") ||
+      !el("m1BExpiredOfferPreparationControls") ||
+      !el("m1BExpiredOfferPrepareBtn") ||
+      !el("m1BExpiredOfferPrepareStatus") ||
+      !el("m1BOperationalLiveNegativeControls") ||
+      !el("m1BOperationalLiveNegativeArmToken") ||
+      !el("m1BOperationalLiveNegativeArmBtn") ||
+      !el("m1BOperationalLiveNegativeRunBtn") ||
+      !el("m1BOperationalLiveNegativeCopyBtn") ||
+      !el("m1BOperationalLiveNegativeStatus") ||
+      !el("m1BRiskBoundaryControls") ||
+      !el("m1BRiskBoundaryArmToken") ||
+      !el("m1BRiskBoundaryArmBtn") ||
+      !el("m1BRiskBoundaryRunBtn") ||
+      !el("m1BRiskBoundaryStatus")
+    ) {
+      throw new Error("The local M1-B safe response controls are unavailable.");
+    }
+    m1BAcceptanceNormalResponseCapture =
+      installM1BAcceptanceNormalResponseCapturePanel({
+        document,
+        location: window.location,
+        getRuntimeState: () => Object.freeze({
+          connected: tenantPilot.connected,
+          authenticationMethod: accessState.sessionAuthenticationMethod,
+          authenticationProfile: accessState.authenticationProfile,
+          workspaceKind: tenantPilot.workspaceKind,
+          hostWorkspaceName: currentWorkspaceName(),
+          walletAuthorityAvailable:
+            walletAuthorityLifecycle.getSnapshot().protectedAuthorityAvailable
+        }),
+        performRead: performM1BAcceptanceNormalResponseRead,
+        clipboard: {
+          async writeText(value) {
+            if (typeof navigator.clipboard?.writeText !== "function") {
+              throw new Error("Clipboard access is unavailable in this browser.");
+            }
+            return navigator.clipboard.writeText(value);
+          }
+        },
+        announce
+      });
+    m1BExpiredOfferPreparation = createM1BExpiredOfferPreparation({
       location: window.location,
+      fetchHealth: (input, init) => fetch(input, init),
+      getCaptureState: () => m1BAcceptanceNormalResponseCapture.snapshot(),
+      getSelectedPassportId: () =>
+        capitalPartnerPilot.selectedApplication?.resource.resourceId ?? null,
+      validUntilControl: el("capitalPartnerValidUntil")
+    });
+    m1BAcceptanceNormalResponseCapture.subscribe(
+      renderM1BExpiredOfferPreparation
+    );
+    m1BAcceptanceDenialResponseCapture =
+      installM1BAcceptanceDenialResponseCapturePanel({
+        document,
+        location: window.location,
+        getRuntimeState: () => Object.freeze({
+          connected: tenantPilot.connected,
+          authenticationMethod: accessState.sessionAuthenticationMethod,
+          authenticationProfile: accessState.authenticationProfile,
+          workspaceKind: tenantPilot.workspaceKind,
+          hostWorkspaceName: currentWorkspaceName(),
+          walletAuthorityAvailable:
+            walletAuthorityLifecycle.getSnapshot().protectedAuthorityAvailable
+        }),
+        performDenial: performM1BAcceptanceDenialResponse,
+        clipboard: {
+          async writeText(value) {
+            if (typeof navigator.clipboard?.writeText !== "function") {
+              throw new Error("Clipboard access is unavailable in this browser.");
+            }
+            return navigator.clipboard.writeText(value);
+          }
+        },
+        announce
+      });
+    m1BOperationalLiveNegativeResponseCapture =
+      installM1BOperationalLiveNegativeResponseCapturePanel({
+        document,
+        location: window.location,
+        getRuntimeState: () => Object.freeze({
+          connected: tenantPilot.connected,
+          authenticationMethod: accessState.sessionAuthenticationMethod,
+          authenticationProfile: accessState.authenticationProfile,
+          workspaceKind: tenantPilot.workspaceKind,
+          hostWorkspaceName: currentWorkspaceName(),
+          walletAuthorityAvailable:
+            walletAuthorityLifecycle.getSnapshot().protectedAuthorityAvailable
+        }),
+        performDenial: performM1BOperationalLiveNegativeResponse,
+        clipboard: {
+          async writeText(value) {
+            if (typeof navigator.clipboard?.writeText !== "function") {
+              throw new Error("Clipboard access is unavailable in this browser.");
+            }
+            return navigator.clipboard.writeText(value);
+          }
+        },
+        announce
+      });
+    m1BRiskBoundaryResponseCapture =
+      installM1BRiskBoundaryResponseCapturePanel({
+        document,
+        location: window.location,
+        getRuntimeState: () => Object.freeze({
+          connected: tenantPilot.connected,
+          authenticationMethod: accessState.sessionAuthenticationMethod,
+          authenticationProfile: accessState.authenticationProfile,
+          hostWorkspaceName: currentWorkspaceName()
+        }),
+        performBoundary: performM1BRiskBoundary,
+        announce
+      });
+    installM1BOperationalBrowserMeasurementConsole({
+      globalObject: window,
+      documentObject: document,
+      hashCanonical: (value) => sha256Hex(
+        canonicalM1BOperationalBrowserJson(value)
+      ),
+      readAuthenticationOptions: () => authJson("/auth/v1/options"),
+      tenantRead: ({ operationId, payload, requestId, correlationId }) =>
+        tenantApi(operationId, {
+          payload,
+          idempotent: false,
+          requestId,
+          correlationId,
+          includeTransportMeta: true,
+          m1bExactResponseRequestId: true
+        }),
       getRuntimeState: () => Object.freeze({
+        authenticationProfile: accessState.authenticationProfile,
         connected: tenantPilot.connected,
         authenticationMethod: accessState.sessionAuthenticationMethod,
-        authenticationProfile: accessState.authenticationProfile,
         workspaceKind: tenantPilot.workspaceKind,
-        walletAuthorityAvailable:
+        protectedAuthorityAvailable:
           walletAuthorityLifecycle.getSnapshot().protectedAuthorityAvailable
       }),
-      requestEconomicActionConfirmation,
-      sha256Hex
+      prepareView: async (view) => {
+        showView(view, { focus: false, historyMode: "replace" });
+      },
+      announce,
+      toast
     });
   }
   applyWorkspaceSurfaceAccess();

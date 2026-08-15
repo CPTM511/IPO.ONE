@@ -5,8 +5,10 @@ import {
   captureM1BOperationalLiveDenialBoundary,
   captureM1BOperationalLiveDenialBoundaryForTest,
   createM1BOperationalLiveAttempt,
-  createM1BOperationalLiveNegativeBrowserExpression,
+  createM1BOperationalLiveNegativeArmToken,
+  deriveM1BOperationalLiveNegativeIdempotencyKey,
   deriveM1BOperationalRepositoryIdempotencyKey,
+  inspectM1BOperationalLiveNegativeResponse,
   parseM1BOperationalLiveNegativeResponseLine,
   readM1BOperationalLiveClientId
 } from "../src/m1-b-operational-live-negative-acceptance.js";
@@ -33,6 +35,8 @@ const CLIENT = "client_human_invited_siwe";
 const OFFER_HASH = HASH;
 const TERMS_HASH = `0x${"b".repeat(64)}`;
 const DISCLOSURE = "urn:ipo.one:sandbox:credit-offer-disclosure:v1";
+const LIVE_ARM_CHALLENGE =
+  "m1_b_live_negative_response_01234567-89ab-4def-8123-456789abcdef";
 
 function liveCliContext() {
   return {
@@ -170,8 +174,10 @@ function problem(requestId) {
   };
 }
 
-test("live browser expression keeps session material in page memory and returns only safe problem truth", () => {
-  const expression = createM1BOperationalLiveNegativeBrowserExpression({
+test("live-negative arm is closed, expiring, and carries no executable browser expression", () => {
+  const idempotencyKey =
+    deriveM1BOperationalLiveNegativeIdempotencyKey(LIVE_ARM_CHALLENGE);
+  const arm = createM1BOperationalLiveNegativeArmToken({
     group: "human",
     id: "unauthorized_subject",
     operationId: "pilotAcceptCreditOffer",
@@ -182,15 +188,25 @@ test("live browser expression keeps session material in page memory and returns 
     disclosureRef: "urn:ipo.one:sandbox:credit-offer-disclosure:v1",
     requestId: "request_m1b_unauthorized_001",
     correlationId: "correlation_m1b_unauthorized_001",
-    idempotencyKey: "idempotency_m1b_unauthorized_001"
+    idempotencyKey,
+    issuedAt: "2026-08-15T01:00:00.000Z",
+    challenge: LIVE_ARM_CHALLENGE
   });
-  assert.match(expression, /meta\[name=\"ipo-one-csrf-token\"\]/);
-  assert.match(expression, /credentials:\"same-origin\"/);
-  assert.match(expression, /__ipoOneM1BOperationalOfferDenialConfirmation/);
-  assert.match(expression, /acknowledgementVersion/);
-  assert.match(expression, /authorization_denied/);
-  assert.doesNotMatch(expression, /document\.cookie|localStorage|sessionStorage|authorization:/i);
-  assert.match(expression, /response:b/);
+  assert.equal(arm.schemaVersion, "m1_b_operational_live_negative_arm.v1");
+  assert.equal(arm.expiresAt, "2026-08-15T01:15:00.000Z");
+  assert.equal(arm.actorRole, "human");
+  assert.equal(arm.expectedStatus, 404);
+  assert.equal(Object.hasOwn(arm, "idempotencyKey"), false);
+  assert.doesNotMatch(JSON.stringify(arm), /browserExpression|csrf|signature|cookie/i);
+  assert.throws(
+    () => createM1BOperationalLiveNegativeArmToken({
+      ...arm,
+      challenge:
+        "m1_b_live_negative_response_11234567-89ab-4def-8123-456789abcdef",
+      idempotencyKey
+    }),
+    /business binding is invalid/
+  );
 });
 
 test("live response parser timestamps a closed problem projection and rejects operator extras", () => {
@@ -201,6 +217,7 @@ test("live response parser timestamps a closed problem projection and rejects op
     correlationId: "correlation_m1b_cross_role_001",
     resourceType: "obligation",
     resourceId: "obligation_human_critical",
+    armChallenge: LIVE_ARM_CHALLENGE,
     observedAt: new Date("2026-08-15T01:00:00.000Z")
   };
   const line = JSON.stringify({
@@ -209,6 +226,7 @@ test("live response parser timestamps a closed problem projection and rejects op
     id: context.id,
     requestId: context.requestId,
     correlationId: context.correlationId,
+    armChallenge: LIVE_ARM_CHALLENGE,
     requestProjection: {
       operationId: "pilotReadOwnObligation",
       resource: {
@@ -258,6 +276,7 @@ test("live Offer response parser recomputes the exact wallet payload and acknowl
     expectedTermsHash: TERMS_HASH,
     disclosureRef: DISCLOSURE,
     idempotencyKey: attempt.idempotencyKey,
+    armChallenge: LIVE_ARM_CHALLENGE,
     observedAt: new Date("2026-08-15T01:00:02.000Z")
   };
   const envelope = {
@@ -266,6 +285,7 @@ test("live Offer response parser recomputes the exact wallet payload and acknowl
     id: attempt.id,
     requestId: attempt.requestId,
     correlationId: attempt.correlationId,
+    armChallenge: LIVE_ARM_CHALLENGE,
     requestProjection,
     response: problem(attempt.requestId)
   };
@@ -274,6 +294,14 @@ test("live Offer response parser recomputes the exact wallet payload and acknowl
     context
   );
   assert.equal(parsed.requestProjectionHash, hashM1BAcceptanceManifest(requestProjection));
+  assert.throws(
+    () => inspectM1BOperationalLiveNegativeResponse({
+      requestProjection,
+      response: envelope.response,
+      armChallenge: LIVE_ARM_CHALLENGE
+    }, context),
+    /sealed response shape is invalid/
+  );
   const tamperedRequest = structuredClone(requestProjection);
   tamperedRequest.payload.acknowledgementHash = `0x${"f".repeat(64)}`;
   assert.throws(

@@ -22,6 +22,7 @@ const RISK_REGRESSION_SOURCE_PATHS = Object.freeze([
   "apps/private-pilot/src/m1-b-risk-mfa-boundary-acceptance.js",
   "apps/private-pilot/src/m1-b-acceptance-postgres.js",
   "scripts/local-risk-mfa-boundary-acceptance.mjs",
+  "scripts/m1-b-agent-phase-receipt.mjs",
   "modules/authorization/src/authorization-policy.js",
   "modules/authorization/src/authorization-service.js",
   "modules/authorization/test/authorization-service.test.js"
@@ -336,6 +337,17 @@ const HUMAN_CRITICAL_OPERATION_SEQUENCE = Object.freeze([
   ["pilotPostSandboxRepayment", "tenant_sandbox_repayment_posted.v1", true],
   ["pilotReadOwnObligationEvidence", "tenant_owned_obligation_evidence_view.v1", false]
 ]);
+const CAPITAL_PARTNER_NORMAL_RESPONSE_SEQUENCE = Object.freeze([
+  [1, "capital_partner", "pilotReadCapitalPartnerSelf"],
+  [2, "capital_partner", "pilotReadCapitalPartnerPassportInbox"],
+  [3, "capital_partner", "pilotAuthorCapitalPartnerOffer"],
+  [5, "human", "pilotReadWorkspaceResume"],
+  [6, "capital_partner", "pilotReadCapitalPartnerPassportInbox"],
+  [7, "capital_partner", "pilotAuthorCapitalPartnerOffer"],
+  [8, "capital_partner", "pilotTransitionCapitalPartnerOffer"],
+  [10, "human", "pilotReadWorkspaceResume"]
+]);
+const NORMAL_RESPONSE_CLOCK_DOMAIN = "lima_exact_pilot_vm_system_clock";
 const ACCEPTED_WALLET_VERIFICATION_METHODS = new Set([
   "eip191_eoa_v1",
   "eip1271_eip191_v1",
@@ -643,6 +655,69 @@ function validQueryProof(query, expectedOperationId, expectedResponseSchemaVersi
     new Set(query.authorizationAudits.map(({ authorizationDecisionId }) =>
       authorizationDecisionId
     )).size === 2;
+}
+
+function validNormalResponseChronology(
+  chronology,
+  expectedSequence,
+  proofs,
+  databaseStartedAt
+) {
+  if (
+    !Array.isArray(chronology) || !Array.isArray(expectedSequence) ||
+    !Array.isArray(proofs) || chronology.length !== expectedSequence.length ||
+    proofs.length !== expectedSequence.length
+  ) return false;
+  return chronology.every((entry, index) => {
+    const [sequence, actorRole, operationId] = expectedSequence[index];
+    const proof = proofs[index];
+    const armIssuedAt = Date.parse(entry?.armIssuedAt ?? "");
+    const capturedAt = Date.parse(entry?.capturedAt ?? "");
+    const authorizationAudits = Array.isArray(proof?.authorizationAudits)
+      ? proof.authorizationAudits
+      : [];
+    const eventManifest = Array.isArray(proof?.eventManifest)
+      ? proof.eventManifest
+      : [];
+    const proofTimes = [
+      proof?.occurredAt,
+      ...(authorizationAudits.map(({ occurredAt }) => occurredAt)),
+      ...(proof?.completedAt ? [proof.completedAt] : []),
+      ...(proof?.capturedAt ? [proof.capturedAt] : []),
+      ...(eventManifest.map(({ occurredAt }) => occurredAt))
+    ].map((value) => Date.parse(value ?? ""));
+    const priorCapturedAt = index === 0
+      ? Date.parse(databaseStartedAt ?? "")
+      : Date.parse(chronology[index - 1]?.capturedAt ?? "");
+    return exactKeys(entry, [
+      "sequence",
+      "actorRole",
+      "operationId",
+      "requestId",
+      "correlationId",
+      "armIssuedAt",
+      "armClockDomain",
+      "capturedAt"
+    ]) &&
+      entry.sequence === sequence && entry.actorRole === actorRole &&
+      entry.operationId === operationId &&
+      entry.armClockDomain === NORMAL_RESPONSE_CLOCK_DOMAIN &&
+      REQUEST_IDENTIFIER.test(entry.requestId ?? "") &&
+      REQUEST_IDENTIFIER.test(entry.correlationId ?? "") &&
+      proof?.operationId === operationId &&
+      proof.requestId === entry.requestId &&
+      proof.correlationId === entry.correlationId &&
+      authorizationAudits.length === 2 &&
+      Number.isFinite(armIssuedAt) && Number.isFinite(capturedAt) &&
+      armIssuedAt >= Date.parse(databaseStartedAt ?? "") &&
+      armIssuedAt >= priorCapturedAt && capturedAt >= armIssuedAt &&
+      (proof.completedAt
+        ? proof.capturedAt === entry.capturedAt
+        : proof.occurredAt === entry.capturedAt) &&
+      proofTimes.length >= 3 && proofTimes.every((time) => (
+        Number.isFinite(time) && time >= armIssuedAt && time <= capturedAt
+      ));
+  });
 }
 
 function validWorkspaceResponseProjection(projection, expected) {
@@ -1790,6 +1865,7 @@ function validateHumanCriticalReceipt(
     "actorScope",
     "originLineage",
     "linkage",
+    "normalResponseChronology",
     "recovery",
     "operations",
     "durability",
@@ -1914,6 +1990,19 @@ function validateHumanCriticalReceipt(
             operation.queryProof.correlationId === operation.correlationId &&
             operation.queryProof.occurredAt === operation.occurredAt);
     });
+  const normalResponseChronologyValid = operationsValid &&
+    validNormalResponseChronology(
+      receipt?.normalResponseChronology,
+      HUMAN_CRITICAL_OPERATION_SEQUENCE.map(([operationId], index) => [
+        index + 1,
+        "human",
+        operationId
+      ]),
+      operations.map((operation) =>
+        operation.commandReceipt ?? operation.queryProof
+      ),
+      expectedDatabaseStartedAt
+    );
   const durability = receipt?.durability;
   const events = durability?.events;
   const eventIds = new Set(Array.isArray(events) ? events.map(({ eventId }) => eventId) : []);
@@ -2231,6 +2320,7 @@ function validateHumanCriticalReceipt(
     identifiers.offerAggregateVersion < 1 ||
     !recoveryMatches ||
     !operationsValid ||
+    !normalResponseChronologyValid ||
     !candidateOperationsAfterRestart ||
     !humanTimelineValid ||
     !lifecycleManifestValid ||
@@ -3050,6 +3140,7 @@ function validateCapitalPartnerCriticalReceipt(
     "role",
     "status",
     "authentication",
+    "normalResponseChronology",
     "profile",
     "preparation",
     "currentLineage",
@@ -3650,6 +3741,23 @@ function validateCapitalPartnerCriticalReceipt(
     withdrawn.replacement.declinedProjectionProof.sourceEventId ===
       withdrawn.replacement.eventId;
   const databaseStart = Date.parse(expectedDatabaseStartedAt ?? "");
+  const normalResponseChronologyValid =
+    Array.isArray(commandReceipts) && commandReceipts.length === 3 &&
+    validNormalResponseChronology(
+      receipt?.normalResponseChronology,
+      CAPITAL_PARTNER_NORMAL_RESPONSE_SEQUENCE,
+      [
+        profile?.selfQueryProof,
+        current?.passport?.inboxQueryProof,
+        commandReceipts[0],
+        current?.borrowerRecovery?.queryProof,
+        withdrawn?.passport?.inboxQueryProof,
+        commandReceipts[1],
+        commandReceipts[2],
+        withdrawn?.borrowerRecovery?.queryProof
+      ],
+      expectedDatabaseStartedAt
+    );
   const preparationCommands = [
     ...(preparation?.currentLineage?.commandReceipts ?? []),
     ...(preparation?.withdrawalLineage?.commandReceipts ?? [])
@@ -3820,6 +3928,7 @@ function validateCapitalPartnerCriticalReceipt(
     !currentValid ||
     !withdrawalLineageValid ||
     !durabilityValid ||
+    !normalResponseChronologyValid ||
     !candidateActivityAfterRestart ||
     !strictCaptureTimelineValid ||
     !actorScopeValid ||

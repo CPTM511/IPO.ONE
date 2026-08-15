@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
-import { createHash, webcrypto } from "node:crypto";
+import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { chmod, lstat, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { relative, resolve } from "node:path";
 import test from "node:test";
-import { runInNewContext } from "node:vm";
 import { hashId } from "../../domain/src/index.js";
 import {
   verifyM1BAcceptanceEvidence
@@ -58,13 +57,17 @@ import {
   writeM1BOperationalDocumentsAtomic
 } from "../../../scripts/m1-b-operational-evidence-builder.mjs";
 import {
-  createM1BExpiredOfferAuthorBrowserExpression,
-  createM1BExpiredOfferInboxBrowserExpression,
+  createM1BExpiredOfferSetupArmToken,
+  readM1BExpiredOfferFreshInboxItem,
   readM1BExpiredOfferSetupCliContext,
   readM1BExpiredOfferSetupCliEnvironment
 } from "../../../apps/private-pilot/src/m1-b-expired-offer-setup-cli.js";
 import {
-  M1_B_OPERATIONAL_BROWSER_MEASUREMENT_PHASES
+  createM1BExpiredOfferPreparation
+} from "../../../apps/web/src/m1-b-expired-offer-preparation.js";
+import {
+  M1_B_OPERATIONAL_BROWSER_MEASUREMENT_PHASES,
+  createM1BOperationalBrowserContextLineageProjection
 } from "../../../apps/private-pilot/src/m1-b-operational-browser-measurement.js";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
@@ -188,7 +191,7 @@ function exactPreRiskReferences() {
       const prefix = `browser_${role}_${check}`;
       for (const phase of M1_B_OPERATIONAL_BROWSER_MEASUREMENT_PHASES[check]) {
         add(`${prefix}_${browserPhaseToken(phase)}_shot`, "screenshot", outputPath(
-          `${RELEASE_SHA}.browser.${role}.${check}.${phase}.png`
+          `${RELEASE_SHA}.browser.${role}.${check}.${phase}.jpg`
         ));
       }
       add(`${prefix}_runtime`, "runtime_receipt", outputPath(
@@ -283,6 +286,29 @@ function projectionHash(value) {
   return `0x${createHash("sha256").update(canonicalJson(value)).digest("hex")}`;
 }
 
+function browserContextClaim(prompt) {
+  if (prompt.check !== "fresh_browser_context") return null;
+  const claim = {
+    schemaVersion: "m1_b_operational_browser_context_claim.v1",
+    promptId: prompt.promptId,
+    challenge: prompt.capture.challenge,
+    role: prompt.role,
+    check: prompt.check,
+    phase: prompt.phase,
+    createdVia: "chrome_control_tabs_new",
+    initialUrl: "about:blank",
+    topLevelContextKind: "fresh_top_level_browsing_context",
+    contextHash: projectionHash({ context: prompt.role }),
+    lineageHash: `0x${"0".repeat(64)}`,
+    controllerObservedAt: "2026-08-15T00:10:10.500Z",
+    isolatedStorageClaimed: false
+  };
+  claim.lineageHash = projectionHash(
+    createM1BOperationalBrowserContextLineageProjection(prompt, claim)
+  );
+  return claim;
+}
+
 function measuredBrowserResponse(prompt) {
   const authenticated = prompt.expected.authentication.active;
   const projection = prompt.role === "capital_partner"
@@ -372,8 +398,18 @@ function measuredBrowserResponse(prompt) {
     },
     browserControl: {
       driver: "chrome_control",
-      consoleErrorCount: 0,
-      failedNetworkRequestCount: 0
+      surface: "visible_loopback_measurement_console",
+      promptTransport: "visible_paste_and_load",
+      executionControl: "visible_click_once",
+      responseTransport: "visible_clipboard_copy_button",
+      screenshotControl: "external_chrome_control_jpeg_quality_80",
+      telemetrySource: "trusted_app_measurement_interval",
+      screenshotStatus:
+        "external_capture_acknowledged_pending_builder_validation",
+      contextClaim: browserContextClaim(prompt),
+      runtimeErrorCount: 0,
+      unhandledRejectionCount: 0,
+      measurementRequestFailureCount: 0
     }
   };
 }
@@ -753,7 +789,7 @@ test("expired-Offer child output is byte-exact across chunks and fails closed on
   await assert.rejects(invalidPromise, /invalid JSON/);
 });
 
-test("expired-Offer browser expressions keep CSRF in page memory and submit one exact safe author request", async () => {
+test("expired-Offer setup uses visible normal arms plus one app-owned 105-second preparation", async () => {
   const context = expiredOfferCliContext();
   const freshPassport = {
     resource: {
@@ -781,168 +817,117 @@ test("expired-Offer browser expressions keep CSRF in page memory and submit one 
     readOnly: true,
     schemaVersion: "tenant_capital_partner_passport_inbox_view.v1"
   };
-  const secretCsrf = "Ab9_-safePageMemoryCsrf_1234567890xyzABCDE";
-  class FakeInput {
-    constructor(value) {
-      this.value = value;
-    }
-  }
-  const inputs = new Map(Object.entries({
-    capitalPartnerFacilityLimit: "250",
-    capitalPartnerPrincipal: "120",
-    capitalPartnerPerDrawCap: "120",
-    capitalPartnerAnnualRate: "12",
-    capitalPartnerOriginationFee: "0",
-    capitalPartnerInstallments: "2",
-    capitalPartnerFirstPaymentAt: "2026-09-15T12:00",
-    capitalPartnerMaturityAt: "2026-10-15T12:00"
-  }).map(([id, value]) => [id, new FakeInput(value)]));
-  let uuidIndex = 0;
-  let capturedRequest;
-  let healthRequest;
-  const logged = [];
-  const sandbox = (response) => ({
-    location: { origin: "http://127.0.0.1:18890" },
-    document: {
-      querySelector(selector) {
-        return selector === 'meta[name="ipo-one-csrf-token"]'
-          ? { content: secretCsrf }
-          : null;
+  const issuedAt = new Date("2026-08-15T00:14:00.000Z");
+  const inboxArm = createM1BExpiredOfferSetupArmToken({
+    sequence: 1,
+    issuedAt,
+    challenge:
+      "m1_b_normal_response_00000001-0000-4000-8000-000000000001"
+  });
+  const authorArm = createM1BExpiredOfferSetupArmToken({
+    sequence: 2,
+    issuedAt,
+    challenge:
+      "m1_b_normal_response_00000002-0000-4000-8000-000000000002"
+  });
+  assert.deepEqual(
+    [inboxArm, authorArm].map((arm) => ({
+      schemaVersion: arm.schemaVersion,
+      flow: arm.flow,
+      sequence: arm.sequence,
+      operationId: arm.operationId
+    })),
+    [
+      {
+        schemaVersion: "m1_b_acceptance_normal_response_arm.v1",
+        flow: "expired_offer_setup",
+        sequence: 1,
+        operationId: "pilotReadCapitalPartnerPassportInbox"
       },
-      getElementById(id) {
-        return inputs.get(id) ?? null;
+      {
+        schemaVersion: "m1_b_acceptance_normal_response_arm.v1",
+        flow: "expired_offer_setup",
+        sequence: 2,
+        operationId: "pilotAuthorCapitalPartnerOffer"
       }
-    },
-    HTMLInputElement: FakeInput,
-    crypto: {
-      subtle: webcrypto.subtle,
-      randomUUID() {
-        uuidIndex += 1;
-        return `00000000-0000-4000-8000-${String(uuidIndex).padStart(12, "0")}`;
-      }
-    },
-    TextEncoder,
-    fetch: async (url, options) => {
-      if (url === "/tenant/v1/healthz") {
-        healthRequest = { url, options };
-        const serverDate = new Date().toUTCString();
-        return {
-          ok: true,
-          headers: {
-            get(name) {
-              return {
-                "x-request-id": options.headers["x-request-id"],
-                "cache-control": "no-store",
-                date: serverDate
-              }[name] ?? null;
-            }
-          },
-          json: async () => ({
-            status: "ready",
-            transport: "authenticated_http_loopback",
-            public: false,
-            schemaVersion: "tenant_transport_health.v1"
-          })
-        };
-      }
-      capturedRequest = { url, options, body: JSON.parse(options.body) };
+    ]
+  );
+  assert.equal(
+    Date.parse(authorArm.expiresAt) - Date.parse(authorArm.issuedAt),
+    15 * 60_000
+  );
+  assert.doesNotMatch(
+    JSON.stringify([inboxArm, authorArm]),
+    /browserExpression|fetch\(|csrf|cookie|signature/i
+  );
+
+  const selected = readM1BExpiredOfferFreshInboxItem(
+    inboxResponse,
+    context.capitalPartnerCriticalBinding
+  );
+  assert.equal(selected.resource.resourceId, "passport_c");
+
+  const serverNow = new Date("2026-08-15T00:14:30.000Z");
+  let clientNow = new Date("2026-08-15T00:14:31.000Z");
+  const captureState = {
+    phase: "armed",
+    runtimeAvailable: true,
+    flow: "expired_offer_setup",
+    sequence: 2,
+    operationId: "pilotAuthorCapitalPartnerOffer",
+    readOnly: false,
+    armEpoch: 7
+  };
+  const validUntilControl = { value: "", step: "60" };
+  let healthRequest;
+  const preparation = createM1BExpiredOfferPreparation({
+    location: { protocol: "http:", hostname: "127.0.0.1" },
+    getCaptureState: () => captureState,
+    getSelectedPassportId: () => selected.resource.resourceId,
+    validUntilControl,
+    now: () => clientNow,
+    randomUUID: () => "00000003-0000-4000-8000-000000000003",
+    fetchHealth: async (url, options) => {
+      healthRequest = { url, options };
       return {
         ok: true,
+        status: 200,
         headers: {
           get(name) {
-            return name === "x-request-id"
-              ? capturedRequest.body.requestId
-              : null;
+            return {
+              "x-request-id": options.headers["x-request-id"],
+              "cache-control": "no-store",
+              date: serverNow.toUTCString()
+            }[name] ?? null;
           }
         },
-        json: async () => response
+        json: async () => ({
+          status: "ready",
+          transport: "authenticated_http_loopback",
+          public: false,
+          schemaVersion: "tenant_transport_health.v1"
+        })
       };
-    },
-    console: { log(value) { logged.push(value); } }
+    }
   });
-
-  const inboxExpression = createM1BExpiredOfferInboxBrowserExpression({
-    expectedOrigin: context.capitalPartnerOrigin
-  });
-  const inboxEnvelope = await runInNewContext(
-    inboxExpression,
-    sandbox(inboxResponse),
-    { timeout: 1_000 }
-  );
-  assert.equal(capturedRequest.url, "/tenant/v1/operations");
-  assert.equal(
-    capturedRequest.options.headers["x-csrf-token"],
-    secretCsrf
-  );
-  assert.deepEqual(capturedRequest.body, {
-    operationId: "pilotReadCapitalPartnerPassportInbox",
-    payload: {},
-    requestId: inboxEnvelope.requestId,
-    correlationId: inboxEnvelope.correlationId,
-    schemaVersion: "tenant_protocol_request.v1"
-  });
-  assert.equal(JSON.stringify(inboxEnvelope).includes(secretCsrf), false);
-
-  const author = createM1BExpiredOfferAuthorBrowserExpression({
-    expectedOrigin: context.capitalPartnerOrigin,
-    inboxResponse,
-    criticalBinding: context.capitalPartnerCriticalBinding
-  });
-  const authoredResponse = {
-    offer: { creditOfferId: "credit_offer_c", schemaVersion: "credit_offer.v2" },
-    fundsAuthority: false,
-    schemaVersion: "tenant_capital_partner_offer_authored.v1"
-  };
-  const before = Date.now();
-  const authorEnvelope = await runInNewContext(
-    author.browserExpression,
-    sandbox(authoredResponse),
-    { timeout: 1_000 }
-  );
-  const after = Date.now();
-  const request = capturedRequest.body;
+  const prepared = await preparation.prepare();
   assert.equal(healthRequest.url, "/tenant/v1/healthz");
   assert.equal(healthRequest.options.credentials, "omit");
-  assert.equal(request.operationId, "pilotAuthorCapitalPartnerOffer");
-  assert.deepEqual(request.resource, {
-    resourceType: "credit_passport_artifact",
-    resourceId: "passport_c"
+  assert.equal(healthRequest.options.cache, "no-store");
+  assert.equal(healthRequest.options.redirect, "error");
+  assert.equal(prepared.validUntil, "2026-08-15T00:16:15.000Z");
+  assert.equal(prepared.validityMs, 105_000);
+  assert.equal(prepared.passportId, "passport_c");
+  assert.equal(validUntilControl.step, "1");
+  assert.match(validUntilControl.value, /T\d{2}:\d{2}:\d{2}$/);
+  clientNow = new Date("2026-08-15T00:14:32.000Z");
+  assert.deepEqual(preparation.consumeForSubmission(), {
+    passportId: "passport_c",
+    validUntil: "2026-08-15T00:16:15.000Z",
+    validityRemainingMs: 104_000,
+    fundsAuthority: false
   });
-  assert.match(request.idempotencyKey, /^m1b_expired_author_idempotency_/);
-  assert.equal(request.payload.creditIntentId, "credit_intent_c");
-  assert.equal(request.payload.artifactHash, HASH);
-  assert.equal(request.payload.artifactVersion, 1);
-  assert.equal(request.payload.facilityLimitMinor, "25000");
-  assert.equal(request.payload.approvedPrincipalMinor, "12000");
-  assert.equal(request.payload.installmentCount, 2);
-  assert.equal(
-    Date.parse(request.payload.validUntil) >= before + 103_000 &&
-      Date.parse(request.payload.validUntil) <= after + 106_000,
-    true
-  );
-  const termKeys = [
-    "assetId", "facilityLimitMinor", "approvedPrincipalMinor",
-    "perDrawCapMinor", "annualRateBps", "originationFeeMinor",
-    "repaymentFrequency", "installmentCount", "firstPaymentAt",
-    "maturityAt", "permittedPurposeCode", "conditions",
-    "undrawnRevocationRule", "validUntil", "reasonCodes", "disclosureRef"
-  ];
-  const terms = Object.fromEntries(termKeys.map((key) => [
-    key,
-    request.payload[key]
-  ]));
-  const expectedSnapshotHash = `0x${createHash("sha256").update(JSON.stringify({
-    creditIntentId: request.payload.creditIntentId,
-    passportId: request.resource.resourceId,
-    artifactHash: request.payload.artifactHash,
-    artifactVersion: request.payload.artifactVersion,
-    terms
-  })).digest("hex")}`;
-  assert.equal(request.payload.underwritingSnapshotHash, expectedSnapshotHash);
-  assert.equal(authorEnvelope.response, authoredResponse);
-  assert.equal(JSON.stringify(authorEnvelope).includes(secretCsrf), false);
-  assert.equal(logged.every((line) => !line.includes(secretCsrf)), true);
-  assert.doesNotMatch(author.browserExpression, /document\.cookie|localStorage|signature|wallet/i);
+  assert.equal(preparation.snapshot().ready, false);
 });
 
 test("restart receipt binds same containers, later starts, exact events, Engine, and retained volume", () => {
@@ -1280,7 +1265,7 @@ test("safe NDJSON rejects operator browser, journey, and negative self-attestati
     negativeCase: null,
     visualArtifact: {
       kind: "screenshot",
-      relativePath: "output/playwright/m1-b-p0-5/example.png"
+      relativePath: "output/playwright/m1-b-p0-5/example.jpg"
     }
   };
   const journey = {
@@ -1694,13 +1679,23 @@ test("measured browser collection reconciles each authenticated phase immediatel
     kind: "screenshot",
     relativePath:
       `output/playwright/m1-b-p0-5/${RELEASE_SHA}.browser.human.desktop.` +
-      `${prompt.phase}.png`,
+      `${prompt.phase}.jpg`,
     sha256: "7".repeat(64),
+    mediaType: prompt.capture.mediaType,
+    codecProfile: prompt.capture.codecProfile,
     challengeHash: prompt.capture.challengeHash,
-    png: {
+    jpeg: {
       width: response.measurement.viewport.innerWidth,
       height: response.measurement.viewport.innerHeight,
-      idatCount: 1
+      jfifVersion: "1.01",
+      iccProfileSegmentCount: 0,
+      iccProfileBytes: 0,
+      quality: 80,
+      subsampling: "4:2:0",
+      mcuCount:
+        Math.ceil(response.measurement.viewport.innerWidth / 16) *
+        Math.ceil(response.measurement.viewport.innerHeight / 16),
+      decodedChallengeHash: prompt.capture.challengeHash
     }
   }));
   const context = {
@@ -1739,6 +1734,18 @@ test("measured browser collection reconciles each authenticated phase immediatel
     () => validateM1BOperationalBrowserRowDocuments(tampered, context),
     /do not reconstruct/
   );
+  const wrongMedia = structuredClone(context);
+  wrongMedia.visualArtifacts[0].mediaType = "image/png";
+  assert.throws(
+    () => createM1BOperationalBrowserRowDocuments(wrongMedia),
+    /visual does not bind/
+  );
+  const wrongCodec = structuredClone(context);
+  wrongCodec.visualArtifacts[0].jpeg.quality = 81;
+  assert.throws(
+    () => createM1BOperationalBrowserRowDocuments(wrongCodec),
+    /visual does not bind/
+  );
 
   let staleTick = 0;
   let currentPrompt;
@@ -1767,6 +1774,40 @@ test("measured browser collection reconciles each authenticated phase immediatel
       }
     }),
     /fresh SIWE ceremony/
+  );
+
+  let lineageTick = 0;
+  await assert.rejects(
+    collectM1BOperationalBrowserMeasurements({
+      candidateReleaseId: RELEASE_SHA,
+      sourceTreeHash: "d".repeat(40),
+      runtimeImageId: IMAGE_ID,
+      databaseStartedAt,
+      portBase: 18_887,
+      outputRoot: resolve(ROOT, "output/playwright/m1-b-p0-5"),
+      clock: () => new Date(
+        Date.parse(databaseStartedAt) + (++lineageTick * 1_000)
+      ).toISOString(),
+      async exchange(prompt) {
+        const measured = measuredBrowserResponse(prompt);
+        if (
+          prompt.role === "human" &&
+          prompt.check === "fresh_browser_context" &&
+          prompt.phase === "authenticated"
+        ) {
+          const claim = measured.browserControl.contextClaim;
+          claim.contextHash = `0x${"f".repeat(64)}`;
+          claim.lineageHash = projectionHash(
+            createM1BOperationalBrowserContextLineageProjection(prompt, claim)
+          );
+        }
+        return JSON.stringify(measured);
+      },
+      async reconcileAuthenticatedRead(readContext) {
+        return browserAppRoleRead(readContext);
+      }
+    }),
+    /do not share one top-level context lineage/
   );
 });
 

@@ -13,7 +13,6 @@ import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
-import { deflateSync } from "node:zlib";
 import {
   M1_B_OPERATIONAL_NEGATIVE_CASE_DEFINITIONS,
   createM1BOperationalExactSourceNegativeProof,
@@ -31,6 +30,12 @@ import {
   hashM1BAcceptanceManifest
 } from
   "../../../apps/private-pilot/src/m1-b-human-capital-partner-acceptance.js";
+import {
+  M1_B_OPERATIONAL_BROWSER_PIXEL_CHALLENGE,
+  createM1BOperationalBrowserPixelChallengeBits,
+  createM1BOperationalBrowserContextLineageProjection
+} from
+  "../../../apps/private-pilot/src/m1-b-operational-browser-measurement.js";
 import { hashId } from "../../domain/src/index.js";
 import { M1BAcceptanceEvidenceError } from
   "../../release-governance/src/m1-b-acceptance-evidence.js";
@@ -223,6 +228,29 @@ function projectionHash(value) {
   return `0x${sha256(canonicalJson(value))}`;
 }
 
+function browserContextClaim(prompt) {
+  if (prompt.check !== "fresh_browser_context") return null;
+  const claim = {
+    schemaVersion: "m1_b_operational_browser_context_claim.v1",
+    promptId: prompt.promptId,
+    challenge: prompt.capture.challenge,
+    role: prompt.role,
+    check: prompt.check,
+    phase: prompt.phase,
+    createdVia: "chrome_control_tabs_new",
+    initialUrl: "about:blank",
+    topLevelContextKind: "fresh_top_level_browsing_context",
+    contextHash: projectionHash({ context: prompt.role }),
+    lineageHash: `0x${"0".repeat(64)}`,
+    controllerObservedAt: "2026-08-15T00:10:10.500Z",
+    isolatedStorageClaimed: false
+  };
+  claim.lineageHash = projectionHash(
+    createM1BOperationalBrowserContextLineageProjection(prompt, claim)
+  );
+  return claim;
+}
+
 function measuredBrowserResponse(prompt) {
   const authenticated = prompt.expected.authentication.active;
   const projection = prompt.role === "capital_partner"
@@ -316,8 +344,18 @@ function measuredBrowserResponse(prompt) {
     },
     browserControl: {
       driver: "chrome_control",
-      consoleErrorCount: 0,
-      failedNetworkRequestCount: 0
+      surface: "visible_loopback_measurement_console",
+      promptTransport: "visible_paste_and_load",
+      executionControl: "visible_click_once",
+      responseTransport: "visible_clipboard_copy_button",
+      screenshotControl: "external_chrome_control_jpeg_quality_80",
+      telemetrySource: "trusted_app_measurement_interval",
+      screenshotStatus:
+        "external_capture_acknowledged_pending_builder_validation",
+      contextClaim: browserContextClaim(prompt),
+      runtimeErrorCount: 0,
+      unhandledRejectionCount: 0,
+      measurementRequestFailureCount: 0
     }
   };
 }
@@ -442,55 +480,153 @@ function browserReadinessObservation(row) {
   };
 }
 
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n += 1) {
-    let value = n;
-    for (let bit = 0; bit < 8; bit += 1) {
-      value = (value & 1)
-        ? 0xedb88320 ^ (value >>> 1)
-        : value >>> 1;
-    }
-    table[n] = value >>> 0;
-  }
-  return table;
-})();
+const JPEG_Q80_LUMA = Object.freeze([
+  6, 4, 5, 6, 5, 4, 6, 6, 5, 6, 7, 7, 6, 8, 10, 16,
+  10, 10, 9, 9, 10, 20, 14, 15, 12, 16, 23, 20, 24, 24, 23, 20,
+  22, 22, 26, 29, 37, 31, 26, 27, 35, 28, 22, 22, 32, 44, 32, 35,
+  38, 39, 41, 42, 41, 25, 31, 45, 48, 45, 40, 48, 37, 40, 41, 40
+]);
+const JPEG_Q80_CHROMA = Object.freeze([
+  7, 7, 7, 10, 8, 10, 19, 10, 10, 19, 40, 26, 22, 26, 40, 40,
+  ...Array(48).fill(40)
+]);
+const JPEG_DC_COUNTS = Object.freeze([0, 0, 0, 12, ...Array(12).fill(0)]);
+const JPEG_DC_SYMBOLS = Object.freeze(Array.from({ length: 12 }, (_, index) => index));
+const JPEG_AC_COUNTS = Object.freeze([1, ...Array(15).fill(0)]);
+const JPEG_AC_SYMBOLS = Object.freeze([0]);
 
-function crc32(bytes) {
-  let crc = 0xffffffff;
-  for (const byte of bytes) {
-    crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function pngChunk(type, data) {
-  const name = Buffer.from(type);
-  const output = Buffer.alloc(12 + data.length);
-  output.writeUInt32BE(data.length, 0);
-  name.copy(output, 4);
-  data.copy(output, 8);
-  output.writeUInt32BE(
-    crc32(Buffer.concat([name, data])),
-    8 + data.length
-  );
+function jpegSegment(marker, data) {
+  const output = Buffer.alloc(data.length + 4);
+  output[0] = 0xff;
+  output[1] = marker;
+  output.writeUInt16BE(data.length + 2, 2);
+  data.copy(output, 4);
   return output;
 }
 
-function browserPng(width, height, nonce) {
-  const header = Buffer.alloc(13);
-  header.writeUInt32BE(width, 0);
-  header.writeUInt32BE(height, 4);
-  header[8] = 8;
-  header[9] = 6;
-  const scanlines = Buffer.alloc((1 + width * 4) * height);
-  scanlines[1] = nonce & 0xff;
-  scanlines[2] = (255 - nonce) & 0xff;
+function jpegDht(tableClass, tableId, counts, symbols) {
+  return jpegSegment(0xc4, Buffer.from([
+    tableClass * 16 + tableId,
+    ...counts,
+    ...symbols
+  ]));
+}
+
+function canonicalCodes(counts, symbols) {
+  const codes = new Map();
+  let code = 0;
+  let offset = 0;
+  for (let length = 1; length <= 16; length += 1) {
+    for (let index = 0; index < counts[length - 1]; index += 1) {
+      codes.set(symbols[offset++], { code, length });
+      code += 1;
+    }
+    code *= 2;
+  }
+  return codes;
+}
+
+function jpegBitWriter() {
+  const bytes = [];
+  let current = 0;
+  let count = 0;
+  return {
+    write(value, length) {
+      for (let bit = length - 1; bit >= 0; bit -= 1) {
+        current = current * 2 + ((value >>> bit) & 1);
+        count += 1;
+        if (count === 8) {
+          bytes.push(current);
+          if (current === 0xff) bytes.push(0x00);
+          current = 0;
+          count = 0;
+        }
+      }
+    },
+    finish() {
+      if (count > 0) this.write((1 << (8 - count)) - 1, 8 - count);
+      return Buffer.from(bytes);
+    }
+  };
+}
+
+function jpegValueBits(value) {
+  if (value === 0) return { category: 0, encoded: 0 };
+  const category = Math.floor(Math.log2(Math.abs(value))) + 1;
+  return {
+    category,
+    encoded: value > 0 ? value : value + (2 ** category - 1)
+  };
+}
+
+function browserJpeg(
+  width,
+  height,
+  challengeHash = null,
+  devicePixelRatio = 1
+) {
+  const specification = M1_B_OPERATIONAL_BROWSER_PIXEL_CHALLENGE;
+  const challengeBits = challengeHash === null
+    ? null
+    : createM1BOperationalBrowserPixelChallengeBits(challengeHash);
+  const dcCodes = canonicalCodes(JPEG_DC_COUNTS, JPEG_DC_SYMBOLS);
+  const acCodes = canonicalCodes(JPEG_AC_COUNTS, JPEG_AC_SYMBOLS);
+  const writer = jpegBitWriter();
+  const predictors = new Map([[1, 0], [2, 0], [3, 0]]);
+  const markerOffsetX = specification.offsetX * devicePixelRatio;
+  const markerOffsetY = specification.offsetY * devicePixelRatio;
+  const markerCellSize = specification.cellSize * devicePixelRatio;
+  function lumaDc(blockX, blockY) {
+    if (challengeBits === null) return 0;
+    const column = Math.floor((blockX * 8 - markerOffsetX) / markerCellSize);
+    const row = Math.floor((blockY * 8 - markerOffsetY) / markerCellSize);
+    if (
+      column < 0 || column >= specification.columns ||
+      row < 0 || row >= specification.rows
+    ) return -171;
+    return challengeBits[row * specification.columns + column] === 1 ? -171 : 169;
+  }
+  function block(componentId, dc) {
+    const difference = dc - predictors.get(componentId);
+    predictors.set(componentId, dc);
+    const value = jpegValueBits(difference);
+    const dcCode = dcCodes.get(value.category);
+    writer.write(dcCode.code, dcCode.length);
+    writer.write(value.encoded, value.category);
+    const eob = acCodes.get(0);
+    writer.write(eob.code, eob.length);
+  }
+  for (let mcuY = 0; mcuY < Math.ceil(height / 16); mcuY += 1) {
+    for (let mcuX = 0; mcuX < Math.ceil(width / 16); mcuX += 1) {
+      for (let vertical = 0; vertical < 2; vertical += 1) {
+        for (let horizontal = 0; horizontal < 2; horizontal += 1) {
+          block(1, lumaDc(mcuX * 2 + horizontal, mcuY * 2 + vertical));
+        }
+      }
+      block(2, 0);
+      block(3, 0);
+    }
+  }
   return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    pngChunk("IHDR", header),
-    pngChunk("IDAT", deflateSync(scanlines)),
-    pngChunk("IEND", Buffer.alloc(0))
+    Buffer.from([0xff, 0xd8]),
+    jpegSegment(0xe0, Buffer.from([
+      0x4a, 0x46, 0x49, 0x46, 0x00, 1, 1, 0, 0, 1, 0, 1, 0, 0
+    ])),
+    jpegSegment(0xdb, Buffer.from([0, ...JPEG_Q80_LUMA])),
+    jpegSegment(0xdb, Buffer.from([1, ...JPEG_Q80_CHROMA])),
+    jpegSegment(0xc0, Buffer.from([
+      8, height >>> 8, height & 0xff, width >>> 8, width & 0xff, 3,
+      1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1
+    ])),
+    jpegDht(0, 0, JPEG_DC_COUNTS, JPEG_DC_SYMBOLS),
+    jpegDht(1, 0, JPEG_AC_COUNTS, JPEG_AC_SYMBOLS),
+    jpegDht(0, 1, JPEG_DC_COUNTS, JPEG_DC_SYMBOLS),
+    jpegDht(1, 1, JPEG_AC_COUNTS, JPEG_AC_SYMBOLS),
+    jpegSegment(0xda, Buffer.from([
+      3, 1, 0x00, 2, 0x11, 3, 0x11, 0, 63, 0
+    ])),
+    writer.finish(),
+    Buffer.from([0xff, 0xd9])
   ]);
 }
 
@@ -550,7 +686,6 @@ async function createBrowserFilesystemFixture() {
   const artifactById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
   const files = new Map();
   const screenshots = [];
-  let screenshotNonce = 0;
   const criticalByRole = {
     human: artifactById.get("human_critical"),
     principal_agent: artifactById.get("agent_after"),
@@ -560,34 +695,50 @@ async function createBrowserFilesystemFixture() {
     const visualArtifacts = [];
     for (const { prompt, response } of row.phaseEvidence) {
       const viewport = response.measurement.viewport;
-      const bytes = browserPng(
+      const bytes = browserJpeg(
         viewport.innerWidth * viewport.devicePixelRatio,
         viewport.innerHeight * viewport.devicePixelRatio,
-        ++screenshotNonce
+        prompt.capture.challengeHash,
+        viewport.devicePixelRatio
       );
       const artifact = safeArtifact({
         id: `browser_${row.role}_${row.check}_${browserPhaseToken(prompt.phase)}_shot`,
         kind: "screenshot",
         relativePath:
           `${outputRootRelativePath}/${CANDIDATE}.browser.${row.role}.` +
-          `${row.check}.${prompt.phase}.png`,
+          `${row.check}.${prompt.phase}.jpg`,
         sha256: sha256(bytes)
       });
       await writePrivate(resolve(root, artifact.relativePath), bytes);
       artifacts.push(artifact);
       artifactById.set(artifact.id, artifact);
-      screenshots.push({ artifact, bytes, viewport });
+      screenshots.push({
+        artifact,
+        bytes,
+        viewport,
+        challengeHash: prompt.capture.challengeHash
+      });
       visualArtifacts.push({
         phase: prompt.phase,
         id: artifact.id,
         kind: artifact.kind,
         relativePath: artifact.relativePath,
         sha256: artifact.sha256,
+        mediaType: prompt.capture.mediaType,
+        codecProfile: prompt.capture.codecProfile,
         challengeHash: prompt.capture.challengeHash,
-        png: {
+        jpeg: {
           width: viewport.innerWidth * viewport.devicePixelRatio,
           height: viewport.innerHeight * viewport.devicePixelRatio,
-          idatCount: 1
+          jfifVersion: "1.01",
+          iccProfileSegmentCount: 0,
+          iccProfileBytes: 0,
+          quality: 80,
+          subsampling: "4:2:0",
+          mcuCount:
+            Math.ceil(viewport.innerWidth * viewport.devicePixelRatio / 16) *
+            Math.ceil(viewport.innerHeight * viewport.devicePixelRatio / 16),
+          decodedChallengeHash: prompt.capture.challengeHash
         }
       });
     }
@@ -2992,7 +3143,7 @@ test("operational verifier reconstructs three journeys and rejects derived-chain
 test("browser filesystem verifier reconstructs all 24 rows and rejects semantic file tampering", async (t) => {
   const fixture = await createBrowserFilesystemFixture();
   try {
-    await t.test("reconstructs 24 rows, 33 phases, and 33 unique PNGs", async () => {
+    await t.test("reconstructs 24 rows, 33 phases, and 33 unique JPEGs", async () => {
       const rows = await verifyM1BOperationalBrowserArtifacts(
         fixture.evidence,
         fixture.context
@@ -3012,13 +3163,13 @@ test("browser filesystem verifier reconstructs all 24 rows and rejects semantic 
       );
     });
 
-    await t.test("rejects a prompt expression-hash tamper", async () => {
+    await t.test("rejects a visible-console control tamper", async () => {
       const restore = await mutateBrowserJsonArtifact(
         fixture,
         "browser_human_desktop_runtime",
         (document) => {
-          document.measurementPhases[0].prompt.browserExpressionHash =
-            `0x${"0".repeat(64)}`;
+          document.measurementPhases[0].prompt.browserControl.surface =
+            "hidden_bridge";
         }
       );
       try {
@@ -3050,23 +3201,57 @@ test("browser filesystem verifier reconstructs all 24 rows and rejects semantic 
       }
     });
 
-    await t.test("rejects PNG dimensions that do not bind the viewport", async () => {
+    await t.test("rejects JPEG dimensions that do not bind the viewport", async () => {
       const screenshot = fixture.screenshots.find(
         ({ artifact }) => artifact.id === "browser_human_desktop_auth_shot"
       );
-      const { artifact, bytes: originalBytes } = screenshot;
+      const { artifact, bytes: originalBytes, challengeHash } = screenshot;
       const originalSha256 = artifact.sha256;
-      const changed = browserPng(1279, 720, 201);
+      const changed = browserJpeg(1279, 720, challengeHash);
       artifact.sha256 = sha256(changed);
       await writeFile(resolve(fixture.root, artifact.relativePath), changed);
       try {
-        await assertBrowserFixtureRejected(fixture, "PNG is invalid");
+        await assertBrowserFixtureRejected(fixture, "JPEG is invalid");
       } finally {
         artifact.sha256 = originalSha256;
         await writeFile(
           resolve(fixture.root, artifact.relativePath),
           originalBytes
         );
+      }
+    });
+
+    await t.test("rejects a blank JPEG even with a recomputed digest", async () => {
+      const screenshot = fixture.screenshots.find(
+        ({ artifact }) => artifact.id === "browser_human_desktop_auth_shot"
+      );
+      const { artifact, bytes: originalBytes } = screenshot;
+      const originalSha256 = artifact.sha256;
+      const changed = browserJpeg(1280, 720, null);
+      artifact.sha256 = sha256(changed);
+      await writeFile(resolve(fixture.root, artifact.relativePath), changed);
+      try {
+        await assertBrowserFixtureRejected(fixture, "JPEG is invalid");
+      } finally {
+        artifact.sha256 = originalSha256;
+        await writeFile(resolve(fixture.root, artifact.relativePath), originalBytes);
+      }
+    });
+
+    await t.test("rejects a wrong self-consistent JPEG pixel challenge", async () => {
+      const screenshot = fixture.screenshots.find(
+        ({ artifact }) => artifact.id === "browser_human_desktop_auth_shot"
+      );
+      const { artifact, bytes: originalBytes } = screenshot;
+      const originalSha256 = artifact.sha256;
+      const changed = browserJpeg(1280, 720, `0x${"f3".repeat(32)}`);
+      artifact.sha256 = sha256(changed);
+      await writeFile(resolve(fixture.root, artifact.relativePath), changed);
+      try {
+        await assertBrowserFixtureRejected(fixture, "JPEG is invalid");
+      } finally {
+        artifact.sha256 = originalSha256;
+        await writeFile(resolve(fixture.root, artifact.relativePath), originalBytes);
       }
     });
 
@@ -3080,7 +3265,7 @@ test("browser filesystem verifier reconstructs all 24 rows and rejects semantic 
       artifact.sha256 = sha256(changed);
       await writeFile(resolve(fixture.root, artifact.relativePath), changed);
       try {
-        await assertBrowserFixtureRejected(fixture, "PNG is invalid");
+        await assertBrowserFixtureRejected(fixture, "JPEG is invalid");
       } finally {
         artifact.sha256 = originalSha256;
         await writeFile(

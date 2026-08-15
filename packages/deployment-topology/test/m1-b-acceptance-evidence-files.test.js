@@ -409,6 +409,7 @@ function riskAuthorizationRegression() {
       "apps/private-pilot/src/m1-b-risk-mfa-boundary-acceptance.js",
       "apps/private-pilot/src/m1-b-acceptance-postgres.js",
       "scripts/local-risk-mfa-boundary-acceptance.mjs",
+      "scripts/m1-b-agent-phase-receipt.mjs",
       "modules/authorization/src/authorization-policy.js",
       "modules/authorization/src/authorization-service.js",
       "modules/authorization/test/authorization-service.test.js"
@@ -2748,6 +2749,43 @@ test("critical artifact verifier binds runtime identity and both Agent phases", 
       }
     }
   };
+  const normalChronologyRow = ({
+    sequence,
+    actorRole,
+    proof
+  }) => ({
+    sequence,
+    actorRole,
+    operationId: proof.operationId,
+    requestId: proof.requestId,
+    correlationId: proof.correlationId,
+    armIssuedAt: new Date(
+      Date.parse(proof.completedAt ? proof.capturedAt : proof.occurredAt) - 1_000
+    ).toISOString(),
+    armClockDomain: "lima_exact_pilot_vm_system_clock",
+    capturedAt: proof.completedAt ? proof.capturedAt : proof.occurredAt
+  });
+  documents.human.normalResponseChronology = documents.human.operations.map(
+    (operation, index) => normalChronologyRow({
+      sequence: index + 1,
+      actorRole: "human",
+      proof: operation.commandReceipt ?? operation.queryProof
+    })
+  );
+  documents.capital_partner.normalResponseChronology = [
+    [1, "capital_partner", documents.capital_partner.profile.selfQueryProof],
+    [2, "capital_partner", documents.capital_partner.currentLineage.passport.inboxQueryProof],
+    [3, "capital_partner", documents.capital_partner.durability.commandReceipts[0]],
+    [5, "human", documents.capital_partner.currentLineage.borrowerRecovery.queryProof],
+    [6, "capital_partner", documents.capital_partner.withdrawalLineage.passport.inboxQueryProof],
+    [7, "capital_partner", documents.capital_partner.durability.commandReceipts[1]],
+    [8, "capital_partner", documents.capital_partner.durability.commandReceipts[2]],
+    [10, "human", documents.capital_partner.withdrawalLineage.borrowerRecovery.queryProof]
+  ].map(([sequence, actorRole, proof]) => normalChronologyRow({
+    sequence,
+    actorRole,
+    proof
+  }));
   const syncCapitalPartnerHumanReceiptBinding = () => ({
     schemaVersion: "m1_b_human_critical_receipt_binding.v1",
     candidateReleaseId: SHA,
@@ -2951,6 +2989,16 @@ test("critical artifact verifier binds runtime identity and both Agent phases", 
   await assertCriticalReceiptInvalid("human", "Human critical receipt");
   documents.human.authentication.amr[2] = "eip191_eoa_v1";
 
+  const humanQueryAuditTime = documents.human.operations[0]
+    .queryProof.authorizationAudits[0].occurredAt;
+  documents.human.operations[0].queryProof.authorizationAudits[0].occurredAt =
+    new Date(
+      Date.parse(documents.human.normalResponseChronology[0].armIssuedAt) - 1
+    ).toISOString();
+  await assertCriticalReceiptInvalid("human", "Human critical receipt");
+  documents.human.operations[0].queryProof.authorizationAudits[0].occurredAt =
+    humanQueryAuditTime;
+
   const repaymentPayload = documents.human.operations[3].commandReceipt
     .eventManifest.at(-1).payloadProjection;
   const repaymentDurableEvent = documents.human.operations[3].commandReceipt
@@ -3084,6 +3132,18 @@ test("critical artifact verifier binds runtime identity and both Agent phases", 
   await assertCriticalReceiptInvalid("capital_partner", "Capital Partner critical receipt");
   documents.capital_partner.withdrawalLineage.passport.inboxQueryProof.occurredAt =
     cpOperationTimes[5];
+
+  const cpCommandAuditTime = documents.capital_partner.durability
+    .commandReceipts[0].authorizationAudits[0].occurredAt;
+  documents.capital_partner.durability.commandReceipts[0]
+    .authorizationAudits[0].occurredAt = new Date(
+      Date.parse(
+        documents.capital_partner.normalResponseChronology[2].armIssuedAt
+      ) - 1
+    ).toISOString();
+  await assertCriticalReceiptInvalid("capital_partner", "Capital Partner critical receipt");
+  documents.capital_partner.durability.commandReceipts[0]
+    .authorizationAudits[0].occurredAt = cpCommandAuditTime;
 
   documents.capital_partner.durability.commandReceipts[0]
     .responseProjection.subjectId = "subject_cp_tampered";
@@ -3360,6 +3420,17 @@ test("critical artifact verifier binds runtime identity and both Agent phases", 
     releaseIdentityArtifactSha256;
 
   documents.risk.authorizationRegression.sourceFiles[0].sha256 = "0".repeat(64);
+  await writeFile(join(root, "risk.json"), `${JSON.stringify(documents.risk)}\n`);
+  await assert.rejects(
+    verifyM1BCriticalArtifactContents(evidence, {
+      evidenceRoot: root,
+      expectedCommitSha: SHA
+    }),
+    issue("Risk MFA boundary")
+  );
+  documents.risk.authorizationRegression = riskAuthorizationRegression();
+
+  documents.risk.authorizationRegression.sourceFiles[3].sha256 = "0".repeat(64);
   await writeFile(join(root, "risk.json"), `${JSON.stringify(documents.risk)}\n`);
   await assert.rejects(
     verifyM1BCriticalArtifactContents(evidence, {

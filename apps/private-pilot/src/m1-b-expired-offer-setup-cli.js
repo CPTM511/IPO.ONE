@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { createInterface } from "node:readline";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +16,8 @@ import {
 } from "./m1-b-acceptance-postgres.js";
 import {
   M1_B_EXPIRED_OFFER_SETUP_HUMAN_PREPARATION,
+  M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+  M1_B_EXPIRED_OFFER_SETUP_RESPONSE_SEQUENCE,
   createM1BExpiredOfferSetupCapture,
   parseM1BExpiredOfferSetupResponseLine,
   produceM1BExpiredOfferSetupReceipt,
@@ -29,6 +32,9 @@ const SHA256 = /^[0-9a-f]{64}$/;
 const IMAGE_ID = /^sha256:[0-9a-f]{64}$/;
 const HASH = /^0x[0-9a-f]{64}$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{1,255}$/;
+const NORMAL_RESPONSE_CHALLENGE =
+  /^m1_b_normal_response_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const NORMAL_RESPONSE_ARM_TTL_MS = 15 * 60_000;
 const MAX_CONTEXT_BYTES = 128 * 1024;
 const MAX_LINE_BYTES = 256 * 1024;
 const MAX_INPUT_BYTES = 768 * 1024;
@@ -276,40 +282,40 @@ export function readM1BExpiredOfferSetupCliEnvironment(environment) {
   });
 }
 
-function browserOperationExpression({
-  expectedOrigin,
-  bodyExpression,
-  sequence
+export function createM1BExpiredOfferSetupArmToken({
+  sequence,
+  issuedAt = new Date(),
+  challenge = `m1_b_normal_response_${randomUUID()}`
 }) {
-  const origin = new URL(expectedOrigin).origin;
-  return `(async()=>{` +
-    `if(location.origin!==${JSON.stringify(origin)})throw new Error("wrong_origin");` +
-    `const csrf=document.querySelector('meta[name="ipo-one-csrf-token"]')?.content??"";` +
-    `if(!/^[A-Za-z0-9_-]{32,128}$/.test(csrf))throw new Error("csrf_unavailable");` +
-    `const requestId="m1b_expired_${sequence}_request_"+crypto.randomUUID();` +
-    `const correlationId="m1b_expired_${sequence}_correlation_"+crypto.randomUUID();` +
-    `${bodyExpression}` +
-    `const result=await fetch("/tenant/v1/operations",{method:"POST",credentials:"same-origin",headers:{accept:"application/json, application/problem+json","content-type":"application/json","x-csrf-token":csrf,"x-request-id":requestId},body:JSON.stringify(request)});` +
-    `const response=await result.json();` +
-    `if(!result.ok||result.headers.get("x-request-id")!==requestId)throw new Error("operation_failed");` +
-    `const output={schemaVersion:"m1_b_acceptance_operator_response.v1",flow:"expired_offer_setup",sequence:${sequence},requestId,correlationId,response};` +
-    `console.log(JSON.stringify(output));return output;` +
-    `})()`;
-}
-
-export function createM1BExpiredOfferInboxBrowserExpression({
-  expectedOrigin
-}) {
-  loopbackOrigin(expectedOrigin);
-  return browserOperationExpression({
-    expectedOrigin,
-    sequence: 1,
-    bodyExpression:
-      `const request={operationId:"pilotReadCapitalPartnerPassportInbox",payload:{},requestId,correlationId,schemaVersion:"tenant_protocol_request.v1"};`
+  const definition = M1_B_EXPIRED_OFFER_SETUP_RESPONSE_SEQUENCE[sequence - 1];
+  assert(
+    definition && NORMAL_RESPONSE_CHALLENGE.test(challenge),
+    "expired_offer_cli_arm_invalid",
+    "Expired-Offer response arm does not match the closed sequence"
+  );
+  const issued = iso(
+    issuedAt instanceof Date ? issuedAt.toISOString() : issuedAt
+  );
+  return Object.freeze({
+    schemaVersion: "m1_b_acceptance_normal_response_arm.v1",
+    challenge,
+    clockDomain: M1_B_EXPIRED_OFFER_NORMAL_RESPONSE_CLOCK_DOMAIN,
+    issuedAt: issued,
+    expiresAt: new Date(
+      Date.parse(issued) + NORMAL_RESPONSE_ARM_TTL_MS
+    ).toISOString(),
+    flow: "expired_offer_setup",
+    sequence,
+    actorRole: definition[0],
+    operationId: definition[1],
+    responseSchemaVersion: definition[2]
   });
 }
 
-function freshInboxItem(inboxResponse, criticalBinding) {
+export function readM1BExpiredOfferFreshInboxItem(
+  inboxResponse,
+  criticalBinding
+) {
   const priorPassportIds = new Set([
     criticalBinding.currentLineage.passportArtifactId,
     criticalBinding.withdrawalLineage.passportArtifactId
@@ -333,44 +339,6 @@ function freshInboxItem(inboxResponse, criticalBinding) {
     "Exactly one fresh bounded Passport C must be present in the Capital Partner inbox"
   );
   return Object.freeze(structuredClone(candidates[0]));
-}
-
-export function createM1BExpiredOfferAuthorBrowserExpression({
-  expectedOrigin,
-  inboxResponse,
-  criticalBinding
-}) {
-  loopbackOrigin(expectedOrigin);
-  const item = freshInboxItem(inboxResponse, criticalBinding);
-  const passportId = item.resource.resourceId;
-  const review = item.reviewContext;
-  const bodyExpression =
-    `const el=(id)=>{const value=document.getElementById(id);if(!(value instanceof HTMLInputElement)||value.value==="")throw new Error("missing_term_"+id);return value;};` +
-    `const minor=(id)=>{const value=Number(el(id).value);if(!Number.isFinite(value)||value<0)throw new Error("invalid_term_"+id);return String(Math.round(value*100));};` +
-    `const passportId=${JSON.stringify(passportId)};` +
-    `const creditIntentId=${JSON.stringify(review.creditIntentId)};` +
-    `const artifactHash=${JSON.stringify(review.artifactHash)};` +
-    `const artifactVersion=${JSON.stringify(review.artifactVersion)};` +
-    `const healthRequestId="m1b_expired_health_"+crypto.randomUUID();` +
-    `const health=await fetch("/tenant/v1/healthz",{method:"GET",credentials:"omit",headers:{accept:"application/json","x-request-id":healthRequestId}});` +
-    `const healthBody=await health.json();` +
-    `const serverNow=Date.parse(health.headers.get("date")??"");` +
-    `if(!health.ok||health.headers.get("x-request-id")!==healthRequestId||health.headers.get("cache-control")!=="no-store"||healthBody?.schemaVersion!=="tenant_transport_health.v1"||healthBody?.status!=="ready"||healthBody?.transport!=="authenticated_http_loopback"||healthBody?.public!==false||!Number.isFinite(serverNow))throw new Error("health_identity_invalid");` +
-    `const validUntil=new Date(serverNow+105000).toISOString();` +
-    `const terms={assetId:"urn:ipo-one:sandbox-asset:usd-cent",facilityLimitMinor:minor("capitalPartnerFacilityLimit"),approvedPrincipalMinor:minor("capitalPartnerPrincipal"),perDrawCapMinor:minor("capitalPartnerPerDrawCap"),annualRateBps:Math.round(Number(el("capitalPartnerAnnualRate").value)*100),originationFeeMinor:minor("capitalPartnerOriginationFee"),repaymentFrequency:"monthly",installmentCount:Number(el("capitalPartnerInstallments").value),firstPaymentAt:new Date(el("capitalPartnerFirstPaymentAt").value).toISOString(),maturityAt:new Date(el("capitalPartnerMaturityAt").value).toISOString(),permittedPurposeCode:"working_capital",conditions:["passport_current_at_acceptance","authority_current_at_acceptance","no_adverse_obligation_at_acceptance"],undrawnRevocationRule:"capital_partner_before_acceptance",validUntil,reasonCodes:["capital_partner_underwritten"],disclosureRef:"disclosure_capital_partner_standard_v1"};` +
-    `const snapshot=JSON.stringify({creditIntentId,passportId,artifactHash,artifactVersion,terms});` +
-    `const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(snapshot));` +
-    `const underwritingSnapshotHash="0x"+[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,"0")).join("");` +
-    `const idempotencyKey="m1b_expired_author_idempotency_"+crypto.randomUUID();` +
-    `const request={operationId:"pilotAuthorCapitalPartnerOffer",resource:{resourceType:"credit_passport_artifact",resourceId:passportId},payload:{creditIntentId,artifactHash,artifactVersion,underwritingSnapshotHash,...terms,schemaVersion:"capital_partner_offer_authoring.v1"},requestId,correlationId,idempotencyKey,schemaVersion:"tenant_protocol_request.v1"};`;
-  return Object.freeze({
-    freshPassportId: passportId,
-    browserExpression: browserOperationExpression({
-      expectedOrigin,
-      sequence: 2,
-      bodyExpression
-    })
-  });
 }
 
 function parsePreparationLine(line) {
@@ -503,29 +471,36 @@ export async function runM1BExpiredOfferSetupCli({
       })
     }));
     const preparation = parsePreparationLine(await operator.nextLine());
+    const inboxArm = createM1BExpiredOfferSetupArmToken({ sequence: 1 });
     operator.prompt(Object.freeze({
-      schemaVersion: "m1_b_expired_offer_setup_prompt.v1",
+      schemaVersion: "m1_b_expired_offer_setup_prompt.v2",
       kind: "response",
       flow: "expired_offer_setup",
       sequence: 1,
       actorRole: "capital_partner",
       operationId: "pilotReadCapitalPartnerPassportInbox",
       responseSchemaVersion: "tenant_capital_partner_passport_inbox_view.v1",
-      browserExpression: createM1BExpiredOfferInboxBrowserExpression({
-        expectedOrigin: context.capitalPartnerOrigin
-      })
+      armToken: JSON.stringify(inboxArm),
+      instruction:
+        "Paste only armToken into the visible local M1-B safe response panel, select Arm one response, Run armed read, then Copy safe response. Do not paste or execute code, a request, header, cookie, CSRF value, idempotency key, signature, or session material."
     }));
     const inbox = parseM1BExpiredOfferSetupResponseLine(
       await operator.nextLine(),
-      { sequence: 1, observedAt: new Date() }
+      {
+        sequence: 1,
+        armChallenge: inboxArm.challenge,
+        armIssuedAt: inboxArm.issuedAt,
+        armClockDomain: inboxArm.clockDomain,
+        observedAt: new Date()
+      }
     );
-    const author = createM1BExpiredOfferAuthorBrowserExpression({
-      expectedOrigin: context.capitalPartnerOrigin,
-      inboxResponse: inbox.response,
-      criticalBinding: context.capitalPartnerCriticalBinding
-    });
+    const freshPassport = readM1BExpiredOfferFreshInboxItem(
+      inbox.response,
+      context.capitalPartnerCriticalBinding
+    );
+    const authorArm = createM1BExpiredOfferSetupArmToken({ sequence: 2 });
     operator.prompt(Object.freeze({
-      schemaVersion: "m1_b_expired_offer_setup_prompt.v1",
+      schemaVersion: "m1_b_expired_offer_setup_prompt.v2",
       kind: "response",
       flow: "expired_offer_setup",
       sequence: 2,
@@ -533,13 +508,19 @@ export async function runM1BExpiredOfferSetupCli({
       operationId: "pilotAuthorCapitalPartnerOffer",
       responseSchemaVersion: "tenant_capital_partner_offer_authored.v1",
       instruction:
-        "Run the exact expression immediately in the same signed-in Capital Partner page. It uses the existing visible no-funds terms, a 105-second validity, and page-memory CSRF; it returns only request IDs and the safe protocol response.",
-      freshPassportId: author.freshPassportId,
-      browserExpression: author.browserExpression
+        "In the same signed-in Capital Partner page, select the exact fresh Passport, paste only armToken into the visible safe response panel, and Arm one response. Select Prepare 105-second expiry, then use the existing Issue exact sandbox Offer button and Copy safe response. The app obtains loopback server time; do not paste or execute code or expose transport/session material.",
+      freshPassportId: freshPassport.resource.resourceId,
+      armToken: JSON.stringify(authorArm)
     }));
     const authored = parseM1BExpiredOfferSetupResponseLine(
       await operator.nextLine(),
-      { sequence: 2, observedAt: new Date() }
+      {
+        sequence: 2,
+        armChallenge: authorArm.challenge,
+        armIssuedAt: authorArm.issuedAt,
+        armClockDomain: authorArm.clockDomain,
+        observedAt: new Date()
+      }
     );
     const capture = createM1BExpiredOfferSetupCapture({
       candidateReleaseId: context.candidateReleaseId,

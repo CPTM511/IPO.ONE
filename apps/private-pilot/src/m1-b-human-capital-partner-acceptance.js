@@ -9,6 +9,8 @@ const EXACT_SHA = /^[0-9a-f]{40}$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{1,255}$/;
 const REQUEST_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
 const HASH = /^0x[0-9a-f]{64}$/;
+const NORMAL_RESPONSE_CLOCK_DOMAIN = "lima_exact_pilot_vm_system_clock";
+const NORMAL_RESPONSE_MAX_OBSERVATION_MS = 17 * 60_000;
 const MINOR_UNITS = /^(?:0|[1-9][0-9]{0,77})$/;
 const SAFE_WALLET_AMR = new Set([
   "eip191_eoa_v1",
@@ -916,6 +918,8 @@ export function assertM1BResponseOnlyCapture(capture, { role }) {
         "requestId",
         "correlationId",
         "responseSchemaVersion",
+        "armIssuedAt",
+        "armClockDomain",
         "capturedAt",
         "response"
       ]) &&
@@ -925,6 +929,14 @@ export function assertM1BResponseOnlyCapture(capture, { role }) {
       REQUEST_IDENTIFIER.test(entry.requestId ?? "") &&
       REQUEST_IDENTIFIER.test(entry.correlationId ?? "") &&
       entry.responseSchemaVersion === responseSchemaVersion &&
+      (denialResponse || (
+        entry.armClockDomain === NORMAL_RESPONSE_CLOCK_DOMAIN &&
+        Number.isFinite(Date.parse(entry.armIssuedAt ?? "")) &&
+        Date.parse(entry.armIssuedAt) >= Date.parse(capture.databaseStartedAt) &&
+        Date.parse(entry.armIssuedAt) <= Date.parse(entry.capturedAt) &&
+        Date.parse(entry.capturedAt) <= Date.parse(entry.armIssuedAt) +
+          NORMAL_RESPONSE_MAX_OBSERVATION_MS
+      )) &&
       Number.isFinite(Date.parse(entry.capturedAt ?? "")) &&
       Date.parse(entry.capturedAt) >= Date.parse(capture.databaseStartedAt) &&
       Date.parse(entry.capturedAt) > previousCapturedAt &&

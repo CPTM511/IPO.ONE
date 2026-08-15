@@ -56,12 +56,11 @@ import {
 } from "../apps/private-pilot/src/m1-b-expired-offer-setup-cli.js";
 import {
   M1_B_OPERATIONAL_BROWSER_MEASUREMENT_PHASES,
-  createM1BOperationalBrowserExpression,
   createM1BOperationalBrowserMeasurementPrompts,
   deriveM1BOperationalBrowserRow,
   parseM1BOperationalBrowserMeasurementResponseLine,
   validateM1BOperationalBrowserMeasurementPrompt,
-  validateM1BOperationalBrowserPng
+  validateM1BOperationalBrowserJpeg
 } from "../apps/private-pilot/src/m1-b-operational-browser-measurement.js";
 import {
   M1_B_OPERATIONAL_BROWSER_READ_CONTEXT_SCHEMA_VERSION,
@@ -470,7 +469,7 @@ export function parseM1BOperationalObservations(text) {
     if (new Set(["browser_row", "browser_measurement_row"]).has(value.type)) {
       fail(
         "operational_browser_self_attestation_forbidden",
-        "Browser rows are produced from builder challenges, measured responses, PostgreSQL audit readback, and PNG files; operator row claims are forbidden."
+        "Browser rows are produced from builder challenges, measured responses, PostgreSQL audit readback, and JPEG files; operator row claims are forbidden."
       );
     }
     else if (value.type === "journey_step") {
@@ -600,25 +599,7 @@ export async function collectM1BOperationalBrowserMeasurements({
       const measuredRow = Object.freeze({
         ...row,
         phaseEvidence: Object.freeze(entries.map((entry) => Object.freeze({
-          prompt: validateM1BOperationalBrowserMeasurementPrompt(Object.freeze({
-            schemaVersion: entry.prompt.schemaVersion,
-            kind: entry.prompt.kind,
-            promptId: entry.prompt.promptId,
-            candidateReleaseId: entry.prompt.candidateReleaseId,
-            sourceTreeHash: entry.prompt.sourceTreeHash,
-            runtimeImageId: entry.prompt.runtimeImageId,
-            databaseStartedAt: entry.prompt.databaseStartedAt,
-            role: entry.prompt.role,
-            check: entry.prompt.check,
-            phase: entry.prompt.phase,
-            origin: entry.prompt.origin,
-            expected: entry.prompt.expected,
-            readRequest: entry.prompt.readRequest,
-            capture: entry.prompt.capture,
-            browserExpressionHash: manifestHash(
-              createM1BOperationalBrowserExpression(entry.prompt)
-            )
-          })),
+          prompt: validateM1BOperationalBrowserMeasurementPrompt(entry.prompt),
           promptIssuedAt: entry.promptIssuedAt,
           response: entry.response,
           responseCapturedAt: entry.responseCapturedAt,
@@ -1517,12 +1498,26 @@ export async function collectM1BBrowserRuntimeObservation({
 function exactObservationSets(observations, context) {
   const browserKeys = new Set();
   const browserDrivers = new Set();
+  const freshContextHashes = new Set();
+  const freshLineageHashes = new Set();
   for (const input of observations.browserRows) {
     const row = validateMeasuredBrowserObservation(input, context);
     const key = `${row.role}:${row.check}`;
     if (browserKeys.has(key)) fail("operational_browser_observation_duplicate", `Duplicate browser row ${key}.`);
     browserKeys.add(key);
     browserDrivers.add(row.driver);
+    if (row.check === "fresh_browser_context") {
+      const claim = row.phaseEvidence[0].response.browserControl.contextClaim;
+      if (
+        freshContextHashes.has(claim.contextHash) ||
+        freshLineageHashes.has(claim.lineageHash)
+      ) fail(
+        "operational_browser_observation_duplicate",
+        "Fresh top-level browser context lineage is reused across roles."
+      );
+      freshContextHashes.add(claim.contextHash);
+      freshLineageHashes.add(claim.lineageHash);
+    }
   }
   const expectedBrowser = M1_B_OPERATIONAL_ROLES.flatMap((role) =>
     M1_B_OPERATIONAL_BROWSER_CHECKS.map((check) => `${role}:${check}`)
@@ -1558,6 +1553,7 @@ function validateMeasuredBrowserObservation(row, context) {
   const responses = [];
   let previous = null;
   let signedOutCapturedAt = null;
+  let freshContextClaim = null;
   for (const [index, evidence] of row.phaseEvidence.entries()) {
     if (!exactKeys(evidence, [
       "prompt", "promptIssuedAt", "response", "responseCapturedAt",
@@ -1568,7 +1564,6 @@ function validateMeasuredBrowserObservation(row, context) {
     );
     const prompt = evidence.prompt;
     validateM1BOperationalBrowserMeasurementPrompt(prompt);
-    createM1BOperationalBrowserExpression(prompt);
     const response = parseM1BOperationalBrowserMeasurementResponseLine(
       JSON.stringify(evidence.response),
       prompt
@@ -1592,6 +1587,40 @@ function validateMeasuredBrowserObservation(row, context) {
     );
     if (prompt.phase === "signed_out") {
       signedOutCapturedAt = evidence.responseCapturedAt;
+    }
+    const contextClaim = response.browserControl.contextClaim;
+    if (row.check === "fresh_browser_context") {
+      if (
+        Date.parse(contextClaim.controllerObservedAt) <
+          Date.parse(context.databaseStartedAt) ||
+        Date.parse(contextClaim.controllerObservedAt) >
+          Date.parse(evidence.responseCapturedAt)
+      ) fail(
+        "operational_browser_measurement_invalid",
+        "Fresh top-level context claim chronology is invalid."
+      );
+      if (index === 0) {
+        freshContextClaim = contextClaim;
+      } else if (
+        freshContextClaim === null ||
+        contextClaim.contextHash !== freshContextClaim.contextHash ||
+        contextClaim.lineageHash !== freshContextClaim.lineageHash ||
+        contextClaim.controllerObservedAt !==
+          freshContextClaim.controllerObservedAt ||
+        contextClaim.createdVia !== freshContextClaim.createdVia ||
+        contextClaim.initialUrl !== freshContextClaim.initialUrl ||
+        contextClaim.topLevelContextKind !==
+          freshContextClaim.topLevelContextKind ||
+        contextClaim.isolatedStorageClaimed !== false
+      ) fail(
+        "operational_browser_measurement_invalid",
+        "Fresh signed-out and authenticated phases do not share one top-level context lineage."
+      );
+    } else if (contextClaim !== null) {
+      fail(
+        "operational_browser_measurement_invalid",
+        "A non-fresh browser row carries a context claim."
+      );
     }
     if (prompt.readRequest !== null) {
       const appRoleRead = validateM1BOperationalBrowserAppRoleRead(
@@ -2643,6 +2672,11 @@ export function createM1BOperationalBrowserRowDocuments({
   );
   const visuals = Object.freeze(visualArtifacts.map((visual, index) => {
     const phase = row.phaseEvidence[index].prompt.phase;
+    const viewport = row.phaseEvidence[index].response.measurement.viewport;
+    const expectedWidth = viewport.innerWidth * viewport.devicePixelRatio;
+    const expectedHeight = viewport.innerHeight * viewport.devicePixelRatio;
+    const expectedMcuCount =
+      Math.ceil(expectedWidth / 16) * Math.ceil(expectedHeight / 16);
     const expectedId = artifactId(
       "browser",
       row.role,
@@ -2650,20 +2684,37 @@ export function createM1BOperationalBrowserRowDocuments({
     );
     const expectedPath =
       `${outputRootRelativePath}/${candidateReleaseId}.browser.` +
-      `${row.role}.${row.check}.${phase}.png`;
+      `${row.role}.${row.check}.${phase}.jpg`;
     if (
       !exactKeys(visual, [
-        "phase", "id", "kind", "relativePath", "sha256", "challengeHash",
-        "png"
+        "phase", "id", "kind", "relativePath", "sha256", "mediaType",
+        "codecProfile", "challengeHash", "jpeg"
       ]) || visual.phase !== phase || visual.id !== expectedId ||
       visual.kind !== "screenshot" || visual.relativePath !== expectedPath ||
+      visual.mediaType !== "image/jpeg" ||
+      visual.codecProfile !== "chrome_jpeg_quality_80_baseline_420" ||
       !SHA256.test(visual.sha256 ?? "") ||
       visual.challengeHash !==
         row.phaseEvidence[index].prompt.capture.challengeHash ||
-      !exactKeys(visual.png, ["width", "height", "idatCount"]) ||
-      !Number.isSafeInteger(visual.png.width) ||
-      !Number.isSafeInteger(visual.png.height) ||
-      !Number.isSafeInteger(visual.png.idatCount) || visual.png.idatCount < 1
+      !exactKeys(visual.jpeg, [
+        "width", "height", "jfifVersion", "iccProfileSegmentCount",
+        "iccProfileBytes", "quality", "subsampling", "mcuCount",
+        "decodedChallengeHash"
+      ]) ||
+      visual.jpeg.width !== expectedWidth ||
+      visual.jpeg.height !== expectedHeight ||
+      visual.jpeg.jfifVersion !== "1.01" ||
+      !Number.isSafeInteger(visual.jpeg.iccProfileSegmentCount) ||
+      visual.jpeg.iccProfileSegmentCount < 0 ||
+      !Number.isSafeInteger(visual.jpeg.iccProfileBytes) ||
+      visual.jpeg.iccProfileBytes < visual.jpeg.iccProfileSegmentCount ||
+      (visual.jpeg.iccProfileSegmentCount === 0) !==
+        (visual.jpeg.iccProfileBytes === 0) ||
+      visual.jpeg.quality !== 80 ||
+      visual.jpeg.subsampling !== "4:2:0" ||
+      visual.jpeg.mcuCount !== expectedMcuCount ||
+      visual.jpeg.decodedChallengeHash !==
+        row.phaseEvidence[index].prompt.capture.challengeHash
     ) fail(
       "operational_browser_document_invalid",
       "Browser visual does not bind its exact measured phase."
@@ -2719,20 +2770,26 @@ export function createM1BOperationalBrowserRowDocuments({
   const diagnostics = Object.freeze({
     driver: row.driver,
     phaseCount: measurementPhases.length,
-    consoleErrorCount: measurementPhases.reduce(
-      (sum, { response }) => sum + response.browserControl.consoleErrorCount,
+    runtimeErrorCount: measurementPhases.reduce(
+      (sum, { response }) => sum + response.browserControl.runtimeErrorCount,
       0
     ),
-    failedNetworkRequestCount: measurementPhases.reduce(
+    unhandledRejectionCount: measurementPhases.reduce(
       (sum, { response }) =>
-        sum + response.browserControl.failedNetworkRequestCount,
+        sum + response.browserControl.unhandledRejectionCount,
       0
     ),
-    observationMethod: "controlled_chrome_prompt_response"
+    measurementRequestFailureCount: measurementPhases.reduce(
+      (sum, { response }) =>
+        sum + response.browserControl.measurementRequestFailureCount,
+      0
+    ),
+    observationMethod: "visible_loopback_measurement_console"
   });
   if (
-    diagnostics.consoleErrorCount !== 0 ||
-    diagnostics.failedNetworkRequestCount !== 0
+    diagnostics.runtimeErrorCount !== 0 ||
+    diagnostics.unhandledRejectionCount !== 0 ||
+    diagnostics.measurementRequestFailureCount !== 0
   ) fail(
     "operational_browser_document_invalid",
     "Browser diagnostics are not clean."
@@ -3537,6 +3594,8 @@ export async function createM1BOperationalEvidenceDocuments({
       if (
         declared.phase !== phaseEvidence?.prompt?.phase ||
         declared.relativePath !== phaseEvidence.prompt.capture.relativePath ||
+        declared.mediaType !== phaseEvidence.prompt.capture.mediaType ||
+        declared.codecProfile !== phaseEvidence.prompt.capture.codecProfile ||
         declared.challengeHash !== phaseEvidence.prompt.capture.challengeHash
       ) fail(
         "operational_visual_artifact_invalid",
@@ -3553,9 +3612,14 @@ export async function createM1BOperationalEvidenceDocuments({
         "operational_visual_artifact_reused",
         `${row.role}:${row.check}:${declared.phase} reuses visual proof.`
       );
-      const png = validateM1BOperationalBrowserPng(
+      const jpeg = validateM1BOperationalBrowserJpeg(
         visualSource.bytes,
-        phaseEvidence.response.measurement.viewport
+        phaseEvidence.response.measurement.viewport,
+        phaseEvidence.prompt.capture.challengeHash
+      );
+      if (jpeg.sha256 !== visualSource.sha256) fail(
+        "operational_visual_artifact_invalid",
+        `${row.role}:${row.check}:${declared.phase} JPEG digest is not exact.`
       );
       visualPaths.add(visualSource.relativePath);
       visualDigests.add(visualSource.sha256);
@@ -3568,7 +3632,7 @@ export async function createM1BOperationalEvidenceDocuments({
         ROOT,
         resolve(
           outputRoot,
-          `${candidateReleaseId}.browser.${row.role}.${row.check}.${declared.phase}.png`
+          `${candidateReleaseId}.browser.${row.role}.${row.check}.${declared.phase}.jpg`
         )
       );
       const visual = Object.freeze({
@@ -3577,11 +3641,19 @@ export async function createM1BOperationalEvidenceDocuments({
         kind: "screenshot",
         relativePath: visualPath,
         sha256: visualSource.sha256,
+        mediaType: declared.mediaType,
+        codecProfile: declared.codecProfile,
         challengeHash: declared.challengeHash,
-        png: Object.freeze({
-          width: png.width,
-          height: png.height,
-          idatCount: png.idatCount
+        jpeg: Object.freeze({
+          width: jpeg.width,
+          height: jpeg.height,
+          jfifVersion: jpeg.jfifVersion,
+          iccProfileSegmentCount: jpeg.iccProfileSegmentCount,
+          iccProfileBytes: jpeg.iccProfileBytes,
+          quality: jpeg.quality,
+          subsampling: jpeg.subsampling,
+          mcuCount: jpeg.mcuCount,
+          decodedChallengeHash: jpeg.decodedChallengeHash
         })
       });
       documents.push(Object.freeze({
@@ -5522,7 +5594,7 @@ export function assertM1BOperationalPreRiskArtifactSet({
         add(
           `${prefix}_${browserPhaseArtifactToken(phase)}_shot`,
           "screenshot",
-          outputPath(`${candidateReleaseId}.browser.${role}.${check}.${phase}.png`)
+          outputPath(`${candidateReleaseId}.browser.${role}.${check}.${phase}.jpg`)
         );
       }
       add(

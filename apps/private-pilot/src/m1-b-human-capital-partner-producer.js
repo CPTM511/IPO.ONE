@@ -20,6 +20,7 @@ import {
 const SHA = /^[0-9a-f]{40}$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{1,255}$/;
 const HASH = /^0x[0-9a-f]{64}$/;
+const NORMAL_RESPONSE_CLOCK_DOMAIN = "lima_exact_pilot_vm_system_clock";
 const HUMAN_ORIGIN_COMMANDS = Object.freeze([
   ["pilotCreateHumanSubject", "subject", "tenant_human_subject_created.v1"],
   ["pilotCreateConsent", "consent", "tenant_consent_created.v1"],
@@ -68,6 +69,64 @@ function iso(value) {
 
 function uniqueBy(values, key) {
   return [...new Map(values.map((value) => [value[key], value])).values()];
+}
+
+function normalResponseChronology(entries, proofs, databaseStartedAt) {
+  assert(
+    Array.isArray(entries) && Array.isArray(proofs) &&
+      entries.length === proofs.length && entries.length >= 1,
+    "normal_response_chronology_invalid",
+    "Normal-response entries and PostgreSQL proofs do not align"
+  );
+  const databaseStart = iso(databaseStartedAt);
+  return Object.freeze(entries.map((entry, index) => {
+    const proof = proofs[index];
+    const armIssuedAt = iso(entry?.armIssuedAt);
+    const capturedAt = iso(entry?.capturedAt);
+    const priorCapturedAt = index === 0
+      ? databaseStart
+      : iso(entries[index - 1]?.capturedAt);
+    const authorizationAudits = proof?.authorizationAudits;
+    const proofTimes = [
+      proof?.occurredAt,
+      ...((Array.isArray(authorizationAudits) ? authorizationAudits : [])
+        .map(({ occurredAt }) => occurredAt)),
+      ...(proof?.completedAt ? [proof.completedAt] : []),
+      ...(proof?.capturedAt ? [proof.capturedAt] : []),
+      ...((Array.isArray(proof?.eventManifest) ? proof.eventManifest : [])
+        .map(({ occurredAt }) => occurredAt))
+    ];
+    assert(
+      entry?.armClockDomain === NORMAL_RESPONSE_CLOCK_DOMAIN &&
+        proof?.operationId === entry.operationId &&
+        proof?.requestId === entry.requestId &&
+        proof?.correlationId === entry.correlationId &&
+        authorizationAudits?.length === 2 &&
+        Date.parse(armIssuedAt) >= Date.parse(databaseStart) &&
+        Date.parse(armIssuedAt) >= Date.parse(priorCapturedAt) &&
+        Date.parse(capturedAt) >= Date.parse(armIssuedAt) &&
+        (proof?.completedAt
+          ? proof?.capturedAt === capturedAt
+          : proof?.occurredAt === capturedAt) &&
+        proofTimes.length >= 3 && proofTimes.every((value) => (
+          Number.isFinite(Date.parse(value ?? "")) &&
+          Date.parse(value) >= Date.parse(armIssuedAt) &&
+          Date.parse(value) <= Date.parse(capturedAt)
+        )),
+      "normal_response_chronology_invalid",
+      `Normal-response PostgreSQL proof is outside its armed capture for ${entry?.operationId}`
+    );
+    return Object.freeze({
+      sequence: entry.sequence,
+      actorRole: entry.actorRole,
+      operationId: entry.operationId,
+      requestId: entry.requestId,
+      correlationId: entry.correlationId,
+      armIssuedAt,
+      armClockDomain: NORMAL_RESPONSE_CLOCK_DOMAIN,
+      capturedAt
+    });
+  }));
 }
 
 function riskFeatureSnapshotCore(snapshot) {
@@ -556,6 +615,13 @@ async function assembleM1BHumanCriticalReceipt({
   );
   const evidenceManifest = evidenceEvents.map(evidenceProjection);
   const evidenceHash = hashM1BAcceptanceManifest(evidenceManifest);
+  const responseChronology = normalResponseChronology(
+    safeCapture.responses,
+    operations.map((operation) =>
+      operation.commandReceipt ?? operation.queryProof
+    ),
+    databaseStartedAt
+  );
   const capturedAt = iso(safeCapture.capturedAt);
   return Object.freeze({
     schemaVersion: "m1_b_human_critical_receipt.v1",
@@ -615,6 +681,7 @@ async function assembleM1BHumanCriticalReceipt({
       })
     }),
     linkage: linkedIdentifiers,
+    normalResponseChronology: responseChronology,
     recovery: Object.freeze({
       operationId: "pilotReadWorkspaceResume",
       requestId: recoveryEntry.requestId,
@@ -1586,6 +1653,20 @@ async function assembleM1BCapitalPartnerCriticalReceipt({
     "capital_partner_borrower_eoa_required",
     "Capital Partner borrower denial/recovery proof requires the invited EOA"
   );
+  const responseChronology = normalResponseChronology(
+    entries.filter((entry) => entry.armIssuedAt !== undefined),
+    [
+      selfProof,
+      inboxAProof,
+      authorAProof,
+      recoveryAProof,
+      inboxBProof,
+      authorBProof,
+      withdrawBProof,
+      finalRecoveryProof
+    ],
+    databaseStartedAt
+  );
   return Object.freeze({
     schemaVersion: "m1_b_capital_partner_critical_receipt.v1",
     candidateReleaseId,
@@ -1599,6 +1680,7 @@ async function assembleM1BCapitalPartnerCriticalReceipt({
       capitalPartner: capitalPartnerAuthentication,
       borrower: borrowerAuthentication
     }),
+    normalResponseChronology: responseChronology,
     profile: Object.freeze({
       capitalPartnerId,
       operatorActorRefHash: hashId("m1_b_acceptance_actor_reference", {
