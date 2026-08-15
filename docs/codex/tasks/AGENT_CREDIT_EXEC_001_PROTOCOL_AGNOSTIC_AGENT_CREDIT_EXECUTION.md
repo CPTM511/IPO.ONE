@@ -432,8 +432,8 @@ transfer checks passed. Execution therefore stopped before any order
 signature. No order, fill, position, close, cancel, repayment or Obligation
 settlement occurred; zero Testnet assets, real funds or mainnet funds moved.
 
-Current L3 truth is `BLOCKED`, not `L3_VERIFIED`. No replay or second run is
-authorized. Durable redacted Evidence:
+At the end of this first attempt, L3 truth was `BLOCKED`, not `L3_VERIFIED`.
+At that point no replay or second run was authorized. Durable redacted Evidence:
 `artifacts/testnet/agent-credit-exec-001-l3-registration-blocked-20260815.json`.
 Post-stop verification passed 1,087 full-repository tests, 721-module source
 lint, 136 Schema checks, the 72-export contract typecheck, focused Agent Credit,
