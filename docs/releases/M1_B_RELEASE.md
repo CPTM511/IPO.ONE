@@ -1,6 +1,6 @@
 # M1-B Release
 
-Status: `ACCEPTED_LOCAL_NO_REAL_FUNDS_PENDING_MERGE_DEPLOY_AUTHORIZATION`
+Status: `MERGED_HOSTED_NO_REAL_FUNDS`
 
 ## Release identity
 
@@ -8,11 +8,21 @@ Status: `ACCEPTED_LOCAL_NO_REAL_FUNDS_PENDING_MERGE_DEPLOY_AUTHORIZATION`
 - Final implementation SHA: `a0d32b4f9b936eacc1a80d0417fc1349a57ab2eb`
 - Final accepted candidate SHA: `74ac425dad33bf667ee2550e33e36220dcfed402`
 - Final accepted candidate tree: `fc5f3eb1c4de1cc7e97e6fa5cc1a411b53490f7f`
-- Rollback target: `fb83a83566b136aa24159d1ab42b8db0caf9b40d`
+- GitHub merge commit: `80efebf33352cd2fd787ef564c5cc7038a5359f0`
+- Hosted release SHA: `74ac425dad33bf667ee2550e33e36220dcfed402`
+- Primary Vercel deployment: `dpl_GYsPPTJ49pB4KrxFdHNJow5PTeUg`
+- Primary deployment URL:
+  `https://ipo-one-internal-8y9a1jmfx-cptm-111-s-projects.vercel.app`
+- Verified hosted rollback deployment: `dpl_2JBesAqB2MXZZBCEDypMq5Gzm7Ue`
+- Rollback deployment URL:
+  `https://ipo-one-internal-8cbtv7ara-cptm-111-s-projects.vercel.app`
+- Immutable local safety baseline: `fb83a83566b136aa24159d1ab42b8db0caf9b40d`
 
-The accepted candidate is a persistent local, synthetic, no-real-funds
-product. Acceptance does not authorize merge, hosted deployment, DNS changes,
-release tags, mainnet activity, real value, custody, or production operation.
+M1-B is merged and hosted at <https://ipo.one> on the exact accepted product
+artifact. The hosted profile remains synthetic or redacted and
+no-real-funds. Hosting does not authorize mainnet activity, real value,
+production Human lending, custody, signing, withdrawals, Venue writes, or
+external Provider execution.
 
 ## Final fixes
 
@@ -106,13 +116,18 @@ single release record.
 
 ## Deployment and rollback state
 
-- Local review runtime: <http://127.0.0.1:18887/#request-credit> with role
-  entrypoints on ports `18887-18890`; exact candidate image healthy.
-- Remote deployment, merge, DNS, tag, and security seal: not performed and
-  pending separate Founder authorization.
-- Rollback returns to `fb83a83566b136aa24159d1ab42b8db0caf9b40d`,
-  stops the candidate runtime, and preserves PostgreSQL for reviewed recovery;
-  it does not activate an older production or real-value state.
+- Public origin: <https://ipo.one>; `www.ipo.one` redirects to the apex origin.
+- `/livez`, `/readyz`, and `/.well-known/ipo-one.json` returned HTTP 200 on
+  2026-08-15 and reported exact release
+  `74ac425dad33bf667ee2550e33e36220dcfed402`, deployment role `primary`,
+  profile `closed_non_funds_pilot`, and `realFundsEnabled:false`.
+- The current Primary Vercel deployment is
+  `dpl_GYsPPTJ49pB4KrxFdHNJow5PTeUg`; Vercel reported it `READY` and production
+  targeted. This is hosting identity, not real-value production authority.
+- The verified rollback deployment is
+  `dpl_2JBesAqB2MXZZBCEDypMq5Gzm7Ue`, the last independently recorded hosted
+  zero-funded baseline. Rollback would restore that older hosted artifact; it
+  would not activate real value or replace reviewed data-recovery procedures.
 
 ## Explicitly disabled flags and authorities
 
@@ -128,8 +143,8 @@ single release record.
 
 - Compose phishing-resistant MFA before privileged Risk or Operations
   promotion.
-- Complete separately authorized merge, hosted deployment, invitation,
-  observability, DNS, and rollback validation.
+- Complete separately authorized participant invitation, observability,
+  rollback exercises, and closed-pilot gates.
 - Review production Provider, signer, custody, capital, servicing, legal,
   privacy, and loss-bearing decisions through named human approvals.
 - Keep A2A, subscriptions, streaming transports, new CreditLine products, new
