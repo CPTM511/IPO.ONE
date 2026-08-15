@@ -166,7 +166,7 @@ test("forbidden and unknown Agent actions deny before signer, adapter, or econom
 test("market, notional, leverage, recipient, venue, account, raw action, target, and mainnet mutation deny", async (t) => {
   const intents = [
     { kind: "open", market: "ETH", requestedNotionalMinor: "1000" },
-    { kind: "open", market: "BTC", requestedNotionalMinor: "1001" },
+    { kind: "open", market: "BTC", requestedNotionalMinor: "1201" },
     { kind: "open", market: "BTC", requestedNotionalMinor: "1000", leverage: 2 },
     { kind: "open", market: "BTC", requestedNotionalMinor: "1000", recipient: "changed" },
     { kind: "open", market: "BTC", requestedNotionalMinor: "1000", venue: "other" },

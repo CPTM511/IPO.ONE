@@ -1,4 +1,4 @@
-import policy from "../policy/agent-credit-hyperliquid-testnet.v1.json" with {
+import policy from "../policy/agent-credit-hyperliquid-testnet.v2.json" with {
   type: "json"
 };
 import { DomainError, hashId } from "../../../packages/domain/src/index.js";

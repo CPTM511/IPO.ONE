@@ -9,9 +9,9 @@ export const AGENT_CREDIT_HYPERLIQUID_L3_PROFILE = Object.freeze({
   path: "/exchange",
   market: "BTC",
   assetIndex: 3,
-  maximumNotionalUsd: "10",
+  maximumNotionalUsd: "12",
   maximumLeverage: 1,
-  policyVersion: "agent_credit_hyperliquid_testnet.v1",
+  policyVersion: "agent_credit_hyperliquid_testnet.v2",
   authorizationVersion: "agent_credit_authorization.v1",
   allowedActions: Object.freeze([
     "order",

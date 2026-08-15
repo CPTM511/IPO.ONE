@@ -42,7 +42,8 @@ const HASH = /^0x[0-9a-f]{64}$/;
 const COMMIT = /^[0-9a-f]{40}$/;
 const RUN_ID = /^agent-credit-exec-001-l3-[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/;
 const PRIVATE_DIRECTORY = "/private/tmp/ipo-one-agent-credit-exec-001";
-const PRINCIPAL_MINOR = "1000";
+const MINIMUM_OPEN_NOTIONAL_USD = "10";
+const PRINCIPAL_MINOR = "1200";
 const MAXIMUM_INFO_RESPONSE_BYTES = 512 * 1024;
 const MAXIMUM_EXCHANGE_RESPONSE_BYTES = 32 * 1024;
 
@@ -252,11 +253,100 @@ function canonicalDecimal(value) {
   return fixed;
 }
 
+function decimalParts(value, name) {
+  const text = String(value);
+  if (!/^(?:0\.[0-9]*[1-9]|[1-9][0-9]*(?:\.[0-9]*[1-9])?)$/.test(text)) {
+    fail("agent_credit_l3_decimal_encoding_denied", `${name} is not canonical`);
+  }
+  const [whole, fraction = ""] = text.split(".");
+  return {
+    coefficient: BigInt(`${whole}${fraction}`),
+    decimals: fraction.length,
+    text
+  };
+}
+
+function powerOfTen(decimals) {
+  return 10n ** BigInt(decimals);
+}
+
+function scaledDecimal(coefficient, decimals) {
+  const padded = coefficient.toString().padStart(decimals + 1, "0");
+  if (decimals === 0) return padded;
+  const whole = padded.slice(0, -decimals);
+  const fraction = padded.slice(-decimals).replace(/0+$/, "");
+  return fraction.length === 0 ? whole : `${whole}.${fraction}`;
+}
+
+function openingNotional({ limitPx, size, sizeDecimals }) {
+  if (!Number.isSafeInteger(sizeDecimals) || sizeDecimals < 0 || sizeDecimals > 8) {
+    fail("agent_credit_l3_size_precision_denied", "BTC size precision is invalid");
+  }
+  const price = decimalParts(limitPx, "limit price");
+  const quantity = decimalParts(size, "quantity");
+  if (quantity.decimals > sizeDecimals) {
+    fail("agent_credit_l3_size_precision_denied", "quantity exceeds BTC size precision");
+  }
+  const sizeUnits = quantity.coefficient * powerOfTen(sizeDecimals - quantity.decimals);
+  const product = price.coefficient * sizeUnits;
+  const productDecimals = price.decimals + sizeDecimals;
+  return {
+    product,
+    productDecimals,
+    sizeUnits,
+    exactNotionalUsd: scaledDecimal(product, productDecimals)
+  };
+}
+
+export function revalidateBoundedBtcOpeningAction({
+  action,
+  sizeDecimals,
+  maximumNotionalUsd = AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.maximumNotionalUsd
+}) {
+  if (
+    !action ||
+    typeof action !== "object" ||
+    Array.isArray(action) ||
+    action.assetIndex !== AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.assetIndex ||
+    action.side !== "buy" ||
+    action.reduceOnly !== false ||
+    action.timeInForce !== "Ioc" ||
+    maximumNotionalUsd !== AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.maximumNotionalUsd
+  ) {
+    fail("agent_credit_l3_open_action_drift", "opening action drifted from the approved envelope");
+  }
+  const notional = openingNotional({
+    limitPx: action.limitPx,
+    size: action.size,
+    sizeDecimals
+  });
+  const minimum = BigInt(MINIMUM_OPEN_NOTIONAL_USD) * powerOfTen(notional.productDecimals);
+  const maximum = BigInt(maximumNotionalUsd) * powerOfTen(notional.productDecimals);
+  if (notional.product <= minimum) {
+    fail("agent_credit_l3_venue_minimum_denied", "opening notional must be greater than 10 USD");
+  }
+  if (notional.product > maximum) {
+    fail("agent_credit_l3_notional_limit_denied", "opening notional exceeds 12 USD");
+  }
+  if (action.maximumLimitNotionalUsd !== notional.exactNotionalUsd) {
+    fail("agent_credit_l3_open_action_drift", "opening notional evidence drifted");
+  }
+  return Object.freeze({
+    exactNotionalUsd: notional.exactNotionalUsd,
+    sizeUnits: notional.sizeUnits.toString(),
+    sizeDecimals,
+    venueMinimumSatisfied: true,
+    maximumNotionalSatisfied: true
+  });
+}
+
 export function selectBoundedBtcIocAction({
   bestBid,
   bestAsk,
   side,
-  closeSize = null
+  closeSize = null,
+  sizeDecimals = 5,
+  maximumNotionalUsd = AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.maximumNotionalUsd
 }) {
   const bid = finiteDecimal(bestBid, "best bid", { allowZero: false });
   const ask = finiteDecimal(bestAsk, "best ask", { allowZero: false });
@@ -271,25 +361,57 @@ export function selectBoundedBtcIocAction({
   const limit = ticks * step;
   let size;
   if (closeSize === null) {
-    const units = Math.floor((10 / limit) * 100_000);
-    if (units < 1) fail("agent_credit_l3_notional_too_small", "BTC size rounds to zero");
-    size = units / 100_000;
+    if (
+      !Number.isSafeInteger(sizeDecimals) ||
+      sizeDecimals < 0 ||
+      sizeDecimals > 8 ||
+      maximumNotionalUsd !== AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.maximumNotionalUsd
+    ) fail("agent_credit_l3_action_selection_denied", "approved size or notional policy drifted");
+    const limitPx = canonicalDecimal(limit);
+    const price = decimalParts(limitPx, "limit price");
+    const quantityScale = powerOfTen(sizeDecimals);
+    const minimumScaled =
+      BigInt(MINIMUM_OPEN_NOTIONAL_USD) *
+      powerOfTen(price.decimals) *
+      quantityScale;
+    const maximumScaled =
+      BigInt(maximumNotionalUsd) *
+      powerOfTen(price.decimals) *
+      quantityScale;
+    const units = minimumScaled / price.coefficient + 1n;
+    if (units < 1n || price.coefficient * units > maximumScaled) {
+      fail(
+        "agent_credit_l3_notional_window_unavailable",
+        "no BTC quantity exists inside the approved 10-12 USD window"
+      );
+    }
+    size = scaledDecimal(units, sizeDecimals);
   } else {
-    size = Math.abs(finiteDecimal(closeSize, "close size", { allowZero: false }));
+    const quantity = decimalParts(closeSize, "close size");
+    if (quantity.decimals > sizeDecimals) {
+      fail("agent_credit_l3_size_precision_denied", "close quantity exceeds BTC size precision");
+    }
+    size = quantity.text;
   }
-  const limitNotional = limit * size;
-  if (closeSize === null && limitNotional > 10 + 1e-9) {
-    fail("agent_credit_l3_notional_limit_denied", "selected opening notional exceeds 10 USD");
-  }
-  return Object.freeze({
+  const limitPx = canonicalDecimal(limit);
+  const notional = openingNotional({ limitPx, size, sizeDecimals });
+  const action = Object.freeze({
     assetIndex: 3,
     side,
-    limitPx: canonicalDecimal(limit),
-    size: canonicalDecimal(size),
+    limitPx,
+    size,
     reduceOnly: closeSize !== null,
     timeInForce: "Ioc",
-    maximumLimitNotionalUsd: limitNotional.toFixed(8).replace(/0+$/, "").replace(/\.$/, "")
+    maximumLimitNotionalUsd: notional.exactNotionalUsd
   });
+  if (closeSize === null) {
+    revalidateBoundedBtcOpeningAction({
+      action,
+      sizeDecimals,
+      maximumNotionalUsd
+    });
+  }
+  return action;
 }
 
 function lifecycle(runId, now) {
@@ -435,8 +557,8 @@ export async function prepareAgentCreditHyperliquidL3({
       if (
         baseline.positions.length !== 0 ||
         baseline.orders.length !== 0 ||
-        Number(baseline.accountValue) < 10 ||
-        Number(baseline.withdrawable) < 10 ||
+        Number(baseline.accountValue) < 12 ||
+        Number(baseline.withdrawable) < 12 ||
         !["missing", "agent"].includes(baseline.apiWalletRole)
       ) fail("agent_credit_l3_baseline_denied", "account, funding or signer baseline is unsafe");
       const kernel = lifecycle(runId, now);
@@ -449,7 +571,7 @@ export async function prepareAgentCreditHyperliquidL3({
         facilityId: kernel.credit.facility.tradingFacilityId,
         market: "BTC",
         maximumLeverage: 1,
-        maximumNotionalUsd: "10",
+        maximumNotionalUsd: AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.maximumNotionalUsd,
         obligationId: kernel.credit.obligation.obligationId,
         policyVersion: kernel.authorization.policyVersion
       };
@@ -491,7 +613,7 @@ export async function prepareAgentCreditHyperliquidL3({
         authorizationVersion: kernel.authorization.authorizationVersion,
         action: "one_bounded_open_close_cycle",
         market: "BTC",
-        maximumNotionalUsd: "10",
+        maximumNotionalUsd: AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.maximumNotionalUsd,
         maximumLeverage: 1,
         maximumConcurrentPositions: 1,
         tradeCycles: 1,
@@ -574,7 +696,8 @@ function validatePreparedArtifact(prepared) {
     prepared.environment !== "testnet" ||
     prepared.origin !== "https://api.hyperliquid-testnet.xyz" ||
     prepared.market !== "BTC" ||
-    prepared.maximumNotionalUsd !== "10" ||
+    prepared.maximumNotionalUsd !==
+      AGENT_CREDIT_HYPERLIQUID_L3_PROFILE.maximumNotionalUsd ||
     prepared.maximumLeverage !== 1 ||
     prepared.maximumConcurrentPositions !== 1 ||
     prepared.tradeCycles !== 1 ||
@@ -680,7 +803,7 @@ export async function dryRunAgentCreditHyperliquidL3({
     reconciliationBaseline: venue.positions.length === 0 && venue.orders.length === 0,
     noExistingUnintendedPosition: venue.positions.length === 0,
     noUnintendedPendingOrder: venue.orders.length === 0,
-    accountValueAtLeastTenUsd: Number(venue.accountValue) >= 10,
+    accountValueAtLeastTwelveUsd: Number(venue.accountValue) >= 12,
     signerRegistration: requireRegistered
       ? venue.apiWalletRole === "agent"
       : ["missing", "agent"].includes(venue.apiWalletRole),
@@ -775,6 +898,7 @@ async function assertBeforeSignature({
   signerDescriptor,
   apiWallet,
   phase,
+  action,
   fetchImpl,
   startTime,
   expectedCloseSize = null,
@@ -822,9 +946,16 @@ async function assertBeforeSignature({
   if (venue.apiWalletRole !== "agent") {
     fail("agent_credit_l3_signer_registration_missing", "API wallet is not the approved agent");
   }
+  if (phase === "open") {
+    revalidateBoundedBtcOpeningAction({
+      action,
+      sizeDecimals: venue.market.sizeDecimals,
+      maximumNotionalUsd: prepared.maximumNotionalUsd
+    });
+  }
   const position = findBtcPosition(venue);
   if (phase === "open") {
-    if (position || venue.orders.length !== 0 || Number(venue.accountValue) < 10) {
+    if (position || venue.orders.length !== 0 || Number(venue.accountValue) < 12) {
       fail("agent_credit_l3_open_preflight_denied", "opening baseline is unsafe");
     }
   } else if (phase === "cancel") {
@@ -842,7 +973,7 @@ async function assertBeforeSignature({
     }
   }
   const positionNotional = Math.abs(Number(position?.positionValue ?? "0"));
-  if (positionNotional > 10.01 || positionNotional / Math.max(Number(venue.accountValue), 0.000001) > 1.000001) {
+  if (positionNotional > 12 + 1e-9 || positionNotional / Math.max(Number(venue.accountValue), 0.000001) > 1.000001) {
     fail("agent_credit_l3_leverage_or_notional_denied", "position exceeds the approved notional or 1x bound");
   }
   return venue;
@@ -868,6 +999,7 @@ async function signAndSubmit({
     signerDescriptor,
     apiWallet,
     phase,
+    action,
     fetchImpl,
     startTime,
     expectedCloseSize: action.reduceOnly ? action.size : null,
@@ -888,7 +1020,7 @@ async function signAndSubmit({
     authorizationId: prepared.authorizationId,
     policyVersion: prepared.policyVersion,
     action: actionCore,
-    maximumNotionalUsd: "10",
+    maximumNotionalUsd: prepared.maximumNotionalUsd,
     maximumLeverage: 1
   });
   const riskSnapshotHash = hashId("agent_credit_l3_risk_snapshot", {
@@ -1130,7 +1262,9 @@ export async function executeAgentCreditHyperliquidL3Once({
       const openAction = selectBoundedBtcIocAction({
         bestBid: before.market.bestBid,
         bestAsk: before.market.bestAsk,
-        side: "buy"
+        side: "buy",
+        sizeDecimals: before.market.sizeDecimals,
+        maximumNotionalUsd: prepared.maximumNotionalUsd
       });
       const open = await signAndSubmit({
         cwd,
@@ -1203,7 +1337,9 @@ export async function executeAgentCreditHyperliquidL3Once({
           bestBid: observed.market.bestBid,
           bestAsk: observed.market.bestAsk,
           side: Number(positionAfterOpen.szi) > 0 ? "sell" : "buy",
-          closeSize: Math.abs(Number(positionAfterOpen.szi)).toString()
+          closeSize: Math.abs(Number(positionAfterOpen.szi)).toString(),
+          sizeDecimals: observed.market.sizeDecimals,
+          maximumNotionalUsd: prepared.maximumNotionalUsd
         });
         close = await signAndSubmit({
           cwd,
@@ -1233,7 +1369,9 @@ export async function executeAgentCreditHyperliquidL3Once({
             bestBid: observed.market.bestBid,
             bestAsk: observed.market.bestAsk,
             side: Number(remaining.szi) > 0 ? "sell" : "buy",
-            closeSize: Math.abs(Number(remaining.szi)).toString()
+            closeSize: Math.abs(Number(remaining.szi)).toString(),
+            sizeDecimals: observed.market.sizeDecimals,
+            maximumNotionalUsd: prepared.maximumNotionalUsd
           });
           emergencyClose = await signAndSubmit({
             cwd,
@@ -1324,7 +1462,7 @@ export async function executeAgentCreditHyperliquidL3Once({
         authorizationVersion: prepared.authorizationVersion,
         approvedEnvelope: {
           market: "BTC",
-          maximumNotionalUsd: "10",
+          maximumNotionalUsd: prepared.maximumNotionalUsd,
           maximumLeverage: 1,
           maximumConcurrentPositions: 1,
           tradeCycles: 1,
@@ -1332,9 +1470,18 @@ export async function executeAgentCreditHyperliquidL3Once({
           transferAllowed: false,
           agentCustodyAllowed: false
         },
+        capitalAllocation: {
+          semantics: "CONTROLLED_ACCOUNT_ALLOCATION",
+          amountMinor: PRINCIPAL_MINOR,
+          externalAssetTransfer: false,
+          custodyTransferredToAgent: false
+        },
         accountEquityBeforeUsd: before.accountValue,
         accountEquityAfterUsd: observed.accountValue,
         positionBefore: positionSummary(before.positions),
+        positionObservedAfterOpen: positionAfterOpen
+          ? positionSummary([{ position: positionAfterOpen }])[0]
+          : null,
         positionAfter: positionSummary(observed.positions),
         open: {
           cloid: open.cloid,
@@ -1390,7 +1537,11 @@ export async function executeAgentCreditHyperliquidL3Once({
           observedAt: observed.observedAt
         },
         settlement,
-        repayment,
+        repayment: repayment ? {
+          ...repayment,
+          semantics: "CONTROLLED_ACCOUNT_REPAYMENT_ALLOCATION",
+          externalAssetTransfer: false
+        } : null,
         obligation: {
           status: finalObligation.status,
           outstandingPrincipalMinor: finalObligation.outstandingPrincipalMinor,
@@ -1402,6 +1553,7 @@ export async function executeAgentCreditHyperliquidL3Once({
           mainnetInteraction: false,
           hyperliquidTestnetWrite: true,
           testnetAssetsMoved: fills.length > 0,
+          externalFundingTransfer: false,
           signerRegistered: observed.apiWalletRole === "agent",
           l3ActivatedForThisRun: true,
           l3Status: lifecycleProven ? "L3_VERIFIED" : "PARTIAL"

@@ -33,9 +33,9 @@ const BINDING = {
   facilityId: "agent_credit_facility_security_001",
   market: "BTC",
   maximumLeverage: 1,
-  maximumNotionalUsd: "10",
+  maximumNotionalUsd: "12",
   obligationId: "agent_credit_obligation_security_001",
-  policyVersion: "agent_credit_hyperliquid_testnet.v1"
+  policyVersion: "agent_credit_hyperliquid_testnet.v2"
 };
 const NO_EFFECT_KEYS = [
   "signatureCreated",
@@ -169,6 +169,8 @@ test("preparation binds exact environment authority into hash and idempotency id
   assert.equal(preparation.origin, "https://api.hyperliquid-testnet.xyz");
   assert.equal(preparation.account, BASE.IPO_ONE_HYPERLIQUID_TESTNET_ACCOUNT_ADDRESS);
   assert.equal(preparation.action, "order");
+  assert.equal(preparation.maximumNotionalUsd, "12");
+  assert.equal(preparation.policyVersion, "agent_credit_hyperliquid_testnet.v2");
   assert.equal(preparation.environmentAuthoritySource, "server_operator_configuration");
   assert.equal(preparation.callerEnvironmentAuthorityAccepted, false);
   assert.match(preparation.preparationHash, /^0x[0-9a-f]{64}$/);
