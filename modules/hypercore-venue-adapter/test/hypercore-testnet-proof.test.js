@@ -68,18 +68,22 @@ function risk(overrides = {}) {
 }
 
 function prepared(riskSnapshot, overrides = {}) {
-  const action = {
-    assetIndex: 3,
-    side: "buy",
-    limitPx: "50000",
-      size: "0.0002",
-    reduceOnly: false,
-    timeInForce: "Alo",
-    cloid: "0x00000000000000000000000000000001",
-    ...(overrides.action ?? {})
-  };
+  const actionKind =
+    overrides.actionKind ?? HypercoreExecutionActionKind.ORDER;
+  const action = actionKind === HypercoreExecutionActionKind.SCHEDULE_CANCEL
+    ? { ...(overrides.action ?? {}) }
+    : {
+        assetIndex: 3,
+        side: "buy",
+        limitPx: "50000",
+        size: "0.0002",
+        reduceOnly: false,
+        timeInForce: "Alo",
+        cloid: "0x00000000000000000000000000000001",
+        ...(overrides.action ?? {})
+      };
   return compileHypercoreExecutionAction({
-    actionKind: overrides.actionKind ?? HypercoreExecutionActionKind.ORDER,
+    actionKind,
     action,
     sourceActionHash: h("source"),
     policyDecisionHash: h("upstream_policy"),
@@ -144,8 +148,7 @@ function authorize({
   };
 }
 
-async function signedEnvelope() {
-  const context = authorize();
+async function signedEnvelope(context = authorize()) {
   const signingRequest = createHypercoreL1SigningRequest({
     preparedAction: context.preparedAction,
     signerReferenceHash: context.proofPolicy.signerReferenceHash,
@@ -191,7 +194,8 @@ test("proof policy fixes Testnet origin, BTC candidate and exact hard caps", () 
     "reduceOnlyOrder",
     "cancel",
     "cancelByCloid",
-    "modify"
+    "modify",
+    "scheduleCancel"
   ]);
 });
 
@@ -203,6 +207,30 @@ test("fresh exact ALO order receives one short-lived single-use authorization", 
   assert.equal(context.authorization.externalTestnetSubmissionAllowed, true);
   assert.equal(context.authorization.effectiveUntil, "2026-08-08T10:00:30.000Z");
   assert.equal(context.authorization.realFundsAuthority, false);
+});
+
+test("scheduleCancel is bounded to five seconds through the proof window", () => {
+  const freshRisk = risk();
+  const approved = prepared(freshRisk, {
+    actionKind: HypercoreExecutionActionKind.SCHEDULE_CANCEL,
+    action: { time: NOW.getTime() + 5_000 }
+  });
+  assert.equal(authorize({ riskSnapshot: freshRisk, preparedAction: approved })
+    .authorization.decision, "ALLOW");
+
+  for (const time of [
+    NOW.getTime() + 4_999,
+    NOW.getTime() + HYPERCORE_TESTNET_PROOF_PROFILE.proofWindowMs + 1
+  ]) {
+    const action = prepared(freshRisk, {
+      actionKind: HypercoreExecutionActionKind.SCHEDULE_CANCEL,
+      action: { time }
+    });
+    assert.throws(
+      () => authorize({ riskSnapshot: freshRisk, preparedAction: action }),
+      { code: "hypercore_testnet_schedule_cancel_denied" }
+    );
+  }
 });
 
 test("malicious or excessive opening orders fail before signing", () => {
@@ -307,6 +335,38 @@ test("Exchange transport sends one exact body and persists only response hashes"
   });
 });
 
+test("scheduleCancel uses the same isolated exact-body transport", async () => {
+  const freshRisk = risk();
+  const action = prepared(freshRisk, {
+    actionKind: HypercoreExecutionActionKind.SCHEDULE_CANCEL,
+    action: { time: NOW.getTime() + 10_000 }
+  });
+  const context = await signedEnvelope(authorize({
+    riskSnapshot: freshRisk,
+    preparedAction: action
+  }));
+  let calls = 0;
+  const transport = new HypercoreTestnetExchangeTransport({
+    clock: () => NOW,
+    fetchImpl: async (_url, options) => {
+      calls += 1;
+      assert.equal(JSON.parse(options.body).action.type, "scheduleCancel");
+      return {
+        status: 200,
+        headers: { get: () => null },
+        async text() {
+          return JSON.stringify({ status: "ok", response: { type: "default" } });
+        }
+      };
+    }
+  });
+  const result = await transport.submit(context.envelope);
+  assert.equal(calls, 1);
+  assert.equal(result.disposition, "confirmed");
+  assert.equal(result.unexpectedFillObserved, false);
+  assert.equal(result.rawResponsePersisted, false);
+});
+
 test("a filled ALO response is explicit and forces reconciliation", async () => {
   const context = await signedEnvelope();
   const transport = new HypercoreTestnetExchangeTransport({
@@ -359,7 +419,7 @@ test("user-signed provisioning request cannot enter the Exchange execution trans
   const context = authorize();
   const request = createHypercoreApproveAgentSigningRequest({
     agentAddress: ACCOUNT.address.toLowerCase(),
-    agentName: "ipo-one-proof-002c",
+    agentName: "ipo1-proof-002c",
     nonce: NOW.getTime(),
     signerReferenceHash: context.proofPolicy.signerReferenceHash,
     canonicalAccountAddressHash: h("canonical_account")

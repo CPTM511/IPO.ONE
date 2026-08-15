@@ -24,7 +24,7 @@ const runtimeEvidenceKinds = new Set([
 
 assert.equal(manifest.schemaVersion, "ipo_one_m1_requirement_evidence.v1");
 assert.deepEqual(manifest.classificationVocabulary, allowedClassifications);
-assert.equal(manifest.constitution.stableRequirementCount, 44);
+assert.equal(manifest.constitution.stableRequirementCount, 45);
 assert.equal(
   createHash("sha256").update(constitution).digest("hex"),
   manifest.constitution.sha256,
@@ -33,8 +33,8 @@ assert.equal(
 
 const constitutionRequirementIds = [...constitution.matchAll(/^\| (REQ-[A-Z0-9-]+) \|/gm)]
   .map((match) => match[1]);
-assert.equal(constitutionRequirementIds.length, 44);
-assert.equal(new Set(constitutionRequirementIds).size, 44);
+assert.equal(constitutionRequirementIds.length, 45);
+assert.equal(new Set(constitutionRequirementIds).size, 45);
 
 const evidenceById = new Map();
 for (const evidence of manifest.evidenceCatalog) {
@@ -99,6 +99,7 @@ assert.equal(byId.get("REQ-UX-001").classification, "IMPLEMENTED_UNVERIFIED");
 assert.equal(byId.get("REQ-UX-002").classification, "VERIFIED_SANDBOX");
 assert.equal(byId.get("REQ-UX-005").classification, "IMPLEMENTED_UNVERIFIED");
 assert.equal(byId.get("REQ-PILOT-001").classification, "NOT_IMPLEMENTED");
+assert.equal(byId.get("REQ-TRADE-005").classification, "IMPLEMENTED_UNVERIFIED");
 assert.equal(manifest.explicitExclusions.strategyVaultApproved, false);
 assert.equal(manifest.explicitExclusions.feeRuntimeFrozen, true);
 assert.equal(manifest.requirements.some(({ classification }) => classification === "VERIFIED_REAL"), false);
@@ -107,6 +108,6 @@ assert.equal(manifest.requirements.some(({ classification }) => classification =
 const counts = Object.fromEntries(allowedClassifications.map((value) => [value, 0]));
 for (const requirement of manifest.requirements) counts[requirement.classification] += 1;
 
-console.log("M1 requirement evidence gate passed for the exact 44 Constitution IDs.");
+console.log("M1 requirement evidence gate passed for the exact 45 Constitution IDs.");
 console.log(JSON.stringify(counts));
 console.log("No requirement is VERIFIED_REAL or PRODUCTION_READY.");

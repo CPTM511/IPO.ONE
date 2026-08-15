@@ -44,7 +44,8 @@ export const HYPERCORE_TESTNET_PROOF_PROFILE = Object.freeze({
     HypercoreExecutionActionKind.REDUCE_ONLY_ORDER,
     HypercoreExecutionActionKind.CANCEL,
     HypercoreExecutionActionKind.CANCEL_BY_CLOID,
-    HypercoreExecutionActionKind.MODIFY
+    HypercoreExecutionActionKind.MODIFY,
+    HypercoreExecutionActionKind.SCHEDULE_CANCEL
   ]),
   mainnetAuthority: false,
   productionAuthority: false,
@@ -72,7 +73,6 @@ const EXPLICITLY_DENIED_ACTIONS = new Set([
   "approveBuilderFee",
   "updateLeverage",
   "updateIsolatedMargin",
-  "scheduleCancel",
   "noop"
 ]);
 
@@ -449,7 +449,13 @@ function assertProofNotional(value) {
   }
 }
 
-function assertActionPolicy(preparedAction, policy, riskSnapshot, proofState) {
+function assertActionPolicy(
+  preparedAction,
+  policy,
+  riskSnapshot,
+  proofState,
+  trustedNow
+) {
   if (EXPLICITLY_DENIED_ACTIONS.has(preparedAction.hyperliquidAction.type)) {
     fail("hypercore_testnet_action_denied", "action is explicitly denied");
   }
@@ -520,6 +526,19 @@ function assertActionPolicy(preparedAction, policy, riskSnapshot, proofState) {
     case HypercoreExecutionActionKind.CANCEL_BY_CLOID:
       if (action.cancels?.[0]?.asset !== policy.assetIndex) {
         fail("hypercore_testnet_cancel_denied", "cancel market drifted");
+      }
+      break;
+    case HypercoreExecutionActionKind.SCHEDULE_CANCEL:
+      if (
+        action.type !== "scheduleCancel" ||
+        !Number.isSafeInteger(action.time) ||
+        action.time < trustedNow.getTime() + 5_000 ||
+        action.time > trustedNow.getTime() + policy.proofWindowMs
+      ) {
+        fail(
+          "hypercore_testnet_schedule_cancel_denied",
+          "scheduled cancel must remain inside the approved proof window"
+        );
       }
       break;
     default:
@@ -657,7 +676,13 @@ export function authorizeHypercoreTestnetAction({
       "account, policy, risk, proof or confirmation binding is unavailable"
     );
   }
-  assertActionPolicy(preparedAction, policy, riskSnapshot, proofState);
+  assertActionPolicy(
+    preparedAction,
+    policy,
+    riskSnapshot,
+    proofState,
+    trustedNow
+  );
   const effectiveUntil = new Date(Math.min(
     trustedNow.getTime() + policy.requestExpiryMs,
     policyExpiresAt.getTime(),
@@ -846,7 +871,7 @@ export function verifyHypercoreTestnetExchangeEnvelope(envelope) {
   integer("body.expiresAfter", envelope.body.expiresAfter, { minimum: 1 });
   if (
     !plainObject(envelope.body.action) ||
-    !["order", "cancel", "cancelByCloid", "batchModify"].includes(
+    !["order", "cancel", "cancelByCloid", "batchModify", "scheduleCancel"].includes(
       envelope.body.action.type
     ) ||
     (envelope.body.vaultAddress !== null &&
@@ -965,6 +990,11 @@ function normalizeExchangeDisposition(parsed, actionType) {
   }
   if (parsed?.status !== "ok") {
     return { disposition: "unknown", unexpectedFillObserved: false };
+  }
+  if (actionType === "scheduleCancel") {
+    return parsed?.response?.type === "default"
+      ? { disposition: "confirmed", unexpectedFillObserved: false }
+      : { disposition: "unknown", unexpectedFillObserved: false };
   }
   const statuses = parsed?.response?.data?.statuses;
   if (!Array.isArray(statuses) || statuses.length !== 1) {
