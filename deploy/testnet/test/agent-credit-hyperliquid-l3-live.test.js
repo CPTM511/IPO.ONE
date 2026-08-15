@@ -107,6 +107,7 @@ test("L3 preparation and dry-run bind candidate, runtime, signer and zero-risk b
   const runId = `agent-credit-exec-001-l3-live-test-${process.pid}-${Date.now()}`;
   const keyPath = `/private/tmp/ipo-one-agent-credit-exec-001/${runId}.key`;
   const preparationFile = `/private/tmp/ipo-one-agent-credit-exec-001/${runId}.json`;
+  const now = new Date();
   try {
     await provisionAgentCreditHyperliquidTestnetSigner({
       keyPath,
@@ -138,7 +139,7 @@ test("L3 preparation and dry-run bind candidate, runtime, signer and zero-risk b
       signerKeyPath: keyPath,
       preparationFile,
       fetchImpl: venueFixture(apiWallet),
-      now: new Date("2026-08-15T08:00:00.000Z"),
+      now,
       env
     });
     assert.equal(prepared.candidateCommit, CANDIDATE);

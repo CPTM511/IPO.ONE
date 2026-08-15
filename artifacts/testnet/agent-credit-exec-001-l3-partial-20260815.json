@@ -1,0 +1,188 @@
+{
+  "artifactVersion": "ipo-one.agent-credit-exec-001.l3-registration-fixed-partial.v1",
+  "artifactId": "agent-credit-exec-001-l3-partial-20260815",
+  "evidenceHash": "0xc3acd475725c474369e24d455695fa4b6e4e93e8817ca3d1f12eabbe146e3102",
+  "evidenceHashScope": "canonical artifact before evidenceHash fields",
+  "issueId": "AGENT-CREDIT-EXEC-001",
+  "runId": "agent-credit-exec-001-l3-20260815-002",
+  "previousCommit": "e6791a60f20684ee091a759ba356ecd08e3cb22c",
+  "candidateCommit": "c0f3f8942f638f29c895536721e0b3be66c0cfe1",
+  "environment": "HYPERLIQUID_TESTNET",
+  "origin": "https://api.hyperliquid-testnet.xyz",
+  "decision": "L3_PARTIAL_MIN_TRADE_NOTIONAL_REJECTED",
+  "registrationCompatibility": {
+    "previousBestSupportedClassification": "INVALID_AGENT_NAME_OR_POST_BODY_SHAPE",
+    "definitiveSingleCauseIsolated": false,
+    "officialSdk": "hyperliquid-python-sdk@0.24.0",
+    "oracleFixture": "modules/hypercore-venue-adapter/test/fixtures/hyperliquid-python-sdk-0.24.0-approve-agent.json",
+    "parity": {
+      "action": "PASS",
+      "signatureChainId": "0x66eee",
+      "hyperliquidChain": "Testnet",
+      "actionNonceEqualsOuterNonce": true,
+      "eip712Domain": "PASS",
+      "primaryType": "HyperliquidTransaction:ApproveAgent",
+      "fieldOrder": "PASS",
+      "digest": "PASS",
+      "recoveredSigner": "PASS",
+      "postShape": "PASS"
+    },
+    "oldAgentName": "ipo-one-credit-001",
+    "newAgentName": "ipo1-l3-002",
+    "oldAgentNameLength": 18,
+    "newAgentNameLength": 12,
+    "officialPostNullFieldsIncluded": [
+      "vaultAddress",
+      "expiresAfter"
+    ]
+  },
+  "identity": {
+    "accountAddressHash": "0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038",
+    "apiWalletAddressHash": "0x6e49ad0515f4f039ebaf623cb5cff6f22d052e7ca6844f3828f890a2e49bfac9",
+    "signerReferenceHash": "0x5b73d650e47693395834581eb1631d9c140fc34290c038ffc8035e516f952f08",
+    "agentName": "ipo1-l3-002",
+    "freshSigner": true,
+    "previousSignerReused": false,
+    "rawApiWalletAddressStored": false
+  },
+  "registration": {
+    "requestHash": "0xb0983d4484cf51369592f9a2ce8b24ea358af9141cf3047c3ada2581ceb9d984",
+    "digestHash": "0x6fc592841c3175431a30dce9e49f038b40c0fc699eb65ae1ff1ca5aae2423de4",
+    "actionHash": "0x5891022d962680eba7ccd224fb6d3ef408c9f57adde020c1454714c4ee77a76e",
+    "authorizationHash": "0x7fc3ec11baa92b14d06f5e13542b30f7e9361cb5ac6afa8c4c5aacaf2647e49d",
+    "resultHash": "0x4e1270a26abd0a0b214f8446f5602e9994a4de36edb9a6e8a10eb5c8dd947afd",
+    "responseHash": "0x22119acf0e830b7d016c8e6e83cd7bec9d28ed1de43abe4aa98817d8a8243e48",
+    "nonce": 1786781449370,
+    "httpStatus": 200,
+    "status": "REGISTERED",
+    "apiWalletRole": "agent",
+    "submissionCount": 1,
+    "authorizationConsumed": true,
+    "automaticRetry": false,
+    "rawResponseStored": false,
+    "rawSignatureStored": false
+  },
+  "execution": {
+    "preparationHash": "0x7f95ba239ad4bf9c72b87dd506cb85051e2389401b9b9285d17c837daa94a00c",
+    "handoffHash": "0x9aaee17e520bbac1dfbdc6da4ce74c15efcf5ceefcca698c08c42855509b4ea7",
+    "idempotencyIdentity": "0xca9054e86c7a24bea41f1c09e5a81c0be9bdd4c33a4d7a57f7b7ce62bd8401ff",
+    "dryRunStatus": "DRY_RUN_PASS",
+    "market": "BTC",
+    "maximumNotionalUsd": "10",
+    "maximumLeverage": 1,
+    "maximumConcurrentPositions": 1,
+    "tradeCycles": 1,
+    "openingOrder": {
+      "cloid": "0x33bbf2fd8193c8f3a0febf1e0f90c717",
+      "venueOrderId": null,
+      "limitPrice": "63692",
+      "size": "0.00015",
+      "calculatedNotionalUsd": "9.5538",
+      "requestBodyHash": "0x1135b548510306490b1c2053fed83a561304dedf37003705c4c50b7dc9655443",
+      "signatureHash": "0xc9e71f21ebcd25a6f8a051cdfd42bf0d9e8d451cc0e1c3d560cf0b3651b68b0b",
+      "responseHash": "0xa274d75d9ce4f641529eaa5e610885c007497bd082b6e1d7d5cb2db2ba38b4c4",
+      "transportDisposition": "UNKNOWN",
+      "readOnlyOrderStatus": "minTradeNtlRejected",
+      "normalizedClassification": "MIN_TRADE_NOTIONAL_REJECTED"
+    },
+    "fillCount": 0,
+    "positionOpened": false,
+    "reduceOnlyCloseSubmitted": false,
+    "reduceOnlyCloseNotRequiredBecauseNoPosition": true,
+    "secondTradeSubmitted": false,
+    "automaticRetry": false
+  },
+  "reconciliation": {
+    "status": "RECONCILED",
+    "accountValueTestnetUsdc": "999.0",
+    "withdrawableTestnetUsdc": "999.0",
+    "positionsCount": 0,
+    "openOrdersCount": 0,
+    "runFillsCount": 0,
+    "observedAt": "2026-08-15T13:58:34.521Z",
+    "sourceHashes": {
+      "apiWalletRole": "0xfcbce3b31bb4332396dd357967b97a027595de3c404d2827ee3e4af3a8f94fa5",
+      "accountState": "0xb0ce6974f04246fb579d357a61b3718997db8a038afd729fb3e7f225a1225bde",
+      "openOrders": "0x4a753819f2ef5d9af2879d5256f8bdb70c23baf88adaa5618b4b10f1404685b6",
+      "fills": "0x4a753819f2ef5d9af2879d5256f8bdb70c23baf88adaa5618b4b10f1404685b6",
+      "orderStatus": "0x39ba14ee27de43c7fa0e4d8ed1ec881ce2c26a9572b549e95db0974c039a7f85"
+    }
+  },
+  "settlement": {
+    "principalMinor": "1000",
+    "closedPnlUsd": "0.00000000",
+    "feeUsd": "0.00000000",
+    "realizedPnlUsd": "0.00000000",
+    "repaymentMinor": "1000",
+    "outstandingMinor": "0",
+    "externalRepaymentFundsMoved": false
+  },
+  "repayment": {
+    "scope": "SYNTHETIC_CANONICAL_OBLIGATION_ONLY",
+    "repaymentEventId": "repayment_5d92ea2334969adf43d46f3ae18d0cd06216e2353c79579c015a487e441dea29",
+    "repaymentHash": "0x5d92ea2334969adf43d46f3ae18d0cd06216e2353c79579c015a487e441dea29",
+    "ledgerTransactionId": "ledger_transaction_fac97860-3aff-4e0e-aa66-690d730d9b83",
+    "appliedPrincipalMinor": "1000",
+    "outstandingPrincipalMinor": "0"
+  },
+  "creditState": {
+    "state": "REPAID_SYNTHETIC",
+    "obligationStatus": "fully_repaid",
+    "productionPerformanceLossRecorded": false,
+    "creditworthinessReduced": false,
+    "realOutstandingDebtCreated": false
+  },
+  "lifecycleTruth": {
+    "registrationVerified": true,
+    "completeTradeCycleVerified": false,
+    "l3Status": "PARTIAL",
+    "orderExchangeWriteAttempts": 1,
+    "fillObserved": false,
+    "testnetAssetsMoved": false,
+    "realFundsMoved": false,
+    "mainnetInteraction": false
+  },
+  "verification": {
+    "officialSdkConformanceTests": {
+      "passed": 16,
+      "failed": 0
+    },
+    "agentCreditTests": {
+      "passed": 41,
+      "failed": 0
+    },
+    "venuePolicyTests": {
+      "passed": 73,
+      "failed": 0
+    },
+    "hyperliquidVenueTests": {
+      "passed": 81,
+      "failed": 0
+    },
+    "fullRepositoryTests": {
+      "passed": 1091,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sourceLintModules": 721,
+    "schemaContracts": 136,
+    "typecheckRuntimeExports": 72,
+    "gitDiffCheck": "PASS"
+  },
+  "safety": {
+    "registrationExchangeWriteAttempts": 1,
+    "orderExchangeWriteAttempts": 1,
+    "closeExchangeWriteAttempts": 0,
+    "automaticRetry": false,
+    "automaticSecondRun": false,
+    "withdrawalPerformed": false,
+    "transferPerformed": false,
+    "agentCustodyCreated": false,
+    "rawPrivateKeyStored": false,
+    "rawSignatureStored": false,
+    "rawVenueErrorStored": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false
+  }
+}
