@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, unlink } from "node:fs/promises";
 import test from "node:test";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   HYPERCORE_TESTNET_SIGNER_PROVISIONING_APPROVAL,
   destroyHypercoreIsolatedTestnetSigner,
+  provisionAgentCreditHyperliquidTestnetSigner,
   provisionHypercoreIsolatedTestnetSigner
 } from "../hypercore-isolated-signer.mjs";
 import {
+  authorizeAgentCreditHyperliquidRegistration,
+  createAgentCreditHyperliquidHandoffProfile,
   createHypercore002dHandoffSession
 } from "../start-hypercore-002d-handoff.mjs";
 
@@ -82,6 +85,62 @@ test("002D handoff verifies a qualified master and stops at exact registration a
     await destroyHypercoreIsolatedTestnetSigner(keyPath).catch(() => {});
     if (previous === undefined) delete process.env[variable];
     else process.env[variable] = previous;
+  }
+});
+
+test("Agent Credit handoff binds the exact run, candidate and separate registration authority", async () => {
+  const runId = `agent-credit-exec-001-l3-test-${process.pid}-${Date.now()}`;
+  const candidateCommit = "ffbcae38fedcb6dbcc4b2da538a2636df0836fde";
+  const keyPath = `/private/tmp/ipo-one-agent-credit-exec-001/${runId}.key`;
+  const profile = createAgentCreditHyperliquidHandoffProfile({
+    runId,
+    candidateCommit
+  });
+  let approvalPath;
+  try {
+    await provisionAgentCreditHyperliquidTestnetSigner({
+      keyPath,
+      runId,
+      env: { IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_RUN: runId }
+    });
+    const session = createHypercore002dHandoffSession({
+      signerKeyPath: keyPath,
+      fetchImpl: fetchFixture(),
+      clock: () => new Date(NOW),
+      profile
+    });
+    await session.inspectMaster({ masterAccountAddress: MASTER.address });
+    const prepared = await session.prepareRegistration();
+    assert.equal(prepared.issueId, "AGENT-CREDIT-EXEC-001");
+    assert.equal(prepared.runId, runId);
+    assert.equal(prepared.candidateCommit, candidateCommit);
+    assert.equal(prepared.typedData.message.agentName, "ipo-one-credit-001");
+    assert.equal(
+      prepared.exactApprovalMarker,
+      `AGENT-CREDIT-EXEC-001:${runId}:${candidateCommit}:AGENT:${prepared.signingRequestHash}`
+    );
+    const state = await session.state();
+    assert.equal(state.runId, runId);
+    assert.equal(state.candidateCommit, candidateCommit);
+    assert.equal(state.registrationAuthorized, false);
+
+    const authorization = await authorizeAgentCreditHyperliquidRegistration({
+      requestHash: prepared.signingRequestHash,
+      runId,
+      candidateCommit,
+      env: {
+        IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_REGISTRATION:
+          prepared.exactApprovalMarker
+      }
+    });
+    approvalPath =
+      `/private/tmp/ipo-one-agent-credit-exec-001/approvals/` +
+      `${prepared.signingRequestHash.slice(2)}.authorized`;
+    assert.equal(authorization.requestHash, prepared.signingRequestHash);
+    assert.equal((await session.state()).registrationAuthorized, true);
+  } finally {
+    if (approvalPath) await unlink(approvalPath).catch(() => {});
+    await destroyHypercoreIsolatedTestnetSigner(keyPath).catch(() => {});
   }
 });
 

@@ -1,0 +1,145 @@
+{
+  "artifactVersion": "ipo-one.agent-credit-exec-001.l3-registration-blocked.v1",
+  "artifactId": "agent-credit-exec-001-l3-registration-blocked-20260815",
+  "evidenceHash": "0x8164316cbe6c0ad1f7affd138ce5433f12dbd4c3d1d5d98921ca1449d93271f2",
+  "evidenceHashScope": "canonical artifact before evidenceHash fields",
+  "issueId": "AGENT-CREDIT-EXEC-001",
+  "runId": "agent-credit-exec-001-l3-20260814-001",
+  "candidateCommit": "ffbcae38fedcb6dbcc4b2da538a2636df0836fde",
+  "environment": "HYPERLIQUID_TESTNET",
+  "origin": "https://api.hyperliquid-testnet.xyz",
+  "decision": "L3_BLOCKED_AT_API_WALLET_REGISTRATION",
+  "preparation": {
+    "runtimeDiffHash": "0xbd4ff01c80452d26db4bc750159f3eb2577e758168d9d05731d5e1e50331ce4b",
+    "runtimeSourceHash": "0x1d024afd0c6536520a9189aed1bc14cb3a30a085542903bc805011745a53f391",
+    "preparationHash": "0xc5ecf9973a482993f6c9f59edda8e0ee78f556851695b6890f2c2358fb65f4cc",
+    "handoffHash": "0x78ba61e297262b046302fde08ca1b3ec8a40ef8bc808cca365b9b2b9282df4e3",
+    "idempotencyIdentity": "0x030f806b1e5e9b5d078c8facbff8b4c3cf2b2d401b4692c7286a0bf28ba1df30",
+    "market": "BTC",
+    "maximumNotionalUsd": "10",
+    "maximumLeverage": 1,
+    "maximumConcurrentPositions": 1,
+    "tradeCycles": 1,
+    "registrationPreflightStatus": "DRY_RUN_PASS",
+    "orderSignatureCreated": false,
+    "orderExchangeWritePerformed": false
+  },
+  "identity": {
+    "accountAddressHash": "0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038",
+    "apiWalletAddressHash": "0x25ad2ab31af2b58f122e9788d7d48cce11b87d54708b237525031fb0c377447a",
+    "signerReferenceHash": "0x03c378f674e4ed27ddc3e3a5547c2dd252f070ab440fae7191586578f64e3cc4",
+    "requestedAgentName": "ipo-one-credit-001",
+    "signerReusedFromPriorRun": false,
+    "additionalDelegateCreated": false
+  },
+  "registration": {
+    "requestHash": "0xd5408b16c042afb52e677d23f5b80e4a4fc7e3e4ad9c675b374a4669c637d368",
+    "digestHash": "0xc6f6aded4fca3059784fe8d88e6903085f094b955768ddf37fdb9f55b79dfcf6",
+    "actionHash": "0x5f9412c544e591792c99cd989f69ca3fb60410f650652fc12eeea9834bd4c423",
+    "authorizationHash": "0x0c2576b6cd7bdc6ba376853e412bd920fd52e8a0d99b271a785bf326c57d576c",
+    "status": "REJECTED",
+    "responseHash": "0xd6d2ed03cdfe3428ccfb96a237c83b756d41b3691724468357d0322917bd34dd",
+    "resultHash": "0x99a5ba6e6a6c79719e67f2de13ad54f757598e32d49dcf11b2d210cf541da94b",
+    "submittedAt": "2026-08-15T07:29:59.593Z",
+    "submissionCount": 1,
+    "authorizationConsumed": true,
+    "automaticRetry": false,
+    "correctedRegistrationAttemptPerformed": false,
+    "venueStateMutationObserved": false,
+    "rootCause": "UNAVAILABLE_FROM_REDACTED_RESPONSE_HASH",
+    "rootCauseInferenceUsed": false
+  },
+  "terminalVenueObservation": {
+    "observedAt": "2026-08-15T07:33:39.150Z",
+    "masterRole": "user",
+    "apiWalletRole": "missing",
+    "accountValueTestnetUsdc": "999.0",
+    "withdrawableTestnetUsdc": "999.0",
+    "positionCount": 0,
+    "openOrderCount": 0,
+    "sourceHashes": {
+      "masterRole": "0x5311089e39570bd508f44f8353b2b308afceb380e741d750344305b140c31777",
+      "apiWalletRole": "0x98ad13f4461a9c12a8531481ffce297257bba730344d50ff670860f21fdb093c",
+      "accountState": "0xb41bfa49627aeb77a2cd88a9c758449b88d93c5919345a5a9e55d0563a473247",
+      "openOrders": "0x7ec21ce55a39dde4fa1a1eb42f9a93b9c3568e674d42bfbfbc04494517d42f1a"
+    }
+  },
+  "terminalDryRun": {
+    "status": "BLOCKED",
+    "reasonCode": "agent_credit_l3_dry_run_blocked",
+    "failedCheck": "signerRegistration",
+    "allOtherHardChecksPassed": true,
+    "signatureCreated": false,
+    "exchangeOrderWritePerformed": false
+  },
+  "lifecycleTruth": {
+    "l3Status": "BLOCKED",
+    "l3Verified": false,
+    "orderSubmitted": false,
+    "fillObserved": false,
+    "positionOpened": false,
+    "positionClosed": false,
+    "repaymentPerformed": false,
+    "obligationSettlementPerformed": false,
+    "testnetAssetsMoved": false,
+    "realFundsMoved": false,
+    "mainnetInteraction": false
+  },
+  "verification": {
+    "focusedHandoffAndSignerTests": {
+      "passed": 15,
+      "failed": 0
+    },
+    "agentCreditTests": {
+      "passed": 41,
+      "failed": 0
+    },
+    "venuePolicyTests": {
+      "passed": 73,
+      "failed": 0
+    },
+    "hyperliquidVenueTests": {
+      "passed": 79,
+      "failed": 0
+    },
+    "positiveE2eTests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "negativeE2eTests": {
+      "passed": 34,
+      "failed": 0
+    },
+    "restartE2eTests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "fullRepositoryTests": {
+      "passed": 1087,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sourceLintModules": 721,
+    "schemaContracts": 136,
+    "typecheckRuntimeExports": 72,
+    "exactSignerSecretScanRepositoryFiles": 1777,
+    "gitDiffCheck": "PASS"
+  },
+  "safety": {
+    "registrationExchangeWriteAttempts": 1,
+    "orderExchangeWriteAttempts": 0,
+    "cancelExchangeWriteAttempts": 0,
+    "automaticRetry": false,
+    "automaticSecondRun": false,
+    "rawAccountAddressStored": false,
+    "rawApiWalletAddressStored": false,
+    "rawPrivateKeyStored": false,
+    "rawSignatureStored": false,
+    "rawResponseStored": false,
+    "withdrawalPerformed": false,
+    "transferPerformed": false,
+    "mainnetAuthority": false,
+    "productionAuthority": false,
+    "realFundsAuthority": false
+  }
+}

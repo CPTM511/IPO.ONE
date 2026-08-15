@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { access, lstat } from "node:fs/promises";
 import test from "node:test";
 import {
+  AGENT_CREDIT_HYPERLIQUID_SIGNER_KEY_DIRECTORY,
   HYPERCORE_TESTNET_SIGNER_PROVISIONING_APPROVAL,
   destroyHypercoreIsolatedTestnetSigner,
   inspectHypercoreIsolatedTestnetSigner,
+  provisionAgentCreditHyperliquidTestnetSigner,
   provisionHypercoreIsolatedTestnetSigner,
   withHypercoreIsolatedTestnetSigner
 } from "../hypercore-isolated-signer.mjs";
@@ -54,6 +56,75 @@ test("HyperCore API wallet key stays owner-only and descriptors never expose it"
   } finally {
     restore(variable, previous);
   }
+});
+
+test("Agent Credit signer requires one exact approved run and remains private", async () => {
+  const runId = `agent-credit-exec-001-l3-test-${process.pid}-${Date.now()}`;
+  const keyPath =
+    `${AGENT_CREDIT_HYPERLIQUID_SIGNER_KEY_DIRECTORY}/${runId}.key`;
+  const env = { IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_RUN: runId };
+  try {
+    const descriptor = await provisionAgentCreditHyperliquidTestnetSigner({
+      keyPath,
+      runId,
+      env
+    });
+    assert.equal((await lstat(keyPath)).mode & 0o077, 0);
+    assert.match(descriptor.signerId, /^agent_credit_exec_001_signer_/);
+    assert.equal(Object.hasOwn(descriptor, "apiWalletAddress"), false);
+    assert.equal(Object.hasOwn(descriptor, "privateKey"), false);
+    assert.deepEqual(await inspectHypercoreIsolatedTestnetSigner(keyPath), descriptor);
+    await destroyHypercoreIsolatedTestnetSigner(keyPath);
+  } finally {
+    await access(keyPath).then(
+      () => destroyHypercoreIsolatedTestnetSigner(keyPath),
+      () => undefined
+    );
+  }
+});
+
+test("old marker, wrong run, cross-directory path, and CI cannot provision Agent Credit signer", async () => {
+  const runId = `agent-credit-exec-001-l3-deny-${process.pid}-${Date.now()}`;
+  const keyPath =
+    `${AGENT_CREDIT_HYPERLIQUID_SIGNER_KEY_DIRECTORY}/${runId}.key`;
+  await assert.rejects(
+    provisionAgentCreditHyperliquidTestnetSigner({
+      keyPath,
+      runId,
+      env: {
+        IPO_ONE_APPROVE_HYPERCORE_TESTNET_SIGNER:
+          HYPERCORE_TESTNET_SIGNER_PROVISIONING_APPROVAL
+      }
+    }),
+    /exact Agent Credit Testnet run approval/
+  );
+  await assert.rejects(
+    provisionAgentCreditHyperliquidTestnetSigner({
+      keyPath,
+      runId,
+      env: { IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_RUN: `${runId}-wrong` }
+    }),
+    /exact Agent Credit Testnet run approval/
+  );
+  await assert.rejects(
+    provisionAgentCreditHyperliquidTestnetSigner({
+      keyPath: `/private/tmp/ipo-one-hypercore-002d/${runId}.key`,
+      runId,
+      env: { IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_RUN: runId }
+    }),
+    /dedicated private temporary directory/
+  );
+  await assert.rejects(
+    provisionAgentCreditHyperliquidTestnetSigner({
+      keyPath,
+      runId,
+      env: {
+        IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_RUN: runId,
+        CI: "true"
+      }
+    }),
+    /disabled in CI/
+  );
 });
 test("HyperCore signer provisioning fails closed without the exact marker and in CI", async () => {
   const variable = "IPO_ONE_APPROVE_HYPERCORE_TESTNET_SIGNER";

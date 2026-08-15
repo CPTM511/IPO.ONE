@@ -17,7 +17,11 @@ import {
 } from "../../modules/hypercore-venue-adapter/src/index.js";
 
 const KEY_DIRECTORY = "/private/tmp/ipo-one-hypercore-002d";
+const AGENT_CREDIT_KEY_DIRECTORY =
+  "/private/tmp/ipo-one-agent-credit-exec-001";
 const APPROVAL_MARKER = "HYPERLIQUID-002D:TESTNET_API_WALLET";
+const AGENT_CREDIT_RUN_ID =
+  /^agent-credit-exec-001-l3-[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/;
 const PRIVATE_KEY = /^0x[0-9a-f]{64}$/;
 
 function fail(message) {
@@ -35,10 +39,25 @@ function requireProvisioningApproval() {
   }
 }
 
-function safeKeyPath(value) {
-  const absolute = resolve(value);
+function requireAgentCreditProvisioningApproval(runId, env) {
   if (
-    !absolute.startsWith(`${KEY_DIRECTORY}/`) ||
+    !AGENT_CREDIT_RUN_ID.test(runId ?? "") ||
+    env.IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_RUN !== runId
+  ) {
+    fail("exact Agent Credit Testnet run approval is required");
+  }
+  if (env.CI === "true" || env.GITHUB_ACTIONS === "true") {
+    fail("Agent Credit Testnet signer provisioning is disabled in CI");
+  }
+}
+
+function safeKeyPath(value, requiredDirectory = null) {
+  const absolute = resolve(value);
+  const directories = requiredDirectory
+    ? [requiredDirectory]
+    : [KEY_DIRECTORY, AGENT_CREDIT_KEY_DIRECTORY];
+  if (
+    !directories.some((directory) => absolute.startsWith(`${directory}/`)) ||
     !absolute.endsWith(".key")
   ) {
     fail("signer keys must stay under the dedicated private temporary directory");
@@ -46,13 +65,20 @@ function safeKeyPath(value) {
   return absolute;
 }
 
+function signerScope(keyPath) {
+  return keyPath.startsWith(`${AGENT_CREDIT_KEY_DIRECTORY}/`)
+    ? "agent_credit_exec_001"
+    : "hypercore_002d";
+}
+
 function descriptor(keyPath, address) {
   const apiWalletAddressHash = hashId(
     "hypercore_account_address",
     address.toLowerCase()
   );
-  const signerId = `hypercore_002d_signer_${hashId(
-    "hypercore_testnet_signer_identity",
+  const scope = signerScope(keyPath);
+  const signerId = `${scope}_signer_${hashId(
+    `${scope}_testnet_signer_identity`,
     { apiWalletAddressHash, keyFile: basename(keyPath) }
   ).slice(2)}`;
   const isolatedSignerReference =
@@ -94,6 +120,33 @@ export async function provisionHypercoreIsolatedTestnetSigner({ keyPath } = {}) 
   requireProvisioningApproval();
   const selected = safeKeyPath(
     keyPath ?? `${KEY_DIRECTORY}/api-wallet-${Date.now()}-${randomUUID()}.key`
+  );
+  await mkdir(dirname(selected), { recursive: true, mode: 0o700 });
+  const privateKey = generatePrivateKey();
+  const handle = await open(
+    selected,
+    constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY,
+    0o600
+  );
+  try {
+    await handle.writeFile(privateKey, { encoding: "utf8" });
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+  return descriptor(selected, privateKeyToAccount(privateKey).address);
+}
+
+export async function provisionAgentCreditHyperliquidTestnetSigner({
+  keyPath,
+  runId,
+  env = process.env
+} = {}) {
+  requireAgentCreditProvisioningApproval(runId, env);
+  const selected = safeKeyPath(
+    keyPath ??
+      `${AGENT_CREDIT_KEY_DIRECTORY}/api-wallet-${runId}-${randomUUID()}.key`,
+    AGENT_CREDIT_KEY_DIRECTORY
   );
   await mkdir(dirname(selected), { recursive: true, mode: 0o700 });
   const privateKey = generatePrivateKey();
@@ -182,3 +235,5 @@ export async function destroyHypercoreIsolatedTestnetSigner(keyPath) {
 }
 
 export const HYPERCORE_TESTNET_SIGNER_PROVISIONING_APPROVAL = APPROVAL_MARKER;
+export const AGENT_CREDIT_HYPERLIQUID_SIGNER_KEY_DIRECTORY =
+  AGENT_CREDIT_KEY_DIRECTORY;

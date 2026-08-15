@@ -1,6 +1,6 @@
 # AGENT-CREDIT-EXEC-001 — Protocol-Agnostic Agent Credit Execution Boundary
 
-Status: `COMPLETED — L0 PASS; L3 READY_FOR_L3_APPROVAL; NO WRITE PERFORMED`
+Status: `COMPLETED — L0 PASS; L3 BLOCKED AT API WALLET REGISTRATION; NO ORDER OR ASSET MOVEMENT`
 
 Owner directive: `IPO_ONE_AGENT_CREDIT_EXECUTION_CODEX_TASK_SPEC_v0.1.md`,
 2026-08-14, P0 / next vertical slice.
@@ -406,3 +406,36 @@ be regenerated from the new pushed security candidate after a separate Founder
 approval. This correction does not register a signer, activate L3, move an
 asset, submit a venue request, execute an order, settle, merge, or broaden
 `REQ-TRADE-005`.
+
+## First bounded L3 attempt — 2026-08-15
+
+Founder approval bound one Hyperliquid Testnet attempt to run
+`agent-credit-exec-001-l3-20260814-001` and candidate
+`ffbcae38fedcb6dbcc4b2da538a2636df0836fde`. The exact preparation and
+registration-preflight dry-run passed with BTC capped at USD 10 notional, 1x
+maximum leverage, one position and one trade cycle. The reviewed master account
+was a Testnet `user` with 999 Testnet USDC account value/withdrawable, zero
+positions and zero open orders. The isolated API wallet was initially
+`missing` and had not been reused from another run.
+
+One exact `approveAgent` registration request was signed by the reviewed master
+and submitted to Hyperliquid Testnet. The venue returned `REJECTED`; the
+one-use local authorization was consumed, the API wallet remained `missing`,
+and no corrected registration request or automatic retry was attempted. The
+redacted response hash is retained, but the raw response was intentionally not
+persisted, so this record does not infer an unproven rejection reason.
+
+The post-registration hard-check dry-run failed only
+`signerRegistration`. All other environment, preparation, isolation, Facility,
+Mandate, Authorization, reconciliation, balance, mainnet, withdrawal and
+transfer checks passed. Execution therefore stopped before any order
+signature. No order, fill, position, close, cancel, repayment or Obligation
+settlement occurred; zero Testnet assets, real funds or mainnet funds moved.
+
+Current L3 truth is `BLOCKED`, not `L3_VERIFIED`. No replay or second run is
+authorized. Durable redacted Evidence:
+`artifacts/testnet/agent-credit-exec-001-l3-registration-blocked-20260815.json`.
+Post-stop verification passed 1,087 full-repository tests, 721-module source
+lint, 136 Schema checks, the 72-export contract typecheck, focused Agent Credit,
+venue-policy, Hyperliquid, negative and restart suites, `git diff --check`, and
+an exact signer-secret scan across 1,777 repository files.

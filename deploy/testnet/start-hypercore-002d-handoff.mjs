@@ -32,6 +32,44 @@ const ADDRESS = /^0x(?!0{40}$)[0-9a-f]{40}$/;
 const HASH = /^0x[0-9a-f]{64}$/;
 const SIGNATURE = /^0x[0-9a-fA-F]{130}$/;
 const APPROVAL_DIRECTORY = "/private/tmp/ipo-one-hypercore-002d/approvals";
+const AGENT_CREDIT_APPROVAL_DIRECTORY =
+  "/private/tmp/ipo-one-agent-credit-exec-001/approvals";
+const COMMIT = /^[0-9a-f]{40}$/;
+const RUN_ID = /^agent-credit-exec-001-l3-[A-Za-z0-9][A-Za-z0-9._:-]{7,95}$/;
+
+export const HYPERCORE_002D_HANDOFF_PROFILE = Object.freeze({
+  issueId: "HYPERLIQUID-002D",
+  runId: null,
+  candidateCommit: null,
+  agentName: "ipo-one-002d",
+  approvalDirectory: APPROVAL_DIRECTORY,
+  approvalMarkerPrefix: "HYPERLIQUID-002D-AGENT",
+  title: "HyperCore 执行闭环",
+  schemaVersion: "hypercore_handoff_profile.v1"
+});
+
+export function createAgentCreditHyperliquidHandoffProfile({
+  runId,
+  candidateCommit
+}) {
+  if (!RUN_ID.test(runId ?? "") || !COMMIT.test(candidateCommit ?? "")) {
+    fail(
+      "invalid_agent_credit_handoff_profile",
+      "An exact Agent Credit run and candidate commit are required."
+    );
+  }
+  return Object.freeze({
+    issueId: "AGENT-CREDIT-EXEC-001",
+    runId,
+    candidateCommit,
+    agentName: "ipo-one-credit-001",
+    approvalDirectory: AGENT_CREDIT_APPROVAL_DIRECTORY,
+    approvalMarkerPrefix:
+      `AGENT-CREDIT-EXEC-001:${runId}:${candidateCommit}:AGENT`,
+    title: "Agent Credit L3 Testnet Handoff",
+    schemaVersion: "hypercore_handoff_profile.v1"
+  });
+}
 
 function fail(code, message) {
   throw Object.assign(new Error(message), { code });
@@ -119,15 +157,15 @@ async function postJson(fetchImpl, endpoint, body, code) {
   }), code);
 }
 
-function approvalPaths(requestHash) {
+function approvalPaths(requestHash, approvalDirectory = APPROVAL_DIRECTORY) {
   if (!HASH.test(requestHash)) {
     fail("invalid_hypercore_002d_registration_hash", "The registration hash is invalid.");
   }
   const stem = requestHash.slice(2);
   return {
-    authorized: `${APPROVAL_DIRECTORY}/${stem}.authorized`,
-    consumed: `${APPROVAL_DIRECTORY}/${stem}.consumed`,
-    result: `${APPROVAL_DIRECTORY}/${stem}.result.json`
+    authorized: `${approvalDirectory}/${stem}.authorized`,
+    consumed: `${approvalDirectory}/${stem}.consumed`,
+    result: `${approvalDirectory}/${stem}.result.json`
   };
 }
 
@@ -141,8 +179,8 @@ async function regularOwnerOnly(path) {
   }
 }
 
-async function approved(requestHash) {
-  const paths = approvalPaths(requestHash);
+async function approved(requestHash, profile = HYPERCORE_002D_HANDOFF_PROFILE) {
+  const paths = approvalPaths(requestHash, profile.approvalDirectory);
   if (!(await regularOwnerOnly(paths.authorized))) return false;
   return (await readFile(paths.authorized, "utf8")).trim() === requestHash;
 }
@@ -164,14 +202,28 @@ function signatureParts(signature) {
 }
 
 export async function authorizeHypercore002dAgentRegistration(requestHash) {
-  const marker = `HYPERLIQUID-002D-AGENT:${requestHash}`;
-  if (process.env.IPO_ONE_APPROVE_HYPERCORE_AGENT_REGISTRATION !== marker) {
+  return authorizeAgentRegistration({
+    requestHash,
+    profile: HYPERCORE_002D_HANDOFF_PROFILE,
+    env: process.env,
+    approvalVariable: "IPO_ONE_APPROVE_HYPERCORE_AGENT_REGISTRATION"
+  });
+}
+
+async function authorizeAgentRegistration({
+  requestHash,
+  profile,
+  env,
+  approvalVariable
+}) {
+  const marker = `${profile.approvalMarkerPrefix}:${requestHash}`;
+  if (env[approvalVariable] !== marker) {
     fail(
       "hypercore_002d_agent_approval_required",
       "The exact hash-bound agent registration approval is required."
     );
   }
-  const paths = approvalPaths(requestHash);
+  const paths = approvalPaths(requestHash, profile.approvalDirectory);
   await mkdir(dirname(paths.authorized), { recursive: true, mode: 0o700 });
   await chmod(dirname(paths.authorized), 0o700);
   const handle = await open(
@@ -187,15 +239,35 @@ export async function authorizeHypercore002dAgentRegistration(requestHash) {
   }
   return Object.freeze({
     requestHash,
-    authorizationHash: hashId("hypercore_002d_agent_registration_authorization", {
+    authorizationHash: hashId("hypercore_agent_registration_authorization", {
       requestHash,
-      marker
+      marker,
+      issueId: profile.issueId,
+      runId: profile.runId,
+      candidateCommit: profile.candidateCommit
     }),
     oneUse: true,
     mainnetAuthority: false,
     productionAuthority: false,
     realFundsAuthority: false,
-    schemaVersion: "hypercore_002d_agent_registration_authorization.v1"
+    schemaVersion: "hypercore_agent_registration_authorization.v1"
+  });
+}
+
+export async function authorizeAgentCreditHyperliquidRegistration({
+  requestHash,
+  runId,
+  candidateCommit,
+  env = process.env
+}) {
+  return authorizeAgentRegistration({
+    requestHash,
+    profile: createAgentCreditHyperliquidHandoffProfile({
+      runId,
+      candidateCommit
+    }),
+    env,
+    approvalVariable: "IPO_ONE_APPROVE_HYPERLIQUID_TESTNET_REGISTRATION"
   });
 }
 
@@ -203,7 +275,8 @@ export function createHypercore002dHandoffSession({
   signerKeyPath,
   fetchImpl = fetch,
   clock = () => new Date(),
-  registrationResume = null
+  registrationResume = null,
+  profile = HYPERCORE_002D_HANDOFF_PROFILE
 } = {}) {
   if (
     typeof signerKeyPath !== "string" ||
@@ -228,6 +301,12 @@ export function createHypercore002dHandoffSession({
           : accountSummary
             ? "qualified_account_verified"
             : "awaiting_wallet",
+      issueId: profile.issueId,
+      runId: profile.runId,
+      candidateCommit: profile.candidateCommit,
+      venue: "hyperliquid",
+      environment: "testnet",
+      origin: "https://api.hyperliquid-testnet.xyz",
       accountAddressHash: accountSummary?.accountAddressHash ?? null,
       accountQualified: accountSummary?.qualified ?? false,
       accountBlockers: accountSummary?.blockers ?? [],
@@ -239,7 +318,7 @@ export function createHypercore002dHandoffSession({
       apiWalletAddressHash: registrationRequest?.apiWalletAddressHash ?? null,
       registrationRequestHash: registrationRequest?.signingRequestHash ?? null,
       registrationAuthorized: registrationRequest
-        ? await approved(registrationRequest.signingRequestHash)
+        ? await approved(registrationRequest.signingRequestHash, profile)
         : false,
       registrationResultHash: registrationResult?.registrationResultHash ?? null,
       safety: {
@@ -340,7 +419,7 @@ export function createHypercore002dHandoffSession({
       ({ descriptor, transientApiWalletAddress }) => {
         const request = createHypercoreApproveAgentSigningRequest({
           agentAddress: transientApiWalletAddress,
-          agentName: "ipo-one-002d",
+          agentName: profile.agentName,
           nonce: registrationNonce,
           signerReferenceHash: descriptor.signerReferenceHash,
           canonicalAccountAddressHash: accountSummary.accountAddressHash
@@ -362,6 +441,16 @@ export function createHypercore002dHandoffSession({
         "The resumed registration request drifted from its exact approval."
       );
     }
+    return registrationRequestView();
+  }
+
+  function registrationRequestView() {
+    if (!registrationRequest) {
+      fail(
+        "hypercore_002d_registration_request_unavailable",
+        "The registration request has not been prepared."
+      );
+    }
     return Object.freeze({
       signingRequestHash: registrationRequest.signingRequestHash,
       digestHash: registrationRequest.digestHash,
@@ -370,7 +459,13 @@ export function createHypercore002dHandoffSession({
       apiWalletAddressHash: registrationRequest.apiWalletAddressHash,
       typedData: registrationRequest.typedData,
       exactApprovalMarker:
-        `HYPERLIQUID-002D-AGENT:${registrationRequest.signingRequestHash}`,
+        `${profile.approvalMarkerPrefix}:${registrationRequest.signingRequestHash}`,
+      issueId: profile.issueId,
+      runId: profile.runId,
+      candidateCommit: profile.candidateCommit,
+      venue: "hyperliquid",
+      environment: "testnet",
+      origin: "https://api.hyperliquid-testnet.xyz",
       registrationWritePerformed: false,
       schemaVersion: "hypercore_002d_agent_registration_request_handoff.v1"
     });
@@ -381,7 +476,7 @@ export function createHypercore002dHandoffSession({
     if (
       !registrationRequest ||
       input.signingRequestHash !== registrationRequest.signingRequestHash ||
-      !(await approved(registrationRequest.signingRequestHash))
+      !(await approved(registrationRequest.signingRequestHash, profile))
     ) {
       fail("hypercore_002d_agent_registration_not_authorized", "Exact registration approval is unavailable.");
     }
@@ -392,7 +487,10 @@ export function createHypercore002dHandoffSession({
     if (recovered !== masterAddress) {
       fail("hypercore_002d_master_signature_mismatch", "The registration signer is not the reviewed master account.");
     }
-    const paths = approvalPaths(registrationRequest.signingRequestHash);
+    const paths = approvalPaths(
+      registrationRequest.signingRequestHash,
+      profile.approvalDirectory
+    );
     await rename(paths.authorized, paths.consumed);
     await chmod(paths.consumed, 0o600);
     const requestBody = {
@@ -452,14 +550,26 @@ export function createHypercore002dHandoffSession({
     return registrationResult;
   }
 
-  return Object.freeze({ state, inspectMaster, prepareRegistration, registerAgent });
+  return Object.freeze({
+    state,
+    inspectMaster,
+    prepareRegistration,
+    readRegistrationRequest: registrationRequestView,
+    registerAgent
+  });
 }
 
 const PAGE = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IPO.ONE HYPERLIQUID-002D Handoff</title><link rel="stylesheet" href="/handoff.css"></head><body><main><p class="eyebrow">HYPERLIQUID-002D · TESTNET ONLY</p><h1>HyperCore 执行闭环</h1><p class="lead">本页只连接现有 Testnet master、读取余额/仓位，并为新 API wallet 生成精确注册请求。订单、转账、提款、杠杆、主网和真实资金全部关闭。</p><section><h2>1. 连接现有钱包</h2><div id="providers"></div><button id="connect" disabled>连接所选钱包并只读检查</button></section><section><h2>2. 准备 API wallet 注册</h2><button id="prepare" disabled>生成精确注册请求哈希</button><p class="warning">生成后会停在哈希绑定批准门，不会自动签名或调用 /exchange。</p></section><section><h2>3. 精确批准后注册</h2><button id="register" disabled>在钱包确认并注册一次</button><p class="warning">签名前会重新核验当前账户，并强制要求 Arbitrum Sepolia（chainId 421614 / 0x66eee）。</p></section><section><h2>脱敏状态</h2><pre id="output">正在初始化…</pre></section></main><script src="/handoff.js" type="module"></script></body></html>`;
 
+function pageFor(profile) {
+  return PAGE
+    .replaceAll("HYPERLIQUID-002D", profile.issueId)
+    .replace("HyperCore 执行闭环", profile.title);
+}
+
 const STYLE = `:root{color-scheme:dark;font:15px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;background:#060b12;color:#e5f1ff}*{box-sizing:border-box}body{margin:0}main{max-width:960px;margin:auto;padding:42px 20px 80px}h1{font:750 clamp(34px,6vw,64px)/1.02 system-ui;margin:.2em 0 .35em;letter-spacing:-.04em}h2{font:650 20px/1.2 system-ui}.eyebrow{color:#63e6be;text-transform:uppercase;letter-spacing:.13em}.lead{font:17px/1.55 system-ui;color:#cbd9ea}.warning{color:#ffd8a8}section{border:1px solid #243b55;background:#0a1421;padding:20px;margin:18px 0;border-radius:14px}button{margin:6px 9px 6px 0;padding:10px 14px;border-radius:9px;border:1px solid #3b6586;background:#102b40;color:#eff8ff;font:inherit;cursor:pointer}button:disabled{opacity:.42;cursor:not-allowed}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#040a11;padding:13px;border-radius:9px;border:1px solid #182a3b}.provider{display:block;width:100%;text-align:left}.provider.selected{outline:2px solid #63e6be}`;
 
-const SCRIPT = `const $=id=>document.getElementById(id);const providers=new Map();const EXPECTED_SIGNING_CHAIN=421614n;let selected;let account;let request;let token;const show=(label,value)=>{$("output").textContent=label+"\\n"+JSON.stringify(value,null,2)};async function api(path,options={}){const response=await fetch(path,{credentials:"same-origin",headers:{accept:"application/json","content-type":"application/json",...(token?{"x-handoff-token":token}:{}),...(options.headers||{})},...options});const text=await response.text();let body;try{body=text?JSON.parse(text):undefined}catch{}if(!response.ok)throw new Error(body?.message||body?.error||("HTTP "+response.status));return body}function render(){const root=$("providers");root.replaceChildren();for(const [id,item] of providers){const button=document.createElement("button");button.className="provider"+(selected===id?" selected":"");button.textContent=item.name;button.onclick=()=>{selected=id;render();$("connect").disabled=false};root.append(button)}if(!providers.size)root.textContent="未发现钱包 Provider。"}function add(id,name,provider){if(!providers.has(id)&&provider&&typeof provider.request==="function"){providers.set(id,{name,provider});render()}}window.addEventListener("eip6963:announceProvider",event=>{const info=event.detail?.info;add("eip6963:"+(info?.uuid||"unknown"),info?.name||"EIP-6963 wallet",event.detail?.provider)});window.dispatchEvent(new Event("eip6963:requestProvider"));setTimeout(()=>{if(!providers.size&&window.ethereum)add("legacy","Injected wallet",window.ethereum)},300);const provider=()=>providers.get(selected)?.provider;async function requireSigningContext(p){if(!p)throw new Error("钱包 Provider 不可用，请重新连接。");const chainId=await p.request({method:"eth_chainId"});let numericChainId;try{numericChainId=BigInt(chainId)}catch{throw new Error("钱包返回了无效的 chainId，签名已停止。")}if(numericChainId!==EXPECTED_SIGNING_CHAIN)throw new Error("签名已停止：请将钱包切换到 Arbitrum Sepolia（chainId 421614 / 0x66eee）。");const accounts=await p.request({method:"eth_accounts"});const current=accounts?.[0]?.toLowerCase();if(!current||current!==account?.toLowerCase())throw new Error("签名已停止：当前账户与已核验 Testnet master 不一致，请重新连接并检查。");return current}async function connect(){const p=provider();let accounts=await p.request({method:"eth_accounts"});if(!accounts?.length)accounts=await p.request({method:"eth_requestAccounts"});account=accounts?.[0];const summary=await api("/api/inspect-master",{method:"POST",body:JSON.stringify({masterAccountAddress:account})});$("prepare").disabled=!summary.qualified;show("Testnet master 只读检查",summary)}async function prepare(){request=await api("/api/prepare-registration",{method:"POST",body:"{}"});show("READY_FOR_EXACT_AGENT_REGISTRATION_APPROVAL",{signingRequestHash:request.signingRequestHash,digestHash:request.digestHash,actionHash:request.actionHash,signerReferenceHash:request.signerReferenceHash,apiWalletAddressHash:request.apiWalletAddressHash,exactApprovalMarker:request.exactApprovalMarker,registrationWritePerformed:false});poll()}async function poll(){if(!request)return;const state=await api("/api/state");$("register").disabled=!state.registrationAuthorized;if(!state.registrationAuthorized)setTimeout(poll,1000)}async function register(){const p=provider();await requireSigningContext(p);const signature=await p.request({method:"eth_signTypedData_v4",params:[account,JSON.stringify(request.typedData)]});$("register").disabled=true;const result=await api("/api/register-agent",{method:"POST",body:JSON.stringify({signingRequestHash:request.signingRequestHash,signature})});show("API wallet 注册结果",result)}for(const [id,fn] of Object.entries({connect,prepare,register}))$(id).onclick=()=>fn().catch(error=>show("ERROR",{message:error.message}));const initial=await api("/api/state",{headers:{}});token=initial.handoffToken;show("安全边界",initial.state.safety);`;
+const SCRIPT = `const $=id=>document.getElementById(id);const providers=new Map();const EXPECTED_SIGNING_CHAIN=421614n;let selected;let account;let request;let token;const show=(label,value)=>{$("output").textContent=label+"\\n"+JSON.stringify(value,null,2)};async function api(path,options={}){const response=await fetch(path,{credentials:"same-origin",headers:{accept:"application/json","content-type":"application/json",...(token?{"x-handoff-token":token}:{}),...(options.headers||{})},...options});const text=await response.text();let body;try{body=text?JSON.parse(text):undefined}catch{}if(!response.ok)throw new Error(body?.message||body?.error||("HTTP "+response.status));return body}function render(){const root=$("providers");root.replaceChildren();for(const [id,item] of providers){const button=document.createElement("button");button.className="provider"+(selected===id?" selected":"");button.textContent=item.name;button.onclick=()=>{selected=id;render();$("connect").disabled=false};root.append(button)}if(!providers.size)root.textContent="未发现钱包 Provider。"}function add(id,name,provider){if(!providers.has(id)&&provider&&typeof provider.request==="function"){providers.set(id,{name,provider});render()}}window.addEventListener("eip6963:announceProvider",event=>{const info=event.detail?.info;add("eip6963:"+(info?.uuid||"unknown"),info?.name||"EIP-6963 wallet",event.detail?.provider)});window.dispatchEvent(new Event("eip6963:requestProvider"));setTimeout(()=>{if(!providers.size&&window.ethereum)add("legacy","Injected wallet",window.ethereum)},300);const provider=()=>providers.get(selected)?.provider;async function requireSigningContext(p){if(!p)throw new Error("钱包 Provider 不可用，请重新连接。");const chainId=await p.request({method:"eth_chainId"});let numericChainId;try{numericChainId=BigInt(chainId)}catch{throw new Error("钱包返回了无效的 chainId，签名已停止。")}if(numericChainId!==EXPECTED_SIGNING_CHAIN)throw new Error("签名已停止：请将钱包切换到 Arbitrum Sepolia（chainId 421614 / 0x66eee）。");const accounts=await p.request({method:"eth_accounts"});const current=accounts?.[0]?.toLowerCase();if(!current||current!==account?.toLowerCase())throw new Error("签名已停止：当前账户与已核验 Testnet master 不一致，请重新连接并检查。");return current}async function connect(){const p=provider();let accounts=await p.request({method:"eth_accounts"});if(!accounts?.length)accounts=await p.request({method:"eth_requestAccounts"});account=accounts?.[0];const summary=await api("/api/inspect-master",{method:"POST",body:JSON.stringify({masterAccountAddress:account})});$("prepare").disabled=!summary.qualified;show("Testnet master 只读检查",summary)}async function prepare(){request=await api("/api/prepare-registration",{method:"POST",body:"{}"});show("READY_FOR_EXACT_AGENT_REGISTRATION_APPROVAL",{signingRequestHash:request.signingRequestHash,digestHash:request.digestHash,actionHash:request.actionHash,signerReferenceHash:request.signerReferenceHash,apiWalletAddressHash:request.apiWalletAddressHash,exactApprovalMarker:request.exactApprovalMarker,registrationWritePerformed:false});poll()}async function poll(){if(!request)return;const state=await api("/api/state");$("register").disabled=!state.registrationAuthorized;if(!state.registrationAuthorized)setTimeout(poll,1000)}async function register(){const p=provider();await requireSigningContext(p);const signature=await p.request({method:"eth_signTypedData_v4",params:[account,JSON.stringify(request.typedData)]});$("register").disabled=true;const result=await api("/api/register-agent",{method:"POST",body:JSON.stringify({signingRequestHash:request.signingRequestHash,signature})});show("API wallet 注册结果",result)}for(const [id,fn] of Object.entries({connect,prepare,register}))$(id).onclick=()=>fn().catch(error=>show("ERROR",{message:error.message}));const initial=await api("/api/state",{headers:{}});token=initial.handoffToken;if(initial.state.workflowStatus==="registration_prepared"){request=await api("/api/registration-request");poll()}show("安全边界",initial.state.safety);`;
 
 const SERVED_SCRIPT = SCRIPT.replace(
   'const state=await api("/api/state");$("register").disabled=!state.registrationAuthorized;if(!state.registrationAuthorized)',
@@ -511,9 +621,11 @@ export async function createHypercore002dHandoffHost({
   port = DEFAULT_PORT,
   signerKeyPath,
   registrationResume = null,
+  profile = HYPERCORE_002D_HANDOFF_PROFILE,
   session = createHypercore002dHandoffSession({
     signerKeyPath,
-    registrationResume
+    registrationResume,
+    profile
   })
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) {
@@ -528,7 +640,7 @@ export async function createHypercore002dHandoffHost({
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url, origin);
-      if (request.method === "GET" && url.pathname === "/") return text(response, "text/html; charset=utf-8", PAGE);
+      if (request.method === "GET" && url.pathname === "/") return text(response, "text/html; charset=utf-8", pageFor(profile));
       if (request.method === "GET" && url.pathname === "/handoff.css") return text(response, "text/css; charset=utf-8", STYLE);
       if (request.method === "GET" && url.pathname === "/handoff.js") return text(response, "text/javascript; charset=utf-8", SERVED_SCRIPT);
       if (request.method === "GET" && url.pathname === "/api/state") {
@@ -543,6 +655,9 @@ export async function createHypercore002dHandoffHost({
       if (request.method === "POST" && url.pathname === "/api/prepare-registration") {
         exactObject(await body(request), []);
         return json(response, 200, await session.prepareRegistration());
+      }
+      if (request.method === "GET" && url.pathname === "/api/registration-request") {
+        return json(response, 200, session.readRegistrationRequest());
       }
       if (request.method === "POST" && url.pathname === "/api/register-agent") {
         return json(response, 200, await session.registerAgent(await body(request)));
