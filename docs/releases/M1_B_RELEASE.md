@@ -1,87 +1,136 @@
 # M1-B Release
 
-Status: `CLOSED_LOCAL_NO_REAL_FUNDS`
+Status: `ACCEPTED_LOCAL_NO_REAL_FUNDS_PENDING_MERGE_DEPLOY_AUTHORIZATION`
 
-## Identity
+## Release identity
 
-- Immutable safety checkpoint: `fb83a83566b136aa24159d1ab42b8db0caf9b40d`
+- Immutable safety baseline: `fb83a83566b136aa24159d1ab42b8db0caf9b40d`
 - Final implementation SHA: `a0d32b4f9b936eacc1a80d0417fc1349a57ab2eb`
+- Final accepted candidate SHA: `74ac425dad33bf667ee2550e33e36220dcfed402`
+- Final accepted candidate tree: `fc5f3eb1c4de1cc7e97e6fa5cc1a411b53490f7f`
 - Rollback target: `fb83a83566b136aa24159d1ab42b8db0caf9b40d`
 
-The final implementation is a local, persistent, no-real-funds product. It is
-not a remote deployment, production financial release, or capital authorization.
+The accepted candidate is a persistent local, synthetic, no-real-funds
+product. Acceptance does not authorize merge, hosted deployment, DNS changes,
+release tags, mainnet activity, real value, custody, or production operation.
 
-## Major defects fixed
+## Final fixes
 
-- Human PostgreSQL session refresh is serialized, and Human Offer v1/v2 state
-  recovers from authenticated server truth across reload, re-login, and restart.
-- Human acceptance is bound to the exact authorized Offer and terms.
-- Agent MCP carries `providerId` and `providerCategory` through the Tenant
-  Gateway into durable PostgreSQL execution.
-- Agent execution preserves Mandate, Facility, Provider-scope, idempotency,
-  Ledger, repayment, and Evidence invariants across restart.
-- Capital Partners can review, author or replace an Offer, and the borrower
-  recovers the current Offer.
-- SIWE-only authentication remains unable to perform operations that require
-  recent phishing-resistant MFA.
+- Human PostgreSQL session refresh is serialized, and the current Human Offer
+  recovers from authenticated server truth across reload, re-login, and
+  restart.
+- Human acceptance is bound to the exact current Offer and terms; a replaced
+  or stale Offer cannot be accepted.
+- Agent MCP carries Provider scope through Tenant Gateway into durable
+  PostgreSQL execution, Ledger, repayment, Evidence, and restart recovery.
+- Capital Partners can author or replace bilateral synthetic Offers, while the
+  borrower recovers only the current Offer.
+- SIWE-only authentication cannot satisfy phishing-resistant recent-MFA policy
+  for privileged Risk or Operations actions, and no weak fallback exists.
 
-## Canonical runtime
+## Canonical runtime and simplification result
 
 ```text
 Human Web / Agent MCP / Tenant API
   -> Tenant Protocol
   -> TenantCommandGateway
-  -> shared deterministic kernel
+  -> shared deterministic obligation kernel
   -> PostgreSQL canonical truth
 ```
 
-The in-memory demo remains compatibility-only and non-authoritative.
+The in-memory demo is compatibility-only and non-authoritative. The former
+release-specific evidence ceremony is not a release gate. Final acceptance
+used the canonical GitHub quality gate, one retained Agent MCP lifecycle and
+restart-recovery smoke, focused Human/Capital Partner/Risk checks, and this
+single release record.
 
-## Final verification
+## Final remote CI
 
-- Locked install: passed with `pnpm install --frozen-lockfile`.
-- Required repository gate: passed. Static checks included 699 source modules,
-  136 schemas, 21 OpenAPI paths/operations, 61 migration pairs, and 102 Tenant
-  Protocol operations. Security passed 34/34, transport passed 80/80, and the
-  aggregate suite passed 1008/1008.
-- PostgreSQL integration: all 87 paths passed on fresh disposable PostgreSQL.
-  One stale-Agent handoff leaf failed transiently in the first aggregate run
-  and passed with its 42-test parent on an immediate fresh-database bounded
-  rerun; no source changed between runs.
-- Agent before/restart/after recovery: passed on the exact local image with one
-  restart. Subject, Mandate, Offer, Obligation, Facility, CreditLine, Ledger,
-  repayment, and Evidence state recovered from retained PostgreSQL truth.
-- Minimal browser smoke: all four loopback role entrypoints loaded the correct
-  no-funds and signed-out privacy boundary. Human OKX SIWE was requested twice
-  and cancelled without a signature or submission; the control surface could
-  not operate the wallet extension popup. No authenticated browser journey is
-  claimed or substituted. Human/Capital Partner recovery and Risk denial remain
-  covered by the passing PostgreSQL, transport, security, and aggregate suites;
-  the Agent lifecycle is additionally covered by the exact-image restart run.
+- Exact candidate: `74ac425dad33bf667ee2550e33e36220dcfed402`.
+- Required GitHub Actions run: `31864233046`, event `pull_request`, conclusion
+  `success`; the duplicate push-triggered run was cancelled before use.
+- Locked install, lint, typecheck, schemas, migrations, Tenant Protocol,
+  security, transport, PostgreSQL, deployment topology, local-stack contract,
+  launch policy, web bundle, aggregate tests, and production dependency audit
+  passed without source changes.
+- Static counts: 699 source modules, 136 schemas, 21 OpenAPI paths and 21
+  operations, 61 migration up/down pairs, and 102 Tenant Protocol operations.
+- Test counts: security 34/34, transport 80/80, PostgreSQL 87/87, aggregate
+  1008/1008; production dependency audit found no known vulnerability.
+- CI evidence: <https://github.com/CPTM511/IPO.ONE/actions/runs/31864233046>
 
-## Deployment state
+## Minimal final acceptance
 
-- Local loopback product: runnable for Founder review.
-- Remote deployment: pending separate Founder authorization.
-- Generic launch policy and deployment identity checks remain active.
-- The versioned Vercel sandbox v2 manifest and package/config files are retained
-  because the canonical deployment runtime references them; they grant no
-  deployment authority.
+### Human
 
-## Explicitly disabled authorities
+- Real invited OKX wallet connected on Base Sepolia (`eip155:84532`) and
+  established one authenticated SIWE session.
+- The borrower recovered the same current $120.00 Offer from PostgreSQL after
+  reload: Offer digest `0x0924c293...9e88ef`, terms digest
+  `0xa7883e40...3ffca8`.
+- The exact no-funds action was confirmed manually in the wallet. One
+  Obligation and a deterministic two-installment schedule were created, with
+  three finalized offchain Evidence events. No transaction, token approval,
+  signer injection, or funds movement occurred.
+- Repayment was not repeated: the required final state was Obligation creation,
+  and the retained Agent smoke already exercised repayment and recovery.
 
-- Real funds and real Human lending
-- Mainnet and production asset movement
-- Signer, custody, withdrawal, and Venue-write authority
-- Protocol fees
+### Agent
+
+- One retained MCP -> Tenant Gateway -> PostgreSQL -> controlled execution ->
+  Ledger -> repayment lifecycle passed on the exact candidate image.
+- After one full local stack restart, the same Subject, Mandate, Offer,
+  Obligation, Facility, CreditLine, Ledger, repayment, and Evidence state was
+  recovered; Evidence count advanced from 14 to 15. `productionFundsMoved`
+  remained `false`.
+
+### Capital Partner
+
+- The real SIWE Borrower session was denied Capital Partner workspace recovery
+  and disclosed no authorized application, confirming role isolation without
+  an authentication bypass.
+- The existing PostgreSQL Capital Partner runtime path passed: v1 Offer was
+  replaced by v2, a fresh borrower session recovered only v2, and v1 acceptance
+  failed closed. Its 42-test Tenant Gateway parent passed 42/42 in the Lima
+  database network with no source change; an initial host-port invocation ended
+  only in tunnel cleanup timeout and did not report a business assertion
+  failure.
+
+### Risk and Operations
+
+- The SIWE-only Borrower session reached the Risk surface but received
+  `Access required`; portfolio, queue, and protective mutation state remained
+  unavailable, with no weak fallback or mutation.
+- The focused policy assertion passed 1/1: SIWE-only Risk and Operations
+  sessions fail closed for every recent-MFA policy.
+
+## Deployment and rollback state
+
+- Local review runtime: <http://127.0.0.1:18887/#request-credit> with role
+  entrypoints on ports `18887-18890`; exact candidate image healthy.
+- Remote deployment, merge, DNS, tag, and security seal: not performed and
+  pending separate Founder authorization.
+- Rollback returns to `fb83a83566b136aa24159d1ab42b8db0caf9b40d`,
+  stops the candidate runtime, and preserves PostgreSQL for reviewed recovery;
+  it does not activate an older production or real-value state.
+
+## Explicitly disabled flags and authorities
+
+- `realFundsEnabled: false`
+- `productionFundsMoved: false`
+- Real Human lending, mainnet, and production asset movement
+- Signer, custody, withdrawal, arbitrary spend, and Venue-write authority
+- Protocol fees, public pools, deposits, allocations, and capital commitment
 - Public Risk/Admin promotion under SIWE-only authentication
-- Paid external Provider or capital commitment
+- Paid external Provider execution and remote Agent HTTPS
 
-## Deferred M1-C/L2 work
+## Deferred to M1-C / L2
 
-- Compose phishing-resistant MFA before promoting privileged Risk operations.
-- Complete separately approved hosted deployment and invitation controls.
-- Revisit production Provider, signer, custody, capital, servicing, legal,
-  privacy, and loss-bearing decisions only through named human approvals.
+- Compose phishing-resistant MFA before privileged Risk or Operations
+  promotion.
+- Complete separately authorized merge, hosted deployment, invitation,
+  observability, DNS, and rollback validation.
+- Review production Provider, signer, custody, capital, servicing, legal,
+  privacy, and loss-bearing decisions through named human approvals.
 - Keep A2A, subscriptions, streaming transports, new CreditLine products, new
-  chains, new Venues, and scoring-model changes outside this closure.
+  chains, new Venues, and scoring-model changes outside M1-B closure.
