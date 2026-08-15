@@ -439,3 +439,52 @@ Post-stop verification passed 1,087 full-repository tests, 721-module source
 lint, 136 Schema checks, the 72-export contract typecheck, focused Agent Credit,
 venue-policy, Hyperliquid, negative and restart suites, `git diff --check`, and
 an exact signer-secret scan across 1,777 repository files.
+
+## Founder-confirmed bounded L3 verification — 2026-08-15
+
+The Founder confirmed that, before execution, explicit approval had been given
+for the exact Hyperliquid Testnet run
+`agent-credit-exec-001-l3-20260815-003`, reuse of the reviewed isolated API
+wallet signer for that run, policy
+`agent_credit_hyperliquid_testnet.v2`, and a USD 12 maximum-notional ceiling.
+This exact approval superseded the earlier no-replay statement only for run
+`...-003`; it did not authorize any additional registration, retry, signer
+reuse, trade cycle, mainnet action, deployment, real funds or production
+authority.
+
+Candidate `b78f37a1f8dfd12c6011b23722874b740aed33be` corrected the venue-minimum
+sizing boundary so the prepared BTC IOC opening quantity had to be strictly
+above USD 10 and no greater than USD 12 at the current venue precision. The
+exact approved run then completed one filled BTC opening order and one filled
+reduce-only close. Recorded opening limit notional was USD 10.18272. Terminal
+reconciliation found zero positions and zero open orders, with no automatic
+retry or second cycle.
+
+The venue reported a cross-leverage setting of 20 while the bounded position
+used 0.84002667x of the USD 12 Facility allocation. The approved IPO.ONE policy
+and runtime checks remained capped at 1x actual Facility allocation leverage;
+the venue setting is retained as an explicit Evidence fact and not relabelled
+as a 1x venue configuration. Any future run that depends on changing or
+accepting a venue leverage setting requires a separate reviewed decision.
+
+Terminal truth for this exact run is `L3_VERIFIED`:
+
+- Testnet assets moved: true;
+- real funds moved: false;
+- mainnet interaction: false;
+- withdrawal, transfer and external funding transfer: false;
+- Agent custody created: false;
+- recorded realized Testnet PnL including fees: USD `-0.01067200`;
+- controlled-account repayment allocation: 1,199 of 1,200 synthetic minor
+  units, leaving 1 synthetic minor unit outstanding;
+- real outstanding debt created: false.
+
+Durable redacted Evidence is
+`artifacts/testnet/agent-credit-exec-001-l3-verified-20260815.json`. Final
+integrated regression recorded 1,076 tests passed, zero failed and zero
+skipped. The earlier rejected registration attempt remains historically true;
+its `BLOCKED` status is not the terminal status of run `...-003`.
+
+No further Testnet run, signer reuse, retry, deployment, mainnet interaction,
+production credential, funds movement or real-value action is authorized by
+this confirmation or by merging the implementation and Evidence.
