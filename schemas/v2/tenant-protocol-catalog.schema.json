@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 102,
-      "maxItems": 102,
+      "minItems": 103,
+      "maxItems": 103,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -293,6 +293,7 @@
             "pilotReadServicingQueue",
             "pilotReadEvidence",
             "pilotReadOwnObligation",
+            "pilotReadOwnCreditState",
             "pilotReadOwnObligationEvidence",
             "pilotRevokeConsent",
             "pilotRevokeDraftMandate",
@@ -585,6 +586,7 @@
             "tenant_obligation_evidence_view.v1",
             "tenant_owned_obligation_evidence_view.v1",
             "tenant_owned_obligation_view.v1",
+            "tenant_owned_credit_state_view.v1",
             "tenant_draft_mandate_revoked.v1",
             "provider_intent_view.v1",
             "provider_intent_acknowledgement.v1",
@@ -1922,6 +1924,37 @@
             },
             "responseSchemaVersion": {
               "const": "tenant_owned_obligation_view.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotReadOwnCreditState"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "human",
+                "agent"
+              ]
+            },
+            "resourceType": {
+              "const": "subject"
+            },
+            "requiredCapability": {
+              "const": "credit.read.self"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_owned_credit_state_view.v1"
             }
           }
         },

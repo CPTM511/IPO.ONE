@@ -578,6 +578,22 @@
       "fundsAuthority": false
     },
     {
+      "operationId": "pilotReadOwnCreditState",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "credit.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_credit_state_view.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
       "operationId": "pilotRevokeConsent",
       "kind": "command",
       "actorTypes": [

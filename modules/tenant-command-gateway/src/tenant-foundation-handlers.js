@@ -4,6 +4,7 @@ import { createExecutionAccountBindingHandlers } from "./execution-account-bindi
 import { createCreditIntentHandlers } from "./credit-intent-handlers.js";
 import { createCreditDecisionHandlers } from "./credit-decision-handlers.js";
 import { createCreditPassportHandlers } from "./credit-passport-handlers.js";
+import { createCreditStateQueryHandlers } from "./credit-state-query-handlers.js";
 import { createCreditAcceptanceHandlers } from "./credit-acceptance-handlers.js";
 import { createCreditExecutionHandlers } from "./credit-execution-handlers.js";
 import { createCreditRegistryEvidenceHandlers } from "./credit-registry-evidence-handlers.js";
@@ -45,6 +46,7 @@ export function createTenantFoundationHandlers(options) {
     ...createExecutionAccountBindingHandlers(options),
     ...createCreditDecisionHandlers(),
     ...createCreditPassportHandlers(),
+    ...createCreditStateQueryHandlers(),
     ...createCapitalPartnerHandlers(),
     ...createCapitalPartnerWorkspaceHandlers(),
     ...createCreditAcceptanceHandlers(),

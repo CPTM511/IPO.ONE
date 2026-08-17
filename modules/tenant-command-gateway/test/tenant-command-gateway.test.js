@@ -180,6 +180,7 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "pilotReadMandate",
     "pilotReadOfficialReport",
     "pilotReadOwnCreditPassportArtifact",
+    "pilotReadOwnCreditState",
     "pilotReadOwnObligation",
     "pilotReadOwnObligationEvidence",
     "pilotReadPilotFeedbackSummary",

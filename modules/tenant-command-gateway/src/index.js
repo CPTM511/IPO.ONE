@@ -4,6 +4,7 @@ export * from "./execution-account-binding-handlers.js";
 export * from "./credit-intent-handlers.js";
 export * from "./credit-decision-handlers.js";
 export * from "./credit-passport-handlers.js";
+export * from "./credit-state-query-handlers.js";
 export * from "./capital-partner-handlers.js";
 export * from "./capital-partner-workspace-handlers.js";
 export * from "./credit-acceptance-handlers.js";

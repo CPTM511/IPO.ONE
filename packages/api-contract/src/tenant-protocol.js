@@ -543,6 +543,19 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotReadOwnCreditState",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "subject",
+    requiredCapability: "credit.read.self",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_owned_credit_state_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
     operationId: "pilotRevokeConsent",
     kind: "command",
     actorTypes: ["human"],
@@ -1471,8 +1484,8 @@ export const TENANT_PROTOCOL_CATALOG = deepFreeze({
   schemaVersion: TENANT_PROTOCOL_CATALOG_SCHEMA_VERSION
 });
 
-function invalid(code, message) {
-  throw new DomainError(code, message);
+function invalid(code, message, details) {
+  throw new DomainError(code, message, details);
 }
 
 export function isTenantProtocolRequest(value) {
@@ -1503,7 +1516,11 @@ export function isTenantProtocolCatalog(value) {
 
 export function assertTenantProtocolCatalog(value) {
   if (!isTenantProtocolCatalog(value)) {
-    invalid("invalid_tenant_protocol_catalog", "tenant protocol catalog does not satisfy its versioned contract");
+    invalid(
+      "invalid_tenant_protocol_catalog",
+      "tenant protocol catalog does not satisfy its versioned contract",
+      { validationErrors: structuredClone(validateCatalog.errors ?? []) }
+    );
   }
   return value;
 }

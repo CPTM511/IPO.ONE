@@ -356,6 +356,16 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async getOwnCreditState({ subjectId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadOwnCreditState",
+      payload: {},
+      resource: { resourceType: "subject", resourceId: subjectId },
+      requestId,
+      correlationId
+    });
+  }
+
   async getOwnObligationEvidence({ obligationId, limit, cursor, requestId, correlationId }) {
     return this.execute({
       operationId: "pilotReadOwnObligationEvidence",
@@ -1055,6 +1065,16 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
       operationId: "pilotReadOwnObligation",
       payload: {},
       resource: { resourceType: "obligation", resourceId: obligationId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getOwnCreditState({ subjectId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadOwnCreditState",
+      payload: {},
+      resource: { resourceType: "subject", resourceId: subjectId },
       requestId,
       correlationId
     });

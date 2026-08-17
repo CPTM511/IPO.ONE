@@ -463,6 +463,17 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotReadOwnCreditState",
+      "payload": {},
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      },
+      "requestId": "request-fixture-read-own-credit-state",
+      "correlationId": "correlation-fixture-read-own-credit-state",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotReadOwnObligationEvidence",
       "payload": {
         "limit": 25
@@ -3128,6 +3139,96 @@
         "productionFundsMoved": false,
         "withdrawable": false,
         "schemaVersion": "tenant_owned_obligation_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadOwnCreditState",
+      "replayed": false,
+      "response": {
+        "creditState": {
+          "creditStateHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "subjectId": "subject_human_fixture",
+          "principalId": "principal_human_fixture",
+          "projectionVersion": 1,
+          "metrics": {
+            "completedCycleCount": 1,
+            "outcomeCounts": {
+              "onTimeRepaid": 1,
+              "lateOrModifiedRepaid": 0,
+              "writtenOff": 0
+            },
+            "maximumDaysPastDue": 0,
+            "totalOriginalPrincipalMinor": "10000",
+            "totalRepaidMinor": "10000",
+            "totalLossMinor": "0",
+            "schemaVersion": "credit_state_metrics.v1"
+          },
+          "factors": {
+            "repaymentReliability": "verified_on_time_history",
+            "servicingPerformance": "no_delinquency_or_modification_recorded",
+            "lossExperience": "no_loss_recorded",
+            "evidenceBasis": "finalized_credit_outcomes_only",
+            "schemaVersion": "credit_state_factors.v1"
+          },
+          "latestOutcome": {
+            "creditOutcomeId": "credit_outcome_fixture",
+            "outcomeHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+            "obligationId": "obligation_owned_view_fixture",
+            "outcomeLabel": "on_time_repaid",
+            "creditImpact": "positive_repayment_history",
+            "maxDaysPastDue": 0,
+            "restructured": false,
+            "repurchased": false,
+            "originalPrincipalMinor": "10000",
+            "totalRepaidMinor": "10000",
+            "lossMinor": "0",
+            "repaymentRatioBps": 10000,
+            "sourceEvidenceHashes": [
+              "0x3333333333333333333333333333333333333333333333333333333333333333",
+              "0x4444444444444444444444444444444444444444444444444444444444444444"
+            ],
+            "outcomeFinalizedAt": "2026-07-17T12:02:00.000Z",
+            "recordedAt": "2026-07-17T12:02:01.000Z",
+            "schemaVersion": "credit_track_record_entry.v1"
+          },
+          "trackRecord": [
+            {
+              "creditOutcomeId": "credit_outcome_fixture",
+              "outcomeHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+              "obligationId": "obligation_owned_view_fixture",
+              "outcomeLabel": "on_time_repaid",
+              "creditImpact": "positive_repayment_history",
+              "maxDaysPastDue": 0,
+              "restructured": false,
+              "repurchased": false,
+              "originalPrincipalMinor": "10000",
+              "totalRepaidMinor": "10000",
+              "lossMinor": "0",
+              "repaymentRatioBps": 10000,
+              "sourceEvidenceHashes": [
+                "0x3333333333333333333333333333333333333333333333333333333333333333",
+                "0x4444444444444444444444444444444444444444444444444444444444444444"
+              ],
+              "outcomeFinalizedAt": "2026-07-17T12:02:00.000Z",
+              "recordedAt": "2026-07-17T12:02:01.000Z",
+              "schemaVersion": "credit_track_record_entry.v1"
+            }
+          ],
+          "updatedAt": "2026-07-17T12:02:01.000Z",
+          "authorizing": false,
+          "automaticLimitChange": false,
+          "fundsAuthority": false,
+          "piiIncluded": false,
+          "productionAuthority": false,
+          "productionFundsMoved": false,
+          "rawTransactionDataIncluded": false,
+          "sandboxOnly": true,
+          "scoreAuthoritative": false,
+          "schemaVersion": "credit_state_projection.v1"
+        },
+        "asOf": "2026-07-17T12:03:00.000Z",
+        "schemaVersion": "tenant_owned_credit_state_view.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },

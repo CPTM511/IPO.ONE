@@ -206,6 +206,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "pilotReadCreditRegistryEvidence",
     "pilotReadEvidence",
     "pilotReadOwnObligation",
+    "pilotReadOwnCreditState",
     "pilotReadOwnObligationEvidence",
     "pilotReadOwnCreditPassportArtifact",
     "pilotVerifyCreditPassportArtifact",

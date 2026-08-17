@@ -52,6 +52,9 @@ function client() {
     ,
     async getCreditRegistryEvidence(input) {
       return { operationId: "pilotReadCreditRegistryEvidence", input };
+    },
+    async getOwnCreditState(input) {
+      return { operationId: "pilotReadOwnCreditState", input };
     }
   };
 }
@@ -261,12 +264,16 @@ function workflowClient({ selfSubjectId = applicationHandoff.subjectId } = {}) {
           input: structuredClone(input)
         });
         return protocolResult("pilotReadCreditRegistryEvidence");
+      },
+      async getOwnCreditState(input) {
+        calls.push({ method: "getOwnCreditState", input: structuredClone(input) });
+        return protocolResult("pilotReadOwnCreditState");
       }
     }
   };
 }
 
-test("local Agent MCP publishes exactly the twelve approved bounded tools", async () => {
+test("local Agent MCP publishes exactly the thirteen approved bounded tools", async () => {
   const adapter = createAgentMcpAdapter({ client: client() });
   assert.deepEqual(
     AGENT_MCP_TOOLS.map(({ name, operationId }) => ({ name, operationId })),
@@ -284,7 +291,8 @@ test("local Agent MCP publishes exactly the twelve approved bounded tools", asyn
     "ipo_one_accept_credit_offer",
     "ipo_one_execute_sandbox_obligation",
     "ipo_one_post_sandbox_repayment",
-    "ipo_one_read_credit_registry_evidence"
+    "ipo_one_read_credit_registry_evidence",
+    "ipo_one_read_credit_state"
   ]);
   const rpc = createAgentMcpJsonRpcHandler({ adapter });
   const listed = await rpc({ jsonrpc: "2.0", id: 1, method: "tools/list" });
@@ -381,6 +389,24 @@ test("local Agent MCP publishes exactly the twelve approved bounded tools", asyn
   assert.equal(
     registryEvidence.result.structuredContent.operationId,
     "pilotReadCreditRegistryEvidence"
+  );
+
+  const creditState = await rpc({
+    jsonrpc: "2.0",
+    id: 62,
+    method: "tools/call",
+    params: {
+      name: "ipo_one_read_credit_state",
+      arguments: {
+        subjectId: "subject_agent",
+        requestId: "request-agent-credit-state-0001",
+        correlationId: "correlation-agent-credit-state-0001"
+      }
+    }
+  });
+  assert.equal(
+    creditState.result.structuredContent.operationId,
+    "pilotReadOwnCreditState"
   );
 
   const accepted = await rpc({

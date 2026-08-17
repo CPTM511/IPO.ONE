@@ -873,6 +873,14 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     ownershipRule: OwnershipRule.ACTOR
   }),
   tenantOperation({
+    operationId: "pilotReadOwnCreditState",
+    action: "credit.read.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.CREDIT_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR
+  }),
+  tenantOperation({
     operationId: "pilotRestructureSandboxObligation",
     action: "servicing.restructure.sandbox",
     resourceType: "obligation",

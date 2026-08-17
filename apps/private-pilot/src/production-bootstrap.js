@@ -162,6 +162,7 @@ const GATEWAY_MUTATION_TABLES = Object.freeze([
   "wallet_simulation_reports", "wallet_transaction_preflight_receipts",
   "repayment_events", "aggregate_stream_heads", "domain_events", "credit_events",
   "pilot_feedback_records", "credit_passport_artifacts", "credit_outcomes",
+  "credit_state_projections",
   "tenant_command_pauses",
   "official_report_artifacts", "evidence_envelopes", "outbox_messages",
   "evidence_chain_anchors", "evidence_chain_anchor_observations",

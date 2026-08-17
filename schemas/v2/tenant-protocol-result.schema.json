@@ -53,6 +53,7 @@
         "pilotReadServicingQueue",
         "pilotReadEvidence",
         "pilotReadOwnObligation",
+        "pilotReadOwnCreditState",
         "pilotReadOwnObligationEvidence",
         "pilotRevokeConsent",
         "pilotRevokeDraftMandate",
@@ -1229,6 +1230,16 @@
         },
         "response": {
           "$ref": "#/$defs/ownedObligationView"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadOwnCreditState"
+        },
+        "response": {
+          "$ref": "#/$defs/ownedCreditStateView"
         }
       }
     },
@@ -6990,6 +7001,179 @@
         "schemaVersion": {
           "const": "tenant_owned_obligation_view.v1"
         }
+      }
+    },
+    "creditTrackRecordEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditOutcomeId",
+        "outcomeHash",
+        "obligationId",
+        "outcomeLabel",
+        "creditImpact",
+        "maxDaysPastDue",
+        "restructured",
+        "repurchased",
+        "originalPrincipalMinor",
+        "totalRepaidMinor",
+        "lossMinor",
+        "repaymentRatioBps",
+        "sourceEvidenceHashes",
+        "outcomeFinalizedAt",
+        "recordedAt",
+        "schemaVersion"
+      ],
+      "properties": {
+        "creditOutcomeId": { "$ref": "#/$defs/identifier" },
+        "outcomeHash": { "$ref": "#/$defs/hash" },
+        "obligationId": { "$ref": "#/$defs/identifier" },
+        "outcomeLabel": {
+          "enum": ["on_time_repaid", "late_or_modified_repaid", "written_off"]
+        },
+        "creditImpact": {
+          "enum": [
+            "positive_repayment_history",
+            "modified_or_late_repayment_history",
+            "loss_history"
+          ]
+        },
+        "maxDaysPastDue": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+        "restructured": { "type": "boolean" },
+        "repurchased": { "type": "boolean" },
+        "originalPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "totalRepaidMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "lossMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+        "repaymentRatioBps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "sourceEvidenceHashes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "outcomeFinalizedAt": { "$ref": "#/$defs/timestamp" },
+        "recordedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "credit_track_record_entry.v1" }
+      }
+    },
+    "creditStateProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditStateHash",
+        "subjectId",
+        "principalId",
+        "projectionVersion",
+        "metrics",
+        "factors",
+        "latestOutcome",
+        "trackRecord",
+        "updatedAt",
+        "authorizing",
+        "automaticLimitChange",
+        "fundsAuthority",
+        "piiIncluded",
+        "productionAuthority",
+        "productionFundsMoved",
+        "rawTransactionDataIncluded",
+        "sandboxOnly",
+        "scoreAuthoritative",
+        "schemaVersion"
+      ],
+      "properties": {
+        "creditStateHash": { "$ref": "#/$defs/hash" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "principalId": { "$ref": "#/$defs/identifier" },
+        "projectionVersion": { "type": "integer", "minimum": 1, "maximum": 512 },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completedCycleCount",
+            "outcomeCounts",
+            "maximumDaysPastDue",
+            "totalOriginalPrincipalMinor",
+            "totalRepaidMinor",
+            "totalLossMinor",
+            "schemaVersion"
+          ],
+          "properties": {
+            "completedCycleCount": { "type": "integer", "minimum": 1, "maximum": 512 },
+            "outcomeCounts": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["onTimeRepaid", "lateOrModifiedRepaid", "writtenOff"],
+              "properties": {
+                "onTimeRepaid": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+                "lateOrModifiedRepaid": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+                "writtenOff": { "$ref": "#/$defs/nonNegativeSafeInteger" }
+              }
+            },
+            "maximumDaysPastDue": { "$ref": "#/$defs/nonNegativeSafeInteger" },
+            "totalOriginalPrincipalMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+            "totalRepaidMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+            "totalLossMinor": { "$ref": "#/$defs/canonicalMinorUnits" },
+            "schemaVersion": { "const": "credit_state_metrics.v1" }
+          }
+        },
+        "factors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repaymentReliability",
+            "servicingPerformance",
+            "lossExperience",
+            "evidenceBasis",
+            "schemaVersion"
+          ],
+          "properties": {
+            "repaymentReliability": {
+              "enum": [
+                "verified_on_time_history",
+                "mixed_repayment_history",
+                "adverse_loss_recorded"
+              ]
+            },
+            "servicingPerformance": {
+              "enum": [
+                "no_delinquency_or_modification_recorded",
+                "delinquency_or_modification_recorded"
+              ]
+            },
+            "lossExperience": { "enum": ["no_loss_recorded", "loss_recorded"] },
+            "evidenceBasis": { "const": "finalized_credit_outcomes_only" },
+            "schemaVersion": { "const": "credit_state_factors.v1" }
+          }
+        },
+        "latestOutcome": { "$ref": "#/$defs/creditTrackRecordEntry" },
+        "trackRecord": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 512,
+          "items": { "$ref": "#/$defs/creditTrackRecordEntry" }
+        },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "authorizing": { "const": false },
+        "automaticLimitChange": { "const": false },
+        "fundsAuthority": { "const": false },
+        "piiIncluded": { "const": false },
+        "productionAuthority": { "const": false },
+        "productionFundsMoved": { "const": false },
+        "rawTransactionDataIncluded": { "const": false },
+        "sandboxOnly": { "const": true },
+        "scoreAuthoritative": { "const": false },
+        "schemaVersion": { "const": "credit_state_projection.v1" }
+      }
+    },
+    "ownedCreditStateView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["creditState", "asOf", "schemaVersion"],
+      "properties": {
+        "creditState": { "$ref": "#/$defs/creditStateProjection" },
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "const": "tenant_owned_credit_state_view.v1" }
       }
     },
     "draftMandateRevoked": {

@@ -83,6 +83,7 @@ const supportedBrowserQaOperationIds = new Set([
   "pilotPostSandboxRepayment",
   "pilotReadOwnObligation",
   "pilotReadOwnObligationEvidence",
+  "pilotReadOwnCreditState",
   "pilotCreateOfficialReport",
   "pilotReadOfficialReport",
   "pilotRetrieveOfficialReport",
@@ -833,6 +834,83 @@ function resultFor(command) {
         command.payload
       )
     );
+  }
+  if (operationId === "pilotReadOwnCreditState") {
+    if (command.resource?.resourceId !== subject.subjectId) {
+      throw new DomainError(
+        "tenant_resource_unavailable",
+        "The requested resource is not available."
+      );
+    }
+    const outcomeHash =
+      "0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1";
+    const creditStateHash =
+      "0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1";
+    const finalizedAt = "2026-07-31T12:00:00.000Z";
+    const trackRecord = [{
+      creditOutcomeId: "credit_outcome_human_browser_001",
+      outcomeHash,
+      obligationId: lifecycleReceipt.obligation.obligationId,
+      outcomeLabel: "on_time_repaid",
+      creditImpact: "positive_repayment_history",
+      maxDaysPastDue: 0,
+      restructured: false,
+      repurchased: false,
+      originalPrincipalMinor: lifecycleReceipt.obligation.originalPrincipalMinor,
+      totalRepaidMinor: lifecycleReceipt.obligation.originalPrincipalMinor,
+      lossMinor: "0",
+      repaymentRatioBps: 10000,
+      sourceEvidenceHashes: [
+        "0xd1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
+        "0xe1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1"
+      ],
+      outcomeFinalizedAt: finalizedAt,
+      recordedAt: finalizedAt,
+      schemaVersion: "credit_track_record_entry.v1"
+    }];
+    return protocolResult(operationId, {
+      creditState: {
+        creditStateHash,
+        subjectId: subject.subjectId,
+        principalId: subject.primaryPrincipalId,
+        projectionVersion: 1,
+        metrics: {
+          completedCycleCount: 1,
+          outcomeCounts: {
+            onTimeRepaid: 1,
+            lateOrModifiedRepaid: 0,
+            writtenOff: 0
+          },
+          maximumDaysPastDue: 0,
+          totalOriginalPrincipalMinor: lifecycleReceipt.obligation.originalPrincipalMinor,
+          totalRepaidMinor: lifecycleReceipt.obligation.originalPrincipalMinor,
+          totalLossMinor: "0",
+          schemaVersion: "credit_state_metrics.v1"
+        },
+        factors: {
+          repaymentReliability: "verified_on_time_history",
+          servicingPerformance: "no_delinquency_or_modification_recorded",
+          lossExperience: "no_loss_recorded",
+          evidenceBasis: "finalized_credit_outcomes_only",
+          schemaVersion: "credit_state_factors.v1"
+        },
+        latestOutcome: trackRecord[0],
+        trackRecord,
+        updatedAt: finalizedAt,
+        authorizing: false,
+        automaticLimitChange: false,
+        fundsAuthority: false,
+        piiIncluded: false,
+        productionAuthority: false,
+        productionFundsMoved: false,
+        rawTransactionDataIncluded: false,
+        sandboxOnly: true,
+        scoreAuthoritative: false,
+        schemaVersion: "credit_state_projection.v1"
+      },
+      asOf: "2026-08-16T12:00:00.000Z",
+      schemaVersion: "tenant_owned_credit_state_view.v1"
+    });
   }
   if (operationId === "pilotCreateOfficialReport") {
     const obligationId = command.resource?.resourceId;

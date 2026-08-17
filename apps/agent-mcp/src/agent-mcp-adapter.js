@@ -274,6 +274,22 @@ export const AGENT_MCP_TOOLS = Object.freeze([
       }
     },
     operationId: AGENT_MCP_CLIENT_TOOLS[11].operationId
+  }),
+  Object.freeze({
+    name: "ipo_one_read_credit_state",
+    description:
+      "Read the authenticated Agent's durable outcome-derived Credit State and Track Record.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["subjectId", "requestId", "correlationId"],
+      properties: {
+        subjectId: IDENTIFIER,
+        requestId: REQUEST_IDENTIFIER,
+        correlationId: REQUEST_IDENTIFIER
+      }
+    },
+    operationId: AGENT_MCP_CLIENT_TOOLS[12].operationId
   })
 ]);
 
@@ -301,7 +317,8 @@ export function createAgentMcpAdapter({ client }) {
     !client?.acceptCreditOffer ||
     !client?.executeSandboxObligation ||
     !client?.postSandboxRepayment ||
-    !client?.getCreditRegistryEvidence
+    !client?.getCreditRegistryEvidence ||
+    !client?.getOwnCreditState
   ) {
     throw new DomainError("invalid_agent_mcp_config", "Agent MCP requires one authenticated Agent client");
   }
@@ -367,6 +384,9 @@ export function createAgentMcpAdapter({ client }) {
         assertExactKeys(args, ["obligationId", "payload", "idempotencyKey", "requestId", "correlationId"]);
         assertExactKeys(args.payload, ["amountMinor", "sourceCode"]);
         result = await client.postSandboxRepayment(args);
+      } else if (name === "ipo_one_read_credit_state") {
+        assertExactKeys(args, ["subjectId", "requestId", "correlationId"]);
+        result = await client.getOwnCreditState(args);
       } else {
         assertExactKeys(args, [
           "authorizationHash",
