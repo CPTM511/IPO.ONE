@@ -157,6 +157,14 @@ test("production Host publishes the disabled remote Agent HTTPS contract behind 
     contract["x-ipo-one-activation"],
     "disabled_pending_named_deployment_approval"
   );
+  assert.equal(
+    contract.paths["/.well-known/ipo-one.json"].get.operationId,
+    "getDeployedChainCapability"
+  );
+  assert.deepEqual(
+    contract.paths["/.well-known/ipo-one.json"].get.security,
+    []
+  );
   assert.deepEqual(
     contract.paths["/tenant/v1/operations"].post.security,
     [{ workloadBearer: [], mutualTls: [] }]
@@ -206,6 +214,29 @@ test("production Host publishes zero-funded real-value and Provider capability t
   );
   assert.equal(document.safety.productionSignerAuthorityEnabled, false);
   assert.equal(document.safety.venueWriteAuthorityEnabled, false);
+  assert.deepEqual(document.chainEvidence, {
+    status: "DISABLED",
+    reasonCode: "approved_testnet_authority_unavailable",
+    currentUserWritesEnabled: false,
+    hashOnly: true,
+    network: null,
+    contractAddress: null,
+    transactionSubmissionConfigured: false,
+    observationConfigured: false,
+    finalityConfigured: false,
+    reconciliationConfigured: false,
+    historicalArtifactsAreCurrentUserEvidence: false,
+    lifecycleStates: [
+      "queued",
+      "submitted",
+      "observed",
+      "finalized",
+      "reconciled",
+      "failed"
+    ],
+    releaseId: "a".repeat(40),
+    schemaVersion: "ipo_one_chain_capability.v1"
+  });
   assert.equal(runtime.gatewayCalls, 0);
 });
 

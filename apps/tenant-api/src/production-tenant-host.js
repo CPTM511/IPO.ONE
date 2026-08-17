@@ -31,6 +31,7 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const DEPLOYMENT_ROLES = new Set(["container", "primary", "risk"]);
 const CONFIG_KEYS = new Set([
   "clock",
+  "chainCapabilityProvider",
   "createNetworkContext",
   "csrfTokenProvider",
   "deploymentRole",
@@ -182,7 +183,111 @@ function json(response, status, value, requestId, headOnly = false) {
   response.end(headOnly ? undefined : body);
 }
 
-function deploymentCapabilityDocument({ publicOrigin, releaseId, deploymentRole }) {
+export function createDisabledChainCapability({ releaseId }) {
+  if (typeof releaseId !== "string" || !/^[0-9a-f]{40}$/.test(releaseId)) {
+    throw invalidConfig();
+  }
+  return Object.freeze({
+    status: "DISABLED",
+    reasonCode: "approved_testnet_authority_unavailable",
+    currentUserWritesEnabled: false,
+    hashOnly: true,
+    network: null,
+    contractAddress: null,
+    transactionSubmissionConfigured: false,
+    observationConfigured: false,
+    finalityConfigured: false,
+    reconciliationConfigured: false,
+    historicalArtifactsAreCurrentUserEvidence: false,
+    lifecycleStates: Object.freeze([
+      "queued",
+      "submitted",
+      "observed",
+      "finalized",
+      "reconciled",
+      "failed"
+    ]),
+    releaseId,
+    schemaVersion: "ipo_one_chain_capability.v1"
+  });
+}
+
+function assertChainCapability(value, releaseId) {
+  const expectedKeys = [
+    "status",
+    "reasonCode",
+    "currentUserWritesEnabled",
+    "hashOnly",
+    "network",
+    "contractAddress",
+    "transactionSubmissionConfigured",
+    "observationConfigured",
+    "finalityConfigured",
+    "reconciliationConfigured",
+    "historicalArtifactsAreCurrentUserEvidence",
+    "lifecycleStates",
+    "releaseId",
+    "schemaVersion"
+  ].sort();
+  const descriptors = value && typeof value === "object"
+    ? Object.getOwnPropertyDescriptors(value)
+    : {};
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Object.prototype ||
+    Object.values(descriptors).some((descriptor) => descriptor.get || descriptor.set) ||
+    JSON.stringify(Object.keys(descriptors).sort()) !== JSON.stringify(expectedKeys) ||
+    value.schemaVersion !== "ipo_one_chain_capability.v1" ||
+    value.releaseId !== releaseId ||
+    !new Set(["ENABLED", "DISABLED"]).has(value.status) ||
+    typeof value.reasonCode !== "string" ||
+    !/^[a-z][a-z0-9_]{1,95}$/.test(value.reasonCode) ||
+    value.currentUserWritesEnabled !== (value.status === "ENABLED") ||
+    value.hashOnly !== true ||
+    value.historicalArtifactsAreCurrentUserEvidence !== false ||
+    !Array.isArray(value.lifecycleStates) ||
+    JSON.stringify(value.lifecycleStates) !==
+      JSON.stringify(["queued", "submitted", "observed", "finalized", "reconciled", "failed"])
+  ) {
+    throw invalidConfig();
+  }
+  if (
+    value.status === "DISABLED" &&
+    (
+      value.network !== null ||
+      value.contractAddress !== null ||
+      value.transactionSubmissionConfigured !== false ||
+      value.observationConfigured !== false ||
+      value.finalityConfigured !== false ||
+      value.reconciliationConfigured !== false
+    )
+  ) {
+    throw invalidConfig();
+  }
+  if (
+    value.status === "ENABLED" &&
+    (
+      value.network !== "eip155:84532" ||
+      !/^0x[0-9a-fA-F]{40}$/.test(value.contractAddress ?? "") ||
+      value.transactionSubmissionConfigured !== true ||
+      value.observationConfigured !== true ||
+      value.finalityConfigured !== true ||
+      value.reconciliationConfigured !== true
+    )
+  ) {
+    throw invalidConfig();
+  }
+  return value;
+}
+
+function deploymentCapabilityDocument({
+  publicOrigin,
+  releaseId,
+  deploymentRole,
+  chainCapability
+}) {
   return Object.freeze({
     schemaVersion: "ipo_one_deployment_capability.v1",
     protocol: "IPO.ONE",
@@ -221,6 +326,7 @@ function deploymentCapabilityDocument({ publicOrigin, releaseId, deploymentRole 
       hyperCoreProductionExecution: "BLOCKED_EXTERNAL_DEPENDENCY",
       unspecifiedProviderExecution: "DISABLED"
     }),
+    chainEvidence: assertChainCapability(chainCapability, releaseId),
     safety: Object.freeze({
       realFundsEnabled: false,
       externalProviderExecutionEnabled: false,
@@ -253,6 +359,8 @@ export function createProductionTenantRequestHandler(input) {
     (input.getTrustedMtlsEvidence !== undefined && typeof input.getTrustedMtlsEvidence !== "function") ||
     (input.sessionHandleProvider !== undefined && typeof input.sessionHandleProvider !== "function") ||
     (input.workspaceNameProvider !== undefined && typeof input.workspaceNameProvider !== "function") ||
+    (input.chainCapabilityProvider !== undefined &&
+      typeof input.chainCapabilityProvider !== "function") ||
     !boundedInteger(port, 1_024, 65_535) ||
     !boundedInteger(requestTimeoutMs, 100, REQUEST_TIMEOUT_MS) ||
     !boundedInteger(maximumConcurrency, 1, MAX_CONCURRENCY) ||
@@ -338,10 +446,18 @@ export function createProductionTenantRequestHandler(input) {
         url.search === "" &&
         url.pathname === PRODUCTION_TENANT_ROUTES.deploymentCapability
       ) {
+        const chainCapability = input.chainCapabilityProvider
+          ? await input.chainCapabilityProvider({
+              request,
+              requestId,
+              releaseId: input.releaseId
+            })
+          : createDisabledChainCapability({ releaseId: input.releaseId });
         return json(response, 200, deploymentCapabilityDocument({
           publicOrigin,
           releaseId: input.releaseId,
-          deploymentRole: input.deploymentRole
+          deploymentRole: input.deploymentRole,
+          chainCapability
         }), requestId, headOnly);
       }
       if (

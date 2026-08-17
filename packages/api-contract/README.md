@@ -37,7 +37,7 @@ absolute timestamps are excluded.
 
 `agent_pilot_capability_manifest.v1` is the non-authorizing discovery contract
 for those existing Agent surfaces. It nests one validated handoff, pins the
-exact twelve-tool local MCP registry, and lists the Offer,
+exact thirteen-tool local MCP registry, and lists the Offer,
 Obligation/repayment, and dual-chain portability SDK workflows with derived
 availability. Validator logic regenerates the manifest from its handoff so
 tool, entry-point, receipt-version, availability, next-action, endpoint,

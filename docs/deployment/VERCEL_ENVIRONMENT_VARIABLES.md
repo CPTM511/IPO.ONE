@@ -107,6 +107,21 @@ credential, real-funds acknowledgement, local-test authentication mode, owner
 database URL, migration credential, or bootstrap credential in Vercel runtime
 Functions.
 
+## Current chain capability
+
+The hosted discovery document at `/.well-known/ipo-one.json` is the Human and
+Agent source for exact-release chain capability. The current Vercel Sandbox
+must publish `chainEvidence.status = DISABLED`, with no network, contract,
+submission, observation, finality, or reconciliation configuration. A stored
+Evidence digest is an offchain integrity record, not a transaction. Historical
+CHAIN artifacts remain reference Evidence only and must never be returned as a
+current signed-in Subject's chain result.
+
+No environment variable may activate chain writing. An enabled profile would
+require a separately approved composition with Base Sepolia authority, a
+current-user dynamic digest, idempotent submission, observation, finality and
+database reconciliation. This document grants none of that authority.
+
 ## Validation
 
 Run before deployment:
