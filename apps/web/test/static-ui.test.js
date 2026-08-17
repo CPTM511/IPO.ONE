@@ -961,10 +961,11 @@ test("PRODUCT-INTEGRATION-001 keeps login, AccountBinding, and execution authori
 });
 
 test("WEB-014 separates product intent, access mode, and Provider operations", async () => {
-  const [html, js, css] = await Promise.all([
+  const [html, js, css, navigationManifest] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
     readFile(new URL("../src/app.js", import.meta.url), "utf8"),
-    readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+    import("../src/workspace-surface-access.js")
   ]);
 
   for (const label of [
@@ -989,8 +990,15 @@ test("WEB-014 separates product intent, access mode, and Provider operations", a
   assert.ok(html.includes('class="product-entry-card developer-product"'));
   assert.ok(html.includes('data-go-view="architecture"'));
   assert.ok(html.includes('data-view-panel="capital-partners"'));
-  assert.ok(js.includes('"capital-partners": { eyebrow: "Synthetic bilateral marketplace", title: "Capital Partners" }'));
-  assert.ok(js.includes('"capital-network": { eyebrow: "Provider sandbox boundary", title: "Provider Network" }'));
+  assert.equal(
+    navigationManifest.WORKSPACE_NAVIGATION_MANIFEST.views["capital-partners"].label,
+    "Capital Partners"
+  );
+  assert.equal(
+    navigationManifest.WORKSPACE_NAVIGATION_MANIFEST.views["capital-network"].label,
+    "Provider Network"
+  );
+  assert.equal(js.includes("const VIEW_META = {"), false);
   assert.ok(css.includes(".product-entry-grid"));
   assert.ok(css.includes(".capital-partners-page"));
 

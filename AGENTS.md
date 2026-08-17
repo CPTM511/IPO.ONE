@@ -66,6 +66,54 @@ Guidance hierarchy:
   operation, live testnet execution, and controlled real value. It grants no
   deployment, signer, remote-access, risk, contract, or funds authority.
 
+## Product usability and truthful completion gate
+
+For every user-facing IPO.ONE capability:
+
+1. A feature is not complete merely because code, a component, handler, test,
+   contract, artifact, or feature flag exists.
+2. Completion requires explicit evidence for five states: CODE, RUNTIME,
+   DEPLOYED, REACHABLE, and VERIFIED.
+3. Every Human workflow step requiring action must have a visible,
+   understandable, operable UI control. Direct hashes, internal functions,
+   hidden DOM, fixtures, and developer tools do not count.
+4. Every Agent workflow step must have an equivalent authorized, versioned
+   API/MCP operation.
+5. Every role-allowed view must be reachable from a visible control. An orphan
+   view is a release-blocking defect.
+6. Navigation placement and authorization are separate concerns. A non-primary
+   view may move to an advanced group but may not lose all entry points.
+7. Disabled or unconfigured capabilities must remain truthfully visible with
+   the reason and recovery condition; they may not silently disappear or be
+   represented as live.
+8. Local tests, historical testnet transactions, static artifacts, preview
+   screenshots, successful merges, and Vercel Ready status do not prove
+   production usability.
+9. Final browser acceptance must run against the actual deployed SHA and use
+   visible clicks for Human journeys.
+10. Critical state must survive refresh, logout/login, process restart, worker
+    replay, duplicate events, and database recovery as applicable.
+11. Sandbox data is allowed, but final acceptance must use deployed services
+    and durable persistence, not frontend mocks or hardcoded success responses.
+12. Chain claims must distinguish digest, transaction, observation, finality,
+    and reconciliation. Never present historical or synthetic artifacts as a
+    current user's chain record.
+13. Do not put PII, KYC, raw transactions, or full credit histories on-chain.
+14. Credit history may inform a new explainable Decision/Offer; it may not
+    silently increase limits or bypass authorization.
+15. Finding a defect creates an obligation to implement the smallest correct
+    fix, add regression protection, deploy, and retest. A defect report alone
+    does not complete a repair task.
+16. If any required verification is unavailable, report
+    `BLOCKED — NOT COMPLETE`. Never substitute "code complete" for product
+    complete.
+
+Allowed final verdicts:
+
+- `PASS — DEPLOYED AND USER-VERIFIED`
+- `BLOCKED — NOT COMPLETE`
+- `FAIL — NOT COMPLETE`
+
 Current core constraints:
 
 - IPO.one is a machine-readable credit obligation protocol layer, not a simple
