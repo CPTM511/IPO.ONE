@@ -63,6 +63,7 @@ value and fails closed on drift.
 | `IPO_ONE_AUTH_REFERENCE_HASH_KEY` | Random 32-64 byte base64url reference hashing key | Prohibited |
 | `IPO_ONE_AUTH_ENCRYPTION_KEY` | Independent random 32-64 byte base64url session/transaction encryption key | Prohibited |
 | `IPO_ONE_IDENTITY_CONFIG_JSON` | Minified reviewed wallet-only identity configuration v2 with public workload JWKS | Prohibited |
+| `IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON` | Optional public-only, digest-bound JWKS supplement for an owner-provisioned Golden Flow Agent on Primary only; private JWK fields are rejected | Prohibited |
 | `CRON_SECRET` | Primary project only; independent random credential of at least 16 characters | Prohibited |
 
 ## Immutable secret-reference variables
@@ -70,6 +71,7 @@ value and fails closed on drift.
 | Name | Must bind |
 | --- | --- |
 | `IPO_ONE_IDP_CONFIGURATION_REF` | `IPO_ONE_IDENTITY_CONFIG_JSON` |
+| `IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF` | `IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON` when the optional Golden Flow Agent supplement is present |
 | `IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF` | `IPO_ONE_AUTH_REFERENCE_HASH_KEY` |
 | `IPO_ONE_AUTH_ENCRYPTION_KEY_REF` | `IPO_ONE_AUTH_ENCRYPTION_KEY` |
 

@@ -20,6 +20,14 @@ Object.assign(workloadPublicJwk, {
   key_ops: ["verify"],
   use: "sig"
 });
+const supplementalWorkloadKeyPair = await generateKeyPair("ES256", { extractable: true });
+const supplementalWorkloadPublicJwk = await exportJWK(supplementalWorkloadKeyPair.publicKey);
+Object.assign(supplementalWorkloadPublicJwk, {
+  alg: "ES256",
+  kid: "golden-flow-workload-001",
+  key_ops: ["verify"],
+  use: "sig"
+});
 
 function secretRef(name, value) {
   return `vercel://environment/production/${name}@sha256:${createHash("sha256")
@@ -131,6 +139,79 @@ test("Vercel Sandbox environment accepts only exact inline secret digests and bo
     alg: "ES256",
     kid: "m1-b-workload-001"
   }));
+});
+
+test("Vercel Primary accepts an exactly bound public-only Golden Flow JWKS supplement", async (t) => {
+  const supplemental = JSON.stringify({ keys: [supplementalWorkloadPublicJwk] });
+  const configuration = await loadProductionClosedPilotEnvironment(vercelEnvironment({
+    IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON: supplemental,
+    IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF: secretRef(
+      "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+      supplemental
+    )
+  }));
+  t.after(() => Promise.allSettled([
+    configuration.gatewayPool.end(),
+    configuration.authenticationPool.end()
+  ]));
+  assert.ok(await configuration.machineResolver.resolve({
+    alg: "ES256",
+    kid: "golden-flow-workload-001"
+  }));
+  assert.ok(await configuration.machineResolver.resolve({
+    alg: "ES256",
+    kid: "m1-b-workload-001"
+  }));
+});
+
+test("Golden Flow JWKS supplement fails closed on digest, private material, duplicate kid, and Risk use", async () => {
+  const supplemental = JSON.stringify({ keys: [supplementalWorkloadPublicJwk] });
+  for (const overrides of [
+    {
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON: supplemental
+    },
+    {
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON: supplemental,
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF: secretRef(
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "different"
+      )
+    },
+    {
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON: JSON.stringify({
+        keys: [{ ...supplementalWorkloadPublicJwk, d: "private" }]
+      }),
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF: secretRef(
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        JSON.stringify({ keys: [{ ...supplementalWorkloadPublicJwk, d: "private" }] })
+      )
+    },
+    {
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON: JSON.stringify({
+        keys: [{ ...supplementalWorkloadPublicJwk, kid: workloadPublicJwk.kid }]
+      }),
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF: secretRef(
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        JSON.stringify({
+          keys: [{ ...supplementalWorkloadPublicJwk, kid: workloadPublicJwk.kid }]
+        })
+      )
+    },
+    {
+      IPO_ONE_VERCEL_PROJECT_ROLE: "risk",
+      IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: undefined,
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON: supplemental,
+      IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF: secretRef(
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        supplemental
+      )
+    }
+  ]) {
+    await assert.rejects(
+      () => loadProductionClosedPilotEnvironment(vercelEnvironment(overrides)),
+      (error) => error?.code === "invalid_production_environment"
+    );
+  }
 });
 
 test("Vercel Sandbox environment rejects a mismatched inline secret digest", async () => {
