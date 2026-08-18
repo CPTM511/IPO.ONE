@@ -50,6 +50,12 @@ test("workspace recovery returns only bounded resources already bound to the aut
   assert.deepEqual(calls[0].values.slice(0, 2), ["tenant_workspace_test", "actor_workspace_test"]);
   assert.match(calls[0].text, /b\.actor_id = \$2/);
   assert.match(calls[0].text, /r\.status = 'active'/);
+  assert.match(calls[0].text, /\$6::text = 'human_borrower'/);
+  assert.match(calls[0].text, /b\.relationship = 'owner'/);
+  assert.match(calls[0].text, /\$6::text = 'principal_controller'/);
+  assert.match(calls[0].text, /b\.relationship = 'controller'/);
+  assert.match(calls[0].text, /\$6::text = 'agent_runtime'/);
+  assert.equal(calls[0].values[5], "human_borrower");
   assert.match(calls[0].text, /ROW_NUMBER\(\) OVER/);
   assert.match(calls[0].text, /PARTITION BY b\.resource_type/);
   assert.match(
@@ -381,6 +387,38 @@ test("workspace recovery is capped and recognizes one Principal Controller role"
   assert.match(calls[1].text, /m\.controller_actor_id = \$2/);
   assert.match(calls[1].text, /a\.actor_type = 'agent'/);
   assert.deepEqual(calls[1].values.slice(0, 2), ["tenant_workspace_test", "actor_workspace_test"]);
+  assert.equal(calls[0].values[5], "principal_controller");
+});
+
+test("same-Human multi-role recovery binds resources to the selected role instead of actor union", async () => {
+  const calls = [];
+  const client = {
+    async query(text, values) {
+      calls.push({ text, values });
+      return text.includes("controller_actor_id") ? { rows: [] } : { rows: [] };
+    }
+  };
+  await readWorkspaceResumeQueryHandler().execute({
+    client,
+    payload: {},
+    authenticationContext: context([RoleBundle.HUMAN_BORROWER]),
+    now: new Date("2026-07-20T00:00:00.000Z")
+  });
+  await readWorkspaceResumeQueryHandler().execute({
+    client,
+    coreRepository: {
+      async listActiveWorkspaceContinuationReceiptsInTransaction() {
+        return [];
+      }
+    },
+    payload: {},
+    authenticationContext: context([RoleBundle.PRINCIPAL_CONTROLLER]),
+    now: new Date("2026-07-20T00:00:00.000Z")
+  });
+  assert.equal(calls[0].values[5], "human_borrower");
+  assert.equal(calls[1].values[5], "principal_controller");
+  assert.match(calls[0].text, /human_borrower'[\s\S]*?b\.relationship = 'owner'/);
+  assert.match(calls[1].text, /principal_controller'[\s\S]*?b\.relationship = 'controller'/);
 });
 
 test("workspace recovery fails closed on caller scope, ambiguous role, or invalid durable rows", async () => {

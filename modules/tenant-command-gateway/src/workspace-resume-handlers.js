@@ -343,6 +343,20 @@ export function readWorkspaceResumeQueryHandler() {
               AND b.status = 'active'
               AND r.status = 'active'
               AND b.resource_type = ANY($3::text[])
+              AND (
+                ($6::text = 'human_borrower'
+                  AND b.relationship = 'owner'
+                  AND b.resource_type = ANY(ARRAY['subject', 'consent', 'credit_intent', 'obligation']::text[]))
+                OR ($6::text = 'principal_controller'
+                  AND b.relationship = 'controller'
+                  AND b.resource_type = ANY(ARRAY['subject', 'mandate', 'obligation']::text[]))
+                OR ($6::text = 'agent_runtime' AND (
+                  (b.relationship = 'subject'
+                    AND b.resource_type = ANY(ARRAY['subject', 'mandate']::text[]))
+                  OR (b.relationship = 'owner'
+                    AND b.resource_type = ANY(ARRAY['credit_intent', 'obligation']::text[]))
+                ))
+              )
          )
          SELECT resource_type, resource_id, relationship
            FROM authorized_resources
@@ -355,7 +369,8 @@ export function readWorkspaceResumeQueryHandler() {
           authenticationContext.actorId,
           RESOURCE_TYPES,
           PAGE_SIZE + 1,
-          now
+          now,
+          kind
         ]
       );
       const rows = result.rows.map(normalizeRow);
