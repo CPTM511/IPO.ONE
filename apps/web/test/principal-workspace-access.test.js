@@ -4,8 +4,33 @@ import test from "node:test";
 import {
   humanWorkspaceAccess,
   principalWorkspaceAccess,
+  resolveAuthenticatedWorkspaceName,
   shouldRecoverAuthenticatedWorkspace
 } from "../src/principal-workspace-access.js";
+
+test("production-neutral shell derives exactly one workspace from authenticated server truth", () => {
+  assert.equal(resolveAuthenticatedWorkspaceName({
+    configuredWorkspaceName: "",
+    serverWorkspaceKind: "human_borrower"
+  }), "borrower");
+  assert.equal(resolveAuthenticatedWorkspaceName({
+    configuredWorkspaceName: "",
+    serverWorkspaceKind: "principal_controller"
+  }), "controller");
+  assert.equal(resolveAuthenticatedWorkspaceName({
+    configuredWorkspaceName: "",
+    serverWorkspaceKind: "unexpected"
+  }), "");
+});
+
+test("named local and permissioned workspaces never change from session role input", () => {
+  for (const configuredWorkspaceName of ["borrower", "controller", "risk", "capitalPartner", "unexpected"]) {
+    assert.equal(resolveAuthenticatedWorkspaceName({
+      configuredWorkspaceName,
+      serverWorkspaceKind: "human_borrower"
+    }), configuredWorkspaceName);
+  }
+});
 
 test("production-neutral authenticated host recovers server workspace truth", () => {
   assert.equal(shouldRecoverAuthenticatedWorkspace({

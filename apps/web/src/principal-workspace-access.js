@@ -1,4 +1,16 @@
 const RECOVERABLE_HOST_WORKSPACES = new Set(["", "borrower", "controller"]);
+const SERVER_WORKSPACE_NAMES = Object.freeze({
+  human_borrower: "borrower",
+  principal_controller: "controller"
+});
+
+export function resolveAuthenticatedWorkspaceName({
+  configuredWorkspaceName,
+  serverWorkspaceKind
+}) {
+  if (configuredWorkspaceName !== "") return configuredWorkspaceName;
+  return SERVER_WORKSPACE_NAMES[serverWorkspaceKind] ?? "";
+}
 
 export function shouldRecoverAuthenticatedWorkspace({
   connected,

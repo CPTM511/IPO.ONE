@@ -66,6 +66,7 @@ import { createObligationPortfolioPresentation } from "./obligation-portfolio-pr
 import {
   humanWorkspaceAccess,
   principalWorkspaceAccess,
+  resolveAuthenticatedWorkspaceName,
   shouldRecoverAuthenticatedWorkspace
 } from "./principal-workspace-access.js";
 import { selectPrincipalAgentWorkspace } from "./principal-agent-workspace-selection.js";
@@ -1959,9 +1960,13 @@ function localPilotAgentAccount() {
 }
 
 function currentWorkspaceName() {
-  return document.querySelector(
+  const configuredWorkspaceName = document.querySelector(
     'meta[name="ipo-one-workspace-name"]'
   )?.content ?? "";
+  return resolveAuthenticatedWorkspaceName({
+    configuredWorkspaceName,
+    serverWorkspaceKind: tenantPilot.workspaceKind
+  });
 }
 
 function applyWorkspaceSurfaceAccess() {
@@ -2528,6 +2533,7 @@ function purgeAuthenticatedBrowserState({
     accessState.connectedChainId = null;
     accessState.selectedWalletProviderId = null;
   }
+  applyWorkspaceSurfaceAccess();
 }
 
 function resetOwnedEvidenceState({
@@ -8419,6 +8425,8 @@ async function recoverAuthenticatedWorkspace() {
   const resources = Array.isArray(recovery.resources) ? recovery.resources : [];
   tenantPilot.workspaceKind = recovery.workspaceKind;
   tenantPilot.workspaceResume = recovery;
+  applyWorkspaceSurfaceAccess();
+  restoreLocation({ focus: false });
   const expectedKind = expectedWorkspaceKind();
   if (expectedKind !== null && recovery.workspaceKind !== expectedKind) {
     tenantPilot.connected = false;
