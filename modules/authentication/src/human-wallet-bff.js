@@ -154,6 +154,28 @@ export class HumanWalletBff {
     ) {
       throw authenticationError("authentication_binding_rejected", "wallet is not bound to an active Human credential");
     }
+    let selectedRole;
+    if (typeof this.credentialRegistry.resolveHumanRole === "function") {
+      selectedRole = await this.credentialRegistry.resolveHumanRole({
+        credentialId: credential.credentialId,
+        roleBundle: transaction.requestedRole,
+        clientId: credential.clientId,
+        now
+      });
+    } else if (
+      credential.roles.length === 1 &&
+      credential.roles[0] === transaction.requestedRole
+    ) {
+      selectedRole = Object.freeze({
+        roleBundle: transaction.requestedRole,
+        capabilities: credential.allowedCapabilities
+      });
+    } else {
+      throw authenticationError(
+        "authentication_role_rejected",
+        "selected Human workspace is not enrolled"
+      );
+    }
     return this.sessionStore.create({
       tenantId: credential.tenantId,
       actorId: credential.actorId,
@@ -162,8 +184,8 @@ export class HumanWalletBff {
       credentialId: credential.credentialId,
       credentialVersion: credential.version,
       policyVersion: credential.policyVersion,
-      capabilities: credential.allowedCapabilities,
-      roles: credential.roles,
+      capabilities: selectedRole.capabilities,
+      roles: [selectedRole.roleBundle],
       tokenJtiHash: this.referenceHasher.hash("siwe.signature", checkedSignature),
       authenticationMethod: ClientAuthenticationMethod.SIWE,
       authTime: now,

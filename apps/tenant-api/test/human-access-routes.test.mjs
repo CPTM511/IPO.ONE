@@ -65,7 +65,8 @@ function createAccessFixture() {
       }
       return Object.freeze({
         actorId: "actor_human_access_test",
-        authenticationMethod: "siwe"
+        authenticationMethod: "siwe",
+        roles: ["human_borrower"]
       });
     },
     logout({ sessionHandle }) {
@@ -150,7 +151,8 @@ function createAccessFixture() {
       calls.push({ method: "completeWallet", input: structuredClone(input) });
       return Object.freeze({
         cookie: activeSessionCookie("session-from-wallet-0000000000000000000000001"),
-        csrfToken: "c".repeat(43)
+        csrfToken: "c".repeat(43),
+        session: Object.freeze({ roles: ["human_borrower"] })
       });
     }
   };
@@ -194,8 +196,10 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       enabled: true,
       sessionActive: false,
       sessionAuthenticationMethod: null,
+      sessionWorkspaceRole: null,
       oidcProviders: ["google"],
       walletAuthentication: true,
+      walletWorkspaceRoles: ["human_borrower", "principal_controller"],
       supportedChains: ["eip155:84532", "eip155:1952"],
       boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
     });
@@ -209,8 +213,10 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       enabled: true,
       sessionActive: true,
       sessionAuthenticationMethod: "siwe",
+      sessionWorkspaceRole: "human_borrower",
       oidcProviders: ["google"],
       walletAuthentication: true,
+      walletWorkspaceRoles: ["human_borrower", "principal_controller"],
       supportedChains: ["eip155:84532", "eip155:1952"],
       boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
     });
@@ -244,7 +250,8 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
       headers: { "content-type": "application/json", origin: BROWSER_ORIGIN },
       body: JSON.stringify({
         address: "0x1111111111111111111111111111111111111111",
-        chainId: 84532
+        chainId: 84532,
+        workspaceRole: "human_borrower"
       })
     });
     assert.equal(challenge.status, 201);
@@ -272,7 +279,8 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
     assert.deepEqual(JSON.parse(verifyText), {
       schemaVersion: "ipo_one_authentication_result.v1",
       status: "authenticated",
-      authenticationMethod: "siwe"
+      authenticationMethod: "siwe",
+      workspaceRole: "human_borrower"
     });
 
     const invalidationKey = "wallet-invalidation-idempotency-000000000001";
@@ -361,6 +369,8 @@ test("Human access HTTP composes truthful discovery, OIDC, SIWE, and logout", as
     assert.equal(oidcCall.input.redirectUri, GOOGLE_REDIRECT);
     assert.equal(oidcCall.input.transactionHandle, "login-transaction-handle-00000000000000000001");
     assert.equal(fixture.calls.some((call) => Object.hasOwn(call.input, "tenantId")), false);
+    const walletCall = fixture.calls.find((call) => call.method === "beginWallet");
+    assert.equal(walletCall.input.requestedRole, "human_borrower");
   } finally {
     await listener.close();
   }

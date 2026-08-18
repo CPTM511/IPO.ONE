@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { calculateJwkThumbprint, exportJWK, generateKeyPair } from "jose";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import {
   mkdir,
@@ -10,6 +12,7 @@ import { dirname, isAbsolute } from "node:path";
 import {
   createVercelGoldenFlowAgentClient,
   runVercelAgentApplication,
+  runVercelAgentRecovery,
   runVercelAgentRuntime,
   submitVercelAgentAccountProof
 } from "../apps/private-pilot/src/vercel-golden-flow-agent.js";
@@ -43,15 +46,57 @@ async function writeExclusiveJson(path, payload) {
 
 function usage() {
   throw new Error(
-    "usage: vercel-golden-flow-agent.mjs provision-account <absolute-key-file> | " +
+    "usage: vercel-golden-flow-agent.mjs provision-workload <absolute-private-jwk-file> <absolute-public-spec-file> | " +
+    "provision-account <absolute-key-file> | " +
     "prove <challenge.json> <bootstrap.json> <workload-private.jwk.json> <account-key-file> [absolute-output.json] | " +
     "application <handoff.json> <bootstrap.json> <workload-private.jwk.json> [absolute-output.json] | " +
-    "runtime <handoff.json> <offer-receipt.json> <bootstrap.json> <workload-private.jwk.json> [absolute-output.json]"
+    "runtime <handoff.json> <offer-receipt.json> <bootstrap.json> <workload-private.jwk.json> [absolute-output.json] | " +
+    "recovery <handoff.json> <recovery-input.json> <bootstrap.json> <workload-private.jwk.json> [absolute-output.json]"
   );
 }
 
 try {
-  if (action === "provision-account" && paths.length === 1) {
+  if (action === "provision-workload" && paths.length === 2) {
+    const [privateDestination, publicDestination] = paths;
+    if (!isAbsolute(privateDestination) || !isAbsolute(publicDestination)) usage();
+    const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
+    const kid = `golden-flow-${randomUUID()}`;
+    const [privateMaterial, publicMaterial] = await Promise.all([
+      exportJWK(privateKey),
+      exportJWK(publicKey)
+    ]);
+    const publicJwk = {
+      ...publicMaterial,
+      alg: "ES256",
+      use: "sig",
+      key_ops: ["verify"],
+      kid
+    };
+    const workloadPrivateJwk = {
+      ...privateMaterial,
+      alg: "ES256",
+      use: "sig",
+      key_ops: ["sign"],
+      kid
+    };
+    const senderThumbprint = await calculateJwkThumbprint(publicJwk, "sha256");
+    await writeExclusiveJson(privateDestination, workloadPrivateJwk);
+    await writeExclusiveJson(publicDestination, {
+      schemaVersion: "vercel_golden_flow_agent_public_key.v1",
+      publicJwk,
+      senderThumbprint,
+      privateKeyIncluded: false,
+      browserStorageAllowed: false,
+      vercelPrivateKeyAllowed: false
+    });
+    process.stdout.write(`${JSON.stringify({
+      schemaVersion: "vercel_golden_flow_agent_workload_key.v1",
+      kid,
+      senderThumbprint,
+      privateKeyIncluded: false,
+      privateKeyMode: "owner_only_0600"
+    })}\n`);
+  } else if (action === "provision-account" && paths.length === 1) {
     const destination = paths[0];
     if (!isAbsolute(destination)) usage();
     await mkdir(dirname(destination), { recursive: true, mode: 0o700 });
@@ -71,7 +116,7 @@ try {
   } else {
     const requiredPathCount = action === "application" ? 3 : 4;
     if (
-      !["prove", "application", "runtime"].includes(action) ||
+      !["prove", "application", "runtime", "recovery"].includes(action) ||
       ![requiredPathCount, requiredPathCount + 1].includes(paths.length)
     ) usage();
     const outputPath = paths.length === requiredPathCount + 1
@@ -105,6 +150,24 @@ try {
         client,
         manifest: await jsonFile(paths[0], "Agent runtime handoff"),
         offerReceipt: await jsonFile(paths[1], "Agent Offer receipt")
+      });
+    } else if (action === "recovery") {
+      const recoveryInput = await jsonFile(paths[1], "Agent recovery input");
+      if (
+        recoveryInput?.schemaVersion !== "vercel_golden_flow_agent_recovery_input.v1" ||
+        typeof recoveryInput.obligationId !== "string" ||
+        (recoveryInput.passportArtifactId !== undefined &&
+          typeof recoveryInput.passportArtifactId !== "string")
+      ) {
+        throw new Error("Agent recovery input is invalid");
+      }
+      result = await runVercelAgentRecovery({
+        client,
+        manifest: await jsonFile(paths[0], "Agent runtime handoff"),
+        obligationId: recoveryInput.obligationId,
+        ...(recoveryInput.passportArtifactId === undefined
+          ? {}
+          : { passportArtifactId: recoveryInput.passportArtifactId })
       });
     } else {
       usage();

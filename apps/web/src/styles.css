@@ -805,6 +805,16 @@ body.access-open {
   gap: 9px;
 }
 
+.access-workspace-picker {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 24px;
+}
+
+.access-section-heading.compact {
+  margin-bottom: 14px;
+}
+
 .access-method-button,
 .network-choice {
   width: 100%;

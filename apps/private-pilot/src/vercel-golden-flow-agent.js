@@ -225,9 +225,40 @@ export async function runVercelAgentApplication({ client, manifest }) {
     manifest,
     transportProfile: "mcp_stdio_local"
   });
-  const receipt = await workflow.runCreditOfferWorkflow(
-    createLocalAgentApplicationInput(manifest)
-  );
+  const applicationInput = createLocalAgentApplicationInput(manifest);
+  const receipt = await workflow.runCreditOfferWorkflow(applicationInput);
+  const replay = await workflow.runCreditOfferWorkflow(applicationInput);
+  if (
+    replay.creditIntent.creditIntentId !== receipt.creditIntent.creditIntentId ||
+    replay.decision.riskDecisionId !== receipt.decision.riskDecisionId ||
+    replay.offer?.creditOfferId !== receipt.offer?.creditOfferId ||
+    replay.steps[1].replayed !== true ||
+    replay.steps[3].replayed !== true
+  ) {
+    throw new TypeError("Agent application retry did not replay exact durable state");
+  }
+  let outOfScopeRejection;
+  try {
+    await client.execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotRequestCredit",
+      payload: {
+        authorityId: manifest.mandateId,
+        ...applicationInput.creditRequest,
+        requestedPrincipalMinor:
+          (BigInt(manifest.authority.aggregateLimitMinor) + 1n).toString()
+      },
+      resource: { resourceType: "subject", resourceId: manifest.subjectId },
+      idempotencyKey: `vercel-agent-out-of-scope-${manifest.mandateHash.slice(2, 26)}`,
+      requestId: identifier("request-agent-out-of-scope"),
+      correlationId: receipt.correlationId
+    });
+  } catch (error) {
+    outOfScopeRejection = error;
+  }
+  if (!outOfScopeRejection) {
+    throw new TypeError("Out-of-scope Agent credit request was not rejected server-side");
+  }
   const continuation = await client.execute({
     schemaVersion: "tenant_protocol_request.v1",
     operationId: "pilotPersistAgentContinuationReceipt",
@@ -245,6 +276,9 @@ export async function runVercelAgentApplication({ client, manifest }) {
     status: "offer_persisted",
     offerReceipt: receipt,
     continuation: continuation.response,
+    applicationReplayConfirmed: true,
+    outOfScopeRejectionCode:
+      outOfScopeRejection.code ?? "agent_request_rejected",
     sandboxOnly: true,
     productionFundsMoved: false
   });
@@ -309,6 +343,11 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
     requestId: identifier("request-agent-evidence"),
     correlationId: workflowReceipt.correlationId
   });
+  const recovery = await runVercelAgentRecovery({
+    client,
+    manifest,
+    obligationId: workflowReceipt.obligation.obligationId
+  });
   return Object.freeze({
     schemaVersion: "vercel_golden_flow_agent_runtime.v1",
     status: "fully_repaid_with_evidence",
@@ -316,7 +355,127 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
     fullRepayment: fullRepayment.response,
     duplicateRepaymentReplayed: true,
     evidence,
+    creditState: recovery.creditState,
+    recoveredObligation: recovery.obligation,
+    terminalOutcomeConfirmed: recovery.terminalOutcomeConfirmed,
     sandboxOnly: true,
     productionFundsMoved: false
+  });
+}
+
+async function readCreditStateWithRetry({ client, manifest, correlationId }) {
+  let lastError;
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    try {
+      return await client.execute({
+        schemaVersion: "tenant_protocol_request.v1",
+        operationId: "pilotReadOwnCreditState",
+        payload: {},
+        resource: { resourceType: "subject", resourceId: manifest.subjectId },
+        requestId: identifier(`request-agent-credit-state-${attempt}`),
+        correlationId
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt < 20) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+  }
+  throw lastError;
+}
+
+export async function runVercelAgentRecovery({
+  client,
+  manifest,
+  obligationId,
+  passportArtifactId
+}) {
+  if (!IDENTIFIER.test(obligationId ?? "")) {
+    throw new TypeError("Agent recovery Obligation is invalid");
+  }
+  const correlationId = identifier("correlation-agent-recovery");
+  const [obligationResult, creditStateResult] = await Promise.all([
+    client.execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotReadOwnObligation",
+      payload: {},
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      requestId: identifier("request-agent-obligation-recovery"),
+      correlationId
+    }),
+    readCreditStateWithRetry({ client, manifest, correlationId })
+  ]);
+  const obligation = obligationResult.response?.obligation;
+  const creditState = creditStateResult.response?.creditState;
+  if (
+    obligation?.obligationId !== obligationId ||
+    obligation.subjectId !== manifest.subjectId ||
+    obligation.authorityId !== manifest.mandateId ||
+    obligation.status !== "fully_repaid" ||
+    obligation.outstandingPrincipalMinor !== "0" ||
+    obligation.outstandingInterestMinor !== "0" ||
+    obligation.outstandingFeesMinor !== "0" ||
+    creditState?.subjectId !== manifest.subjectId ||
+    creditState.latestOutcome?.obligationId !== obligationId ||
+    creditState.latestOutcome?.outcomeLabel !== "on_time_repaid" ||
+    creditState.metrics?.completedCycleCount < 1 ||
+    creditState.trackRecord?.filter((entry) => entry.obligationId === obligationId).length !== 1
+  ) {
+    throw new TypeError("Agent terminal Obligation and Credit State recovery are inconsistent");
+  }
+  const evidenceClient = new IpoOneAgentEvidenceClient({
+    execute: client.execute.bind(client),
+    manifest,
+    transportProfile: "local_in_process"
+  });
+  const evidence = await evidenceClient.readObligationEvidence({
+    obligationId,
+    limit: 50,
+    requestId: identifier("request-agent-recovery-evidence"),
+    correlationId
+  });
+  if (!Array.isArray(evidence.items) || evidence.items.length < 1) {
+    throw new TypeError("Agent recovery Evidence is unavailable");
+  }
+  let passport;
+  if (passportArtifactId !== undefined) {
+    if (!IDENTIFIER.test(passportArtifactId)) {
+      throw new TypeError("Agent Credit Passport artifact is invalid");
+    }
+    const passportResult = await client.execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotReadOwnCreditPassportArtifact",
+      payload: {},
+      resource: {
+        resourceType: "credit_passport_artifact",
+        resourceId: passportArtifactId
+      },
+      requestId: identifier("request-agent-passport-recovery"),
+      correlationId
+    });
+    passport = passportResult.response?.artifact;
+    if (
+      passport?.creditPassportArtifactId !== passportArtifactId ||
+      passport.subjectId !== manifest.subjectId ||
+      passport.sandboxOnly !== true ||
+      passport.productionAuthority !== false ||
+      passport.piiIncluded !== false
+    ) {
+      throw new TypeError("Agent Credit Passport recovery is inconsistent");
+    }
+  }
+  return Object.freeze({
+    schemaVersion: "vercel_golden_flow_agent_recovery.v1",
+    status: "terminal_state_recovered",
+    obligation,
+    creditState,
+    evidence,
+    ...(passport === undefined ? {} : { passport }),
+    terminalOutcomeConfirmed: true,
+    retrySafe: true,
+    sandboxOnly: true,
+    productionFundsMoved: false,
+    privateKeyIncluded: false
   });
 }

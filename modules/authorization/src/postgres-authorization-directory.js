@@ -109,6 +109,10 @@ export class PostgresAuthorizationDirectory {
     ) {
       throw authorizationError("authorization_membership_rejected", "membership is not active");
     }
+    if (context.roles.length !== 1) {
+      throw authorizationError("authorization_membership_rejected", "membership is not active");
+    }
+    const selectedRole = context.roles[0];
     const at = authorizationTimestamp("now", now);
     await this.client.query(
       "SELECT pg_advisory_xact_lock(hashtext('authorization_actor'), hashtext($1))",
@@ -118,22 +122,71 @@ export class PostgresAuthorizationDirectory {
       "SELECT pg_advisory_xact_lock(hashtext('authorization_membership:' || $1), hashtext($2))",
       [tenantId, actorId]
     );
-    const result = await this.client.query(
-      `SELECT m.*, a.actor_type
-         FROM memberships m
-         JOIN actors a ON a.id = m.actor_id
-        WHERE m.tenant_id = $1
-          AND m.actor_id = $2
-          AND a.actor_type = $3
-          AND a.status = 'active'
-          AND m.status = 'active'
-          AND m.valid_from <= $4
-          AND (m.expires_at IS NULL OR m.expires_at > $4)
-          AND m.policy_version = $5
-          AND m.client_ids ? $6
-        FOR SHARE OF m, a`,
-      [tenantId, actorId, actorType, at, policyVersion, clientId]
-    );
+    const usesSelectedHumanEnrollment = actorType === ActorType.HUMAN &&
+      (selectedRole === "human_borrower" || selectedRole === "principal_controller");
+    let result;
+    if (usesSelectedHumanEnrollment) {
+      result = await this.client.query(
+          `SELECT e.*, a.actor_type
+             FROM authentication_role_enrollments e
+             JOIN actors a ON a.id = e.actor_id
+            WHERE e.tenant_id = $1
+              AND e.actor_id = $2
+              AND a.actor_type = $3
+              AND a.status = 'active'
+              AND e.status = 'active'
+              AND e.valid_from <= $4
+              AND (e.expires_at IS NULL OR e.expires_at > $4)
+              AND e.policy_version = $5
+              AND e.client_ids ? $6
+              AND e.role_bundle = $7
+              AND e.credential_id = $8
+            FOR SHARE OF a`,
+          [
+            tenantId,
+            actorId,
+            actorType,
+            at,
+            policyVersion,
+            clientId,
+            selectedRole,
+            context.credentialId
+          ]
+        );
+      if (result.rowCount === 0) {
+        const durableCredential = await this.client.query(
+          `SELECT 1
+             FROM authentication_credentials
+            WHERE tenant_id = $1 AND id = $2 AND actor_id = $3`,
+          [tenantId, context.credentialId, actorId]
+        );
+        if (durableCredential.rowCount !== 0) {
+          throw authorizationError(
+            "authorization_membership_rejected",
+            "membership is not active"
+          );
+        }
+      }
+    }
+    if (!usesSelectedHumanEnrollment || result.rowCount === 0) {
+      result = await this.client.query(
+          `SELECT m.*, a.actor_type
+             FROM memberships m
+             JOIN actors a ON a.id = m.actor_id
+            WHERE m.tenant_id = $1
+              AND m.actor_id = $2
+              AND a.actor_type = $3
+              AND a.status = 'active'
+              AND m.status = 'active'
+              AND m.valid_from <= $4
+              AND (m.expires_at IS NULL OR m.expires_at > $4)
+              AND m.policy_version = $5
+              AND m.client_ids ? $6
+              AND m.role_bundle = $7
+            FOR SHARE OF m, a`,
+          [tenantId, actorId, actorType, at, policyVersion, clientId, selectedRole]
+        );
+    }
     if (result.rowCount !== 1) {
       throw authorizationError("authorization_membership_rejected", "membership is not active");
     }

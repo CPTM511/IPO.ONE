@@ -339,6 +339,607 @@ export async function loadProductionBootstrapConfig(path) {
   }));
 }
 
+export async function enrollProductionHumanRole({
+  adminConnectionString,
+  tenantId,
+  actorId,
+  roleBundle,
+  performedByActorId,
+  now = new Date()
+}) {
+  const checkedTenantId = id("tenantId", tenantId);
+  const checkedActorId = id("actorId", actorId);
+  const checkedPerformer = id("performedByActorId", performedByActorId);
+  const profile = PROFILES[roleBundle];
+  if (
+    !profile ||
+    profile.actorType !== ActorType.HUMAN ||
+    !new Set([RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER])
+      .has(profile.roleBundle)
+  ) {
+    throw fail("Human role enrollment profile is invalid");
+  }
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+    throw fail("Human role enrollment time is invalid");
+  }
+  const pool = createPostgresPool({
+    connectionString: adminConnectionString,
+    max: 1,
+    applicationName: "ipo-one-human-role-enrollment"
+  });
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('authentication_role_enrollment'), hashtext($1 || ':' || $2))",
+        [checkedTenantId, checkedActorId]
+      );
+      await setTenantTransactionContext(client, createTenantSecurityContext({
+        tenantId: checkedTenantId,
+        actorId: checkedPerformer,
+        policyVersion: "security_001.v1",
+        source: "system_worker"
+      }));
+      const binding = await client.query(
+        `SELECT c.*, a.actor_type, a.status AS actor_status,
+                m.role_bundle AS base_role, m.status AS membership_status,
+                m.policy_version AS membership_policy_version,
+                m.client_ids AS membership_client_ids
+           FROM authentication_credentials c
+           JOIN actors a ON a.id = c.actor_id
+           JOIN memberships m
+             ON m.tenant_id = c.tenant_id AND m.actor_id = c.actor_id
+          WHERE c.tenant_id = $1
+            AND c.actor_id = $2
+            AND c.status = 'active'
+            AND c.client_authentication_method = 'siwe'
+            AND c.sender_constraint_method = 'host_session'
+            AND (c.expires_at IS NULL OR c.expires_at > $3)
+          FOR UPDATE OF c, a, m`,
+        [checkedTenantId, checkedActorId, now]
+      );
+      if (binding.rowCount !== 1) {
+        throw fail("active Human wallet Credential is unavailable");
+      }
+      const credential = binding.rows[0];
+      if (
+        credential.actor_type !== ActorType.HUMAN ||
+        credential.actor_status !== "active" ||
+        credential.membership_status !== "active" ||
+        credential.membership_policy_version !== credential.policy_version ||
+        ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER]
+          .includes(credential.base_role) ||
+        !Array.isArray(credential.membership_client_ids) ||
+        !credential.membership_client_ids.includes(credential.client_id)
+      ) {
+        throw fail("Human wallet Credential binding is not eligible for role enrollment");
+      }
+      const existing = await client.query(
+        `SELECT * FROM authentication_role_enrollments
+          WHERE tenant_id = $1 AND credential_id = $2 AND role_bundle = $3
+          FOR UPDATE`,
+        [checkedTenantId, credential.id, profile.roleBundle]
+      );
+      if (existing.rowCount === 1) {
+        const row = existing.rows[0];
+        if (
+          row.actor_id !== checkedActorId ||
+          row.status !== "active" ||
+          row.policy_version !== credential.policy_version ||
+          JSON.stringify(row.capabilities) !== JSON.stringify(profile.capabilities) ||
+          JSON.stringify(row.client_ids) !== JSON.stringify([credential.client_id])
+        ) {
+          throw fail("existing Human role enrollment does not match the reviewed profile");
+        }
+        await client.query("COMMIT");
+        return Object.freeze({
+          schemaVersion: "production_human_role_enrollment_result.v1",
+          tenantId: checkedTenantId,
+          actorId: checkedActorId,
+          roleBundle: profile.roleBundle,
+          enrollmentId: row.id,
+          replayed: true,
+          capabilitiesIncluded: false,
+          credentialsIncluded: false
+        });
+      }
+      const enrollmentId = createOperationalId("role_enrollment");
+      await client.query(
+        `INSERT INTO authentication_role_enrollments(
+           id, tenant_id, actor_id, credential_id, role_bundle, capabilities,
+           client_ids, policy_version, status, valid_from, expires_at, version,
+           created_at, updated_at, schema_version
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6::jsonb,
+           $7::jsonb, $8, 'active', $9, $10, 1,
+           $9, $9, 'authentication_role_enrollment.v1'
+         )`,
+        [
+          enrollmentId,
+          checkedTenantId,
+          checkedActorId,
+          credential.id,
+          profile.roleBundle,
+          JSON.stringify(profile.capabilities),
+          JSON.stringify([credential.client_id]),
+          credential.policy_version,
+          now,
+          credential.expires_at
+        ]
+      );
+      const eventId = createOperationalId("auth_event");
+      await client.query(
+        `INSERT INTO authentication_events(
+           id, tenant_id, event_type, actor_id, credential_id, reason_code,
+           occurred_at, payload, schema_version
+         ) VALUES (
+           $1, $2, 'role_enrolled', $3, $4,
+           'founder_closed_pilot_role_enrollment', $5, $6::jsonb,
+           'authentication_event.v1'
+         )`,
+        [
+          eventId,
+          checkedTenantId,
+          checkedPerformer,
+          credential.id,
+          now,
+          JSON.stringify({
+            roleBundle: profile.roleBundle,
+            enrollmentId,
+            version: 1
+          })
+        ]
+      );
+      await client.query("COMMIT");
+      return Object.freeze({
+        schemaVersion: "production_human_role_enrollment_result.v1",
+        tenantId: checkedTenantId,
+        actorId: checkedActorId,
+        roleBundle: profile.roleBundle,
+        enrollmentId,
+        eventId,
+        replayed: false,
+        capabilitiesIncluded: false,
+        credentialsIncluded: false
+      });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
+function goldenFlowAgentBootstrapResult({
+  tenantId,
+  policyVersion,
+  actorId,
+  clientId,
+  issuer,
+  externalSubject,
+  senderThumbprint,
+  credentialId,
+  replayed
+}) {
+  return Object.freeze({
+    schemaVersion: "production_golden_flow_agent_result.v1",
+    tenantId,
+    actorId,
+    credentialId,
+    replayed,
+    credentialsIncluded: false,
+    privateKeyIncluded: false,
+    productionFundsAuthority: false,
+    runnerBootstrap: Object.freeze({
+      schemaVersion: "vercel_golden_flow_agent_bootstrap.v1",
+      tenant: Object.freeze({ tenantId }),
+      policyVersion,
+      credentials: Object.freeze([Object.freeze({
+        kind: "agent_dpop",
+        profile: "agent_runtime",
+        actorId,
+        clientId,
+        issuer,
+        externalSubject,
+        senderThumbprint
+      })])
+    })
+  });
+}
+
+export async function provisionProductionGoldenFlowAgent({
+  adminConnectionString,
+  referenceHashKey,
+  tenantId,
+  controllerActorId,
+  actorId,
+  clientId,
+  issuer,
+  externalSubject,
+  invitationId,
+  senderThumbprint,
+  expiresAt,
+  performedByActorId,
+  policyVersion = "security_001.v1",
+  now = new Date()
+}) {
+  const checkedTenantId = id("tenantId", tenantId);
+  const checkedControllerId = id("controllerActorId", controllerActorId);
+  const checkedActorId = id("actorId", actorId);
+  const checkedClientId = id("clientId", clientId);
+  const checkedIssuer = httpsOrigin("credential issuer", issuer);
+  const checkedExternalSubject = text("externalSubject", externalSubject);
+  const checkedInvitationId = id("invitationId", invitationId, INVITATION_ID);
+  const checkedPerformer = id("performedByActorId", performedByActorId);
+  const checkedPolicyVersion = id("policyVersion", policyVersion);
+  const checkedExpiresAt = canonicalTimestamp("expiresAt", expiresAt);
+  if (!BASE64URL.test(senderThumbprint ?? "") || senderThumbprint.length !== 43) {
+    throw fail("Agent sender thumbprint is invalid");
+  }
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+    throw fail("Agent provisioning time is invalid");
+  }
+  const lifetime = new Date(checkedExpiresAt).getTime() - now.getTime();
+  if (lifetime <= 0 || lifetime > MAXIMUM_CREDENTIAL_LIFETIME_MS) {
+    throw fail("credential provisioning window is invalid");
+  }
+  const referenceHasher = createReferenceHasher(referenceHashKey);
+  const subjectRefHash = referenceHasher.hash(
+    "subject",
+    `${checkedIssuer}\0${checkedExternalSubject}`
+  );
+  const invitationRefHash = referenceHasher.hash(
+    "pilot.invitation",
+    `${checkedTenantId}\0${checkedInvitationId}`
+  );
+  const senderConstraintRefHash = referenceHasher.hash(
+    "sender.constraint",
+    senderThumbprint
+  );
+  const profile = PROFILES.agent_runtime;
+  const pool = createPostgresPool({
+    connectionString: adminConnectionString,
+    max: 1,
+    applicationName: "ipo-one-golden-flow-agent-provisioning"
+  });
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('golden_flow_agent_provisioning'), hashtext($1 || ':' || $2))",
+        [checkedTenantId, checkedActorId]
+      );
+      await setTenantTransactionContext(client, createTenantSecurityContext({
+        tenantId: checkedTenantId,
+        actorId: checkedPerformer,
+        policyVersion: checkedPolicyVersion,
+        source: "system_worker"
+      }));
+      const authority = await client.query(
+        `SELECT t.status AS tenant_status,
+                controller.actor_type AS controller_actor_type,
+                controller.status AS controller_status,
+                controller_membership.status AS controller_membership_status,
+                controller_membership.policy_version,
+                performer.actor_type AS performer_actor_type,
+                performer.status AS performer_status,
+                performer_membership.role_bundle AS performer_role,
+                performer_membership.status AS performer_membership_status
+           FROM tenants t
+           JOIN actors controller ON controller.id = $2
+           JOIN memberships controller_membership
+             ON controller_membership.tenant_id = t.id
+            AND controller_membership.actor_id = controller.id
+           JOIN actors performer ON performer.id = $3
+           JOIN memberships performer_membership
+             ON performer_membership.tenant_id = t.id
+            AND performer_membership.actor_id = performer.id
+          WHERE t.id = $1
+            AND controller_membership.role_bundle = 'principal_controller'
+            AND performer_membership.role_bundle = 'system_worker'
+          FOR SHARE OF t, controller, controller_membership, performer, performer_membership`,
+        [checkedTenantId, checkedControllerId, checkedPerformer]
+      );
+      const bound = authority.rows[0];
+      if (
+        authority.rowCount !== 1 ||
+        bound.tenant_status !== "active" ||
+        bound.controller_actor_type !== ActorType.HUMAN ||
+        bound.controller_status !== "active" ||
+        bound.controller_membership_status !== "active" ||
+        bound.policy_version !== checkedPolicyVersion ||
+        bound.performer_actor_type !== ActorType.SYSTEM_WORKER ||
+        bound.performer_status !== "active" ||
+        bound.performer_role !== RoleBundle.SYSTEM_WORKER ||
+        bound.performer_membership_status !== "active"
+      ) {
+        throw fail("Golden Flow Agent provisioning authority is unavailable");
+      }
+      await client.query(
+        `INSERT INTO actors(
+           id, actor_hash, actor_type, status, created_at, updated_at, schema_version
+         ) VALUES ($1, $2, 'agent', 'active', $3, $3, 'actor.v1')
+         ON CONFLICT (id) DO NOTHING`,
+        [checkedActorId, hashId("production_actor", checkedActorId), now]
+      );
+      await client.query(
+        `INSERT INTO memberships(
+           id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
+           client_ids, policy_version, controller_actor_id, status, valid_from,
+           expires_at, created_at, updated_at, version, schema_version
+         ) VALUES (
+           $1, $2, $3, $4, 'agent_runtime', $5::jsonb,
+           $6::jsonb, $7, $8, 'active', $9,
+           NULL, $9, $9, 1, 'membership.v1'
+         ) ON CONFLICT (tenant_id, actor_id, role_bundle) DO NOTHING`,
+        [
+          `membership_${checkedActorId}`,
+          hashId("production_membership", `${checkedTenantId}:${checkedActorId}`),
+          checkedTenantId,
+          checkedActorId,
+          JSON.stringify(profile.capabilities),
+          JSON.stringify([checkedClientId]),
+          checkedPolicyVersion,
+          checkedControllerId,
+          now
+        ]
+      );
+      const identity = await client.query(
+        `SELECT a.actor_type, a.status AS actor_status,
+                m.role_bundle, m.capabilities, m.client_ids, m.policy_version,
+                m.controller_actor_id, m.status AS membership_status
+           FROM actors a
+           JOIN memberships m ON m.actor_id = a.id AND m.tenant_id = $2
+          WHERE a.id = $1 AND m.role_bundle = 'agent_runtime'`,
+        [checkedActorId, checkedTenantId]
+      );
+      const agent = identity.rows[0];
+      if (
+        identity.rowCount !== 1 ||
+        agent.actor_type !== ActorType.AGENT ||
+        agent.actor_status !== "active" ||
+        agent.membership_status !== "active" ||
+        agent.policy_version !== checkedPolicyVersion ||
+        agent.controller_actor_id !== checkedControllerId ||
+        JSON.stringify(agent.capabilities) !== JSON.stringify(profile.capabilities) ||
+        JSON.stringify(agent.client_ids) !== JSON.stringify([checkedClientId])
+      ) {
+        throw fail("existing Golden Flow Agent identity does not match the reviewed profile");
+      }
+      const invitation = await client.query(
+        `SELECT credential_id
+           FROM authentication_events
+          WHERE tenant_id = $1
+            AND event_type = 'credential_registered'
+            AND payload->>'invitationRefHash' = $2
+          ORDER BY occurred_at, id`,
+        [checkedTenantId, invitationRefHash]
+      );
+      const sender = await client.query(
+        `SELECT actor_id
+           FROM authentication_credentials
+          WHERE tenant_id = $1
+            AND client_authentication_method = 'private_key_jwt'
+            AND sender_constraint_ref_hash = $2`,
+        [checkedTenantId, senderConstraintRefHash]
+      );
+      const existing = await client.query(
+        `SELECT *
+           FROM authentication_credentials
+          WHERE tenant_id = $1 AND issuer = $2 AND client_id = $3
+            AND subject_ref_hash = $4
+          FOR UPDATE`,
+        [checkedTenantId, checkedIssuer, checkedClientId, subjectRefHash]
+      );
+      if (existing.rowCount === 1) {
+        const credential = existing.rows[0];
+        if (
+          credential.actor_id !== checkedActorId ||
+          credential.actor_type !== ActorType.AGENT ||
+          credential.status !== "active" ||
+          credential.client_authentication_method !== ClientAuthenticationMethod.PRIVATE_KEY_JWT ||
+          credential.sender_constraint_method !== SenderConstraintMethod.DPOP ||
+          credential.sender_constraint_ref_hash !== senderConstraintRefHash ||
+          credential.policy_version !== checkedPolicyVersion ||
+          new Date(credential.expires_at).toISOString() !== checkedExpiresAt ||
+          invitation.rowCount !== 1 ||
+          invitation.rows[0].credential_id !== credential.id ||
+          sender.rowCount !== 1 ||
+          sender.rows[0].actor_id !== checkedActorId
+        ) {
+          throw fail("existing Golden Flow Agent Credential does not match the reviewed invitation");
+        }
+        await client.query("COMMIT");
+        return goldenFlowAgentBootstrapResult({
+          tenantId: checkedTenantId,
+          policyVersion: checkedPolicyVersion,
+          actorId: checkedActorId,
+          clientId: checkedClientId,
+          issuer: checkedIssuer,
+          externalSubject: checkedExternalSubject,
+          senderThumbprint,
+          credentialId: credential.id,
+          replayed: true
+        });
+      }
+      if (invitation.rowCount !== 0 || sender.rowCount !== 0) {
+        throw fail("Golden Flow Agent invitation or sender constraint is already bound");
+      }
+      const credentialId = createOperationalId("credential");
+      await client.query(
+        `INSERT INTO authentication_credentials(
+           id, tenant_id, actor_id, actor_type, issuer, subject_ref_hash,
+           client_id, client_authentication_method, sender_constraint_method,
+           sender_constraint_ref_hash, roles, allowed_capabilities,
+           policy_version, status, version, expires_at, created_at, updated_at,
+           schema_version
+         ) VALUES (
+           $1, $2, $3, 'agent', $4, $5,
+           $6, 'private_key_jwt', 'dpop',
+           $7, $8::jsonb, $9::jsonb,
+           $10, 'active', 1, $11, $12, $12,
+           'authentication_credential.v1'
+         )`,
+        [
+          credentialId,
+          checkedTenantId,
+          checkedActorId,
+          checkedIssuer,
+          subjectRefHash,
+          checkedClientId,
+          senderConstraintRefHash,
+          JSON.stringify([profile.roleBundle]),
+          JSON.stringify(profile.capabilities),
+          checkedPolicyVersion,
+          checkedExpiresAt,
+          now
+        ]
+      );
+      await client.query(
+        `INSERT INTO authentication_events(
+           id, tenant_id, event_type, actor_id, credential_id, reason_code,
+           occurred_at, payload, schema_version
+         ) VALUES (
+           $1, $2, 'credential_registered', $3, $4,
+           'golden_flow_agent_invitation_provisioned', $5, $6::jsonb,
+           'authentication_event.v1'
+         )`,
+        [
+          createOperationalId("auth_event"),
+          checkedTenantId,
+          checkedPerformer,
+          credentialId,
+          now,
+          JSON.stringify({
+            actorType: ActorType.AGENT,
+            clientAuthenticationMethod: ClientAuthenticationMethod.PRIVATE_KEY_JWT,
+            invitationRefHash,
+            senderConstraintMethod: SenderConstraintMethod.DPOP,
+            version: 1
+          })
+        ]
+      );
+      await client.query("COMMIT");
+      return goldenFlowAgentBootstrapResult({
+        tenantId: checkedTenantId,
+        policyVersion: checkedPolicyVersion,
+        actorId: checkedActorId,
+        clientId: checkedClientId,
+        issuer: checkedIssuer,
+        externalSubject: checkedExternalSubject,
+        senderThumbprint,
+        credentialId,
+        replayed: false
+      });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function revokeProductionGoldenFlowAgentCredential({
+  adminConnectionString,
+  tenantId,
+  actorId,
+  performedByActorId,
+  now = new Date()
+}) {
+  const checkedTenantId = id("tenantId", tenantId);
+  const checkedActorId = id("actorId", actorId);
+  const checkedPerformer = id("performedByActorId", performedByActorId);
+  const pool = createPostgresPool({
+    connectionString: adminConnectionString,
+    max: 1,
+    applicationName: "ipo-one-golden-flow-agent-revocation"
+  });
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await setTenantTransactionContext(client, createTenantSecurityContext({
+        tenantId: checkedTenantId,
+        actorId: checkedPerformer,
+        policyVersion: "security_001.v1",
+        source: "system_worker"
+      }));
+      const selected = await client.query(
+        `SELECT * FROM authentication_credentials
+          WHERE tenant_id = $1 AND actor_id = $2 AND actor_type = 'agent'
+            AND client_authentication_method = 'private_key_jwt'
+          FOR UPDATE`,
+        [checkedTenantId, checkedActorId]
+      );
+      if (selected.rowCount !== 1) {
+        throw fail("Golden Flow Agent Credential is unavailable");
+      }
+      const credential = selected.rows[0];
+      if (credential.status === "revoked") {
+        await client.query("COMMIT");
+        return Object.freeze({
+          schemaVersion: "production_golden_flow_agent_revocation.v1",
+          tenantId: checkedTenantId,
+          actorId: checkedActorId,
+          status: "revoked",
+          replayed: true,
+          privateKeyIncluded: false
+        });
+      }
+      if (credential.status !== "active" && credential.status !== "suspended") {
+        throw fail("Golden Flow Agent Credential cannot be revoked from its current state");
+      }
+      await client.query(
+        `UPDATE authentication_credentials
+            SET status = 'revoked', updated_at = $3
+          WHERE tenant_id = $1 AND id = $2`,
+        [checkedTenantId, credential.id, now]
+      );
+      await client.query(
+        `INSERT INTO authentication_events(
+           id, tenant_id, event_type, actor_id, credential_id, reason_code,
+           occurred_at, payload, schema_version
+         ) VALUES (
+           $1, $2, 'credential_revoked', $3, $4,
+           'golden_flow_agent_acceptance_complete', $5,
+           '{"status":"revoked"}'::jsonb, 'authentication_event.v1'
+         )`,
+        [
+          createOperationalId("auth_event"),
+          checkedTenantId,
+          checkedPerformer,
+          credential.id,
+          now
+        ]
+      );
+      await client.query("COMMIT");
+      return Object.freeze({
+        schemaVersion: "production_golden_flow_agent_revocation.v1",
+        tenantId: checkedTenantId,
+        actorId: checkedActorId,
+        status: "revoked",
+        replayed: false,
+        privateKeyIncluded: false
+      });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
 async function quoteLiteral(pool, value) {
   return (await pool.query("SELECT quote_literal($1) AS value", [value])).rows[0].value;
 }
@@ -375,14 +976,16 @@ async function configureRole(client, { roleName, password, authenticationOnly })
   await client.query(`GRANT CONNECT ON DATABASE ${database} TO ${role}`);
   await client.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
   if (authenticationOnly) {
-    await client.query(`GRANT SELECT ON tenants, actors, memberships, authentication_credentials, authentication_oidc_transactions, authentication_wallet_transactions, authentication_sessions, authentication_session_invalidations, authentication_replay_entries, authentication_events TO ${role}`);
+    await client.query(`GRANT SELECT ON tenants, actors, memberships, authentication_credentials, authentication_role_enrollments, authentication_oidc_transactions, authentication_wallet_transactions, authentication_sessions, authentication_session_invalidations, authentication_replay_entries, authentication_events TO ${role}`);
     await client.query(`GRANT INSERT, UPDATE ON authentication_credentials TO ${role}`);
     await client.query(`GRANT INSERT, DELETE ON authentication_oidc_transactions, authentication_wallet_transactions TO ${role}`);
     await client.query(`GRANT INSERT, UPDATE ON authentication_sessions TO ${role}`);
     await client.query(`GRANT INSERT ON authentication_session_invalidations TO ${role}`);
     await client.query(`GRANT INSERT, DELETE ON authentication_replay_entries TO ${role}`);
     await client.query(`GRANT INSERT ON authentication_events TO ${role}`);
-    await client.query(`GRANT UPDATE (id) ON actors, memberships TO ${role}`);
+    await client.query(
+      `GRANT UPDATE (id) ON actors, memberships, authentication_role_enrollments TO ${role}`
+    );
     return;
   }
   await client.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${role}`);
@@ -635,6 +1238,45 @@ async function seedTenantAndIdentity(client, config, referenceHasher) {
         })]
     );
     insertedCredentials += 1;
+  }
+  for (const credential of config.credentials.filter(({ profile }) =>
+    profile.roleBundle === "human_borrower" || profile.roleBundle === "principal_controller"
+  )) {
+    const storedCredential = await client.query(
+      `SELECT id, created_at, expires_at, updated_at
+         FROM authentication_credentials
+        WHERE tenant_id = $1 AND actor_id = $2 AND client_id = $3
+          AND status = 'active'`,
+      [config.tenant.tenantId, credential.actorId, credential.clientId]
+    );
+    if (storedCredential.rowCount !== 1) {
+      throw fail(`Human Credential is unavailable for ${credential.actorId}`);
+    }
+    const stored = storedCredential.rows[0];
+    await client.query(
+      `INSERT INTO authentication_role_enrollments(
+         id, tenant_id, actor_id, credential_id, role_bundle, capabilities,
+         client_ids, policy_version, status, valid_from, expires_at, version,
+         created_at, updated_at, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6::jsonb,
+         $7::jsonb, $8, 'active', $9, $10, 1,
+         $9, $11, 'authentication_role_enrollment.v1'
+       ) ON CONFLICT (tenant_id, credential_id, role_bundle) DO NOTHING`,
+      [
+        createOperationalId("role_enrollment"),
+        config.tenant.tenantId,
+        credential.actorId,
+        stored.id,
+        credential.profile.roleBundle,
+        JSON.stringify(credential.profile.capabilities),
+        JSON.stringify([credential.clientId]),
+        config.policyVersion,
+        stored.created_at,
+        stored.expires_at,
+        stored.updated_at
+      ]
+    );
   }
   return insertedCredentials;
 }

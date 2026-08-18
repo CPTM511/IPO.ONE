@@ -37,7 +37,9 @@ export const AuthenticationEventType = Object.freeze({
   SESSION_CREATED: "session_created",
   SESSION_ROTATED: "session_rotated",
   SESSION_REVOKED: "session_revoked",
-  SESSION_EXPIRED: "session_expired"
+  SESSION_EXPIRED: "session_expired",
+  ROLE_ENROLLED: "role_enrolled",
+  ROLE_SELECTED: "role_selected"
 });
 
 export const PHISHING_RESISTANT_AMR = Object.freeze(["hwk", "webauthn", "fido"]);

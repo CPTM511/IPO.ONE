@@ -499,6 +499,8 @@ const accessState = {
   authenticationProfile: null,
   providers: new Set(),
   walletAuthenticationEnabled: false,
+  walletWorkspaceRoles: new Set(),
+  selectedWorkspaceRole: "human_borrower",
   sessionActive: false,
   sessionAuthenticationMethod: null,
   localSessionSignedOut: false,
@@ -814,7 +816,22 @@ function renderAccess() {
     : "Connect & sign in with wallet";
   el("walletSignInBtn").querySelector("small").textContent = walletSession
     ? "Connect the selected wallet for an exact sandbox confirmation"
-    : "One-use SIWE signature · no transaction or fee";
+    : `${accessState.selectedWorkspaceRole === "human_borrower" ? "Human Borrower" : "Principal Controller"} · one-use SIWE signature · no transaction or fee`;
+  el("accessWorkspacePicker").hidden =
+    authenticated ||
+    !accessState.walletAuthenticationEnabled ||
+    accessState.walletWorkspaceRoles.size === 0;
+  for (const button of document.querySelectorAll("[data-wallet-workspace-role]")) {
+    const role = button.dataset.walletWorkspaceRole;
+    const selectedRole = role === accessState.selectedWorkspaceRole;
+    button.hidden = !accessState.walletWorkspaceRoles.has(role);
+    button.disabled = waiting || authenticated;
+    button.classList.toggle("active", selectedRole);
+    button.setAttribute("aria-checked", String(selectedRole));
+    button.querySelector("[data-role-state]").textContent = selectedRole
+      ? "Selected"
+      : "Select";
+  }
   el("accessNetworkPanel").hidden = !availability.showNetworks;
   el("accessDialogGrid").classList.toggle("methods-only", !availability.showNetworks);
   el("walletProviderPicker").hidden = !availability.showWalletPicker;
@@ -878,13 +895,13 @@ function renderAccess() {
   el("accessSessionPanel").hidden = !authenticated && !localSessionEnded;
   el("accessMethodPanel").hidden =
     localSessionEnded || (authenticated && !walletSession);
-  el("accessMethodStep").textContent = walletSession ? "Session" : "Step 1";
+  el("accessMethodStep").textContent = walletSession ? "Session" : "2";
   el("signInMethodTitle").textContent = walletSession
     ? "Reconnect the session wallet"
     : "Choose how to sign in";
   el("signInMethodCopy").textContent = walletSession
     ? "Select and connect the wallet again before an exact sandbox confirmation. The server session remains authoritative."
-    : "One secure session across the Human and Agent workspaces.";
+    : "The signed session receives only the workspace role selected above.";
   el("accessDialogGrid").classList.toggle(
     "session-active",
     authenticated || localSessionEnded
@@ -1112,6 +1129,18 @@ async function probeAccessOptions() {
     accessState.authEnabled = options?.enabled === true;
     accessState.providers = new Set(Array.isArray(options?.oidcProviders) ? options.oidcProviders : []);
     accessState.walletAuthenticationEnabled = options?.walletAuthentication === true;
+    accessState.walletWorkspaceRoles = new Set(
+      Array.isArray(options?.walletWorkspaceRoles)
+        ? options.walletWorkspaceRoles.filter((role) =>
+            new Set(["human_borrower", "principal_controller"]).has(role)
+          )
+        : []
+    );
+    if (!accessState.walletWorkspaceRoles.has(accessState.selectedWorkspaceRole)) {
+      accessState.selectedWorkspaceRole = accessState.walletWorkspaceRoles.has("human_borrower")
+        ? "human_borrower"
+        : [...accessState.walletWorkspaceRoles][0] ?? "human_borrower";
+    }
     accessState.optionsState = "ready";
     accessState.optionsObservedAt = new Date().toISOString();
     accessState.sessionAuthenticationMethod =
@@ -1119,6 +1148,12 @@ async function probeAccessOptions() {
       new Set(["oidc_pkce_bff", "siwe"]).has(options?.sessionAuthenticationMethod)
         ? options.sessionAuthenticationMethod
         : null;
+    if (
+      options?.sessionActive === true &&
+      accessState.walletWorkspaceRoles.has(options?.sessionWorkspaceRole)
+    ) {
+      accessState.selectedWorkspaceRole = options.sessionWorkspaceRole;
+    }
     accessState.sessionActive =
       authorityAvailable &&
       (options?.sessionActive === true || tenantPilot.connected);
@@ -1135,6 +1170,7 @@ async function probeAccessOptions() {
     accessState.authEnabled = false;
     accessState.providers = new Set();
     accessState.walletAuthenticationEnabled = false;
+    accessState.walletWorkspaceRoles = new Set();
     accessState.authenticationProfile = null;
     accessState.sessionAuthenticationMethod = null;
     accessState.optionsState = "failed";
@@ -1292,7 +1328,11 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
       renderAccess();
       const challenge = await authJson("/auth/v1/wallet/challenge", {
         method: "POST",
-        body: { address, chainId: connectedChainId }
+        body: {
+          address,
+          chainId: connectedChainId,
+          workspaceRole: accessState.selectedWorkspaceRole
+        }
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       const signature = await connector.signMessage({
@@ -1305,6 +1345,9 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
         body: { transactionHandle: challenge.handle, signature }
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
+      if (authentication?.workspaceRole !== accessState.selectedWorkspaceRole) {
+        throw new Error("The issued session does not match the selected workspace.");
+      }
       accessState.sessionActive = true;
       accessState.sessionAuthenticationMethod =
         authentication?.authenticationMethod === "siwe" ? "siwe" : null;
@@ -2005,9 +2048,9 @@ function hasHumanBorrowerWorkspace() {
 
 function humanWorkspaceUnavailableMessage() {
   if (tenantPilot.workspaceKind === "principal_controller") {
-    return "This secure session is a Principal Controller. Sign out and use an invited Human Borrower wallet to create a Human Subject.";
+    return "This secure session is a Principal Controller. Sign out, select the Human Borrower workspace, and sign the new role-bound session to create your Human Subject.";
   }
-  return "Human Borrower workspace authority has not been recovered. Wait for verification or sign in with an invited Human Borrower wallet.";
+  return "Human Borrower workspace authority has not been recovered. Wait for verification or sign in after selecting the Human Borrower workspace.";
 }
 
 function localPrincipalWorkspaceUrl() {
@@ -12078,6 +12121,21 @@ function bindActions() {
     const button = event.target.closest("button[data-wallet-provider-id]");
     if (button) selectWalletProvider(button.dataset.walletProviderId);
   });
+  for (const button of document.querySelectorAll("[data-wallet-workspace-role]")) {
+    button.addEventListener("click", () => {
+      const role = button.dataset.walletWorkspaceRole;
+      if (
+        accessState.busy ||
+        accessState.optionsBusy ||
+        accessState.sessionActive ||
+        !accessState.walletWorkspaceRoles.has(role)
+      ) return;
+      accessState.selectedWorkspaceRole = role;
+      accessState.helper = `${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} selected. The next wallet signature will issue only this workspace role.`;
+      renderAccess();
+      announce(`${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} workspace selected`);
+    });
+  }
   for (const button of document.querySelectorAll("[data-wallet-chain]")) {
     button.addEventListener("click", () => {
       if (accessState.busy || accessState.optionsBusy) return;

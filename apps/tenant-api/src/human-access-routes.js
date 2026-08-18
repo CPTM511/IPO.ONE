@@ -34,6 +34,10 @@ const CONFIG_KEYS = new Set([
 const PROVIDER_CONFIG_KEYS = new Set(["bff", "redirectUri"]);
 const MAX_AUTH_BODY_BYTES = 8 * 1024;
 const SUPPORTED_CHAINS = Object.freeze(["eip155:84532", "eip155:1952"]);
+const WALLET_WORKSPACE_ROLES = Object.freeze([
+  "human_borrower",
+  "principal_controller"
+]);
 
 function assertPlainObject(name, value, allowedKeys) {
   if (
@@ -355,7 +359,7 @@ export function createHumanAccessRouteHandler(input) {
   async function sessionStatus(request, now) {
     const sessionHandle = parseCookies(request.headers.cookie).get(SESSION_COOKIE_NAME);
     if (!sessionHandle) {
-      return Object.freeze({ active: false, authenticationMethod: null });
+      return Object.freeze({ active: false, authenticationMethod: null, workspaceRole: null });
     }
     try {
       const authenticationContext = await humanSessionBff.authenticateSession({
@@ -371,9 +375,15 @@ export function createHumanAccessRouteHandler(input) {
       ]).has(authenticationContext?.authenticationMethod)
         ? authenticationContext.authenticationMethod
         : null;
-      return Object.freeze({ active: true, authenticationMethod });
+      const roles = Array.isArray(authenticationContext?.roles)
+        ? authenticationContext.roles
+        : [];
+      const workspaceRole = roles.length === 1 && WALLET_WORKSPACE_ROLES.includes(roles[0])
+        ? roles[0]
+        : null;
+      return Object.freeze({ active: true, authenticationMethod, workspaceRole });
     } catch {
-      return Object.freeze({ active: false, authenticationMethod: null });
+      return Object.freeze({ active: false, authenticationMethod: null, workspaceRole: null });
     }
   }
 
@@ -398,8 +408,10 @@ export function createHumanAccessRouteHandler(input) {
         enabled: providers.size > 0 || walletBff !== undefined,
         sessionActive: activeSession.active,
         sessionAuthenticationMethod: activeSession.authenticationMethod,
+        sessionWorkspaceRole: activeSession.workspaceRole,
         oidcProviders: [...providers.keys()],
         walletAuthentication: walletBff !== undefined,
+        walletWorkspaceRoles: walletBff === undefined ? [] : WALLET_WORKSPACE_ROLES,
         supportedChains: SUPPORTED_CHAINS,
         boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
       }, requestId, {}, request.method === "HEAD");
@@ -447,10 +459,11 @@ export function createHumanAccessRouteHandler(input) {
         throw new ApiBoundaryError("authentication_provider_rejected", "wallet authentication is not available");
       }
       requireOrigin(request, browserOrigin);
-      const body = await readStrictBody(request, ["address", "chainId"]);
+      const body = await readStrictBody(request, ["address", "chainId", "workspaceRole"]);
       const challenge = await walletBff.beginLogin({
         address: body.address,
         chainId: body.chainId,
+        requestedRole: body.workspaceRole,
         now
       });
       sendJson(response, 201, {
@@ -476,7 +489,8 @@ export function createHumanAccessRouteHandler(input) {
       sendJson(response, 200, {
         schemaVersion: "ipo_one_authentication_result.v1",
         status: "authenticated",
-        authenticationMethod: "siwe"
+        authenticationMethod: "siwe",
+        workspaceRole: issued.session.roles[0]
       }, requestId, {
         "set-cookie": [
           serializeCookie(issued.cookie),

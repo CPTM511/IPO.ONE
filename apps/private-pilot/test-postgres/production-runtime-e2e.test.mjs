@@ -237,8 +237,10 @@ test(
           enabled: true,
           sessionActive: false,
           sessionAuthenticationMethod: null,
+          sessionWorkspaceRole: null,
           oidcProviders: [],
           walletAuthentication: true,
+          walletWorkspaceRoles: ["human_borrower", "principal_controller"],
           supportedChains: ["eip155:84532", "eip155:1952"],
           boundary:
             "Authentication proves presence; internal policy and Mandates separately decide authority."
@@ -256,7 +258,8 @@ test(
           },
           body: JSON.stringify({
             address: account.address,
-            chainId: 84532
+            chainId: 84532,
+            workspaceRole: "human_borrower"
           })
         }
       );
@@ -370,7 +373,8 @@ test(
           },
           body: JSON.stringify({
             address: account.address,
-            chainId: 84532
+            chainId: 84532,
+            workspaceRole: "human_borrower"
           })
         }
       );
@@ -415,6 +419,7 @@ test(
       const signedInAgainAuthentication = await signedInAgainOptions.json();
       assert.equal(signedInAgainAuthentication.sessionActive, true);
       assert.equal(signedInAgainAuthentication.sessionAuthenticationMethod, "siwe");
+      assert.equal(signedInAgainAuthentication.sessionWorkspaceRole, "human_borrower");
       const signedInAgainCatalog = await fetch(
         `${baseUrl}/tenant/v1/catalog`,
         {
