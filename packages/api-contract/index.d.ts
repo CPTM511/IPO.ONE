@@ -2511,6 +2511,12 @@ export interface WorkspaceResumeResource {
   relationship: "owner" | "controller" | "subject";
 }
 
+export interface ControlledAgentWorkspaceOption {
+  actorId: string;
+  label: string;
+  setupStatus: "configured" | "setup_required";
+}
+
 export interface WorkspaceResumeViewResponseV1 {
   workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
   resources: WorkspaceResumeResource[];
@@ -2525,6 +2531,8 @@ export interface WorkspaceResumeViewResponseV2 {
   workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
   resources: WorkspaceResumeResource[];
   controlledAgentActorIds?: string[];
+  controlledAgentOptions?: ControlledAgentWorkspaceOption[];
+  selectedAgentActorId?: string | null;
   continuationReceipts?: WorkspaceContinuationReceiptView[];
   humanOfferReview?: HumanOfferReviewRecovery | null;
   hasMore: boolean;

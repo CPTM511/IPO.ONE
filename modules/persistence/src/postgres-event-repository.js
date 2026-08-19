@@ -17,6 +17,16 @@ const MAX_REPOSITORY_STRING_LENGTH = 2048;
 const MAX_EVENT_PAYLOAD_BYTES = 64 * 1024;
 const MAX_COMMAND_PAYLOAD_BYTES = 1024 * 1024;
 const MAX_COMMAND_RESPONSE_BYTES = 256 * 1024;
+const TRANSACTION_RETRY_BASE_DELAY_MS = 5;
+const TRANSACTION_RETRY_MAX_DELAY_MS = 250;
+
+function transactionRetryDelayMs(attempt) {
+  const exponential = Math.min(
+    TRANSACTION_RETRY_MAX_DELAY_MS,
+    TRANSACTION_RETRY_BASE_DELAY_MS * (2 ** Math.min(attempt, 6))
+  );
+  return exponential + Math.floor(Math.random() * exponential);
+}
 
 function clone(value) {
   return structuredClone(value);
@@ -1051,7 +1061,9 @@ export class PostgresEventRepository {
       } finally {
         client.release();
       }
-      if (retry) await new Promise((resolve) => setTimeout(resolve, 5 * (attempt + 1)));
+      if (retry) {
+        await new Promise((resolve) => setTimeout(resolve, transactionRetryDelayMs(attempt)));
+      }
     }
     throw new DomainError("transaction_retry_exhausted", "PostgreSQL transaction retry budget was exhausted");
   }

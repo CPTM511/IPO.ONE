@@ -62,6 +62,47 @@ test("event repository rejects oversized event and response payloads before data
   );
 });
 
+test("event repository retries serialization failures with fresh bounded transactions", async () => {
+  let connections = 0;
+  let operations = 0;
+  const released = [];
+  const pool = {
+    async connect() {
+      connections += 1;
+      const connection = connections;
+      return {
+        async query(statement) {
+          if (statement === "COMMIT" && connection < 3) {
+            const error = new Error("serialization retry");
+            error.code = "40001";
+            throw error;
+          }
+          return { rows: [], rowCount: 0 };
+        },
+        release() {
+          released.push(connection);
+        }
+      };
+    },
+    async query() {
+      return { rows: [], rowCount: 0 };
+    }
+  };
+  const repository = new PostgresEventRepository({
+    pool,
+    tenantContext: TENANT_CONTEXT,
+    transactionRetries: 2
+  });
+
+  assert.equal(await repository.withTenantWrite(async () => {
+    operations += 1;
+    return "committed";
+  }), "committed");
+  assert.equal(connections, 3);
+  assert.equal(operations, 3);
+  assert.deepEqual(released, [1, 2, 3]);
+});
+
 test("core repository rejects duplicate, oversized, and raw-PII projection writes before database access", async () => {
   const pool = unreachablePool();
   const repository = new PostgresCoreRepository({

@@ -5136,6 +5136,20 @@
             "$ref": "#/$defs/identifier"
           }
         },
+        "controlledAgentOptions": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/controlledAgentOption"
+          }
+        },
+        "selectedAgentActorId": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/identifier" }
+          ]
+        },
         "continuationReceipts": {
           "type": "array",
           "maxItems": 16,
@@ -5157,6 +5171,31 @@
         },
         "schemaVersion": {
           "const": "tenant_workspace_resume_view.v2"
+        }
+      }
+    },
+    "controlledAgentOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorId",
+        "label",
+        "setupStatus"
+      ],
+      "properties": {
+        "actorId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "setupStatus": {
+          "enum": [
+            "configured",
+            "setup_required"
+          ]
         }
       }
     },
