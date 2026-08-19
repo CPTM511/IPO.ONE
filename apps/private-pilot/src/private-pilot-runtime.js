@@ -49,7 +49,10 @@ import {
   provisionPrivatePilotAuthentication,
   provisionPrivatePilotDatabase
 } from "./private-pilot-database.js";
-import { createLocalSyntheticIdentityProvider } from "./local-synthetic-identity-provider.js";
+import {
+  createLocalSyntheticIdentityProvider,
+  createSyntheticIdentityGateway
+} from "./local-synthetic-identity-provider.js";
 import {
   loadLocalAgentKeyMaterial,
   loadLocalAuthenticationInvitation,
@@ -109,31 +112,9 @@ function createGateway(
     livePolicyAdapterFactory: createPostgresTenantLivePolicyAdapter
   });
   const syntheticIdentity = createLocalSyntheticIdentityProvider({ pool });
-  return Object.freeze({
-    async execute(command) {
-      if (
-        command.operationId === "pilotRequestCredit" &&
-        command.authenticationContext?.actorType === "human"
-      ) {
-        await syntheticIdentity.ensure({
-          authenticationContext: command.authenticationContext,
-          subjectId: command.resource.resourceId,
-          consentId: command.payload.authorityId
-        });
-      }
-      const result = await durableGateway.execute(command);
-      if (
-        command.operationId === "pilotCreateConsent" &&
-        command.authenticationContext?.actorType === "human"
-      ) {
-        await syntheticIdentity.ensure({
-          authenticationContext: command.authenticationContext,
-          subjectId: result.response.subjectId,
-          consentId: result.response.consent.consentId
-        });
-      }
-      return result;
-    }
+  return createSyntheticIdentityGateway({
+    gateway: durableGateway,
+    syntheticIdentity
   });
 }
 

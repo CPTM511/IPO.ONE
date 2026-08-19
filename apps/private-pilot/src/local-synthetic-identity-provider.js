@@ -8,9 +8,28 @@ import { PostgresAuthorizationDirectory } from "../../../modules/authorization/s
 import {
   PostgresCoreRepository,
   PostgresEventRepository,
-  createTenantSecurityContext,
+  createTenantSecurityContextFromAuthentication,
   setTenantTransactionContext
 } from "../../../modules/persistence/src/index.js";
+
+const SYNTHETIC_IDENTITY_PROFILES = Object.freeze({
+  local: Object.freeze({
+    lockNamespace: "private_pilot_synthetic_identity",
+    providerRef: "urn:ipo.one:private-pilot:synthetic-identity-provider:v1",
+    providerVersion: "private_pilot_synthetic_provider.v1",
+    referencePrefix: "urn:ipo.one:private-pilot:synthetic-evidence",
+    idempotencyPrefix: "private-pilot-synthetic-identity-v2",
+    hashNamespace: "private_pilot_synthetic_identity"
+  }),
+  production_sandbox: Object.freeze({
+    lockNamespace: "production_sandbox_synthetic_identity",
+    providerRef: "urn:ipo.one:closed-pilot:synthetic-identity-provider:v1",
+    providerVersion: "closed_pilot_synthetic_provider.v1",
+    referencePrefix: "urn:ipo.one:closed-pilot:synthetic-evidence",
+    idempotencyPrefix: "production-sandbox-synthetic-identity-v1",
+    hashNamespace: "production_sandbox_synthetic_identity"
+  })
+});
 
 async function withTenantTransaction(pool, context, operation) {
   const client = await pool.connect();
@@ -32,17 +51,18 @@ async function withTenantTransaction(pool, context, operation) {
   }
 }
 
-export function createLocalSyntheticIdentityProvider({ pool }) {
+function createSyntheticIdentityProvider({ pool, profile }) {
+  const configuration = SYNTHETIC_IDENTITY_PROFILES[profile];
+  if (!configuration || typeof pool?.connect !== "function") {
+    throw new TypeError("Synthetic identity Provider configuration is invalid");
+  }
   return Object.freeze({
     async ensure({ authenticationContext, subjectId, consentId }) {
-      const tenantContext = createTenantSecurityContext({
-        tenantId: authenticationContext.tenantId,
-        actorId: authenticationContext.actorId,
-        policyVersion: authenticationContext.policyVersion,
-        source: "local_test"
-      });
+      const tenantContext =
+        createTenantSecurityContextFromAuthentication(authenticationContext);
       const lockClient = await pool.connect();
-      const lockKey = `private_pilot_synthetic_identity:${authenticationContext.tenantId}:${consentId}`;
+      const lockKey =
+        `${configuration.lockNamespace}:${authenticationContext.tenantId}:${consentId}`;
       try {
         await lockClient.query("SELECT pg_advisory_lock(hashtext($1))", [lockKey]);
         const eventRepository = new PostgresEventRepository({ pool, tenantContext });
@@ -73,9 +93,9 @@ export function createLocalSyntheticIdentityProvider({ pool }) {
           principalId: consent.principalId,
           consent,
           referenceType: "kyc_reference",
-          providerRef: "urn:ipo.one:private-pilot:synthetic-identity-provider:v1",
-          providerVersion: "private_pilot_synthetic_provider.v1",
-          referenceRef: `urn:ipo.one:private-pilot:synthetic-evidence:${consentId}`,
+          providerRef: configuration.providerRef,
+          providerVersion: configuration.providerVersion,
+          referenceRef: `${configuration.referencePrefix}:${consentId}`,
           assuranceLevel: "synthetic_provider_asserted",
           purposeCodes: requiredPurposes,
           validFrom: now.toISOString(),
@@ -99,8 +119,8 @@ export function createLocalSyntheticIdentityProvider({ pool }) {
         await coreRepository.commitCommand({
           aggregateType: "human_identity_reference",
           aggregateId: reference.identityReferenceId,
-          idempotencyKey: `private-pilot-synthetic-identity-v2-${consentId}`,
-          commandHash: hashId("private_pilot_synthetic_identity", {
+          idempotencyKey: `${configuration.idempotencyPrefix}-${consentId}`,
+          commandHash: hashId(configuration.hashNamespace, {
             tenantId: authenticationContext.tenantId,
             subjectId,
             consentId
@@ -142,6 +162,52 @@ export function createLocalSyntheticIdentityProvider({ pool }) {
           lockClient.release();
         }
       }
+    }
+  });
+}
+
+export function createLocalSyntheticIdentityProvider({ pool }) {
+  return createSyntheticIdentityProvider({ pool, profile: "local" });
+}
+
+export function createProductionSyntheticIdentityProvider({ pool }) {
+  return createSyntheticIdentityProvider({
+    pool,
+    profile: "production_sandbox"
+  });
+}
+
+export function createSyntheticIdentityGateway({ gateway, syntheticIdentity }) {
+  if (
+    typeof gateway?.execute !== "function" ||
+    typeof syntheticIdentity?.ensure !== "function"
+  ) {
+    throw new TypeError("Synthetic identity Gateway configuration is invalid");
+  }
+  return Object.freeze({
+    async execute(command) {
+      if (
+        command.operationId === "pilotRequestCredit" &&
+        command.authenticationContext?.actorType === "human"
+      ) {
+        await syntheticIdentity.ensure({
+          authenticationContext: command.authenticationContext,
+          subjectId: command.resource.resourceId,
+          consentId: command.payload.authorityId
+        });
+      }
+      const result = await gateway.execute(command);
+      if (
+        command.operationId === "pilotCreateConsent" &&
+        command.authenticationContext?.actorType === "human"
+      ) {
+        await syntheticIdentity.ensure({
+          authenticationContext: command.authenticationContext,
+          subjectId: result.response.subjectId,
+          consentId: result.response.consent.consentId
+        });
+      }
+      return result;
     }
   });
 }

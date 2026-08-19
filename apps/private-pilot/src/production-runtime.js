@@ -24,6 +24,10 @@ import {
   createPostgresHumanAccessComposition,
   createProductionTenantHost
 } from "../../tenant-api/src/index.js";
+import {
+  createProductionSyntheticIdentityProvider,
+  createSyntheticIdentityGateway
+} from "./local-synthetic-identity-provider.js";
 
 const CONFIG_KEYS = new Set([
   "agentAccountAddress",
@@ -141,7 +145,7 @@ async function composeProductionClosedPilotRuntime(input) {
   const policyRegistry = new AuthorizationPolicyRegistry({
     policyVersion: input.policyVersion
   });
-  const gateway = new TenantCommandGateway({
+  const durableGateway = new TenantCommandGateway({
     pool: input.gatewayPool,
     handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
       proofAdapters: input.proofAdapters,
@@ -153,6 +157,12 @@ async function composeProductionClosedPilotRuntime(input) {
     credentialRegistry: humanAccess.credentialRegistry,
     referenceHasher,
     livePolicyAdapterFactory: createPostgresTenantLivePolicyAdapter
+  });
+  const gateway = createSyntheticIdentityGateway({
+    gateway: durableGateway,
+    syntheticIdentity: createProductionSyntheticIdentityProvider({
+      pool: input.gatewayPool
+    })
   });
   const machineAuthenticator = new MachineAuthenticator({
     issuer: input.machineIssuer,
