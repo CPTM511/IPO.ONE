@@ -8,8 +8,7 @@ import { PostgresAuthorizationDirectory } from "../../../modules/authorization/s
 import {
   PostgresCoreRepository,
   PostgresEventRepository,
-  createTenantSecurityContextFromAuthentication,
-  setTenantTransactionContext
+  createTenantSecurityContextFromAuthentication
 } from "../../../modules/persistence/src/index.js";
 
 const SYNTHETIC_IDENTITY_PROFILES = Object.freeze({
@@ -31,26 +30,6 @@ const SYNTHETIC_IDENTITY_PROFILES = Object.freeze({
   })
 });
 
-async function withTenantTransaction(pool, context, operation) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setTenantTransactionContext(client, context);
-    const result = await operation(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original failure.
-    }
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
 function createSyntheticIdentityProvider({ pool, profile }) {
   const configuration = SYNTHETIC_IDENTITY_PROFILES[profile];
   if (!configuration || typeof pool?.connect !== "function") {
@@ -60,16 +39,17 @@ function createSyntheticIdentityProvider({ pool, profile }) {
     async ensure({ authenticationContext, subjectId, consentId }) {
       const tenantContext =
         createTenantSecurityContextFromAuthentication(authenticationContext);
-      const lockClient = await pool.connect();
       const lockKey =
         `${configuration.lockNamespace}:${authenticationContext.tenantId}:${consentId}`;
-      try {
-        await lockClient.query("SELECT pg_advisory_lock(hashtext($1))", [lockKey]);
-        const eventRepository = new PostgresEventRepository({ pool, tenantContext });
-        const coreRepository = new PostgresCoreRepository({ pool, eventRepository });
-        const page = await coreRepository.withTenantTransaction((client) => (
-          coreRepository.listHumanIdentityReferencesForSubjectInTransaction(client, subjectId, { limit: 50 })
-        ));
+      const eventRepository = new PostgresEventRepository({ pool, tenantContext });
+      const coreRepository = new PostgresCoreRepository({ pool, eventRepository });
+      return coreRepository.withTenantTransaction(async (client) => {
+        await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKey]);
+        const page = await coreRepository.listHumanIdentityReferencesForSubjectInTransaction(
+          client,
+          subjectId,
+          { limit: 50 }
+        );
         const requiredPurposes = [
           "identity_reference_use",
           "credit_decision",
@@ -82,7 +62,7 @@ function createSyntheticIdentityProvider({ pool, profile }) {
         ));
         if (existing) return existing;
 
-        const consent = await coreRepository.getConsentRecord(consentId);
+        const consent = await coreRepository.getConsentRecordInTransaction(client, consentId);
         const now = new Date();
         const expiresAt = new Date(Math.min(
           new Date(consent.expiresAt).getTime(),
@@ -116,7 +96,7 @@ function createSyntheticIdentityProvider({ pool, profile }) {
           },
           now
         });
-        await coreRepository.commitCommand({
+        await coreRepository.commitCommandInTransaction(client, {
           aggregateType: "human_identity_reference",
           aggregateId: reference.identityReferenceId,
           idempotencyKey: `${configuration.idempotencyPrefix}-${consentId}`,
@@ -138,30 +118,22 @@ function createSyntheticIdentityProvider({ pool, profile }) {
           }],
           response: { identityReferenceId: reference.identityReferenceId }
         });
-        await withTenantTransaction(pool, tenantContext, async (client) => {
-          const directory = new PostgresAuthorizationDirectory({
-            client,
-            authenticationContext
-          });
-          await directory.registerResource({
-            resourceType: "human_identity_reference",
-            resourceId: reference.identityReferenceId,
-            actorBindings: [{
-              actorId: authenticationContext.actorId,
-              actorType: authenticationContext.actorType,
-              relationship: "owner"
-            }],
-            now
-          });
+        const directory = new PostgresAuthorizationDirectory({
+          client,
+          authenticationContext
+        });
+        await directory.registerResource({
+          resourceType: "human_identity_reference",
+          resourceId: reference.identityReferenceId,
+          actorBindings: [{
+            actorId: authenticationContext.actorId,
+            actorType: authenticationContext.actorType,
+            relationship: "owner"
+          }],
+          now
         });
         return reference;
-      } finally {
-        try {
-          await lockClient.query("SELECT pg_advisory_unlock(hashtext($1))", [lockKey]);
-        } finally {
-          lockClient.release();
-        }
-      }
+      });
     }
   });
 }

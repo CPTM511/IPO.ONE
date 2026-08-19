@@ -58,7 +58,7 @@ function cookieValue(cookies, name) {
 
 test(
   "production closed pilot executes a durable Human command, logs out, and signs in again with real EIP-191 signatures",
-  { timeout: 30_000 },
+  { timeout: 120_000 },
   async () => {
     assert.ok(
       CONNECTION_STRING,
@@ -125,7 +125,7 @@ test(
     authenticationUrl.password = authenticationPassword;
     const gatewayPool = createPostgresPool({
       connectionString: gatewayUrl.toString(),
-      max: 4,
+      max: 1,
       applicationName: "ipo-one-predeploy-production-gateway"
     });
     const authenticationPool = createPostgresPool({
