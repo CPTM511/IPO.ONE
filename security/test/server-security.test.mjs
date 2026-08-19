@@ -7,7 +7,19 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
-const port = 32_000 + (process.pid % 10_000);
+const findAvailablePort = async () => {
+  const server = net.createServer();
+  server.unref();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  if (!address || typeof address === "string") throw new Error("available_port_not_resolved");
+  return address.port;
+};
+const port = await findAvailablePort();
 const baseUrl = `http://127.0.0.1:${port}`;
 const sessionA = "security_test_session_a";
 const sessionB = "security_test_session_b";
@@ -263,7 +275,7 @@ test("public sandbox rejects adversarial HTTP input and bounds mutable state", a
 });
 
 test("production runtime enforces the approved public ingress contract", async (t) => {
-  const productionPort = port + 1;
+  const productionPort = await findAvailablePort();
   const productionBaseUrl = `http://127.0.0.1:${productionPort}`;
   let output = "";
   const child = spawn(process.execPath, ["apps/api/src/server.js"], {
