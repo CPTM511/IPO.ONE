@@ -1063,7 +1063,7 @@ export interface ReadHumanSelfRequest extends TenantProtocolRequestBase {
 
 export interface ReadWorkspaceResumeRequest extends TenantProtocolRequestBase {
   operationId: "pilotReadWorkspaceResume";
-  payload: Record<string, never>;
+  payload: { selectedAgentActorId?: string };
 }
 
 export interface ReadTenantRiskPortfolioReferenceRequest extends TenantProtocolRequestBase {

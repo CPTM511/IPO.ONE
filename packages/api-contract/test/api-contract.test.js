@@ -439,6 +439,23 @@ test("Tenant protocol fixtures enforce every closed request and result branch", 
 });
 
 test("Principal workspace recovery accepts only the reviewed controlled Agent picker contract", () => {
+  const selectedWorkspaceRequest = {
+    operationId: "pilotReadWorkspaceResume",
+    payload: { selectedAgentActorId: "actor_agent_new" },
+    requestId: "request_workspace_resume_picker_001",
+    correlationId: "correlation_workspace_resume_picker_001",
+    schemaVersion: "tenant_protocol_request.v1"
+  };
+  assert.equal(isTenantProtocolRequest(selectedWorkspaceRequest), true);
+  assert.equal(isTenantProtocolRequest({
+    ...selectedWorkspaceRequest,
+    payload: { selectedAgentActorId: "actor_agent_new", unrestricted: true }
+  }), false);
+  assert.equal(isTenantProtocolRequest({
+    ...selectedWorkspaceRequest,
+    payload: { selectedAgentActorId: " actor_agent_new" }
+  }), false);
+
   const result = {
     operationId: "pilotReadWorkspaceResume",
     response: {
