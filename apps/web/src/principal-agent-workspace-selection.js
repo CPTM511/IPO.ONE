@@ -32,6 +32,26 @@ function exactUniqueIdentifiers(values) {
   return unique.length === values.length ? unique : null;
 }
 
+function exactControlledAgentOptions(value, actorIds) {
+  if (!Array.isArray(value) || value.length !== actorIds.length) return null;
+  const options = value.map((option) => {
+    if (
+      !exactObject(option, new Set(["actorId", "label", "setupStatus"])) ||
+      !IDENTIFIER.test(option.actorId ?? "") ||
+      typeof option.label !== "string" || option.label.length < 1 || option.label.length > 80 ||
+      !new Set(["configured", "setup_required"]).has(option.setupStatus)
+    ) return null;
+    return Object.freeze({
+      actorId: option.actorId,
+      label: option.label,
+      setupStatus: option.setupStatus
+    });
+  });
+  if (options.some((option) => option === null)) return null;
+  if (options.some((option, index) => option.actorId !== actorIds[index])) return null;
+  return options;
+}
+
 function exactObject(value, keys) {
   return value && typeof value === "object" && !Array.isArray(value) &&
     Object.keys(value).every((key) => keys.has(key));
@@ -96,6 +116,8 @@ export function selectPrincipalAgentWorkspace(input = {}) {
     "workspaceKind",
     "resources",
     "controlledAgentActorIds",
+    "controlledAgentOptions",
+    "selectedAgentActorId",
     "continuationReceipts",
     "hasMore",
     "serverTruth",
@@ -120,7 +142,24 @@ export function selectPrincipalAgentWorkspace(input = {}) {
         : "ambiguous"
     });
   }
-  if (actorIds.length !== 1) return Object.freeze({ status: "ambiguous" });
+  const hasPickerContract = input.controlledAgentOptions !== undefined ||
+    input.selectedAgentActorId !== undefined;
+  const options = hasPickerContract
+    ? exactControlledAgentOptions(input.controlledAgentOptions, actorIds)
+    : undefined;
+  if (hasPickerContract && !options) return Object.freeze({ status: "ambiguous" });
+  const selectedActorId = input.selectedAgentActorId === null
+    ? undefined
+    : input.selectedAgentActorId;
+  if (
+    selectedActorId !== undefined &&
+    (typeof selectedActorId !== "string" || !actorIds.includes(selectedActorId))
+  ) return Object.freeze({ status: "ambiguous" });
+  if (actorIds.length !== 1 && selectedActorId === undefined) {
+    if (!options) return Object.freeze({ status: "ambiguous" });
+    return Object.freeze({ status: "selection_required", options });
+  }
+  const actorId = selectedActorId ?? actorIds[0];
 
   const subjects = resources.filter(({ resourceType }) => resourceType === "subject");
   const mandates = resources.filter(({ resourceType }) => resourceType === "mandate");
@@ -141,8 +180,9 @@ export function selectPrincipalAgentWorkspace(input = {}) {
   }
   return Object.freeze({
     status: "selected",
-    actorId: actorIds[0],
+    actorId,
     subjectId: subjects[0]?.resourceId ?? null,
-    mandateId: mandates[0]?.resourceId ?? null
+    mandateId: mandates[0]?.resourceId ?? null,
+    ...(options === undefined ? {} : { options })
   });
 }

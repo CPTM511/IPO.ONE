@@ -390,6 +390,58 @@ test("workspace recovery is capped and recognizes one Principal Controller role"
   assert.equal(calls[0].values[5], "principal_controller");
 });
 
+test("Principal recovery filters resources and continuations to one selected controlled Agent", async () => {
+  const calls = [];
+  const continuationActors = [];
+  const result = await readWorkspaceResumeQueryHandler().execute({
+    client: {
+      async query(text, values) {
+        calls.push({ text, values });
+        if (text.includes("controller_actor_id")) {
+          return {
+            rows: [
+              { actor_id: "actor_agent_existing", subject_configured: true },
+              { actor_id: "actor_agent_new", subject_configured: false }
+            ]
+          };
+        }
+        return { rows: [] };
+      }
+    },
+    coreRepository: {
+      async listActiveWorkspaceContinuationReceiptsInTransaction(_client, { actorId }) {
+        continuationActors.push(actorId);
+        return [];
+      }
+    },
+    payload: { selectedAgentActorId: "actor_agent_new" },
+    authenticationContext: context([RoleBundle.PRINCIPAL_CONTROLLER]),
+    now: new Date("2026-07-20T00:00:00.000Z")
+  });
+
+  assert.equal(calls[0].values[6], "actor_agent_new");
+  assert.match(calls[0].text, /selected_binding\.actor_id = \$7/);
+  assert.deepEqual(continuationActors, ["actor_agent_new"]);
+  assert.deepEqual(result.controlledAgentActorIds, [
+    "actor_agent_existing",
+    "actor_agent_new"
+  ]);
+  assert.deepEqual(result.controlledAgentOptions, [
+    {
+      actorId: "actor_agent_existing",
+      label: "Existing Agent workspace",
+      setupStatus: "configured"
+    },
+    {
+      actorId: "actor_agent_new",
+      label: "New Agent workspace",
+      setupStatus: "setup_required"
+    }
+  ]);
+  assert.equal(result.selectedAgentActorId, "actor_agent_new");
+  assert.deepEqual(result.resources, []);
+});
+
 test("same-Human multi-role recovery binds resources to the selected role instead of actor union", async () => {
   const calls = [];
   const client = {

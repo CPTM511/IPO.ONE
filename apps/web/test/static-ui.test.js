@@ -1702,7 +1702,7 @@ test("UX-005 opens a fresh Human application when a recovered Obligation exists"
 
 test("Human reload prioritizes one actionable recovered Offer over prior position hydration", async () => {
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  const recoveryStart = js.indexOf("async function recoverAuthenticatedWorkspace()");
+  const recoveryStart = js.indexOf("async function recoverAuthenticatedWorkspace(");
   const recoveryEnd = js.indexOf("async function restoreLatestCreditPassport()", recoveryStart);
   const recovery = js.slice(recoveryStart, recoveryEnd);
 

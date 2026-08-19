@@ -104,6 +104,45 @@ test("zero controlled Agents exposes an explicit empty state", () => {
   });
 });
 
+test("multiple controlled Agents require and verify one server-backed visible selection", () => {
+  const options = [
+    {
+      actorId: "actor_agent_existing",
+      label: "Existing Agent workspace",
+      setupStatus: "configured"
+    },
+    {
+      actorId: "actor_agent_new",
+      label: "New Agent workspace",
+      setupStatus: "setup_required"
+    }
+  ];
+  assert.deepEqual(selectPrincipalAgentWorkspace(recovery({
+    controlledAgentActorIds: options.map(({ actorId }) => actorId),
+    controlledAgentOptions: options,
+    selectedAgentActorId: null
+  })), {
+    status: "selection_required",
+    options
+  });
+  assert.deepEqual(selectPrincipalAgentWorkspace(recovery({
+    controlledAgentActorIds: options.map(({ actorId }) => actorId),
+    controlledAgentOptions: options,
+    selectedAgentActorId: "actor_agent_new"
+  })), {
+    status: "selected",
+    actorId: "actor_agent_new",
+    subjectId: null,
+    mandateId: null,
+    options
+  });
+  assert.deepEqual(selectPrincipalAgentWorkspace(recovery({
+    controlledAgentActorIds: options.map(({ actorId }) => actorId),
+    controlledAgentOptions: options,
+    selectedAgentActorId: "actor_agent_uncontrolled"
+  })), { status: "ambiguous" });
+});
+
 test("multiple, incomplete and malformed server truth fail closed", () => {
   for (const input of [
     recovery({ controlledAgentActorIds: ["actor_a", "actor_b"] }),

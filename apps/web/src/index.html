@@ -768,6 +768,15 @@
                     <strong id="agentWorkspaceSelectionStatus">Checking Agent assignment</strong>
                     <small id="agentWorkspaceSelectionHelper">Only one server-authorized Agent can open this workflow. Empty or ambiguous assignments remain safely closed.</small>
                   </div>
+                  <div class="form-grid two" id="agentWorkspacePicker" hidden>
+                    <div>
+                      <label for="agentWorkspaceChoice">Agent workspace</label>
+                      <select id="agentWorkspaceChoice"></select>
+                    </div>
+                    <div class="button-row authority-actions">
+                      <button class="secondary" id="openSelectedAgentWorkspaceBtn" type="button">Open selected Agent workspace</button>
+                    </div>
+                  </div>
 
                   <div id="agentAuthoritySelectedWorkflow" hidden>
                   <div id="agentSubjectCreationControls" hidden>

@@ -22,10 +22,20 @@ const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/;
 const PAGE_SIZE = 32;
 const CONTROLLED_AGENT_LIMIT = 8;
 
-function assertEmptyPayload(payload) {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload) || Object.keys(payload).length !== 0) {
-    throw new DomainError("invalid_tenant_command_payload", "Workspace recovery payload must be empty");
+function selectedControlledAgentActorId(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new DomainError("invalid_tenant_command_payload", "Workspace recovery payload is invalid");
   }
+  const keys = Object.keys(payload);
+  if (keys.length === 0) return undefined;
+  if (
+    keys.length !== 1 || keys[0] !== "selectedAgentActorId" ||
+    typeof payload.selectedAgentActorId !== "string" ||
+    !IDENTIFIER.test(payload.selectedAgentActorId)
+  ) {
+    throw new DomainError("invalid_tenant_command_payload", "Workspace recovery payload is invalid");
+  }
+  return payload.selectedAgentActorId;
 }
 
 function workspaceKind(authenticationContext) {
@@ -59,10 +69,19 @@ function normalizeRow(row) {
   });
 }
 
-async function controlledAgentActorIds({ client, authenticationContext, kind, now }) {
+async function controlledAgentOptions({ client, authenticationContext, kind, now }) {
   if (kind !== "principal_controller") return [];
   const result = await client.query(
-    `SELECT m.actor_id
+    `SELECT m.actor_id,
+            EXISTS (
+              SELECT 1
+                FROM authorization_resource_bindings AS subject_binding
+               WHERE subject_binding.tenant_id = m.tenant_id
+                 AND subject_binding.actor_id = m.actor_id
+                 AND subject_binding.resource_type = 'subject'
+                 AND subject_binding.relationship = 'subject'
+                 AND subject_binding.status = 'active'
+            ) AS subject_configured
        FROM memberships AS m
        JOIN actors AS a ON a.id = m.actor_id
       WHERE m.tenant_id = $1
@@ -97,7 +116,20 @@ async function controlledAgentActorIds({ client, authenticationContext, kind, no
       "Controlled Agent recovery state is invalid"
     );
   }
-  return actorIds;
+  const labelCounts = new Map();
+  return result.rows.map((row) => {
+    const setupStatus = row.subject_configured === true ? "configured" : "setup_required";
+    const baseLabel = setupStatus === "configured"
+      ? "Existing Agent workspace"
+      : "New Agent workspace";
+    const count = (labelCounts.get(baseLabel) ?? 0) + 1;
+    labelCounts.set(baseLabel, count);
+    return Object.freeze({
+      actorId: row.actor_id,
+      label: count === 1 ? baseLabel : `${baseLabel} ${count}`,
+      setupStatus
+    });
+  });
 }
 
 async function continuationReceiptsForWorkspace({
@@ -289,8 +321,14 @@ export function readWorkspaceResumeQueryHandler() {
     operationId: "pilotReadWorkspaceResume",
     kind: "query",
     async execute({ client, coreRepository, directory, payload, authenticationContext, now }) {
-      assertEmptyPayload(payload);
       const kind = workspaceKind(authenticationContext);
+      const selectedAgentActorId = selectedControlledAgentActorId(payload);
+      if (selectedAgentActorId !== undefined && kind !== "principal_controller") {
+        throw new DomainError(
+          "workspace_recovery_unavailable",
+          "Workspace recovery is unavailable for this authenticated role"
+        );
+      }
       const result = await client.query(
         `WITH authorized_resources AS (
            SELECT b.resource_type, b.resource_id, b.relationship, b.updated_at,
@@ -349,7 +387,17 @@ export function readWorkspaceResumeQueryHandler() {
                   AND b.resource_type = ANY(ARRAY['subject', 'consent', 'credit_intent', 'obligation']::text[]))
                 OR ($6::text = 'principal_controller'
                   AND b.relationship = 'controller'
-                  AND b.resource_type = ANY(ARRAY['subject', 'mandate', 'obligation']::text[]))
+                  AND b.resource_type = ANY(ARRAY['subject', 'mandate', 'obligation']::text[])
+                  AND ($7::text IS NULL OR EXISTS (
+                    SELECT 1
+                      FROM authorization_resource_bindings AS selected_binding
+                     WHERE selected_binding.tenant_id = b.tenant_id
+                       AND selected_binding.resource_type = b.resource_type
+                       AND selected_binding.resource_id = b.resource_id
+                       AND selected_binding.actor_id = $7
+                       AND selected_binding.status = 'active'
+                       AND selected_binding.relationship IN ('subject', 'owner')
+                  )))
                 OR ($6::text = 'agent_runtime' AND (
                   (b.relationship = 'subject'
                     AND b.resource_type = ANY(ARRAY['subject', 'mandate']::text[]))
@@ -370,22 +418,35 @@ export function readWorkspaceResumeQueryHandler() {
           RESOURCE_TYPES,
           PAGE_SIZE + 1,
           now,
-          kind
+          kind,
+          selectedAgentActorId ?? null
         ]
       );
       const rows = result.rows.map(normalizeRow);
-      const controlledAgents = await controlledAgentActorIds({
+      const controlledAgents = await controlledAgentOptions({
         client,
         authenticationContext,
         kind,
         now
       });
+      const controlledAgentActorIds = controlledAgents.map(({ actorId }) => actorId);
+      if (
+        selectedAgentActorId !== undefined &&
+        !controlledAgentActorIds.includes(selectedAgentActorId)
+      ) {
+        throw new DomainError(
+          "workspace_recovery_unavailable",
+          "The selected Agent workspace is not available"
+        );
+      }
       const continuationReceipts = await continuationReceiptsForWorkspace({
         client,
         coreRepository,
         authenticationContext,
         kind,
-        controlledAgents,
+        controlledAgents: selectedAgentActorId === undefined
+          ? controlledAgentActorIds
+          : [selectedAgentActorId],
         now
       });
       const resources = rows.slice(0, PAGE_SIZE);
@@ -402,7 +463,11 @@ export function readWorkspaceResumeQueryHandler() {
         workspaceKind: kind,
         resources,
         ...(kind === "principal_controller"
-          ? { controlledAgentActorIds: controlledAgents }
+          ? {
+              controlledAgentActorIds,
+              controlledAgentOptions: controlledAgents,
+              selectedAgentActorId: selectedAgentActorId ?? null
+            }
           : {}),
         ...(kind === "human_borrower" ? { humanOfferReview } : {}),
         continuationReceipts: continuationReceipts.map((receipt) => ({

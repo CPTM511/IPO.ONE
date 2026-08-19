@@ -2446,7 +2446,7 @@ function samePrincipalAgentSelection(left, right) {
 async function revalidatePrincipalAgentSelection() {
   const previousSelection = requireSelectedPrincipalAgent();
   const result = await tenantApi("pilotReadWorkspaceResume", {
-    payload: {},
+    payload: { selectedAgentActorId: previousSelection.actorId },
     idempotent: false
   });
   const currentSelection = selectPrincipalAgentWorkspace(result.response);
@@ -4150,6 +4150,27 @@ function renderAgentAuthorityPilot() {
   }
 
   const exactAgentSelected = agentAuthorityPilot.workspaceSelection?.status === "selected";
+  const workspaceOptions = agentAuthorityPilot.workspaceSelection?.options ?? [];
+  const workspacePicker = el("agentWorkspacePicker");
+  const workspaceChoice = el("agentWorkspaceChoice");
+  workspacePicker.hidden = workspaceOptions.length < 2;
+  const optionSignature = JSON.stringify(workspaceOptions);
+  if (workspaceChoice.dataset.optionSignature !== optionSignature) {
+    workspaceChoice.replaceChildren(...workspaceOptions.map((option) => {
+      const item = document.createElement("option");
+      item.value = option.actorId;
+      item.textContent = option.label;
+      return item;
+    }));
+    workspaceChoice.dataset.optionSignature = optionSignature;
+  }
+  if (exactAgentSelected && workspaceOptions.some(({ actorId }) =>
+    actorId === agentAuthorityPilot.workspaceSelection.actorId
+  )) {
+    workspaceChoice.value = agentAuthorityPilot.workspaceSelection.actorId;
+  }
+  el("openSelectedAgentWorkspaceBtn").disabled =
+    privateBusy || workspaceOptions.length < 2 || !workspaceChoice.value;
   el("agentAuthoritySelectedWorkflow").hidden = !exactAgentSelected;
   el("agentAuthorityReviewPanel").hidden = !exactAgentSelected || !mandate;
   el("agentSubjectCreationControls").hidden = Boolean(subjectId);
@@ -4197,11 +4218,14 @@ function renderAgentAuthorityPilot() {
     selected: subjectId ? "Assigned Agent restored" : "Assigned Agent ready",
     empty: "No Agent assigned",
     ambiguous: "Agent selection required",
+    selection_required: "Choose an Agent workspace",
     unavailable: "Agent workspace unavailable"
   }[agentAuthorityPilot.workspaceSelection?.status] ?? "Checking Agent assignment";
   el("agentWorkspaceSelectionHelper").textContent =
     agentAuthorityPilot.workspaceSelection?.status === "selected"
       ? "The assignment was restored from authenticated server truth. Internal locators stay in technical details."
+      : agentAuthorityPilot.workspaceSelection?.status === "selection_required"
+        ? "Choose one server-authorized workspace. The selection does not combine Agent authority or expose credentials."
       : agentAuthorityPilot.helper;
   el("agentApplicationStageStatus").textContent = mandate?.status === "active"
     ? "Application stage closed"
@@ -8414,11 +8438,15 @@ function recoveredResource(resources, resourceType) {
   );
 }
 
-async function recoverAuthenticatedWorkspace() {
+async function recoverAuthenticatedWorkspace({
+  selectedAgentActorId = agentAuthorityPilot.workspaceSelection?.status === "selected"
+    ? agentAuthorityPilot.workspaceSelection.actorId
+    : undefined
+} = {}) {
   tenantPilot.workspaceRecoveryState = "loading";
   tenantPilot.workspaceRecoveryErrorCode = null;
   const result = await tenantApi("pilotReadWorkspaceResume", {
-    payload: {},
+    payload: selectedAgentActorId === undefined ? {} : { selectedAgentActorId },
     idempotent: false
   });
   const recovery = result.response;
@@ -12668,6 +12696,28 @@ function bindActions() {
     }
   });
   el("agentAuthorityForm").addEventListener("submit", (event) => event.preventDefault());
+  el("openSelectedAgentWorkspaceBtn").addEventListener("click", async () => {
+    const selectedAgentActorId = el("agentWorkspaceChoice").value;
+    if (!selectedAgentActorId) return;
+    agentAuthorityPilot.busy = true;
+    agentAuthorityPilot.helper = "Opening the selected server-authorized Agent workspace…";
+    renderTenantPilot();
+    try {
+      await recoverAuthenticatedWorkspace({ selectedAgentActorId });
+      if (
+        agentAuthorityPilot.workspaceSelection?.status !== "selected" ||
+        agentAuthorityPilot.workspaceSelection.actorId !== selectedAgentActorId
+      ) throw new Error("The selected Agent workspace could not be verified.");
+      toast("Agent workspace opened");
+      announce("Selected Agent workspace restored from server truth");
+    } catch (error) {
+      agentAuthorityPilot.helper = error.message;
+      toast(error.message, "error");
+    } finally {
+      agentAuthorityPilot.busy = false;
+      renderTenantPilot();
+    }
+  });
   el("createPrivateAgentSubjectBtn").addEventListener("click", createPrivateAgentSubject);
   el("createAccountChallengeBtn").addEventListener("click", createAgentAccountChallenge);
   el("proveAccountOnlineBtn").addEventListener("click", proveAgentAccountOnline);
