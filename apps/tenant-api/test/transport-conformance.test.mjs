@@ -239,7 +239,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(page, /Request and price no-funds credit/);
     assert.match(page, /Create, review, and activate Agent authority/);
     assert.match(page, /Principal → Agent capability packet/);
-    assert.match(page, /One manifest\. Twelve local tools\. No ambient authority\./);
+    assert.match(page, /One manifest\. Thirteen local tools\. No ambient authority\./);
     assert.match(page, /Approved local stdio MCP tools/);
     assert.match(page, /Three staged workflows/);
     assert.match(page, /local stdio MCP · closed_non_funds_pilot/);

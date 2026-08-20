@@ -74,7 +74,8 @@ export interface AgentMcpToolOperation {
     | "ipo_one_accept_credit_offer"
     | "ipo_one_execute_sandbox_obligation"
     | "ipo_one_post_sandbox_repayment"
-    | "ipo_one_read_credit_registry_evidence";
+    | "ipo_one_read_credit_registry_evidence"
+    | "ipo_one_read_credit_state";
   readonly operationId:
     | "pilotReadAgentSelf"
     | "pilotRequestCredit"
@@ -87,7 +88,8 @@ export interface AgentMcpToolOperation {
     | "pilotAcceptCreditOffer"
     | "pilotExecuteSandboxObligation"
     | "pilotPostSandboxRepayment"
-    | "pilotReadCreditRegistryEvidence";
+    | "pilotReadCreditRegistryEvidence"
+    | "pilotReadOwnCreditState";
 }
 
 export const AGENT_MCP_CLIENT_TOOLS: readonly AgentMcpToolOperation[];

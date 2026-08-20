@@ -1021,8 +1021,8 @@
               <div class="private-page-heading">
                 <div>
                   <div class="v9-heading-badges"><p class="eyebrow">Private credit evidence</p><span class="v9-maturity-badge checking" data-v9-maturity="credit-passport">Checking server</span></div>
-                  <h2 id="creditPassportViewTitle">Credit Passport</h2>
-                  <p>Share a temporary, read-only view of the facts behind your current credit Decision. You choose one authorized reviewer, how long access lasts, and exactly which facts are disclosed.</p>
+                  <h2 id="creditPassportViewTitle">Decision Passport sharing</h2>
+                  <p>This v1 artifact is a temporary, read-only view of the facts behind one current credit Decision—not a repayment-history Passport. You choose one authorized reviewer, how long access lasts, and exactly which facts are disclosed. Terminal repayment history appears separately in Credit Track Record.</p>
                 </div>
                 <button class="primary" id="restoreCreditPassportBtn" type="button">Load my latest Decision</button>
               </div>
@@ -1155,9 +1155,9 @@
               <div class="agent-console-contract-heading">
                 <div>
                   <p class="eyebrow">Versioned integration truth</p>
-                  <h3 id="agentConsoleContractTitle">One online Agent path. Twelve protected operations.</h3>
+                  <h3 id="agentConsoleContractTitle">One online Agent path. Thirteen protected operations.</h3>
                   <p>Run the registered local reference Agent online or connect an external Agent through the protected HTTPS contract. Credentials remain server-side and every call is reauthorized.</p>
-                  <p>One manifest. Twelve local tools. No ambient authority.</p>
+                  <p>One manifest. Thirteen local tools. No ambient authority.</p>
                 </div>
                 <div class="agent-console-contract-actions">
                   <span class="state-pill neutral" id="agentConsoleContractStatus">Checking contract</span>
@@ -2029,26 +2029,28 @@
                 <div>
                   <div class="v9-heading-badges"><p class="eyebrow">Evidence-derived only</p><span class="v9-maturity-badge checking" data-v9-maturity="credit-track-record">Checking server</span></div>
                   <h2 id="creditTrackRecordViewTitle">Credit Track Record</h2>
-                  <p>Summarize only the authenticated Decision and Obligation Evidence already available to this session. Browser history is not credit truth.</p>
+                  <p>Read the durable Credit State rebuilt from finalized terminal Credit Outcomes. Browser history is not credit truth, and this qualitative record cannot authorize funds or change a limit automatically.</p>
                 </div>
                 <button class="primary" id="loadCreditTrackRecordBtn" type="button">Load verified record</button>
               </div>
               <section class="panel v9-capability-state" aria-labelledby="creditTrackRecordStateTitle">
                 <div><svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg><span><p class="eyebrow">Current record</p><h3 id="creditTrackRecordStateTitle">No verified lifecycle loaded</h3></span></div>
-                <p id="creditTrackRecordStateCopy">Restore an owned Obligation and load its Evidence. No positive history is inferred from an empty browser state.</p>
+                <p id="creditTrackRecordStateCopy">Restore an owned Subject and load its outcome-derived Credit State. No positive history is inferred from an empty browser state.</p>
               </section>
               <section class="panel credit-track-record-summary" aria-labelledby="creditTrackRecordSummaryTitle">
-                <div class="panel-heading"><div><p class="eyebrow">Canonical inputs only</p><h3 id="creditTrackRecordSummaryTitle">Current Evidence summary</h3></div><span id="creditTrackRecordFinality" class="state-pill neutral">Not loaded</span></div>
+                <div class="panel-heading"><div><p class="eyebrow">Finalized outcomes only</p><h3 id="creditTrackRecordSummaryTitle">Durable Credit State</h3></div><span id="creditTrackRecordFinality" class="state-pill neutral">Not loaded</span></div>
                 <dl class="credit-passport-facts">
                   <div><dt>Decision Passport</dt><dd id="creditTrackRecordDecision">Not loaded</dd></div>
-                  <div><dt>Owned Evidence</dt><dd id="creditTrackRecordEvidenceCount">0 events</dd></div>
-                  <div><dt>Finalized</dt><dd id="creditTrackRecordFinalizedCount">0</dd></div>
-                  <div><dt>Non-final / invalidated</dt><dd id="creditTrackRecordNonFinalCount">0</dd></div>
+                  <div><dt>Completed cycles</dt><dd id="creditTrackRecordCycleCount">0</dd></div>
+                  <div><dt>Latest terminal outcome</dt><dd id="creditTrackRecordLatestOutcome">Not loaded</dd></div>
+                  <div><dt>Repayment reliability</dt><dd id="creditTrackRecordReliability">Not loaded</dd></div>
+                  <div><dt>Total loss</dt><dd id="creditTrackRecordLoss">$0.00</dd></div>
                 </dl>
+                <div id="creditTrackRecordRows" class="credit-passport-disclosures" aria-label="Terminal credit outcome chronology"></div>
               </section>
               <div class="v9-maturity-grid">
-                <section class="panel"><span class="state-pill">Server-backed</span><h3>Evidence-derived record</h3><p>Decision and owned Obligation Evidence are the only permitted inputs.</p></section>
-                <section class="panel"><span class="state-pill warning">Simulation only</span><h3>Wallet history and impact</h3><p>Wallet-history import and impact simulation are not authoritative product actions.</p></section>
+                <section class="panel"><span class="state-pill">Server-backed</span><h3>Outcome-derived record</h3><p>Only finalized on-time, late or modified, and written-off Credit Outcomes can update this state.</p></section>
+                <section class="panel"><span class="state-pill warning">Non-authorizing</span><h3>Qualitative factors</h3><p>No universal score, wallet-history inference, funds authority, or automatic limit change is created.</p></section>
                 <section class="panel"><span class="state-pill">Server-backed</span><h3>Generated report</h3><p>Create a bounded JSON or formula-safe CSV artifact from the exact owned Obligation and its persisted Evidence.</p></section>
               </div>
             </section>
@@ -2464,7 +2466,7 @@
                   </div>
                 </div>
                 <pre><code id="mcpHandoffPacket"></code></pre>
-                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises twelve local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority never enter the packet.</p>
+                <p class="mcp-boundary-note" id="mcpHandoffBoundaryNote">This non-authorizing packet advertises thirteen local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority never enter the packet.</p>
               </section>
 
               <section class="panel" aria-labelledby="mcpToolTitle">

@@ -5,7 +5,7 @@ TRANSPORT-001 approval and verification on 2026-07-15. Public/remote and
 production transport remain disabled.
 
 Current V9 product note: V9-006 exposes the later reviewed
-`agent_mcp_registry.v2` with exactly twelve local stdio tools. It does not
+`agent_mcp_registry.v2` with exactly thirteen local stdio tools. It does not
 provision or expose a workload token, DPoP proof, mTLS key, production
 credential, remote MCP listener, or public Agent endpoint. Host authentication
 context remains out of band.

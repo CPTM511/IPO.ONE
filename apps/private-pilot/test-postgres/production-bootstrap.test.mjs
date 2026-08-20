@@ -36,7 +36,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0061_execution_account_bindings"
+      "0062_durable_credit_state_projection"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({

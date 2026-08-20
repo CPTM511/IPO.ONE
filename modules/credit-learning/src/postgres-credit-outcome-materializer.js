@@ -4,6 +4,7 @@ import {
   createFinalizedCreditOutcome,
   hashId
 } from "../../../packages/domain/src/index.js";
+import { createCreditStateProjection } from "./credit-state-projection.js";
 
 const DEFAULT_LIMIT = 25;
 
@@ -201,6 +202,84 @@ async function insertOutcome(client, outcome, committed) {
   );
 }
 
+async function refreshCreditState(client, subjectId) {
+  const outcomes = await client.query(
+    `SELECT outcome
+       FROM credit_outcomes
+      WHERE subject_id = $1
+      ORDER BY outcome_finalized_at, recorded_at, id
+      LIMIT 512`,
+    [subjectId]
+  );
+  if (outcomes.rowCount < 1) return undefined;
+  const values = outcomes.rows.map(({ outcome }) =>
+    typeof outcome === "string" ? JSON.parse(outcome) : outcome);
+  const updatedAt = values.reduce(
+    (latest, outcome) => outcome.recordedAt > latest ? outcome.recordedAt : latest,
+    values[0].recordedAt
+  );
+  const projection = createCreditStateProjection({
+    outcomes: values,
+    updatedAt
+  });
+  const result = await client.query(
+    `INSERT INTO credit_state_projections(
+       subject_id, principal_id, projection_hash, projection_version,
+       projected_outcome_count, latest_outcome_hash,
+       latest_outcome_finalized_at, projection, updated_at, schema_version
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     ON CONFLICT (tenant_id, subject_id) DO UPDATE SET
+       principal_id = EXCLUDED.principal_id,
+       projection_hash = EXCLUDED.projection_hash,
+       projection_version = EXCLUDED.projection_version,
+       projected_outcome_count = EXCLUDED.projected_outcome_count,
+       latest_outcome_hash = EXCLUDED.latest_outcome_hash,
+       latest_outcome_finalized_at = EXCLUDED.latest_outcome_finalized_at,
+       projection = EXCLUDED.projection,
+       updated_at = EXCLUDED.updated_at,
+       schema_version = EXCLUDED.schema_version
+     WHERE credit_state_projections.projection_hash <> EXCLUDED.projection_hash
+        OR credit_state_projections.projected_outcome_count <>
+           EXCLUDED.projected_outcome_count
+     RETURNING projection_hash`,
+    [
+      projection.subjectId,
+      projection.principalId,
+      projection.creditStateHash,
+      projection.projectionVersion,
+      projection.metrics.completedCycleCount,
+      projection.latestOutcome.outcomeHash,
+      projection.latestOutcome.outcomeFinalizedAt,
+      JSON.stringify(projection),
+      projection.updatedAt,
+      projection.schemaVersion
+    ]
+  );
+  return Object.freeze({
+    subjectId: projection.subjectId,
+    creditStateHash: projection.creditStateHash,
+    completedCycleCount: projection.metrics.completedCycleCount,
+    updated: result.rowCount === 1,
+    schemaVersion: projection.schemaVersion
+  });
+}
+
+async function refreshCreditStates(client, limit) {
+  const subjects = await client.query(
+    `SELECT subject_id
+       FROM credit_outcomes
+      GROUP BY subject_id
+      ORDER BY MIN(outcome_finalized_at), subject_id
+      LIMIT $1`,
+    [limit]
+  );
+  const projections = [];
+  for (const { subject_id: subjectId } of subjects.rows) {
+    projections.push(await refreshCreditState(client, subjectId));
+  }
+  return projections.filter(Boolean);
+}
+
 export class PostgresCreditOutcomeMaterializer {
   constructor({ eventRepository, clock = () => new Date() }) {
     this.eventRepository = assertRepository(eventRepository);
@@ -335,10 +414,14 @@ export class PostgresCreditOutcomeMaterializer {
         });
         outcomes.push({ ...committed.response, replayed: committed.replayed });
       }
+      const creditStates = await refreshCreditStates(client, checkedLimit);
       return Object.freeze({
         candidateCount: candidates.rowCount,
         materializedCount: outcomes.length,
         outcomes: Object.freeze(outcomes),
+        creditStateProjectionCount: creditStates.length,
+        creditStateUpdatedCount: creditStates.filter(({ updated }) => updated).length,
+        creditStates: Object.freeze(creditStates),
         nonAuthorizing: true,
         productionAuthority: false,
         schemaVersion: "credit_outcome_materialization_batch.v1"

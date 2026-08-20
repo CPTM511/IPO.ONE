@@ -161,6 +161,8 @@ export async function runVercelSandboxCronCycle({
       publishedCount: result.publishedCount,
       creditOutcomeMaterializedCount:
         result.creditOutcomes?.materializedCount ?? 0,
+      creditStateUpdatedCount:
+        result.creditOutcomes?.creditStateUpdatedCount ?? 0,
       reconciliationStatus: result.reconciliation?.status ?? "not_due",
       realFundsEnabled: false
     });

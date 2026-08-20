@@ -137,11 +137,12 @@
             { "$ref": "#/$defs/executeSandboxObligationTool" },
             { "$ref": "#/$defs/postSandboxRepaymentTool" }
             ,
-            { "$ref": "#/$defs/readCreditRegistryEvidenceTool" }
+            { "$ref": "#/$defs/readCreditRegistryEvidenceTool" },
+            { "$ref": "#/$defs/readCreditStateTool" }
           ],
           "items": false,
-          "minItems": 12,
-          "maxItems": 12
+          "minItems": 13,
+          "maxItems": 13
         }
       }
     },
@@ -285,6 +286,15 @@
         "operationId": {
           "const": "pilotReadCreditRegistryEvidence"
         }
+      }
+    },
+    "readCreditStateTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_read_credit_state" },
+        "operationId": { "const": "pilotReadOwnCreditState" }
       }
     },
     "acceptCreditOfferTool": {

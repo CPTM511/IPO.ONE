@@ -198,6 +198,10 @@ test("Agent SDK publishes the exact reviewed local MCP operation pairs", () => {
     {
       name: "ipo_one_read_credit_registry_evidence",
       operationId: "pilotReadCreditRegistryEvidence"
+    },
+    {
+      name: "ipo_one_read_credit_state",
+      operationId: "pilotReadOwnCreditState"
     }
   ]);
   assert.equal(Object.isFrozen(AGENT_MCP_CLIENT_TOOLS), true);

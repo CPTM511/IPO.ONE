@@ -54,6 +54,7 @@
         "pilotReadServicingQueue",
         "pilotReadEvidence",
         "pilotReadOwnObligation",
+        "pilotReadOwnCreditState",
         "pilotReadOwnObligationEvidence",
         "pilotRevokeConsent",
         "pilotRevokeDraftMandate",
@@ -2297,6 +2298,37 @@
         },
         "resource": {
           "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "idempotencyKey"
+            ]
+          },
+          {
+            "required": [
+              "reasonCode"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Read Own Credit State",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadOwnCreditState"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
         }
       },
       "not": {

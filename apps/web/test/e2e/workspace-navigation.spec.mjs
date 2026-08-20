@@ -45,3 +45,28 @@ test("placement never removes a role-allowed Borrower navigation control", async
     );
   }
 });
+
+test("Borrower loads durable terminal Credit State through a visible control", async ({ page }) => {
+  await page.goto("/");
+  const moreTools = page.getByRole("button", { name: "More tools" });
+  await moreTools.click();
+  await page.getByRole("button", { name: /^Credit Track Record/ }).click();
+
+  await page.getByRole("button", { name: "Load verified record" }).click();
+
+  await expect(page.locator("#creditTrackRecordStateTitle")).toHaveText(
+    "1 completed credit cycle"
+  );
+  await expect(page.locator("#creditTrackRecordLatestOutcome")).toHaveText(
+    "On Time Repaid"
+  );
+  await expect(page.locator("#creditTrackRecordReliability")).toHaveText(
+    "Verified On Time History"
+  );
+  await expect(page.locator("#creditTrackRecordRows")).toContainText(
+    "Positive Repayment History"
+  );
+  await expect(page.locator("#creditTrackRecordStateCopy")).toContainText(
+    "does not authorize funds or an automatic limit change"
+  );
+});

@@ -1453,6 +1453,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
          wallet_simulation_reports, wallet_transaction_preflight_receipts,
          aggregate_stream_heads, domain_events, credit_events,
          pilot_feedback_records, credit_passport_artifacts, credit_outcomes,
+         credit_state_projections,
          tenant_command_pauses,
          official_report_artifacts, trading_credit_profiles,
          evidence_envelopes, evidence_chain_anchors,
@@ -5745,13 +5746,72 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       const materialized = await outcomeMaterializer.run();
       assert.equal(materialized.candidateCount, 2);
       assert.equal(materialized.materializedCount, 2);
+      assert.equal(materialized.creditStateProjectionCount, 2);
+      assert.equal(materialized.creditStateUpdatedCount, 2);
       assert.deepEqual(
         materialized.outcomes.map((outcome) => outcome.outcomeLabel),
         ["on_time_repaid", "on_time_repaid"]
       );
+      const humanCreditState = await restartedHuman.getOwnCreditState({
+        subjectId: tenantOneHumanSubjectId,
+        requestId: `request-read-human-credit-state-${RUN_ID}`,
+        correlationId: `correlation-read-human-credit-state-${RUN_ID}`
+      });
+      const agentCreditState = await restartedAgent.getOwnCreditState({
+        subjectId: creditAgentSubject.response.subjectId,
+        requestId: `request-read-agent-credit-state-${RUN_ID}`,
+        correlationId: `correlation-read-agent-credit-state-${RUN_ID}`
+      });
+      for (const state of [humanCreditState, agentCreditState]) {
+        assert.equal(state.response.schemaVersion, "tenant_owned_credit_state_view.v1");
+        assert.equal(state.response.creditState.metrics.completedCycleCount, 1);
+        assert.equal(state.response.creditState.latestOutcome.outcomeLabel, "on_time_repaid");
+        assert.equal(state.response.creditState.trackRecord.length, 1);
+        assert.equal(
+          state.response.creditState.trackRecord[0].creditImpact,
+          "positive_repayment_history"
+        );
+        assert.equal(state.response.creditState.authorizing, false);
+        assert.equal(state.response.creditState.automaticLimitChange, false);
+        assert.equal(state.response.creditState.scoreAuthoritative, false);
+        assert.equal(state.response.creditState.productionFundsMoved, false);
+      }
+      assert.equal(
+        humanCreditState.response.creditState.subjectId,
+        tenantOneHumanSubjectId
+      );
+      assert.equal(
+        agentCreditState.response.creditState.subjectId,
+        creditAgentSubject.response.subjectId
+      );
+      await assert.rejects(
+        () => tenantTwoAgent.getOwnCreditState({
+          subjectId: tenantOneHumanSubjectId,
+          requestId: `request-cross-tenant-credit-state-${RUN_ID}`,
+          correlationId: `correlation-cross-tenant-credit-state-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
       const materializedReplay = await outcomeMaterializer.run();
       assert.equal(materializedReplay.candidateCount, 0);
       assert.equal(materializedReplay.materializedCount, 0);
+      assert.equal(materializedReplay.creditStateProjectionCount, 2);
+      assert.equal(materializedReplay.creditStateUpdatedCount, 0);
+
+      await withTenantTransaction(
+        ownerPool,
+        creditOutcomeTenantContext,
+        (client) => client.query(
+          `DELETE FROM credit_state_projections
+            WHERE tenant_id = $1 AND subject_id = $2`,
+          [TENANT_ONE, tenantOneHumanSubjectId]
+        )
+      );
+      const repairedProjection = await outcomeMaterializer.run();
+      assert.equal(repairedProjection.candidateCount, 0);
+      assert.equal(repairedProjection.materializedCount, 0);
+      assert.equal(repairedProjection.creditStateProjectionCount, 2);
+      assert.equal(repairedProjection.creditStateUpdatedCount, 1);
 
       const outcomeDurability = await ownerPool.query(
         `SELECT
@@ -5784,7 +5844,24 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
              JOIN domain_events e
                ON e.tenant_id = m.tenant_id AND e.id = m.event_id
             WHERE m.tenant_id = $1
-              AND e.event_type = 'credit_outcome_finalized') AS outbox
+              AND e.event_type = 'credit_outcome_finalized') AS outbox,
+           (SELECT count(*)::int FROM credit_state_projections
+             WHERE tenant_id = $1) AS credit_states,
+           (SELECT bool_and(
+              projected_outcome_count = 1
+              AND projection_version = 1
+              AND projection->>'creditStateHash' = projection_hash
+              AND projection @> jsonb_build_object(
+                'authorizing', false,
+                'automaticLimitChange', false,
+                'fundsAuthority', false,
+                'productionAuthority', false,
+                'productionFundsMoved', false,
+                'sandboxOnly', true,
+                'scoreAuthoritative', false
+              )
+            ) FROM credit_state_projections
+             WHERE tenant_id = $1) AS credit_state_safety
          FROM credit_outcomes
         WHERE tenant_id = $1`,
         [TENANT_ONE]
@@ -5798,7 +5875,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         evidence_bound: true,
         events: 2,
         evidence: 2,
-        outbox: 2
+        outbox: 2,
+        credit_states: 2,
+        credit_state_safety: true
       });
       await assert.rejects(
         () => withTenantTransaction(appPool, creditOutcomeTenantContext, (client) =>

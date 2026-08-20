@@ -269,6 +269,18 @@ const ownedEvidence = {
   helper: OWNED_EVIDENCE_DEFAULT_HELPER,
   error: false
 };
+const CREDIT_STATE_DEFAULT_HELPER =
+  "Load the durable, outcome-derived Credit State for this exact owned Subject. It is qualitative, non-authorizing, and cannot change a limit automatically.";
+const creditStatePilot = {
+  catalogAvailable: false,
+  busy: false,
+  queried: false,
+  subjectId: null,
+  projection: null,
+  asOf: null,
+  helper: CREDIT_STATE_DEFAULT_HELPER,
+  error: false
+};
 const evidenceAnchorPilot = {
   available: false,
   busy: false,
@@ -387,6 +399,7 @@ const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [agentOnlinePilot, structuredClone(agentOnlinePilot)],
   [auditorEvidence, structuredClone(auditorEvidence)],
   [ownedEvidence, structuredClone(ownedEvidence)],
+  [creditStatePilot, structuredClone(creditStatePilot)],
   [creditRegistryEvidence, structuredClone(creditRegistryEvidence)],
   [officialReportPilot, structuredClone(officialReportPilot)],
   [creditPassportPilot, structuredClone(creditPassportPilot)],
@@ -3967,8 +3980,8 @@ function renderAgentMcpHandoff() {
   el("mcpHandoffBoundaryNote").textContent = applicationReady
     ? "Application tools are Ready. Evidence and the three sandbox economic tools stay Locked until Principal activation; credentials and authority are never carried in this packet."
     : runtimeReady
-      ? "Runtime-stage tools are Ready for an existing Offer receipt, including exact owned Obligation state, Registry Evidence, and three no-funds economic commands. The twelve-tool registry remains visible, but new application request and evaluation are Draft-only."
-      : "This non-authorizing packet advertises twelve local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority remain outside the packet.";
+      ? "Runtime-stage tools are Ready for an existing Offer receipt, including exact owned Obligation state, Credit State, Registry Evidence, and three no-funds economic commands. The thirteen-tool registry remains visible, but new application request and evaluation are Draft-only."
+      : "This non-authorizing packet advertises thirteen local Agent operations and three staged workflows. The loopback OpenAPI describes the server boundary; credentials and funds authority remain outside the packet.";
   el("agentHandoffPhase").textContent = applicationReady
     ? "Application handoff"
     : runtimeReady
@@ -5813,7 +5826,17 @@ function renderV9ShellStates() {
   }
 
   const trackRecordState = currentOwnedEvidenceVerificationState();
-  if (tenantPilot.obligation && trackRecordState === "latest_proven") {
+  if (creditStatePilot.projection) {
+    const { projection } = creditStatePilot;
+    el("creditTrackRecordStateTitle").textContent =
+      `${projection.metrics.completedCycleCount} completed credit cycle${projection.metrics.completedCycleCount === 1 ? "" : "s"}`;
+    el("creditTrackRecordStateCopy").textContent =
+      `${titleize(projection.latestOutcome.outcomeLabel)} is the latest terminal Credit Outcome. ` +
+      `State ${compactDecisionProofHash(projection.creditStateHash)} was rebuilt from finalized outcomes only; it does not authorize funds or an automatic limit change.`;
+  } else if (creditStatePilot.error) {
+    el("creditTrackRecordStateTitle").textContent = "Credit State not available yet";
+    el("creditTrackRecordStateCopy").textContent = creditStatePilot.helper;
+  } else if (tenantPilot.obligation && trackRecordState === "latest_proven") {
     el("creditTrackRecordStateTitle").textContent = "Latest lifecycle Evidence verified";
     el("creditTrackRecordStateCopy").textContent =
       `${ownedEvidence.items.length} latest bounded Evidence event${ownedEvidence.items.length === 1 ? "" : "s"} loaded for the selected owned Obligation. Earlier events may remain outside the browser cap.`;
@@ -6263,15 +6286,32 @@ function creditPassportDisclosureRow(disclosure) {
   return row;
 }
 
+function creditTrackRecordRow(entry) {
+  const row = document.createElement("div");
+  const label = document.createElement("strong");
+  const impact = document.createElement("span");
+  const lineage = document.createElement("small");
+  row.className = "credit-passport-disclosure";
+  label.textContent = `${titleize(entry.outcomeLabel)} · ${formatEvidenceTime(
+    entry.outcomeFinalizedAt,
+    { short: true }
+  )}`;
+  impact.className = `state-pill ${entry.outcomeLabel === "on_time_repaid" ? "" : "warning"}`;
+  impact.textContent = titleize(entry.creditImpact);
+  lineage.textContent =
+    `${entry.sourceEvidenceHashes.length} finalized Evidence reference${entry.sourceEvidenceHashes.length === 1 ? "" : "s"} · ` +
+    `DPD ${entry.maxDaysPastDue} · repaid ${entry.repaymentRatioBps / 100}% · ` +
+    `outcome ${compactDecisionProofHash(entry.outcomeHash)}`;
+  row.append(label, impact, lineage);
+  return row;
+}
+
 function renderCreditPassportPilot() {
   const presentation = creditPassportPilot.presentation;
   const artifact = creditPassportPilot.artifact;
   const busy = creditPassportPilot.busy;
   const connected = tenantPilot.connected;
-  const trackRecordEvidenceState = currentOwnedEvidenceVerificationState();
-  const trackRecordEvidenceLoaded = currentOwnedEvidenceLoaded();
-  const trackRecordLatestProven = trackRecordEvidenceState === "latest_proven";
-  const trackRecordItems = trackRecordEvidenceLoaded ? ownedEvidence.items : [];
+  const creditState = creditStatePilot.projection;
   el("restoreCreditPassportBtn").disabled = busy || !connected;
   const subjectInput = el("creditPassportSubjectId");
   const intentInput = el("creditPassportIntentId");
@@ -6380,43 +6420,50 @@ function renderCreditPassportPilot() {
       : titleize(creditPassportPilot.verification.status)
     : "Not verified";
 
-  const finalized = trackRecordItems.filter(
-    ({ sourceFinality }) => sourceFinality === "finalized"
-  ).length;
-  const nonFinal = trackRecordItems.length - finalized;
   el("creditTrackRecordDecision").textContent = tenantPilot.decision?.decisionPassport
     ? `${titleize(tenantPilot.decision.status)} · ${compactDecisionProofHash(
         tenantPilot.decision.decisionPassport.decisionPassportHash
       )}`
     : "Not loaded";
-  el("creditTrackRecordEvidenceCount").textContent =
-    `${trackRecordItems.length} event${trackRecordItems.length === 1 ? "" : "s"}`;
-  el("creditTrackRecordFinalizedCount").textContent = String(finalized);
-  el("creditTrackRecordNonFinalCount").textContent = String(nonFinal);
+  el("creditTrackRecordCycleCount").textContent = String(
+    creditState?.metrics.completedCycleCount ?? 0
+  );
+  el("creditTrackRecordLatestOutcome").textContent = creditState
+    ? titleize(creditState.latestOutcome.outcomeLabel)
+    : "Not loaded";
+  el("creditTrackRecordReliability").textContent = creditState
+    ? titleize(creditState.factors.repaymentReliability)
+    : "Not loaded";
+  el("creditTrackRecordLoss").textContent = creditState
+    ? usdMinorToMoney(creditState.metrics.totalLossMinor)
+    : "$0.00";
+  el("creditTrackRecordRows").replaceChildren(
+    ...(creditState
+      ? creditState.trackRecord.map(creditTrackRecordRow)
+      : [emptyRow("No finalized Credit Outcome is loaded for this Subject.")])
+  );
   el("loadCreditTrackRecordBtn").disabled =
-    ownedEvidence.busy || !connected;
+    creditStatePilot.busy || !connected || !creditStatePilot.catalogAvailable;
   const finality = el("creditTrackRecordFinality");
-  finality.classList.toggle(
-    "neutral",
-    trackRecordEvidenceState === "not_loaded" ||
-      trackRecordEvidenceState === "loading"
-  );
-  finality.classList.toggle(
-    "warning",
-    new Set(["partial", "delayed"]).has(trackRecordEvidenceState) ||
-      trackRecordLatestProven && nonFinal > 0
-  );
-  finality.textContent = trackRecordEvidenceState === "not_loaded"
-    ? "Not loaded"
-    : trackRecordEvidenceState === "loading"
-      ? "Loading"
-    : trackRecordEvidenceState === "delayed"
-      ? "Verification delayed"
-    : trackRecordEvidenceState === "partial"
-      ? "Partial timeline"
-    : nonFinal > 0
-      ? "Latest proven · mixed finality"
-      : "Latest proven · finalized only";
+  finality.classList.toggle("neutral", !creditState && !creditStatePilot.error);
+  finality.classList.toggle("warning", creditStatePilot.error);
+  finality.textContent = creditStatePilot.busy
+    ? "Loading"
+    : creditState
+      ? `Outcome-derived · v${creditState.projectionVersion}`
+      : creditStatePilot.error
+        ? "Not available yet"
+        : "Not loaded";
+  if (creditState) {
+    el("creditTrackRecordStateTitle").textContent =
+      `${creditState.metrics.completedCycleCount} completed credit cycle${creditState.metrics.completedCycleCount === 1 ? "" : "s"}`;
+    el("creditTrackRecordStateCopy").textContent =
+      `${titleize(creditState.latestOutcome.outcomeLabel)} is the latest terminal Credit Outcome. ` +
+      `State ${compactDecisionProofHash(creditState.creditStateHash)} was rebuilt from finalized outcomes only; it does not authorize funds or an automatic limit change.`;
+  } else if (creditStatePilot.error) {
+    el("creditTrackRecordStateTitle").textContent = "Credit State not available yet";
+    el("creditTrackRecordStateCopy").textContent = creditStatePilot.helper;
+  }
 }
 
 function capitalNetworkAmount(assetId, minor) {
@@ -8596,49 +8643,45 @@ async function loadCreditTrackRecord() {
   }
   button.disabled = true;
   button.setAttribute("aria-busy", "true");
-  button.textContent = "Loading Evidence…";
+  creditStatePilot.busy = true;
+  creditStatePilot.error = false;
+  button.textContent = "Loading Credit State…";
   try {
     if (!tenantPilot.obligation) await recoverAuthenticatedWorkspace();
-    const obligationId = tenantPilot.obligation?.obligationId;
-    if (!exactResourceId(obligationId)) {
+    const subjectId = tenantPilot.obligation?.subjectId ??
+      tenantPilot.decision?.subjectId ?? tenantInputValue("humanSubjectId");
+    if (!exactResourceId(subjectId)) {
       throw new Error(
         interactionMode === "agent"
           ? "Run the Agent lifecycle online before loading its Credit Track Record."
-          : "Create and execute one Human Obligation before loading its Credit Track Record."
+          : "Create or restore one Human Subject before loading its Credit Track Record."
       );
     }
-    const append = currentOwnedEvidenceLoaded() && ownedEvidence.hasMore;
-    await loadOwnedEvidence({ append });
-    const evidenceState = currentOwnedEvidenceVerificationState();
-    if (evidenceState === "delayed" || evidenceState === "not_loaded") {
-      throw new Error(ownedEvidence.helper || "The Evidence timeline could not be loaded.");
-    }
-    if (evidenceState === "partial") {
-      el("creditTrackRecordStateTitle").textContent = "Partial lifecycle Evidence";
-      el("creditTrackRecordStateCopy").textContent = ownedEvidence.helper;
-      toast("Partial Credit Track Record loaded");
-      announce("Partial Credit Track Record loaded; continue the read-only cursor");
-      return;
-    }
-    if (evidenceState !== "latest_proven") {
-      throw new Error("The Evidence timeline is still loading.");
-    }
+    const result = await tenantApi("pilotReadOwnCreditState", {
+      resource: { resourceType: "subject", resourceId: subjectId },
+      payload: {},
+      idempotent: false
+    });
+    creditStatePilot.queried = true;
+    creditStatePilot.subjectId = subjectId;
+    creditStatePilot.projection = result.response.creditState;
+    creditStatePilot.asOf = result.response.asOf;
+    creditStatePilot.helper =
+      "Durable Credit State loaded from finalized terminal outcomes and Evidence lineage.";
     toast("Verified Credit Track Record loaded");
-    announce("Verified Credit Track Record loaded from server Evidence");
+    announce("Verified Credit Track Record loaded from durable Credit State");
   } catch (error) {
     const message =
       error?.message ?? "The verified Credit Track Record could not be loaded.";
-    el("creditTrackRecordStateTitle").textContent = "Record not available yet";
-    el("creditTrackRecordStateCopy").textContent = message;
+    creditStatePilot.error = true;
+    creditStatePilot.helper = message;
     toast(message, "error");
     announce("Credit Track Record load failed");
     if (isRejectedAuthenticationSession(error)) openAccess();
   } finally {
-    button.disabled = false;
+    creditStatePilot.busy = false;
     button.removeAttribute("aria-busy");
-    button.textContent = currentOwnedEvidenceLoaded() && ownedEvidence.hasMore
-      ? "Load more Evidence"
-      : "Load verified record";
+    button.textContent = "Load verified record";
     renderTenantPilot();
   }
 }
@@ -8841,6 +8884,7 @@ async function runTenantPilotProbe(probeOwner) {
     serverCatalogOperations = available;
     auditorEvidence.catalogAvailable = available.has("pilotReadEvidence");
     ownedEvidence.catalogAvailable = available.has("pilotReadOwnObligationEvidence");
+    creditStatePilot.catalogAvailable = available.has("pilotReadOwnCreditState");
     creditRegistryEvidence.catalogAvailable =
       available.has("pilotReadCreditRegistryEvidence");
     creditPassportPilot.createAvailable =
@@ -8993,6 +9037,7 @@ async function runTenantPilotProbe(probeOwner) {
     serverCatalogSnapshot = null;
     auditorEvidence.catalogAvailable = false;
     ownedEvidence.catalogAvailable = false;
+    creditStatePilot.catalogAvailable = false;
     creditRegistryEvidence.catalogAvailable = false;
     tenantPilot.obligationReadAvailable = false;
     pilotFeedback.catalogAvailable = false;

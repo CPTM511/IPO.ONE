@@ -40,6 +40,7 @@ export type TenantProtocolOperationId =
   | "pilotReadServicingQueue"
   | "pilotReadEvidence"
   | "pilotReadOwnObligation"
+  | "pilotReadOwnCreditState"
   | "pilotReadOwnObligationEvidence"
   | "pilotReadProviderIntent"
   | "pilotRevokeConsent"
@@ -150,7 +151,8 @@ export interface AgentHandoffToolReference {
     | "ipo_one_accept_credit_offer"
     | "ipo_one_execute_sandbox_obligation"
     | "ipo_one_post_sandbox_repayment"
-    | "ipo_one_read_credit_registry_evidence";
+    | "ipo_one_read_credit_registry_evidence"
+    | "ipo_one_read_credit_state";
   operationId:
     | "pilotReadAgentSelf"
     | "pilotRequestCredit"
@@ -163,7 +165,8 @@ export interface AgentHandoffToolReference {
     | "pilotAcceptCreditOffer"
     | "pilotExecuteSandboxObligation"
     | "pilotPostSandboxRepayment"
-    | "pilotReadCreditRegistryEvidence";
+    | "pilotReadCreditRegistryEvidence"
+    | "pilotReadOwnCreditState";
 }
 
 interface AgentHandoffManifestSafety {
@@ -1192,6 +1195,12 @@ export interface ReadOwnObligationRequest extends TenantProtocolRequestBase {
   resource: { resourceType: "obligation"; resourceId: string };
 }
 
+export interface ReadOwnCreditStateRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadOwnCreditState";
+  payload: Record<string, never>;
+  resource: { resourceType: "subject"; resourceId: string };
+}
+
 export interface RevokeDraftMandateRequest extends TenantProtocolRequestBase {
   operationId: "pilotRevokeDraftMandate";
   payload: Record<string, never>;
@@ -1849,6 +1858,7 @@ export type TenantProtocolRequest =
   | ReadObligationEvidenceRequest
   | ReadCreditRegistryEvidenceRequest
   | ReadOwnObligationRequest
+  | ReadOwnCreditStateRequest
   | ReadOwnObligationEvidenceRequest
   | ReadProviderIntentRequest
   | RevokeConsentRequest
@@ -2958,6 +2968,79 @@ export interface OwnedObligationViewResponse {
   productionFundsMoved: false;
   withdrawable: false;
   schemaVersion: "tenant_owned_obligation_view.v1";
+}
+
+export interface CreditTrackRecordEntry {
+  creditOutcomeId: string;
+  outcomeHash: `0x${string}`;
+  obligationId: string;
+  outcomeLabel: "on_time_repaid" | "late_or_modified_repaid" | "written_off";
+  creditImpact:
+    | "positive_repayment_history"
+    | "modified_or_late_repayment_history"
+    | "loss_history";
+  maxDaysPastDue: number;
+  restructured: boolean;
+  repurchased: boolean;
+  originalPrincipalMinor: string;
+  totalRepaidMinor: string;
+  lossMinor: string;
+  repaymentRatioBps: number;
+  sourceEvidenceHashes: `0x${string}`[];
+  outcomeFinalizedAt: string;
+  recordedAt: string;
+  schemaVersion: "credit_track_record_entry.v1";
+}
+
+export interface CreditStateProjection {
+  creditStateHash: `0x${string}`;
+  subjectId: string;
+  principalId: string;
+  projectionVersion: number;
+  metrics: {
+    completedCycleCount: number;
+    outcomeCounts: {
+      onTimeRepaid: number;
+      lateOrModifiedRepaid: number;
+      writtenOff: number;
+    };
+    maximumDaysPastDue: number;
+    totalOriginalPrincipalMinor: string;
+    totalRepaidMinor: string;
+    totalLossMinor: string;
+    schemaVersion: "credit_state_metrics.v1";
+  };
+  factors: {
+    repaymentReliability:
+      | "verified_on_time_history"
+      | "mixed_repayment_history"
+      | "adverse_loss_recorded";
+    servicingPerformance:
+      | "no_delinquency_or_modification_recorded"
+      | "delinquency_or_modification_recorded";
+    lossExperience: "no_loss_recorded" | "loss_recorded";
+    evidenceBasis: "finalized_credit_outcomes_only";
+    schemaVersion: "credit_state_factors.v1";
+  };
+  latestOutcome: CreditTrackRecordEntry;
+  trackRecord: CreditTrackRecordEntry[];
+  updatedAt: string;
+  authorizing: false;
+  automaticLimitChange: false;
+  fundsAuthority: false;
+  piiIncluded: false;
+  productionAuthority: false;
+  productionFundsMoved: false;
+  rawTransactionDataIncluded: false;
+  sandboxOnly: true;
+  scoreAuthoritative: false;
+  schemaVersion: "credit_state_projection.v1";
+}
+
+export interface OwnedCreditStateViewResponse {
+  creditState: CreditStateProjection;
+  asOf: string;
+  schemaVersion: "tenant_owned_credit_state_view.v1";
 }
 
 export interface DraftMandateRevokedResponse {
@@ -4469,6 +4552,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotReadEvidence", ObligationEvidenceViewResponse>
   | TenantProtocolResultBase<"pilotReadCreditRegistryEvidence", CreditRegistryEvidenceViewResponse>
   | TenantProtocolResultBase<"pilotReadOwnObligation", OwnedObligationViewResponse>
+  | TenantProtocolResultBase<"pilotReadOwnCreditState", OwnedCreditStateViewResponse>
   | TenantProtocolResultBase<"pilotReadOwnObligationEvidence", OwnedObligationEvidenceViewResponse>
   | TenantProtocolResultBase<"pilotReadProviderIntent", ProviderIntentViewResponse>
   | TenantProtocolResultBase<"pilotRevokeConsent", HumanConsentRevokedResponse>
@@ -5283,6 +5367,16 @@ export type TenantProtocolOperation =
       "prohibited",
       "read",
       "tenant_owned_obligation_view.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadOwnCreditState",
+      "query",
+      readonly ["human", "agent"],
+      "subject",
+      "credit.read.self",
+      "prohibited",
+      "read",
+      "tenant_owned_credit_state_view.v1"
     >
   | TenantProtocolOperationBase<
       "pilotReadOwnObligationEvidence",
