@@ -1,7 +1,7 @@
 {
-  "name": "IPO.ONE Control Plane",
+  "name": "IPO.ONE — Verifiable Credit Infrastructure",
   "short_name": "IPO.ONE",
-  "description": "Public sandbox for programmable Agent obligations and repayment evidence.",
+  "description": "Verifiable credit and obligation infrastructure for Humans and AI Agents.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f7fa",

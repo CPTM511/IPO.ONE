@@ -883,10 +883,15 @@ function renderAccess() {
   document.body.classList.toggle("workspace-session-active", privateWorkspaceVisible);
   const privacyShield = el("signedOutPrivacyShield");
   privacyShield.hidden = authenticated;
-  el("signedOutPrivacyTitle").textContent = "Choose how you want to use IPO.ONE";
+  if (!authenticated) {
+    el("viewEyebrow").textContent = "IPO.ONE";
+    el("viewTitle").textContent = "Verifiable credit for Humans and Agents";
+  }
+  el("signedOutPrivacyTitle").textContent =
+    "Verifiable Credit Infrastructure for Humans and Agents";
   el("signedOutPrivacyCopy").textContent = localSessionEnded
-    ? "The previous account session, wallet connection, and private browser state were cleared. Sign in once to open a verified workspace."
-    : "Sign in once, then continue in the exact workspace available on this host or use the versioned API.";
+    ? "The previous account session, wallet connection, and private browser state were cleared. Enter the product again to open a verified workspace."
+    : "Identity, authority, capital, obligations, execution, repayment, and verified outcomes—coordinated through one shared credit kernel.";
   el("signedOutPrivacyAction").hidden = !availability.showSignedOutPrimaryAction;
   el("signedOutPrivacyAction").disabled = accessState.optionsBusy;
   el("topbarSignOutBtn").hidden = !authenticated;
