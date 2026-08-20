@@ -489,6 +489,11 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(icons.includes("id=\"shield-check\""));
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.start_url, "/");
+  assert.equal(manifest.name, "IPO.ONE — Verifiable Credit Infrastructure");
+  assert.equal(
+    manifest.description,
+    "Verifiable credit and obligation infrastructure for Humans and AI Agents."
+  );
   assert.ok(css.includes(":focus-visible"));
   assert.match(css, /\[hidden\]\s*\{[\s\S]*?display:\s*none !important;/);
   assert.match(css, /#mainContent:focus\s*\{[\s\S]*?outline:\s*none;/);
@@ -1123,7 +1128,20 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   assert.ok(css.includes(".access-session-panel"));
   assert.ok(html.includes('class="private-session-closed"'));
   assert.ok(html.includes('id="signedOutPrivacyShield"'));
-  assert.ok(html.includes("Choose how you want to use IPO.ONE"));
+  for (const publicProductTruth of [
+    "Verifiable Credit Infrastructure for Humans and Agents",
+    "Verifiable credit for Humans and Agents",
+    "BORROW.</strong> <strong>BUILD.</strong> <strong>PROVE.",
+    "Payments prove movement. Credit proves responsibility.",
+    "Different interfaces. One economic truth.",
+    "An Agent can act only inside accountable, bounded authority.",
+    "Transaction history is not credit history.",
+    "Capital decision and protocol truth stay distinct.",
+    "Stable kernel. Replaceable adapters.",
+    "The Agent economy needs more than faster payments."
+  ]) {
+    assert.ok(html.includes(publicProductTruth), `${publicProductTruth} public product truth missing`);
+  }
   assert.ok(html.includes("Developer / API"));
   assert.ok(html.includes('id="signedOutPrivacyAction" class="primary" type="button" hidden'));
   assert.ok(html.includes('id="authenticatedRuntimeGateAction" class="primary" type="button" hidden'));
@@ -1144,6 +1162,8 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   ));
   assert.ok(css.includes("body.private-session-closed [data-view-panel]"));
   assert.ok(css.includes(".signed-out-role-list"));
+  assert.ok(css.includes(".public-authority-chain"));
+  assert.ok(css.includes(".public-architecture-map"));
   assert.ok(css.includes(".signed-out-privacy-shield[hidden]"));
   assert.ok(js.includes('from "./wallet-sign-out.js"'));
   assert.ok(js.includes("releaseSelectedWallet"));

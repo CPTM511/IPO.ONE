@@ -4,11 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#15171c" />
-    <meta name="description" content="IPO.ONE no-funds credit workspace for Human and Agent obligations, repayment, and verifiable evidence." />
+    <meta name="description" content="IPO.ONE is verifiable credit and obligation infrastructure for Humans and AI Agents." />
     <meta name="ipo-one-csrf-token" content="" />
     <meta name="ipo-one-local-agent-account" content="" />
     <meta name="ipo-one-workspace-name" content="" />
-    <title>IPO.ONE Product Workspace</title>
+    <title>IPO.ONE — Verifiable Credit Infrastructure for Humans and Agents</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/styles.css?v=web018" />
@@ -22,7 +22,7 @@
           <div class="brand-mark" aria-hidden="true">ONE</div>
           <div>
             <strong>IPO.ONE</strong>
-            <span>Credit obligations</span>
+            <span>Verifiable credit</span>
           </div>
           <button class="icon-button sidebar-close" id="sidebarCloseBtn" type="button" aria-label="Close navigation" title="Close navigation">
             <svg aria-hidden="true"><use href="/icons.svg#x"></use></svg>
@@ -142,8 +142,8 @@
               <svg aria-hidden="true"><use href="/icons.svg#menu"></use></svg>
             </button>
             <div>
-              <span id="viewEyebrow">Private credit workspace</span>
-              <h1 id="viewTitle">Your portfolio overview</h1>
+              <span id="viewEyebrow">IPO.ONE</span>
+              <h1 id="viewTitle">Verifiable credit for Humans and Agents</h1>
             </div>
           </div>
 
@@ -190,23 +190,118 @@
             <button id="authenticatedRuntimeGateAction" class="primary" type="button" hidden>Review account access</button>
           </section>
 
-          <section id="signedOutPrivacyShield" class="signed-out-privacy-shield" aria-labelledby="signedOutPrivacyTitle" aria-live="polite">
-            <div class="signed-out-privacy-heading">
-              <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
-              <div>
-                <p class="eyebrow">Private workspace</p>
-                <h2 id="signedOutPrivacyTitle">Choose how you want to use IPO.ONE</h2>
-                <p id="signedOutPrivacyCopy">Sign in once, then continue in the exact workspace available on this host or use the versioned API.</p>
+          <section id="signedOutPrivacyShield" class="signed-out-privacy-shield public-canonical-home" aria-labelledby="signedOutPrivacyTitle" aria-live="polite">
+            <section class="public-product-hero" aria-labelledby="signedOutPrivacyTitle">
+              <div class="public-product-hero-copy">
+                <p class="public-kicker"><span></span>Verifiable Credit Infrastructure</p>
+                <h2 id="signedOutPrivacyTitle">Verifiable Credit Infrastructure for Humans and Agents</h2>
+                <p id="signedOutPrivacyCopy" class="public-product-lede">Identity, authority, capital, obligations, execution, repayment, and verified outcomes—coordinated through one shared credit kernel.</p>
+                <p class="public-product-tagline" aria-label="Borrow. Build. Prove."><strong>BORROW.</strong> <strong>BUILD.</strong> <strong>PROVE.</strong></p>
+                <div class="public-hero-actions">
+                  <button id="signedOutPrivacyAction" class="primary" type="button" hidden>Enter the product</button>
+                  <a class="secondary public-link-button" href="/agent-openapi.json">Explore the Agent API</a>
+                </div>
+                <p class="signed-out-privacy-note">Private account, wallet, and credit data stay hidden until the exact Tenant workspace is verified. The hosted experience uses synthetic capital and grants no real-funds authority.</p>
               </div>
-            </div>
-            <ul class="signed-out-role-list" aria-label="IPO.ONE access modes">
-              <li><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg><span><strong>Human</strong><small>Request, manage, and repay purpose-bound credit.</small></span></li>
-              <li><svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg><span><strong>Agent</strong><small>Use scoped authority through the same credit kernel.</small></span></li>
-              <li data-role-entry="capitalPartner" hidden><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg><span><strong>Capital Partner</strong><small>Review verified credit evidence in an invited workspace.</small></span></li>
-              <li><svg aria-hidden="true"><use href="/icons.svg#code"></use></svg><span><strong>Developer / API</strong><small>Integrate through versioned, machine-readable interfaces.</small></span></li>
-            </ul>
-            <p class="signed-out-privacy-note">Use the single <strong>Sign in</strong> action below. Private account, wallet, and credit data remain hidden until the Tenant workspace is verified.</p>
-            <button id="signedOutPrivacyAction" class="primary" type="button" hidden>Sign in</button>
+              <div class="public-credit-loop-card" aria-label="IPO.ONE credit loop">
+                <p class="eyebrow">The Credit Loop</p>
+                <div class="public-loop-track" aria-hidden="true">
+                  <span>Identity</span><i></i><span>Authority</span><i></i><span>Intent</span><i></i><span>Offer</span><i></i><span>Obligation</span><i></i><span>Repay</span><i></i><span>Credit State</span>
+                </div>
+                <p><strong>Borrow → Build → Repay → Prove</strong></p>
+                <p>Turn each verified outcome into stronger, permissioned Credit State for the next capital decision.</p>
+              </div>
+            </section>
+
+            <section class="public-thesis-grid" aria-labelledby="publicWhyTitle">
+              <div class="public-section-copy">
+                <p class="eyebrow">Why IPO.ONE</p>
+                <h3 id="publicWhyTitle">Payments prove movement. Credit proves responsibility.</h3>
+                <p>A payment can show that value moved. Credit must preserve who committed, under whose authority, on which terms, what became owed, what happened afterward, and whether that outcome can become reusable credit.</p>
+              </div>
+              <blockquote>
+                <span>Payments ask</span>
+                <strong>Did value move?</strong>
+                <span>Credit must also ask</span>
+                <strong>Who is responsible—and what did they prove?</strong>
+              </blockquote>
+            </section>
+
+            <section class="public-product-section" aria-labelledby="publicEntryModesTitle">
+              <div class="public-section-heading">
+                <div>
+                  <p class="eyebrow">One kernel · two native entry modes</p>
+                  <h3 id="publicEntryModesTitle">Different interfaces. One economic truth.</h3>
+                </div>
+                <p>Human and Agent experiences converge on the same Offer, Obligation, Ledger, servicing, Evidence, and Credit State model.</p>
+              </div>
+              <ul class="signed-out-role-list" aria-label="IPO.ONE access modes">
+                <li><svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg><span><strong>Human</strong><small>Connect → Verify → Consent → Request → Offer → Accept → Repay → Build Credit</small></span></li>
+                <li><svg aria-hidden="true"><use href="/icons.svg#bot"></use></svg><span><strong>Agent</strong><small>Principal → Agent Identity → Mandate → Request → Controlled Execution → Repay</small></span></li>
+                <li><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg><span><strong>Capital Provider</strong><small>Review authorized Evidence, author exact terms, and monitor verified outcomes.</small></span></li>
+                <li><svg aria-hidden="true"><use href="/icons.svg#code"></use></svg><span><strong>Developer / API</strong><small>Integrate through versioned API, SDK, MCP, and machine-readable receipts.</small></span></li>
+              </ul>
+            </section>
+
+            <section class="public-product-section public-agent-authority" aria-labelledby="publicAgentAuthorityTitle">
+              <div class="public-section-heading">
+                <div>
+                  <p class="eyebrow">How Agent credit works</p>
+                  <h3 id="publicAgentAuthorityTitle">An Agent can act only inside accountable, bounded authority.</h3>
+                </div>
+                <p>An API key or wallet does not create financial authority. Every action traces to a Principal and a current, revocable Mandate.</p>
+              </div>
+              <ol class="public-authority-chain" aria-label="Agent authority chain">
+                <li><span>01</span><strong>Principal</strong><small>Accountable party</small></li>
+                <li><span>02</span><strong>Agent Identity</strong><small>Verifiable workload</small></li>
+                <li><span>03</span><strong>Bounded Mandate</strong><small>Purpose · amount · time · venue</small></li>
+                <li><span>04</span><strong>Obligation</strong><small>Exact accepted terms</small></li>
+                <li><span>05</span><strong>Authorized Execution</strong><small>Deterministic · replay safe</small></li>
+                <li><span>06</span><strong>Credit State</strong><small>Verified outcomes</small></li>
+              </ol>
+            </section>
+
+            <section class="public-truth-grid" aria-label="Evidence and capital roles">
+              <article>
+                <div class="public-icon-box"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg></div>
+                <p class="eyebrow">Evidence and Credit State</p>
+                <h3>Transaction history is not credit history.</h3>
+                <p>Credit State adds Obligation terms, payment timing, delinquency, cure, default, loss, resolution, authority provenance, and Evidence lineage. Credit Passport is a permissioned portable view—not a universal opaque score.</p>
+              </article>
+              <article>
+                <div class="public-icon-box"><svg aria-hidden="true"><use href="/icons.svg#server"></use></svg></div>
+                <p class="eyebrow">Capital Providers</p>
+                <h3>Capital decision and protocol truth stay distinct.</h3>
+                <p>Banks, fintech lenders, private credit, institutional Facilities, and compatible capital rails can author economic terms. IPO.ONE preserves permission, versioning, Ledger, servicing, reconciliation, and Evidence integrity.</p>
+              </article>
+            </section>
+
+            <section class="public-product-section public-architecture" aria-labelledby="publicArchitectureTitle">
+              <div class="public-section-heading">
+                <div>
+                  <p class="eyebrow">Protocol architecture</p>
+                  <h3 id="publicArchitectureTitle">Stable kernel. Replaceable adapters.</h3>
+                </div>
+                <p>External rails can evolve without changing the canonical meaning of identity, authority, Offer, Obligation, repayment, or Evidence.</p>
+              </div>
+              <div class="public-architecture-map" aria-label="IPO.ONE architecture">
+                <div class="public-interface-row"><span>Human Interface</span><span>Agent API / SDK / MCP</span><span>Capital Providers</span></div>
+                <div class="public-map-arrow" aria-hidden="true">↓</div>
+                <div class="public-kernel-box"><strong>Command &amp; Authorization Gateway</strong><span>Deterministic Credit &amp; Obligation Kernel</span><small>Identity · Offers · Obligations · Ledger · Evidence · Credit State</small></div>
+                <div class="public-map-arrow" aria-hidden="true">↓</div>
+                <div class="public-adapter-row"><span>Payments</span><span>Chains</span><span>Identity</span><span>Venues</span><span>Capital Rails</span></div>
+              </div>
+            </section>
+
+            <section class="public-closing" aria-labelledby="publicClosingTitle">
+              <p class="eyebrow">The responsibility layer</p>
+              <h3 id="publicClosingTitle">The Agent economy needs more than faster payments.</h3>
+              <p>IPO.ONE turns identity, authority, obligations, execution, and repayment into verifiable Credit State—giving Humans and Agents a path from one successful outcome to the next source of capital.</p>
+              <div class="public-ecosystem-links" aria-label="IPO.ONE interfaces">
+                <a href="/">Human interface</a><a href="/agent-openapi.json">Agent API</a><a href="/openapi.json">OpenAPI</a><a href="/.well-known/ipo-one.json">Capability discovery</a>
+              </div>
+              <strong class="public-closing-tagline">BORROW. BUILD. PROVE.</strong>
+            </section>
           </section>
 
           <section class="view active" data-view-panel="overview" aria-labelledby="privatePortfolioTitle">
