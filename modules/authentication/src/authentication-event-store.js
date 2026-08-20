@@ -24,7 +24,9 @@ const EVENT_PAYLOAD_FIELDS = new Map([
   [AuthenticationEventType.SESSION_CREATED, ["sessionRefHash", "rotation"]],
   [AuthenticationEventType.SESSION_ROTATED, ["sessionRefHash", "rotation"]],
   [AuthenticationEventType.SESSION_REVOKED, ["sessionRefHash", "rotation"]],
-  [AuthenticationEventType.SESSION_EXPIRED, ["sessionRefHash", "rotation"]]
+  [AuthenticationEventType.SESSION_EXPIRED, ["sessionRefHash", "rotation"]],
+  [AuthenticationEventType.ROLE_ENROLLED, ["roleBundle", "enrollmentId", "version"]],
+  [AuthenticationEventType.ROLE_SELECTED, ["roleBundle", "sessionRefHash"]]
 ]);
 
 function assertCredentialFree(value, path = "event") {

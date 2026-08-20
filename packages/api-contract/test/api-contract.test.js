@@ -438,6 +438,65 @@ test("Tenant protocol fixtures enforce every closed request and result branch", 
   assert.equal(isTenantProtocolCatalog(TENANT_PROTOCOL_CATALOG), true);
 });
 
+test("Principal workspace recovery accepts only the reviewed controlled Agent picker contract", () => {
+  const selectedWorkspaceRequest = {
+    operationId: "pilotReadWorkspaceResume",
+    payload: { selectedAgentActorId: "actor_agent_new" },
+    requestId: "request_workspace_resume_picker_001",
+    correlationId: "correlation_workspace_resume_picker_001",
+    schemaVersion: "tenant_protocol_request.v1"
+  };
+  assert.equal(isTenantProtocolRequest(selectedWorkspaceRequest), true);
+  assert.equal(isTenantProtocolRequest({
+    ...selectedWorkspaceRequest,
+    payload: { selectedAgentActorId: "actor_agent_new", unrestricted: true }
+  }), false);
+  assert.equal(isTenantProtocolRequest({
+    ...selectedWorkspaceRequest,
+    payload: { selectedAgentActorId: " actor_agent_new" }
+  }), false);
+
+  const result = {
+    operationId: "pilotReadWorkspaceResume",
+    response: {
+      workspaceKind: "principal_controller",
+      resources: [],
+      controlledAgentActorIds: ["actor_agent_existing", "actor_agent_new"],
+      controlledAgentOptions: [
+        {
+          actorId: "actor_agent_existing",
+          label: "Existing Agent workspace",
+          setupStatus: "configured"
+        },
+        {
+          actorId: "actor_agent_new",
+          label: "New Agent workspace",
+          setupStatus: "setup_required"
+        }
+      ],
+      selectedAgentActorId: null,
+      continuationReceipts: [],
+      hasMore: false,
+      serverTruth: true,
+      schemaVersion: "tenant_workspace_resume_view.v2"
+    },
+    replayed: false,
+    schemaVersion: "tenant_protocol_result.v1"
+  };
+  assert.equal(isTenantProtocolResult(result), true);
+  assert.equal(isTenantProtocolResult({
+    ...result,
+    response: {
+      ...result.response,
+      controlledAgentOptions: [{
+        actorId: "actor_agent_existing",
+        label: "Existing Agent workspace",
+        setupStatus: "unrestricted"
+      }]
+    }
+  }), false);
+});
+
 test("Risk workspace recovery contracts expose only server-derived narrow references", () => {
   const portfolioOperation = TENANT_PROTOCOL_CATALOG.operations.find(
     ({ operationId }) => operationId === "pilotReadTenantRiskPortfolioReference"

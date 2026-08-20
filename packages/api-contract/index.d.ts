@@ -1063,7 +1063,7 @@ export interface ReadHumanSelfRequest extends TenantProtocolRequestBase {
 
 export interface ReadWorkspaceResumeRequest extends TenantProtocolRequestBase {
   operationId: "pilotReadWorkspaceResume";
-  payload: Record<string, never>;
+  payload: { selectedAgentActorId?: string };
 }
 
 export interface ReadTenantRiskPortfolioReferenceRequest extends TenantProtocolRequestBase {
@@ -2511,6 +2511,12 @@ export interface WorkspaceResumeResource {
   relationship: "owner" | "controller" | "subject";
 }
 
+export interface ControlledAgentWorkspaceOption {
+  actorId: string;
+  label: string;
+  setupStatus: "configured" | "setup_required";
+}
+
 export interface WorkspaceResumeViewResponseV1 {
   workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
   resources: WorkspaceResumeResource[];
@@ -2525,6 +2531,8 @@ export interface WorkspaceResumeViewResponseV2 {
   workspaceKind: "human_borrower" | "principal_controller" | "agent_runtime";
   resources: WorkspaceResumeResource[];
   controlledAgentActorIds?: string[];
+  controlledAgentOptions?: ControlledAgentWorkspaceOption[];
+  selectedAgentActorId?: string | null;
   continuationReceipts?: WorkspaceContinuationReceiptView[];
   humanOfferReview?: HumanOfferReviewRecovery | null;
   hasMore: boolean;
@@ -5373,7 +5381,7 @@ export type TenantProtocolOperation =
       "query",
       readonly ["human", "agent"],
       "subject",
-      "credit.read.self",
+      "credit_passport.read.self",
       "prohibited",
       "read",
       "tenant_owned_credit_state_view.v1"

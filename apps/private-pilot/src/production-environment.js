@@ -44,6 +44,10 @@ const VERCEL_SECRET_REFERENCE = /^vercel:\/\/environment\/production\/([A-Z][A-Z
 const VERCEL_PRIMARY_CUSTOM_DOMAIN = "ipo.one";
 const VERCEL_PRIMARY_CUSTOM_DOMAIN_ACK =
   "FOUNDER_AUTHORIZED_IPO_ONE_PRODUCTION_DOMAIN";
+const ADDITIONAL_WORKLOAD_JWKS_VALUE =
+  "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON";
+const ADDITIONAL_WORKLOAD_JWKS_REF =
+  "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF";
 
 function configError(message = "Production environment configuration is invalid") {
   return new DomainError("invalid_production_environment", message);
@@ -215,6 +219,34 @@ function inlinePublicJwks(value) {
   return Object.freeze({ keys: Object.freeze(jwks.keys.map((key) => Object.freeze({ ...key }))) });
 }
 
+function additionalWorkloadJwks(environment, { vercelSandbox }) {
+  const valuePresent = environment[ADDITIONAL_WORKLOAD_JWKS_VALUE] !== undefined;
+  const referencePresent = environment[ADDITIONAL_WORKLOAD_JWKS_REF] !== undefined;
+  if (!valuePresent && !referencePresent) return undefined;
+  if (
+    !vercelSandbox ||
+    environment.IPO_ONE_VERCEL_PROJECT_ROLE !== "primary" ||
+    !valuePresent ||
+    !referencePresent
+  ) {
+    throw configError(
+      "additional workload public JWKS is allowed only on the Vercel Primary project"
+    );
+  }
+  const source = inlineSecret(environment, ADDITIONAL_WORKLOAD_JWKS_VALUE, 16 * 1024);
+  assertVercelSecretReference(
+    environment,
+    ADDITIONAL_WORKLOAD_JWKS_REF,
+    ADDITIONAL_WORKLOAD_JWKS_VALUE,
+    source
+  );
+  return inlinePublicJwks(parseStrictJson(source, {
+    maximumBytes: 16 * 1024,
+    maximumDepth: 5,
+    maximumKeys: 64
+  }));
+}
+
 function constantTimeMatch(actual, expected) {
   if (typeof actual !== "string") return false;
   const left = Buffer.from(actual);
@@ -369,6 +401,19 @@ async function loadProviderConfig(environment, publicOrigin, { vercelSandbox }) 
   const workloadJwks = inlineWorkloadKeys
     ? inlinePublicJwks(workload.publicJwks)
     : undefined;
+  const supplementalWorkloadJwks = additionalWorkloadJwks(environment, { vercelSandbox });
+  const resolvedWorkloadJwks = workloadJwks === undefined
+    ? undefined
+    : inlinePublicJwks({
+        keys: [...workloadJwks.keys, ...(supplementalWorkloadJwks?.keys ?? [])]
+      });
+  if (
+    resolvedWorkloadJwks &&
+    new Set(resolvedWorkloadJwks.keys.map(({ kid }) => kid)).size !==
+      resolvedWorkloadJwks.keys.length
+  ) {
+    throw configError("workload public JWKS key IDs must be unique");
+  }
   const workloadJwksUri = inlineWorkloadKeys
     ? undefined
     : exactHttpsUrl("workload JWKS URI", workload.jwksUri).href;
@@ -376,7 +421,7 @@ async function loadProviderConfig(environment, publicOrigin, { vercelSandbox }) 
     issuer: workloadIssuer,
     allowedAlgorithms: workloadAlgorithms,
     fetchJwks: inlineWorkloadKeys
-      ? async () => workloadJwks
+      ? async () => resolvedWorkloadJwks
       : ({ signal }) => fetchBoundedJson(workloadJwksUri, signal)
   });
 

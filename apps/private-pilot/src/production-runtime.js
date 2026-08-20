@@ -24,6 +24,10 @@ import {
   createPostgresHumanAccessComposition,
   createProductionTenantHost
 } from "../../tenant-api/src/index.js";
+import {
+  createProductionSyntheticIdentityProvider,
+  createSyntheticIdentityGateway
+} from "./local-synthetic-identity-provider.js";
 
 const CONFIG_KEYS = new Set([
   "agentAccountAddress",
@@ -55,7 +59,6 @@ const CONFIG_KEYS = new Set([
 const EVM_ACCOUNT = /^0x[a-fA-F0-9]{40}$/;
 const DEPLOYMENT_ROLES = new Set(["container", "primary", "risk"]);
 const PRODUCTION_WORKSPACE_BY_DEPLOYMENT_ROLE = Object.freeze({
-  primary: "controller",
   risk: "risk"
 });
 
@@ -142,7 +145,7 @@ async function composeProductionClosedPilotRuntime(input) {
   const policyRegistry = new AuthorizationPolicyRegistry({
     policyVersion: input.policyVersion
   });
-  const gateway = new TenantCommandGateway({
+  const durableGateway = new TenantCommandGateway({
     pool: input.gatewayPool,
     handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
       proofAdapters: input.proofAdapters,
@@ -154,6 +157,12 @@ async function composeProductionClosedPilotRuntime(input) {
     credentialRegistry: humanAccess.credentialRegistry,
     referenceHasher,
     livePolicyAdapterFactory: createPostgresTenantLivePolicyAdapter
+  });
+  const gateway = createSyntheticIdentityGateway({
+    gateway: durableGateway,
+    syntheticIdentity: createProductionSyntheticIdentityProvider({
+      pool: input.gatewayPool
+    })
   });
   const machineAuthenticator = new MachineAuthenticator({
     issuer: input.machineIssuer,

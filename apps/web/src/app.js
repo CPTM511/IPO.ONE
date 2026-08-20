@@ -60,12 +60,14 @@ import { createServicingCasePresentation } from "./servicing-case-presentation.j
 import {
   SERVICING_POSITION_INDEX_LIMIT,
   acceptServicingPositionRefresh,
-  createServicingPositionIndex
+  createServicingPositionIndex,
+  projectServicingWorkspaceResume
 } from "./servicing-position-index.js";
 import { createObligationPortfolioPresentation } from "./obligation-portfolio-presentation.js";
 import {
   humanWorkspaceAccess,
   principalWorkspaceAccess,
+  resolveAuthenticatedWorkspaceName,
   shouldRecoverAuthenticatedWorkspace
 } from "./principal-workspace-access.js";
 import { selectPrincipalAgentWorkspace } from "./principal-agent-workspace-selection.js";
@@ -499,6 +501,8 @@ const accessState = {
   authenticationProfile: null,
   providers: new Set(),
   walletAuthenticationEnabled: false,
+  walletWorkspaceRoles: new Set(),
+  selectedWorkspaceRole: "human_borrower",
   sessionActive: false,
   sessionAuthenticationMethod: null,
   localSessionSignedOut: false,
@@ -814,7 +818,22 @@ function renderAccess() {
     : "Connect & sign in with wallet";
   el("walletSignInBtn").querySelector("small").textContent = walletSession
     ? "Connect the selected wallet for an exact sandbox confirmation"
-    : "One-use SIWE signature · no transaction or fee";
+    : `${accessState.selectedWorkspaceRole === "human_borrower" ? "Human Borrower" : "Principal Controller"} · one-use SIWE signature · no transaction or fee`;
+  el("accessWorkspacePicker").hidden =
+    authenticated ||
+    !accessState.walletAuthenticationEnabled ||
+    accessState.walletWorkspaceRoles.size === 0;
+  for (const button of document.querySelectorAll("[data-wallet-workspace-role]")) {
+    const role = button.dataset.walletWorkspaceRole;
+    const selectedRole = role === accessState.selectedWorkspaceRole;
+    button.hidden = !accessState.walletWorkspaceRoles.has(role);
+    button.disabled = waiting || authenticated;
+    button.classList.toggle("active", selectedRole);
+    button.setAttribute("aria-checked", String(selectedRole));
+    button.querySelector("[data-role-state]").textContent = selectedRole
+      ? "Selected"
+      : "Select";
+  }
   el("accessNetworkPanel").hidden = !availability.showNetworks;
   el("accessDialogGrid").classList.toggle("methods-only", !availability.showNetworks);
   el("walletProviderPicker").hidden = !availability.showWalletPicker;
@@ -878,13 +897,13 @@ function renderAccess() {
   el("accessSessionPanel").hidden = !authenticated && !localSessionEnded;
   el("accessMethodPanel").hidden =
     localSessionEnded || (authenticated && !walletSession);
-  el("accessMethodStep").textContent = walletSession ? "Session" : "Step 1";
+  el("accessMethodStep").textContent = walletSession ? "Session" : "2";
   el("signInMethodTitle").textContent = walletSession
     ? "Reconnect the session wallet"
     : "Choose how to sign in";
   el("signInMethodCopy").textContent = walletSession
     ? "Select and connect the wallet again before an exact sandbox confirmation. The server session remains authoritative."
-    : "One secure session across the Human and Agent workspaces.";
+    : "The signed session receives only the workspace role selected above.";
   el("accessDialogGrid").classList.toggle(
     "session-active",
     authenticated || localSessionEnded
@@ -1112,6 +1131,18 @@ async function probeAccessOptions() {
     accessState.authEnabled = options?.enabled === true;
     accessState.providers = new Set(Array.isArray(options?.oidcProviders) ? options.oidcProviders : []);
     accessState.walletAuthenticationEnabled = options?.walletAuthentication === true;
+    accessState.walletWorkspaceRoles = new Set(
+      Array.isArray(options?.walletWorkspaceRoles)
+        ? options.walletWorkspaceRoles.filter((role) =>
+            new Set(["human_borrower", "principal_controller"]).has(role)
+          )
+        : []
+    );
+    if (!accessState.walletWorkspaceRoles.has(accessState.selectedWorkspaceRole)) {
+      accessState.selectedWorkspaceRole = accessState.walletWorkspaceRoles.has("human_borrower")
+        ? "human_borrower"
+        : [...accessState.walletWorkspaceRoles][0] ?? "human_borrower";
+    }
     accessState.optionsState = "ready";
     accessState.optionsObservedAt = new Date().toISOString();
     accessState.sessionAuthenticationMethod =
@@ -1119,6 +1150,12 @@ async function probeAccessOptions() {
       new Set(["oidc_pkce_bff", "siwe"]).has(options?.sessionAuthenticationMethod)
         ? options.sessionAuthenticationMethod
         : null;
+    if (
+      options?.sessionActive === true &&
+      accessState.walletWorkspaceRoles.has(options?.sessionWorkspaceRole)
+    ) {
+      accessState.selectedWorkspaceRole = options.sessionWorkspaceRole;
+    }
     accessState.sessionActive =
       authorityAvailable &&
       (options?.sessionActive === true || tenantPilot.connected);
@@ -1135,6 +1172,7 @@ async function probeAccessOptions() {
     accessState.authEnabled = false;
     accessState.providers = new Set();
     accessState.walletAuthenticationEnabled = false;
+    accessState.walletWorkspaceRoles = new Set();
     accessState.authenticationProfile = null;
     accessState.sessionAuthenticationMethod = null;
     accessState.optionsState = "failed";
@@ -1292,7 +1330,11 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
       renderAccess();
       const challenge = await authJson("/auth/v1/wallet/challenge", {
         method: "POST",
-        body: { address, chainId: connectedChainId }
+        body: {
+          address,
+          chainId: connectedChainId,
+          workspaceRole: accessState.selectedWorkspaceRole
+        }
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
       const signature = await connector.signMessage({
@@ -1305,6 +1347,9 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
         body: { transactionHandle: challenge.handle, signature }
       });
       walletAuthorityLifecycle.assertContextEpoch(walletChallengeEpoch);
+      if (authentication?.workspaceRole !== accessState.selectedWorkspaceRole) {
+        throw new Error("The issued session does not match the selected workspace.");
+      }
       accessState.sessionActive = true;
       accessState.sessionAuthenticationMethod =
         authentication?.authenticationMethod === "siwe" ? "siwe" : null;
@@ -1916,9 +1961,13 @@ function localPilotAgentAccount() {
 }
 
 function currentWorkspaceName() {
-  return document.querySelector(
+  const configuredWorkspaceName = document.querySelector(
     'meta[name="ipo-one-workspace-name"]'
   )?.content ?? "";
+  return resolveAuthenticatedWorkspaceName({
+    configuredWorkspaceName,
+    serverWorkspaceKind: tenantPilot.workspaceKind
+  });
 }
 
 function applyWorkspaceSurfaceAccess() {
@@ -2005,9 +2054,9 @@ function hasHumanBorrowerWorkspace() {
 
 function humanWorkspaceUnavailableMessage() {
   if (tenantPilot.workspaceKind === "principal_controller") {
-    return "This secure session is a Principal Controller. Sign out and use an invited Human Borrower wallet to create a Human Subject.";
+    return "This secure session is a Principal Controller. Sign out, select the Human Borrower workspace, and sign the new role-bound session to create your Human Subject.";
   }
-  return "Human Borrower workspace authority has not been recovered. Wait for verification or sign in with an invited Human Borrower wallet.";
+  return "Human Borrower workspace authority has not been recovered. Wait for verification or sign in after selecting the Human Borrower workspace.";
 }
 
 function localPrincipalWorkspaceUrl() {
@@ -2076,6 +2125,7 @@ async function tenantApi(operationId, {
       headers: {
         accept: "application/json, application/problem+json",
         "content-type": "application/json",
+        "x-ipo-one-authentication-mode": "human_session",
         "x-csrf-token": csrfToken,
         "x-request-id": requestId
       },
@@ -2398,7 +2448,7 @@ function samePrincipalAgentSelection(left, right) {
 async function revalidatePrincipalAgentSelection() {
   const previousSelection = requireSelectedPrincipalAgent();
   const result = await tenantApi("pilotReadWorkspaceResume", {
-    payload: {},
+    payload: { selectedAgentActorId: previousSelection.actorId },
     idempotent: false
   });
   const currentSelection = selectPrincipalAgentWorkspace(result.response);
@@ -2485,6 +2535,7 @@ function purgeAuthenticatedBrowserState({
     accessState.connectedChainId = null;
     accessState.selectedWalletProviderId = null;
   }
+  applyWorkspaceSurfaceAccess();
 }
 
 function resetOwnedEvidenceState({
@@ -4101,6 +4152,27 @@ function renderAgentAuthorityPilot() {
   }
 
   const exactAgentSelected = agentAuthorityPilot.workspaceSelection?.status === "selected";
+  const workspaceOptions = agentAuthorityPilot.workspaceSelection?.options ?? [];
+  const workspacePicker = el("agentWorkspacePicker");
+  const workspaceChoice = el("agentWorkspaceChoice");
+  workspacePicker.hidden = workspaceOptions.length < 2;
+  const optionSignature = JSON.stringify(workspaceOptions);
+  if (workspaceChoice.dataset.optionSignature !== optionSignature) {
+    workspaceChoice.replaceChildren(...workspaceOptions.map((option) => {
+      const item = document.createElement("option");
+      item.value = option.actorId;
+      item.textContent = option.label;
+      return item;
+    }));
+    workspaceChoice.dataset.optionSignature = optionSignature;
+  }
+  if (exactAgentSelected && workspaceOptions.some(({ actorId }) =>
+    actorId === agentAuthorityPilot.workspaceSelection.actorId
+  )) {
+    workspaceChoice.value = agentAuthorityPilot.workspaceSelection.actorId;
+  }
+  el("openSelectedAgentWorkspaceBtn").disabled =
+    privateBusy || workspaceOptions.length < 2 || !workspaceChoice.value;
   el("agentAuthoritySelectedWorkflow").hidden = !exactAgentSelected;
   el("agentAuthorityReviewPanel").hidden = !exactAgentSelected || !mandate;
   el("agentSubjectCreationControls").hidden = Boolean(subjectId);
@@ -4148,11 +4220,14 @@ function renderAgentAuthorityPilot() {
     selected: subjectId ? "Assigned Agent restored" : "Assigned Agent ready",
     empty: "No Agent assigned",
     ambiguous: "Agent selection required",
+    selection_required: "Choose an Agent workspace",
     unavailable: "Agent workspace unavailable"
   }[agentAuthorityPilot.workspaceSelection?.status] ?? "Checking Agent assignment";
   el("agentWorkspaceSelectionHelper").textContent =
     agentAuthorityPilot.workspaceSelection?.status === "selected"
       ? "The assignment was restored from authenticated server truth. Internal locators stay in technical details."
+      : agentAuthorityPilot.workspaceSelection?.status === "selection_required"
+        ? "Choose one server-authorized workspace. The selection does not combine Agent authority or expose credentials."
       : agentAuthorityPilot.helper;
   el("agentApplicationStageStatus").textContent = mandate?.status === "active"
     ? "Application stage closed"
@@ -4623,6 +4698,10 @@ function rememberWorkspaceObligation(resourceId, relationship = "owner") {
 
 function currentServicingPositionIndex() {
   if (!tenantPilot.workspaceResume) return null;
+  const servicingWorkspace = projectServicingWorkspaceResume(
+    tenantPilot.workspaceResume
+  );
+  if (!servicingWorkspace) return null;
   const referenceIds = new Set(
     tenantPilot.workspaceObligations
       .slice(0, SERVICING_POSITION_INDEX_LIMIT)
@@ -4630,7 +4709,7 @@ function currentServicingPositionIndex() {
   );
   const selectedObligationId = tenantPilot.obligation?.obligationId;
   return createServicingPositionIndex({
-    workspace: tenantPilot.workspaceResume,
+    workspace: servicingWorkspace,
     views: [...tenantPilot.workspacePositionViews]
       .filter(([obligationId]) => referenceIds.has(obligationId))
       .map(([obligationId, view]) => ({ obligationId, view })),
@@ -8365,17 +8444,23 @@ function recoveredResource(resources, resourceType) {
   );
 }
 
-async function recoverAuthenticatedWorkspace() {
+async function recoverAuthenticatedWorkspace({
+  selectedAgentActorId = agentAuthorityPilot.workspaceSelection?.status === "selected"
+    ? agentAuthorityPilot.workspaceSelection.actorId
+    : undefined
+} = {}) {
   tenantPilot.workspaceRecoveryState = "loading";
   tenantPilot.workspaceRecoveryErrorCode = null;
   const result = await tenantApi("pilotReadWorkspaceResume", {
-    payload: {},
+    payload: selectedAgentActorId === undefined ? {} : { selectedAgentActorId },
     idempotent: false
   });
   const recovery = result.response;
   const resources = Array.isArray(recovery.resources) ? recovery.resources : [];
   tenantPilot.workspaceKind = recovery.workspaceKind;
   tenantPilot.workspaceResume = recovery;
+  applyWorkspaceSurfaceAccess();
+  restoreLocation({ focus: false });
   const expectedKind = expectedWorkspaceKind();
   if (expectedKind !== null && recovery.workspaceKind !== expectedKind) {
     tenantPilot.connected = false;
@@ -8826,7 +8911,10 @@ async function runTenantPilotProbe(probeOwner) {
     walletAuthorityLifecycle.assertProtectedAvailable();
     const response = await fetch("/tenant/v1/catalog", {
       credentials: "same-origin",
-      headers: { accept: "application/json, application/problem+json" }
+      headers: {
+        accept: "application/json, application/problem+json",
+        "x-ipo-one-authentication-mode": "human_session"
+      }
     });
     if (!isCurrentTenantPilotProbe(probeOwner)) return;
     if (!response.ok) {
@@ -12078,6 +12166,21 @@ function bindActions() {
     const button = event.target.closest("button[data-wallet-provider-id]");
     if (button) selectWalletProvider(button.dataset.walletProviderId);
   });
+  for (const button of document.querySelectorAll("[data-wallet-workspace-role]")) {
+    button.addEventListener("click", () => {
+      const role = button.dataset.walletWorkspaceRole;
+      if (
+        accessState.busy ||
+        accessState.optionsBusy ||
+        accessState.sessionActive ||
+        !accessState.walletWorkspaceRoles.has(role)
+      ) return;
+      accessState.selectedWorkspaceRole = role;
+      accessState.helper = `${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} selected. The next wallet signature will issue only this workspace role.`;
+      renderAccess();
+      announce(`${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} workspace selected`);
+    });
+  }
   for (const button of document.querySelectorAll("[data-wallet-chain]")) {
     button.addEventListener("click", () => {
       if (accessState.busy || accessState.optionsBusy) return;
@@ -12602,6 +12705,28 @@ function bindActions() {
     }
   });
   el("agentAuthorityForm").addEventListener("submit", (event) => event.preventDefault());
+  el("openSelectedAgentWorkspaceBtn").addEventListener("click", async () => {
+    const selectedAgentActorId = el("agentWorkspaceChoice").value;
+    if (!selectedAgentActorId) return;
+    agentAuthorityPilot.busy = true;
+    agentAuthorityPilot.helper = "Opening the selected server-authorized Agent workspace…";
+    renderTenantPilot();
+    try {
+      await recoverAuthenticatedWorkspace({ selectedAgentActorId });
+      if (
+        agentAuthorityPilot.workspaceSelection?.status !== "selected" ||
+        agentAuthorityPilot.workspaceSelection.actorId !== selectedAgentActorId
+      ) throw new Error("The selected Agent workspace could not be verified.");
+      toast("Agent workspace opened");
+      announce("Selected Agent workspace restored from server truth");
+    } catch (error) {
+      agentAuthorityPilot.helper = error.message;
+      toast(error.message, "error");
+    } finally {
+      agentAuthorityPilot.busy = false;
+      renderTenantPilot();
+    }
+  });
   el("createPrivateAgentSubjectBtn").addEventListener("click", createPrivateAgentSubject);
   el("createAccountChallengeBtn").addEventListener("click", createAgentAccountChallenge);
   el("proveAccountOnlineBtn").addEventListener("click", proveAgentAccountOnline);

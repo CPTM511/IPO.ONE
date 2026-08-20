@@ -1954,7 +1954,7 @@
           "const": "pilotReadWorkspaceResume"
         },
         "payload": {
-          "$ref": "#/$defs/emptyPayload"
+          "$ref": "#/$defs/workspaceResumePayload"
         }
       },
       "not": {
@@ -3340,6 +3340,16 @@
           "minLength": 1,
           "maxLength": 768,
           "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      }
+    },
+    "workspaceResumePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "maxProperties": 1,
+      "properties": {
+        "selectedAgentActorId": {
+          "$ref": "#/$defs/domainIdentifier"
         }
       }
     },

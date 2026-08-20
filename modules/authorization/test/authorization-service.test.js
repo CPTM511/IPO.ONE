@@ -212,6 +212,83 @@ test("the Human Borrower boundary is Human-only and grants credit only when expl
   );
 });
 
+test("a selected Human workspace uses its enrolled capabilities without widening the wallet credential", async () => {
+  const harness = createAuthorizationHarness();
+  const tenantId = "tenant_multi_role_human";
+  const actorId = "actor_multi_role_human";
+  const clientId = "client_multi_role_human";
+  harness.actorDirectory.register({ actorId, actorType: ActorType.HUMAN });
+  const credential = harness.credentialRegistry.register({
+    tenantId,
+    actorId,
+    actorType: ActorType.HUMAN,
+    issuer: "https://issuer.local.test",
+    externalSubject: "eip155:84532:0x1111111111111111111111111111111111111111",
+    clientId,
+    clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
+    senderConstraint: {
+      method: SenderConstraintMethod.HOST_SESSION,
+      thumbprint: "t".repeat(43)
+    },
+    roles: [RoleBundle.PRINCIPAL_CONTROLLER],
+    allowedCapabilities: [PilotCapability.WORKSPACE_RESUME_SELF],
+    policyVersion: AUTHORIZATION_POLICY_VERSION,
+    performedByActorId: "actor_security_admin",
+    reasonCode: "local_authorization_fixture",
+    now: FIXED_NOW
+  });
+  harness.directory.registerMembership({
+    membershipId: "role_enrollment_multi_role_human_borrower",
+    tenantId,
+    actorId,
+    actorType: ActorType.HUMAN,
+    roleBundle: RoleBundle.HUMAN_BORROWER,
+    capabilities: [PilotCapability.HUMAN_SUBJECT_CREATE_SELF],
+    clientIds: [clientId],
+    policyVersion: AUTHORIZATION_POLICY_VERSION,
+    validFrom: FIXED_NOW,
+    now: FIXED_NOW
+  });
+  const selectedBorrowerContext = createAuthenticationContext({
+    tenantId,
+    actorId,
+    actorType: ActorType.HUMAN,
+    clientId,
+    credentialId: credential.credentialId,
+    credentialVersion: credential.version,
+    policyVersion: AUTHORIZATION_POLICY_VERSION,
+    capabilities: [PilotCapability.HUMAN_SUBJECT_CREATE_SELF],
+    roles: [RoleBundle.HUMAN_BORROWER],
+    tokenJtiHash: harness.referenceHasher.hash("token.jti", "multi_role_human"),
+    authenticationMethod: ClientAuthenticationMethod.SIWE,
+    senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
+    authenticatedAt: FIXED_NOW,
+    authTime: FIXED_NOW,
+    acr: "urn:ipo.one:acr:wallet",
+    amr: ["wallet", "siwe", "eip191_eoa_v1"]
+  });
+
+  const allowed = await harness.service.authorize(authorizationRequest(
+    selectedBorrowerContext,
+    "pilotCreateHumanSubject",
+    { idempotencyKey: "selected-human-workspace-0001" }
+  ));
+  assert.equal(allowed.authorizationDecision, "allow");
+  assert.deepEqual(credential.allowedCapabilities, [PilotCapability.WORKSPACE_RESUME_SELF]);
+
+  const untrustedSenderContext = createAuthenticationContext({
+    ...selectedBorrowerContext,
+    senderConstraintMethod: SenderConstraintMethod.DPOP,
+    tokenJtiHash: harness.referenceHasher.hash("token.jti", "multi_role_human_dpop")
+  });
+  await denied(() => harness.service.authorize(authorizationRequest(
+    untrustedSenderContext,
+    "pilotCreateHumanSubject",
+    { idempotencyKey: "selected-human-workspace-0002" }
+  )));
+  assert.equal(harness.auditStore.list().at(-1).reasonCode, "actor_capability_rejected");
+});
+
 test("horizontal, vertical, and missing-object denials share one non-enumerating contract", async () => {
   const harness = createAuthorizationHarness();
   const alpha = harness.addIdentity({

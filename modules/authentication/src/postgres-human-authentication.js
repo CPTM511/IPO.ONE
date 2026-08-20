@@ -39,6 +39,7 @@ const HUMAN_AUTHENTICATION_METHODS = new Set([
 ]);
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const APPROVED_CHAIN_IDS = new Set([84532, 1952]);
+const SELECTABLE_HUMAN_ROLES = new Set(["human_borrower", "principal_controller"]);
 const TRANSACTION_COOKIE_NAME = "__Host-ipo_one_login";
 const SESSION_COOKIE_NAME = "__Host-ipo_one_session";
 const TENANT_ROW_POLICY = "(tenant_id = current_app_tenant_id())";
@@ -70,6 +71,7 @@ function authenticationRlsPolicies() {
   ]);
   for (const table of [
     "authentication_credentials",
+    "authentication_role_enrollments",
     "authentication_oidc_transactions",
     "authentication_wallet_transactions",
     "authentication_sessions",
@@ -174,6 +176,7 @@ export async function assertPostgresAuthenticationRole(queryable) {
     actors: [true, false, false, false, false, false, false],
     memberships: [true, false, false, false, false, false, false],
     authentication_credentials: [true, true, true, false, false, false, false],
+    authentication_role_enrollments: [true, false, false, false, false, false, false],
     authentication_oidc_transactions: [true, true, false, true, false, false, false],
     authentication_wallet_transactions: [true, true, false, true, false, false, false],
     authentication_sessions: [true, true, true, false, false, false, false],
@@ -229,8 +232,11 @@ export async function assertPostgresAuthenticationRole(queryable) {
   }
   for (const row of columnPrivileges.rows) {
     const tablePrivileges = expected[row.table_name];
-    const boundedLock =
-      row.column_name === "id" && (row.table_name === "actors" || row.table_name === "memberships");
+    const boundedLock = row.column_name === "id" && (
+      row.table_name === "actors" ||
+      row.table_name === "memberships" ||
+      row.table_name === "authentication_role_enrollments"
+    );
     if (
       !tablePrivileges ||
       row.can_select !== tablePrivileges[0] ||
@@ -512,6 +518,20 @@ function normalizeChainId(value) {
   return value;
 }
 
+function selectableHumanRole(value) {
+  const role = assertBoundedString("requestedRole", value, {
+    maximum: 64,
+    pattern: /^[a-z][a-z0-9_]+$/
+  });
+  if (!SELECTABLE_HUMAN_ROLES.has(role)) {
+    throw authenticationError(
+      "authentication_role_rejected",
+      "selected Human workspace is not available"
+    );
+  }
+  return role;
+}
+
 export class PostgresLoginTransactionStore {
   constructor({
     eventRepository,
@@ -670,9 +690,10 @@ export class PostgresWalletLoginTransactionStore {
     this.maximumTransactions = maximumTransactions;
   }
 
-  async create({ address, chainId, now = new Date() }) {
+  async create({ address, chainId, requestedRole, now = new Date() }) {
     const checkedAddress = normalizeAddress(address);
     const checkedChainId = normalizeChainId(chainId);
+    const checkedRole = selectableHumanRole(requestedRole);
     const handle = randomOpaqueValue();
     const nonce = randomBytes(16).toString("hex");
     const expirationTime = new Date(now.getTime() + this.ttlMs);
@@ -683,7 +704,7 @@ export class PostgresWalletLoginTransactionStore {
       expirationTime,
       issuedAt: now,
       nonce,
-      statement: this.statement,
+      statement: `${this.statement} Selected workspace: ${checkedRole === "human_borrower" ? "Human Borrower" : "Principal Controller"}.`,
       uri: this.uri,
       version: "1"
     });
@@ -706,14 +727,17 @@ export class PostgresWalletLoginTransactionStore {
       await client.query(
         `INSERT INTO authentication_wallet_transactions(
            tenant_id, handle_ref_hash, address_ref_hash, address_ciphertext,
-           chain_id, message_ciphertext, expires_at, created_at, schema_version
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'authentication_wallet_transaction.v1')`,
+           chain_id, requested_role, message_ciphertext, expires_at, created_at,
+           schema_version
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
+                   'authentication_wallet_transaction.v1')`,
         [
           this.tenantId,
           this.referenceHasher.hash("siwe.transaction", handle),
           this.referenceHasher.hash("siwe.address", checkedAddress.toLowerCase()),
           this.secretBox.seal("siwe.address", checkedAddress),
           checkedChainId,
+          checkedRole,
           this.secretBox.seal("siwe.message", message),
           expirationTime,
           now
@@ -724,6 +748,7 @@ export class PostgresWalletLoginTransactionStore {
       handle,
       address: checkedAddress,
       chainId: checkedChainId,
+      requestedRole: checkedRole,
       message,
       expiresAt: expirationTime.toISOString()
     });
@@ -757,6 +782,7 @@ export class PostgresWalletLoginTransactionStore {
       return Object.freeze({
         address: normalizeAddress(address),
         chainId: normalizeChainId(Number(row.chain_id)),
+        requestedRole: selectableHumanRole(row.requested_role),
         message: this.secretBox.open("siwe.message", row.message_ciphertext),
         expiresAt: timestamp(row.expires_at)
       });
@@ -994,6 +1020,54 @@ export class PostgresCredentialRegistry {
         [this.tenantId, normalizedIssuer, normalizedClientId, subjectRefHash]
       );
       return this.#activeInTransaction(client, result.rows[0]?.id, now);
+    });
+  }
+
+  async resolveHumanRole({ credentialId, roleBundle, clientId, now = new Date() }) {
+    const checkedCredentialId = assertSafeIdentifier("credentialId", credentialId);
+    const checkedRole = selectableHumanRole(roleBundle);
+    const checkedClientId = assertSafeIdentifier("clientId", clientId);
+    return this.repository.withTenantWrite(async (client) => {
+      const credential = await this.#activeInTransaction(client, checkedCredentialId, now);
+      const result = await client.query(
+        `SELECT e.*
+           FROM authentication_role_enrollments AS e
+           JOIN actors AS a ON a.id = e.actor_id
+          WHERE e.tenant_id = $1
+            AND e.credential_id = $2
+            AND e.actor_id = $3
+            AND e.role_bundle = $4
+            AND e.status = 'active'
+            AND e.valid_from <= $5
+            AND (e.expires_at IS NULL OR e.expires_at > $5)
+            AND e.policy_version = $6
+            AND e.client_ids ? $7
+            AND a.actor_type = 'human'
+            AND a.status = 'active'
+          FOR SHARE OF e, a`,
+        [
+          this.tenantId,
+          checkedCredentialId,
+          credential.actorId,
+          checkedRole,
+          now,
+          credential.policyVersion,
+          checkedClientId
+        ]
+      );
+      if (result.rowCount !== 1) {
+        throw authenticationError(
+          "authentication_role_rejected",
+          "selected Human workspace is not enrolled"
+        );
+      }
+      const row = result.rows[0];
+      return Object.freeze({
+        enrollmentId: row.id,
+        roleBundle: row.role_bundle,
+        capabilities: jsonList(row.capabilities, "role enrollment capabilities"),
+        version: safeVersion(row.version, "role enrollment version")
+      });
     });
   }
 
@@ -1428,6 +1502,20 @@ export class PostgresHumanSessionStore {
         occurredAt: now,
         payload: { sessionRefHash, rotation: 0 }
       });
+      if (SELECTABLE_HUMAN_ROLES.has(normalized.roles[0])) {
+        await appendEvent(client, {
+          eventType: AuthenticationEventType.ROLE_SELECTED,
+          tenantId: this.tenantId,
+          actorId: normalized.actorId,
+          credentialId: normalized.credentialId,
+          reasonCode: "human_role_selected",
+          occurredAt: now,
+          payload: {
+            roleBundle: normalized.roles[0],
+            sessionRefHash
+          }
+        });
+      }
       return inserted.rows[0];
     });
     return this.#issued(sessionFromRow(row), handle, csrfToken);
@@ -1466,7 +1554,14 @@ export class PostgresHumanSessionStore {
                 m.policy_version AS bound_policy_version,
                 m.client_ids AS bound_client_ids,
                 m.role_bundle AS bound_role_bundle,
-                m.capabilities AS bound_membership_capabilities
+                m.capabilities AS bound_membership_capabilities,
+                e.status AS bound_enrollment_status,
+                e.role_bundle AS bound_enrollment_role,
+                e.capabilities AS bound_enrollment_capabilities,
+                e.client_ids AS bound_enrollment_client_ids,
+                e.policy_version AS bound_enrollment_policy_version,
+                e.valid_from AS bound_enrollment_valid_from,
+                e.expires_at AS bound_enrollment_expires_at
            FROM authentication_sessions s
            LEFT JOIN tenants t ON t.id = s.tenant_id
            LEFT JOIN authentication_credentials c
@@ -1474,6 +1569,11 @@ export class PostgresHumanSessionStore {
            LEFT JOIN actors a ON a.id = s.actor_id
            LEFT JOIN memberships m
              ON m.tenant_id = s.tenant_id AND m.actor_id = s.actor_id
+           LEFT JOIN authentication_role_enrollments e
+             ON e.tenant_id = s.tenant_id
+            AND e.credential_id = s.credential_id
+            AND e.actor_id = s.actor_id
+            AND e.role_bundle = s.roles->>0
           WHERE s.tenant_id = $1 AND s.session_ref_hash = $2
           FOR UPDATE OF s`,
         [this.tenantId, sessionRefHash]
@@ -1516,7 +1616,16 @@ export class PostgresHumanSessionStore {
       const membershipCapabilities = row.bound_membership_capabilities
         ? jsonList(row.bound_membership_capabilities, "membership capabilities")
         : [];
+      const enrollmentCapabilities = row.bound_enrollment_capabilities
+        ? jsonList(row.bound_enrollment_capabilities, "role enrollment capabilities")
+        : [];
+      const enrollmentClientIds = row.bound_enrollment_client_ids
+        ? jsonList(row.bound_enrollment_client_ids, "role enrollment client IDs", {
+            maximumItems: 16
+          })
+        : [];
       const session = sessionFromRow(row);
+      const selectedEnrollmentRequired = SELECTABLE_HUMAN_ROLES.has(session.roles[0]);
       const credentialExpired = row.bound_credential_expires_at &&
         new Date(row.bound_credential_expires_at) <= effectiveNow;
       if (
@@ -1528,10 +1637,20 @@ export class PostgresHumanSessionStore {
         row.bound_membership_status !== "active" ||
         row.bound_policy_version !== row.policy_version ||
         !clientIds.includes(row.client_id) ||
-        !sameValues(session.roles, credentialRoles) ||
-        !sameValues(session.capabilities, credentialCapabilities) ||
         !sameValues(credentialRoles, [row.bound_role_bundle]) ||
-        credentialCapabilities.some((capability) => !membershipCapabilities.includes(capability))
+        credentialCapabilities.some((capability) => !membershipCapabilities.includes(capability)) ||
+        session.roles.length !== 1 ||
+        (selectedEnrollmentRequired
+          ? row.bound_enrollment_status !== "active" ||
+            row.bound_enrollment_role !== session.roles[0] ||
+            row.bound_enrollment_policy_version !== session.policyVersion ||
+            new Date(row.bound_enrollment_valid_from) > effectiveNow ||
+            (row.bound_enrollment_expires_at &&
+              new Date(row.bound_enrollment_expires_at) <= effectiveNow) ||
+            !enrollmentClientIds.includes(session.clientId) ||
+            !sameValues(session.capabilities, enrollmentCapabilities)
+          : !sameValues(session.roles, credentialRoles) ||
+            !sameValues(session.capabilities, credentialCapabilities))
       ) {
         const updated = await client.query(
           `UPDATE authentication_sessions
@@ -1818,6 +1937,10 @@ export class PostgresHumanSessionStore {
     if (!Number.isFinite(authTime.getTime())) {
       throw authenticationError("invalid_authentication_input", "authentication time is invalid");
     }
+    const roles = assertStringList("roles", input.roles ?? [], {
+      maximumItems: 1,
+      allowEmpty: false
+    });
     return Object.freeze({
       tenantId: this.tenantId,
       actorId: assertSafeIdentifier("actorId", input.actorId),
@@ -1828,7 +1951,7 @@ export class PostgresHumanSessionStore {
       credentialVersion,
       policyVersion: assertSafeIdentifier("policyVersion", input.policyVersion),
       capabilities: assertStringList("capabilities", input.capabilities ?? []),
-      roles: assertStringList("roles", input.roles ?? [], { maximumItems: 16 }),
+      roles,
       tokenJtiHash: assertBoundedString("tokenJtiHash", input.tokenJtiHash, {
         minimum: 32,
         maximum: 128,
@@ -1851,14 +1974,26 @@ export class PostgresHumanSessionStore {
               m.policy_version AS bound_policy_version,
               m.client_ids AS bound_client_ids,
               m.role_bundle AS bound_role_bundle,
-              m.capabilities AS bound_membership_capabilities
+              m.capabilities AS bound_membership_capabilities,
+              e.status AS bound_enrollment_status,
+              e.role_bundle AS bound_enrollment_role,
+              e.capabilities AS bound_enrollment_capabilities,
+              e.client_ids AS bound_enrollment_client_ids,
+              e.policy_version AS bound_enrollment_policy_version,
+              e.valid_from AS bound_enrollment_valid_from,
+              e.expires_at AS bound_enrollment_expires_at
          FROM authentication_credentials c
          JOIN tenants t ON t.id = c.tenant_id
          JOIN actors a ON a.id = c.actor_id
          JOIN memberships m ON m.tenant_id = c.tenant_id AND m.actor_id = c.actor_id
+         LEFT JOIN authentication_role_enrollments e
+           ON e.tenant_id = c.tenant_id
+          AND e.credential_id = c.id
+          AND e.actor_id = c.actor_id
+          AND e.role_bundle = $3
         WHERE c.tenant_id = $1 AND c.id = $2
         FOR SHARE OF c, a, m`,
-      [this.tenantId, session.credentialId]
+      [this.tenantId, session.credentialId, session.roles[0]]
     );
     const row = result.rows[0];
     const clientIds = row
@@ -1868,6 +2003,15 @@ export class PostgresHumanSessionStore {
     const membershipCapabilities = row
       ? jsonList(row.bound_membership_capabilities, "membership capabilities")
       : [];
+    const enrollmentCapabilities = row?.bound_enrollment_capabilities
+      ? jsonList(row.bound_enrollment_capabilities, "role enrollment capabilities")
+      : [];
+    const enrollmentClientIds = row?.bound_enrollment_client_ids
+      ? jsonList(row.bound_enrollment_client_ids, "role enrollment client IDs", {
+          maximumItems: 16
+        })
+      : [];
+    const selectedEnrollmentRequired = SELECTABLE_HUMAN_ROLES.has(session.roles[0]);
     if (
       !row ||
       row.bound_tenant_status !== "active" ||
@@ -1883,10 +2027,19 @@ export class PostgresHumanSessionStore {
       row.bound_membership_status !== "active" ||
       row.bound_policy_version !== session.policyVersion ||
       !clientIds.includes(session.clientId) ||
-      !sameValues(session.roles, credential.roles) ||
-      !sameValues(session.capabilities, credential.allowedCapabilities) ||
       !sameValues(credential.roles, [row.bound_role_bundle]) ||
-      credential.allowedCapabilities.some((capability) => !membershipCapabilities.includes(capability))
+      credential.allowedCapabilities.some((capability) => !membershipCapabilities.includes(capability)) ||
+      session.roles.length !== 1 ||
+      (selectedEnrollmentRequired
+        ? row.bound_enrollment_status !== "active" ||
+          row.bound_enrollment_role !== session.roles[0] ||
+          row.bound_enrollment_policy_version !== session.policyVersion ||
+          new Date(row.bound_enrollment_valid_from) > now ||
+          (row.bound_enrollment_expires_at && new Date(row.bound_enrollment_expires_at) <= now) ||
+          !enrollmentClientIds.includes(session.clientId) ||
+          !sameValues(session.capabilities, enrollmentCapabilities)
+        : !sameValues(session.roles, credential.roles) ||
+          !sameValues(session.capabilities, credential.allowedCapabilities))
     ) {
       throw authenticationError("authentication_session_rejected", "session credential is not active");
     }

@@ -8,7 +8,7 @@ import {
 test("production deployment roles derive a closed browser workspace topology", () => {
   assert.equal(
     productionWorkspaceNameForDeploymentRole("primary"),
-    "controller"
+    undefined
   );
   assert.equal(
     productionWorkspaceNameForDeploymentRole("risk"),
@@ -22,4 +22,9 @@ test("production deployment roles derive a closed browser workspace topology", (
     productionWorkspaceNameForDeploymentRole("unexpected"),
     undefined
   );
+});
+
+test("the primary production shell remains neutral until authenticated server role recovery", () => {
+  assert.notEqual(productionWorkspaceNameForDeploymentRole("primary"), "controller");
+  assert.notEqual(productionWorkspaceNameForDeploymentRole("primary"), "borrower");
 });

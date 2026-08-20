@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
 import pg from "pg";
-import { migrateUp } from "../../../scripts/migrate.mjs";
+import { migrateDown, migrateUp } from "../../../scripts/migrate.mjs";
 import {
   assertProductionBootstrapConfig,
-  bootstrapProductionDatabase
+  bootstrapProductionDatabase,
+  enrollProductionHumanRole,
+  provisionProductionGoldenFlowAgent,
+  revokeProductionGoldenFlowAgentCredential
 } from "../src/production-bootstrap.js";
 
 const { Pool } = pg;
@@ -36,7 +39,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0062_durable_credit_state_projection"
+      "0063_selected_human_role_enrollment"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
@@ -149,12 +152,13 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       expiresAt: futureCredentialExpiry()
     }]
   };
+  const referenceHashKey = randomBytes(32);
   const parameters = {
     adminConnectionString: process.env.DATABASE_URL,
     config: assertProductionBootstrapConfig(input),
     gatewayPassword: randomBytes(32).toString("base64url"),
     authenticationPassword: randomBytes(32).toString("base64url"),
-    referenceHashKey: randomBytes(32)
+    referenceHashKey
   };
 
   const first = await bootstrapProductionDatabase(parameters);
@@ -163,9 +167,48 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   assert.equal(first.credentialCount, 4);
   assert.equal(first.invitationCount, 4);
 
+  const upgradePool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 1 }), [
+      "0063_selected_human_role_enrollment"
+    ]);
+    assert.deepEqual(await migrateUp({ pool: upgradePool }), [
+      "0063_selected_human_role_enrollment"
+    ]);
+    const backfilled = await upgradePool.query(
+      `SELECT count(*)::int AS count
+         FROM authentication_role_enrollments
+        WHERE tenant_id = $1`,
+      [input.tenant.tenantId]
+    );
+    assert.equal(backfilled.rows[0].count, 2);
+  } finally {
+    await upgradePool.end();
+  }
+
   const second = await bootstrapProductionDatabase(parameters);
   assert.equal(second.insertedCredentials, 0);
   assert.equal(second.tenantId, input.tenant.tenantId);
+
+  const borrowerEnrollment = await enrollProductionHumanRole({
+    adminConnectionString: process.env.DATABASE_URL,
+    tenantId: input.tenant.tenantId,
+    actorId: `actor_principal_${suffix}`,
+    roleBundle: "human_borrower",
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(borrowerEnrollment.roleBundle, "human_borrower");
+  assert.equal(borrowerEnrollment.replayed, false);
+  assert.equal(borrowerEnrollment.credentialsIncluded, false);
+  const replayedEnrollment = await enrollProductionHumanRole({
+    adminConnectionString: process.env.DATABASE_URL,
+    tenantId: input.tenant.tenantId,
+    actorId: `actor_principal_${suffix}`,
+    roleBundle: "human_borrower",
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(replayedEnrollment.enrollmentId, borrowerEnrollment.enrollmentId);
+  assert.equal(replayedEnrollment.replayed, true);
 
   const reusedInvitationConfig = assertProductionBootstrapConfig({
     ...input,
@@ -190,6 +233,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   });
   let invitationEvents;
   let provisionedCredentials;
+  let roleEnrollmentEvidence;
   try {
     invitationEvents = await verificationPool.query(
       `SELECT payload
@@ -206,6 +250,12 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
         ORDER BY actor_id`,
       [input.tenant.tenantId]
     );
+    roleEnrollmentEvidence = await verificationPool.query(
+      `SELECT e.payload
+         FROM authentication_events e
+        WHERE e.tenant_id=$1 AND e.event_type='role_enrolled'`,
+      [input.tenant.tenantId]
+    );
   } finally {
     await verificationPool.end();
   }
@@ -219,6 +269,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   assert.equal(JSON.stringify(invitationEvents.rows).includes("0x111111"), false);
   assert.equal(JSON.stringify(invitationEvents.rows).includes("d".repeat(43)), false);
   assert.equal(provisionedCredentials.rowCount, 4);
+  assert.equal(roleEnrollmentEvidence.rowCount, 1);
+  assert.equal(roleEnrollmentEvidence.rows[0].payload.roleBundle, "human_borrower");
   const agentCredential = provisionedCredentials.rows.find(
     ({ actor_type: actorType }) => actorType === "agent"
   );
@@ -235,6 +287,44 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     true
   );
   assert.ok(new Date(riskCredential.expires_at) > new Date());
+
+  const goldenFlowInput = {
+    adminConnectionString: process.env.DATABASE_URL,
+    referenceHashKey,
+    tenantId: input.tenant.tenantId,
+    controllerActorId: `actor_principal_${suffix}`,
+    actorId: `actor_golden_flow_${suffix}`,
+    clientId: `client_golden_flow_${suffix}`,
+    issuer: "https://workload.ipo.one",
+    externalSubject: `golden-flow-agent-${suffix}`,
+    invitationId: `invite_golden_flow_${suffix}`,
+    senderThumbprint: "g".repeat(43),
+    expiresAt: futureCredentialExpiry(),
+    performedByActorId: input.systemActor.actorId
+  };
+  const provisionedAgent = await provisionProductionGoldenFlowAgent(goldenFlowInput);
+  assert.equal(provisionedAgent.replayed, false);
+  assert.equal(provisionedAgent.privateKeyIncluded, false);
+  assert.equal(provisionedAgent.runnerBootstrap.credentials[0].senderThumbprint, "g".repeat(43));
+  assert.equal(JSON.stringify(provisionedAgent).includes("invite_golden_flow"), false);
+  const replayedAgent = await provisionProductionGoldenFlowAgent(goldenFlowInput);
+  assert.equal(replayedAgent.credentialId, provisionedAgent.credentialId);
+  assert.equal(replayedAgent.replayed, true);
+  const revokedAgent = await revokeProductionGoldenFlowAgentCredential({
+    adminConnectionString: process.env.DATABASE_URL,
+    tenantId: input.tenant.tenantId,
+    actorId: goldenFlowInput.actorId,
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(revokedAgent.status, "revoked");
+  assert.equal(revokedAgent.replayed, false);
+  const replayedRevocation = await revokeProductionGoldenFlowAgentCredential({
+    adminConnectionString: process.env.DATABASE_URL,
+    tenantId: input.tenant.tenantId,
+    actorId: goldenFlowInput.actorId,
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(replayedRevocation.replayed, true);
 
   await assert.rejects(
     () => bootstrapProductionDatabase({

@@ -32,6 +32,10 @@ function oneHeader(headers, name, { maximum = 16_384 } = {}) {
   return value;
 }
 
+const AUTHENTICATION_MODE_HEADER = "x-ipo-one-authentication-mode";
+const HUMAN_SESSION_MODE = "human_session";
+const WORKLOAD_BEARER_MODE = "workload_bearer";
+
 export function createTenantAuthenticationResolver({
   humanBff,
   machineAuthenticator,
@@ -51,10 +55,22 @@ export function createTenantAuthenticationResolver({
     const cookies = parseCookies(request.headers.cookie);
     const sessionHandle = cookies.get(SESSION_COOKIE_NAME);
     const authorization = oneHeader(request.headers, "authorization");
-    if ((sessionHandle && authorization) || (!sessionHandle && !authorization)) {
+    const selectedMode = oneHeader(request.headers, AUTHENTICATION_MODE_HEADER, {
+      maximum: 32
+    });
+    if (!sessionHandle && !authorization) {
       throw new DomainError("authentication_required", "Exactly one approved authentication method is required");
     }
     if (sessionHandle) {
+      if (selectedMode !== undefined && selectedMode !== HUMAN_SESSION_MODE) {
+        throw new DomainError(
+          "authentication_required",
+          "The selected authentication mode does not match the Human session"
+        );
+      }
+      if (authorization && selectedMode !== HUMAN_SESSION_MODE) {
+        throw new DomainError("authentication_required", "Exactly one approved authentication method is required");
+      }
       return assertAuthenticationContext(await humanBff.authenticateSession({
         sessionHandle,
         requestMethod: request.method,
@@ -62,6 +78,12 @@ export function createTenantAuthenticationResolver({
         csrfToken: oneHeader(request.headers, "x-csrf-token", { maximum: 256 }),
         now
       }));
+    }
+    if (selectedMode !== undefined && selectedMode !== WORKLOAD_BEARER_MODE) {
+      throw new DomainError(
+        "authentication_required",
+        "The selected authentication mode does not match the Agent workload credential"
+      );
     }
     if (!authorization.startsWith("Bearer ") || authorization.length <= 7) {
       throw new DomainError("authentication_required", "Workload bearer authentication is required");

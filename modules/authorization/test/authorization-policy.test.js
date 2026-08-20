@@ -385,6 +385,12 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     ),
     true
   );
+  assert.equal(
+    new AuthorizationPolicyRegistry()
+      .getAuthenticated("pilotReadOwnCreditState")
+      .requiredCapability,
+    PilotCapability.CREDIT_PASSPORT_READ_SELF
+  );
   for (const capability of [
     PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
     PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,

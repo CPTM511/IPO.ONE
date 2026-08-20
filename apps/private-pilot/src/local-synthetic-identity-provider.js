@@ -8,48 +8,48 @@ import { PostgresAuthorizationDirectory } from "../../../modules/authorization/s
 import {
   PostgresCoreRepository,
   PostgresEventRepository,
-  createTenantSecurityContext,
-  setTenantTransactionContext
+  createTenantSecurityContextFromAuthentication
 } from "../../../modules/persistence/src/index.js";
 
-async function withTenantTransaction(pool, context, operation) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await setTenantTransactionContext(client, context);
-    const result = await operation(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original failure.
-    }
-    throw error;
-  } finally {
-    client.release();
-  }
-}
+const SYNTHETIC_IDENTITY_PROFILES = Object.freeze({
+  local: Object.freeze({
+    lockNamespace: "private_pilot_synthetic_identity",
+    providerRef: "urn:ipo.one:private-pilot:synthetic-identity-provider:v1",
+    providerVersion: "private_pilot_synthetic_provider.v1",
+    referencePrefix: "urn:ipo.one:private-pilot:synthetic-evidence",
+    idempotencyPrefix: "private-pilot-synthetic-identity-v2",
+    hashNamespace: "private_pilot_synthetic_identity"
+  }),
+  production_sandbox: Object.freeze({
+    lockNamespace: "production_sandbox_synthetic_identity",
+    providerRef: "urn:ipo.one:closed-pilot:synthetic-identity-provider:v1",
+    providerVersion: "closed_pilot_synthetic_provider.v1",
+    referencePrefix: "urn:ipo.one:closed-pilot:synthetic-evidence",
+    idempotencyPrefix: "production-sandbox-synthetic-identity-v1",
+    hashNamespace: "production_sandbox_synthetic_identity"
+  })
+});
 
-export function createLocalSyntheticIdentityProvider({ pool }) {
+function createSyntheticIdentityProvider({ pool, profile }) {
+  const configuration = SYNTHETIC_IDENTITY_PROFILES[profile];
+  if (!configuration || typeof pool?.connect !== "function") {
+    throw new TypeError("Synthetic identity Provider configuration is invalid");
+  }
   return Object.freeze({
     async ensure({ authenticationContext, subjectId, consentId }) {
-      const tenantContext = createTenantSecurityContext({
-        tenantId: authenticationContext.tenantId,
-        actorId: authenticationContext.actorId,
-        policyVersion: authenticationContext.policyVersion,
-        source: "local_test"
-      });
-      const lockClient = await pool.connect();
-      const lockKey = `private_pilot_synthetic_identity:${authenticationContext.tenantId}:${consentId}`;
-      try {
-        await lockClient.query("SELECT pg_advisory_lock(hashtext($1))", [lockKey]);
-        const eventRepository = new PostgresEventRepository({ pool, tenantContext });
-        const coreRepository = new PostgresCoreRepository({ pool, eventRepository });
-        const page = await coreRepository.withTenantTransaction((client) => (
-          coreRepository.listHumanIdentityReferencesForSubjectInTransaction(client, subjectId, { limit: 50 })
-        ));
+      const tenantContext =
+        createTenantSecurityContextFromAuthentication(authenticationContext);
+      const lockKey =
+        `${configuration.lockNamespace}:${authenticationContext.tenantId}:${consentId}`;
+      const eventRepository = new PostgresEventRepository({ pool, tenantContext });
+      const coreRepository = new PostgresCoreRepository({ pool, eventRepository });
+      return coreRepository.withTenantTransaction(async (client) => {
+        await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKey]);
+        const page = await coreRepository.listHumanIdentityReferencesForSubjectInTransaction(
+          client,
+          subjectId,
+          { limit: 50 }
+        );
         const requiredPurposes = [
           "identity_reference_use",
           "credit_decision",
@@ -62,7 +62,7 @@ export function createLocalSyntheticIdentityProvider({ pool }) {
         ));
         if (existing) return existing;
 
-        const consent = await coreRepository.getConsentRecord(consentId);
+        const consent = await coreRepository.getConsentRecordInTransaction(client, consentId);
         const now = new Date();
         const expiresAt = new Date(Math.min(
           new Date(consent.expiresAt).getTime(),
@@ -73,9 +73,9 @@ export function createLocalSyntheticIdentityProvider({ pool }) {
           principalId: consent.principalId,
           consent,
           referenceType: "kyc_reference",
-          providerRef: "urn:ipo.one:private-pilot:synthetic-identity-provider:v1",
-          providerVersion: "private_pilot_synthetic_provider.v1",
-          referenceRef: `urn:ipo.one:private-pilot:synthetic-evidence:${consentId}`,
+          providerRef: configuration.providerRef,
+          providerVersion: configuration.providerVersion,
+          referenceRef: `${configuration.referencePrefix}:${consentId}`,
           assuranceLevel: "synthetic_provider_asserted",
           purposeCodes: requiredPurposes,
           validFrom: now.toISOString(),
@@ -96,11 +96,11 @@ export function createLocalSyntheticIdentityProvider({ pool }) {
           },
           now
         });
-        await coreRepository.commitCommand({
+        await coreRepository.commitCommandInTransaction(client, {
           aggregateType: "human_identity_reference",
           aggregateId: reference.identityReferenceId,
-          idempotencyKey: `private-pilot-synthetic-identity-v2-${consentId}`,
-          commandHash: hashId("private_pilot_synthetic_identity", {
+          idempotencyKey: `${configuration.idempotencyPrefix}-${consentId}`,
+          commandHash: hashId(configuration.hashNamespace, {
             tenantId: authenticationContext.tenantId,
             subjectId,
             consentId
@@ -118,30 +118,68 @@ export function createLocalSyntheticIdentityProvider({ pool }) {
           }],
           response: { identityReferenceId: reference.identityReferenceId }
         });
-        await withTenantTransaction(pool, tenantContext, async (client) => {
-          const directory = new PostgresAuthorizationDirectory({
-            client,
-            authenticationContext
-          });
-          await directory.registerResource({
-            resourceType: "human_identity_reference",
-            resourceId: reference.identityReferenceId,
-            actorBindings: [{
-              actorId: authenticationContext.actorId,
-              actorType: authenticationContext.actorType,
-              relationship: "owner"
-            }],
-            now
-          });
+        const directory = new PostgresAuthorizationDirectory({
+          client,
+          authenticationContext
+        });
+        await directory.registerResource({
+          resourceType: "human_identity_reference",
+          resourceId: reference.identityReferenceId,
+          actorBindings: [{
+            actorId: authenticationContext.actorId,
+            actorType: authenticationContext.actorType,
+            relationship: "owner"
+          }],
+          now
         });
         return reference;
-      } finally {
-        try {
-          await lockClient.query("SELECT pg_advisory_unlock(hashtext($1))", [lockKey]);
-        } finally {
-          lockClient.release();
-        }
+      });
+    }
+  });
+}
+
+export function createLocalSyntheticIdentityProvider({ pool }) {
+  return createSyntheticIdentityProvider({ pool, profile: "local" });
+}
+
+export function createProductionSyntheticIdentityProvider({ pool }) {
+  return createSyntheticIdentityProvider({
+    pool,
+    profile: "production_sandbox"
+  });
+}
+
+export function createSyntheticIdentityGateway({ gateway, syntheticIdentity }) {
+  if (
+    typeof gateway?.execute !== "function" ||
+    typeof syntheticIdentity?.ensure !== "function"
+  ) {
+    throw new TypeError("Synthetic identity Gateway configuration is invalid");
+  }
+  return Object.freeze({
+    async execute(command) {
+      if (
+        command.operationId === "pilotRequestCredit" &&
+        command.authenticationContext?.actorType === "human"
+      ) {
+        await syntheticIdentity.ensure({
+          authenticationContext: command.authenticationContext,
+          subjectId: command.resource.resourceId,
+          consentId: command.payload.authorityId
+        });
       }
+      const result = await gateway.execute(command);
+      if (
+        command.operationId === "pilotCreateConsent" &&
+        command.authenticationContext?.actorType === "human"
+      ) {
+        await syntheticIdentity.ensure({
+          authenticationContext: command.authenticationContext,
+          subjectId: result.response.subjectId,
+          consentId: result.response.consent.consentId
+        });
+      }
+      return result;
     }
   });
 }

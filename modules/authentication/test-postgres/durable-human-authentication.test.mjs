@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import test from "node:test";
 import { hashId } from "../../../packages/domain/src/index.js";
 import { createPostgresHumanAccessComposition } from "../../../apps/tenant-api/src/index.js";
@@ -125,6 +125,39 @@ async function seedIdentity(pool, {
   ));
 }
 
+async function enrollHumanRole(pool, context, {
+  actorId,
+  credentialId,
+  roleBundle,
+  capabilities,
+  clientId,
+  now = NOW
+}) {
+  const enrollmentId = `role_enrollment_${randomUUID()}`;
+  await withTenantTransaction(pool, context, (client) => client.query(
+    `INSERT INTO authentication_role_enrollments(
+       id, tenant_id, actor_id, credential_id, role_bundle, capabilities,
+       client_ids, policy_version, status, valid_from, expires_at, version,
+       created_at, updated_at, schema_version
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6::jsonb,
+       $7::jsonb, 'security_001.v1', 'active', $8, NULL, 1,
+       $8, $8, 'authentication_role_enrollment.v1'
+     )`,
+    [
+      enrollmentId,
+      context.tenantId,
+      actorId,
+      credentialId,
+      roleBundle,
+      JSON.stringify(capabilities),
+      JSON.stringify([clientId]),
+      now
+    ]
+  ));
+  return enrollmentId;
+}
+
 async function createApplicationPool(ownerPool) {
   const password = randomBytes(24).toString("base64url");
   const quotedPassword = (await ownerPool.query("SELECT quote_literal($1) AS value", [password])).rows[0].value;
@@ -137,6 +170,7 @@ async function createApplicationPool(ownerPool) {
     `GRANT SELECT ON
        tenants, actors, memberships,
        authentication_credentials,
+       authentication_role_enrollments,
        authentication_oidc_transactions,
        authentication_wallet_transactions,
        authentication_sessions,
@@ -156,7 +190,9 @@ async function createApplicationPool(ownerPool) {
   await ownerPool.query(`GRANT INSERT, UPDATE ON authentication_sessions TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT INSERT ON authentication_session_invalidations TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT INSERT ON authentication_events TO ${APP_ROLE}`);
-  await ownerPool.query(`GRANT UPDATE (id) ON actors, memberships TO ${APP_ROLE}`);
+  await ownerPool.query(
+    `GRANT UPDATE (id) ON actors, memberships, authentication_role_enrollments TO ${APP_ROLE}`
+  );
   const connection = new URL(CONNECTION_STRING);
   connection.username = APP_ROLE;
   connection.password = password;
@@ -436,6 +472,69 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       reasonCode: "wallet_credential_provisioned",
       now: NOW
     });
+    await enrollHumanRole(ownerPool, context, {
+      actorId: HUMAN_ACTOR_ID,
+      credentialId: oidcCredential.credentialId,
+      roleBundle: "human_borrower",
+      capabilities: oidcCredential.allowedCapabilities,
+      clientId: OIDC_CLIENT_ID
+    });
+    await enrollHumanRole(ownerPool, context, {
+      actorId: HUMAN_ACTOR_ID,
+      credentialId: walletCredential.credentialId,
+      roleBundle: "human_borrower",
+      capabilities: walletCredential.allowedCapabilities,
+      clientId: WALLET_CLIENT_ID
+    });
+    await enrollHumanRole(ownerPool, context, {
+      actorId: HUMAN_ACTOR_ID,
+      credentialId: walletCredential.credentialId,
+      roleBundle: "principal_controller",
+      capabilities: ["subject.read", "agent.manage"],
+      clientId: WALLET_CLIENT_ID
+    });
+
+    await t.test("one wallet selects one durable Human role without capability union", async () => {
+      const sessionStore = new PostgresHumanSessionStore({
+        eventRepository: repository,
+        tenantId: TENANT_ID,
+        referenceHasher,
+        origin: ORIGIN
+      });
+      const principalRole = await registry.resolveHumanRole({
+        credentialId: walletCredential.credentialId,
+        roleBundle: "principal_controller",
+        clientId: WALLET_CLIENT_ID,
+        now: NOW
+      });
+      const principalSession = await sessionStore.create({
+        ...sessionInput(walletCredential),
+        roles: [principalRole.roleBundle],
+        capabilities: principalRole.capabilities
+      });
+      assert.deepEqual(principalSession.session.roles, ["principal_controller"]);
+      assert.deepEqual(principalSession.session.capabilities, ["subject.read", "agent.manage"]);
+      assert.equal(principalSession.session.capabilities.includes("integration.manage"), false);
+      const authenticated = await sessionStore.authenticate({
+        sessionHandle: principalSession.cookie.value,
+        requestMethod: "GET",
+        now: new Date(NOW.getTime() + 1_000)
+      });
+      assert.deepEqual(authenticated.roles, ["principal_controller"]);
+      const roleEvents = await repository.withTenantRead((client) => client.query(
+        `SELECT event_type, payload
+           FROM authentication_events
+          WHERE tenant_id = $1 AND event_type = 'role_selected'`,
+        [TENANT_ID]
+      ));
+      assert.equal(roleEvents.rowCount >= 1, true);
+      assert.equal(roleEvents.rows.at(-1).payload.roleBundle, "principal_controller");
+      await sessionStore.revoke({
+        sessionHandle: principalSession.cookie.value,
+        reasonCode: "test_role_session_complete",
+        now: new Date(NOW.getTime() + 2_000)
+      });
+    });
 
     await t.test(
       "DPoP replay entries survive cache restart and remain Tenant-isolated",
@@ -683,6 +782,7 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       const wallet = await walletStore.create({
         address: "0x1111111111111111111111111111111111111111",
         chainId: 84532,
+        requestedRole: "human_borrower",
         now: NOW
       });
       const rawWallet = await repository.withTenantRead((client) => client.query(
@@ -696,6 +796,7 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       const recovered = await walletStore.consume({ handle: wallet.handle, now: NOW });
       assert.equal(recovered.address, wallet.address);
       assert.equal(recovered.message, wallet.message);
+      assert.equal(recovered.requestedRole, "human_borrower");
       await assert.rejects(
         () => walletStore.consume({ handle: wallet.handle, now: NOW }),
         (error) => error.code === "wallet_transaction_rejected"

@@ -9,6 +9,7 @@ import {
   HyperliquidExecutionNonceState,
   HyperliquidTestnetExecutionGateway,
   InMemoryHyperliquidExecutionRepository,
+  PostgresHyperliquidExecutionRepository,
   SimulatedHyperliquidExchangeTransport,
   SimulatedIsolatedHyperliquidSigner
 } from "../src/index.js";
@@ -327,6 +328,59 @@ test("concurrent reservations are unique and monotonic per signer", async () => 
     nonces,
     Array.from({ length: 100 }, (_, index) => NOW + index)
   );
+});
+
+test("PostgreSQL nonce reservation serializes one signer before reading durable state", async () => {
+  const queries = [];
+  const client = {
+    async query(sql, parameters = []) {
+      queries.push({ sql, parameters });
+      if (sql.includes("FROM trading_testnet_execution_records")) {
+        return { rowCount: 0, rows: [] };
+      }
+      if (sql.includes("INSERT INTO trading_execution_nonce_heads")) {
+        return { rowCount: 1, rows: [{ last_nonce: NOW }] };
+      }
+      return { rowCount: 1, rows: [] };
+    }
+  };
+  const repository = new PostgresHyperliquidExecutionRepository({
+    eventRepository: {
+      async withTenantWrite(operation) {
+        return operation(client);
+      },
+      async withTenantRead(operation) {
+        return operation(client);
+      }
+    }
+  });
+  const draft = {
+    requestHash: hashId("test_execution_request", BASE),
+    facilityId: FACILITY_ID,
+    facilityHash: FACILITY_HASH,
+    orderIntentId: ORDER_INTENT_ID,
+    orderIntentHash: ORDER_INTENT_HASH,
+    accountBindingHash: ACCOUNT_BINDING_HASH,
+    signerReferenceHash: SIGNER_REFERENCE_HASH,
+    idempotencyKeyHash: hashId("test_execution_idempotency", BASE),
+    policyDecisionHash: hashId("test_execution_policy", BASE),
+    actionKind: HyperliquidExecutionActionKind.ORDER,
+    actionHash: hashId("test_execution_action", ACTIONS[0]),
+    action: ACTIONS[0],
+    cloid: "0x11111111111111111111111111111111"
+  };
+
+  await repository.reserve(draft, {
+    nowMs: NOW,
+    expiresAfter: NOW + HYPERLIQUID_TESTNET_EXCHANGE_PROFILE.expiresAfterMs
+  });
+
+  assert.match(queries[0].sql, /pg_advisory_xact_lock/);
+  assert.deepEqual(queries[0].parameters, [
+    `hyperliquid_execution_nonce:${SIGNER_REFERENCE_HASH}`
+  ]);
+  assert.match(queries[1].sql, /FROM trading_testnet_execution_records/);
+  assert.match(queries[2].sql, /INSERT INTO trading_execution_nonce_heads/);
 });
 
 test("idempotent replay returns one result and conflicting reuse is denied", async () => {

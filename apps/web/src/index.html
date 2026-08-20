@@ -768,6 +768,15 @@
                     <strong id="agentWorkspaceSelectionStatus">Checking Agent assignment</strong>
                     <small id="agentWorkspaceSelectionHelper">Only one server-authorized Agent can open this workflow. Empty or ambiguous assignments remain safely closed.</small>
                   </div>
+                  <div class="form-grid two" id="agentWorkspacePicker" hidden>
+                    <div>
+                      <label for="agentWorkspaceChoice">Agent workspace</label>
+                      <select id="agentWorkspaceChoice"></select>
+                    </div>
+                    <div class="button-row authority-actions">
+                      <button class="secondary" id="openSelectedAgentWorkspaceBtn" type="button">Open selected Agent workspace</button>
+                    </div>
+                  </div>
 
                   <div id="agentAuthoritySelectedWorkflow" hidden>
                   <div id="agentSubjectCreationControls" hidden>
@@ -2555,8 +2564,22 @@
 
         <div class="access-dialog-grid" id="accessDialogGrid">
           <section class="access-methods" id="accessMethodPanel" aria-labelledby="signInMethodTitle">
+            <div class="access-workspace-picker" id="accessWorkspacePicker" aria-labelledby="workspaceRoleTitle">
+              <div class="access-section-heading compact">
+                <span>1</span>
+                <div><h3 id="workspaceRoleTitle">Choose your active workspace</h3><p>One verified Human identity may be enrolled in more than one role. This session receives only the role selected here.</p></div>
+              </div>
+              <div class="network-choice-list" role="radiogroup" aria-label="Active Human workspace">
+                <button class="network-choice active" id="borrowerWorkspaceRoleBtn" type="button" role="radio" aria-checked="true" data-wallet-workspace-role="human_borrower">
+                  <span><strong>Human Borrower</strong><small>Own Human Subject, Consent, Offer, Obligation and repayment</small></span><em data-role-state>Selected</em>
+                </button>
+                <button class="network-choice" id="principalWorkspaceRoleBtn" type="button" role="radio" aria-checked="false" data-wallet-workspace-role="principal_controller">
+                  <span><strong>Principal Controller</strong><small>Principal-owned Agent Subjects, Mandates and integrations</small></span><em data-role-state>Select</em>
+                </button>
+              </div>
+            </div>
             <div class="access-section-heading">
-              <span id="accessMethodStep">Step 1</span>
+              <span id="accessMethodStep">2</span>
               <div><h3 id="signInMethodTitle">Choose how to sign in</h3><p id="signInMethodCopy">One secure session across the Human and Agent workspaces.</p></div>
             </div>
             <div class="access-method-list" id="oidcMethodList"></div>
@@ -2618,7 +2641,7 @@
 
           <section class="access-networks" id="accessNetworkPanel" aria-labelledby="networkTitle" hidden>
             <div class="access-section-heading">
-              <span>Step 2</span>
+              <span>3</span>
               <div><h3 id="networkTitle">Connect an approved network</h3><p>Both test networks use the same chain-agnostic Obligation kernel.</p></div>
             </div>
             <div class="network-choice-list" id="networkChoiceList">

@@ -15,6 +15,10 @@ import {
   preparePrivatePilotAgentProof
 } from "./private-pilot-agent-account.js";
 import {
+  createAuthenticatedProtocolActionConfirmation,
+  economicActionTypeForOperation
+} from "../../../modules/tenant-command-gateway/src/economic-action-confirmation.js";
+import {
   createLocalAgentApplicationInput,
   createLocalAgentRuntimeInput
 } from "./agent-reference-workflows.js";
@@ -68,12 +72,16 @@ function identifier(prefix) {
 
 export async function createVercelGoldenFlowAgentClient({
   origin,
+  audience,
   bootstrap,
   workloadPrivateJwk,
   clock = () => new Date(),
   request
 }) {
   const baseUrl = exactOrigin(origin);
+  const accessTokenAudience = audience === undefined
+    ? baseUrl
+    : exactOrigin(audience);
   const credential = exactAgentCredential(
     bootstrap?.credentials?.find((entry) => entry?.kind === "agent_dpop")
   );
@@ -100,7 +108,7 @@ export async function createVercelGoldenFlowAgentClient({
       .setProtectedHeader({ alg: "ES256", typ: "at+jwt", kid: workloadPrivateJwk.kid })
       .setIssuer(credential.issuer)
       .setSubject(credential.externalSubject)
-      .setAudience(baseUrl)
+      .setAudience(accessTokenAudience)
       .setIssuedAt(now)
       .setNotBefore(now)
       .setExpirationTime(now + 120)
@@ -225,9 +233,40 @@ export async function runVercelAgentApplication({ client, manifest }) {
     manifest,
     transportProfile: "mcp_stdio_local"
   });
-  const receipt = await workflow.runCreditOfferWorkflow(
-    createLocalAgentApplicationInput(manifest)
-  );
+  const applicationInput = createLocalAgentApplicationInput(manifest);
+  const receipt = await workflow.runCreditOfferWorkflow(applicationInput);
+  const replay = await workflow.runCreditOfferWorkflow(applicationInput);
+  if (
+    replay.creditIntent.creditIntentId !== receipt.creditIntent.creditIntentId ||
+    replay.decision.riskDecisionId !== receipt.decision.riskDecisionId ||
+    replay.offer?.creditOfferId !== receipt.offer?.creditOfferId ||
+    replay.steps[1].replayed !== true ||
+    replay.steps[3].replayed !== true
+  ) {
+    throw new TypeError("Agent application retry did not replay exact durable state");
+  }
+  let outOfScopeRejection;
+  try {
+    await client.execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotRequestCredit",
+      payload: {
+        authorityId: manifest.mandateId,
+        ...applicationInput.creditRequest,
+        requestedPrincipalMinor:
+          (BigInt(manifest.authority.aggregateLimitMinor) + 1n).toString()
+      },
+      resource: { resourceType: "subject", resourceId: manifest.subjectId },
+      idempotencyKey: `vercel-agent-out-of-scope-${manifest.mandateHash.slice(2, 26)}`,
+      requestId: identifier("request-agent-out-of-scope"),
+      correlationId: receipt.correlationId
+    });
+  } catch (error) {
+    outOfScopeRejection = error;
+  }
+  if (!outOfScopeRejection) {
+    throw new TypeError("Out-of-scope Agent credit request was not rejected server-side");
+  }
   const continuation = await client.execute({
     schemaVersion: "tenant_protocol_request.v1",
     operationId: "pilotPersistAgentContinuationReceipt",
@@ -245,31 +284,96 @@ export async function runVercelAgentApplication({ client, manifest }) {
     status: "offer_persisted",
     offerReceipt: receipt,
     continuation: continuation.response,
+    applicationReplayConfirmed: true,
+    outOfScopeRejectionCode:
+      outOfScopeRejection.code ?? "agent_request_rejected",
     sandboxOnly: true,
     productionFundsMoved: false
   });
 }
 
+export function resolveVercelAgentOfferReceipt(input) {
+  if (input?.schemaVersion !== "vercel_golden_flow_agent_application.v1") {
+    return input;
+  }
+  if (
+    input.status !== "offer_persisted" ||
+    input.sandboxOnly !== true ||
+    input.productionFundsMoved !== false ||
+    input.offerReceipt?.schemaVersion !== "agent_credit_offer_workflow_receipt.v1"
+  ) {
+    throw new TypeError("Golden Flow Agent application output is not an eligible Offer receipt source");
+  }
+  return input.offerReceipt;
+}
+
+export function confirmVercelAgentEconomicCommand(command) {
+  if (
+    !economicActionTypeForOperation(command?.operationId) ||
+    command.payload?.actionConfirmation
+  ) return command;
+  return {
+    ...command,
+    payload: {
+      ...command.payload,
+      actionConfirmation: createAuthenticatedProtocolActionConfirmation({
+        operationId: command.operationId,
+        payload: command.payload,
+        resource: command.resource,
+        requestId: command.requestId
+      })
+    }
+  };
+}
+
 export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) {
-  const approvedMinor = BigInt(offerReceipt?.offer?.approvedPrincipalMinor ?? "0");
+  const exactOfferReceipt = resolveVercelAgentOfferReceipt(offerReceipt);
+  const approvedMinor = BigInt(exactOfferReceipt?.offer?.approvedPrincipalMinor ?? "0");
   if (approvedMinor < 2n) {
     throw new TypeError("Agent Offer must support distinct partial and full repayment evidence");
   }
-  const execute = client.execute.bind(client);
+  let failedCommand;
+  const execute = async (command) => {
+    const confirmedCommand = confirmVercelAgentEconomicCommand(command);
+    try {
+      return await client.execute(confirmedCommand);
+    } catch (error) {
+      failedCommand = Object.freeze({
+        operationId: command.operationId,
+        code: error?.code ?? "agent_operation_failed",
+        requestId: error?.requestId
+      });
+      throw error;
+    }
+  };
   const runtime = new IpoOneAgentSandboxObligationClient({
     execute,
     manifest,
     transportProfile: "local_in_process"
   });
-  const baseInput = createLocalAgentRuntimeInput(manifest, offerReceipt);
+  const baseInput = createLocalAgentRuntimeInput(manifest, exactOfferReceipt);
   const partialMinor = (approvedMinor / 2n).toString();
-  const workflowReceipt = await runtime.runObligationWorkflow({
-    ...baseInput,
-    repayment: {
-      amountMinor: partialMinor,
-      sourceCode: "synthetic_revenue"
+  let workflowReceipt;
+  try {
+    workflowReceipt = await runtime.runObligationWorkflow({
+      ...baseInput,
+      repayment: {
+        amountMinor: partialMinor,
+        sourceCode: "synthetic_revenue"
+      }
+    });
+  } catch (error) {
+    if (failedCommand) {
+      const failure = new TypeError(
+        `Golden Flow Agent ${failedCommand.operationId} failed with ${failedCommand.code}`,
+        { cause: error }
+      );
+      failure.code = failedCommand.code;
+      failure.requestId = failedCommand.requestId;
+      throw failure;
     }
-  });
+    throw error;
+  }
   const outstandingMinor = (
     BigInt(workflowReceipt.obligation.outstandingPrincipalMinor) +
     BigInt(workflowReceipt.obligation.outstandingInterestMinor) +
@@ -293,8 +397,8 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
     requestId: identifier("request-agent-full-repayment"),
     correlationId: workflowReceipt.correlationId
   };
-  const fullRepayment = await client.execute(fullRepaymentCommand);
-  const duplicateRepayment = await client.execute(fullRepaymentCommand);
+  const fullRepayment = await execute(fullRepaymentCommand);
+  const duplicateRepayment = await execute(fullRepaymentCommand);
   if (duplicateRepayment.replayed !== true) {
     throw new TypeError("Duplicate repayment did not replay idempotently");
   }
@@ -309,6 +413,11 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
     requestId: identifier("request-agent-evidence"),
     correlationId: workflowReceipt.correlationId
   });
+  const recovery = await runVercelAgentRecovery({
+    client,
+    manifest,
+    obligationId: workflowReceipt.obligation.obligationId
+  });
   return Object.freeze({
     schemaVersion: "vercel_golden_flow_agent_runtime.v1",
     status: "fully_repaid_with_evidence",
@@ -316,7 +425,127 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
     fullRepayment: fullRepayment.response,
     duplicateRepaymentReplayed: true,
     evidence,
+    creditState: recovery.creditState,
+    recoveredObligation: recovery.obligation,
+    terminalOutcomeConfirmed: recovery.terminalOutcomeConfirmed,
     sandboxOnly: true,
     productionFundsMoved: false
+  });
+}
+
+async function readCreditStateWithRetry({ client, manifest, correlationId }) {
+  let lastError;
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    try {
+      return await client.execute({
+        schemaVersion: "tenant_protocol_request.v1",
+        operationId: "pilotReadOwnCreditState",
+        payload: {},
+        resource: { resourceType: "subject", resourceId: manifest.subjectId },
+        requestId: identifier(`request-agent-credit-state-${attempt}`),
+        correlationId
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt < 20) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+  }
+  throw lastError;
+}
+
+export async function runVercelAgentRecovery({
+  client,
+  manifest,
+  obligationId,
+  passportArtifactId
+}) {
+  if (!IDENTIFIER.test(obligationId ?? "")) {
+    throw new TypeError("Agent recovery Obligation is invalid");
+  }
+  const correlationId = identifier("correlation-agent-recovery");
+  const [obligationResult, creditStateResult] = await Promise.all([
+    client.execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotReadOwnObligation",
+      payload: {},
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      requestId: identifier("request-agent-obligation-recovery"),
+      correlationId
+    }),
+    readCreditStateWithRetry({ client, manifest, correlationId })
+  ]);
+  const obligation = obligationResult.response?.obligation;
+  const creditState = creditStateResult.response?.creditState;
+  if (
+    obligation?.obligationId !== obligationId ||
+    obligation.subjectId !== manifest.subjectId ||
+    obligation.authorityId !== manifest.mandateId ||
+    obligation.status !== "fully_repaid" ||
+    obligation.outstandingPrincipalMinor !== "0" ||
+    obligation.outstandingInterestMinor !== "0" ||
+    obligation.outstandingFeesMinor !== "0" ||
+    creditState?.subjectId !== manifest.subjectId ||
+    creditState.latestOutcome?.obligationId !== obligationId ||
+    creditState.latestOutcome?.outcomeLabel !== "on_time_repaid" ||
+    creditState.metrics?.completedCycleCount < 1 ||
+    creditState.trackRecord?.filter((entry) => entry.obligationId === obligationId).length !== 1
+  ) {
+    throw new TypeError("Agent terminal Obligation and Credit State recovery are inconsistent");
+  }
+  const evidenceClient = new IpoOneAgentEvidenceClient({
+    execute: client.execute.bind(client),
+    manifest,
+    transportProfile: "local_in_process"
+  });
+  const evidence = await evidenceClient.readObligationEvidence({
+    obligationId,
+    limit: 50,
+    requestId: identifier("request-agent-recovery-evidence"),
+    correlationId
+  });
+  if (!Array.isArray(evidence.items) || evidence.items.length < 1) {
+    throw new TypeError("Agent recovery Evidence is unavailable");
+  }
+  let passport;
+  if (passportArtifactId !== undefined) {
+    if (!IDENTIFIER.test(passportArtifactId)) {
+      throw new TypeError("Agent Credit Passport artifact is invalid");
+    }
+    const passportResult = await client.execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotReadOwnCreditPassportArtifact",
+      payload: {},
+      resource: {
+        resourceType: "credit_passport_artifact",
+        resourceId: passportArtifactId
+      },
+      requestId: identifier("request-agent-passport-recovery"),
+      correlationId
+    });
+    passport = passportResult.response?.artifact;
+    if (
+      passport?.creditPassportArtifactId !== passportArtifactId ||
+      passport.subjectId !== manifest.subjectId ||
+      passport.sandboxOnly !== true ||
+      passport.productionAuthority !== false ||
+      passport.piiIncluded !== false
+    ) {
+      throw new TypeError("Agent Credit Passport recovery is inconsistent");
+    }
+  }
+  return Object.freeze({
+    schemaVersion: "vercel_golden_flow_agent_recovery.v1",
+    status: "terminal_state_recovered",
+    obligation,
+    creditState,
+    evidence,
+    ...(passport === undefined ? {} : { passport }),
+    terminalOutcomeConfirmed: true,
+    retrySafe: true,
+    sandboxOnly: true,
+    productionFundsMoved: false,
+    privateKeyIncluded: false
   });
 }

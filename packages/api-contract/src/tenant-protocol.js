@@ -547,7 +547,7 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     kind: "query",
     actorTypes: ["human", "agent"],
     resourceType: "subject",
-    requiredCapability: "credit.read.self",
+    requiredCapability: "credit_passport.read.self",
     idempotency: "prohibited",
     quotaClass: "read",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,

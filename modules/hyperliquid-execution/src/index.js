@@ -1277,6 +1277,10 @@ export class PostgresHyperliquidExecutionRepository {
 
   async reserve(draft, { nowMs, expiresAfter }) {
     return this.#withWrite(async (client) => {
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+        [`hyperliquid_execution_nonce:${draft.signerReferenceHash}`]
+      );
       const existing = await client.query(
         `SELECT request_hash, record
            FROM trading_testnet_execution_records

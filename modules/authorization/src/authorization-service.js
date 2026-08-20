@@ -1,5 +1,7 @@
 import { createOperationalId, hashId } from "../../../packages/domain/src/index.js";
 import {
+  ActorType,
+  SenderConstraintMethod,
   assertAuthenticationContext,
   assertRecentPhishingResistantAuthentication
 } from "../../authentication/src/index.js";
@@ -25,6 +27,7 @@ import {
 const trustedAuthorizationDecisions = new WeakSet();
 const authorizationFacts = new WeakMap();
 const trustedApprovalPreparations = new WeakSet();
+const SELECTABLE_HUMAN_ROLES = new Set(["human_borrower", "principal_controller"]);
 
 function decisionVersion(name, value, { minimum = 0 } = {}) {
   if (!Number.isSafeInteger(value) || value < minimum) {
@@ -244,6 +247,18 @@ function compareCredential(context, credential) {
   );
 }
 
+function credentialAllowsSelectedHumanCapability({ context, credential, membership, capability }) {
+  if (credential.allowedCapabilities.includes(capability)) return true;
+  const selectedRole = context.roles.length === 1 ? context.roles[0] : undefined;
+  return (
+    context.actorType === ActorType.HUMAN &&
+    context.senderConstraintMethod === SenderConstraintMethod.HOST_SESSION &&
+    SELECTABLE_HUMAN_ROLES.has(selectedRole) &&
+    membership.roleBundle === selectedRole &&
+    membership.capabilities.includes(capability)
+  );
+}
+
 function normalizeRequest(input) {
   assertAuthorizationShape("authorization request", input, {
     required: [
@@ -447,7 +462,12 @@ export class AuthorizationService {
         if (
           !policy.allowedActorTypes.includes(context.actorType) ||
           !context.capabilities.includes(policy.requiredCapability) ||
-          !credential.allowedCapabilities.includes(policy.requiredCapability) ||
+          !credentialAllowsSelectedHumanCapability({
+            context,
+            credential,
+            membership,
+            capability: policy.requiredCapability
+          }) ||
           !membership.capabilities.includes(policy.requiredCapability)
         ) {
           throw new Error("actor or capability is not allowed");

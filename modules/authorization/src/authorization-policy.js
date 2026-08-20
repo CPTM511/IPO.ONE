@@ -877,7 +877,7 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     action: "credit.read.self",
     resourceType: "subject",
     allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
-    requiredCapability: PilotCapability.CREDIT_READ_SELF,
+    requiredCapability: PilotCapability.CREDIT_PASSPORT_READ_SELF,
     ownershipRule: OwnershipRule.ACTOR
   }),
   tenantOperation({

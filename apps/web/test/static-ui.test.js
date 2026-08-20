@@ -649,6 +649,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes("response?.fundsAuthority !== false"));
   assert.ok(js.includes('"Lifecycle complete"'));
   assert.ok(js.includes('"x-csrf-token": csrfToken'));
+  assert.ok(js.includes('"x-ipo-one-authentication-mode": "human_session"'));
   assert.ok(js.includes("tenant_protocol_request.v1"));
   assert.ok(js.includes("/tenant/v1/operations"));
   assert.ok(js.includes("/tenant/v1/catalog"));
@@ -1702,7 +1703,7 @@ test("UX-005 opens a fresh Human application when a recovered Obligation exists"
 
 test("Human reload prioritizes one actionable recovered Offer over prior position hydration", async () => {
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  const recoveryStart = js.indexOf("async function recoverAuthenticatedWorkspace()");
+  const recoveryStart = js.indexOf("async function recoverAuthenticatedWorkspace(");
   const recoveryEnd = js.indexOf("async function restoreLatestCreditPassport()", recoveryStart);
   const recovery = js.slice(recoveryStart, recoveryEnd);
 
@@ -1800,7 +1801,7 @@ test("UX-004 keeps the user manual and primary browser actions in one operabilit
 test("every browser button has a discoverable action contract", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|auth-provider|trading-capital-view|scroll-target)=/;
+  const genericAction = /\bdata-(?:view|go-view|agent-guide-action|borrow-entry|human-guide-action|private-action|wallet-chain|wallet-workspace-role|auth-provider|trading-capital-view|scroll-target)=/;
   const buttons = [...html.matchAll(/<button\b[^>]*>/g)].map(
     (match) => match[0]
   );

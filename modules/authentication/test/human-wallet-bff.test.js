@@ -45,8 +45,8 @@ function createFixture({ signatureVerifier } = {}) {
       method: SenderConstraintMethod.HOST_SESSION,
       thumbprint: "w".repeat(43)
     },
-    roles: ["tenant_owner"],
-    allowedCapabilities: ["subject.read", "integration.manage"],
+    roles: ["human_borrower"],
+    allowedCapabilities: ["subject.read", "intent.create"],
     policyVersion: "security_001.v1",
     performedByActorId: "actor_security_admin",
     reasonCode: "wallet_credential_registration",
@@ -96,6 +96,7 @@ test("SIWE creates a one-use host session only for a pre-provisioned wallet cred
   const login = await fixture.bff.beginLogin({
     address: fixture.account.address,
     chainId: 84532,
+    requestedRole: "human_borrower",
     now: NOW
   });
   assert.match(login.message, /ipo\.one wants you to sign in with your Ethereum account:/);
@@ -116,8 +117,8 @@ test("SIWE creates a one-use host session only for a pre-provisioned wallet cred
     "siwe",
     "eip191_eoa_v1"
   ]);
-  assert.deepEqual(issued.session.roles, ["tenant_owner"]);
-  assert.deepEqual(issued.session.capabilities, ["subject.read", "integration.manage"]);
+  assert.deepEqual(issued.session.roles, ["human_borrower"]);
+  assert.deepEqual(issued.session.capabilities, ["subject.read", "intent.create"]);
   assert.throws(
     () => assertRecentPhishingResistantAuthentication(issued.session, { now: NOW }),
     (error) => error.code === "recent_phishing_resistant_authentication_required"
@@ -134,7 +135,12 @@ test("SIWE creates a one-use host session only for a pre-provisioned wallet cred
 test("SIWE rejects unapproved chains, invalid signatures, and unprovisioned wallets", async () => {
   const fixture = createFixture();
   await assert.rejects(
-    () => fixture.bff.beginLogin({ address: fixture.account.address, chainId: 1, now: NOW }),
+    () => fixture.bff.beginLogin({
+      address: fixture.account.address,
+      chainId: 1,
+      requestedRole: "human_borrower",
+      now: NOW
+    }),
     (error) => error.code === "wallet_chain_rejected"
   );
 
@@ -142,6 +148,7 @@ test("SIWE rejects unapproved chains, invalid signatures, and unprovisioned wall
   const wrongSignatureLogin = await fixture.bff.beginLogin({
     address: fixture.account.address,
     chainId: 84532,
+    requestedRole: "human_borrower",
     now: NOW
   });
   const wrongSignature = await wrongAccount.signMessage({ message: wrongSignatureLogin.message });
@@ -157,6 +164,7 @@ test("SIWE rejects unapproved chains, invalid signatures, and unprovisioned wall
   const unprovisionedLogin = await fixture.bff.beginLogin({
     address: wrongAccount.address,
     chainId: 84532,
+    requestedRole: "human_borrower",
     now: NOW
   });
   const unprovisionedSignature = await wrongAccount.signMessage({ message: unprovisionedLogin.message });
@@ -190,6 +198,7 @@ test("SIWE records an eligible ERC-1271 method and rejects inclusion-only eviden
   const challenge = await eligible.bff.beginLogin({
     address: eligible.account.address,
     chainId: 84532,
+    requestedRole: "human_borrower",
     now: NOW
   });
   const issued = await eligible.bff.completeLogin({
@@ -211,6 +220,7 @@ test("SIWE records an eligible ERC-1271 method and rejects inclusion-only eviden
   const rejected = await ineligible.bff.beginLogin({
     address: ineligible.account.address,
     chainId: 1952,
+    requestedRole: "human_borrower",
     now: NOW
   });
   await assert.rejects(
@@ -244,6 +254,7 @@ test("SIWE accepts an eligible ERC-6492 receipt without retaining the raw signat
   const challenge = await fixture.bff.beginLogin({
     address: fixture.account.address,
     chainId: 84532,
+    requestedRole: "human_borrower",
     now: NOW
   });
   const signature = `0x${"33".repeat(96)}`;

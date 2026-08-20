@@ -8,6 +8,18 @@ import {
 } from "./security-utils.js";
 
 const APPROVED_CHAIN_IDS = new Set([84532, 1952]);
+const SELECTABLE_HUMAN_ROLES = new Set(["human_borrower", "principal_controller"]);
+
+function requestedRole(value) {
+  const role = assertBoundedString("requestedRole", value, {
+    maximum: 64,
+    pattern: /^[a-z][a-z0-9_]+$/
+  });
+  if (!SELECTABLE_HUMAN_ROLES.has(role)) {
+    throw authenticationError("authentication_role_rejected", "selected Human workspace is not available");
+  }
+  return role;
+}
 
 function exactHttpsUrl(name, value) {
   let parsed;
@@ -73,13 +85,14 @@ export class InMemoryWalletLoginTransactionStore {
     this.maximumTransactions = maximumTransactions;
   }
 
-  create({ address, chainId, now = new Date() }) {
+  create({ address, chainId, requestedRole: requestedRoleInput, now = new Date() }) {
     this.#prune(now);
     if (this.#transactions.size >= this.maximumTransactions) {
       throw authenticationError("wallet_transaction_capacity_exceeded", "wallet login capacity is exhausted");
     }
     const checkedAddress = normalizeAddress(address);
     const checkedChainId = normalizeChainId(chainId);
+    const checkedRole = requestedRole(requestedRoleInput);
     const handle = randomOpaqueValue();
     const nonce = randomBytes(16).toString("hex");
     const expirationTime = new Date(now.getTime() + this.ttlMs);
@@ -90,7 +103,7 @@ export class InMemoryWalletLoginTransactionStore {
       expirationTime,
       issuedAt: now,
       nonce,
-      statement: this.statement,
+      statement: `${this.statement} Selected workspace: ${checkedRole === "human_borrower" ? "Human Borrower" : "Principal Controller"}.`,
       uri: this.uri,
       version: "1"
     });
@@ -98,6 +111,7 @@ export class InMemoryWalletLoginTransactionStore {
     this.#transactions.set(reference, {
       address: checkedAddress,
       chainId: checkedChainId,
+      requestedRole: checkedRole,
       message,
       expiresAt: expirationTime.toISOString()
     });
@@ -105,6 +119,7 @@ export class InMemoryWalletLoginTransactionStore {
       handle,
       address: checkedAddress,
       chainId: checkedChainId,
+      requestedRole: checkedRole,
       message,
       expiresAt: expirationTime.toISOString()
     });
@@ -130,4 +145,4 @@ export class InMemoryWalletLoginTransactionStore {
   }
 }
 
-export { APPROVED_CHAIN_IDS };
+export { APPROVED_CHAIN_IDS, SELECTABLE_HUMAN_ROLES };

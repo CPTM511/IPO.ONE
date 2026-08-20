@@ -58,7 +58,7 @@ function cookieValue(cookies, name) {
 
 test(
   "production closed pilot executes a durable Human command, logs out, and signs in again with real EIP-191 signatures",
-  { timeout: 30_000 },
+  { timeout: 120_000 },
   async () => {
     assert.ok(
       CONNECTION_STRING,
@@ -125,7 +125,7 @@ test(
     authenticationUrl.password = authenticationPassword;
     const gatewayPool = createPostgresPool({
       connectionString: gatewayUrl.toString(),
-      max: 4,
+      max: 1,
       applicationName: "ipo-one-predeploy-production-gateway"
     });
     const authenticationPool = createPostgresPool({
@@ -237,8 +237,10 @@ test(
           enabled: true,
           sessionActive: false,
           sessionAuthenticationMethod: null,
+          sessionWorkspaceRole: null,
           oidcProviders: [],
           walletAuthentication: true,
+          walletWorkspaceRoles: ["human_borrower", "principal_controller"],
           supportedChains: ["eip155:84532", "eip155:1952"],
           boundary:
             "Authentication proves presence; internal policy and Mandates separately decide authority."
@@ -256,7 +258,8 @@ test(
           },
           body: JSON.stringify({
             address: account.address,
-            chainId: 84532
+            chainId: 84532,
+            workspaceRole: "human_borrower"
           })
         }
       );
@@ -329,6 +332,148 @@ test(
       assert.equal(result.response.prototypeOnly, true);
       assert.equal(result.response.schemaVersion, "tenant_human_subject_created.v1");
 
+      const subjectId = result.response.subjectId;
+      const consentResponse = await fetch(`${baseUrl}/tenant/v1/operations`, {
+        method: "POST",
+        headers: {
+          ...edgeHeaders,
+          "content-type": "application/json",
+          cookie: cookieHeader,
+          origin: browserOrigin,
+          "x-csrf-token": csrfToken
+        },
+        body: JSON.stringify({
+          operationId: "pilotCreateConsent",
+          payload: {
+            purposes: [
+              "credit_application",
+              "credit_decision",
+              "credit_offer_acceptance",
+              "obligation_servicing",
+              "identity_reference_use"
+            ],
+            allowedAssetIds: ["urn:ipo-one:sandbox-asset:usd-cent"],
+            allowedCreditPurposeCodes: ["working_capital"],
+            allowedRepaymentFrequencies: ["monthly"],
+            maxRequestedPrincipalMinor: "11100",
+            maxRequestedTermDays: 60,
+            maxInstallmentCount: 2,
+            termsRef: "urn:ipo.one:terms:human-credit-sandbox:v1",
+            termsVersion: "human_credit_terms.v1",
+            dataUsageRef: "urn:ipo.one:data-usage:human-credit-sandbox:v1",
+            dataUsageVersion: "human_credit_data_usage.v1",
+            disclosureRef: "urn:ipo.one:disclosure:no-real-funds:v1",
+            expiresAt: new Date(
+              Date.now() + 30 * 24 * 60 * 60 * 1_000
+            ).toISOString()
+          },
+          resource: { resourceType: "subject", resourceId: subjectId },
+          idempotencyKey: `predeploy-create-consent-${suffix}`,
+          requestId: `request-predeploy-consent-${suffix}`,
+          correlationId: `correlation-predeploy-credit-${suffix}`,
+          schemaVersion: "tenant_protocol_request.v1"
+        })
+      });
+      const consentText = await consentResponse.text();
+      assert.equal(consentResponse.status, 200, consentText);
+      const consentResult = JSON.parse(consentText);
+      const consentId = consentResult.response.consent.consentId;
+
+      const selfResponse = await fetch(`${baseUrl}/tenant/v1/operations`, {
+        method: "POST",
+        headers: {
+          ...edgeHeaders,
+          "content-type": "application/json",
+          cookie: cookieHeader,
+          origin: browserOrigin,
+          "x-csrf-token": csrfToken
+        },
+        body: JSON.stringify({
+          operationId: "pilotReadHumanSelf",
+          payload: {},
+          resource: { resourceType: "subject", resourceId: subjectId },
+          requestId: `request-predeploy-read-self-${suffix}`,
+          correlationId: `correlation-predeploy-credit-${suffix}`,
+          schemaVersion: "tenant_protocol_request.v1"
+        })
+      });
+      const selfText = await selfResponse.text();
+      assert.equal(selfResponse.status, 200, selfText);
+      const selfResult = JSON.parse(selfText);
+      assert.equal(selfResult.response.identityReferences.length, 1);
+      assert.equal(
+        selfResult.response.identityReferences[0].providerVersion,
+        "closed_pilot_synthetic_provider.v1"
+      );
+      assert.equal(selfResult.response.identityReferences[0].consentId, consentId);
+      assert.equal(selfResult.response.identityReferences[0].syntheticOnly, true);
+      assert.equal(selfResult.response.identityReferences[0].productionVerified, false);
+
+      const intentResponse = await fetch(`${baseUrl}/tenant/v1/operations`, {
+        method: "POST",
+        headers: {
+          ...edgeHeaders,
+          "content-type": "application/json",
+          cookie: cookieHeader,
+          origin: browserOrigin,
+          "x-csrf-token": csrfToken
+        },
+        body: JSON.stringify({
+          operationId: "pilotRequestCredit",
+          payload: {
+            authorityId: consentId,
+            assetId: "urn:ipo-one:sandbox-asset:usd-cent",
+            requestedPrincipalMinor: "11100",
+            purposeCode: "working_capital",
+            requestedTermDays: 60,
+            repaymentFrequency: "monthly",
+            installmentCount: 2
+          },
+          resource: { resourceType: "subject", resourceId: subjectId },
+          idempotencyKey: `predeploy-request-credit-${suffix}`,
+          requestId: `request-predeploy-credit-${suffix}`,
+          correlationId: `correlation-predeploy-credit-${suffix}`,
+          schemaVersion: "tenant_protocol_request.v1"
+        })
+      });
+      const intentText = await intentResponse.text();
+      assert.equal(intentResponse.status, 200, intentText);
+      const intentResult = JSON.parse(intentText);
+      const creditIntentId = intentResult.response.creditIntent.creditIntentId;
+
+      const evaluationResponse = await fetch(`${baseUrl}/tenant/v1/operations`, {
+        method: "POST",
+        headers: {
+          ...edgeHeaders,
+          "content-type": "application/json",
+          cookie: cookieHeader,
+          origin: browserOrigin,
+          "x-csrf-token": csrfToken
+        },
+        body: JSON.stringify({
+          operationId: "pilotEvaluateCreditApplication",
+          payload: {},
+          resource: {
+            resourceType: "credit_intent",
+            resourceId: creditIntentId
+          },
+          idempotencyKey: `predeploy-evaluate-credit-${suffix}`,
+          requestId: `request-predeploy-evaluate-${suffix}`,
+          correlationId: `correlation-predeploy-credit-${suffix}`,
+          schemaVersion: "tenant_protocol_request.v1"
+        })
+      });
+      const evaluationText = await evaluationResponse.text();
+      assert.equal(evaluationResponse.status, 200, evaluationText);
+      const evaluationResult = JSON.parse(evaluationText);
+      assert.equal(evaluationResult.response.decision.status, "approved");
+      assert.ok(evaluationResult.response.offer);
+      assert.ok(
+        evaluationResult.response.decision.decisionPassport.sourceEvidence.some(
+          (source) => source.role === "human_identity_reference"
+        )
+      );
+
       const logout = await fetch(`${baseUrl}/auth/v1/logout`, {
         method: "POST",
         headers: {
@@ -370,7 +515,8 @@ test(
           },
           body: JSON.stringify({
             address: account.address,
-            chainId: 84532
+            chainId: 84532,
+            workspaceRole: "human_borrower"
           })
         }
       );
@@ -415,6 +561,7 @@ test(
       const signedInAgainAuthentication = await signedInAgainOptions.json();
       assert.equal(signedInAgainAuthentication.sessionActive, true);
       assert.equal(signedInAgainAuthentication.sessionAuthenticationMethod, "siwe");
+      assert.equal(signedInAgainAuthentication.sessionWorkspaceRole, "human_borrower");
       const signedInAgainCatalog = await fetch(
         `${baseUrl}/tenant/v1/catalog`,
         {

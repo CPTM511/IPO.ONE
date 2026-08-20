@@ -11,8 +11,10 @@ import {
 } from "jose";
 import fixtures from "../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json" with { type: "json" };
 import {
+  confirmVercelAgentEconomicCommand,
   createProductionMcpHandle,
-  createVercelGoldenFlowAgentClient
+  createVercelGoldenFlowAgentClient,
+  resolveVercelAgentOfferReceipt
 } from "../src/vercel-golden-flow-agent.js";
 
 const NOW = new Date("2026-08-07T00:00:00.000Z");
@@ -80,6 +82,7 @@ test("Vercel Golden Flow Agent creates exact short-lived DPoP-bound requests", a
   const transport = fakeHttpsRequest();
   const client = await createVercelGoldenFlowAgentClient({
     origin: "https://closed-pilot.invalid",
+    audience: "https://closed-pilot-audience.invalid",
     bootstrap,
     workloadPrivateJwk: privateJwk,
     clock: () => NOW,
@@ -98,7 +101,7 @@ test("Vercel Golden Flow Agent creates exact short-lived DPoP-bound requests", a
     typ: "at+jwt",
     kid: "golden-flow-test-key"
   });
-  assert.equal(tokenClaims.aud, "https://closed-pilot.invalid");
+  assert.equal(tokenClaims.aud, "https://closed-pilot-audience.invalid");
   assert.equal(tokenClaims.cnf.jkt, thumbprint);
   assert.equal(tokenClaims.exp - tokenClaims.iat, 120);
   assert.equal(tokenClaims.capabilities.includes("agent_account.proof.submit.self"), true);
@@ -155,5 +158,64 @@ test("production MCP handle maps only the four approved application tools", asyn
   await assert.rejects(
     () => handle({ ...message, params: { ...message.params, name: "forbidden_tool" } }),
     /unavailable/
+  );
+});
+
+test("Golden Flow runtime consumes only an exact safe application Offer receipt", () => {
+  const receipt = {
+    schemaVersion: "agent_credit_offer_workflow_receipt.v1",
+    offer: { approvedPrincipalMinor: "10000" }
+  };
+  assert.equal(resolveVercelAgentOfferReceipt(receipt), receipt);
+  assert.equal(resolveVercelAgentOfferReceipt({
+    schemaVersion: "vercel_golden_flow_agent_application.v1",
+    status: "offer_persisted",
+    offerReceipt: receipt,
+    sandboxOnly: true,
+    productionFundsMoved: false
+  }), receipt);
+  assert.throws(
+    () => resolveVercelAgentOfferReceipt({
+      schemaVersion: "vercel_golden_flow_agent_application.v1",
+      status: "offer_persisted",
+      offerReceipt: receipt,
+      sandboxOnly: true,
+      productionFundsMoved: true
+    }),
+    /not an eligible Offer receipt source/
+  );
+});
+
+test("Golden Flow Agent binds economic commands to one authenticated protocol confirmation", () => {
+  const command = {
+    schemaVersion: "tenant_protocol_request.v1",
+    operationId: "pilotAcceptCreditOffer",
+    payload: {
+      expectedOfferHash: `0x${"1".repeat(64)}`,
+      expectedTermsHash: `0x${"2".repeat(64)}`,
+      acknowledgementHash: `0x${"3".repeat(64)}`
+    },
+    resource: {
+      resourceType: "credit_offer",
+      resourceId: "credit_offer_golden_flow"
+    },
+    idempotencyKey: "idempotency-golden-flow-accept-0001",
+    requestId: "request-golden-flow-accept-0001",
+    correlationId: "correlation-golden-flow-accept-0001"
+  };
+  const confirmed = confirmVercelAgentEconomicCommand(command);
+  assert.equal(Object.hasOwn(command.payload, "actionConfirmation"), false);
+  assert.equal(
+    confirmed.payload.actionConfirmation.confirmationMethod,
+    "authenticated_protocol_request"
+  );
+  assert.equal(confirmed.payload.actionConfirmation.requestId, command.requestId);
+  assert.equal(confirmed.payload.actionConfirmation.resourceId, command.resource.resourceId);
+  assert.equal(confirmed.payload.actionConfirmation.rawSignaturePersisted, false);
+  assert.equal(confirmed.payload.actionConfirmation.blockchainTransactionSubmitted, false);
+  assert.equal(
+    confirmVercelAgentEconomicCommand(confirmed),
+    confirmed,
+    "an exact existing confirmation must not be replaced"
   );
 });
