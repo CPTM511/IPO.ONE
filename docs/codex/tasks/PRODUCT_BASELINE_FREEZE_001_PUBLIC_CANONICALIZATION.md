@@ -1,6 +1,6 @@
 # PRODUCT-BASELINE-FREEZE-001 — Public Canonicalization and v0.1.0 Freeze
 
-Status: Candidate verified locally; remote CI/deployment/checkpoint pending
+Status: Public baseline deployed and checkpoint recorded; final tag/Release pending
 
 Owner: IPO.ONE Founder / Codex implementation
 
@@ -226,5 +226,25 @@ Local candidate Evidence on 2026-08-20:
 - production dependency audit: no known vulnerabilities;
 - `git diff --check`: PASS.
 
-Remote PR, exact CI, deployment, production acceptance, checkpoint, tag, and
-GitHub Release Evidence remain pending and must be appended before freeze.
+Remote Evidence on 2026-08-20:
+
+- canonicalization PR #29: candidate
+  `2aec35b59b107fe86a9411187ab69f70e7273613`, merged as
+  `4356680ae8c9ace64d8029de943aa2a16ecf81ef`;
+- candidate Quality Gate runs `32354952070` and `32354930973`: PASS;
+- product-checkpoint `main` Quality Gate run `32355841411`: PASS;
+- production deployment `dpl_8iBxcDq1fHWZzy52mgzWiPmmiHp8`: READY and
+  promoted to [https://ipo.one](https://ipo.one);
+- production liveness, readiness, and capability discovery identify exact
+  release `2aec35b59b107fe86a9411187ab69f70e7273613`, with real funds and all
+  unapproved authority disabled;
+- deployed Chromium desktop/mobile public surface and visible product-entry
+  click: PASS, with no overflow or console issue;
+- bounded Human authentication discovery is reachable and unauthenticated
+  Agent access fails closed;
+- checkpoint record:
+  `docs/releases/PRODUCT_BASELINE_CHECKPOINT_2026_08_20.md`.
+
+The annotated `v0.1.0` tag and GitHub Release remain intentionally pending
+until the checkpoint PR is merged and the resulting exact `main` SHA is green
+and deployed.
