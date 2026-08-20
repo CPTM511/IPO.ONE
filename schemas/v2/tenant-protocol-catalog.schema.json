@@ -1945,7 +1945,7 @@
               "const": "subject"
             },
             "requiredCapability": {
-              "const": "credit.read.self"
+              "const": "credit_passport.read.self"
             },
             "idempotency": {
               "const": "prohibited"

@@ -5381,7 +5381,7 @@ export type TenantProtocolOperation =
       "query",
       readonly ["human", "agent"],
       "subject",
-      "credit.read.self",
+      "credit_passport.read.self",
       "prohibited",
       "read",
       "tenant_owned_credit_state_view.v1"

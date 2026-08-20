@@ -585,7 +585,7 @@
         "agent"
       ],
       "resourceType": "subject",
-      "requiredCapability": "credit.read.self",
+      "requiredCapability": "credit_passport.read.self",
       "idempotency": "prohibited",
       "quotaClass": "read",
       "requestSchemaVersion": "tenant_protocol_request.v1",
