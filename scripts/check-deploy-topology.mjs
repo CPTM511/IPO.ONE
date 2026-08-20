@@ -40,7 +40,10 @@ const launchPolicy = validateLaunchPolicy(
 const vercelPackage = JSON.parse(vercelPackageText);
 
 assert.equal(topology.runtime.nodeVersion, nodeVersion.trim());
-assert.equal(manifest.engines?.node, `>=${topology.runtime.nodeVersion} <27`);
+assert.equal(
+  manifest.engines?.node,
+  `>=24.19.0 <25 || >=${topology.runtime.nodeVersion} <27`
+);
 assert.equal(vercelPackage.engines?.node, "26.x");
 assert.equal(launchPolicy.profiles.closed_non_funds_pilot.releaseEnabled, false);
 assert.equal(topology.launchBlocked, true);
