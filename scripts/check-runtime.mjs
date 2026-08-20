@@ -19,7 +19,11 @@ const expectedPackageManager = "pnpm@11.1.3";
 
 assert.equal(expectedNodeVersion, "26.5.0", ".node-version must remain on the reviewed runtime");
 assert.equal(nvmVersion.trim(), expectedNodeVersion, ".nvmrc and .node-version must agree");
-assert.equal(manifest.engines?.node, ">=26.5.0 <27", "package engines must preserve the Node 26 boundary");
+assert.equal(
+  manifest.engines?.node,
+  ">=24.19.0 <25 || >=26.5.0 <27",
+  "package engines must preserve reviewed Vercel Node 24 and repository Node 26 boundaries"
+);
 assert.equal(manifest.packageManager, expectedPackageManager, "package manager declaration drifted");
 assert.match(
   workflow,

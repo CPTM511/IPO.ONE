@@ -22,6 +22,16 @@ vercel://environment/production/VARIABLE_NAME@sha256:<64 lowercase hex>
 The runtime verifies that each reference digest matches the exact deployed
 value and fails closed on drift.
 
+## Hosted runtime compatibility
+
+Vercel builds and Functions use the latest supported Node 24 LTS release. The
+root engine range admits the reviewed Node 24 LTS line for this hosted target
+and the exact Node 26.5.0 repository/container line; it does not admit Node 25.
+Vercel automatically advances Node 24 minor and patch releases, so every
+deployment must rerun health, Human browser, and Agent transport acceptance on
+the exact deployed SHA. This compatibility declaration changes no funds,
+signer, chain, database-owner, or authentication authority.
+
 ## Vercel-provided variables
 
 | Name | Required value or constraint |
