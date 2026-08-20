@@ -649,6 +649,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes("response?.fundsAuthority !== false"));
   assert.ok(js.includes('"Lifecycle complete"'));
   assert.ok(js.includes('"x-csrf-token": csrfToken'));
+  assert.ok(js.includes('"x-ipo-one-authentication-mode": "human_session"'));
   assert.ok(js.includes("tenant_protocol_request.v1"));
   assert.ok(js.includes("/tenant/v1/operations"));
   assert.ok(js.includes("/tenant/v1/catalog"));

@@ -626,3 +626,93 @@ test("transport authentication resolver uses Human session or sender-constrained
   assert.equal(calls[0][1].dpopProof, "opaque-test-proof");
   assert.equal(Object.hasOwn(calls[0][1], "tenantId"), false);
 });
+
+test("transport authentication resolver honors an explicit Human session mode without unioning workload authority", async () => {
+  const context = humanContext();
+  const calls = [];
+  const sessionHandle = "s".repeat(43);
+  const resolver = createTenantAuthenticationResolver({
+    humanBff: {
+      authenticateSession(input) {
+        calls.push(["human", input]);
+        return context;
+      }
+    },
+    machineAuthenticator: {
+      async authenticate() {
+        calls.push(["agent"]);
+        assert.fail("Explicit Human session selection reached the Agent verifier");
+      }
+    }
+  });
+
+  const result = await resolver({
+    request: {
+      method: "POST",
+      headers: {
+        authorization: "Bearer platform-injected-credential",
+        cookie: `${SESSION_COOKIE_NAME}=${sessionHandle}`,
+        origin: "https://ipo.one",
+        "x-csrf-token": "c".repeat(43),
+        "x-ipo-one-authentication-mode": "human_session"
+      }
+    },
+    requestUrl: "https://ipo.one/tenant/v1/operations"
+  });
+
+  assert.equal(result, context);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], "human");
+  assert.equal(calls[0][1].sessionHandle, sessionHandle);
+});
+
+test("transport authentication resolver rejects ambiguous or mismatched authentication selection", async () => {
+  const context = humanContext();
+  const sessionHandle = "s".repeat(43);
+  const resolver = createTenantAuthenticationResolver({
+    humanBff: { authenticateSession: async () => context },
+    machineAuthenticator: { authenticate: async () => context }
+  });
+  const requestUrl = "https://ipo.one/tenant/v1/operations";
+
+  await assert.rejects(
+    () => resolver({
+      request: {
+        method: "POST",
+        headers: {
+          authorization: "Bearer opaque-test-token",
+          cookie: `${SESSION_COOKIE_NAME}=${sessionHandle}`
+        }
+      },
+      requestUrl
+    }),
+    (error) => error.code === "authentication_required"
+  );
+  await assert.rejects(
+    () => resolver({
+      request: {
+        method: "POST",
+        headers: {
+          authorization: "Bearer opaque-test-token",
+          cookie: `${SESSION_COOKIE_NAME}=${sessionHandle}`,
+          "x-ipo-one-authentication-mode": "workload_bearer"
+        }
+      },
+      requestUrl
+    }),
+    (error) => error.code === "authentication_required"
+  );
+  await assert.rejects(
+    () => resolver({
+      request: {
+        method: "POST",
+        headers: {
+          authorization: "Bearer opaque-test-token",
+          "x-ipo-one-authentication-mode": "human_session"
+        }
+      },
+      requestUrl
+    }),
+    (error) => error.code === "authentication_required"
+  );
+});

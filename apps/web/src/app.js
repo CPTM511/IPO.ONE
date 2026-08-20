@@ -2124,6 +2124,7 @@ async function tenantApi(operationId, {
       headers: {
         accept: "application/json, application/problem+json",
         "content-type": "application/json",
+        "x-ipo-one-authentication-mode": "human_session",
         "x-csrf-token": csrfToken,
         "x-request-id": requestId
       },
@@ -8905,7 +8906,10 @@ async function runTenantPilotProbe(probeOwner) {
     walletAuthorityLifecycle.assertProtectedAvailable();
     const response = await fetch("/tenant/v1/catalog", {
       credentials: "same-origin",
-      headers: { accept: "application/json, application/problem+json" }
+      headers: {
+        accept: "application/json, application/problem+json",
+        "x-ipo-one-authentication-mode": "human_session"
+      }
     });
     if (!isCurrentTenantPilotProbe(probeOwner)) return;
     if (!response.ok) {
