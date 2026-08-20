@@ -139,7 +139,7 @@ assert.doesNotMatch(
 );
 
 const manifest = JSON.parse(packageJson);
-assert.equal(manifest.engines?.node, ">=26.5.0 <27");
+assert.equal(manifest.engines?.node, ">=24.19.0 <25 || >=26.5.0 <27");
 assert.equal(nodeVersion.trim(), "26.5.0");
 assert.equal(nvmVersion.trim(), nodeVersion.trim());
 assert.match(workflow, /node-version-file:\s*\.node-version/);
