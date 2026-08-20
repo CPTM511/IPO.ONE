@@ -60,7 +60,8 @@ import { createServicingCasePresentation } from "./servicing-case-presentation.j
 import {
   SERVICING_POSITION_INDEX_LIMIT,
   acceptServicingPositionRefresh,
-  createServicingPositionIndex
+  createServicingPositionIndex,
+  projectServicingWorkspaceResume
 } from "./servicing-position-index.js";
 import { createObligationPortfolioPresentation } from "./obligation-portfolio-presentation.js";
 import {
@@ -4697,6 +4698,10 @@ function rememberWorkspaceObligation(resourceId, relationship = "owner") {
 
 function currentServicingPositionIndex() {
   if (!tenantPilot.workspaceResume) return null;
+  const servicingWorkspace = projectServicingWorkspaceResume(
+    tenantPilot.workspaceResume
+  );
+  if (!servicingWorkspace) return null;
   const referenceIds = new Set(
     tenantPilot.workspaceObligations
       .slice(0, SERVICING_POSITION_INDEX_LIMIT)
@@ -4704,7 +4709,7 @@ function currentServicingPositionIndex() {
   );
   const selectedObligationId = tenantPilot.obligation?.obligationId;
   return createServicingPositionIndex({
-    workspace: tenantPilot.workspaceResume,
+    workspace: servicingWorkspace,
     views: [...tenantPilot.workspacePositionViews]
       .filter(([obligationId]) => referenceIds.has(obligationId))
       .map(([obligationId, view]) => ({ obligationId, view })),

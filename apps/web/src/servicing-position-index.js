@@ -13,6 +13,13 @@ const WORKSPACE_RESOURCE_TYPES = new Set([
 ]);
 const WORKSPACE_RELATIONSHIPS = new Set(["owner", "controller", "subject"]);
 const WORKSPACE_KINDS = new Set(["human_borrower", "principal_controller"]);
+const WORKSPACE_RESUME_OPTIONAL_KEYS = Object.freeze([
+  "continuationReceipts",
+  "controlledAgentActorIds",
+  "controlledAgentOptions",
+  "humanOfferReview",
+  "selectedAgentActorId"
+]);
 
 function plainRecord(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -44,6 +51,26 @@ function deepFreeze(value) {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const nested of Object.values(value)) deepFreeze(nested);
   return Object.freeze(value);
+}
+
+export function projectServicingWorkspaceResume(workspace) {
+  const required = [
+    "workspaceKind",
+    "resources",
+    "hasMore",
+    "serverTruth",
+    "schemaVersion"
+  ];
+  if (!closedRecord(workspace, required, WORKSPACE_RESUME_OPTIONAL_KEYS)) {
+    return null;
+  }
+  return deepFreeze({
+    workspaceKind: workspace.workspaceKind,
+    resources: structuredClone(workspace.resources),
+    hasMore: workspace.hasMore,
+    serverTruth: workspace.serverTruth,
+    schemaVersion: workspace.schemaVersion
+  });
 }
 
 function normalizeWorkspace(workspace) {

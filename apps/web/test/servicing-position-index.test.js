@@ -4,7 +4,8 @@ import test from "node:test";
 import {
   SERVICING_POSITION_INDEX_LIMIT,
   acceptServicingPositionRefresh,
-  createServicingPositionIndex
+  createServicingPositionIndex,
+  projectServicingWorkspaceResume
 } from "../src/servicing-position-index.js";
 
 const fixtures = JSON.parse(await readFile(
@@ -113,6 +114,44 @@ test("principal controller uses the same bounded index for Agent-owned obligatio
   assert.equal(index.positions[0].relationship, "owner");
   assert.equal(index.positions[0].outstandingMinor, owned.obligation.outstandingPrincipalMinor);
   assert.equal(index.aggregate.outstandingMinor, owned.obligation.outstandingPrincipalMinor);
+});
+
+test("servicing projection excludes selected-Agent continuation metadata from balance authority", () => {
+  const id = "obligation_agent_position_selected";
+  const fullWorkspace = workspace([id], {
+    workspaceKind: "principal_controller",
+    controlledAgentActorIds: ["actor_agent_controlled"],
+    controlledAgentOptions: [{
+      actorId: "actor_agent_controlled",
+      label: "Existing Agent workspace",
+      setupStatus: "configured"
+    }],
+    selectedAgentActorId: "actor_agent_controlled",
+    continuationReceipts: [{
+      continuationReceiptId: "continuation_selected_agent",
+      receiptHash: `0x${"1".repeat(64)}`
+    }]
+  });
+  const projected = projectServicingWorkspaceResume(fullWorkspace);
+  assert.deepEqual(Object.keys(projected).sort(), [
+    "hasMore",
+    "resources",
+    "schemaVersion",
+    "serverTruth",
+    "workspaceKind"
+  ]);
+  const index = createServicingPositionIndex({
+    workspace: projected,
+    views: [{ obligationId: id, view: viewFor(id) }],
+    selectedObligationId: id
+  });
+  assert.equal(index.coverage, "complete");
+  assert.equal(index.aggregate.totalRepaidMinor, owned.obligation.totalRepaidMinor);
+  assert.equal(Object.hasOwn(index, "continuationReceipts"), false);
+  assert.equal(
+    projectServicingWorkspaceResume({ ...fullWorkspace, unknownAuthority: true }),
+    null
+  );
 });
 
 test("servicing position index never invents values for an unrefreshed position", () => {
