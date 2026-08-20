@@ -1,6 +1,6 @@
 # IDENTITY-ACCEPTANCE-UNBLOCK-001
 
-Status: Founder-authorized implementation in progress
+Status: Complete — deployed from `main` and user-verified
 
 ## Context
 
@@ -83,11 +83,26 @@ delete authentication or credit history to force a downgrade.
 
 ## Security checklist
 
-- [ ] One role per session; no capability union.
-- [ ] Server-derived role capabilities only.
-- [ ] Role selection is bound to the one-use SIWE transaction.
-- [ ] Every request revalidates credential and selected enrollment.
-- [ ] Private Agent JWK remains only in owner-only ephemeral storage or memory.
-- [ ] DPoP proof remains request-, token-, key- and replay-bound.
-- [ ] RLS and least-privilege role checks pass.
-- [ ] No funds or chain authority is introduced.
+- [x] One role per session; no capability union.
+- [x] Server-derived role capabilities only.
+- [x] Role selection is bound to the one-use SIWE transaction.
+- [x] Every request revalidates credential and selected enrollment.
+- [x] Private Agent JWK remained only in owner-only ephemeral storage or memory and was destroyed after revocation.
+- [x] DPoP proof remains request-, token-, key- and replay-bound.
+- [x] RLS and least-privilege role checks pass.
+- [x] No funds or chain authority is introduced.
+
+## Completion evidence
+
+- PRs #23 through #27 were normalized, merged in dependency order and verified
+  on final `main` SHA `f8bc87c034ad0257cd2b4fdbdb3898dc8cbea194`.
+- Production deployment `dpl_B7VcAfv5CHrHrermwr8K71aswDNp` is active at
+  [https://ipo.one](https://ipo.one).
+- H-03 through H-14 passed through visible Human controls using the Founder
+  wallet's explicitly selected `human_borrower` enrollment.
+- A-01 through A-09 passed through the deployed SDK/MCP transport using a new
+  owner-controlled public-key bootstrap and an external ephemeral private key.
+- The temporary Agent Credential was durably revoked; a post-revocation DPoP
+  request failed closed, and all temporary private-key material was destroyed.
+- Exact acceptance, release and rollback evidence is recorded in
+  `docs/releases/FINAL_CREDIT_LOOP_001_COMPLETION.md`.

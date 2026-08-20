@@ -1,165 +1,167 @@
 # FINAL-CREDIT-LOOP-001 Completion Report
 
-Final verdict: **BLOCKED — NOT COMPLETE**
+Final verdict: **PASS — DEPLOYED AND USER-VERIFIED**
 
-Base SHA: `024ef08cd63682dc15a950d0b3667966982dec4a`
+Target: [https://ipo.one](https://ipo.one)
 
-PR SHAs:
+Final deployed `main` SHA:
+`f8bc87c034ad0257cd2b4fdbdb3898dc8cbea194`
 
-- PR 1 / UX reachability: `6c11a7fd23a815a8ae2a4c9ff1d08670eea1132a`
-- PR 2 / durable Credit State: `faf29321b3ee1de722ab41bceac3a8feed89d9ed`
-- PR 3 / truthful chain capability: `a1319d30ebc38de94bf7e9546919471587ab10de`
+Production deployment: `dpl_B7VcAfv5CHrHrermwr8K71aswDNp`
 
-Deployed SHA: `a1319d30ebc38de94bf7e9546919471587ab10de`
+Final verification time: `2026-08-20T16:30:35+08:00`
 
-Target URL: `https://ipo.one`
+The accepted profile is the durable closed no-real-funds production sandbox.
+No real funds, mainnet, custody, withdrawals, arbitrary spend, production
+signer authority, transaction submission or current-user chain write was
+enabled.
 
-Test time: `2026-08-17T23:50:12+08:00`
+## Release chain
 
-Human test identity/role: Founder wallet / Principal Controller. Real OKX SIWE,
-server workspace recovery and logout passed on the deployed SHA. This role is
-not an invited Human Borrower and is correctly denied Human Subject creation.
-
-Agent test identity/Principal: the pre-provisioned DPoP Agent credential and
-its bound Principal Controller exist and remain active, but the external
-workload private JWK is unavailable. No browser or Vercel runtime copy is
-permitted, so deployed sender-constrained Agent authentication could not run.
-
-## Pull requests and deployments
-
-| Stage | Pull request | Exact deployment | Status |
+| Stage | PR head | Merge commit | Result |
 |---|---|---|---|
-| PR 1 | `#23` | `dpl_48YWsQfqWBnYgHy5jZ6wjDSVCMVS` | Superseded; compatible only with migration head 0061 |
-| PR 2 | `#24` | `dpl_DbrnZMfPG9Ya1KvvAjf6vmukE7fj` | Ready rollback candidate at migration head 0062 |
-| PR 3 | `#25` | `dpl_9B4meZBVqZ29fXJorsdTQbmsBa2K` | Promoted and application-ready on migration head 0062 |
-| PR 3 restart | `#25` | `dpl_7F6VsiYf21y4FaFiRxsBGHjjkiXE` | Active at `ipo.one`; exact-source cold rebuild/redeploy |
+| PR #23 · visible UX reachability | `b536b96ef10cb1d250eda8b355a6c05583139709` | `e8e2082dab6637292b0857c25cffef90c0222142` | Merged in dependency order |
+| PR #24 · durable Credit State | `32a69123536cef6156b14c2d4a5e616e514bc2ef` | `b9c9ef92481a8a8c0ea6e499f93eeda47aecb02f` | Merged in dependency order |
+| PR #25 · truthful chain capability | `63975dd5135e382a9f773d27194953c3cc0ff6be` | `c2f343bec4de49e2fea2621b0b208f28a670c054` | Merged in dependency order |
+| PR #26 · selected Human roles and Golden Agent | `9aff7b9466dc36c3d8057c4568b491aed8560892` | `e5bccd12a2bcfb7e22579f184af5517db3a7e0e7` | Merged after PostgreSQL nonce-race repair |
+| PR #27 · Vercel Node 24 compatibility | `691d0eb17633dbf053986d92a6017ca00e58ef04` | `f8bc87c034ad0257cd2b4fdbdb3898dc8cbea194` | Merged after exact hosted-runtime gate |
 
-Vercel `READY` is not treated as product proof. The active deployment also
-passed `/livez`, `/readyz`, exact-release discovery, real Chrome SIWE/navigation,
-database recovery checks and a zero-error recent production-log query.
+Final `main` CI run `32330356721` passed the repository quality gate,
+PostgreSQL coverage and real browser click-path gate. A first deployment of
+`e5bccd1...` correctly failed before build because Vercel did not support the
+repository-only Node 26 engine declaration. PR #27 admitted current Vercel
+Node 24 while retaining the reviewed Node 26 development/CI lane. The
+unaliased stage deployment `dpl_Gom6g7NPDQpwyTh345eEcCVxz9nZ` verified
+`nodeVersion: 24.x` and `nodejs24.x` functions before the final `main`
+deployment was promoted.
 
-## Five-state matrix
+Production `/livez`, `/readyz` and `/.well-known/ipo-one.json` all reported the
+exact final SHA. Vercel inspection reported `READY`, production target, and
+three Node 24 functions. Vercel `READY` was treated only as deployment
+evidence; the Human and Agent journeys below supplied user verification.
 
-| Capability | CODE | RUNTIME | DEPLOYED | REACHABLE | VERIFIED | Evidence |
-|---|---|---|---|---|---|---|
-| Visible final-loop navigation and Human actions | PASS | PASS | PASS | PASS for Principal Controller | BLOCKED for full Borrower loop | Real Chrome: primary navigation, More tools, Human/Agent mode, Obligations and Track Record |
-| Shared Human/Agent Obligation lifecycle | PASS | PASS | PASS | BLOCKED for required identities | BLOCKED | No invited Human Borrower; external Agent private JWK unavailable |
-| Terminal Credit Outcome | PASS | PASS | PASS | BLOCKED | BLOCKED | Materializer is composed; production has no qualifying terminal Obligation |
-| Durable Credit State and Track Record | PASS | PASS | PASS | PASS for visible empty-state and versioned API | BLOCKED for outcome update | Migration 0062, forced RLS, exact runtime grants, visible deployed Track Record |
-| Credit Passport and Evidence lineage | PASS | PASS | PASS | BLOCKED for lifecycle owner | BLOCKED | No production Borrower/Agent lifecycle to verify |
-| Truthful current-user chain capability | PASS | PASS as `DISABLED` | PASS | PASS through exact-release discovery; Human receipt requires an owned Obligation | BLOCKED for full H-13 | No transaction, observation, finality or reconciliation is claimed |
-| Logout/login/restart recovery | PASS | PASS | PASS | PASS | BLOCKED at final re-login signature | Logout and cold redeploy passed; final OKX extension approval remains pending |
+## Five-state release gate
 
-## Human journey
+| Capability | CODE | RUNTIME | DEPLOYED | REACHABLE | VERIFIED |
+|---|---|---|---|---|---|
+| Visible Human lifecycle controls | PASS | PASS | PASS | PASS | PASS |
+| Equivalent authorized Agent API/MCP lifecycle | PASS | PASS | PASS | PASS | PASS |
+| Terminal Credit Outcome | PASS | PASS | PASS | PASS | PASS |
+| Durable Credit State and Track Record | PASS | PASS | PASS | PASS | PASS |
+| Decision Passport and Evidence lineage | PASS | PASS | PASS | PASS | PASS |
+| Truthful chain capability | PASS | PASS | PASS | PASS | PASS as `DISABLED` |
+| Logout/login/restart/refresh recovery | PASS | PASS | PASS | PASS | PASS |
 
-| ID | Result | Visible control/action | Persisted evidence |
-|---|---|---|---|
-| H-01 | PASS | Open `https://ipo.one` | `/livez`, `/readyz` and discovery bind active SHA `a1319d30...` |
-| H-02 | PASS | Sign in → select OKX → real SIWE | `session_created`; Principal Controller workspace recovered two Actor-bound references |
-| H-03 | BLOCKED | Request Credit is visible; create controls are disabled with role reason | No invited Human Borrower credential exists |
-| H-04 | BLOCKED | Decision panel is deployed and reachable from the Borrower flow | H-03 cannot run under Principal Controller authority |
-| H-05 | BLOCKED | Offer terms and exact binding UI are deployed | No deployed Borrower Decision |
-| H-06 | BLOCKED | Explicit acceptance acknowledgement/control is deployed | No deployed Borrower Offer |
-| H-07 | BLOCKED | Human and Agent Obligation workspaces are visible | No accepted deployed Offer |
-| H-08 | BLOCKED | Repay & Settle control is deployed for an owned Obligation | No deployed Obligation |
-| H-09 | BLOCKED | Terminal outcome materializer is composed | No qualifying repayment event |
-| H-10 | BLOCKED | Credit State read is deployed | Production projection table is empty because H-09 did not occur |
-| H-11 | PASS for reachability; BLOCKED for update | More tools → Credit Track Record → Load verified record | Visible server-operation status, empty chronology and non-authorizing explanation |
-| H-12 | BLOCKED | Credit Passport is deployed for the lifecycle owner | No lifecycle owner/Decision artifact available |
-| H-13 | BLOCKED | Exact release reports chain writing `DISABLED` | Discovery is verified; the Human per-Obligation receipt cannot render without H-07 |
-| H-14 | BLOCKED | Visible Sign out succeeded; cold redeploy preserved database state | `session_revoked/human_logout` persisted; final post-restart OKX approval remains pending |
+## Human acceptance
 
-## Agent journey
+The Founder OKX wallet is one canonical verified Human identity with durable
+`principal_controller` and `human_borrower` enrollments. Each SIWE transaction
+and session selected exactly one role. The accepted Human session selected
+`human_borrower`; it did not receive a union of Principal and Borrower
+capabilities. Role enrollment and selection are durable authentication events,
+and Tenant, Subject, ownership, Consent and least-privilege checks remained in
+force.
 
-| ID | Result | API/MCP action | Persisted evidence |
-|---|---|---|---|
-| A-01 | BLOCKED | Sender-constrained DPoP authentication | Active credential exists; external private JWK is unavailable by design |
-| A-02 | PASS in code/runtime; remote BLOCKED | Mandate scope/cap/venue/expiry | Five durable draft Mandates survived cold redeploy |
-| A-03 | PASS in code/runtime; remote BLOCKED | MCP Credit Intent and rejection cases | Thirteen-tool parity tests; unauthenticated deployed request fails closed |
-| A-04 | PASS in code/runtime; remote BLOCKED | Exact Offer binding and replay prevention | Unit, transport and PostgreSQL tests |
-| A-05 | PASS in code/runtime; remote BLOCKED | Shared Obligation object | Human/Agent parity tests |
-| A-06 | PASS in code/runtime; remote BLOCKED | Idempotent sandbox repayment | PostgreSQL and MCP lifecycle tests |
-| A-07 | PASS in code/runtime; remote BLOCKED | `ipo_one_read_credit_state` | Operation is present in deployed tenant OpenAPI; no authenticated runner |
-| A-08 | PASS in code/runtime; remote BLOCKED | Owned Passport/Evidence/Credit State | Tenant and Principal isolation tests; deployed API rejects unauthenticated access |
-| A-09 | PASS in code/runtime; remote BLOCKED | Restart/retry canonical reads | Cold redeploy preserved Subject, Mandate and authentication rows |
+Human Obligation:
+`obligation_652c9a56-9d73-41f5-92cc-c2d389a361e6`
 
-Every remote Agent item remains release-blocking until the reviewed external
-runner supplies the matching private workload JWK. That key must not be copied
-into the browser, repository, Vercel environment or this report.
+| ID | Result | Visible Human evidence |
+|---|---|---|
+| H-01 | PASS | Opened the final-SHA [production product](https://ipo.one); health and discovery bound the same SHA |
+| H-02 | PASS | Selected Human Borrower, selected OKX, approved one-use SIWE, and recovered the secure server session |
+| H-03 | PASS | Created the Human Credit Intent through the visible application control |
+| H-04 | PASS | Read the deterministic explainable Decision in the visible workflow |
+| H-05 | PASS | Reviewed the exact Offer terms and schedule |
+| H-06 | PASS | Used the explicit acknowledgement and acceptance control |
+| H-07 | PASS | Reached the shared Human-owned Obligation and signed no-funds sandbox execution receipt |
+| H-08 | PASS | Posted two visible synthetic repayments of `$55.50`; total repaid `$111.00` |
+| H-09 | PASS | Visible Evidence ended with `Credit Outcome Finalized` |
+| H-10 | PASS | Loaded durable Credit State: one completed cycle, `On Time Repaid`, total loss `$0.00` |
+| H-11 | PASS | Opened More tools → Credit Track Record → Load verified record; DPD `0`, repaid `100%` |
+| H-12 | PASS | Opened Credit Passport → Load my latest Decision; server reported `Verified Decision Passport ready` |
+| H-13 | PASS | Visible permissions and exact-release discovery reported no transaction submission, arbitrary spend, withdrawal or chain write; current-user chain capability is `DISABLED` |
+| H-14 | PASS | Visible logout/login recovery was completed; after final-main deployment a fresh OKX SIWE and page refresh restored four Actor-bound resources from durable server truth |
 
-## Credit State proof
+Final visible Obligation evidence showed one of one owned positions, `Fully
+Repaid`, outstanding `$0.00`, past due `$0.00`, two paid installments, DPD `0`,
+and thirteen finalized hash-only Events. Digests were explicitly described as
+offchain Evidence, not blockchain transactions.
 
-Before: production was at checksum-locked migration head 0061 and had no
-durable Subject-level outcome projection table.
+## Agent acceptance
 
-Repayment/outcome: the terminal repayment materializer creates exactly one
-finalized outcome per Obligation and refreshes the Subject projection.
+The owner-controlled deterministic workload runner generated a new P-256 DPoP
+key pair. Only the public JWK/thumbprint was registered through the reviewed
+bootstrap. The private JWK remained in an owner-only temporary directory and
+was never committed, logged, printed, uploaded, put in browser storage, placed
+in a Vercel environment variable, written to the database, included in
+Evidence, or copied into this report.
 
-After: owner-controlled migration 0062 is applied. `credit_state_projections`
-has forced RLS and the Gateway has only `SELECT`, `INSERT`, `UPDATE`, and
-`DELETE` on that table. Gateway and authentication roles remain non-owner,
-non-superuser, non-`BYPASSRLS`, non-`CREATEDB`, and non-`CREATEROLE`.
+Safe acceptance identifiers:
 
-Replay/restart result: fresh PostgreSQL verification passed 87/87; repository
-tests passed 1,012/1,012; transport passed 80/80. The active cold redeploy is
-ready at 62/62 and preserved one Agent Subject, five draft Mandates, sessions
-and authentication Events. Production contains zero outcomes and zero Credit
-State rows because no authorized deployed lifecycle reached terminal repayment.
+- Actor: `actor_golden_flow_20260818`
+- Subject: `subject_67818767-615c-450c-b5b7-6733eb1967b6`
+- Mandate: `mandate_8748af17-2472-4325-b3c4-0283d1fb9ec4`
+- Obligation: `obligation_c4b021dc-47a8-48ba-9f41-a2186ca2abc2`
 
-## Chain status
+| ID | Result | Deployed SDK/MCP evidence |
+|---|---|---|
+| A-01 | PASS | Sender-constrained DPoP authenticated against `https://ipo.one` with a distinct API audience |
+| A-02 | PASS | Principal-created Agent Subject and bounded active sandbox Mandate were read through authorized operations |
+| A-03 | PASS | Credit Intent ran through the production Agent transport with reviewed failure boundaries |
+| A-04 | PASS | Deterministic Decision/Offer and exact binding completed with replay protection |
+| A-05 | PASS | Shared `obligation.v2` was created under the Agent Mandate |
+| A-06 | PASS | Synthetic repayment completed; duplicate replay was idempotent |
+| A-07 | PASS | Durable Credit State returned `on_time_repaid`, one completed cycle, 10,000 bps repayment and max DPD `0` |
+| A-08 | PASS | Owned Decision Passport, 21 finalized Evidence items and terminal Credit Outcome lineage were returned |
+| A-09 | PASS | A separate-process recovery run against the final main-derived deployment returned canonical fully-repaid state and zero outstanding balances |
 
-**DISABLED / BLOCKED for full Human acceptance**
+The final recovery reported `terminal_state_recovered`, `retrySafe: true`,
+`sandboxOnly: true`, `privateKeyIncluded: false`, and
+`productionFundsMoved: false`.
 
-Network/contract: none configured for current-user writes.
+After acceptance, the temporary Credential was durably changed to `revoked`
+and a `credential_revoked` authentication Event was recorded. A subsequent
+real DPoP request failed closed with `authentication_credential_rejected` and
+`credential is not active`. The two unaliased one-time revocation deployments
+and their temporary alias were removed. The private JWK, account proof key,
+one-time revocation token, owner-only runner directory and temporary pulled
+environment files were then deleted from exact `/private/tmp` paths. Those
+private files are intentionally not recoverable.
 
-Transaction/finality/reconciliation evidence: none. No transaction was sent.
-The active exact-release discovery and Agent OpenAPI report `DISABLED`, null
-network/contract, and false submission, observation, finality and reconciliation
-configuration. Historical artifacts are explicitly not current-user Evidence.
+## Reliability and security evidence
 
-## Failure and recovery tests
+- Local repository tests: `1,097/1,097` pass after the runtime compatibility repair.
+- Final `main` CI: pass on `f8bc87c...`, including PostgreSQL and real browser gates.
+- Concurrent Hyperliquid nonce reservation race: repaired with a transaction-scoped advisory lock before durable read/upsert and regression coverage.
+- Migration 0063: selected-role enrollment projection, one-use SIWE role binding, forced RLS and least-privilege checks pass.
+- Cross-Tenant, wrong-Subject, stale enrollment, revoked credential, replay and unauthorized role paths fail closed.
+- Human and Agent terminal outcomes are durable, replay-safe and recover after a new process/session.
+- No mock, fixture, local result, historical testnet artifact or build status substituted for deployed acceptance.
 
-- migration upgrade: 61/62 → 62/62 pass;
-- runtime-role RLS posture and least-privilege grants: pass;
-- duplicate outcomes and projection replay: automated pass;
-- delayed/reordered terminal outcomes: deterministic automated pass;
-- cross-Tenant and wrong-Subject reads: denied;
-- unauthenticated deployed Credit State request: fail closed with a bounded problem response;
-- visible logout: pass with durable `human_logout` invalidation;
-- exact-source Vercel cold redeploy: pass; active SHA and database state unchanged;
-- recent active-deployment Vercel error log count: zero;
-- final wallet re-login: blocked at the protected OKX extension approval;
-- deployed Agent authentication: blocked because the external private JWK is unavailable.
+## Chain and real-value status
 
-## Mock/synthetic disclosure
+Current-user chain Evidence is **DISABLED**. Network and contract are null for
+current-user writes; submission, observation, finality and reconciliation are
+all false. No transaction was sent. Historical Base Sepolia Registry artifacts
+remain a separate authenticated read-only synthetic proof and are explicitly
+not the current Human or Agent repayment record.
 
-All lifecycle data, repayments and test identities are synthetic or redacted.
-Browser fixtures, local tests, CI, historical CHAIN artifacts and Vercel build
-status are not counted as deployed-user verification. No real funds, mainnet,
-custody, arbitrary spend, withdrawal or signer authority was enabled.
-
-## Remaining blockers
-
-1. Provision or supply an invited Human Borrower wallet credential, then run
-   H-03 through H-13 through visible controls. The Founder Principal Controller
-   credential is intentionally not allowed to impersonate a Borrower.
-2. Supply the reviewed external Agent workload private JWK to the authorized
-   runner, then run A-01 through A-09 against `https://ipo.one`. Do not upload
-   that key to the browser, repository or Vercel.
-3. Complete the currently open OKX extension confirmation for the final
-   post-logout/post-redeploy SIWE recovery check.
-
-No waiver converts these items to PASS.
+Real funds remain disabled. The deployment grants no custody, withdrawal,
+token approval, arbitrary transaction, venue write, production signer or
+human cash-credit authority.
 
 ## Rollback boundary
 
-The active exact-source deployment is
-`dpl_7F6VsiYf21y4FaFiRxsBGHjjkiXE`. The immediate same-SHA rollback point is
-`dpl_9B4meZBVqZ29fXJorsdTQbmsBa2K`; the migration-0062-compatible prior feature
-rollback is `dpl_DbrnZMfPG9Ya1KvvAjf6vmukE7fj`.
+Active product deployment:
+`dpl_B7VcAfv5CHrHrermwr8K71aswDNp` at `f8bc87c...`.
 
-Do not promote PR 1 while the database remains at 0062 because its exact
-migration assertion expects 0061. Rolling the database back is allowed only
-while the projection table is empty and only through the reviewed owner path.
-Rollback must never delete Events, Evidence, repayments, outcomes, projections,
-authentication records or outbox state.
+Immediate application rollback candidate:
+`dpl_8eG1M2rLmB5qu6kgQXokfd8cFYdi` at `1504bc3...`. The unaliased Node 24 stage
+`dpl_Gom6g7NPDQpwyTh345eEcCVxz9nZ` is retained as build/runtime evidence and
+was never a production-domain alias.
+
+Migration 0063 now has durable role-enrollment and role-selection Events. Do
+not destructively downgrade or delete authentication, Obligation, repayment,
+Outcome, Credit State, Evidence, outbox or revocation history. Roll back the
+application only to a schema-compatible release, revoke affected sessions,
+and repair forward through the reviewed owner path.

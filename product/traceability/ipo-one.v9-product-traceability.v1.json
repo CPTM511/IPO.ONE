@@ -1028,6 +1028,28 @@
       ]
     },
     {
+      "operationId": "pilotReadOwnCreditState",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_owned_credit_state_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/credit-state-query-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "packages/sdk/src/agent-mcp-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/tenant-command-gateway.test.js",
+        "packages/sdk/test/agent-mcp-client.test.js",
+        "apps/web/test/support/human-lifecycle-browser-host.mjs"
+      ]
+    },
+    {
       "operationId": "pilotReadOwnObligationEvidence",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_owned_obligation_evidence_view.v1",
@@ -2802,6 +2824,7 @@
             "pilotAcceptCreditOffer",
             "pilotExecuteSandboxObligation",
             "pilotPostSandboxRepayment",
+            "pilotReadOwnCreditState",
             "pilotReadOwnObligation",
             "pilotReadOwnObligationEvidence",
             "pilotSubmitPilotFeedback"
@@ -3367,6 +3390,7 @@
           "classification": "REAL_LOCAL",
           "authorityType": "tenant_protocol",
           "operationIds": [
+            "pilotReadOwnCreditState",
             "pilotReadOwnObligationEvidence",
             "pilotReadEvidence"
           ],
