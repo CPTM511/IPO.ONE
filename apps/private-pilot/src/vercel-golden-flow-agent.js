@@ -15,6 +15,10 @@ import {
   preparePrivatePilotAgentProof
 } from "./private-pilot-agent-account.js";
 import {
+  createAuthenticatedProtocolActionConfirmation,
+  economicActionTypeForOperation
+} from "../../../modules/tenant-command-gateway/src/economic-action-confirmation.js";
+import {
   createLocalAgentApplicationInput,
   createLocalAgentRuntimeInput
 } from "./agent-reference-workflows.js";
@@ -288,26 +292,88 @@ export async function runVercelAgentApplication({ client, manifest }) {
   });
 }
 
+export function resolveVercelAgentOfferReceipt(input) {
+  if (input?.schemaVersion !== "vercel_golden_flow_agent_application.v1") {
+    return input;
+  }
+  if (
+    input.status !== "offer_persisted" ||
+    input.sandboxOnly !== true ||
+    input.productionFundsMoved !== false ||
+    input.offerReceipt?.schemaVersion !== "agent_credit_offer_workflow_receipt.v1"
+  ) {
+    throw new TypeError("Golden Flow Agent application output is not an eligible Offer receipt source");
+  }
+  return input.offerReceipt;
+}
+
+export function confirmVercelAgentEconomicCommand(command) {
+  if (
+    !economicActionTypeForOperation(command?.operationId) ||
+    command.payload?.actionConfirmation
+  ) return command;
+  return {
+    ...command,
+    payload: {
+      ...command.payload,
+      actionConfirmation: createAuthenticatedProtocolActionConfirmation({
+        operationId: command.operationId,
+        payload: command.payload,
+        resource: command.resource,
+        requestId: command.requestId
+      })
+    }
+  };
+}
+
 export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) {
-  const approvedMinor = BigInt(offerReceipt?.offer?.approvedPrincipalMinor ?? "0");
+  const exactOfferReceipt = resolveVercelAgentOfferReceipt(offerReceipt);
+  const approvedMinor = BigInt(exactOfferReceipt?.offer?.approvedPrincipalMinor ?? "0");
   if (approvedMinor < 2n) {
     throw new TypeError("Agent Offer must support distinct partial and full repayment evidence");
   }
-  const execute = client.execute.bind(client);
+  let failedCommand;
+  const execute = async (command) => {
+    const confirmedCommand = confirmVercelAgentEconomicCommand(command);
+    try {
+      return await client.execute(confirmedCommand);
+    } catch (error) {
+      failedCommand = Object.freeze({
+        operationId: command.operationId,
+        code: error?.code ?? "agent_operation_failed",
+        requestId: error?.requestId
+      });
+      throw error;
+    }
+  };
   const runtime = new IpoOneAgentSandboxObligationClient({
     execute,
     manifest,
     transportProfile: "local_in_process"
   });
-  const baseInput = createLocalAgentRuntimeInput(manifest, offerReceipt);
+  const baseInput = createLocalAgentRuntimeInput(manifest, exactOfferReceipt);
   const partialMinor = (approvedMinor / 2n).toString();
-  const workflowReceipt = await runtime.runObligationWorkflow({
-    ...baseInput,
-    repayment: {
-      amountMinor: partialMinor,
-      sourceCode: "synthetic_revenue"
+  let workflowReceipt;
+  try {
+    workflowReceipt = await runtime.runObligationWorkflow({
+      ...baseInput,
+      repayment: {
+        amountMinor: partialMinor,
+        sourceCode: "synthetic_revenue"
+      }
+    });
+  } catch (error) {
+    if (failedCommand) {
+      const failure = new TypeError(
+        `Golden Flow Agent ${failedCommand.operationId} failed with ${failedCommand.code}`,
+        { cause: error }
+      );
+      failure.code = failedCommand.code;
+      failure.requestId = failedCommand.requestId;
+      throw failure;
     }
-  });
+    throw error;
+  }
   const outstandingMinor = (
     BigInt(workflowReceipt.obligation.outstandingPrincipalMinor) +
     BigInt(workflowReceipt.obligation.outstandingInterestMinor) +
@@ -331,8 +397,8 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
     requestId: identifier("request-agent-full-repayment"),
     correlationId: workflowReceipt.correlationId
   };
-  const fullRepayment = await client.execute(fullRepaymentCommand);
-  const duplicateRepayment = await client.execute(fullRepaymentCommand);
+  const fullRepayment = await execute(fullRepaymentCommand);
+  const duplicateRepayment = await execute(fullRepaymentCommand);
   if (duplicateRepayment.replayed !== true) {
     throw new TypeError("Duplicate repayment did not replay idempotently");
   }
