@@ -11341,24 +11341,17 @@ label,
   color: #b5adff;
 }
 
-.nav-item[data-view="agent-console"],
-.nav-item[data-view="wallet-permissions"],
-.nav-item[data-view="capital-network"],
-.nav-item[data-view="architecture"],
-.nav-item[data-view="activity-proofs"],
-.nav-item[data-view="reports-exports"],
-.nav-item[data-view="risk-operations"] {
+.nav-item[data-workspace-placement="advanced"],
+.nav-section[data-workspace-placement="advanced"] {
   display: none;
 }
 
-body.sidebar-tools-open .nav-item[data-view="agent-console"],
-body.sidebar-tools-open .nav-item[data-view="wallet-permissions"],
-body.sidebar-tools-open .nav-item[data-view="capital-network"],
-body.sidebar-tools-open .nav-item[data-view="architecture"],
-body.sidebar-tools-open .nav-item[data-view="activity-proofs"],
-body.sidebar-tools-open .nav-item[data-view="reports-exports"],
-body.sidebar-tools-open .nav-item[data-view="risk-operations"] {
+body.sidebar-tools-open .nav-item[data-workspace-placement="advanced"] {
   display: grid;
+}
+
+body.sidebar-tools-open .nav-section[data-workspace-placement="advanced"] {
+  display: block;
 }
 
 .sidebar-more-toggle {

@@ -71,7 +71,8 @@ import {
 import { selectPrincipalAgentWorkspace } from "./principal-agent-workspace-selection.js";
 import {
   canonicalWorkspaceView,
-  workspaceSurfaceAccess
+  workspaceSurfaceAccess,
+  workspaceViewCatalog
 } from "./workspace-surface-access.js";
 import {
   createPostLoginViewIntent,
@@ -94,23 +95,13 @@ import {
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const percent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
-const VIEW_META = {
-  overview: { eyebrow: "Private credit workspace", title: "Your portfolio overview" },
-  "request-credit": { eyebrow: "Human entry · shared kernel", title: "Credit" },
-  "repay-settle": { eyebrow: "Obligation workspace", title: "Repay & Settle" },
-  "credit-passport": { eyebrow: "Explainable Decision Evidence", title: "Credit Passport" },
-  obligations: { eyebrow: "Shared obligation kernel", title: "Obligations" },
-  "agent-console": { eyebrow: "Principal-controlled workspace", title: "Agent Console" },
-  "capital-partners": { eyebrow: "Synthetic bilateral marketplace", title: "Capital Partners" },
-  "capital-network": { eyebrow: "Provider sandbox boundary", title: "Provider Network" },
-  "trading-capital": { eyebrow: "Hyperliquid MVP · local no-funds", title: "Trading Capital" },
-  "wallet-permissions": { eyebrow: "Authentication + execution boundaries", title: "Wallet & Permissions" },
-  "activity-proofs": { eyebrow: "Protocol Evidence", title: "Activity & Proofs" },
-  "credit-track-record": { eyebrow: "Evidence-derived record", title: "Credit Track Record" },
-  "reports-exports": { eyebrow: "Artifact maturity", title: "Reports & Exports" },
-  "risk-operations": { eyebrow: "Permissioned controls", title: "Risk & Operations" },
-  architecture: { eyebrow: "Machine-readable protocol", title: "Architecture" }
-};
+const VIEW_DEFINITIONS = workspaceViewCatalog();
+const VIEW_META = Object.fromEntries(
+  Object.entries(VIEW_DEFINITIONS).map(([viewId, definition]) => [
+    viewId,
+    { eyebrow: definition.eyebrow, title: definition.pageTitle }
+  ])
+);
 
 let currentView = "overview";
 let interactionMode = "human";
@@ -1918,21 +1909,34 @@ function applyWorkspaceSurfaceAccess() {
   const workspaceName = currentWorkspaceName();
   const access = workspaceSurfaceAccess(workspaceName);
   for (const control of document.querySelectorAll("[data-view]")) {
-    control.hidden = !access.primaryViews.has(control.dataset.view);
+    const entry = access.entries.get(control.dataset.view);
+    control.hidden = !entry?.allowed;
+    if (!entry?.allowed) {
+      delete control.dataset.workspacePlacement;
+      delete control.dataset.capabilityState;
+      continue;
+    }
+    const definition = VIEW_DEFINITIONS[entry.viewId];
+    control.dataset.workspacePlacement = entry.placement;
+    control.dataset.capabilityState = definition.capability.state;
+    const label = control.querySelector("span strong");
+    if (label) label.textContent = definition.label;
   }
   for (const control of document.querySelectorAll("[data-go-view]")) {
-    const destinations = control.classList.contains("product-entry-card")
-      ? access.primaryViews
-      : access.allowedViews;
-    control.hidden = !destinations.has(control.dataset.goView);
+    control.hidden = !access.allowedViews.has(control.dataset.goView);
   }
   for (const section of document.querySelectorAll(".nav-section")) {
-    section.hidden = !section.querySelector(".nav-item:not([hidden])");
+    const allowedItems = [...section.querySelectorAll(".nav-item:not([hidden])")];
+    section.hidden = allowedItems.length === 0;
+    if (allowedItems.length > 0) {
+      section.dataset.workspacePlacement = allowedItems.some(
+        (item) => item.dataset.workspacePlacement === "primary"
+      ) ? "primary" : "advanced";
+    } else {
+      delete section.dataset.workspacePlacement;
+    }
   }
-  const visibleNavigationCount = document.querySelectorAll(
-    ".nav-item:not([hidden])"
-  ).length;
-  el("sidebarMoreBtn").hidden = visibleNavigationCount <= 4;
+  el("sidebarMoreBtn").hidden = access.advancedViews.size === 0;
   for (const item of document.querySelectorAll("[data-role-entry]")) {
     item.hidden = item.dataset.roleEntry !== workspaceName;
   }
@@ -9823,17 +9827,10 @@ function showView(viewName, { focus = true, historyMode = "push" } = {}) {
     else button.removeAttribute("aria-current");
   }
   const activeNavigationItem = document.querySelector(`.nav-item[data-view="${nextView}"]`);
-  const primaryNavigationViews = new Set([
-    "overview",
-    "request-credit",
-    "trading-capital",
-    "capital-partners",
-    "obligations",
-    "repay-settle",
-    "credit-passport",
-    "credit-track-record"
-  ]);
-  if (activeNavigationItem && !primaryNavigationViews.has(nextView)) {
+  if (
+    activeNavigationItem &&
+    workspaceSurfaceAccess(currentWorkspaceName()).advancedViews.has(nextView)
+  ) {
     document.body.classList.add("sidebar-tools-open");
     el("sidebarMoreBtn").setAttribute("aria-expanded", "true");
   }

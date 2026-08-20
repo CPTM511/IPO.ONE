@@ -64,6 +64,12 @@ jobs:
       - name: Run repository quality gate
         run: pnpm run check
 
+      - name: Install Chromium for real click-path acceptance
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run real browser click-path gate
+        run: pnpm run test:browser:click-path
+
       - name: Run isolated vertical slice
         if: github.event_name == 'workflow_dispatch'
         run: pnpm run demo

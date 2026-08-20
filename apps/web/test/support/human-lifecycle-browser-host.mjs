@@ -20,6 +20,10 @@ import {
 } from "../../../../packages/domain/src/index.js";
 
 const csrfToken = "human_lifecycle_browser_qa_csrf_token_00000001";
+const browserQaPort = Number(process.env.IPO_ONE_BROWSER_QA_PORT ?? 0);
+if (!Number.isSafeInteger(browserQaPort) || browserQaPort < 0 || browserQaPort > 65_535) {
+  throw new Error("invalid_browser_qa_port");
+}
 const disableAuthenticationDiscovery =
   process.env.IPO_ONE_BROWSER_QA_DISABLE_AUTH_DISCOVERY === "1";
 const evidenceScenario =
@@ -984,6 +988,7 @@ async function serveAuthentication({ request, response, url, requestId }) {
 }
 
 const host = createTenantHttpServer({
+  port: browserQaPort,
   environment: "development",
   credentialSource: "local_test",
   gateway: {
