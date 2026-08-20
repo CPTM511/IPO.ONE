@@ -268,9 +268,14 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.equal(openApi["x-ipo-one-profile"], "closed_non_funds_pilot");
     assert.equal(openApi["x-real-funds-enabled"], false);
     assert.deepEqual(Object.keys(openApi.paths).sort(), [
+      "/.well-known/ipo-one.json",
       "/tenant/v1/catalog",
       "/tenant/v1/operations"
     ]);
+    assert.equal(
+      openApi.paths["/.well-known/ipo-one.json"].get.operationId,
+      "getDeployedChainCapability"
+    );
 
     const scriptResponse = await fetch(`${baseUrl}/app.js`, { method: "HEAD" });
     assert.equal(scriptResponse.status, 200);

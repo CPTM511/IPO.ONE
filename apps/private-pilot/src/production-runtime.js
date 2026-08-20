@@ -20,6 +20,7 @@ import {
   readMigrationSet
 } from "../../../scripts/migrate.mjs";
 import {
+  createDisabledChainCapability,
   createPostgresHumanAccessComposition,
   createProductionTenantHost
 } from "../../tenant-api/src/index.js";
@@ -190,6 +191,8 @@ async function composeProductionClosedPilotRuntime(input) {
     port: input.port,
     releaseId: input.releaseId,
     deploymentRole: input.deploymentRole,
+    chainCapabilityProvider: async () =>
+      createDisabledChainCapability({ releaseId: input.releaseId }),
     ...(productionWorkspaceNameForDeploymentRole(input.deploymentRole) === undefined
       ? {}
       : {

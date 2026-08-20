@@ -48,6 +48,63 @@ const PROBLEM_DETAILS_SCHEMA = Object.freeze({
   })
 });
 
+const CHAIN_CAPABILITY_DOCUMENT_SCHEMA = Object.freeze({
+  type: "object",
+  additionalProperties: true,
+  required: Object.freeze(["schemaVersion", "deployment", "chainEvidence", "safety"]),
+  properties: Object.freeze({
+    schemaVersion: Object.freeze({ const: "ipo_one_deployment_capability.v1" }),
+    chainEvidence: Object.freeze({
+      type: "object",
+      additionalProperties: false,
+      required: Object.freeze([
+        "status",
+        "reasonCode",
+        "currentUserWritesEnabled",
+        "hashOnly",
+        "network",
+        "contractAddress",
+        "transactionSubmissionConfigured",
+        "observationConfigured",
+        "finalityConfigured",
+        "reconciliationConfigured",
+        "historicalArtifactsAreCurrentUserEvidence",
+        "lifecycleStates",
+        "releaseId",
+        "schemaVersion"
+      ]),
+      properties: Object.freeze({
+        status: Object.freeze({ enum: Object.freeze(["ENABLED", "DISABLED"]) }),
+        reasonCode: Object.freeze({ type: "string", minLength: 1, maxLength: 96 }),
+        currentUserWritesEnabled: Object.freeze({ type: "boolean" }),
+        hashOnly: Object.freeze({ const: true }),
+        network: Object.freeze({ type: ["string", "null"] }),
+        contractAddress: Object.freeze({ type: ["string", "null"] }),
+        transactionSubmissionConfigured: Object.freeze({ type: "boolean" }),
+        observationConfigured: Object.freeze({ type: "boolean" }),
+        finalityConfigured: Object.freeze({ type: "boolean" }),
+        reconciliationConfigured: Object.freeze({ type: "boolean" }),
+        historicalArtifactsAreCurrentUserEvidence: Object.freeze({ const: false }),
+        lifecycleStates: Object.freeze({
+          type: "array",
+          prefixItems: Object.freeze([
+            Object.freeze({ const: "queued" }),
+            Object.freeze({ const: "submitted" }),
+            Object.freeze({ const: "observed" }),
+            Object.freeze({ const: "finalized" }),
+            Object.freeze({ const: "reconciled" }),
+            Object.freeze({ const: "failed" })
+          ]),
+          minItems: 6,
+          maxItems: 6
+        }),
+        releaseId: Object.freeze({ type: "string", pattern: "^[0-9a-f]{40}$" }),
+        schemaVersion: Object.freeze({ const: "ipo_one_chain_capability.v1" })
+      })
+    })
+  })
+});
+
 function exactOrigin(value, { httpsOnly = false } = {}) {
   const origin = value instanceof URL ? value : new URL(value);
   if (
@@ -83,6 +140,26 @@ export function createTenantOpenApiDocument(publicOrigin) {
     }),
     servers: Object.freeze([{ url: origin.origin }]),
     paths: Object.freeze({
+      "/.well-known/ipo-one.json": Object.freeze({
+        get: Object.freeze({
+          operationId: "getDeployedChainCapability",
+          summary: "Read exact-release hosted and chain-writing capability",
+          security: Object.freeze([]),
+          responses: Object.freeze({
+            200: Object.freeze({
+              description:
+                "Exact deployed SHA and truthful current-user Evidence anchoring status",
+              content: Object.freeze({
+                "application/json": Object.freeze({
+                  schema: CHAIN_CAPABILITY_DOCUMENT_SCHEMA
+                })
+              })
+            }),
+            421: problemResponse("Request did not arrive through the approved edge"),
+            503: problemResponse("The exact deployment runtime is unavailable")
+          })
+        })
+      }),
       "/tenant/v1/operations": Object.freeze({
         post: Object.freeze({
           operationId: "executeTenantOperation",
@@ -181,6 +258,26 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
     servers: Object.freeze([{ url: origin.origin }]),
     security: agentSecurity,
     paths: Object.freeze({
+      "/.well-known/ipo-one.json": Object.freeze({
+        get: Object.freeze({
+          operationId: "getDeployedChainCapability",
+          summary: "Read exact-release hosted and chain-writing capability",
+          security: Object.freeze([]),
+          responses: Object.freeze({
+            200: Object.freeze({
+              description:
+                "Exact deployed SHA and truthful current-user Evidence anchoring status",
+              content: Object.freeze({
+                "application/json": Object.freeze({
+                  schema: CHAIN_CAPABILITY_DOCUMENT_SCHEMA
+                })
+              })
+            }),
+            421: problemResponse("Request did not arrive through the approved edge"),
+            503: problemResponse("The exact deployment runtime is unavailable")
+          })
+        })
+      }),
       "/tenant/v1/operations": Object.freeze({
         post: Object.freeze({
           operationId: "executeAgentTenantOperation",
@@ -261,7 +358,8 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
         })
       }),
       schemas: Object.freeze({
-        ProblemDetails: PROBLEM_DETAILS_SCHEMA
+        ProblemDetails: PROBLEM_DETAILS_SCHEMA,
+        ChainCapabilityDocument: CHAIN_CAPABILITY_DOCUMENT_SCHEMA
       })
     }),
     "x-ipo-one-schema-version": AGENT_HTTPS_OPENAPI_SCHEMA_VERSION,

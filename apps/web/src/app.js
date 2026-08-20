@@ -285,10 +285,13 @@ const evidenceAnchorPilot = {
   available: false,
   busy: false,
   config: null,
+  hostedStatus: "UNKNOWN",
+  hostedReasonCode: null,
+  hostedReleaseId: null,
   obligationId: null,
   items: [],
   helper:
-    "Every durable Evidence hash requires a verified Base Sepolia transaction.",
+    "Chain status is resolved from hosted capability and current-user Evidence.",
   error: false
 };
 const creditRegistryEvidence = {
@@ -2512,7 +2515,7 @@ function resetOwnedEvidenceState({
     config: anchorConfig,
     obligationId: null,
     items: [],
-    helper: "Every durable Evidence hash requires a verified Base Sepolia transaction.",
+    helper: "Chain status is resolved from hosted capability and current-user Evidence.",
     error: false
   });
   return queryEpoch;
@@ -10231,9 +10234,15 @@ function renderEvidenceAnchor() {
     evidenceAnchorPilot.available && items.length === 0
   );
   if (!evidenceAnchorPilot.available) {
-    status.textContent = "Anchor service unavailable";
-    copy.textContent =
-      "No chain contract is configured for this local runtime. Server Evidence hashes must not be presented as blockchain transactions.";
+    if (evidenceAnchorPilot.hostedStatus === "DISABLED") {
+      status.textContent = "DISABLED";
+      copy.textContent =
+        `Chain writing is disabled for deployed release ${evidenceAnchorPilot.hostedReleaseId?.slice(0, 12) ?? "unknown"} because approved testnet authority is unavailable. Current-user Evidence digests remain offchain integrity records; no transaction, observation, finality, or reconciliation is claimed.`;
+    } else {
+      status.textContent = "Anchor service unavailable";
+      copy.textContent =
+        "No chain contract is composed for this runtime. Server Evidence digests must not be presented as blockchain transactions.";
+    }
   } else if (items.length === 0) {
     status.textContent = "Waiting for Evidence";
     copy.textContent =
@@ -10257,6 +10266,41 @@ function renderEvidenceAnchor() {
     status.textContent = `${items.length - finalized.length} pending`;
     copy.textContent =
       `${items.length - finalized.length} loaded Evidence hash${items.length - finalized.length === 1 ? "" : "es"} still require a zero-value wallet transaction on Base Sepolia. No loan principal or repayment value is transferred by this anchor.`;
+  }
+}
+
+async function probeHostedChainCapability() {
+  try {
+    const response = await fetch("/.well-known/ipo-one.json", {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+    if (!response.ok) return;
+    const document = await response.json();
+    const capability = document?.chainEvidence;
+    if (
+      document?.schemaVersion !== "ipo_one_deployment_capability.v1" ||
+      capability?.schemaVersion !== "ipo_one_chain_capability.v1" ||
+      capability?.releaseId !== document?.deployment?.releaseId ||
+      !new Set(["ENABLED", "DISABLED"]).has(capability?.status) ||
+      capability?.hashOnly !== true ||
+      capability?.historicalArtifactsAreCurrentUserEvidence !== false
+    ) return;
+    evidenceAnchorPilot.hostedStatus = capability.status;
+    evidenceAnchorPilot.hostedReasonCode = capability.reasonCode;
+    evidenceAnchorPilot.hostedReleaseId = capability.releaseId;
+    if (capability.status === "DISABLED") {
+      evidenceAnchorPilot.available = false;
+      evidenceAnchorPilot.config = null;
+      evidenceAnchorPilot.helper =
+        "DISABLED: approved testnet authority is unavailable; no current-user chain write is claimed.";
+    }
+  } catch {
+    // The composed anchor configuration endpoint remains authoritative for local runtimes.
+  } finally {
+    renderEvidenceAnchor();
   }
 }
 
@@ -12645,7 +12689,7 @@ function bindActions() {
   el("agentConsoleCopyManifestBtn").addEventListener("click", async () => {
     const presentation = currentAgentConsolePresentation();
     if (!presentation?.registry.catalogParity || presentation.status === "waiting") {
-      return toast("Load an eligible exact handoff with 12/12 catalog parity first.", "error");
+      return toast("Load an eligible exact handoff with 13/13 catalog parity first.", "error");
     }
     try {
       await navigator.clipboard.writeText(
@@ -12661,7 +12705,7 @@ function bindActions() {
     const presentation = currentAgentConsolePresentation();
     const handoff = currentAgentMcpHandoffPacket();
     if (!handoff || !presentation?.registry.catalogParity) {
-      return toast("Load an eligible exact handoff with 12/12 catalog parity first.", "error");
+      return toast("Load an eligible exact handoff with 13/13 catalog parity first.", "error");
     }
     const body = JSON.stringify(handoff, null, 2);
     const url = URL.createObjectURL(new Blob([body], { type: "application/json" }));
@@ -12710,6 +12754,7 @@ async function boot() {
   renderAuditorEvidence();
   renderCreditRegistryEvidence();
   renderRiskOperations();
+  await probeHostedChainCapability();
   await probeAccessOptions();
   await probeTenantPilot();
   setConnection(tenantPilot.connected);

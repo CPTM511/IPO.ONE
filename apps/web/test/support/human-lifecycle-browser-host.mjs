@@ -1008,6 +1008,49 @@ const authenticationContext = createAuthenticationContext({
 
 async function serveAuthentication({ request, response, url, requestId }) {
   if (disableAuthenticationDiscovery) return false;
+  if (request.method === "GET" && url.pathname === "/.well-known/ipo-one.json") {
+    const releaseId = "f".repeat(40);
+    const body = JSON.stringify({
+      schemaVersion: "ipo_one_deployment_capability.v1",
+      deployment: {
+        hostingStatus: "PRODUCTION_HOSTED",
+        deploymentRole: "primary",
+        releaseId
+      },
+      chainEvidence: {
+        status: "DISABLED",
+        reasonCode: "approved_testnet_authority_unavailable",
+        currentUserWritesEnabled: false,
+        hashOnly: true,
+        network: null,
+        contractAddress: null,
+        transactionSubmissionConfigured: false,
+        observationConfigured: false,
+        finalityConfigured: false,
+        reconciliationConfigured: false,
+        historicalArtifactsAreCurrentUserEvidence: false,
+        lifecycleStates: [
+          "queued",
+          "submitted",
+          "observed",
+          "finalized",
+          "reconciled",
+          "failed"
+        ],
+        releaseId,
+        schemaVersion: "ipo_one_chain_capability.v1"
+      }
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
   if (request.method === "POST" && url.pathname === "/auth/v1/logout") {
     if (
       request.headers["x-csrf-token"] !== csrfToken ||

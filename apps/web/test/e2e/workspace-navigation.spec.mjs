@@ -70,3 +70,18 @@ test("Borrower loads durable terminal Credit State through a visible control", a
     "does not authorize funds or an automatic limit change"
   );
 });
+
+test("Borrower sees exact-release chain writing as explicitly disabled", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "More tools" }).click();
+  await page.getByRole("button", { name: /^Repay & Settle/ }).click();
+
+  await expect(page.locator("#humanObligationChainAnchorStatus")).toHaveText(
+    "DISABLED"
+  );
+  await expect(page.locator("#humanObligationChainAnchorCopy")).toContainText(
+    "no transaction, observation, finality, or reconciliation is claimed"
+  );
+  await expect(page.locator("#anchorPendingEvidenceBtn")).toBeHidden();
+  await expect(page.locator("#humanObligationChainAnchorLink")).toBeHidden();
+});
