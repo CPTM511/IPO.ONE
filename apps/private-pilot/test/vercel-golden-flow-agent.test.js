@@ -80,6 +80,7 @@ test("Vercel Golden Flow Agent creates exact short-lived DPoP-bound requests", a
   const transport = fakeHttpsRequest();
   const client = await createVercelGoldenFlowAgentClient({
     origin: "https://closed-pilot.invalid",
+    audience: "https://closed-pilot-audience.invalid",
     bootstrap,
     workloadPrivateJwk: privateJwk,
     clock: () => NOW,
@@ -98,7 +99,7 @@ test("Vercel Golden Flow Agent creates exact short-lived DPoP-bound requests", a
     typ: "at+jwt",
     kid: "golden-flow-test-key"
   });
-  assert.equal(tokenClaims.aud, "https://closed-pilot.invalid");
+  assert.equal(tokenClaims.aud, "https://closed-pilot-audience.invalid");
   assert.equal(tokenClaims.cnf.jkt, thumbprint);
   assert.equal(tokenClaims.exp - tokenClaims.iat, 120);
   assert.equal(tokenClaims.capabilities.includes("agent_account.proof.submit.self"), true);

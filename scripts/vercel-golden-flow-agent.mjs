@@ -130,6 +130,9 @@ try {
     ]);
     const client = await createVercelGoldenFlowAgentClient({
       origin: process.env.IPO_ONE_AGENT_API_ORIGIN,
+      ...(process.env.IPO_ONE_AGENT_API_AUDIENCE === undefined
+        ? {}
+        : { audience: process.env.IPO_ONE_AGENT_API_AUDIENCE }),
       bootstrap,
       workloadPrivateJwk
     });

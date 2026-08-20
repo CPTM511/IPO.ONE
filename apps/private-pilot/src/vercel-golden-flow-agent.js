@@ -68,12 +68,16 @@ function identifier(prefix) {
 
 export async function createVercelGoldenFlowAgentClient({
   origin,
+  audience,
   bootstrap,
   workloadPrivateJwk,
   clock = () => new Date(),
   request
 }) {
   const baseUrl = exactOrigin(origin);
+  const accessTokenAudience = audience === undefined
+    ? baseUrl
+    : exactOrigin(audience);
   const credential = exactAgentCredential(
     bootstrap?.credentials?.find((entry) => entry?.kind === "agent_dpop")
   );
@@ -100,7 +104,7 @@ export async function createVercelGoldenFlowAgentClient({
       .setProtectedHeader({ alg: "ES256", typ: "at+jwt", kid: workloadPrivateJwk.kid })
       .setIssuer(credential.issuer)
       .setSubject(credential.externalSubject)
-      .setAudience(baseUrl)
+      .setAudience(accessTokenAudience)
       .setIssuedAt(now)
       .setNotBefore(now)
       .setExpirationTime(now + 120)
