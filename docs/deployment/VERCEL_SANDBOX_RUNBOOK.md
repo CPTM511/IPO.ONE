@@ -26,7 +26,7 @@ not a milestone-specific Evidence gate.
 | Risk Vercel project | `ipo-one-internal-risk`; historical baseline only during current closure |
 | Runtime | Node.js 24.x, Fluid Compute |
 | Database | One Neon PostgreSQL 17 project through Vercel Marketplace |
-| Cron | Primary project only: `/api/cron`, `*/5 * * * *`, authenticated by `CRON_SECRET` |
+| Cron | Primary project only: `/api/cron`, `*/15 * * * *`, authenticated by `CRON_SECRET` |
 | Public label | M1-B Deployable Sandbox; never a production financial claim |
 
 ## Exact source gate
@@ -93,6 +93,12 @@ an artifact is never deployable evidence.
    `agent_dpop`.
 7. Record migration and seed results without values.
 8. Remove the owner/bootstrap credential from the Vercel runtime environment.
+
+The Primary Cron cadence leaves more than Neon's fixed five-minute Free-plan
+idle window between bounded cycles. Do not reduce it to five minutes or less:
+frequent connection attempts prevent scale-to-zero and can exhaust the monthly
+Free compute allowance. A higher-frequency worker or paid Neon plan requires a
+separate Founder decision.
 
 Runtime Functions receive only the two least-privilege database URLs.
 

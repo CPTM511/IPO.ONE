@@ -46,7 +46,7 @@
     "deployedNode": "24.x",
     "functionMaximumDurationSeconds": 30,
     "fluidCompute": true,
-    "cronSchedule": "*/5 * * * *"
+    "cronSchedule": "*/15 * * * *"
   },
   "database": {
     "provider": "neon_via_vercel_marketplace",
