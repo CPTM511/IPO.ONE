@@ -1,6 +1,43 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+
+test("public README and Founding Edition II sources remain canonical", async () => {
+  const [readme, whitepaper, whitepaperPage, whitepaperCss, whitepaperJs, pdf] = await Promise.all([
+    readFile(new URL("../../../README.md", import.meta.url)),
+    readFile(new URL("../../../docs/WHITEPAPER.md", import.meta.url)),
+    readFile(new URL("../src/whitepaper.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/whitepaper.css", import.meta.url), "utf8"),
+    readFile(new URL("../src/whitepaper.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf", import.meta.url))
+  ]);
+  const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+  assert.ok(readme.includes(Buffer.from("https://ipo.one/whitepaper")));
+  assert.ok(readme.includes(Buffer.from("docs/WHITEPAPER.md")));
+  assert.equal(sha256(whitepaper), "bcaea0332d415fa474be0f2edaa0a5eb1b27059cea73178606dfa9acc073b91c");
+  assert.equal(sha256(pdf), "0273fd454b47a1033004c175d8b491046d3e284160547a36b1086461e6997572");
+  for (const label of [
+    "The Credit Layer for the <em>Agentic Economy</em>",
+    "Current Foundation",
+    "Product Evolution",
+    "Protocol Horizon",
+    "Single Kernel, Dual-Native Access",
+    "Stable Kernel + Replaceable Adapters",
+    "Credit Intelligence Network",
+    "Evidence-Gated Roadmap",
+    "Strategic Non-Goals",
+    "BORROW. BUILD. PROVE."
+  ]) assert.ok(whitepaperPage.includes(label), `${label} whitepaper section missing`);
+  assert.equal((whitepaperPage.match(/class="protocol-diagram"/g) ?? []).length, 12);
+  assert.equal((whitepaperPage.match(/class="toc-level-/g) ?? []).length, 60);
+  assert.ok(whitepaperPage.includes('href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf" download'));
+  assert.ok(whitepaperPage.includes('<link rel="canonical" href="https://ipo.one/whitepaper"'));
+  assert.ok(whitepaperCss.includes(".reading-progress"));
+  assert.ok(whitepaperCss.includes("@media (max-width: 760px)"));
+  assert.ok(whitepaperJs.includes("IntersectionObserver"));
+  assert.ok(whitepaperJs.includes("scrollIntoView"));
+});
 
 test("closed-pilot product includes authenticated Human and Agent workflows", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
@@ -1142,6 +1179,9 @@ test("WEB-015 presents and synchronizes one authenticated session state", async 
   ]) {
     assert.ok(html.includes(publicProductTruth), `${publicProductTruth} public product truth missing`);
   }
+  assert.ok(html.includes('href="/whitepaper"'));
+  assert.ok(html.includes('rel="canonical" href="https://ipo.one/"'));
+  assert.ok(html.includes('property="og:title" content="IPO.ONE — The Credit Layer for the Agentic Economy"'));
   assert.ok(html.includes("Developer / API"));
   assert.ok(html.includes('id="signedOutPrivacyAction" class="primary" type="button" hidden'));
   assert.ok(html.includes('id="authenticatedRuntimeGateAction" class="primary" type="button" hidden'));

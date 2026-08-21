@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d1520" />
+    <meta name="description" content="IPO.ONE Founding Edition II: the protocol thesis, architecture, safety boundaries, commercial logic, and evidence-gated roadmap for verifiable Human and Agent credit." />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="IPO.ONE" />
+    <meta property="og:title" content="IPO.ONE Whitepaper — Founding Edition II" />
+    <meta property="og:description" content="The Credit Layer for the Agentic Economy: verifiable credit and obligation infrastructure for Humans and autonomous Agents." />
+    <meta property="og:url" content="https://ipo.one/whitepaper" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="IPO.ONE Whitepaper — Founding Edition II" />
+    <meta name="twitter:description" content="The protocol thesis for verifiable Human and Agent credit." />
+    <title>IPO.ONE Whitepaper — Founding Edition II</title>
+    <link rel="canonical" href="https://ipo.one/whitepaper" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/whitepaper.css?v=founding-edition-ii-v3" />
+    <script src="/whitepaper.js?v=founding-edition-ii-v3" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#whitepaperContent">Skip to whitepaper</a>
+    <div class="reading-progress" aria-hidden="true"><span id="readingProgress"></span></div>
+    <header class="site-header">
+      <a class="site-brand" href="/" aria-label="IPO.ONE product home"><span>ONE</span><strong>IPO.ONE</strong></a>
+      <nav aria-label="Public site navigation">
+        <a href="/">Product</a>
+        <a href="/whitepaper" aria-current="page">Whitepaper</a>
+        <a href="/agent-openapi.json">Developers</a>
+        <a href="https://github.com/CPTM511/IPO.ONE/blob/main/SECURITY.md">Security</a>
+      </nav>
+    </header>
+    <main>
+      <section class="whitepaper-hero" aria-labelledby="whitepaperTitle">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <p class="kicker"><span></span>Founding Edition II · August 2026</p>
+          <h1 id="whitepaperTitle">The Credit Layer for the <em>Agentic Economy</em></h1>
+          <p class="hero-lede">Verifiable credit and obligation infrastructure for Humans and autonomous Agents.</p>
+          <p class="hero-proposition">Turn verified economic performance into portable, programmable credit.</p>
+          <p class="hero-motto"><strong>BORROW.</strong><strong>BUILD.</strong><strong>PROVE.</strong></p>
+          <div class="hero-actions">
+            <a class="primary-action" href="#document-status">Read the whitepaper</a>
+            <a class="secondary-action" href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf" download>Download PDF · 50 pages</a>
+          </div>
+        </div>
+        <aside class="hero-status" aria-label="Document status">
+          <p>Document lens</p>
+          <dl>
+            <div><dt>Current Foundation</dt><dd>Deployed no-funds product baseline</dd></div>
+            <div><dt>Product Evolution</dt><dd>Evidence-gated controlled pilots</dd></div>
+            <div><dt>Protocol Horizon</dt><dd>Long-term direction, not current activation</dd></div>
+          </dl>
+          <small>No offer of credit, securities, tokens, or investment products.</small>
+        </aside>
+      </section>
+      <div class="mobile-section-picker">
+        <label for="mobileToc">Jump to a section</label>
+        <select id="mobileToc">
+          <option value="#document-status">Document Status</option>
+<option value="#foundational-proposition">Foundational Proposition</option>
+<option value="#abstract">Abstract</option>
+<option value="#executive-summary">Executive Summary</option>
+<option value="#part-i-the-agentic-economic-transition">Part I - The Agentic Economic Transition</option>
+<option value="#1-from-programmable-information-to-programmable-credit">1. From Programmable Information to Programmable Credit</option>
+<option value="#2-payments-are-necessary-but-insufficient">2. Payments Are Necessary but Insufficient</option>
+<option value="#3-credit-is-trust-across-time">3. Credit Is Trust Across Time</option>
+<option value="#4-why-the-transition-matters-now">4. Why the Transition Matters Now</option>
+<option value="#part-ii-the-missing-protocol-primitive">Part II - The Missing Protocol Primitive</option>
+<option value="#5-identity-payment-and-obligation">5. Identity, Payment, and Obligation</option>
+<option value="#6-obligation-as-the-atomic-unit-of-credit">6. Obligation as the Atomic Unit of Credit</option>
+<option value="#7-responsibility-before-autonomy">7. Responsibility Before Autonomy</option>
+<option value="#8-single-kernel-dual-native-access">8. Single Kernel, Dual-Native Access</option>
+<option value="#part-iii-the-ipo-one-credit-system">Part III - The IPO.ONE Credit System</option>
+<option value="#9-the-canonical-credit-loop">9. The Canonical Credit Loop</option>
+<option value="#10-human-credit-access">10. Human Credit Access</option>
+<option value="#11-agent-credit-access">11. Agent Credit Access</option>
+<option value="#12-capital-providers-and-offer-formation">12. Capital Providers and Offer Formation</option>
+<option value="#13-the-obligation-kernel-and-ledger">13. The Obligation Kernel and Ledger</option>
+<option value="#14-evidence">14. Evidence</option>
+<option value="#15-credit-state-and-the-credit-passport">15. Credit State and the Credit Passport</option>
+<option value="#16-economic-memory">16. Economic Memory</option>
+<option value="#17-the-obligation-graph">17. The Obligation Graph</option>
+<option value="#part-iv-protocol-architecture">Part IV - Protocol Architecture</option>
+<option value="#18-stable-kernel-replaceable-adapters">18. Stable Kernel + Replaceable Adapters</option>
+<option value="#19-interface-architecture">19. Interface Architecture</option>
+<option value="#20-multi-rail-settlement">20. Multi-Rail Settlement</option>
+<option value="#21-onchain-components">21. Onchain Components</option>
+<option value="#22-reliability-and-failure-isolation">22. Reliability and Failure Isolation</option>
+<option value="#part-v-credit-intelligence-and-economics">Part V - Credit Intelligence and Economics</option>
+<option value="#23-the-credit-intelligence-network">23. The Credit Intelligence Network</option>
+<option value="#24-credit-decisioning">24. Credit Decisioning</option>
+<option value="#25-progressive-credit">25. Progressive Credit</option>
+<option value="#26-business-model">26. Business Model</option>
+<option value="#27-capital-economics">27. Capital Economics</option>
+<option value="#28-compounding-network-effects">28. Compounding Network Effects</option>
+<option value="#part-vi-safety-privacy-and-governance">Part VI - Safety, Privacy, and Governance</option>
+<option value="#29-protocol-invariants">29. Protocol Invariants</option>
+<option value="#30-bounded-authority">30. Bounded Authority</option>
+<option value="#31-privacy-and-data-minimization">31. Privacy and Data Minimization</option>
+<option value="#32-human-protection-and-fairness">32. Human Protection and Fairness</option>
+<option value="#33-model-governance">33. Model Governance</option>
+<option value="#34-regulated-role-separation">34. Regulated Role Separation</option>
+<option value="#35-security-posture">35. Security Posture</option>
+<option value="#part-vii-product-foundation-and-protocol-evolution">Part VII - Product Foundation and Protocol Evolution</option>
+<option value="#36-current-product-foundation">36. Current Product Foundation</option>
+<option value="#37-initial-commercial-wedge">37. Initial Commercial Wedge</option>
+<option value="#38-human-product-evolution">38. Human Product Evolution</option>
+<option value="#39-evidence-gated-roadmap">39. Evidence-Gated Roadmap</option>
+<option value="#40-strategic-non-goals">40. Strategic Non-Goals</option>
+<option value="#41-the-protocol-horizon">41. The Protocol Horizon</option>
+<option value="#conclusion">Conclusion</option>
+<option value="#borrow-build-prove">BORROW. BUILD. PROVE.</option>
+<option value="#appendix-a-canonical-objects">Appendix A - Canonical Objects</option>
+<option value="#appendix-b-obligation-lifecycle">Appendix B - Obligation Lifecycle</option>
+<option value="#appendix-c-illustrative-interface-surface">Appendix C - Illustrative Interface Surface</option>
+<option value="#appendix-d-decision-and-portfolio-measures">Appendix D - Decision and Portfolio Measures</option>
+<option value="#appendix-e-glossary">Appendix E - Glossary</option>
+<option value="#appendix-f-selected-references">Appendix F - Selected References</option>
+        </select>
+      </div>
+      <div class="reading-shell">
+        <aside class="table-of-contents" aria-label="Whitepaper table of contents">
+          <div class="toc-heading"><span>Contents</span><small>Founding Edition II</small></div>
+          <nav id="whitepaperToc">
+            <a class="toc-level-2" href="#document-status">Document Status</a>
+<a class="toc-level-2" href="#foundational-proposition">Foundational Proposition</a>
+<a class="toc-level-2" href="#abstract">Abstract</a>
+<a class="toc-level-2" href="#executive-summary">Executive Summary</a>
+<a class="toc-level-1" href="#part-i-the-agentic-economic-transition">Part I - The Agentic Economic Transition</a>
+<a class="toc-level-2" href="#1-from-programmable-information-to-programmable-credit">1. From Programmable Information to Programmable Credit</a>
+<a class="toc-level-2" href="#2-payments-are-necessary-but-insufficient">2. Payments Are Necessary but Insufficient</a>
+<a class="toc-level-2" href="#3-credit-is-trust-across-time">3. Credit Is Trust Across Time</a>
+<a class="toc-level-2" href="#4-why-the-transition-matters-now">4. Why the Transition Matters Now</a>
+<a class="toc-level-1" href="#part-ii-the-missing-protocol-primitive">Part II - The Missing Protocol Primitive</a>
+<a class="toc-level-2" href="#5-identity-payment-and-obligation">5. Identity, Payment, and Obligation</a>
+<a class="toc-level-2" href="#6-obligation-as-the-atomic-unit-of-credit">6. Obligation as the Atomic Unit of Credit</a>
+<a class="toc-level-2" href="#7-responsibility-before-autonomy">7. Responsibility Before Autonomy</a>
+<a class="toc-level-2" href="#8-single-kernel-dual-native-access">8. Single Kernel, Dual-Native Access</a>
+<a class="toc-level-1" href="#part-iii-the-ipo-one-credit-system">Part III - The IPO.ONE Credit System</a>
+<a class="toc-level-2" href="#9-the-canonical-credit-loop">9. The Canonical Credit Loop</a>
+<a class="toc-level-2" href="#10-human-credit-access">10. Human Credit Access</a>
+<a class="toc-level-2" href="#11-agent-credit-access">11. Agent Credit Access</a>
+<a class="toc-level-2" href="#12-capital-providers-and-offer-formation">12. Capital Providers and Offer Formation</a>
+<a class="toc-level-2" href="#13-the-obligation-kernel-and-ledger">13. The Obligation Kernel and Ledger</a>
+<a class="toc-level-2" href="#14-evidence">14. Evidence</a>
+<a class="toc-level-2" href="#15-credit-state-and-the-credit-passport">15. Credit State and the Credit Passport</a>
+<a class="toc-level-2" href="#16-economic-memory">16. Economic Memory</a>
+<a class="toc-level-2" href="#17-the-obligation-graph">17. The Obligation Graph</a>
+<a class="toc-level-1" href="#part-iv-protocol-architecture">Part IV - Protocol Architecture</a>
+<a class="toc-level-2" href="#18-stable-kernel-replaceable-adapters">18. Stable Kernel + Replaceable Adapters</a>
+<a class="toc-level-2" href="#19-interface-architecture">19. Interface Architecture</a>
+<a class="toc-level-2" href="#20-multi-rail-settlement">20. Multi-Rail Settlement</a>
+<a class="toc-level-2" href="#21-onchain-components">21. Onchain Components</a>
+<a class="toc-level-2" href="#22-reliability-and-failure-isolation">22. Reliability and Failure Isolation</a>
+<a class="toc-level-1" href="#part-v-credit-intelligence-and-economics">Part V - Credit Intelligence and Economics</a>
+<a class="toc-level-2" href="#23-the-credit-intelligence-network">23. The Credit Intelligence Network</a>
+<a class="toc-level-2" href="#24-credit-decisioning">24. Credit Decisioning</a>
+<a class="toc-level-2" href="#25-progressive-credit">25. Progressive Credit</a>
+<a class="toc-level-2" href="#26-business-model">26. Business Model</a>
+<a class="toc-level-2" href="#27-capital-economics">27. Capital Economics</a>
+<a class="toc-level-2" href="#28-compounding-network-effects">28. Compounding Network Effects</a>
+<a class="toc-level-1" href="#part-vi-safety-privacy-and-governance">Part VI - Safety, Privacy, and Governance</a>
+<a class="toc-level-2" href="#29-protocol-invariants">29. Protocol Invariants</a>
+<a class="toc-level-2" href="#30-bounded-authority">30. Bounded Authority</a>
+<a class="toc-level-2" href="#31-privacy-and-data-minimization">31. Privacy and Data Minimization</a>
+<a class="toc-level-2" href="#32-human-protection-and-fairness">32. Human Protection and Fairness</a>
+<a class="toc-level-2" href="#33-model-governance">33. Model Governance</a>
+<a class="toc-level-2" href="#34-regulated-role-separation">34. Regulated Role Separation</a>
+<a class="toc-level-2" href="#35-security-posture">35. Security Posture</a>
+<a class="toc-level-1" href="#part-vii-product-foundation-and-protocol-evolution">Part VII - Product Foundation and Protocol Evolution</a>
+<a class="toc-level-2" href="#36-current-product-foundation">36. Current Product Foundation</a>
+<a class="toc-level-2" href="#37-initial-commercial-wedge">37. Initial Commercial Wedge</a>
+<a class="toc-level-2" href="#38-human-product-evolution">38. Human Product Evolution</a>
+<a class="toc-level-2" href="#39-evidence-gated-roadmap">39. Evidence-Gated Roadmap</a>
+<a class="toc-level-2" href="#40-strategic-non-goals">40. Strategic Non-Goals</a>
+<a class="toc-level-2" href="#41-the-protocol-horizon">41. The Protocol Horizon</a>
+<a class="toc-level-1" href="#conclusion">Conclusion</a>
+<a class="toc-level-1" href="#borrow-build-prove">BORROW. BUILD. PROVE.</a>
+<a class="toc-level-1" href="#appendix-a-canonical-objects">Appendix A - Canonical Objects</a>
+<a class="toc-level-1" href="#appendix-b-obligation-lifecycle">Appendix B - Obligation Lifecycle</a>
+<a class="toc-level-1" href="#appendix-c-illustrative-interface-surface">Appendix C - Illustrative Interface Surface</a>
+<a class="toc-level-1" href="#appendix-d-decision-and-portfolio-measures">Appendix D - Decision and Portfolio Measures</a>
+<a class="toc-level-1" href="#appendix-e-glossary">Appendix E - Glossary</a>
+<a class="toc-level-1" href="#appendix-f-selected-references">Appendix F - Selected References</a>
+          </nav>
+          <div class="toc-footer">
+            <span>12 protocol diagrams</span>
+            <a href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf" download>Download PDF</a>
+          </div>
+        </aside>
+        <article class="whitepaper-content" id="whitepaperContent">
+          <h2 id="document-status">Document Status<a class="heading-anchor" href="#document-status" aria-label="Link to Document Status">#</a></h2>
+<p>This whitepaper defines the founding thesis, protocol architecture, commercial logic, safety boundaries, and long-term direction of IPO.ONE.</p>
+<p>It distinguishes three categories:</p>
+<ul><li><strong>Current Foundation</strong> describes capabilities represented by the deployed IPO.ONE product baseline and its canonical public repository as of August 20, 2026.</li><li><strong>Product Evolution</strong> describes staged capabilities intended for controlled pilots and subsequent product releases.</li><li><strong>Protocol Horizon</strong> describes the long-term infrastructure role IPO.ONE is designed to serve. It is not a claim that every component is currently active.</li></ul>
+<p>This document is not an offer of credit, securities, tokens, or investment products. It is not legal, regulatory, tax, or investment advice. Credit, capital movement, custody, settlement, and regulated activity require product-specific agreements, qualified counterparties, applicable approvals, and jurisdictional review.</p>
+<hr />
+<h2 id="foundational-proposition">Foundational Proposition<a class="heading-anchor" href="#foundational-proposition" aria-label="Link to Foundational Proposition">#</a></h2>
+<blockquote><p><strong>The Agentic Economy does not only need faster payments. It needs a system for responsibility, credit, and obligations.</strong></p></blockquote>
+<p>The internet made information interoperable. Blockchains made ownership and settlement programmable. Artificial intelligence is making economic activity autonomous.</p>
+<p>The next missing layer is credit.</p>
+<p>A wallet can hold value. A payment protocol can move it. An Agent protocol can discover tools or coordinate work. None of these systems, by themselves, establishes the complete economic truth required for credit:</p>
+<ul><li>who acted;</li><li>who authorized the action;</li><li>who bears responsibility;</li><li>what capital was requested and for what purpose;</li><li>which terms were accepted;</li><li>what became owed;</li><li>how execution and repayment occurred;</li><li>whether the result was final and reconciled; and</li><li>whether that outcome should improve access to future capital.</li></ul>
+<p>IPO.ONE is designed to provide that missing layer.</p>
+<p>It connects <strong>Identity, Payment, and Obligation</strong> through one deterministic credit lifecycle. Humans and autonomous Agents enter through different interfaces and authority models, but they converge on one canonical economic truth. Verified outcomes become permissioned economic memory. That memory can support the next decision, the next application, and the next source of capital.</p>
+<hr />
+<h2 id="abstract">Abstract<a class="heading-anchor" href="#abstract" aria-label="Link to Abstract">#</a></h2>
+<p>IPO.ONE is verifiable credit and obligation infrastructure for an economy shared by humans and autonomous Agents.</p>
+<p>The protocol begins from a simple observation: payment is not credit. Payment records movement of value. Credit requires a durable representation of responsibility across time. It must establish who may commit, under whose authority, on what terms, what became owed, what happened afterward, and how the outcome affects future access.</p>
+<p>This requirement becomes more urgent as software Agents become economic actors. Agents can already discover services, call tools, purchase digital resources, operate strategies, create work product, and coordinate with other machines. Yet most remain economically dependent on pre-funded balances, operator-controlled accounts, or isolated platform allowances. They can transact, but they cannot carry responsibility, obligations, and repayment history across environments in a standardized form.</p>
+<p>Humans face a parallel problem. Account ownership and digital activity have expanded globally, but financial resilience and portable credit remain uneven. The World Bank's Global Findex 2025 reports that 79% of adults globally have a financial account, while access to emergency funds remains materially lower, particularly in low- and middle-income economies. A large population produces legitimate cash-flow and repayment evidence that still fails to become reusable credit history.[1]</p>
+<p>IPO.ONE addresses both problems through <strong>Single Kernel, Dual-Native Access</strong>. Human applications and Agent-native interfaces - including APIs, SDKs, MCP-compatible tools, and other machine protocols - normalize into the same Subjects, Principals, Consent or Mandates, Credit Intents, Decisions, Offers, Authorizations, Obligations, Ledger events, Credit Outcomes, Evidence, and Credit States.</p>
+<p>The protocol's central primitive is the <strong>Obligation</strong>: the canonical accepted economic commitment that records who owes what, to whom, under which terms, schedule, authority, and servicing rules. An Obligation is independent of any one wallet, payment network, blockchain, Agent runtime, or capital provider. Replaceable adapters connect those external systems without allowing them to redefine canonical credit truth.</p>
+<p>IPO.ONE converts verified performance into <strong>Credit State</strong> - a longitudinal, provenance-aware representation of economic outcomes. A permissioned <strong>Credit Passport</strong> enables relevant performance to travel across approved applications and providers without turning raw identity or transaction data into a public dossier. Over time, a governed <strong>Credit Intelligence Network</strong> can improve risk understanding, capital matching, terms, intervention, and portfolio controls. Models may observe, forecast, diagnose, and recommend. Only approved deterministic policy may authorize financial state changes.</p>
+<p>The current IPO.ONE foundation implements a complete Human-Agent Credit Loop: identity and responsibility, Consent or Mandate, Credit Intent, explainable Decision and Offer, canonical Obligation, controlled execution, repayment, terminal Credit Outcome, durable Credit State, Track Record, Passport, and Evidence. Product evolution proceeds from this foundation toward purpose-bound Agent working capital, independent capital providers, multi-rail settlement, governed intelligence, and cross-platform credit portability.</p>
+<p>The long-term objective is a neutral credit and obligation protocol through which a trustworthy Human or Agent can establish responsibility, access appropriately governed capital, fulfill obligations, and carry verified progress across applications, institutions, and economic environments.</p>
+<hr />
+<h2 id="executive-summary">Executive Summary<a class="heading-anchor" href="#executive-summary" aria-label="Link to Executive Summary">#</a></h2>
+<h3 id="the-thesis">The thesis<a class="heading-anchor" href="#the-thesis" aria-label="Link to The thesis">#</a></h3>
+<p>Autonomous economic action is advancing faster than the infrastructure required to finance it responsibly.</p>
+<p>Today's Agent stack is rapidly developing standards for tool access, agent-to-agent communication, identity, wallets, and machine payments. These layers are necessary, but they do not create credit. Credit is trust extended across time. It requires accountable authority before value moves, a canonical Obligation while exposure exists, and verifiable performance after settlement.</p>
+<p>IPO.ONE defines this missing responsibility and credit layer.</p>
+<h3 id="the-product">The product<a class="heading-anchor" href="#the-product" aria-label="Link to The product">#</a></h3>
+<p>IPO.ONE coordinates one canonical lifecycle:</p>
+<blockquote><p><strong>Identity / Principal → Consent / Mandate → Credit Intent → Decision → Capital Offer → Obligation → Controlled Execution → Repayment → Verified Outcome → Credit State → Credit Passport</strong></p></blockquote>
+<p>Humans and Agents use different interfaces and security profiles, but the economic objects and state transitions remain shared.</p>
+<h3 id="the-architecture">The architecture<a class="heading-anchor" href="#the-architecture" aria-label="Link to The architecture">#</a></h3>
+<p>IPO.ONE uses <strong>Stable Kernel + Replaceable Adapters</strong>.</p>
+<p>The deterministic kernel owns identity relationships, authority, policy versions, Offers, Obligations, Ledger state, servicing, Evidence, reconciliation, Credit Outcomes, and Credit State.</p>
+<p>Adapters connect Human interfaces, Agent protocols, identity providers, payment rails, blockchains, smart accounts, capital facilities, and execution venues. An adapter may transport, verify, or execute. It cannot create authority, alter accepted terms, expand exposure, or redefine an Obligation.</p>
+<h3 id="the-economic-model">The economic model<a class="heading-anchor" href="#the-economic-model" aria-label="Link to The economic model">#</a></h3>
+<p>IPO.ONE is designed as neutral infrastructure around external capital. Banks, fintech lenders, private-credit facilities, Provider credit, institutional capital, and compatible onchain facilities can supply funding under explicit policies. Capital Providers retain control over economic decisions and terms. IPO.ONE coordinates lifecycle integrity and can earn transparent infrastructure, execution, routing, servicing, reconciliation, and realized-revenue participation fees.</p>
+<h3 id="the-intelligence-model">The intelligence model<a class="heading-anchor" href="#the-intelligence-model" aria-label="Link to The intelligence model">#</a></h3>
+<p>Verified outcomes create a compounding information advantage. Credit Intelligence can improve evidence confidence, affordability, risk estimates, Facility structure, Mandate limits, pricing recommendations, anomaly detection, repayment forecasting, interventions, and capital routing.</p>
+<p>The authority boundary is permanent:</p>
+<blockquote><p><strong>Intelligence may learn and recommend. Approved deterministic policy authorizes. The kernel executes.</strong></p></blockquote>
+<h3 id="the-market-entry">The market entry<a class="heading-anchor" href="#the-market-entry" aria-label="Link to The market entry">#</a></h3>
+<p>The first differentiated wedge is purpose-bound working capital for verified Agents and autonomous businesses purchasing productive digital resources such as compute, APIs, data, software, and approved services. This environment offers observable use of proceeds, machine-readable execution, short durations, bounded authority, and measurable repayment sources.</p>
+<p>Human productive credit remains a native mode of the same protocol, not a separate architecture. Both paths compound into one Credit State and capital network.</p>
+<h3 id="the-end-state">The end state<a class="heading-anchor" href="#the-end-state" aria-label="Link to The end state">#</a></h3>
+<p>IPO.ONE is designed to become a shared credit and obligation protocol for the Agentic Economy: a system in which verified economic performance becomes portable capacity, multiple capital providers compete to finance qualified obligations, and Humans and Agents can carry trustworthy progress across applications and rails.</p>
+<hr />
+<h1 id="part-i-the-agentic-economic-transition" class="part-heading">Part I - The Agentic Economic Transition<a class="heading-anchor" href="#part-i-the-agentic-economic-transition" aria-label="Link to Part I - The Agentic Economic Transition">#</a></h1>
+<h2 id="1-from-programmable-information-to-programmable-credit">1. From Programmable Information to Programmable Credit<a class="heading-anchor" href="#1-from-programmable-information-to-programmable-credit" aria-label="Link to 1. From Programmable Information to Programmable Credit">#</a></h2>
+<p>The modern digital economy has developed in layers.</p>
+<p>The internet separated information from physical distribution. Open protocols made publishing, messaging, and computation interoperable across networks.</p>
+<p>Blockchains separated digital ownership from centralized ledgers. Assets, signatures, and settlement could become globally verifiable and programmable.</p>
+<p>Artificial intelligence is now separating economic action from continuous human operation. Software can interpret goals, discover services, negotiate parameters, call tools, coordinate tasks, and produce outcomes with increasing autonomy.</p>
+<p>Each transition creates a new infrastructure requirement.</p>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 1"><span class="diagram-node"><small>01</small>Internet · Programmable Information</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Crypto · Programmable Ownership</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>AI Agents · Programmable Action</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>IPO.ONE · Programmable Credit</span></div>
+    <figcaption>Protocol relationship · diagram 1</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    Information[&quot;Internet\nProgrammable Information&quot;] --&gt; Ownership[&quot;Crypto\nProgrammable Ownership&quot;]
+    Ownership --&gt; Autonomy[&quot;AI Agents\nProgrammable Action&quot;]
+    Autonomy --&gt; Credit[&quot;IPO.ONE\nProgrammable Credit&quot;]</code></pre></details>
+  </figure>
+<p>Autonomous action can scale only as far as capital, trust, and accountability allow.</p>
+<p>A prepaid Agent can spend until its balance reaches zero. A sponsored Agent can operate until its owner stops funding it. A platform Agent can receive internal allowances that disappear outside the platform. These are useful operating models, but they are not portable credit.</p>
+<p>Credit allows an economic actor to access resources in the present against an accountable commitment to future performance. It expands productive capacity beyond current cash. It also introduces risk: someone must define authority, assess repayment capacity, price uncertainty, record the Obligation, control use, reconcile payment, and absorb or allocate loss.</p>
+<p>For Humans, institutions evolved legal contracts, identity systems, bureaus, underwriting models, servicing infrastructure, and collections processes to perform these functions. The systems are imperfect and fragmented, but the underlying questions are known.</p>
+<p>For Agents, the questions must be answered in machine-readable form from the beginning.</p>
+<p>The Agentic Economy therefore requires more than a payment layer. It requires a protocol for responsibility across time.</p>
+<h2 id="2-payments-are-necessary-but-insufficient">2. Payments Are Necessary but Insufficient<a class="heading-anchor" href="#2-payments-are-necessary-but-insufficient" aria-label="Link to 2. Payments Are Necessary but Insufficient">#</a></h2>
+<p>A payment proves or asserts that value moved. Credit must establish the economic relationship around that movement.</p>
+<figure class="protocol-diagram" data-direction="TB">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 2"><span class="diagram-node"><small>01</small>Payment</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Did value move?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>When and through which rail?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Was technical finality reached?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Credit &amp; Obligation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Who committed?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Under whose authority?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>On what terms and for what purpose?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>09</small>What became owed?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>10</small>Was the Obligation fulfilled?</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>11</small>How should the outcome affect future access?</span></div>
+    <figcaption>Protocol relationship · diagram 2</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart TB
+    Payment[&quot;Payment&quot;] --&gt; P1[&quot;Did value move?&quot;]
+    Payment --&gt; P2[&quot;When and through which rail?&quot;]
+    Payment --&gt; P3[&quot;Was technical finality reached?&quot;]
+
+    Credit[&quot;Credit &amp; Obligation&quot;] --&gt; C1[&quot;Who committed?&quot;]
+    Credit --&gt; C2[&quot;Under whose authority?&quot;]
+    Credit --&gt; C3[&quot;On what terms and for what purpose?&quot;]
+    Credit --&gt; C4[&quot;What became owed?&quot;]
+    Credit --&gt; C5[&quot;Was the Obligation fulfilled?&quot;]
+    Credit --&gt; C6[&quot;How should the outcome affect future access?&quot;]</code></pre></details>
+  </figure>
+<p>The distinction matters because identical transfers can represent different economic facts.</p>
+<p>A payment may be:</p>
+<ul><li>an advance under a credit Facility;</li><li>a purchase funded from current cash;</li><li>a repayment of principal;</li><li>payment of interest or fees;</li><li>a refund;</li><li>collateral movement;</li><li>a Provider settlement;</li><li>a mistaken duplicate;</li><li>a reversible processor event;</li><li>an onchain transaction that later becomes non-canonical; or</li><li>a transfer unrelated to any credit relationship.</li></ul>
+<p>Without identity, authority, accepted terms, allocation rules, servicing state, and Evidence, a payment cannot reliably update credit.</p>
+<p>IPO.ONE does not replace payment networks. It gives payment events economic meaning inside a canonical Obligation.</p>
+<h2 id="3-credit-is-trust-across-time">3. Credit Is Trust Across Time<a class="heading-anchor" href="#3-credit-is-trust-across-time" aria-label="Link to 3. Credit Is Trust Across Time">#</a></h2>
+<p>Credit is often described as money lent with an expectation of repayment. That definition is incomplete.</p>
+<p>Credit is a governed transfer of present capacity based on a judgment about future accountable performance.</p>
+<p>It contains at least six elements:</p>
+<ol><li><strong>Identity</strong> - the relevant economic Subject and responsible Principal.</li><li><strong>Authority</strong> - the right to request, accept, draw, spend, or settle.</li><li><strong>Terms</strong> - amount, price, duration, schedule, purpose, conditions, and remedies.</li><li><strong>Obligation</strong> - the canonical future commitment created by acceptance and use.</li><li><strong>Performance</strong> - execution, repayment, delinquency, cure, loss, recovery, and resolution.</li><li><strong>Memory</strong> - the durable evidence through which past performance informs future decisions.</li></ol>
+<p>Traditional systems often compress these elements into a private bureau score or lender-specific account history. That approach produces scale within institutions but weak portability across platforms, countries, payment rails, and emerging digital actors.</p>
+<p>The Agentic Economy creates an opportunity to define credit more precisely:</p>
+<blockquote><p><strong>Credit is permissioned access to present resources under accountable authority, canonical obligations, and verifiable future performance.</strong></p></blockquote>
+<p>This definition is subject-neutral. It can apply to a Human, organization, Agent, or machine while preserving the legal and risk differences among them.</p>
+<h2 id="4-why-the-transition-matters-now">4. Why the Transition Matters Now<a class="heading-anchor" href="#4-why-the-transition-matters-now" aria-label="Link to 4. Why the Transition Matters Now">#</a></h2>
+<p>Several infrastructure shifts are converging.</p>
+<h3 id="4-1-agents-are-becoming-economic-interfaces">4.1 Agents are becoming economic interfaces<a class="heading-anchor" href="#4-1-agents-are-becoming-economic-interfaces" aria-label="Link to 4.1 Agents are becoming economic interfaces">#</a></h3>
+<p>Agents increasingly sit between users and digital services. They search, compare, plan, call APIs, operate software, and coordinate other Agents. Protocols such as MCP and A2A are reducing integration friction between models, tools, and remote Agents.[7][8]</p>
+<p>Interoperability increases economic opportunity, but it also increases the need for standardized authority and accountability. A system that can call any tool must not be assumed to have permission to accept any financial obligation.</p>
+<h3 id="4-2-machine-payments-are-becoming-native">4.2 Machine payments are becoming native<a class="heading-anchor" href="#4-2-machine-payments-are-becoming-native" aria-label="Link to 4.2 Machine payments are becoming native">#</a></h3>
+<p>HTTP-native and onchain payment protocols, including x402, make it possible for software to discover a paid resource, satisfy a payment request, and receive service programmatically.[9]</p>
+<p>This improves settlement. It does not answer who may borrow, how much, for what purpose, or how repayment history should travel.</p>
+<h3 id="4-3-digital-identity-is-becoming-more-verifiable">4.3 Digital identity is becoming more verifiable<a class="heading-anchor" href="#4-3-digital-identity-is-becoming-more-verifiable" aria-label="Link to 4.3 Digital identity is becoming more verifiable">#</a></h3>
+<p>Standards such as W3C Verifiable Credentials 2.0 provide issuer-holder-verifier patterns for machine-verifiable, privacy-aware claims.[3] Wallet authentication, sender-constrained tokens, workload credentials, and account-control proofs make it possible to separate identity from authorization more cleanly than many legacy systems.</p>
+<h3 id="4-4-capital-remains-fragmented">4.4 Capital remains fragmented<a class="heading-anchor" href="#4-4-capital-remains-fragmented" aria-label="Link to 4.4 Capital remains fragmented">#</a></h3>
+<p>Capital providers operate under different laws, risk appetites, data requirements, currencies, and settlement systems. A global balance sheet is neither necessary nor desirable as the default architecture. What is needed is a common obligation language through which many capital providers can evaluate, price, fund, and monitor compatible credit relationships.</p>
+<h3 id="4-5-account-access-has-not-solved-credit-access">4.5 Account access has not solved credit access<a class="heading-anchor" href="#4-5-account-access-has-not-solved-credit-access" aria-label="Link to 4.5 Account access has not solved credit access">#</a></h3>
+<p>The Global Findex 2025 shows substantial progress in account ownership, yet financial resilience remains weaker than account access. In low- and middle-income economies, many people have mobile connectivity and digital transaction histories but lack mechanisms that convert lawful cash flow and repayment into portable credit.[1]</p>
+<p>Humans and Agents therefore arrive at the same structural gap from different directions:</p>
+<ul><li>Humans may have economic activity without a portable credit file.</li><li>Agents may have execution capability without a portable responsibility and repayment history.</li></ul>
+<p>IPO.ONE is designed around the shared infrastructure problem beneath both.</p>
+<hr />
+<h1 id="part-ii-the-missing-protocol-primitive" class="part-heading">Part II - The Missing Protocol Primitive<a class="heading-anchor" href="#part-ii-the-missing-protocol-primitive" aria-label="Link to Part II - The Missing Protocol Primitive">#</a></h1>
+<h2 id="5-identity-payment-and-obligation">5. Identity, Payment, and Obligation<a class="heading-anchor" href="#5-identity-payment-and-obligation" aria-label="Link to 5. Identity, Payment, and Obligation">#</a></h2>
+<p>IPO.ONE retains the original <strong>I-P-O model</strong>:</p>
+<blockquote><p><strong>Identity + Payment + Obligation</strong></p></blockquote>
+<p>Credit Intent acts as the request envelope that connects these primitives.</p>
+<div class="table-scroll"><table><thead><tr><th>Primitive</th><th>Question</th><th>Protocol role</th></tr></thead><tbody><tr><td><strong>Identity</strong></td><td>Who is acting, who authorized the action, and who is responsible?</td><td>Resolve Subjects, Principals, accounts, roles, credentials, and attestations.</td></tr><tr><td><strong>Intent</strong></td><td>What value is requested, for what purpose, under which constraints, and from which repayment source?</td><td>Represent a subject-neutral Credit Intent and optional Execution Plan.</td></tr><tr><td><strong>Payment / Settlement</strong></td><td>How does value move, reach technical finality, and reconcile?</td><td>Produce rail-neutral instructions and normalize authenticated receipts.</td></tr><tr><td><strong>Obligation</strong></td><td>What future commitment exists?</td><td>Create canonical terms, exposure, schedule, servicing, delinquency, default, correction, and resolution state.</td></tr><tr><td><strong>Evidence</strong></td><td>What actually happened, and how do we know?</td><td>Bind observations, receipts, state transitions, provenance, finality, and reconciliation.</td></tr></tbody></table></div>
+<p>Identity without obligation produces authentication but no credit relationship.</p>
+<p>Payment without obligation produces settlement but no durable representation of responsibility.</p>
+<p>Obligation without Evidence produces a claim that cannot be trusted across systems.</p>
+<p>IPO.ONE combines the three into a lifecycle that can be interpreted by Humans, Agents, capital providers, applications, and auditors.</p>
+<h2 id="6-obligation-as-the-atomic-unit-of-credit">6. Obligation as the Atomic Unit of Credit<a class="heading-anchor" href="#6-obligation-as-the-atomic-unit-of-credit" aria-label="Link to 6. Obligation as the Atomic Unit of Credit">#</a></h2>
+<p>The atomic unit of a payment network is a transfer.</p>
+<p>The atomic unit of a credit system is an <strong>Obligation</strong>.</p>
+<p>An Obligation records:</p>
+<ul><li>the obligor and responsible Principal;</li><li>the Capital Provider or beneficiary;</li><li>the accepted Offer version;</li><li>principal, price, fees, and total cost;</li><li>asset or currency;</li><li>purpose and permitted use;</li><li>term and repayment schedule;</li><li>repayment source;</li><li>servicing and allocation rules;</li><li>applicable policy and authority;</li><li>permitted execution and settlement environments;</li><li>current state;</li><li>Evidence and reconciliation lineage; and</li><li>remedies, correction, and resolution rules.</li></ul>
+<p>The Obligation is not merely a database row or legal-document hash. It is the canonical protocol representation of the accepted economic commitment. Legal agreements, disclosures, and jurisdiction-specific rights remain controlled by the applicable lender, Originator, counterparties, and law. IPO.ONE does not claim that software overrides those instruments.</p>
+<p>The protocol requirement is narrower and more durable: every system participating in the lifecycle must refer to one canonical economic commitment and must not create contradictory sources of truth.</p>
+<h2 id="7-responsibility-before-autonomy">7. Responsibility Before Autonomy<a class="heading-anchor" href="#7-responsibility-before-autonomy" aria-label="Link to 7. Responsibility Before Autonomy">#</a></h2>
+<p>Autonomy without responsibility produces unbounded risk.</p>
+<p>IPO.ONE separates three concepts that are often collapsed:</p>
+<ul><li><strong>Identity</strong> answers which actor or account is present.</li><li><strong>Responsibility</strong> answers which person or organization ultimately bears economic accountability.</li><li><strong>Authority</strong> answers what exact action is currently permitted.</li></ul>
+<p>For a Human, these concepts may overlap but are not identical. A wallet can authenticate an address, while role selection, Consent, eligibility, Offer acceptance, and product policy determine what the Human may do.</p>
+<p>For an Agent, the separation is essential. An Agent identity describes a workload or software actor. It does not establish legal personhood, balance-sheet capacity, or open-ended permission to borrow.</p>
+<p>An accountable Principal establishes the relationship. A Mandate narrows authority. Deterministic authorization evaluates each exact action against current scope and state.</p>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 3"><span class="diagram-node"><small>01</small>Accountable Principal</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Agent Identity</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Bounded Mandate</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Exact Request</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Deterministic Authorization</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Canonical Obligation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Controlled Execution</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>Verified Outcome</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>09</small>Credit State</span></div>
+    <figcaption>Protocol relationship · diagram 3</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    Principal[&quot;Accountable Principal&quot;] --&gt; AgentID[&quot;Agent Identity&quot;]
+    Principal --&gt; Mandate[&quot;Bounded Mandate&quot;]
+    AgentID --&gt; Mandate
+    Mandate --&gt; Request[&quot;Exact Request&quot;]
+    Request --&gt; Policy[&quot;Deterministic Authorization&quot;]
+    Policy --&gt; Obligation[&quot;Canonical Obligation&quot;]
+    Obligation --&gt; Execution[&quot;Controlled Execution&quot;]
+    Execution --&gt; Evidence[&quot;Verified Outcome&quot;]
+    Evidence --&gt; State[&quot;Credit State&quot;]</code></pre></details>
+  </figure>
+<p>This design allows Agents to become more economically capable without granting them undefined autonomy.</p>
+<h2 id="8-single-kernel-dual-native-access">8. Single Kernel, Dual-Native Access<a class="heading-anchor" href="#8-single-kernel-dual-native-access" aria-label="Link to 8. Single Kernel, Dual-Native Access">#</a></h2>
+<p>Humans and Agents are equal first-class Subjects of the protocol. Equal status does not mean identical law, identity assurance, underwriting, user experience, or liability.</p>
+<p>It means the protocol does not treat Humans as a legacy mode or Agents as an API wrapper around Human forms.</p>
+<figure class="protocol-diagram" data-direction="TD">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 4"><span class="diagram-node"><small>01</small>Human</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Human-Native Access · Wallet authentication · Consent · Disclosure</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Autonomous Agent</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Agent-Native Access · Principal · Workload identity · Mandate</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Capital Provider</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Provider Access · Policy · Offer · Portfolio</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Single Credit &amp; Obligation Kernel</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>Shared Objects · Intent · Decision · Offer · Obligation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>09</small>Shared Ledger &amp; Servicing</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>10</small>Shared Evidence &amp; Reconciliation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>11</small>Shared Credit State &amp; Passport</span></div>
+    <figcaption>Protocol relationship · diagram 4</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart TD
+    Human[&quot;Human&quot;] --&gt; HumanEdge[&quot;Human-Native Access\nWallet authentication · Consent · Disclosure&quot;]
+    Agent[&quot;Autonomous Agent&quot;] --&gt; AgentEdge[&quot;Agent-Native Access\nPrincipal · Workload identity · Mandate&quot;]
+    Provider[&quot;Capital Provider&quot;] --&gt; ProviderEdge[&quot;Provider Access\nPolicy · Offer · Portfolio&quot;]
+
+    HumanEdge --&gt; Kernel[&quot;Single Credit &amp; Obligation Kernel&quot;]
+    AgentEdge --&gt; Kernel
+    ProviderEdge --&gt; Kernel
+
+    Kernel --&gt; Objects[&quot;Shared Objects\nIntent · Decision · Offer · Obligation&quot;]
+    Objects --&gt; Ledger[&quot;Shared Ledger &amp; Servicing&quot;]
+    Ledger --&gt; Evidence[&quot;Shared Evidence &amp; Reconciliation&quot;]
+    Evidence --&gt; Credit[&quot;Shared Credit State &amp; Passport&quot;]</code></pre></details>
+  </figure>
+<p>The edges differ:</p>
+<div class="table-scroll"><table><thead><tr><th>Dimension</th><th>Human-native profile</th><th>Agent-native profile</th><th>Shared kernel</th></tr></thead><tbody><tr><td>Interaction</td><td>Product interface, embedded SDK, partner workflow</td><td>API, SDK, MCP-compatible tool, A2A-compatible adapter</td><td>Canonical commands and resources</td></tr><tr><td>Identity</td><td>Human authentication and identity attestations</td><td>Workload identity and account binding</td><td>Subject and Principal relationships</td></tr><tr><td>Authority</td><td>Consent, role, legal capacity, deliberate acceptance</td><td>Principal, Mandate, key binding, purpose and budget limits</td><td>Deterministic Authorization</td></tr><tr><td>Disclosure</td><td>Human-readable terms, schedule, cost, remediation</td><td>Machine-readable terms, constraints, receipts, errors</td><td>Versioned Offer and Obligation</td></tr><tr><td>Execution</td><td>User-directed approved operation</td><td>Replay-safe machine command</td><td>Shared Ledger and state machine</td></tr><tr><td>Output</td><td>Credit State, Track Record, Passport, Evidence</td><td>Same</td><td>One economic truth</td></tr></tbody></table></div>
+<p>The canonical lifecycle remains:</p>
+<blockquote><p><strong>Subject → Authority → Credit Intent → Decision → Offer → Obligation → Execution → Repayment → Credit Outcome → Credit State</strong></p></blockquote>
+<hr />
+<h1 id="part-iii-the-ipo-one-credit-system" class="part-heading">Part III - The IPO.ONE Credit System<a class="heading-anchor" href="#part-iii-the-ipo-one-credit-system" aria-label="Link to Part III - The IPO.ONE Credit System">#</a></h1>
+<h2 id="9-the-canonical-credit-loop">9. The Canonical Credit Loop<a class="heading-anchor" href="#9-the-canonical-credit-loop" aria-label="Link to 9. The Canonical Credit Loop">#</a></h2>
+<p>The IPO.ONE Credit Loop turns one accountable request into a durable economic outcome.</p>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 5"><span class="diagram-node"><small>01</small>1. Establish Subject</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>2. Bind Authority</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>3. Submit Credit Intent</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>4. Evaluate &amp; Issue Offer</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>5. Accept &amp; Create Obligation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>6. Execute Under Controls</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>7. Service &amp; Repay</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>8. Finalize Outcome</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>09</small>9. Update Credit State</span></div>
+    <figcaption>Protocol relationship · diagram 5</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    S1[&quot;1. Establish Subject&quot;] --&gt; S2[&quot;2. Bind Authority&quot;]
+    S2 --&gt; S3[&quot;3. Submit Credit Intent&quot;]
+    S3 --&gt; S4[&quot;4. Evaluate &amp; Issue Offer&quot;]
+    S4 --&gt; S5[&quot;5. Accept &amp; Create Obligation&quot;]
+    S5 --&gt; S6[&quot;6. Execute Under Controls&quot;]
+    S6 --&gt; S7[&quot;7. Service &amp; Repay&quot;]
+    S7 --&gt; S8[&quot;8. Finalize Outcome&quot;]
+    S8 --&gt; S9[&quot;9. Update Credit State&quot;]
+    S9 --&gt; S3</code></pre></details>
+  </figure>
+<h3 id="9-1-establish-subject-and-responsibility">9.1 Establish Subject and responsibility<a class="heading-anchor" href="#9-1-establish-subject-and-responsibility" aria-label="Link to 9.1 Establish Subject and responsibility">#</a></h3>
+<p>A Human or Agent becomes a canonical Subject. The system binds the relevant Principal relationship, role, Tenant, account-control evidence, and verification attestations.</p>
+<h3 id="9-2-establish-authority">9.2 Establish authority<a class="heading-anchor" href="#9-2-establish-authority" aria-label="Link to 9.2 Establish authority">#</a></h3>
+<p>A Human grants Consent and performs explicit lifecycle actions. An Agent operates under a bounded Mandate. Authority is versioned, revocable, and evaluated at the moment of action.</p>
+<h3 id="9-3-submit-credit-intent">9.3 Submit Credit Intent<a class="heading-anchor" href="#9-3-submit-credit-intent" aria-label="Link to 9.3 Submit Credit Intent">#</a></h3>
+<p>The Subject requests capital and states amount, asset, purpose, duration, repayment source, constraints, and preferred execution environment. Complex or restricted-use requests may include an Execution Plan.</p>
+<h3 id="9-4-evaluate-and-issue-offer">9.4 Evaluate and issue Offer<a class="heading-anchor" href="#9-4-evaluate-and-issue-offer" aria-label="Link to 9.4 Evaluate and issue Offer">#</a></h3>
+<p>Verified Evidence, active policy, affordability or repayment capacity, current exposure, and Capital Provider requirements inform an explainable Decision. The Capital Provider authors binding or conditional terms in a versioned Offer.</p>
+<h3 id="9-5-accept-and-create-obligation">9.5 Accept and create Obligation<a class="heading-anchor" href="#9-5-accept-and-create-obligation" aria-label="Link to 9.5 Accept and create Obligation">#</a></h3>
+<p>The authorized Subject or Principal accepts an exact Offer version. Acceptance creates the canonical Obligation and its servicing schedule. No later change may silently rewrite the original terms.</p>
+<h3 id="9-6-controlled-execution">9.6 Controlled execution<a class="heading-anchor" href="#9-6-controlled-execution" aria-label="Link to 9.6 Controlled execution">#</a></h3>
+<p>Use of capital occurs only through approved operations, counterparties, Providers, assets, venues, or rails. Execution receipts remain linked to the Obligation.</p>
+<h3 id="9-7-service-and-repay">9.7 Service and repay<a class="heading-anchor" href="#9-7-service-and-repay" aria-label="Link to 9.7 Service and repay">#</a></h3>
+<p>Principal, financial charges, fees, refunds, reversals, corrections, delinquency, cure, restructuring, loss, and recovery update an append-only Ledger under explicit allocation rules.</p>
+<h3 id="9-8-finalize-outcome">9.8 Finalize outcome<a class="heading-anchor" href="#9-8-finalize-outcome" aria-label="Link to 9.8 Finalize outcome">#</a></h3>
+<p>A terminal Credit Outcome is created when the relevant obligation state, Evidence, and reconciliation conditions are satisfied.</p>
+<h3 id="9-9-update-credit-state">9.9 Update Credit State<a class="heading-anchor" href="#9-9-update-credit-state" aria-label="Link to 9.9 Update Credit State">#</a></h3>
+<p>The verified outcome becomes part of longitudinal Credit State and can support future authorized decisions and disclosures.</p>
+<h2 id="10-human-credit-access">10. Human Credit Access<a class="heading-anchor" href="#10-human-credit-access" aria-label="Link to 10. Human Credit Access">#</a></h2>
+<p>Human access is a native protocol mode.</p>
+<p>A Human journey should be understandable without requiring knowledge of blockchains, Agent protocols, or credit-system internals.</p>
+<p>A complete Human lifecycle includes:</p>
+<ol><li>authenticate and select the intended role;</li><li>establish or recover the Human Subject;</li><li>grant purpose-limited Consent;</li><li>connect approved identity or economic Evidence;</li><li>submit Credit Intent;</li><li>receive an explainable Decision;</li><li>review exact Offer terms, cost, schedule, conditions, and lender identity;</li><li>deliberately accept the Offer;</li><li>create and inspect the resulting Obligation;</li><li>execute or receive the approved benefit;</li><li>repay according to schedule;</li><li>see delinquency, cure, dispute, or remediation state where relevant;</li><li>receive terminal Credit Outcome;</li><li>inspect Credit State, Track Record, Passport, and Evidence; and</li><li>recover the same canonical state across sessions and devices under current authorization.</li></ol>
+<p>Human product requirements include:</p>
+<ul><li>clear total cost and repayment schedule;</li><li>understandable reason codes;</li><li>explicit Consent and disclosure scope;</li><li>correction, complaint, and appeal mechanisms where required;</li><li>affordability and overextension controls;</li><li>privacy-preserving attestations rather than unnecessary raw documents;</li><li>accessible remediation and support; and</li><li>no implication that a wallet balance or onchain history alone defines identity or creditworthiness.</li></ul>
+<h2 id="11-agent-credit-access">11. Agent Credit Access<a class="heading-anchor" href="#11-agent-credit-access" aria-label="Link to 11. Agent Credit Access">#</a></h2>
+<p>Agent access is designed around structured authority, machine-readable constraints, and deterministic execution.</p>
+<p>An Agent credit lifecycle includes:</p>
+<ol><li>establish the responsible Principal or Operator;</li><li>register a verifiable workload identity and approved key material;</li><li>bind the Agent to a Subject, account, or smart-account relationship;</li><li>create a bounded Mandate;</li><li>submit Credit Intent and, where needed, an Execution Plan;</li><li>validate purpose, Provider, amount, duration, current exposure, and repayment source;</li><li>receive a deterministic Decision and versioned Offer;</li><li>accept under explicit authority;</li><li>create the shared canonical Obligation;</li><li>execute only approved actions;</li><li>service repayment through replay-safe, idempotent commands;</li><li>finalize the Credit Outcome; and</li><li>recover durable Credit State, Passport, and Evidence through authorized machine interfaces.</li></ol>
+<h3 id="11-1-the-mandate">11.1 The Mandate<a class="heading-anchor" href="#11-1-the-mandate" aria-label="Link to 11.1 The Mandate">#</a></h3>
+<p>A Mandate is not a general permission string. It is a versioned economic control object.</p>
+<p>It may constrain:</p>
+<ul><li>maximum amount and aggregate exposure;</li><li>asset or currency;</li><li>purpose and permitted use;</li><li>approved Providers, counterparties, or venues;</li><li>permitted operation types;</li><li>duration and expiry;</li><li>per-action and per-period limits;</li><li>repayment source;</li><li>revenue-capture or settlement routing;</li><li>risk and loss limits;</li><li>required Evidence;</li><li>escalation and human-approval thresholds;</li><li>revocation and stop conditions.</li></ul>
+<h3 id="11-2-sender-constrained-authentication">11.2 Sender-constrained authentication<a class="heading-anchor" href="#11-2-sender-constrained-authentication" aria-label="Link to 11.2 Sender-constrained authentication">#</a></h3>
+<p>Bearer credentials are inadequate for high-consequence Agent actions because copied secrets can be replayed by a different sender. IPO.ONE's Agent architecture uses sender-constrained authentication patterns, including proof-of-possession, so a request must demonstrate control of approved key material. RFC 9449 DPoP provides a relevant standards-track mechanism for sender-constraining OAuth tokens and detecting replay.[4]</p>
+<p>Authentication is necessary but still not sufficient. The system evaluates current Mandate, role, expiry, revocation, resource ownership, amount, state, and reconciliation before authorizing an exact command.</p>
+<h3 id="11-3-idempotency-and-concurrency">11.3 Idempotency and concurrency<a class="heading-anchor" href="#11-3-idempotency-and-concurrency" aria-label="Link to 11.3 Idempotency and concurrency">#</a></h3>
+<p>Machine systems retry. Networks duplicate. Workers restart. A financial protocol must expect this behavior.</p>
+<p>Every mutating command requires a stable idempotency boundary. Concurrent requests cannot create duplicate Offers, Obligations, draws, repayments, or Evidence. The canonical outcome is derived from durable server state, not from browser memory, local process state, or an optimistic client assertion.</p>
+<h3 id="11-4-controlled-use-of-proceeds">11.4 Controlled use of proceeds<a class="heading-anchor" href="#11-4-controlled-use-of-proceeds" aria-label="Link to 11.4 Controlled use of proceeds">#</a></h3>
+<p>Early Agent credit should be purpose-bound. Capital can be directed toward approved compute, APIs, data, software, infrastructure, inventory, or services rather than unrestricted cash withdrawal.</p>
+<p>This structure improves observability and risk containment:</p>
+<ul><li>the Provider is known;</li><li>the intended resource is known;</li><li>the amount and timing are bounded;</li><li>execution can produce machine-readable receipts;</li><li>productive outcomes may be observable;</li><li>revenue or repayment sources can be linked; and</li><li>authority can be revoked without granting general custody.</li></ul>
+<h2 id="12-capital-providers-and-offer-formation">12. Capital Providers and Offer Formation<a class="heading-anchor" href="#12-capital-providers-and-offer-formation" aria-label="Link to 12. Capital Providers and Offer Formation">#</a></h2>
+<p>IPO.ONE is designed to coordinate external capital rather than require one universal balance sheet.</p>
+<p>Capital Providers may include:</p>
+<ul><li>banks and licensed non-bank lenders;</li><li>fintech and embedded-credit providers;</li><li>private-credit facilities;</li><li>Provider or vendor trade-credit programs;</li><li>institutional facilities;</li><li>protocol or digital-asset capital;</li><li>specialized Agent-finance providers; and</li><li>compatible onchain capital facilities with defined legal, custody, investor, and servicing controls.</li></ul>
+<p>A Capital Provider publishes or applies a machine-readable policy or Capital Mandate defining:</p>
+<ul><li>eligible jurisdictions and Subject classes;</li><li>product and purpose;</li><li>amount and tenor bounds;</li><li>pricing and total-cost limits;</li><li>required identity and Evidence standards;</li><li>affordability or repayment-capacity rules;</li><li>concentration and portfolio limits;</li><li>permitted assets and rails;</li><li>finality and reconciliation requirements;</li><li>recourse, reserve, and loss-allocation terms;</li><li>servicing obligations; and</li><li>delegated decision authority.</li></ul>
+<p>IPO.ONE supports several decision modes:</p>
+<div class="table-scroll"><table><thead><tr><th>Mode</th><th>IPO.ONE role</th><th>Capital Provider control</th></tr></thead><tbody><tr><td><strong>Advisory</strong></td><td>Produce Credit Profile, reason codes, and recommended terms</td><td>Provider makes the final decision in its own system</td></tr><tr><td><strong>Delegated policy</strong></td><td>Approve, decline, or step up inside a signed policy envelope</td><td>Provider pre-approves policy, caps, pricing, exceptions, and oversight</td></tr><tr><td><strong>Request for Offer</strong></td><td>Route a standardized request to eligible Providers</td><td>Each Provider returns binding or conditional terms</td></tr></tbody></table></div>
+<p>The Capital Provider owns the economic Offer. IPO.ONE preserves the integrity of the accepted Offer version and resulting lifecycle.</p>
+<h2 id="13-the-obligation-kernel-and-ledger">13. The Obligation Kernel and Ledger<a class="heading-anchor" href="#13-the-obligation-kernel-and-ledger" aria-label="Link to 13. The Obligation Kernel and Ledger">#</a></h2>
+<p>The Obligation Kernel is the source of canonical economic state.</p>
+<p>It manages:</p>
+<ul><li>Offer acceptance and version binding;</li><li>Obligation creation;</li><li>Facility projection and available capacity;</li><li>execution and draw state;</li><li>repayment schedule;</li><li>principal, financial income, fees, and total due;</li><li>payment allocation;</li><li>days past due;</li><li>delinquency and cure;</li><li>modification, restructure, repurchase, or refinance references;</li><li>default, write-off, recovery, and resolution;</li><li>Evidence and reconciliation status; and</li><li>Credit Outcome finalization.</li></ul>
+<h3 id="13-1-append-only-economic-truth">13.1 Append-only economic truth<a class="heading-anchor" href="#13-1-append-only-economic-truth" aria-label="Link to 13.1 Append-only economic truth">#</a></h3>
+<p>Financial state must be reconstructable.</p>
+<p>Funding, repayment, refund, reversal, correction, write-off, and recovery events are recorded additively. Historical events are not silently mutated to make projections appear correct. Derived balances and Credit State must be recomputable from canonical events and accepted terms.</p>
+<h3 id="13-2-double-entry-discipline">13.2 Double-entry discipline<a class="heading-anchor" href="#13-2-double-entry-discipline" aria-label="Link to 13.2 Double-entry discipline">#</a></h3>
+<p>Where value is represented economically, the Ledger should preserve balanced accounting entries. A single external receipt may result in multiple internal allocations, but total recognized value cannot exceed the valid Obligation amount.</p>
+<h3 id="13-3-technical-finality-and-legal-discharge">13.3 Technical finality and legal discharge<a class="heading-anchor" href="#13-3-technical-finality-and-legal-discharge" aria-label="Link to 13.3 Technical finality and legal discharge">#</a></h3>
+<p>Technical finality is not always legal settlement.</p>
+<p>Onchain finality may depend on inclusion, confirmation depth, protocol finality, or an accepted attestation. Traditional-rail finality may remain subject to return, chargeback, bank, processor, or scheme rules. The applicable agreement and law determine legal discharge.</p>
+<p>IPO.ONE records both without conflating them.</p>
+<h2 id="14-evidence">14. Evidence<a class="heading-anchor" href="#14-evidence" aria-label="Link to 14. Evidence">#</a></h2>
+<p>Evidence is the bridge between events and trust.</p>
+<p>An Evidence item should be:</p>
+<ul><li>typed;</li><li>attributable;</li><li>time-bounded;</li><li>linked to the relevant Subject, authority, Obligation, and event;</li><li>provenance-aware;</li><li>immutable or additively correctable;</li><li>explicit about observation and finality state;</li><li>permissioned according to sensitivity; and</li><li>sufficient to reconstruct why a state transition occurred.</li></ul>
+<p>Evidence may include:</p>
+<ul><li>identity or account-control attestations;</li><li>Consent and Mandate versions;</li><li>Credit Intent and Decision snapshots;</li><li>Offer and acceptance receipts;</li><li>execution receipts;</li><li>payment and rail receipts;</li><li>finality proofs;</li><li>Ledger allocation events;</li><li>delinquency, cure, default, and recovery events;</li><li>dispute or correction records;</li><li>model and policy versions; and</li><li>reconciliation outcomes.</li></ul>
+<p>A hash can help prove integrity. It does not, by itself, prove the meaning, truth, authority, or legal effect of the underlying event.</p>
+<h2 id="15-credit-state-and-the-credit-passport">15. Credit State and the Credit Passport<a class="heading-anchor" href="#15-credit-state-and-the-credit-passport" aria-label="Link to 15. Credit State and the Credit Passport">#</a></h2>
+<p>Credit State is the longitudinal economic state derived from canonical obligations and verified outcomes.</p>
+<p>It may include:</p>
+<ul><li>active and completed Obligations;</li><li>total funded and repaid value;</li><li>repayment ratio;</li><li>payment timing;</li><li>maximum days past due;</li><li>delinquency and cure history;</li><li>default, loss, write-off, and recovery;</li><li>purpose and Mandate compliance;</li><li>execution quality;</li><li>Evidence confidence;</li><li>disputes and corrections;</li><li>relevant concentration or stability factors; and</li><li>policy-specific progression status.</li></ul>
+<p>Credit State is not a browser profile and not an opaque score generated without provenance. It is a recomputable projection over canonical economic truth.</p>
+<p>The Credit Passport is a permissioned representation of relevant Credit State. It can disclose the minimum information required for a defined purpose:</p>
+<ul><li>a proof of completed obligations;</li><li>a repayment-performance summary;</li><li>a purpose-specific Decision Passport;</li><li>a bounded factor set;</li><li>a Provider or lender-specific Evidence package;</li><li>a credential or attestation reference; or</li><li>a verifier-readable provenance chain.</li></ul>
+<p>W3C Verifiable Credentials 2.0 provides a useful interoperable issuer-holder-verifier pattern for machine-verifiable, privacy-aware claims.[3] IPO.ONE may use compatible credential formats where they improve portability, while each recipient remains responsible for its own decision rules.</p>
+<h2 id="16-economic-memory">16. Economic Memory<a class="heading-anchor" href="#16-economic-memory" aria-label="Link to 16. Economic Memory">#</a></h2>
+<p>A central IPO.ONE concept is <strong>economic memory</strong>.</p>
+<p>Economic systems remember unevenly. A bank remembers the accounts it services. A platform remembers activity inside its own marketplace. A blockchain remembers public transactions. A wallet remembers assets and signatures. An Agent runtime remembers local tasks.</p>
+<p>None of these records necessarily forms a portable, permissioned account of responsibility and performance.</p>
+<p>IPO.ONE economic memory is built from:</p>
+<blockquote><p><strong>Accountable identity + bounded authority + canonical obligations + reconciled outcomes + provenance</strong></p></blockquote>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 6"><span class="diagram-node"><small>01</small>Accountable Identity</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Bounded Authority</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Canonical Obligation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Execution &amp; Repayment Events</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Verified Credit Outcome</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Economic Memory</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Permissioned Credit Passport</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>Future Capital Decision</span></div>
+    <figcaption>Protocol relationship · diagram 6</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    Identity[&quot;Accountable Identity&quot;] --&gt; Authority[&quot;Bounded Authority&quot;]
+    Authority --&gt; Obligation[&quot;Canonical Obligation&quot;]
+    Obligation --&gt; Events[&quot;Execution &amp; Repayment Events&quot;]
+    Events --&gt; Outcome[&quot;Verified Credit Outcome&quot;]
+    Outcome --&gt; Memory[&quot;Economic Memory&quot;]
+    Memory --&gt; Passport[&quot;Permissioned Credit Passport&quot;]
+    Passport --&gt; Capital[&quot;Future Capital Decision&quot;]</code></pre></details>
+  </figure>
+<p>Economic memory changes the strategic value of a completed transaction. The outcome is not merely closed. It becomes an input into future capacity.</p>
+<h2 id="17-the-obligation-graph">17. The Obligation Graph<a class="heading-anchor" href="#17-the-obligation-graph" aria-label="Link to 17. The Obligation Graph">#</a></h2>
+<p>As the network grows, IPO.ONE can represent a permissioned <strong>Obligation Graph</strong>.</p>
+<p>The graph connects:</p>
+<ul><li>Subjects;</li><li>Principals;</li><li>Agents;</li><li>Mandates and Consent;</li><li>Capital Providers;</li><li>Offers and Facilities;</li><li>Obligations;</li><li>Providers and counterparties;</li><li>execution environments;</li><li>payment rails;</li><li>Evidence issuers;</li><li>outcomes; and</li><li>Credit State.</li></ul>
+<figure class="protocol-diagram" data-direction="TD">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 7"><span class="diagram-node"><small>01</small>Principal</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Human / Agent Subject</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Consent / Mandate</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Credit Intent</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Capital Provider</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Offer / Facility</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Obligation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>Provider / Execution Venue</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>09</small>Payment / Settlement Rail</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>10</small>Execution Evidence</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>11</small>Credit Outcome</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>12</small>Credit State</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>13</small>Credit Passport</span></div>
+    <figcaption>Protocol relationship · diagram 7</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart TD
+    Principal[&quot;Principal&quot;] --&gt; Subject[&quot;Human / Agent Subject&quot;]
+    Principal --&gt; Mandate[&quot;Consent / Mandate&quot;]
+    Mandate --&gt; Intent[&quot;Credit Intent&quot;]
+    Provider[&quot;Capital Provider&quot;] --&gt; Offer[&quot;Offer / Facility&quot;]
+    Intent --&gt; Offer
+    Offer --&gt; Obligation[&quot;Obligation&quot;]
+    Obligation --&gt; Service[&quot;Provider / Execution Venue&quot;]
+    Obligation --&gt; Rail[&quot;Payment / Settlement Rail&quot;]
+    Service --&gt; Evidence[&quot;Execution Evidence&quot;]
+    Rail --&gt; Evidence
+    Evidence --&gt; Outcome[&quot;Credit Outcome&quot;]
+    Outcome --&gt; State[&quot;Credit State&quot;]
+    State --&gt; Passport[&quot;Credit Passport&quot;]</code></pre></details>
+  </figure>
+<p>The Obligation Graph is not intended to become a public surveillance graph. Access remains purpose-limited and policy-controlled. Its value comes from normalized relationships and verified outcomes, not unrestricted visibility.</p>
+<p>A mature graph can improve:</p>
+<ul><li>duplicate-financing detection;</li><li>authority and ownership resolution;</li><li>Provider and attester quality assessment;</li><li>concentration analysis;</li><li>portfolio correlation;</li><li>capital matching;</li><li>fraud and collusion detection;</li><li>cross-platform performance portability; and</li><li>systemic-risk understanding.</li></ul>
+<hr />
+<h1 id="part-iv-protocol-architecture" class="part-heading">Part IV - Protocol Architecture<a class="heading-anchor" href="#part-iv-protocol-architecture" aria-label="Link to Part IV - Protocol Architecture">#</a></h1>
+<h2 id="18-stable-kernel-replaceable-adapters">18. Stable Kernel + Replaceable Adapters<a class="heading-anchor" href="#18-stable-kernel-replaceable-adapters" aria-label="Link to 18. Stable Kernel + Replaceable Adapters">#</a></h2>
+<p>IPO.ONE uses a deliberately asymmetric architecture:</p>
+<blockquote><p><strong>Stable Protocol Kernel + Replaceable Adapters</strong></p></blockquote>
+<p>The kernel changes slowly because it defines the meaning of credit and obligations. Adapters change more quickly because external systems, standards, Providers, chains, and payment rails evolve.</p>
+<figure class="protocol-diagram" data-direction="TB">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 8"><span class="diagram-node"><small>01</small>Human Interfaces</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Agent API · SDK · MCP · A2A</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Capital Provider Interfaces</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Authenticated Command &amp; Authorization Gateway</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Deterministic Credit &amp; Obligation Kernel</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Identity &amp; Authority</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Decision &amp; Offer</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>Obligation Engine</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>09</small>Ledger &amp; Servicing</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>10</small>Evidence &amp; Reconciliation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>11</small>Credit State &amp; Passport</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>12</small>Versioned Adapter Layer</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>13</small>Identity / KYC / Attestation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>14</small>Payment &amp; Settlement Rails</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>15</small>Chains &amp; Smart Accounts</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>16</small>Providers &amp; Execution Venues</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>17</small>Capital Facilities</span></div>
+    <figcaption>Protocol relationship · diagram 8</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart TB
+    HumanUI[&quot;Human Interfaces&quot;]
+    AgentInterfaces[&quot;Agent API · SDK · MCP · A2A&quot;]
+    CapitalInterfaces[&quot;Capital Provider Interfaces&quot;]
+
+    HumanUI --&gt; Gateway[&quot;Authenticated Command &amp; Authorization Gateway&quot;]
+    AgentInterfaces --&gt; Gateway
+    CapitalInterfaces --&gt; Gateway
+
+    Gateway --&gt; Kernel[&quot;Deterministic Credit &amp; Obligation Kernel&quot;]
+
+    Kernel --&gt; Identity[&quot;Identity &amp; Authority&quot;]
+    Kernel --&gt; Decision[&quot;Decision &amp; Offer&quot;]
+    Kernel --&gt; Obligation[&quot;Obligation Engine&quot;]
+    Kernel --&gt; Ledger[&quot;Ledger &amp; Servicing&quot;]
+    Kernel --&gt; Evidence[&quot;Evidence &amp; Reconciliation&quot;]
+    Kernel --&gt; State[&quot;Credit State &amp; Passport&quot;]
+
+    Kernel --&gt; AdapterLayer[&quot;Versioned Adapter Layer&quot;]
+
+    AdapterLayer --&gt; KYC[&quot;Identity / KYC / Attestation&quot;]
+    AdapterLayer --&gt; Payments[&quot;Payment &amp; Settlement Rails&quot;]
+    AdapterLayer --&gt; Chains[&quot;Chains &amp; Smart Accounts&quot;]
+    AdapterLayer --&gt; Venues[&quot;Providers &amp; Execution Venues&quot;]
+    AdapterLayer --&gt; Capital[&quot;Capital Facilities&quot;]</code></pre></details>
+  </figure>
+<h3 id="18-1-kernel-responsibilities">18.1 Kernel responsibilities<a class="heading-anchor" href="#18-1-kernel-responsibilities" aria-label="Link to 18.1 Kernel responsibilities">#</a></h3>
+<p>The kernel owns:</p>
+<ul><li>canonical identifiers;</li><li>Subject and Principal relationships;</li><li>roles, Consent, Mandates, and Authorizations;</li><li>Credit Intent;</li><li>active policy versions;</li><li>Decision and Offer versions;</li><li>accepted Obligations;</li><li>Facility projections;</li><li>Ledger and servicing state;</li><li>Evidence and outbox state;</li><li>finality and reconciliation status;</li><li>Credit Outcomes;</li><li>Credit State and Passport permissions; and</li><li>audit history.</li></ul>
+<h3 id="18-2-adapter-responsibilities">18.2 Adapter responsibilities<a class="heading-anchor" href="#18-2-adapter-responsibilities" aria-label="Link to 18.2 Adapter responsibilities">#</a></h3>
+<p>Adapters may:</p>
+<ul><li>normalize external identity or account-control proofs;</li><li>translate Human or machine messages into canonical commands;</li><li>prepare payment or execution instructions;</li><li>submit an approved operation;</li><li>observe external events;</li><li>confirm technical finality;</li><li>reconcile partial, reversed, or corrected events;</li><li>register capital mandates;</li><li>obtain Offers; or</li><li>anchor and verify permitted proofs.</li></ul>
+<p>Adapters may not:</p>
+<ul><li>grant credit authority;</li><li>bypass Consent or Mandate;</li><li>alter accepted terms;</li><li>create or expand exposure outside policy;</li><li>finalize an Obligation without required Evidence;</li><li>rewrite Ledger history;</li><li>substitute external state for canonical state; or</li><li>treat a chain, wallet, or Provider as the universal source of credit truth.</li></ul>
+<h2 id="19-interface-architecture">19. Interface Architecture<a class="heading-anchor" href="#19-interface-architecture" aria-label="Link to 19. Interface Architecture">#</a></h2>
+<p>IPO.ONE exposes one application protocol through role-appropriate interfaces.</p>
+<h3 id="19-1-human-interface">19.1 Human interface<a class="heading-anchor" href="#19-1-human-interface" aria-label="Link to 19.1 Human interface">#</a></h3>
+<p>The Human interface supports:</p>
+<ul><li>identity and role selection;</li><li>Consent and disclosure;</li><li>Credit Intent;</li><li>Decision explanation;</li><li>Offer review and acceptance;</li><li>Obligation and schedule visibility;</li><li>repayment;</li><li>remediation;</li><li>Evidence;</li><li>Track Record; and</li><li>Credit Passport.</li></ul>
+<h3 id="19-2-agent-api-and-sdk">19.2 Agent API and SDK<a class="heading-anchor" href="#19-2-agent-api-and-sdk" aria-label="Link to 19.2 Agent API and SDK">#</a></h3>
+<p>The Agent interface supports:</p>
+<ul><li>capability discovery;</li><li>authenticated operation catalog;</li><li>Subject and Mandate retrieval;</li><li>Credit Intent submission;</li><li>Offer and Obligation operations;</li><li>controlled execution;</li><li>repayment;</li><li>structured receipts;</li><li>stable error semantics;</li><li>Evidence and Passport retrieval; and</li><li>server-derived state recovery.</li></ul>
+<h3 id="19-3-mcp-and-a2a-compatible-adapters">19.3 MCP and A2A-compatible adapters<a class="heading-anchor" href="#19-3-mcp-and-a2a-compatible-adapters" aria-label="Link to 19.3 MCP and A2A-compatible adapters">#</a></h3>
+<p>MCP standardizes Agent-to-tool interaction, while A2A standardizes communication between independent Agents.[7][8] IPO.ONE treats these protocols as interaction environments, not sources of financial authority.</p>
+<p>An MCP tool call or A2A message is normalized into a canonical IPO.ONE command. The same authentication, Mandate, policy, idempotency, ownership, and state checks apply. No hidden financial action exists only because a machine protocol can invoke it.</p>
+<h3 id="19-4-capital-provider-interface">19.4 Capital Provider interface<a class="heading-anchor" href="#19-4-capital-provider-interface" aria-label="Link to 19.4 Capital Provider interface">#</a></h3>
+<p>Capital Providers can access:</p>
+<ul><li>authorized underwriting packages;</li><li>policy and Capital Mandate configuration;</li><li>Offer creation;</li><li>portfolio and Facility state;</li><li>exposure and concentration;</li><li>servicing and repayment;</li><li>Evidence and reconciliation;</li><li>disputes and exceptions; and</li><li>audit exports.</li></ul>
+<h3 id="19-5-operator-and-risk-interface">19.5 Operator and risk interface<a class="heading-anchor" href="#19-5-operator-and-risk-interface" aria-label="Link to 19.5 Operator and risk interface">#</a></h3>
+<p>Authorized operators require:</p>
+<ul><li>Tenant and portfolio exposure;</li><li>per-Subject, per-Agent, per-Provider, and per-rail limits;</li><li>stop conditions;</li><li>freeze and pause controls;</li><li>dual-control actions;</li><li>reconciliation discrepancies;</li><li>incident state;</li><li>model and policy versions;</li><li>credential and Mandate revocation; and</li><li>privacy-safe drill-down.</li></ul>
+<h2 id="20-multi-rail-settlement">20. Multi-Rail Settlement<a class="heading-anchor" href="#20-multi-rail-settlement" aria-label="Link to 20. Multi-Rail Settlement">#</a></h2>
+<p>IPO.ONE is rail-neutral at the kernel and rail-aware at the adapter boundary.</p>
+<p>Supported rail categories may include:</p>
+<ul><li>bank and payment-processor rails;</li><li>mobile-money and platform settlement;</li><li>card or account-based payment where appropriate;</li><li>stable-value and digital-asset settlement;</li><li>smart-account execution;</li><li>onchain capital facilities;</li><li>Provider-internal credit; and</li><li>hybrid settlement across multiple environments.</li></ul>
+<p>A Multi-Rail Adapter provides a common control surface for:</p>
+<ol><li>account binding;</li><li>instruction preparation;</li><li>approved submission;</li><li>event observation;</li><li>finality confirmation;</li><li>partial reconciliation;</li><li>reversal or reorganization handling;</li><li>correction; and</li><li>audit linking.</li></ol>
+<p>A single Obligation may receive multiple partial payments across different rails. IPO.ONE recognizes only authenticated, policy-valid, reconciled events and prevents the sum of recognized settlement from exceeding the valid Obligation.</p>
+<p>Chain-aware identifiers can use interoperable account and network standards such as CAIP-2 and CAIP-10. The business Obligation remains chain-agnostic.</p>
+<h2 id="21-onchain-components">21. Onchain Components<a class="heading-anchor" href="#21-onchain-components" aria-label="Link to 21. Onchain Components">#</a></h2>
+<p>Blockchains provide useful properties:</p>
+<ul><li>programmable settlement;</li><li>account-control proofs;</li><li>public finality evidence;</li><li>smart-account permissions;</li><li>verifiable asset representation;</li><li>shared event ordering; and</li><li>portable anchoring.</li></ul>
+<p>They also introduce constraints:</p>
+<ul><li>public data permanence;</li><li>key and signer risk;</li><li>reorganization or finality assumptions;</li><li>contract risk;</li><li>network and asset fragmentation;</li><li>transaction-cost variability;</li><li>legal ambiguity across jurisdictions; and</li><li>the possibility of confusing public transactions with complete credit truth.</li></ul>
+<p>IPO.ONE uses onchain systems where they improve verifiability, coordination, or settlement. It does not place raw KYC documents, sensitive financial data, private policy, credentials, or unrestricted Credit State on public chains.</p>
+<p>Tokenization is optional. A tokenized credit asset can represent an eligible legal or economic claim only when rights, custody, transfer restrictions, servicing, and investor eligibility are defined. Tokenization does not create the underlying claim and must never duplicate financing.</p>
+<h2 id="22-reliability-and-failure-isolation">22. Reliability and Failure Isolation<a class="heading-anchor" href="#22-reliability-and-failure-isolation" aria-label="Link to 22. Reliability and Failure Isolation">#</a></h2>
+<p>A credit protocol must remain correct when external systems fail.</p>
+<h3 id="22-1-fail-closed">22.1 Fail closed<a class="heading-anchor" href="#22-1-fail-closed" aria-label="Link to 22.1 Fail closed">#</a></h3>
+<p>Unknown, stale, revoked, unauthorized, or unreconciled state cannot create new risk.</p>
+<h3 id="22-2-durable-truth">22.2 Durable truth<a class="heading-anchor" href="#22-2-durable-truth" aria-label="Link to 22.2 Durable truth">#</a></h3>
+<p>Canonical state is server-derived and persistent. A browser, Agent process, wallet UI, or adapter cache cannot become the authoritative record of an Obligation.</p>
+<h3 id="22-3-atomic-state-transitions">22.3 Atomic state transitions<a class="heading-anchor" href="#22-3-atomic-state-transitions" aria-label="Link to 22.3 Atomic state transitions">#</a></h3>
+<p>A successful command should commit the relevant state transition, economic Event, Evidence reference, and downstream work atomically or through a durable outbox pattern.</p>
+<h3 id="22-4-replay-resistance">22.4 Replay resistance<a class="heading-anchor" href="#22-4-replay-resistance" aria-label="Link to 22.4 Replay resistance">#</a></h3>
+<p>Authentication proofs, nonces, and idempotency keys prevent duplicated authorization and economic effects.</p>
+<h3 id="22-5-isolation">22.5 Isolation<a class="heading-anchor" href="#22-5-isolation" aria-label="Link to 22.5 Isolation">#</a></h3>
+<p>A rail outage, chain reorganization, Provider failure, Agent protocol error, or identity-service interruption may pause affected operations. It cannot silently finalize an Obligation or corrupt unrelated state.</p>
+<h3 id="22-6-reconciliation-before-expansion">22.6 Reconciliation before expansion<a class="heading-anchor" href="#22-6-reconciliation-before-expansion" aria-label="Link to 22.6 Reconciliation before expansion">#</a></h3>
+<p>Unreconciled discrepancies restrict further draw, settlement, or authority according to policy. The protocol does not compensate for uncertain state by assuming success.</p>
+<hr />
+<h1 id="part-v-credit-intelligence-and-economics" class="part-heading">Part V - Credit Intelligence and Economics<a class="heading-anchor" href="#part-v-credit-intelligence-and-economics" aria-label="Link to Part V - Credit Intelligence and Economics">#</a></h1>
+<h2 id="23-the-credit-intelligence-network">23. The Credit Intelligence Network<a class="heading-anchor" href="#23-the-credit-intelligence-network" aria-label="Link to 23. The Credit Intelligence Network">#</a></h2>
+<p>Credit systems improve when they learn from real outcomes.</p>
+<p>IPO.ONE's long-term intelligence layer is a governed network built on verified longitudinal Evidence, not an opaque universal score.</p>
+<p>It can process signals across three scopes:</p>
+<div class="table-scroll"><table><thead><tr><th>Scope</th><th>Relevant signals</th><th>Potential outputs</th></tr></thead><tbody><tr><td><strong>Individual</strong></td><td>cash-flow stability, repayment, utilization, execution quality, Mandate compliance, intervention response</td><td>risk understanding, capacity, tenor, schedule, purpose limits, improvement actions</td></tr><tr><td><strong>Cohort</strong></td><td>comparable Subjects, products, Providers, tasks, jurisdictions, and vintages</td><td>calibration, pricing recommendations, policy thresholds, intervention effectiveness</td></tr><tr><td><strong>Network</strong></td><td>fraud rings, attester quality, Provider performance, capital performance, rail reliability, concentration, macro drift</td><td>anomaly controls, capital routing, diversification, fallback policy, systemic-risk signals</td></tr></tbody></table></div>
+<h3 id="23-1-multiple-outputs-not-one-score">23.1 Multiple outputs, not one score<a class="heading-anchor" href="#23-1-multiple-outputs-not-one-score" aria-label="Link to 23.1 Multiple outputs, not one score">#</a></h3>
+<p>A useful credit system produces several explainable outputs:</p>
+<ul><li>probability of default or non-performance;</li><li>loss given default;</li><li>exposure at default;</li><li>affordability or repayment capacity;</li><li>fraud risk;</li><li>Evidence confidence;</li><li>stability and concentration;</li><li>recommended limit;</li><li>recommended tenor and schedule;</li><li>required controls;</li><li>indicative risk price;</li><li>intervention or remediation recommendation; and</li><li>capital-provider fit.</li></ul>
+<p>A single display score may improve usability, but it cannot override affordability, policy, identity, Mandate, Evidence quality, or legal constraints.</p>
+<h3 id="23-2-governed-learning-loop">23.2 Governed learning loop<a class="heading-anchor" href="#23-2-governed-learning-loop" aria-label="Link to 23.2 Governed learning loop">#</a></h3>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 9"><span class="diagram-node"><small>01</small>Verified Outcomes</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Versioned Features &amp; Labels</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Candidate Models</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Independent Validation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Shadow Evaluation</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Human / Provider Approval</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Deterministic Policy Envelope</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>08</small>Production Monitoring</span></div>
+    <figcaption>Protocol relationship · diagram 9</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    Events[&quot;Verified Outcomes&quot;] --&gt; Features[&quot;Versioned Features &amp; Labels&quot;]
+    Features --&gt; Models[&quot;Candidate Models&quot;]
+    Models --&gt; Validate[&quot;Independent Validation&quot;]
+    Validate --&gt; Shadow[&quot;Shadow Evaluation&quot;]
+    Shadow --&gt; Approve[&quot;Human / Provider Approval&quot;]
+    Approve --&gt; Policy[&quot;Deterministic Policy Envelope&quot;]
+    Policy --&gt; Monitor[&quot;Production Monitoring&quot;]
+    Monitor --&gt; Events</code></pre></details>
+  </figure>
+<p>Candidate techniques may include deterministic scorecards, supervised learning, graph methods, Bayesian updating, causal inference, anomaly detection, contextual bandits, and constrained optimization.</p>
+<p>NIST's AI Risk Management Framework provides a useful governance reference built around mapping, measuring, managing, and governing AI risk.[6]</p>
+<h3 id="23-3-permanent-authority-boundary">23.3 Permanent authority boundary<a class="heading-anchor" href="#23-3-permanent-authority-boundary" aria-label="Link to 23.3 Permanent authority boundary">#</a></h3>
+<p>No learning system may:</p>
+<ul><li>approve outside an authorized policy envelope;</li><li>increase exposure beyond current limits;</li><li>alter an accepted Offer or Obligation;</li><li>expand a Mandate;</li><li>remove a stop condition;</li><li>move funds;</li><li>conceal the responsible Capital Provider;</li><li>rewrite protocol invariants;</li><li>self-promote into production; or</li><li>optimize solely for borrowing volume or platform revenue.</li></ul>
+<h2 id="24-credit-decisioning">24. Credit Decisioning<a class="heading-anchor" href="#24-credit-decisioning" aria-label="Link to 24. Credit Decisioning">#</a></h2>
+<p>Credit decisions combine Evidence, policy, economics, and authority.</p>
+<h3 id="24-1-expected-loss">24.1 Expected loss<a class="heading-anchor" href="#24-1-expected-loss" aria-label="Link to 24.1 Expected loss">#</a></h3>
+<blockquote><p><strong>EL = PD × LGD × EAD</strong></p></blockquote>
+<p>Where:</p>
+<ul><li><strong>PD</strong> is probability of default or defined non-performance over the relevant horizon;</li><li><strong>LGD</strong> is expected economic loss after recoveries; and</li><li><strong>EAD</strong> is expected exposure at default.</li></ul>
+<p>All three are product-, cohort-, purpose-, and jurisdiction-specific.</p>
+<h3 id="24-2-recommended-capacity">24.2 Recommended capacity<a class="heading-anchor" href="#24-2-recommended-capacity" aria-label="Link to 24.2 Recommended capacity">#</a></h3>
+<p>A conceptual capacity bound is:</p>
+<blockquote><p>*<em>Limit\</em> = max(0, min(Affordability Cap, Cash-Flow Cap, Policy Cap, Facility Cap) × Evidence Confidence × Stress Haircut − Existing Exposure)**</p></blockquote>
+<p>For Agents, equivalent caps may include Principal capacity, observable revenue, Provider limits, Mandate limits, reserve requirements, execution performance, and purpose-specific loss bounds.</p>
+<h3 id="24-3-indicative-price">24.3 Indicative price<a class="heading-anchor" href="#24-3-indicative-price" aria-label="Link to 24.3 Indicative price">#</a></h3>
+<blockquote><p>*<em>Price\</em> = Cost of Capital + Expected Loss + Operations + Compliance + Capital Charge + Margin**</p></blockquote>
+<p>Pricing remains subject to law, disclosure, lender policy, competition, and borrower protection.</p>
+<h3 id="24-4-decision-receipt">24.4 Decision receipt<a class="heading-anchor" href="#24-4-decision-receipt" aria-label="Link to 24.4 Decision receipt">#</a></h3>
+<p>Every material decision should record:</p>
+<ul><li>Subject and responsible Principal;</li><li>requested product and purpose;</li><li>Evidence snapshot and provenance;</li><li>policy and model versions;</li><li>reason codes;</li><li>confidence and uncertainty;</li><li>recommended or approved terms;</li><li>responsible Capital Provider;</li><li>decision authority; and</li><li>timestamp and expiry.</li></ul>
+<h2 id="25-progressive-credit">25. Progressive Credit<a class="heading-anchor" href="#25-progressive-credit" aria-label="Link to 25. Progressive Credit">#</a></h2>
+<p>Inclusive credit should not infer large unsecured exposure from weak Evidence.</p>
+<p>IPO.ONE uses a progression principle:</p>
+<blockquote><p><strong>Start bounded. Observe verified performance. Expand only when evidence, borrower benefit, and Capital Provider policy support it.</strong></p></blockquote>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 10"><span class="diagram-node"><small>01</small>T0 · Verified Identity</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>T1 · Connected Evidence</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>T2 · Starter Capacity</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>T3 · Proven Repayment</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>T4 · Portable Credit</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>T5 · Broader Bounded Autonomy</span></div>
+    <figcaption>Protocol relationship · diagram 10</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    T0[&quot;T0\nVerified Identity&quot;] --&gt; T1[&quot;T1\nConnected Evidence&quot;]
+    T1 --&gt; T2[&quot;T2\nStarter Capacity&quot;]
+    T2 --&gt; T3[&quot;T3\nProven Repayment&quot;]
+    T3 --&gt; T4[&quot;T4\nPortable Credit&quot;]
+    T4 --&gt; T5[&quot;T5\nBroader Bounded Autonomy&quot;]</code></pre></details>
+  </figure>
+<p>Progression may improve:</p>
+<ul><li>amount;</li><li>duration;</li><li>price;</li><li>repayment flexibility;</li><li>eligible Providers;</li><li>per-Agent sub-limits;</li><li>settlement options;</li><li>approval speed; or</li><li>disclosure burden where legally reusable.</li></ul>
+<p>Progress is earned through verified behavior. It is not purchased through token ownership, social status, or unexplained scoring.</p>
+<h2 id="26-business-model">26. Business Model<a class="heading-anchor" href="#26-business-model" aria-label="Link to 26. Business Model">#</a></h2>
+<p>IPO.ONE is designed to monetize useful infrastructure and successful economic coordination.</p>
+<p>Potential revenue lines include:</p>
+<div class="table-scroll"><table><thead><tr><th>Revenue line</th><th>Typical payer</th><th>Economic rationale</th></tr></thead><tbody><tr><td><strong>Platform / API subscription</strong></td><td>Capital Provider, Originator, Provider, platform</td><td>Access to workflow, policy, reporting, and integration</td></tr><tr><td><strong>Decision / Offer-routing fee</strong></td><td>Capital Provider or partner; borrower only where lawful and transparent</td><td>Eligibility, delegated decisioning, and Offer orchestration</td></tr><tr><td><strong>Protocol execution fee</strong></td><td>Defined participant in a successful funding or draw event</td><td>Successful creation and execution of a governed Obligation</td></tr><tr><td><strong>Realized financial revenue participation</strong></td><td>Capital or product partner</td><td>Align protocol economics with financial income actually received</td></tr><tr><td><strong>Servicing / reconciliation fee</strong></td><td>Capital Provider, Facility, or Provider</td><td>Payment state, allocation, DPD, correction, reconciliation, and audit</td></tr><tr><td><strong>Facility / capital-routing fee</strong></td><td>Capital Provider</td><td>Eligibility, allocation, exposure, reserves, and portfolio reporting</td></tr><tr><td><strong>Passport verification / analytics</strong></td><td>Authorized verifier or institution</td><td>Purpose-limited proofs and portfolio intelligence</td></tr></tbody></table></div>
+<p>IPO.ONE should not depend on:</p>
+<ul><li>undisclosed interest spreads;</li><li>indiscriminate balance-sheet growth;</li><li>sale of raw personal data;</li><li>speculative token issuance before product-market fit;</li><li>hidden routing incentives that override borrower utility; or</li><li>borrowing volume that produces negative risk-adjusted value.</li></ul>
+<p>The commercial objective is aligned infrastructure economics:</p>
+<blockquote><p><strong>Revenue should grow when qualified obligations are created, serviced, repaid, reconciled, and reused safely.</strong></p></blockquote>
+<h2 id="27-capital-economics">27. Capital Economics<a class="heading-anchor" href="#27-capital-economics" aria-label="Link to 27. Capital Economics">#</a></h2>
+<p>Growth is valuable only when it produces positive risk-adjusted contribution.</p>
+<p>A conceptual measure is:</p>
+<blockquote><p><strong>Risk-Adjusted Contribution = Fees + Realized Financial Participation − Funding Cost − Expected Loss − Fraud − Servicing − Compliance − Partner Share</strong></p></blockquote>
+<p>Important operating metrics include:</p>
+<ul><li>qualified Offer match rate;</li><li>approval certainty;</li><li>time to decision;</li><li>time to execution;</li><li>capital utilization;</li><li>repayment and delinquency;</li><li>net loss;</li><li>fraud and unauthorized use;</li><li>progression rate;</li><li>repeat usage and retention;</li><li>Provider value;</li><li>reconciliation quality;</li><li>borrower or Principal benefit; and</li><li>contribution by cohort and vintage.</li></ul>
+<p>A high application count is not product-market fit. Neither is transaction volume without repayment, renewal, Provider value, or positive risk-adjusted economics.</p>
+<h2 id="28-compounding-network-effects">28. Compounding Network Effects<a class="heading-anchor" href="#28-compounding-network-effects" aria-label="Link to 28. Compounding Network Effects">#</a></h2>
+<p>The IPO.ONE network compounds through verified outcomes.</p>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 11"><span class="diagram-node"><small>01</small>More Verified Outcomes</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Richer Credit State</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Lower Underwriting Uncertainty</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>More Confident Capital</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Better Capacity &amp; Terms</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>More Productive Activity</span></div>
+    <figcaption>Protocol relationship · diagram 11</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    Outcomes[&quot;More Verified Outcomes&quot;] --&gt; State[&quot;Richer Credit State&quot;]
+    State --&gt; Risk[&quot;Lower Underwriting Uncertainty&quot;]
+    Risk --&gt; Capital[&quot;More Confident Capital&quot;]
+    Capital --&gt; Terms[&quot;Better Capacity &amp; Terms&quot;]
+    Terms --&gt; Activity[&quot;More Productive Activity&quot;]
+    Activity --&gt; Outcomes</code></pre></details>
+  </figure>
+<p>The moat is not one score, one model, one chain, one wallet, or one balance sheet.</p>
+<p>It is the interaction among:</p>
+<ul><li>canonical Obligation history;</li><li>Human and Agent outcomes;</li><li>Principal and Mandate relationships;</li><li>Capital Provider policies;</li><li>distribution integrations;</li><li>servicing and reconciliation;</li><li>Provider and attester quality;</li><li>compliance adapters;</li><li>portable Credit Passports;</li><li>multi-rail state; and</li><li>governed intelligence.</li></ul>
+<p>More Providers increase Offer diversity. More verified outcomes improve decision quality. Better decision quality attracts more capital. More capital creates more useful Facilities. Embedded distribution increases repeated activity. Portable Credit State reduces the need to restart from zero.</p>
+<p>This is a network effect based on normalized responsibility and performance, not speculative liquidity.</p>
+<hr />
+<h1 id="part-vi-safety-privacy-and-governance" class="part-heading">Part VI - Safety, Privacy, and Governance<a class="heading-anchor" href="#part-vi-safety-privacy-and-governance" aria-label="Link to Part VI - Safety, Privacy, and Governance">#</a></h1>
+<h2 id="29-protocol-invariants">29. Protocol Invariants<a class="heading-anchor" href="#29-protocol-invariants" aria-label="Link to 29. Protocol Invariants">#</a></h2>
+<p>IPO.ONE is designed around permanent invariants.</p>
+<ol><li>No credit exposure without a valid Subject, accountable Principal, and applicable Capital Provider policy.</li><li>No automated approval outside an authorized decision envelope.</li><li>No Agent authority without a current, bounded, revocable Mandate.</li><li>No Obligation without exact accepted terms and a unique state transition.</li><li>No adapter may create authority, alter terms, or redefine canonical state.</li><li>No funding or repayment becomes final until the applicable Evidence and reconciliation policy is satisfied.</li><li>No partial or hybrid settlement may cause recognized value to exceed the valid Obligation.</li><li>No repayment, refund, reversal, correction, write-off, or recovery may be counted twice.</li><li>No stale, revoked, unknown, unauthorized, or unreconciled state may create new risk.</li><li>No model may directly move funds, expand authority, rewrite protocol invariants, or conceal the responsible Capital Provider.</li><li>No tokenized representation may duplicate or exceed the underlying claim.</li><li>No cross-purpose data reuse without valid authority and permitted use.</li></ol>
+<h2 id="30-bounded-authority">30. Bounded Authority<a class="heading-anchor" href="#30-bounded-authority" aria-label="Link to 30. Bounded Authority">#</a></h2>
+<p>Bounded authority is the core safety primitive for Agent finance.</p>
+<p>Permissions should be:</p>
+<ul><li>explicit;</li><li>minimal;</li><li>purpose-limited;</li><li>amount-limited;</li><li>time-limited;</li><li>asset- and counterparty-aware;</li><li>revocable;</li><li>inspectable;</li><li>attributable; and</li><li>enforced at the exact action boundary.</li></ul>
+<p>A system should prefer:</p>
+<ul><li>Provider payment over unrestricted withdrawal;</li><li>per-action limits over general account access;</li><li>short-duration Facilities over undefined rolling exposure;</li><li>revenue-linked repayment over opaque future funding;</li><li>stop conditions over human hope;</li><li>explicit escalation over silent authority expansion; and</li><li>deterministic rules over model-generated permissions.</li></ul>
+<h2 id="31-privacy-and-data-minimization">31. Privacy and Data Minimization<a class="heading-anchor" href="#31-privacy-and-data-minimization" aria-label="Link to 31. Privacy and Data Minimization">#</a></h2>
+<p>Credit requires information, but more data does not automatically produce better or fairer decisions.</p>
+<p>IPO.ONE follows several principles:</p>
+<ul><li>collect only information relevant to the declared purpose;</li><li>store minimum necessary identity results and provenance;</li><li>keep raw KYC documents with the qualified party where possible;</li><li>separate raw data from derived Evidence;</li><li>use purpose-limited Consent and Mandates;</li><li>disclose minimal proofs rather than unrestricted dossiers;</li><li>preserve correction and revocation state;</li><li>encrypt sensitive data offchain;</li><li>avoid public-chain publication of raw personal or commercially sensitive information;</li><li>prohibit unconsented contact lists, private messages, or social content as default underwriting data;</li><li>avoid opaque third-party scores without provenance and correction rights; and</li><li>prevent persistent wallet or device surveillance unrelated to defined fraud, account-control, or underwriting needs.</li></ul>
+<p>FATF guidance recognizes that reliable digital identity can improve identification efficiency and inclusion while requiring risk-based assessment of assurance and use.[2] Identity verification is necessary, but it is not a substitute for affordability, authority, or credit assessment.</p>
+<h2 id="32-human-protection-and-fairness">32. Human Protection and Fairness<a class="heading-anchor" href="#32-human-protection-and-fairness" aria-label="Link to 32. Human Protection and Fairness">#</a></h2>
+<p>Human credit products require explicit protections.</p>
+<ul><li>Affordability constrains limits even when predicted default risk appears low.</li><li>Total cost, lender identity, schedule, conditions, and material reasons are visible before acceptance.</li><li>Repeat borrowing, rollovers, debt stacking, and harmful overextension are monitored.</li><li>Data correction, complaint, and appeal routes are measurable product requirements.</li><li>Fairness analysis examines approval, pricing, loss, and intervention outcomes.</li><li>Proxy variables require explicit justification and review.</li><li>Product design optimizes sustainable access and productive outcomes, not maximum debt.</li></ul>
+<p>Equal protocol status does not erase consumer-protection law or Human vulnerability. Human and Agent products share canonical semantics while applying different policy profiles where meaning, protection, and liability differ.</p>
+<h2 id="33-model-governance">33. Model Governance<a class="heading-anchor" href="#33-model-governance" aria-label="Link to 33. Model Governance">#</a></h2>
+<p>Every production model or scorecard requires:</p>
+<ul><li>version and scope;</li><li>named owner;</li><li>feature and label provenance;</li><li>training and observation windows;</li><li>independent validation;</li><li>calibration and stability analysis;</li><li>fairness and harm analysis where applicable;</li><li>shadow comparison against approved baselines;</li><li>monitoring thresholds;</li><li>rollback path;</li><li>change approval; and</li><li>auditability.</li></ul>
+<p>Exploration is bounded by explicit exposure, fairness, customer-harm, and loss budgets. Material deterioration triggers fallback to a safer approved policy.</p>
+<p>Human and Agent models may share ontology and infrastructure, but feature transfer occurs only when validated, lawful, explainable, and beneficial in the target domain.</p>
+<h2 id="34-regulated-role-separation">34. Regulated Role Separation<a class="heading-anchor" href="#34-regulated-role-separation" aria-label="Link to 34. Regulated Role Separation">#</a></h2>
+<p>IPO.ONE coordinates infrastructure. External entities retain regulated responsibilities according to jurisdiction and product.</p>
+<div class="table-scroll"><table><thead><tr><th>Role</th><th>Responsibility boundary</th></tr></thead><tbody><tr><td><strong>IPO.ONE</strong></td><td>Credit infrastructure, authority, decision technology, routing, canonical state, Evidence, reconciliation, and audit; not automatically lender, broker, servicer, custodian, or Originator in every jurisdiction</td></tr><tr><td><strong>Identity / KYC / KYB provider</strong></td><td>Performs identity, organization, signer, or screening checks within its assurance and contractual scope</td></tr><tr><td><strong>Originator / lender</strong></td><td>Owns regulated approval, agreement, disclosures, capital, servicing, and delegated oversight as applicable</td></tr><tr><td><strong>Capital Provider</strong></td><td>Funds eligible Obligations under a defined policy or Facility and bears agreed economic risk</td></tr><tr><td><strong>Platform / Provider</strong></td><td>Supplies permitted distribution, resources, or Evidence; cannot silently redefine credit state</td></tr><tr><td><strong>Rail / chain provider</strong></td><td>Executes approved external instructions and reports status or finality; cannot approve credit or mutate canonical state</td></tr><tr><td><strong>Operator / Principal</strong></td><td>Establishes Agent authority, responsibility, repayment sources, and supervision within the applicable structure</td></tr><tr><td><strong>Onchain capital facility</strong></td><td>Provides capital or receives eligible asset representations under defined legal, custody, investor, and servicing controls</td></tr></tbody></table></div>
+<h2 id="35-security-posture">35. Security Posture<a class="heading-anchor" href="#35-security-posture" aria-label="Link to 35. Security Posture">#</a></h2>
+<p>Security is not a single contract audit or access-control list. It is an end-to-end authority discipline.</p>
+<p>Important controls include:</p>
+<ul><li>role-bound Human authentication;</li><li>wallet-domain and nonce binding;</li><li>sender-constrained Agent authentication;</li><li>key rotation and credential revocation;</li><li>replay detection;</li><li>least privilege;</li><li>Tenant and Subject isolation;</li><li>object-level authorization;</li><li>idempotency and concurrency control;</li><li>durable state and restart recovery;</li><li>signed and versioned external instructions;</li><li>fail-closed adapter behavior;</li><li>finality and reconciliation gates;</li><li>separation of production signing from application code;</li><li>no raw secrets or private keys in Evidence;</li><li>pause, freeze, and incident controls; and</li><li>explicit approval before capital movement, custody, external execution, or higher-risk permissions.</li></ul>
+<hr />
+<h1 id="part-vii-product-foundation-and-protocol-evolution" class="part-heading">Part VII - Product Foundation and Protocol Evolution<a class="heading-anchor" href="#part-vii-product-foundation-and-protocol-evolution" aria-label="Link to Part VII - Product Foundation and Protocol Evolution">#</a></h1>
+<h2 id="36-current-product-foundation">36. Current Product Foundation<a class="heading-anchor" href="#36-current-product-foundation" aria-label="Link to 36. Current Product Foundation">#</a></h2>
+<p>As of August 20, 2026, IPO.ONE has established the first complete Human-Agent Credit Loop as a deployed product foundation.</p>
+<h3 id="36-1-shared-lifecycle">36.1 Shared lifecycle<a class="heading-anchor" href="#36-1-shared-lifecycle" aria-label="Link to 36.1 Shared lifecycle">#</a></h3>
+<p>Both Human and Agent paths converge on:</p>
+<ul><li>Subject and accountable responsibility;</li><li>Consent or Mandate;</li><li>Credit Intent;</li><li>explainable Decision;</li><li>versioned Offer;</li><li>canonical Obligation;</li><li>controlled execution;</li><li>repayment;</li><li>terminal Credit Outcome;</li><li>durable Credit State;</li><li>Credit Track Record;</li><li>Decision Passport;</li><li>Evidence; and</li><li>server-derived recovery.</li></ul>
+<h3 id="36-2-human-foundation">36.2 Human foundation<a class="heading-anchor" href="#36-2-human-foundation" aria-label="Link to 36.2 Human foundation">#</a></h3>
+<p>The Human product supports wallet-based authentication with explicit role selection, Subject and Consent, application, Decision and Offer review, deliberate acceptance, Obligation visibility, repayment, outcome, Credit State, Track Record, Passport, Evidence, logout and login, refresh, and recovery from durable server truth.</p>
+<h3 id="36-3-agent-foundation">36.3 Agent foundation<a class="heading-anchor" href="#36-3-agent-foundation" aria-label="Link to 36.3 Agent foundation">#</a></h3>
+<p>The Agent product supports an accountable Principal, registered workload identity, sender-constrained authentication, bounded Mandate, machine-readable Credit Intent, deterministic Decision and Offer, shared canonical Obligation, controlled execution, idempotent repayment, terminal Outcome, durable Credit State, Passport, Evidence, credential revocation, and separate-process recovery.</p>
+<h3 id="36-4-interfaces-and-architecture">36.4 Interfaces and architecture<a class="heading-anchor" href="#36-4-interfaces-and-architecture" aria-label="Link to 36.4 Interfaces and architecture">#</a></h3>
+<p>The foundation includes a Human-facing product interface, Agent-facing API and OpenAPI surfaces, SDK-oriented and MCP-compatible operations, Capital Provider and developer boundaries, persistent Ledger and Evidence state, and Stable Kernel + Replaceable Adapter architecture.</p>
+<h3 id="36-5-activation-boundary">36.5 Activation boundary<a class="heading-anchor" href="#36-5-activation-boundary" aria-label="Link to 36.5 Activation boundary">#</a></h3>
+<p>The foundation establishes product and protocol truth. Capital movement, custody, production signing, unrestricted withdrawals, public liquidity, and external execution are separately governed capabilities and require explicit product, legal, compliance, security, risk, capital, and partner approval before activation.</p>
+<p>This boundary is not a limitation of the thesis. It is the required sequence for safe financial infrastructure:</p>
+<blockquote><p><strong>First establish correct authority, obligations, servicing, Evidence, and recovery. Then activate capital under controlled conditions.</strong></p></blockquote>
+<h2 id="37-initial-commercial-wedge">37. Initial Commercial Wedge<a class="heading-anchor" href="#37-initial-commercial-wedge" aria-label="Link to 37. Initial Commercial Wedge">#</a></h2>
+<p>The most differentiated first real-value wedge is purpose-bound Agent working capital.</p>
+<h3 id="37-1-target-activity">37.1 Target activity<a class="heading-anchor" href="#37-1-target-activity" aria-label="Link to 37.1 Target activity">#</a></h3>
+<p>Verified Agents or autonomous businesses purchase productive digital resources such as:</p>
+<ul><li>compute;</li><li>APIs;</li><li>data;</li><li>software;</li><li>infrastructure;</li><li>approved digital services;</li><li>controlled inventory or resource access; and</li><li>bounded execution at approved venues.</li></ul>
+<h3 id="37-2-why-this-wedge-is-structurally-attractive">37.2 Why this wedge is structurally attractive<a class="heading-anchor" href="#37-2-why-this-wedge-is-structurally-attractive" aria-label="Link to 37.2 Why this wedge is structurally attractive">#</a></h3>
+<ul><li>use of proceeds can be constrained;</li><li>Providers and prices are machine-readable;</li><li>durations can be short;</li><li>execution receipts can be produced automatically;</li><li>outcomes and revenue may be observable;</li><li>limits can be low and progressive;</li><li>repayment can be linked to captured revenue or Principal support;</li><li>Agents integrate through native interfaces; and</li><li>the product demonstrates a category that legacy consumer lending systems were not designed to serve.</li></ul>
+<h3 id="37-3-capital-structures">37.3 Capital structures<a class="heading-anchor" href="#37-3-capital-structures" aria-label="Link to 37.3 Capital structures">#</a></h3>
+<p>Initial capital can come from:</p>
+<ul><li>Provider credit;</li><li>Principal or sponsor-backed Facilities;</li><li>closed private-credit programs;</li><li>specialized Agent-finance partners;</li><li>revenue-based structures; or</li><li>compatible onchain Facilities where legal and operational controls are defined.</li></ul>
+<p>The product should not begin with unrestricted cash, public liquidity pools, or anonymous capital-provider exposure.</p>
+<h2 id="38-human-product-evolution">38. Human Product Evolution<a class="heading-anchor" href="#38-human-product-evolution" aria-label="Link to 38. Human Product Evolution">#</a></h2>
+<p>Human productive credit remains a native protocol mode.</p>
+<p>The initial Human product should focus on digitally observable borrowers and productive uses where lawful cash flow and repayment can be verified. Examples include software, equipment, inventory, education, tools, and working capital rather than unrestricted high-cost cash.</p>
+<p>Human pilots require:</p>
+<ul><li>one clearly defined jurisdiction;</li><li>qualified identity and KYC partners;</li><li>a licensed Originator or lender where required;</li><li>transparent terms and consumer protection;</li><li>external capital;</li><li>reliable servicing;</li><li>correction and complaint mechanisms;</li><li>measurable borrower benefit; and</li><li>evidence that verified performance improves future access.</li></ul>
+<p>The protocol remains shared with Agent credit even where product policy, legal structure, and Evidence differ.</p>
+<h2 id="39-evidence-gated-roadmap">39. Evidence-Gated Roadmap<a class="heading-anchor" href="#39-evidence-gated-roadmap" aria-label="Link to 39. Evidence-Gated Roadmap">#</a></h2>
+<p>IPO.ONE expands through evidence, not narrative.</p>
+<figure class="protocol-diagram" data-direction="LR">
+    <div class="diagram-visual" role="img" aria-label="Protocol diagram 12"><span class="diagram-node"><small>01</small>Foundation · Complete Human-Agent Credit Loop</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>02</small>Controlled Pilots · Purpose-bound capital</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>03</small>Multi-Provider Network · Independent capital mandates</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>04</small>Governed Intelligence · Better terms and routing</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>05</small>Multi-Rail Expansion · Traditional + onchain</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>06</small>Cross-Platform Passport · Obligation Graph</span><span class="diagram-arrow" aria-hidden="true">→</span><span class="diagram-node"><small>07</small>Protocol Standard · Agentic Economy</span></div>
+    <figcaption>Protocol relationship · diagram 12</figcaption>
+    <details><summary>View diagram source</summary><pre><code>flowchart LR
+    P0[&quot;Foundation\nComplete Human-Agent Credit Loop&quot;] --&gt; P1[&quot;Controlled Pilots\nPurpose-bound capital&quot;]
+    P1 --&gt; P2[&quot;Multi-Provider Network\nIndependent capital mandates&quot;]
+    P2 --&gt; P3[&quot;Governed Intelligence\nBetter terms and routing&quot;]
+    P3 --&gt; P4[&quot;Multi-Rail Expansion\nTraditional + onchain&quot;]
+    P4 --&gt; P5[&quot;Cross-Platform Passport\nObligation Graph&quot;]
+    P5 --&gt; P6[&quot;Protocol Standard\nAgentic Economy&quot;]</code></pre></details>
+  </figure>
+<h3 id="phase-0-protocol-foundation">Phase 0 - Protocol foundation<a class="heading-anchor" href="#phase-0-protocol-foundation" aria-label="Link to Phase 0 - Protocol foundation">#</a></h3>
+<p><strong>Outcome:</strong> complete Human-Agent lifecycle, deterministic authority, canonical Obligations, durable Ledger, Evidence, Credit State, Passport, Human interface, Agent API, and adapter boundaries.</p>
+<p><strong>Gate:</strong> correctness, recovery, security, product clarity, design partners, and approved pilot structure.</p>
+<h3 id="phase-1-controlled-credit-pilots">Phase 1 - Controlled credit pilots<a class="heading-anchor" href="#phase-1-controlled-credit-pilots" aria-label="Link to Phase 1 - Controlled credit pilots">#</a></h3>
+<p><strong>Outcome:</strong> purpose-bound Agent working capital and selected Human productive-credit pilots with named Capital Providers and Providers.</p>
+<p><strong>Gate:</strong> repeat demand, on-time performance, bounded loss, no unauthorized use, reconciliation integrity, partner renewal, and positive contribution.</p>
+<h3 id="phase-2-multi-provider-credit-network">Phase 2 - Multi-Provider credit network<a class="heading-anchor" href="#phase-2-multi-provider-credit-network" aria-label="Link to Phase 2 - Multi-Provider credit network">#</a></h3>
+<p><strong>Outcome:</strong> multiple Capital Mandates, Offer competition, Provider integrations, production servicing, and portable Credit Passport.</p>
+<p><strong>Gate:</strong> at least two independent capital sources in qualified segments, measurable improvement in approval or price, concentration control, and complete portfolio Evidence.</p>
+<h3 id="phase-3-governed-credit-intelligence">Phase 3 - Governed Credit Intelligence<a class="heading-anchor" href="#phase-3-governed-credit-intelligence" aria-label="Link to Phase 3 - Governed Credit Intelligence">#</a></h3>
+<p><strong>Outcome:</strong> model-assisted decisions, term recommendations, intervention, and routing inside explicit Provider-approved policy envelopes.</p>
+<p><strong>Gate:</strong> independent validation, stable out-of-sample performance, explainable benefit, fairness and harm controls, zero policy-envelope breach, and rollback readiness.</p>
+<h3 id="phase-4-multi-rail-and-onchain-capital-expansion">Phase 4 - Multi-rail and onchain capital expansion<a class="heading-anchor" href="#phase-4-multi-rail-and-onchain-capital-expansion" aria-label="Link to Phase 4 - Multi-rail and onchain capital expansion">#</a></h3>
+<p><strong>Outcome:</strong> additional settlement adapters, smart-account controls, eligible onchain Facilities, and optional tokenized credit representations.</p>
+<p><strong>Gate:</strong> legally valid structures, custody and signer controls, finality and reorganization handling, no duplicate claims, stable loss, and positive contribution.</p>
+<h3 id="phase-5-cross-platform-economic-memory">Phase 5 - Cross-platform economic memory<a class="heading-anchor" href="#phase-5-cross-platform-economic-memory" aria-label="Link to Phase 5 - Cross-platform economic memory">#</a></h3>
+<p><strong>Outcome:</strong> externally accepted Credit Passports, broader distribution, Obligation Graph intelligence, and privacy-preserving cross-platform learning.</p>
+<p><strong>Gate:</strong> revocation, correction, privacy, fairness, servicing, and jurisdiction controls proven in each market.</p>
+<h3 id="phase-6-credit-and-obligation-protocol-standard">Phase 6 - Credit and obligation protocol standard<a class="heading-anchor" href="#phase-6-credit-and-obligation-protocol-standard" aria-label="Link to Phase 6 - Credit and obligation protocol standard">#</a></h3>
+<p><strong>Outcome:</strong> Humans, organizations, Agents, and machines use one interoperable intent-to-credit lifecycle across applications, capital providers, and rails.</p>
+<p><strong>Gate:</strong> sustained utility, resilient governance, high-quality Evidence, independent adoption, and durable participant benefit.</p>
+<h2 id="40-strategic-non-goals">40. Strategic Non-Goals<a class="heading-anchor" href="#40-strategic-non-goals" aria-label="Link to 40. Strategic Non-Goals">#</a></h2>
+<p>IPO.ONE is not designed to become:</p>
+<ul><li>a global consumer cash-loan application launching in many jurisdictions at once;</li><li>a universal balance-sheet lender by default;</li><li>an unrestricted Agent wallet;</li><li>a public liquidity pool before asset quality and servicing exist;</li><li>a token project that manufactures activity before product-market fit;</li><li>a KYC company;</li><li>an opaque universal credit score;</li><li>a blockchain or payment-rail replacement;</li><li>a chain-specific fork of credit semantics;</li><li>a public repository of raw identity or financial data;</li><li>an autonomous model that can approve, price, or move funds outside deterministic policy; or</li><li>a system that maximizes borrowing volume at the expense of repayment capacity and productive outcomes.</li></ul>
+<p>These boundaries protect the product thesis. IPO.ONE is most valuable when it remains the neutral coordination and verification layer around responsibility, capital, obligations, and outcomes.</p>
+<h2 id="41-the-protocol-horizon">41. The Protocol Horizon<a class="heading-anchor" href="#41-the-protocol-horizon" aria-label="Link to 41. The Protocol Horizon">#</a></h2>
+<p>The mature Agentic Economy will contain vast numbers of software actors that differ in capability, ownership, jurisdiction, risk, and purpose.</p>
+<p>Some Agents will remain tools under immediate Human control. Some will operate business processes. Some will purchase resources and coordinate other Agents. Some will manage revenue-generating systems. None should be granted financial authority merely because it can produce a signature or call an API.</p>
+<p>A scalable economy needs graduated trust.</p>
+<p>Trusted actors should be able to:</p>
+<ul><li>establish identity and responsibility;</li><li>receive explicit authority;</li><li>request capital;</li><li>compare qualified Offers;</li><li>create canonical Obligations;</li><li>execute within bounded permissions;</li><li>repay through approved rails;</li><li>prove performance;</li><li>improve terms; and</li><li>carry progress forward.</li></ul>
+<p>Capital Providers should be able to:</p>
+<ul><li>express machine-readable policy;</li><li>retain legal and economic control;</li><li>evaluate standardized Evidence;</li><li>fund through their preferred infrastructure;</li><li>monitor exposure and performance;</li><li>reconcile across rails; and</li><li>reuse trusted outcomes without rebuilding every integration.</li></ul>
+<p>Applications and platforms should be able to embed credit without becoming credit bureaus, lenders, or servicing systems by default.</p>
+<p>IPO.ONE's protocol horizon is therefore larger than one loan product and more disciplined than an autonomous lender.</p>
+<p>It is the shared layer through which responsibility becomes machine-readable, Obligations become interoperable, and verified performance becomes future economic capacity.</p>
+<hr />
+<h1 id="conclusion" class="part-heading">Conclusion<a class="heading-anchor" href="#conclusion" aria-label="Link to Conclusion">#</a></h1>
+<p>The next credit system cannot be designed only for the institutional workflows of the past or only for autonomous software at the edge.</p>
+<p>Humans and Agents will increasingly share markets, services, capital, and settlement environments. They require one credit and obligation architecture that recognizes both as first-class Subjects while preserving the legal, identity, authority, and risk distinctions that matter.</p>
+<p>IPO.ONE provides that common layer.</p>
+<p><strong>Single Kernel, Dual-Native Access</strong> keeps economic truth coherent.</p>
+<p><strong>Identity, Payment, and Obligation</strong> define the essential primitives.</p>
+<p><strong>Stable Kernel + Replaceable Adapters</strong> allows external systems to evolve without fragmenting credit semantics.</p>
+<p><strong>Canonical Obligations, Evidence, and Credit State</strong> convert isolated transactions into permissioned economic memory.</p>
+<p><strong>External capital neutrality</strong> allows many Providers to compete without forcing participants into one balance sheet.</p>
+<p><strong>Governed Credit Intelligence</strong> improves recommendations and allocation while deterministic policy preserves authority.</p>
+<p>The end state is clear:</p>
+<blockquote><p><strong>A trustworthy Human or Agent can establish responsibility, access appropriately governed capital, fulfill a bounded Obligation, convert verified performance into portable Credit State, and carry that progress across applications, capital providers, and economic environments.</strong></p></blockquote>
+<p>Payments make autonomous actors economically active.</p>
+<p>Credit makes them economically scalable.</p>
+<h1 id="borrow-build-prove" class="part-heading">BORROW. BUILD. PROVE.<a class="heading-anchor" href="#borrow-build-prove" aria-label="Link to BORROW. BUILD. PROVE.">#</a></h1>
+<hr />
+<h1 id="appendix-a-canonical-objects" class="part-heading">Appendix A - Canonical Objects<a class="heading-anchor" href="#appendix-a-canonical-objects" aria-label="Link to Appendix A - Canonical Objects">#</a></h1>
+<div class="table-scroll"><table><thead><tr><th>Object</th><th>Definition</th></tr></thead><tbody><tr><td><strong>Tenant</strong></td><td>Security and operational boundary containing authorized Subjects, roles, policy, and resources.</td></tr><tr><td><strong>Subject</strong></td><td>Human, organization, Agent, or machine whose economic activity is represented.</td></tr><tr><td><strong>PrincipalRelationship</strong></td><td>Link to the person or organization granting authority or bearing legal or economic responsibility.</td></tr><tr><td><strong>RoleEnrollment</strong></td><td>Durable record of approved role eligibility and current role selection.</td></tr><tr><td><strong>ConsentGrant</strong></td><td>Purpose, data scope, recipient, duration, permitted use, revocation, and audit state for Human authorization.</td></tr><tr><td><strong>AgentIdentity</strong></td><td>Verifiable workload identity and approved key relationship for an Agent.</td></tr><tr><td><strong>Mandate</strong></td><td>Versioned, bounded, revocable authority defining what an Agent may request, accept, or execute.</td></tr><tr><td><strong>VerificationAttestation</strong></td><td>Externally issued identity, organization, account-control, eligibility, or Evidence result with provenance, expiry, and revocation.</td></tr><tr><td><strong>CreditIntent</strong></td><td>Subject-neutral request for amount, asset, purpose, duration, repayment source, restrictions, and permitted execution environments.</td></tr><tr><td><strong>ExecutionPlan</strong></td><td>Optional bounded task, purchase, Provider, or resource plan linked to a complex or restricted-use Intent.</td></tr><tr><td><strong>CreditProfile</strong></td><td>Multidimensional risk, affordability or capacity, fraud, stability, Evidence confidence, and reason factors.</td></tr><tr><td><strong>Decision</strong></td><td>Versioned, explainable assessment under active policy and a defined Evidence snapshot.</td></tr><tr><td><strong>LenderPolicy / CapitalMandate</strong></td><td>Machine-readable eligibility, pricing, verification, concentration, capital, rail, finality, and servicing rules.</td></tr><tr><td><strong>CreditOffer</strong></td><td>Exact terms issued by an identified Capital Provider, including total cost, purpose, conditions, schedule, permitted rails, and expiry.</td></tr><tr><td><strong>Authorization</strong></td><td>Context-bound permission to perform one exact action under current identity, authority, policy, and state.</td></tr><tr><td><strong>Facility</strong></td><td>Purpose-bound capacity derived from accepted terms and active Obligations; never independent lending authority.</td></tr><tr><td><strong>Obligation</strong></td><td>Canonical accepted economic commitment with obligor, Provider, amount, terms, schedule, authority, and lifecycle state.</td></tr><tr><td><strong>SettlementInstruction</strong></td><td>Rail-neutral command specifying amount, destination, purpose, adapter profile, and idempotency key.</td></tr><tr><td><strong>RailReceipt</strong></td><td>Authenticated external status or transaction record normalized by an adapter.</td></tr><tr><td><strong>FinalityProof</strong></td><td>Evidence that the applicable technical-finality policy has been satisfied.</td></tr><tr><td><strong>LedgerEntry</strong></td><td>Append-only balanced economic record for funding, allocation, repayment, fee, refund, correction, loss, or recovery.</td></tr><tr><td><strong>RepaymentEvent</strong></td><td>Reconciled payment, cure, refund, reversal, correction, write-off, or recovery applied to an Obligation.</td></tr><tr><td><strong>Evidence</strong></td><td>Typed, attributable, provenance-aware record supporting a state transition or observation.</td></tr><tr><td><strong>CreditOutcome</strong></td><td>Finalized performance result such as on-time repayment, cure, default, loss, or resolution.</td></tr><tr><td><strong>CreditState</strong></td><td>Recomputable current exposure and longitudinal performance derived from canonical Obligations and Outcomes.</td></tr><tr><td><strong>CreditTrackRecord</strong></td><td>Authorized history of relevant completed and active credit cycles.</td></tr><tr><td><strong>DecisionPassport</strong></td><td>Permissioned representation of a specific Decision, Evidence snapshot, policy, terms, and provenance.</td></tr><tr><td><strong>CreditPassport</strong></td><td>Permissioned portable representation of relevant factors, Outcomes, and Evidence.</td></tr><tr><td><strong>TokenizedCreditAsset</strong></td><td>Optional onchain representation of an eligible legal or economic claim; never a duplicate source of the claim.</td></tr><tr><td><strong>OnchainCapitalFacility</strong></td><td>Capital Mandate executed through an onchain environment under defined legal, custody, investor, and servicing controls.</td></tr></tbody></table></div>
+<hr />
+<h1 id="appendix-b-obligation-lifecycle" class="part-heading">Appendix B - Obligation Lifecycle<a class="heading-anchor" href="#appendix-b-obligation-lifecycle" aria-label="Link to Appendix B - Obligation Lifecycle">#</a></h1>
+<div class="table-scroll"><table><thead><tr><th>State</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Proposed</strong></td><td>Intent and preliminary terms exist but no binding Offer has been accepted.</td></tr><tr><td><strong>Offered</strong></td><td>Conditional or binding terms are issued by an identified Capital Provider.</td></tr><tr><td><strong>Accepted</strong></td><td>Authorized acceptance binds an exact Offer version.</td></tr><tr><td><strong>Active</strong></td><td>The canonical Obligation exists and may permit controlled execution.</td></tr><tr><td><strong>Execution Pending</strong></td><td>An approved operation has been instructed but required execution or finality Evidence is incomplete.</td></tr><tr><td><strong>Outstanding</strong></td><td>Recognized value is owed under the schedule.</td></tr><tr><td><strong>Partially Repaid</strong></td><td>A valid portion has been allocated and reconciled.</td></tr><tr><td><strong>Due</strong></td><td>A scheduled amount is currently payable.</td></tr><tr><td><strong>Delinquent</strong></td><td>Payment is past due under the applicable DPD definition.</td></tr><tr><td><strong>Cured</strong></td><td>A delinquency has been resolved under accepted rules.</td></tr><tr><td><strong>Restructured</strong></td><td>Terms have been lawfully modified with complete version and Evidence history.</td></tr><tr><td><strong>Fully Repaid</strong></td><td>Principal, financial charges, and applicable fees are reconciled.</td></tr><tr><td><strong>Defaulted</strong></td><td>Defined default conditions are satisfied.</td></tr><tr><td><strong>Written Off</strong></td><td>Economic loss is recognized while recovery history remains possible.</td></tr><tr><td><strong>Resolved</strong></td><td>The Obligation has reached a terminal reconciled outcome.</td></tr><tr><td><strong>Corrected</strong></td><td>A reversal, duplicate, reorganization, or operational error has been handled through additive correction.</td></tr></tbody></table></div>
+<hr />
+<h1 id="appendix-c-illustrative-interface-surface" class="part-heading">Appendix C - Illustrative Interface Surface<a class="heading-anchor" href="#appendix-c-illustrative-interface-surface" aria-label="Link to Appendix C - Illustrative Interface Surface">#</a></h1>
+<div class="table-scroll"><table><thead><tr><th>Domain</th><th>Illustrative operations</th></tr></thead><tbody><tr><td><strong>Identity and authority</strong></td><td><code>create_subject</code>, <code>bind_principal</code>, <code>register_attestation</code>, <code>grant_consent</code>, <code>create_mandate</code>, <code>revoke_mandate</code>, <code>register_agent_identity</code></td></tr><tr><td><strong>Credit and Offers</strong></td><td><code>submit_credit_intent</code>, <code>submit_execution_plan</code>, <code>evaluate_intent</code>, <code>request_offers</code>, <code>accept_offer</code>, <code>get_obligation</code></td></tr><tr><td><strong>Execution and servicing</strong></td><td><code>authorize_action</code>, <code>execute_approved_operation</code>, <code>record_repayment</code>, <code>get_schedule</code>, <code>record_cure</code>, <code>apply_correction</code></td></tr><tr><td><strong>Evidence and reconciliation</strong></td><td><code>record_receipt</code>, <code>query_finality</code>, <code>reconcile_event</code>, <code>record_reversal</code>, <code>finalize_outcome</code>, <code>reconstruct_state</code></td></tr><tr><td><strong>Credit State and Passport</strong></td><td><code>get_credit_state</code>, <code>get_track_record</code>, <code>issue_decision_passport</code>, <code>issue_credit_passport</code>, <code>verify_passport</code></td></tr><tr><td><strong>Capital Providers</strong></td><td><code>register_capital_mandate</code>, <code>create_offer</code>, <code>reserve_capacity</code>, <code>monitor_exposure</code>, <code>export_portfolio_evidence</code></td></tr><tr><td><strong>Trust and operations</strong></td><td><code>rotate_credential</code>, <code>revoke_credential</code>, <code>freeze_subject</code>, <code>pause_adapter</code>, <code>get_incident_state</code>, <code>export_audit_receipt</code></td></tr></tbody></table></div>
+<p>These names are illustrative protocol operations, not a representation that every interface uses identical route names.</p>
+<hr />
+<h1 id="appendix-d-decision-and-portfolio-measures" class="part-heading">Appendix D - Decision and Portfolio Measures<a class="heading-anchor" href="#appendix-d-decision-and-portfolio-measures" aria-label="Link to Appendix D - Decision and Portfolio Measures">#</a></h1>
+<div class="table-scroll"><table><thead><tr><th>Measure</th><th>Illustrative formulation</th><th>Use</th></tr></thead><tbody><tr><td><strong>Expected Loss</strong></td><td><code>EL = PD × LGD × EAD</code></td><td>Risk economics and reserve calibration</td></tr><tr><td><strong>Recommended Limit</strong></td><td><code>min(capacity, policy, facility, purpose) × confidence × stress haircut − exposure</code></td><td>Prevent score-only overextension</td></tr><tr><td><strong>Risk-Adjusted Contribution</strong></td><td><code>fees + realized financial participation − funding cost − EL − fraud − servicing − compliance − partner share</code></td><td>Determine whether growth creates economic value</td></tr><tr><td><strong>Offer Match Rate</strong></td><td><code>qualified requests receiving ≥1 compliant Offer / qualified requests</code></td><td>Measure capital-network liquidity</td></tr><tr><td><strong>Progression Rate</strong></td><td><code>eligible good performers receiving improved terms / eligible good performers</code></td><td>Measure whether verified history creates better access</td></tr><tr><td><strong>Capital Utilization</strong></td><td><code>average funded exposure / committed Facility capital</code></td><td>Measure capital efficiency</td></tr><tr><td><strong>Evidence Reconciliation Rate</strong></td><td><code>fully reconciled economic events / recognized economic events</code></td><td>Measure state integrity</td></tr><tr><td><strong>Unauthorized Action Rate</strong></td><td><code>unauthorized or out-of-Mandate attempts with economic effect / total attempts</code></td><td>Measure authority control; target economic effect is zero</td></tr></tbody></table></div>
+<hr />
+<h1 id="appendix-e-glossary" class="part-heading">Appendix E - Glossary<a class="heading-anchor" href="#appendix-e-glossary" aria-label="Link to Appendix E - Glossary">#</a></h1>
+<div class="table-scroll"><table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody><tr><td><strong>Agentic Economy</strong></td><td>An economy in which autonomous or semi-autonomous software Agents participate in discovery, coordination, execution, purchasing, and value creation.</td></tr><tr><td><strong>Economic Memory</strong></td><td>Permissioned longitudinal memory derived from accountable authority, canonical Obligations, verified outcomes, and provenance.</td></tr><tr><td><strong>Obligation Graph</strong></td><td>Permissioned network of Subjects, Principals, Mandates, Offers, Obligations, Providers, rails, Evidence, and Outcomes.</td></tr><tr><td><strong>Bounded Authority</strong></td><td>Explicit permission limited by purpose, amount, time, asset, counterparty, operation, and revocation conditions.</td></tr><tr><td><strong>Single Kernel, Dual-Native Access</strong></td><td>Human and Agent interfaces differ at the edge but normalize into one canonical credit and obligation system.</td></tr><tr><td><strong>Stable Kernel + Replaceable Adapters</strong></td><td>Architecture in which long-lived credit semantics remain stable while external integrations evolve behind versioned boundaries.</td></tr><tr><td><strong>Multi-Rail Adapter</strong></td><td>Replaceable component that maps external account, payment, finality, and reconciliation behavior into canonical IPO.ONE events.</td></tr><tr><td><strong>Onchain Settlement</strong></td><td>Funding or repayment executed in a blockchain environment and recognized only after applicable technical and legal conditions.</td></tr><tr><td><strong>Hybrid Settlement</strong></td><td>Settlement of one Obligation through multiple partial events across traditional and onchain rails.</td></tr><tr><td><strong>Sender-Constrained Authentication</strong></td><td>Authentication in which token use requires proof of possession of approved key material rather than presentation of a freely replayable bearer secret.</td></tr><tr><td><strong>Evidence Confidence</strong></td><td>Versioned assessment of the relevance, provenance, freshness, consistency, and completeness of Evidence used for a decision.</td></tr><tr><td><strong>Credit Intelligence Network</strong></td><td>Governed learning and analytics layer that uses verified outcomes to improve recommendations while remaining subordinate to deterministic authority.</td></tr></tbody></table></div>
+<hr />
+<h1 id="appendix-f-selected-references" class="part-heading">Appendix F - Selected References<a class="heading-anchor" href="#appendix-f-selected-references" aria-label="Link to Appendix F - Selected References">#</a></h1>
+<p>[1] World Bank. <em>The Global Findex Database 2025: Connectivity and Financial Inclusion in the Digital Economy.</em> 2025.</p>
+<p>[2] Financial Action Task Force. <em>Guidance on Digital Identity.</em> 2020.</p>
+<p>[3] World Wide Web Consortium. <em>Verifiable Credentials Data Model v2.0.</em> W3C Recommendation, May 15, 2025.</p>
+<p>[4] IETF. <em>RFC 9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP).</em> September 2023.</p>
+<p>[5] Ethereum Improvement Proposal 4361. <em>Sign-In with Ethereum.</em></p>
+<p>[6] National Institute of Standards and Technology. <em>Artificial Intelligence Risk Management Framework (AI RMF 1.0)</em> and <em>Generative Artificial Intelligence Profile.</em> 2023-2026.</p>
+<p>[7] Model Context Protocol. <em>Specification 2026-07-28.</em> 2026.</p>
+<p>[8] Agent2Agent Protocol. <em>A2A Protocol Specification and Governance.</em> Linux Foundation project.</p>
+<p>[9] x402 Foundation / Coinbase Developer Platform. <em>x402 Protocol v2 Documentation and Specification.</em></p>
+<p>[10] Chain Agnostic Improvement Proposals. <em>CAIP-2 Blockchain ID Specification</em> and <em>CAIP-10 Account ID Specification.</em></p>
+<p>[11] W3C, IETF, Ethereum, and chain-agnostic standards are referenced as interoperability and security precedents. Reference does not imply partnership, endorsement, or that IPO.ONE depends exclusively on any named standard.</p>
+<p>[12] IPO.ONE. <em>Product Charter v1.1</em>, canonical public README, and August 20, 2026 Human-Agent product baseline checkpoint in the public IPO.ONE repository.</p>
+        </article>
+      </div>
+      <section class="whitepaper-cta" aria-labelledby="whitepaperCtaTitle">
+        <p>BORROW. BUILD. PROVE.</p>
+        <h2 id="whitepaperCtaTitle">Responsibility is the missing layer.</h2>
+        <div>
+          <a href="/">Enter the no-funds product</a>
+          <a href="/agent-openapi.json">Explore the Agent API</a>
+          <a href="https://github.com/CPTM511/IPO.ONE">View the canonical repository</a>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <strong>IPO.ONE</strong>
+      <span>Identity · Payment · Obligation</span>
+      <nav aria-label="Whitepaper footer links"><a href="/">Product</a><a href="/openapi.json">OpenAPI</a><a href="https://github.com/CPTM511/IPO.ONE/blob/main/SECURITY.md">Security</a></nav>
+    </footer>
+  </body>
+</html>
