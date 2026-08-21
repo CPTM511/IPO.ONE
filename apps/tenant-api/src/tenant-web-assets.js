@@ -7,6 +7,12 @@ const WEB_ASSET_ROOT = join(process.cwd(), "apps", "web", "src");
 const WEB_ASSETS = Object.freeze({
   "/": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
   "/index.html": Object.freeze({ file: "index.html", contentType: "text/html; charset=utf-8" }),
+  "/whitepaper": Object.freeze({ file: "whitepaper.html", contentType: "text/html; charset=utf-8" }),
+  "/whitepaper/": Object.freeze({ file: "whitepaper.html", contentType: "text/html; charset=utf-8" }),
+  "/whitepaper.html": Object.freeze({ file: "whitepaper.html", contentType: "text/html; charset=utf-8" }),
+  "/whitepaper.css": Object.freeze({ file: "whitepaper.css", contentType: "text/css; charset=utf-8" }),
+  "/whitepaper.js": Object.freeze({ file: "whitepaper.js", contentType: "text/javascript; charset=utf-8" }),
+  "/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf": Object.freeze({ file: "whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf", contentType: "application/pdf" }),
   "/app.js": Object.freeze({ file: "app.js", contentType: "text/javascript; charset=utf-8" }),
   "/agent-console-presentation.js": Object.freeze({ file: "agent-console-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/agent-handoff-manifest.js": Object.freeze({ file: "agent-handoff-manifest.js", contentType: "text/javascript; charset=utf-8" }),

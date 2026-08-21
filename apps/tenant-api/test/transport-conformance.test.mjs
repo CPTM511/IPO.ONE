@@ -255,6 +255,29 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.doesNotMatch(page, /privateKey|signatureHex/);
     assert.equal(pageResponse.headers.get("vary"), "cookie");
 
+    const whitepaperResponse = await fetch(`${baseUrl}/whitepaper`);
+    assert.equal(whitepaperResponse.status, 200);
+    assert.match(whitepaperResponse.headers.get("content-type"), /^text\/html/);
+    assert.equal(whitepaperResponse.headers.get("vary"), null);
+    const whitepaper = await whitepaperResponse.text();
+    assert.match(whitepaper, /Founding Edition II/);
+    assert.match(whitepaper, /The Credit Layer for the <em>Agentic Economy<\/em>/);
+    assert.match(whitepaper, /No offer of credit, securities, tokens, or investment products/);
+
+    const whitepaperScriptResponse = await fetch(`${baseUrl}/whitepaper.js`, { method: "HEAD" });
+    assert.equal(whitepaperScriptResponse.status, 200);
+    assert.match(whitepaperScriptResponse.headers.get("content-type"), /^text\/javascript/);
+    assert.equal(await whitepaperScriptResponse.text(), "");
+
+    const pdfResponse = await fetch(
+      `${baseUrl}/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf`,
+      { method: "HEAD" }
+    );
+    assert.equal(pdfResponse.status, 200);
+    assert.equal(pdfResponse.headers.get("content-type"), "application/pdf");
+    assert.equal(Number(pdfResponse.headers.get("content-length")), 2310065);
+    assert.equal(await pdfResponse.text(), "");
+
     const openApiResponse = await fetch(`${baseUrl}${TENANT_HTTP_ROUTES.openapi}`);
     assert.equal(openApiResponse.status, 200);
     const openApi = await openApiResponse.json();
