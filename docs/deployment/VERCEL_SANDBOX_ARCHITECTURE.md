@@ -104,7 +104,11 @@ state.
 
 ## Retry, lease, and idempotency behavior
 
-The Cron route is `/api/cron` and runs on Vercel Pro at `*/5 * * * *`.
+The Cron route is `/api/cron` and runs on Vercel Pro at `*/15 * * * *`. This
+cadence leaves an idle interval beyond Neon Free's fixed five-minute
+scale-to-zero delay; a five-minute-or-faster schedule is outside the no-paid-
+integration operating boundary because it can keep the compute continuously
+active.
 Vercel supplies `Authorization: Bearer ${CRON_SECRET}`; the endpoint also
 supports an authenticated `POST` recovery invocation. It never accepts an
 unauthenticated processing request.

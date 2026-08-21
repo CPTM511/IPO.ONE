@@ -126,7 +126,7 @@ assert.equal(manifest.topology.riskProjectIncluded, false);
 assert.equal(manifest.topology.riskProjectDeploymentTarget, false);
 assert.equal(manifest.topology.externalQueue, false);
 assert.equal(manifest.topology.externalCache, false);
-assert.equal(manifest.runtime.cronSchedule, "*/5 * * * *");
+assert.equal(manifest.runtime.cronSchedule, "*/15 * * * *");
 assert.equal(
   manifest.authority.currentAuthoritySource,
   "docs/PRODUCT_CONSTITUTION.md"
@@ -188,7 +188,7 @@ assert.equal(vercel.fluid, true);
 assert.equal(vercel.crons.length, 1);
 assert.deepEqual(vercel.crons[0], {
   path: "/api/cron",
-  schedule: "*/5 * * * *"
+  schedule: "*/15 * * * *"
 });
 assert.equal(vercel.functions["api/vercel-sandbox.mjs"].maxDuration, 30);
 assert.equal(vercel.functions["api/vercel-sandbox-cron.mjs"].maxDuration, 30);

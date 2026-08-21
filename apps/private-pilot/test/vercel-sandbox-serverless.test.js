@@ -497,7 +497,7 @@ test("Vercel Primary config binds the bounded Cron while the Risk bundle remains
   const config = JSON.parse(await readFile("deploy/vercel/vercel.m1-b-sandbox.json", "utf8"));
   const risk = JSON.parse(await readFile("deploy/vercel/vercel.m1-b-sandbox-risk.json", "utf8"));
   assert.equal(config.fluid, true);
-  assert.deepEqual(config.crons, [{ path: "/api/cron", schedule: "*/5 * * * *" }]);
+  assert.deepEqual(config.crons, [{ path: "/api/cron", schedule: "*/15 * * * *" }]);
   assert.deepEqual(config.redirects, [{
     source: "/(.*)",
     has: [{ type: "host", value: "www.ipo.one" }],
