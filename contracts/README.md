@@ -6,6 +6,18 @@ exact build/test dependencies in `toolchain-manifest.v1.json`. Their admission
 does not authorize a new contract, deployment, signer, transaction, or funds
 path.
 
+`contracts/src/m2/IpoOneSecuredPoolV1.sol` is the locally verified M2A-003
+single-market accounting core. It is native and non-upgradeable, binds one
+chain/debt asset/collateral asset/oracle interface and fixed caps at
+construction, keeps LP/debt shares internal and non-transferable, and exposes
+only supply/valid withdrawal, collateral, borrow/repay and protective pause
+operations. Exact transfer-delta checks reject non-standard token behavior.
+Unsolicited token transfers do not change internal cash or LP claims. The
+contract has not been deployed and authorizes no testnet call, signer, asset,
+live oracle, interest, liquidation, real funds or public runtime. M2A-004 must
+add and independently verify those deferred economic controls before any L3
+candidate can be proposed.
+
 `IpoOneCreditAuthorizationRegistryV1.sol` is the active Base Sepolia MVP
 contract. It publishes a versioned, privacy-preserving projection of an
 accepted off-chain credit authorization and its latest CreditState/Obligation

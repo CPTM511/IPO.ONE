@@ -206,7 +206,11 @@ revertible without inventing permission for its successor.
 - Security/permission: no arbitrary transfer/admin drain; dependency approval.
   Migration: none. Rollback: remove un-deployed contract version. Evidence:
   coverage, invariant seeds, ABI/bytecode hashes.
-- Dependency/status: M2A-002; not started.
+- Dependency/status: M2A-001 and M2A-002; the immutable single-market custody,
+  share/debt accounting, collateral, borrow/repay, cap, pause and event core is
+  implemented and locally verified at `L0_LOCAL_NO_FUNDS`. Live-oracle source,
+  rate accrual, liquidation, bad debt, adapter/UI and deployment remain outside
+  this issue and unapproved.
 
 ### M2A-004 — oracle, rate and liquidation contracts
 
