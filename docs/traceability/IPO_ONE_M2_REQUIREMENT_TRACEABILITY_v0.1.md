@@ -1,7 +1,8 @@
 # IPO.ONE M2 requirement traceability v0.1
 
 Status: IDs ratified in Product Constitution v1.3; M2A-001 and M2A-003 through
-M2A-007 have bounded local implementation Evidence only
+M2A-007 have bounded local implementation Evidence; M2A-008 has fail-closed
+preflight and read-only/fork compatibility Evidence only
 
 Base: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
@@ -198,3 +199,32 @@ control view.
 address, transaction, pending/final chain state, deployed SHA, public
 reachability, real value or production usability is claimed. Those states and
 all M2A-008 permissions remain independently gated.
+
+## M2A-008 preflight Evidence update — 2026-08-23
+
+M2A-008 now has one closed exact-deployment decision schema, a mode-0600 strict
+decision reader, deterministic nonce-derived adapter/pool addresses, bounded
+test-asset/risk/signer fields, a fail-closed 13-gate pending Evidence template,
+and a read-only two-RPC dependency inspector. It adds no signer, wallet client,
+transaction-signing or broadcast primitive.
+
+Official Base and Circle sources identify the exact Base Sepolia WETH and test
+USDC candidates. The Chainlink Base Sepolia directory identifies one ETH/USD
+feed candidate. Read-only observations through `sepolia.base.org` and
+`base-sepolia-rpc.publicnode.com` agree on chain ID, dependency code hashes,
+token decimals and a fresh positive feed round. A Base Sepolia fork dry run
+successfully constructs the immutable oracle adapter and pool against those
+dependencies using explicitly non-authorizing fixture caps and roles.
+
+The focused preflight suite passes 6/6, fork dry run 1/1, Foundry local suite
+25 passed with the explicit non-fork case skipped, indexer/reconciliation 15/15,
+security 34/34, transport 84/84, clean PostgreSQL 90/90 and aggregate unit/
+contract 1145/1145. Dependency provenance, schemas, launch policy, lint,
+typecheck, migrations, Web bundle and production dependency audit pass.
+
+This Evidence establishes only preflight CODE and local/read-only/fork
+verification. `TESTNET VERIFIED`, `DEPLOYED`, `REACHABLE` and `USER VERIFIED`
+remain `NO`. The launch profile is still disabled with `exactProfile: null`,
+and no independent contract review, exact Risk/cap/role Evidence, durable
+pause/recovery accounts, private 13-gate Evidence or fresh one-use signer is
+present. No transaction was signed or broadcast and no funds moved.

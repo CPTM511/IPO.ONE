@@ -74,6 +74,7 @@ const requiredFiles = new Set([
   "ledger-transaction.schema.json",
   "mandate.schema.json",
   "membership.schema.json",
+  "m2a-008-exact-deployment-decision.schema.json",
   "metamask-advanced-permission-projection.schema.json",
   "metamask-advanced-permission-response-comparison.schema.json",
   "metamask-agent-wallet-security-receipt.schema.json",

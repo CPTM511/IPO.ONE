@@ -13,10 +13,11 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-const [policyText, templateText, closedPilotTemplateText, schemaText] = await Promise.all([
+const [policyText, templateText, closedPilotTemplateText, m2TemplateText, schemaText] = await Promise.all([
   source("deploy/launch-policy.v1.json"),
   source("deploy/approvals/public-sandbox.pending.json"),
   source("deploy/approvals/closed-non-funds-pilot.pending.json"),
+  source("deploy/approvals/m2a-008-secured-pool.pending.json"),
   source("deploy/launch-evidence.v1.schema.json")
 ]);
 
@@ -25,6 +26,10 @@ const template = parseCanonicalJson(templateText, "Pending launch evidence templ
 const closedPilotTemplate = parseCanonicalJson(
   closedPilotTemplateText,
   "Pending closed-pilot launch evidence template"
+);
+const m2Template = parseCanonicalJson(
+  m2TemplateText,
+  "Pending M2A-008 launch evidence template"
 );
 const schema = parseCanonicalJson(schemaText, "Launch evidence schema");
 
@@ -64,6 +69,18 @@ assert.throws(
       expectedProfile: "closed_non_funds_pilot",
       expectedCommitSha: "b".repeat(40),
       now: new Date("2026-07-18T12:00:00.000Z")
+    }),
+  (error) =>
+    error instanceof LaunchEvidenceError &&
+    error.issues.some((issue) => issue.includes("policy-locked"))
+);
+assert.throws(
+  () =>
+    verifyLaunchEvidence(m2Template, {
+      policy,
+      expectedProfile: "live_testnet_secured_pool",
+      expectedCommitSha: "c".repeat(40),
+      now: new Date("2026-08-22T20:00:00.000Z")
     }),
   (error) =>
     error instanceof LaunchEvidenceError &&
