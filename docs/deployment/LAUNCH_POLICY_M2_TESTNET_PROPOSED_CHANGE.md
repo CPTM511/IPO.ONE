@@ -1,20 +1,21 @@
 # Launch policy M2 testnet proposed change
 
-Status: Proposal only; `deploy/launch-policy.v1.json` is unchanged
+Status: Schema direction accepted 2026-08-22; profile added disabled in policy v1.1.0
 
 ## Problem
 
-The current policy has no secured-pool L3 profile. `public_sandbox` is enabled
-only for no-real-funds product behavior; closed pilot and controlled Agent
-credit are disabled. Reusing `humanCreditEnabled` would wrongly conflate Human
-production credit with public test-asset secured borrowing.
+The prior policy had no secured-pool L3 profile. `public_sandbox` remains enabled
+only for no-real-funds product behavior; closed pilot, controlled Agent credit,
+and the new secured-pool profile remain disabled. Reusing
+`humanCreditEnabled` would wrongly conflate Human production credit with public
+test-asset secured borrowing.
 
 ## Proposed schema and profile
 
-After Constitution v1.3 ratification, review a policy schema revision that adds
-explicit test-asset capabilities and the disabled profile below. Exact addresses
-must replace every placeholder before an unlock PR; placeholders fail schema
-validation and cannot be deployed.
+Policy v1.1.0 adds explicit test-asset capabilities and the disabled profile
+below. The checked-in profile uses `exactProfile: null`; exact reviewed values
+must replace it before a separate unlock PR. Null, placeholders, and invalid
+values fail closed and cannot authorize release.
 
 ```json
 {

@@ -1,6 +1,6 @@
 # ADR-M2-003: Pool/kernel source-of-truth split
 
-Status: Proposed; governance ratification required
+Status: Accepted for bounded M2 architecture; runtime remains gated
 
 ## Context
 

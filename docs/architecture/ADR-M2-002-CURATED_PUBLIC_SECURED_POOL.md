@@ -1,6 +1,6 @@
 # ADR-M2-002: One curated public secured pool
 
-Status: Proposed; governance ratification required
+Status: Accepted for bounded M2 architecture; runtime remains gated
 
 ## Context
 

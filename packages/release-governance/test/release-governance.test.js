@@ -76,9 +76,20 @@ function hasIssue(fragment) {
     error.issues.some((issue) => issue.includes(fragment));
 }
 
-test("launch policy exposes only the public sandbox profile", () => {
+test("launch policy exposes only public sandbox and locks the exact M2 profile", () => {
   assert.equal(policy.profiles.public_sandbox.releaseEnabled, true);
   assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
+  assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, false);
+  assert.equal(policy.profiles.live_testnet_secured_pool.exactProfile, null);
+  assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.realFundsEnabled, false);
+  assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.testAssetsEnabled, true);
+  assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.securedPoolEnabled, true);
+  assert.equal(
+    policy.profiles.live_testnet_secured_pool.capabilities.publicPoolParticipationEnabled,
+    true
+  );
+  assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.marketCreationEnabled, false);
+  assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.agentVenueExecutionEnabled, false);
   assert.equal(policy.profiles.controlled_agent_credit_pilot.releaseEnabled, false);
   assert.equal(policy.profiles.public_sandbox.capabilities.realFundsEnabled, false);
   assert.equal(policy.profiles.public_sandbox.capabilities.privateTenantDataEnabled, false);
@@ -89,6 +100,35 @@ test("launch policy exposes only the public sandbox profile", () => {
   assert.throws(
     () => validateLaunchPolicy(unsafePolicy),
     hasIssue("must remain policy-locked while private tenant data")
+  );
+
+  const prematureM2Policy = structuredClone(policy);
+  prematureM2Policy.profiles.live_testnet_secured_pool.releaseEnabled = true;
+  prematureM2Policy.profiles.live_testnet_secured_pool.unlockRequirements = [];
+  assert.throws(
+    () => validateLaunchPolicy(prematureM2Policy),
+    hasIssue("exactProfile must be complete")
+  );
+
+  const placeholderM2Policy = structuredClone(policy);
+  placeholderM2Policy.profiles.live_testnet_secured_pool.exactProfile = {
+    chainId: "eip155:84532",
+    poolContract: "REQUIRED_EXACT_ADDRESS",
+    poolBytecodeHash: "REQUIRED_BYTES32",
+    adapterVersion: "REQUIRED_VERSION",
+    wethCollateral: "0x4200000000000000000000000000000000000006",
+    testUsdcDebt: "REQUIRED_EXACT_ADDRESS",
+    oracleAddress: "REQUIRED_EXACT_ADDRESS",
+    oracleSource: "[REQUIRED_SOURCE]",
+    marketCount: 1,
+    runOwner: "[REQUIRED_OWNER]",
+    deploymentApprovalRef: "[REQUIRED_APPROVAL]",
+    configurationHash: "REQUIRED_BYTES32",
+    realValueClassification: "test_assets_only"
+  };
+  assert.throws(
+    () => validateLaunchPolicy(placeholderM2Policy),
+    (error) => error instanceof LaunchEvidenceError && error.issues.length >= 8
   );
 });
 
@@ -105,7 +145,7 @@ test("complete fresh public-sandbox evidence verifies", () => {
   const result = verify(validEvidence());
   assert.deepEqual(result, {
     status: "verified",
-    policyVersion: "1.0.0",
+    policyVersion: "1.1.0",
     profile: "public_sandbox",
     repository: "CPTM511/IPO.ONE",
     commitSha: COMMIT_SHA,
@@ -219,6 +259,9 @@ test("capability escalation and policy-locked profiles fail closed", () => {
 
   const creditPilot = validEvidence("controlled_agent_credit_pilot");
   assert.throws(() => verify(creditPilot), hasIssue("profile is policy-locked"));
+
+  const securedPool = validEvidence("live_testnet_secured_pool");
+  assert.throws(() => verify(securedPool), hasIssue("profile is policy-locked"));
 });
 
 test("stale, expired, and future evidence fails closed", () => {

@@ -1,6 +1,6 @@
 # IPO.ONE M2 requirement traceability v0.1
 
-Status: Proposed IDs; no Product Constitution registry mutation
+Status: IDs ratified in Product Constitution v1.3; implementation remains absent
 
 Base: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
@@ -8,8 +8,9 @@ State vocabulary is not collapsed: `APPROVED`, `IMPLEMENTED`, `LOCALLY
 VERIFIED`, `TESTNET VERIFIED`, `DEPLOYED`, `REACHABLE`, `USER VERIFIED`, and
 `REAL-VALUE ACTIVE` require independent Evidence. At this baseline every new
 `REQ-POOL-*`, `REQ-COLL-*`, `REQ-ORACLE-*`, `REQ-RATE-*`, `REQ-POOL-EVID-*`,
-`REQ-POOL-UX-*` and `REQ-AGENT-POOL-*` row is **proposal-only**; all eight
-states are `NO` until ratification establishes only the `APPROVED` state.
+`REQ-POOL-UX-*` and `REQ-AGENT-POOL-*` row is architecture-approved only; all
+implementation and runtime states remain `NO` until current Evidence proves
+them independently.
 
 | Proposed ID | Capability | Current capability / exact gap | Owner | Dependency | Acceptance Evidence | Earliest authorized mode |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -48,10 +49,10 @@ risk or Agent execution system.
 
 ## Governance conflict and gate
 
-Constitution v1.2 currently makes `APPROVED=NO` for public LP/vaults. The
-proposed v1.3 diff must be ratified before any new M2 row can become approved.
-Ratification still sets no row beyond `APPROVED=YES`; implementation and every
-higher state remain evidence-based.
+Constitution v1.3 sets only the bounded M2 architecture rows to
+`APPROVED=YES`. It does not approve a generic or real-value public LP/vault.
+Implementation and every higher state remain Evidence-based and currently
+`NO`.
 
 Permission/funds/deployment impact: **none**. The matrix neither enables a
 launch profile nor authorizes assets, accounts, signers or transactions.

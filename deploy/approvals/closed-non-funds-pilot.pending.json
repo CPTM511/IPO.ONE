@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-evidence/v1",
-  "policyVersion": "1.0.0",
+  "policyVersion": "1.1.0",
   "profile": "closed_non_funds_pilot",
   "release": {
     "repository": "CPTM511/IPO.ONE",
@@ -12,8 +12,13 @@
   "capabilities": {
     "realFundsEnabled": false,
     "humanCreditEnabled": false,
+    "testAssetsEnabled": false,
+    "securedPoolEnabled": false,
+    "publicPoolParticipationEnabled": false,
+    "marketCreationEnabled": false,
     "privateTenantDataEnabled": true,
-    "externalProviderExecutionEnabled": false
+    "externalProviderExecutionEnabled": false,
+    "agentVenueExecutionEnabled": false
   },
   "externalAuthorization": {
     "system": "protected_environment",

@@ -1,6 +1,6 @@
 # ADR-M2-005: Oracle, rate, accounting and liquidation model
 
-Status: Proposed; all numerical values below are test fixtures
+Status: Accepted architecture; all numerical values below remain test fixtures
 
 ## Units and rounding
 
