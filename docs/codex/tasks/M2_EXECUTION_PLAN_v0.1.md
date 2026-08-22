@@ -169,7 +169,10 @@ revertible without inventing permission for its successor.
 - Tests: `node --test packages/domain/test/secured-pool-reference-model.test.js`.
 - Security/permission: closed inputs, bounded integers/time; L0 only. Migration:
   none. Rollback: remove isolated model. Evidence: vector/fuzz seed corpus.
-- Dependency/status: ratified M2-005/006; not started.
+- Dependency/status: ratified M2-005/006; pure BigInt reference model,
+  native-unit vectors, negative matrix and deterministic seed corpus are
+  implemented and locally verified at `L0_LOCAL_NO_FUNDS`. No contract or
+  runtime authority is implied.
 
 ### M2A-002 — contract toolchain and dependency admission
 

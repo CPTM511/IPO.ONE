@@ -16,13 +16,17 @@ Status: Accepted architecture; all numerical values below remain test fixtures
 
 ## Pool accounting
 
-Let `C` be cash, `D` performing debt including accrued interest, `R` protocol
-reserves, and `B` recognized bad debt, all in debt-asset base units.
+Let `C` be cash, `D` gross outstanding debt including accrued interest and any
+recognized-but-unrecovered bad-debt receivable, `R` protocol reserves, and `B`
+recognized bad debt, all in debt-asset base units. Performing interest-bearing
+debt is `P = D - B`. Keeping `B` as an explicit contra-asset while the adverse
+borrower outcome remains outstanding applies the LP loss exactly once.
 
 ```text
 grossAssets = C + D
 lpClaimAssets = max(0, C + D - R - B)
-utilization U = D / (C + D), or 0 when denominator is 0
+performingDebt = P = D - B
+utilization U = P / (C + P), or 0 when denominator is 0
 exchangeRate = lpClaimAssets / totalSupplyShares
 ```
 
@@ -37,10 +41,13 @@ Withdrawal of exact assets `a` burns
 The initial depositor cannot mint zero shares; donations must not produce a
 share-inflation advantage.
 
-Debt uses shares. New debt `a` mints
-`ceil(a * totalDebtShares / D)` (or `a` when empty). Partial repayment burns no
-more than `floor(a * totalDebtShares / D)`; exact full repayment burns the
+Performing debt uses shares. New debt `a` mints
+`ceil(a * totalDebtShares / P)` (or `a` when empty). Partial repayment burns no
+more than `floor(a * totalDebtShares / P)`; exact full repayment burns the
 borrower's remaining debt shares and quotes the required amount before transfer.
+Any explicitly calculated repayment dust is assigned to `R`. Recognized bad
+debt has no performing shares and does not accrue interest; later recovery
+reduces both `D` and `B` while increasing `C`, restoring LP claim value once.
 
 ## Interest fixture
 
@@ -59,7 +66,7 @@ else:
   borrowAPR = baseBorrow + slope1 + slope2 * (U-kink)/(1-kink)
 
 supplyAPR = borrowAPR * U * (1-reserveFactor)
-interest = ceil(D * borrowAPR_bps * dt / (365 days * 10,000))
+interest = ceil(P * borrowAPR_bps * dt / (365 days * 10,000))
 reserveAccrual = floor(interest * reserveFactor)
 ```
 
@@ -92,10 +99,15 @@ healthFactor = liquidationThresholdValue / debt
 liquidatable iff debt > 0 and healthFactor < 1
 closeFactor = 50%
 liquidationBonus = 5%
-repayAmount <= min(debt * closeFactor, amount covering available collateral)
+repayAmount <= min(debt * closeFactor, ceil(amount covering available collateral))
 seizeValue = repayAmount * 1.05
 seizeCollateral = min(collateral, ceil(seizeValue / validPrice))
 ```
+
+The collateral-coverage repayment ceiling may exceed the exact floor by at
+most one debt-asset base unit. Collateral seizure remains capped at the
+borrower's available collateral; this prevents zero-value collateral dust from
+blocking explicit bad-debt recognition.
 
 The liquidator transfers test-USDC before collateral is released. Checks,
 accounting and transfers are one non-reentrant transaction. Surplus collateral
@@ -108,9 +120,10 @@ cannot hide LP loss.
 
 1. **Kink rate:** `C=500,000 USDC`, `D=500,000 USDC` gives `U=50%`, borrow APR
    `7.00%`, supply APR `3.15%`.
-2. **Thirty-day accrual:** debt `500,000.00 USDC` at `7.00%` for 2,592,000
-   seconds accrues `2,876.72 USDC` after borrower-debt rounding; reserve accrual
-   is `287.67 USDC` after reserve rounding down.
+2. **Thirty-day simple-rate accrual:** debt `500,000.00 USDC` at a fixed
+   `7.00%` for 2,592,000 seconds accrues `2,876.712329 USDC` after ceiling to
+   one micro-USDC; reserve accrual is `287.671232 USDC` after reserve rounding
+   down. Pool catch-up recomputes utilization at each bounded seven-day chunk.
 3. **Healthy borrow:** 10 WETH at `$2,000` has `$15,000` capacity and `$16,000`
    liquidation-threshold value; `$14,000` debt is permitted with health
    `1.142857...`.

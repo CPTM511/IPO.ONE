@@ -30,3 +30,6 @@ export * from "./provider-sandbox.js";
 export * from "./rail.js";
 export * from "./state-machines.js";
 export * from "./validators.js";
+export * from "./secured-pool-reference-math.js";
+export * from "./secured-pool-reference-state.js";
+export * from "./secured-pool-reference-model.js";

@@ -56,3 +56,18 @@ Implementation and every higher state remain Evidence-based and currently
 
 Permission/funds/deployment impact: **none**. The matrix neither enables a
 launch profile nor authorizes assets, accounts, signers or transactions.
+
+## M2A-001 local Evidence update — 2026-08-22
+
+M2A-001 adds a dependency-free pure BigInt reference model at
+`packages/domain/src/secured-pool-reference-model.js` with separate math and
+invariant modules. It establishes only `IMPLEMENTED=YES` and
+`LOCALLY VERIFIED=YES` for the exact model boundary of `REQ-POOL-003`, the
+accounting portion of `REQ-POOL-004`, `REQ-COLL-001..004`, deterministic
+`REQ-ORACLE-001`, and `REQ-RATE-001..002`.
+
+Contract, persistence, adapter, deployed, reachable, user-verified, testnet and
+real-value states remain `NO`. The Evidence is the accepted native-unit vector
+suite, bounded time-chunk tests, negative action matrix, bad-debt one-time-loss
+test and checked-in deterministic randomized seed corpus in
+`packages/domain/test/secured-pool-reference-model.test.js`.
