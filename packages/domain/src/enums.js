@@ -424,6 +424,8 @@ export const CreditEventType = Object.freeze({
   OBLIGATION_RESTRUCTURED: "obligation_restructured",
   OBLIGATION_REPURCHASED: "obligation_repurchased",
   OBLIGATION_WRITTEN_OFF: "obligation_written_off",
+  POOL_OBLIGATION_BOUND: "pool_obligation_bound",
+  POOL_OBLIGATION_EFFECT_IMPORTED: "pool_obligation_effect_imported",
   TRANSFER_INTENT_CREATED: "transfer_intent_created",
   TRANSFER_QUOTED: "transfer_quoted",
   TRANSFER_AUTHORIZED: "transfer_authorized",

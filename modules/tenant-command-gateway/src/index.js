@@ -40,3 +40,4 @@ export * from "./workspace-resume-handlers.js";
 export * from "./workspace-continuation-handlers.js";
 export * from "./wallet-execution-handlers.js";
 export * from "./venue-execution-handlers.js";
+export * from "./pool-obligation-integration.js";

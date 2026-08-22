@@ -16,6 +16,10 @@ export const CoreProjectionType = Object.freeze({
   PRINCIPAL: "principal",
   SUBJECT: "subject",
   ACCOUNT_BINDING: "account_binding",
+  POOL_OBLIGATION_BINDING: "pool_obligation_binding",
+  POOL_OBLIGATION_PROJECTION: "pool_obligation_projection",
+  POOL_EXECUTION_RECEIPT: "pool_execution_receipt",
+  POOL_OBLIGATION_EFFECT_RECEIPT: "pool_obligation_effect_receipt",
   AGENT_ACCOUNT_CHALLENGE: "agent_account_challenge",
   AGENT_ACCOUNT_PROOF_ATTEMPT: "agent_account_proof_attempt",
   EXECUTION_ACCOUNT_BINDING_CHALLENGE: "execution_account_binding_challenge",
@@ -69,6 +73,10 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.PRINCIPAL]: "principalId",
   [CoreProjectionType.SUBJECT]: "subjectId",
   [CoreProjectionType.ACCOUNT_BINDING]: "accountBindingId",
+  [CoreProjectionType.POOL_OBLIGATION_BINDING]: "poolObligationBindingId",
+  [CoreProjectionType.POOL_OBLIGATION_PROJECTION]: "poolObligationProjectionId",
+  [CoreProjectionType.POOL_EXECUTION_RECEIPT]: "poolExecutionReceiptId",
+  [CoreProjectionType.POOL_OBLIGATION_EFFECT_RECEIPT]: "poolObligationEffectReceiptId",
   [CoreProjectionType.AGENT_ACCOUNT_CHALLENGE]: "challengeId",
   [CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT]: "proofAttemptId",
   [CoreProjectionType.EXECUTION_ACCOUNT_BINDING_CHALLENGE]: "challengeId",
@@ -432,6 +440,61 @@ function mapAccountBinding(row) {
     binding.bindingKind = row.binding_kind;
   }
   return binding;
+}
+
+function mapPoolObligationBinding(row) {
+  if (!row) return undefined;
+  return {
+    poolObligationBindingId: row.id,
+    bindingHash: row.binding_hash,
+    subjectId: row.subject_id,
+    principalId: row.principal_id,
+    accountBindingId: row.account_binding_id,
+    accountHash: row.account_hash,
+    obligationId: row.obligation_id,
+    obligationHash: row.obligation_hash,
+    chainId: row.chain_id,
+    contractAddress: row.contract_address,
+    marketId: row.market_id,
+    abiVersion: row.abi_version,
+    positionAccountHash: row.position_account_hash,
+    entryMode: row.entry_mode,
+    selfPrincipal: row.self_principal,
+    status: row.status,
+    boundAt: timestamp(row.bound_at),
+    syntheticOnly: row.synthetic_only,
+    productionFundsMoved: row.production_funds_moved,
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapPoolObligationProjection(row) {
+  if (!row) return undefined;
+  return row.projection;
+}
+
+function mapPoolExecutionReceipt(row) {
+  if (!row) return undefined;
+  return {
+    poolExecutionReceiptId: row.id,
+    receiptHash: row.receipt_hash,
+    poolObligationBindingId: row.pool_obligation_binding_id,
+    obligationId: row.obligation_id,
+    effectHash: row.effect_hash,
+    eventKey: row.event_key,
+    observationHash: row.observation_hash,
+    amountMinor: row.amount_minor,
+    debtAfterMinor: row.debt_after_minor,
+    finalizedAt: timestamp(row.finalized_at),
+    syntheticOnly: row.synthetic_only,
+    productionFundsMoved: row.production_funds_moved,
+    schemaVersion: row.schema_version
+  };
+}
+
+function mapPoolObligationEffectReceipt(row) {
+  if (!row) return undefined;
+  return row.receipt;
 }
 
 function mapAgentAccountChallenge(row) {
@@ -880,6 +943,9 @@ function mapObligation(row, installments = []) {
       scheduleSequence: row.schedule_sequence,
       installments: installments.map(mapObligationInstallment),
       executionStatus: row.execution_status,
+      ...(row.pool_obligation_binding_id
+        ? { poolObligationBindingId: row.pool_obligation_binding_id }
+        : {}),
       sandboxOnly: row.sandbox_only,
       productionFundsMoved: row.production_funds_moved,
       status: row.status,
@@ -904,7 +970,12 @@ function mapObligation(row, installments = []) {
       schemaVersion: row.schema_version
     };
     if (row.execution_status === "executed") {
-      shared.sandboxExecutionReceiptId = row.sandbox_execution_receipt_id;
+      if (row.sandbox_execution_receipt_id) {
+        shared.sandboxExecutionReceiptId = row.sandbox_execution_receipt_id;
+      }
+      if (row.pool_execution_receipt_id) {
+        shared.poolExecutionReceiptId = row.pool_execution_receipt_id;
+      }
       shared.executedAt = timestamp(row.executed_at);
       shared.lastAccruedAt = timestamp(row.last_accrued_at);
       shared.interestAccrualRemainder = row.interest_accrual_remainder;
@@ -2142,6 +2213,42 @@ export class PostgresCoreRepository {
 
   async getAccountBinding(accountBindingId) {
     return this.#getOne("accountBindingId", accountBindingId, "SELECT * FROM account_bindings WHERE id = $1", mapAccountBinding);
+  }
+
+  async getPoolObligationBinding(poolObligationBindingId) {
+    return this.#getOne(
+      "poolObligationBindingId",
+      poolObligationBindingId,
+      "SELECT * FROM pool_obligation_bindings WHERE id = $1",
+      mapPoolObligationBinding
+    );
+  }
+
+  async getPoolObligationProjection(poolObligationProjectionId) {
+    return this.#getOne(
+      "poolObligationProjectionId",
+      poolObligationProjectionId,
+      "SELECT * FROM pool_obligation_projections WHERE id = $1",
+      mapPoolObligationProjection
+    );
+  }
+
+  async getPoolExecutionReceipt(poolExecutionReceiptId) {
+    return this.#getOne(
+      "poolExecutionReceiptId",
+      poolExecutionReceiptId,
+      "SELECT * FROM pool_execution_receipts WHERE id = $1",
+      mapPoolExecutionReceipt
+    );
+  }
+
+  async getPoolObligationEffectReceipt(poolObligationEffectReceiptId) {
+    return this.#getOne(
+      "poolObligationEffectReceiptId",
+      poolObligationEffectReceiptId,
+      "SELECT * FROM pool_obligation_effect_receipts WHERE id = $1",
+      mapPoolObligationEffectReceipt
+    );
   }
 
   async getAgentAccountChallenge(challengeId) {
@@ -4382,6 +4489,18 @@ export class PostgresCoreRepository {
       case CoreProjectionType.ACCOUNT_BINDING:
         value = await this.getAccountBinding(entityId);
         break;
+      case CoreProjectionType.POOL_OBLIGATION_BINDING:
+        value = await this.getPoolObligationBinding(entityId);
+        break;
+      case CoreProjectionType.POOL_OBLIGATION_PROJECTION:
+        value = await this.getPoolObligationProjection(entityId);
+        break;
+      case CoreProjectionType.POOL_EXECUTION_RECEIPT:
+        value = await this.getPoolExecutionReceipt(entityId);
+        break;
+      case CoreProjectionType.POOL_OBLIGATION_EFFECT_RECEIPT:
+        value = await this.getPoolObligationEffectReceipt(entityId);
+        break;
       case CoreProjectionType.AGENT_ACCOUNT_CHALLENGE:
         value = await this.getAgentAccountChallenge(entityId);
         break;
@@ -4598,6 +4717,14 @@ export class PostgresCoreRepository {
         return this.#writeSubject(client, value);
       case CoreProjectionType.ACCOUNT_BINDING:
         return this.#writeAccountBinding(client, value);
+      case CoreProjectionType.POOL_OBLIGATION_BINDING:
+        return this.#writePoolObligationBinding(client, value);
+      case CoreProjectionType.POOL_OBLIGATION_PROJECTION:
+        return this.#writePoolObligationProjection(client, value);
+      case CoreProjectionType.POOL_EXECUTION_RECEIPT:
+        return this.#writePoolExecutionReceipt(client, value);
+      case CoreProjectionType.POOL_OBLIGATION_EFFECT_RECEIPT:
+        return this.#writePoolObligationEffectReceipt(client, value, write.eventId);
       case CoreProjectionType.AGENT_ACCOUNT_CHALLENGE:
         return this.#writeAgentAccountChallenge(client, value);
       case CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT:
@@ -4816,6 +4943,150 @@ export class PostgresCoreRepository {
       ]
     );
     if (result.rowCount !== 1) throw projectionConflict(CoreProjectionType.ACCOUNT_BINDING, value.accountBindingId);
+  }
+
+  async #writePoolObligationBinding(client, value) {
+    const result = await client.query(
+      `INSERT INTO pool_obligation_bindings(
+         id, binding_hash, subject_id, principal_id, account_binding_id,
+         account_hash, obligation_id, obligation_hash, chain_id,
+         contract_address, market_id, abi_version, position_account_hash,
+         entry_mode, self_principal, status, bound_at, synthetic_only,
+         production_funds_moved, schema_version
+       ) VALUES (
+         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
+       ) ON CONFLICT (tenant_id, id) DO UPDATE SET status = EXCLUDED.status
+       WHERE pool_obligation_bindings.binding_hash = EXCLUDED.binding_hash
+         AND pool_obligation_bindings.subject_id = EXCLUDED.subject_id
+         AND pool_obligation_bindings.principal_id = EXCLUDED.principal_id
+         AND pool_obligation_bindings.account_binding_id = EXCLUDED.account_binding_id
+         AND pool_obligation_bindings.obligation_id = EXCLUDED.obligation_id
+         AND pool_obligation_bindings.chain_id = EXCLUDED.chain_id
+         AND pool_obligation_bindings.contract_address = EXCLUDED.contract_address
+         AND pool_obligation_bindings.market_id = EXCLUDED.market_id
+       RETURNING id`,
+      [
+        value.poolObligationBindingId, value.bindingHash, value.subjectId,
+        value.principalId, value.accountBindingId, value.accountHash,
+        value.obligationId, value.obligationHash, value.chainId,
+        value.contractAddress, value.marketId, value.abiVersion,
+        value.positionAccountHash, value.entryMode, value.selfPrincipal,
+        value.status, value.boundAt, value.syntheticOnly,
+        value.productionFundsMoved, value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.POOL_OBLIGATION_BINDING, value.poolObligationBindingId);
+    }
+  }
+
+  async #writePoolObligationProjection(client, value) {
+    const result = await client.query(
+      `INSERT INTO pool_obligation_projections(
+         id, projection_hash, pool_obligation_binding_id, obligation_id,
+         subject_id, principal_id, chain_id, contract_address, market_id,
+         account_binding_id, projection_version, finalized_effect_count,
+         source_finalized_event_count, collateral_assets, debt_assets, bad_debt_assets, total_repaid_assets,
+         lifecycle_status, last_event_key, last_effect_hash, last_evidence_hash,
+         projection, updated_at, schema_version
+       ) VALUES (
+         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::jsonb,$23,$24
+       ) ON CONFLICT (tenant_id, id) DO UPDATE SET
+         projection_hash = EXCLUDED.projection_hash,
+         projection_version = EXCLUDED.projection_version,
+         finalized_effect_count = EXCLUDED.finalized_effect_count,
+         source_finalized_event_count = EXCLUDED.source_finalized_event_count,
+         collateral_assets = EXCLUDED.collateral_assets,
+         debt_assets = EXCLUDED.debt_assets,
+         bad_debt_assets = EXCLUDED.bad_debt_assets,
+         total_repaid_assets = EXCLUDED.total_repaid_assets,
+         lifecycle_status = EXCLUDED.lifecycle_status,
+         last_event_key = EXCLUDED.last_event_key,
+         last_effect_hash = EXCLUDED.last_effect_hash,
+         last_evidence_hash = EXCLUDED.last_evidence_hash,
+         projection = EXCLUDED.projection,
+         updated_at = EXCLUDED.updated_at
+       WHERE pool_obligation_projections.pool_obligation_binding_id = EXCLUDED.pool_obligation_binding_id
+         AND pool_obligation_projections.obligation_id = EXCLUDED.obligation_id
+         AND pool_obligation_projections.projection_version + 1 = EXCLUDED.projection_version
+       RETURNING id`,
+      [
+        value.poolObligationProjectionId, value.projectionHash,
+        value.poolObligationBindingId, value.obligationId, value.subjectId,
+        value.principalId, value.chainId, value.contractAddress, value.marketId,
+        value.accountBindingId, value.projectionVersion, value.finalizedEffectCount,
+        value.sourceFinalizedEventCount, value.collateralAssets, value.debtAssets, value.badDebtAssets,
+        value.totalRepaidAssets, value.lifecycleStatus, value.lastEventKey,
+        value.lastEffectHash, value.lastEvidenceHash, json(value), value.updatedAt,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.POOL_OBLIGATION_PROJECTION, value.poolObligationProjectionId);
+    }
+  }
+
+  async #writePoolExecutionReceipt(client, value) {
+    const result = await client.query(
+      `INSERT INTO pool_execution_receipts(
+         id, receipt_hash, pool_obligation_binding_id, obligation_id,
+         effect_hash, event_key, observation_hash, amount_minor,
+         debt_after_minor, finalized_at, synthetic_only,
+         production_funds_moved, schema_version
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       ON CONFLICT (tenant_id, id) DO NOTHING RETURNING id`,
+      [
+        value.poolExecutionReceiptId, value.receiptHash,
+        value.poolObligationBindingId, value.obligationId, value.effectHash,
+        value.eventKey, value.observationHash, value.amountMinor,
+        value.debtAfterMinor, value.finalizedAt, value.syntheticOnly,
+        value.productionFundsMoved, value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.POOL_EXECUTION_RECEIPT, value.poolExecutionReceiptId);
+    }
+  }
+
+  async #writePoolObligationEffectReceipt(client, value, eventId) {
+    const evidence = await client.query(
+      "SELECT evidence_hash FROM evidence_envelopes WHERE id = $1",
+      [eventId]
+    );
+    if (evidence.rowCount !== 1) {
+      throw new DomainError("projection_event_missing", "Pool effect Evidence is unavailable");
+    }
+    const receipt = { ...value, evidenceHash: evidence.rows[0].evidence_hash };
+    const result = await client.query(
+      `INSERT INTO pool_obligation_effect_receipts(
+         id, receipt_hash, pool_obligation_binding_id, obligation_id,
+         subject_id, event_key, observation_hash, effect_hash, pool_state_hash,
+         event_type, projection_version, projection_hash,
+         ledger_transaction_ids, domain_event_id, evidence_hash, finalized_at,
+         finality, credit_state_candidate, credit_state_authorizing,
+         automatic_limit_change, synthetic_only, production_funds_moved,
+         receipt, schema_version
+       ) VALUES (
+         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23::jsonb,$24
+       ) ON CONFLICT (tenant_id, effect_hash) DO NOTHING RETURNING id`,
+      [
+        value.poolObligationEffectReceiptId, value.receiptHash,
+        value.poolObligationBindingId, value.obligationId, value.subjectId,
+        value.eventKey, value.observationHash, value.effectHash,
+        value.poolStateHash, value.eventType, value.projectionVersion,
+        value.projectionHash, json(value.ledgerTransactionIds), eventId,
+        evidence.rows[0].evidence_hash, value.finalizedAt, value.finality,
+        value.creditStateCandidate, value.creditStateAuthorizing,
+        value.automaticLimitChange, value.syntheticOnly,
+        value.productionFundsMoved, json(receipt), value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.POOL_OBLIGATION_EFFECT_RECEIPT,
+        value.poolObligationEffectReceiptId
+      );
+    }
   }
 
   async #writeAgentAccountChallenge(client, value) {
@@ -5937,7 +6208,8 @@ export class PostgresCoreRepository {
          servicing_effective_at, servicing_reason_code, servicing_policy_version,
          schedule_sequence, servicing_owner_code, resolution_type,
          resolution_reason_code, resolution_at, written_off_principal_minor,
-         written_off_interest_minor, written_off_fees_minor
+         written_off_interest_minor, written_off_fees_minor,
+         pool_obligation_binding_id, pool_execution_receipt_id
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
          NULL, NULL, $11, 1, '[]'::jsonb, '[]'::jsonb, $12, $13, $14, $15,
@@ -5945,7 +6217,7 @@ export class PostgresCoreRepository {
          $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
          $39, $40, $41, $42, $43,
          $44, $45, $46, $47, $48, $49, $50, $51, $52, $53,
-         $54, $55, $56, $57
+         $54, $55, $56, $57, $58, $59
        )
        ON CONFLICT (id) DO UPDATE
          SET outstanding_minor = EXCLUDED.outstanding_minor,
@@ -5980,6 +6252,8 @@ export class PostgresCoreRepository {
              written_off_principal_minor = EXCLUDED.written_off_principal_minor,
              written_off_interest_minor = EXCLUDED.written_off_interest_minor,
              written_off_fees_minor = EXCLUDED.written_off_fees_minor,
+             pool_obligation_binding_id = EXCLUDED.pool_obligation_binding_id,
+             pool_execution_receipt_id = EXCLUDED.pool_execution_receipt_id,
              status = EXCLUDED.status,
              updated_at = EXCLUDED.updated_at
        WHERE obligations.obligation_hash = EXCLUDED.obligation_hash
@@ -6044,7 +6318,9 @@ export class PostgresCoreRepository {
         value.resolutionAt ?? null,
         value.writtenOffPrincipalMinor ?? "0",
         value.writtenOffInterestMinor ?? "0",
-        value.writtenOffFeesMinor ?? "0"
+        value.writtenOffFeesMinor ?? "0",
+        value.poolObligationBindingId ?? null,
+        value.poolExecutionReceiptId ?? null
       ]
     );
     if (result.rowCount !== 1) {

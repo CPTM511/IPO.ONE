@@ -266,7 +266,9 @@ revertible without inventing permission for its successor.
 - Security/permission: exact AccountBinding and no PII onchain. Migration:
   additive bindings/projections. Rollback: disable adapter, preserve chain
   Evidence and rebuild projections. Evidence: linked receipts/state hashes.
-- Dependency/status: M2A-005 must be merged; not started.
+- Dependency/status: M2A-005 merged at `6f4a1e0`; M2A-006 implemented and
+  locally verified at `L0_LOCAL_NO_FUNDS`. It adds no provider, RPC, signer,
+  transaction, deployment, public endpoint or real-value authority.
 
 ### M2A-007 — LP, Human and Risk/Ops surfaces
 
@@ -284,7 +286,8 @@ revertible without inventing permission for its successor.
   no hidden mutation. Migration: queries may require additive projections.
   Rollback: feature gate off with truthful disabled state. Evidence: deployed
   SHA visible-click captures and queryable receipts.
-- Dependency/status: M2A-006; not started.
+- Dependency/status: M2A-006 local kernel integration is complete; M2A-007 is
+  not started and remains a separate UI/API/SDK/MCP issue.
 
 ### M2A-008 — exact Base Sepolia deployment
 
