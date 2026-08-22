@@ -1,5 +1,11 @@
 # IPO.ONE testnet contracts
 
+The repository contract source is MIT-licensed. Foundry `v1.7.1`, forge-std
+`v1.16.1`, OpenZeppelin Contracts `5.6.1`, and solc-js `0.8.30` are admitted as
+exact build/test dependencies in `toolchain-manifest.v1.json`. Their admission
+does not authorize a new contract, deployment, signer, transaction, or funds
+path.
+
 `IpoOneCreditAuthorizationRegistryV1.sol` is the active Base Sepolia MVP
 contract. It publishes a versioned, privacy-preserving projection of an
 accepted off-chain credit authorization and its latest CreditState/Obligation

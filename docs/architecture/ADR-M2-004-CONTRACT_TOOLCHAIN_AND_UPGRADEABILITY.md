@@ -1,14 +1,14 @@
 # ADR-M2-004: Contract toolchain and upgradeability
 
-Status: Accepted architecture; dependency admission and license decision remain gated
+Status: Accepted; license and dependency admission completed 2026-08-22
 
 ## Current state
 
-The repository compiles four small Solidity 0.8.30 contracts with
-`solc@0.8.30` and tests them through Node (`package.json:131-141`,
-`contracts/README.md:1-37`). There is no `foundry.toml`, OpenZeppelin dependency,
-Solidity fuzz harness or invariant runner. Existing contracts are deliberately
-non-custodial and are not a sufficient pool base.
+The repository compiles four small Solidity 0.8.30 contracts with the exact
+`solc@0.8.30` package and retains their Node integration tests. M2A-002 now adds
+the exact Foundry, forge-std and OpenZeppelin toolchain, a minimal Solidity
+unit/fuzz admission harness, and CI verification. Existing contracts remain
+deliberately non-custodial and are not a sufficient pool base.
 
 ## Decision
 
@@ -17,15 +17,15 @@ tests. Add, only in separately approved `M2A-002`:
 
 | Component | Exact proposed pin | Admission rule |
 | --- | --- | --- |
-| Foundry | `v1.7.1` stable toolchain | pin release and platform archive SHA-256/Sigstore evidence in a toolchain manifest |
-| forge-std | `v1.16.1` tag | pin exact commit in dependency manifest; test-only |
+| Foundry | `@foundry-rs/forge@1.7.1` stable toolchain | exact npm and platform-package integrity, denied lifecycle script, plus release SHA-256/Sigstore evidence |
+| forge-std | `v1.16.1` / `620536fa5277db4e3fd46772d5cbc1ea0696fb43` | exact commit archive plus pnpm integrity; test-only |
 | OpenZeppelin Contracts | `@openzeppelin/contracts@5.6.1` | exact pnpm lock integrity; import only reviewed modules |
-| Solidity | `0.8.30` | exact pragma and bytecode metadata settings |
+| Solidity | `0.8.30` | exact npm and native compiler checksums, pragma and bytecode metadata settings |
 
-These were the official latest stable releases observed during the 2026-08-22
-Phase 0 review; the admission issue must re-verify release status, tag/commit,
-license, checksum and security advisories before changing files. No dependency
-is installed by this ADR.
+These were re-verified as official non-prerelease releases on 2026-08-22. The
+exact source commits, package integrities, Foundry archive checksums, Sigstore
+bundle references, licenses, and allowed OpenZeppelin imports are recorded in
+`contracts/toolchain-manifest.v1.json`.
 
 Review sources: [OpenZeppelin Contracts releases](https://github.com/OpenZeppelin/openzeppelin-contracts/releases),
 [OpenZeppelin release-channel guidance](https://github.com/OpenZeppelin/openzeppelin-contracts),
@@ -61,8 +61,8 @@ recorded ABI/bytecode hashes.
 
 - OpenZeppelin Contracts is MIT-licensed; Foundry/forge-std are MIT or
   Apache-2.0 licensed. Their notices and transitive artifacts must be captured.
-- The IPO.ONE repository currently has no root license. Dependency license does
-  not decide the license of IPO.ONE source.
+- IPO.ONE source is now covered by the Founder-approved root MIT License and
+  DCO 1.1 contribution policy. Dependency licenses remain separately recorded.
 - CI must verify exact tool versions, lock integrity, release provenance, no
   floating git references and reproducible ABI/bytecode.
 - New dependencies require named human approval under the Engineering Standard
@@ -88,5 +88,6 @@ recorded ABI/bytecode hashes.
   review than the bounded market requires.
 - Custom ERC-20 transfer/math/reentrancy libraries: avoidable security risk.
 
-Permission/funds/deployment impact: **none**. This ADR changes no dependency,
-contract or build file and grants no deployment, signer or funds authority.
+Permission/funds/deployment impact: **none**. Dependency admission adds build
+and test tooling only and grants no contract implementation, deployment, signer,
+oracle, risk-parameter, transaction, or funds authority.

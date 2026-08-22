@@ -1,13 +1,32 @@
-# License decision required before public M2 contracts/SDK
+# IPO.ONE repository license decision
 
-Status: Founder/legal decision required; no license added
+Status: Founder-approved and recorded 2026-08-22
+
+Decision owner: IPO.ONE Founder / Product / Governance
+
+## Decision
+
+1. The repository, contracts, SDK, application source, examples, and
+   documentation use one root MIT License.
+2. Copyright line: `Copyright (c) 2026 IPO.ONE`.
+3. New inbound contributions use Developer Certificate of Origin 1.1 sign-off;
+   no separate CLA is required at this stage.
+4. Third-party dependencies retain their upstream licenses and notices. Their
+   source is consumed only through exact reviewed dependencies; no Aave or other
+   lending-protocol source is copied.
+5. Contract source verification is permitted only for a separately approved
+   deployment. The MIT License does not authorize deployment, a signer, an
+   account, an oracle, funds, mainnet, or production.
+6. Existing Solidity `SPDX-License-Identifier: MIT` headers remain consistent
+   and unchanged.
+
+The authoritative files are `LICENSE`, `DCO`, `CONTRIBUTING.md`, and
+`THIRD_PARTY_NOTICES.md`.
 
 ## Current fact
 
-At base commit `71786a3c72237320f7bacf77b64496dd1a0c526f`, the repository has no root
-`LICENSE` file. Individual Solidity files use SPDX `MIT`, but that header does
-not establish a complete repository-wide distribution policy for application,
-SDK, documentation and contract source.
+At base commit `71786a3c72237320f7bacf77b64496dd1a0c526f`, the repository had no root
+`LICENSE` file. That gap is resolved by this decision and the root MIT License.
 
 ## Why M2 makes the decision material
 
@@ -35,30 +54,12 @@ This affects:
   documentation or tests without a separate scope-specific license and
   architecture review.
 
-## Founder/legal choices to record
-
-Before M2 contract publication, select and document:
-
-1. whether the repository, contracts, SDK and documentation share one license
-   or use explicit per-directory licenses;
-2. the chosen approved license text and copyright holder/year;
-3. contribution policy or contributor agreement/DCO posture;
-4. third-party notices and source-offer obligations;
-5. whether deployment source verification is allowed before a broader SDK/app
-   license; and
-6. treatment of existing SPDX headers if they conflict with the chosen policy.
-
-Candidate models (MIT/Apache-2.0/open-core/source-available/proprietary) have
-different commercial, patent, contribution and redistribution consequences.
-Phase 0 intentionally makes no recommendation because this is a Founder/legal,
-not engineering, choice.
-
 ## Gate
 
-`M2A-002` may prepare a dependency/license inventory but must not add a license,
-copy third-party protocol code or publish reusable claims until the decision is
-recorded. Contract deployment/source verification also remains separately
-gated.
+The license prerequisite for dependency admission is satisfied. Contract
+implementation, deployment, and source verification remain separately gated by
+their issue, launch policy, exact profile, and named approvals.
 
-Permission/funds/deployment impact: **none**. This file grants no reuse,
-distribution, contract, deployment or funds authority.
+Permission/funds/deployment impact: **none**. The MIT License grants source reuse
+rights; it does not grant operational, contract, deployment, signer, custody,
+oracle, risk, transaction, or funds authority.

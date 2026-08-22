@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "ipo.one.m2-contract-toolchain/v1",
+  "decisionDate": "2026-08-22",
+  "repositoryLicense": {
+    "spdx": "MIT",
+    "file": "LICENSE",
+    "copyright": "Copyright (c) 2026 IPO.ONE"
+  },
+  "contributionPolicy": {
+    "type": "DCO-1.1",
+    "file": "DCO",
+    "signoffRequired": true
+  },
+  "foundry": {
+    "version": "v1.7.1",
+    "commit": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+    "releaseType": "stable",
+    "repository": "https://github.com/foundry-rs/foundry",
+    "licenseExpression": "MIT OR Apache-2.0",
+    "npmPackage": {
+      "name": "@foundry-rs/forge",
+      "version": "1.7.1",
+      "integrity": "sha512-ji244KYCP15RTaHg/V3VpTarX+8Tl7qm54B8laVeabbUMKhsJI5QK28gh5fbTxndB7tdsnbliwdrx/FwAXzEoA==",
+      "lifecycleScriptAllowed": false,
+      "platformPackageIntegrity": {
+        "darwin_arm64": "sha512-PwvdcKxniBoIic163Gw8t7rIOfE8ZfV2mCM2WOXnGdsUbCJRvkqCWq4qidkUORbibhfiRTyw3991hMFL8/qEfw==",
+        "linux_amd64": "sha512-/HQddyTanVOJKgvilmZrf8VOf7mhvwrWb59W73w5W5flX7b6zNh9CR6hKZzJwiRRi5Sxk/JOFEYIeKsQx7Teqg=="
+      }
+    },
+    "platforms": {
+      "darwin_arm64": {
+        "archive": "foundry_v1.7.1_darwin_arm64.tar.gz",
+        "archiveSha256": "eacdc67718fac857cad9e19c7f6729dd80de731d09df81856391d093cfcab547",
+        "checksumAsset": "foundry_v1.7.1_darwin_arm64.sha256",
+        "sigstoreBundle": "foundry_v1.7.1_darwin_arm64.sigstore.json",
+        "sigstoreBundleSha256": "d5930109b48c43a968ce8c0b2068c7d43e973a2b2604eb590a48c4c74a52159e"
+      },
+      "linux_amd64": {
+        "archive": "foundry_v1.7.1_linux_amd64.tar.gz",
+        "archiveSha256": "cf7e688ed0c4c48adffca788b496076e31060b67ac5afe1e43dbb5499c20c88b",
+        "checksumAsset": "foundry_v1.7.1_linux_amd64.sha256",
+        "sigstoreBundle": "foundry_v1.7.1_linux_amd64.sigstore.json",
+        "sigstoreBundleSha256": "5f8203e7473e355617bdc38283d1a3fa4f548f6086358a3dbaab5828bd0ecb37"
+      }
+    }
+  },
+  "forgeStd": {
+    "tag": "v1.16.1",
+    "commit": "620536fa5277db4e3fd46772d5cbc1ea0696fb43",
+    "dependencySpecifier": "https://codeload.github.com/foundry-rs/forge-std/tar.gz/620536fa5277db4e3fd46772d5cbc1ea0696fb43",
+    "archiveIntegrity": "sha512-RxfydS+JX7WEYyF/lS5CKqNirDg5womaWVp+pN48GI01GvTdME4ZYX3OjtGAVf9TUG+IkKyEHScBHijLEWg1iQ==",
+    "installedTreeSha256": "0a987877b6927bdc30858518c76c8c883100bc1acea8627ddb6abade5fe3a815",
+    "licenseExpression": "MIT OR Apache-2.0",
+    "testOnly": true
+  },
+  "openZeppelinContracts": {
+    "package": "@openzeppelin/contracts",
+    "version": "5.6.1",
+    "tagCommit": "5fd1781b1454fd1ef8e722282f86f9293cacf256",
+    "integrity": "sha512-Ly6SlsVJ3mj+b18W3R8gNufB7dTICT105fJhodGAGgyC2oqnBAhqSiNDJ8V8DLY05cCz81GLI0CU5vNYA1EC/w==",
+    "shasum": "90c1cd427b3c1007ada4f42378ce84cc2a2145a5",
+    "license": "MIT",
+    "allowedImports": [
+      "contracts/token/ERC20/utils/SafeERC20.sol",
+      "contracts/utils/math/Math.sol",
+      "contracts/utils/ReentrancyGuard.sol",
+      "contracts/utils/Pausable.sol",
+      "contracts/access/AccessControl.sol"
+    ]
+  },
+  "solc": {
+    "package": "solc",
+    "version": "0.8.30",
+    "integrity": "sha512-9Srk/gndtBmoUbg4CE6ypAzPQlElv8ntbnl6SigUBAzgXKn35v87sj04uZeoZWjtDkdzT0qKFcIo/wl63UMxdw==",
+    "foundryNative": {
+      "longVersion": "0.8.30+commit.73712a01",
+      "darwinAmd64Sha256": "738dcdc6afddeb505ee4e4ef24f1c1fdba2b8c924e614cbbf5801a5b062dd683",
+      "linuxAmd64Sha256": "f3e987dc6ecebd4bd350c48edcbc320b46cf9e3109bd3fc3d88f1acaf4c428f7"
+    }
+  }
+}

@@ -9,6 +9,8 @@ coverage/
 playwright-report/
 test-results/
 output/playwright/
+/out/
+/cache/
 *.log
 .env
 .env.*
