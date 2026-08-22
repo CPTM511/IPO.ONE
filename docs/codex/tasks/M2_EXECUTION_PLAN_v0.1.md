@@ -246,7 +246,12 @@ revertible without inventing permission for its successor.
   Migration: additive pool observation/projection tables with tested down only
   before Evidence exists. Rollback: stop ingestion, preserve observations and
   rebuild. Evidence: state hashes and discrepancy drill.
-- Dependency/status: M2A-003/004; not started.
+- Dependency/status: M2A-003/004 are merged. The closed Pool V1 decoder,
+  tuple/finality/reorg history, canonical local projection, two-read direct
+  reconciliation, discrepancy freeze, approved recovery record and forced-RLS
+  additive persistence are implemented and locally verified at
+  `L0_LOCAL_NO_FUNDS`. No provider, RPC, signer, transaction, deployment,
+  public endpoint or real value is selected or approved.
 
 ### M2A-006 — canonical Obligation/Evidence integration
 
@@ -261,7 +266,7 @@ revertible without inventing permission for its successor.
 - Security/permission: exact AccountBinding and no PII onchain. Migration:
   additive bindings/projections. Rollback: disable adapter, preserve chain
   Evidence and rebuild projections. Evidence: linked receipts/state hashes.
-- Dependency/status: M2A-005; not started.
+- Dependency/status: M2A-005 must be merged; not started.
 
 ### M2A-007 — LP, Human and Risk/Ops surfaces
 

@@ -8,3 +8,4 @@ export * from "./evm-execution-account-proof-adapter.js";
 export * from "./obligation-portability.js";
 export * from "./sandbox-chain-adapter.js";
 export * from "./sandbox-chain-indexer.js";
+export * from "./secured-pool-v1-adapter.js";

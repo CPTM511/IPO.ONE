@@ -29,3 +29,19 @@ non-authorizing hash-only outbox message into dedicated forced-RLS tables.
 Exact replay is deduplicated, records are append-only, and reconciliation
 recomputes the lifecycle observation hash. This path has no signer, broadcast,
 credit-limit, funds, or production authority.
+
+M2A-005 adds a separate Pool V1 local indexer/reconciliation boundary. It
+persists normalized observations before a finalized projection, handles
+duplicate/reordered delivery and append-only non-final reorgs, replays in
+canonical chain order after restart/restore, and emits one hash-only outbox
+effect per finalized tuple. Forced-RLS migration `0064` makes observation,
+cursor, effect, reconciliation, discrepancy and risk-transition history
+append-only.
+
+Pool direct-state reconciliation accepts exactly two normalized local reader
+slots. Incomplete reads, provider disagreement or projection mismatch add
+reason-coded Evidence and freeze new off-chain risk while keeping repay,
+collateral addition and valid liquidation available. A later agreeing run does
+not auto-resume; recovery needs a separate hash-bound approval receipt. This
+issue invokes no network, selects no provider and grants no live-RPC, signer,
+deployment or funds authority.
