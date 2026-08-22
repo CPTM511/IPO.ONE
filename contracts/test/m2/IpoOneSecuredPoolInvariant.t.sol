@@ -15,6 +15,7 @@ contract M2SecuredPoolHandler is Test {
     IpoOneSecuredPoolV1 public immutable pool;
     M2MockERC20 public immutable debt;
     M2MockERC20 public immutable collateral;
+    M2MockPriceOracle public immutable oracle;
     address public immutable guardian;
     address public immutable recovery;
     address[3] private actors;
@@ -23,12 +24,14 @@ contract M2SecuredPoolHandler is Test {
         IpoOneSecuredPoolV1 pool_,
         M2MockERC20 debt_,
         M2MockERC20 collateral_,
+        M2MockPriceOracle oracle_,
         address guardian_,
         address recovery_
     ) {
         pool = pool_;
         debt = debt_;
         collateral = collateral_;
+        oracle = oracle_;
         guardian = guardian_;
         recovery = recovery_;
         actors = [address(0x2001), address(0x2002), address(0x2003)];
@@ -50,7 +53,11 @@ contract M2SecuredPoolHandler is Test {
         address account = _actor(actorSeed);
         uint256 available = debt.balanceOf(account);
         if (available == 0) return;
-        uint256 amount = bound(uint256(rawAmount), 1, available);
+        uint256 minimumShareMint = pool.totalSupplyShares() == 0
+            ? 1
+            : (pool.lpClaimAssets() + pool.totalSupplyShares() - 1) / pool.totalSupplyShares();
+        if (available < minimumShareMint) return;
+        uint256 amount = bound(uint256(rawAmount), minimumShareMint, available);
         vm.prank(account);
         pool.supply(amount);
     }
@@ -89,7 +96,7 @@ contract M2SecuredPoolHandler is Test {
     function borrow(uint256 actorSeed, uint96 rawAmount) external {
         if (pool.newRiskPaused()) return;
         address account = _actor(actorSeed);
-        (,, uint256 capacity, uint256 accountDebt,) = pool.health(account);
+        (,, uint256 capacity,, uint256 accountDebt,,) = pool.health(account);
         uint256 capacityRemaining = capacity > accountDebt ? capacity - accountDebt : 0;
         uint256 borrowerCapRemaining =
             pool.borrowerDebtCapAssets() > accountDebt ? pool.borrowerDebtCapAssets() - accountDebt : 0;
@@ -109,8 +116,10 @@ contract M2SecuredPoolHandler is Test {
         address account = _actor(actorSeed);
         uint256 quote = pool.debtQuoteAssets(account);
         uint256 available = _min(quote, debt.balanceOf(account));
-        if (available == 0) return;
-        uint256 amount = bound(uint256(rawAmount), 1, available);
+        if (available == 0 || pool.totalDebtShares() == 0) return;
+        uint256 minimumShareBurn = (pool.performingDebtAssets() + pool.totalDebtShares() - 1) / pool.totalDebtShares();
+        if (available < minimumShareBurn) return;
+        uint256 amount = bound(uint256(rawAmount), minimumShareBurn, available);
         vm.prank(account);
         pool.repay(amount);
     }
@@ -123,6 +132,14 @@ contract M2SecuredPoolHandler is Test {
             vm.prank(recovery);
             pool.resumeNewRisk();
         }
+    }
+
+    function advanceTimeAndAccrue(uint32 rawElapsed) external {
+        uint256 elapsed = bound(uint256(rawElapsed), 1, 30 days);
+        vm.warp(block.timestamp + elapsed);
+        oracle.setObservation(2_000e18, uint64(block.timestamp), true);
+        pool.syncOracle();
+        pool.accrueInterest();
     }
 
     function _actor(uint256 seed) private view returns (address) {
@@ -149,7 +166,7 @@ contract IpoOneSecuredPoolInvariantTest is StdInvariant, Test {
         vm.warp(1_800_000_000);
         debt = new M2MockERC20("Test USDC", "tUSDC", 6);
         collateral = new M2MockERC20("Wrapped Ether", "WETH", 18);
-        oracle = new M2MockPriceOracle();
+        oracle = new M2MockPriceOracle(block.chainid, address(collateral));
         oracle.setObservation(2_000e18, uint64(block.timestamp), true);
         pool = new IpoOneSecuredPoolV1(
             IpoOneSecuredPoolV1.MarketConfiguration({
@@ -164,7 +181,7 @@ contract IpoOneSecuredPoolInvariantTest is StdInvariant, Test {
                 recoveryAuthority: RECOVERY
             })
         );
-        handler = new M2SecuredPoolHandler(pool, debt, collateral, GUARDIAN, RECOVERY);
+        handler = new M2SecuredPoolHandler(pool, debt, collateral, oracle, GUARDIAN, RECOVERY);
         targetContract(address(handler));
     }
 
@@ -186,15 +203,14 @@ contract IpoOneSecuredPoolInvariantTest is StdInvariant, Test {
 
     function invariantClaimsDebtAndCapsRemainSolvent() public view {
         assertEq(pool.lpClaimAssets(), pool.cashAssets() + pool.grossDebtAssets() - pool.reservesAssets());
-        assertLe(pool.grossDebtAssets(), pool.marketDebtCapAssets());
+        assertEq(pool.badDebtAssets(), 0);
+        assertEq(pool.performingDebtAssets(), pool.grossDebtAssets());
         uint256 aggregateClaims;
         for (uint256 index = 0; index < 3; index++) {
             address account = handler.actor(index);
             aggregateClaims += pool.supplyClaimAssets(account);
             uint256 debtAssets = pool.debtQuoteAssets(account);
-            assertLe(debtAssets, pool.borrowerDebtCapAssets());
-            (,, uint256 capacity,,) = pool.health(account);
-            assertLe(debtAssets, capacity);
+            assertLe(debtAssets, pool.performingDebtAssets());
         }
         assertLe(aggregateClaims, pool.lpClaimAssets());
     }

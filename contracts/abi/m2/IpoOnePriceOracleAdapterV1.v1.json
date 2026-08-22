@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "ipo_one_m2_contract_abi_evidence.v1",
+  "contract": "IpoOnePriceOracleAdapterV1",
+  "source": "contracts/src/m2/IpoOnePriceOracleAdapterV1.sol",
+  "compiler": "0.8.30+commit.73712a01.Emscripten.clang",
+  "settings": {
+    "optimizer": true,
+    "optimizerRuns": 200,
+    "evmVersion": "cancun",
+    "bytecodeHash": "none",
+    "cborMetadata": false
+  },
+  "functionSignatures": [
+    "MAX_ORACLE_AGE_SECONDS()",
+    "MAX_ORACLE_FUTURE_SKEW_SECONDS()",
+    "WAD()",
+    "asset()",
+    "feed()",
+    "feedDecimals()",
+    "latestPrice()",
+    "marketChainId()",
+    "normalizationFactor()",
+    "sourceId()"
+  ],
+  "eventSignatures": [],
+  "errorSignatures": [
+    "InvalidConfiguration()"
+  ],
+  "creationBytecodeKeccak256": "0xc603db2c905b3641ea9454745e48d6d55c0933f74a0ec850de8e98df6736ac4b",
+  "runtimeBytecodeKeccak256": "0xe11dd1fd1c92dddd5012df3ef930c63ff9fbe9263b205a8d7344950b1219166d"
+}
