@@ -307,7 +307,12 @@ revertible without inventing permission for its successor.
   lifecycle and destruction; no reused signer. Migration: approved DB migration
   set only. Rollback: pause, disable profile, reconcile, preserve Evidence.
   Evidence: contracts, txs, configs, hashes, finality and owner sign-off.
-- Dependency/status: M2A-003..007 and enabled launch profile; blocked.
+- Dependency/status: M2A-003..007 are merged. The exact-decision schema,
+  fail-closed 13-gate Evidence template, dual-RPC dependency inspection and
+  Base Sepolia fork dry run are implemented and locally verified. Live
+  execution remains blocked by the disabled/null launch profile, independent
+  contract review, exact Risk caps/roles, current private gate Evidence and a
+  fresh one-use signer. No transaction was signed or broadcast.
 
 ### M2A-009 — recovery and v0.2.0 candidate
 
