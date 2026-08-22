@@ -71,6 +71,7 @@ const [
   fixtures,
   walletExecutionFixtures,
   venueExecutionFixtures,
+  securedPoolFixtures,
   handoffFixtures,
   capabilityManifestFixtures,
   workflowReceiptFixtures,
@@ -95,6 +96,10 @@ const [
   ).then(JSON.parse),
   readFile(
     join(root, "api", "tenant-protocol", "conformance", "venue-execution.v1.fixtures.json"),
+    "utf8"
+  ).then(JSON.parse),
+  readFile(
+    join(root, "api", "tenant-protocol", "conformance", "secured-pool-workspace.v1.fixtures.json"),
     "utf8"
   ).then(JSON.parse),
   readFile(
@@ -297,22 +302,26 @@ for (const forbiddenMcpOperation of [
 const validRequests = [
   ...(fixtures.validRequests ?? []),
   ...(walletExecutionFixtures.validRequests ?? []),
-  ...(venueExecutionFixtures.validRequests ?? [])
+  ...(venueExecutionFixtures.validRequests ?? []),
+  ...(securedPoolFixtures.validRequests ?? [])
 ];
 const invalidRequests = [
   ...(fixtures.invalidRequests ?? []),
   ...(walletExecutionFixtures.invalidRequests ?? []),
-  ...(venueExecutionFixtures.invalidRequests ?? [])
+  ...(venueExecutionFixtures.invalidRequests ?? []),
+  ...(securedPoolFixtures.invalidRequests ?? [])
 ];
 const validResults = [
   ...(fixtures.validResults ?? []),
   ...(walletExecutionFixtures.validResults ?? []),
-  ...(venueExecutionFixtures.validResults ?? [])
+  ...(venueExecutionFixtures.validResults ?? []),
+  ...(securedPoolFixtures.validResults ?? [])
 ];
 const invalidResults = [
   ...(fixtures.invalidResults ?? []),
   ...(walletExecutionFixtures.invalidResults ?? []),
-  ...(venueExecutionFixtures.invalidResults ?? [])
+  ...(venueExecutionFixtures.invalidResults ?? []),
+  ...(securedPoolFixtures.invalidResults ?? [])
 ];
 
 for (const fixture of validRequests) {

@@ -1384,6 +1384,37 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     approvalRequirement: ApprovalRequirement.DUAL_CONTROL,
     liveChecks: ["reconciliation", "projection_hash", "repair_dry_run"],
     worker: true
+  }),
+  tenantOperation({
+    operationId: "pilotReadOwnSecuredPool",
+    action: "pool.read.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.POOL_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["pool_binding", "pool_reconciliation"]
+  }),
+  tenantOperation({
+    operationId: "pilotReviewSecuredPoolAction",
+    action: "pool.action.review.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.POOL_ACTION_REVIEW_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["pool_binding", "pool_oracle", "pool_reconciliation", "pool_risk_control"]
+  }),
+  tenantOperation({
+    operationId: "pilotReadSecuredPoolRisk",
+    action: "pool.risk.read.tenant",
+    resourceType: "risk_portfolio",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.POOL_RISK_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    liveChecks: ["pool_reconciliation", "pool_risk_control"],
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
   })
 ]);
 

@@ -156,6 +156,8 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
     PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
     PilotCapability.OBLIGATION_READ_OWNED,
+    PilotCapability.POOL_READ_SELF,
+    PilotCapability.POOL_ACTION_REVIEW_SELF,
     PilotCapability.EVIDENCE_READ_OWNED,
     PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
     PilotCapability.CREDIT_PASSPORT_CREATE_SELF,

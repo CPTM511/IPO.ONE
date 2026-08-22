@@ -551,6 +551,33 @@
               </details>
             </section>
 
+            <section class="panel secured-pool-card" aria-labelledby="securedPoolTitle">
+              <div class="panel-heading stacked-mobile">
+                <div><p class="eyebrow">M2 · secured Pool · local synthetic state</p><h3 id="securedPoolTitle">Review liquidity or secured borrowing</h3><p>Load the current server-derived Pool position, then review one exact action. This surface cannot sign or submit a transaction.</p></div>
+                <span id="securedPoolStatus" class="state-pill neutral">Not loaded</span>
+              </div>
+              <div class="secured-pool-metrics" aria-label="Secured Pool workspace">
+                <div><span>Curated market</span><strong id="securedPoolMarket">Base Sepolia reference market</strong></div>
+                <div><span>Available liquidity</span><strong id="securedPoolLiquidity">0</strong></div>
+                <div><span>My position</span><strong id="securedPoolPosition">No server-derived position</strong></div>
+                <div><span>Health</span><strong id="securedPoolHealth">Unavailable</strong></div>
+              </div>
+              <div class="secured-pool-actions">
+                <button id="refreshSecuredPoolBtn" class="secondary" type="button">Refresh Pool state</button>
+                <form id="securedPoolReviewForm" class="secured-pool-review-form">
+                  <label>Exact action<select id="securedPoolActionType"><option value="supply">Supply liquidity</option><option value="withdraw">Withdraw liquidity</option><option value="deposit_collateral">Deposit collateral</option><option value="borrow">Borrow</option><option value="repay">Repay</option><option value="release_collateral">Release collateral</option></select></label>
+                  <label>Asset units<input id="securedPoolAmount" type="text" inputmode="numeric" pattern="[1-9][0-9]{0,77}" value="1000000" required /></label>
+                  <button id="reviewSecuredPoolActionBtn" class="primary" type="submit">Review exact action</button>
+                </form>
+              </div>
+              <dl class="secured-pool-review-facts">
+                <div><dt>Reviewed action</dt><dd id="securedPoolReviewAction">—</dd></div>
+                <div><dt>Exact amount</dt><dd id="securedPoolReviewAmount">—</dd></div>
+                <div><dt>Submission</dt><dd id="securedPoolSubmission">Unavailable until separately approved M2A-008 deployment</dd></div>
+              </dl>
+              <p id="securedPoolReviewHelper" class="risk-helper" role="status" aria-live="polite">Refresh current state first. Review produces no signature, RPC call, transaction, or funds movement.</p>
+            </section>
+
             <section class="panel credit-application-workbench" id="humanApplication" tabindex="-1" aria-labelledby="humanApplicationTitle">
               <div class="panel-heading workbench-heading">
                 <div>
@@ -2252,6 +2279,23 @@
                 <span id="privateRiskStatus" class="state-pill neutral" role="status">Not loaded</span>
               </header>
 
+              <section class="panel secured-pool-card" aria-labelledby="riskSecuredPoolTitle">
+                <div class="panel-heading stacked-mobile">
+                  <div><p class="eyebrow">M2 Pool control view · aggregate only</p><h3 id="riskSecuredPoolTitle">Solvency, oracle, reconciliation</h3><p>No account address, raw transaction, signer, or liquidation submission is exposed.</p></div>
+                  <span id="riskSecuredPoolStatus" class="state-pill neutral">Not loaded</span>
+                </div>
+                <div class="secured-pool-metrics" aria-label="Secured Pool risk posture">
+                  <div><span>Market</span><strong id="riskSecuredPoolMarket">Base Sepolia reference market</strong></div>
+                  <div><span>Positions</span><strong id="riskSecuredPoolPositions">0</strong></div>
+                  <div><span>Liquidatable</span><strong id="riskSecuredPoolLiquidatable">0</strong></div>
+                  <div><span>Discrepancies</span><strong id="riskSecuredPoolDiscrepancies">0</strong></div>
+                </div>
+                <div class="risk-workspace-actions">
+                  <p id="riskSecuredPoolHelper" class="risk-helper" role="status" aria-live="polite">Load the exact authorized Tenant risk portfolio first.</p>
+                  <button id="refreshRiskSecuredPoolBtn" class="secondary" type="button">Refresh Pool control view</button>
+                </div>
+              </section>
+
               <section class="panel risk-query-card" aria-labelledby="riskPortfolioTitle">
                 <div class="panel-heading stacked-mobile">
                   <div><p class="eyebrow">Aggregate exposure</p><h3 id="riskPortfolioTitle">Tenant portfolio posture</h3></div>
@@ -2820,6 +2864,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="operationStatus" class="sr-only" role="status" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=web018"></script>
+    <script type="module" src="/app.js?v=web019"></script>
   </body>
 </html>

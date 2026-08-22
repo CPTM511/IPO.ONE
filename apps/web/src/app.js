@@ -55,6 +55,7 @@ import {
   evaluateRequestCreditReviewBinding
 } from "./request-credit-review-binding.js";
 import { createRiskOperationsPresentation } from "./risk-operations-presentation.js";
+import { createSecuredPoolPresentation } from "./secured-pool-presentation.js";
 import { selectRiskWorkspaceReference } from "./risk-workspace-selection.js";
 import { createServicingCasePresentation } from "./servicing-case-presentation.js";
 import {
@@ -378,6 +379,20 @@ const riskOperations = {
   queueHelper: "Restoring the authorized servicing queue from authenticated server truth.",
   queueError: false
 };
+const securedPoolPilot = {
+  readAvailable: false,
+  reviewAvailable: false,
+  riskAvailable: false,
+  busy: false,
+  riskBusy: false,
+  workspace: null,
+  review: null,
+  risk: null,
+  helper: "Refresh current state first. Review produces no signature, RPC call, transaction, or funds movement.",
+  riskHelper: "Load the exact authorized Tenant risk portfolio first.",
+  error: false,
+  riskError: false
+};
 const executionWalletPilot = {
   catalogAvailable: false,
   busy: false,
@@ -409,6 +424,7 @@ const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [officialReportPilot, structuredClone(officialReportPilot)],
   [creditPassportPilot, structuredClone(creditPassportPilot)],
   [riskOperations, structuredClone(riskOperations)],
+  [securedPoolPilot, structuredClone(securedPoolPilot)],
   [executionWalletPilot, structuredClone(executionWalletPilot)]
 ]);
 const PROTECTIVE_REASON_CODES = new Set([
@@ -429,6 +445,9 @@ function clearRiskCatalogAvailability() {
   riskOperations.feedbackCatalogAvailable = false;
   riskOperations.queueCatalogAvailable = false;
   riskOperations.freezeCatalogAvailable = false;
+  securedPoolPilot.readAvailable = false;
+  securedPoolPilot.reviewAvailable = false;
+  securedPoolPilot.riskAvailable = false;
 }
 
 function invalidateRiskRequestOwners(lanes = Object.keys(riskRequestOwners)) {
@@ -9022,6 +9041,9 @@ async function runTenantPilotProbe(probeOwner) {
     riskOperations.queueReferenceCatalogAvailable =
       available.has("pilotReadServicingQueueReference");
     riskOperations.freezeCatalogAvailable = available.has("pilotFreezeSubject");
+    securedPoolPilot.readAvailable = available.has("pilotReadOwnSecuredPool");
+    securedPoolPilot.reviewAvailable = available.has("pilotReviewSecuredPoolAction");
+    securedPoolPilot.riskAvailable = available.has("pilotReadSecuredPoolRisk");
     const operationsAvailable = [...requiredOperations].every((operationId) => available.has(operationId));
     const csrfReady = Boolean(tenantCsrfToken());
     tenantPilot.connected = operationsAvailable && csrfReady;
@@ -12040,6 +12062,148 @@ async function freezeRiskSubject() {
   }
 }
 
+function renderSecuredPool() {
+  if (!el("securedPoolStatus")) return;
+  const presentation = createSecuredPoolPresentation({
+    workspace: securedPoolPilot.workspace,
+    review: securedPoolPilot.review,
+    risk: securedPoolPilot.risk
+  });
+  const subjectId = tenantInputValue("humanSubjectId");
+  const status = el("securedPoolStatus");
+  status.className = `state-pill ${securedPoolPilot.error ? "warning" : securedPoolPilot.workspace ? "" : "neutral"}`;
+  status.textContent = securedPoolPilot.busy
+    ? "Refreshing"
+    : !securedPoolPilot.readAvailable
+      ? "Operation unavailable"
+      : presentation.workspaceState;
+  el("securedPoolMarket").textContent = presentation.market;
+  el("securedPoolLiquidity").textContent = presentation.liquidity;
+  el("securedPoolPosition").textContent = presentation.position;
+  el("securedPoolHealth").textContent = presentation.health;
+  el("securedPoolSubmission").textContent = presentation.submission;
+  el("securedPoolReviewAction").textContent = presentation.reviewAction;
+  el("securedPoolReviewAmount").textContent = presentation.reviewAmount;
+  el("securedPoolReviewHelper").textContent = securedPoolPilot.review
+    ? presentation.reviewBlockers
+    : securedPoolPilot.helper;
+  el("securedPoolReviewHelper").classList.toggle("error", securedPoolPilot.error);
+  el("refreshSecuredPoolBtn").disabled =
+    securedPoolPilot.busy || !securedPoolPilot.readAvailable || !exactResourceId(subjectId);
+  el("reviewSecuredPoolActionBtn").disabled =
+    securedPoolPilot.busy || !securedPoolPilot.reviewAvailable || !securedPoolPilot.workspace;
+
+  const riskStatus = el("riskSecuredPoolStatus");
+  riskStatus.className = `state-pill ${securedPoolPilot.riskError ? "warning" : securedPoolPilot.risk ? "" : "neutral"}`;
+  riskStatus.textContent = securedPoolPilot.riskBusy
+    ? "Refreshing"
+    : !securedPoolPilot.riskAvailable
+      ? "Operation unavailable"
+      : presentation.riskState;
+  el("riskSecuredPoolMarket").textContent = presentation.market;
+  el("riskSecuredPoolPositions").textContent = presentation.riskPositions;
+  el("riskSecuredPoolLiquidatable").textContent = presentation.riskLiquidatable;
+  el("riskSecuredPoolDiscrepancies").textContent = presentation.riskDiscrepancies;
+  el("riskSecuredPoolHelper").textContent = securedPoolPilot.riskHelper;
+  el("riskSecuredPoolHelper").classList.toggle("error", securedPoolPilot.riskError);
+  el("refreshRiskSecuredPoolBtn").disabled =
+    securedPoolPilot.riskBusy || !securedPoolPilot.riskAvailable ||
+    riskOperations.portfolioSelection.status !== "selected";
+}
+
+async function loadSecuredPoolWorkspace() {
+  if (securedPoolPilot.busy) return;
+  const subjectId = tenantInputValue("humanSubjectId");
+  if (!exactResourceId(subjectId)) {
+    securedPoolPilot.error = true;
+    securedPoolPilot.helper = "Create or recover the authenticated Human Subject before loading Pool state.";
+    renderSecuredPool();
+    return;
+  }
+  securedPoolPilot.busy = true;
+  securedPoolPilot.error = false;
+  securedPoolPilot.helper = "Loading current Pool projection and exact owned position from server truth…";
+  renderSecuredPool();
+  try {
+    const result = await tenantApi("pilotReadOwnSecuredPool", {
+      resource: { resourceType: "subject", resourceId: subjectId },
+      payload: {},
+      idempotent: false
+    });
+    securedPoolPilot.workspace = result.response;
+    securedPoolPilot.review = null;
+    securedPoolPilot.helper = "Current local synthetic state loaded. Chain submission remains unavailable.";
+  } catch (error) {
+    securedPoolPilot.error = true;
+    securedPoolPilot.helper = `Pool state is unavailable. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    securedPoolPilot.busy = false;
+    renderSecuredPool();
+  }
+}
+
+async function reviewSecuredPoolAction() {
+  if (securedPoolPilot.busy) return;
+  const subjectId = tenantInputValue("humanSubjectId");
+  const amountAssets = tenantInputValue("securedPoolAmount");
+  const actionType = el("securedPoolActionType").value;
+  if (!exactResourceId(subjectId) || !/^[1-9][0-9]{0,77}$/.test(amountAssets)) {
+    securedPoolPilot.error = true;
+    securedPoolPilot.helper = "Choose one exact action and enter a positive whole asset-unit amount.";
+    renderSecuredPool();
+    return;
+  }
+  securedPoolPilot.busy = true;
+  securedPoolPilot.error = false;
+  securedPoolPilot.helper = "Reviewing exact market, position, liquidity, health, oracle, and reconciliation blockers…";
+  renderSecuredPool();
+  try {
+    const result = await tenantApi("pilotReviewSecuredPoolAction", {
+      resource: { resourceType: "subject", resourceId: subjectId },
+      payload: { actionType, amountAssets },
+      idempotent: false
+    });
+    securedPoolPilot.review = result.response;
+    securedPoolPilot.helper = "Exact action reviewed. Nothing was signed or submitted.";
+  } catch (error) {
+    securedPoolPilot.error = true;
+    securedPoolPilot.helper = `Pool review failed closed. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    securedPoolPilot.busy = false;
+    renderSecuredPool();
+  }
+}
+
+async function loadRiskSecuredPool() {
+  if (securedPoolPilot.riskBusy) return;
+  const portfolioId = riskOperations.portfolioSelection.resourceId;
+  if (riskOperations.portfolioSelection.status !== "selected" || !exactResourceId(portfolioId)) {
+    securedPoolPilot.riskError = true;
+    securedPoolPilot.riskHelper = "Restore the exact authorized Tenant risk portfolio before loading Pool controls.";
+    renderSecuredPool();
+    return;
+  }
+  securedPoolPilot.riskBusy = true;
+  securedPoolPilot.riskError = false;
+  securedPoolPilot.riskHelper = "Loading aggregate Pool solvency, oracle, reconciliation, and control state…";
+  renderSecuredPool();
+  try {
+    const result = await tenantApi("pilotReadSecuredPoolRisk", {
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      payload: {},
+      idempotent: false
+    });
+    securedPoolPilot.risk = result.response;
+    securedPoolPilot.riskHelper = "Aggregate state loaded; no address or liquidation submission authority was returned.";
+  } catch (error) {
+    securedPoolPilot.riskError = true;
+    securedPoolPilot.riskHelper = `Pool control view is unavailable. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    securedPoolPilot.riskBusy = false;
+    renderSecuredPool();
+  }
+}
+
 function renderRuntime() {
   if (!el("requestLog")) return;
   const architecture = createArchitectureCapabilityPresentation(serverCatalogSnapshot);
@@ -12110,6 +12274,7 @@ function render() {
   renderAuditorEvidence();
   renderCreditRegistryEvidence();
   renderRiskOperations();
+  renderSecuredPool();
   renderTradingCapital();
   renderCapitalPartner();
   renderRuntime();
@@ -12599,6 +12764,12 @@ function bindActions() {
     renderCreditRegistryEvidence();
   });
   el("refreshRiskWorkspaceBtn").addEventListener("click", refreshRiskWorkspace);
+  el("refreshSecuredPoolBtn").addEventListener("click", loadSecuredPoolWorkspace);
+  el("securedPoolReviewForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    reviewSecuredPoolAction();
+  });
+  el("refreshRiskSecuredPoolBtn").addEventListener("click", loadRiskSecuredPool);
   el("loadRiskInsightsBtn").addEventListener("click", loadRiskSupportingInsights);
   el("servicingQueueFilterForm").addEventListener("submit", (event) => {
     event.preventDefault();

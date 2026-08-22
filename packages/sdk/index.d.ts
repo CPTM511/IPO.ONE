@@ -502,3 +502,32 @@ export class VenueExecutionClient {
   }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueSubmitExecution">>;
   readExecution(input: VenueExecutionRequestIdentity & { executionId: string }): Promise<import("@ipo-one/api-contract").TenantProtocolResultFor<"venueReadExecution">>;
 }
+
+export type SecuredPoolAgentOperationId =
+  | "pilotReadOwnSecuredPool"
+  | "pilotReviewSecuredPoolAction";
+
+export const SECURED_POOL_AGENT_OPERATION_IDS: readonly SecuredPoolAgentOperationId[];
+
+export class IpoOneSecuredPoolSdkError extends Error {
+  code: string;
+  constructor(code: string, message: string);
+}
+
+export interface IpoOneSecuredPoolClientOptions {
+  execute(
+    request: import("@ipo-one/api-contract").TenantProtocolRequest
+  ): Promise<import("@ipo-one/api-contract").TenantProtocolResult>;
+  transportProfile: "local_in_process";
+}
+
+export class IpoOneSecuredPoolClient {
+  constructor(options: IpoOneSecuredPoolClientOptions);
+  listOperations(): SecuredPoolAgentOperationId[];
+  executeOperation(
+    request: Extract<
+      import("@ipo-one/api-contract").TenantProtocolRequest,
+      { operationId: SecuredPoolAgentOperationId }
+    >
+  ): Promise<import("@ipo-one/api-contract").TenantProtocolResult>;
+}

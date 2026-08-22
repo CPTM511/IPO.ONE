@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { TENANT_PROTOCOL_CATALOG } from "../../../../packages/api-contract/src/index.js";
 import {
   ActorType,
@@ -15,6 +16,15 @@ const csrfToken = "risk_operations_browser_qa_csrf_token_000000001";
 const portfolioId = "risk_portfolio_browser_qa";
 const servicingQueueId = "servicing_queue_browser_qa";
 const subjectId = "subject_case_17ad";
+const securedPoolRiskResult = JSON.parse(await readFile(
+  new URL(
+    "../../../../api/tenant-protocol/conformance/secured-pool-workspace.v1.fixtures.json",
+    import.meta.url
+  ),
+  "utf8"
+)).validResults.find(({ operationId }) =>
+  operationId === "pilotReadSecuredPoolRisk"
+);
 let riskWorkspaceScenario =
   process.env.IPO_ONE_BROWSER_QA_RISK_WORKSPACE_SCENARIO ?? "single";
 const RISK_WORKSPACE_SCENARIOS = new Set([
@@ -69,6 +79,49 @@ let browserSessionActive = true;
 let subjectFrozen = false;
 
 async function serveAuthentication({ request, response, url, requestId }) {
+  if (request.method === "GET" && url.pathname === "/.well-known/ipo-one.json") {
+    const releaseId = "f".repeat(40);
+    const body = JSON.stringify({
+      schemaVersion: "ipo_one_deployment_capability.v1",
+      deployment: {
+        hostingStatus: "PRODUCTION_HOSTED",
+        deploymentRole: "risk",
+        releaseId
+      },
+      chainEvidence: {
+        status: "DISABLED",
+        reasonCode: "approved_testnet_authority_unavailable",
+        currentUserWritesEnabled: false,
+        hashOnly: true,
+        network: null,
+        contractAddress: null,
+        transactionSubmissionConfigured: false,
+        observationConfigured: false,
+        finalityConfigured: false,
+        reconciliationConfigured: false,
+        historicalArtifactsAreCurrentUserEvidence: false,
+        lifecycleStates: [
+          "queued",
+          "submitted",
+          "observed",
+          "finalized",
+          "reconciled",
+          "failed"
+        ],
+        releaseId,
+        schemaVersion: "ipo_one_chain_capability.v1"
+      }
+    });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(body),
+      "x-content-type-options": "nosniff",
+      "x-request-id": requestId
+    });
+    response.end(body);
+    return true;
+  }
   if (
     request.method === "GET" &&
     url.pathname === "/__qa__/risk-workspace-scenario"
@@ -700,6 +753,9 @@ function servicingQueue(command) {
 }
 
 function resultFor(command) {
+  if (command.operationId === "pilotReadSecuredPoolRisk") {
+    return structuredClone(securedPoolRiskResult);
+  }
   if (command.operationId === "pilotReadTenantRiskPortfolioReference") {
     if (riskWorkspaceScenario === "multiple") unavailableWorkspaceReference();
     if (riskWorkspaceScenario === "portfolio-denied") deniedWorkspaceReference();

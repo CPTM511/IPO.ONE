@@ -1646,6 +1646,55 @@
       "responseSchemaVersion": "tenant_venue_execution_view.v1",
       "public": false,
       "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadOwnSecuredPool",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "pool.read.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_secured_pool_workspace.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReviewSecuredPoolAction",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "subject",
+      "requiredCapability": "pool.action.review.self",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_secured_pool_action_review.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "pilotReadSecuredPoolRisk",
+      "kind": "query",
+      "actorTypes": [
+        "risk_operator",
+        "operations_operator",
+        "auditor"
+      ],
+      "resourceType": "risk_portfolio",
+      "requiredCapability": "pool.risk.read.tenant",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_secured_pool_risk_view.v1",
+      "public": false,
+      "fundsAuthority": false
     }
   ],
   "safety": {
@@ -1671,6 +1720,8 @@
     "tradingCapitalNoFundsSettlementEnabled": true,
     "agenticWalletPreflightEnabled": true,
     "walletSubmissionEnabled": false,
+    "securedPoolWorkspaceEnabled": true,
+    "securedPoolSubmissionEnabled": false,
     "productionIdentityEnabled": false,
     "rawPiiAllowed": false
   },

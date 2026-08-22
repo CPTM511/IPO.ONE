@@ -287,7 +287,10 @@ revertible without inventing permission for its successor.
   Rollback: feature gate off with truthful disabled state. Evidence: deployed
   SHA visible-click captures and queryable receipts.
 - Dependency/status: M2A-006 local kernel integration is complete; M2A-007 is
-  not started and remains a separate UI/API/SDK/MCP issue.
+  implemented and locally verified at `L0_LOCAL_NO_FUNDS`. Human/LP review,
+  aggregate Risk/Ops read, and Agent SDK/MCP read/review share one closed
+  protocol family; transaction submission remains absent and M2A-008 remains
+  the separately approved deployment issue.
 
 ### M2A-008 — exact Base Sepolia deployment
 

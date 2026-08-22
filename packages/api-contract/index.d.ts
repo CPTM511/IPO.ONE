@@ -101,7 +101,10 @@ export type TenantProtocolOperationId =
   | "venueRevokeDelegate"
   | "venuePrepareExecution"
   | "venueSubmitExecution"
-  | "venueReadExecution";
+  | "venueReadExecution"
+  | "pilotReadOwnSecuredPool"
+  | "pilotReviewSecuredPoolAction"
+  | "pilotReadSecuredPoolRisk";
 
 export type TenantProtocolRequestSchemaVersion = "tenant_protocol_request.v1";
 export type TenantProtocolResultSchemaVersion = "tenant_protocol_result.v1";
@@ -1795,7 +1798,36 @@ export interface VenueReadExecutionRequest extends TenantProtocolRequestBase {
   resource: { resourceType: "venue_execution"; resourceId: string };
 }
 
+export type SecuredPoolActionType =
+  | "supply"
+  | "withdraw"
+  | "deposit_collateral"
+  | "borrow"
+  | "repay"
+  | "release_collateral";
+
+export interface ReadOwnSecuredPoolRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadOwnSecuredPool";
+  payload: Record<string, never>;
+  resource: { resourceType: "subject"; resourceId: string };
+}
+
+export interface ReviewSecuredPoolActionRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReviewSecuredPoolAction";
+  payload: { actionType: SecuredPoolActionType; amountAssets: string };
+  resource: { resourceType: "subject"; resourceId: string };
+}
+
+export interface ReadSecuredPoolRiskRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadSecuredPoolRisk";
+  payload: Record<string, never>;
+  resource: { resourceType: "risk_portfolio"; resourceId: string };
+}
+
 export type TenantProtocolRequest =
+  | ReadOwnSecuredPoolRequest
+  | ReviewSecuredPoolActionRequest
+  | ReadSecuredPoolRiskRequest
   | WalletPrepareAccountBindingRequest
   | WalletSubmitAccountBindingRequest
   | WalletReadAccountBindingsRequest
@@ -4497,7 +4529,70 @@ export interface TenantProtocolResultBase<
   schemaVersion: TenantProtocolResultSchemaVersion;
 }
 
+export interface SecuredPoolWorkspaceResponse {
+  subjectId: string;
+  market: Record<string, unknown>;
+  position: Record<string, unknown> | null;
+  accountBindingAvailable: boolean;
+  obligation: Record<string, unknown> | null;
+  actions: Record<string, "review_only">;
+  submission: {
+    state: "unavailable";
+    reasonCode: "pool_deployment_unavailable";
+    recoveryCondition: string;
+    transactionHash: null;
+    finality: "not_applicable";
+  };
+  serverDerived: true;
+  syntheticOnly: true;
+  productionFundsMoved: false;
+  schemaVersion: "tenant_secured_pool_workspace.v1";
+}
+
+export interface SecuredPoolActionReviewResponse {
+  actionType: SecuredPoolActionType;
+  amountAssets: string;
+  chainId: string | null;
+  contractAddress: string | null;
+  marketId: string | null;
+  position: Record<string, unknown> | null;
+  preview: {
+    supplySharesDelta: string | null;
+    collateralAssetsAfter: string | null;
+    debtAssetsAfter: string | null;
+    healthAfter: Record<string, unknown> | null;
+  };
+  blockerReasonCodes: string[];
+  reviewedAt: string;
+  reviewHash: string;
+  reviewState: "blocked_before_submission";
+  submittable: false;
+  transactionState: "not_submitted";
+  finality: "not_applicable";
+  recoveryCondition: string;
+  syntheticOnly: true;
+  productionFundsMoved: false;
+  schemaVersion: "tenant_secured_pool_action_review.v1";
+}
+
+export interface SecuredPoolRiskViewResponse {
+  portfolioId: string;
+  market: Record<string, unknown>;
+  positionCount: number;
+  liquidatablePositionCount: number;
+  discrepancyCount: number;
+  controls: Record<string, boolean>;
+  submission: Record<string, unknown>;
+  serverDerived: true;
+  syntheticOnly: true;
+  productionFundsMoved: false;
+  schemaVersion: "tenant_secured_pool_risk_view.v1";
+}
+
 export type TenantProtocolResult =
+  | TenantProtocolResultBase<"pilotReadOwnSecuredPool", SecuredPoolWorkspaceResponse>
+  | TenantProtocolResultBase<"pilotReviewSecuredPoolAction", SecuredPoolActionReviewResponse>
+  | TenantProtocolResultBase<"pilotReadSecuredPoolRisk", SecuredPoolRiskViewResponse>
   | TenantProtocolResultBase<"walletPrepareAccountBinding", ExecutionAccountBindingChallengeResponse>
   | TenantProtocolResultBase<"walletSubmitAccountBinding", ExecutionAccountBindingMutationResponse>
   | TenantProtocolResultBase<"walletReadAccountBindings", ExecutionAccountBindingsViewResponse>
@@ -5535,6 +5630,36 @@ export type TenantProtocolOperation =
       "required",
       "worker",
       "provider_sandbox_callback_result.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadOwnSecuredPool",
+      "query",
+      readonly ["human", "agent"],
+      "subject",
+      "pool.read.self",
+      "prohibited",
+      "read",
+      "tenant_secured_pool_workspace.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReviewSecuredPoolAction",
+      "query",
+      readonly ["human", "agent"],
+      "subject",
+      "pool.action.review.self",
+      "prohibited",
+      "read",
+      "tenant_secured_pool_action_review.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadSecuredPoolRisk",
+      "query",
+      readonly ["risk_operator", "operations_operator", "auditor"],
+      "risk_portfolio",
+      "pool.risk.read.tenant",
+      "prohibited",
+      "read",
+      "tenant_secured_pool_risk_view.v1"
     >;
 
 export interface TenantProtocolCatalog {
@@ -5583,6 +5708,8 @@ export interface TenantProtocolCatalog {
     tradingCapitalNoFundsSettlementEnabled: true;
     agenticWalletPreflightEnabled: true;
     walletSubmissionEnabled: false;
+    securedPoolWorkspaceEnabled: true;
+    securedPoolSubmissionEnabled: false;
     productionIdentityEnabled: false;
     rawPiiAllowed: false;
   };

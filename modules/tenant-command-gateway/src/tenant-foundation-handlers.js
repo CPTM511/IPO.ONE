@@ -17,6 +17,7 @@ import { createOfficialReportHandlers } from "./official-report-handlers.js";
 import { createPilotHealthQueryHandlers } from "./pilot-health-query-handlers.js";
 import { createPilotFeedbackHandlers } from "./pilot-feedback-handlers.js";
 import { createServicingQueueQueryHandlers } from "./servicing-queue-query-handlers.js";
+import { createSecuredPoolWorkspaceHandlers } from "./secured-pool-workspace-handlers.js";
 import { createProviderHandlers } from "./provider-handlers.js";
 import { createSandboxServicingHandlers } from "./servicing-handlers.js";
 import { createSubjectRiskHandlers } from "./subject-risk-handlers.js";
@@ -58,6 +59,7 @@ export function createTenantFoundationHandlers(options) {
     ...createPilotHealthQueryHandlers(),
     ...createPilotFeedbackHandlers(),
     ...createServicingQueueQueryHandlers(),
+    ...createSecuredPoolWorkspaceHandlers(),
     ...createCreditIntentHandlers(),
     ...createHumanSubjectHandlers(),
     ...createWorkspaceResumeHandlers(),
