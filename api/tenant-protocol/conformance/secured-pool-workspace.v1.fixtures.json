@@ -1,0 +1,148 @@
+{
+  "validRequests": [
+    {
+      "operationId": "pilotReadOwnSecuredPool",
+      "payload": {},
+      "resource": { "resourceType": "subject", "resourceId": "subject_pool_fixture" },
+      "requestId": "request_pool_workspace_fixture_001",
+      "correlationId": "correlation_pool_workspace_fixture_001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReviewSecuredPoolAction",
+      "payload": { "actionType": "borrow", "amountAssets": "1000000" },
+      "resource": { "resourceType": "subject", "resourceId": "subject_pool_fixture" },
+      "requestId": "request_pool_review_fixture_001",
+      "correlationId": "correlation_pool_review_fixture_001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadSecuredPoolRisk",
+      "payload": {},
+      "resource": { "resourceType": "risk_portfolio", "resourceId": "risk_portfolio_fixture" },
+      "requestId": "request_pool_risk_fixture_001",
+      "correlationId": "correlation_pool_risk_fixture_001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    }
+  ],
+  "invalidRequests": [
+    {
+      "operationId": "pilotReviewSecuredPoolAction",
+      "payload": { "actionType": "borrow", "amountAssets": "1000000", "submit": true },
+      "resource": { "resourceType": "subject", "resourceId": "subject_pool_fixture" },
+      "requestId": "request_pool_review_invalid_001",
+      "correlationId": "correlation_pool_review_invalid_001",
+      "schemaVersion": "tenant_protocol_request.v1"
+    }
+  ],
+  "validResults": [
+    {
+      "operationId": "pilotReadOwnSecuredPool",
+      "replayed": false,
+      "response": {
+        "subjectId": "subject_pool_fixture",
+        "market": {
+          "status": "not_indexed",
+          "chainId": "eip155:84532",
+          "contractAddress": null,
+          "marketId": null,
+          "accounting": null,
+          "oracle": { "state": "unavailable", "observedAt": null },
+          "reconciliation": { "state": "unavailable", "reasonCode": "pool_state_unavailable" },
+          "riskControl": { "newRiskFrozen": true, "reasonCode": "pool_state_unavailable" }
+        },
+        "position": null,
+        "accountBindingAvailable": false,
+        "obligation": null,
+        "actions": {
+          "supply": "review_only",
+          "withdraw": "review_only",
+          "depositCollateral": "review_only",
+          "borrow": "review_only",
+          "repay": "review_only",
+          "releaseCollateral": "review_only"
+        },
+        "submission": {
+          "state": "unavailable",
+          "reasonCode": "pool_deployment_unavailable",
+          "recoveryCondition": "Complete separately approved M2A-008 exact Base Sepolia deployment",
+          "transactionHash": null,
+          "finality": "not_applicable"
+        },
+        "serverDerived": true,
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "tenant_secured_pool_workspace.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReviewSecuredPoolAction",
+      "replayed": false,
+      "response": {
+        "actionType": "borrow",
+        "amountAssets": "1000000",
+        "chainId": "eip155:84532",
+        "contractAddress": null,
+        "marketId": null,
+        "position": null,
+        "preview": {
+          "supplySharesDelta": null,
+          "collateralAssetsAfter": null,
+          "debtAssetsAfter": null,
+          "healthAfter": null
+        },
+        "blockerReasonCodes": ["pool_state_unavailable", "pool_deployment_unavailable"],
+        "reviewedAt": "2026-08-23T00:00:00.000Z",
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "reviewHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "reviewState": "blocked_before_submission",
+        "submittable": false,
+        "transactionState": "not_submitted",
+        "finality": "not_applicable",
+        "recoveryCondition": "Complete separately approved M2A-008 exact Base Sepolia deployment",
+        "schemaVersion": "tenant_secured_pool_action_review.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadSecuredPoolRisk",
+      "replayed": false,
+      "response": {
+        "portfolioId": "risk_portfolio_fixture",
+        "market": { "status": "not_indexed", "chainId": "eip155:84532" },
+        "positionCount": 0,
+        "liquidatablePositionCount": 0,
+        "discrepancyCount": 0,
+        "controls": {
+          "freezeNewRisk": true,
+          "automaticRecoveryEnabled": false,
+          "dualControlRequiredForRecovery": true,
+          "protectiveRepaymentAvailable": true,
+          "liquidationSubmissionAvailable": false
+        },
+        "submission": {
+          "state": "unavailable",
+          "reasonCode": "pool_deployment_unavailable",
+          "transactionHash": null,
+          "finality": "not_applicable"
+        },
+        "serverDerived": true,
+        "syntheticOnly": true,
+        "productionFundsMoved": false,
+        "schemaVersion": "tenant_secured_pool_risk_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    }
+  ],
+  "invalidResults": [
+    {
+      "operationId": "pilotReadOwnSecuredPool",
+      "replayed": false,
+      "response": { "productionFundsMoved": true },
+      "schemaVersion": "tenant_protocol_result.v1"
+    }
+  ],
+  "schemaVersion": "secured_pool_workspace_conformance.v1"
+}

@@ -1069,6 +1069,71 @@
       ]
     },
     {
+      "operationId": "pilotReadOwnSecuredPool",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_secured_pool_workspace.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/secured-pool-workspace-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "packages/sdk/src/secured-pool-client.js",
+        "apps/agent-mcp/src/secured-pool-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
+        "packages/sdk/test/secured-pool-client.test.js",
+        "apps/web/test/e2e/workspace-navigation.spec.mjs"
+      ]
+    },
+    {
+      "operationId": "pilotReviewSecuredPoolAction",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_secured_pool_action_review.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/secured-pool-workspace-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "packages/sdk/src/secured-pool-client.js",
+        "apps/agent-mcp/src/secured-pool-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
+        "packages/sdk/test/secured-pool-client.test.js",
+        "apps/agent-mcp/test/secured-pool-mcp-adapter.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadSecuredPoolRisk",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_secured_pool_risk_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/secured-pool-workspace-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/web/src/secured-pool-presentation.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
+        "apps/web/test/secured-pool-presentation.test.js",
+        "apps/web/test/support/risk-operations-browser-host.mjs"
+      ]
+    },
+    {
       "operationId": "pilotReadOwnObligation",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_owned_obligation_view.v1",
@@ -2302,6 +2367,37 @@
             "REALVALUE-001"
           ],
           "humanGateRequired": true
+        },
+        {
+          "actionId": "request_credit.review_secured_pool_action",
+          "label": "Read the owned secured-Pool position and review one exact no-funds action",
+          "prototypeLabels": [
+            "Refresh Pool state",
+            "Review exact action"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadOwnSecuredPool",
+            "pilotReviewSecuredPoolAction"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/secured-pool-presentation.js",
+            "packages/sdk/src/secured-pool-client.js",
+            "apps/agent-mcp/src/secured-pool-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "apps/web/test/e2e/workspace-navigation.spec.mjs",
+            "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
+            "packages/sdk/test/secured-pool-client.test.js"
+          ],
+          "truthBoundary": "Only local synthetic PostgreSQL projection facts are authoritative. Review never signs or submits, and pool_deployment_unavailable remains mandatory until M2A-008.",
+          "nextTaskIds": [
+            "M2A-008"
+          ],
+          "humanGateRequired": false
         },
         {
           "actionId": "request_credit.best_available_router",
@@ -3753,6 +3849,33 @@
             "V9-008"
           ],
           "humanGateRequired": true
+        },
+        {
+          "actionId": "risk_operations.read_secured_pool_control",
+          "label": "Read aggregate secured-Pool solvency, oracle, reconciliation, and control state",
+          "prototypeLabels": [
+            "Refresh Pool control view"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadSecuredPoolRisk"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/secured-pool-presentation.js"
+          ],
+          "testFiles": [
+            "apps/web/test/secured-pool-presentation.test.js",
+            "apps/web/test/support/risk-operations-browser-host.mjs",
+            "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js"
+          ],
+          "truthBoundary": "The result is aggregate, PII-free and read-only; it exposes no address, signer, liquidation submission, transaction, or funds authority.",
+          "nextTaskIds": [
+            "M2A-008"
+          ],
+          "humanGateRequired": false
         },
         {
           "actionId": "risk_operations.resolve_sandbox_servicing",

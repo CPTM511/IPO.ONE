@@ -465,6 +465,8 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
     tradingCapitalNoFundsSettlementEnabled: true,
     agenticWalletPreflightEnabled: true,
     walletSubmissionEnabled: false,
+    securedPoolWorkspaceEnabled: true,
+    securedPoolSubmissionEnabled: false,
     productionIdentityEnabled: false,
     rawPiiAllowed: false
   });

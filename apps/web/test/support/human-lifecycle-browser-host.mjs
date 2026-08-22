@@ -60,6 +60,18 @@ const tenantProtocolFixtures = JSON.parse(await readFile(
   ),
   "utf8"
 ));
+const securedPoolFixtures = JSON.parse(await readFile(
+  new URL(
+    "../../../../api/tenant-protocol/conformance/secured-pool-workspace.v1.fixtures.json",
+    import.meta.url
+  ),
+  "utf8"
+));
+const securedPoolResult = (operationId) => structuredClone(
+  securedPoolFixtures.validResults.find((fixture) =>
+    fixture.operationId === operationId
+  )
+);
 const creditPassportCreateFixture = tenantProtocolFixtures.validResults.find(
   ({ operationId }) => operationId === "pilotCreateCreditPassportArtifact"
 );
@@ -84,6 +96,8 @@ const supportedBrowserQaOperationIds = new Set([
   "pilotReadOwnObligation",
   "pilotReadOwnObligationEvidence",
   "pilotReadOwnCreditState",
+  "pilotReadOwnSecuredPool",
+  "pilotReviewSecuredPoolAction",
   "pilotCreateOfficialReport",
   "pilotReadOfficialReport",
   "pilotRetrieveOfficialReport",
@@ -552,6 +566,17 @@ function resultFor(command) {
   const { operationId } = command;
   if (operationId === "pilotReadTenantRisk" || operationId === "pilotFreezeSubject") {
     throw new DomainError("authorization_denied", "The requested operation is not available.");
+  }
+  if (operationId === "pilotReadOwnSecuredPool") {
+    const result = securedPoolResult(operationId);
+    result.response.subjectId = command.resource.resourceId;
+    return result;
+  }
+  if (operationId === "pilotReviewSecuredPoolAction") {
+    const result = securedPoolResult(operationId);
+    result.response.actionType = command.payload.actionType;
+    result.response.amountAssets = command.payload.amountAssets;
+    return result;
   }
   if (operationId === "pilotCreateHumanSubject") {
     currentSubjectCreated = true;

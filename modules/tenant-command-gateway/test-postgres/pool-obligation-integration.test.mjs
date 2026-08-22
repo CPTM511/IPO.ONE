@@ -31,7 +31,12 @@ import {
   setTenantTransactionContext
 } from "../../persistence/src/index.js";
 import { PostgresCreditOutcomeMaterializer } from "../../credit-learning/src/index.js";
-import { PoolObligationIntegrationService } from "../src/index.js";
+import {
+  PoolObligationIntegrationService,
+  readOwnSecuredPoolQueryHandler,
+  readSecuredPoolRiskQueryHandler,
+  reviewSecuredPoolActionQueryHandler
+} from "../src/index.js";
 
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const TENANT_ID = "tenant_ipo_one_local_pilot";
@@ -499,6 +504,45 @@ test("M2A-006 binding and finalized-effect import are atomic, RLS-isolated, repl
     assert.equal(durable.receipt.rows[0].automatic_limit_change, false);
     assert.equal(durable.evidence.rows[0].count, 1);
     assert.equal(durable.ledger.rows[0].count, 1);
+
+    const workspaceRepository = new PostgresCoreRepository({
+      pool: appPool,
+      eventRepository: new PostgresEventRepository({ pool: appPool, tenantContext: CONTEXT })
+    });
+    const productSurfaces = await withContext(appPool, CONTEXT, async (client) => {
+      const workspace = await readOwnSecuredPoolQueryHandler().execute({
+        client,
+        coreRepository: workspaceRepository,
+        resource: { resourceType: "subject", resourceId: SUBJECT_ID },
+        payload: {},
+        now: new Date("2026-08-23T01:15:00.000Z")
+      });
+      const review = await reviewSecuredPoolActionQueryHandler().execute({
+        client,
+        coreRepository: workspaceRepository,
+        resource: { resourceType: "subject", resourceId: SUBJECT_ID },
+        payload: { actionType: "borrow", amountAssets: "1000" },
+        now: new Date("2026-08-23T01:15:00.000Z")
+      });
+      const risk = await readSecuredPoolRiskQueryHandler().execute({
+        client,
+        authorizationDecision: {
+          resourceType: "risk_portfolio",
+          resourceId: "risk_portfolio_m2a007"
+        },
+        payload: {},
+        now: new Date("2026-08-23T01:15:00.000Z")
+      });
+      return { workspace, review, risk };
+    });
+    assert.equal(productSurfaces.workspace.market.status, "local_synthetic_indexed");
+    assert.equal(productSurfaces.workspace.position.debtAssets, "2000");
+    assert.equal(productSurfaces.workspace.accountBindingAvailable, true);
+    assert.equal(JSON.stringify(productSurfaces.workspace).includes(ACCOUNT), false);
+    assert.equal(productSurfaces.review.submittable, false);
+    assert.equal(productSurfaces.review.transactionState, "not_submitted");
+    assert.equal(productSurfaces.risk.positionCount, 2);
+    assert.equal(productSurfaces.risk.controls.liquidationSubmissionAvailable, false);
 
     const restarted = new PoolObligationIntegrationService({ pool: appPool, tenantContext: CONTEXT });
     const replayed = await restarted.importFinalizedEffect({

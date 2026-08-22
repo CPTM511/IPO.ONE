@@ -85,3 +85,44 @@ test("Borrower sees exact-release chain writing as explicitly disabled", async (
   await expect(page.locator("#anchorPendingEvidenceBtn")).toBeHidden();
   await expect(page.locator("#humanObligationChainAnchorLink")).toBeHidden();
 });
+
+test("Borrower visibly reviews an exact secured-Pool action without submission", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#request-credit");
+
+  const pool = page.getByRole("region", { name: "Review liquidity or secured borrowing" });
+  await expect(pool).toBeVisible();
+  await pool.getByRole("button", { name: "Refresh Pool state" }).click();
+  await expect(page.locator("#securedPoolStatus")).toHaveText("Awaiting indexed state");
+  await expect(page.locator("#securedPoolSubmission")).toContainText("M2A-008");
+
+  await page.locator("#securedPoolActionType").focus();
+  await page.keyboard.press("b");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("1000000");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+
+  await expect(page.locator("#securedPoolReviewAction")).toHaveText("Borrow");
+  await expect(page.locator("#securedPoolReviewAmount")).toHaveText("1000000");
+  await expect(page.locator("#securedPoolReviewHelper")).toContainText(
+    "pool_deployment_unavailable"
+  );
+  await expect(page.locator("#securedPoolSubmission")).toContainText("M2A-008");
+});
+
+test("secured-Pool controls remain usable at 200 percent zoom", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/#request-credit");
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "200%";
+  });
+
+  const refresh = page.getByRole("button", { name: "Refresh Pool state" });
+  await refresh.scrollIntoViewIfNeeded();
+  await expect(refresh).toBeVisible();
+  await refresh.click();
+  await expect(page.locator("#securedPoolReviewForm")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Review exact action" })).toBeEnabled();
+});

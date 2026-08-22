@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 103,
-      "maxItems": 103,
+      "minItems": 106,
+      "maxItems": 106,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -149,6 +149,8 @@
         "tradingCapitalNoFundsEvidenceEnabled",
         "tradingCapitalNoFundsMatchingEnabled",
         "tradingCapitalNoFundsSettlementEnabled",
+        "securedPoolWorkspaceEnabled",
+        "securedPoolSubmissionEnabled",
         "agenticWalletPreflightEnabled",
         "walletSubmissionEnabled",
         "productionIdentityEnabled",
@@ -220,6 +222,12 @@
         },
         "tradingCapitalNoFundsSettlementEnabled": {
           "const": true
+        },
+        "securedPoolWorkspaceEnabled": {
+          "const": true
+        },
+        "securedPoolSubmissionEnabled": {
+          "const": false
         },
         "agenticWalletPreflightEnabled": {
           "const": true
@@ -355,7 +363,10 @@
             "venueRevokeDelegate",
             "venuePrepareExecution",
             "venueSubmitExecution",
-            "venueReadExecution"
+            "venueReadExecution",
+            "pilotReadOwnSecuredPool",
+            "pilotReviewSecuredPoolAction",
+            "pilotReadSecuredPoolRisk"
           ]
         },
         "kind": {
@@ -514,7 +525,10 @@
             "venue.delegate.revoke.owned",
             "venue.execution.prepare.owned",
             "venue.execution.submit.owned",
-            "venue.execution.read.owned"
+            "venue.execution.read.owned",
+            "pool.read.self",
+            "pool.action.review.self",
+            "pool.risk.read.tenant"
           ]
         },
         "idempotency": {
@@ -640,7 +654,10 @@
             "tenant_venue_delegate_revocation_blocked.v1",
             "tenant_venue_execution_prepared.v1",
             "tenant_venue_execution_submission_blocked.v1",
-            "tenant_venue_execution_view.v1"
+            "tenant_venue_execution_view.v1",
+            "tenant_secured_pool_workspace.v1",
+            "tenant_secured_pool_action_review.v1",
+            "tenant_secured_pool_risk_view.v1"
           ]
         },
         "public": {
@@ -3344,6 +3361,30 @@
             "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "venue_execution" },
             "requiredCapability": { "const": "venue.execution.read.owned" }, "idempotency": { "const": "prohibited" },
             "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "tenant_venue_execution_view.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadOwnSecuredPool" }, "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "pool.read.self" }, "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "tenant_secured_pool_workspace.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReviewSecuredPoolAction" }, "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] }, "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "pool.action.review.self" }, "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "tenant_secured_pool_action_review.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadSecuredPoolRisk" }, "kind": { "const": "query" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator", "auditor"] }, "resourceType": { "const": "risk_portfolio" },
+            "requiredCapability": { "const": "pool.risk.read.tenant" }, "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" }, "responseSchemaVersion": { "const": "tenant_secured_pool_risk_view.v1" }
           }
         }
       ]

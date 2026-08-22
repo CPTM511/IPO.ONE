@@ -115,7 +115,10 @@
         "venueRevokeDelegate",
         "venuePrepareExecution",
         "venueSubmitExecution",
-        "venueReadExecution"
+        "venueReadExecution",
+        "pilotReadOwnSecuredPool",
+        "pilotReviewSecuredPoolAction",
+        "pilotReadSecuredPoolRisk"
       ]
     },
     "replayed": {
@@ -129,6 +132,24 @@
     }
   },
   "oneOf": [
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadOwnSecuredPool" },
+        "response": { "$ref": "#/$defs/securedPoolWorkspaceResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReviewSecuredPoolAction" },
+        "response": { "$ref": "#/$defs/securedPoolActionReviewResponse" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadSecuredPoolRisk" },
+        "response": { "$ref": "#/$defs/securedPoolRiskViewResponse" }
+      }
+    },
     {
       "properties": {
         "operationId": { "const": "walletPrepareAccountBinding" },
@@ -1305,6 +1326,121 @@
     }
   ],
   "$defs": {
+    "securedPoolWorkspaceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectId", "market", "position", "accountBindingAvailable", "obligation", "actions", "submission", "serverDerived", "syntheticOnly", "productionFundsMoved", "schemaVersion"],
+      "properties": {
+        "subjectId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "market": { "type": "object" },
+        "position": { "anyOf": [{ "type": "object" }, { "type": "null" }] },
+        "accountBindingAvailable": { "type": "boolean" },
+        "obligation": { "anyOf": [{ "type": "object" }, { "type": "null" }] },
+        "actions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["supply", "withdraw", "depositCollateral", "borrow", "repay", "releaseCollateral"],
+          "properties": {
+            "supply": { "const": "review_only" },
+            "withdraw": { "const": "review_only" },
+            "depositCollateral": { "const": "review_only" },
+            "borrow": { "const": "review_only" },
+            "repay": { "const": "review_only" },
+            "releaseCollateral": { "const": "review_only" }
+          }
+        },
+        "submission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "recoveryCondition", "transactionHash", "finality"],
+          "properties": {
+            "state": { "const": "unavailable" },
+            "reasonCode": { "const": "pool_deployment_unavailable" },
+            "recoveryCondition": { "type": "string", "minLength": 1 },
+            "transactionHash": { "type": "null" },
+            "finality": { "const": "not_applicable" }
+          }
+        },
+        "serverDerived": { "const": true },
+        "syntheticOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "schemaVersion": { "const": "tenant_secured_pool_workspace.v1" }
+      }
+    },
+    "securedPoolActionReviewResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionType", "amountAssets", "chainId", "contractAddress", "marketId", "position", "preview", "blockerReasonCodes", "reviewedAt", "syntheticOnly", "productionFundsMoved", "reviewHash", "reviewState", "submittable", "transactionState", "finality", "recoveryCondition", "schemaVersion"],
+      "properties": {
+        "actionType": { "enum": ["supply", "withdraw", "deposit_collateral", "borrow", "repay", "release_collateral"] },
+        "amountAssets": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" },
+        "chainId": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "contractAddress": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "marketId": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "position": { "anyOf": [{ "type": "object" }, { "type": "null" }] },
+        "preview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["supplySharesDelta", "collateralAssetsAfter", "debtAssetsAfter", "healthAfter"],
+          "properties": {
+            "supplySharesDelta": { "anyOf": [{ "type": "string", "pattern": "^[0-9]+$" }, { "type": "null" }] },
+            "collateralAssetsAfter": { "anyOf": [{ "type": "string", "pattern": "^[0-9]+$" }, { "type": "null" }] },
+            "debtAssetsAfter": { "anyOf": [{ "type": "string", "pattern": "^[0-9]+$" }, { "type": "null" }] },
+            "healthAfter": { "anyOf": [{ "type": "object" }, { "type": "null" }] }
+          }
+        },
+        "blockerReasonCodes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "syntheticOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "reviewHash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+        "reviewState": { "const": "blocked_before_submission" },
+        "submittable": { "const": false },
+        "transactionState": { "const": "not_submitted" },
+        "finality": { "const": "not_applicable" },
+        "recoveryCondition": { "type": "string", "minLength": 1 },
+        "schemaVersion": { "const": "tenant_secured_pool_action_review.v1" }
+      }
+    },
+    "securedPoolRiskViewResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["portfolioId", "market", "positionCount", "liquidatablePositionCount", "discrepancyCount", "controls", "submission", "serverDerived", "syntheticOnly", "productionFundsMoved", "schemaVersion"],
+      "properties": {
+        "portfolioId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "market": { "type": "object" },
+        "positionCount": { "type": "integer", "minimum": 0 },
+        "liquidatablePositionCount": { "type": "integer", "minimum": 0 },
+        "discrepancyCount": { "type": "integer", "minimum": 0 },
+        "controls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["freezeNewRisk", "automaticRecoveryEnabled", "dualControlRequiredForRecovery", "protectiveRepaymentAvailable", "liquidationSubmissionAvailable"],
+          "properties": {
+            "freezeNewRisk": { "type": "boolean" },
+            "automaticRecoveryEnabled": { "const": false },
+            "dualControlRequiredForRecovery": { "const": true },
+            "protectiveRepaymentAvailable": { "const": true },
+            "liquidationSubmissionAvailable": { "const": false }
+          }
+        },
+        "submission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "transactionHash", "finality"],
+          "properties": {
+            "state": { "const": "unavailable" },
+            "reasonCode": { "const": "pool_deployment_unavailable" },
+            "transactionHash": { "type": "null" },
+            "finality": { "const": "not_applicable" }
+          }
+        },
+        "serverDerived": { "const": true },
+        "syntheticOnly": { "const": true },
+        "productionFundsMoved": { "const": false },
+        "schemaVersion": { "const": "tenant_secured_pool_risk_view.v1" }
+      }
+    },
     "walletSafety": {
       "type": "object",
       "additionalProperties": false,

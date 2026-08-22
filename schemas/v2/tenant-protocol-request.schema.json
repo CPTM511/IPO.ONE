@@ -116,7 +116,10 @@
         "venueRevokeDelegate",
         "venuePrepareExecution",
         "venueSubmitExecution",
-        "venueReadExecution"
+        "venueReadExecution",
+        "pilotReadOwnSecuredPool",
+        "pilotReviewSecuredPoolAction",
+        "pilotReadSecuredPoolRisk"
       ]
     },
     "payload": {
@@ -178,6 +181,36 @@
     }
   },
   "oneOf": [
+    {
+      "title": "Read Own Secured Pool Workspace",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "pilotReadOwnSecuredPool" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
+    },
+    {
+      "title": "Review Own Secured Pool Action",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "pilotReviewSecuredPoolAction" },
+        "payload": { "$ref": "#/$defs/securedPoolActionReviewPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
+    },
+    {
+      "title": "Read Tenant Secured Pool Risk",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "pilotReadSecuredPoolRisk" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/riskPortfolioResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
+    },
     {
       "title": "Prepare Execution AccountBinding",
       "required": ["idempotencyKey", "resource"],
@@ -2652,6 +2685,22 @@
     }
   ],
   "$defs": {
+    "securedPoolActionReviewPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionType", "amountAssets"],
+      "properties": {
+        "actionType": {
+          "enum": ["supply", "withdraw", "deposit_collateral", "borrow", "repay", "release_collateral"]
+        },
+        "amountAssets": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 78,
+          "pattern": "^[1-9][0-9]{0,77}$"
+        }
+      }
+    },
     "hash": {
       "type": "string",
       "pattern": "^0x[0-9a-f]{64}$"

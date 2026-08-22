@@ -1,7 +1,7 @@
 # IPO.ONE M2 requirement traceability v0.1
 
 Status: IDs ratified in Product Constitution v1.3; M2A-001 and M2A-003 through
-M2A-006 have bounded local implementation Evidence only
+M2A-007 have bounded local implementation Evidence only
 
 Base: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
@@ -31,10 +31,10 @@ them independently.
 | REQ-POOL-EVID-002 | pool/Obligation mapping | M2A-006 binds one exact self-Principal execution AccountBinding and canonical Obligation; ordered finalized effects atomically create Event/Evidence/outbox/Ledger/receipt/projection updates | adapter + kernel | EVID-001, ID binding | one finalized event -> one canonical effect | L0 locally verified |
 | REQ-POOL-EVID-003 | exact finality/reconciliation | M2A-005 replay/restore and two normalized direct-read comparison locally verified; no provider/RPC selected | indexer + persistence | EVID-001 | replay/reorg/RPC disagreement/restart/restore | L0; L3 exact providers |
 | REQ-POOL-EVID-004 | discrepancy fail-closed | M2A-005 reason-coded additive discrepancy, new-risk freeze, protective operations and approved zero-discrepancy recovery locally verified | Risk/Ops + Gateway | EVID-003 | discrepancy freezes new risk; additive recovery | L0 |
-| REQ-POOL-UX-001 | LP workspace | absent | Web + Tenant API | POOL-002/003 | visible click supply/withdraw + truthful states | L3 candidate UI |
-| REQ-POOL-UX-002 | Human secured-borrow workspace | wallet/Human UI exists; no deposit/borrow/health/liquidation flow | Web + Tenant API | COLL/RATE/ORACLE | real-browser complete and adverse paths | L3 candidate UI |
-| REQ-POOL-UX-003 | pool Risk/Ops workspace | generic Risk/Ops exists; no solvency/oracle/liquidation queue | Web + Gateway | POOL-005, EVID-004 | visible controls, dual control, discrepancy drill | L0 then L3 |
-| REQ-POOL-UX-004 | Agent API parity | existing OpenAPI/SDK/MCP has no secured-pool operation family | API contract/SDK/MCP | kernel operations | conformance and forbidden-capability tests | L0; M2B L3 |
+| REQ-POOL-UX-001 | LP workspace | M2A-007 locally verifies visible supply/withdraw review, exact liquidity/share blockers and explicit no-deployment state; no submit operation | Web + Tenant API | POOL-002/003 | visible click supply/withdraw + truthful states | L0 locally verified; L3 submission separate |
+| REQ-POOL-UX-002 | Human secured-borrow workspace | M2A-007 locally verifies visible collateral/borrow/repay/release review with projected health/oracle/reconciliation blockers; no transaction path | Web + Tenant API | COLL/RATE/ORACLE | real-browser complete and adverse paths | L0 locally verified; L3 submission separate |
+| REQ-POOL-UX-003 | pool Risk/Ops workspace | M2A-007 locally verifies aggregate server-derived solvency/oracle/reconciliation/control state with no address or liquidation submission | Web + Gateway | POOL-005, EVID-004 | visible controls, dual control, discrepancy drill | L0 locally verified; L3 separate |
+| REQ-POOL-UX-004 | Agent API parity | M2A-007 adds closed Tenant API, typed SDK and two-tool MCP read/review parity; forbidden submit/transfer/authority inputs fail closed | API contract/SDK/MCP | kernel operations | conformance and forbidden-capability tests | L0 locally verified; M2B L3 |
 | REQ-AGENT-POOL-001 | Principal/Mandate-bound secured Facility | M2A-006 proves Human/Agent self-Principal parity over one binding contract; Mandate-specific pool Facility operations remain for M2A-007/M2B | Gateway + kernel | POOL-EVID-002 | revocation/replay/wrong-account tests | partial L0 locally verified; M2B L3 |
 | REQ-AGENT-POOL-002 | bounded Hyperliquid execution | exact approval/nonce/UNKNOWN/reconciliation reusable from ADR-035/038/039 | HyperCore adapter | AGENT-POOL-001 | independent Agent E2E with no withdrawal/transfer | M2B L3 only |
 | REQ-AGENT-POOL-003 | dual-risk recovery | venue recovery exists; pool health not composed | Risk guardian + settlement | COLL-003, AGENT-POOL-002 | freeze/cancel/reduce/flatten/reconcile/repay/liquidate drill | M2B L3 only |
@@ -175,3 +175,26 @@ Facility operation remains incomplete. The full PostgreSQL suite passes
 restart and forced RLS. No provider, public RPC, signer, transaction,
 deployment, testnet/public endpoint, UI/API/SDK/MCP surface or real value is
 selected or authorized. Those states remain `NO` and separately gated.
+
+## M2A-007 local product-surface Evidence update — 2026-08-23
+
+M2A-007 adds one closed three-operation secured-Pool product family over the
+M2A-005/M2A-006 PostgreSQL projection and canonical Obligation binding. Human
+and Agent own-position reads and exact action review share the same Gateway
+handlers; Risk, Operations and Auditor receive only an aggregate, PII-free
+control view. The typed Agent SDK and two-tool MCP adapter expose read/review
+only. There is no submit, signer, RPC, generic transfer or arbitrary withdrawal
+operation.
+
+At this boundary `REQ-POOL-UX-001..004` are `IMPLEMENTED=YES` and `LOCALLY
+VERIFIED=YES` for no-funds read/review behavior only. The 1139-test unit and
+contract suite, 90-test clean PostgreSQL suite, 34-test security suite,
+84-test transport suite, 25-test Foundry suite and six-test Playwright click
+path pass. Browser acceptance covers a visible Human exact-action review,
+keyboard operation, mobile width, 200-percent zoom and the aggregate Risk Pool
+control view.
+
+`pool_deployment_unavailable` remains a required product state. No contract
+address, transaction, pending/final chain state, deployed SHA, public
+reachability, real value or production usability is claimed. Those states and
+all M2A-008 permissions remain independently gated.

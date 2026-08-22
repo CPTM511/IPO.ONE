@@ -1425,6 +1425,45 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     responseSchemaVersion: "tenant_venue_execution_view.v1",
     public: false,
     fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadOwnSecuredPool",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "subject",
+    requiredCapability: "pool.read.self",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_secured_pool_workspace.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReviewSecuredPoolAction",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "subject",
+    requiredCapability: "pool.action.review.self",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_secured_pool_action_review.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadSecuredPoolRisk",
+    kind: "query",
+    actorTypes: ["risk_operator", "operations_operator", "auditor"],
+    resourceType: "risk_portfolio",
+    requiredCapability: "pool.risk.read.tenant",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_secured_pool_risk_view.v1",
+    public: false,
+    fundsAuthority: false
   }
 ]);
 
@@ -1476,6 +1515,8 @@ export const TENANT_PROTOCOL_CATALOG = deepFreeze({
     tradingCapitalNoFundsEvidenceEnabled: true,
     tradingCapitalNoFundsMatchingEnabled: true,
     tradingCapitalNoFundsSettlementEnabled: true,
+    securedPoolWorkspaceEnabled: true,
+    securedPoolSubmissionEnabled: false,
     agenticWalletPreflightEnabled: true,
     walletSubmissionEnabled: false,
     productionIdentityEnabled: false,

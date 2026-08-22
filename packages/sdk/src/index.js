@@ -9,6 +9,7 @@ export * from "./agent-sandbox-obligation-client.js";
 export * from "./trading-capital-client.js";
 export * from "./wallet-execution-client.js";
 export * from "./venue-execution-client.js";
+export * from "./secured-pool-client.js";
 export { runSandboxObligationPortabilityConformance } from "@ipo-one/chain-adapter";
 export { createAgentPilotCapabilityManifest } from "@ipo-one/api-contract";
 
