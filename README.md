@@ -326,6 +326,14 @@ The protocol horizon includes purpose-bound Agent working capital, independent c
 
 Capital movement, custody, production signing, external execution, and higher-risk permissions require explicit legal, compliance, security, risk, and partner approval.
 
+### License and contributions
+
+IPO.ONE source is available under the [MIT License](LICENSE). Contributions use
+the [Developer Certificate of Origin 1.1](DCO) sign-off described in
+[CONTRIBUTING.md](CONTRIBUTING.md). Third-party licenses and exact admitted
+contract-toolchain dependencies are recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ---
 
 ## FAQ

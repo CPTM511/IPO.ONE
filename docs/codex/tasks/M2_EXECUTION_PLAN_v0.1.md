@@ -184,7 +184,9 @@ revertible without inventing permission for its successor.
 - Security/permission: named dependency/license approval first. Migration: lock
   files/tool manifests only. Rollback: revert pins/config. Evidence: hashes,
   SBOM/notices and reproducible outputs.
-- Dependency/status: M2A-001 and license decision; not started.
+- Dependency/status: Founder-approved sequencing exception allows the isolated
+  toolchain gate before M2A-001. License decision and dependency admission are
+  completed; M2A-001 remains the prerequisite for economic contract work.
 
 ### M2A-003 — single-market pool contracts
 
