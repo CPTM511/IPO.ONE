@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 import {Test} from "forge-std/Test.sol";
 
 import {IpoOneSecuredPoolV1} from "../../src/m2/IpoOneSecuredPoolV1.sol";
+import {IIpoOnePriceOracleV1} from "../../src/m2/interfaces/IIpoOnePriceOracleV1.sol";
 import {M2MockERC20} from "./mocks/M2MockERC20.sol";
 import {M2MockPriceOracle} from "./mocks/M2MockPriceOracle.sol";
 
@@ -17,6 +18,7 @@ contract IpoOneSecuredPoolV1Test is Test {
     address private constant LP = address(0x1001);
     address private constant BORROWER = address(0x1002);
     address private constant SECOND_LP = address(0x1003);
+    address private constant LIQUIDATOR = address(0x1004);
     address private constant GUARDIAN = address(0xA11CE);
     address private constant RECOVERY = address(0xB0B);
 
@@ -29,17 +31,19 @@ contract IpoOneSecuredPoolV1Test is Test {
         vm.warp(1_800_000_000);
         debt = new M2MockERC20("Test USDC", "tUSDC", 6);
         collateral = new M2MockERC20("Wrapped Ether", "WETH", 18);
-        oracle = new M2MockPriceOracle();
+        oracle = new M2MockPriceOracle(block.chainid, address(collateral));
         oracle.setObservation(PRICE, uint64(block.timestamp), true);
         pool = _deploy(debt, collateral, oracle);
 
         debt.mint(LP, 1_000_000 * USDC);
         debt.mint(SECOND_LP, 1_000_000 * USDC);
         debt.mint(BORROWER, 100_000 * USDC);
+        debt.mint(LIQUIDATOR, 100_000 * USDC);
         collateral.mint(BORROWER, 100 * WETH);
         _approve(LP, pool, debt, collateral);
         _approve(SECOND_LP, pool, debt, collateral);
         _approve(BORROWER, pool, debt, collateral);
+        _approve(LIQUIDATOR, pool, debt, collateral);
     }
 
     function testConstructorBindsOneImmutableMarket() public view {
@@ -131,13 +135,22 @@ contract IpoOneSecuredPoolV1Test is Test {
         assertEq(debtShares, 14_000 * USDC);
         assertEq(pool.debtQuoteAssets(BORROWER), 14_000 * USDC);
 
-        (uint256 price, uint256 collateralValue, uint256 capacity, uint256 debtAssets, uint256 healthWad) =
-            pool.health(BORROWER);
+        (
+            uint256 price,
+            uint256 collateralValue,
+            uint256 capacity,
+            uint256 liquidationThreshold,
+            uint256 debtAssets,
+            uint256 healthWad,
+            bool liquidatable
+        ) = pool.health(BORROWER);
         assertEq(price, PRICE);
         assertEq(collateralValue, 20_000 * USDC);
         assertEq(capacity, 15_000 * USDC);
+        assertEq(liquidationThreshold, 16_000 * USDC);
         assertEq(debtAssets, 14_000 * USDC);
-        assertEq(healthWad, uint256(15_000e18) / 14_000);
+        assertEq(healthWad, uint256(16_000e18) / 14_000);
+        assertFalse(liquidatable);
 
         pool.repay(7_000 * USDC);
         pool.releaseCollateral(5 * WETH);
@@ -226,6 +239,9 @@ contract IpoOneSecuredPoolV1Test is Test {
         vm.prank(BORROWER);
         vm.expectRevert(IpoOneSecuredPoolV1.InvalidOracleObservation.selector);
         pool.releaseCollateral(1);
+        vm.prank(LIQUIDATOR);
+        vm.expectRevert(IpoOneSecuredPoolV1.InvalidOracleObservation.selector);
+        pool.liquidate(BORROWER, 1, 0, block.timestamp);
 
         vm.startPrank(BORROWER);
         pool.repay(1 * USDC);
@@ -240,6 +256,166 @@ contract IpoOneSecuredPoolV1Test is Test {
         vm.prank(BORROWER);
         vm.expectRevert(IpoOneSecuredPoolV1.InvalidOracleObservation.selector);
         pool.borrow(1);
+    }
+
+    function testOracleDeviationHaltsRiskUntilExplicitRecovery() public {
+        vm.prank(LP);
+        pool.supply(500_000 * USDC);
+        vm.prank(BORROWER);
+        pool.addCollateral(10 * WETH);
+
+        oracle.setObservation(1_599e18, uint64(block.timestamp + 1), true);
+        vm.warp(block.timestamp + 1);
+        assertFalse(pool.syncOracle());
+        assertTrue(pool.oracleDeviationHalted());
+        assertEq(pool.acceptedPriceUsdWad(), PRICE);
+
+        vm.prank(BORROWER);
+        vm.expectRevert(IpoOneSecuredPoolV1.OracleDeviationHalted.selector);
+        pool.borrow(1 * USDC);
+        vm.prank(GUARDIAN);
+        vm.expectRevert(IpoOneSecuredPoolV1.Unauthorized.selector);
+        pool.recoverOracleDeviation();
+
+        vm.prank(RECOVERY);
+        pool.recoverOracleDeviation();
+        assertFalse(pool.oracleDeviationHalted());
+        assertEq(pool.acceptedPriceUsdWad(), 1_599e18);
+    }
+
+    function testOracleSequenceAndBindingsFailClosed() public {
+        IIpoOnePriceOracleV1.PriceObservation memory regressed = IIpoOnePriceOracleV1.PriceObservation({
+            priceUsdWad: PRICE,
+            observedAt: uint64(block.timestamp - 1),
+            roundId: 2,
+            sourceId: pool.oracleSourceId(),
+            asset: address(collateral),
+            marketChainId: block.chainid,
+            complete: true
+        });
+        oracle.setClosedObservation(regressed);
+        vm.expectRevert(IpoOneSecuredPoolV1.InvalidOracleObservation.selector);
+        pool.syncOracle();
+
+        regressed.observedAt = uint64(block.timestamp + 1);
+        regressed.asset = address(debt);
+        oracle.setClosedObservation(regressed);
+        vm.warp(block.timestamp + 1);
+        vm.expectRevert(IpoOneSecuredPoolV1.InvalidOracleObservation.selector);
+        pool.syncOracle();
+    }
+
+    function testKinkRatesChunkedAccrualAndBoundedCatchUpMatchReference() public {
+        IpoOneSecuredPoolV1 ratePool = _deployWithBorrowerCap(debt, collateral, oracle, MARKET_CAP);
+        _approve(LP, ratePool, debt, collateral);
+        _approve(BORROWER, ratePool, debt, collateral);
+        collateral.mint(BORROWER, 900 * WETH);
+
+        vm.prank(LP);
+        ratePool.supply(1_000_000 * USDC);
+        vm.startPrank(BORROWER);
+        ratePool.addCollateral(1_000 * WETH);
+        ratePool.borrow(500_000 * USDC);
+        vm.stopPrank();
+
+        IpoOneSecuredPoolV1.PoolAccounting memory beforeAccrual = ratePool.accounting();
+        assertEq(beforeAccrual.utilizationBps, 5_000);
+        assertEq(beforeAccrual.borrowAprBps, 700);
+        assertEq(beforeAccrual.supplyAprBps, 315);
+
+        vm.warp(block.timestamp + 30 days);
+        (uint256 interest, uint256 reserve, uint256 chunks, bool caughtUp) = ratePool.accrueInterest();
+        assertEq(chunks, 5);
+        assertTrue(caughtUp);
+        assertGt(interest, 2_876_712_329);
+        assertGt(reserve, 287_671_232);
+        assertEq(ratePool.grossDebtAssets(), 500_000 * USDC + interest);
+        assertEq(ratePool.reservesAssets(), reserve);
+
+        (interest, reserve, chunks, caughtUp) = ratePool.accrueInterest();
+        assertEq(interest, 0);
+        assertEq(reserve, 0);
+        assertEq(chunks, 0);
+        assertTrue(caughtUp);
+
+        vm.warp(block.timestamp + 225 days);
+        (,,, caughtUp) = ratePool.accrueInterest();
+        assertFalse(caughtUp);
+        (,,, caughtUp) = ratePool.accrueInterest();
+        assertTrue(caughtUp);
+    }
+
+    function testApprovedShockLiquidatesAtCloseFactorWithExactCollateralQuote() public {
+        vm.prank(LP);
+        pool.supply(500_000 * USDC);
+        vm.startPrank(BORROWER);
+        pool.addCollateral(10 * WETH);
+        pool.borrow(14_000 * USDC);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1);
+        pool.accrueInterest();
+        oracle.setObservation(1_600e18, uint64(block.timestamp), true);
+        assertTrue(pool.syncOracle());
+        uint256 debtBeforeLiquidation = pool.debtQuoteAssets(BORROWER);
+        vm.prank(GUARDIAN);
+        pool.pauseNewRisk();
+
+        vm.prank(LIQUIDATOR);
+        (uint256 seized, uint256 badDebt) =
+            pool.liquidate(BORROWER, 7_000 * USDC, 4_593_750_000_000_000_000, block.timestamp);
+        assertEq(seized, 4_593_750_000_000_000_000);
+        assertEq(badDebt, 0);
+        assertEq(pool.debtQuoteAssets(BORROWER), debtBeforeLiquidation - 7_000 * USDC);
+        assertEq(pool.collateralAssetsOf(BORROWER), 5_406_250_000_000_000_000);
+
+        vm.prank(LIQUIDATOR);
+        vm.expectRevert(IpoOneSecuredPoolV1.ActionUnavailable.selector);
+        pool.liquidate(BORROWER, 3_500 * USDC, type(uint256).max, block.timestamp);
+        vm.prank(LIQUIDATOR);
+        vm.expectRevert(IpoOneSecuredPoolV1.InvalidAmount.selector);
+        pool.liquidate(BORROWER, 1, 0, block.timestamp - 1);
+    }
+
+    function testCollateralExhaustionRecognizesAndRecoversBadDebtOnce() public {
+        vm.prank(LP);
+        pool.supply(50_000 * USDC);
+        vm.startPrank(BORROWER);
+        pool.addCollateral(1 * WETH);
+        pool.borrow(1_500 * USDC);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1);
+        pool.accrueInterest();
+        oracle.setObservation(500e18, uint64(block.timestamp), true);
+        assertFalse(pool.syncOracle());
+        vm.prank(RECOVERY);
+        pool.recoverOracleDeviation();
+        uint256 claimBefore = pool.lpClaimAssets();
+
+        vm.prank(LIQUIDATOR);
+        (uint256 seized, uint256 recognized) = pool.liquidate(BORROWER, 476_190_477, 1 * WETH, block.timestamp);
+        assertEq(seized, 1 * WETH);
+        assertGt(recognized, 1_000 * USDC);
+        assertEq(pool.debtSharesOf(BORROWER), 0);
+        assertEq(pool.totalDebtShares(), 0);
+        assertEq(pool.badDebtAssetsOf(BORROWER), recognized);
+        assertEq(pool.lpClaimAssets(), claimBefore - recognized);
+
+        uint256 grossAfterRecognition = pool.grossDebtAssets();
+        vm.warp(block.timestamp + 365 days);
+        pool.accrueInterest();
+        assertEq(pool.grossDebtAssets(), grossAfterRecognition);
+
+        vm.prank(BORROWER);
+        pool.repay(100 * USDC);
+        assertEq(pool.badDebtAssetsOf(BORROWER), recognized - 100 * USDC);
+        assertEq(pool.lpClaimAssets(), claimBefore - recognized + 100 * USDC);
+        oracle.setObservation(500e18, uint64(block.timestamp), true);
+        assertTrue(pool.syncOracle());
+        vm.prank(LIQUIDATOR);
+        vm.expectRevert(IpoOneSecuredPoolV1.ActionUnavailable.selector);
+        pool.liquidate(BORROWER, 1, 0, block.timestamp);
     }
 
     function testFeeTokenAndReentrantCallbackRevertAllState() public {
@@ -325,6 +501,17 @@ contract IpoOneSecuredPoolV1Test is Test {
         returns (IpoOneSecuredPoolV1)
     {
         return new IpoOneSecuredPoolV1(_configuration(debt_, collateral_, oracle_));
+    }
+
+    function _deployWithBorrowerCap(
+        M2MockERC20 debt_,
+        M2MockERC20 collateral_,
+        M2MockPriceOracle oracle_,
+        uint256 borrowerCap
+    ) private returns (IpoOneSecuredPoolV1) {
+        IpoOneSecuredPoolV1.MarketConfiguration memory configuration = _configuration(debt_, collateral_, oracle_);
+        configuration.borrowerDebtCapAssets = borrowerCap;
+        return new IpoOneSecuredPoolV1(configuration);
     }
 
     function _configuration(M2MockERC20 debt_, M2MockERC20 collateral_, M2MockPriceOracle oracle_)

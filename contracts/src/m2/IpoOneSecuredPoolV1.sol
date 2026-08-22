@@ -7,20 +7,23 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {IIpoOnePriceOracleV1} from "./interfaces/IIpoOnePriceOracleV1.sol";
+import {SecuredPoolMathV1} from "./libraries/SecuredPoolMathV1.sol";
 
-/// @notice Native, non-proxy accounting core for one immutable M2 secured market.
-/// @dev M2A-003 is local/no-funds only. Interest, liquidation and live-oracle admission are deferred.
+/// @notice Native, non-proxy accounting and liquidation core for one immutable M2 secured market.
+/// @dev M2A-004 remains local/no-funds. Its fixture policy is not a live feed or commercial approval.
 contract IpoOneSecuredPoolV1 is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant BPS = 10_000;
     uint256 public constant WAD = 1e18;
-    uint256 public constant DEBT_ASSET_SCALE = 1e6;
-    uint256 public constant COLLATERAL_ASSET_SCALE = 1e18;
-    uint256 public constant PRICE_SCALE = 1e18;
-    uint256 public constant COLLATERAL_VALUE_DENOMINATOR = 1e30;
     uint256 public constant MAX_ORACLE_AGE_SECONDS = 3_600;
     uint256 public constant MAX_ORACLE_FUTURE_SKEW_SECONDS = 60;
+    uint256 public constant MAX_ORACLE_DEVIATION_BPS = 2_000;
+    uint256 public constant LIQUIDATION_THRESHOLD_BPS = 8_000;
+    uint256 public constant CLOSE_FACTOR_BPS = 5_000;
+    uint256 public constant LIQUIDATION_BONUS_BPS = 500;
+    uint256 public constant MAX_ACCRUAL_CHUNK_SECONDS = 7 days;
+    uint256 public constant MAX_ACCRUAL_CHUNKS_PER_CALL = 32;
 
     struct MarketConfiguration {
         uint256 expectedChainId;
@@ -39,7 +42,21 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
         uint256 collateralAssets;
         uint256 debtShares;
         uint256 supplyClaimAssets;
-        uint256 debtQuoteAssets;
+        uint256 performingDebtAssets;
+        uint256 badDebtAssets;
+        uint256 totalOutstandingDebtAssets;
+    }
+
+    struct PoolAccounting {
+        uint256 cashAssets;
+        uint256 grossDebtAssets;
+        uint256 performingDebtAssets;
+        uint256 reservesAssets;
+        uint256 badDebtAssets;
+        uint256 lpClaimAssets;
+        uint256 utilizationBps;
+        uint256 borrowAprBps;
+        uint256 supplyAprBps;
     }
 
     bytes32 public immutable marketId;
@@ -47,6 +64,7 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
     IERC20 public immutable debtAsset;
     IERC20 public immutable collateralAsset;
     IIpoOnePriceOracleV1 public immutable priceOracle;
+    bytes32 public immutable oracleSourceId;
     uint256 public immutable marketDebtCapAssets;
     uint256 public immutable borrowerDebtCapAssets;
     uint16 public immutable loanToValueBps;
@@ -56,13 +74,20 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
     uint256 public cashAssets;
     uint256 public grossDebtAssets;
     uint256 public reservesAssets;
+    uint256 public badDebtAssets;
     uint256 public totalSupplyShares;
     uint256 public totalDebtShares;
+    uint256 public lastAccruedAt;
+    uint256 public acceptedPriceUsdWad;
+    uint64 public acceptedOracleObservedAt;
+    uint80 public acceptedOracleRoundId;
+    bool public oracleDeviationHalted;
     bool public newRiskPaused;
 
     mapping(address account => uint256 shares) public supplySharesOf;
     mapping(address account => uint256 assets) public collateralAssetsOf;
     mapping(address account => uint256 shares) public debtSharesOf;
+    mapping(address account => uint256 assets) public badDebtAssetsOf;
 
     event MarketInitialized(
         bytes32 indexed marketId,
@@ -70,11 +95,35 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
         address indexed debtAsset,
         address collateralAsset,
         address priceOracle,
+        bytes32 oracleSourceId,
         uint256 marketDebtCapAssets,
         uint256 borrowerDebtCapAssets,
         uint16 loanToValueBps,
+        uint16 liquidationThresholdBps,
         address pauseGuardian,
         address recoveryAuthority
+    );
+    event OracleObservationAccepted(
+        bytes32 indexed marketId,
+        bytes32 indexed sourceId,
+        uint80 indexed roundId,
+        uint256 priceUsdWad,
+        uint64 observedAt
+    );
+    event OracleDeviationHaltChanged(
+        bytes32 indexed marketId,
+        bool halted,
+        uint256 previousPriceUsdWad,
+        uint256 candidatePriceUsdWad,
+        address indexed actor
+    );
+    event InterestAccrued(
+        bytes32 indexed marketId,
+        uint256 fromTimestamp,
+        uint256 toTimestamp,
+        uint256 chunks,
+        uint256 interestAssets,
+        uint256 reserveAssets
     );
     event AssetsSupplied(
         bytes32 indexed marketId,
@@ -107,12 +156,29 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
     event AssetsRepaid(
         bytes32 indexed marketId,
         address indexed account,
+        address indexed payer,
         uint256 assetsTransferred,
         uint256 debtReducedAssets,
         uint256 debtSharesBurned,
         uint256 reserveDustAssets,
         uint256 debtAfter,
         uint256 cashAfter
+    );
+    event PositionLiquidated(
+        bytes32 indexed marketId,
+        address indexed borrower,
+        address indexed liquidator,
+        uint256 repaidAssets,
+        uint256 collateralSeizedAssets,
+        uint256 badDebtRecognizedAssets
+    );
+    event BadDebtRecovered(
+        bytes32 indexed marketId,
+        address indexed account,
+        address indexed payer,
+        uint256 recoveredAssets,
+        uint256 accountBadDebtAfter,
+        uint256 marketBadDebtAfter
     );
     event NewRiskPauseChanged(bytes32 indexed marketId, bool paused, address indexed actor);
 
@@ -122,6 +188,9 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
     error Unauthorized();
     error NewRiskPaused();
     error InvalidOracleObservation();
+    error OracleDeviationExceeded();
+    error OracleDeviationHalted();
+    error AccrualCatchUpRequired();
     error ExactTokenTransferRequired();
     error NativeValueRejected();
 
@@ -150,7 +219,7 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
                 || !_hasExpectedDecimals(configuration.collateralAsset, 18) || configuration.marketDebtCapAssets == 0
                 || configuration.borrowerDebtCapAssets == 0
                 || configuration.borrowerDebtCapAssets > configuration.marketDebtCapAssets
-                || configuration.loanToValueBps == 0 || configuration.loanToValueBps >= BPS
+                || configuration.loanToValueBps == 0 || configuration.loanToValueBps >= LIQUIDATION_THRESHOLD_BPS
                 || configuration.pauseGuardian == address(0) || configuration.recoveryAuthority == address(0)
                 || configuration.pauseGuardian == configuration.recoveryAuthority
                 || configuration.pauseGuardian == configuration.debtAsset
@@ -179,6 +248,12 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
                 configuration.priceOracle
             )
         );
+        lastAccruedAt = block.timestamp;
+
+        IIpoOnePriceOracleV1.PriceObservation memory observation = priceOracle.latestPrice();
+        _validateObservationBinding(observation, bytes32(0));
+        oracleSourceId = observation.sourceId;
+        _storeAcceptedObservation(observation);
 
         emit MarketInitialized(
             marketId,
@@ -186,16 +261,37 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
             configuration.debtAsset,
             configuration.collateralAsset,
             configuration.priceOracle,
+            observation.sourceId,
             configuration.marketDebtCapAssets,
             configuration.borrowerDebtCapAssets,
             configuration.loanToValueBps,
+            uint16(LIQUIDATION_THRESHOLD_BPS),
             configuration.pauseGuardian,
             configuration.recoveryAuthority
         );
     }
 
+    function performingDebtAssets() public view returns (uint256) {
+        return grossDebtAssets - badDebtAssets;
+    }
+
     function lpClaimAssets() public view returns (uint256) {
-        return cashAssets + grossDebtAssets - reservesAssets;
+        return cashAssets + grossDebtAssets - reservesAssets - badDebtAssets;
+    }
+
+    function accounting() external view returns (PoolAccounting memory) {
+        uint256 performing = performingDebtAssets();
+        return PoolAccounting({
+            cashAssets: cashAssets,
+            grossDebtAssets: grossDebtAssets,
+            performingDebtAssets: performing,
+            reservesAssets: reservesAssets,
+            badDebtAssets: badDebtAssets,
+            lpClaimAssets: lpClaimAssets(),
+            utilizationBps: SecuredPoolMathV1.utilizationBps(cashAssets, performing),
+            borrowAprBps: SecuredPoolMathV1.borrowAprBps(cashAssets, performing),
+            supplyAprBps: SecuredPoolMathV1.supplyAprBps(cashAssets, performing)
+        });
     }
 
     function supplyClaimAssets(address account) public view returns (uint256) {
@@ -208,17 +304,22 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
     function debtQuoteAssets(address account) public view returns (uint256) {
         uint256 shares = debtSharesOf[account];
         if (shares == 0) return 0;
-        if (shares == totalDebtShares) return grossDebtAssets;
-        return Math.mulDiv(shares, grossDebtAssets, totalDebtShares, Math.Rounding.Ceil);
+        uint256 performing = performingDebtAssets();
+        if (shares == totalDebtShares) return performing;
+        return Math.mulDiv(shares, performing, totalDebtShares, Math.Rounding.Ceil);
     }
 
     function position(address account) external view returns (AccountPosition memory) {
+        uint256 performing = debtQuoteAssets(account);
+        uint256 badDebt = badDebtAssetsOf[account];
         return AccountPosition({
             supplyShares: supplySharesOf[account],
             collateralAssets: collateralAssetsOf[account],
             debtShares: debtSharesOf[account],
             supplyClaimAssets: supplyClaimAssets(account),
-            debtQuoteAssets: debtQuoteAssets(account)
+            performingDebtAssets: performing,
+            badDebtAssets: badDebt,
+            totalOutstandingDebtAssets: performing + badDebt
         });
     }
 
@@ -229,15 +330,19 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
             uint256 priceUsdWad,
             uint256 collateralValueAssets,
             uint256 borrowCapacityAssets,
+            uint256 liquidationThresholdAssets,
             uint256 debtAssets,
-            uint256 capacityRatioWad
+            uint256 healthFactorWad,
+            bool liquidatable
         )
     {
-        priceUsdWad = _currentPrice();
-        collateralValueAssets = _collateralValue(collateralAssetsOf[account], priceUsdWad);
+        priceUsdWad = _previewCurrentPrice();
+        collateralValueAssets = SecuredPoolMathV1.collateralValueAssets(collateralAssetsOf[account], priceUsdWad);
         borrowCapacityAssets = Math.mulDiv(collateralValueAssets, loanToValueBps, BPS);
-        debtAssets = debtQuoteAssets(account);
-        capacityRatioWad = debtAssets == 0 ? type(uint256).max : Math.mulDiv(borrowCapacityAssets, WAD, debtAssets);
+        liquidationThresholdAssets = Math.mulDiv(collateralValueAssets, LIQUIDATION_THRESHOLD_BPS, BPS);
+        debtAssets = debtQuoteAssets(account) + badDebtAssetsOf[account];
+        healthFactorWad = debtAssets == 0 ? type(uint256).max : Math.mulDiv(liquidationThresholdAssets, WAD, debtAssets);
+        liquidatable = debtSharesOf[account] > 0 && debtAssets > liquidationThresholdAssets;
     }
 
     function pauseNewRisk() external onlyPauseGuardian {
@@ -252,8 +357,40 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
         emit NewRiskPauseChanged(marketId, false, msg.sender);
     }
 
+    function syncOracle() external returns (bool accepted) {
+        if (oracleDeviationHalted) revert OracleDeviationHalted();
+        IIpoOnePriceOracleV1.PriceObservation memory observation = _readValidObservation();
+        _validateObservationSequence(observation);
+        if (_deviationExceeded(observation.priceUsdWad)) {
+            oracleDeviationHalted = true;
+            emit OracleDeviationHaltChanged(marketId, true, acceptedPriceUsdWad, observation.priceUsdWad, msg.sender);
+            return false;
+        }
+        _storeAcceptedObservation(observation);
+        return true;
+    }
+
+    function recoverOracleDeviation() external onlyRecoveryAuthority {
+        if (!oracleDeviationHalted) revert ActionUnavailable();
+        IIpoOnePriceOracleV1.PriceObservation memory observation = _readValidObservation();
+        _validateObservationSequence(observation);
+        uint256 previousPrice = acceptedPriceUsdWad;
+        _storeAcceptedObservation(observation);
+        oracleDeviationHalted = false;
+        emit OracleDeviationHaltChanged(marketId, false, previousPrice, observation.priceUsdWad, msg.sender);
+    }
+
+    function accrueInterest()
+        external
+        returns (uint256 interestAssets, uint256 reserveAssets, uint256 chunks, bool caughtUp)
+    {
+        (interestAssets, reserveAssets, chunks) = _accrue(MAX_ACCRUAL_CHUNKS_PER_CALL);
+        caughtUp = lastAccruedAt == block.timestamp;
+    }
+
     function supply(uint256 amountAssets) external nonReentrant returns (uint256 sharesMinted) {
         if (amountAssets == 0) revert InvalidAmount();
+        _accrueToCurrent();
         uint256 claimBefore = lpClaimAssets();
         sharesMinted = totalSupplyShares == 0 ? amountAssets : Math.mulDiv(amountAssets, totalSupplyShares, claimBefore);
         if (sharesMinted == 0) revert ActionUnavailable();
@@ -267,9 +404,9 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
 
     function withdraw(uint256 amountAssets) external nonReentrant whenNewRiskActive returns (uint256 sharesBurned) {
         if (amountAssets == 0) revert InvalidAmount();
+        _accrueToCurrent();
         if (amountAssets > cashAssets || totalSupplyShares == 0) revert ActionUnavailable();
-        uint256 claimAssets = lpClaimAssets();
-        sharesBurned = Math.mulDiv(amountAssets, totalSupplyShares, claimAssets, Math.Rounding.Ceil);
+        sharesBurned = Math.mulDiv(amountAssets, totalSupplyShares, lpClaimAssets(), Math.Rounding.Ceil);
         if (sharesBurned == 0 || sharesBurned > supplySharesOf[msg.sender]) revert ActionUnavailable();
 
         cashAssets -= amountAssets;
@@ -280,6 +417,7 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
     }
 
     function redeemAll() external nonReentrant whenNewRiskActive returns (uint256 amountAssets) {
+        _accrueToCurrent();
         uint256 sharesBurned = supplySharesOf[msg.sender];
         if (sharesBurned == 0) revert ActionUnavailable();
         amountAssets = sharesBurned == totalSupplyShares
@@ -296,6 +434,7 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
 
     function addCollateral(uint256 amountAssets) external nonReentrant {
         if (amountAssets == 0) revert InvalidAmount();
+        _accrueToCurrent();
         _pullExact(collateralAsset, msg.sender, amountAssets);
         collateralAssetsOf[msg.sender] += amountAssets;
         emit CollateralAdded(marketId, msg.sender, amountAssets, collateralAssetsOf[msg.sender]);
@@ -303,9 +442,12 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
 
     function releaseCollateral(uint256 amountAssets) external nonReentrant whenNewRiskActive {
         if (amountAssets == 0 || amountAssets > collateralAssetsOf[msg.sender]) revert InvalidAmount();
+        _accrueToCurrent();
+        uint256 price = _refreshCurrentPrice();
         uint256 remainingCollateral = collateralAssetsOf[msg.sender] - amountAssets;
-        uint256 capacity = Math.mulDiv(_collateralValue(remainingCollateral, _currentPrice()), loanToValueBps, BPS);
-        if (debtQuoteAssets(msg.sender) > capacity) revert ActionUnavailable();
+        uint256 capacity =
+            Math.mulDiv(SecuredPoolMathV1.collateralValueAssets(remainingCollateral, price), loanToValueBps, BPS);
+        if (debtQuoteAssets(msg.sender) + badDebtAssetsOf[msg.sender] > capacity) revert ActionUnavailable();
 
         collateralAssetsOf[msg.sender] = remainingCollateral;
         _pushExact(collateralAsset, msg.sender, amountAssets);
@@ -314,17 +456,21 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
 
     function borrow(uint256 amountAssets) external nonReentrant whenNewRiskActive returns (uint256 debtSharesMinted) {
         if (amountAssets == 0) revert InvalidAmount();
-        if (amountAssets > cashAssets) revert ActionUnavailable();
+        _accrueToCurrent();
+        if (badDebtAssetsOf[msg.sender] != 0 || amountAssets > cashAssets) revert ActionUnavailable();
+        uint256 price = _refreshCurrentPrice();
         uint256 debtBefore = debtQuoteAssets(msg.sender);
         if (grossDebtAssets + amountAssets > marketDebtCapAssets) revert ActionUnavailable();
         if (debtBefore + amountAssets > borrowerDebtCapAssets) revert ActionUnavailable();
-        uint256 capacity =
-            Math.mulDiv(_collateralValue(collateralAssetsOf[msg.sender], _currentPrice()), loanToValueBps, BPS);
+        uint256 capacity = Math.mulDiv(
+            SecuredPoolMathV1.collateralValueAssets(collateralAssetsOf[msg.sender], price), loanToValueBps, BPS
+        );
         if (debtBefore + amountAssets > capacity) revert ActionUnavailable();
 
+        uint256 performingBefore = performingDebtAssets();
         debtSharesMinted = totalDebtShares == 0
             ? amountAssets
-            : Math.mulDiv(amountAssets, totalDebtShares, grossDebtAssets, Math.Rounding.Ceil);
+            : Math.mulDiv(amountAssets, totalDebtShares, performingBefore, Math.Rounding.Ceil);
         cashAssets -= amountAssets;
         grossDebtAssets += amountAssets;
         totalDebtShares += debtSharesMinted;
@@ -341,27 +487,26 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
         returns (uint256 debtSharesBurned, uint256 debtReducedAssets, uint256 reserveDustAssets)
     {
         if (amountAssets == 0) revert InvalidAmount();
-        uint256 quotedDebtAssets = debtQuoteAssets(msg.sender);
-        if (quotedDebtAssets == 0 || amountAssets > quotedDebtAssets) revert ActionUnavailable();
-
-        if (amountAssets == quotedDebtAssets) {
-            debtSharesBurned = debtSharesOf[msg.sender];
-            debtReducedAssets = amountAssets;
-        } else {
-            debtSharesBurned = Math.mulDiv(amountAssets, totalDebtShares, grossDebtAssets);
-            if (debtSharesBurned == 0) revert ActionUnavailable();
-            debtReducedAssets = Math.mulDiv(debtSharesBurned, grossDebtAssets, totalDebtShares, Math.Rounding.Ceil);
+        _accrueToCurrent();
+        uint256 recognizedBadDebt = badDebtAssetsOf[msg.sender];
+        if (recognizedBadDebt != 0) {
+            if (debtSharesOf[msg.sender] != 0 || amountAssets > recognizedBadDebt) revert ActionUnavailable();
+            _pullExact(debtAsset, msg.sender, amountAssets);
+            cashAssets += amountAssets;
+            grossDebtAssets -= amountAssets;
+            badDebtAssets -= amountAssets;
+            badDebtAssetsOf[msg.sender] -= amountAssets;
+            emit BadDebtRecovered(
+                marketId, msg.sender, msg.sender, amountAssets, badDebtAssetsOf[msg.sender], badDebtAssets
+            );
+            return (0, amountAssets, 0);
         }
-        reserveDustAssets = amountAssets - debtReducedAssets;
 
         _pullExact(debtAsset, msg.sender, amountAssets);
-        cashAssets += amountAssets;
-        grossDebtAssets -= debtReducedAssets;
-        reservesAssets += reserveDustAssets;
-        totalDebtShares -= debtSharesBurned;
-        debtSharesOf[msg.sender] -= debtSharesBurned;
+        (debtSharesBurned, debtReducedAssets, reserveDustAssets) = _applyPerformingRepayment(msg.sender, amountAssets);
         emit AssetsRepaid(
             marketId,
+            msg.sender,
             msg.sender,
             amountAssets,
             debtReducedAssets,
@@ -372,18 +517,206 @@ contract IpoOneSecuredPoolV1 is ReentrancyGuard {
         );
     }
 
-    function _currentPrice() internal view returns (uint256 priceUsdWad) {
-        uint64 observedAt;
-        bool valid;
-        (priceUsdWad, observedAt, valid) = priceOracle.latestPrice();
+    function liquidate(address borrower, uint256 repayAmountAssets, uint256 minCollateralOut, uint256 deadline)
+        external
+        nonReentrant
+        returns (uint256 collateralSeizedAssets, uint256 badDebtRecognizedAssets)
+    {
+        if (borrower == address(0) || borrower == msg.sender || repayAmountAssets == 0 || block.timestamp > deadline) {
+            revert InvalidAmount();
+        }
+        _accrueToCurrent();
+        uint256 price = _refreshCurrentPrice();
+        collateralSeizedAssets = _quoteLiquidation(borrower, repayAmountAssets, price);
+        if (collateralSeizedAssets < minCollateralOut) revert ActionUnavailable();
+        badDebtRecognizedAssets = _settleLiquidation(borrower, repayAmountAssets, collateralSeizedAssets);
+
+        emit PositionLiquidated(
+            marketId, borrower, msg.sender, repayAmountAssets, collateralSeizedAssets, badDebtRecognizedAssets
+        );
+    }
+
+    function _quoteLiquidation(address borrower, uint256 repayAmountAssets, uint256 price)
+        internal
+        view
+        returns (uint256 collateralSeizedAssets)
+    {
+        uint256 accountDebt = debtQuoteAssets(borrower);
+        uint256 collateralValue = SecuredPoolMathV1.collateralValueAssets(collateralAssetsOf[borrower], price);
+        uint256 liquidationThreshold = Math.mulDiv(collateralValue, LIQUIDATION_THRESHOLD_BPS, BPS);
+        if (accountDebt == 0 || accountDebt <= liquidationThreshold) revert ActionUnavailable();
+
+        uint256 closeLimit = Math.mulDiv(accountDebt, CLOSE_FACTOR_BPS, BPS);
+        uint256 collateralCoverageLimit =
+            Math.mulDiv(collateralValue, BPS, BPS + LIQUIDATION_BONUS_BPS, Math.Rounding.Ceil);
+        uint256 repaymentLimit = Math.min(accountDebt, Math.min(closeLimit, collateralCoverageLimit));
+        if (repayAmountAssets > repaymentLimit) revert ActionUnavailable();
+
+        uint256 seizeValue = Math.mulDiv(repayAmountAssets, BPS + LIQUIDATION_BONUS_BPS, BPS, Math.Rounding.Ceil);
+        collateralSeizedAssets =
+            Math.min(collateralAssetsOf[borrower], SecuredPoolMathV1.collateralRequiredForValue(seizeValue, price));
+        if (collateralSeizedAssets == 0) revert ActionUnavailable();
+    }
+
+    function _settleLiquidation(address borrower, uint256 repayAmountAssets, uint256 collateralSeizedAssets)
+        internal
+        returns (uint256 badDebtRecognizedAssets)
+    {
+        _pullExact(debtAsset, msg.sender, repayAmountAssets);
+        (uint256 sharesBurned, uint256 debtReduced, uint256 reserveDust) =
+            _applyPerformingRepayment(borrower, repayAmountAssets);
+        collateralAssetsOf[borrower] -= collateralSeizedAssets;
+        if (collateralAssetsOf[borrower] == 0 && debtSharesOf[borrower] != 0) {
+            badDebtRecognizedAssets = _recognizeBadDebt(borrower);
+        }
+        _pushExact(collateralAsset, msg.sender, collateralSeizedAssets);
+
+        emit AssetsRepaid(
+            marketId,
+            borrower,
+            msg.sender,
+            repayAmountAssets,
+            debtReduced,
+            sharesBurned,
+            reserveDust,
+            debtQuoteAssets(borrower),
+            cashAssets
+        );
+    }
+
+    function _applyPerformingRepayment(address account, uint256 amountAssets)
+        internal
+        returns (uint256 sharesBurned, uint256 debtReducedAssets, uint256 reserveDustAssets)
+    {
+        uint256 quotedDebt = debtQuoteAssets(account);
+        if (quotedDebt == 0 || amountAssets > quotedDebt) revert ActionUnavailable();
+        uint256 performing = performingDebtAssets();
+        if (amountAssets == quotedDebt) {
+            sharesBurned = debtSharesOf[account];
+            debtReducedAssets = amountAssets;
+        } else {
+            sharesBurned = Math.mulDiv(amountAssets, totalDebtShares, performing);
+            if (sharesBurned == 0) revert ActionUnavailable();
+            debtReducedAssets = Math.mulDiv(sharesBurned, performing, totalDebtShares, Math.Rounding.Ceil);
+        }
+        reserveDustAssets = amountAssets - debtReducedAssets;
+        cashAssets += amountAssets;
+        grossDebtAssets -= debtReducedAssets;
+        reservesAssets += reserveDustAssets;
+        totalDebtShares -= sharesBurned;
+        debtSharesOf[account] -= sharesBurned;
+    }
+
+    function _recognizeBadDebt(address account) internal returns (uint256 recognizedAssets) {
+        recognizedAssets = debtQuoteAssets(account);
+        if (recognizedAssets == 0 || collateralAssetsOf[account] != 0) revert ActionUnavailable();
+        totalDebtShares -= debtSharesOf[account];
+        debtSharesOf[account] = 0;
+        badDebtAssets += recognizedAssets;
+        badDebtAssetsOf[account] += recognizedAssets;
+    }
+
+    function _accrueToCurrent() internal {
+        _accrue(MAX_ACCRUAL_CHUNKS_PER_CALL);
+        if (lastAccruedAt != block.timestamp) revert AccrualCatchUpRequired();
+    }
+
+    function _accrue(uint256 maxChunks)
+        internal
+        returns (uint256 interestAssets, uint256 reserveAssets, uint256 chunks)
+    {
+        if (block.timestamp < lastAccruedAt) {
+            revert ActionUnavailable();
+        }
+        uint256 fromTimestamp = lastAccruedAt;
+        uint256 performing = performingDebtAssets();
+        if (performing == 0) {
+            lastAccruedAt = block.timestamp;
+        } else {
+            while (lastAccruedAt < block.timestamp && chunks < maxChunks) {
+                uint256 elapsed = Math.min(block.timestamp - lastAccruedAt, MAX_ACCRUAL_CHUNK_SECONDS);
+                uint256 apr = SecuredPoolMathV1.borrowAprBps(cashAssets, performing);
+                (uint256 chunkInterest, uint256 chunkReserve) =
+                    SecuredPoolMathV1.interestAtRate(performing, apr, elapsed);
+                grossDebtAssets += chunkInterest;
+                reservesAssets += chunkReserve;
+                interestAssets += chunkInterest;
+                reserveAssets += chunkReserve;
+                performing += chunkInterest;
+                lastAccruedAt += elapsed;
+                chunks++;
+            }
+        }
+        if (lastAccruedAt != fromTimestamp) {
+            emit InterestAccrued(marketId, fromTimestamp, lastAccruedAt, chunks, interestAssets, reserveAssets);
+        }
+    }
+
+    function _refreshCurrentPrice() internal returns (uint256 priceUsdWad) {
+        if (oracleDeviationHalted) revert OracleDeviationHalted();
+        IIpoOnePriceOracleV1.PriceObservation memory observation = _readValidObservation();
+        _validateObservationSequence(observation);
+        if (_deviationExceeded(observation.priceUsdWad)) revert OracleDeviationExceeded();
         if (
-            !valid || priceUsdWad == 0 || uint256(observedAt) > block.timestamp + MAX_ORACLE_FUTURE_SKEW_SECONDS
-                || (block.timestamp > observedAt && block.timestamp - uint256(observedAt) > MAX_ORACLE_AGE_SECONDS)
+            observation.observedAt != acceptedOracleObservedAt || observation.roundId != acceptedOracleRoundId
+                || observation.priceUsdWad != acceptedPriceUsdWad
+        ) _storeAcceptedObservation(observation);
+        return observation.priceUsdWad;
+    }
+
+    function _previewCurrentPrice() internal view returns (uint256 priceUsdWad) {
+        if (oracleDeviationHalted) revert OracleDeviationHalted();
+        IIpoOnePriceOracleV1.PriceObservation memory observation = _readValidObservation();
+        _validateObservationSequence(observation);
+        if (_deviationExceeded(observation.priceUsdWad)) revert OracleDeviationExceeded();
+        return observation.priceUsdWad;
+    }
+
+    function _readValidObservation() internal view returns (IIpoOnePriceOracleV1.PriceObservation memory observation) {
+        observation = priceOracle.latestPrice();
+        _validateObservationBinding(observation, oracleSourceId);
+    }
+
+    function _validateObservationBinding(
+        IIpoOnePriceOracleV1.PriceObservation memory observation,
+        bytes32 expectedSourceId
+    ) internal view {
+        if (
+            !observation.complete || observation.priceUsdWad == 0 || observation.observedAt == 0
+                || observation.roundId == 0 || observation.sourceId == bytes32(0)
+                || (expectedSourceId != bytes32(0) && observation.sourceId != expectedSourceId)
+                || observation.asset != address(collateralAsset) || observation.marketChainId != marketChainId
+                || uint256(observation.observedAt) > block.timestamp + MAX_ORACLE_FUTURE_SKEW_SECONDS
+                || (block.timestamp > observation.observedAt
+                    && block.timestamp - uint256(observation.observedAt) > MAX_ORACLE_AGE_SECONDS)
         ) revert InvalidOracleObservation();
     }
 
-    function _collateralValue(uint256 amountAssets, uint256 priceUsdWad) internal pure returns (uint256) {
-        return Math.mulDiv(amountAssets, priceUsdWad, COLLATERAL_VALUE_DENOMINATOR);
+    function _validateObservationSequence(IIpoOnePriceOracleV1.PriceObservation memory observation) internal view {
+        if (
+            observation.observedAt < acceptedOracleObservedAt || observation.roundId < acceptedOracleRoundId
+                || (observation.observedAt == acceptedOracleObservedAt
+                    && (observation.roundId != acceptedOracleRoundId || observation.priceUsdWad != acceptedPriceUsdWad))
+                || (observation.roundId == acceptedOracleRoundId
+                    && (observation.observedAt != acceptedOracleObservedAt
+                        || observation.priceUsdWad != acceptedPriceUsdWad))
+        ) revert InvalidOracleObservation();
+    }
+
+    function _deviationExceeded(uint256 candidatePriceUsdWad) internal view returns (bool) {
+        uint256 difference = candidatePriceUsdWad > acceptedPriceUsdWad
+            ? candidatePriceUsdWad - acceptedPriceUsdWad
+            : acceptedPriceUsdWad - candidatePriceUsdWad;
+        return Math.mulDiv(difference, BPS, acceptedPriceUsdWad, Math.Rounding.Ceil) > MAX_ORACLE_DEVIATION_BPS;
+    }
+
+    function _storeAcceptedObservation(IIpoOnePriceOracleV1.PriceObservation memory observation) internal {
+        acceptedPriceUsdWad = observation.priceUsdWad;
+        acceptedOracleObservedAt = observation.observedAt;
+        acceptedOracleRoundId = observation.roundId;
+        emit OracleObservationAccepted(
+            marketId, observation.sourceId, observation.roundId, observation.priceUsdWad, observation.observedAt
+        );
     }
 
     function _hasExpectedDecimals(address token, uint8 expectedDecimals) private view returns (bool) {

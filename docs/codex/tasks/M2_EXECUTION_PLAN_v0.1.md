@@ -225,7 +225,11 @@ revertible without inventing permission for its successor.
 - Security/permission: live source/address and fixture values require Security/
   Risk approval before L3. Migration: none. Rollback: pause and replace
   un-deployed version. Evidence: differential and adversarial reports.
-- Dependency/status: M2A-003; not started.
+- Dependency/status: M2A-003 is merged. The immutable oracle adapter,
+  deviation halt/recovery, kink-rate accrual, liquidation health/close factor,
+  explicit reserve/bad-debt recognition and recovery are implemented and
+  locally verified at `L0_LOCAL_NO_FUNDS`. No live feed, deployment, asset,
+  commercial parameter, signer, RPC or transaction is selected or approved.
 
 ### M2A-005 — pool adapter, indexer and reconciliation
 

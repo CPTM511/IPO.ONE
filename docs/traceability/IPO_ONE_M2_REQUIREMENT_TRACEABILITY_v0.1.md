@@ -96,3 +96,31 @@ Interest/rate accrual, liquidation, bad debt, a live oracle source, adapter,
 indexer, kernel mapping, persistence, UI/API, deployment, reachable,
 user-verified, testnet and real-value states remain `NO`. This Evidence grants
 no L3 asset, role, signer, RPC or transaction authority.
+
+## M2A-004 local contract Evidence update — 2026-08-22
+
+M2A-004 adds immutable closed-feed normalization, pool-side oracle binding and
+deviation recovery, deterministic kink-rate accrual, liquidation-threshold
+health, close-factor liquidation, reserves and explicit non-accruing bad debt.
+At this exact boundary it establishes `IMPLEMENTED=YES` and `LOCALLY
+VERIFIED=YES` for the contract portions of `REQ-POOL-003..005`,
+`REQ-COLL-002..004`, `REQ-ORACLE-001`, `REQ-RATE-001..002`, and event-shape
+preparation for `REQ-POOL-EVID-001`.
+
+The adapter rejects wrong decimals, invalid/incomplete rounds, zero or negative
+answers and stale/future observations. The pool additionally rejects wrong
+asset/chain/source, timestamp/round regression and conflicting observations;
+a greater-than-20% move creates a persistent halt that only the distinct
+recovery authority can clear. Interest uses seven-day chunks with a maximum of
+32 per on-chain call, allowing permissionless multi-call catch-up without a
+user loop in economic mutations. Foundry unit/fuzz/stateful tests cover the
+approved 50% utilization rate vector, a 20% price shock, close-factor seizure,
+bad-debt one-time recognition/recovery, long time gaps, oracle failures,
+slippage/deadline denial, pause asymmetry and exact token custody. Pinned solc
+and Foundry ABI/bytecode parity is checked for both contracts.
+
+A live oracle/feed identity, testnet action, adapter/indexer reconciliation,
+kernel mapping, persistence, UI/API, deployment, reachable, user-verified and
+real-value states remain `NO`. This local contract evidence selects no
+commercial parameter and grants no L3 asset, role, signer, RPC or transaction
+authority.
