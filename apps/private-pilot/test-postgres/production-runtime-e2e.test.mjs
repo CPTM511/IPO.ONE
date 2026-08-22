@@ -34,6 +34,29 @@ const { Pool } = pg;
 const CONNECTION_STRING = process.env.DATABASE_URL;
 const SECRET_REF =
   "projects/ipo-one-public-sandbox-cptm511/secrets/predeploy/versions/1";
+const LOCAL_EOA_BLOCK_HASH = `0x${"77".repeat(32)}`;
+
+function localReadOnlyEoaRpc(_url, options) {
+  const request = JSON.parse(options.body);
+  let result;
+  if (request.method === "eth_chainId") {
+    result = "0x14a34";
+  } else if (request.method === "eth_getBlockByNumber") {
+    result = {
+      number: "0x123",
+      hash: LOCAL_EOA_BLOCK_HASH,
+      timestamp: `0x${Math.floor(Date.now() / 1_000).toString(16)}`
+    };
+  } else if (request.method === "eth_getCode") {
+    result = "0x";
+  } else {
+    throw new Error(`unexpected local read-only wallet RPC method: ${request.method}`);
+  }
+  return Promise.resolve(new Response(
+    JSON.stringify({ jsonrpc: "2.0", id: request.id, result }),
+    { status: 200, headers: { "content-type": "application/json" } }
+  ));
+}
 
 async function availablePort() {
   const probe = createServer();
@@ -143,7 +166,9 @@ test(
       IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: SECRET_REF,
       IPO_ONE_AUTH_ENCRYPTION_KEY_REF: SECRET_REF
     });
-    const walletSignatureVerifier = new EvmWalletSignatureVerifier();
+    const walletSignatureVerifier = new EvmWalletSignatureVerifier({
+      fetchImpl: localReadOnlyEoaRpc
+    });
     const referenceHasher = createReferenceHasher(referenceHashKey);
     let runtime;
     const ownerPool = new Pool({
@@ -283,7 +308,11 @@ test(
           })
         }
       );
-      assert.equal(verifyResponse.status, 200);
+      assert.equal(
+        verifyResponse.status,
+        200,
+        JSON.stringify(await verifyResponse.clone().json())
+      );
       const setCookies = verifyResponse.headers.getSetCookie();
       assert.equal(setCookies.length, 2);
       const cookieHeader = setCookies

@@ -258,6 +258,12 @@ export function executeSandboxObligation(obligation, {
   now = new Date()
 }) {
   assertSharedObligation(obligation);
+  if (obligation.poolObligationBindingId) {
+    throw new DomainError(
+      "obligation_execution_rail_conflict",
+      "Pool-bound Obligation cannot execute through the sandbox rail"
+    );
+  }
   if (
     obligation.status !== ObligationStatus.CREATED ||
     obligation.executionStatus !== ObligationExecutionStatus.PENDING
@@ -389,6 +395,12 @@ export function postSandboxRepayment(obligation, {
   now = new Date()
 }) {
   assertSharedObligation(obligation);
+  if (obligation.poolExecutionReceiptId) {
+    throw new DomainError(
+      "obligation_execution_rail_conflict",
+      "Pool-executed Obligation must be repaid through finalized Pool effects"
+    );
+  }
   if (
     obligation.executionStatus !== ObligationExecutionStatus.EXECUTED ||
     ![

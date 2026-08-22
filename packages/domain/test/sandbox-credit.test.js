@@ -162,3 +162,34 @@ test("execution and repayment fail closed before eligible lifecycle states", () 
     (error) => error.code === "obligation_not_executable"
   );
 });
+
+test("sandbox execution and repayment cannot cross a Pool execution rail", () => {
+  const pending = acceptedObligation();
+  assert.throws(
+    () => executeSandboxObligation({
+      ...pending,
+      poolObligationBindingId: "pool_obligation_binding_test"
+    }, {
+      adapterReceipt: adapterReceipt(pending),
+      now: START
+    }),
+    (error) => error.code === "obligation_execution_rail_conflict"
+  );
+  const executed = executeSandboxObligation(pending, {
+    adapterReceipt: adapterReceipt(pending),
+    now: START
+  }).obligation;
+  assert.throws(
+    () => postSandboxRepayment({
+      ...executed,
+      sandboxExecutionReceiptId: undefined,
+      poolExecutionReceiptId: "pool_execution_receipt_test"
+    }, {
+      amountMinor: "1",
+      sourceCode: SandboxRepaymentSource.SYNTHETIC_BANK,
+      actorId: "actor_human",
+      now: START
+    }),
+    (error) => error.code === "obligation_execution_rail_conflict"
+  );
+});

@@ -1,7 +1,7 @@
 # IPO.ONE M2 requirement traceability v0.1
 
 Status: IDs ratified in Product Constitution v1.3; M2A-001 and M2A-003 through
-M2A-005 have bounded local implementation Evidence only
+M2A-006 have bounded local implementation Evidence only
 
 Base: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
@@ -28,14 +28,14 @@ them independently.
 | REQ-RATE-001 | utilization kink rate | synthetic utilization is exposure policy, not pool pricing (`packages/domain/src/trading-capital-facility.js:980-1029`) | rate model | POOL-003 | kink/boundary/reference vectors | L0 model |
 | REQ-RATE-002 | monotonic bounded interest accrual | obligation schedule interest exists; no pool debt index | pool accounting | RATE-001 | time warp, chunking, no-user-loop invariants | L0 model |
 | REQ-POOL-EVID-001 | pool event normalization | M2A-005 closed 13-event Pool V1 decoder and tuple/finality/reorg history locally verified; no live reader | adapter/indexer | contracts ABI | closed decoder/idempotency/reorg tests | L0 simulation; L3 reads |
-| REQ-POOL-EVID-002 | pool/Obligation mapping | one finalized Pool event creates one local hash-only effect/outbox; shared Obligation binding remains absent | adapter + kernel | EVID-001, ID binding | one finalized event -> one canonical effect | L0 |
+| REQ-POOL-EVID-002 | pool/Obligation mapping | M2A-006 binds one exact self-Principal execution AccountBinding and canonical Obligation; ordered finalized effects atomically create Event/Evidence/outbox/Ledger/receipt/projection updates | adapter + kernel | EVID-001, ID binding | one finalized event -> one canonical effect | L0 locally verified |
 | REQ-POOL-EVID-003 | exact finality/reconciliation | M2A-005 replay/restore and two normalized direct-read comparison locally verified; no provider/RPC selected | indexer + persistence | EVID-001 | replay/reorg/RPC disagreement/restart/restore | L0; L3 exact providers |
 | REQ-POOL-EVID-004 | discrepancy fail-closed | M2A-005 reason-coded additive discrepancy, new-risk freeze, protective operations and approved zero-discrepancy recovery locally verified | Risk/Ops + Gateway | EVID-003 | discrepancy freezes new risk; additive recovery | L0 |
 | REQ-POOL-UX-001 | LP workspace | absent | Web + Tenant API | POOL-002/003 | visible click supply/withdraw + truthful states | L3 candidate UI |
 | REQ-POOL-UX-002 | Human secured-borrow workspace | wallet/Human UI exists; no deposit/borrow/health/liquidation flow | Web + Tenant API | COLL/RATE/ORACLE | real-browser complete and adverse paths | L3 candidate UI |
 | REQ-POOL-UX-003 | pool Risk/Ops workspace | generic Risk/Ops exists; no solvency/oracle/liquidation queue | Web + Gateway | POOL-005, EVID-004 | visible controls, dual control, discrepancy drill | L0 then L3 |
 | REQ-POOL-UX-004 | Agent API parity | existing OpenAPI/SDK/MCP has no secured-pool operation family | API contract/SDK/MCP | kernel operations | conformance and forbidden-capability tests | L0; M2B L3 |
-| REQ-AGENT-POOL-001 | Principal/Mandate-bound secured Facility | exact Principal/Mandate controls reusable; no pool binding | Gateway + kernel | POOL-EVID-002 | revocation/replay/wrong-account tests | L0 then M2B L3 |
+| REQ-AGENT-POOL-001 | Principal/Mandate-bound secured Facility | M2A-006 proves Human/Agent self-Principal parity over one binding contract; Mandate-specific pool Facility operations remain for M2A-007/M2B | Gateway + kernel | POOL-EVID-002 | revocation/replay/wrong-account tests | partial L0 locally verified; M2B L3 |
 | REQ-AGENT-POOL-002 | bounded Hyperliquid execution | exact approval/nonce/UNKNOWN/reconciliation reusable from ADR-035/038/039 | HyperCore adapter | AGENT-POOL-001 | independent Agent E2E with no withdrawal/transfer | M2B L3 only |
 | REQ-AGENT-POOL-003 | dual-risk recovery | venue recovery exists; pool health not composed | Risk guardian + settlement | COLL-003, AGENT-POOL-002 | freeze/cancel/reduce/flatten/reconcile/repay/liquidate drill | M2B L3 only |
 
@@ -149,3 +149,29 @@ All reads in this issue are deterministic local fixtures. No provider, RPC,
 account, credential, signer, transaction, contract deployment, testnet/public
 endpoint, kernel Obligation mapping, UI/API, reachable, user-verified or
 real-value state is added. Those states remain `NO` and separately gated.
+
+## M2A-006 local canonical-kernel Evidence update — 2026-08-23
+
+M2A-006 adds one immutable Tenant-scoped binding from an active Human or Agent
+self-Principal execution `account_binding.v3` to one existing
+`obligation.v2` and one exact chain/contract/market/account position. Only an
+ordered M2A-005 finalized effect whose debt asset matches the Obligation
+CAIP-19 asset may enter the shared kernel. Older, pending, safe, invalidated,
+wrong-account, wrong-chain and wrong-asset inputs fail closed.
+
+Migration `0065` adds forced-RLS bindings, rebuildable projections and
+append-only execution/effect receipts. Each admitted effect commits through
+the existing Event/Evidence/outbox transaction with balanced canonical Ledger
+postings. Finalized repayment settles the same Obligation and installment;
+terminal state feeds the existing Credit Outcome/Credit State materializer as
+non-authorizing, non-scoring and incapable of automatic limit change. Pool and
+sandbox execution rails are mutually exclusive.
+
+At this boundary `REQ-POOL-EVID-002` is `IMPLEMENTED=YES` and
+`LOCALLY VERIFIED=YES`; the self-Principal parity subset of
+`REQ-AGENT-POOL-001` is locally verified, while a Mandate-specific secured
+Facility operation remains incomplete. The full PostgreSQL suite passes
+90/90, including fresh/rollback migrations, atomicity, concurrency replay,
+restart and forced RLS. No provider, public RPC, signer, transaction,
+deployment, testnet/public endpoint, UI/API/SDK/MCP surface or real value is
+selected or authorized. Those states remain `NO` and separately gated.
