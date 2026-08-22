@@ -71,3 +71,28 @@ real-value states remain `NO`. The Evidence is the accepted native-unit vector
 suite, bounded time-chunk tests, negative action matrix, bad-debt one-time-loss
 test and checked-in deterministic randomized seed corpus in
 `packages/domain/test/secured-pool-reference-model.test.js`.
+
+## M2A-003 local contract Evidence update — 2026-08-22
+
+M2A-003 adds one native, non-proxy `IpoOneSecuredPoolV1` with immutable market,
+asset, oracle-interface, cap and separated pause/recovery identities. At its
+exact boundary it establishes `IMPLEMENTED=YES` and `LOCALLY VERIFIED=YES` for
+the contract portion of `REQ-POOL-001`, `REQ-POOL-003`, `REQ-POOL-004`,
+`REQ-POOL-005`, `REQ-COLL-001` and event-shape preparation for
+`REQ-POOL-EVID-001`.
+
+The local contract implements supply, liquidity-valid withdrawal, exact
+redemption, internal non-transferable LP/debt shares, collateral deposit and
+capacity-valid release, capped borrow/repay, exact token balance-delta checks,
+protective pause and a closed event surface. It deliberately ignores
+unsolicited token donations for internal accounting, preventing them from
+inflating LP claims. The pinned Foundry stateful suite covers conservation,
+caps, capacity, pause/recovery, stale/invalid price denial, malicious token
+behavior, reentrancy and privilege negatives. Pinned solc and Foundry ABI plus
+bytecode are compared against
+`contracts/abi/m2/IpoOneSecuredPoolV1.v1.json`.
+
+Interest/rate accrual, liquidation, bad debt, a live oracle source, adapter,
+indexer, kernel mapping, persistence, UI/API, deployment, reachable,
+user-verified, testnet and real-value states remain `NO`. This Evidence grants
+no L3 asset, role, signer, RPC or transaction authority.

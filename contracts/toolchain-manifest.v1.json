@@ -61,6 +61,7 @@
     "shasum": "90c1cd427b3c1007ada4f42378ce84cc2a2145a5",
     "license": "MIT",
     "allowedImports": [
+      "contracts/token/ERC20/IERC20.sol",
       "contracts/token/ERC20/utils/SafeERC20.sol",
       "contracts/utils/math/Math.sol",
       "contracts/utils/ReentrancyGuard.sol",

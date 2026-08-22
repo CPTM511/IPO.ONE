@@ -76,7 +76,7 @@
     "check:deploy": "node scripts/check-deploy.mjs",
     "check:launch-policy": "node scripts/check-launch-policy.mjs",
     "check:m2-contract-toolchain": "node scripts/check-m2-contract-toolchain.mjs",
-    "test:contracts:foundry": "forge fmt --check contracts/test/m2 && forge build --sizes && forge test",
+    "test:contracts:foundry": "forge fmt --check contracts/src/m2 contracts/test/m2 && forge build --sizes && forge test",
     "check:realvalue-decision-package": "node scripts/check-realvalue-decision-package.mjs",
     "check:realvalue-offline-review-contract": "node scripts/check-realvalue-offline-review-contract.mjs",
     "check:approval-policy": "node scripts/check-approval-policy.mjs",
