@@ -30,7 +30,7 @@
     "agent:handoff:plan": "node apps/agent-mcp/src/handoff-cli.js",
     "agent:production:call": "node apps/agent-mcp/src/production-quickstart.js",
     "test:chain:conformance": "node --test modules/chain-adapter/test/chain-conformance.test.js",
-    "test:indexer:reorg": "node --test modules/chain-adapter/test/chain-indexer.test.js",
+    "test:indexer:reorg": "node --test modules/chain-adapter/test/chain-indexer.test.js modules/chain-adapter/test/secured-pool-v1-adapter.test.js modules/event-indexer/test/pool-event-indexer.test.js",
     "test:chain:live-unit": "node --test contracts/test/sandbox-evidence-emitter.test.js contracts/test/credit-authorization-registry.test.js deploy/testnet/test/ephemeral-key.test.js deploy/testnet/test/credit-registry-live-run.test.js modules/chain-adapter/test/credit-authorization-registry.test.js modules/event-indexer/test/live-testnet-observer.test.js",
     "testnet:observe:heads": "node deploy/testnet/observe-heads.mjs",
     "testnet:erc1271:preflight": "node deploy/testnet/prepare-erc1271-deployment.mjs",

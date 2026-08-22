@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ipo-one/api-contract": "workspace:*",
-    "@ipo-one/domain": "workspace:*"
+    "@ipo-one/domain": "workspace:*",
+    "viem": "2.55.0"
   }
 }

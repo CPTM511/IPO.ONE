@@ -8,3 +8,5 @@ export * from "./live-chain-indexer.js";
 export * from "./live-credit-registry-observer.js";
 export * from "./live-evidence-observer.js";
 export * from "./live-testnet-config.js";
+export * from "./pool-event-indexer.js";
+export * from "./pool-observation-store.js";

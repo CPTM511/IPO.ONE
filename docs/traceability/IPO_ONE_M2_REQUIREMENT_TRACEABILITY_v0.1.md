@@ -1,6 +1,7 @@
 # IPO.ONE M2 requirement traceability v0.1
 
-Status: IDs ratified in Product Constitution v1.3; implementation remains absent
+Status: IDs ratified in Product Constitution v1.3; M2A-001 and M2A-003 through
+M2A-005 have bounded local implementation Evidence only
 
 Base: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
@@ -26,10 +27,10 @@ them independently.
 | REQ-ORACLE-001 | valid/fresh/deviation-bounded price | no price oracle adapter found | oracle adapter | live source review | stale/zero/wrong-decimal/deviation tests | L0 deterministic; L3 exact feed |
 | REQ-RATE-001 | utilization kink rate | synthetic utilization is exposure policy, not pool pricing (`packages/domain/src/trading-capital-facility.js:980-1029`) | rate model | POOL-003 | kink/boundary/reference vectors | L0 model |
 | REQ-RATE-002 | monotonic bounded interest accrual | obligation schedule interest exists; no pool debt index | pool accounting | RATE-001 | time warp, chunking, no-user-loop invariants | L0 model |
-| REQ-POOL-EVID-001 | pool event normalization | generic finality/indexer reusable; no pool ABI decoder (`modules/event-indexer/README.md`) | adapter/indexer | contracts ABI | closed decoder/idempotency/reorg tests | L0 simulation; L3 reads |
-| REQ-POOL-EVID-002 | pool/Obligation mapping | shared Obligation exists; no pool position binding | adapter + kernel | EVID-001, ID binding | one finalized event -> one canonical effect | L0 |
-| REQ-POOL-EVID-003 | exact finality/reconciliation | ADR-029/indexer reusable; no pool direct-read reconciliation | indexer + persistence | EVID-001 | replay/reorg/RPC disagreement/restart/restore | L0; L3 exact providers |
-| REQ-POOL-EVID-004 | discrepancy fail-closed | generic monotonic protection reusable | Risk/Ops + Gateway | EVID-003 | discrepancy freezes new risk; additive recovery | L0 |
+| REQ-POOL-EVID-001 | pool event normalization | M2A-005 closed 13-event Pool V1 decoder and tuple/finality/reorg history locally verified; no live reader | adapter/indexer | contracts ABI | closed decoder/idempotency/reorg tests | L0 simulation; L3 reads |
+| REQ-POOL-EVID-002 | pool/Obligation mapping | one finalized Pool event creates one local hash-only effect/outbox; shared Obligation binding remains absent | adapter + kernel | EVID-001, ID binding | one finalized event -> one canonical effect | L0 |
+| REQ-POOL-EVID-003 | exact finality/reconciliation | M2A-005 replay/restore and two normalized direct-read comparison locally verified; no provider/RPC selected | indexer + persistence | EVID-001 | replay/reorg/RPC disagreement/restart/restore | L0; L3 exact providers |
+| REQ-POOL-EVID-004 | discrepancy fail-closed | M2A-005 reason-coded additive discrepancy, new-risk freeze, protective operations and approved zero-discrepancy recovery locally verified | Risk/Ops + Gateway | EVID-003 | discrepancy freezes new risk; additive recovery | L0 |
 | REQ-POOL-UX-001 | LP workspace | absent | Web + Tenant API | POOL-002/003 | visible click supply/withdraw + truthful states | L3 candidate UI |
 | REQ-POOL-UX-002 | Human secured-borrow workspace | wallet/Human UI exists; no deposit/borrow/health/liquidation flow | Web + Tenant API | COLL/RATE/ORACLE | real-browser complete and adverse paths | L3 candidate UI |
 | REQ-POOL-UX-003 | pool Risk/Ops workspace | generic Risk/Ops exists; no solvency/oracle/liquidation queue | Web + Gateway | POOL-005, EVID-004 | visible controls, dual control, discrepancy drill | L0 then L3 |
@@ -124,3 +125,27 @@ kernel mapping, persistence, UI/API, deployment, reachable, user-verified and
 real-value states remain `NO`. This local contract evidence selects no
 commercial parameter and grants no L3 asset, role, signer, RPC or transaction
 authority.
+
+## M2A-005 local adapter/indexer Evidence update — 2026-08-22
+
+M2A-005 adds a closed 13-event `IpoOneSecuredPoolV1.v1` decoder, tuple identity
+bound to chain/contract/transaction/log index, monotonic included/safe/finalized
+observations, append-only non-final reorg invalidation, canonical-order local
+projection and hash-only finalized outbox. At this exact boundary it establishes
+`IMPLEMENTED=YES` and `LOCALLY VERIFIED=YES` for `REQ-POOL-EVID-001`, the
+effect-staging subset of `REQ-POOL-EVID-002`, and `REQ-POOL-EVID-003..004`.
+
+Additive migration `0064` stores tenant-isolated observations, cursor history,
+finalized effects, outbox, reconciliation runs/discrepancies/Evidence and risk
+control transitions. Duplicate/concurrent admission commits one effect;
+restart/restore reproduces the exact state hash. Reconciliation requires two
+complete normalized direct reads. Incomplete input, provider disagreement or
+projection mismatch adds reason-coded Evidence and freezes supply, withdrawal,
+collateral release and borrow while retaining repay, collateral addition and
+valid liquidation. Resume requires a later zero-discrepancy run and a separate
+hash-bound approval record.
+
+All reads in this issue are deterministic local fixtures. No provider, RPC,
+account, credential, signer, transaction, contract deployment, testnet/public
+endpoint, kernel Obligation mapping, UI/API, reachable, user-verified or
+real-value state is added. Those states remain `NO` and separately gated.

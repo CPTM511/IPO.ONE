@@ -56,6 +56,9 @@ importers:
       '@ipo-one/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      viem:
+        specifier: 2.55.0
+        version: 2.55.0(zod@3.25.76)
 
   modules/event-indexer:
     dependencies:

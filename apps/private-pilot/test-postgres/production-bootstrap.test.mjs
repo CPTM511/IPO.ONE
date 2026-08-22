@@ -39,7 +39,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0063_selected_human_role_enrollment"
+      "0064_pool_chain_reconciliation"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
@@ -169,11 +169,13 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
 
   const upgradePool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   try {
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 1 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 2 }), [
+      "0064_pool_chain_reconciliation",
       "0063_selected_human_role_enrollment"
     ]);
     assert.deepEqual(await migrateUp({ pool: upgradePool }), [
-      "0063_selected_human_role_enrollment"
+      "0063_selected_human_role_enrollment",
+      "0064_pool_chain_reconciliation"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count

@@ -376,6 +376,15 @@ const TENANT_OWNED_TABLES = [
   "operational_synthetic_runs",
   "outbox_messages",
   "pilot_feedback_records",
+  "pool_chain_cursors",
+  "pool_chain_finalized_effects",
+  "pool_chain_observations",
+  "pool_chain_outbox_messages",
+  "pool_reconciliation_discrepancies",
+  "pool_reconciliation_evidence",
+  "pool_reconciliation_runs",
+  "pool_risk_control_transitions",
+  "pool_risk_controls",
   "principals",
   "projection_registry",
   "projection_replay_jobs",
@@ -1147,12 +1156,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0060_hypercore_stable_cancel_closure",
         "0061_execution_account_bindings",
         "0062_durable_credit_state_projection",
-        "0063_selected_human_role_enrollment"
+        "0063_selected_human_role_enrollment",
+        "0064_pool_chain_reconciliation"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 63 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 64 }), [
+        "0064_pool_chain_reconciliation",
         "0063_selected_human_role_enrollment",
         "0062_durable_credit_state_projection",
         "0061_execution_account_bindings",
@@ -1280,10 +1291,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0060_hypercore_stable_cancel_closure",
         "0061_execution_account_bindings",
         "0062_durable_credit_state_projection",
-        "0063_selected_human_role_enrollment"
+        "0063_selected_human_role_enrollment",
+        "0064_pool_chain_reconciliation"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 61 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 62 }), [
+        "0064_pool_chain_reconciliation",
         "0063_selected_human_role_enrollment",
         "0062_durable_credit_state_projection",
         "0061_execution_account_bindings",
@@ -1420,7 +1433,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0060_hypercore_stable_cancel_closure",
         "0061_execution_account_bindings",
         "0062_durable_credit_state_projection",
-        "0063_selected_human_role_enrollment"
+        "0063_selected_human_role_enrollment",
+        "0064_pool_chain_reconciliation"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5099,7 +5113,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 6 }),
+        () => migrateDown({ pool, steps: 7 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5138,12 +5152,19 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         ).applied,
         false
       );
+      assert.equal(
+        (await migrationStatus({ pool })).find(
+          ({ name }) => name === "0064_pool_chain_reconciliation"
+        ).applied,
+        false
+      );
       assert.deepEqual(await migrateUp({ pool }), [
         "0059_hypercore_stable_intent_jit_preflight",
         "0060_hypercore_stable_cancel_closure",
         "0061_execution_account_bindings",
         "0062_durable_credit_state_projection",
-        "0063_selected_human_role_enrollment"
+        "0063_selected_human_role_enrollment",
+        "0064_pool_chain_reconciliation"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(

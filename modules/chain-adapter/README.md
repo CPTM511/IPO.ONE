@@ -25,3 +25,12 @@ receipt preserves the source Obligation, repayment, and Ledger references,
 proves one chain-neutral canonical Payment reference, and retains distinct
 synthetic Finality Proof and Evidence hashes at the adapter boundary. It still
 makes no network call and is not a live testnet-execution claim.
+
+M2A-005 adds `createSecuredPoolV1Adapter(...)`, a deterministic local boundary
+for the checked-in `IpoOneSecuredPoolV1.v1` ABI. It admits only one configured
+CAIP-2 chain, contract and market, decodes the 13 closed event topics, derives
+tuple identity from `(chainId, contractAddress, transactionHash, logIndex)`,
+and produces raw-free included/safe/finalized observations. Non-final block
+replacement creates an additive invalidation; finalized history cannot reorg.
+The adapter contains no provider client, RPC URL, signer, broadcast or deploy
+path.
