@@ -24,6 +24,15 @@ read the project guidance source:
 - Public sandbox threat model: `docs/security/IPO_ONE_SANDBOX_THREAT_MODEL_v0.3.md`
 - CHAIN-001B live-testnet runbook:
   `docs/security/IPO_ONE_CHAIN_001B_TESTNET_RUNBOOK_v0.1.md`
+- M2 secured-pool pre-development alignment:
+  `docs/guidance/IPO_ONE_M2_PRE_DEVELOPMENT_ALIGNMENT_v1.0.md`
+- M2 architecture decisions:
+  `docs/architecture/ADR-M2-001-SECURED_ONLY_M2.md` through
+  `docs/architecture/ADR-M2-005-ORACLE_RATE_LIQUIDATION.md`
+- M2 threat model:
+  `docs/security/IPO_ONE_M2_PUBLIC_SECURED_POOL_THREAT_MODEL_v0.1_DRAFT.md`
+- M2 requirement traceability:
+  `docs/traceability/IPO_ONE_M2_REQUIREMENT_TRACEABILITY_v0.1.md`
 
 Treat the guidance as versioned project context. It may evolve, so prefer
 updating the guidance document rather than scattering product decisions across
@@ -31,7 +40,7 @@ untracked notes.
 
 Guidance hierarchy:
 
-- Product Constitution v1.0 is the highest product-truth authority and conflict
+- Product Constitution v1.3 is the highest product-truth authority and conflict
   resolver. It assigns stable requirement IDs, records approved/gated/rejected
   capabilities, and resolves the current CreditLine, Agent Lockbox, Strategy
   Vault, and dispute-workflow decisions. Approval in the Constitution is not
@@ -65,6 +74,11 @@ Guidance hierarchy:
   Use it to separate repeatable local integration, invited durable no-funds
   operation, live testnet execution, and controlled real value. It grants no
   deployment, signer, remote-access, risk, contract, or funds authority.
+- M2 Pre-Development Alignment v1.0 and ADR-M2-001 through ADR-M2-005 govern the
+  Founder-approved secured-pool architecture and issue sequence. They grant no
+  runtime, dependency, contract, deployment, signer, oracle, risk-parameter,
+  testnet-run, real-value, or production authority. The canonical Constitution
+  and launch policy remain the conflict and activation gates.
 
 ## Product usability and truthful completion gate
 
@@ -129,9 +143,14 @@ Current core constraints:
 - Must remain multi-chain-ready from day 1 using CAIP-2, CAIP-10,
   chain-agnostic obligation IDs, event indexing, per-chain caps, and adapter
   boundaries.
-- Do not enable real Human cash loans, public LP vaults, tokens/DAO governance,
-  arbitrary withdrawals, or black-box credit scoring before real repayment
-  events exist.
+- M2 is secured-only and may implement one curated Base Sepolia test-asset pool
+  after governance ratification. The pool is an adapter-connected Capital
+  Facility, not a second kernel. No hybrid/unsecured real-value exposure, market
+  factory, mainnet, real funds, multiple markets/assets, flash loans, recursive
+  leverage, or unrestricted withdrawal is authorized. Each L3 profile,
+  contract, asset, oracle, account, signer, and run remains separately reviewed.
+- Do not enable real Human cash loans, tokens/DAO governance, arbitrary
+  withdrawals, or black-box credit scoring before real repayment events exist.
 - Sensitive human data and raw KYC/PII should stay offchain by default; use
   encrypted offchain references, hashes, attestations, and least-privilege
   access boundaries.

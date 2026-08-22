@@ -1,14 +1,14 @@
 {
   "schemaVersion": "ipo_one_m1_requirement_evidence.v1",
   "auditId": "M1-A.1-20260804",
-  "status": "CANDIDATE_EVIDENCE_WITH_V1_2_REQUIREMENT_CROSSWALK",
+  "status": "CANDIDATE_EVIDENCE_WITH_V1_3_REQUIREMENT_CROSSWALK",
   "constitution": {
     "path": "docs/PRODUCT_CONSTITUTION.md",
-    "sha256": "84e108240b4ea593b0e4c822adcc2f659c659ce772952e3cce8e377cae262557",
+    "sha256": "85251adea9605330d9379759fe63689e8a5b907faa5403b3a0bd5577783e3a0d",
     "evidenceBaselineSha256": "c36e26a00c49868c418896a8c3a9920108b32ade1161c25104c6586513f5e653",
-    "compatibilityDecisionId": "DEC-AGENT-VENUE-EXEC-001",
-    "compatibilityStatement": "v1.2 preserves all 44 prior requirement IDs and dispositions, adds runtime-gated REQ-TRADE-005, and keeps current Agent Credit Execution Evidence separate from the historical M1 evidence catalog.",
-    "stableRequirementCount": 45
+    "compatibilityDecisionId": "DEC-M2-SECURED-POOL-001",
+    "compatibilityStatement": "v1.3 preserves all 45 prior requirement IDs and dispositions, adds 10 architecture-approved runtime-gated M2 IDs as NOT_IMPLEMENTED, and keeps all M1 Evidence classifications unchanged.",
+    "stableRequirementCount": 55
   },
   "classificationVocabulary": [
     "NOT_IMPLEMENTED",
@@ -158,6 +158,16 @@
     {"requirementId":"REQ-TRADE-003","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Capital request, provider mandate, compatible match, and bilateral acceptance paths execute durably without funds."}],"blockers":["No real funding authority."]},
     {"requirementId":"REQ-TRADE-004","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Synthetic Facility, order, risk, unknown, reconciliation, close, and settlement paths execute durably."}],"blockers":["Numerical production policy is unapproved."]},
     {"requirementId":"REQ-TRADE-005","classification":"IMPLEMENTED_UNVERIFIED","implementationMode":"SANDBOX","implementationPaths":["modules/agent-credit-execution/src/runtime.js","modules/hypercore-venue-adapter/src/hypercore-action.js","deploy/testnet/agent-credit-hyperliquid-l3-gate.mjs"],"evidenceBindings":[],"blockers":["L3 requires a newly provisioned isolated signer, reviewed account/action artifacts, and an exact Founder-approved run; no external write or durable PostgreSQL proof was performed."]},
+    {"requirementId":"REQ-POOL-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No secured-pool contract, deterministic reference implementation, custody state, or solvency Evidence exists."]},
+    {"requirementId":"REQ-POOL-002","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["The live testnet secured-pool profile is disabled and has no exact contracts, assets, deployment, or public LP runtime Evidence."]},
+    {"requirementId":"REQ-POOL-003","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No LP or debt share accounting, reserve accounting, bad-debt accounting, or executable invariant Evidence exists."]},
+    {"requirementId":"REQ-COLL-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No secured collateral deposit, health, capacity, or release implementation exists."]},
+    {"requirementId":"REQ-COLL-002","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No liquidation, surplus, shortfall, or bad-debt implementation and Evidence exists."]},
+    {"requirementId":"REQ-ORACLE-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No admitted oracle dependency, exact testnet feed, freshness guard, deviation guard, or recovery Evidence exists."]},
+    {"requirementId":"REQ-RATE-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No executable utilization-rate or bounded accrual implementation exists; documented values remain fixtures."]},
+    {"requirementId":"REQ-POOL-EVID-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No pool ABI decoder, finalized event mapping, canonical Obligation binding, or reconciliation Evidence exists."]},
+    {"requirementId":"REQ-POOL-UX-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No LP, Human secured-borrower, or pool Risk/Operations product journey exists."]},
+    {"requirementId":"REQ-AGENT-POOL-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["M2B is sequenced after M2A and has no Principal-bound Agent secured-Facility implementation or L3 authorization."]},
     {"requirementId":"REQ-PRIV-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Forced RLS, Tenant isolation, hash-only authentication records, and offchain identity references execute in PostgreSQL."}],"blockers":["No real KYC or production privacy approval."]},
     {"requirementId":"REQ-AUTO-001","classification":"VERIFIED_SANDBOX","implementationMode":"SANDBOX","implementationPaths":["modules/persistence/src/postgres-core-repository.js"],"evidenceBindings":[{"evidenceId":"EV-M1A1-POSTGRES","assertion":"Durable command, outbox, inbox, retry, replay, pause, reconciliation, and exact authority paths execute fail closed."}],"blockers":["Production automation authority is absent."]},
     {"requirementId":"REQ-PILOT-001","classification":"NOT_IMPLEMENTED","implementationMode":"ABSENT","implementationPaths":[],"evidenceBindings":[],"blockers":["No durable dispute, appeal, correction case domain, operation, authorization policy, persistence, UI, or runtime evidence exists."]},

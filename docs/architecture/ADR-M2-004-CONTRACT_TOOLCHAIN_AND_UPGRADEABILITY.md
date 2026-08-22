@@ -1,6 +1,6 @@
 # ADR-M2-004: Contract toolchain and upgradeability
 
-Status: Proposed; dependency approval required before implementation
+Status: Accepted architecture; dependency admission and license decision remain gated
 
 ## Current state
 

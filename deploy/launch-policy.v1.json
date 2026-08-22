@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-policy/v1",
-  "policyVersion": "1.0.0",
+  "policyVersion": "1.1.0",
   "repository": "CPTM511/IPO.ONE",
   "evidenceSchemaVersion": "ipo.one.launch-evidence/v1",
   "profiles": {
@@ -12,9 +12,15 @@
       "capabilities": {
         "realFundsEnabled": false,
         "humanCreditEnabled": false,
+        "testAssetsEnabled": false,
+        "securedPoolEnabled": false,
+        "publicPoolParticipationEnabled": false,
+        "marketCreationEnabled": false,
         "privateTenantDataEnabled": false,
-        "externalProviderExecutionEnabled": false
+        "externalProviderExecutionEnabled": false,
+        "agentVenueExecutionEnabled": false
       },
+      "exactProfile": null,
       "gates": [
         {
           "id": "repository_quality",
@@ -87,9 +93,15 @@
       "capabilities": {
         "realFundsEnabled": false,
         "humanCreditEnabled": false,
+        "testAssetsEnabled": false,
+        "securedPoolEnabled": false,
+        "publicPoolParticipationEnabled": false,
+        "marketCreationEnabled": false,
         "privateTenantDataEnabled": true,
-        "externalProviderExecutionEnabled": false
+        "externalProviderExecutionEnabled": false,
+        "agentVenueExecutionEnabled": false
       },
+      "exactProfile": null,
       "gates": [
         {
           "id": "security_001_approval",
@@ -139,6 +151,97 @@
         "Approve a policy revision that unlocks this profile; evidence alone cannot unlock it."
       ]
     },
+    "live_testnet_secured_pool": {
+      "displayName": "Public Base Sepolia secured-pool test",
+      "releaseEnabled": false,
+      "environment": "live-testnet-secured-pool",
+      "maxReleaseAgeHours": 24,
+      "capabilities": {
+        "realFundsEnabled": false,
+        "humanCreditEnabled": false,
+        "testAssetsEnabled": true,
+        "securedPoolEnabled": true,
+        "publicPoolParticipationEnabled": true,
+        "marketCreationEnabled": false,
+        "privateTenantDataEnabled": false,
+        "externalProviderExecutionEnabled": false,
+        "agentVenueExecutionEnabled": false
+      },
+      "exactProfile": null,
+      "gates": [
+        {
+          "id": "constitution_v1_3_ratified",
+          "ownerRole": "Founder/Product/Governance",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "m2_adrs_accepted",
+          "ownerRole": "CTO/Security/Product",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "contract_dependency_provenance",
+          "ownerRole": "Security/Engineering",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "contract_unit_fuzz_invariant",
+          "ownerRole": "Smart Contract/Security",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "independent_contract_review",
+          "ownerRole": "Independent Security",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "exact_chain_contract_asset_oracle",
+          "ownerRole": "Security/Risk/Engineering",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "testnet_caps_and_pause_roles",
+          "ownerRole": "Risk/Founder",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "deployment_signer_lifecycle",
+          "ownerRole": "Security/Release Owner",
+          "maxAgeHours": 24
+        },
+        {
+          "id": "indexer_finality_reorg_reconciliation",
+          "ownerRole": "Engineering/Operations",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "restart_restore_recovery_drill",
+          "ownerRole": "Operations/Security",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "lp_human_risk_browser_acceptance",
+          "ownerRole": "Product/QA/Risk",
+          "maxAgeHours": 72
+        },
+        {
+          "id": "test_asset_public_safety_copy",
+          "ownerRole": "Product/Legal",
+          "maxAgeHours": 720
+        },
+        {
+          "id": "release_owner_authorization",
+          "ownerRole": "Founder/Release Owner",
+          "maxAgeHours": 24
+        }
+      ],
+      "unlockRequirements": [
+        "Set the reviewed exact profile; null, placeholder, stale, or mismatched fields cannot unlock release.",
+        "Prove one market, no factory/proxy, no real funds/mainnet, and no Agent venue execution.",
+        "Record deployment, configuration, transaction, finality, indexer, and zero-discrepancy reconciliation evidence.",
+        "Approve a separate policy revision that changes releaseEnabled; passing evidence alone cannot unlock the profile."
+      ]
+    },
     "controlled_agent_credit_pilot": {
       "displayName": "Controlled Agent-only real-value credit pilot",
       "releaseEnabled": false,
@@ -147,9 +250,15 @@
       "capabilities": {
         "realFundsEnabled": true,
         "humanCreditEnabled": false,
+        "testAssetsEnabled": false,
+        "securedPoolEnabled": false,
+        "publicPoolParticipationEnabled": false,
+        "marketCreationEnabled": false,
         "privateTenantDataEnabled": true,
-        "externalProviderExecutionEnabled": true
+        "externalProviderExecutionEnabled": true,
+        "agentVenueExecutionEnabled": false
       },
+      "exactProfile": null,
       "gates": [
         {
           "id": "closed_pilot_exit",

@@ -1,16 +1,16 @@
 # IPO.ONE Product Constitution
 
-Version: v1.2
+Version: v1.3
 
-Effective date: 2026-08-14
+Effective date: 2026-08-22
 
 Status: Founder-directed and ratified for current product-truth governance
 
 Decision owner: IPO.ONE Founder / Product / Governance
 
-Supersedes: Product Constitution v1.1 effective 2026-08-11
+Supersedes: Product Constitution v1.2 effective 2026-08-14
 
-Milestone: GOVERNANCE-001 / Recovery M0
+Milestone: M2 — Public Secured Liquidity & Delegated Agent Execution
 
 ## 1. Purpose and authority
 
@@ -20,10 +20,12 @@ is an authority index and conflict resolver. It does not replace the detailed
 product thesis, architecture decisions, security invariants, schemas, or
 acceptance specifications it governs.
 
-The M0 direction is made authoritative by recording it in this versioned
-repository document. Conversations remain non-authoritative unless their
-decision is reviewed and incorporated into this Constitution or a subordinate
-approved source.
+The M2 direction is made authoritative by recording it in this versioned
+repository document. v1.3 approves only the bounded secured-pool architecture
+and implementation sequence described here. It does not prove or activate
+runtime, testnet, hosting, real value, or production. Conversations remain
+non-authoritative unless their decision is reviewed and incorporated into this
+Constitution or a subordinate approved source.
 
 Approval of a requirement is not evidence that it is implemented, verified,
 hosted, available to users, real-value active, or production ready. Those states
@@ -69,13 +71,28 @@ only if it explicitly records supersession. Otherwise the behavior is
    learning model is versioned, shadow-only, and non-authorizing.
 7. Raw KYC, PII, credentials, private keys, raw signatures, and lender-private
    policy remain off public/onchain surfaces by default.
-8. No arbitrary withdrawal, unrestricted transfer, public LP/vault, token/DAO,
-   black-box universal score, unbounded Human cash loan, or automatic model
-   promotion is approved.
+8. No arbitrary withdrawal, unrestricted transfer, generic/public real-value
+   LP/vault, market factory, token/DAO, black-box universal score, unbounded
+   Human cash loan, hybrid secured/unsecured Facility, or automatic model
+   promotion is approved. One curated, overcollateralized, public-participation
+   Base Sepolia test-asset pool may proceed through separately gated M2 modes.
+   That exception grants no mainnet, real-value, production, multi-market,
+   multi-asset, flash-loan, recursive-leverage, or Agent-withdrawal authority.
 9. Stale, unknown, unauthorized, unreconciled, or ambiguous state cannot
    authorize new risk.
 10. Designed, approved, implemented, locally verified, testnet verified,
     hosted, real-value active, and production ready are distinct states.
+11. M2 is secured-only. Existing unsecured/synthetic credit remains no-funds;
+    collateral deficiency never becomes silent unsecured exposure.
+12. The secured pool is one Capital Facility domain behind an adapter, not a
+    second Subject, Offer, Obligation, Ledger, Event, Evidence, Credit State, or
+    reconciliation kernel.
+13. Public participation does not imply permissionless market creation or risk
+    administration.
+14. On-chain pool balances are authoritative for custody, LP shares,
+    collateral, debt, interest, and liquidation; the IPO.ONE kernel remains
+    authoritative for identity, Mandate, cross-rail Obligation, and portable
+    Evidence. Discrepancies fail closed.
 
 ## 4. Delivery modes and requirement status
 
@@ -84,7 +101,7 @@ only if it explicitly records supersession. Otherwise the behavior is
 | `L0_LOCAL_NO_FUNDS` | Durable local synthetic/no-funds product work | Approved only within existing local permissions and policies. |
 | `L1_PUBLIC_SANDBOX` | Public synthetic product with no private Tenant data or real value | Subject to current launch policy and current release Evidence. |
 | `L2_CLOSED_NO_FUNDS` | Invited durable no-funds pilot with private Tenant data | Disabled until all named launch-policy gates and approvals pass. |
-| `L3_LIVE_TESTNET` | Separately approved testnet execution/read proof | Each transaction, signer, account, adapter, and run requires its own approval. |
+| `L3_LIVE_TESTNET` | Separately approved testnet execution/read proof | Every live profile remains disabled until a named policy entry is unlocked. A ratified `live_testnet_secured_pool` profile may authorize public test-asset participation only for its exact chain, contracts, accounts, assets, oracle, caps, owners, and Evidence window. Deployment/admin/signers remain exact-run approvals. Test assets are not real funds or Human production lending. |
 | `L4_CONTROLLED_REAL_VALUE` | Bounded Agent-only real-value candidate | Disabled; requires a complete named decision package and policy revision. |
 | `L5_PRODUCTION` | Production real-value operation | Not approved. |
 
@@ -145,6 +162,16 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-TRADE-003 | bilateral capital request/mandate/matching | APPROVED_PHASE_2 | L0_LOCAL_NO_FUNDS | Product Optimization Measure v1.0 section 2 | exact bilateral acceptance; no real funding |
 | REQ-TRADE-004 | synthetic Trading Facility/order/risk lifecycle | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-036 | conservative state machine; exact numerical policy separately approved |
 | REQ-TRADE-005 | purpose-bound delegated external venue execution for an Agent Trading Capital Facility | ARCHITECTURE_APPROVED_RUNTIME_GATED | L3_LIVE_TESTNET | DEC-AGENT-VENUE-EXEC-001 in section 7 | external Agent and shared kernel remain independent; controlled capital account and policy signer only; every signer, account and run separately approved; mainnet and real value prohibited |
+| REQ-POOL-001 | one curated secured market and pool solvency | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | DEC-M2-SECURED-POOL-001 | one market; no factory/proxy/multi-asset; L3 separately gated |
+| REQ-POOL-002 | public testnet LP supply and liquidity-valid withdrawal | ARCHITECTURE_APPROVED_RUNTIME_GATED | L3_LIVE_TESTNET | DEC-M2-SECURED-POOL-001 | exact test assets/caps/pause; no real funds |
+| REQ-POOL-003 | deterministic LP/debt share and reserve/bad-debt accounting | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-M2-005 | explicit rounding and conservation invariants |
+| REQ-COLL-001 | collateral deposit, capacity, health and valid release | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-M2-005 | secured-only; stale oracle denies new risk/release |
+| REQ-COLL-002 | deterministic liquidation, surplus and bad debt | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-M2-005 | test fixtures only; L3 action separately gated |
+| REQ-ORACLE-001 | source-bound valid/fresh/deviation-guarded price | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-M2-005 | exact L3 feed/address and recovery separately approved |
+| REQ-RATE-001 | utilization rate and monotonic bounded accrual | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-M2-005 | fixture curve; no commercial pricing inference |
+| REQ-POOL-EVID-001 | pool event finality, Obligation mapping and reconciliation | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | ADR-M2-003 | finalized authenticated logs; discrepancy blocks new risk |
+| REQ-POOL-UX-001 | LP, Human borrower and pool Risk/Ops journeys | ARCHITECTURE_APPROVED_RUNTIME_GATED | L0_LOCAL_NO_FUNDS | M2 alignment v1.0 | L3 candidate requires deployed visible-click Evidence |
+| REQ-AGENT-POOL-001 | Principal-bound Agent use of secured Facility | ARCHITECTURE_APPROVED_RUNTIME_GATED | L3_LIVE_TESTNET | DEC-AGENT-VENUE-EXEC-001 plus M2 alignment | M2B after M2A; no withdrawal/transfer/leverage-on-leverage |
 | REQ-PRIV-001 | offchain sensitive-data and least-privilege boundary | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 6 | no raw KYC/PII/credentials/onchain sensitive record |
 | REQ-AUTO-001 | queryable fail-closed automation | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Engineering and Experience Standard v1.0 section 5 | A3/A4 authority must be exact; AI never authorizes credit or mutation |
 | REQ-PILOT-001 | dispute/appeal/correction case workflow | REQUIRED_BEFORE_CLOSED_PILOT | L2_CLOSED_NO_FUNDS | DEC-DISPUTE-001 in section 7 | no claim of legal complaint handling; immutable Evidence and correction linkage |
@@ -329,14 +356,44 @@ runtime-gated capability for delegated external venue execution; it does not
 claim implementation, verification, hosting, testnet execution, real value or
 production readiness.
 
+### DEC-M2-SECURED-POOL-001 — one secured testnet Capital Facility
+
+Founder direction on 2026-08-22 approves the target architecture and bounded
+implementation sequence for one secured testnet Capital Facility while
+retaining explicit runtime and release gates.
+
+1. M2 introduces one curated Base Sepolia WETH/test-USDC overcollateralized
+   pool. Public users may participate only through the exact enabled L3 profile.
+2. Market, asset, oracle, and risk administration remains governed. No market
+   factory, proxy, arbitrary asset, or multi-market path is approved.
+3. M2A proves the LP and Human lifecycle before M2B composes Principal-bound
+   Hyperliquid Testnet execution.
+4. The pool is not the IPO.ONE kernel. It emits authenticated facts mapped by a
+   fail-closed adapter to the existing shared Obligation, Ledger, and Evidence
+   model.
+5. All numerical values before an exact run approval are test fixtures.
+6. Testnet passage grants no real-value or mainnet authority. Real-value public
+   liquidity requires a future Constitution revision and complete legal,
+   custody, capital, risk, oracle, audit, incident, and loss-bearer decision.
+
+### v1.2 to v1.3 requirement crosswalk
+
+No v1.2 requirement ID is deleted, repurposed, downgraded, or broadened.
+`REQ-CREDIT-008` and `REQ-TRADE-001` remain shared-kernel Facility requirements;
+the ten new rows add pool-specific acceptance. `REQ-EXEC-004` continues to
+prohibit arbitrary withdrawal; `REQ-POOL-002` permits only normal withdrawal of
+an LP's valid pool claim under liquidity and pause rules. Architecture approval
+does not claim implementation, verification, hosting, testnet execution, real
+value, or production readiness.
+
 ## 8. Explicit current non-goals and gates
 
-The following remain not approved: real Human cash lending; public LP or
-Strategy Vault products; unrestricted liquidity, withdrawal, or transfer;
-mainnet; token/DAO governance; black-box or universal authoritative scoring;
-raw KYC/PII onchain; automatic model promotion; uncontrolled Agent borrowing;
-production signer/custody; real-value settlement; and self-enabling release
-profiles.
+The following remain not approved: real Human cash lending; public real-value
+LP, Strategy Vault, generic market factory, and any pool outside the exact M2
+testnet profile; unrestricted liquidity, withdrawal, or transfer; mainnet;
+token/DAO governance; black-box or universal authoritative scoring; raw KYC/PII
+onchain; automatic model promotion; uncontrolled Agent borrowing; production
+signer/custody; real-value settlement; and self-enabling release profiles.
 
 Contracts, funds movement, custody, risk limits, pricing, permissions, privacy
 boundaries, KYC/KYP providers, production dependencies, chain/mainnet selection,
@@ -360,7 +417,7 @@ Changing this Constitution requires a new version, named decision owner,
 effective date, explicit supersession, and a migration/crosswalk for any changed
 requirement ID. Existing IDs must not be silently reused for different meaning.
 
-## 10. M0 disposition
+## 10. Governance disposition
 
 Recovery finding `P0-AUTH-001` is resolved at the governance-document level by
 this Constitution. It does not resolve `P0-RC-001`, `P0-RUNTIME-001`,
@@ -368,5 +425,7 @@ this Constitution. It does not resolve `P0-RC-001`, `P0-RUNTIME-001`,
 the 2026-08-03 audit.
 
 M1 remains responsible for sealing one exact candidate and synchronizing
-machine/human traceability to that commit. M2 remains responsible for current
-authenticated durable Human and Agent Golden Flow Evidence.
+machine/human traceability to that commit. The M2 secured-pool capability remains
+`BLOCKED — NOT COMPLETE` until issue-sized implementation, current runtime and
+deployment Evidence, an explicitly unlocked launch-policy revision, and visible
+Human and equivalent Agent verification exist.

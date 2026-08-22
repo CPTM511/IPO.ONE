@@ -1,10 +1,10 @@
 # ADR-M2-001: Secured-only M2
 
-Status: Proposed; governance ratification required
+Status: Accepted for bounded M2 architecture; runtime remains gated
 
 ## Context
 
-Constitution v1.2 permits one shared kernel and purpose-bound Facilities but
+The predecessor Constitution v1.2 permitted one shared kernel and purpose-bound Facilities but
 prohibits public LP/vaults and real-value Human lending. The proposed M2
 direction intentionally introduces one bounded public testnet secured Facility.
 A secured/unsecured hybrid would multiply accounting, risk and recovery states
@@ -33,7 +33,7 @@ risk.
 - Mitigation: adapter-only integration, one canonical Obligation, explicit bad
   debt state, invariant tests, and no unsecured fallback.
 - Simpler safe alternative: retain the current no-funds product and defer M2;
-  this remains the rollback posture until ratification.
+  this remains the rollback posture until an exact release profile is separately activated.
 
 ## Alternatives rejected
 

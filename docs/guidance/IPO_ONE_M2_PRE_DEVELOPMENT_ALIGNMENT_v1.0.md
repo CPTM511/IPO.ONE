@@ -1,6 +1,6 @@
 # IPO.ONE M2 pre-development alignment v1.0
 
-Status: `PROPOSED_FOR_REPOSITORY_RATIFICATION`
+Status: `FOUNDER_APPROVED_FOR_REPOSITORY_RATIFICATION_2026_08_22`
 
 Decision owner: IPO.ONE Founder / Product / Governance
 
@@ -8,17 +8,17 @@ Base commit: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
 ## Authority and conflict
 
-This document translates the supplied M2 alignment package into a repository
-proposal. It is subordinate to Product Constitution v1.2 until a reviewed v1.3
-is ratified. Conversation and attachment approval do not silently supersede the
-Constitution (`docs/PRODUCT_CONSTITUTION.md:15-53`).
+This document translates the supplied M2 alignment package into a bounded
+repository direction. Product Constitution v1.3 is the canonical authority;
+this document cannot activate runtime, testnet, contracts, dependencies,
+signers, risk values, real funds, or production by itself.
 
 The conflict is explicit: v1.2 prohibits public LP/vault capability
 (`docs/PRODUCT_CONSTITUTION.md:72-74`, `332-344`), and the launch policy has no
 live-testnet secured-pool profile. Therefore this PR changes no runtime and
 authorizes no pool.
 
-## Frozen proposed direction
+## Ratified bounded direction
 
 > One kernel. One active risk mode. One curated market. Human first. Delegated
 > Agent execution second.
@@ -48,7 +48,7 @@ Founder-owned commercial decisions include capital sources, LP acquisition,
 commercial pricing, partners, jurisdiction/legal structure, real-value timing,
 loss bearing and go-to-market. Engineering must not invent them.
 
-The product/engineering track may, after ratification and issue approval, build
+The product/engineering track may, after repository ratification and issue approval, build
 versioned contracts, adapters, accounting, indexers, Human/Agent interfaces,
 security controls, tests and an explicitly approved testnet deployment. All
 numbers in Phase 0 are test fixtures, not commercial terms.
@@ -95,9 +95,9 @@ Hyperliquid = external execution venue
 | M2B testnet | separately approved exact Agent run | Principal/Mandate, signer, nonce, venue and recovery evidence |
 | Real value / mainnet | not approved in M2 | new Constitution, policy, legal/custody/risk/security/audit and Founder go/no-go |
 
-Phase 0 stops for Founder review. Implementation may begin only after the
-Constitution, AGENTS.md and launch-policy direction are ratified in the sequence
-defined by `docs/codex/tasks/M2_EXECUTION_PLAN_v0.1.md`.
+Phase 0 stops for repository review and merge. Implementation may begin only
+after the Constitution, AGENTS.md, and launch-policy direction are merged in the
+sequence defined by `docs/codex/tasks/M2_EXECUTION_PLAN_v0.1.md`.
 
 ## Explicit non-goals
 

@@ -144,16 +144,71 @@ function timestamp(value, path, issues, nowMs, { allowFuture = false } = {}) {
   return milliseconds;
 }
 
+const CAPABILITY_KEYS = [
+  "realFundsEnabled",
+  "humanCreditEnabled",
+  "testAssetsEnabled",
+  "securedPoolEnabled",
+  "publicPoolParticipationEnabled",
+  "marketCreationEnabled",
+  "privateTenantDataEnabled",
+  "externalProviderExecutionEnabled",
+  "agentVenueExecutionEnabled"
+];
+
 function capabilities(value, path, issues) {
+  if (!exactKeys(value, CAPABILITY_KEYS, path, issues)) return;
+  for (const key of CAPABILITY_KEYS) {
+    if (typeof value[key] !== "boolean") issues.push(`${path}.${key} must be a boolean.`);
+  }
+}
+
+function securedPoolExactProfile(value, path, issues) {
   const keys = [
-    "realFundsEnabled",
-    "humanCreditEnabled",
-    "privateTenantDataEnabled",
-    "externalProviderExecutionEnabled"
+    "chainId",
+    "poolContract",
+    "poolBytecodeHash",
+    "adapterVersion",
+    "wethCollateral",
+    "testUsdcDebt",
+    "oracleAddress",
+    "oracleSource",
+    "marketCount",
+    "runOwner",
+    "deploymentApprovalRef",
+    "configurationHash",
+    "realValueClassification"
   ];
   if (!exactKeys(value, keys, path, issues)) return;
-  for (const key of keys) {
-    if (typeof value[key] !== "boolean") issues.push(`${path}.${key} must be a boolean.`);
+
+  if (value.chainId !== "eip155:84532") {
+    issues.push(`${path}.chainId must be eip155:84532.`);
+  }
+  for (const key of ["poolContract", "wethCollateral", "testUsdcDebt", "oracleAddress"]) {
+    boundedString(value[key], `${path}.${key}`, issues, {
+      max: 42,
+      pattern: /^0x[0-9a-fA-F]{40}$/
+    });
+  }
+  if (value.wethCollateral !== "0x4200000000000000000000000000000000000006") {
+    issues.push(`${path}.wethCollateral must be the reviewed Base Sepolia WETH address.`);
+  }
+  for (const key of ["poolBytecodeHash", "configurationHash"]) {
+    boundedString(value[key], `${path}.${key}`, issues, {
+      max: 66,
+      pattern: /^0x[0-9a-f]{64}$/
+    });
+  }
+  boundedString(value.adapterVersion, `${path}.adapterVersion`, issues, {
+    max: 64,
+    pattern: /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
+  });
+  safeApprovalText(value.oracleSource, `${path}.oracleSource`, issues);
+  safeApprovalText(value.runOwner, `${path}.runOwner`, issues);
+  safeApprovalText(value.deploymentApprovalRef, `${path}.deploymentApprovalRef`, issues);
+  if (value.marketCount !== 1) issues.push(`${path}.marketCount must equal 1.`);
+  if (value.realValueClassification !== "test_assets_only") {
+    issues.push(`${path}.realValueClassification must be test_assets_only.`);
   }
 }
 
@@ -190,6 +245,7 @@ export function validateLaunchPolicy(policy) {
         "environment",
         "maxReleaseAgeHours",
         "capabilities",
+        "exactProfile",
         "gates",
         "unlockRequirements"
       ];
@@ -208,6 +264,57 @@ export function validateLaunchPolicy(policy) {
       capabilities(profile.capabilities, `${path}.capabilities`, issues);
       if (profile.capabilities?.humanCreditEnabled !== false) {
         issues.push(`${path} must not enable Human credit under the current product charter.`);
+      }
+      if (profile.capabilities?.marketCreationEnabled !== false) {
+        issues.push(`${path} must not enable market creation under the current Product Constitution.`);
+      }
+      if (
+        profile.capabilities?.publicPoolParticipationEnabled === true &&
+        (profile.capabilities?.securedPoolEnabled !== true ||
+          profile.capabilities?.testAssetsEnabled !== true)
+      ) {
+        issues.push(`${path} cannot enable public pool participation without secured test assets.`);
+      }
+      if (
+        profile.capabilities?.realFundsEnabled === true &&
+        profile.capabilities?.testAssetsEnabled === true
+      ) {
+        issues.push(`${path} must not conflate real funds with test assets.`);
+      }
+
+      if (profileId === "live_testnet_secured_pool") {
+        if (
+          profile.capabilities?.realFundsEnabled !== false ||
+          profile.capabilities?.humanCreditEnabled !== false ||
+          profile.capabilities?.testAssetsEnabled !== true ||
+          profile.capabilities?.securedPoolEnabled !== true ||
+          profile.capabilities?.publicPoolParticipationEnabled !== true ||
+          profile.capabilities?.marketCreationEnabled !== false ||
+          profile.capabilities?.privateTenantDataEnabled !== false ||
+          profile.capabilities?.externalProviderExecutionEnabled !== false ||
+          profile.capabilities?.agentVenueExecutionEnabled !== false
+        ) {
+          issues.push(`${path} capability boundary drifted from the ratified M2A test-asset profile.`);
+        }
+        if (profile.exactProfile === null) {
+          if (profile.releaseEnabled === true) {
+            issues.push(`${path}.exactProfile must be complete before release can be enabled.`);
+          }
+        } else {
+          securedPoolExactProfile(profile.exactProfile, `${path}.exactProfile`, issues);
+        }
+      } else {
+        if (profile.exactProfile !== null) {
+          issues.push(`${path}.exactProfile is reserved for an exact secured-pool profile.`);
+        }
+        if (
+          profile.capabilities?.testAssetsEnabled !== false ||
+          profile.capabilities?.securedPoolEnabled !== false ||
+          profile.capabilities?.publicPoolParticipationEnabled !== false ||
+          profile.capabilities?.agentVenueExecutionEnabled !== false
+        ) {
+          issues.push(`${path} must not inherit M2 secured-pool or Agent venue capabilities.`);
+        }
       }
       if (
         profile.releaseEnabled === true &&

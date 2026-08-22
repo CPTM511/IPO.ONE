@@ -1,6 +1,6 @@
 # IPO.ONE M2 public secured pool threat model v0.1 DRAFT
 
-Status: Proposed, not an independent security review
+Status: Accepted as the M2 baseline; not an independent security review
 
 Scope: one Base Sepolia WETH/test-USDC secured testnet market, its adapter,
 indexer, IPO.ONE kernel integration, Human/LP/Risk surfaces and later M2B Agent

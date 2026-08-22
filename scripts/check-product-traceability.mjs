@@ -128,6 +128,10 @@ fail(
   "controlled-credit release state drifted"
 );
 fail(
+  launchPolicy.profiles.live_testnet_secured_pool.releaseEnabled === false,
+  "M2 secured-pool testnet profile must remain policy-locked"
+);
+fail(
   manifest.releaseMaturity.enabledReleaseProfile === "public_sandbox",
   "traceability enabled release profile drifted"
 );

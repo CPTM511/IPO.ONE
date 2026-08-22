@@ -1,6 +1,6 @@
 # Product Constitution v1.3 M2 proposed diff
 
-Status: Proposal only; `docs/PRODUCT_CONSTITUTION.md` remains v1.2 and unchanged
+Status: Accepted 2026-08-22 and incorporated into `docs/PRODUCT_CONSTITUTION.md` v1.3
 
 Decision required: IPO.ONE Founder / Product / Governance
 
@@ -129,5 +129,6 @@ paths to the guidance list, and replace only the blanket public-LP sentence with
 
 All existing issue, completion, privacy, security and deployment gates remain.
 
-Permission/funds/deployment impact: **none until separately ratified and
-activated**. This file is not the Constitution and cannot approve runtime.
+Permission/funds/deployment impact: **none until separately activated**. This
+historical proposal is not the canonical Constitution and cannot approve
+runtime.

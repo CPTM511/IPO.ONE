@@ -33,6 +33,17 @@ assert.equal(schema.$id, "https://schemas.ipo.one/operations/launch-evidence.v1.
 assert.equal(schema.additionalProperties, false);
 assert.equal(policy.profiles.public_sandbox.releaseEnabled, true);
 assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
+assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, false);
+assert.equal(policy.profiles.live_testnet_secured_pool.exactProfile, null);
+assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.realFundsEnabled, false);
+assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.testAssetsEnabled, true);
+assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.securedPoolEnabled, true);
+assert.equal(
+  policy.profiles.live_testnet_secured_pool.capabilities.publicPoolParticipationEnabled,
+  true
+);
+assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.marketCreationEnabled, false);
+assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.agentVenueExecutionEnabled, false);
 assert.equal(policy.profiles.controlled_agent_credit_pilot.releaseEnabled, false);
 assert.throws(
   () =>

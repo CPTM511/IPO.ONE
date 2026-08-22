@@ -107,8 +107,13 @@
       "required": [
         "realFundsEnabled",
         "humanCreditEnabled",
+        "testAssetsEnabled",
+        "securedPoolEnabled",
+        "publicPoolParticipationEnabled",
+        "marketCreationEnabled",
         "privateTenantDataEnabled",
-        "externalProviderExecutionEnabled"
+        "externalProviderExecutionEnabled",
+        "agentVenueExecutionEnabled"
       ],
       "properties": {
         "realFundsEnabled": {
@@ -117,10 +122,25 @@
         "humanCreditEnabled": {
           "type": "boolean"
         },
+        "testAssetsEnabled": {
+          "type": "boolean"
+        },
+        "securedPoolEnabled": {
+          "type": "boolean"
+        },
+        "publicPoolParticipationEnabled": {
+          "type": "boolean"
+        },
+        "marketCreationEnabled": {
+          "type": "boolean"
+        },
         "privateTenantDataEnabled": {
           "type": "boolean"
         },
         "externalProviderExecutionEnabled": {
+          "type": "boolean"
+        },
+        "agentVenueExecutionEnabled": {
           "type": "boolean"
         }
       }
