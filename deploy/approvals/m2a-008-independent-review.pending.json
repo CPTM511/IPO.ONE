@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "m2a_008_independent_contract_review.v1",
+  "reviewId": "M2A-008-REVIEW-PENDING-0001",
+  "reviewer": {
+    "name": "PENDING INDEPENDENT REVIEWER",
+    "organizationOrIndependentCapacity": "PENDING",
+    "ownerRole": "Independent Security"
+  },
+  "release": {
+    "repository": "CPTM511/IPO.ONE",
+    "commitSha": "0000000000000000000000000000000000000000",
+    "sourceSha256": {
+      "oracleAdapter": "sha256:29fcf0d1775b2d7be2e4c478cbaa4e072e4bb63394cae648ac0027411bb5ed34",
+      "securedPool": "sha256:7982c23b405958a85ae3035f3e4ba9c69b92a46ade9fcabd3f02b5ec741028ca",
+      "securedPoolMath": "sha256:7eb4731af2ded7e4a1fefb22352e4b4100e275cb702516ab09233d3376382f09"
+    },
+    "solidityVersion": "0.8.30+commit.73712a01",
+    "optimizerRuns": 200
+  },
+  "review": {
+    "conclusion": "pending",
+    "completedAt": "2026-08-23T00:00:00.000Z",
+    "methods": [
+      "PENDING"
+    ],
+    "findingSummary": {
+      "total": 0,
+      "resolved": 0,
+      "openCritical": 0,
+      "openHigh": 0
+    },
+    "residualRisks": [],
+    "reportUrl": "https://invalid.local/pending-review-report",
+    "reportSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "scope": {
+    "chainId": "eip155:84532",
+    "testAssetsOnly": true,
+    "mainnetAuthorized": false,
+    "realFundsAuthorized": false
+  },
+  "independentReviewAttested": true
+}

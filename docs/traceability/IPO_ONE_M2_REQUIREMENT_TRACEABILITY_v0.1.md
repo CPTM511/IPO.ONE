@@ -228,3 +228,10 @@ remain `NO`. The launch profile is still disabled with `exactProfile: null`,
 and no independent contract review, exact Risk/cap/role Evidence, durable
 pause/recovery accounts, private 13-gate Evidence or fresh one-use signer is
 present. No transaction was signed or broadcast and no funds moved.
+
+The subsequent Founder review confirmation is recorded as Founder/Release
+acceptance only. A closed `m2a_008_independent_contract_review.v1` schema,
+pending template and report-byte verifier now make the separate Independent
+Security gate mechanically admissible once a named external reviewer supplies
+the exact attestation and immutable report. Until that occurs, the gate remains
+absent and the launch profile remains correctly locked.

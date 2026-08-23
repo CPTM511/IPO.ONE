@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/m2a-008-independent-contract-review.schema.json",
+  "title": "IPO.ONE M2A-008 independent contract review attestation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "reviewId",
+    "reviewer",
+    "release",
+    "review",
+    "scope",
+    "independentReviewAttested"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "m2a_008_independent_contract_review.v1"
+    },
+    "reviewId": {
+      "type": "string",
+      "pattern": "^M2A-008-REVIEW-[A-Z0-9-]{8,48}$"
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "organizationOrIndependentCapacity", "ownerRole"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 128
+        },
+        "organizationOrIndependentCapacity": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 256
+        },
+        "ownerRole": {
+          "const": "Independent Security"
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commitSha",
+        "sourceSha256",
+        "solidityVersion",
+        "optimizerRuns"
+      ],
+      "properties": {
+        "repository": {
+          "const": "CPTM511/IPO.ONE"
+        },
+        "commitSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "sourceSha256": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["oracleAdapter", "securedPool", "securedPoolMath"],
+          "properties": {
+            "oracleAdapter": {
+              "$ref": "#/$defs/sha256"
+            },
+            "securedPool": {
+              "$ref": "#/$defs/sha256"
+            },
+            "securedPoolMath": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        "solidityVersion": {
+          "const": "0.8.30+commit.73712a01"
+        },
+        "optimizerRuns": {
+          "const": 200
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conclusion",
+        "completedAt",
+        "methods",
+        "findingSummary",
+        "residualRisks",
+        "reportUrl",
+        "reportSha256"
+      ],
+      "properties": {
+        "conclusion": {
+          "enum": [
+            "pending",
+            "approved",
+            "approved_with_resolved_findings",
+            "rejected"
+          ]
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "methods": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 256
+          }
+        },
+        "findingSummary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "resolved",
+            "openCritical",
+            "openHigh"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "resolved": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "openCritical": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "openHigh": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            }
+          }
+        },
+        "residualRisks": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 512
+          }
+        },
+        "reportUrl": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 2048
+        },
+        "reportSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chainId",
+        "testAssetsOnly",
+        "mainnetAuthorized",
+        "realFundsAuthorized"
+      ],
+      "properties": {
+        "chainId": {
+          "const": "eip155:84532"
+        },
+        "testAssetsOnly": {
+          "const": true
+        },
+        "mainnetAuthorized": {
+          "const": false
+        },
+        "realFundsAuthorized": {
+          "const": false
+        }
+      }
+    },
+    "independentReviewAttested": {
+      "const": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
