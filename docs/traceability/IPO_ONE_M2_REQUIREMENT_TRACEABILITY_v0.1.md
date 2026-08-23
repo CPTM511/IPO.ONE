@@ -202,7 +202,8 @@ all M2A-008 permissions remain independently gated.
 
 ## M2A-008 preflight Evidence update — 2026-08-23
 
-M2A-008 now has one closed exact-deployment decision schema, a mode-0600 strict
+The original M2A-008 preflight established one closed exact-deployment decision
+schema, a mode-0600 strict
 decision reader, deterministic nonce-derived adapter/pool addresses, bounded
 test-asset/risk/signer fields, a fail-closed 13-gate pending Evidence template,
 and a read-only two-RPC dependency inspector. It adds no signer, wallet client,
@@ -225,13 +226,36 @@ typecheck, migrations, Web bundle and production dependency audit pass.
 This Evidence establishes only preflight CODE and local/read-only/fork
 verification. `TESTNET VERIFIED`, `DEPLOYED`, `REACHABLE` and `USER VERIFIED`
 remain `NO`. The launch profile is still disabled with `exactProfile: null`,
-and no independent contract review, exact Risk/cap/role Evidence, durable
-pause/recovery accounts, private 13-gate Evidence or fresh one-use signer is
-present. No transaction was signed or broadcast and no funds moved.
+and no exact Risk/cap/role Evidence, public pause/recovery addresses or fresh
+one-use signer is present. No transaction was signed or broadcast and no funds
+moved.
 
 The subsequent Founder review confirmation is recorded as Founder/Release
 acceptance only. A closed `m2a_008_independent_contract_review.v1` schema,
 pending template and report-byte verifier now make the separate Independent
-Security gate mechanically admissible once a named external reviewer supplies
-the exact attestation and immutable report. Until that occurs, the gate remains
-absent and the launch profile remains correctly locked.
+Security assurance mechanically admissible once a named external reviewer
+supplies the exact attestation and immutable report.
+
+## M2A-008 testnet governance correction — 2026-08-23
+
+Policy v1.2.0 replaces the testnet profile's 13 named approval gates with five
+effective gates without removing technical verification. Gates A-C cover code
+integrity, exact configuration and authority/signer safety before signing. Gate
+D is enforced inside the closed deployment runner. Gate E is required after
+deployment for finality, indexer/reconciliation, restart/replay, safe pause/
+recovery and Human/LP/Risk browser acceptance.
+
+Independent Security review is no longer a blocking requirement for the first
+Base Sepolia test-assets-only engineering deployment. The exact review schema,
+verifier and handoff remain available and no review is claimed. Policy
+validation now rejects any mainnet-named or real-funds profile that omits an
+`Independent Security` gate.
+
+The exact-decision contract permits both testnet role addresses to identify the
+Founder as controller while still requiring distinct EVM addresses, distinct
+private keys, testnet-only scope and zero key material in Evidence. Exact
+1,000/100 test-USDC caps, 50% LTV, `mainnetAuthorized=false` and
+`realFundsAuthorized=false` are executable invariants. The only unavoidable
+Founder-supplied inputs remaining with this correction applied are the two
+public role addresses. The profile remains disabled and no transaction is
+authorized by the correction alone.

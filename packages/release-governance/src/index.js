@@ -5,6 +5,13 @@ const ID_PATTERN = /^[a-z][a-z0-9_]{2,63}$/;
 const PLACEHOLDER_PATTERN = /(?:\[[^\]]*\]|<[^>]*>|\b(?:todo|tbd|pending|changeme|placeholder)\b)/i;
 const SECRET_PATTERN = /(?:ghp_|github_pat_|AIza[0-9A-Za-z_-]{20,}|-----BEGIN |\bBearer\s+)/;
 const SENSITIVE_QUERY_KEY_PATTERN = /(?:token|secret|signature|credential|api[_-]?key|x-goog|sig$|^key$)/i;
+export const M2A008_EFFECTIVE_GATES = Object.freeze({
+  m2a_testnet_code_integrity: "pre_deployment",
+  m2a_testnet_exact_configuration: "pre_deployment",
+  m2a_testnet_authority_signer_safety: "pre_deployment",
+  m2a_testnet_exact_deployment: "runtime_enforced",
+  m2a_testnet_post_deployment_acceptance: "post_deployment"
+});
 
 export class LaunchEvidenceError extends Error {
   constructor(message, issues = []) {
@@ -128,6 +135,24 @@ function immutableGitHubRunUrl(value, path, issues, repository) {
   const runPath = new RegExp(`^/${escapedRepository}/actions/runs/\\d+(?:/attempts/\\d+)?/?$`);
   if (url.hostname !== "github.com" || !runPath.test(url.pathname)) {
     issues.push(`${path} must identify an immutable GitHub Actions run for this repository.`);
+  }
+}
+
+function immutableGitHubRevisionUrl(value, path, issues, repository) {
+  httpsEvidenceUrl(value, path, issues, repository);
+  if (typeof value !== "string") return;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return;
+  }
+  const escapedRepository = repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const revisionPath = new RegExp(
+    `^/${escapedRepository}/(?:commit|blob)/[a-f0-9]{40}(?:/[^?#]+)?/?$`
+  );
+  if (url.hostname !== "github.com" || !revisionPath.test(url.pathname)) {
+    issues.push(`${path} must identify an immutable GitHub commit or blob for this repository.`);
   }
 }
 
@@ -333,7 +358,10 @@ export function validateLaunchPolicy(policy) {
         const gateIds = new Set();
         profile.gates.forEach((gate, index) => {
           const gatePath = `${path}.gates[${index}]`;
-          if (!exactKeys(gate, ["id", "ownerRole", "maxAgeHours"], gatePath, issues)) return;
+          const gateKeys = profileId === "live_testnet_secured_pool"
+            ? ["id", "ownerRole", "maxAgeHours", "stage"]
+            : ["id", "ownerRole", "maxAgeHours"];
+          if (!exactKeys(gate, gateKeys, gatePath, issues)) return;
           if (!boundedString(gate.id, `${gatePath}.id`, issues, { max: 64, pattern: ID_PATTERN })) return;
           if (gateIds.has(gate.id)) issues.push(`${path}.gates duplicates ${gate.id}.`);
           gateIds.add(gate.id);
@@ -341,7 +369,32 @@ export function validateLaunchPolicy(policy) {
           if (!Number.isInteger(gate.maxAgeHours) || gate.maxAgeHours < 1 || gate.maxAgeHours > 8760) {
             issues.push(`${gatePath}.maxAgeHours must be an integer from 1 to 8760.`);
           }
+          if (
+            profileId === "live_testnet_secured_pool" &&
+            M2A008_EFFECTIVE_GATES[gate.id] !== gate.stage
+          ) {
+            issues.push(`${gatePath} does not match the exact M2A-008 gate stage.`);
+          }
         });
+        if (profileId === "live_testnet_secured_pool") {
+          const expectedIds = Object.keys(M2A008_EFFECTIVE_GATES);
+          for (const gateId of expectedIds) {
+            if (!gateIds.has(gateId)) issues.push(`${path}.gates is missing ${gateId}.`);
+          }
+          for (const gateId of gateIds) {
+            if (!expectedIds.includes(gateId)) issues.push(`${path}.gates must not add ${gateId}.`);
+          }
+        }
+        const requiresIndependentReview =
+          profile.capabilities?.realFundsEnabled === true ||
+          /mainnet/.test(profileId) ||
+          /mainnet/.test(profile.environment ?? "");
+        if (
+          requiresIndependentReview &&
+          !profile.gates.some((gate) => gate.ownerRole === "Independent Security")
+        ) {
+          issues.push(`${path} requires an Independent Security gate before mainnet or real value.`);
+        }
       }
 
       if (!Array.isArray(profile.unlockRequirements)) {
@@ -422,10 +475,16 @@ export function verifyLaunchEvidence(
       issues,
       policy.repository
     );
-    boundedString(evidence.release.imageUri, "evidence.release.imageUri", issues, {
-      max: 512,
-      pattern: DIGEST_IMAGE_PATTERN
-    });
+    if (evidence.profile === "live_testnet_secured_pool") {
+      if (evidence.release.imageUri !== null) {
+        issues.push("evidence.release.imageUri must be null for the local closed M2A-008 runner.");
+      }
+    } else {
+      boundedString(evidence.release.imageUri, "evidence.release.imageUri", issues, {
+        max: 512,
+        pattern: DIGEST_IMAGE_PATTERN
+      });
+    }
     builtAt = timestamp(evidence.release.builtAt, "evidence.release.builtAt", issues, nowMs);
     if (builtAt !== null && profile && nowMs - builtAt > profile.maxReleaseAgeHours * 60 * 60 * 1000) {
       issues.push("evidence.release.builtAt is older than the profile release window.");
@@ -443,18 +502,33 @@ export function verifyLaunchEvidence(
 
   const authorizationKeys = ["system", "environment", "approvalUrl", "approvedAt"];
   if (exactKeys(evidence.externalAuthorization, authorizationKeys, "evidence.externalAuthorization", issues)) {
-    if (evidence.externalAuthorization.system !== "protected_environment") {
-      issues.push("evidence.externalAuthorization.system must be protected_environment.");
+    const m2aTestnet = evidence.profile === "live_testnet_secured_pool";
+    const expectedSystem = m2aTestnet
+      ? "founder_exact_testnet_decision"
+      : "protected_environment";
+    if (evidence.externalAuthorization.system !== expectedSystem) {
+      issues.push(
+        `evidence.externalAuthorization.system must be ${expectedSystem}.`
+      );
     }
     if (profile && evidence.externalAuthorization.environment !== profile.environment) {
       issues.push("evidence.externalAuthorization.environment does not match the profile.");
     }
-    immutableGitHubRunUrl(
-      evidence.externalAuthorization.approvalUrl,
-      "evidence.externalAuthorization.approvalUrl",
-      issues,
-      policy.repository
-    );
+    if (m2aTestnet) {
+      immutableGitHubRevisionUrl(
+        evidence.externalAuthorization.approvalUrl,
+        "evidence.externalAuthorization.approvalUrl",
+        issues,
+        policy.repository
+      );
+    } else {
+      immutableGitHubRunUrl(
+        evidence.externalAuthorization.approvalUrl,
+        "evidence.externalAuthorization.approvalUrl",
+        issues,
+        policy.repository
+      );
+    }
     const authorizedAt = timestamp(
       evidence.externalAuthorization.approvedAt,
       "evidence.externalAuthorization.approvedAt",
@@ -469,7 +543,11 @@ export function verifyLaunchEvidence(
   if (!Array.isArray(evidence.gates)) {
     issues.push("evidence.gates must be an array.");
   } else if (profile) {
-    const requiredById = new Map(profile.gates.map((gate) => [gate.id, gate]));
+    const requiredById = new Map(
+      profile.gates
+        .filter((gate) => gate.stage === undefined || gate.stage === "pre_deployment")
+        .map((gate) => [gate.id, gate])
+    );
     const observedIds = new Set();
     evidence.gates.forEach((gate, index) => {
       const path = `evidence.gates[${index}]`;

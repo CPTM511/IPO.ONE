@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-evidence/v1",
-  "policyVersion": "1.1.0",
+  "policyVersion": "1.2.0",
   "profile": "public_sandbox",
   "release": {
     "repository": "CPTM511/IPO.ONE",

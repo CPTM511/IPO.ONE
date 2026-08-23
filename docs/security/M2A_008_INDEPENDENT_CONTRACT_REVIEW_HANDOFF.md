@@ -1,10 +1,16 @@
 # M2A-008 independent contract review handoff
 
-Status: `READY_FOR_INDEPENDENT_REVIEW — THIS FILE IS NOT A REVIEW`
+Status: `OPTIONAL_TESTNET_ASSURANCE — REQUIRED_BEFORE_MAINNET_OR_REAL_VALUE`
 
-Review owner required by launch policy: `Independent Security`
+Review owner when used: `Independent Security`
 
 Scope: one Base Sepolia WETH/test-USDC test-asset market only
+
+Policy v1.2.0 does not make this review a blocking requirement for the first
+Base Sepolia test-assets-only engineering deployment. The tooling is retained
+because the exact review remains useful additional assurance and because an
+Independent Security gate is mandatory before any mainnet or real-value
+profile. This file is not a review and no external review is currently claimed.
 
 ## Exact review sources
 
@@ -68,8 +74,8 @@ It must not approve mainnet, real funds, production credit, custody, Human cash
 lending or Agent venue execution.
 
 Codex-authored tests, this handoff, internal threat modeling, Foundry lint and
-CI are supporting assurance only. They must never be recorded as the
-`independent_contract_review` gate.
+CI are supporting assurance only. They must never be recorded as an
+Independent Security review.
 
 ## Single-command intake
 
@@ -87,6 +93,6 @@ pnpm run testnet:m2a008:review:verify -- \
 The verifier checks the closed schema, reviewer identity/capacity, exact
 release SHA, all three current source hashes, compiler profile, conclusion,
 finding counts, 720-hour validity window, immutable report URL and the report
-bytes against its non-zero SHA-256 digest. Only then does it emit the exact
-`independent_contract_review` gate record. It has no signer, wallet or
-transaction primitive and cannot enable the launch policy.
+bytes against its non-zero SHA-256 digest. Only then does it emit the optional
+review record for a future policy that explicitly names it. It has no signer,
+wallet or transaction primitive and cannot enable the current testnet policy.

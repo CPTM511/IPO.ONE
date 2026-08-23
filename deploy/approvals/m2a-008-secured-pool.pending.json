@@ -1,12 +1,12 @@
 {
   "schemaVersion": "ipo.one.launch-evidence/v1",
-  "policyVersion": "1.1.0",
+  "policyVersion": "1.2.0",
   "profile": "live_testnet_secured_pool",
   "release": {
     "repository": "CPTM511/IPO.ONE",
     "commitSha": "[EXACT_GREEN_COMMIT_SHA]",
     "ciRunUrl": "[IMMUTABLE_GITHUB_ACTIONS_RUN_URL]",
-    "imageUri": "[IMMUTABLE_ARTIFACT_DIGEST]",
+    "imageUri": null,
     "builtAt": "[ISO_8601_UTC_TIMESTAMP]"
   },
   "capabilities": {
@@ -21,124 +21,34 @@
     "agentVenueExecutionEnabled": false
   },
   "externalAuthorization": {
-    "system": "protected_environment",
+    "system": "founder_exact_testnet_decision",
     "environment": "live-testnet-secured-pool",
     "approvalUrl": "[PROTECTED_ENVIRONMENT_APPROVAL_URL]",
     "approvedAt": "[ISO_8601_UTC_TIMESTAMP]"
   },
   "gates": [
     {
-      "id": "constitution_v1_3_ratified",
+      "id": "m2a_testnet_code_integrity",
       "status": "pending",
-      "ownerRole": "Founder/Product/Governance",
+      "ownerRole": "Engineering/Security",
       "approvedBy": "[APPROVER]",
       "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
       "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
       "evidenceUrl": "[EVIDENCE_URL]"
     },
     {
-      "id": "m2_adrs_accepted",
+      "id": "m2a_testnet_exact_configuration",
       "status": "pending",
-      "ownerRole": "CTO/Security/Product",
+      "ownerRole": "Founder/Risk/Engineering",
       "approvedBy": "[APPROVER]",
       "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
       "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
       "evidenceUrl": "[EVIDENCE_URL]"
     },
     {
-      "id": "contract_dependency_provenance",
+      "id": "m2a_testnet_authority_signer_safety",
       "status": "pending",
-      "ownerRole": "Security/Engineering",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "contract_unit_fuzz_invariant",
-      "status": "pending",
-      "ownerRole": "Smart Contract/Security",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "independent_contract_review",
-      "status": "pending",
-      "ownerRole": "Independent Security",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "exact_chain_contract_asset_oracle",
-      "status": "pending",
-      "ownerRole": "Security/Risk/Engineering",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "testnet_caps_and_pause_roles",
-      "status": "pending",
-      "ownerRole": "Risk/Founder",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "deployment_signer_lifecycle",
-      "status": "pending",
-      "ownerRole": "Security/Release Owner",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "indexer_finality_reorg_reconciliation",
-      "status": "pending",
-      "ownerRole": "Engineering/Operations",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "restart_restore_recovery_drill",
-      "status": "pending",
-      "ownerRole": "Operations/Security",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "lp_human_risk_browser_acceptance",
-      "status": "pending",
-      "ownerRole": "Product/QA/Risk",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "test_asset_public_safety_copy",
-      "status": "pending",
-      "ownerRole": "Product/Legal",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "release_owner_authorization",
-      "status": "pending",
-      "ownerRole": "Founder/Release Owner",
+      "ownerRole": "Founder/Release/Security",
       "approvedBy": "[APPROVER]",
       "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
       "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",

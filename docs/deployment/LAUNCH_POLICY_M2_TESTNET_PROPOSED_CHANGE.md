@@ -1,6 +1,6 @@
 # Launch policy M2 testnet proposed change
 
-Status: Schema direction accepted 2026-08-22; profile added disabled in policy v1.1.0
+Status: v1.1.0 historical baseline; testnet gates superseded by policy v1.2.0
 
 ## Problem
 
@@ -11,6 +11,9 @@ and the new secured-pool profile remain disabled. Reusing
 test-asset secured borrowing.
 
 ## Proposed schema and profile
+
+The JSON below records the original v1.1.0 proposal and is retained for change
+history. Its 13-gate list is no longer the current M2A-008 policy.
 
 Policy v1.1.0 adds explicit test-asset capabilities and the disabled profile
 below. The checked-in profile uses `exactProfile: null`; exact reviewed values
@@ -99,3 +102,21 @@ Ledger/Event history and does not reuse a retired signer.
 
 Permission/funds/deployment impact: **none**. No JSON policy, Vercel setting,
 contract, profile, signer or deployment is changed by this proposal.
+
+## Founder-directed v1.2.0 governance correction — 2026-08-23
+
+The first Base Sepolia test-assets-only engineering deployment now uses five
+effective gates:
+
+1. `m2a_testnet_code_integrity` — pre-deployment;
+2. `m2a_testnet_exact_configuration` — pre-deployment;
+3. `m2a_testnet_authority_signer_safety` — pre-deployment;
+4. `m2a_testnet_exact_deployment` — enforced by the closed runner; and
+5. `m2a_testnet_post_deployment_acceptance` — required before completion.
+
+Independent Security review is optional assurance for this one testnet
+engineering profile. It remains a hard policy requirement for every mainnet-
+named or real-funds profile. Both testnet role addresses may be Founder-
+controlled, but they must be distinct and attest distinct private keys; keys are
+never requested or stored. The profile remains disabled with `exactProfile:
+null` until the two public role addresses and final exact release values exist.

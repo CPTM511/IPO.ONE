@@ -45,6 +45,7 @@ const TOP_LEVEL_KEYS = new Set([
   "deploymentApprovalRef",
   "launchEvidenceSha256",
   "addresses",
+  "testnetRoleCustody",
   "risk",
   "oracle",
   "signer",
@@ -64,6 +65,15 @@ const ADDRESS_KEYS = new Set([
   "pauseGuardian",
   "recoveryAuthority"
 ]);
+const ROLE_CUSTODY_KEYS = new Set([
+  "pauseGuardian",
+  "recoveryAuthority",
+  "distinctPrivateKeysAttested",
+  "privateKeysIncluded",
+  "institutionalCustodyRequired",
+  "multisigRequired"
+]);
+const FOUNDER_TESTNET_ROLE_KEYS = new Set(["controllerRole", "scope"]);
 const RISK_KEYS = new Set([
   "marketDebtCapAssets",
   "borrowerDebtCapAssets",
@@ -270,6 +280,45 @@ export function validateM2A008ExactDecision(
     );
   }
 
+  const testnetRoleCustody = exactObject(
+    "testnetRoleCustody",
+    decision.testnetRoleCustody,
+    ROLE_CUSTODY_KEYS
+  );
+  for (const roleName of ["pauseGuardian", "recoveryAuthority"]) {
+    const role = exactObject(
+      `testnetRoleCustody.${roleName}`,
+      testnetRoleCustody[roleName],
+      FOUNDER_TESTNET_ROLE_KEYS
+    );
+    exactValue(`${roleName}.controllerRole`, role.controllerRole, "Founder");
+    exactValue(
+      `${roleName}.scope`,
+      role.scope,
+      "Base Sepolia test assets only"
+    );
+  }
+  exactValue(
+    "testnetRoleCustody.distinctPrivateKeysAttested",
+    testnetRoleCustody.distinctPrivateKeysAttested,
+    true
+  );
+  exactValue(
+    "testnetRoleCustody.privateKeysIncluded",
+    testnetRoleCustody.privateKeysIncluded,
+    false
+  );
+  exactValue(
+    "testnetRoleCustody.institutionalCustodyRequired",
+    testnetRoleCustody.institutionalCustodyRequired,
+    false
+  );
+  exactValue(
+    "testnetRoleCustody.multisigRequired",
+    testnetRoleCustody.multisigRequired,
+    false
+  );
+
   const risk = exactObject("risk", decision.risk, RISK_KEYS);
   const marketDebtCapAssets = positiveIntegerString(
     "marketDebtCapAssets",
@@ -282,12 +331,12 @@ export function validateM2A008ExactDecision(
     marketDebtCapAssets
   );
   if (
+    marketDebtCapAssets !== 1_000_000_000n ||
+    borrowerDebtCapAssets !== 100_000_000n ||
     borrowerDebtCapAssets > marketDebtCapAssets ||
-    !Number.isInteger(risk.loanToValueBps) ||
-    risk.loanToValueBps < 1 ||
-    risk.loanToValueBps >= 8_000
+    risk.loanToValueBps !== 5_000
   ) {
-    fail("invalid_m2a008_decision", "risk caps or LTV are outside the contract boundary");
+    fail("invalid_m2a008_decision", "risk caps or LTV drifted from the exact testnet profile");
   }
 
   const oracle = exactObject("oracle", decision.oracle, ORACLE_KEYS);
@@ -343,6 +392,8 @@ export function validateM2A008ExactDecision(
     expectedPool: derivedPool,
     pauseGuardian,
     recoveryAuthority,
+    founderControlledTestnetRoles: true,
+    distinctRolePrivateKeysAttested: true,
     startingNonce: signer.startingNonce,
     expectedStartingBalanceWei: expectedStartingBalanceWei.toString(),
     deploymentCount: 2,
@@ -368,6 +419,16 @@ export function assessM2A008LaunchPolicy(policy) {
     releaseEnabled: profile.releaseEnabled,
     exactProfilePresent: profile.exactProfile !== null,
     requiredGateIds: Object.freeze(profile.gates.map(({ id }) => id)),
+    preDeploymentGateIds: Object.freeze(
+      profile.gates.filter(({ stage }) => stage === "pre_deployment").map(({ id }) => id)
+    ),
+    runtimeEnforcedGateIds: Object.freeze(
+      profile.gates.filter(({ stage }) => stage === "runtime_enforced").map(({ id }) => id)
+    ),
+    postDeploymentGateIds: Object.freeze(
+      profile.gates.filter(({ stage }) => stage === "post_deployment").map(({ id }) => id)
+    ),
+    independentSecurityReviewBlocking: false,
     blockers: Object.freeze(blockers),
     ready: blockers.length === 0
   });
@@ -576,10 +637,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   } else {
     blockers.push(
       "exact_decision_missing",
-      "independent_contract_review_missing",
-      "risk_and_role_approval_missing",
+      "founder_testnet_role_addresses_missing",
       "fresh_one_use_signer_missing",
-      "private_launch_gate_evidence_missing"
+      "pre_deployment_gate_evidence_missing"
     );
   }
   if (!inspection.passed) blockers.push(...inspection.blockers);

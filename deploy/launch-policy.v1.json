@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-policy/v1",
-  "policyVersion": "1.1.0",
+  "policyVersion": "1.2.0",
   "repository": "CPTM511/IPO.ONE",
   "evidenceSchemaVersion": "ipo.one.launch-evidence/v1",
   "profiles": {
@@ -170,76 +170,40 @@
       "exactProfile": null,
       "gates": [
         {
-          "id": "constitution_v1_3_ratified",
-          "ownerRole": "Founder/Product/Governance",
-          "maxAgeHours": 720
+          "id": "m2a_testnet_code_integrity",
+          "ownerRole": "Engineering/Security",
+          "maxAgeHours": 72,
+          "stage": "pre_deployment"
         },
         {
-          "id": "m2_adrs_accepted",
-          "ownerRole": "CTO/Security/Product",
-          "maxAgeHours": 720
+          "id": "m2a_testnet_exact_configuration",
+          "ownerRole": "Founder/Risk/Engineering",
+          "maxAgeHours": 72,
+          "stage": "pre_deployment"
         },
         {
-          "id": "contract_dependency_provenance",
-          "ownerRole": "Security/Engineering",
-          "maxAgeHours": 72
+          "id": "m2a_testnet_authority_signer_safety",
+          "ownerRole": "Founder/Release/Security",
+          "maxAgeHours": 24,
+          "stage": "pre_deployment"
         },
         {
-          "id": "contract_unit_fuzz_invariant",
-          "ownerRole": "Smart Contract/Security",
-          "maxAgeHours": 72
+          "id": "m2a_testnet_exact_deployment",
+          "ownerRole": "Engineering/Release",
+          "maxAgeHours": 24,
+          "stage": "runtime_enforced"
         },
         {
-          "id": "independent_contract_review",
-          "ownerRole": "Independent Security",
-          "maxAgeHours": 720
-        },
-        {
-          "id": "exact_chain_contract_asset_oracle",
-          "ownerRole": "Security/Risk/Engineering",
-          "maxAgeHours": 72
-        },
-        {
-          "id": "testnet_caps_and_pause_roles",
-          "ownerRole": "Risk/Founder",
-          "maxAgeHours": 72
-        },
-        {
-          "id": "deployment_signer_lifecycle",
-          "ownerRole": "Security/Release Owner",
-          "maxAgeHours": 24
-        },
-        {
-          "id": "indexer_finality_reorg_reconciliation",
-          "ownerRole": "Engineering/Operations",
-          "maxAgeHours": 72
-        },
-        {
-          "id": "restart_restore_recovery_drill",
-          "ownerRole": "Operations/Security",
-          "maxAgeHours": 72
-        },
-        {
-          "id": "lp_human_risk_browser_acceptance",
-          "ownerRole": "Product/QA/Risk",
-          "maxAgeHours": 72
-        },
-        {
-          "id": "test_asset_public_safety_copy",
-          "ownerRole": "Product/Legal",
-          "maxAgeHours": 720
-        },
-        {
-          "id": "release_owner_authorization",
-          "ownerRole": "Founder/Release Owner",
-          "maxAgeHours": 24
+          "id": "m2a_testnet_post_deployment_acceptance",
+          "ownerRole": "Product/Operations/Risk",
+          "maxAgeHours": 72,
+          "stage": "post_deployment"
         }
       ],
       "unlockRequirements": [
-        "Set the reviewed exact profile; null, placeholder, stale, or mismatched fields cannot unlock release.",
-        "Prove one market, no factory/proxy, no real funds/mainnet, and no Agent venue execution.",
-        "Record deployment, configuration, transaction, finality, indexer, and zero-discrepancy reconciliation evidence.",
-        "Approve a separate policy revision that changes releaseEnabled; passing evidence alone cannot unlock the profile."
+        "Set the exact Base Sepolia test-asset profile and two distinct Founder-controlled role addresses.",
+        "Pass pre-deployment Gates A through C; Gate D is runner-enforced and Gate E is required for completion.",
+        "Approve a separate exact-profile revision that changes releaseEnabled; Evidence cannot self-unlock the profile."
       ]
     },
     "controlled_agent_credit_pilot": {

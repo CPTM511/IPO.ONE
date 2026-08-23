@@ -49,6 +49,28 @@ assert.equal(
 );
 assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.marketCreationEnabled, false);
 assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.agentVenueExecutionEnabled, false);
+assert.deepEqual(
+  policy.profiles.live_testnet_secured_pool.gates.map(({ id, stage }) => ({ id, stage })),
+  [
+    { id: "m2a_testnet_code_integrity", stage: "pre_deployment" },
+    { id: "m2a_testnet_exact_configuration", stage: "pre_deployment" },
+    { id: "m2a_testnet_authority_signer_safety", stage: "pre_deployment" },
+    { id: "m2a_testnet_exact_deployment", stage: "runtime_enforced" },
+    { id: "m2a_testnet_post_deployment_acceptance", stage: "post_deployment" }
+  ]
+);
+assert.equal(
+  policy.profiles.live_testnet_secured_pool.gates.some(
+    ({ ownerRole }) => ownerRole === "Independent Security"
+  ),
+  false
+);
+assert.equal(
+  policy.profiles.controlled_agent_credit_pilot.gates.some(
+    ({ ownerRole }) => ownerRole === "Independent Security"
+  ),
+  true
+);
 assert.equal(policy.profiles.controlled_agent_credit_pilot.releaseEnabled, false);
 assert.throws(
   () =>

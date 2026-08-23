@@ -26,37 +26,46 @@ function canonical(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-function validEvidence(profileId = "public_sandbox") {
-  const profile = policy.profiles[profileId];
+function validEvidence(profileId = "public_sandbox", selectedPolicy = policy) {
+  const profile = selectedPolicy.profiles[profileId];
+  const m2aTestnet = profileId === "live_testnet_secured_pool";
   return {
     schemaVersion: "ipo.one.launch-evidence/v1",
-    policyVersion: policy.policyVersion,
+    policyVersion: selectedPolicy.policyVersion,
     profile: profileId,
     release: {
-      repository: policy.repository,
+      repository: selectedPolicy.repository,
       commitSha: COMMIT_SHA,
       ciRunUrl: "https://github.com/CPTM511/IPO.ONE/actions/runs/123456789",
-      imageUri: `asia-southeast1-docker.pkg.dev/ipo-one/ipo-one/app@sha256:${IMAGE_DIGEST}`,
+      imageUri: m2aTestnet
+        ? null
+        : `asia-southeast1-docker.pkg.dev/ipo-one/ipo-one/app@sha256:${IMAGE_DIGEST}`,
       builtAt: "2026-07-12T10:00:00.000Z"
     },
     capabilities: { ...profile.capabilities },
     externalAuthorization: {
-      system: "protected_environment",
+      system: m2aTestnet
+        ? "founder_exact_testnet_decision"
+        : "protected_environment",
       environment: profile.environment,
-      approvalUrl: "https://github.com/CPTM511/IPO.ONE/actions/runs/123456789",
+      approvalUrl: m2aTestnet
+        ? `https://github.com/CPTM511/IPO.ONE/commit/${COMMIT_SHA}`
+        : "https://github.com/CPTM511/IPO.ONE/actions/runs/123456789",
       approvedAt: "2026-07-12T10:30:00.000Z"
     },
-    gates: profile.gates.map((gate, index) => ({
-      id: gate.id,
-      status: "approved",
-      ownerRole: gate.ownerRole,
-      approvedBy: `test-approver-${index + 1}`,
-      approvedAt: "2026-07-12T10:30:00.000Z",
-      expiresAt: new Date(
-        Date.parse("2026-07-12T10:30:00.000Z") + Math.min(gate.maxAgeHours, 24) * 60 * 60 * 1000
-      ).toISOString(),
-      evidenceUrl: `https://github.com/CPTM511/IPO.ONE/issues/${index + 1}`
-    }))
+    gates: profile.gates
+      .filter((gate) => gate.stage === undefined || gate.stage === "pre_deployment")
+      .map((gate, index) => ({
+        id: gate.id,
+        status: "approved",
+        ownerRole: gate.ownerRole,
+        approvedBy: `test-approver-${index + 1}`,
+        approvedAt: "2026-07-12T10:30:00.000Z",
+        expiresAt: new Date(
+          Date.parse("2026-07-12T10:30:00.000Z") + Math.min(gate.maxAgeHours, 24) * 60 * 60 * 1000
+        ).toISOString(),
+        evidenceUrl: `https://github.com/CPTM511/IPO.ONE/issues/${index + 1}`
+      }))
   };
 }
 
@@ -76,7 +85,7 @@ function hasIssue(fragment) {
     error.issues.some((issue) => issue.includes(fragment));
 }
 
-test("launch policy exposes only public sandbox and locks the exact M2 profile", () => {
+test("launch policy exposes five staged M2 testnet gates and locks the exact profile", () => {
   assert.equal(policy.profiles.public_sandbox.releaseEnabled, true);
   assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
   assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, false);
@@ -90,6 +99,22 @@ test("launch policy exposes only public sandbox and locks the exact M2 profile",
   );
   assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.marketCreationEnabled, false);
   assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.agentVenueExecutionEnabled, false);
+  assert.deepEqual(
+    policy.profiles.live_testnet_secured_pool.gates.map(({ id, stage }) => ({ id, stage })),
+    [
+      { id: "m2a_testnet_code_integrity", stage: "pre_deployment" },
+      { id: "m2a_testnet_exact_configuration", stage: "pre_deployment" },
+      { id: "m2a_testnet_authority_signer_safety", stage: "pre_deployment" },
+      { id: "m2a_testnet_exact_deployment", stage: "runtime_enforced" },
+      { id: "m2a_testnet_post_deployment_acceptance", stage: "post_deployment" }
+    ]
+  );
+  assert.equal(
+    policy.profiles.live_testnet_secured_pool.gates.some(
+      ({ ownerRole }) => ownerRole === "Independent Security"
+    ),
+    false
+  );
   assert.equal(policy.profiles.controlled_agent_credit_pilot.releaseEnabled, false);
   assert.equal(policy.profiles.public_sandbox.capabilities.realFundsEnabled, false);
   assert.equal(policy.profiles.public_sandbox.capabilities.privateTenantDataEnabled, false);
@@ -132,6 +157,97 @@ test("launch policy exposes only public sandbox and locks the exact M2 profile",
   );
 });
 
+test("Base Sepolia test-assets release does not require Independent Security Evidence", () => {
+  const enabledPolicy = structuredClone(policy);
+  const profile = enabledPolicy.profiles.live_testnet_secured_pool;
+  profile.releaseEnabled = true;
+  profile.unlockRequirements = [];
+  profile.exactProfile = {
+    chainId: "eip155:84532",
+    poolContract: "0x2222222222222222222222222222222222222222",
+    poolBytecodeHash: `0x${"1".repeat(64)}`,
+    adapterVersion: "IpoOnePriceOracleAdapterV1",
+    wethCollateral: "0x4200000000000000000000000000000000000006",
+    testUsdcDebt: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    oracleAddress: "0x3333333333333333333333333333333333333333",
+    oracleSource: "chainlink_base_sepolia_eth_usd.v1",
+    marketCount: 1,
+    runOwner: "IPO.ONE Founder / Release Owner",
+    deploymentApprovalRef: "M2A-008-TESTNET-APPROVAL-001",
+    configurationHash: `0x${"2".repeat(64)}`,
+    realValueClassification: "test_assets_only"
+  };
+  const evidence = validEvidence("live_testnet_secured_pool", enabledPolicy);
+  assert.deepEqual(
+    evidence.gates.map(({ id }) => id),
+    [
+      "m2a_testnet_code_integrity",
+      "m2a_testnet_exact_configuration",
+      "m2a_testnet_authority_signer_safety"
+    ]
+  );
+  const result = verifyLaunchEvidence(evidence, {
+    policy: enabledPolicy,
+    expectedProfile: "live_testnet_secured_pool",
+    expectedCommitSha: COMMIT_SHA,
+    now: NOW
+  });
+  assert.equal(result.status, "verified");
+  assert.equal(result.gateCount, 3);
+  assert.equal(result.imageUri, null);
+  assert.equal(result.externalAuthorization, "founder_exact_testnet_decision");
+
+  const productionShaped = validEvidence("live_testnet_secured_pool", enabledPolicy);
+  productionShaped.release.imageUri =
+    `asia-southeast1-docker.pkg.dev/ipo-one/ipo-one/app@sha256:${IMAGE_DIGEST}`;
+  productionShaped.externalAuthorization.system = "protected_environment";
+  assert.throws(
+    () => verifyLaunchEvidence(productionShaped, {
+      policy: enabledPolicy,
+      expectedProfile: "live_testnet_secured_pool",
+      expectedCommitSha: COMMIT_SHA,
+      now: NOW
+    }),
+    hasIssue("imageUri must be null")
+  );
+
+  evidence.gates.pop();
+  assert.throws(
+    () => verifyLaunchEvidence(evidence, {
+      policy: enabledPolicy,
+      expectedProfile: "live_testnet_secured_pool",
+      expectedCommitSha: COMMIT_SHA,
+      now: NOW
+    }),
+    hasIssue("is missing m2a_testnet_authority_signer_safety")
+  );
+});
+
+test("mainnet or real-value profiles retain an Independent Security hard gate", () => {
+  const realValueWithoutReview = structuredClone(policy);
+  realValueWithoutReview.profiles.controlled_agent_credit_pilot.gates =
+    realValueWithoutReview.profiles.controlled_agent_credit_pilot.gates.filter(
+      ({ ownerRole }) => ownerRole !== "Independent Security"
+    );
+  assert.throws(
+    () => validateLaunchPolicy(realValueWithoutReview),
+    hasIssue("requires an Independent Security gate before mainnet or real value")
+  );
+
+  const mainnetWithoutReview = structuredClone(policy);
+  mainnetWithoutReview.profiles.mainnet_engineering = {
+    ...structuredClone(mainnetWithoutReview.profiles.public_sandbox),
+    displayName: "Mainnet engineering candidate",
+    releaseEnabled: false,
+    environment: "mainnet-engineering",
+    unlockRequirements: ["Independent Security review and explicit mainnet policy are required."]
+  };
+  assert.throws(
+    () => validateLaunchPolicy(mainnetWithoutReview),
+    hasIssue("requires an Independent Security gate before mainnet or real value")
+  );
+});
+
 test("canonical JSON rejects duplicate-key and alternate review representations", () => {
   assert.deepEqual(parseCanonicalJson(canonical({ value: 1 }), "fixture"), { value: 1 });
   assert.throws(
@@ -145,7 +261,7 @@ test("complete fresh public-sandbox evidence verifies", () => {
   const result = verify(validEvidence());
   assert.deepEqual(result, {
     status: "verified",
-    policyVersion: "1.1.0",
+    policyVersion: "1.2.0",
     profile: "public_sandbox",
     repository: "CPTM511/IPO.ONE",
     commitSha: COMMIT_SHA,
