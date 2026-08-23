@@ -50,9 +50,16 @@
           "maxLength": 2048
         },
         "imageUri": {
-          "type": "string",
-          "pattern": "^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$",
-          "maxLength": 512
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$",
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "builtAt": {
           "type": "string",
@@ -74,7 +81,10 @@
       ],
       "properties": {
         "system": {
-          "const": "protected_environment"
+          "enum": [
+            "protected_environment",
+            "founder_exact_testnet_decision"
+          ]
         },
         "environment": {
           "type": "string",

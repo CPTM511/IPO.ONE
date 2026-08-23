@@ -42,6 +42,20 @@ function decision() {
       pauseGuardian: "0x1111111111111111111111111111111111111111",
       recoveryAuthority: "0x2222222222222222222222222222222222222222"
     },
+    testnetRoleCustody: {
+      pauseGuardian: {
+        controllerRole: "Founder",
+        scope: "Base Sepolia test assets only"
+      },
+      recoveryAuthority: {
+        controllerRole: "Founder",
+        scope: "Base Sepolia test assets only"
+      },
+      distinctPrivateKeysAttested: true,
+      privateKeysIncluded: false,
+      institutionalCustodyRequired: false,
+      multisigRequired: false
+    },
     risk: {
       marketDebtCapAssets: "1000000000",
       borrowerDebtCapAssets: "100000000",

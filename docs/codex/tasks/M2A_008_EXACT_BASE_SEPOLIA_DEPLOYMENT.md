@@ -1,6 +1,6 @@
 # M2A-008 — Exact Base Sepolia secured-pool deployment
 
-Status: `LIVE_RUNNER_AND_REVIEW_INTAKE_IMPLEMENTED — BLOCKED_NOT_COMPLETE`
+Status: `TESTNET_GOVERNANCE_CORRECTED — BLOCKED_ON_TWO_PUBLIC_ROLE_ADDRESSES`
 
 Delivery mode: `L3_LIVE_TESTNET_TEST_ASSETS_ONLY` after every named gate passes
 
@@ -16,10 +16,11 @@ canonical Obligation/Evidence integration, and Human/Agent/Risk product
 surfaces. They do not prove a deployed, reachable or user-verified live pool.
 
 This issue owns one exact Base Sepolia deployment. The Founder instruction is
-the Release/Founder intent to continue this issue; it does not replace the
-independent Security review, exact Risk/role decision, enabled launch-policy
-revision, fresh signer lifecycle, or immutable gate Evidence required by the
-checked-in policy.
+the Release/Founder authority for this test-assets-only run. Policy v1.2.0 uses
+five staged technical gates and does not require Independent Security Evidence
+for this first engineering deployment. Independent review remains mandatory for
+mainnet/real value. The exact roles, enabled profile, fresh signer lifecycle and
+current pre-deployment Evidence remain required.
 
 The currently admitted read-only dependency candidates are:
 
@@ -86,11 +87,11 @@ them. Test assets have no real-world value.
    wrong SHA/chain/asset/feed, role overlap, nonce/address drift, enlarged caps,
    signer reuse, mainnet or real-funds authority.
 2. The checked-in `live_testnet_secured_pool` profile is enabled by a reviewed
-   policy change, has one complete exact profile, and its 13 named gates are
-   approved by current immutable Evidence. Evidence cannot self-enable it.
+   exact-profile change and has five effective gates: A-C pre-deployment, D
+   runtime-enforced and E post-deployment. Evidence cannot self-enable it.
 3. The exact release passes dependency provenance, Foundry unit/fuzz/invariant,
-   independent contract review, fork dry run, repository quality and secret/
-   PII scans.
+   fork dry run, repository quality, security and secret/PII scans. Independent
+   review is optional additional testnet assurance.
 4. Two distinct RPCs agree on chain ID, admitted code hashes, token decimals,
    oracle round/value/time and the deployer nonce. The feed is positive,
    complete and no older than 3,600 seconds at signing time.
@@ -145,11 +146,14 @@ not approve the RPCs, risk values, roles, signer or deployment.
   code hashes, metadata and oracle round truth.
 - [x] Decision files must be strict, bounded, regular, non-symlink mode-0600
   files in the isolated M2A-008 directory.
-- [ ] Constitution/ADR, independent contract review, exact asset/oracle, Risk
-  caps/roles, signer lifecycle, recovery, browser and release gates have current
-  immutable owner Evidence.
+- [x] The testnet role custody contract permits one Founder controller while
+  requiring distinct addresses and distinct private keys; no key material is
+  included or requested.
+- [x] Mainnet/real-value profiles retain an Independent Security hard gate.
+- [ ] Gates A-C have current exact release, configuration and signer Evidence.
+- [ ] Gate D deployment and Gate E reconciliation/browser Evidence exist.
 - [ ] The exact launch-policy profile is complete and enabled.
-- [ ] A fresh approved deployer and durable pause/recovery accounts exist.
+- [ ] A fresh approved deployer and the two public pause/recovery addresses exist.
 
 ## Current preflight result — 2026-08-23
 
@@ -159,17 +163,17 @@ Circle test USDC 6 decimals, Chainlink feed 8 decimals, positive round data and
 the exact code hashes. This is dependency discovery only.
 
 Live execution remains `BLOCKED — NOT COMPLETE` because the checked-in launch
-profile is disabled with `exactProfile: null`; no exact Risk/cap/role decision,
-independent contract-review Evidence, 13-gate private launch Evidence, durable
-pause/recovery accounts or fresh one-use signer is present. No transaction was
-signed or broadcast and no funds moved.
+profile is disabled with `exactProfile: null`; the two Founder-controlled public
+role addresses have not been supplied, so the exact decision, Gates A-C Evidence
+and fresh one-use signer do not yet exist. Independent contract review is not a
+testnet blocker. No transaction was signed or broadcast and no funds moved.
 
 The deterministic fork dry run passes 1/1 against Base Sepolia. The focused
-preflight/runner suite passes 11/11; Foundry local tests pass 25 with the explicit fork
+preflight/runner suite passes 13/13; Foundry local tests pass 25 with the explicit fork
 case skipped outside its fork command; indexer/reconciliation passes 15/15;
 security passes 34/34; transport passes 84/84; a clean isolated PostgreSQL run
 passes 90/90; browser visible-click acceptance passes 6/6; and the aggregate
-unit/contract suite passes 1151/1151. Schema,
+unit/contract suite passes 1155/1155. Schema,
 launch-policy, toolchain/provenance, lint, type, migration, Web-bundle and
 production dependency checks pass. These results prove deployability and
 fail-closed preparation, not deployment authorization or product completion.
@@ -185,7 +189,9 @@ The closed live runner now:
 
 - requires the exact SHA, decision file and byte-for-byte private Launch
   Evidence hash;
-- requires the enabled exact launch profile and all 13 currently valid gates;
+- requires the enabled exact launch profile and Gates A-C before signing;
+- enforces Gate D during the two-transaction run and leaves Gate E explicitly
+  pending until final reconciliation and product acceptance;
 - rechecks two RPCs, exact signer address, exact balance, nonce, empty predicted
   addresses, gas ceiling and admitted dependencies before signing;
 - encodes exactly one adapter and one pool deployment with zero native value;
@@ -202,18 +208,25 @@ The decision schema now binds the exact observed starting signer balance in
 addition to the faucet ceiling, fixing a gap between the written acceptance
 criterion and executable preflight.
 
-Independent review remains genuinely absent. An exact review packet is ready
-at `docs/security/M2A_008_INDEPENDENT_CONTRACT_REVIEW_HANDOFF.md`. No signer was
-provisioned, no policy was enabled, no transaction was signed or broadcast and
-no funds moved.
+Independent review remains genuinely absent and is not claimed. Its optional
+assurance packet remains at
+`docs/security/M2A_008_INDEPENDENT_CONTRACT_REVIEW_HANDOFF.md`; the same class of
+review remains mandatory before mainnet or real value. No signer was
+provisioned, no exact profile was enabled, no transaction was signed or
+broadcast and no funds moved.
 
 After Founder review confirmation, M2A-008 also has a closed independent-review
 attestation schema, fail-closed pending template and one verifier that binds the
 named reviewer, independent capacity, exact release SHA, current contract source
 hashes, compiler profile, findings, validity window, immutable report URL and
-the report's bytes. This converts the remaining external review input into one
-deterministic gate record without treating Founder or Codex review as
-Independent Security Evidence.
+the report's bytes. This produces deterministic optional assurance without
+treating Founder or Codex review as Independent Security Evidence.
+
+The Founder-directed testnet governance correction is recorded in
+`docs/codex/audits/M2A-008/testnet-gate-governance-correction.md`. With that
+correction applied, the only unavoidable Founder-supplied inputs are the two
+public role addresses; every other preparation item is derived or generated by
+Codex from the final exact release.
 
 ## Migration and rollback
 

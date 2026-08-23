@@ -308,11 +308,14 @@ revertible without inventing permission for its successor.
   set only. Rollback: pause, disable profile, reconcile, preserve Evidence.
   Evidence: contracts, txs, configs, hashes, finality and owner sign-off.
 - Dependency/status: M2A-003..007 are merged. The exact-decision schema,
-  fail-closed 13-gate Evidence template, dual-RPC dependency inspection and
-  Base Sepolia fork dry run are implemented and locally verified. Live
-  execution remains blocked by the disabled/null launch profile, independent
-  contract review, exact Risk caps/roles, current private gate Evidence and a
-  fresh one-use signer. No transaction was signed or broadcast.
+  five-stage testnet gate policy, dual-RPC dependency inspection and Base
+  Sepolia fork dry run are implemented and locally verified. Independent review
+  is optional for this first test-assets-only engineering deployment and remains
+  mandatory before mainnet/real value. Live execution remains blocked by the
+  disabled/null exact profile and two Founder-supplied public role addresses;
+  final Evidence and the fresh one-use signer are generated only after those
+  addresses and the exact green SHA exist. No transaction was signed or
+  broadcast.
 
 ### M2A-009 — recovery and v0.2.0 candidate
 

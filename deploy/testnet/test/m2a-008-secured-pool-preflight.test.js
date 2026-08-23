@@ -66,6 +66,20 @@ function decision(overrides = {}) {
       pauseGuardian: "0x1111111111111111111111111111111111111111",
       recoveryAuthority: "0x2222222222222222222222222222222222222222"
     },
+    testnetRoleCustody: {
+      pauseGuardian: {
+        controllerRole: "Founder",
+        scope: "Base Sepolia test assets only"
+      },
+      recoveryAuthority: {
+        controllerRole: "Founder",
+        scope: "Base Sepolia test assets only"
+      },
+      distinctPrivateKeysAttested: true,
+      privateKeysIncluded: false,
+      institutionalCustodyRequired: false,
+      multisigRequired: false
+    },
     risk: {
       marketDebtCapAssets: "1000000000",
       borrowerDebtCapAssets: "100000000",
@@ -100,6 +114,18 @@ function decision(overrides = {}) {
     ...base,
     ...overrides,
     addresses: { ...base.addresses, ...(overrides.addresses ?? {}) },
+    testnetRoleCustody: {
+      ...base.testnetRoleCustody,
+      ...(overrides.testnetRoleCustody ?? {}),
+      pauseGuardian: {
+        ...base.testnetRoleCustody.pauseGuardian,
+        ...(overrides.testnetRoleCustody?.pauseGuardian ?? {})
+      },
+      recoveryAuthority: {
+        ...base.testnetRoleCustody.recoveryAuthority,
+        ...(overrides.testnetRoleCustody?.recoveryAuthority ?? {})
+      }
+    },
     risk: { ...base.risk, ...(overrides.risk ?? {}) },
     oracle: { ...base.oracle, ...(overrides.oracle ?? {}) },
     signer: { ...base.signer, ...(overrides.signer ?? {}) },
@@ -125,6 +151,8 @@ test("exact M2A-008 decision validates without creating a transaction", () => {
   assert.equal(result.testAssetsOnly, true);
   assert.equal(result.mainnetAuthorized, false);
   assert.equal(result.realFundsAuthorized, false);
+  assert.equal(result.founderControlledTestnetRoles, true);
+  assert.equal(result.distinctRolePrivateKeysAttested, true);
   assert.equal(result.signerKeyMaterialIncluded, false);
   assert.equal(result.transactionSigned, false);
   assert.equal(result.transactionBroadcast, false);
@@ -139,9 +167,17 @@ test("decision rejects authority, address, nonce, role, expiry and cap drift", (
     decision({ addresses: { expectedPool: ORACLE } }),
     decision({ addresses: { recoveryAuthority: "0x1111111111111111111111111111111111111111" } }),
     decision({ addresses: { pauseGuardian: DEPLOYER } }),
+    decision({ testnetRoleCustody: { distinctPrivateKeysAttested: false } }),
+    decision({
+      testnetRoleCustody: { recoveryAuthority: { controllerRole: "Custodian" } }
+    }),
+    decision({ testnetRoleCustody: { privateKeysIncluded: true } }),
     decision({ signer: { startingNonce: 1 } }),
     decision({ signer: { priorSignerReuse: true } }),
     decision({ risk: { borrowerDebtCapAssets: "1000000001" } }),
+    decision({ risk: { marketDebtCapAssets: "999999999" } }),
+    decision({ risk: { borrowerDebtCapAssets: "99999999" } }),
+    decision({ risk: { loanToValueBps: 4999 } }),
     decision({ risk: { loanToValueBps: 8000 } }),
     decision({ oracle: { sourceId: `0x${"0".repeat(64)}` } }),
     decision({ transactionCaps: { deploymentCount: 3 } }),
@@ -161,7 +197,7 @@ test("decision rejects authority, address, nonce, role, expiry and cap drift", (
   }
 });
 
-test("checked-in launch policy keeps M2A-008 blocked and enumerates all gates", async () => {
+test("checked-in policy keeps M2A-008 locked behind five staged technical gates", async () => {
   const policyText = await readFile(
     new URL("../../launch-policy.v1.json", import.meta.url),
     "utf8"
@@ -177,10 +213,23 @@ test("checked-in launch policy keeps M2A-008 blocked and enumerates all gates", 
     "exact_profile_missing",
     "unlock_requirements_open"
   ]);
-  assert.equal(assessment.requiredGateIds.length, 13);
-  assert.ok(assessment.requiredGateIds.includes("independent_contract_review"));
-  assert.ok(assessment.requiredGateIds.includes("deployment_signer_lifecycle"));
-  assert.ok(assessment.requiredGateIds.includes("release_owner_authorization"));
+  assert.deepEqual(assessment.requiredGateIds, [
+    "m2a_testnet_code_integrity",
+    "m2a_testnet_exact_configuration",
+    "m2a_testnet_authority_signer_safety",
+    "m2a_testnet_exact_deployment",
+    "m2a_testnet_post_deployment_acceptance"
+  ]);
+  assert.deepEqual(assessment.preDeploymentGateIds, [
+    "m2a_testnet_code_integrity",
+    "m2a_testnet_exact_configuration",
+    "m2a_testnet_authority_signer_safety"
+  ]);
+  assert.deepEqual(assessment.runtimeEnforcedGateIds, ["m2a_testnet_exact_deployment"]);
+  assert.deepEqual(assessment.postDeploymentGateIds, [
+    "m2a_testnet_post_deployment_acceptance"
+  ]);
+  assert.equal(assessment.independentSecurityReviewBlocking, false);
 });
 
 test("read-only inspection requires two distinct RPCs before any live read", async () => {

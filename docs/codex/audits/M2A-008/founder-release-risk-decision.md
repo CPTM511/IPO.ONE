@@ -11,10 +11,12 @@ Founder instructions in the active task:
 - `好的，继续吧，同意授权并执行`
 - `往下继续，我授权你做其中的所有内容，给我把这个部分做完了。`
 - `已审查，没问题， 给我继续`
+- `M2A-008 TESTNET GATE SIMPLIFICATION / GOVERNANCE CORRECTION`
 
-The latest statement confirms the Founder's review of the delivered change and
-instruction to continue. It is Founder/Release acceptance; it is not attributed
-to, and does not replace, the separately named `Independent Security` owner.
+The latest instruction is a Founder-owned scope-specific governance decision:
+Independent Security review is optional additional assurance for the first Base
+Sepolia test-assets-only engineering deployment, but remains a hard requirement
+for any mainnet or real-value profile.
 
 ## Approved boundary
 
@@ -50,16 +52,15 @@ documentation, branch, pull request and merge needed for this issue.
 
 This record does not claim or substitute for:
 
-- an independent smart-contract review by the policy owner role
-  `Independent Security`;
-- exact durable pause-guardian and recovery-authority addresses with reviewed
-  custody and recovery;
+- two exact, distinct pause-guardian and recovery-authority public addresses
+  controlled with distinct keys under the Founder testnet-only attestation;
 - a freshly provisioned and exactly funded one-use deployer;
-- immutable Evidence for all 13 launch-policy gates;
+- immutable Evidence for pre-deployment Gates A through C;
 - the separate reviewed policy revision that completes `exactProfile`, clears
   `unlockRequirements` and changes `releaseEnabled` to `true`;
+- runtime enforcement of Gate D; or
 - source-explorer verification, finality, indexer/restart reconciliation or
-  visible-click acceptance against the deployed SHA.
+  Gate E visible-click acceptance against the deployed SHA.
 
 Those values must be inserted into a mode-0600 exact decision after the final
 green release SHA and before signing. A missing, stale or mismatched condition
@@ -68,14 +69,13 @@ must fail closed.
 ## Current decision effect
 
 Founder / Release / Risk intent and the conservative numeric limits are
-approved. Live signing remains blocked because the independent review and the
-remaining exact-run identities and Evidence do not yet exist. The checked-in
-launch profile therefore correctly remains disabled.
+approved. Live signing remains blocked until the two public Founder-controlled
+role addresses exist and the final exact release/signing inputs are generated.
+The checked-in launch profile therefore correctly remains disabled.
 
-The independent-review gap now has one closed schema, pending template and
-single verification command. This reduces the external handoff to the named
-reviewer attestation plus exact report, while continuing to fail closed on a
-placeholder, mutable URL, SHA/source drift, stale result, open P0/P1 finding or
-report-digest mismatch.
+The independent-review schema, template and verifier remain available. They are
+not a testnet launch blocker and cannot be represented as completed without a
+real external reviewer and exact report. Any mainnet or real-value policy still
+fails validation without an `Independent Security` gate.
 
 This is not a mainnet, real-value, production or funds-movement approval.
