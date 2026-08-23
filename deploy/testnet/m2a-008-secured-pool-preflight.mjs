@@ -85,6 +85,7 @@ const SIGNER_KEYS = new Set([
 const TRANSACTION_CAP_KEYS = new Set([
   "deploymentCount",
   "nativeValueWei",
+  "expectedStartingBalanceWei",
   "maximumFaucetBalanceWei",
   "maximumTotalGasCostWei"
 ]);
@@ -304,11 +305,22 @@ export function validateM2A008ExactDecision(
   );
   exactValue("transactionCaps.deploymentCount", transactionCaps.deploymentCount, 2);
   exactValue("transactionCaps.nativeValueWei", transactionCaps.nativeValueWei, "0");
-  positiveIntegerString(
+  const expectedStartingBalanceWei = positiveIntegerString(
+    "expectedStartingBalanceWei",
+    transactionCaps.expectedStartingBalanceWei,
+    MAXIMUM_FAUCET_BALANCE_WEI
+  );
+  const maximumFaucetBalanceWei = positiveIntegerString(
     "maximumFaucetBalanceWei",
     transactionCaps.maximumFaucetBalanceWei,
     MAXIMUM_FAUCET_BALANCE_WEI
   );
+  if (expectedStartingBalanceWei > maximumFaucetBalanceWei) {
+    fail(
+      "invalid_m2a008_decision",
+      "expected signer balance exceeds the approved faucet ceiling"
+    );
+  }
   positiveIntegerString(
     "maximumTotalGasCostWei",
     transactionCaps.maximumTotalGasCostWei,
@@ -332,6 +344,7 @@ export function validateM2A008ExactDecision(
     pauseGuardian,
     recoveryAuthority,
     startingNonce: signer.startingNonce,
+    expectedStartingBalanceWei: expectedStartingBalanceWei.toString(),
     deploymentCount: 2,
     nativeValueWei: "0",
     testAssetsOnly: true,

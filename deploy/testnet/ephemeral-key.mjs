@@ -7,7 +7,8 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 const KEY_SCOPES = Object.freeze({
   "CHAIN-001B": "/private/tmp/ipo-one-chain-001b",
   "CHAIN-001D": "/private/tmp/ipo-one-chain-001d",
-  "CHAIN-001F": "/private/tmp/ipo-one-chain-001f"
+  "CHAIN-001F": "/private/tmp/ipo-one-chain-001f",
+  "M2A-008": "/private/tmp/ipo-one-m2a-008"
 });
 const PRIVATE_KEY = /^0x[0-9a-f]{64}$/;
 

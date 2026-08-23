@@ -1,6 +1,6 @@
 # M2A-008 — Exact Base Sepolia secured-pool deployment
 
-Status: `PREFLIGHT_IMPLEMENTED — BLOCKED_NOT_COMPLETE`
+Status: `LIVE_RUNNER_IMPLEMENTED — BLOCKED_NOT_COMPLETE`
 
 Delivery mode: `L3_LIVE_TESTNET_TEST_ASSETS_ONLY` after every named gate passes
 
@@ -165,13 +165,47 @@ pause/recovery accounts or fresh one-use signer is present. No transaction was
 signed or broadcast and no funds moved.
 
 The deterministic fork dry run passes 1/1 against Base Sepolia. The focused
-preflight suite passes 6/6; Foundry local tests pass 25 with the explicit fork
+preflight/runner suite passes 11/11; Foundry local tests pass 25 with the explicit fork
 case skipped outside its fork command; indexer/reconciliation passes 15/15;
 security passes 34/34; transport passes 84/84; a clean isolated PostgreSQL run
-passes 90/90; and the aggregate unit/contract suite passes 1145/1145. Schema,
+passes 90/90; browser visible-click acceptance passes 6/6; and the aggregate
+unit/contract suite passes 1151/1151. Schema,
 launch-policy, toolchain/provenance, lint, type, migration, Web-bundle and
 production dependency checks pass. These results prove deployability and
 fail-closed preparation, not deployment authorization or product completion.
+
+## Continued execution — 2026-08-23
+
+The Founder explicitly authorized Codex to continue and finish the M2A-008
+scope. `docs/codex/audits/M2A-008/founder-release-risk-decision.md` records the
+approved test-only boundary and conservative limits without pretending that a
+Founder decision is Independent Security Evidence.
+
+The closed live runner now:
+
+- requires the exact SHA, decision file and byte-for-byte private Launch
+  Evidence hash;
+- requires the enabled exact launch profile and all 13 currently valid gates;
+- rechecks two RPCs, exact signer address, exact balance, nonce, empty predicted
+  addresses, gas ceiling and admitted dependencies before signing;
+- encodes exactly one adapter and one pool deployment with zero native value;
+- journals each returned transaction hash before waiting and never blindly
+  retries an uncertain transaction;
+- verifies transaction input, sender, nonce, receipt, deterministic address,
+  two-RPC finality, runtime bytecode and every immutable pool parameter;
+- destroys the one-use signer after success or any terminal post-attempt
+  failure; and
+- provides a separate read-only reconciliation command with no wallet,
+  signing, broadcast or key-read primitive.
+
+The decision schema now binds the exact observed starting signer balance in
+addition to the faucet ceiling, fixing a gap between the written acceptance
+criterion and executable preflight.
+
+Independent review remains genuinely absent. An exact review packet is ready
+at `docs/security/M2A_008_INDEPENDENT_CONTRACT_REVIEW_HANDOFF.md`. No signer was
+provisioned, no policy was enabled, no transaction was signed or broadcast and
+no funds moved.
 
 ## Migration and rollback
 
