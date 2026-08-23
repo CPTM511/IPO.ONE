@@ -1,6 +1,6 @@
 # M2A-008 — Exact Base Sepolia secured-pool deployment
 
-Status: `LIVE_RUNNER_IMPLEMENTED — BLOCKED_NOT_COMPLETE`
+Status: `LIVE_RUNNER_AND_REVIEW_INTAKE_IMPLEMENTED — BLOCKED_NOT_COMPLETE`
 
 Delivery mode: `L3_LIVE_TESTNET_TEST_ASSETS_ONLY` after every named gate passes
 
@@ -206,6 +206,14 @@ Independent review remains genuinely absent. An exact review packet is ready
 at `docs/security/M2A_008_INDEPENDENT_CONTRACT_REVIEW_HANDOFF.md`. No signer was
 provisioned, no policy was enabled, no transaction was signed or broadcast and
 no funds moved.
+
+After Founder review confirmation, M2A-008 also has a closed independent-review
+attestation schema, fail-closed pending template and one verifier that binds the
+named reviewer, independent capacity, exact release SHA, current contract source
+hashes, compiler profile, findings, validity window, immutable report URL and
+the report's bytes. This converts the remaining external review input into one
+deterministic gate record without treating Founder or Codex review as
+Independent Security Evidence.
 
 ## Migration and rollback
 

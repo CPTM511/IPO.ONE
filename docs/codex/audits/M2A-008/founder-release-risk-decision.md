@@ -10,6 +10,11 @@ Founder instructions in the active task:
 
 - `好的，继续吧，同意授权并执行`
 - `往下继续，我授权你做其中的所有内容，给我把这个部分做完了。`
+- `已审查，没问题， 给我继续`
+
+The latest statement confirms the Founder's review of the delivered change and
+instruction to continue. It is Founder/Release acceptance; it is not attributed
+to, and does not replace, the separately named `Independent Security` owner.
 
 ## Approved boundary
 
@@ -66,5 +71,11 @@ Founder / Release / Risk intent and the conservative numeric limits are
 approved. Live signing remains blocked because the independent review and the
 remaining exact-run identities and Evidence do not yet exist. The checked-in
 launch profile therefore correctly remains disabled.
+
+The independent-review gap now has one closed schema, pending template and
+single verification command. This reduces the external handoff to the named
+reviewer attestation plus exact report, while continuing to fail closed on a
+placeholder, mutable URL, SHA/source drift, stale result, open P0/P1 finding or
+report-digest mismatch.
 
 This is not a mainnet, real-value, production or funds-movement approval.

@@ -70,3 +70,23 @@ lending or Agent venue execution.
 Codex-authored tests, this handoff, internal threat modeling, Foundry lint and
 CI are supporting assurance only. They must never be recorded as the
 `independent_contract_review` gate.
+
+## Single-command intake
+
+The reviewer copies
+`deploy/approvals/m2a-008-independent-review.pending.json`, replaces every
+pending value, attaches the exact report and runs:
+
+```text
+pnpm run testnet:m2a008:review:verify -- \
+  --attestation /absolute/path/review-attestation.json \
+  --report /absolute/path/review-report.pdf \
+  --expected-sha <EXACT_RELEASE_SHA>
+```
+
+The verifier checks the closed schema, reviewer identity/capacity, exact
+release SHA, all three current source hashes, compiler profile, conclusion,
+finding counts, 720-hour validity window, immutable report URL and the report
+bytes against its non-zero SHA-256 digest. Only then does it emit the exact
+`independent_contract_review` gate record. It has no signer, wallet or
+transaction primitive and cannot enable the launch policy.
