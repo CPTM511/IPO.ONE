@@ -105,3 +105,25 @@ test("CHAIN-001F deployer uses a new isolated owner-only temporary scope", async
     }
   }
 });
+
+test("M2A-008 deployer uses its own one-use owner-only temporary scope", async () => {
+  const previous = process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
+  process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = "M2A-008";
+  const keyPath = `/private/tmp/ipo-one-m2a-008/test-${process.pid}-${Date.now()}.key`;
+  try {
+    const provisioned = await provisionEphemeralTestnetKey({ keyPath });
+    assert.equal(provisioned.approvalScope, "M2A-008");
+    assert.equal(provisioned.keyPath, keyPath);
+    assert.equal((await lstat(keyPath)).mode & 0o077, 0);
+    await assert.rejects(
+      provisionEphemeralTestnetKey({
+        keyPath: `/private/tmp/ipo-one-chain-001f/cross-scope-${process.pid}-${Date.now()}.key`
+      }),
+      /dedicated private temporary/
+    );
+    await destroyEphemeralTestnetKey(keyPath);
+  } finally {
+    if (previous === undefined) delete process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY;
+    else process.env.IPO_ONE_APPROVE_EPHEMERAL_TESTNET_KEY = previous;
+  }
+});

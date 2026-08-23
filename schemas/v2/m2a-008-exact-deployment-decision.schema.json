@@ -182,6 +182,7 @@
       "required": [
         "deploymentCount",
         "nativeValueWei",
+        "expectedStartingBalanceWei",
         "maximumFaucetBalanceWei",
         "maximumTotalGasCostWei"
       ],
@@ -191,6 +192,9 @@
         },
         "nativeValueWei": {
           "const": "0"
+        },
+        "expectedStartingBalanceWei": {
+          "$ref": "#/$defs/positiveIntegerString"
         },
         "maximumFaucetBalanceWei": {
           "$ref": "#/$defs/positiveIntegerString"

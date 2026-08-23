@@ -87,6 +87,7 @@ function decision(overrides = {}) {
     transactionCaps: {
       deploymentCount: 2,
       nativeValueWei: "0",
+      expectedStartingBalanceWei: "10000000000000000",
       maximumFaucetBalanceWei: "100000000000000000",
       maximumTotalGasCostWei: "20000000000000000"
     },
@@ -144,6 +145,7 @@ test("decision rejects authority, address, nonce, role, expiry and cap drift", (
     decision({ risk: { loanToValueBps: 8000 } }),
     decision({ oracle: { sourceId: `0x${"0".repeat(64)}` } }),
     decision({ transactionCaps: { deploymentCount: 3 } }),
+    decision({ transactionCaps: { expectedStartingBalanceWei: "100000000000000001" } }),
     decision({ transactionCaps: { maximumFaucetBalanceWei: "100000000000000001" } }),
     decision({ approvedAt: "2026-08-21T19:59:59.999Z" }),
     decision({ approvalExpiresAt: "2026-08-22T20:00:00.000Z" }),
