@@ -197,7 +197,7 @@ test("decision rejects authority, address, nonce, role, expiry and cap drift", (
   }
 });
 
-test("checked-in policy keeps M2A-008 locked behind five staged technical gates", async () => {
+test("checked-in policy enables only the exact M2A-008 profile behind five staged technical gates", async () => {
   const policyText = await readFile(
     new URL("../../launch-policy.v1.json", import.meta.url),
     "utf8"
@@ -205,14 +205,10 @@ test("checked-in policy keeps M2A-008 locked behind five staged technical gates"
   const assessment = assessM2A008LaunchPolicy(
     parseCanonicalJson(policyText, "Test launch policy")
   );
-  assert.equal(assessment.releaseEnabled, false);
-  assert.equal(assessment.exactProfilePresent, false);
-  assert.equal(assessment.ready, false);
-  assert.deepEqual(assessment.blockers, [
-    "launch_profile_disabled",
-    "exact_profile_missing",
-    "unlock_requirements_open"
-  ]);
+  assert.equal(assessment.releaseEnabled, true);
+  assert.equal(assessment.exactProfilePresent, true);
+  assert.equal(assessment.ready, true);
+  assert.deepEqual(assessment.blockers, []);
   assert.deepEqual(assessment.requiredGateIds, [
     "m2a_testnet_code_integrity",
     "m2a_testnet_exact_configuration",

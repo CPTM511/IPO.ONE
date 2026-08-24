@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-evidence/v1",
-  "policyVersion": "1.2.0",
+  "policyVersion": "1.3.0",
   "profile": "live_testnet_secured_pool",
   "release": {
     "repository": "CPTM511/IPO.ONE",
@@ -23,7 +23,7 @@
   "externalAuthorization": {
     "system": "founder_exact_testnet_decision",
     "environment": "live-testnet-secured-pool",
-    "approvalUrl": "[PROTECTED_ENVIRONMENT_APPROVAL_URL]",
+    "approvalUrl": "[IMMUTABLE_GITHUB_COMMIT_OR_BLOB_URL]",
     "approvedAt": "[ISO_8601_UTC_TIMESTAMP]"
   },
   "gates": [

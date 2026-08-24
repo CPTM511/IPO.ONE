@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-policy/v1",
-  "policyVersion": "1.2.0",
+  "policyVersion": "1.3.0",
   "repository": "CPTM511/IPO.ONE",
   "evidenceSchemaVersion": "ipo.one.launch-evidence/v1",
   "profiles": {
@@ -153,7 +153,7 @@
     },
     "live_testnet_secured_pool": {
       "displayName": "Public Base Sepolia secured-pool test",
-      "releaseEnabled": false,
+      "releaseEnabled": true,
       "environment": "live-testnet-secured-pool",
       "maxReleaseAgeHours": 24,
       "capabilities": {
@@ -167,7 +167,21 @@
         "externalProviderExecutionEnabled": false,
         "agentVenueExecutionEnabled": false
       },
-      "exactProfile": null,
+      "exactProfile": {
+        "chainId": "eip155:84532",
+        "poolContract": "0x1d106a3590c0364b145146B3829cFC8825Da916F",
+        "poolBytecodeHash": "0xfa921161401d05ed267da2253df1d94b8b92be3a91bcabe47ccf8e0c2bb82fc5",
+        "adapterVersion": "IpoOnePriceOracleAdapterV1",
+        "wethCollateral": "0x4200000000000000000000000000000000000006",
+        "testUsdcDebt": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "oracleAddress": "0x1B6e2D641d783792aB03e11C8E56Fc381e6000aF",
+        "oracleSource": "chainlink_base_sepolia_eth_usd.v1",
+        "marketCount": 1,
+        "runOwner": "IPO.ONE Founder / Release Owner",
+        "deploymentApprovalRef": "M2A-008-DEPLOY-20260824-001",
+        "configurationHash": "0xa95b15c4f342d8d8f17f1152ad2a3590045ea965f4ce49044304f2df3f2a9933",
+        "realValueClassification": "test_assets_only"
+      },
       "gates": [
         {
           "id": "m2a_testnet_code_integrity",
@@ -200,11 +214,7 @@
           "stage": "post_deployment"
         }
       ],
-      "unlockRequirements": [
-        "Set the exact Base Sepolia test-asset profile and two distinct Founder-controlled role addresses.",
-        "Pass pre-deployment Gates A through C; Gate D is runner-enforced and Gate E is required for completion.",
-        "Approve a separate exact-profile revision that changes releaseEnabled; Evidence cannot self-unlock the profile."
-      ]
+      "unlockRequirements": []
     },
     "controlled_agent_credit_pilot": {
       "displayName": "Controlled Agent-only real-value credit pilot",
