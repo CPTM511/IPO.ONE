@@ -91,11 +91,11 @@ test("launch policy exposes five staged M2 testnet gates and one exact enabled p
   assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
   assert.equal(
     policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,
-    "0x1d106a3590c0364b145146B3829cFC8825Da916F"
+    "0xe3a50a2BA033661F87C09A796f7ae4C8aDb93a1f"
   );
   assert.equal(
     policy.profiles.live_testnet_secured_pool.exactProfile.oracleAddress,
-    "0x1B6e2D641d783792aB03e11C8E56Fc381e6000aF"
+    "0xA67DDDEA7DF4b084cE70B0c87C16621664C4fb98"
   );
   assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.realFundsEnabled, false);
   assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.testAssetsEnabled, true);
@@ -248,7 +248,7 @@ test("complete fresh public-sandbox evidence verifies", () => {
   const result = verify(validEvidence());
   assert.deepEqual(result, {
     status: "verified",
-    policyVersion: "1.3.0",
+    policyVersion: "1.3.1",
     profile: "public_sandbox",
     repository: "CPTM511/IPO.ONE",
     commitSha: COMMIT_SHA,

@@ -262,7 +262,7 @@ authorized by the correction alone.
 
 ## M2A-008 exact-profile activation — 2026-08-24
 
-Policy v1.3.0 enables exactly one Base Sepolia test-assets-only profile bound
+Policy v1.3.1 enables exactly one Base Sepolia test-assets-only profile bound
 to the fresh one-use deployer, deterministic adapter/pool addresses, runtime
 pool bytecode hash, WETH/test-USDC/Chainlink dependencies, exact 1,000/100
 test-USDC caps, 50% LTV, two distinct Founder-controlled role addresses and
