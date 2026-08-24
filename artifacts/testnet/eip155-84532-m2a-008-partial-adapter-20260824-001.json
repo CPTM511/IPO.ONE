@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "m2a_008_partial_deployment_evidence.v1",
+  "issue": "M2A-008",
+  "chainId": "eip155:84532",
+  "releaseCommitSha": "8d361e1aaa9d28603f8a0d788c6f6dce1af97221",
+  "decisionId": "M2A-008-BASE-SEPOLIA-20260824-002",
+  "decisionHash": "0xeae21fe10f4ba88ca04877f64d1f04ed99a2eeca8c51806afaa4d38e4b182ffe",
+  "observedAt": "2026-08-24T14:02:46.000Z",
+  "rpcHosts": [
+    "sepolia.base.org",
+    "base-sepolia-rpc.publicnode.com"
+  ],
+  "deployerAddress": "0xeEe5EA8826F5c9572358dbc73501E8C8283571b1",
+  "adapter": {
+    "transactionHash": "0xc85f96568d602084ec6efd4678422e3923d8d84285f1b0263f4e506189d2169d",
+    "nonce": 0,
+    "nativeValueWei": "0",
+    "blockNumber": "45905788",
+    "blockHash": "0xe55da8c3228828ad393adc8b36358867d522e160abe343ce1daeaf28dacf6295",
+    "blockTimestamp": "2026-08-24T13:57:44.000Z",
+    "contractAddress": "0x1B6e2D641d783792aB03e11C8E56Fc381e6000aF",
+    "receiptStatus": "success",
+    "runtimeBytecodeHash": "0x1e6df0c6c6e5f479e2b0bb8fa4f7856b99dbbec171fe3159b3a2539b9ac17d80",
+    "twoRpcAgreement": true
+  },
+  "pool": {
+    "transactionHash": null,
+    "contractAddress": null,
+    "transactionBroadcast": false
+  },
+  "runner": {
+    "terminalStatus": "FAILED_OR_UNKNOWN_READ_ONLY_RECONCILIATION_REQUIRED",
+    "errorCode": "m2a008_deployment_receipt_invalid",
+    "cause": "pending_transaction_read_raced_mined_receipt",
+    "blindRetryPerformed": false
+  },
+  "signer": {
+    "endingNonce": 1,
+    "keyLogicallyDestroyed": true,
+    "keyMaterialIncluded": false,
+    "reuseAuthorized": false
+  },
+  "classification": {
+    "adapterDeployed": true,
+    "poolDeployed": false,
+    "m2a008Complete": false,
+    "testAssetsOnly": true,
+    "mainnetAuthorized": false,
+    "realFundsAuthorized": false
+  }
+}

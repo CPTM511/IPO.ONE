@@ -382,16 +382,14 @@ async function waitForBothFinalized({ primary, secondary, receipts }) {
   fail("m2a008_finality_timeout", "both deployments did not reach two-RPC finalized heads");
 }
 
-async function observeAndAssertDeployment({ context, hash, nonce, data, contract }) {
-  const [transaction, receipt] = await Promise.all([
-    context.primary.getTransaction({ hash }),
-    context.primary.waitForTransactionReceipt({
-      hash,
-      confirmations: 1,
-      timeout: RECEIPT_TIMEOUT_MS,
-      pollingInterval: 1_000
-    })
-  ]);
+export async function observeAndAssertDeployment({ context, hash, nonce, data, contract }) {
+  const receipt = await context.primary.waitForTransactionReceipt({
+    hash,
+    confirmations: 1,
+    timeout: RECEIPT_TIMEOUT_MS,
+    pollingInterval: 1_000
+  });
+  const transaction = await context.primary.getTransaction({ hash });
   assertM2A008DeploymentReceipt({
     transaction,
     receipt,

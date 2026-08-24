@@ -18,7 +18,7 @@ contract IpoOneSecuredPoolBaseSepoliaForkTest is Test {
     address private constant WETH = 0x4200000000000000000000000000000000000006;
     address private constant TEST_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
     address private constant ETH_USD_FEED = 0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1;
-    address private constant EXPECTED_ADAPTER = 0x1B6e2D641d783792aB03e11C8E56Fc381e6000aF;
+    address private constant EXPECTED_ADAPTER = 0xA67DDDEA7DF4b084cE70B0c87C16621664C4fb98;
     address private constant PAUSE_GUARDIAN = 0x8a1E62C539B802c8a204382442cA7a8caC31f19E;
     address private constant RECOVERY_AUTHORITY = 0x730766ff23D3c4366f3314c8895330fC589AA546;
     address private constant FIXTURE_GUARDIAN = address(0xA11CE);
@@ -27,7 +27,7 @@ contract IpoOneSecuredPoolBaseSepoliaForkTest is Test {
     bytes32 private constant EXACT_ADAPTER_RUNTIME_HASH =
         0x1e6df0c6c6e5f479e2b0bb8fa4f7856b99dbbec171fe3159b3a2539b9ac17d80;
     bytes32 private constant EXACT_POOL_RUNTIME_HASH =
-        0xfa921161401d05ed267da2253df1d94b8b92be3a91bcabe47ccf8e0c2bb82fc5;
+        0x512d9c39aefbc7b905f2f03b4046f99f3b705b960ce96a8319a752ef9b664272;
 
     function testBaseSepoliaDependenciesAdmitOneFixtureOnlyDryRun() public {
         vm.skip(block.chainid != BASE_SEPOLIA, "requires an explicit Base Sepolia fork URL");

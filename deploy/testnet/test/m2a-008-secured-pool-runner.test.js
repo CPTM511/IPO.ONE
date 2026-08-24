@@ -12,7 +12,8 @@ import {
   assertM2A008GasAndBalance,
   assertM2A008PolicyBinding,
   buildM2A008DeploymentPlan,
-  m2a008ConfigurationHash
+  m2a008ConfigurationHash,
+  observeAndAssertDeployment
 } from "../m2a-008-secured-pool-runner.mjs";
 import { parseCanonicalJson } from "../../../packages/release-governance/src/index.js";
 
@@ -206,6 +207,51 @@ test("M2A-008 receipt binding rejects sender, nonce, value, calldata or address 
     expectedData: "0x6000",
     expectedContract: ADAPTER
   }), /deployment.*receipt.*invalid/);
+});
+
+test("M2A-008 waits for a mined receipt before reading the transaction", async () => {
+  const hash = `0x${"3".repeat(64)}`;
+  const blockHash = `0x${"4".repeat(64)}`;
+  let receiptObserved = false;
+  const receipt = {
+    transactionHash: hash,
+    status: "success",
+    contractAddress: ADAPTER,
+    blockNumber: 101n,
+    blockHash
+  };
+  const transaction = {
+    hash,
+    from: DEPLOYER,
+    to: null,
+    chainId: 84532,
+    nonce: 0,
+    value: 0n,
+    input: "0x6000",
+    blockNumber: 101n,
+    blockHash
+  };
+  const context = {
+    account: { address: DEPLOYER },
+    primary: {
+      async waitForTransactionReceipt() {
+        receiptObserved = true;
+        return receipt;
+      },
+      async getTransaction() {
+        assert.equal(receiptObserved, true, "transaction was read while it could still be pending");
+        return transaction;
+      }
+    }
+  };
+
+  assert.equal(await observeAndAssertDeployment({
+    context,
+    hash,
+    nonce: 0,
+    data: "0x6000",
+    contract: ADAPTER
+  }), receipt);
 });
 
 test("M2A-008 live runner has a wallet only behind the closed runner and never reads an environment private key", async () => {

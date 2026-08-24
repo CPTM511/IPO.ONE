@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-policy/v1",
-  "policyVersion": "1.3.0",
+  "policyVersion": "1.3.1",
   "repository": "CPTM511/IPO.ONE",
   "evidenceSchemaVersion": "ipo.one.launch-evidence/v1",
   "profiles": {
@@ -169,17 +169,17 @@
       },
       "exactProfile": {
         "chainId": "eip155:84532",
-        "poolContract": "0x1d106a3590c0364b145146B3829cFC8825Da916F",
-        "poolBytecodeHash": "0xfa921161401d05ed267da2253df1d94b8b92be3a91bcabe47ccf8e0c2bb82fc5",
+        "poolContract": "0xe3a50a2BA033661F87C09A796f7ae4C8aDb93a1f",
+        "poolBytecodeHash": "0x512d9c39aefbc7b905f2f03b4046f99f3b705b960ce96a8319a752ef9b664272",
         "adapterVersion": "IpoOnePriceOracleAdapterV1",
         "wethCollateral": "0x4200000000000000000000000000000000000006",
         "testUsdcDebt": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        "oracleAddress": "0x1B6e2D641d783792aB03e11C8E56Fc381e6000aF",
+        "oracleAddress": "0xA67DDDEA7DF4b084cE70B0c87C16621664C4fb98",
         "oracleSource": "chainlink_base_sepolia_eth_usd.v1",
         "marketCount": 1,
         "runOwner": "IPO.ONE Founder / Release Owner",
-        "deploymentApprovalRef": "M2A-008-DEPLOY-20260824-001",
-        "configurationHash": "0xa95b15c4f342d8d8f17f1152ad2a3590045ea965f4ce49044304f2df3f2a9933",
+        "deploymentApprovalRef": "M2A-008-DEPLOY-20260824-002",
+        "configurationHash": "0x136416856b1f3abbc239f3b39e129f8c1debfdee454162466f82cd9d90e27a89",
         "realValueClassification": "test_assets_only"
       },
       "gates": [
