@@ -17,7 +17,8 @@ import {
   assessM2A008LaunchPolicy,
   inspectM2A008ReadOnlyDependencies,
   readM2A008ExactDecision,
-  validateM2A008ExactDecision
+  validateM2A008ExactDecision,
+  validateM2A008PoolRecoveryDecision
 } from "../m2a-008-secured-pool-preflight.mjs";
 import {
   parseCanonicalJson
@@ -39,11 +40,25 @@ const validateSchema = new Ajv2020({
   strict: true,
   validateFormats: false
 }).compile(decisionSchema);
+const recoveryDecisionSchema = JSON.parse(await readFile(
+  new URL(
+    "../../../schemas/v2/m2a-008-pool-recovery-decision.schema.json",
+    import.meta.url
+  ),
+  "utf8"
+));
+const validateRecoverySchema = new Ajv2020({
+  allErrors: true,
+  strict: true,
+  validateFormats: false
+}).compile(recoveryDecisionSchema);
 
 const NOW = new Date("2026-08-22T20:00:00.000Z");
 const DEPLOYER = "0x9999999999999999999999999999999999999999";
 const ORACLE = getContractAddress({ from: DEPLOYER, nonce: 0n });
 const POOL = getContractAddress({ from: DEPLOYER, nonce: 1n });
+const RECOVERY_DEPLOYER = "0x8888888888888888888888888888888888888888";
+const RECOVERY_POOL = getContractAddress({ from: RECOVERY_DEPLOYER, nonce: 0n });
 
 function decision(overrides = {}) {
   const base = {
@@ -136,6 +151,44 @@ function decision(overrides = {}) {
   };
 }
 
+function recoveryDecision(overrides = {}) {
+  const base = decision({
+    schemaVersion: "m2a_008_pool_recovery_decision.v1",
+    addresses: {
+      deployer: RECOVERY_DEPLOYER,
+      expectedOracleAdapter: ORACLE,
+      expectedPool: RECOVERY_POOL
+    },
+    signer: {
+      purpose: "M2A-008 missing Pool recovery only"
+    },
+    transactionCaps: {
+      deploymentCount: 1,
+      expectedStartingBalanceWei: "1000000000000000",
+      maximumFaucetBalanceWei: "1000000000000000",
+      maximumTotalGasCostWei: "1000000000000000"
+    }
+  });
+  base.recoveryProof = {
+    adapterDeployer: DEPLOYER,
+    adapterTransactionHash: `0x${"4".repeat(64)}`,
+    adapterNonce: 0,
+    adapterBlockNumber: "45907914",
+    adapterBlockHash: `0x${"5".repeat(64)}`,
+    adapterRuntimeBytecodeHash: `0x${"6".repeat(64)}`,
+    twoRpcAgreement: true,
+    reuseClassification: "immutable_existing_adapter"
+  };
+  return {
+    ...base,
+    ...overrides,
+    addresses: { ...base.addresses, ...(overrides.addresses ?? {}) },
+    signer: { ...base.signer, ...(overrides.signer ?? {}) },
+    transactionCaps: { ...base.transactionCaps, ...(overrides.transactionCaps ?? {}) },
+    recoveryProof: { ...base.recoveryProof, ...(overrides.recoveryProof ?? {}) }
+  };
+}
+
 test("exact M2A-008 decision validates without creating a transaction", () => {
   const input = decision();
   assert.equal(validateSchema(input), true, JSON.stringify(validateSchema.errors));
@@ -156,6 +209,40 @@ test("exact M2A-008 decision validates without creating a transaction", () => {
   assert.equal(result.signerKeyMaterialIncluded, false);
   assert.equal(result.transactionSigned, false);
   assert.equal(result.transactionBroadcast, false);
+});
+
+test("M2A-008 Pool recovery validates exactly one fresh creation against an immutable Adapter proof", () => {
+  const input = recoveryDecision();
+  assert.equal(validateRecoverySchema(input), true, JSON.stringify(validateRecoverySchema.errors));
+  const result = validateM2A008PoolRecoveryDecision(input, {
+    clock: () => NOW,
+    expectedCommitSha: "a".repeat(40)
+  });
+  assert.equal(result.status, "decision_valid");
+  assert.equal(result.expectedOracleAdapter, ORACLE);
+  assert.equal(result.expectedPool, RECOVERY_POOL);
+  assert.equal(result.adapterDeployer, DEPLOYER);
+  assert.equal(result.poolDeployer, RECOVERY_DEPLOYER);
+  assert.equal(result.deploymentCount, 1);
+  assert.equal(result.nativeValueWei, "0");
+  assert.equal(result.mainnetAuthorized, false);
+  assert.equal(result.realFundsAuthorized, false);
+});
+
+test("M2A-008 Pool recovery rejects another Adapter, reused signer or more than one transaction", () => {
+  for (const input of [
+    recoveryDecision({ recoveryProof: { twoRpcAgreement: false } }),
+    recoveryDecision({ recoveryProof: { adapterNonce: 1 } }),
+    recoveryDecision({ signer: { startingNonce: 1 } }),
+    recoveryDecision({ signer: { priorSignerReuse: true } }),
+    recoveryDecision({ transactionCaps: { deploymentCount: 2 } }),
+    recoveryDecision({ addresses: { expectedPool: ORACLE } })
+  ]) {
+    assert.throws(() => validateM2A008PoolRecoveryDecision(input, {
+      clock: () => NOW,
+      expectedCommitSha: "a".repeat(40)
+    }));
+  }
 });
 
 test("decision rejects authority, address, nonce, role, expiry and cap drift", () => {

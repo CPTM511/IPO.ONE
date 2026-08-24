@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/m2a-008-pool-recovery-decision.schema.json",
+  "title": "IPO.ONE M2A-008 missing Pool recovery decision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decisionId",
+    "decision",
+    "chainId",
+    "releaseCommitSha",
+    "approvedAt",
+    "approvalExpiresAt",
+    "deploymentApprovalRef",
+    "launchEvidenceSha256",
+    "addresses",
+    "testnetRoleCustody",
+    "risk",
+    "oracle",
+    "signer",
+    "transactionCaps",
+    "deploymentAuthorized",
+    "testAssetsOnly",
+    "mainnetAuthorized",
+    "realFundsAuthorized",
+    "recoveryProof"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "m2a_008_pool_recovery_decision.v1" },
+    "decisionId": {
+      "type": "string",
+      "pattern": "^M2A-008-BASE-SEPOLIA-[A-Z0-9-]{8,48}$"
+    },
+    "decision": { "const": "APPROVE" },
+    "chainId": { "const": "eip155:84532" },
+    "releaseCommitSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "approvalExpiresAt": { "type": "string", "format": "date-time" },
+    "deploymentApprovalRef": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "launchEvidenceSha256": { "$ref": "#/$defs/sha256" },
+    "addresses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wethCollateral",
+        "testUsdcDebt",
+        "priceFeed",
+        "deployer",
+        "expectedOracleAdapter",
+        "expectedPool",
+        "pauseGuardian",
+        "recoveryAuthority"
+      ],
+      "properties": {
+        "wethCollateral": { "const": "0x4200000000000000000000000000000000000006" },
+        "testUsdcDebt": { "const": "0x036CbD53842c5426634e7929541eC2318f3dCF7e" },
+        "priceFeed": { "const": "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1" },
+        "deployer": { "$ref": "#/$defs/address" },
+        "expectedOracleAdapter": { "$ref": "#/$defs/address" },
+        "expectedPool": { "$ref": "#/$defs/address" },
+        "pauseGuardian": { "$ref": "#/$defs/address" },
+        "recoveryAuthority": { "$ref": "#/$defs/address" }
+      }
+    },
+    "testnetRoleCustody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pauseGuardian",
+        "recoveryAuthority",
+        "distinctPrivateKeysAttested",
+        "privateKeysIncluded",
+        "institutionalCustodyRequired",
+        "multisigRequired"
+      ],
+      "properties": {
+        "pauseGuardian": { "$ref": "#/$defs/founderTestnetRole" },
+        "recoveryAuthority": { "$ref": "#/$defs/founderTestnetRole" },
+        "distinctPrivateKeysAttested": { "const": true },
+        "privateKeysIncluded": { "const": false },
+        "institutionalCustodyRequired": { "const": false },
+        "multisigRequired": { "const": false }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["marketDebtCapAssets", "borrowerDebtCapAssets", "loanToValueBps"],
+      "properties": {
+        "marketDebtCapAssets": { "const": "1000000000" },
+        "borrowerDebtCapAssets": { "const": "100000000" },
+        "loanToValueBps": { "const": 5000 }
+      }
+    },
+    "oracle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "sourceLabel", "feedDecimals", "maximumAgeSeconds"],
+      "properties": {
+        "sourceId": { "$ref": "#/$defs/hash" },
+        "sourceLabel": { "const": "chainlink_base_sepolia_eth_usd.v1" },
+        "feedDecimals": { "const": 8 },
+        "maximumAgeSeconds": { "const": 3600 }
+      }
+    },
+    "signer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyFile", "purpose", "startingNonce", "priorSignerReuse", "destroyAfterRun"],
+      "properties": {
+        "keyFile": {
+          "type": "string",
+          "pattern": "^/private/tmp/ipo-one-m2a-008/[A-Za-z0-9._-]+\\.key$"
+        },
+        "purpose": { "const": "M2A-008 missing Pool recovery only" },
+        "startingNonce": { "const": 0 },
+        "priorSignerReuse": { "const": false },
+        "destroyAfterRun": { "const": true }
+      }
+    },
+    "transactionCaps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deploymentCount",
+        "nativeValueWei",
+        "expectedStartingBalanceWei",
+        "maximumFaucetBalanceWei",
+        "maximumTotalGasCostWei"
+      ],
+      "properties": {
+        "deploymentCount": { "const": 1 },
+        "nativeValueWei": { "const": "0" },
+        "expectedStartingBalanceWei": { "$ref": "#/$defs/positiveIntegerString" },
+        "maximumFaucetBalanceWei": { "$ref": "#/$defs/positiveIntegerString" },
+        "maximumTotalGasCostWei": { "$ref": "#/$defs/positiveIntegerString" }
+      }
+    },
+    "deploymentAuthorized": { "const": true },
+    "testAssetsOnly": { "const": true },
+    "mainnetAuthorized": { "const": false },
+    "realFundsAuthorized": { "const": false },
+    "recoveryProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapterDeployer",
+        "adapterTransactionHash",
+        "adapterNonce",
+        "adapterBlockNumber",
+        "adapterBlockHash",
+        "adapterRuntimeBytecodeHash",
+        "twoRpcAgreement",
+        "reuseClassification"
+      ],
+      "properties": {
+        "adapterDeployer": { "$ref": "#/$defs/address" },
+        "adapterTransactionHash": { "$ref": "#/$defs/hash" },
+        "adapterNonce": { "const": 0 },
+        "adapterBlockNumber": { "type": "string", "pattern": "^[1-9][0-9]{0,19}$" },
+        "adapterBlockHash": { "$ref": "#/$defs/hash" },
+        "adapterRuntimeBytecodeHash": { "$ref": "#/$defs/hash" },
+        "twoRpcAgreement": { "const": true },
+        "reuseClassification": { "const": "immutable_existing_adapter" }
+      }
+    }
+  },
+  "$defs": {
+    "address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "positiveIntegerString": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" },
+    "founderTestnetRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controllerRole", "scope"],
+      "properties": {
+        "controllerRole": { "const": "Founder" },
+        "scope": { "const": "Base Sepolia test assets only" }
+      }
+    }
+  }
+}

@@ -41,7 +41,7 @@ assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
 assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
 assert.equal(
   policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,
-  "0x9Da8d04D0E989811aB59a37aEf3C9E548F242362"
+  "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da"
 );
 assert.equal(
   policy.profiles.live_testnet_secured_pool.exactProfile.oracleAddress,
