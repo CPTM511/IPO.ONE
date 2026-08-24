@@ -12132,7 +12132,7 @@ async function loadSecuredPoolWorkspace() {
     });
     securedPoolPilot.workspace = result.response;
     securedPoolPilot.review = null;
-    securedPoolPilot.helper = "Current local synthetic state loaded. Chain submission remains unavailable.";
+    securedPoolPilot.helper = "Current local synthetic projection loaded for the deployed Base Sepolia test Pool. Chain submission remains unavailable.";
   } catch (error) {
     securedPoolPilot.error = true;
     securedPoolPilot.helper = `Pool state is unavailable. Request ID: ${error.requestId ?? "unavailable"}`;

@@ -94,7 +94,7 @@ test("Borrower visibly reviews an exact secured-Pool action without submission",
   await expect(pool).toBeVisible();
   await pool.getByRole("button", { name: "Refresh Pool state" }).click();
   await expect(page.locator("#securedPoolStatus")).toHaveText("Awaiting indexed state");
-  await expect(page.locator("#securedPoolSubmission")).toContainText("M2A-008");
+  await expect(page.locator("#securedPoolSubmission")).toContainText("no chain transaction will be submitted");
 
   await page.locator("#securedPoolActionType").focus();
   await page.keyboard.press("b");
@@ -109,7 +109,7 @@ test("Borrower visibly reviews an exact secured-Pool action without submission",
   await expect(page.locator("#securedPoolReviewHelper")).toContainText(
     "pool_deployment_unavailable"
   );
-  await expect(page.locator("#securedPoolSubmission")).toContainText("M2A-008");
+  await expect(page.locator("#securedPoolSubmission")).toContainText("no chain transaction will be submitted");
 });
 
 test("secured-Pool controls remain usable at 200 percent zoom", async ({ page }) => {
