@@ -99,6 +99,17 @@ const TRANSACTION_CAP_KEYS = new Set([
   "maximumFaucetBalanceWei",
   "maximumTotalGasCostWei"
 ]);
+const RECOVERY_TOP_LEVEL_KEYS = new Set([...TOP_LEVEL_KEYS, "recoveryProof"]);
+const RECOVERY_PROOF_KEYS = new Set([
+  "adapterDeployer",
+  "adapterTransactionHash",
+  "adapterNonce",
+  "adapterBlockNumber",
+  "adapterBlockHash",
+  "adapterRuntimeBytecodeHash",
+  "twoRpcAgreement",
+  "reuseClassification"
+]);
 
 const TOKEN_ABI = parseAbi([
   "function decimals() view returns (uint8)",
@@ -402,6 +413,198 @@ export function validateM2A008ExactDecision(
     mainnetAuthorized: false,
     realFundsAuthorized: false,
     signerKeyMaterialIncluded: false,
+    transactionSigned: false,
+    transactionBroadcast: false
+  });
+}
+
+export function validateM2A008PoolRecoveryDecision(
+  decision,
+  { clock = () => new Date(), expectedCommitSha } = {}
+) {
+  exactObject("decision", decision, RECOVERY_TOP_LEVEL_KEYS);
+  exactValue(
+    "schemaVersion",
+    decision.schemaVersion,
+    "m2a_008_pool_recovery_decision.v1"
+  );
+  if (!DECISION_ID.test(decision.decisionId ?? "")) {
+    fail("invalid_m2a008_decision", "decisionId is invalid");
+  }
+  exactValue("decision", decision.decision, "APPROVE");
+  exactValue("chainId", decision.chainId, M2A008_CHAIN_ID);
+  if (!SHA.test(decision.releaseCommitSha ?? "")) {
+    fail("invalid_m2a008_decision", "releaseCommitSha is invalid");
+  }
+  if (expectedCommitSha !== undefined) {
+    exactValue("releaseCommitSha", decision.releaseCommitSha, expectedCommitSha);
+  }
+  if (!APPROVAL_REF.test(decision.deploymentApprovalRef ?? "")) {
+    fail("invalid_m2a008_decision", "deploymentApprovalRef is invalid");
+  }
+  if (!SHA256.test(decision.launchEvidenceSha256 ?? "")) {
+    fail("invalid_m2a008_decision", "launchEvidenceSha256 is invalid");
+  }
+
+  const nowMs = clock().getTime();
+  if (!Number.isFinite(nowMs)) {
+    fail("invalid_m2a008_preflight", "clock returned an invalid date");
+  }
+  const approvedAtMs = exactTimestamp("approvedAt", decision.approvedAt);
+  const approvalExpiresAtMs = exactTimestamp("approvalExpiresAt", decision.approvalExpiresAt);
+  if (
+    approvedAtMs > nowMs + 5 * 60 * 1000 ||
+    approvedAtMs < nowMs - MAXIMUM_APPROVAL_AGE_MS ||
+    approvalExpiresAtMs <= nowMs ||
+    approvalExpiresAtMs > approvedAtMs + MAXIMUM_APPROVAL_AGE_MS
+  ) {
+    fail(
+      "m2a008_approval_expired",
+      "the one-use approval is stale, future-dated, expired, or too broad"
+    );
+  }
+
+  const addresses = exactObject("addresses", decision.addresses, ADDRESS_KEYS);
+  exactValue("wethCollateral", addresses.wethCollateral, M2A008_WETH);
+  exactValue("testUsdcDebt", addresses.testUsdcDebt, M2A008_TEST_USDC);
+  exactValue("priceFeed", addresses.priceFeed, M2A008_ETH_USD_FEED);
+  const deployer = exactAddress("deployer", addresses.deployer);
+  const expectedOracleAdapter = exactAddress("expectedOracleAdapter", addresses.expectedOracleAdapter);
+  const expectedPool = exactAddress("expectedPool", addresses.expectedPool);
+  const pauseGuardian = exactAddress("pauseGuardian", addresses.pauseGuardian);
+  const recoveryAuthority = exactAddress("recoveryAuthority", addresses.recoveryAuthority);
+
+  const signer = exactObject("signer", decision.signer, SIGNER_KEYS);
+  if (
+    typeof signer.keyFile !== "string" ||
+    !signer.keyFile.startsWith(DECISION_DIRECTORY) ||
+    !/^[A-Za-z0-9._-]+\.key$/.test(signer.keyFile.slice(DECISION_DIRECTORY.length))
+  ) {
+    fail("invalid_m2a008_decision", "signer.keyFile must use the isolated M2A-008 directory");
+  }
+  exactValue(
+    "signer.purpose",
+    signer.purpose,
+    "M2A-008 missing Pool recovery only"
+  );
+  if (
+    signer.startingNonce !== 0 ||
+    signer.priorSignerReuse !== false ||
+    signer.destroyAfterRun !== true
+  ) {
+    fail("invalid_m2a008_decision", "recovery signer must be fresh, nonce zero and one-use");
+  }
+  exactValue(
+    "expectedPool",
+    expectedPool,
+    getContractAddress({ from: deployer, nonce: 0n })
+  );
+
+  const recoveryProof = exactObject(
+    "recoveryProof",
+    decision.recoveryProof,
+    RECOVERY_PROOF_KEYS
+  );
+  const adapterDeployer = exactAddress("adapterDeployer", recoveryProof.adapterDeployer);
+  if (
+    !HASH.test(recoveryProof.adapterTransactionHash ?? "") ||
+    recoveryProof.adapterNonce !== 0 ||
+    !/^[1-9][0-9]{0,19}$/.test(recoveryProof.adapterBlockNumber ?? "") ||
+    !HASH.test(recoveryProof.adapterBlockHash ?? "") ||
+    !HASH.test(recoveryProof.adapterRuntimeBytecodeHash ?? "") ||
+    recoveryProof.twoRpcAgreement !== true ||
+    recoveryProof.reuseClassification !== "immutable_existing_adapter" ||
+    getContractAddress({ from: adapterDeployer, nonce: 0n }) !== expectedOracleAdapter
+  ) {
+    fail("invalid_m2a008_decision", "existing Adapter recovery proof is not exact");
+  }
+
+  const excludedRoleAddresses = new Set([
+    deployer.toLowerCase(), adapterDeployer.toLowerCase(), M2A008_WETH.toLowerCase(),
+    M2A008_TEST_USDC.toLowerCase(), M2A008_ETH_USD_FEED.toLowerCase(),
+    expectedOracleAdapter.toLowerCase(), expectedPool.toLowerCase()
+  ]);
+  if (
+    pauseGuardian === recoveryAuthority ||
+    excludedRoleAddresses.has(pauseGuardian.toLowerCase()) ||
+    excludedRoleAddresses.has(recoveryAuthority.toLowerCase())
+  ) {
+    fail("invalid_m2a008_decision", "pause and recovery roles must remain distinct from deployment identities");
+  }
+
+  const testnetRoleCustody = exactObject(
+    "testnetRoleCustody", decision.testnetRoleCustody, ROLE_CUSTODY_KEYS
+  );
+  for (const roleName of ["pauseGuardian", "recoveryAuthority"]) {
+    const role = exactObject(
+      `testnetRoleCustody.${roleName}`,
+      testnetRoleCustody[roleName],
+      FOUNDER_TESTNET_ROLE_KEYS
+    );
+    exactValue(`${roleName}.controllerRole`, role.controllerRole, "Founder");
+    exactValue(`${roleName}.scope`, role.scope, "Base Sepolia test assets only");
+  }
+  exactValue("distinctPrivateKeysAttested", testnetRoleCustody.distinctPrivateKeysAttested, true);
+  exactValue("privateKeysIncluded", testnetRoleCustody.privateKeysIncluded, false);
+  exactValue("institutionalCustodyRequired", testnetRoleCustody.institutionalCustodyRequired, false);
+  exactValue("multisigRequired", testnetRoleCustody.multisigRequired, false);
+
+  const risk = exactObject("risk", decision.risk, RISK_KEYS);
+  if (
+    positiveIntegerString("marketDebtCapAssets", risk.marketDebtCapAssets, 1_000_000_000_000n) !== 1_000_000_000n ||
+    positiveIntegerString("borrowerDebtCapAssets", risk.borrowerDebtCapAssets, 1_000_000_000n) !== 100_000_000n ||
+    risk.loanToValueBps !== 5_000
+  ) {
+    fail("invalid_m2a008_decision", "risk caps or LTV drifted from the exact testnet profile");
+  }
+  const oracle = exactObject("oracle", decision.oracle, ORACLE_KEYS);
+  if (!HASH.test(oracle.sourceId ?? "") || /^0x0{64}$/.test(oracle.sourceId)) {
+    fail("invalid_m2a008_decision", "oracle.sourceId must be one non-zero exact hash");
+  }
+  exactValue("oracle.sourceLabel", oracle.sourceLabel, M2A008_ORACLE_SOURCE_LABEL);
+  exactValue("oracle.feedDecimals", oracle.feedDecimals, 8);
+  exactValue("oracle.maximumAgeSeconds", oracle.maximumAgeSeconds, 3_600);
+
+  const transactionCaps = exactObject(
+    "transactionCaps", decision.transactionCaps, TRANSACTION_CAP_KEYS
+  );
+  exactValue("transactionCaps.deploymentCount", transactionCaps.deploymentCount, 1);
+  exactValue("transactionCaps.nativeValueWei", transactionCaps.nativeValueWei, "0");
+  const expectedStartingBalanceWei = positiveIntegerString(
+    "expectedStartingBalanceWei", transactionCaps.expectedStartingBalanceWei, MAXIMUM_FAUCET_BALANCE_WEI
+  );
+  const maximumFaucetBalanceWei = positiveIntegerString(
+    "maximumFaucetBalanceWei", transactionCaps.maximumFaucetBalanceWei, MAXIMUM_FAUCET_BALANCE_WEI
+  );
+  if (expectedStartingBalanceWei > maximumFaucetBalanceWei) {
+    fail("invalid_m2a008_decision", "expected signer balance exceeds the approved faucet ceiling");
+  }
+  positiveIntegerString(
+    "maximumTotalGasCostWei", transactionCaps.maximumTotalGasCostWei, MAXIMUM_TOTAL_GAS_COST_WEI
+  );
+  exactValue("deploymentAuthorized", decision.deploymentAuthorized, true);
+  exactValue("testAssetsOnly", decision.testAssetsOnly, true);
+  exactValue("mainnetAuthorized", decision.mainnetAuthorized, false);
+  exactValue("realFundsAuthorized", decision.realFundsAuthorized, false);
+
+  return Object.freeze({
+    schemaVersion: "m2a_008_pool_recovery_preflight.v1",
+    status: "decision_valid",
+    decisionId: decision.decisionId,
+    decisionHash: hashId("m2a_008_pool_recovery_decision", decision),
+    chainId: M2A008_CHAIN_ID,
+    releaseCommitSha: decision.releaseCommitSha,
+    expectedOracleAdapter,
+    expectedPool,
+    adapterDeployer,
+    poolDeployer: deployer,
+    startingNonce: 0,
+    expectedStartingBalanceWei: expectedStartingBalanceWei.toString(),
+    deploymentCount: 1,
+    nativeValueWei: "0",
+    testAssetsOnly: true,
+    mainnetAuthorized: false,
+    realFundsAuthorized: false,
     transactionSigned: false,
     transactionBroadcast: false
   });

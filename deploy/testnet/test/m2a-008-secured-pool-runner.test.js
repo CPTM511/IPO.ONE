@@ -263,14 +263,60 @@ test("M2A-008 waits for the receipt and then polls until the RPC returns the min
   assert.equal(transactionReads, 2);
 });
 
-test("M2A-008 live runner has a wallet only behind the closed runner and never reads an environment private key", async () => {
-  const [runner, preflight, reconciliation] = await Promise.all([
+test("M2A-008 keeps polling when mined transaction fields temporarily drift from the receipt", async () => {
+  const hash = `0x${"7".repeat(64)}`;
+  const blockHash = `0x${"8".repeat(64)}`;
+  const receipt = {
+    transactionHash: hash,
+    status: "success",
+    contractAddress: ADAPTER,
+    blockNumber: 102n,
+    blockHash
+  };
+  const transaction = {
+    hash,
+    from: DEPLOYER,
+    to: null,
+    chainId: 84532,
+    nonce: 0,
+    value: 0n,
+    input: "0x6000",
+    blockNumber: 102n,
+    blockHash
+  };
+  let reads = 0;
+  const context = {
+    account: { address: DEPLOYER },
+    primary: {
+      async waitForTransactionReceipt() { return receipt; },
+      async getTransaction() {
+        reads += 1;
+        return reads === 1 ? { ...transaction, chainId: 0 } : transaction;
+      }
+    }
+  };
+  assert.equal(await observeAndAssertDeployment({
+    context,
+    hash,
+    nonce: 0,
+    data: "0x6000",
+    contract: ADAPTER,
+    transactionReadIntervalMs: 0
+  }), receipt);
+  assert.equal(reads, 2);
+});
+
+test("M2A-008 live runners have wallets only behind closed local entrypoints and never read an environment private key", async () => {
+  const [runner, poolRecovery, preflight, reconciliation] = await Promise.all([
     readFile(new URL("../m2a-008-secured-pool-runner.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../m2a-008-pool-recovery-runner.mjs", import.meta.url), "utf8"),
     readFile(new URL("../m2a-008-secured-pool-preflight.mjs", import.meta.url), "utf8"),
     readFile(new URL("../m2a-008-secured-pool-reconcile.mjs", import.meta.url), "utf8")
   ]);
   assert.match(runner, /createWalletClient/);
   assert.doesNotMatch(runner, /process\.env\.(?:PRIVATE_KEY|DEPLOYER_PRIVATE_KEY)/);
+  assert.match(poolRecovery, /IPO_ONE_M2A008_MODE !== "pool-recovery"/);
+  assert.doesNotMatch(poolRecovery, /process\.env\.(?:PRIVATE_KEY|DEPLOYER_PRIVATE_KEY)/);
   assert.doesNotMatch(preflight, /createWalletClient|sendTransaction|deployContract/);
   assert.doesNotMatch(reconciliation, /createWalletClient|sendTransaction|deployContract|readEphemeralTestnetKey/);
 });

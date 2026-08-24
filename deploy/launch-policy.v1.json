@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-policy/v1",
-  "policyVersion": "1.3.2",
+  "policyVersion": "1.3.3",
   "repository": "CPTM511/IPO.ONE",
   "evidenceSchemaVersion": "ipo.one.launch-evidence/v1",
   "profiles": {
@@ -169,7 +169,7 @@
       },
       "exactProfile": {
         "chainId": "eip155:84532",
-        "poolContract": "0x9Da8d04D0E989811aB59a37aEf3C9E548F242362",
+        "poolContract": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
         "poolBytecodeHash": "0xd65ee592be35018f33af1e2a538ead22f15e1bb577e84583645cb76bf768a198",
         "adapterVersion": "IpoOnePriceOracleAdapterV1",
         "wethCollateral": "0x4200000000000000000000000000000000000006",
@@ -178,7 +178,7 @@
         "oracleSource": "chainlink_base_sepolia_eth_usd.v1",
         "marketCount": 1,
         "runOwner": "IPO.ONE Founder / Release Owner",
-        "deploymentApprovalRef": "M2A-008-DEPLOY-20260824-003",
+        "deploymentApprovalRef": "M2A-008-DEPLOY-20260824-004",
         "configurationHash": "0x3c6ad8d23ecb794f702d6102075cd06d3d0b3b7261d7a5d1c86f6b7da8b67b8c",
         "realValueClassification": "test_assets_only"
       },

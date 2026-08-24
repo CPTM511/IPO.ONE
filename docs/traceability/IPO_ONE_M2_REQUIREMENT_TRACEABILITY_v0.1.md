@@ -262,12 +262,12 @@ authorized by the correction alone.
 
 ## M2A-008 exact-profile activation — 2026-08-24
 
-Policy v1.3.2 enables exactly one Base Sepolia test-assets-only profile bound
-to the fresh one-use deployer, deterministic adapter/pool addresses, runtime
+Policy v1.3.3 enables exactly one Base Sepolia test-assets-only profile bound
+to the finalized immutable Adapter and a fresh Pool-only one-use deployer, deterministic pool address, runtime
 pool bytecode hash, WETH/test-USDC/Chainlink dependencies, exact 1,000/100
 test-USDC caps, 50% LTV, two distinct Founder-controlled role addresses and
 configuration hash recorded in
-`docs/codex/audits/M2A-008/exact-profile-activation.md`. Mainnet, real funds,
+`docs/codex/audits/M2A-008/pool-recovery-004.md`. Mainnet, real funds,
 Human production credit, private Tenant data, external Provider execution and
 Agent venue execution remain false.
 

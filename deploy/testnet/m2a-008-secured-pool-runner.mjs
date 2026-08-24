@@ -29,7 +29,8 @@ import {
   M2A008_WETH,
   inspectM2A008ReadOnlyDependencies,
   readM2A008ExactDecision,
-  validateM2A008ExactDecision
+  validateM2A008ExactDecision,
+  validateM2A008PoolRecoveryDecision
 } from "./m2a-008-secured-pool-preflight.mjs";
 import {
   destroyEphemeralTestnetKey,
@@ -288,6 +289,33 @@ async function loadClosedInputs({ decisionFile, launchEvidenceFile, expectedComm
   return { artifacts, decision, decisionInput, evidenceHash, launchVerification, plan, profile };
 }
 
+async function loadClosedRecoveryInputs({ decisionFile, launchEvidenceFile, expectedCommitSha }) {
+  if (!/^[a-f0-9]{40}$/.test(expectedCommitSha ?? "")) {
+    fail("invalid_m2a008_release_sha", "one exact lowercase release commit SHA is required");
+  }
+  const [decisionInput, policyText, evidenceText, artifacts] = await Promise.all([
+    readM2A008ExactDecision(decisionFile),
+    readFile(new URL("../launch-policy.v1.json", import.meta.url), "utf8"),
+    readOwnerOnlyFile(launchEvidenceFile, "launch evidence"),
+    loadArtifacts()
+  ]);
+  const decision = validateM2A008PoolRecoveryDecision(decisionInput, { expectedCommitSha });
+  const policy = parseCanonicalJson(policyText, "M2A-008 launch policy");
+  const evidence = parseCanonicalJson(evidenceText, "M2A-008 launch evidence");
+  const evidenceHash = `sha256:${createHash("sha256").update(evidenceText).digest("hex")}`;
+  if (evidenceHash !== decisionInput.launchEvidenceSha256) {
+    fail("m2a008_launch_evidence_hash_mismatch", "private launch Evidence is not the decision-bound file");
+  }
+  const launchVerification = verifyLaunchEvidence(evidence, {
+    policy,
+    expectedProfile: PROFILE_ID,
+    expectedCommitSha
+  });
+  const plan = buildM2A008DeploymentPlan(decisionInput, artifacts);
+  const profile = assertM2A008PolicyBinding({ policy, decision: decisionInput, plan });
+  return { artifacts, decision, decisionInput, evidenceHash, launchVerification, plan, profile };
+}
+
 export async function preflightM2A008Deployment(input) {
   const closed = await loadClosedInputs(input);
   const privateKey = await readEphemeralTestnetKey(closed.decisionInput.signer.keyFile);
@@ -351,6 +379,96 @@ export async function preflightM2A008Deployment(input) {
   });
 }
 
+export async function preflightM2A008PoolRecovery(input) {
+  const closed = await loadClosedRecoveryInputs(input);
+  const privateKey = await readEphemeralTestnetKey(closed.decisionInput.signer.keyFile);
+  const account = privateKeyToAccount(privateKey);
+  if (getAddress(account.address) !== getAddress(closed.decisionInput.addresses.deployer)) {
+    fail("m2a008_signer_address_mismatch", "one-use Pool key does not match the exact recovery deployer");
+  }
+  const [inspection, primaryChainId, secondaryChainId] = await Promise.all([
+    inspectM2A008ReadOnlyDependencies({
+      primaryRpcUrl: PRIMARY_RPC_URL,
+      secondaryRpcUrl: SECONDARY_RPC_URL
+    }),
+    publicClientFor(PRIMARY_RPC_URL).getChainId(),
+    publicClientFor(SECONDARY_RPC_URL).getChainId()
+  ]);
+  if (!inspection.passed || primaryChainId !== M2A008_NUMERIC_CHAIN_ID || secondaryChainId !== M2A008_NUMERIC_CHAIN_ID) {
+    fail("m2a008_dependency_preflight_failed", "two-RPC dependency inspection did not pass");
+  }
+  const primary = publicClientFor(PRIMARY_RPC_URL);
+  const secondary = publicClientFor(SECONDARY_RPC_URL);
+  const proof = closed.decisionInput.recoveryProof;
+  const adapterAddress = closed.decisionInput.addresses.expectedOracleAdapter;
+  const poolAddress = closed.decisionInput.addresses.expectedPool;
+  const [
+    balanceA, balanceB, nonceA, nonceB, adapterCodeA, adapterCodeB,
+    poolCodeA, poolCodeB, adapterTransactionA, adapterTransactionB,
+    adapterReceiptA, adapterReceiptB, fees
+  ] = await Promise.all([
+    primary.getBalance({ address: account.address }),
+    secondary.getBalance({ address: account.address }),
+    primary.getTransactionCount({ address: account.address, blockTag: "pending" }),
+    secondary.getTransactionCount({ address: account.address, blockTag: "pending" }),
+    primary.getCode({ address: adapterAddress, blockTag: "finalized" }),
+    secondary.getCode({ address: adapterAddress, blockTag: "finalized" }),
+    primary.getCode({ address: poolAddress }),
+    secondary.getCode({ address: poolAddress }),
+    primary.getTransaction({ hash: proof.adapterTransactionHash }),
+    secondary.getTransaction({ hash: proof.adapterTransactionHash }),
+    primary.getTransactionReceipt({ hash: proof.adapterTransactionHash }),
+    secondary.getTransactionReceipt({ hash: proof.adapterTransactionHash }),
+    primary.estimateFeesPerGas()
+  ]);
+  for (const [transaction, receipt] of [
+    [adapterTransactionA, adapterReceiptA],
+    [adapterTransactionB, adapterReceiptB]
+  ]) {
+    assertM2A008DeploymentReceipt({
+      transaction,
+      receipt,
+      expectedSender: proof.adapterDeployer,
+      expectedNonce: proof.adapterNonce,
+      expectedData: closed.plan.adapterData,
+      expectedContract: adapterAddress
+    });
+  }
+  if (
+    balanceA !== balanceB || nonceA !== nonceB || nonceA !== 0 ||
+    !adapterCodeA || adapterCodeA !== adapterCodeB ||
+    keccak256(adapterCodeA) !== proof.adapterRuntimeBytecodeHash ||
+    adapterReceiptA.blockNumber.toString() !== proof.adapterBlockNumber ||
+    adapterReceiptB.blockNumber.toString() !== proof.adapterBlockNumber ||
+    adapterReceiptA.blockHash !== proof.adapterBlockHash ||
+    adapterReceiptB.blockHash !== proof.adapterBlockHash ||
+    (poolCodeA !== undefined && poolCodeA !== "0x") ||
+    (poolCodeB !== undefined && poolCodeB !== "0x")
+  ) {
+    fail("m2a008_pool_recovery_state_drift", "existing Adapter proof or fresh Pool deployment state drifted");
+  }
+  const maximumFeePerGas = fees.maxFeePerGas ?? fees.gasPrice ?? await primary.getGasPrice();
+  const maximumGasCostWei = assertM2A008GasAndBalance({
+    balance: balanceA,
+    expectedBalance: BigInt(closed.decisionInput.transactionCaps.expectedStartingBalanceWei),
+    maximumBalance: BigInt(closed.decisionInput.transactionCaps.maximumFaucetBalanceWei),
+    maximumFeePerGas,
+    maximumTotalGasCost: BigInt(closed.decisionInput.transactionCaps.maximumTotalGasCostWei)
+  });
+  return Object.freeze({
+    ...closed,
+    account,
+    primary,
+    secondary,
+    adapterReceipt: adapterReceiptA,
+    maximumFeePerGas,
+    maximumGasCostWei,
+    observedBalanceWei: balanceA.toString(),
+    observedNonce: nonceA,
+    ready: true
+  });
+}
+
 async function writePrivateJournal(path, value) {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });
   const handle = await open(path, constants.O_CREAT | constants.O_WRONLY | constants.O_TRUNC, 0o600);
@@ -406,9 +524,18 @@ export async function observeAndAssertDeployment({
     } catch {
       transaction = undefined;
     }
-    if (transaction?.blockNumber !== null && transaction?.blockNumber !== undefined
-      && transaction?.blockHash !== null && transaction?.blockHash !== undefined) {
-      break;
+    try {
+      assertM2A008DeploymentReceipt({
+        transaction,
+        receipt,
+        expectedSender: context.account.address,
+        expectedNonce: nonce,
+        expectedData: data,
+        expectedContract: contract
+      });
+      return receipt;
+    } catch (error) {
+      if (error?.code !== "m2a008_deployment_receipt_invalid") throw error;
     }
     await delay(transactionReadIntervalMs);
   } while (Date.now() < deadline);
@@ -660,6 +787,119 @@ export async function deployM2A008SecuredPool(input) {
     const artifactPath = resolve(
       "artifacts/testnet",
       `eip155-84532-m2a-008-${context.decisionInput.decisionId.toLowerCase()}.json`
+    );
+    await mkdir(dirname(artifactPath), { recursive: true });
+    await writeFile(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`, {
+      encoding: "utf8",
+      mode: 0o600,
+      flag: "wx"
+    });
+    journal.terminal = true;
+    journal.terminalStatus = "DEPLOYED_PENDING_PRODUCT_VERIFICATION";
+    await writePrivateJournal(journalPath, journal);
+    const destruction = await destroyEphemeralTestnetKey(context.decisionInput.signer.keyFile);
+    return Object.freeze({
+      ...artifact,
+      artifactPath,
+      signerLogicallyDestroyed: destruction.logicallyDestroyed,
+      status: "DEPLOYED_PENDING_PRODUCT_VERIFICATION"
+    });
+  } catch (error) {
+    journal.terminal = true;
+    journal.terminalStatus = "FAILED_OR_UNKNOWN_READ_ONLY_RECONCILIATION_REQUIRED";
+    journal.errorCode = error?.code ?? "m2a008_unknown_failure";
+    await writePrivateJournal(journalPath, journal);
+    if (transactionAttempted) {
+      await destroyEphemeralTestnetKey(context.decisionInput.signer.keyFile);
+    }
+    throw error;
+  }
+}
+
+export async function deployM2A008PoolRecovery(input) {
+  const context = await preflightM2A008PoolRecovery(input);
+  const journalPath = `${PRIVATE_DIRECTORY}/${context.decisionInput.decisionId}.pool-recovery.journal.json`;
+  const wallet = createWalletClient({
+    account: context.account,
+    chain: chainFor(PRIMARY_RPC_URL),
+    transport: http(PRIMARY_RPC_URL, { retryCount: 0, timeout: 10_000 })
+  });
+  const journal = {
+    schemaVersion: "m2a_008_pool_recovery_journal.v1",
+    decisionId: context.decisionInput.decisionId,
+    adapterTransactionHash: context.decisionInput.recoveryProof.adapterTransactionHash,
+    poolDeployerAddress: context.account.address,
+    startedAt: new Date().toISOString(),
+    poolTransactionHash: null,
+    terminal: false
+  };
+  let transactionAttempted = false;
+  try {
+    const poolGas = await context.primary.estimateGas({
+      account: context.account.address,
+      data: context.plan.poolData,
+      value: 0n
+    });
+    if (poolGas <= 0n || poolGas > 8_000_000n) {
+      fail("m2a008_pool_gas_cap_exceeded", "Pool recovery estimate exceeds the closed gas limit");
+    }
+    transactionAttempted = true;
+    journal.poolTransactionHash = await wallet.sendTransaction({
+      account: context.account,
+      chain: chainFor(PRIMARY_RPC_URL),
+      data: context.plan.poolData,
+      value: 0n,
+      nonce: 0,
+      gas: poolGas,
+      maxFeePerGas: context.maximumFeePerGas
+    });
+    await writePrivateJournal(journalPath, journal);
+    const poolReceipt = await observeAndAssertDeployment({
+      context,
+      hash: journal.poolTransactionHash,
+      nonce: 0,
+      data: context.plan.poolData,
+      contract: context.decisionInput.addresses.expectedPool
+    });
+    const finalized = await waitForBothFinalized({
+      primary: context.primary,
+      secondary: context.secondary,
+      receipts: [context.adapterReceipt, poolReceipt]
+    });
+    const runtime = await assertFinalRuntime(context);
+    const artifact = {
+      schemaVersion: "m2a_008_base_sepolia_pool_recovery_evidence.v1",
+      decisionId: context.decisionInput.decisionId,
+      decisionHash: context.decision.decisionHash,
+      launchEvidenceSha256: context.evidenceHash,
+      releaseCommitSha: context.decisionInput.releaseCommitSha,
+      chainId: M2A008_CHAIN_ID,
+      recoveryMode: "verified_existing_adapter_plus_one_pool_creation",
+      testAssetsOnly: true,
+      mainnetAuthorized: false,
+      realFundsAuthorized: false,
+      adapterDeployerAddress: context.decisionInput.recoveryProof.adapterDeployer,
+      poolDeployerAddress: context.account.address,
+      oracleAdapterAddress: context.decisionInput.addresses.expectedOracleAdapter,
+      poolAddress: context.decisionInput.addresses.expectedPool,
+      adapterTransactionHash: context.decisionInput.recoveryProof.adapterTransactionHash,
+      poolTransactionHash: journal.poolTransactionHash,
+      adapterBlockNumber: context.adapterReceipt.blockNumber.toString(),
+      poolBlockNumber: poolReceipt.blockNumber.toString(),
+      primaryFinalizedHead: finalized.primaryHead.number.toString(),
+      secondaryFinalizedHead: finalized.secondaryHead.number.toString(),
+      configurationHash: context.plan.configurationHash,
+      ...runtime,
+      observedThroughRpcCount: 2,
+      sourceExplorerVerification: "PENDING_SEPARATE_EXPLORER_CONFIRMATION",
+      indexerReconciliation: "PENDING_SEPARATE_FINALIZED_INGESTION",
+      browserAcceptance: "PENDING_EXACT_DEPLOYED_SHA",
+      productionFundsMoved: false,
+      privateKeyIncluded: false
+    };
+    const artifactPath = resolve(
+      "artifacts/testnet",
+      `eip155-84532-m2a-008-${context.decisionInput.decisionId.toLowerCase()}-pool-recovery.json`
     );
     await mkdir(dirname(artifactPath), { recursive: true });
     await writeFile(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`, {
