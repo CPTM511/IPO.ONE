@@ -1,6 +1,6 @@
 # M2A-008 — Exact Base Sepolia secured-pool deployment
 
-Status: `TWO PARTIAL ADAPTERS DEPLOYED — RETRY PROFILE CI-GATED`
+Status: `ADAPTER AND POOL DEPLOYED — FINALITY / GATE E IN PROGRESS`
 
 Delivery mode: `L3_LIVE_TESTNET_TEST_ASSETS_ONLY` after every named gate passes
 
@@ -282,6 +282,31 @@ approved M2A-005/M2A-006 additive database set. Rollback pauses new risk,
 disables the exact profile, stops ingestion, reconciles both RPCs, preserves all
 chain/Evidence history and rebuilds projections. A failed or uncertain
 transaction is never blindly retried; it enters read-only reconciliation.
+
+## Pool recovery execution — 2026-08-24
+
+Policy v1.3.3 retained the finalized immutable Adapter from the third partial
+run and admitted one fresh nonce-zero signer for exactly one missing Pool
+creation. Both RPCs observed the exact `0.0005 ETH` starting gas balance,
+empty predicted Pool address, decision-bound calldata and zero native value.
+
+Pool transaction
+`0x90d67e7732f752bcf13dd4278ea6ca3263f715d75766f2b497d997b07fd3d9e3`
+succeeded in block `45908863` at
+`0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da`. Both RPCs agreed on the
+sender, nonce, calldata, receipt, block hash and Pool runtime bytecode hash
+`0xd65ee592be35018f33af1e2a538ead22f15e1bb577e84583645cb76bf768a198`.
+The fresh Pool signer was logically destroyed.
+
+The primary RPC continued to expose a transient transaction representation
+outside the original 30-second binding window, so the live runner failed
+closed after the already-successful transaction. No retry or second Pool
+transaction occurred. Recovery is read-only: the bounded observation window
+is extended to five minutes and a key-free two-RPC reconciliation command
+waits for finality, verifies both historical Adapter and Pool transactions,
+re-reads finalized runtime/configuration, and writes the recovery Evidence.
+Gate E remains open until finality, indexer/restart/replay, explorer and visible
+product acceptance are complete.
 
 ## Completion Evidence
 

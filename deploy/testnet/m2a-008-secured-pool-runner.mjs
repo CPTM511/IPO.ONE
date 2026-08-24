@@ -44,7 +44,7 @@ const PRIVATE_DIRECTORY = "/private/tmp/ipo-one-m2a-008";
 const MAXIMUM_PRIVATE_FILE_BYTES = 128 * 1024;
 const MAXIMUM_DEPLOY_GAS = 12_000_000n;
 const RECEIPT_TIMEOUT_MS = 120_000;
-const MINED_TRANSACTION_PROPAGATION_TIMEOUT_MS = 30_000;
+const MINED_TRANSACTION_PROPAGATION_TIMEOUT_MS = 5 * 60_000;
 const FINALITY_TIMEOUT_MS = 30 * 60_000;
 const SOURCE_ID = keccak256(new TextEncoder().encode(M2A008_ORACLE_SOURCE_LABEL));
 const HASH = /^0x[0-9a-f]{64}$/;
@@ -686,6 +686,116 @@ export async function reconcileM2A008Deployment(input) {
     flag: "wx"
   });
   return Object.freeze({ ...evidence, artifactPath, status: "RECONCILED" });
+}
+
+export async function reconcileM2A008PoolRecovery(input) {
+  if (!HASH.test(input.poolTransactionHash ?? "")) {
+    fail("invalid_m2a008_reconciliation_hash", "one exact lowercase Pool transaction hash is required");
+  }
+  const closed = await loadClosedRecoveryInputs(input);
+  const context = {
+    ...closed,
+    primary: publicClientFor(PRIMARY_RPC_URL),
+    secondary: publicClientFor(SECONDARY_RPC_URL)
+  };
+  const adapterHash = closed.decisionInput.recoveryProof.adapterTransactionHash;
+  const [
+    adapterTransactionA, adapterReceiptA, adapterTransactionB, adapterReceiptB,
+    poolTransactionA, poolReceiptA, poolTransactionB, poolReceiptB
+  ] = await Promise.all([
+    context.primary.getTransaction({ hash: adapterHash }),
+    context.primary.getTransactionReceipt({ hash: adapterHash }),
+    context.secondary.getTransaction({ hash: adapterHash }),
+    context.secondary.getTransactionReceipt({ hash: adapterHash }),
+    context.primary.getTransaction({ hash: input.poolTransactionHash }),
+    context.primary.getTransactionReceipt({ hash: input.poolTransactionHash }),
+    context.secondary.getTransaction({ hash: input.poolTransactionHash }),
+    context.secondary.getTransactionReceipt({ hash: input.poolTransactionHash })
+  ]);
+  for (const [transaction, receipt] of [
+    [adapterTransactionA, adapterReceiptA],
+    [adapterTransactionB, adapterReceiptB]
+  ]) {
+    assertM2A008DeploymentReceipt({
+      transaction,
+      receipt,
+      expectedSender: closed.decisionInput.recoveryProof.adapterDeployer,
+      expectedNonce: closed.decisionInput.recoveryProof.adapterNonce,
+      expectedData: closed.plan.adapterData,
+      expectedContract: closed.decisionInput.addresses.expectedOracleAdapter
+    });
+  }
+  for (const [transaction, receipt] of [
+    [poolTransactionA, poolReceiptA],
+    [poolTransactionB, poolReceiptB]
+  ]) {
+    assertM2A008DeploymentReceipt({
+      transaction,
+      receipt,
+      expectedSender: closed.decisionInput.addresses.deployer,
+      expectedNonce: closed.decisionInput.signer.startingNonce,
+      expectedData: closed.plan.poolData,
+      expectedContract: closed.decisionInput.addresses.expectedPool
+    });
+  }
+  if (
+    adapterReceiptA.blockNumber.toString() !== closed.decisionInput.recoveryProof.adapterBlockNumber ||
+    adapterReceiptB.blockNumber.toString() !== closed.decisionInput.recoveryProof.adapterBlockNumber ||
+    adapterReceiptA.blockHash !== closed.decisionInput.recoveryProof.adapterBlockHash ||
+    adapterReceiptB.blockHash !== closed.decisionInput.recoveryProof.adapterBlockHash
+  ) {
+    fail("m2a008_pool_recovery_state_drift", "existing Adapter proof drifted during recovery reconciliation");
+  }
+  const finalized = await waitForBothFinalized({
+    primary: context.primary,
+    secondary: context.secondary,
+    receipts: [adapterReceiptA, poolReceiptA]
+  });
+  const runtime = await assertFinalRuntime(context);
+  const evidence = {
+    schemaVersion: "m2a_008_base_sepolia_pool_recovery_reconciliation.v1",
+    decisionId: closed.decisionInput.decisionId,
+    decisionHash: closed.decision.decisionHash,
+    launchEvidenceSha256: closed.evidenceHash,
+    releaseCommitSha: closed.decisionInput.releaseCommitSha,
+    chainId: M2A008_CHAIN_ID,
+    recoveryMode: "verified_existing_adapter_plus_one_pool_creation",
+    recoveredFromTerminalUncertainty: true,
+    adapterDeployerAddress: closed.decisionInput.recoveryProof.adapterDeployer,
+    poolDeployerAddress: closed.decisionInput.addresses.deployer,
+    oracleAdapterAddress: closed.decisionInput.addresses.expectedOracleAdapter,
+    poolAddress: closed.decisionInput.addresses.expectedPool,
+    adapterTransactionHash: adapterHash,
+    poolTransactionHash: input.poolTransactionHash,
+    adapterBlockNumber: adapterReceiptA.blockNumber.toString(),
+    poolBlockNumber: poolReceiptA.blockNumber.toString(),
+    primaryFinalizedHead: finalized.primaryHead.number.toString(),
+    secondaryFinalizedHead: finalized.secondaryHead.number.toString(),
+    configurationHash: closed.plan.configurationHash,
+    ...runtime,
+    observedThroughRpcCount: 2,
+    discrepancyCount: 0,
+    sourceExplorerVerification: "PENDING_SEPARATE_EXPLORER_CONFIRMATION",
+    indexerReconciliation: "PENDING_SEPARATE_FINALIZED_INGESTION",
+    browserAcceptance: "PENDING_EXACT_DEPLOYED_SHA",
+    transactionPrimitivePresent: false,
+    testAssetsOnly: true,
+    mainnetAuthorized: false,
+    realFundsAuthorized: false,
+    productionFundsMoved: false,
+    privateKeyIncluded: false
+  };
+  const artifactPath = resolve(
+    "artifacts/testnet",
+    `eip155-84532-m2a-008-${closed.decisionInput.decisionId.toLowerCase()}-pool-recovery-reconciled.json`
+  );
+  await mkdir(dirname(artifactPath), { recursive: true });
+  await writeFile(artifactPath, `${JSON.stringify(evidence, null, 2)}\n`, {
+    encoding: "utf8",
+    mode: 0o600,
+    flag: "wx"
+  });
+  return Object.freeze({ ...evidence, artifactPath, status: "RECONCILED_PENDING_PRODUCT_VERIFICATION" });
 }
 
 export async function deployM2A008SecuredPool(input) {
