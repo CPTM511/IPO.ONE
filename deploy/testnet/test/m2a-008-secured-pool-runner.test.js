@@ -307,9 +307,10 @@ test("M2A-008 keeps polling when mined transaction fields temporarily drift from
 });
 
 test("M2A-008 live runners have wallets only behind closed local entrypoints and never read an environment private key", async () => {
-  const [runner, poolRecovery, preflight, reconciliation] = await Promise.all([
+  const [runner, poolRecovery, poolRecoveryReconciliation, preflight, reconciliation] = await Promise.all([
     readFile(new URL("../m2a-008-secured-pool-runner.mjs", import.meta.url), "utf8"),
     readFile(new URL("../m2a-008-pool-recovery-runner.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../m2a-008-pool-recovery-reconcile.mjs", import.meta.url), "utf8"),
     readFile(new URL("../m2a-008-secured-pool-preflight.mjs", import.meta.url), "utf8"),
     readFile(new URL("../m2a-008-secured-pool-reconcile.mjs", import.meta.url), "utf8")
   ]);
@@ -317,6 +318,11 @@ test("M2A-008 live runners have wallets only behind closed local entrypoints and
   assert.doesNotMatch(runner, /process\.env\.(?:PRIVATE_KEY|DEPLOYER_PRIVATE_KEY)/);
   assert.match(poolRecovery, /IPO_ONE_M2A008_MODE !== "pool-recovery"/);
   assert.doesNotMatch(poolRecovery, /process\.env\.(?:PRIVATE_KEY|DEPLOYER_PRIVATE_KEY)/);
+  assert.match(runner, /MINED_TRANSACTION_PROPAGATION_TIMEOUT_MS = 5 \* 60_000/);
   assert.doesNotMatch(preflight, /createWalletClient|sendTransaction|deployContract/);
   assert.doesNotMatch(reconciliation, /createWalletClient|sendTransaction|deployContract|readEphemeralTestnetKey/);
+  assert.doesNotMatch(
+    poolRecoveryReconciliation,
+    /createWalletClient|sendTransaction|deployContract|readEphemeralTestnetKey/
+  );
 });
