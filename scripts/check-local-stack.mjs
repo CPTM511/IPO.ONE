@@ -68,7 +68,7 @@ assert.match(worker, /PostgresReconciliationService/);
 assert.match(worker, /PostgresCreditOutcomeMaterializer/);
 assert.match(
   privatePilotDatabase,
-  /credit_passport_artifacts,\s+credit_outcomes,\s+tenant_command_pauses/
+  /credit_passport_artifacts,\s+credit_outcomes,\s+credit_state_projections,\s+tenant_command_pauses/
 );
 assert.match(privatePilotDatabase, /seedCapitalPartnerProfile/);
 assert.match(compose, /IPO_ONE_PILOT_PROFILE_FILE: \/app\/deploy\/local\/private-pilot-profile\.v1\.json/g);
