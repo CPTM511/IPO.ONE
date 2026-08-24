@@ -16,8 +16,14 @@ test("Secured Pool presentation distinguishes indexed state from deployment auth
     }
   });
   assert.equal(presentation.workspaceState, "Synthetic state loaded");
-  assert.equal(presentation.market, "USDC / WETH");
-  assert.match(presentation.submission, /M2A-008/);
+  assert.equal(
+    presentation.market,
+    "USDC / WETH · Base Sepolia test Pool deployed · local synthetic projection"
+  );
+  assert.equal(
+    presentation.submission,
+    "Unavailable in this local synthetic view · no chain transaction will be submitted"
+  );
 });
 
 test("Secured Pool review keeps blockers and exact amount visible", () => {

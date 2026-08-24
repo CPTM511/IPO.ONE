@@ -18,7 +18,7 @@ export function createSecuredPoolPresentation({ workspace, review, risk } = {}) 
   return Object.freeze({
     workspaceState: workspace ? (indexed ? "Synthetic state loaded" : "Awaiting indexed state") : "Not loaded",
     market: indexed
-      ? `${text(market.debtAsset)} / ${text(market.collateralAsset)}`
+      ? `${text(market.debtAsset)} / ${text(market.collateralAsset)} · Base Sepolia test Pool deployed · local synthetic projection`
       : "Base Sepolia reference market · not deployed",
     liquidity: market?.accounting ? market.accounting.cashAssets : "0",
     position: position
@@ -26,7 +26,7 @@ export function createSecuredPoolPresentation({ workspace, review, risk } = {}) 
       : "No server-derived position",
     health: position?.health?.state ?? "Unavailable",
     submission: workspace?.submission?.state === "unavailable" || risk?.submission?.state === "unavailable"
-      ? "Unavailable until separately approved M2A-008 deployment"
+      ? "Unavailable in this local synthetic view · no chain transaction will be submitted"
       : "Not configured",
     reviewState: review?.reviewState ?? "No action reviewed",
     reviewAction: review ? ACTION_LABELS[review.actionType] ?? review.actionType : "—",

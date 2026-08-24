@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "m2a_008_source_explorer_verification.v1",
+  "chainId": "eip155:84532",
+  "explorer": "https://repo.sourcify.dev",
+  "verifier": "https://sourcify.dev/server",
+  "compilerVersion": "v0.8.30+commit.73712a01",
+  "optimizationEnabled": true,
+  "optimizationRuns": 200,
+  "evmVersion": "cancun",
+  "metadataBytecodeHash": "none",
+  "license": "MIT",
+  "contracts": [
+    {
+      "name": "IpoOnePriceOracleAdapterV1",
+      "address": "0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19",
+      "transactionHash": "0x9653196281e29f96476a53aed2b21a2a6ee14794987dd1aeaeb98df376c8721f",
+      "status": "verified",
+      "match": "match",
+      "creationMatch": "match",
+      "runtimeMatch": "match",
+      "verificationSubmitted": true,
+      "verificationId": "14b27e4b-fea2-449a-ac42-6288c5a4dfc1",
+      "sourceUrl": "https://repo.sourcify.dev/84532/0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19"
+    },
+    {
+      "name": "IpoOneSecuredPoolV1",
+      "address": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+      "transactionHash": "0x90d67e7732f752bcf13dd4278ea6ca3263f715d75766f2b497d997b07fd3d9e3",
+      "status": "verified",
+      "match": "match",
+      "creationMatch": "match",
+      "runtimeMatch": "match",
+      "verificationSubmitted": true,
+      "verificationId": "c0a2ae3b-8251-49df-a254-067b25ac74a3",
+      "sourceUrl": "https://repo.sourcify.dev/84532/0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da"
+    }
+  ],
+  "verifiedContractCount": 2,
+  "discrepancyCount": 0,
+  "sourceContainsPrivateKey": false,
+  "testAssetsOnly": true,
+  "productionFundsMoved": false,
+  "verifiedAt": "2026-08-24T16:01:28.673Z"
+}

@@ -65,6 +65,8 @@
     "testnet:m2a008:run": "node deploy/testnet/m2a-008-secured-pool-runner.mjs",
     "testnet:m2a008:pool-recovery": "node deploy/testnet/m2a-008-pool-recovery-runner.mjs",
     "testnet:m2a008:pool-recovery:reconcile": "node deploy/testnet/m2a-008-pool-recovery-reconcile.mjs",
+    "testnet:m2a008:gate-e:indexer": "node deploy/testnet/m2a-008-live-indexer-acceptance.mjs",
+    "testnet:m2a008:gate-e:source": "node deploy/testnet/m2a-008-source-verification.mjs",
     "testnet:m2a008:reconcile": "node deploy/testnet/m2a-008-secured-pool-reconcile.mjs",
     "testnet:m2a008:fork:dry-run": "forge test --fork-url https://sepolia.base.org --match-path contracts/test/m2/IpoOneSecuredPoolBaseSepoliaFork.t.sol -vv",
     "test:m2a008:preflight": "node --test deploy/testnet/test/m2a-008-secured-pool-preflight.test.js deploy/testnet/test/m2a-008-independent-review.test.js deploy/testnet/test/m2a-008-secured-pool-runner.test.js",
