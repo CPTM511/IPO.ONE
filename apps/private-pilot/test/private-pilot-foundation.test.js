@@ -61,6 +61,22 @@ test("private pilot bootstrap closes membership versioning to exact authority dr
   );
 });
 
+test("private pilot worker can persist durable credit-state projections", async () => {
+  const source = await readFile(
+    new URL("../src/private-pilot-database.js", import.meta.url),
+    "utf8"
+  );
+  const mutationGrant = source.match(
+    /GRANT INSERT, UPDATE, DELETE ON[\s\S]*?TO \$\{APP_ROLE\}/
+  )?.[0] ?? "";
+
+  assert.match(mutationGrant, /\bcredit_state_projections\b/);
+  assert.equal(
+    (mutationGrant.match(/\bcredit_state_projections\b/g) ?? []).length,
+    1
+  );
+});
+
 async function localAuthenticationResponse({
   cookie,
   csrfToken,
