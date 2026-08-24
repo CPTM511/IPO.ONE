@@ -38,8 +38,15 @@ assert.equal(schema.$id, "https://schemas.ipo.one/operations/launch-evidence.v1.
 assert.equal(schema.additionalProperties, false);
 assert.equal(policy.profiles.public_sandbox.releaseEnabled, true);
 assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
-assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, false);
-assert.equal(policy.profiles.live_testnet_secured_pool.exactProfile, null);
+assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
+assert.equal(
+  policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,
+  "0x1d106a3590c0364b145146B3829cFC8825Da916F"
+);
+assert.equal(
+  policy.profiles.live_testnet_secured_pool.exactProfile.oracleAddress,
+  "0x1B6e2D641d783792aB03e11C8E56Fc381e6000aF"
+);
 assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.realFundsEnabled, false);
 assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.testAssetsEnabled, true);
 assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.securedPoolEnabled, true);
@@ -106,7 +113,7 @@ assert.throws(
     }),
   (error) =>
     error instanceof LaunchEvidenceError &&
-    error.issues.some((issue) => issue.includes("policy-locked"))
+    error.issues.some((issue) => issue.includes("status must be approved"))
 );
 
 const cliResult = spawnSync(

@@ -85,11 +85,18 @@ function hasIssue(fragment) {
     error.issues.some((issue) => issue.includes(fragment));
 }
 
-test("launch policy exposes five staged M2 testnet gates and locks the exact profile", () => {
+test("launch policy exposes five staged M2 testnet gates and one exact enabled profile", () => {
   assert.equal(policy.profiles.public_sandbox.releaseEnabled, true);
   assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
-  assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, false);
-  assert.equal(policy.profiles.live_testnet_secured_pool.exactProfile, null);
+  assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
+  assert.equal(
+    policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,
+    "0x1d106a3590c0364b145146B3829cFC8825Da916F"
+  );
+  assert.equal(
+    policy.profiles.live_testnet_secured_pool.exactProfile.oracleAddress,
+    "0x1B6e2D641d783792aB03e11C8E56Fc381e6000aF"
+  );
   assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.realFundsEnabled, false);
   assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.testAssetsEnabled, true);
   assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.securedPoolEnabled, true);
@@ -128,8 +135,7 @@ test("launch policy exposes five staged M2 testnet gates and locks the exact pro
   );
 
   const prematureM2Policy = structuredClone(policy);
-  prematureM2Policy.profiles.live_testnet_secured_pool.releaseEnabled = true;
-  prematureM2Policy.profiles.live_testnet_secured_pool.unlockRequirements = [];
+  prematureM2Policy.profiles.live_testnet_secured_pool.exactProfile = null;
   assert.throws(
     () => validateLaunchPolicy(prematureM2Policy),
     hasIssue("exactProfile must be complete")
@@ -158,26 +164,7 @@ test("launch policy exposes five staged M2 testnet gates and locks the exact pro
 });
 
 test("Base Sepolia test-assets release does not require Independent Security Evidence", () => {
-  const enabledPolicy = structuredClone(policy);
-  const profile = enabledPolicy.profiles.live_testnet_secured_pool;
-  profile.releaseEnabled = true;
-  profile.unlockRequirements = [];
-  profile.exactProfile = {
-    chainId: "eip155:84532",
-    poolContract: "0x2222222222222222222222222222222222222222",
-    poolBytecodeHash: `0x${"1".repeat(64)}`,
-    adapterVersion: "IpoOnePriceOracleAdapterV1",
-    wethCollateral: "0x4200000000000000000000000000000000000006",
-    testUsdcDebt: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    oracleAddress: "0x3333333333333333333333333333333333333333",
-    oracleSource: "chainlink_base_sepolia_eth_usd.v1",
-    marketCount: 1,
-    runOwner: "IPO.ONE Founder / Release Owner",
-    deploymentApprovalRef: "M2A-008-TESTNET-APPROVAL-001",
-    configurationHash: `0x${"2".repeat(64)}`,
-    realValueClassification: "test_assets_only"
-  };
-  const evidence = validEvidence("live_testnet_secured_pool", enabledPolicy);
+  const evidence = validEvidence("live_testnet_secured_pool", policy);
   assert.deepEqual(
     evidence.gates.map(({ id }) => id),
     [
@@ -187,7 +174,7 @@ test("Base Sepolia test-assets release does not require Independent Security Evi
     ]
   );
   const result = verifyLaunchEvidence(evidence, {
-    policy: enabledPolicy,
+    policy,
     expectedProfile: "live_testnet_secured_pool",
     expectedCommitSha: COMMIT_SHA,
     now: NOW
@@ -197,13 +184,13 @@ test("Base Sepolia test-assets release does not require Independent Security Evi
   assert.equal(result.imageUri, null);
   assert.equal(result.externalAuthorization, "founder_exact_testnet_decision");
 
-  const productionShaped = validEvidence("live_testnet_secured_pool", enabledPolicy);
+  const productionShaped = validEvidence("live_testnet_secured_pool", policy);
   productionShaped.release.imageUri =
     `asia-southeast1-docker.pkg.dev/ipo-one/ipo-one/app@sha256:${IMAGE_DIGEST}`;
   productionShaped.externalAuthorization.system = "protected_environment";
   assert.throws(
     () => verifyLaunchEvidence(productionShaped, {
-      policy: enabledPolicy,
+      policy,
       expectedProfile: "live_testnet_secured_pool",
       expectedCommitSha: COMMIT_SHA,
       now: NOW
@@ -214,7 +201,7 @@ test("Base Sepolia test-assets release does not require Independent Security Evi
   evidence.gates.pop();
   assert.throws(
     () => verifyLaunchEvidence(evidence, {
-      policy: enabledPolicy,
+      policy,
       expectedProfile: "live_testnet_secured_pool",
       expectedCommitSha: COMMIT_SHA,
       now: NOW
@@ -261,7 +248,7 @@ test("complete fresh public-sandbox evidence verifies", () => {
   const result = verify(validEvidence());
   assert.deepEqual(result, {
     status: "verified",
-    policyVersion: "1.2.0",
+    policyVersion: "1.3.0",
     profile: "public_sandbox",
     repository: "CPTM511/IPO.ONE",
     commitSha: COMMIT_SHA,
@@ -365,7 +352,7 @@ test("gate set rejects pending, missing, duplicate, extra, and wrong-owner evide
   assert.throws(() => verify(wrongOwner), hasIssue("ownerRole does not match policy"));
 });
 
-test("capability escalation and policy-locked profiles fail closed", () => {
+test("capability escalation and remaining policy-locked profiles fail closed", () => {
   const escalation = validEvidence();
   escalation.capabilities.realFundsEnabled = true;
   assert.throws(() => verify(escalation), hasIssue("realFundsEnabled does not match"));
@@ -376,8 +363,6 @@ test("capability escalation and policy-locked profiles fail closed", () => {
   const creditPilot = validEvidence("controlled_agent_credit_pilot");
   assert.throws(() => verify(creditPilot), hasIssue("profile is policy-locked"));
 
-  const securedPool = validEvidence("live_testnet_secured_pool");
-  assert.throws(() => verify(securedPool), hasIssue("profile is policy-locked"));
 });
 
 test("stale, expired, and future evidence fails closed", () => {

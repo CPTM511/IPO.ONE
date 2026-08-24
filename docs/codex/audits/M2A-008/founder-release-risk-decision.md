@@ -79,3 +79,18 @@ real external reviewer and exact report. Any mainnet or real-value policy still
 fails validation without an `Independent Security` gate.
 
 This is not a mainnet, real-value, production or funds-movement approval.
+
+## Final public role inputs — 2026-08-24
+
+The Founder supplied the two final public Base Sepolia role addresses after
+being shown the distinct-address and distinct-private-key requirement:
+
+- pause guardian: `0x8a1E62C539B802c8a204382442cA7a8caC31f19E`;
+- recovery authority: `0x730766ff23D3c4366f3314c8895330fC589AA546`.
+
+They are distinct. Both are attested as Founder-controlled for Base Sepolia
+test assets only using distinct keys. No private key or seed phrase was
+requested or supplied. The exact profile, Gate A-C Evidence, fresh one-use
+deployer, funding/preflight, Gate D deployment and Gate E acceptance remain
+machine-enforced conditions; the addresses alone do not authorize a
+transaction.

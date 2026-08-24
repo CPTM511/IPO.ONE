@@ -8,7 +8,7 @@ export const RISK_OPERATIONS_POLICY_EVIDENCE = Object.freeze({
   namedIncidentOwnerStatus: "unconfigured",
   reconciliationSchemaVersion: "reconciliation_summary.v1",
   approvalPolicyVersion: "security_001.v1",
-  launchPolicyVersion: "1.2.0",
+  launchPolicyVersion: "1.3.0",
   closedPilotReleaseEnabled: false
 });
 
