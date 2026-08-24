@@ -1,6 +1,6 @@
 # M2A-008 — Exact Base Sepolia secured-pool deployment
 
-Status: `PARTIAL ADAPTER DEPLOYED — RETRY PROFILE CI-GATED`
+Status: `TWO PARTIAL ADAPTERS DEPLOYED — RETRY PROFILE CI-GATED`
 
 Delivery mode: `L3_LIVE_TESTNET_TEST_ASSETS_ONLY` after every named gate passes
 
@@ -253,6 +253,27 @@ transaction. A fresh one-use signer produces new deterministic Adapter/Pool
 addresses, a new configuration hash and a new exact policy approval reference.
 The retry must pass PR and post-merge CI, receive fresh private Gate A-C
 Evidence and exact funding before any further transaction.
+
+## Second exact-run incident — 2026-08-24
+
+The retry Adapter transaction
+`0xc5fa651f93e0b186eb9e01a7d3ef44feae73b1dad40770ad132414c00e2f3013`
+succeeded at
+`0xA67DDDEA7DF4b084cE70B0c87C16621664C4fb98`; both RPCs later agreed on
+the exact sender, nonce, zero value, calldata, block, receipt and admitted
+runtime hash. No Pool transaction was sent and the second one-use signer was
+destroyed.
+
+The first fix removed the original concurrent receipt/transaction read, but a
+single transaction re-read could still return pending block metadata briefly
+after the same RPC returned the mined receipt. The corrected runner now polls
+only the read-only transaction observation for bounded mined block metadata
+before applying the exact binding. It does not sign or broadcast during that
+poll. Evidence is recorded in
+`artifacts/testnet/eip155-84532-m2a-008-partial-adapter-20260824-002.json`.
+
+A third fresh signer and deterministic profile are separately CI-gated. Both
+prior signers remain destroyed and neither partial Adapter is reused.
 
 ## Migration and rollback
 

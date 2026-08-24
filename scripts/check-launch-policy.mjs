@@ -41,11 +41,11 @@ assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
 assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
 assert.equal(
   policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,
-  "0xe3a50a2BA033661F87C09A796f7ae4C8aDb93a1f"
+  "0x9Da8d04D0E989811aB59a37aEf3C9E548F242362"
 );
 assert.equal(
   policy.profiles.live_testnet_secured_pool.exactProfile.oracleAddress,
-  "0xA67DDDEA7DF4b084cE70B0c87C16621664C4fb98"
+  "0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19"
 );
 assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.realFundsEnabled, false);
 assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.testAssetsEnabled, true);

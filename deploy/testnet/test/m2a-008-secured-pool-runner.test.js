@@ -209,7 +209,7 @@ test("M2A-008 receipt binding rejects sender, nonce, value, calldata or address 
   }), /deployment.*receipt.*invalid/);
 });
 
-test("M2A-008 waits for a mined receipt before reading the transaction", async () => {
+test("M2A-008 waits for the receipt and then polls until the RPC returns the mined transaction", async () => {
   const hash = `0x${"3".repeat(64)}`;
   const blockHash = `0x${"4".repeat(64)}`;
   let receiptObserved = false;
@@ -231,6 +231,12 @@ test("M2A-008 waits for a mined receipt before reading the transaction", async (
     blockNumber: 101n,
     blockHash
   };
+  const pendingTransaction = {
+    ...transaction,
+    blockNumber: null,
+    blockHash: null
+  };
+  let transactionReads = 0;
   const context = {
     account: { address: DEPLOYER },
     primary: {
@@ -240,7 +246,8 @@ test("M2A-008 waits for a mined receipt before reading the transaction", async (
       },
       async getTransaction() {
         assert.equal(receiptObserved, true, "transaction was read while it could still be pending");
-        return transaction;
+        transactionReads += 1;
+        return transactionReads === 1 ? pendingTransaction : transaction;
       }
     }
   };
@@ -250,8 +257,10 @@ test("M2A-008 waits for a mined receipt before reading the transaction", async (
     hash,
     nonce: 0,
     data: "0x6000",
-    contract: ADAPTER
+    contract: ADAPTER,
+    transactionReadIntervalMs: 0
   }), receipt);
+  assert.equal(transactionReads, 2);
 });
 
 test("M2A-008 live runner has a wallet only behind the closed runner and never reads an environment private key", async () => {

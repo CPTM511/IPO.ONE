@@ -11,7 +11,7 @@ locked and every external approval remains pending. Copy it only to an ignored
 real approvers exist; never convert placeholders into invented evidence.
 
 `m2a-008-secured-pool.pending.json` is the fail-closed contract for the one
-exact Base Sepolia secured-pool test-asset deployment. Policy v1.3.1 retains
+exact Base Sepolia secured-pool test-asset deployment. Policy v1.3.2 retains
 pre-deployment approval Evidence to Gates A through C: code integrity, exact
 configuration, and authority/signer safety. Gate D is enforced by the closed
 runner during deployment; Gate E is required before completion. The profile is
