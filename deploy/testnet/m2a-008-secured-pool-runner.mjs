@@ -43,6 +43,7 @@ const PRIVATE_DIRECTORY = "/private/tmp/ipo-one-m2a-008";
 const MAXIMUM_PRIVATE_FILE_BYTES = 128 * 1024;
 const MAXIMUM_DEPLOY_GAS = 12_000_000n;
 const RECEIPT_TIMEOUT_MS = 120_000;
+const MINED_TRANSACTION_PROPAGATION_TIMEOUT_MS = 30_000;
 const FINALITY_TIMEOUT_MS = 30 * 60_000;
 const SOURCE_ID = keccak256(new TextEncoder().encode(M2A008_ORACLE_SOURCE_LABEL));
 const HASH = /^0x[0-9a-f]{64}$/;
@@ -382,14 +383,35 @@ async function waitForBothFinalized({ primary, secondary, receipts }) {
   fail("m2a008_finality_timeout", "both deployments did not reach two-RPC finalized heads");
 }
 
-export async function observeAndAssertDeployment({ context, hash, nonce, data, contract }) {
+export async function observeAndAssertDeployment({
+  context,
+  hash,
+  nonce,
+  data,
+  contract,
+  transactionReadIntervalMs = 1_000,
+  transactionReadTimeoutMs = MINED_TRANSACTION_PROPAGATION_TIMEOUT_MS
+}) {
   const receipt = await context.primary.waitForTransactionReceipt({
     hash,
     confirmations: 1,
     timeout: RECEIPT_TIMEOUT_MS,
     pollingInterval: 1_000
   });
-  const transaction = await context.primary.getTransaction({ hash });
+  const deadline = Date.now() + transactionReadTimeoutMs;
+  let transaction;
+  do {
+    try {
+      transaction = await context.primary.getTransaction({ hash });
+    } catch {
+      transaction = undefined;
+    }
+    if (transaction?.blockNumber !== null && transaction?.blockNumber !== undefined
+      && transaction?.blockHash !== null && transaction?.blockHash !== undefined) {
+      break;
+    }
+    await delay(transactionReadIntervalMs);
+  } while (Date.now() < deadline);
   assertM2A008DeploymentReceipt({
     transaction,
     receipt,
