@@ -333,10 +333,12 @@ revertible without inventing permission for its successor.
   candidate at `25921f008f260d2d8a39524603cd1a6f2512fd63` passes recovery,
   two-RPC read-only, PostgreSQL 90/90, browser 8/8, fork 2/2 and aggregate
   1173/1173 gates. Exact-SHA Founder re-sign/visible-click verification is now
-  complete. It remains `BLOCKED — NOT COMPLETE` because the Founder-reported
-  independent review has no independently attributable reviewer identity or
-  bounded finding disposition, and PR merge/post-merge CI are pending. M2B-001
-  may not start.
+  complete. The Founder accepted the offline review performed with an
+  independently participating engineer and waived public identity/report
+  publication for this exact M2A boundary. PR #53, post-merge CI, exact OCI
+  rebuild and signed visible-click recheck passed at
+  `ad5cce4c3477cb5732f4601d892e13e223382abe`. M2A-009 and the bounded v0.2.0
+  review are `PASS — DEPLOYED AND USER-VERIFIED`; M2B-001 is unlocked at L0.
 
 ## M2B — Principal-bound Hyperliquid Agent execution
 
@@ -350,6 +352,9 @@ revertible without inventing permission for its successor.
 - Tests: protocol/SDK/MCP, RLS, revocation/replay/restart and parity tests.
 - Security/permission: L0 only until exact M2B profile. Migration: additive
   binding. Rollback: revoke grant, preserve Evidence. Dependency: v0.2.0 review.
+- Dependency/status: v0.2.0 bounded review passed. M2B-001 issue contract is
+  active on `codex/m2b-001-facility-authorization`; implementation is limited
+  to L0 no-funds authorization and contains no venue submission or signer.
 
 ### M2B-002 — bounded Hyperliquid Testnet composition
 

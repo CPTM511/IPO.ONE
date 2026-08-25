@@ -55,11 +55,15 @@ independent-review row to `PASS`, does not unlock M2B-001, and grants no
 mainnet, real-funds, signer, public-production, Agent venue-write or automatic
 unfreeze authority.
 
-## Current verdict
+## Final Founder disposition
 
-`BLOCKED — NOT COMPLETE`
+The Founder subsequently clarified that an independently participating
+engineer reviewed the candidate together with the Founder offline, declined the
+need to publish that engineer's identity or a separate online report, and
+explicitly directed that the bounded M2A review be accepted.
 
-The remaining release gate is an independently attributable reviewer identity
-and bounded finding disposition, followed by the v0.2.0 review. Code merge and
-post-merge verification are evidence-collection steps, not substitutes for
-that gate.
+For this exact testnet/no-funds boundary the final verdict is
+`PASS — DEPLOYED AND USER-VERIFIED`. The disclosure that the review is not
+publicly attributable remains. This disposition is not reusable for mainnet,
+real value, production custody/signers, public-production deployment or live
+M2B venue writes.
