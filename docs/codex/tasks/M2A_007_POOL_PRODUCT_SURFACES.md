@@ -89,7 +89,7 @@ remain authoritative.
    oracle freshness, liquidation queue, current control and discrepancies are
    server-derived and privacy safe.
 5. Given no M2A-008 deployment, when any chain submission is sought, then the
-   product remains visibly disabled with `pool_deployment_unavailable`; no
+   product remains visibly disabled with `pool_submission_unavailable`; no
    transaction, pending/final state or funds movement is claimed.
 6. Given Agent API/SDK/MCP clients, when the same workspace/review operations
    run, then result schemas and reason codes conform to the Human product

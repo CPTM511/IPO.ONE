@@ -195,10 +195,11 @@ path pass. Browser acceptance covers a visible Human exact-action review,
 keyboard operation, mobile width, 200-percent zoom and the aggregate Risk Pool
 control view.
 
-`pool_deployment_unavailable` remains a required product state. No contract
-address, transaction, pending/final chain state, deployed SHA, public
-reachability, real value or production usability is claimed. Those states and
-all M2A-008 permissions remain independently gated.
+After the bounded M2A-008 Base Sepolia deployment, the local product uses
+`pool_submission_unavailable`: it may show the exact deployed test Pool from
+the enabled launch profile while keeping local indexer state explicit and all
+transaction submission absent. This does not claim a current-user chain
+record, real value, public production usability or funds authority.
 
 ## M2A-008 preflight Evidence update — 2026-08-23
 

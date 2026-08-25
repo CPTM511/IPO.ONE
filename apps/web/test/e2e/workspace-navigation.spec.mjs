@@ -107,7 +107,7 @@ test("Borrower visibly reviews an exact secured-Pool action without submission",
   await expect(page.locator("#securedPoolReviewAction")).toHaveText("Borrow");
   await expect(page.locator("#securedPoolReviewAmount")).toHaveText("1000000");
   await expect(page.locator("#securedPoolReviewHelper")).toContainText(
-    "pool_deployment_unavailable"
+    "pool_submission_unavailable"
   );
   await expect(page.locator("#securedPoolSubmission")).toContainText("no chain transaction will be submitted");
 });

@@ -216,17 +216,20 @@ function healthView(position, state) {
   });
 }
 
-function marketView(context, now) {
+function marketView(context, now, deploymentProfile) {
   if (!context) {
     return Object.freeze({
-      status: "not_indexed",
-      chainId: "eip155:84532",
-      contractAddress: null,
+      status: deploymentProfile ? "deployed_not_indexed" : "not_indexed",
+      chainId: deploymentProfile?.chainId ?? "eip155:84532",
+      contractAddress: deploymentProfile?.poolContract ?? null,
       marketId: null,
       accounting: null,
       oracle: Object.freeze({ state: "unavailable", observedAt: null }),
       reconciliation: Object.freeze({ state: "unavailable", reasonCode: "pool_state_unavailable" }),
-      riskControl: Object.freeze({ newRiskFrozen: true, reasonCode: "pool_state_unavailable" })
+      riskControl: Object.freeze({ newRiskFrozen: true, reasonCode: "pool_state_unavailable" }),
+      testAssetsOnly: deploymentProfile?.realValueClassification === "test_assets_only",
+      deploymentApprovalRef: deploymentProfile?.deploymentApprovalRef ?? null,
+      readOnly: true
     });
   }
   const state = context.projection.state;
@@ -333,8 +336,8 @@ async function ownPosition(client, coreRepository, subjectId, context) {
   return Object.freeze({ accountBinding, position, obligationProjection });
 }
 
-function ownWorkspaceResponse({ subjectId, context, owned, now }) {
-  const market = marketView(context, now);
+function ownWorkspaceResponse({ subjectId, context, owned, now, deploymentProfile }) {
+  const market = marketView(context, now, deploymentProfile);
   const position = owned.position ? Object.freeze({
     ...owned.position,
     health: healthView(owned.position, context.projection.state)
@@ -363,8 +366,8 @@ function ownWorkspaceResponse({ subjectId, context, owned, now }) {
     }),
     submission: Object.freeze({
       state: "unavailable",
-      reasonCode: "pool_deployment_unavailable",
-      recoveryCondition: "Complete separately approved M2A-008 exact Base Sepolia deployment",
+      reasonCode: "pool_submission_unavailable",
+      recoveryCondition: "This local synthetic workspace is review-only and has no transaction submission authority",
       transactionHash: null,
       finality: "not_applicable"
     }),
@@ -457,7 +460,7 @@ function actionReview({ workspace, actionType, amountAssets, now }) {
       })
     });
   }
-  blockers.push("pool_deployment_unavailable");
+  blockers.push("pool_submission_unavailable");
   const uniqueBlockers = [...new Set(blockers)];
   const core = {
     actionType,
@@ -487,12 +490,12 @@ function actionReview({ workspace, actionType, amountAssets, now }) {
     submittable: false,
     transactionState: "not_submitted",
     finality: "not_applicable",
-    recoveryCondition: "Complete separately approved M2A-008 exact Base Sepolia deployment",
+    recoveryCondition: "This local synthetic workspace is review-only and has no transaction submission authority",
     schemaVersion: "tenant_secured_pool_action_review.v1"
   });
 }
 
-export function readOwnSecuredPoolQueryHandler() {
+export function readOwnSecuredPoolQueryHandler({ deploymentProfile } = {}) {
   return Object.freeze({
     operationId: "pilotReadOwnSecuredPool",
     kind: "query",
@@ -501,12 +504,12 @@ export function readOwnSecuredPoolQueryHandler() {
       const subjectId = ownResource(resource);
       const context = await loadPoolContext(client);
       const owned = await ownPosition(client, coreRepository, subjectId, context);
-      return ownWorkspaceResponse({ subjectId, context, owned, now });
+      return ownWorkspaceResponse({ subjectId, context, owned, now, deploymentProfile });
     }
   });
 }
 
-export function reviewSecuredPoolActionQueryHandler() {
+export function reviewSecuredPoolActionQueryHandler({ deploymentProfile } = {}) {
   return Object.freeze({
     operationId: "pilotReviewSecuredPoolAction",
     kind: "query",
@@ -515,13 +518,13 @@ export function reviewSecuredPoolActionQueryHandler() {
       const subjectId = ownResource(resource);
       const context = await loadPoolContext(client);
       const owned = await ownPosition(client, coreRepository, subjectId, context);
-      const workspace = ownWorkspaceResponse({ subjectId, context, owned, now });
+      const workspace = ownWorkspaceResponse({ subjectId, context, owned, now, deploymentProfile });
       return actionReview({ workspace, ...checked, now });
     }
   });
 }
 
-export function readSecuredPoolRiskQueryHandler() {
+export function readSecuredPoolRiskQueryHandler({ deploymentProfile } = {}) {
   return Object.freeze({
     operationId: "pilotReadSecuredPoolRisk",
     kind: "query",
@@ -529,7 +532,7 @@ export function readSecuredPoolRiskQueryHandler() {
       emptyPayload(payload, "Secured Pool Risk/Ops workspace");
       const portfolioId = riskResource(authorizationDecision);
       const context = await loadPoolContext(client);
-      const market = marketView(context, now);
+      const market = marketView(context, now, deploymentProfile);
       const positions = context?.projection.state.accounts ?? [];
       const liquidatablePositions = context
         ? positions.filter((position) => healthView(position, context.projection.state).liquidatable).length
@@ -560,7 +563,7 @@ export function readSecuredPoolRiskQueryHandler() {
         }),
         submission: Object.freeze({
           state: "unavailable",
-          reasonCode: "pool_deployment_unavailable",
+          reasonCode: "pool_submission_unavailable",
           transactionHash: null,
           finality: "not_applicable"
         }),
@@ -573,10 +576,10 @@ export function readSecuredPoolRiskQueryHandler() {
   });
 }
 
-export function createSecuredPoolWorkspaceHandlers() {
+export function createSecuredPoolWorkspaceHandlers(options = {}) {
   return Object.freeze([
-    readOwnSecuredPoolQueryHandler(),
-    reviewSecuredPoolActionQueryHandler(),
-    readSecuredPoolRiskQueryHandler()
+    readOwnSecuredPoolQueryHandler(options),
+    reviewSecuredPoolActionQueryHandler(options),
+    readSecuredPoolRiskQueryHandler(options)
   ]);
 }

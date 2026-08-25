@@ -2393,7 +2393,7 @@
             "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
             "packages/sdk/test/secured-pool-client.test.js"
           ],
-          "truthBoundary": "Only local synthetic PostgreSQL projection facts are authoritative. Review never signs or submits, and pool_deployment_unavailable remains mandatory until M2A-008.",
+          "truthBoundary": "Only local synthetic PostgreSQL projection facts are authoritative. The enabled launch profile may identify the exact deployed Base Sepolia test Pool when local indexer state is unavailable; review never signs or submits and pool_submission_unavailable remains mandatory.",
           "nextTaskIds": [
             "M2A-008"
           ],

@@ -32,10 +32,27 @@ test("Secured Pool review keeps blockers and exact amount visible", () => {
       actionType: "borrow",
       amountAssets: "1000000",
       reviewState: "blocked_before_submission",
-      blockerReasonCodes: ["pool_oracle_stale", "pool_deployment_unavailable"]
+      blockerReasonCodes: ["pool_oracle_stale", "pool_submission_unavailable"]
     }
   });
   assert.equal(presentation.reviewAction, "Borrow");
   assert.equal(presentation.reviewAmount, "1000000");
-  assert.match(presentation.reviewBlockers, /pool_deployment_unavailable/);
+  assert.match(presentation.reviewBlockers, /pool_submission_unavailable/);
+});
+
+test("Secured Pool presentation shows a deployed test Pool without inventing indexed state", () => {
+  const presentation = createSecuredPoolPresentation({
+    workspace: {
+      market: {
+        status: "deployed_not_indexed",
+        contractAddress: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+        accounting: null
+      },
+      position: null,
+      submission: { state: "unavailable" }
+    }
+  });
+  assert.match(presentation.market, /Base Sepolia test Pool deployed/);
+  assert.match(presentation.market, /local indexer state unavailable/);
+  assert.equal(presentation.workspaceState, "Awaiting indexed state");
 });
