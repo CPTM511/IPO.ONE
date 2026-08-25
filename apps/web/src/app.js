@@ -211,6 +211,7 @@ const tradingCapitalPilot = {
   evidence: null,
   authorization: null,
   executionPrewriteReadiness: null,
+  dualRiskRecoveryReadiness: null,
   authorizationError: false,
   authorizationHelper:
     "Load one exact Facility first. Creation and revocation require the authenticated Principal workspace; the Agent may only read the current authorization.",
@@ -7522,6 +7523,7 @@ function safeAgentFacilityAuthorizationResponse(result, facilityId) {
   const response = result?.response;
   const authorization = response?.authorization;
   const readiness = response?.executionPrewriteReadiness;
+  const recoveryReadiness = response?.dualRiskRecoveryReadiness;
   if (
     !authorization ||
     authorization.schemaVersion !== "agent_secured_facility_authorization.v1" ||
@@ -7550,11 +7552,21 @@ function safeAgentFacilityAuthorizationResponse(result, facilityId) {
     readiness.signatureCreated !== false ||
     readiness.networkCalled !== false ||
     readiness.submissionAuthorized !== false ||
-    readiness.schemaVersion !== "agent_hyperliquid_prewrite_readiness.v1"
+    readiness.schemaVersion !== "agent_hyperliquid_prewrite_readiness.v1" ||
+    recoveryReadiness?.status !== "BLOCKED_RECOVERY_PREWRITE" ||
+    recoveryReadiness.combinedRiskState !== "UNKNOWN" ||
+    recoveryReadiness.currentStage !== "FREEZE_NEW_RISK" ||
+    !Array.isArray(recoveryReadiness.blockers) || recoveryReadiness.blockers.length < 3 ||
+    recoveryReadiness.externalWriteAuthorized !== false ||
+    recoveryReadiness.externalNonceAllocated !== false ||
+    recoveryReadiness.signatureCreated !== false ||
+    recoveryReadiness.networkCalled !== false ||
+    recoveryReadiness.protectiveAuthorityCanExpandRisk !== false ||
+    recoveryReadiness.schemaVersion !== "m2b_003_recovery_readiness.v1"
   ) {
     throw new Error("agent_facility_authorization_presentation_rejected");
   }
-  return { authorization, readiness };
+  return { authorization, readiness, recoveryReadiness };
 }
 
 function renderTradingCapital() {
@@ -7629,6 +7641,17 @@ function renderTradingCapital() {
   el("tradingCapitalPrewriteHelper").textContent = prewrite
     ? `STOP receipt verified. ${prewrite.blockers.length} recovery conditions remain; no nonce, signature, or network submission exists.`
     : "This is a queryable STOP receipt, not an execution control. Load the exact Facility and authorization to recover current server truth.";
+  const recoveryReadiness = tradingCapitalPilot.dualRiskRecoveryReadiness;
+  el("tradingCapitalRecoveryStatus").textContent = recoveryReadiness
+    ? "STOP · server verified"
+    : "STOP · no current incident";
+  el("tradingCapitalCombinedRiskState").textContent =
+    recoveryReadiness?.combinedRiskState ?? "Unknown";
+  el("tradingCapitalRecoveryStage").textContent =
+    recoveryReadiness?.currentStage ?? "Freeze new risk";
+  el("tradingCapitalRecoveryHelper").textContent = recoveryReadiness
+    ? `Recovery remains read-only. ${recoveryReadiness.blockers.length} conditions remain; protective authority cannot expand risk.`
+    : "Load the exact Facility and authorization to recover current dual-risk STOP truth.";
   el("tradingCapitalActiveEyebrow").textContent = view.label;
   el("tradingCapitalViewStatus").textContent = parity
     ? "Authenticated local contract"
@@ -7738,6 +7761,7 @@ async function loadTradingCapitalFacility({ evidence = false } = {}) {
     }
     tradingCapitalPilot.authorization = null;
     tradingCapitalPilot.executionPrewriteReadiness = null;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = null;
     tradingCapitalPilot.authorizationError = false;
     tradingCapitalPilot.authorizationHelper =
       "Facility loaded. Check current authorization before creating or revoking Principal authority.";
@@ -7792,12 +7816,14 @@ async function readTradingCapitalAuthorization() {
     );
     tradingCapitalPilot.authorization = checked.authorization;
     tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = checked.recoveryReadiness;
     tradingCapitalPilot.authorizationHelper =
       "Current authorization is bound to this Facility, canonical Obligation, Mandate, execution AccountBinding, and finalized Pool projection. It grants no nonce, signer, network, withdrawal, transfer, or funds authority.";
     toast("Agent Facility authorization loaded");
   } catch (error) {
     tradingCapitalPilot.authorization = null;
     tradingCapitalPilot.executionPrewriteReadiness = null;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = null;
     tradingCapitalPilot.authorizationError = true;
     tradingCapitalPilot.authorizationHelper = tradingCapitalResourceUnavailable(error)
       ? "No current authorization is available for this bound Facility and workspace."
@@ -7834,6 +7860,7 @@ async function createTradingCapitalAuthorization() {
     );
     tradingCapitalPilot.authorization = checked.authorization;
     tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = checked.recoveryReadiness;
     tradingCapitalPilot.authorizationHelper =
       "Agent authorization created. It permits only goal-level open and protective close intent checks before signing; all external authority remains disabled.";
     toast("Agent Facility authorization created");
@@ -7880,6 +7907,7 @@ async function revokeTradingCapitalAuthorization() {
     );
     tradingCapitalPilot.authorization = checked.authorization;
     tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = checked.recoveryReadiness;
     tradingCapitalPilot.authorizationHelper =
       "Agent authorization revoked. Historical Event and Evidence remain queryable; new-risk Agent intent remains denied.";
     toast("Agent Facility authorization revoked");
@@ -12747,6 +12775,7 @@ function bindActions() {
     tradingCapitalPilot.evidence = null;
     tradingCapitalPilot.authorization = null;
     tradingCapitalPilot.executionPrewriteReadiness = null;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = null;
     tradingCapitalPilot.authorizationError = false;
     tradingCapitalPilot.authorizationHelper =
       "Load one exact Facility first. Creation and revocation require the authenticated Principal workspace; the Agent may only read the current authorization.";

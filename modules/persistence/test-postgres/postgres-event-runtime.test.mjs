@@ -296,6 +296,8 @@ const TENANT_OWNED_TABLES = [
   "admin_actions",
   "agent_account_challenges",
   "agent_account_proof_attempts",
+  "agent_dual_risk_incident_transitions",
+  "agent_dual_risk_incidents",
   "agent_hyperliquid_composition_transitions",
   "agent_hyperliquid_compositions",
   "agent_secured_facility_authorizations",
@@ -1167,12 +1169,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0064_pool_chain_reconciliation",
         "0065_pool_obligation_integration",
         "0066_agent_secured_facility_authorizations",
-        "0067_m2b_hyperliquid_compositions"
+        "0067_m2b_hyperliquid_compositions",
+        "0068_m2b_dual_risk_recovery"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 67 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 68 }), [
+        "0068_m2b_dual_risk_recovery",
         "0067_m2b_hyperliquid_compositions",
         "0066_agent_secured_facility_authorizations",
         "0065_pool_obligation_integration",
@@ -1308,10 +1312,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0064_pool_chain_reconciliation",
         "0065_pool_obligation_integration",
         "0066_agent_secured_facility_authorizations",
-        "0067_m2b_hyperliquid_compositions"
+        "0067_m2b_hyperliquid_compositions",
+        "0068_m2b_dual_risk_recovery"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 65 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 66 }), [
+        "0068_m2b_dual_risk_recovery",
         "0067_m2b_hyperliquid_compositions",
         "0066_agent_secured_facility_authorizations",
         "0065_pool_obligation_integration",
@@ -1456,7 +1462,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0064_pool_chain_reconciliation",
         "0065_pool_obligation_integration",
         "0066_agent_secured_facility_authorizations",
-        "0067_m2b_hyperliquid_compositions"
+        "0067_m2b_hyperliquid_compositions",
+        "0068_m2b_dual_risk_recovery"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5135,7 +5142,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 10 }),
+        () => migrateDown({ pool, steps: 11 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5198,6 +5205,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         ).applied,
         false
       );
+      assert.equal(
+        (await migrationStatus({ pool })).find(
+          ({ name }) => name === "0068_m2b_dual_risk_recovery"
+        ).applied,
+        false
+      );
       assert.deepEqual(await migrateUp({ pool }), [
         "0059_hypercore_stable_intent_jit_preflight",
         "0060_hypercore_stable_cancel_closure",
@@ -5207,7 +5220,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0064_pool_chain_reconciliation",
         "0065_pool_obligation_integration",
         "0066_agent_secured_facility_authorizations",
-        "0067_m2b_hyperliquid_compositions"
+        "0067_m2b_hyperliquid_compositions",
+        "0068_m2b_dual_risk_recovery"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(

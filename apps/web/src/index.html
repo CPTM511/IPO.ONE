@@ -1753,6 +1753,25 @@
                 <p id="tradingCapitalPrewriteHelper" role="status" aria-live="polite">This is a queryable STOP receipt, not an execution control. Load the exact Facility and authorization to recover current server truth.</p>
               </section>
 
+              <section class="panel trading-capital-actions" aria-labelledby="tradingCapitalRecoveryTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">M2B-003 · dual-risk recovery</p><h3 id="tradingCapitalRecoveryTitle">Pool health + Venue margin recovery</h3></div>
+                  <span class="state-pill warning" id="tradingCapitalRecoveryStatus">STOP · no current incident</span>
+                </div>
+                <div class="trading-capital-summary">
+                  <div><span>Combined risk</span><strong id="tradingCapitalCombinedRiskState">Unknown</strong></div>
+                  <div><span>Current stage</span><strong id="tradingCapitalRecoveryStage">Freeze new risk</strong></div>
+                  <div><span>Protective authority</span><strong>Cannot expand risk</strong></div>
+                  <div><span>External write</span><strong>Not authorized</strong></div>
+                </div>
+                <div class="unavailable-capability-list compact" role="list" aria-label="Ordered recovery stages">
+                  <span role="listitem"><strong>1 · Freeze and cancel</strong><small>Freeze new risk before any reviewed protective action</small></span>
+                  <span role="listitem"><strong>2 · Reduce / flatten and reconcile</strong><small>Unknown or stale truth stays at least reduce-only</small></span>
+                  <span role="listitem"><strong>3 · Repay / liquidate and settle</strong><small>Loss remains outstanding until additive Evidence resolves it</small></span>
+                </div>
+                <p id="tradingCapitalRecoveryHelper" role="status" aria-live="polite">Load the exact Facility and authorization to recover current dual-risk STOP truth.</p>
+              </section>
+
               <div class="trading-capital-tabs" role="tablist" aria-label="Trading Capital product views">
                 <button id="tradingCapitalTabOverview" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="true" tabindex="0" data-trading-capital-view="overview">Overview</button>
                 <button id="tradingCapitalTabProfile" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="profile">Profile</button>

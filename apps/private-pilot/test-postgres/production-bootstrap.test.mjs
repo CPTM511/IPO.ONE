@@ -39,7 +39,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0067_m2b_hyperliquid_compositions"
+      "0068_m2b_dual_risk_recovery"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
@@ -181,7 +181,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0067_m2b_hyperliquid_compositions"
+      "0068_m2b_dual_risk_recovery"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -193,7 +193,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 5 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 6 }), [
+      "0068_m2b_dual_risk_recovery",
       "0067_m2b_hyperliquid_compositions",
       "0066_agent_secured_facility_authorizations",
       "0065_pool_obligation_integration",
@@ -205,7 +206,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0064_pool_chain_reconciliation",
       "0065_pool_obligation_integration",
       "0066_agent_secured_facility_authorizations",
-      "0067_m2b_hyperliquid_compositions"
+      "0067_m2b_hyperliquid_compositions",
+      "0068_m2b_dual_risk_recovery"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count

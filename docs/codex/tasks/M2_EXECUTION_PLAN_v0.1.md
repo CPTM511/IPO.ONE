@@ -368,6 +368,10 @@ revertible without inventing permission for its successor.
 - Security/permission: one-use Founder approval, signer lifecycle/destruction,
   no credentials in DB/Evidence. Migration: reuse/additive receipts. Rollback:
   cancel/flatten, retire signer, reconcile. Dependency: M2B-001.
+- Dependency/status: M2B-002 local composition is implemented at exact baseline
+  `944f344196f6a63a86ba817d750d466b09887142`; external venue execution remains
+  `BLOCKED — NOT COMPLETE`. M2B-003 local L0 work is unlocked only on the
+  stacked branch and inherits every M2B-002 external STOP condition.
 
 ### M2B-003 — dual-risk monitoring and recovery
 
@@ -381,6 +385,11 @@ revertible without inventing permission for its successor.
 - Security/permission: protective authority cannot expand risk. Migration:
   additive incidents/recovery evidence. Rollback: remain frozen and reconcile.
   Dependency: M2B-002.
+- Dependency/status: local dual-risk composition, immutable incident Evidence,
+  monotonic transition guard, read-only Human/Agent receipt and STOP runner are
+  implemented on `codex/m2b-003-dual-risk-recovery`. No external protective
+  action, signer, nonce, network, production, mainnet or real-funds authority is
+  granted; external M2B-003 completion remains `BLOCKED — NOT COMPLETE`.
 
 ### M2B-004 — Agent repayment and Credit State E2E
 

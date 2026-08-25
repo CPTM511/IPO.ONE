@@ -102,7 +102,8 @@ async function provisionApplicationRole(ownerPool, password) {
     `GRANT INSERT ON
        authorization_resources, authorization_resource_bindings,
        authorization_audit_events, tenant_command_executions,
-       agent_hyperliquid_compositions, agent_hyperliquid_composition_transitions
+       agent_hyperliquid_compositions, agent_hyperliquid_composition_transitions,
+       agent_dual_risk_incidents, agent_dual_risk_incident_transitions
      TO ${APP_ROLE}`
   );
   await ownerPool.query(
