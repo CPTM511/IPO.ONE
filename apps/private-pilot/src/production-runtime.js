@@ -28,6 +28,7 @@ import {
   createProductionSyntheticIdentityProvider,
   createSyntheticIdentityGateway
 } from "./local-synthetic-identity-provider.js";
+import launchPolicy from "../../../deploy/launch-policy.v1.json" with { type: "json" };
 
 const CONFIG_KEYS = new Set([
   "agentAccountAddress",
@@ -151,7 +152,9 @@ async function composeProductionClosedPilotRuntime(input) {
       proofAdapters: input.proofAdapters,
       hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
       hyperliquidBindingProofVerifier:
-        new HyperliquidBindingProofVerifier()
+        new HyperliquidBindingProofVerifier(),
+      securedPoolDeploymentProfile:
+        launchPolicy.profiles.live_testnet_secured_pool.exactProfile
     })),
     policyRegistry,
     credentialRegistry: humanAccess.credentialRegistry,

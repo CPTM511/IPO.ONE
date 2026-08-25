@@ -24,6 +24,7 @@ scripts/*
 deploy
 !deploy/
 deploy/*
+!deploy/launch-policy.v1.json
 !deploy/local/
 deploy/local/*
 !deploy/local/private-pilot-profile.v1.json

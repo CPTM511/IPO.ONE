@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "m2a_008_gate_e_product_acceptance.v1",
+  "issue": "M2A-008",
+  "releaseCandidateSha": "d7707b43726fb15490c2664b0ba89b4ffb18e3fe",
+  "chainId": "eip155:84532",
+  "poolAddress": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+  "adapterAddress": "0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19",
+  "localRuntimeUrl": "http://127.0.0.1:8787/#request-credit",
+  "localRuntimeReceipt": "output/playwright/m1-b-p0-5/d7707b43726fb15490c2664b0ba89b4ffb18e3fe.local-release-identity.json",
+  "localRuntimeAcceptancePassed": true,
+  "visibleBrowserAcceptance": {
+    "human": {
+      "authenticatedExactRuntime": true,
+      "userSignedSession": true,
+      "visibleClicks": [
+        "Refresh Pool state",
+        "Review exact action"
+      ],
+      "reviewedAction": "borrow",
+      "amountAssets": "1000000",
+      "poolAddressVisible": true,
+      "submissionState": "unavailable",
+      "transactionSubmitted": false
+    },
+    "capitalPartner": {
+      "roleIsolatedSyntheticQaHost": true,
+      "visibleClicks": [
+        "Capital Partners",
+        "Refresh workspace"
+      ],
+      "bilateralWorkspaceReachable": true,
+      "publicPoolAuthority": false,
+      "productionFundsAuthority": false
+    },
+    "risk": {
+      "roleIsolatedSyntheticQaHost": true,
+      "visibleClicks": [
+        "Risk & Operations",
+        "Refresh Pool control view"
+      ],
+      "aggregateViewReachable": true,
+      "accountAddressReturned": false,
+      "liquidationSubmissionAuthority": false
+    },
+    "playwrightPassed": 8,
+    "playwrightFailed": 0
+  },
+  "runtimeTruth": {
+    "deployedTestPoolVisible": true,
+    "localIndexerState": "unavailable",
+    "currentUserChainRecordClaimed": false,
+    "transactionSubmissionConfigured": false,
+    "mainnetAuthorized": false,
+    "realFundsAuthorized": false
+  },
+  "gateEReferences": {
+    "liveIndexer": "artifacts/testnet/eip155-84532-m2a-008-gate-e-live-indexer-20260824.json",
+    "sourceVerification": "artifacts/testnet/eip155-84532-m2a-008-source-verification-20260824.json",
+    "deploymentReconciliation": "artifacts/testnet/eip155-84532-m2a-008-m2a-008-base-sepolia-20260824-005-pool-recovery-reconciled.json"
+  },
+  "transactionPrimitiveUsedDuringAcceptance": false,
+  "testAssetsOnly": true,
+  "productionFundsMoved": false,
+  "acceptedAt": "2026-08-25T04:09:03Z"
+}

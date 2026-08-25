@@ -1,6 +1,6 @@
 # M2A-008 — Exact Base Sepolia secured-pool deployment
 
-Status: `ADAPTER AND POOL DEPLOYED — FINALITY / GATE E IN PROGRESS`
+Status: `GATE E COMPLETE — PR / POST-MERGE CI PENDING`
 
 Delivery mode: `L3_LIVE_TESTNET_TEST_ASSETS_ONLY` after every named gate passes
 
@@ -150,10 +150,10 @@ not approve the RPCs, risk values, roles, signer or deployment.
   requiring distinct addresses and distinct private keys; no key material is
   included or requested.
 - [x] Mainnet/real-value profiles retain an Independent Security hard gate.
-- [ ] Gates A-C have current exact release, configuration and signer Evidence.
-- [ ] Gate D deployment and Gate E reconciliation/browser Evidence exist.
-- [ ] The exact launch-policy profile is complete and enabled.
-- [ ] A fresh approved deployer and the two public pause/recovery addresses exist.
+- [x] Gates A-C have current exact release, configuration and signer Evidence.
+- [x] Gate D deployment and Gate E reconciliation/browser Evidence exist.
+- [x] The exact launch-policy profile is complete and enabled.
+- [x] A fresh approved deployer and the two public pause/recovery addresses exist.
 
 ## Current preflight result — 2026-08-23
 
@@ -310,9 +310,26 @@ product acceptance are complete.
 
 ## Completion Evidence
 
-Completion requires the contract addresses, creation/runtime/configuration
-hashes, two deployment transaction hashes, receipts, finality observations,
-source-verification URLs, exact gate approvals, signer tombstone, indexer and
-zero-discrepancy receipts, exact deployed SHA and visible-click browser
-captures. Until every item exists, the only truthful verdict is
-`BLOCKED — NOT COMPLETE`.
+Gate D and Gate E Evidence now exists. The finalized Pool is
+`0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da`; its admitted Adapter is
+`0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19`. Sourcify reports creation and
+runtime matches for both contracts. Two-RPC finality, restart, duplicate
+replay, zero-discrepancy reconciliation, protective freeze and bounded recovery
+are recorded in the checked-in Gate E artifacts. Every one-use deployment key
+is destroyed and tombstoned; no further transaction is permitted.
+
+Release candidate `d7707b43726fb15490c2664b0ba89b4ffb18e3fe` passes the exact
+local-stack acceptance receipt at
+`output/playwright/m1-b-p0-5/d7707b43726fb15490c2664b0ba89b4ffb18e3fe.local-release-identity.json`.
+An authenticated Founder-signed Human session used visible clicks to load the
+exact deployed test Pool and review a `1,000,000`-unit Borrow while transaction
+submission remained unavailable. Role-isolated visible-click QA covers the
+Capital Partner bilateral workspace and aggregate Risk Pool view; the suite
+passes 8/8. Product acceptance is recorded in
+`artifacts/testnet/eip155-84532-m2a-008-gate-e-product-acceptance-20260825.json`.
+
+This Evidence proves a Base Sepolia test-assets-only deployment and a local
+review product. It does not prove public hosting, mainnet authorization, real
+funds, Human cash lending, production custody, KYC, or Agent write authority.
+Repository completion remains pending only until the Gate E PR and post-merge
+main CI pass.

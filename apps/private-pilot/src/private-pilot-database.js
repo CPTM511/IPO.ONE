@@ -323,6 +323,65 @@ async function seedAuthenticationSystemIdentity(ownerPool, profile, now) {
   }, profile, now);
 }
 
+async function seedLocalHumanRoleEnrollment(client, {
+  tenantId,
+  actor,
+  credential
+}) {
+  if (
+    actor.actorType !== ActorType.HUMAN ||
+    ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER]
+      .includes(actor.roleBundle)
+  ) {
+    return;
+  }
+  await client.query(
+    `INSERT INTO authentication_role_enrollments(
+       id, tenant_id, actor_id, credential_id, role_bundle, capabilities,
+       client_ids, policy_version, status, valid_from, expires_at, version,
+       created_at, updated_at, schema_version
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6::jsonb,
+       $7::jsonb, $8, 'active', $9, $10, 1,
+       $9, $11, 'authentication_role_enrollment.v1'
+     ) ON CONFLICT (tenant_id, credential_id, role_bundle) DO NOTHING`,
+    [
+      createOperationalId("role_enrollment"),
+      tenantId,
+      actor.actorId,
+      credential.id,
+      actor.roleBundle,
+      JSON.stringify(actor.capabilities),
+      JSON.stringify([actor.clientId]),
+      AUTHORIZATION_POLICY_VERSION,
+      credential.created_at,
+      credential.expires_at,
+      credential.updated_at
+    ]
+  );
+  const enrolled = await client.query(
+    `SELECT actor_id, capabilities, client_ids, policy_version, status
+       FROM authentication_role_enrollments
+      WHERE tenant_id = $1
+        AND credential_id = $2
+        AND role_bundle = $3`,
+    [tenantId, credential.id, actor.roleBundle]
+  );
+  const row = enrolled.rows[0];
+  if (
+    enrolled.rowCount !== 1 ||
+    row.actor_id !== actor.actorId ||
+    row.status !== "active" ||
+    row.policy_version !== AUTHORIZATION_POLICY_VERSION ||
+    JSON.stringify(row.capabilities) !== JSON.stringify(actor.capabilities) ||
+    JSON.stringify(row.client_ids) !== JSON.stringify([actor.clientId])
+  ) {
+    throw new Error(
+      `existing local Human role enrollment does not match ${actor.actorId}`
+    );
+  }
+}
+
 async function seedAuthenticationCredential(client, {
   tenantId,
   actor,
@@ -402,6 +461,11 @@ async function seedAuthenticationCredential(client, {
         `existing local authentication Credential does not match ${actor.actorId}`
       );
     }
+    await seedLocalHumanRoleEnrollment(client, {
+      tenantId,
+      actor,
+      credential: stored
+    });
     return stored;
   }
   const credentialId = createOperationalId("credential");
@@ -464,6 +528,11 @@ async function seedAuthenticationCredential(client, {
       })
     ]
   );
+  await seedLocalHumanRoleEnrollment(client, {
+    tenantId,
+    actor,
+    credential: inserted.rows[0]
+  });
   return inserted.rows[0];
 }
 

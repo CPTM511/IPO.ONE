@@ -59,7 +59,9 @@ export function createTenantFoundationHandlers(options) {
     ...createPilotHealthQueryHandlers(),
     ...createPilotFeedbackHandlers(),
     ...createServicingQueueQueryHandlers(),
-    ...createSecuredPoolWorkspaceHandlers(),
+    ...createSecuredPoolWorkspaceHandlers({
+      deploymentProfile: options?.securedPoolDeploymentProfile
+    }),
     ...createCreditIntentHandlers(),
     ...createHumanSubjectHandlers(),
     ...createWorkspaceResumeHandlers(),

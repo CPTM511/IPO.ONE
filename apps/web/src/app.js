@@ -6911,7 +6911,7 @@ function renderCapitalPartner() {
   if (!el("capitalPartnerOfferForm")) return;
   ensureCapitalPartnerDateDefaults();
   const connected =
-    tenantPilot.connected &&
+    tenantPilot.checked &&
     Boolean(tenantCsrfToken()) &&
     currentWorkspaceName() === "capitalPartner";
   const discoveryAvailable =

@@ -195,10 +195,28 @@ path pass. Browser acceptance covers a visible Human exact-action review,
 keyboard operation, mobile width, 200-percent zoom and the aggregate Risk Pool
 control view.
 
-`pool_deployment_unavailable` remains a required product state. No contract
-address, transaction, pending/final chain state, deployed SHA, public
-reachability, real value or production usability is claimed. Those states and
-all M2A-008 permissions remain independently gated.
+After the bounded M2A-008 Base Sepolia deployment, the local product uses
+`pool_submission_unavailable`: it may show the exact deployed test Pool from
+the enabled launch profile while keeping local indexer state explicit and all
+transaction submission absent. This does not claim a current-user chain
+record, real value, public production usability or funds authority.
+
+## M2A-008 Gate E product acceptance — 2026-08-25
+
+Release candidate `d7707b43726fb15490c2664b0ba89b4ffb18e3fe` passes exact local
+runtime acceptance and exposes the deployed Base Sepolia test Pool while
+truthfully reporting that the local indexer has no current projection. An
+authenticated Founder-signed Human session visibly refreshed Pool state and
+reviewed one exact Borrow without signature, RPC submission, transaction or
+funds movement. Role-isolated synthetic browser hosts separately prove visible
+Capital Partner and aggregate Risk journeys; the click-path suite passes 8/8.
+
+The Gate E Evidence set binds this product acceptance to the finalized Pool,
+Sourcify source matches, two-RPC finality, restart and duplicate replay,
+zero-discrepancy reconciliation, freeze/recovery behavior and destroyed signer
+tombstones. `TESTNET VERIFIED`, local `RUNTIME`, local `REACHABLE`, and local
+`VERIFIED` are `YES`; public production `DEPLOYED` and real-value authority are
+`NO`.
 
 ## M2A-008 preflight Evidence update — 2026-08-23
 

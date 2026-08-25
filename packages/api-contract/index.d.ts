@@ -4538,7 +4538,7 @@ export interface SecuredPoolWorkspaceResponse {
   actions: Record<string, "review_only">;
   submission: {
     state: "unavailable";
-    reasonCode: "pool_deployment_unavailable";
+    reasonCode: "pool_submission_unavailable";
     recoveryCondition: string;
     transactionHash: null;
     finality: "not_applicable";

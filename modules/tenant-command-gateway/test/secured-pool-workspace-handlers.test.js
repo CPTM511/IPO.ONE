@@ -34,6 +34,28 @@ test("own Secured Pool workspace is server-derived and truthfully unavailable be
   assert.equal(response.productionFundsMoved, false);
 });
 
+test("own Secured Pool workspace identifies the deployed test Pool without inventing indexer state", async () => {
+  const response = await readOwnSecuredPoolQueryHandler({
+    deploymentProfile: {
+      chainId: "eip155:84532",
+      poolContract: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+      deploymentApprovalRef: "M2A-008-DEPLOY-20260824-004",
+      realValueClassification: "test_assets_only"
+    }
+  }).execute({
+    client: emptyPoolClient,
+    coreRepository,
+    resource: { resourceType: "subject", resourceId: "subject_pool_fixture" },
+    payload: {},
+    now
+  });
+  assert.equal(response.market.status, "deployed_not_indexed");
+  assert.equal(response.market.contractAddress, "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da");
+  assert.equal(response.market.accounting, null);
+  assert.equal(response.market.readOnly, true);
+  assert.equal(response.submission.reasonCode, "pool_submission_unavailable");
+});
+
 test("exact Pool action review fails closed before any submission path", async () => {
   const response = await reviewSecuredPoolActionQueryHandler().execute({
     client: emptyPoolClient,
@@ -46,7 +68,7 @@ test("exact Pool action review fails closed before any submission path", async (
   assert.equal(response.submittable, false);
   assert.equal(response.transactionState, "not_submitted");
   assert.equal(response.blockerReasonCodes.includes("pool_account_binding_unavailable"), true);
-  assert.equal(response.blockerReasonCodes.includes("pool_deployment_unavailable"), true);
+  assert.equal(response.blockerReasonCodes.includes("pool_submission_unavailable"), true);
   assert.match(response.reviewHash, /^0x[0-9a-f]{64}$/);
 });
 

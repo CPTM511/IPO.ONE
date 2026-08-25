@@ -77,6 +77,32 @@ test("private pilot worker can persist durable credit-state projections", async 
   );
 });
 
+test("private pilot wallet bootstrap enrolls each selectable Human role", async () => {
+  const source = await readFile(
+    new URL("../src/private-pilot-database.js", import.meta.url),
+    "utf8"
+  );
+  const enrollmentSeed = source.match(
+    /async function seedLocalHumanRoleEnrollment[\s\S]*?\n}\n\nasync function seedAuthenticationCredential/
+  )?.[0] ?? "";
+
+  assert.match(enrollmentSeed, /authentication_role_enrollments/);
+  assert.match(enrollmentSeed, /RoleBundle\.HUMAN_BORROWER/);
+  assert.match(enrollmentSeed, /RoleBundle\.PRINCIPAL_CONTROLLER/);
+  assert.match(
+    enrollmentSeed,
+    /ON CONFLICT \(tenant_id, credential_id, role_bundle\) DO NOTHING/
+  );
+  assert.match(
+    source,
+    /existing local authentication Credential[\s\S]*?seedLocalHumanRoleEnrollment/
+  );
+  assert.match(
+    source,
+    /credential_registered[\s\S]*?seedLocalHumanRoleEnrollment/
+  );
+});
+
 async function localAuthenticationResponse({
   cookie,
   csrfToken,

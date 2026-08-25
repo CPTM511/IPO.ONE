@@ -64,8 +64,8 @@
         },
         "submission": {
           "state": "unavailable",
-          "reasonCode": "pool_deployment_unavailable",
-          "recoveryCondition": "Complete separately approved M2A-008 exact Base Sepolia deployment",
+          "reasonCode": "pool_submission_unavailable",
+          "recoveryCondition": "This local synthetic workspace is review-only and has no transaction submission authority",
           "transactionHash": null,
           "finality": "not_applicable"
         },
@@ -92,7 +92,7 @@
           "debtAssetsAfter": null,
           "healthAfter": null
         },
-        "blockerReasonCodes": ["pool_state_unavailable", "pool_deployment_unavailable"],
+        "blockerReasonCodes": ["pool_state_unavailable", "pool_submission_unavailable"],
         "reviewedAt": "2026-08-23T00:00:00.000Z",
         "syntheticOnly": true,
         "productionFundsMoved": false,
@@ -101,7 +101,7 @@
         "submittable": false,
         "transactionState": "not_submitted",
         "finality": "not_applicable",
-        "recoveryCondition": "Complete separately approved M2A-008 exact Base Sepolia deployment",
+        "recoveryCondition": "This local synthetic workspace is review-only and has no transaction submission authority",
         "schemaVersion": "tenant_secured_pool_action_review.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
@@ -124,7 +124,7 @@
         },
         "submission": {
           "state": "unavailable",
-          "reasonCode": "pool_deployment_unavailable",
+          "reasonCode": "pool_submission_unavailable",
           "transactionHash": null,
           "finality": "not_applicable"
         },

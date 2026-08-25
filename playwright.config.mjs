@@ -14,14 +14,39 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "retain-on-failure"
   },
-  webServer: {
-    command: "node apps/web/test/support/human-lifecycle-browser-host.mjs",
-    env: {
-      ...process.env,
-      IPO_ONE_BROWSER_QA_PORT: "4173"
+  webServer: [
+    {
+      command: "node apps/web/test/support/human-lifecycle-browser-host.mjs",
+      env: {
+        ...process.env,
+        IPO_ONE_BROWSER_QA_PORT: "4173",
+        IPO_ONE_BROWSER_QA_ROLE: "borrower"
+      },
+      url: "http://127.0.0.1:4173/tenant/v1/healthz",
+      reuseExistingServer: false,
+      timeout: 30_000
     },
-    url: "http://127.0.0.1:4173/tenant/v1/healthz",
-    reuseExistingServer: false,
-    timeout: 30_000
-  }
+    {
+      command: "node apps/web/test/support/human-lifecycle-browser-host.mjs",
+      env: {
+        ...process.env,
+        IPO_ONE_BROWSER_QA_PORT: "4174",
+        IPO_ONE_BROWSER_QA_ROLE: "capitalPartner"
+      },
+      url: "http://127.0.0.1:4174/tenant/v1/healthz",
+      reuseExistingServer: false,
+      timeout: 30_000
+    },
+    {
+      command: "node apps/web/test/support/human-lifecycle-browser-host.mjs",
+      env: {
+        ...process.env,
+        IPO_ONE_BROWSER_QA_PORT: "4175",
+        IPO_ONE_BROWSER_QA_ROLE: "risk"
+      },
+      url: "http://127.0.0.1:4175/tenant/v1/healthz",
+      reuseExistingServer: false,
+      timeout: 30_000
+    }
+  ]
 });

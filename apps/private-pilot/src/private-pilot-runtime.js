@@ -70,6 +70,7 @@ import {
   preparePrivatePilotAgentProof
 } from "./private-pilot-agent-account.js";
 import { loadPrivatePilotProfile } from "./private-pilot-profile.js";
+import launchPolicy from "../../../deploy/launch-policy.v1.json" with { type: "json" };
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_AUTHENTICATION_SERVER_FILE = resolve(
@@ -103,7 +104,9 @@ function createGateway(
         hyperliquidBindingProofVerifier:
           new HyperliquidBindingProofVerifier(),
         walletExecutionApplication: createPostgresWalletExecutionApplication(),
-        venueExecutionApplication: createPostgresVenueExecutionApplication()
+        venueExecutionApplication: createPostgresVenueExecutionApplication(),
+        securedPoolDeploymentProfile:
+          launchPolicy.profiles.live_testnet_secured_pool.exactProfile
       })
     ),
     policyRegistry: authentication.policyRegistry,

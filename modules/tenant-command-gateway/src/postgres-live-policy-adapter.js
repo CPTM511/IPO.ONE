@@ -12,12 +12,29 @@ import { resolveCreditIntentAuthority } from "./credit-intent-handlers.js";
 const ALLOWED_DRAFT_SUBJECT_STATUSES = new Set([SubjectStatus.PENDING, SubjectStatus.ACTIVE]);
 const FREEZABLE_SUBJECT_STATUSES = new Set([SubjectStatus.PENDING, SubjectStatus.ACTIVE]);
 const HUMAN_CONSENT_SUBJECT_STATUSES = new Set([SubjectStatus.PENDING, SubjectStatus.ACTIVE]);
+const POOL_SUBJECT_STATUSES = new Set([SubjectStatus.PENDING, SubjectStatus.ACTIVE]);
 
 function hasExactChecks(policy, checks) {
   return (
     policy.liveChecks.length === checks.length &&
     checks.every((check, index) => policy.liveChecks[index] === check)
   );
+}
+
+async function poolLiveStateVersion(client) {
+  const result = await client.query(
+    `SELECT (
+       1 +
+       COALESCE((SELECT MAX(finalized_sequence) FROM pool_chain_finalized_effects), 0) +
+       COALESCE((SELECT COUNT(*) FROM pool_reconciliation_runs), 0) +
+       COALESCE((SELECT MAX(version) FROM pool_risk_controls), 0)
+     )::text AS live_state_version`
+  );
+  const value = Number(result.rows[0]?.live_state_version);
+  if (result.rowCount !== 1 || !Number.isSafeInteger(value) || value < 1) {
+    throw new DomainError("authorization_live_policy_rejected", "live Pool state is unavailable");
+  }
+  return value;
 }
 
 export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, handler, payload }) {
@@ -568,6 +585,40 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
         return Object.freeze({
           liveStateVersion: state.aggregateVersion,
           evaluatedChecks: Object.freeze(["mandate_state"])
+        });
+      }
+
+      if (
+        ["pilotReadOwnSecuredPool", "pilotReviewSecuredPoolAction"].includes(handler.operationId) &&
+        resource?.resourceType === "subject" &&
+        (
+          hasExactChecks(policy, ["pool_binding", "pool_reconciliation"]) ||
+          hasExactChecks(policy, ["pool_binding", "pool_oracle", "pool_reconciliation", "pool_risk_control"])
+        )
+      ) {
+        const subjectState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.SUBJECT,
+          resource.resourceId,
+          { lock: false }
+        );
+        if (!subjectState || !POOL_SUBJECT_STATUSES.has(subjectState.value.status)) {
+          throw new DomainError("authorization_live_policy_rejected", "live Pool Subject state rejected the operation");
+        }
+        return Object.freeze({
+          liveStateVersion: subjectState.aggregateVersion + await poolLiveStateVersion(client),
+          evaluatedChecks: Object.freeze([...policy.liveChecks])
+        });
+      }
+
+      if (
+        handler.operationId === "pilotReadSecuredPoolRisk" &&
+        hasExactChecks(policy, ["pool_reconciliation", "pool_risk_control"]) &&
+        resource?.resourceType === "risk_portfolio"
+      ) {
+        return Object.freeze({
+          liveStateVersion: await poolLiveStateVersion(client),
+          evaluatedChecks: Object.freeze([...policy.liveChecks])
         });
       }
 

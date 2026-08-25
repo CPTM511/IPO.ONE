@@ -14,12 +14,15 @@ function text(value, fallback = "Unavailable") {
 export function createSecuredPoolPresentation({ workspace, review, risk } = {}) {
   const market = workspace?.market ?? risk?.market ?? null;
   const indexed = market?.status === "local_synthetic_indexed";
+  const deployed = indexed || market?.status === "deployed_not_indexed";
   const position = workspace?.position ?? null;
   return Object.freeze({
     workspaceState: workspace ? (indexed ? "Synthetic state loaded" : "Awaiting indexed state") : "Not loaded",
     market: indexed
       ? `${text(market.debtAsset)} / ${text(market.collateralAsset)} · Base Sepolia test Pool deployed · local synthetic projection`
-      : "Base Sepolia reference market · not deployed",
+      : deployed
+        ? `${text(market.contractAddress)} · Base Sepolia test Pool deployed · local indexer state unavailable`
+        : "Base Sepolia reference market · not deployed",
     liquidity: market?.accounting ? market.accounting.cashAssets : "0",
     position: position
       ? `${position.supplyShares} supply shares · ${position.debtAssets} debt`

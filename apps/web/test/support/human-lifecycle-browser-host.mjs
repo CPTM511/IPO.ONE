@@ -24,6 +24,26 @@ const browserQaPort = Number(process.env.IPO_ONE_BROWSER_QA_PORT ?? 0);
 if (!Number.isSafeInteger(browserQaPort) || browserQaPort < 0 || browserQaPort > 65_535) {
   throw new Error("invalid_browser_qa_port");
 }
+const browserQaRole = process.env.IPO_ONE_BROWSER_QA_ROLE ?? "borrower";
+const BROWSER_QA_ROLES = Object.freeze({
+  borrower: Object.freeze({
+    actorId: "actor_human_lifecycle_browser_qa",
+    actorType: ActorType.HUMAN,
+    roles: ["borrower"]
+  }),
+  capitalPartner: Object.freeze({
+    actorId: "actor_capital_partner_browser_qa",
+    actorType: ActorType.HUMAN,
+    roles: ["capital_partner"]
+  }),
+  risk: Object.freeze({
+    actorId: "actor_risk_browser_qa",
+    actorType: ActorType.RISK_OPERATOR,
+    roles: ["risk_operator"]
+  })
+});
+const browserQaIdentity = BROWSER_QA_ROLES[browserQaRole];
+if (!browserQaIdentity) throw new Error("invalid_browser_qa_role");
 const disableAuthenticationDiscovery =
   process.env.IPO_ONE_BROWSER_QA_DISABLE_AUTH_DISCOVERY === "1";
 const evidenceScenario =
@@ -72,6 +92,11 @@ const securedPoolResult = (operationId) => structuredClone(
     fixture.operationId === operationId
   )
 );
+const tenantProtocolResult = (operationId) => structuredClone(
+  tenantProtocolFixtures.validResults.find((fixture) =>
+    fixture.operationId === operationId
+  )
+);
 const creditPassportCreateFixture = tenantProtocolFixtures.validResults.find(
   ({ operationId }) => operationId === "pilotCreateCreditPassportArtifact"
 );
@@ -103,6 +128,22 @@ const supportedBrowserQaOperationIds = new Set([
   "pilotRetrieveOfficialReport",
   "pilotRevokeOfficialReport"
 ]);
+const roleOperationIds = Object.freeze({
+  borrower: supportedBrowserQaOperationIds,
+  capitalPartner: new Set([
+    "pilotReadCapitalPartnerSelf",
+    "pilotReadCapitalPartnerPassportInbox",
+    "pilotAuthorCapitalPartnerOffer",
+    "pilotTransitionCapitalPartnerOffer",
+    "pilotReadCapitalPartnerFacility",
+    "pilotReadCapitalPartnerPortfolio"
+  ]),
+  risk: new Set([
+    "pilotReadTenantRiskPortfolioReference",
+    "pilotReadTenantRisk",
+    "pilotReadSecuredPoolRisk"
+  ])
+});
 
 const consent = Object.freeze({
   consentId: offerReceipt.consentId,
@@ -564,8 +605,27 @@ function officialReportView(report, now = new Date()) {
 
 function resultFor(command) {
   const { operationId } = command;
-  if (operationId === "pilotReadTenantRisk" || operationId === "pilotFreezeSubject") {
+  if (operationId === "pilotFreezeSubject") {
     throw new DomainError("authorization_denied", "The requested operation is not available.");
+  }
+  if (
+    operationId === "pilotReadTenantRiskPortfolioReference" ||
+    operationId === "pilotReadTenantRisk" ||
+    operationId === "pilotReadCapitalPartnerSelf" ||
+    operationId === "pilotReadCapitalPartnerPassportInbox" ||
+    operationId === "pilotReadCapitalPartnerFacility" ||
+    operationId === "pilotReadCapitalPartnerPortfolio"
+  ) {
+    const result = tenantProtocolResult(operationId);
+    if (operationId === "pilotReadCapitalPartnerPortfolio") {
+      result.response.portfolio.facilities = [
+        tenantProtocolResult("pilotReadCapitalPartnerFacility").response.facility
+      ];
+    }
+    return result;
+  }
+  if (operationId === "pilotReadSecuredPoolRisk") {
+    return securedPoolResult(operationId);
   }
   if (operationId === "pilotReadOwnSecuredPool") {
     const result = securedPoolResult(operationId);
@@ -1010,18 +1070,18 @@ function resultFor(command) {
 
 const authenticationContext = createAuthenticationContext({
   tenantId: "tenant_human_lifecycle_browser_qa",
-  actorId: "actor_human_lifecycle_browser_qa",
-  actorType: ActorType.HUMAN,
+  actorId: browserQaIdentity.actorId,
+  actorType: browserQaIdentity.actorType,
   clientId: "client_human_lifecycle_browser_qa",
   credentialId: "credential_human_lifecycle_browser_qa",
   credentialVersion: 1,
   policyVersion: "security_001.v1",
   capabilities: [...new Set(
     TENANT_PROTOCOL_CATALOG.operations
-      .filter((operation) => supportedBrowserQaOperationIds.has(operation.operationId))
+      .filter((operation) => roleOperationIds[browserQaRole].has(operation.operationId))
       .map((operation) => operation.requiredCapability)
   )],
-  roles: ["borrower"],
+  roles: browserQaIdentity.roles,
   tokenJtiHash: "token_jti_hash_human_lifecycle_browser_qa_000000000000",
   authenticationMethod: ClientAuthenticationMethod.OIDC_PKCE_BFF,
   senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
@@ -1161,7 +1221,7 @@ const host = createTenantHttpServer({
   serveAuthentication,
   serveWebAsset: createTenantWebAssetHandler({
     csrfTokenProvider: async () => browserSessionActive ? csrfToken : undefined,
-    workspaceNameProvider: async () => "borrower"
+    workspaceNameProvider: async () => browserQaRole
   })
 });
 

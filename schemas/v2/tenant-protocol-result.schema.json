@@ -1355,7 +1355,7 @@
           "required": ["state", "reasonCode", "recoveryCondition", "transactionHash", "finality"],
           "properties": {
             "state": { "const": "unavailable" },
-            "reasonCode": { "const": "pool_deployment_unavailable" },
+            "reasonCode": { "const": "pool_submission_unavailable" },
             "recoveryCondition": { "type": "string", "minLength": 1 },
             "transactionHash": { "type": "null" },
             "finality": { "const": "not_applicable" }
@@ -1430,7 +1430,7 @@
           "required": ["state", "reasonCode", "transactionHash", "finality"],
           "properties": {
             "state": { "const": "unavailable" },
-            "reasonCode": { "const": "pool_deployment_unavailable" },
+            "reasonCode": { "const": "pool_submission_unavailable" },
             "transactionHash": { "type": "null" },
             "finality": { "const": "not_applicable" }
           }
