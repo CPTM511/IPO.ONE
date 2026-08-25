@@ -36,7 +36,10 @@ const EVIDENCE_KINDS = [
   "deployment_reconciliation",
   "source_verification",
   "live_indexer",
-  "product_acceptance"
+  "product_acceptance",
+  "recovery_drill",
+  "live_read_only",
+  "postgres_restore"
 ];
 
 function candidate(overrides = {}) {
@@ -131,7 +134,7 @@ test("M2A-009 schema and runtime validator accept only the exact bounded candida
     status: "candidate_valid",
     candidateId: fixture.candidateId,
     releaseCommitSha: fixture.releaseCommitSha,
-    evidenceCount: 4,
+    evidenceCount: 7,
     dualControl: true,
     transactionPrimitivePresent: false,
     testAssetsOnly: true,
@@ -198,7 +201,7 @@ test("Evidence verification binds digest, no-funds posture, and exact Pool", asy
       evidence.push({ kind, path, sha256: createHash("sha256").update(bytes).digest("hex") });
     }
     const fixture = candidate({ evidence });
-    assert.equal((await verifyM2A009EvidenceDigests(fixture, { root })).length, 4);
+    assert.equal((await verifyM2A009EvidenceDigests(fixture, { root })).length, 7);
     await writeFile(join(root, evidence[0].path), JSON.stringify({
       poolAddress: M2A009_POOL,
       testAssetsOnly: false,

@@ -41,7 +41,10 @@ const REQUIRED_EVIDENCE = new Set([
   "deployment_reconciliation",
   "source_verification",
   "live_indexer",
-  "product_acceptance"
+  "product_acceptance",
+  "recovery_drill",
+  "live_read_only",
+  "postgres_restore"
 ]);
 const FAILURE_TRIGGERS = new Set([
   "rpc_disagreement",

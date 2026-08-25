@@ -51,7 +51,7 @@
     },
     "evidence": {
       "type": "array",
-      "minItems": 4,
+      "minItems": 7,
       "maxItems": 8,
       "uniqueItems": true,
       "items": {
@@ -65,6 +65,8 @@
               "source_verification",
               "live_indexer",
               "product_acceptance",
+              "recovery_drill",
+              "live_read_only",
               "local_release_identity",
               "postgres_restore"
             ]
