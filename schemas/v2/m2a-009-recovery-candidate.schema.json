@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/m2a-009-recovery-candidate.schema.json",
+  "title": "IPO.ONE M2A-009 recovery and v0.2.0 candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateId",
+    "releaseVersion",
+    "releaseCommitSha",
+    "chain",
+    "evidence",
+    "database",
+    "recovery",
+    "acceptance",
+    "rollback",
+    "excludedAuthority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "m2a_009_recovery_candidate.v1" },
+    "candidateId": {
+      "type": "string",
+      "pattern": "^M2A-009-V0.2.0-RC-[0-9]{8}-[0-9]{3}$"
+    },
+    "releaseVersion": { "const": "0.2.0-rc.1" },
+    "releaseCommitSha": { "$ref": "#/$defs/sha" },
+    "chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chainId",
+        "poolAddress",
+        "adapterAddress",
+        "poolTransactionHash",
+        "adapterTransactionHash",
+        "testAssetsOnly",
+        "readOnlyRecovery",
+        "transactionPrimitivePresent"
+      ],
+      "properties": {
+        "chainId": { "const": "eip155:84532" },
+        "poolAddress": { "const": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da" },
+        "adapterAddress": { "const": "0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19" },
+        "poolTransactionHash": { "const": "0x90d67e7732f752bcf13dd4278ea6ca3263f715d75766f2b497d997b07fd3d9e3" },
+        "adapterTransactionHash": { "const": "0x9653196281e29f96476a53aed2b21a2a6ee14794987dd1aeaeb98df376c8721f" },
+        "testAssetsOnly": { "const": true },
+        "readOnlyRecovery": { "const": true },
+        "transactionPrimitivePresent": { "const": false }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "path", "sha256"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "deployment_reconciliation",
+              "source_verification",
+              "live_indexer",
+              "product_acceptance",
+              "local_release_identity",
+              "postgres_restore"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(artifacts/testnet|output/playwright)/[A-Za-z0-9._/-]+\\.json$"
+          },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "migrationCount",
+        "latestMigration",
+        "forcedRlsRequired",
+        "destructiveMigrationPresent",
+        "restartRestoreRequired"
+      ],
+      "properties": {
+        "migrationCount": { "const": 65 },
+        "latestMigration": { "const": "0065_pool_obligation_integration" },
+        "forcedRlsRequired": { "const": true },
+        "destructiveMigrationPresent": { "const": false },
+        "restartRestoreRequired": { "const": true }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ownerApprovals",
+        "failureTriggers",
+        "newRiskFrozenOnFailure",
+        "protectiveRepaymentAvailable",
+        "automaticUnfreeze",
+        "zeroDiscrepancyRequired"
+      ],
+      "properties": {
+        "ownerApprovals": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "approvalHash"],
+            "properties": {
+              "role": { "enum": ["release_owner", "risk_operations_owner"] },
+              "approvalHash": { "$ref": "#/$defs/hash" }
+            }
+          }
+        },
+        "failureTriggers": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "rpc_disagreement",
+              "oracle_invalid_or_stale",
+              "reorg_uncertainty",
+              "projection_discrepancy",
+              "process_restart",
+              "database_restore"
+            ]
+          }
+        },
+        "newRiskFrozenOnFailure": { "const": true },
+        "protectiveRepaymentAvailable": { "const": true },
+        "automaticUnfreeze": { "const": false },
+        "zeroDiscrepancyRequired": { "const": true }
+      }
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repositoryGatePassed",
+        "postgresPassed",
+        "securityPassed",
+        "transportPassed",
+        "browserPassed",
+        "forkDryRunPassed",
+        "unresolvedP0P1"
+      ],
+      "properties": {
+        "repositoryGatePassed": { "const": true },
+        "postgresPassed": { "const": true },
+        "securityPassed": { "const": true },
+        "transportPassed": { "const": true },
+        "browserPassed": { "const": true },
+        "forkDryRunPassed": { "const": true },
+        "unresolvedP0P1": { "const": 0 }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profilePosture",
+        "stopIngestion",
+        "preserveEvidence",
+        "rebuildFromFinalizedLogs",
+        "onchainTransactionPracticed"
+      ],
+      "properties": {
+        "profilePosture": { "const": "deployed_testnet_read_only_when_disabled" },
+        "stopIngestion": { "const": true },
+        "preserveEvidence": { "const": true },
+        "rebuildFromFinalizedLogs": { "const": true },
+        "onchainTransactionPracticed": { "const": false }
+      }
+    },
+    "excludedAuthority": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "mainnet",
+          "real_funds",
+          "human_cash_lending",
+          "custody",
+          "kyc",
+          "production_deployment",
+          "agent_venue_write",
+          "new_chain_transaction",
+          "automatic_unfreeze"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "hash": { "type": "string", "pattern": "^0x[a-f0-9]{64}$" }
+  }
+}
