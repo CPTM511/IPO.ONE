@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "m2a_009_recovery_candidate.v1",
+  "candidateId": "M2A-009-V0.2.0-RC-20260825-001",
+  "releaseVersion": "0.2.0-rc.1",
+  "releaseCommitSha": "25921f008f260d2d8a39524603cd1a6f2512fd63",
+  "chain": {
+    "chainId": "eip155:84532",
+    "poolAddress": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+    "adapterAddress": "0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19",
+    "poolTransactionHash": "0x90d67e7732f752bcf13dd4278ea6ca3263f715d75766f2b497d997b07fd3d9e3",
+    "adapterTransactionHash": "0x9653196281e29f96476a53aed2b21a2a6ee14794987dd1aeaeb98df376c8721f",
+    "testAssetsOnly": true,
+    "readOnlyRecovery": true,
+    "transactionPrimitivePresent": false
+  },
+  "evidence": [
+    {
+      "kind": "deployment_reconciliation",
+      "path": "artifacts/testnet/eip155-84532-m2a-008-m2a-008-base-sepolia-20260824-005-pool-recovery-reconciled.json",
+      "sha256": "b5647b8c2d00431166b26c6ba2f82c5f8d3b0513775bcdc90b79689c96ed6abb"
+    },
+    {
+      "kind": "source_verification",
+      "path": "artifacts/testnet/eip155-84532-m2a-008-source-verification-20260824.json",
+      "sha256": "9099832b5b6624eac9edfe248ccabaf9bf63f0dd631f45a0498e69c510221331"
+    },
+    {
+      "kind": "live_indexer",
+      "path": "artifacts/testnet/eip155-84532-m2a-008-gate-e-live-indexer-20260824.json",
+      "sha256": "cc95634fa6ea85ffcd8d71b0c91f843c96bac77be4cec1aeb2c0e6999ad34773"
+    },
+    {
+      "kind": "product_acceptance",
+      "path": "artifacts/testnet/eip155-84532-m2a-008-gate-e-product-acceptance-20260825.json",
+      "sha256": "8787e54bf878403ca8a95e7faa7746c3061b77f147d789d6564566c715e12712"
+    },
+    {
+      "kind": "recovery_drill",
+      "path": "artifacts/testnet/eip155-84532-m2a-009-recovery-drill-20260825.json",
+      "sha256": "f407eb7fe0a2ed3cb7f86029a3e1f072a0c6d4819662dc03dec583483a6958e0"
+    },
+    {
+      "kind": "live_read_only",
+      "path": "artifacts/testnet/eip155-84532-m2a-009-live-read-only-20260825.json",
+      "sha256": "da7bd6d65acf969d5db29a04d2244f14170220a28a44b12f6efd59e907eff843"
+    },
+    {
+      "kind": "postgres_restore",
+      "path": "artifacts/testnet/eip155-84532-m2a-009-postgres-restore-20260825.json",
+      "sha256": "e6e85a1a89366064ba1725082b28491d1f23bb06b857190fa7d2364f7a0787ce"
+    }
+  ],
+  "database": {
+    "migrationCount": 65,
+    "latestMigration": "0065_pool_obligation_integration",
+    "forcedRlsRequired": true,
+    "destructiveMigrationPresent": false,
+    "restartRestoreRequired": true
+  },
+  "recovery": {
+    "ownerApprovals": [
+      {
+        "role": "release_owner",
+        "approvalHash": "0x330f3a875bef7a664f7055dd0cfba2413df4daf5d6e5bd3f1a4e044cd27eca78"
+      },
+      {
+        "role": "risk_operations_owner",
+        "approvalHash": "0xe39b6374531e68dfd023999aa262ae346ac71a5cbe282191cb82c3c06d770542"
+      }
+    ],
+    "failureTriggers": [
+      "rpc_disagreement",
+      "oracle_invalid_or_stale",
+      "reorg_uncertainty",
+      "projection_discrepancy",
+      "process_restart",
+      "database_restore"
+    ],
+    "newRiskFrozenOnFailure": true,
+    "protectiveRepaymentAvailable": true,
+    "automaticUnfreeze": false,
+    "zeroDiscrepancyRequired": true
+  },
+  "acceptance": {
+    "repositoryGatePassed": true,
+    "postgresPassed": true,
+    "securityPassed": true,
+    "transportPassed": true,
+    "browserPassed": true,
+    "forkDryRunPassed": true,
+    "unresolvedP0P1": 0
+  },
+  "rollback": {
+    "profilePosture": "deployed_testnet_read_only_when_disabled",
+    "stopIngestion": true,
+    "preserveEvidence": true,
+    "rebuildFromFinalizedLogs": true,
+    "onchainTransactionPracticed": false
+  },
+  "excludedAuthority": [
+    "mainnet",
+    "real_funds",
+    "human_cash_lending",
+    "custody",
+    "kyc",
+    "production_deployment",
+    "agent_venue_write",
+    "new_chain_transaction",
+    "automatic_unfreeze"
+  ]
+}

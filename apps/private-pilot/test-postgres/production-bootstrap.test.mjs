@@ -167,8 +167,29 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   assert.equal(first.credentialCount, 4);
   assert.equal(first.invitationCount, 4);
 
-  const upgradePool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  const upgradeDatabase = `ipo_bootstrap_upgrade_${suffix}`;
+  const upgradeGatewayRole = `${input.gatewayRole}_upgrade`;
+  const upgradeAuthenticationRole = `${input.authenticationRole}_upgrade`;
+  const adminUrl = new URL(process.env.DATABASE_URL);
+  adminUrl.pathname = "/postgres";
+  const upgradeUrl = new URL(adminUrl);
+  upgradeUrl.pathname = `/${upgradeDatabase}`;
+  const upgradeAdmin = new Pool({ connectionString: adminUrl.toString(), max: 1 });
+  let upgradePool;
   try {
+    await upgradeAdmin.query(`CREATE DATABASE "${upgradeDatabase}"`);
+    upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
+    assert.equal((await migrateUp({ pool: upgradePool })).at(-1), "0065_pool_obligation_integration");
+    const upgradeBootstrap = await bootstrapProductionDatabase({
+      ...parameters,
+      adminConnectionString: upgradeUrl.toString(),
+      config: assertProductionBootstrapConfig({
+        ...input,
+        gatewayRole: upgradeGatewayRole,
+        authenticationRole: upgradeAuthenticationRole
+      })
+    });
+    assert.equal(upgradeBootstrap.insertedCredentials, 4);
     assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 3 }), [
       "0065_pool_obligation_integration",
       "0064_pool_chain_reconciliation",
@@ -187,7 +208,11 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     );
     assert.equal(backfilled.rows[0].count, 2);
   } finally {
-    await upgradePool.end();
+    await upgradePool?.end().catch(() => {});
+    await upgradeAdmin.query(`DROP DATABASE IF EXISTS "${upgradeDatabase}" WITH (FORCE)`).catch(() => {});
+    await upgradeAdmin.query(`DROP ROLE IF EXISTS "${upgradeGatewayRole}"`).catch(() => {});
+    await upgradeAdmin.query(`DROP ROLE IF EXISTS "${upgradeAuthenticationRole}"`).catch(() => {});
+    await upgradeAdmin.end();
   }
 
   const second = await bootstrapProductionDatabase(parameters);

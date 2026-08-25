@@ -76,6 +76,7 @@ const requiredFiles = new Set([
   "membership.schema.json",
   "m2a-008-exact-deployment-decision.schema.json",
   "m2a-008-independent-contract-review.schema.json",
+  "m2a-009-recovery-candidate.schema.json",
   "metamask-advanced-permission-projection.schema.json",
   "metamask-advanced-permission-response-comparison.schema.json",
   "metamask-agent-wallet-security-receipt.schema.json",

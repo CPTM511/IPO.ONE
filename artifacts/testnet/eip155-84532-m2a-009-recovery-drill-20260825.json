@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "m2a_009_recovery_drill_receipt.v1",
+  "candidateId": "M2A-009-V0.2.0-RC-20260825-001",
+  "releaseCommitSha": "25921f008f260d2d8a39524603cd1a6f2512fd63",
+  "chainId": "eip155:84532",
+  "poolAddress": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+  "initialProjectionHash": "0x80f90005b19c90e5b702c9a8c18e68cdc109b4c325d268b2ffadbceedde2ed2c",
+  "restoredProjectionHash": "0x80f90005b19c90e5b702c9a8c18e68cdc109b4c325d268b2ffadbceedde2ed2c",
+  "replayDispositions": [
+    "duplicate",
+    "duplicate"
+  ],
+  "reorgInvalidationCount": 1,
+  "providerFailureReasonCode": "provider_disagreement",
+  "oracleFailureReasonCode": "projection_mismatch",
+  "borrowAllowedDuringFailure": false,
+  "repaymentAllowedDuringFailure": true,
+  "zeroDiscrepancyBeforeRecovery": true,
+  "singleApprovalRejected": true,
+  "dualControlRecovered": true,
+  "transactionPrimitivePresent": false,
+  "testAssetsOnly": true,
+  "productionFundsMoved": false,
+  "status": "PASS"
+}

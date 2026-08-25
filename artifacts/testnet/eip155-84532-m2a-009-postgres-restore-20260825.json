@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "m2a_009_postgres_restore_receipt.v1",
+  "candidateId": "M2A-009-V0.2.0-RC-20260825-001",
+  "releaseCommitSha": "25921f008f260d2d8a39524603cd1a6f2512fd63",
+  "migrationCount": 65,
+  "latestMigration": "0065_pool_obligation_integration",
+  "forcedRlsVerified": true,
+  "destructiveMigrationPresent": false,
+  "restartRestoreReplayVerified": true,
+  "poolIndexerRestartReplayVerified": true,
+  "dualControlRestartVerified": true,
+  "initialFullRun": {
+    "passed": 89,
+    "failed": 1,
+    "reasonCode": "shared_database_downgrade_conflicted_with_append_only_pool_evidence"
+  },
+  "repair": {
+    "scope": "isolate_bootstrap_downgrade_recovery_test_database",
+    "poolEvidenceRollbackGuardPreserved": true,
+    "targetedTestsPassed": 2,
+    "targetedTestsFailed": 0
+  },
+  "finalFullRun": {
+    "passed": 90,
+    "failed": 0
+  },
+  "credentialsIncluded": false,
+  "databaseSecretsIncluded": false,
+  "testAssetsOnly": true,
+  "productionFundsMoved": false,
+  "status": "PASS"
+}
