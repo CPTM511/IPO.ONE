@@ -332,9 +332,11 @@ revertible without inventing permission for its successor.
 - Dependency/status: M2A-008 is complete. The exact M2A-009 engineering
   candidate at `25921f008f260d2d8a39524603cd1a6f2512fd63` passes recovery,
   two-RPC read-only, PostgreSQL 90/90, browser 8/8, fork 2/2 and aggregate
-  1173/1173 gates. It remains `BLOCKED — NOT COMPLETE` pending exact-SHA
-  Founder re-sign/visible-click verification, named independent security
-  review, PR merge and post-merge CI. M2B-001 may not start.
+  1173/1173 gates. Exact-SHA Founder re-sign/visible-click verification is now
+  complete. It remains `BLOCKED — NOT COMPLETE` because the Founder-reported
+  independent review has no independently attributable reviewer identity or
+  bounded finding disposition, and PR merge/post-merge CI are pending. M2B-001
+  may not start.
 
 ## M2B — Principal-bound Hyperliquid Agent execution
 

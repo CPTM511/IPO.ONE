@@ -129,7 +129,7 @@ preparation or broadcast primitive is release-blocking.
   enter artifacts or logs.
 - [x] Exact candidate automated browser and composite repository gates pass.
 - [x] Rollback profile is practiced and leaves the product truthfully disabled.
-- [ ] Exact candidate Founder-signed visible-click acceptance is complete.
+- [x] Exact candidate Founder-signed visible-click acceptance is complete.
 - [ ] Named independent security review is complete.
 - [ ] PR, merge SHA and post-merge CI Evidence exist.
 
@@ -186,6 +186,10 @@ found by the gates were repaired with regression protection: shared-database
 downgrade interference and pruned historical RPC state.
 
 The prior Human session was correctly invalidated after the exact image
-rebuild. Founder re-sign/visible-click Evidence, a named independent security
-review, PR merge and post-merge CI are still absent. The truthful verdict is
+rebuild. The Founder re-signed and visibly refreshed/reviewed the Pool action;
+that gate is recorded in
+`docs/codex/audits/M2A-009/founder-visible-acceptance-and-review-attestation.md`.
+The Founder reports an independent review was completed, but independently
+attributable reviewer identity and bounded finding disposition remain absent.
+PR merge and post-merge CI are also still absent. The truthful verdict is
 `BLOCKED — NOT COMPLETE`.

@@ -18,9 +18,12 @@ drills, dual-role local recovery control and an explicit rollback posture. It
 adds no signer, wallet client, signing method, transaction preparation or
 broadcast primitive.
 
-This report is not the final v0.2.0 acceptance. Independent Security review
-and an exact-SHA Founder-signed visible-click session remain outstanding. M2B
-must not start from this candidate.
+This report is not the final v0.2.0 acceptance. The exact-SHA Founder-signed
+visible-click session is complete. The Founder reports that an independent
+security reviewer completed review, but no independently attributable reviewer
+identity or bounded finding disposition is attached to PR #53 or the
+repository. That review row therefore remains `UNVERIFIED`, and M2B must not
+start from this candidate.
 
 ## Truthful completion states
 
@@ -30,7 +33,7 @@ must not start from this candidate.
 | RUNTIME | Yes, local | exact OCI image revision and worker/pilot identity equal the code SHA |
 | DEPLOYED | Base Sepolia contracts only | Pool and Adapter are the finalized M2A-008 test-assets deployment; this candidate adds no deployment |
 | REACHABLE | Yes, local | loopback product is healthy at the URL above; no public-production claim |
-| VERIFIED | Automated yes; final Human no | browser 8/8 and local acceptance pass; prior session was correctly invalidated after the exact image rebuild and must be re-signed |
+| VERIFIED | Automated and Founder local yes; independent review Evidence unverified | browser 8/8 and local acceptance pass; the re-signed Human session visibly refreshed Pool state and reviewed the exact action with submission unavailable |
 
 ## Exact Base Sepolia boundary
 
@@ -117,9 +120,10 @@ container. No database listener was widened to make one shell command green.
 
 ## Remaining gates
 
-1. Founder re-signs the exact local SHA and visibly refreshes/reviews the Pool
-   action without transaction submission.
-2. A named independent security reviewer reviews the candidate and supplies a
+1. ~~Founder re-signs the exact local SHA and visibly refreshes/reviews the Pool
+   action without transaction submission.~~ Completed and recorded in
+   `docs/codex/audits/M2A-009/founder-visible-acceptance-and-review-attestation.md`.
+2. A named independent security reviewer supplies an independently attributable
    bounded finding disposition. Self-review does not satisfy this gate.
 3. The candidate PR is merged, post-merge CI passes, and the exact merge SHA is
    rebuilt and rechecked before the final v0.2.0 review.
