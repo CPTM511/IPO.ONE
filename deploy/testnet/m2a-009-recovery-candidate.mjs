@@ -519,11 +519,14 @@ export async function runM2A009LiveReadOnlyRecovery(candidate) {
     poolCodeA !== poolCodeB || adapterCodeA !== adapterCodeB
   ) fail("m2a009_live_read_only_disagreement", "two finalized RPC observations must agree exactly");
 
+  const observationBlockNumber = finalizedA.number < finalizedB.number
+    ? finalizedA.number
+    : finalizedB.number;
   const read = (client, functionName) => client.readContract({
     address: M2A009_POOL,
     abi: POOL_READ_ABI,
     functionName,
-    blockNumber: poolReceiptA.blockNumber
+    blockNumber: observationBlockNumber
   });
   const functions = [
     "marketId", "pauseGuardian", "recoveryAuthority",
@@ -545,6 +548,7 @@ export async function runM2A009LiveReadOnlyRecovery(candidate) {
     adapterAddress: M2A009_ADAPTER,
     poolBlockNumber: poolReceiptA.blockNumber.toString(),
     adapterBlockNumber: adapterReceiptA.blockNumber.toString(),
+    configurationObservationBlockNumber: observationBlockNumber.toString(),
     primaryFinalizedHead: finalizedA.number.toString(),
     secondaryFinalizedHead: finalizedB.number.toString(),
     marketId: stateA[0],

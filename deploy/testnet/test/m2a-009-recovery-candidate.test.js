@@ -251,5 +251,7 @@ test("M2A-009 recovery implementation contains no wallet, signer, or broadcast p
     ".signTransaction("
   ]) assert.equal(source.includes(primitive), false, `forbidden primitive: ${primitive}`);
   assert.match(source, /createPublicClient/);
+  assert.match(source, /configurationObservationBlockNumber/);
+  assert.doesNotMatch(source, /functionName,\n\s+blockNumber: poolReceiptA\.blockNumber/);
   assert.match(source, /transactionPrimitivePresent: false/);
 });
