@@ -20,7 +20,7 @@ import { DEFAULT_PRIVATE_PILOT_PROFILE, assertPrivatePilotProfile } from "./priv
 export const LOCAL_PILOT_TENANT_ID = DEFAULT_PRIVATE_PILOT_PROFILE.tenantId;
 export const LOCAL_PILOT_RISK_PORTFOLIO_ID = DEFAULT_PRIVATE_PILOT_PROFILE.riskPortfolioId;
 export const LOCAL_PILOT_SERVICING_QUEUE_ID = DEFAULT_PRIVATE_PILOT_PROFILE.servicingQueueId;
-export const LOCAL_PILOT_CREDENTIAL_GENERATION = "phase5";
+export const LOCAL_PILOT_CREDENTIAL_GENERATION = "phase6";
 
 const IDENTITY_SPECS = Object.freeze({
   borrower: Object.freeze({
