@@ -39,7 +39,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0065_pool_obligation_integration"
+      "0066_agent_secured_facility_authorizations"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
@@ -179,7 +179,10 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   try {
     await upgradeAdmin.query(`CREATE DATABASE "${upgradeDatabase}"`);
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
-    assert.equal((await migrateUp({ pool: upgradePool })).at(-1), "0065_pool_obligation_integration");
+    assert.equal(
+      (await migrateUp({ pool: upgradePool })).at(-1),
+      "0066_agent_secured_facility_authorizations"
+    );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
       adminConnectionString: upgradeUrl.toString(),
@@ -190,7 +193,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 3 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 4 }), [
+      "0066_agent_secured_facility_authorizations",
       "0065_pool_obligation_integration",
       "0064_pool_chain_reconciliation",
       "0063_selected_human_role_enrollment"
@@ -198,7 +202,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     assert.deepEqual(await migrateUp({ pool: upgradePool }), [
       "0063_selected_human_role_enrollment",
       "0064_pool_chain_reconciliation",
-      "0065_pool_obligation_integration"
+      "0065_pool_obligation_integration",
+      "0066_agent_secured_facility_authorizations"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count
