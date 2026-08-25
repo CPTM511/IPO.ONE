@@ -1689,10 +1689,10 @@
                     <span class="v9-maturity-badge checking" id="tradingCapitalCatalogStatus">Checking contract</span>
                   </div>
                   <h2 id="tradingCapitalViewTitle">Trading Capital</h2>
-                  <p>Hyperliquid testnet is the only MVP venue for this authenticated Facility and canonical Obligation. This local screen inspects and closes an existing synthetic Facility; creation, matching, funding simulation, and execution setup are role-scoped API/SDK workflows. Other venue adapters remain disabled; no redeemable settlement, external execution, or remote MCP is implied.</p>
+                  <p>Hyperliquid testnet is the only MVP venue for this authenticated Facility and canonical Obligation. This local screen inspects and closes an existing synthetic Facility and lets the accountable Principal create or revoke the exact pre-signing Agent authorization. Facility creation, matching, funding simulation, and execution setup remain role-scoped API/SDK workflows. Other venue adapters remain disabled; no nonce, signature, redeemable settlement, external execution, or remote MCP is implied.</p>
                 </div>
                 <div class="trading-capital-heading-status">
-                  <strong id="tradingCapitalOperationCount">0 / 25</strong>
+                  <strong id="tradingCapitalOperationCount">0 / 28</strong>
                   <small>catalog parity</small>
                 </div>
               </div>
@@ -1715,6 +1715,25 @@
                 <p id="tradingCapitalHelper" role="status" aria-live="polite">Use the Facility ID returned by an authorized Trading Capital API/SDK workflow. This page does not create or discover Facilities; denied, missing, and cross-Tenant resources remain non-enumerating.</p>
               </section>
 
+              <section class="panel trading-capital-actions" aria-labelledby="tradingCapitalAuthorizationTitle">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">Principal-controlled · pre-signing only</p><h3 id="tradingCapitalAuthorizationTitle">Agent Facility authorization</h3></div>
+                  <span class="state-pill warning" id="tradingCapitalAuthorizationStatus">Not checked</span>
+                </div>
+                <div class="trading-capital-summary">
+                  <div><span>Authorization</span><strong id="tradingCapitalAuthorizationHash">Unavailable</strong></div>
+                  <div><span>Valid until</span><strong id="tradingCapitalAuthorizationExpiry">Unavailable</strong></div>
+                  <div><span>Authority</span><strong>Open / protective close</strong></div>
+                  <div><span>Signer / nonce / funds</span><strong>Not granted</strong></div>
+                </div>
+                <div>
+                  <button class="secondary" id="tradingCapitalReadAuthorizationBtn" type="button" disabled>Check authorization</button>
+                  <button class="primary" id="tradingCapitalCreateAuthorizationBtn" type="button" disabled>Create Agent authorization</button>
+                  <button class="danger" id="tradingCapitalRevokeAuthorizationBtn" type="button" disabled>Revoke Agent authorization</button>
+                </div>
+                <p id="tradingCapitalAuthorizationHelper" role="status" aria-live="polite">Load one exact Facility first. Creation and revocation require the authenticated Principal workspace; the Agent may only read the current authorization.</p>
+              </section>
+
               <div class="trading-capital-tabs" role="tablist" aria-label="Trading Capital product views">
                 <button id="tradingCapitalTabOverview" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="true" tabindex="0" data-trading-capital-view="overview">Overview</button>
                 <button id="tradingCapitalTabProfile" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="profile">Profile</button>
@@ -1724,6 +1743,7 @@
                 <button id="tradingCapitalTabRisk" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="risk">Risk</button>
                 <button id="tradingCapitalTabSettle" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="settle">Settle</button>
                 <button id="tradingCapitalTabProof" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="proof">Proof</button>
+                <button id="tradingCapitalTabAuthorization" type="button" role="tab" aria-controls="tradingCapitalContract" aria-selected="false" tabindex="-1" data-trading-capital-view="authorization">Agent authorization</button>
               </div>
 
               <section class="panel trading-capital-contract" id="tradingCapitalContract" role="tabpanel" tabindex="0" aria-labelledby="tradingCapitalTabOverview tradingCapitalContractTitle">

@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/agent-secured-facility-authorization.schema.json",
+  "title": "IPO.ONE Agent Secured Facility Authorization v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "agentSecuredFacilityAuthorizationId",
+    "authorizationHash",
+    "subjectId",
+    "principalId",
+    "mandateId",
+    "mandateHash",
+    "accountBindingId",
+    "accountHash",
+    "poolObligationBindingId",
+    "poolBindingHash",
+    "poolProjectionHash",
+    "obligationId",
+    "obligationHash",
+    "tradingFacilityId",
+    "facilityHash",
+    "facilityStateHash",
+    "facilityVersion",
+    "chainId",
+    "operationFamily",
+    "allowedIntentKinds",
+    "validFrom",
+    "expiresAt",
+    "sandboxOnly",
+    "productionAuthority",
+    "fundsAuthority",
+    "signingAuthority",
+    "nonceAuthority",
+    "networkAuthority",
+    "withdrawalAllowed",
+    "transferAllowed",
+    "status",
+    "version",
+    "revokedAt",
+    "revocationHash",
+    "schemaVersion"
+  ],
+  "properties": {
+    "agentSecuredFacilityAuthorizationId": { "$ref": "#/$defs/id" },
+    "authorizationHash": { "$ref": "#/$defs/hash" },
+    "subjectId": { "$ref": "#/$defs/id" },
+    "principalId": { "$ref": "#/$defs/id" },
+    "mandateId": { "$ref": "#/$defs/id" },
+    "mandateHash": { "$ref": "#/$defs/hash" },
+    "accountBindingId": { "$ref": "#/$defs/id" },
+    "accountHash": { "$ref": "#/$defs/hash" },
+    "poolObligationBindingId": { "$ref": "#/$defs/id" },
+    "poolBindingHash": { "$ref": "#/$defs/hash" },
+    "poolProjectionHash": { "$ref": "#/$defs/hash" },
+    "obligationId": { "$ref": "#/$defs/id" },
+    "obligationHash": { "$ref": "#/$defs/hash" },
+    "tradingFacilityId": { "$ref": "#/$defs/id" },
+    "facilityHash": { "$ref": "#/$defs/hash" },
+    "facilityStateHash": { "$ref": "#/$defs/hash" },
+    "facilityVersion": { "type": "integer", "minimum": 1 },
+    "chainId": { "const": "eip155:84532" },
+    "operationFamily": { "const": "agent_trading_capital_intent.v1" },
+    "allowedIntentKinds": { "const": ["open", "close"] },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "sandboxOnly": { "const": true },
+    "productionAuthority": { "const": false },
+    "fundsAuthority": { "const": false },
+    "signingAuthority": { "const": false },
+    "nonceAuthority": { "const": false },
+    "networkAuthority": { "const": false },
+    "withdrawalAllowed": { "const": false },
+    "transferAllowed": { "const": false },
+    "status": { "enum": ["active", "revoked", "expired"] },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2 },
+    "revokedAt": {
+      "oneOf": [
+        { "type": "string", "format": "date-time" },
+        { "type": "null" }
+      ]
+    },
+    "revocationHash": {
+      "oneOf": [
+        { "$ref": "#/$defs/hash" },
+        { "type": "null" }
+      ]
+    },
+    "schemaVersion": { "const": "agent_secured_facility_authorization.v1" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    }
+  }
+}

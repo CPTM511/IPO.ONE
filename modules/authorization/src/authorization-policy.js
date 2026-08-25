@@ -237,6 +237,36 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.REQUIRED
   }),
   tenantOperation({
+    operationId: "agentCreateSecuredFacilityAuthorization",
+    action: "agent.facility_authorization.create.owned",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability:
+      PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_CREATE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "agentReadSecuredFacilityAuthorization",
+    action: "agent.facility_authorization.read.bound",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability:
+      PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
+    operationId: "agentRevokeSecuredFacilityAuthorization",
+    action: "agent.facility_authorization.revoke.owned",
+    resourceType: "trading_facility",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability:
+      PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_REVOKE_OWNED,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
     operationId: "tradingSubmitOrderIntent",
     action: "trading.order_intent.submit.self",
     resourceType: "trading_facility",

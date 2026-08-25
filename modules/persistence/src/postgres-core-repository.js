@@ -2267,6 +2267,22 @@ export class PostgresCoreRepository {
     );
   }
 
+  async findAgentSecuredFacilityAuthorizationForFacilityInTransaction(
+    client,
+    tradingFacilityId,
+    { lock = false } = {}
+  ) {
+    assertQueryable(client);
+    assertString("tradingFacilityId", tradingFacilityId);
+    const result = await client.query(
+      `SELECT * FROM agent_secured_facility_authorizations
+        WHERE trading_facility_id = $1
+        ${lock ? "FOR UPDATE" : ""}`,
+      [tradingFacilityId]
+    );
+    return mapAgentSecuredFacilityAuthorization(result.rows[0]);
+  }
+
   async getAgentAccountChallenge(challengeId) {
     return this.#getOne(
       "challengeId",
@@ -5035,7 +5051,7 @@ export class PostgresCoreRepository {
         value.poolBindingHash, value.poolProjectionHash, value.obligationId,
         value.obligationHash, value.tradingFacilityId, value.facilityHash,
         value.facilityStateHash, value.facilityVersion, value.chainId,
-        value.operationFamily, value.allowedIntentKinds, value.validFrom,
+        value.operationFamily, json(value.allowedIntentKinds), value.validFrom,
         value.expiresAt, value.status, value.version, value.revokedAt,
         value.revocationHash, value.sandboxOnly, value.productionAuthority,
         value.fundsAuthority, value.signingAuthority, value.nonceAuthority,

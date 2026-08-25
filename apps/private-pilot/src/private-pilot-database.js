@@ -118,7 +118,7 @@ async function provisionApplicationRole(ownerPool, password) {
        abuse_command_charges, principals, subjects, mandates,
        agent_account_challenges, agent_account_proof_attempts,
        execution_account_binding_challenges, execution_account_binding_proof_attempts,
-       account_bindings,
+       account_bindings, agent_secured_facility_authorizations,
        consent_records, human_identity_references, credit_intents,
        risk_decisions, credit_offers, credit_offer_acceptances,
        workspace_continuation_receipts,

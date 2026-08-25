@@ -28,7 +28,10 @@ export const TRADING_CAPITAL_OPERATION_IDS = Object.freeze([
   "tradingRunSettlement",
   "tradingReadSettlement",
   "tradingIssuePerformanceProof",
-  "tradingReadFacilityEvidence"
+  "tradingReadFacilityEvidence",
+  "agentCreateSecuredFacilityAuthorization",
+  "agentReadSecuredFacilityAuthorization",
+  "agentRevokeSecuredFacilityAuthorization"
 ]);
 
 export const TRADING_CAPITAL_ROLE_OPERATIONS = Object.freeze({
@@ -46,7 +49,10 @@ export const TRADING_CAPITAL_ROLE_OPERATIONS = Object.freeze({
     "tradingRequestClose",
     "tradingReadSettlement",
     "tradingIssuePerformanceProof",
-    "tradingReadFacilityEvidence"
+    "tradingReadFacilityEvidence",
+    "agentCreateSecuredFacilityAuthorization",
+    "agentReadSecuredFacilityAuthorization",
+    "agentRevokeSecuredFacilityAuthorization"
   ]),
   agent: Object.freeze([
     ...TRADING_CAPITAL_OPERATION_IDS.slice(0, 5),
@@ -62,7 +68,8 @@ export const TRADING_CAPITAL_ROLE_OPERATIONS = Object.freeze({
     "tradingRequestClose",
     "tradingReadSettlement",
     "tradingIssuePerformanceProof",
-    "tradingReadFacilityEvidence"
+    "tradingReadFacilityEvidence",
+    "agentReadSecuredFacilityAuthorization"
   ]),
   provider: Object.freeze([
     "tradingCreateProviderMandate",

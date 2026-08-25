@@ -227,6 +227,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "tradingReadCreditProfile",
     "tradingListCompatibleMandates",
     "tradingReadFacilityState",
+    "agentReadSecuredFacilityAuthorization",
     "tradingReadSettlement",
     "tradingReadFacilityEvidence"
   ],
@@ -257,6 +258,8 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "tradingContributeSubjectCollateral",
     "tradingRecordProviderFunding",
     "tradingActivateFacility",
+    "agentCreateSecuredFacilityAuthorization",
+    "agentRevokeSecuredFacilityAuthorization",
     "tradingSubmitOrderIntent",
     "tradingCancelOrderIntent",
     "tradingRequestClose",

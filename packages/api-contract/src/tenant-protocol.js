@@ -21,6 +21,7 @@ import tradingFacilityRiskEvaluationSchema from "../../../schemas/v2/trading-fac
 import tradingFacilityCloseRequestSchema from "../../../schemas/v2/trading-facility-close-request.schema.json" with { type: "json" };
 import tradingSettlementSchema from "../../../schemas/v2/trading-settlement.schema.json" with { type: "json" };
 import tradingPerformanceProofSchema from "../../../schemas/v2/trading-performance-proof.schema.json" with { type: "json" };
+import agentSecuredFacilityAuthorizationSchema from "../../../schemas/v2/agent-secured-facility-authorization.schema.json" with { type: "json" };
 import catalogSchema from "../../../schemas/v2/tenant-protocol-catalog.schema.json" with { type: "json" };
 import requestSchema from "../../../schemas/v2/tenant-protocol-request.schema.json" with { type: "json" };
 import resultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
@@ -75,6 +76,7 @@ ajv.addSchema(tradingFacilityRiskEvaluationSchema);
 ajv.addSchema(tradingFacilityCloseRequestSchema);
 ajv.addSchema(tradingSettlementSchema);
 ajv.addSchema(tradingPerformanceProofSchema);
+ajv.addSchema(agentSecuredFacilityAuthorizationSchema);
 
 const validateRequest = ajv.compile(requestSchema);
 const validateResult = ajv.compile(resultSchema);
@@ -1150,6 +1152,48 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     quotaClass: "read",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
     responseSchemaVersion: "trading_facility_evidence.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "agentCreateSecuredFacilityAuthorization",
+    kind: "command",
+    actorTypes: ["human"],
+    resourceType: "trading_facility",
+    requiredCapability: "agent.facility_authorization.create.owned",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion:
+      "tenant_agent_secured_facility_authorization_created.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "agentReadSecuredFacilityAuthorization",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "trading_facility",
+    requiredCapability: "agent.facility_authorization.read.bound",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion:
+      "tenant_agent_secured_facility_authorization_ready.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "agentRevokeSecuredFacilityAuthorization",
+    kind: "command",
+    actorTypes: ["human"],
+    resourceType: "trading_facility",
+    requiredCapability: "agent.facility_authorization.revoke.owned",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion:
+      "tenant_agent_secured_facility_authorization_revoked.v1",
     public: false,
     fundsAuthority: false
   },

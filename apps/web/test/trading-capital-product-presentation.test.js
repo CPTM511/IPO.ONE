@@ -145,9 +145,9 @@ function fixture() {
   return { facility, closeRequest, settlement, performanceProof, evidence };
 }
 
-test("TC-104 eight views cover the exact 25-operation local catalog", () => {
-  assert.equal(TRADING_CAPITAL_VIEW_DEFINITIONS.length, 8);
-  assert.equal(TRADING_CAPITAL_OPERATION_IDS.length, 25);
+test("TC-104 and M2B-001 nine views cover the exact 28-operation local catalog", () => {
+  assert.equal(TRADING_CAPITAL_VIEW_DEFINITIONS.length, 9);
+  assert.equal(TRADING_CAPITAL_OPERATION_IDS.length, 28);
   assert.deepEqual(
     [...new Set(TRADING_CAPITAL_VIEW_DEFINITIONS.flatMap((view) => view.operationIds))]
       .sort(),
@@ -166,8 +166,8 @@ test("TC-104 Human, Agent, and Provider reconcile to one Facility", () => {
     ...input
   });
   assert.equal(Object.isFrozen(human), true);
-  assert.equal(human.operationCount, 25);
-  assert.equal(human.views.length, 8);
+  assert.equal(human.operationCount, 28);
+  assert.equal(human.views.length, 9);
   assert.equal(human.audiences.human.facilityId, input.facility.tradingFacilityId);
   assert.equal(human.audiences.agent.facilityId, input.facility.tradingFacilityId);
   assert.equal(human.audiences.provider.facilityId, input.facility.tradingFacilityId);

@@ -1570,7 +1570,7 @@ test("UX-002 keeps Human actions operable and Agent actions authority-truthful",
   assert.ok(css.includes(".agent-online-workflow"));
 });
 
-test("TC-104 exposes eight authenticated Trading Capital views without funds claims", async () => {
+test("TC-104 and M2B-001 expose nine authenticated Trading Capital views without funds claims", async () => {
   const [html, js, presentation] = await Promise.all([
     readFile(new URL("../src/index.html", import.meta.url), "utf8"),
     readFile(new URL("../src/app.js", import.meta.url), "utf8"),
@@ -1588,7 +1588,8 @@ test("TC-104 exposes eight authenticated Trading Capital views without funds cla
     "live",
     "risk",
     "settle",
-    "proof"
+    "proof",
+    "authorization"
   ]) {
     assert.ok(
       html.includes(`data-trading-capital-view="${view}"`),
@@ -1599,6 +1600,12 @@ test("TC-104 exposes eight authenticated Trading Capital views without funds cla
   assert.ok(js.includes('"tradingReadFacilityEvidence"'));
   assert.ok(js.includes('"tradingRequestClose"'));
   assert.ok(js.includes('"tradingIssuePerformanceProof"'));
+  assert.ok(js.includes('"agentCreateSecuredFacilityAuthorization"'));
+  assert.ok(js.includes('"agentReadSecuredFacilityAuthorization"'));
+  assert.ok(js.includes('"agentRevokeSecuredFacilityAuthorization"'));
+  assert.ok(html.includes("Create Agent authorization"));
+  assert.ok(html.includes("Revoke Agent authorization"));
+  assert.ok(html.includes("Signer / nonce / funds"));
   assert.ok(presentation.includes("TRADING_CAPITAL_OPERATION_IDS"));
   assert.ok(html.includes("Unavailable Trading Capital capabilities"));
   assert.ok(html.includes("Worker-controlled · synthetic only"));

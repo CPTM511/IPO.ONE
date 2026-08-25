@@ -170,6 +170,12 @@ export const PilotCapability = Object.freeze({
   TRADING_FACILITY_FUNDING_RECORD_PROVIDER:
     "trading.facility.funding.record.provider",
   TRADING_FACILITY_ACTIVATE_SELF: "trading.facility.activate.self",
+  AGENT_SECURED_FACILITY_AUTHORIZATION_CREATE_OWNED:
+    "agent.facility_authorization.create.owned",
+  AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND:
+    "agent.facility_authorization.read.bound",
+  AGENT_SECURED_FACILITY_AUTHORIZATION_REVOKE_OWNED:
+    "agent.facility_authorization.revoke.owned",
   TRADING_ORDER_INTENT_SUBMIT_SELF: "trading.order_intent.submit.self",
   TRADING_ORDER_INTENT_CANCEL_SELF: "trading.order_intent.cancel.self",
   TRADING_FACILITY_READ_BOUND: "trading.facility.read.bound",
@@ -275,6 +281,9 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.TRADING_FACILITY_CREATE_SELF,
     PilotCapability.TRADING_FACILITY_COLLATERAL_RECORD_SELF,
     PilotCapability.TRADING_FACILITY_ACTIVATE_SELF,
+    PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_CREATE_OWNED,
+    PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND,
+    PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_REVOKE_OWNED,
     PilotCapability.TRADING_ORDER_INTENT_SUBMIT_SELF,
     PilotCapability.TRADING_ORDER_INTENT_CANCEL_SELF,
     PilotCapability.TRADING_FACILITY_READ_BOUND,
@@ -400,6 +409,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
     PilotCapability.TRADING_ORDER_INTENT_SUBMIT_SELF,
     PilotCapability.TRADING_ORDER_INTENT_CANCEL_SELF,
     PilotCapability.TRADING_FACILITY_READ_BOUND,
+    PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND,
     PilotCapability.TRADING_FACILITY_CLOSE_REQUEST_SELF,
     PilotCapability.TRADING_SETTLEMENT_READ_BOUND,
     PilotCapability.TRADING_PERFORMANCE_PROOF_ISSUE_BOUND,

@@ -95,6 +95,9 @@
         "tradingReadSettlement",
         "tradingIssuePerformanceProof",
         "tradingReadFacilityEvidence",
+        "agentCreateSecuredFacilityAuthorization",
+        "agentReadSecuredFacilityAuthorization",
+        "agentRevokeSecuredFacilityAuthorization",
         "walletPrepareAccountBinding",
         "walletSubmitAccountBinding",
         "walletReadAccountBindings",
@@ -365,6 +368,69 @@
         },
         "response": {
           "$ref": "#/$defs/tradingFacilityEvidenceResponse"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "agentCreateSecuredFacilityAuthorization"
+        },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/agentSecuredFacilityAuthorizationResponse" },
+            {
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": "tenant_agent_secured_facility_authorization_created.v1"
+                },
+                "readyForIntent": { "const": true }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "agentReadSecuredFacilityAuthorization"
+        },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/agentSecuredFacilityAuthorizationResponse" },
+            {
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": "tenant_agent_secured_facility_authorization_ready.v1"
+                },
+                "readyForIntent": { "const": true }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "agentRevokeSecuredFacilityAuthorization"
+        },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/agentSecuredFacilityAuthorizationResponse" },
+            {
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": "tenant_agent_secured_facility_authorization_revoked.v1"
+                },
+                "readyForIntent": { "const": false }
+              }
+            }
+          ]
         }
       }
     },
@@ -7512,6 +7578,38 @@
             "tenant_trading_provider_funding_recorded.v1",
             "tenant_trading_facility_activated.v1",
             "tenant_trading_facility_new_risk_paused.v1"
+          ]
+        }
+      }
+    },
+    "agentSecuredFacilityAuthorizationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization",
+        "readyForIntent",
+        "preSigningOnly",
+        "nonceCreated",
+        "signatureCreated",
+        "networkCalled",
+        "fundsMoved",
+        "schemaVersion"
+      ],
+      "properties": {
+        "authorization": {
+          "$ref": "https://schemas.ipo.one/v2/agent-secured-facility-authorization.schema.json"
+        },
+        "readyForIntent": { "type": "boolean" },
+        "preSigningOnly": { "const": true },
+        "nonceCreated": { "const": false },
+        "signatureCreated": { "const": false },
+        "networkCalled": { "const": false },
+        "fundsMoved": { "const": false },
+        "schemaVersion": {
+          "enum": [
+            "tenant_agent_secured_facility_authorization_created.v1",
+            "tenant_agent_secured_facility_authorization_ready.v1",
+            "tenant_agent_secured_facility_authorization_revoked.v1"
           ]
         }
       }
