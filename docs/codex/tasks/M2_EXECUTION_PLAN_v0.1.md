@@ -309,13 +309,13 @@ revertible without inventing permission for its successor.
   Evidence: contracts, txs, configs, hashes, finality and owner sign-off.
 - Dependency/status: M2A-003..007 are merged. The exact-decision schema,
   five-stage testnet gate policy, dual-RPC dependency inspection and Base
-  Sepolia fork dry run are implemented and locally verified. Independent review
-  is optional for this first test-assets-only engineering deployment and remains
-  mandatory before mainnet/real value. Live execution remains blocked by the
-  disabled/null exact profile and two Founder-supplied public role addresses;
-  final Evidence and the fresh one-use signer are generated only after those
-  addresses and the exact green SHA exist. No transaction was signed or
-  broadcast.
+  Sepolia fork dry run were implemented and locally verified. The bounded
+  Base Sepolia test-assets Pool and Adapter were subsequently deployed,
+  source-verified, finalized, reconciled and accepted through visible Human,
+  Capital Partner and Risk product paths in PR #52. Every one-use signer was
+  destroyed. M2A-008 is `PASS — DEPLOYED AND USER-VERIFIED` only for that exact
+  L3 test-assets and local-product boundary; it grants no mainnet, real-value,
+  public-production or M2B authority.
 
 ### M2A-009 — recovery and v0.2.0 candidate
 
@@ -329,7 +329,12 @@ revertible without inventing permission for its successor.
   independent security review.
 - Security/permission: named recovery owners and dual control. Migration: exact
   manifest. Rollback: practiced disabled profile. Evidence: candidate bundle.
-- Dependency/status: M2A-008; blocked.
+- Dependency/status: M2A-008 is complete. The exact M2A-009 engineering
+  candidate at `25921f008f260d2d8a39524603cd1a6f2512fd63` passes recovery,
+  two-RPC read-only, PostgreSQL 90/90, browser 8/8, fork 2/2 and aggregate
+  1173/1173 gates. It remains `BLOCKED — NOT COMPLETE` pending exact-SHA
+  Founder re-sign/visible-click verification, named independent security
+  review, PR merge and post-merge CI. M2B-001 may not start.
 
 ## M2B — Principal-bound Hyperliquid Agent execution
 

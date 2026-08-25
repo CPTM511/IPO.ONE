@@ -1,6 +1,6 @@
 # M2A-009 — Recovery drills and v0.2.0 candidate
 
-Status: `ACTIVE — BASELINE AUDIT`
+Status: `BLOCKED — ENGINEERING CANDIDATE READY; HUMAN AND INDEPENDENT REVIEW REQUIRED`
 
 Delivery mode: `L3_LIVE_TESTNET_TEST_ASSETS_ONLY` observation and local
 recovery rehearsal; no new chain write
@@ -120,15 +120,18 @@ preparation or broadcast primitive is release-blocking.
 - [x] Scope explicitly prohibits another transaction and signer use.
 - [x] Mainnet, real funds, production Human lending and Agent writes remain
   false.
-- [ ] Candidate schema is closed, canonical and rejects authority expansion.
-- [ ] Recovery runner is mechanically read-only and verified by source tests.
-- [ ] RPC/oracle/reorg/reconciliation failures freeze new risk monotonically.
-- [ ] Dual-control recovery rejects duplicate or overlapping owners.
-- [ ] PostgreSQL restore/replay preserves forced RLS and exact Evidence.
-- [ ] No raw PII, credentials, private keys, signatures or database secrets
+- [x] Candidate schema is closed, canonical and rejects authority expansion.
+- [x] Recovery runner is mechanically read-only and verified by source tests.
+- [x] RPC/oracle/reorg/reconciliation failures freeze new risk monotonically.
+- [x] Dual-control recovery rejects duplicate or overlapping owners.
+- [x] PostgreSQL restore/replay preserves forced RLS and exact Evidence.
+- [x] No raw PII, credentials, private keys, signatures or database secrets
   enter artifacts or logs.
-- [ ] Exact candidate browser and repository gates pass.
-- [ ] Rollback profile is practiced and leaves the product truthfully disabled.
+- [x] Exact candidate automated browser and composite repository gates pass.
+- [x] Rollback profile is practiced and leaves the product truthfully disabled.
+- [ ] Exact candidate Founder-signed visible-click acceptance is complete.
+- [ ] Named independent security review is complete.
+- [ ] PR, merge SHA and post-merge CI Evidence exist.
 
 ## Permission boundary
 
@@ -176,5 +179,13 @@ completion grants no M2B signer, venue, transaction or real-value authority.
 
 ## Completion Evidence
 
-Not yet complete. Until the manifest, drills, exact-runtime acceptance, PR and
-post-merge CI exist, the truthful verdict is `BLOCKED — NOT COMPLETE`.
+Engineering candidate `25921f008f260d2d8a39524603cd1a6f2512fd63` binds the
+manifest, two-RPC live read, recovery drills, PostgreSQL 90/90, browser 8/8,
+fork 2/2, aggregate 1173/1173 and exact local runtime identity. Two defects
+found by the gates were repaired with regression protection: shared-database
+downgrade interference and pruned historical RPC state.
+
+The prior Human session was correctly invalidated after the exact image
+rebuild. Founder re-sign/visible-click Evidence, a named independent security
+review, PR merge and post-merge CI are still absent. The truthful verdict is
+`BLOCKED — NOT COMPLETE`.

@@ -1,8 +1,10 @@
 # IPO.ONE M2 requirement traceability v0.1
 
 Status: IDs ratified in Product Constitution v1.3; M2A-001 and M2A-003 through
-M2A-007 have bounded local implementation Evidence; M2A-008 has fail-closed
-preflight and read-only/fork compatibility Evidence only
+M2A-007 have bounded local implementation Evidence; M2A-008 is deployed and
+user-verified at the exact Base Sepolia test-assets/local-product boundary;
+M2A-009 has a blocked engineering candidate pending Human and independent
+review gates
 
 Base: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
@@ -217,6 +219,36 @@ zero-discrepancy reconciliation, freeze/recovery behavior and destroyed signer
 tombstones. `TESTNET VERIFIED`, local `RUNTIME`, local `REACHABLE`, and local
 `VERIFIED` are `YES`; public production `DEPLOYED` and real-value authority are
 `NO`.
+
+## M2A-009 recovery candidate Evidence update — 2026-08-25
+
+Engineering candidate `25921f008f260d2d8a39524603cd1a6f2512fd63`
+adds one closed recovery manifest and read-only runner over the existing
+M2A-008 Pool. The two admitted RPCs agree on finalized deployment receipts,
+current runtime bytecode and configuration at their latest common finalized
+height. No wallet, signer, signing method, transaction preparation or broadcast
+primitive exists in the runner.
+
+At this boundary the recovery Evidence for `REQ-POOL-EVID-001`,
+`REQ-POOL-EVID-003`, `REQ-POOL-EVID-004`, `REQ-POOL-005`, `REQ-RISK-001` and
+`REQ-RISK-002` is `IMPLEMENTED=YES` and `LOCALLY VERIFIED=YES`. Restart and
+duplicate replay preserve one projection hash; non-final reorg data invalidates
+additively; RPC/oracle/projection discrepancies freeze new risk while retaining
+protective repayment; zero discrepancy cannot auto-recover; and one role-bound
+approval is rejected before two distinct role hashes create a local recovery
+transition.
+
+The PostgreSQL suite passes 90/90 after isolating a downgrade drill from shared
+append-only Pool Evidence. Visible synthetic browser paths pass 8/8 for
+Borrower, Capital Partner and Risk, and aggregate tests pass 1173/1173. The
+exact local OCI image is reachable at
+`http://127.0.0.1:8787/#request-credit` and reports the candidate SHA.
+
+Final `USER VERIFIED` for M2A-009 remains `NO` because the prior Human session
+was correctly invalidated after rebuilding the exact candidate and has not yet
+been re-signed. Independent Security review is also absent. Public production,
+mainnet, real value, new transactions and M2B authority remain `NO`; the
+candidate verdict is `BLOCKED — NOT COMPLETE`.
 
 ## M2A-008 preflight Evidence update — 2026-08-23
 
