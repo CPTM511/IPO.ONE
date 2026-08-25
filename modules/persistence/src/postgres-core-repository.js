@@ -501,7 +501,7 @@ function mapPoolObligationEffectReceipt(row) {
 
 function mapAgentSecuredFacilityAuthorization(row) {
   if (!row) return undefined;
-  return row.authorization;
+  return row.authorization_record;
 }
 
 function mapAgentAccountChallenge(row) {
@@ -5012,7 +5012,7 @@ export class PostgresCoreRepository {
          allowed_intent_kinds, valid_from, expires_at, status, version,
          revoked_at, revocation_hash, sandbox_only, production_authority,
          funds_authority, signing_authority, nonce_authority, network_authority,
-         withdrawal_allowed, transfer_allowed, authorization, schema_version
+         withdrawal_allowed, transfer_allowed, authorization_record, schema_version
        ) VALUES (
          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
          $20::jsonb,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,
@@ -5022,7 +5022,7 @@ export class PostgresCoreRepository {
          version = EXCLUDED.version,
          revoked_at = EXCLUDED.revoked_at,
          revocation_hash = EXCLUDED.revocation_hash,
-         authorization = EXCLUDED.authorization
+         authorization_record = EXCLUDED.authorization_record
        WHERE agent_secured_facility_authorizations.authorization_hash = EXCLUDED.authorization_hash
          AND agent_secured_facility_authorizations.status = 'active'
          AND EXCLUDED.status = 'revoked'

@@ -37,7 +37,7 @@ CREATE TABLE agent_secured_facility_authorizations (
   network_authority BOOLEAN NOT NULL CHECK (network_authority = FALSE),
   withdrawal_allowed BOOLEAN NOT NULL CHECK (withdrawal_allowed = FALSE),
   transfer_allowed BOOLEAN NOT NULL CHECK (transfer_allowed = FALSE),
-  authorization JSONB NOT NULL,
+  authorization_record JSONB NOT NULL,
   schema_version TEXT NOT NULL CHECK (schema_version = 'agent_secured_facility_authorization.v1'),
   CONSTRAINT agent_secured_facility_authorizations_pkey PRIMARY KEY (tenant_id, id),
   CONSTRAINT agent_secured_facility_authorizations_hash_key UNIQUE (tenant_id, authorization_hash),
@@ -63,20 +63,20 @@ CREATE TABLE agent_secured_facility_authorizations (
     OR (status = 'expired' AND version = 2 AND revoked_at IS NULL AND revocation_hash IS NOT NULL)
   ),
   CONSTRAINT agent_secured_facility_authorizations_identity_check CHECK (
-    authorization->>'agentSecuredFacilityAuthorizationId' = id
-    AND authorization->>'authorizationHash' = authorization_hash
-    AND authorization->>'subjectId' = subject_id
-    AND authorization->>'principalId' = principal_id
-    AND authorization->>'mandateId' = mandate_id
-    AND authorization->>'accountBindingId' = account_binding_id
-    AND authorization->>'poolObligationBindingId' = pool_obligation_binding_id
-    AND authorization->>'obligationId' = obligation_id
-    AND authorization->>'tradingFacilityId' = trading_facility_id
-    AND authorization->>'operationFamily' = operation_family
-    AND authorization->'allowedIntentKinds' = allowed_intent_kinds
-    AND authorization->>'status' = status
-    AND (authorization->>'version')::BIGINT = version
-    AND authorization->>'schemaVersion' = schema_version
+    authorization_record->>'agentSecuredFacilityAuthorizationId' = id
+    AND authorization_record->>'authorizationHash' = authorization_hash
+    AND authorization_record->>'subjectId' = subject_id
+    AND authorization_record->>'principalId' = principal_id
+    AND authorization_record->>'mandateId' = mandate_id
+    AND authorization_record->>'accountBindingId' = account_binding_id
+    AND authorization_record->>'poolObligationBindingId' = pool_obligation_binding_id
+    AND authorization_record->>'obligationId' = obligation_id
+    AND authorization_record->>'tradingFacilityId' = trading_facility_id
+    AND authorization_record->>'operationFamily' = operation_family
+    AND authorization_record->'allowedIntentKinds' = allowed_intent_kinds
+    AND authorization_record->>'status' = status
+    AND (authorization_record->>'version')::BIGINT = version
+    AND authorization_record->>'schemaVersion' = schema_version
   )
 );
 
