@@ -9,6 +9,7 @@ node_modules
 coverage
 dist
 output
+test-results
 *.log
 *.db
 *.db-shm
