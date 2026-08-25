@@ -14,3 +14,5 @@ export * from "./hypercore-evidence.js";
 export * from "./hypercore-venue-adapter.js";
 export * from "./postgres-hypercore-delegate-repository.js";
 export * from "./postgres-venue-execution-application.js";
+export * from "./m2b-secured-facility-composition.js";
+export * from "./postgres-m2b-composition-repository.js";

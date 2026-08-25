@@ -996,7 +996,7 @@ async function configureRole(client, { roleName, password, authenticationOnly })
   await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${role}`);
   await client.query(`GRANT UPDATE (id) ON actors, memberships, access_grants TO ${role}`);
   await client.query(`GRANT UPDATE (status) ON obligations, credit_lines TO ${role}`);
-  await client.query(`GRANT INSERT ON authorization_resources, authorization_resource_bindings, authorization_audit_events, tenant_command_executions TO ${role}`);
+  await client.query(`GRANT INSERT ON authorization_resources, authorization_resource_bindings, authorization_audit_events, tenant_command_executions, agent_hyperliquid_compositions, agent_hyperliquid_composition_transitions TO ${role}`);
   await client.query(`GRANT UPDATE (resource_id) ON authorization_resources, authorization_resource_bindings TO ${role}`);
   await client.query(`GRANT UPDATE (status, version, updated_at) ON authorization_resources TO ${role}`);
   await client.query(`GRANT INSERT, UPDATE, DELETE ON ${GATEWAY_MUTATION_TABLES.join(", ")} TO ${role}`);

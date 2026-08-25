@@ -145,6 +145,25 @@ function response(authorization, { readyForIntent, schemaVersion }) {
   return {
     authorization: structuredClone(authorization),
     readyForIntent,
+    executionPrewriteReadiness: {
+      status: "BLOCKED_PREWRITE",
+      launchProfileId: "live_testnet_secured_pool_agent_execution",
+      compositionAvailable: false,
+      compositionHash: null,
+      blockers: [
+        "distinct_agent_venue_launch_profile_missing",
+        "durable_exact_composition_not_supplied",
+        "fresh_reconciled_hyperliquid_account_observation_missing",
+        "fresh_non_exporting_signer_handoff_missing",
+        "exact_one_use_founder_run_approval_missing",
+        ...(readyForIntent ? [] : ["current_facility_authorization_unavailable"])
+      ],
+      externalNonceAllocated: false,
+      signatureCreated: false,
+      networkCalled: false,
+      submissionAuthorized: false,
+      schemaVersion: "agent_hyperliquid_prewrite_readiness.v1"
+    },
     preSigningOnly: true,
     nonceCreated: false,
     signatureCreated: false,

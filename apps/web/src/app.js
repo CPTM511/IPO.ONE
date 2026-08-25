@@ -210,6 +210,7 @@ const tradingCapitalPilot = {
   performanceProof: null,
   evidence: null,
   authorization: null,
+  executionPrewriteReadiness: null,
   authorizationError: false,
   authorizationHelper:
     "Load one exact Facility first. Creation and revocation require the authenticated Principal workspace; the Agent may only read the current authorization.",
@@ -7520,6 +7521,7 @@ function tradingCapitalSummaryItem(label, value) {
 function safeAgentFacilityAuthorizationResponse(result, facilityId) {
   const response = result?.response;
   const authorization = response?.authorization;
+  const readiness = response?.executionPrewriteReadiness;
   if (
     !authorization ||
     authorization.schemaVersion !== "agent_secured_facility_authorization.v1" ||
@@ -7538,11 +7540,21 @@ function safeAgentFacilityAuthorizationResponse(result, facilityId) {
     response.nonceCreated !== false ||
     response.signatureCreated !== false ||
     response.networkCalled !== false ||
-    response.fundsMoved !== false
+    response.fundsMoved !== false ||
+    readiness?.status !== "BLOCKED_PREWRITE" ||
+    readiness.launchProfileId !== "live_testnet_secured_pool_agent_execution" ||
+    readiness.compositionAvailable !== false ||
+    readiness.compositionHash !== null ||
+    !Array.isArray(readiness.blockers) || readiness.blockers.length < 5 ||
+    readiness.externalNonceAllocated !== false ||
+    readiness.signatureCreated !== false ||
+    readiness.networkCalled !== false ||
+    readiness.submissionAuthorized !== false ||
+    readiness.schemaVersion !== "agent_hyperliquid_prewrite_readiness.v1"
   ) {
     throw new Error("agent_facility_authorization_presentation_rejected");
   }
-  return authorization;
+  return { authorization, readiness };
 }
 
 function renderTradingCapital() {
@@ -7607,6 +7619,16 @@ function renderTradingCapital() {
     "error",
     tradingCapitalPilot.authorizationError
   );
+  const prewrite = tradingCapitalPilot.executionPrewriteReadiness;
+  el("tradingCapitalPrewriteStatus").textContent = prewrite
+    ? "Blocked pre-write · server verified"
+    : "Blocked pre-write";
+  el("tradingCapitalCompositionState").textContent = prewrite?.compositionAvailable
+    ? "Prepared"
+    : "Not available";
+  el("tradingCapitalPrewriteHelper").textContent = prewrite
+    ? `STOP receipt verified. ${prewrite.blockers.length} recovery conditions remain; no nonce, signature, or network submission exists.`
+    : "This is a queryable STOP receipt, not an execution control. Load the exact Facility and authorization to recover current server truth.";
   el("tradingCapitalActiveEyebrow").textContent = view.label;
   el("tradingCapitalViewStatus").textContent = parity
     ? "Authenticated local contract"
@@ -7715,6 +7737,7 @@ async function loadTradingCapitalFacility({ evidence = false } = {}) {
       tradingCapitalPilot.evidence = null;
     }
     tradingCapitalPilot.authorization = null;
+    tradingCapitalPilot.executionPrewriteReadiness = null;
     tradingCapitalPilot.authorizationError = false;
     tradingCapitalPilot.authorizationHelper =
       "Facility loaded. Check current authorization before creating or revoking Principal authority.";
@@ -7763,13 +7786,18 @@ async function readTradingCapitalAuthorization() {
       payload: {},
       idempotent: false
     });
-    tradingCapitalPilot.authorization =
-      safeAgentFacilityAuthorizationResponse(result, presentation.facilityId);
+    const checked = safeAgentFacilityAuthorizationResponse(
+      result,
+      presentation.facilityId
+    );
+    tradingCapitalPilot.authorization = checked.authorization;
+    tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
     tradingCapitalPilot.authorizationHelper =
       "Current authorization is bound to this Facility, canonical Obligation, Mandate, execution AccountBinding, and finalized Pool projection. It grants no nonce, signer, network, withdrawal, transfer, or funds authority.";
     toast("Agent Facility authorization loaded");
   } catch (error) {
     tradingCapitalPilot.authorization = null;
+    tradingCapitalPilot.executionPrewriteReadiness = null;
     tradingCapitalPilot.authorizationError = true;
     tradingCapitalPilot.authorizationHelper = tradingCapitalResourceUnavailable(error)
       ? "No current authorization is available for this bound Facility and workspace."
@@ -7800,8 +7828,12 @@ async function createTradingCapitalAuthorization() {
       payload: {},
       idempotent: true
     });
-    tradingCapitalPilot.authorization =
-      safeAgentFacilityAuthorizationResponse(result, presentation.facilityId);
+    const checked = safeAgentFacilityAuthorizationResponse(
+      result,
+      presentation.facilityId
+    );
+    tradingCapitalPilot.authorization = checked.authorization;
+    tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
     tradingCapitalPilot.authorizationHelper =
       "Agent authorization created. It permits only goal-level open and protective close intent checks before signing; all external authority remains disabled.";
     toast("Agent Facility authorization created");
@@ -7842,8 +7874,12 @@ async function revokeTradingCapitalAuthorization() {
       },
       idempotent: true
     });
-    tradingCapitalPilot.authorization =
-      safeAgentFacilityAuthorizationResponse(result, presentation.facilityId);
+    const checked = safeAgentFacilityAuthorizationResponse(
+      result,
+      presentation.facilityId
+    );
+    tradingCapitalPilot.authorization = checked.authorization;
+    tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
     tradingCapitalPilot.authorizationHelper =
       "Agent authorization revoked. Historical Event and Evidence remain queryable; new-risk Agent intent remains denied.";
     toast("Agent Facility authorization revoked");
@@ -12710,6 +12746,7 @@ function bindActions() {
     tradingCapitalPilot.performanceProof = null;
     tradingCapitalPilot.evidence = null;
     tradingCapitalPilot.authorization = null;
+    tradingCapitalPilot.executionPrewriteReadiness = null;
     tradingCapitalPilot.authorizationError = false;
     tradingCapitalPilot.authorizationHelper =
       "Load one exact Facility first. Creation and revocation require the authenticated Principal workspace; the Agent may only read the current authorization.";
