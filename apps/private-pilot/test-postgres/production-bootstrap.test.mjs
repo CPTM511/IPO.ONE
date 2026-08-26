@@ -39,7 +39,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0068_m2b_dual_risk_recovery"
+      "0069_auth_reference_hash_key_rotation"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
@@ -181,7 +181,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0068_m2b_dual_risk_recovery"
+      "0069_auth_reference_hash_key_rotation"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -193,7 +193,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 6 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 7 }), [
+      "0069_auth_reference_hash_key_rotation",
       "0068_m2b_dual_risk_recovery",
       "0067_m2b_hyperliquid_compositions",
       "0066_agent_secured_facility_authorizations",
@@ -207,7 +208,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0065_pool_obligation_integration",
       "0066_agent_secured_facility_authorizations",
       "0067_m2b_hyperliquid_compositions",
-      "0068_m2b_dual_risk_recovery"
+      "0068_m2b_dual_risk_recovery",
+      "0069_auth_reference_hash_key_rotation"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count
@@ -356,6 +358,23 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   });
   assert.equal(revokedAgent.status, "revoked");
   assert.equal(revokedAgent.replayed, false);
+  const rotatedAgent = await provisionProductionGoldenFlowAgent({
+    ...goldenFlowInput,
+    referenceHashKey: randomBytes(32),
+    referenceHashKeyVersion: "v2",
+    invitationId: `invite_golden_flow_v2_${suffix}`,
+    senderThumbprint: "h".repeat(43)
+  });
+  assert.equal(rotatedAgent.replayed, false);
+  assert.notEqual(rotatedAgent.credentialId, provisionedAgent.credentialId);
+  const revokedRotatedAgent = await revokeProductionGoldenFlowAgentCredential({
+    adminConnectionString: process.env.DATABASE_URL,
+    tenantId: input.tenant.tenantId,
+    actorId: goldenFlowInput.actorId,
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(revokedRotatedAgent.status, "revoked");
+  assert.equal(revokedRotatedAgent.replayed, false);
   const replayedRevocation = await revokeProductionGoldenFlowAgentCredential({
     adminConnectionString: process.env.DATABASE_URL,
     tenantId: input.tenant.tenantId,

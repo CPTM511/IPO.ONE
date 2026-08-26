@@ -1,6 +1,6 @@
 # AUTHN-008 — Authentication reference-hash key rotation
 
-Status: `PLANNED — IMPLEMENTATION AND PRODUCTION EXECUTION NOT AUTHORIZED`
+Status: `IMPLEMENTED LOCALLY — PRODUCTION EXECUTION NOT AUTHORIZED`
 
 Requirements: `REQ-CORE-001`, `REQ-EVID-001`, `REQ-EVID-002`,
 `REQ-UX-001`, `REQ-UX-002`, `REQ-UX-005`
@@ -226,7 +226,23 @@ rollback identity and explicit no-funds/no-chain truth.
 
 ## Permission boundary and next gate
 
-This document is a plan only. Implementation and local synthetic/no-funds
-testing require a new explicit Founder approval of `AUTHN-008`. Production key
-creation, schema migration, Vercel configuration, deployment, rebind, cutover
-and old-key deletion then remain separately approved actions under the runbook.
+Founder approval for implementation and local synthetic/no-funds testing was
+received on 2026-08-26. The implementation uses additive migration
+`0069_auth_reference_hash_key_rotation`, a three-state dual-key runtime,
+verified Human side-by-side rebind, reviewed Agent v2 reprovisioning, dual abuse
+metering, legacy-artifact retirement and fail-closed cutover inventory.
+
+The credential/role/old-Session authority transition is one Tenant transaction.
+The new browser Session is issued only after that transaction commits. This is
+an intentional fail-closed implementation exception to the single-transaction
+wording above: a Session failure grants no authority, and a retry idempotently
+uses the active v2 credential. It avoids returning a browser cookie for a
+database transaction that could still roll back. Production review must accept
+this invariant or require a separately reviewed transaction-coupled issuance
+design before production execution.
+
+Local PostgreSQL, unit, transport, migration, traceability and repository tests
+passed with no funds and no chain writes. Production key creation, production
+schema migration, Vercel configuration, deployment, production rebind,
+cutover and old-key deletion remain separately approved actions under
+`docs/security/IPO_ONE_AUTH_REFERENCE_HASH_KEY_ROTATION_RUNBOOK_v0.1_DRAFT.md`.

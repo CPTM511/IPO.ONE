@@ -1,6 +1,6 @@
 import {
   MachineAuthenticator,
-  createReferenceHasher
+  createReferenceHashKeyring
 } from "../../../modules/authentication/src/index.js";
 import { AuthorizationPolicyRegistry } from "../../../modules/authorization/src/index.js";
 import { assertTenantDatabaseRole } from "../../../modules/persistence/src/index.js";
@@ -41,6 +41,8 @@ const CONFIG_KEYS = new Set([
   "encryptionKeyRef",
   "gatewayPool",
   "getTrustedMtlsEvidence",
+  "legacyReferenceHashKey",
+  "legacyReferenceHashKeyRef",
   "machineAudience",
   "machineIssuer",
   "machineResolver",
@@ -50,6 +52,7 @@ const CONFIG_KEYS = new Set([
   "proofAdapters",
   "referenceHashKey",
   "referenceHashKeyRef",
+  "referenceHashMode",
   "releaseId",
   "runtimeConfig",
   "systemActorId",
@@ -110,6 +113,8 @@ async function assertExactMigrationSet(pool) {
 
 async function composeProductionClosedPilotRuntime(input) {
   assertClosedConfig(input);
+  const referenceHashMode = input.referenceHashMode ??
+    input.runtimeConfig?.referenceHashMode ?? "single_v1";
   if (
     !input.gatewayPool?.connect ||
     !input.gatewayPool?.query ||
@@ -135,6 +140,13 @@ async function composeProductionClosedPilotRuntime(input) {
     pool: input.authenticationPool,
     referenceHashKey: input.referenceHashKey,
     referenceHashKeyRef: input.referenceHashKeyRef,
+    referenceHashMode,
+    ...(input.legacyReferenceHashKey === undefined
+      ? {}
+      : { legacyReferenceHashKey: input.legacyReferenceHashKey }),
+    ...(input.legacyReferenceHashKeyRef === undefined
+      ? {}
+      : { legacyReferenceHashKeyRef: input.legacyReferenceHashKeyRef }),
     runtimeConfig: input.runtimeConfig,
     systemActorId: input.systemActorId,
     tenantId: input.tenantId,
@@ -142,7 +154,21 @@ async function composeProductionClosedPilotRuntime(input) {
     ...(input.wallet === undefined ? {} : { wallet: input.wallet })
   });
 
-  const referenceHasher = createReferenceHasher(input.referenceHashKey);
+  const referenceHasher = createReferenceHashKeyring({
+    mode: referenceHashMode,
+    primary: {
+      keyVersion: referenceHashMode === "single_v1" ? "v1" : "v2",
+      secret: input.referenceHashKey
+    },
+    ...(referenceHashMode === "overlap_v2_write_v1_lookup"
+      ? {
+          legacy: {
+            keyVersion: "v1",
+            secret: input.legacyReferenceHashKey
+          }
+        }
+      : {})
+  });
   const policyRegistry = new AuthorizationPolicyRegistry({
     policyVersion: input.policyVersion
   });

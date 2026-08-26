@@ -1,6 +1,6 @@
 # IPO.ONE authentication reference-hash key rotation runbook v0.1
 
-Status: `DRAFT — NO PRODUCTION EXECUTION AUTHORITY`
+Status: `IMPLEMENTED LOCALLY — NO PRODUCTION EXECUTION AUTHORITY`
 
 Issue: `AUTHN-008`
 
@@ -87,12 +87,17 @@ No approval for one stage authorizes any later stage.
    exact tenant, wallet, issuer, client, policy, status and authorization
    continuity.
 4. Atomically insert the new `v2` credential and exact cloned active role
-   enrollments, revoke the `v1` credential and old enrollments, append the
-   rebind Event, and create a `v2` Session.
-5. On retry, return the same completed result or fail on divergence. Never
-   create a second active binding.
+   enrollments, revoke the `v1` credential and old enrollments, revoke every old
+   Session and append the rebind Event.
+5. Issue the new `v2` browser Session only after the authority transaction
+   commits. A Session failure grants no authority; retry must reuse the active
+   `v2` binding without creating another credential or broadening authorization.
 6. Refresh the browser and prove the workspace is recovered from authenticated
    server truth. Log out and sign in once more to prove normal recovery.
+
+The post-commit Session issuance in step 5 is the reviewed local implementation
+exception to a transaction-coupled cookie return. Production execution must
+accept this fail-closed invariant or require a separate implementation review.
 
 ## Rebind or reprovision workload identity
 
