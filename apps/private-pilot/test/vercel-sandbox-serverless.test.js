@@ -423,6 +423,22 @@ test("Cron cycle rejects a non-Vercel runtime before opening PostgreSQL", async 
   );
 });
 
+test("Cron cycle rejects duplicate-key AUTHN-008 operations before opening PostgreSQL", async () => {
+  const releaseId = "a".repeat(40);
+  await assert.rejects(
+    () => runVercelSandboxCronCycle({
+      environment: vercelEnvironment({
+        IPO_ONE_RELEASE_ID: releaseId,
+        IPO_ONE_AUTHN_008_AGENT_OPERATION_JSON:
+          `{"schemaVersion":"authn_008_agent_operation.v1",` +
+          `"action":"revoke","action":"reprovision",` +
+          `"releaseId":"${releaseId}","actorId":"actor_agent_runtime_m1_b"}`
+      })
+    }),
+    (error) => error?.code === "invalid_vercel_sandbox_cron_configuration"
+  );
+});
+
 test("Vercel Sandbox rejects file-mounted secrets instead of mixing providers", async () => {
   await assert.rejects(
     () => loadProductionClosedPilotEnvironment(vercelEnvironment({
