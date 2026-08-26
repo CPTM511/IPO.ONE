@@ -403,6 +403,12 @@ revertible without inventing permission for its successor.
 - Security/permission: external Agent credentials exact and revocable. Migration:
   only previously approved additive schema. Rollback: freeze/close, preserve
   outcome. Dependency: M2B-003.
+- Dependency/status: local shared-kernel repayment, terminal Credit Outcome,
+  non-authorizing Credit State, independent Agent reads, restart/replay proof
+  and visible healthy/loss review are implemented on
+  `codex/m2b-004-agent-repayment-credit-state`. No external credential,
+  signer, nonce, Pool/Venue write, deployment, mainnet or real-value authority
+  is granted; external M2B-004 completion remains `BLOCKED — NOT COMPLETE`.
 
 ### M2B-005 — v0.2.1 release hardening
 
