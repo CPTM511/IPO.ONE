@@ -284,7 +284,7 @@ function assertEvidenceSemantics(kind, text) {
       fail("invalid_m2b005_evidence", "M2B-002 no-write boundary drifted");
     }
   } else if (kind === "m2b_003_recovery") {
-    if (!text.includes("BLOCKED — NOT COMPLETE") || !text.includes("automatic movement to a less restrictive state fails")) {
+    if (!text.includes("BLOCKED — NOT COMPLETE") || !text.includes("Automatic movement to a less restrictive state fails")) {
       fail("invalid_m2b005_evidence", "M2B-003 recovery STOP boundary drifted");
     }
   }
