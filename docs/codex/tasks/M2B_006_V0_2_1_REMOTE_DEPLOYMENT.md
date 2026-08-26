@@ -260,3 +260,20 @@ The credential-disclosure incident is closed. M2B-006 remains
 positive Agent read. The Agent path now requires either the owner-only original
 reference-hash key supplied through a local `0600` file, or a separately scoped
 authentication-key rotation and data-migration issue.
+
+## 2026-08-26 reference-hash rotation planning authorization
+
+- The Founder confirmed that no owner copy of the original reference-hash key
+  is available and authorized formulation of the separately scoped migration.
+- `AUTHN-008` now specifies a bounded `v1 -> v2` overlap: `v2`-only writes,
+  post-proof `v1` credential lookup, side-by-side versioned credentials,
+  terminal old Sessions, fresh Human/workload proof, exact cutover inventory
+  and forward-only rollback.
+- No production secret, database row, deployment or credential was changed
+  under this planning authorization. Implementation/local testing and each
+  production stage remain separately approved actions.
+
+Plan: `docs/codex/tasks/AUTHN_008_REFERENCE_HASH_KEY_ROTATION.md`.
+
+Draft runbook:
+`docs/security/IPO_ONE_AUTH_REFERENCE_HASH_KEY_ROTATION_RUNBOOK_v0.1_DRAFT.md`.
