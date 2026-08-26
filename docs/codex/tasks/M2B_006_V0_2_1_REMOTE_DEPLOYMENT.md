@@ -229,3 +229,34 @@ is then revoked/destroyed.
 
 Final continuation Evidence:
 `artifacts/m2b-006/production-promotion-and-acceptance.json`.
+
+## 2026-08-26 explicit security-remediation authorization
+
+- The Founder explicitly authorized rotation of the exposed
+  `neondb_owner` password and one temporary Agent acceptance credential with
+  post-acceptance revocation and private-key destruction.
+- Neon rotated the owner password exactly once. A fresh direct connection with
+  the old credential failed authentication, while the new credential completed
+  a read-only verification as `neondb_owner` on `neondb`, not in recovery, with
+  68/68 exact migration names and checksums at
+  `0068_m2b_dual_risk_recovery`. The new password was neither printed nor
+  persisted. Production runtime roles were unchanged.
+- After rotation, `https://ipo.one/livez`, `/readyz` and discovery remained
+  HTTP 200 at the exact deployed SHA with real funds disabled. The bounded
+  30-minute Vercel scan contained no error or HTTP 5xx entry, and anonymous
+  Tenant catalog access continued to fail closed.
+- Vercel correctly refused to export the encrypted
+  `IPO_ONE_AUTH_REFERENCE_HASH_KEY`. Exact digest-based search found no
+  owner-only original local copy. Because the production bootstrap hashes
+  invitation, Subject and sender-constraint references with that key, issuing
+  a credential without it would require an authentication bypass or a broader
+  key-rotation/data migration. Neither was attempted.
+- A production Chrome tab is open at `https://ipo.one`; the wallet signature
+  and post-login refresh remain a Founder action. Browser-control attachment
+  timed out without changing application or wallet state.
+
+The credential-disclosure incident is closed. M2B-006 remains
+`BLOCKED — NOT COMPLETE` only on authenticated Human refresh/recovery and the
+positive Agent read. The Agent path now requires either the owner-only original
+reference-hash key supplied through a local `0600` file, or a separately scoped
+authentication-key rotation and data-migration issue.

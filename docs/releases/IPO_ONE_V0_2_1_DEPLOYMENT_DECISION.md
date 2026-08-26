@@ -71,3 +71,18 @@ transcript during verification; explicit password-rotation authority is
 required because the prior instruction prohibited role-password changes. The
 healthy promoted deployment remains in place while these security and
 authenticated acceptance obligations are resolved.
+
+The Founder then explicitly authorized the required owner-password rotation
+and one ephemeral Agent acceptance credential. The owner password was rotated;
+the old credential now fails, the new credential passed read-only identity and
+68/68 migration verification, and the promoted runtime remained healthy with
+no bounded error or 5xx. This closes the database credential-disclosure
+finding.
+
+The temporary Agent credential could not be safely issued because Vercel does
+not export the encrypted authentication reference-hash key and no owner-only
+original copy was recoverable locally. No authentication bypass, HMAC oracle,
+alternate hash key or runtime privilege expansion was introduced. Final status
+therefore remains `BLOCKED — NOT COMPLETE` pending the original key through an
+owner-only local file (or a separately reviewed key-rotation migration) and the
+Founder's production wallet sign-in plus refresh verification.

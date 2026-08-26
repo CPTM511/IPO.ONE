@@ -2,13 +2,13 @@
   "schemaVersion": "m2b_006_production_promotion_and_acceptance.v1",
   "issueId": "M2B-006",
   "candidateId": "M2B-005-V0.2.1-RC-20260826-002",
-  "observedAt": "2026-08-26T13:20:26Z",
+  "observedAt": "2026-08-26T14:30:26Z",
   "authorization": {
     "runtimePrivilegeRepair": true,
     "stableAliasPromotion": true,
     "fullRemoteAcceptance": true,
-    "rolePasswordMutation": false,
-    "newProductionCredential": false,
+    "rolePasswordMutation": true,
+    "newProductionCredential": true,
     "mainnet": false,
     "realFunds": false
   },
@@ -54,6 +54,17 @@
     "authenticationAudit": {
       "unexpectedSelect": 0,
       "unexpectedMutation": 0
+    },
+    "ownerPasswordRotation": {
+      "authorized": true,
+      "completed": true,
+      "oldCredentialRejected": true,
+      "newCredentialValidated": true,
+      "postRotationMigrationCount": 68,
+      "postRotationMigrationHead": "0068_m2b_dual_risk_recovery",
+      "postRotationExactNamesAndChecksums": true,
+      "passwordPersisted": false,
+      "passwordPrinted": false
     }
   },
   "deployment": {
@@ -82,7 +93,9 @@
       "realFundsEnabled": false
     },
     "errorsInFortyFiveMinuteScan": 0,
-    "fiveHundredsInFortyFiveMinuteScan": 0
+    "fiveHundredsInFortyFiveMinuteScan": 0,
+    "postRotationErrorsInThirtyMinuteScan": 0,
+    "postRotationFiveHundredsInThirtyMinuteScan": 0
   },
   "humanAcceptance": {
     "visibleProductionPage": true,
@@ -91,21 +104,27 @@
     "noWalletFailsClosed": true,
     "authenticatedSession": false,
     "refreshRecoveryVerified": false,
-    "blocker": "COMPATIBLE_WALLET_SIGNATURE_REQUIRED"
+    "productionChromeTabOpened": true,
+    "blocker": "FOUNDER_WALLET_SIGNATURE_AND_REFRESH_REQUIRED"
   },
   "agentAcceptance": {
     "openApiPublished": true,
     "senderConstrainedSecurityDeclared": true,
     "unauthenticatedCatalogRejected": true,
     "authorizedRead": false,
-    "blocker": "NO_APPROVED_ACTIVE_PRIVATE_CREDENTIAL_AVAILABLE"
+    "ephemeralCredentialAuthorized": true,
+    "referenceHashKeyExportableFromVercel": false,
+    "ownerOnlyOriginalKeyRecoveredLocally": false,
+    "unsafeBootstrapBypassAttempted": false,
+    "blocker": "OWNER_ONLY_AUTH_REFERENCE_HASH_KEY_OR_ROTATION_MIGRATION_REQUIRED"
   },
   "securityIncident": {
     "type": "OWNER_CONNECTION_STRING_DISCLOSED_IN_INTERNAL_COMMAND_ERROR_OUTPUT",
     "secretRepeatedInEvidence": false,
-    "passwordRotated": false,
-    "reasonNotRotated": "EXPLICIT_ROLE_PASSWORD_MUTATION_PROHIBITION_REMAINS_IN_FORCE",
-    "requiredAction": "EXPLICITLY_AUTHORIZE_OWNER_PASSWORD_ROTATION_AND_POST_ROTATION_REVALIDATION"
+    "passwordRotated": true,
+    "oldCredentialRejected": true,
+    "postRotationRevalidated": true,
+    "status": "CLOSED"
   },
   "rollback": {
     "previousDeploymentId": "dpl_qLgKAkpyTEdeZpsjMw8trL5gtNLj",
@@ -129,9 +148,8 @@
     "verified": "PARTIAL_REMOTE_ACCEPTANCE",
     "verdict": "BLOCKED — NOT COMPLETE",
     "blockers": [
-      "OWNER_PASSWORD_ROTATION_REQUIRED_AFTER_CREDENTIAL_DISCLOSURE",
       "HUMAN_AUTHENTICATED_REFRESH_RECOVERY_NOT_VERIFIED",
-      "AGENT_AUTHORIZED_READ_NOT_VERIFIED"
+      "AGENT_AUTHORIZED_READ_NOT_VERIFIED_DUE_TO_UNAVAILABLE_OWNER_REFERENCE_HASH_KEY"
     ]
   }
 }
