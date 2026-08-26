@@ -29,6 +29,12 @@ Object.assign(supplementalWorkloadPublicJwk, {
   use: "sig"
 });
 
+const singleV1ReferenceHashState = Object.freeze({
+  mode: "single_v1",
+  writeKeyVersion: "v1",
+  legacyLookupKeyVersion: null
+});
+
 function secretRef(name, value) {
   return `vercel://environment/production/${name}@sha256:${createHash("sha256")
     .update(value)
@@ -357,6 +363,7 @@ test("production request handler runs without opening a listening socket", async
     deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,
+    authenticationReferenceHash: singleV1ReferenceHashState,
     publicOrigin: "https://ipo.one",
     port: 8080,
     releaseId: "a".repeat(40)
@@ -379,6 +386,7 @@ test("serverless request handler fails closed on missing Vercel edge headers", a
     deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: configuration.verifyEdgeRequest,
+    authenticationReferenceHash: singleV1ReferenceHashState,
     publicOrigin: configuration.browserOrigin,
     port: 8080,
     releaseId: "a".repeat(40)
@@ -434,6 +442,7 @@ function requestHandlerFixture(overrides = {}) {
     deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,
+    authenticationReferenceHash: singleV1ReferenceHashState,
     publicOrigin: "https://ipo.one",
     port: 8080,
     releaseId: "a".repeat(40),
