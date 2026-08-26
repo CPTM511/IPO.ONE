@@ -511,7 +511,7 @@ test("Vercel Primary config binds the bounded Cron while the Risk bundle remains
   assert.equal(Object.hasOwn(risk.functions, "api/vercel-sandbox-cron.mjs"), false);
 });
 
-test("current Vercel manifest is Primary-only and keeps every external authority disabled", async () => {
+test("current Vercel manifest authorizes one staged Primary deploy and keeps product authority disabled", async () => {
   const manifest = JSON.parse(await readFile(
     "deploy/vercel/m1-b-sandbox.manifest.v2.json",
     "utf8"
@@ -528,7 +528,7 @@ test("current Vercel manifest is Primary-only and keeps every external authority
     withdrawal: manifest.withdrawalAuthorityEnabled,
     venueWrite: manifest.venueWriteAuthorityEnabled
   }, {
-    status: "DEPLOYMENT_PENDING_AUTHORIZATION",
+    status: "STAGED_PRIMARY_DEPLOYMENT_AUTHORIZED",
     deployedReleaseId: null,
     production: false,
     productionHosting: false,
@@ -554,10 +554,10 @@ test("current Vercel manifest is Primary-only and keeps every external authority
   ]);
   assert.equal(manifest.topology.riskProjectIncluded, false);
   assert.equal(manifest.topology.riskProjectDeploymentTarget, false);
+  assert.equal(manifest.authority.deploymentAuthorized, true);
+  assert.equal(manifest.authority.deploymentEvidenceCollectionAuthorized, true);
   for (const boundary of [
     "mergeAuthorized",
-    "deploymentAuthorized",
-    "deploymentEvidenceCollectionAuthorized",
     "deploymentPromotionAuthorized",
     "aliasMutationAuthorized",
     "dnsMutationAuthorized",
@@ -569,7 +569,7 @@ test("current Vercel manifest is Primary-only and keeps every external authority
     "realValueActivationAuthorized"
   ]) assert.equal(manifest.authority[boundary], false);
   assert.equal(manifest.authority.customDomain, null);
-  assert.equal(manifest.authority.maximumVercelProjectsAuthorizedForDeployment, 0);
+  assert.equal(manifest.authority.maximumVercelProjectsAuthorizedForDeployment, 1);
   assert.deepEqual(manifest.conditionalInterfaces.riskProject, {
     targetMilestone: "M1_C_L2_CLOSED_NO_FUNDS",
     configurationPath: "deploy/vercel/vercel.m1-b-sandbox-risk.json",

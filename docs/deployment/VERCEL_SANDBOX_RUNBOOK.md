@@ -2,15 +2,16 @@
 
 ## Status
 
-Status: `DEPLOYMENT_PENDING_FINAL_FOUNDER_AUTHORIZATION`
+Status: `FOUNDER_AUTHORIZED_STAGED_PRIMARY_DEPLOYMENT`
 
-This runbook describes a future, separately authorized deployment of one
+This runbook governs the Founder-authorized M2B-006 staged deployment of one
 invitation-only no-real-funds Sandbox through the Primary Vercel project and
 one canonical database. A separate Risk project is conditional on a later,
-separately approved phishing-resistant authentication topology. This is not
-current deployment authority and does not authorize a merge, deployment,
-promotion, alias, DNS or custom-domain change, tag, seal, RC, paid integration,
-signer, mainnet operation, real-funds path, or production financial claim. The
+separately approved phishing-resistant authentication topology. The current
+authorization permits one Primary production-target deployment with
+`--skip-domain` and bounded Evidence collection. It does not authorize a merge,
+promotion, alias, DNS or custom-domain change, tag, paid integration, signer,
+mainnet operation, real-funds path, or production financial claim. The
 current machine-readable topology is
 `deploy/vercel/m1-b-sandbox.manifest.v2.json`. The M1-B name in that compatibility
 asset is retained because the canonical deployment runtime references it; it is
@@ -104,9 +105,8 @@ Runtime Functions receive only the two least-privilege database URLs.
 
 ## Vercel environment and deploy
 
-Do not execute this section during current M1-B closure. It begins only after
-final Founder deployment authorization names the exact accepted candidate and
-the freshly revalidated rollback baselines.
+Execute this section only for the exact M2B-006 authorization commit and the
+freshly revalidated rollback baseline. Stop before promotion or alias mutation.
 
 1. Enable Vercel system environment variables.
 2. Add only the variables in
