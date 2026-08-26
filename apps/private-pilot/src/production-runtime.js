@@ -213,6 +213,11 @@ async function composeProductionClosedPilotRuntime(input) {
     );
   };
   const host = createProductionTenantHost({
+    authenticationReferenceHash: {
+      mode: referenceHasher.mode,
+      writeKeyVersion: referenceHasher.keyVersion,
+      legacyLookupKeyVersion: referenceHasher.legacyKeyVersion ?? null
+    },
     gateway,
     humanBff: humanAccess.humanSessionBff,
     machineAuthenticator,
