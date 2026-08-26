@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "m2b_005_local_release_verification.v1",
+  "issueId": "M2B-005",
+  "candidateId": "M2B-005-V0.2.1-RC-20260826-001",
+  "releaseVersion": "0.2.1-rc.1",
+  "releaseCommitSha": "fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7",
+  "mode": "L0_LOCAL_NO_FUNDS",
+  "verification": {
+    "repositoryTests": {
+      "passed": 1201,
+      "failed": 0,
+      "skipped": 0
+    },
+    "postgresTests": {
+      "passed": 91,
+      "failed": 0,
+      "database": "isolated_local_vm_test_database"
+    },
+    "securityTests": {
+      "passed": 34,
+      "failed": 0
+    },
+    "transportTests": {
+      "passed": 85,
+      "failed": 0
+    },
+    "foundryTests": {
+      "passed": 25,
+      "failed": 0,
+      "forkTestsSkipped": 2
+    },
+    "schemas": 143,
+    "openApiOperations": 21,
+    "migrationPairs": 68,
+    "tenantOperations": 109,
+    "browserVisibleActions": 3,
+    "browserConsoleErrors": 0,
+    "browserConsoleWarnings": 0,
+    "unresolvedM2B005P0P1": 0
+  },
+  "recovery": {
+    "projectionHash": "4c6447f53a1be4c525657827cb51336e59fb5448fcc0acdb92be30a6f1f4fc24",
+    "canonicalRepaymentPreserved": true,
+    "canonicalOutcomePreserved": true,
+    "creditStatePreserved": true,
+    "replayStable": true,
+    "lossPreserved": true,
+    "newRiskFrozenOnFailure": true,
+    "automaticUnfreeze": false
+  },
+  "authority": {
+    "externalWriteAuthorized": false,
+    "newSignerCreated": false,
+    "signerLoaded": false,
+    "signerReused": false,
+    "networkCalled": false,
+    "m2bRemotelyDeployed": false,
+    "mainnetAuthorized": false,
+    "realFundsAuthorized": false,
+    "transferAuthorized": false,
+    "withdrawalAuthorized": false
+  },
+  "productTruth": {
+    "code": "EXACT_SHA_IMPLEMENTED",
+    "runtime": "LOCAL_EXACT_SHA",
+    "deployed": "M2B_NOT_REMOTELY_DEPLOYED",
+    "reachable": "LOOPBACK_ONLY",
+    "verified": "LOCAL_BROWSER_AGENT_RECOVERY",
+    "independentReview": "PENDING",
+    "founderCandidateDecision": "PENDING",
+    "verdict": "BLOCKED — NOT COMPLETE"
+  }
+}

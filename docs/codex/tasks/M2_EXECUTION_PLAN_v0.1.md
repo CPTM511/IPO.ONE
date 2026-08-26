@@ -421,7 +421,10 @@ revertible without inventing permission for its successor.
   gates and recovery drills.
 - Security/permission: independent review and Founder candidate decision.
   Migration: exact manifest. Rollback: disable profile, retire signer, reconcile
-  all outcomes. Dependency/status: M2B-004; blocked.
+  all outcomes. Dependency/status: M2B-004. The L0 v0.2.1 engineering candidate
+  is implemented at exact SHA
+  `fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7`; independent review, Founder
+  candidate decision and any remote/external deployment remain blocked.
 
 ## Release verdict discipline
 

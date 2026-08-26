@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "m2b_005_v0_2_1_candidate.v1",
+  "candidateId": "M2B-005-V0.2.1-RC-20260826-001",
+  "releaseVersion": "0.2.1-rc.1",
+  "releaseCommitSha": "fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7",
+  "stack": [
+    {
+      "issueId": "M2B-001",
+      "commitSha": "2e27c35d09530404a2eea9b35168abcbb7306cbc",
+      "pullRequest": 54,
+      "state": "DRAFT_STACKED_LOCAL"
+    },
+    {
+      "issueId": "M2B-002",
+      "commitSha": "944f344196f6a63a86ba817d750d466b09887142",
+      "pullRequest": 55,
+      "state": "DRAFT_STACKED_LOCAL"
+    },
+    {
+      "issueId": "M2B-003",
+      "commitSha": "b7cb70d2facc749c01a40ece6e0261a8bfac6667",
+      "pullRequest": 56,
+      "state": "DRAFT_STACKED_LOCAL"
+    },
+    {
+      "issueId": "M2B-004",
+      "commitSha": "5f7a4143f54fb3e15d392fa04fa217dd230870e3",
+      "pullRequest": 57,
+      "state": "DRAFT_STACKED_LOCAL"
+    }
+  ],
+  "database": {
+    "migrationCount": 68,
+    "latestMigration": "0068_m2b_dual_risk_recovery",
+    "forcedRlsRequired": true,
+    "destructiveMigrationPresent": false
+  },
+  "evidence": [
+    {
+      "kind": "m2b_002_prewrite",
+      "path": "docs/codex/audits/M2B-002/README.md",
+      "sha256": "38162d0f34aed2f271dfdbf1015e4a98931fd92f51adbe38555a9b2807521ea4"
+    },
+    {
+      "kind": "m2b_003_recovery",
+      "path": "docs/codex/audits/M2B-003/README.md",
+      "sha256": "10ecc331649394f474527c4f0effa3b597d47b4c984d4c32572a0038fe547eb9"
+    },
+    {
+      "kind": "m2b_004_terminal",
+      "path": "artifacts/m2b-004/local-e2e-evidence.json",
+      "sha256": "e4e622e15b0f68a914ac6e22e570cefc1248c3b3b321bd334ba1fb51e7b6073d"
+    },
+    {
+      "kind": "m2a_009_candidate",
+      "path": "deploy/releases/m2a-009-v0.2.0-candidate.json",
+      "sha256": "1563f1fd330092f50a05a88e5734d1956f543fda02726762b90ea3e3c0000423"
+    },
+    {
+      "kind": "base_pool_signer_closure",
+      "path": "docs/codex/audits/M2A-008/pool-recovery-004.md",
+      "sha256": "e8253d88b0824262ecf51a981bc95607aa1b4eddccbb2996121e452ceae8e60e"
+    },
+    {
+      "kind": "venue_signer_closure",
+      "path": "artifacts/testnet/hyperliquid-002d-final-closure-20260810T142835Z.json",
+      "sha256": "7e86e382d9082b2e374e47c4f2d5ca45f5699231d7b6c5363f5b5ba953519fce"
+    }
+  ],
+  "historicalTestnet": {
+    "chainId": "eip155:84532",
+    "poolAddress": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+    "adapterAddress": "0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19",
+    "historicalM2AOnly": true,
+    "m2bDeployed": false,
+    "newTransactionPerformed": false
+  },
+  "signerSafety": {
+    "newSignerCreated": false,
+    "signerLoaded": false,
+    "signerReused": false,
+    "signingPerformed": false,
+    "priorSignersRetired": true,
+    "addressReuseAllowed": false
+  },
+  "recovery": {
+    "drillMode": "DETERMINISTIC_LOCAL_NO_NETWORK",
+    "externalWriteAuthorized": false,
+    "newRiskFrozenOnFailure": true,
+    "canonicalLossPreserved": true,
+    "restartReplayPreserved": true,
+    "automaticUnfreeze": false
+  },
+  "verification": {
+    "repositoryPassed": true,
+    "postgresPassed": true,
+    "securityPassed": true,
+    "transportPassed": true,
+    "contractsPassed": true,
+    "browserPassed": true,
+    "agentPassed": true,
+    "recoveryPassed": true,
+    "unresolvedM2B005P0P1": 0,
+    "independentReview": "PENDING",
+    "founderCandidateDecision": "PENDING"
+  },
+  "productTruth": {
+    "code": "EXACT_SHA_IMPLEMENTED",
+    "runtime": "LOCAL_EXACT_SHA",
+    "deployed": "M2B_NOT_REMOTELY_DEPLOYED",
+    "reachable": "LOOPBACK_ONLY",
+    "verified": "LOCAL_BROWSER_AGENT_RECOVERY",
+    "verdict": "BLOCKED — NOT COMPLETE"
+  },
+  "rollback": {
+    "disableProfile": true,
+    "preserveEvidence": true,
+    "readOnlyReconcile": true,
+    "retryUnknownOutcome": false,
+    "reuseRetiredSigner": false
+  },
+  "excludedAuthority": [
+    "remote_deployment",
+    "production_deployment",
+    "mainnet",
+    "real_funds",
+    "custody",
+    "human_cash_lending",
+    "kyc",
+    "agent_venue_write",
+    "pool_write",
+    "new_chain_transaction",
+    "signer_reuse",
+    "transfer",
+    "withdrawal",
+    "automatic_unfreeze"
+  ]
+}

@@ -1,6 +1,6 @@
 # M2B-005 — v0.2.1 release hardening
 
-Status: `L0 LOCAL CANDIDATE IN PROGRESS — EXTERNAL RELEASE BLOCKED`
+Status: `L0 LOCAL CANDIDATE IMPLEMENTED — EXTERNAL RELEASE BLOCKED`
 
 Baseline: `5f7a4143f54fb3e15d392fa04fa217dd230870e3`
 
@@ -101,17 +101,17 @@ git diff --check
 
 ## Security checklist
 
-- [ ] Candidate parser is bounded, strict and symlink-safe.
-- [ ] Every Evidence file remains under an allowlisted repository root and is
+- [x] Candidate parser is bounded, strict and symlink-safe.
+- [x] Every Evidence file remains under an allowlisted repository root and is
       content-digest bound.
-- [ ] No secret, raw address, raw signature or credential is introduced.
-- [ ] No network, signer, nonce, write or profile mutation primitive exists in
+- [x] No secret, raw address, raw signature or credential is introduced.
+- [x] No network, signer, nonce, write or profile mutation primitive exists in
       the candidate checker or recovery drill.
-- [ ] Historical Testnet deployment is labeled historical/read-only and does
+- [x] Historical Testnet deployment is labeled historical/read-only and does
       not imply M2B deployment.
-- [ ] Prior retired signers remain non-reusable; no new signer is created.
-- [ ] Recovery remains fail-closed, loss-preserving and non-automatic.
-- [ ] Human and Agent views report the same kernel and authority boundary.
+- [x] Prior retired signers remain non-reusable; no new signer is created.
+- [x] Recovery remains fail-closed, loss-preserving and non-automatic.
+- [x] Human and Agent views report the same kernel and authority boundary.
 
 ## Permission boundary
 
@@ -151,3 +151,35 @@ M2B-005 is stacked on M2B-004 exact commit
 remain Draft and unmerged. The candidate cannot become a public or production
 release until those exact dependencies, independent review, Founder candidate
 decision and separately authorized deployment/verification gates are complete.
+
+## Completion Evidence
+
+The local v0.2.1 engineering candidate binds implementation SHA
+`fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7`. Its strict checker validates the
+exact stacked commits, 68 migrations, six content-digest Evidence bindings,
+historical M2A Testnet-only identity, prior signer closure and fourteen absent
+authorities.
+
+Executable results:
+
+- full repository JavaScript suite: 1,201 passed;
+- PostgreSQL forced-RLS/restart suite: 91 passed in an isolated local VM test
+  database;
+- security / API-SDK-MCP transport: 34 / 85 passed;
+- Foundry: 25 passed, with 2 deliberate live-fork skips;
+- 143 Schemas, 21 OpenAPI operations, 109 Tenant operations and 68 migration
+  pairs passed;
+- browser: three visible release/recovery/Agent controls passed, 0 console
+  errors and 0 warnings.
+
+The deterministic recovery projection hash is
+`4c6447f53a1be4c525657827cb51336e59fb5448fcc0acdb92be30a6f1f4fc24`.
+No network request, transaction, signer creation/load/reuse, nonce, signature,
+funds movement or profile mutation occurred.
+
+`check:product-traceability` remains a pre-existing launch-policy/catalog
+accounting blocker outside this candidate's source changes. Independent review
+and Founder candidate decision remain pending, so the product verdict is
+`BLOCKED — NOT COMPLETE`.
+
+Local Founder/Risk experience: `http://127.0.0.1:4178/`.
