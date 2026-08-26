@@ -2,6 +2,17 @@ import { access, readdir, readFile } from "node:fs/promises";
 import { dirname, join, normalize, resolve } from "node:path";
 
 const root = process.cwd();
+const ignoredDirectoryNames = new Set([
+  ".git",
+  ".ipo-one",
+  ".playwright-cli",
+  "artifacts",
+  "cache",
+  "node_modules",
+  "out",
+  "output",
+  "test-results"
+]);
 const requiredModules = [
   "authentication",
   "authorization",
@@ -48,6 +59,7 @@ async function collectFiles(dir, predicate) {
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (ignoredDirectoryNames.has(entry.name)) continue;
       files.push(...(await collectFiles(fullPath, predicate)));
     } else if (predicate(fullPath)) {
       files.push(fullPath);
