@@ -1,13 +1,13 @@
 {
   "schemaVersion": "m2b_005_local_release_verification.v1",
   "issueId": "M2B-005",
-  "candidateId": "M2B-005-V0.2.1-RC-20260826-001",
+  "candidateId": "M2B-005-V0.2.1-RC-20260826-002",
   "releaseVersion": "0.2.1-rc.1",
-  "releaseCommitSha": "fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7",
+  "releaseCommitSha": "e2e8bf460fcd17ba64974b6100bc0731c4c4a733",
   "mode": "L0_LOCAL_NO_FUNDS",
   "verification": {
     "repositoryTests": {
-      "passed": 1201,
+      "passed": 1205,
       "failed": 0,
       "skipped": 0
     },
@@ -33,10 +33,21 @@
     "openApiOperations": 21,
     "migrationPairs": 68,
     "tenantOperations": 109,
-    "browserVisibleActions": 3,
+    "browserVisibleActions": 4,
     "browserConsoleErrors": 0,
     "browserConsoleWarnings": 0,
-    "unresolvedM2B005P0P1": 0
+    "unresolvedM2B005P0P1": 0,
+    "productTraceability": {
+      "enabledReleaseProfiles": [
+        "public_sandbox",
+        "live_testnet_secured_pool"
+      ],
+      "destinations": 13,
+      "actions": 72,
+      "boundOperations": 109,
+      "focusedTestsPassed": 4,
+      "aggregateQualityGateEnforced": true
+    }
   },
   "recovery": {
     "projectionHash": "4c6447f53a1be4c525657827cb51336e59fb5448fcc0acdb92be30a6f1f4fc24",

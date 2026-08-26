@@ -1,8 +1,8 @@
 {
   "schemaVersion": "m2b_005_v0_2_1_candidate.v1",
-  "candidateId": "M2B-005-V0.2.1-RC-20260826-001",
+  "candidateId": "M2B-005-V0.2.1-RC-20260826-002",
   "releaseVersion": "0.2.1-rc.1",
-  "releaseCommitSha": "fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7",
+  "releaseCommitSha": "e2e8bf460fcd17ba64974b6100bc0731c4c4a733",
   "stack": [
     {
       "issueId": "M2B-001",

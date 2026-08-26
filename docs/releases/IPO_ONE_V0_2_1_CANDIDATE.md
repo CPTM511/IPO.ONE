@@ -1,10 +1,10 @@
 # IPO.ONE v0.2.1 local release candidate
 
-Candidate: `M2B-005-V0.2.1-RC-20260826-001`
+Candidate: `M2B-005-V0.2.1-RC-20260826-002`
 
 Release version: `0.2.1-rc.1`
 
-Implementation SHA: `fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7`
+Implementation SHA: `e2e8bf460fcd17ba64974b6100bc0731c4c4a733`
 
 Verdict: `BLOCKED — NOT COMPLETE`
 
@@ -37,7 +37,7 @@ deployed.
 
 ## Verification
 
-- 1,201 repository JavaScript tests passed; 0 failed, 0 skipped.
+- 1,205 repository JavaScript tests passed; 0 failed, 0 skipped.
 - 91 PostgreSQL tests passed against an isolated local VM test database.
 - 34 security and 85 API/SDK/MCP transport tests passed.
 - 25 Foundry tests passed; 2 live-fork tests remained deliberately skipped.
@@ -45,14 +45,15 @@ deployed.
   ordered migration pairs passed.
 - Deployment topology, local stack, launch policy, closed-pilot operations,
   M2 contract toolchain and web-bundle checks passed.
-- Real-browser visible-click acceptance passed all three Human actions:
-  exact-candidate verification, read-only recovery drill and Agent release
-  receipt. The browser reported 0 console errors and 0 warnings.
+- Product traceability passed with exactly 13 destinations, 72 actions, all
+  109 Tenant operations and the two reviewed enabled profiles.
+- Real-browser visible-click acceptance passed all four Human actions:
+  exact-candidate verification, 109-operation ledger verification, read-only
+  recovery drill and Agent release receipt. The browser log remained empty.
 
-`check:product-traceability` remains a pre-existing baseline blocker. It reports
-stale launch-policy and closed Tenant-catalog accounting. M2B-005 changes no
-launch profile or Tenant operation catalog and does not claim to repair that
-separate release obligation.
+The stale `check:product-traceability` blocker is resolved without changing any
+launch profile or Tenant operation. The checker is now enforced by the
+aggregate `pnpm check` gate and fails closed on profile or catalog drift.
 
 ## Recovery and signer closure
 

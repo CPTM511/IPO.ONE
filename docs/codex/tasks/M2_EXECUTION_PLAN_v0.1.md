@@ -423,8 +423,10 @@ revertible without inventing permission for its successor.
   Migration: exact manifest. Rollback: disable profile, retire signer, reconcile
   all outcomes. Dependency/status: M2B-004. The L0 v0.2.1 engineering candidate
   is implemented at exact SHA
-  `fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7`; independent review, Founder
-  candidate decision and any remote/external deployment remain blocked.
+  `e2e8bf460fcd17ba64974b6100bc0731c4c4a733`; its exact two-profile and
+  109-operation traceability gate is repaired and aggregate-CI enforced.
+  Independent review, Founder candidate decision and any remote/external
+  deployment remain blocked.
 
 ## Release verdict discipline
 

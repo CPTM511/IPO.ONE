@@ -155,31 +155,33 @@ decision and separately authorized deployment/verification gates are complete.
 ## Completion Evidence
 
 The local v0.2.1 engineering candidate binds implementation SHA
-`fd7ae2c06672dbee5aeb8becaf7dada4f8f1cfa7`. Its strict checker validates the
+`e2e8bf460fcd17ba64974b6100bc0731c4c4a733`. Its strict checker validates the
 exact stacked commits, 68 migrations, six content-digest Evidence bindings,
 historical M2A Testnet-only identity, prior signer closure and fourteen absent
 authorities.
 
 Executable results:
 
-- full repository JavaScript suite: 1,201 passed;
+- full repository JavaScript suite: 1,205 passed;
 - PostgreSQL forced-RLS/restart suite: 91 passed in an isolated local VM test
   database;
 - security / API-SDK-MCP transport: 34 / 85 passed;
 - Foundry: 25 passed, with 2 deliberate live-fork skips;
 - 143 Schemas, 21 OpenAPI operations, 109 Tenant operations and 68 migration
   pairs passed;
-- browser: three visible release/recovery/Agent controls passed, 0 console
-  errors and 0 warnings.
+- product traceability: exact two-profile policy and all 109 Tenant operations
+  passed, including four focused fail-closed regression tests;
+- browser: four visible release/traceability/recovery/Agent controls passed and
+  the browser log remained empty.
 
 The deterministic recovery projection hash is
 `4c6447f53a1be4c525657827cb51336e59fb5448fcc0acdb92be30a6f1f4fc24`.
 No network request, transaction, signer creation/load/reuse, nonce, signature,
 funds movement or profile mutation occurred.
 
-`check:product-traceability` remains a pre-existing launch-policy/catalog
-accounting blocker outside this candidate's source changes. Independent review
-and Founder candidate decision remain pending, so the product verdict is
+The stale `check:product-traceability` launch-policy/catalog accounting blocker
+is resolved and admitted to the aggregate quality gate. Independent review and
+Founder candidate decision remain pending, so the product verdict is
 `BLOCKED — NOT COMPLETE`.
 
 Local Founder/Risk experience: `http://127.0.0.1:4178/`.

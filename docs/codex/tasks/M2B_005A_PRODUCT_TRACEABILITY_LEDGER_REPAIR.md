@@ -1,6 +1,6 @@
 # M2B-005A — product traceability ledger repair
 
-Status: `IN PROGRESS — INTERNAL RELEASE INTEGRITY BLOCKER`
+Status: `IMPLEMENTED — INTERNAL TRACEABILITY BLOCKER RESOLVED`
 
 Baseline: `890ae4aaa5b5be0168fa3bc756caca2d160aa5a7`
 
@@ -89,13 +89,13 @@ git diff --check
 
 ## Security checklist
 
-- [ ] Exact approved enabled-profile set is closed and order-stable.
-- [ ] Base Sepolia profile remains test-assets-only and no-real-funds.
-- [ ] Agent Venue execution, market creation and production credit remain off.
-- [ ] All 109 catalog operations remain private and no-funds-authority.
-- [ ] Every binding resolves to the real handler, AuthZ, admission and durable
+- [x] Exact approved enabled-profile set is closed and order-stable.
+- [x] Base Sepolia profile remains test-assets-only and no-real-funds.
+- [x] Agent Venue execution, market creation and production credit remain off.
+- [x] All 109 catalog operations remain private and no-funds-authority.
+- [x] Every binding resolves to the real handler, AuthZ, admission and durable
       persistence sources.
-- [ ] Negative tests prove profile and operation drift fail closed.
+- [x] Negative tests prove profile and operation drift fail closed.
 
 ## Permission boundary
 
@@ -128,3 +128,28 @@ candidate receipt, visible local review and remote quality-gate result.
 This repair is stacked on M2B-005 PR #58. It must complete before independent
 review or a Founder v0.2.1 candidate decision. It does not unlock M3 or any
 remote/external execution step.
+
+## Completion Evidence
+
+- Traceability implementation: `bf468e975d606c0c9cf88ab7261bdc463675d5d8`.
+- Aggregate quality-gate admission and candidate SHA:
+  `e2e8bf460fcd17ba64974b6100bc0731c4c4a733`.
+- `pnpm check:product-traceability`: 13 destinations, 72 actions and exact
+  109/109 operation bindings passed for exactly `public_sandbox` and
+  `live_testnet_secured_pool`.
+- `pnpm test:product-traceability`: 4 positive/negative contract tests passed.
+- `pnpm test`: 1,205 passed, 0 failed and 0 skipped.
+- Candidate contract: 5 passed; 143 Schemas, 21 OpenAPI operations, 109 Tenant
+  operations and 68 ordered migration pairs remained exact.
+- Foundry: 25 passed, 0 failed and 2 explicit live-fork skips.
+- Real-browser visible clicks passed all four candidate, traceability, recovery
+  and Agent receipt controls; the browser produced no console log entries.
+- A fresh PostgreSQL rerun exposed pre-existing non-deterministic business-test
+  failures whose test names and failing projections changed between identical
+  clean runs. The traceability diff changes no runtime, migration or persistence
+  source; the previously sealed 91-test PostgreSQL candidate evidence remains
+  unchanged and no unrelated business logic was modified in this repair.
+
+The traceability blocker is resolved. Independent review, Founder candidate
+decision and every remote/external authority remain pending, so the product
+verdict remains `BLOCKED — NOT COMPLETE`.
