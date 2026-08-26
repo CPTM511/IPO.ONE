@@ -118,7 +118,7 @@
     "db:rollback": "node scripts/migrate.mjs down",
     "db:status": "node scripts/migrate.mjs status",
     "smoke:api": "node scripts/smoke-api.mjs",
-    "check": "pnpm run check:runtime && pnpm run lint && pnpm run typecheck && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm run check:tenant-protocol && pnpm run test:security && pnpm run test:transport && pnpm run test:postgres && pnpm run check:deploy-topology && pnpm run check:local-stack && pnpm run check:launch-policy && pnpm run check:closed-pilot-operations && pnpm run check:m2-contract-toolchain && pnpm run test:contracts:foundry && pnpm run check:web-bundle && pnpm test",
+    "check": "pnpm run check:runtime && pnpm run lint && pnpm run typecheck && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm run check:tenant-protocol && pnpm run check:product-traceability && pnpm run test:security && pnpm run test:transport && pnpm run test:postgres && pnpm run check:deploy-topology && pnpm run check:local-stack && pnpm run check:launch-policy && pnpm run check:closed-pilot-operations && pnpm run check:m2-contract-toolchain && pnpm run test:contracts:foundry && pnpm run check:web-bundle && pnpm test",
     "dev": "node scripts/local-stack.mjs up",
     "dev:api": "node apps/private-pilot/src/start.js",
     "dev:legacy-demo": "node apps/api/src/server.js",
