@@ -43,3 +43,13 @@ remains unchanged. M2B-006 is `BLOCKED — NOT COMPLETE` pending exact owner
 inspection and, only if the existing history is a valid prefix, an additive
 migration through `0068_m2b_dual_risk_recovery`. No owner credential, stable
 alias, DNS, real-funds, signer, chain-write or Venue-write authority was used.
+
+The exact owner inspection and additive migration were subsequently
+authorized. Stored migration history was an exact valid prefix through `0063`;
+`0064` through `0068` applied successfully after a manual Neon snapshot, and
+68/68 post-migration names and checksums match. Replacement unaliased candidate
+`dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94` is Vercel `READY`; liveness and readiness
+are HTTP 200 at the exact reviewed SHA with real funds disabled. Release
+completion remains blocked on separately reviewed least-privilege grants for
+the 18 new tables and stable-alias promotion needed for actual-origin Human and
+Agent acceptance.

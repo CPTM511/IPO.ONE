@@ -1,6 +1,6 @@
 # M2B-006 — v0.2.1 authorized remote deployment
 
-Status: `BLOCKED — OWNER MIGRATION AUTHORIZATION REQUIRED`
+Status: `BLOCKED — RUNTIME PRIVILEGE REPAIR AND PROMOTION AUTHORIZATION REQUIRED`
 
 Baseline: `34ac9d982b5a0061b645940f1532ed6f19e18290`
 
@@ -153,3 +153,36 @@ authority.
   of the same reviewed candidate and full acceptance.
 
 Evidence: `artifacts/m2b-006/remote-deployment-attempt.json`.
+
+## 2026-08-26 authorized owner migration continuation
+
+- Founder authorization was received for owner-controlled read-only history
+  inspection and additive migration only when the stored history was a valid
+  prefix. Unknown migrations, checksum drift, a database-ahead state,
+  downgrade and destructive migration remained prohibited.
+- Neon project `falling-king-09359147`, main branch
+  `br-nameless-hill-avcw7qpp`, PostgreSQL 17 and owner role `neondb_owner`
+  matched the prior production Evidence. A manual pre-migration snapshot
+  `snap-lively-flower-av7nl8qq` was created and existing six-hour PITR was
+  confirmed.
+- The owner read-only transaction proved exact migration head `0063`, 63/68
+  contiguous entries, matching checksums and no unknown or ahead migration.
+- Migrations `0064` through `0068` then applied in five independent
+  transactions. Post-migration read-only verification proved 68/68 exact names
+  and checksums at `0068_m2b_dual_risk_recovery`.
+- Least-privilege verification found that the 18 tables introduced by those
+  migrations do not yet have Gateway `SELECT`; authentication correctly has no
+  access. Runtime privilege mutation was not included in the owner-migration
+  authorization and was not inferred.
+- The exact reviewed bundle was redeployed without aliases as
+  `dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94`. `/livez` and `/readyz` returned HTTP 200
+  with exact SHA `33d60105f9ba229c5827d831d2991aee3c78112c` and
+  `realFundsEnabled=false`; unauthenticated Cron returned HTTP 401 and the
+  bounded log scan had no runtime errors.
+- Candidate discovery/UI correctly returned HTTP 421 because the production
+  runtime accepts only `IPO_ONE_PUBLIC_ORIGIN=https://ipo.one`. Stable alias
+  promotion remains unauthorized, so browser-visible Human and authorized
+  Agent acceptance cannot truthfully bind the candidate SHA yet.
+
+Continuation Evidence:
+`artifacts/m2b-006/production-owner-migration-and-redeploy.json`.
