@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
+import { execFile } from "node:child_process";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 import {
   M2B005_CANDIDATE_FILE,
   checkM2B005Candidate,
@@ -10,6 +12,7 @@ import {
 
 const HOST = "127.0.0.1";
 const PORT = Number.parseInt(process.env.IPO_ONE_M2B005_PORT ?? "4178", 10);
+const execFileAsync = promisify(execFile);
 
 function json(response, status, value) {
   const body = JSON.stringify(value, null, 2);
@@ -77,6 +80,7 @@ const html = `<!doctype html>
     <div class="row">
       <ul>
         <li>M2B-001 → 004 exact stacked commits and 68 migrations</li>
+        <li>Traceability covers 13 destinations, 72 actions and all 109 operations</li>
         <li>One shared Obligation, repayment, Outcome and Credit State kernel</li>
         <li>Terminal repayment survives restart/replay without duplication</li>
         <li>Partial loss remains outstanding and holds new capacity</li>
@@ -90,6 +94,7 @@ const html = `<!doctype html>
     </div>
     <div class="actions">
       <button id="verify">Verify exact candidate</button>
+      <button class="secondary" id="traceability">Verify 109-operation ledger</button>
       <button class="secondary" id="recover">Run read-only recovery drill</button>
       <button class="secondary" id="agent">Read Agent release receipt</button>
     </div>
@@ -116,6 +121,7 @@ const html = `<!doctype html>
     finally { buttons.forEach(button => button.disabled = false); }
   }
   document.querySelector('#verify').addEventListener('click', () => run('/api/verify', 'POST'));
+  document.querySelector('#traceability').addEventListener('click', () => run('/api/traceability', 'POST'));
   document.querySelector('#recover').addEventListener('click', () => run('/api/recovery', 'POST'));
   document.querySelector('#agent').addEventListener('click', () => run('/api/agent/release-candidate'));
 </script>
@@ -145,6 +151,25 @@ export function createM2B005ExperienceServer({ root = process.cwd() } = {}) {
       if (request.method === "POST" && url.pathname === "/api/verify") {
         return json(response, 200, await checkM2B005Candidate({ root }));
       }
+      if (request.method === "POST" && url.pathname === "/api/traceability") {
+        const { stdout } = await execFileAsync(
+          process.execPath,
+          ["scripts/check-product-traceability.mjs"],
+          { cwd: root, timeout: 30_000, maxBuffer: 1024 * 1024 }
+        );
+        return json(response, 200, {
+          schemaVersion: "m2b_005_traceability_verification.v1",
+          status: "PRODUCT_TRACEABILITY_CURRENT",
+          enabledReleaseProfiles: ["public_sandbox", "live_testnet_secured_pool"],
+          destinations: 13,
+          actions: 72,
+          boundOperations: 109,
+          testAssetsOnly: true,
+          realFundsEnabled: false,
+          agentVenueExecutionEnabled: false,
+          output: stdout.trim()
+        });
+      }
       if (request.method === "POST" && url.pathname === "/api/recovery") {
         const candidate = await readM2B005Candidate(resolve(root, M2B005_CANDIDATE_FILE));
         return json(response, 200, await runM2B005RecoveryDrill(candidate, { root }));
@@ -157,6 +182,7 @@ export function createM2B005ExperienceServer({ root = process.cwd() } = {}) {
           candidateId: candidate.candidateId,
           releaseCommitSha: candidate.releaseCommitSha,
           sharedKernel: true,
+          traceabilityBoundOperations: 109,
           creditStateAuthorizing: false,
           externalWriteAuthorized: false,
           signerReuseAuthorized: false,

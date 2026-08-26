@@ -104,6 +104,7 @@
     "check:tenant-protocol": "node scripts/check-tenant-protocol.mjs",
     "check:agent-https-transport": "node scripts/check-agent-https-transport.mjs",
     "check:product-traceability": "node scripts/check-product-traceability.mjs",
+    "test:product-traceability": "node --test packages/release-governance/test/product-traceability-contract.test.js",
     "check:m1-requirements": "node scripts/check-m1-requirement-evidence.mjs",
     "check:vercel-sandbox": "node scripts/check-vercel-sandbox-deployment.mjs",
     "check:vercel-sandbox-env": "node scripts/check-vercel-sandbox-environment.mjs",
