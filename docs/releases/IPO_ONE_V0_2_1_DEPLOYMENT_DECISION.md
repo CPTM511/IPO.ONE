@@ -53,3 +53,21 @@ are HTTP 200 at the exact reviewed SHA with real funds disabled. Release
 completion remains blocked on separately reviewed least-privilege grants for
 the 18 new tables and stable-alias promotion needed for actual-origin Human and
 Agent acceptance.
+
+The Founder subsequently authorized those exact grants, promotion and remote
+acceptance. Gateway least privilege now covers the new read surfaces and only
+the approved append or secured-authorization mutation paths; Authentication
+retains no unexpected access. Exact candidate deployment
+`dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94` is now the `ipo.one` production alias and is
+healthy at the reviewed SHA with migration head `0068`, no real funds, passing
+scheduled Cron reconciliation and no observed error or 5xx in the bounded log
+window.
+
+The release verdict remains `BLOCKED — NOT COMPLETE`, not because of a runtime
+failure, but because authenticated Human refresh/recovery and positive
+authorized Agent read are still unavailable in the acceptance environment.
+In addition, an owner connection string appeared in a private command-error
+transcript during verification; explicit password-rotation authority is
+required because the prior instruction prohibited role-password changes. The
+healthy promoted deployment remains in place while these security and
+authenticated acceptance obligations are resolved.

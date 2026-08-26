@@ -1,6 +1,6 @@
 # M2B-006 — v0.2.1 authorized remote deployment
 
-Status: `BLOCKED — RUNTIME PRIVILEGE REPAIR AND PROMOTION AUTHORIZATION REQUIRED`
+Status: `BLOCKED — DEPLOYED; FINAL SECURITY AND AUTHENTICATED ACCEPTANCE REQUIRED`
 
 Baseline: `34ac9d982b5a0061b645940f1532ed6f19e18290`
 
@@ -186,3 +186,46 @@ Evidence: `artifacts/m2b-006/remote-deployment-attempt.json`.
 
 Continuation Evidence:
 `artifacts/m2b-006/production-owner-migration-and-redeploy.json`.
+
+## 2026-08-26 runtime repair, promotion and acceptance continuation
+
+- The Founder authorized the exact runtime privilege repair, stable-alias
+  promotion and full remote acceptance. This did not override the existing
+  prohibition on role-password mutation or create authority for a new
+  production Agent credential, mainnet, real funds or external execution.
+- Owner-controlled verification reconfirmed the exact 68/68 migration history
+  at `0068_m2b_dual_risk_recovery`. In one transaction the Gateway received
+  `SELECT` on the 18 new tables, sequence read/use, full DML only on secured
+  Facility authorization and insert-only access on the four Agent composition
+  and incident append tables. The 13 Pool tables retain zero Gateway mutation;
+  Authentication retains zero unexpected read or mutation access. Neither
+  runtime role owns the new relations or inherits the owner role.
+- Exact candidate `dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94` was promoted to
+  `https://ipo.one`. Alias inspection, `/livez` and `/readyz` bind the public
+  origin to exact SHA `33d60105f9ba229c5827d831d2991aee3c78112c` with
+  `realFundsEnabled=false`.
+- Discovery and Agent OpenAPI return HTTP 200. Uncredentialed Cron returns HTTP
+  401 and uncredentialed Tenant catalog access fails closed. Scheduled Vercel
+  Cron returned HTTP 200 on the exact release with reconciliation `passed` and
+  real funds disabled. The 45-minute deployment log scan contains no error or
+  HTTP 5xx entry.
+- A real browser reached the promoted public origin and visibly clicked Sign
+  in plus the Human Borrower and Principal Controller role choices. The
+  isolated acceptance browser has no compatible wallet, so authenticated
+  Human refresh/recovery is not verified. The previously reviewed Golden Flow
+  Agent credential was revoked and its private key destroyed, so no approved
+  active credential exists for a positive authorized Agent read.
+- During an owner connection-string retrieval attempt, a command-format error
+  printed the owner connection string into the private tool transcript. The
+  secret is not repeated in repository Evidence. Because role-password
+  mutation remained explicitly prohibited, it was not rotated.
+
+The promoted candidate is healthy and rollback is not justified by a runtime
+failure. M2B-006 nevertheless remains `BLOCKED — NOT COMPLETE` until the owner
+password is explicitly authorized for rotation and revalidated, a compatible
+wallet completes Human authenticated refresh/recovery, and a separately
+approved ephemeral Agent credential completes a positive authorized read and
+is then revoked/destroyed.
+
+Final continuation Evidence:
+`artifacts/m2b-006/production-promotion-and-acceptance.json`.
