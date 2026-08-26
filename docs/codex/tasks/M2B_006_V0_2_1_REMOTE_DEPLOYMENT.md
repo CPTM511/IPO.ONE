@@ -1,6 +1,6 @@
 # M2B-006 — v0.2.1 authorized remote deployment
 
-Status: `AUTHORIZED — STAGED PRIMARY DEPLOYMENT PENDING`
+Status: `BLOCKED — OWNER MIGRATION AUTHORIZATION REQUIRED`
 
 Baseline: `34ac9d982b5a0061b645940f1532ed6f19e18290`
 
@@ -126,3 +126,30 @@ migration head, browser-visible clicks, Agent read receipt, bounded log scan,
 rollback deployment identity, unchanged-alias proof and explicit excluded
 authority.
 
+## 2026-08-26 execution result
+
+- Authorization commit `33d60105f9ba229c5827d831d2991aee3c78112c`
+  and tree `37fbef1dcc249e6316b1c824d36c8d679a5f2bb8` passed the
+  local 1,205-test suite and both required remote CI workflows.
+- The clean 191-file deployment bundle had manifest digest
+  `f61b39d1b123e5ab21c658d0c2f7b5043c8954a1ba64db70defa1b818c0b865e`.
+- Unaliased Primary deployment `dpl_DZMtBKTtTZfH7Q3CwhEnP1MfVo1m`
+  reached Vercel `READY` with two Node.js Functions and no aliases.
+- `/livez`, `/readyz` and discovery failed closed with HTTP `503`, exact
+  release SHA `33d60105f9ba229c5827d831d2991aee3c78112c` and runtime code
+  `production_database_migration_mismatch`. Uncredentialed `/api/cron`
+  returned HTTP `401`; logs recorded `realFundsEnabled=false`.
+- The production environment exposes only encrypted runtime-role connection
+  variables and no database owner/bootstrap credential. The current migration
+  head therefore cannot be advanced or owner-read under this issue's authority.
+- Per the rollback contract, the unaliased candidate was safely removed. Stable
+  alias `ipo.one` remains on `dpl_qLgKAkpyTEdeZpsjMw8trL5gtNLj`, release
+  `71786a3c72237320f7bacf77b64496dd1a0c526f`, and remains ready with
+  `realFundsEnabled=false`.
+- Browser-visible Human and Agent acceptance did not run because application
+  readiness is a prerequisite. The required next authority is an exact,
+  bounded owner inspection and, if the history is a valid prefix, migration
+  through `0068_m2b_dual_risk_recovery`, followed by a fresh clean deployment
+  of the same reviewed candidate and full acceptance.
+
+Evidence: `artifacts/m2b-006/remote-deployment-attempt.json`.

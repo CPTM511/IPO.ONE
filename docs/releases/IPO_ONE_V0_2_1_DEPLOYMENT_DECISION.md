@@ -34,3 +34,12 @@ the staged candidate passes all deployed health, readiness, browser, Agent,
 database, Cron and log gates and a later explicit promotion decision is
 recorded.
 
+## Execution checkpoint
+
+The authorized staged deployment reached Vercel `READY` without an alias, but
+the runtime failed closed with `production_database_migration_mismatch`. The
+candidate was removed under the approved rollback contract and `ipo.one`
+remains unchanged. M2B-006 is `BLOCKED — NOT COMPLETE` pending exact owner
+inspection and, only if the existing history is a valid prefix, an additive
+migration through `0068_m2b_dual_risk_recovery`. No owner credential, stable
+alias, DNS, real-funds, signer, chain-write or Venue-write authority was used.

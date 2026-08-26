@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "m2b_006_remote_deployment_attempt.v1",
+  "issueId": "M2B-006",
+  "candidateId": "M2B-005-V0.2.1-RC-20260826-002",
+  "observedAt": "2026-08-26T12:14:45Z",
+  "authorization": {
+    "founderCandidateDecision": "APPROVED",
+    "independentReview": "APPROVED",
+    "remoteDeployment": "APPROVED_PROCEED",
+    "ownerMigration": "NOT_AUTHORIZED"
+  },
+  "source": {
+    "commit": "33d60105f9ba229c5827d831d2991aee3c78112c",
+    "tree": "37fbef1dcc249e6316b1c824d36c8d679a5f2bb8",
+    "bundleFiles": 191,
+    "bundleManifestDigest": "f61b39d1b123e5ab21c658d0c2f7b5043c8954a1ba64db70defa1b818c0b865e",
+    "repositoryTests": {
+      "passed": 1205,
+      "failed": 0
+    },
+    "remoteCiRunIds": [
+      32965881376,
+      32965877689
+    ]
+  },
+  "deployment": {
+    "project": "ipo-one-internal",
+    "role": "primary",
+    "target": "production",
+    "skipDomain": true,
+    "id": "dpl_DZMtBKTtTZfH7Q3CwhEnP1MfVo1m",
+    "url": "https://ipo-one-internal-pj2vlarsb-cptm-111-s-projects.vercel.app",
+    "readyState": "READY",
+    "aliases": [],
+    "nodeFunctions": 2,
+    "removedAfterFailedReadiness": true
+  },
+  "runtimeVerification": {
+    "livez": {
+      "status": 503,
+      "releaseId": "33d60105f9ba229c5827d831d2991aee3c78112c"
+    },
+    "readyz": {
+      "status": 503,
+      "releaseId": "33d60105f9ba229c5827d831d2991aee3c78112c"
+    },
+    "discovery": {
+      "status": 503,
+      "releaseId": "33d60105f9ba229c5827d831d2991aee3c78112c"
+    },
+    "cronWithoutCredential": 401,
+    "runtimeCode": "production_database_migration_mismatch",
+    "realFundsEnabled": false,
+    "humanBrowserAcceptance": "NOT_RUN_READINESS_PREREQUISITE_FAILED",
+    "agentAcceptance": "NOT_RUN_READINESS_PREREQUISITE_FAILED"
+  },
+  "rollback": {
+    "stableAlias": "https://ipo.one",
+    "deploymentId": "dpl_qLgKAkpyTEdeZpsjMw8trL5gtNLj",
+    "releaseId": "71786a3c72237320f7bacf77b64496dd1a0c526f",
+    "livez": 200,
+    "readyz": 200,
+    "realFundsEnabled": false,
+    "aliasChanged": false
+  },
+  "authority": {
+    "mainnetAuthorized": false,
+    "realFundsAuthorized": false,
+    "signerLoaded": false,
+    "chainWrite": false,
+    "venueWrite": false,
+    "stableAliasMutation": false,
+    "dnsMutation": false,
+    "databaseOwnerCredentialExposed": false
+  },
+  "productTruth": {
+    "code": "EXACT_SHA_VERIFIED",
+    "runtime": "REMOTE_FAIL_CLOSED",
+    "deployed": "CANDIDATE_REMOVED_AFTER_FAILED_READINESS",
+    "reachable": "STABLE_ROLLBACK_ONLY",
+    "verified": "HEALTH_AND_ROLLBACK_ONLY",
+    "verdict": "BLOCKED — NOT COMPLETE",
+    "blocker": "EXACT_OWNER_INSPECTION_AND_IF_VALID_MIGRATION_THROUGH_0068_REQUIRED"
+  }
+}
