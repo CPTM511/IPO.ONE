@@ -176,7 +176,7 @@ export async function assertPostgresAuthenticationRole(queryable) {
     actors: [true, false, false, false, false, false, false],
     memberships: [true, false, false, false, false, false, false],
     authentication_credentials: [true, true, true, false, false, false, false],
-    authentication_role_enrollments: [true, false, false, false, false, false, false],
+    authentication_role_enrollments: [true, true, true, false, false, false, false],
     authentication_oidc_transactions: [true, true, false, true, false, false, false],
     authentication_wallet_transactions: [true, true, false, true, false, false, false],
     authentication_sessions: [true, true, true, false, false, false, false],
@@ -580,11 +580,12 @@ export class PostgresLoginTransactionStore {
         throw authenticationError("oidc_transaction_capacity_exceeded", "login transaction capacity is exhausted");
       }
       await client.query(
-        `INSERT INTO authentication_oidc_transactions(
+         `INSERT INTO authentication_oidc_transactions(
            tenant_id, handle_ref_hash, state_ref_hash, provider_id, redirect_uri,
            nonce_ciphertext, code_verifier_ciphertext, expires_at, created_at,
-           schema_version
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'authentication_oidc_transaction.v1')`,
+           reference_hash_key_version, schema_version
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                   'authentication_oidc_transaction.v1')`,
         [
           this.tenantId,
           this.referenceHasher.hash("oidc.transaction", handle),
@@ -594,7 +595,8 @@ export class PostgresLoginTransactionStore {
           this.secretBox.seal("oidc.nonce", nonce),
           this.secretBox.seal("oidc.code_verifier", codeVerifier),
           expiresAt,
-          now
+          now,
+          this.referenceHasher.keyVersion
         ]
       );
     });
@@ -725,11 +727,11 @@ export class PostgresWalletLoginTransactionStore {
         throw authenticationError("wallet_transaction_capacity_exceeded", "wallet login capacity is exhausted");
       }
       await client.query(
-        `INSERT INTO authentication_wallet_transactions(
+         `INSERT INTO authentication_wallet_transactions(
            tenant_id, handle_ref_hash, address_ref_hash, address_ciphertext,
            chain_id, requested_role, message_ciphertext, expires_at, created_at,
-           schema_version
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
+           reference_hash_key_version, schema_version
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
                    'authentication_wallet_transaction.v1')`,
         [
           this.tenantId,
@@ -740,7 +742,8 @@ export class PostgresWalletLoginTransactionStore {
           checkedRole,
           this.secretBox.seal("siwe.message", message),
           expirationTime,
-          now
+          now,
+          this.referenceHasher.keyVersion
         ]
       );
     });
@@ -816,6 +819,7 @@ function credentialFromRow(row) {
     actorType: row.actor_type,
     issuer: row.issuer,
     subjectRefHash: row.subject_ref_hash,
+    referenceHashKeyVersion: row.reference_hash_key_version ?? "v1",
     clientId: row.client_id,
     clientAuthenticationMethod: row.client_authentication_method,
     senderConstraint: Object.freeze({
@@ -953,13 +957,13 @@ export class PostgresCredentialRegistry {
              client_id, client_authentication_method, sender_constraint_method,
              sender_constraint_ref_hash, roles, allowed_capabilities,
              policy_version, status, version, expires_at, created_at,
-             updated_at, schema_version
+             updated_at, schema_version, reference_hash_key_version
            ) VALUES (
              $1, $2, $3, $4, $5, $6,
              $7, $8, $9,
              $10, $11::jsonb, $12::jsonb,
              $13, 'active', 1, $14, $15,
-             $15, 'authentication_credential.v1'
+             $15, 'authentication_credential.v1', $16
            ) RETURNING *`,
           [
             credentialId,
@@ -976,7 +980,8 @@ export class PostgresCredentialRegistry {
             JSON.stringify(allowedCapabilities),
             policyVersion,
             expiresAt ?? null,
-            now
+            now,
+            this.referenceHasher.keyVersion
           ]
         );
         await appendEvent(client, {
@@ -990,6 +995,7 @@ export class PostgresCredentialRegistry {
             actorType: input.actorType,
             clientAuthenticationMethod: input.clientAuthenticationMethod,
             senderConstraintMethod: constraint.method,
+            referenceHashKeyVersion: this.referenceHasher.keyVersion,
             version: 1
           }
         });
@@ -1020,6 +1026,272 @@ export class PostgresCredentialRegistry {
         [this.tenantId, normalizedIssuer, normalizedClientId, subjectRefHash]
       );
       return this.#activeInTransaction(client, result.rows[0]?.id, now);
+    });
+  }
+
+  async findOrRebindVerifiedHumanSubject({
+    issuer,
+    tenantId: requestedTenantId,
+    externalSubject,
+    clientId,
+    now = new Date()
+  }) {
+    assertTenant(this.tenantId, requestedTenantId);
+    const normalizedIssuer = exactHttpsOrigin("issuer", issuer);
+    const normalizedClientId = assertSafeIdentifier("clientId", clientId);
+    const normalizedSubject = assertBoundedString(
+      "externalSubject",
+      externalSubject,
+      { maximum: 512 }
+    );
+    const lookupHashes = typeof this.referenceHasher.lookupHashes === "function"
+      ? this.referenceHasher.lookupHashes(
+          "subject",
+          `${normalizedIssuer}\0${normalizedSubject}`
+        )
+      : Object.freeze([Object.freeze({
+          keyVersion: this.referenceHasher.keyVersion ?? "v1",
+          referenceHash: this.referenceHasher.hash(
+            "subject",
+            `${normalizedIssuer}\0${normalizedSubject}`
+          )
+        })]);
+    const primary = lookupHashes[0];
+    const legacy = lookupHashes[1];
+
+    return this.repository.withTenantWrite(async (client) => {
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('authentication_reference_rebind'), hashtext($1 || ':' || $2 || ':' || $3))",
+        [this.tenantId, normalizedIssuer, normalizedClientId]
+      );
+      const selected = await client.query(
+        `SELECT *
+           FROM authentication_credentials
+          WHERE tenant_id = $1
+            AND issuer = $2
+            AND client_id = $3
+            AND (
+              (reference_hash_key_version = $4 AND subject_ref_hash = $5)
+              OR ($6::text IS NOT NULL AND
+                  reference_hash_key_version = $6 AND subject_ref_hash = $7)
+            )
+          ORDER BY reference_hash_key_version DESC, id
+          FOR UPDATE`,
+        [
+          this.tenantId,
+          normalizedIssuer,
+          normalizedClientId,
+          primary.keyVersion,
+          primary.referenceHash,
+          legacy?.keyVersion ?? null,
+          legacy?.referenceHash ?? primary.referenceHash
+        ]
+      );
+      const primaryRows = selected.rows.filter((row) =>
+        row.reference_hash_key_version === primary.keyVersion &&
+        row.subject_ref_hash === primary.referenceHash
+      );
+      const legacyRows = legacy === undefined
+        ? []
+        : selected.rows.filter((row) =>
+            row.reference_hash_key_version === legacy.keyVersion &&
+            row.subject_ref_hash === legacy.referenceHash
+          );
+      if (primaryRows.length > 1 || legacyRows.length > 1) {
+        throw authenticationError(
+          "authentication_reference_binding_ambiguous",
+          "credential reference binding is ambiguous"
+        );
+      }
+      const primaryRow = primaryRows[0];
+      const legacyRow = legacyRows[0];
+      if (primaryRow) {
+        if (legacyRow?.status === CredentialStatus.ACTIVE) {
+          throw authenticationError(
+            "authentication_reference_binding_ambiguous",
+            "credential reference binding is ambiguous"
+          );
+        }
+        return this.#activeInTransaction(client, primaryRow.id, now);
+      }
+      if (
+        this.referenceHasher.mode !== "overlap_v2_write_v1_lookup" ||
+        primary.keyVersion !== "v2" ||
+        legacy?.keyVersion !== "v1" ||
+        !legacyRow
+      ) {
+        throw authenticationError(
+          "authentication_credential_rejected",
+          "credential is not active"
+        );
+      }
+      const current = await this.#activeInTransaction(client, legacyRow.id, now);
+      if (
+        !HUMAN_ACTOR_TYPES.has(current.actorType) ||
+        !HUMAN_AUTHENTICATION_METHODS.has(current.clientAuthenticationMethod) ||
+        current.senderConstraint.method !== SenderConstraintMethod.HOST_SESSION ||
+        current.referenceHashKeyVersion !== "v1"
+      ) {
+        throw authenticationError(
+          "authentication_binding_rejected",
+          "verified Subject is not bound to a rebindable Human credential"
+        );
+      }
+      const enrollments = await client.query(
+        `SELECT *
+           FROM authentication_role_enrollments
+          WHERE tenant_id = $1 AND credential_id = $2 AND status = 'active'
+          ORDER BY role_bundle, id
+          FOR UPDATE`,
+        [this.tenantId, current.credentialId]
+      );
+      if (
+        current.roles.some((role) => SELECTABLE_HUMAN_ROLES.has(role)) &&
+        enrollments.rowCount === 0
+      ) {
+        throw authenticationError(
+          "authentication_role_rejected",
+          "verified Human credential has no active role enrollment"
+        );
+      }
+      const credentialId = createOperationalId("credential");
+      const senderConstraintRefHash = this.referenceHasher.hash(
+        "sender.constraint",
+        `verified-human-rebind\0${current.credentialId}\0${credentialId}`
+      );
+      const inserted = await client.query(
+        `INSERT INTO authentication_credentials(
+           id, tenant_id, actor_id, actor_type, issuer, subject_ref_hash,
+           client_id, client_authentication_method, sender_constraint_method,
+           sender_constraint_ref_hash, roles, allowed_capabilities,
+           policy_version, status, version, expires_at, created_at, updated_at,
+           schema_version, reference_hash_key_version
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6,
+           $7, $8, $9,
+           $10, $11::jsonb, $12::jsonb,
+           $13, 'active', 1, $14, $15, $15,
+           'authentication_credential.v1', 'v2'
+         ) RETURNING *`,
+        [
+          credentialId,
+          this.tenantId,
+          current.actorId,
+          current.actorType,
+          current.issuer,
+          primary.referenceHash,
+          current.clientId,
+          current.clientAuthenticationMethod,
+          current.senderConstraint.method,
+          senderConstraintRefHash,
+          JSON.stringify(current.roles),
+          JSON.stringify(current.allowedCapabilities),
+          current.policyVersion,
+          current.expiresAt ?? null,
+          now
+        ]
+      );
+      for (const enrollment of enrollments.rows) {
+        await client.query(
+          `INSERT INTO authentication_role_enrollments(
+             id, tenant_id, actor_id, credential_id, role_bundle, capabilities,
+             client_ids, policy_version, status, valid_from, expires_at,
+             version, created_at, updated_at, schema_version
+           ) VALUES (
+             $1, $2, $3, $4, $5, $6::jsonb,
+             $7::jsonb, $8, 'active', $9, $10,
+             1, $11, $11, 'authentication_role_enrollment.v1'
+           )`,
+          [
+            createOperationalId("role_enrollment"),
+            this.tenantId,
+            current.actorId,
+            credentialId,
+            enrollment.role_bundle,
+            JSON.stringify(enrollment.capabilities),
+            JSON.stringify(enrollment.client_ids),
+            enrollment.policy_version,
+            enrollment.valid_from,
+            enrollment.expires_at,
+            now
+          ]
+        );
+      }
+      await client.query(
+        `UPDATE authentication_role_enrollments
+            SET status = 'revoked', version = version + 1, updated_at = $3
+          WHERE tenant_id = $1 AND credential_id = $2 AND status = 'active'`,
+        [this.tenantId, current.credentialId, now]
+      );
+      const revokedSessions = await client.query(
+        `UPDATE authentication_sessions
+            SET status = 'revoked', revoked_at = $3,
+                end_reason_code = 'reference_hash_key_rotation'
+          WHERE tenant_id = $1 AND credential_id = $2 AND status = 'active'
+        RETURNING *`,
+        [this.tenantId, current.credentialId, now]
+      );
+      for (const sessionRow of revokedSessions.rows) {
+        const session = sessionFromRow(sessionRow);
+        await appendEvent(client, {
+          eventType: AuthenticationEventType.SESSION_REVOKED,
+          tenantId: this.tenantId,
+          actorId: current.actorId,
+          credentialId: current.credentialId,
+          reasonCode: "reference_hash_key_rotation",
+          occurredAt: now,
+          payload: {
+            sessionRefHash: session.sessionRefHash,
+            rotation: session.rotation,
+            referenceHashKeyVersion: session.referenceHashKeyVersion
+          }
+        });
+      }
+      await client.query(
+        `UPDATE authentication_credentials
+            SET status = 'revoked', updated_at = $3
+          WHERE tenant_id = $1 AND id = $2`,
+        [this.tenantId, current.credentialId, now]
+      );
+      await appendEvent(client, {
+        eventType: AuthenticationEventType.CREDENTIAL_REVOKED,
+        tenantId: this.tenantId,
+        actorId: current.actorId,
+        credentialId: current.credentialId,
+        reasonCode: "reference_hash_key_rotation",
+        occurredAt: now,
+        payload: { status: CredentialStatus.REVOKED }
+      });
+      await appendEvent(client, {
+        eventType: AuthenticationEventType.CREDENTIAL_REGISTERED,
+        tenantId: this.tenantId,
+        actorId: current.actorId,
+        credentialId,
+        reasonCode: "verified_reference_hash_rebind",
+        occurredAt: now,
+        payload: {
+          actorType: current.actorType,
+          clientAuthenticationMethod: current.clientAuthenticationMethod,
+          senderConstraintMethod: current.senderConstraint.method,
+          referenceHashKeyVersion: "v2",
+          version: 1
+        }
+      });
+      await appendEvent(client, {
+        eventType: AuthenticationEventType.CREDENTIAL_REFERENCE_REBOUND,
+        tenantId: this.tenantId,
+        actorId: current.actorId,
+        credentialId,
+        reasonCode: "verified_reference_hash_rebind",
+        occurredAt: now,
+        payload: {
+          oldCredentialId: current.credentialId,
+          newCredentialId: credentialId,
+          oldReferenceHashKeyVersion: "v1",
+          newReferenceHashKeyVersion: "v2"
+        }
+      });
+      return credentialFromRow(inserted.rows[0]);
     });
   }
 
@@ -1099,6 +1371,12 @@ export class PostgresCredentialRegistry {
     });
     const row = await this.repository.withTenantWrite(async (client) => {
       const current = await this.#activeInTransaction(client, checkedId, now);
+      if (current.referenceHashKeyVersion !== this.referenceHasher.keyVersion) {
+        throw authenticationError(
+          "authentication_credential_rebind_required",
+          "credential reference binding requires a verified key rebind"
+        );
+      }
       const result = await client.query(
         `UPDATE authentication_credentials
             SET sender_constraint_ref_hash = $3,
@@ -1123,6 +1401,7 @@ export class PostgresCredentialRegistry {
         occurredAt: now,
         payload: {
           senderConstraintMethod: current.senderConstraint.method,
+          referenceHashKeyVersion: current.referenceHashKeyVersion,
           version: updated.version
         }
       });
@@ -1337,6 +1616,7 @@ function sessionFromRow(row) {
   return Object.freeze({
     sessionRefHash: row.session_ref_hash,
     csrfRefHash: row.csrf_ref_hash,
+    referenceHashKeyVersion: row.reference_hash_key_version ?? "v1",
     tenantId: row.tenant_id,
     actorId: row.actor_id,
     actorType: row.actor_type,
@@ -1462,14 +1742,15 @@ export class PostgresHumanSessionStore {
            sender_constraint_method, policy_version, roles, allowed_capabilities,
            token_jti_ref_hash, auth_time, acr, amr, created_at, last_seen_at,
            idle_expires_at, absolute_expires_at, status, rotation, revoked_at,
-           rotated_at, expired_at, end_reason_code, schema_version
+           rotated_at, expired_at, end_reason_code, schema_version,
+           reference_hash_key_version
          ) VALUES (
            $1, $2, $3, $4, $5,
            $6, $7, $8, $9,
            'host_session', $10, $11::jsonb, $12::jsonb,
            $13, $14, $15, $16::jsonb, $17, $17,
            $18, $19, 'active', 0, NULL,
-           NULL, NULL, NULL, 'authentication_session.v1'
+           NULL, NULL, NULL, 'authentication_session.v1', $20
          ) RETURNING *`,
         [
           this.tenantId,
@@ -1490,7 +1771,8 @@ export class PostgresHumanSessionStore {
           JSON.stringify(normalized.amr),
           now,
           idleExpiresAt,
-          absoluteExpiresAt
+          absoluteExpiresAt,
+          this.referenceHasher.keyVersion
         ]
       );
       await appendEvent(client, {
@@ -1499,8 +1781,12 @@ export class PostgresHumanSessionStore {
         actorId: normalized.actorId,
         credentialId: normalized.credentialId,
         reasonCode: "human_login",
-        occurredAt: now,
-        payload: { sessionRefHash, rotation: 0 }
+          occurredAt: now,
+          payload: {
+            sessionRefHash,
+            rotation: 0,
+            referenceHashKeyVersion: this.referenceHasher.keyVersion
+          }
       });
       if (SELECTABLE_HUMAN_ROLES.has(normalized.roles[0])) {
         await appendEvent(client, {
@@ -1512,7 +1798,8 @@ export class PostgresHumanSessionStore {
           occurredAt: now,
           payload: {
             roleBundle: normalized.roles[0],
-            sessionRefHash
+            sessionRefHash,
+            referenceHashKeyVersion: this.referenceHasher.keyVersion
           }
         });
       }
@@ -1735,14 +2022,15 @@ export class PostgresHumanSessionStore {
            sender_constraint_method, policy_version, roles, allowed_capabilities,
            token_jti_ref_hash, auth_time, acr, amr, created_at, last_seen_at,
            idle_expires_at, absolute_expires_at, status, rotation, revoked_at,
-           rotated_at, expired_at, end_reason_code, schema_version
+           rotated_at, expired_at, end_reason_code, schema_version,
+           reference_hash_key_version
          ) SELECT
            tenant_id, $3, $4, actor_id, actor_type,
            client_id, authentication_method, credential_id, credential_version,
            sender_constraint_method, policy_version, roles, allowed_capabilities,
            token_jti_ref_hash, auth_time, acr, amr, created_at, $5,
            $6, absolute_expires_at, 'active', rotation + 1, NULL,
-           NULL, NULL, NULL, schema_version
+           NULL, NULL, NULL, schema_version, reference_hash_key_version
          FROM authentication_sessions
          WHERE tenant_id = $1 AND session_ref_hash = $2
          RETURNING *`,
@@ -1878,11 +2166,18 @@ export class PostgresHumanSessionStore {
         throw authenticationError("authentication_session_rejected", "session is not active");
       }
       await client.query(
-        `INSERT INTO authentication_session_invalidations(
+         `INSERT INTO authentication_session_invalidations(
            tenant_id, idempotency_ref_hash, session_ref_hash, reason_code,
-           occurred_at, schema_version
-         ) VALUES ($1, $2, $3, $4, $5, 'wallet_session_invalidation.v1')`,
-        [this.tenantId, idempotencyRefHash, suppliedSessionRefHash, reason, now]
+           occurred_at, reference_hash_key_version, schema_version
+         ) VALUES ($1, $2, $3, $4, $5, $6, 'wallet_session_invalidation.v1')`,
+        [
+          this.tenantId,
+          idempotencyRefHash,
+          suppliedSessionRefHash,
+          reason,
+          now,
+          this.referenceHasher.keyVersion
+        ]
       );
       const session = sessionFromRow(revoked.rows[0]);
       await this.#sessionEvent(
@@ -2086,8 +2381,196 @@ export class PostgresHumanSessionStore {
       occurredAt: now,
       payload: {
         sessionRefHash: session.sessionRefHash,
-        rotation: session.rotation
+        rotation: session.rotation,
+        referenceHashKeyVersion: session.referenceHashKeyVersion
       }
+    });
+  }
+}
+
+export class PostgresReferenceHashRotationService {
+  constructor({ eventRepository, tenantId: configuredTenantId, referenceHasher, systemActorId }) {
+    this.tenantId = tenantId(configuredTenantId);
+    this.repository = assertRepository(eventRepository, this.tenantId);
+    if (
+      !referenceHasher ||
+      typeof referenceHasher.hash !== "function" ||
+      !new Set(["single_v1", "overlap_v2_write_v1_lookup", "single_v2"]).has(referenceHasher.mode)
+    ) {
+      throw authenticationError(
+        "invalid_authentication_configuration",
+        "reference-hash rotation requires an explicit keyring mode"
+      );
+    }
+    this.referenceHasher = referenceHasher;
+    this.systemActorId = assertSafeIdentifier("systemActorId", systemActorId);
+  }
+
+  async inventory({ now = new Date() } = {}) {
+    if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+      throw authenticationError("invalid_authentication_input", "inventory time is invalid");
+    }
+    const result = await this.repository.withTenantRead((client) => client.query(
+      `SELECT
+         (SELECT count(*)::int FROM authentication_credentials
+           WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'
+             AND status = 'active' AND (expires_at IS NULL OR expires_at > $2)) AS active_v1_credentials,
+         (SELECT count(*)::int FROM authentication_role_enrollments e
+           JOIN authentication_credentials c
+             ON c.tenant_id = e.tenant_id AND c.id = e.credential_id
+          WHERE e.tenant_id = $1 AND c.reference_hash_key_version = 'v1'
+            AND e.status = 'active' AND e.valid_from <= $2
+            AND (e.expires_at IS NULL OR e.expires_at > $2)) AS active_v1_role_enrollments,
+         (SELECT count(*)::int FROM authentication_sessions
+           WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'
+             AND status = 'active' AND absolute_expires_at > $2) AS active_v1_sessions,
+         (SELECT count(*)::int FROM authentication_oidc_transactions
+           WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'
+             AND expires_at > $2) AS pending_v1_oidc_transactions,
+         (SELECT count(*)::int FROM authentication_wallet_transactions
+           WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'
+             AND expires_at > $2) AS pending_v1_wallet_transactions,
+         (SELECT count(*)::int FROM authentication_replay_entries
+           WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'
+             AND expires_at > $2) AS live_v1_replay_entries,
+         (SELECT count(*)::int FROM authentication_credentials
+           WHERE tenant_id = $1 AND reference_hash_key_version = 'v2'
+             AND status = 'active' AND (expires_at IS NULL OR expires_at > $2)) AS active_v2_credentials,
+         (SELECT count(*)::int FROM authentication_sessions
+           WHERE tenant_id = $1 AND reference_hash_key_version = 'v2'
+             AND status = 'active' AND absolute_expires_at > $2) AS active_v2_sessions`,
+      [this.tenantId, now]
+    ));
+    const row = result.rows[0];
+    return Object.freeze({
+      schemaVersion: "authentication_reference_hash_inventory.v1",
+      tenantId: this.tenantId,
+      observedAt: now.toISOString(),
+      activeV1Credentials: row.active_v1_credentials,
+      activeV1RoleEnrollments: row.active_v1_role_enrollments,
+      activeV1Sessions: row.active_v1_sessions,
+      pendingV1OidcTransactions: row.pending_v1_oidc_transactions,
+      pendingV1WalletTransactions: row.pending_v1_wallet_transactions,
+      liveV1ReplayEntries: row.live_v1_replay_entries,
+      activeV2Credentials: row.active_v2_credentials,
+      activeV2Sessions: row.active_v2_sessions,
+      secretMaterialIncluded: false
+    });
+  }
+
+  async retireLegacySessionsAndChallenges({ now = new Date() } = {}) {
+    if (this.referenceHasher.mode !== "overlap_v2_write_v1_lookup") {
+      throw authenticationError(
+        "authentication_reference_rotation_rejected",
+        "legacy runtime artifacts may be retired only in overlap mode"
+      );
+    }
+    const retired = await this.repository.withTenantWrite(async (client) => {
+      const sessions = await client.query(
+        `UPDATE authentication_sessions
+            SET status = 'revoked', revoked_at = $2,
+                end_reason_code = 'reference_hash_key_rotation'
+          WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'
+            AND status = 'active'
+        RETURNING *`,
+        [this.tenantId, now]
+      );
+      for (const row of sessions.rows) {
+        const session = sessionFromRow(row);
+        await appendEvent(client, {
+          eventType: AuthenticationEventType.SESSION_REVOKED,
+          tenantId: this.tenantId,
+          actorId: this.systemActorId,
+          credentialId: session.credentialId,
+          reasonCode: "reference_hash_key_rotation",
+          occurredAt: now,
+          payload: {
+            sessionRefHash: session.sessionRefHash,
+            rotation: session.rotation,
+            referenceHashKeyVersion: session.referenceHashKeyVersion
+          }
+        });
+      }
+      const oidc = await client.query(
+        `DELETE FROM authentication_oidc_transactions
+          WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'`,
+        [this.tenantId]
+      );
+      const wallet = await client.query(
+        `DELETE FROM authentication_wallet_transactions
+          WHERE tenant_id = $1 AND reference_hash_key_version = 'v1'`,
+        [this.tenantId]
+      );
+      return Object.freeze({
+        revokedSessions: sessions.rowCount,
+        deletedOidcTransactions: oidc.rowCount,
+        deletedWalletTransactions: wallet.rowCount
+      });
+    });
+    return Object.freeze({
+      schemaVersion: "authentication_reference_hash_retirement.v1",
+      tenantId: this.tenantId,
+      retiredAt: now.toISOString(),
+      ...retired,
+      secretMaterialIncluded: false
+    });
+  }
+
+  async assertCutoverReady({ now = new Date() } = {}) {
+    const inventory = await this.inventory({ now });
+    const blockers = Object.freeze({
+      activeV1Credentials: inventory.activeV1Credentials,
+      activeV1RoleEnrollments: inventory.activeV1RoleEnrollments,
+      activeV1Sessions: inventory.activeV1Sessions,
+      pendingV1OidcTransactions: inventory.pendingV1OidcTransactions,
+      pendingV1WalletTransactions: inventory.pendingV1WalletTransactions,
+      liveV1ReplayEntries: inventory.liveV1ReplayEntries
+    });
+    if (Object.values(blockers).some((count) => count !== 0)) {
+      throw authenticationError(
+        "authentication_reference_cutover_blocked",
+        `active legacy reference-hash dependencies block cutover (${Object.values(blockers).reduce((sum, count) => sum + count, 0)})`
+      );
+    }
+    return inventory;
+  }
+
+  async recordCutover({ credentialId, now = new Date() }) {
+    if (this.referenceHasher.mode !== "single_v2" || this.referenceHasher.keyVersion !== "v2") {
+      throw authenticationError(
+        "authentication_reference_rotation_rejected",
+        "reference-hash cutover Evidence requires single-v2 mode"
+      );
+    }
+    const checkedCredentialId = assertSafeIdentifier("credentialId", credentialId);
+    await this.assertCutoverReady({ now });
+    return this.repository.withTenantWrite(async (client) => {
+      const credential = await client.query(
+        `SELECT id FROM authentication_credentials
+          WHERE tenant_id = $1 AND id = $2 AND reference_hash_key_version = 'v2'
+            AND status = 'active' AND (expires_at IS NULL OR expires_at > $3)
+          FOR SHARE`,
+        [this.tenantId, checkedCredentialId, now]
+      );
+      if (credential.rowCount !== 1) {
+        throw authenticationError(
+          "authentication_reference_cutover_blocked",
+          "cutover Evidence credential is not an active v2 credential"
+        );
+      }
+      return appendEvent(client, {
+        eventType: AuthenticationEventType.REFERENCE_HASH_CUTOVER,
+        tenantId: this.tenantId,
+        actorId: this.systemActorId,
+        credentialId: checkedCredentialId,
+        reasonCode: "reference_hash_v2_cutover",
+        occurredAt: now,
+        payload: {
+          fromKeyVersion: "v1",
+          toKeyVersion: "v2",
+          mode: "single_v2"
+        }
+      });
     });
   }
 }

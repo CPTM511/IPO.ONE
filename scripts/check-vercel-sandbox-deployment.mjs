@@ -73,14 +73,17 @@ exactKeys(manifest, [
 assert.equal(manifest.schemaVersion, "ipo.one.vercel-m1-b-sandbox/v2");
 assert.equal(
   manifest.status,
-  "current_release_closure_configuration_deployment_pending"
+  "founder_authorized_staged_primary_deployment"
 );
 assert.equal(manifest.productProfile, "deployable_sandbox_vertical_slice");
 assert.equal(manifest.deliveryMode, "L1_PUBLIC_SANDBOX");
 assert.equal(manifest.vercelTargetEnvironment, "production");
 assert.match(manifest.vercelTargetReason, /configuration, not hosting or deployment authority/);
 assert.equal(manifest.productionTargetConfigured, true);
-assert.equal(manifest.deploymentStatus, "DEPLOYMENT_PENDING_AUTHORIZATION");
+assert.equal(
+  manifest.deploymentStatus,
+  "STAGED_PRIMARY_DEPLOYMENT_AUTHORIZED"
+);
 assert.equal(manifest.deployedReleaseId, null);
 for (const boundary of [
   "productProductionClaim",
@@ -148,10 +151,10 @@ exactKeys(manifest.authority, [
   "realValueActivationAuthorized",
   "maximumVercelProjectsAuthorizedForDeployment"
 ]);
+assert.equal(manifest.authority.deploymentAuthorized, true);
+assert.equal(manifest.authority.deploymentEvidenceCollectionAuthorized, true);
 for (const boundary of [
   "mergeAuthorized",
-  "deploymentAuthorized",
-  "deploymentEvidenceCollectionAuthorized",
   "deploymentPromotionAuthorized",
   "aliasMutationAuthorized",
   "dnsMutationAuthorized",
@@ -169,7 +172,7 @@ for (const boundary of [
   );
 }
 assert.equal(manifest.authority.customDomain, null);
-assert.equal(manifest.authority.maximumVercelProjectsAuthorizedForDeployment, 0);
+assert.equal(manifest.authority.maximumVercelProjectsAuthorizedForDeployment, 1);
 
 exactKeys(manifest.conditionalInterfaces, ["riskProject"]);
 assert.deepEqual(manifest.conditionalInterfaces.riskProject, {
@@ -260,6 +263,7 @@ assert.doesNotMatch(
 
 process.stdout.write(
   "Vercel Sandbox static gate passed: current Primary-only configuration " +
-  "is deployment-pending, all external authority is false, the Risk bundle is " +
-  "a deferred interface, and no-real-funds boundaries are explicit.\n"
+  "authorizes one staged unaliased deployment and Evidence collection, " +
+  "promotion and alias authority remain false, the Risk bundle is a deferred " +
+  "interface, and no-real-funds boundaries are explicit.\n"
 );

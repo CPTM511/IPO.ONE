@@ -3,7 +3,7 @@
   "product": "IPO.ONE",
   "productVersion": "V9",
   "status": "IMPLEMENTED_UNVERIFIED",
-  "sourceCommit": "de5e72d5a912d2d55c2ce86570408f37c07d4a4f",
+  "sourceCommit": "bf468e975d606c0c9cf88ab7261bdc463675d5d8",
   "prototypeAuthority": false,
   "classifications": [
     "REAL_LOCAL",
@@ -14,7 +14,10 @@
   ],
   "releaseMaturity": {
     "tenantProtocolMaturity": "local_non_funds",
-    "enabledReleaseProfile": "public_sandbox",
+    "enabledReleaseProfiles": [
+      "public_sandbox",
+      "live_testnet_secured_pool"
+    ],
     "closedPilotReleaseEnabled": false,
     "controlledCreditReleaseEnabled": false,
     "realFundsEnabled": false,
@@ -1586,6 +1589,77 @@
       ]
     },
     {
+      "operationId": "agentCreateSecuredFacilityAuthorization",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_secured_facility_authorization_created.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-secured-facility-authorization-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/trading-capital-product-presentation.js",
+        "packages/sdk/src/trading-capital-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/agent-secured-facility-authorization-handlers.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js",
+        "packages/sdk/test/trading-capital-client.test.js"
+      ]
+    },
+    {
+      "operationId": "agentReadSecuredFacilityAuthorization",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_secured_facility_authorization_ready.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-secured-facility-authorization-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/trading-capital-product-presentation.js",
+        "apps/agent-mcp/src/trading-capital-mcp-adapter.js",
+        "packages/sdk/src/trading-capital-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/agent-secured-facility-authorization-handlers.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js",
+        "apps/agent-mcp/test/agent-secured-facility-authorization-mcp-adapter.test.js",
+        "packages/sdk/test/trading-capital-client.test.js"
+      ]
+    },
+    {
+      "operationId": "agentRevokeSecuredFacilityAuthorization",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_secured_facility_authorization_revoked.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/agent-secured-facility-authorization-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/web/src/trading-capital-product-presentation.js",
+        "packages/sdk/src/trading-capital-client.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/agent-secured-facility-authorization-handlers.test.js",
+        "apps/web/test/trading-capital-product-presentation.test.js",
+        "packages/sdk/test/trading-capital-client.test.js"
+      ]
+    },
+    {
       "operationId": "pilotAuthorCapitalPartnerOffer",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_capital_partner_offer_authored.v1",
@@ -2895,6 +2969,40 @@
           "truthBoundary": "Only closed-schema sandbox mandates are supported; activation grants no real-funds authority.",
           "nextTaskIds": [
             "V9-006"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "agent_console.secured_facility_authorization",
+          "label": "Create, read, or revoke the exact Principal-bound secured-Facility authorization",
+          "prototypeLabels": [
+            "Authorize Agent Facility",
+            "Refresh authorization",
+            "Revoke authorization"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "agentCreateSecuredFacilityAuthorization",
+            "agentReadSecuredFacilityAuthorization",
+            "agentRevokeSecuredFacilityAuthorization"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/trading-capital-product-presentation.js",
+            "apps/agent-mcp/src/trading-capital-mcp-adapter.js",
+            "packages/sdk/src/trading-capital-client.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/agent-secured-facility-authorization-handlers.test.js",
+            "apps/web/test/trading-capital-product-presentation.test.js",
+            "apps/agent-mcp/test/agent-secured-facility-authorization-mcp-adapter.test.js",
+            "packages/sdk/test/trading-capital-client.test.js"
+          ],
+          "truthBoundary": "This local authorization binds one Principal, Agent, Mandate, Account, Pool, Obligation and Facility. It grants no signer, Venue write, withdrawal, transfer, mainnet or real-funds authority.",
+          "nextTaskIds": [
+            "M2B-002"
           ],
           "humanGateRequired": false
         },

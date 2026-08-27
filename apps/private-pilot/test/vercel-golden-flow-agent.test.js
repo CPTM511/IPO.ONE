@@ -105,6 +105,13 @@ test("Vercel Golden Flow Agent creates exact short-lived DPoP-bound requests", a
   assert.equal(tokenClaims.cnf.jkt, thumbprint);
   assert.equal(tokenClaims.exp - tokenClaims.iat, 120);
   assert.equal(tokenClaims.capabilities.includes("agent_account.proof.submit.self"), true);
+  assert.equal(
+    tokenClaims.capabilities.includes(
+      "agent_secured_facility_authorization.read.bound"
+    ),
+    false
+  );
+  assert.equal(tokenClaims.capabilities.length, 20);
   assert.equal(proofHeader.typ, "dpop+jwt");
   assert.equal(Object.hasOwn(proofHeader.jwk, "d"), false);
   assert.equal(proofClaims.htm, "POST");

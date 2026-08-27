@@ -5,12 +5,20 @@ const trustedAccountContexts = new WeakSet();
 const NETWORK_SOURCES = new Set(["verified_proxy", "direct_socket", "local_test"]);
 const ACCOUNT_SOURCES = new Set(["normalized_login_identifier", "recovery_identifier", "local_test"]);
 
-function createHashedContext({ value, source, allowedSources, trustedSet, schemaVersion }) {
+function createHashedContext({ value, legacyValue, source, allowedSources, trustedSet, schemaVersion }) {
   if (!allowedSources.has(source)) {
     throw abuseError("invalid_abuse_control_input", "context source is not trusted");
   }
+  const referenceHash = assertAbuseHash("referenceHash", value);
+  const legacyReferenceHash = legacyValue === undefined
+    ? undefined
+    : assertAbuseHash("legacyReferenceHash", legacyValue);
+  if (legacyReferenceHash === referenceHash) {
+    throw abuseError("invalid_abuse_control_input", "legacy context hash must differ from primary hash");
+  }
   const context = deepFreezeAbuse({
-    referenceHash: assertAbuseHash("referenceHash", value),
+    referenceHash,
+    ...(legacyReferenceHash === undefined ? {} : { legacyReferenceHash }),
     source,
     schemaVersion
   });
@@ -18,9 +26,10 @@ function createHashedContext({ value, source, allowedSources, trustedSet, schema
   return context;
 }
 
-export function createTrustedNetworkContext({ networkRefHash, source }) {
+export function createTrustedNetworkContext({ networkRefHash, legacyNetworkRefHash, source }) {
   return createHashedContext({
     value: networkRefHash,
+    legacyValue: legacyNetworkRefHash,
     source,
     allowedSources: NETWORK_SOURCES,
     trustedSet: trustedNetworkContexts,
@@ -38,9 +47,10 @@ export function assertTrustedNetworkContext(context) {
   return context;
 }
 
-export function createTrustedAccountContext({ accountRefHash, source }) {
+export function createTrustedAccountContext({ accountRefHash, legacyAccountRefHash, source }) {
   return createHashedContext({
     value: accountRefHash,
+    legacyValue: legacyAccountRefHash,
     source,
     allowedSources: ACCOUNT_SOURCES,
     trustedSet: trustedAccountContexts,

@@ -37,7 +37,7 @@
       "additionalProperties": false,
       "required": [
         "tenantProtocolMaturity",
-        "enabledReleaseProfile",
+        "enabledReleaseProfiles",
         "closedPilotReleaseEnabled",
         "controlledCreditReleaseEnabled",
         "realFundsEnabled",
@@ -45,7 +45,17 @@
       ],
       "properties": {
         "tenantProtocolMaturity": { "const": "local_non_funds" },
-        "enabledReleaseProfile": { "const": "public_sandbox" },
+        "enabledReleaseProfiles": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "prefixItems": [
+            { "const": "public_sandbox" },
+            { "const": "live_testnet_secured_pool" }
+          ],
+          "items": false
+        },
         "closedPilotReleaseEnabled": { "const": false },
         "controlledCreditReleaseEnabled": { "const": false },
         "realFundsEnabled": { "const": false },
@@ -148,7 +158,7 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 128,
-          "pattern": "^(pilot|worker|trading|wallet|venue)[A-Z][A-Za-z0-9]*$"
+          "pattern": "^(pilot|worker|trading|agent|wallet|venue)[A-Z][A-Za-z0-9]*$"
         },
         "requestSchemaVersion": {
           "type": "string",

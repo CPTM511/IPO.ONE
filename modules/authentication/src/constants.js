@@ -34,12 +34,14 @@ export const AuthenticationEventType = Object.freeze({
   CREDENTIAL_SUSPENDED: "credential_suspended",
   CREDENTIAL_REVOKED: "credential_revoked",
   CREDENTIAL_EXPIRED: "credential_expired",
+  CREDENTIAL_REFERENCE_REBOUND: "credential_reference_rebound",
   SESSION_CREATED: "session_created",
   SESSION_ROTATED: "session_rotated",
   SESSION_REVOKED: "session_revoked",
   SESSION_EXPIRED: "session_expired",
   ROLE_ENROLLED: "role_enrolled",
-  ROLE_SELECTED: "role_selected"
+  ROLE_SELECTED: "role_selected",
+  REFERENCE_HASH_CUTOVER: "reference_hash_cutover"
 });
 
 export const PHISHING_RESISTANT_AMR = Object.freeze(["hwk", "webauthn", "fido"]);

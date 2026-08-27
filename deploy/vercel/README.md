@@ -2,8 +2,10 @@
 
 Current M1-B release authority is defined by
 `m1-b-sandbox.manifest.v2.json`: one Primary bundle, a
-`DEPLOYMENT_PENDING_AUTHORIZATION` status, and no hosting or deployment
-authority. The preserved v1 manifest is historical. Runtime/build support for
+`STAGED_PRIMARY_DEPLOYMENT_AUTHORIZED` status, and authority for exactly one
+unaliased Primary deployment plus Evidence collection. Promotion, stable alias,
+DNS, custom domain, merge and production financial authority remain false. The
+preserved v1 manifest is historical. Runtime/build support for
 the `risk` role is a dormant M1-C/L2 compatibility interface and is not a
 current M1-B project, hosted surface, or authorization to deploy.
 

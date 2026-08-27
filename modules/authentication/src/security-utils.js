@@ -10,6 +10,11 @@ import { DomainError } from "../../../packages/domain/src/index.js";
 
 const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/;
 const CAPABILITY_PATTERN = /^[a-z][a-z0-9_.:-]{1,127}$/;
+const REFERENCE_HASH_KEYRING_MODES = new Set([
+  "single_v1",
+  "overlap_v2_write_v1_lookup",
+  "single_v2"
+]);
 
 export function authenticationError(code, message) {
   return new DomainError(code, message);
@@ -98,6 +103,8 @@ export function createReferenceHasher(secret) {
   }
   const privateKey = Buffer.from(key);
   return Object.freeze({
+    mode: "single_v1",
+    keyVersion: "v1",
     hash(namespace, value) {
       assertBoundedString("hash namespace", namespace, { maximum: 64, pattern: /^[a-z][a-z0-9_.-]+$/ });
       assertBoundedString("hash input", value, { maximum: 16_384 });
@@ -108,6 +115,109 @@ export function createReferenceHasher(secret) {
         .update("\0")
         .update(value)
         .digest("base64url");
+    }
+  });
+}
+
+function referenceHashKeyMaterial(name, value) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Object.prototype ||
+    Object.keys(value).length !== 2 ||
+    !Object.hasOwn(value, "keyVersion") ||
+    !Object.hasOwn(value, "secret") ||
+    (value.keyVersion !== "v1" && value.keyVersion !== "v2")
+  ) {
+    throw authenticationError(
+      "invalid_authentication_configuration",
+      `${name} reference hashing key is invalid`
+    );
+  }
+  const secret = Buffer.from(value.secret ?? []);
+  if (secret.length < 32 || secret.length > 64) {
+    throw authenticationError(
+      "invalid_authentication_configuration",
+      `${name} reference hashing key must contain 32-64 bytes`
+    );
+  }
+  return Object.freeze({
+    keyVersion: value.keyVersion,
+    digest: createHash("sha256").update(secret).digest("base64url"),
+    hasher: createReferenceHasher(secret)
+  });
+}
+
+export function createReferenceHashKeyring(input) {
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input) ||
+    Object.getPrototypeOf(input) !== Object.prototype ||
+    Object.keys(input).some((key) => key !== "mode" && key !== "primary" && key !== "legacy") ||
+    !Object.hasOwn(input, "mode") ||
+    !Object.hasOwn(input, "primary") ||
+    !REFERENCE_HASH_KEYRING_MODES.has(input.mode)
+  ) {
+    throw authenticationError(
+      "invalid_authentication_configuration",
+      "reference hash keyring is invalid"
+    );
+  }
+  const primary = referenceHashKeyMaterial("primary", input.primary);
+  const legacy = input.legacy === undefined
+    ? undefined
+    : referenceHashKeyMaterial("legacy", input.legacy);
+  const expectedPrimaryVersion = input.mode === "single_v1" ? "v1" : "v2";
+  if (
+    primary.keyVersion !== expectedPrimaryVersion ||
+    (input.mode === "overlap_v2_write_v1_lookup"
+      ? !legacy || legacy.keyVersion !== "v1"
+      : legacy !== undefined) ||
+    (legacy && (
+      legacy.keyVersion === primary.keyVersion ||
+      constantTimeEqual(legacy.digest, primary.digest)
+    ))
+  ) {
+    throw authenticationError(
+      "invalid_authentication_configuration",
+      "reference hash keyring mode and key material do not match"
+    );
+  }
+  const byVersion = new Map([[primary.keyVersion, primary.hasher]]);
+  if (legacy) byVersion.set(legacy.keyVersion, legacy.hasher);
+
+  return Object.freeze({
+    mode: input.mode,
+    keyVersion: primary.keyVersion,
+    ...(legacy === undefined ? {} : { legacyKeyVersion: legacy.keyVersion }),
+    hash(namespace, value) {
+      return primary.hasher.hash(namespace, value);
+    },
+    hashForVersion(keyVersion, namespace, value) {
+      const hasher = byVersion.get(keyVersion);
+      if (!hasher) {
+        throw authenticationError(
+          "reference_hash_key_version_rejected",
+          "reference hash key version is not active"
+        );
+      }
+      return hasher.hash(namespace, value);
+    },
+    lookupHashes(namespace, value) {
+      return Object.freeze([
+        Object.freeze({
+          keyVersion: primary.keyVersion,
+          referenceHash: primary.hasher.hash(namespace, value)
+        }),
+        ...(legacy === undefined
+          ? []
+          : [Object.freeze({
+              keyVersion: legacy.keyVersion,
+              referenceHash: legacy.hasher.hash(namespace, value)
+            })])
+      ]);
     }
   });
 }

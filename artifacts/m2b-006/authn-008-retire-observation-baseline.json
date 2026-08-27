@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "authn_008_retire_observation_baseline.v1",
+  "issueId": "AUTHN-008",
+  "stage": "RETIRE_OBSERVATION",
+  "observedAt": "2026-08-27T07:39:44.247Z",
+  "status": "OBSERVING_RETIRE_NOT_AUTHORIZED",
+  "observationWindow": {
+    "startsAt": "2026-08-27T04:27:16.783Z",
+    "earliestEndsAt": "2026-08-28T04:27:16.783Z",
+    "durationHours": 24,
+    "basis": {
+      "walletOrOidcChallengeMaximumSeconds": 600,
+      "credentialRateWindowMaximumSeconds": 600,
+      "dpopReplayMaximumSeconds": 361,
+      "runtimeSessionAbsoluteDefaultHours": 8,
+      "databaseSessionAbsoluteMaximumHours": 24,
+      "cronIntervalMinutes": 15,
+      "maximumScheduledCyclesInWindow": 96
+    }
+  },
+  "source": {
+    "evidenceHeadBeforeBaseline": "41c775c0008663bb71a008fd018af036abe65806",
+    "productionCommit": "3bb525ce168ef274fea862cd3d5e55d35b2577fd",
+    "productionTree": "3b8369f581506842ab84fde0f392c55060e359ea"
+  },
+  "deployment": {
+    "id": "dpl_GqX1Z5y232pmos2WyZLoxicfu88f",
+    "url": "https://ipo.one",
+    "ready": true,
+    "releaseId": "3bb525ce168ef274fea862cd3d5e55d35b2577fd",
+    "profile": "closed_non_funds_pilot",
+    "authenticationReferenceHashMode": "single_v2",
+    "writeKeyVersion": "v2",
+    "legacyLookupKeyVersion": null,
+    "realFundsEnabled": false
+  },
+  "currentProductionEnvironment": {
+    "variableCount": 27,
+    "referenceHashVariableNames": [
+      "IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY",
+      "IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF",
+      "IPO_ONE_AUTH_REFERENCE_HASH_MODE"
+    ],
+    "legacyReferenceHashVariablePresent": false,
+    "valuesRead": false,
+    "valuesPrinted": false,
+    "valuesPersisted": false
+  },
+  "database": {
+    "provider": "neon",
+    "projectId": "falling-king-09359147",
+    "branchId": "br-nameless-hill-avcw7qpp",
+    "database": "neondb",
+    "role": "neondb_owner",
+    "recovery": false,
+    "readOnlyTransaction": true,
+    "migrationCount": 69,
+    "releaseMigrationCount": 69,
+    "migrationHead": "0069_auth_reference_hash_key_rotation",
+    "exactNames": true,
+    "checksumsMatch": true,
+    "authenticationRls": {
+      "tableCount": 6,
+      "enabled": 6,
+      "forced": 6,
+      "policyCount": 6
+    }
+  },
+  "inventory": {
+    "activeV1Credentials": 0,
+    "activeV1RoleEnrollments": 0,
+    "activeV1Sessions": 0,
+    "pendingV1OidcTransactions": 0,
+    "pendingV1WalletTransactions": 0,
+    "liveV1ReplayEntries": 0,
+    "legacyBlockerTotal": 0,
+    "activeV2Credentials": 1,
+    "activeV2Sessions": 0
+  },
+  "cutoverEvidence": {
+    "eventId": "auth_event_38a20374-b1f7-457a-a66f-a4a3955eb61a",
+    "eventType": "reference_hash_cutover",
+    "occurredAt": "2026-08-27T04:27:16.783Z",
+    "fromKeyVersion": "v1",
+    "toKeyVersion": "v2",
+    "mode": "single_v2"
+  },
+  "boundedLogs": {
+    "since": "2026-08-27T04:27:16Z",
+    "uniqueEntries": 50,
+    "http200": 49,
+    "expectedServiceWorker404": 1,
+    "unexpectedHttp4xx": 0,
+    "authenticationHttp4xx": 0,
+    "http5xx": 0,
+    "errorOrFatal": 0,
+    "cronHttp200": 3
+  },
+  "retainedDeploymentInventory": {
+    "readyProductionDeploymentsVisible": 20,
+    "knownOverlapRollbackDeployment": {
+      "id": "dpl_9VrySxPRMYDg5amcA88u4GyeqjMm",
+      "state": "READY",
+      "target": "production"
+    },
+    "allRetainedDeploymentsClassified": false,
+    "classificationRequiredBeforeRetire": true
+  },
+  "authority": {
+    "observationAuthorized": true,
+    "retireAuthorized": false,
+    "environmentMutation": false,
+    "deploymentDeletion": false,
+    "retentionPolicyMutation": false,
+    "databaseMutation": false,
+    "runtimeRoleMutation": false,
+    "fundsMutation": false,
+    "chainMutation": false
+  },
+  "result": {
+    "baselinePassed": true,
+    "windowElapsed": false,
+    "retireReady": false,
+    "retireVerdict": "BLOCKED — NOT COMPLETE"
+  }
+}
