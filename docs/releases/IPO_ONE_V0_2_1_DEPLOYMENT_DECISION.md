@@ -113,8 +113,31 @@ readiness, RLS, Cron and bounded logs remained healthy.
 The v0.2.1 and M2B-006 verdict is now
 `PASS — DEPLOYED AND USER-VERIFIED`. This does not authorize real funds,
 mainnet, signer use, chain/Venue writes, custody, transfer or withdrawal.
-`AUTHN-008 RETIRE` remains separately gated and unexecuted pending a defined
-and observed rollback window plus explicit retirement approval.
+
+The Founder subsequently shortened the `AUTHN-008 RETIRE` observation window
+and authorized deletion of only the exact deterministically safe historical
+deployment set. All six v1 blocker classes remained zero, Production remained
+`single_v2`, migration history remained an exact 69/69 match, Authentication
+RLS remained enabled and forced on all six tables, and the bounded Production
+log window contained no unexplained authentication 4xx, HTTP 5xx, error or
+fatal entry.
+
+Fifty-eight historical READY Production deployments were classified before
+deletion. Fifty-five obsolete deployments were deleted, the current
+Production deployment and one clean post-`single_v2` fallback were retained,
+and one unaliased, non-v1 deployment remains `REVIEW` because its historical
+runtime release identifier does not match its packaged source and it returned
+HTTP 503. It is not an authorized rollback candidate. No current Production
+configuration, database identity history, runtime role, business row, funds or
+chain state changed during retirement.
+
+`AUTHN-008 RETIRE` is therefore
+`PASS — DEPLOYED AND USER-VERIFIED`. The final Production source remains
+`3bb525ce168ef274fea862cd3d5e55d35b2577fd` at `https://ipo.one`, and the
+M2 bounded no-funds release is closed. M3, mainnet, real value, signer use,
+chain/Venue writes, custody, transfer and withdrawal remain separately gated.
 
 Final Evidence:
-`artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
+
+- `artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`;
+- `artifacts/m2b-006/authn-008-retire-final.json`.
