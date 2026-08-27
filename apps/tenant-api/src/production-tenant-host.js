@@ -29,7 +29,13 @@ const MAX_BODY_BYTES = 64 * 1024;
 const MAX_CONCURRENCY = 64;
 const REQUEST_TIMEOUT_MS = 30_000;
 const DEPLOYMENT_ROLES = new Set(["container", "primary", "risk"]);
+const REFERENCE_HASH_MODES = new Set([
+  "single_v1",
+  "overlap_v2_write_v1_lookup",
+  "single_v2"
+]);
 const CONFIG_KEYS = new Set([
+  "authenticationReferenceHash",
   "clock",
   "chainCapabilityProvider",
   "createNetworkContext",
@@ -93,6 +99,32 @@ function exactPublicOrigin(value) {
 
 function boundedInteger(value, minimum, maximum) {
   return Number.isSafeInteger(value) && value >= minimum && value <= maximum;
+}
+
+function authenticationReferenceHashState(value) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Object.prototype ||
+    JSON.stringify(Object.keys(value).sort()) !==
+      JSON.stringify(["legacyLookupKeyVersion", "mode", "writeKeyVersion"]) ||
+    !REFERENCE_HASH_MODES.has(value.mode) ||
+    (value.writeKeyVersion !== "v1" && value.writeKeyVersion !== "v2") ||
+    (value.legacyLookupKeyVersion !== null &&
+      value.legacyLookupKeyVersion !== "v1") ||
+    (value.mode === "single_v1" &&
+      (value.writeKeyVersion !== "v1" || value.legacyLookupKeyVersion !== null)) ||
+    (value.mode === "overlap_v2_write_v1_lookup" &&
+      (value.writeKeyVersion !== "v2" || value.legacyLookupKeyVersion !== "v1")) ||
+    (value.mode === "single_v2" &&
+      (value.writeKeyVersion !== "v2" || value.legacyLookupKeyVersion !== null))
+  ) throw invalidConfig();
+  return Object.freeze({
+    mode: value.mode,
+    writeKeyVersion: value.writeKeyVersion,
+    legacyLookupKeyVersion: value.legacyLookupKeyVersion
+  });
 }
 
 function oneHeader(headers, name, { required = false, maximum = 16_384 } = {}) {
@@ -344,6 +376,9 @@ export function createProductionTenantRequestHandler(input) {
   const port = input.port ?? 8080;
   const requestTimeoutMs = input.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   const maximumConcurrency = input.maximumConcurrency ?? MAX_CONCURRENCY;
+  const authenticationReferenceHash = authenticationReferenceHashState(
+    input.authenticationReferenceHash
+  );
   if (
     !input.gateway?.execute ||
     !input.humanBff?.authenticateSession ||
@@ -419,7 +454,8 @@ export function createProductionTenantRequestHandler(input) {
           deploymentRole: input.deploymentRole,
           profile: "closed_non_funds_pilot",
           realFundsEnabled: false,
-          schemaVersion: "production_readiness.v1"
+          authenticationReferenceHash,
+          schemaVersion: "production_readiness.v2"
         }, requestId, headOnly);
       }
       const url = await requestUrl(request, {
@@ -477,7 +513,8 @@ export function createProductionTenantRequestHandler(input) {
           deploymentRole: input.deploymentRole,
           profile: "closed_non_funds_pilot",
           realFundsEnabled: false,
-          schemaVersion: "production_readiness.v1"
+          authenticationReferenceHash,
+          schemaVersion: "production_readiness.v2"
         }, requestId, headOnly);
       }
       if (input.serveAuthentication && await input.serveAuthentication({

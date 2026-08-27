@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "m2b_006_production_promotion_and_acceptance.v1",
+  "issueId": "M2B-006",
+  "candidateId": "M2B-005-V0.2.1-RC-20260826-002",
+  "observedAt": "2026-08-26T14:30:26Z",
+  "authorization": {
+    "runtimePrivilegeRepair": true,
+    "stableAliasPromotion": true,
+    "fullRemoteAcceptance": true,
+    "rolePasswordMutation": true,
+    "newProductionCredential": true,
+    "mainnet": false,
+    "realFunds": false
+  },
+  "source": {
+    "commit": "33d60105f9ba229c5827d831d2991aee3c78112c",
+    "tree": "37fbef1dcc249e6316b1c824d36c8d679a5f2bb8",
+    "candidateAuthorizationHead": "816b10b1b0d9a00e362cc5cb89ddf374f6e1b1f3",
+    "requiredCiRuns": [
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/32970579446",
+      "https://github.com/CPTM511/IPO.ONE/actions/runs/32970575618"
+    ],
+    "requiredCiPassed": true
+  },
+  "database": {
+    "provider": "neon",
+    "projectId": "falling-king-09359147",
+    "branchId": "br-nameless-hill-avcw7qpp",
+    "database": "neondb",
+    "migrationCount": 68,
+    "migrationHead": "0068_m2b_dual_risk_recovery",
+    "exactNames": true,
+    "checksumsMatch": true,
+    "runtimeRoleBaseline": {
+      "loginOnly": true,
+      "superuser": false,
+      "inherit": false,
+      "createRole": false,
+      "createDatabase": false,
+      "replication": false,
+      "bypassRls": false,
+      "ownerMembership": false,
+      "ownsNewRelations": 0
+    },
+    "gatewayRepair": {
+      "newTables": 18,
+      "missingSelectBefore": 18,
+      "missingSelectAfter": 0,
+      "sequenceUsageAndSelect": true,
+      "securedFacilityAuthorizationFullDml": true,
+      "agentInsertOnlyTables": 4,
+      "poolMutationTables": 0
+    },
+    "authenticationAudit": {
+      "unexpectedSelect": 0,
+      "unexpectedMutation": 0
+    },
+    "ownerPasswordRotation": {
+      "authorized": true,
+      "completed": true,
+      "oldCredentialRejected": true,
+      "newCredentialValidated": true,
+      "postRotationMigrationCount": 68,
+      "postRotationMigrationHead": "0068_m2b_dual_risk_recovery",
+      "postRotationExactNamesAndChecksums": true,
+      "passwordPersisted": false,
+      "passwordPrinted": false
+    }
+  },
+  "deployment": {
+    "id": "dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94",
+    "uniqueUrl": "https://ipo-one-internal-620el8est-cptm-111-s-projects.vercel.app",
+    "promotedUrl": "https://ipo.one",
+    "target": "production",
+    "readyState": "READY",
+    "nodeFunctions": 2,
+    "livez": {"status": 200, "releaseId": "33d60105f9ba229c5827d831d2991aee3c78112c"},
+    "readyz": {
+      "status": 200,
+      "releaseId": "33d60105f9ba229c5827d831d2991aee3c78112c",
+      "deploymentRole": "primary",
+      "profile": "closed_non_funds_pilot",
+      "realFundsEnabled": false
+    },
+    "discovery": 200,
+    "openApi": 200,
+    "cronWithoutCredential": 401,
+    "scheduledCron": {
+      "status": 200,
+      "trigger": "vercel_cron",
+      "releaseId": "33d60105f9ba229c5827d831d2991aee3c78112c",
+      "reconciliationStatus": "passed",
+      "realFundsEnabled": false
+    },
+    "errorsInFortyFiveMinuteScan": 0,
+    "fiveHundredsInFortyFiveMinuteScan": 0,
+    "postRotationErrorsInThirtyMinuteScan": 0,
+    "postRotationFiveHundredsInThirtyMinuteScan": 0
+  },
+  "humanAcceptance": {
+    "visibleProductionPage": true,
+    "visibleSignInClick": true,
+    "visibleRoleSelection": ["Human Borrower", "Principal Controller"],
+    "noWalletFailsClosed": true,
+    "authenticatedSession": false,
+    "refreshRecoveryVerified": false,
+    "productionChromeTabOpened": true,
+    "blocker": "FOUNDER_WALLET_SIGNATURE_AND_REFRESH_REQUIRED"
+  },
+  "agentAcceptance": {
+    "openApiPublished": true,
+    "senderConstrainedSecurityDeclared": true,
+    "unauthenticatedCatalogRejected": true,
+    "authorizedRead": false,
+    "ephemeralCredentialAuthorized": true,
+    "referenceHashKeyExportableFromVercel": false,
+    "ownerOnlyOriginalKeyRecoveredLocally": false,
+    "unsafeBootstrapBypassAttempted": false,
+    "blocker": "OWNER_ONLY_AUTH_REFERENCE_HASH_KEY_OR_ROTATION_MIGRATION_REQUIRED"
+  },
+  "securityIncident": {
+    "type": "OWNER_CONNECTION_STRING_DISCLOSED_IN_INTERNAL_COMMAND_ERROR_OUTPUT",
+    "secretRepeatedInEvidence": false,
+    "passwordRotated": true,
+    "oldCredentialRejected": true,
+    "postRotationRevalidated": true,
+    "status": "CLOSED"
+  },
+  "rollback": {
+    "previousDeploymentId": "dpl_qLgKAkpyTEdeZpsjMw8trL5gtNLj",
+    "previousReleaseId": "71786a3c72237320f7bacf77b64496dd1a0c526f",
+    "known": true,
+    "executed": false,
+    "reason": "PROMOTED_CANDIDATE_IS_HEALTHY_AND_NO_RUNTIME_FAILURE_WAS_OBSERVED"
+  },
+  "verification": {
+    "productTraceability": "PASS_13_DESTINATIONS_72_ACTIONS_109_BOUND_OPERATIONS",
+    "m2b005Candidate": "PASS_LOCAL_RELEASE_CANDIDATE_VALID",
+    "vercelSandboxStaticGate": "PASS",
+    "artifactJsonParse": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "productTruth": {
+    "code": "EXACT_SHA_VERIFIED",
+    "runtime": "REMOTE_HEALTHY",
+    "deployed": "PROMOTED_PRIMARY",
+    "reachable": "PUBLIC_ORIGIN_REACHABLE",
+    "verified": "PARTIAL_REMOTE_ACCEPTANCE",
+    "verdict": "BLOCKED — NOT COMPLETE",
+    "blockers": [
+      "HUMAN_AUTHENTICATED_REFRESH_RECOVERY_NOT_VERIFIED",
+      "AGENT_AUTHORIZED_READ_NOT_VERIFIED_DUE_TO_UNAVAILABLE_OWNER_REFERENCE_HASH_KEY"
+    ]
+  }
+}

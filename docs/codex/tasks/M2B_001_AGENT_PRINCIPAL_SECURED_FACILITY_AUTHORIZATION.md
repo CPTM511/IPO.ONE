@@ -1,6 +1,6 @@
 # M2B-001 — Agent/Principal secured-Facility authorization
 
-Status: `IN PROGRESS — L0 LOCAL NO FUNDS`
+Status: `FOUNDER-ACCEPTED LOCAL ENGINEERING — AUTHENTICATED PRODUCT REVIEW PENDING`
 
 Baseline: `ad5cce4c3477cb5732f4601d892e13e223382abe`
 
@@ -120,3 +120,12 @@ local product URL.
 M2B-001 follows the accepted v0.2.0 review. M2B-002 remains blocked until this
 issue is completed, independently reviewed where required and explicitly
 accepted.
+
+Founder acceptance of the local engineering result was recorded on 2026-08-25
+for exact commit `2e27c35d09530404a2eea9b35168abcbb7306cbc`. Both GitHub quality
+gates passed and the exact local stack was healthy. The controlled in-app
+browser had no compatible EVM wallet, so authenticated visible-click product
+acceptance was not claimed and PR #54 remains Draft. The Founder separately
+authorized M2B-002 local pre-write composition to proceed as a stacked branch;
+that authorization grants no Hyperliquid write, signer, nonce, launch-profile,
+mainnet, real-value or production authority.

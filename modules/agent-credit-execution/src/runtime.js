@@ -1,9 +1,11 @@
 import {
+  createFinalizedCreditOutcome,
   DomainError,
   flattenTradingFacility,
   hashId,
   submitTradingOrderIntent
 } from "../../../packages/domain/src/index.js";
+import { createCreditStateProjection } from "../../credit-learning/src/index.js";
 import {
   HyperliquidExecutionActionKind,
   HyperliquidExecutionNonceState,
@@ -94,6 +96,8 @@ function initialState({ finalEquityMinor }) {
     waterfall: null,
     repayment: null,
     performance: null,
+    creditOutcome: null,
+    creditState: null,
     evidence: [],
     denials: [],
     frozen: false,
@@ -153,7 +157,9 @@ export class AgentCreditExecutionRuntime {
       readFacility: (input) => this.readFacility(input),
       repay: (input) => this.repay(input),
       readEvidence: (input) => this.readEvidence(input),
-      readPerformance: (input) => this.readPerformance(input)
+      readPerformance: (input) => this.readPerformance(input),
+      readCreditOutcome: (input) => this.readCreditOutcome(input),
+      readCreditState: (input) => this.readCreditState(input)
     });
   }
 
@@ -304,7 +310,9 @@ export class AgentCreditExecutionRuntime {
         "readFacility",
         "repay",
         "readEvidence",
-        "readPerformance"
+        "readPerformance",
+        "readCreditOutcome",
+        "readCreditState"
       ],
       sharedKernel: true,
       productionAuthority: false,
@@ -956,7 +964,7 @@ export class AgentCreditExecutionRuntime {
         outstanding === "0" ? "SETTLED" : "PARTIALLY_REPAID",
       futureCapacity:
         outstanding === "0" && !this.#state.frozen
-          ? "POLICY_ELIGIBLE"
+          ? "UNCHANGED_REVIEW_REQUIRED"
           : "HELD_FOR_REVIEW",
       canonicalLedger: true,
       schemaVersion: "agent_credit_performance_proof.v1"
@@ -972,6 +980,7 @@ export class AgentCreditExecutionRuntime {
       residualReleaseMinor,
       residualReleasedAfterRepayment
     });
+    if (outstanding === "0") this.finalizeCreditOutcome();
     return clone({
       repaymentEventId: repayment.repayment.repaymentId,
       appliedPrincipalMinor: repayment.repayment.appliedPrincipalMinor,
@@ -980,6 +989,45 @@ export class AgentCreditExecutionRuntime {
       residualReleaseMinor,
       residualReleasedAfterRepayment,
       schemaVersion: "agent_credit_repayment_receipt.v1"
+    });
+  }
+
+  finalizeCreditOutcome() {
+    if (this.#state.creditOutcome || this.#state.creditState) {
+      this.deny("finalizeCreditOutcome", "credit_outcome_replay_denied");
+    }
+    const finalizedAt = this.now().toISOString();
+    const creditOutcome = createFinalizedCreditOutcome({
+      decision: this.#state.offerState.decision,
+      obligation: this.#state.credit.obligation,
+      servicingSummary: {
+        maxDaysPastDue: 0,
+        restructured: false,
+        repurchased: false,
+        outcomeFinalizedAt: finalizedAt
+      },
+      sourceEvidenceHashes: this.#state.evidence.map(
+        ({ evidenceHash }) => evidenceHash
+      ),
+      recordedAt: finalizedAt
+    });
+    const creditState = createCreditStateProjection({
+      outcomes: [creditOutcome],
+      updatedAt: finalizedAt
+    });
+    this.#state.creditOutcome = creditOutcome;
+    this.#state.creditState = creditState;
+    this.appendEvidence("CREDIT_OUTCOME_FINALIZED", {
+      creditOutcomeId: creditOutcome.creditOutcomeId,
+      outcomeHash: creditOutcome.outcomeHash,
+      outcomeLabel: creditOutcome.outcomeLabel,
+      authorizing: false
+    });
+    this.appendEvidence("CREDIT_STATE_PROJECTED", {
+      creditStateHash: creditState.creditStateHash,
+      projectionVersion: creditState.projectionVersion,
+      automaticLimitChange: false,
+      authorizing: false
     });
   }
 
@@ -1007,6 +1055,41 @@ export class AgentCreditExecutionRuntime {
       this.deny("readPerformance", "agent_credit_performance_unavailable");
     }
     return clone(this.#state.performance);
+  }
+
+  readCreditOutcome(input) {
+    exact(input, ["facilityId", "runId"]);
+    this.requireRun(input.runId);
+    if (input.facilityId !== this.#state.credit?.facility.tradingFacilityId) {
+      this.deny("readCreditOutcome", "agent_credit_outcome_unavailable");
+    }
+    return clone({
+      status: this.#state.creditOutcome ? "FINALIZED" : "PENDING_TERMINAL",
+      creditOutcome: this.#state.creditOutcome,
+      outstandingPrincipalMinor:
+        this.#state.credit.obligation.outstandingPrincipalMinor,
+      authorizing: false,
+      automaticLimitChange: false,
+      schemaVersion: "agent_credit_outcome_view.v1"
+    });
+  }
+
+  readCreditState(input) {
+    exact(input, ["facilityId", "runId"]);
+    this.requireRun(input.runId);
+    if (input.facilityId !== this.#state.credit?.facility.tradingFacilityId) {
+      this.deny("readCreditState", "agent_credit_state_unavailable");
+    }
+    return clone({
+      status: this.#state.creditState ? "PROJECTED" : "PENDING_TERMINAL",
+      creditState: this.#state.creditState,
+      outstandingPrincipalMinor:
+        this.#state.credit.obligation.outstandingPrincipalMinor,
+      authorizing: false,
+      automaticLimitChange: false,
+      collateralRelief: false,
+      schemaVersion: "agent_credit_state_view.v1"
+    });
   }
 
   freeze(reasonCode = "operator_freeze") {

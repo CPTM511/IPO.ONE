@@ -8,6 +8,7 @@ import {
   bootstrapProductionDatabase,
   enrollProductionHumanRole,
   provisionProductionGoldenFlowAgent,
+  reprovisionProductionAgentReference,
   revokeProductionGoldenFlowAgentCredential
 } from "../src/production-bootstrap.js";
 
@@ -39,7 +40,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0066_agent_secured_facility_authorizations"
+      "0069_auth_reference_hash_key_rotation"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const bootstrap = await bootstrapProductionDatabase({
@@ -181,7 +182,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0066_agent_secured_facility_authorizations"
+      "0069_auth_reference_hash_key_rotation"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -193,7 +194,10 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 4 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 7 }), [
+      "0069_auth_reference_hash_key_rotation",
+      "0068_m2b_dual_risk_recovery",
+      "0067_m2b_hyperliquid_compositions",
       "0066_agent_secured_facility_authorizations",
       "0065_pool_obligation_integration",
       "0064_pool_chain_reconciliation",
@@ -203,7 +207,10 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0063_selected_human_role_enrollment",
       "0064_pool_chain_reconciliation",
       "0065_pool_obligation_integration",
-      "0066_agent_secured_facility_authorizations"
+      "0066_agent_secured_facility_authorizations",
+      "0067_m2b_hyperliquid_compositions",
+      "0068_m2b_dual_risk_recovery",
+      "0069_auth_reference_hash_key_rotation"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count
@@ -322,6 +329,104 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   );
   assert.ok(new Date(riskCredential.expires_at) > new Date());
 
+  const authenticationUrl = new URL(process.env.DATABASE_URL);
+  authenticationUrl.username = input.authenticationRole;
+  authenticationUrl.password = parameters.authenticationPassword;
+  const sourceAgentPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 1
+  });
+  let sourceAgent;
+  try {
+    sourceAgent = await sourceAgentPool.query(
+      `SELECT id
+         FROM authentication_credentials
+        WHERE tenant_id = $1 AND actor_id = $2
+          AND reference_hash_key_version = 'v1'`,
+      [input.tenant.tenantId, `actor_agent_${suffix}`]
+    );
+  } finally {
+    await sourceAgentPool.end();
+  }
+  assert.equal(sourceAgent.rowCount, 1);
+  const reprovisionInput = {
+    authenticationConnectionString: authenticationUrl.toString(),
+    referenceHashKey: randomBytes(32),
+    referenceHashMode: "overlap_v2_write_v1_lookup",
+    tenantId: input.tenant.tenantId,
+    oldCredentialId: sourceAgent.rows[0].id,
+    actorId: `actor_agent_${suffix}`,
+    clientId: `client_agent_${suffix}`,
+    issuer: "https://workload.ipo.one",
+    externalSubject: `agent-runtime-v2-${suffix}`,
+    invitationId: `invite_agent_v2_${suffix}`,
+    senderThumbprint: "r".repeat(43),
+    performedByActorId: input.systemActor.actorId
+  };
+  const reboundAgent = await reprovisionProductionAgentReference(reprovisionInput);
+  assert.equal(reboundAgent.replayed, false);
+  assert.equal(reboundAgent.oldReferenceHashKeyVersion, "v1");
+  assert.equal(reboundAgent.newReferenceHashKeyVersion, "v2");
+  assert.equal(reboundAgent.privateKeyIncluded, false);
+  assert.equal(reboundAgent.productionFundsAuthority, false);
+  const replayedReboundAgent = await reprovisionProductionAgentReference(reprovisionInput);
+  assert.equal(replayedReboundAgent.replayed, true);
+  assert.equal(replayedReboundAgent.credentialId, reboundAgent.credentialId);
+  const reboundEvidencePool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 1
+  });
+  try {
+    const credentials = await reboundEvidencePool.query(
+      `SELECT id, status, reference_hash_key_version
+         FROM authentication_credentials
+        WHERE tenant_id = $1 AND actor_id = $2
+        ORDER BY reference_hash_key_version`,
+      [input.tenant.tenantId, `actor_agent_${suffix}`]
+    );
+    assert.deepEqual(credentials.rows.map((row) => [
+      row.id,
+      row.status,
+      row.reference_hash_key_version
+    ]), [
+      [sourceAgent.rows[0].id, "revoked", "v1"],
+      [reboundAgent.credentialId, "active", "v2"]
+    ]);
+    const events = await reboundEvidencePool.query(
+      `SELECT event_type, reason_code, payload
+         FROM authentication_events
+        WHERE tenant_id = $1 AND credential_id = ANY($2::text[])
+          AND reason_code IN ('reference_hash_key_rotation', 'approved_workload_reprovision')
+        ORDER BY event_type`,
+      [input.tenant.tenantId, [sourceAgent.rows[0].id, reboundAgent.credentialId]]
+    );
+    assert.deepEqual(events.rows.map(({ event_type: eventType }) => eventType), [
+      "credential_reference_rebound",
+      "credential_registered",
+      "credential_revoked"
+    ]);
+    assert.equal(JSON.stringify(events.rows).includes(reprovisionInput.externalSubject), false);
+    assert.equal(JSON.stringify(events.rows).includes(reprovisionInput.invitationId), false);
+    assert.equal(JSON.stringify(events.rows).includes(reprovisionInput.senderThumbprint), false);
+  } finally {
+    await reboundEvidencePool.end();
+  }
+  const revokedReboundAgent = await revokeProductionGoldenFlowAgentCredential({
+    adminConnectionString: authenticationUrl.toString(),
+    tenantId: input.tenant.tenantId,
+    actorId: reprovisionInput.actorId,
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(revokedReboundAgent.replayed, false);
+  assert.equal(revokedReboundAgent.status, "revoked");
+  const replayedReboundRevocation = await revokeProductionGoldenFlowAgentCredential({
+    adminConnectionString: authenticationUrl.toString(),
+    tenantId: input.tenant.tenantId,
+    actorId: reprovisionInput.actorId,
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(replayedReboundRevocation.replayed, true);
+
   const goldenFlowInput = {
     adminConnectionString: process.env.DATABASE_URL,
     referenceHashKey,
@@ -352,6 +457,23 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   });
   assert.equal(revokedAgent.status, "revoked");
   assert.equal(revokedAgent.replayed, false);
+  const rotatedAgent = await provisionProductionGoldenFlowAgent({
+    ...goldenFlowInput,
+    referenceHashKey: randomBytes(32),
+    referenceHashKeyVersion: "v2",
+    invitationId: `invite_golden_flow_v2_${suffix}`,
+    senderThumbprint: "h".repeat(43)
+  });
+  assert.equal(rotatedAgent.replayed, false);
+  assert.notEqual(rotatedAgent.credentialId, provisionedAgent.credentialId);
+  const revokedRotatedAgent = await revokeProductionGoldenFlowAgentCredential({
+    adminConnectionString: process.env.DATABASE_URL,
+    tenantId: input.tenant.tenantId,
+    actorId: goldenFlowInput.actorId,
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(revokedRotatedAgent.status, "revoked");
+  assert.equal(revokedRotatedAgent.replayed, false);
   const replayedRevocation = await revokeProductionGoldenFlowAgentCredential({
     adminConnectionString: process.env.DATABASE_URL,
     tenantId: input.tenant.tenantId,

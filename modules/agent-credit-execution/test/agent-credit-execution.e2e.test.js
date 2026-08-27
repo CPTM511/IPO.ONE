@@ -65,8 +65,17 @@ test("L0 external Agent completes shared credit, controlled execution, repayment
   assert.equal(result.repayment.residualReleaseMinor, "100");
   assert.equal(result.repayment.residualReleasedAfterRepayment, true);
   assert.equal(result.performance.creditState, "REPAID");
+  assert.equal(result.performance.futureCapacity, "UNCHANGED_REVIEW_REQUIRED");
   assert.equal(result.performance.canonicalLedger, true);
-  assert.equal(result.evidence.count, 10);
+  assert.equal(result.creditOutcome.status, "FINALIZED");
+  assert.equal(result.creditOutcome.creditOutcome.outcomeLabel, "on_time_repaid");
+  assert.equal(result.creditOutcome.creditOutcome.authorizing, false);
+  assert.equal(result.creditState.status, "PROJECTED");
+  assert.equal(result.creditState.creditState.projectionVersion, 1);
+  assert.equal(result.creditState.creditState.authorizing, false);
+  assert.equal(result.creditState.creditState.automaticLimitChange, false);
+  assert.equal(result.creditState.collateralRelief, false);
+  assert.equal(result.evidence.count, 12);
   assert.equal(result.account.agentCustody, false);
   assert.equal(result.account.keyExportable, false);
   assert.equal(result.account.withdrawalAuthority, false);
@@ -101,6 +110,10 @@ test("loss performs partial canonical repayment and retains truthful outstanding
   assert.equal(result.performance.creditState, "LOSS_OUTSTANDING");
   assert.equal(result.performance.riskState, "NEW_CAPACITY_HELD");
   assert.equal(result.performance.futureCapacity, "HELD_FOR_REVIEW");
+  assert.equal(result.creditOutcome.status, "PENDING_TERMINAL");
+  assert.equal(result.creditOutcome.creditOutcome, null);
+  assert.equal(result.creditState.status, "PENDING_TERMINAL");
+  assert.equal(result.creditState.creditState, null);
   assert.equal(result.repayment.residualReleaseMinor, "0");
 });
 
@@ -439,6 +452,26 @@ test("restart checkpoints preserve one Facility, order, reconciliation, and repa
   });
   assert.equal(afterRepayment.inspect().state.stage, "SETTLED");
   assert.equal(afterRepayment.inspect().state.executions.length, 2);
+  const outcomeBeforeRestart = recovered.inspect().state.creditOutcome;
+  const stateBeforeRestart = recovered.inspect().state.creditState;
+  const outcomeAfterRestart = await afterRepayment.creditProvider.readCreditOutcome({
+    facilityId: base.facility.facilityId,
+    runId: base.runId
+  });
+  const stateAfterRestart = await afterRepayment.creditProvider.readCreditState({
+    facilityId: base.facility.facilityId,
+    runId: base.runId
+  });
+  assert.equal(
+    outcomeAfterRestart.creditOutcome.outcomeHash,
+    outcomeBeforeRestart.outcomeHash
+  );
+  assert.equal(
+    stateAfterRestart.creditState.creditStateHash,
+    stateBeforeRestart.creditStateHash
+  );
+  assert.equal(stateAfterRestart.creditState.authorizing, false);
+  assert.equal(stateAfterRestart.automaticLimitChange, false);
   await assert.rejects(async () => afterRepayment.creditProvider.repay({
     expectedReconciliationHash: reconciliation.reconciliationHash,
     facilityId: base.facility.facilityId,

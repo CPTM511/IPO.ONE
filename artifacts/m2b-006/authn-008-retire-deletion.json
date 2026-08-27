@@ -1,0 +1,356 @@
+{
+  "schemaVersion": "authn_008_retire_deletion.v1",
+  "executedAt": "2026-08-27T08:16:26.655Z",
+  "classificationObservedAt": "2026-08-27T08:13:21.841Z",
+  "projectId": "prj_KLyAPHnFCtQAxIbUjdJa012gAq7Y",
+  "teamId": "team_f6TQU7mloG5OnQGNmtXwFkOi",
+  "currentDeploymentId": "dpl_GqX1Z5y232pmos2WyZLoxicfu88f",
+  "currentProductionPreserved": true,
+  "designatedCleanRollbackDeploymentId": "dpl_9Gxuxec5wgB1BMRS7UzoUvCYRhWu",
+  "designatedCleanRollbackPreserved": true,
+  "proposedDeleteCount": 54,
+  "finalDeleteCount": 54,
+  "retainedForReview": [],
+  "deletionResults": [
+    {
+      "deploymentId": "dpl_9VrySxPRMYDg5amcA88u4GyeqjMm",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_CFdBXeiKfGctGvgJcK3tGvNk6Rfm",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_FQwmebqw1touJuF9dfSk8UhaUbVZ",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_2SmpMTc7KVqEBb4NGoP5DbJnGBDy",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_84cq5tnW8rPp2NnXgN5oq515Ye7S",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_3nhn5ZFjxYi9yZ58CxV82NaBdZE5",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_83wN9mHMb6rEPQ8DzLHPg1ve86eq",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_qLgKAkpyTEdeZpsjMw8trL5gtNLj",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_ZAZ8vD5BFrfAxALc4iAjap9puEiD",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_GNaoeCE7MLRbfVyCAqjg67vkDa2K",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_BwApzWAp7qjUWzXWLdEX21BM5BVq",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_8iBxcDq1fHWZzy52mgzWiPmmiHp8",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_B7VcAfv5CHrHrermwr8K71aswDNp",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_Gom6g7NPDQpwyTh345eEcCVxz9nZ",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_8eG1M2rLmB5qu6kgQXokfd8cFYdi",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_22tqSMdMhaS5r8EPmJcVrRZ9C4f8",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_Bd3MssKDuaD1XYUc6AkwGTv6kRfa",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_ApQgSbJbqmVxw93kikcRVNcmSAnk",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_A636ENDevjZkFK11FXhCbzF2t9a1",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_2ZQfcippkD5pKQNKWe1WxMtRbu4Y",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_2KHDLvpvxXuGZ5kJuUVbDTw4muk6",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_Am1PR1udE1czHQnydsLAAdfRKwrk",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_4UtLa4BCSpGUPtCytRqTtSZzwawE",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_AaUQxbfBeKiovpWLGMxFsTexsEjk",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_2itgD32WQpJL45ntHaawrjzKSs2p",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_2VgkVcfwGNA92A5AMzuwkkRQtpUf",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_4UojsLACiUUMCVPhduVaVwWNLahy",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_B25ArZdhy8fSzwPAJTSQaCXXRjuc",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_795F6n2Co3bwoFxTjt6c7oUNYVtZ",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_GQH6WSphB5MgJ8BFZ9xzKBGHDo2s",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_7F6VsiYf21y4FaFiRxsBGHjjkiXE",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_9B4meZBVqZ29fXJorsdTQbmsBa2K",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_DbrnZMfPG9Ya1KvvAjf6vmukE7fj",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_48YWsQfqWBnYgHy5jZ6wjDSVCMVS",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_GYsPPTJ49pB4KrxFdHNJow5PTeUg",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_491k2nW5gjahKiCk63duBXQjc2wk",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_C3cSHa5vHYaHm7gEKBKJpYcRGaXM",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_8FHpFiLYT8FxiZaDqj6XHLLFo3dy",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_5ncXoxr33w6VzL29ncwGbAXgpy1G",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_Dq8wuS6vFBzJVTpDVLTiMcm4ouPr",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_5NgM79iL5ojLVvkfj49Tw2cNS457",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_C4uas9sDTt26Zoz13gzvQm1cWdDk",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_6gDN62RphEfXPAMMxas7cTw7jixe",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_7NhTtf5Px5nuP3maXowDeftJNQz5",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_H75rvtTNCLasdzETw5HpT1h5UgQe",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_GJG82Bi13cdjd7pZ4dKvQgkw4yLG",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_HJD6haHAkSPH2Nk93VwzGsTxU7e5",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_D36KZ5vZL6x4MoN21QkqbVMyTa3n",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_4PC8ANEn7Eq8TKRyo4s5SJLsauke",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_DjX78y2HdYcXz7GQqCexofURr6QQ",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_8q1SUFsvYjkyzbPVgukEK1eJVF3n",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_2BmCvBJ1Qoh51FPHK9rc3B6NMc2U",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    },
+    {
+      "deploymentId": "dpl_5GkjnPJrJ2YLUqqv9nJNaYz6KpNH",
+      "httpStatus": 200,
+      "deleted": true,
+      "providerState": "DELETED"
+    }
+  ],
+  "failedDeletionIds": [],
+  "readyProductionCountAfterDeletion": 4,
+  "remainingReadyProductionDeploymentIds": [
+    "dpl_GqX1Z5y232pmos2WyZLoxicfu88f",
+    "dpl_FcNXh5b8m6eEE1PrUgeNoEQxuJa6",
+    "dpl_9Gxuxec5wgB1BMRS7UzoUvCYRhWu",
+    "dpl_2JBesAqB2MXZZBCEDypMq5Gzm7Ue"
+  ],
+  "secretValuesRead": false,
+  "secretValuesPrinted": false,
+  "databaseMutation": false,
+  "runtimeRoleMutation": false,
+  "businessDataMutation": false,
+  "fundsMutation": false,
+  "chainMutation": false,
+  "passed": true
+}

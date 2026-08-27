@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/m2b-005-v0-2-1-candidate.schema.json",
+  "title": "IPO.ONE M2B-005 v0.2.1 local release candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateId",
+    "releaseVersion",
+    "releaseCommitSha",
+    "stack",
+    "database",
+    "evidence",
+    "historicalTestnet",
+    "signerSafety",
+    "recovery",
+    "verification",
+    "productTruth",
+    "rollback",
+    "excludedAuthority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "m2b_005_v0_2_1_candidate.v1" },
+    "candidateId": {
+      "type": "string",
+      "pattern": "^M2B-005-V0.2.1-RC-[0-9]{8}-[0-9]{3}$"
+    },
+    "releaseVersion": { "const": "0.2.1-rc.1" },
+    "releaseCommitSha": { "$ref": "#/$defs/sha" },
+    "stack": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["issueId", "commitSha", "pullRequest", "state"],
+        "properties": {
+          "issueId": { "enum": ["M2B-001", "M2B-002", "M2B-003", "M2B-004"] },
+          "commitSha": { "$ref": "#/$defs/sha" },
+          "pullRequest": { "type": "integer", "minimum": 54, "maximum": 57 },
+          "state": { "const": "DRAFT_STACKED_LOCAL" }
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "migrationCount",
+        "latestMigration",
+        "forcedRlsRequired",
+        "destructiveMigrationPresent"
+      ],
+      "properties": {
+        "migrationCount": { "const": 68 },
+        "latestMigration": { "const": "0068_m2b_dual_risk_recovery" },
+        "forcedRlsRequired": { "const": true },
+        "destructiveMigrationPresent": { "const": false }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "path", "sha256"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "m2b_002_prewrite",
+              "m2b_003_recovery",
+              "m2b_004_terminal",
+              "m2a_009_candidate",
+              "base_pool_signer_closure",
+              "venue_signer_closure"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(artifacts|deploy/releases|docs/codex/audits)/[A-Za-z0-9._/-]+\\.(json|md)$"
+          },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "historicalTestnet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chainId",
+        "poolAddress",
+        "adapterAddress",
+        "historicalM2AOnly",
+        "m2bDeployed",
+        "newTransactionPerformed"
+      ],
+      "properties": {
+        "chainId": { "const": "eip155:84532" },
+        "poolAddress": { "const": "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da" },
+        "adapterAddress": { "const": "0xB06D905Da7c4a2b42843F3EF46Aff706622F9B19" },
+        "historicalM2AOnly": { "const": true },
+        "m2bDeployed": { "const": false },
+        "newTransactionPerformed": { "const": false }
+      }
+    },
+    "signerSafety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "newSignerCreated",
+        "signerLoaded",
+        "signerReused",
+        "signingPerformed",
+        "priorSignersRetired",
+        "addressReuseAllowed"
+      ],
+      "properties": {
+        "newSignerCreated": { "const": false },
+        "signerLoaded": { "const": false },
+        "signerReused": { "const": false },
+        "signingPerformed": { "const": false },
+        "priorSignersRetired": { "const": true },
+        "addressReuseAllowed": { "const": false }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "drillMode",
+        "externalWriteAuthorized",
+        "newRiskFrozenOnFailure",
+        "canonicalLossPreserved",
+        "restartReplayPreserved",
+        "automaticUnfreeze"
+      ],
+      "properties": {
+        "drillMode": { "const": "DETERMINISTIC_LOCAL_NO_NETWORK" },
+        "externalWriteAuthorized": { "const": false },
+        "newRiskFrozenOnFailure": { "const": true },
+        "canonicalLossPreserved": { "const": true },
+        "restartReplayPreserved": { "const": true },
+        "automaticUnfreeze": { "const": false }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repositoryPassed",
+        "postgresPassed",
+        "securityPassed",
+        "transportPassed",
+        "contractsPassed",
+        "browserPassed",
+        "agentPassed",
+        "recoveryPassed",
+        "unresolvedM2B005P0P1",
+        "independentReview",
+        "founderCandidateDecision"
+      ],
+      "properties": {
+        "repositoryPassed": { "const": true },
+        "postgresPassed": { "const": true },
+        "securityPassed": { "const": true },
+        "transportPassed": { "const": true },
+        "contractsPassed": { "const": true },
+        "browserPassed": { "const": true },
+        "agentPassed": { "const": true },
+        "recoveryPassed": { "const": true },
+        "unresolvedM2B005P0P1": { "const": 0 },
+        "independentReview": { "const": "PENDING" },
+        "founderCandidateDecision": { "const": "PENDING" }
+      }
+    },
+    "productTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "runtime", "deployed", "reachable", "verified", "verdict"],
+      "properties": {
+        "code": { "const": "EXACT_SHA_IMPLEMENTED" },
+        "runtime": { "const": "LOCAL_EXACT_SHA" },
+        "deployed": { "const": "M2B_NOT_REMOTELY_DEPLOYED" },
+        "reachable": { "const": "LOOPBACK_ONLY" },
+        "verified": { "const": "LOCAL_BROWSER_AGENT_RECOVERY" },
+        "verdict": { "const": "BLOCKED — NOT COMPLETE" }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "disableProfile",
+        "preserveEvidence",
+        "readOnlyReconcile",
+        "retryUnknownOutcome",
+        "reuseRetiredSigner"
+      ],
+      "properties": {
+        "disableProfile": { "const": true },
+        "preserveEvidence": { "const": true },
+        "readOnlyReconcile": { "const": true },
+        "retryUnknownOutcome": { "const": false },
+        "reuseRetiredSigner": { "const": false }
+      }
+    },
+    "excludedAuthority": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "remote_deployment",
+          "production_deployment",
+          "mainnet",
+          "real_funds",
+          "custody",
+          "human_cash_lending",
+          "kyc",
+          "agent_venue_write",
+          "pool_write",
+          "new_chain_transaction",
+          "signer_reuse",
+          "transfer",
+          "withdrawal",
+          "automatic_unfreeze"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

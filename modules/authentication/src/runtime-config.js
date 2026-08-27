@@ -1,6 +1,11 @@
 import { authenticationError } from "./security-utils.js";
 
 const AUTHENTICATION_MODES = new Set(["disabled", "local_test", "closed_pilot"]);
+const REFERENCE_HASH_MODES = new Set([
+  "single_v1",
+  "overlap_v2_write_v1_lookup",
+  "single_v2"
+]);
 const IMMUTABLE_SECRET_REFERENCE = /^(?:projects\/[a-z][a-z0-9-]{4,61}\/secrets\/[A-Za-z0-9_-]{1,255}\/versions\/[1-9][0-9]*|vercel:\/\/environment\/production\/[A-Z][A-Z0-9_]{2,127}@sha256:[0-9a-f]{64})$/;
 const trustedRuntimeConfigs = new WeakSet();
 
@@ -12,10 +17,17 @@ function trustedConfig(value) {
 
 export function loadAuthenticationRuntimeConfig(environment = process.env) {
   const mode = environment.IPO_ONE_AUTHENTICATION_MODE ?? "disabled";
+  const referenceHashMode = environment.IPO_ONE_AUTH_REFERENCE_HASH_MODE ?? "single_v1";
   if (!AUTHENTICATION_MODES.has(mode)) {
     throw authenticationError("invalid_authentication_configuration", "authentication mode is invalid");
   }
   if (mode === "closed_pilot") {
+    if (!REFERENCE_HASH_MODES.has(referenceHashMode)) {
+      throw authenticationError(
+        "authentication_deployment_gate_closed",
+        "closed-pilot reference hash mode is invalid"
+      );
+    }
     if (
       environment.IPO_ONE_IDP_DEPLOYMENT_APPROVAL !== "APPROVED" ||
       !/^[a-z][a-z0-9_-]{2,63}$/.test(environment.IPO_ONE_IDP_VENDOR_ID ?? "") ||
@@ -28,9 +40,30 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
     }
     const requiredSecretReferences = [
       "IPO_ONE_IDP_CONFIGURATION_REF",
-      "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
       "IPO_ONE_AUTH_ENCRYPTION_KEY_REF"
     ];
+    if (referenceHashMode === "single_v1") {
+      requiredSecretReferences.push("IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF");
+      if (environment.IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF !== undefined) {
+        throw authenticationError(
+          "authentication_deployment_gate_closed",
+          "single-v1 authentication rejects a next reference hash key"
+        );
+      }
+    } else if (referenceHashMode === "overlap_v2_write_v1_lookup") {
+      requiredSecretReferences.push(
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF"
+      );
+    } else {
+      requiredSecretReferences.push("IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF");
+      if (environment.IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF !== undefined) {
+        throw authenticationError(
+          "authentication_deployment_gate_closed",
+          "single-v2 authentication rejects a legacy reference hash key"
+        );
+      }
+    }
     if (environment.IPO_ONE_IDP_VENDOR_ID !== "wallet_only") {
       requiredSecretReferences.push("IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF");
     }
@@ -45,6 +78,16 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
           "closed-pilot authentication requires approved immutable secret references"
         );
       }
+    }
+    if (
+      referenceHashMode === "overlap_v2_write_v1_lookup" &&
+      environment.IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF ===
+        environment.IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF
+    ) {
+      throw authenticationError(
+        "authentication_deployment_gate_closed",
+        "reference hash rotation keys require distinct immutable references"
+      );
     }
   }
   if (mode === "local_test" && environment.NODE_ENV === "production") {
@@ -65,7 +108,16 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
           ...(environment.IPO_ONE_IDP_VENDOR_ID === "wallet_only"
             ? {}
             : { oidcClientCredentialRef: environment.IPO_ONE_OIDC_CLIENT_CREDENTIAL_REF }),
-          referenceHashKeyRef: environment.IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF,
+          referenceHashMode,
+          referenceHashKeyRef: referenceHashMode === "single_v1"
+            ? environment.IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF
+            : environment.IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF,
+          ...(referenceHashMode === "overlap_v2_write_v1_lookup"
+            ? {
+                legacyReferenceHashKeyRef:
+                  environment.IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF
+              }
+            : {}),
           encryptionKeyRef: environment.IPO_ONE_AUTH_ENCRYPTION_KEY_REF
         }
       : {})

@@ -1608,6 +1608,13 @@ test("TC-104 and M2B-001 expose nine authenticated Trading Capital views without
   assert.ok(html.includes("Signer / nonce / funds"));
   assert.ok(presentation.includes("TRADING_CAPITAL_OPERATION_IDS"));
   assert.ok(html.includes("Unavailable Trading Capital capabilities"));
+  assert.ok(html.includes("M2B-002 · read-only gate"));
+  assert.ok(html.includes("Hyperliquid Testnet pre-write readiness"));
+  assert.ok(html.includes('id="tradingCapitalPrewriteStatus"'));
+  assert.ok(js.includes('readiness?.status !== "BLOCKED_PREWRITE"'));
+  assert.ok(html.includes("M2B-003 · dual-risk recovery"));
+  assert.ok(html.includes('id="tradingCapitalRecoveryStatus"'));
+  assert.ok(js.includes('recoveryReadiness?.status !== "BLOCKED_RECOVERY_PREWRITE"'));
   assert.ok(html.includes("Worker-controlled · synthetic only"));
   assert.ok(html.includes("No withdrawal product path"));
   assert.equal(html.includes("official redeemable settlement"), false);

@@ -177,6 +177,11 @@ test("M2B-001 Gateway creates one atomic no-funds authorization plan", async () 
     CoreProjectionType.AGENT_SECURED_FACILITY_AUTHORIZATION
   );
   assert.equal(plan.response.readyForIntent, true);
+  assert.equal(plan.response.executionPrewriteReadiness.status, "BLOCKED_PREWRITE");
+  assert.equal(plan.response.executionPrewriteReadiness.submissionAuthorized, false);
+  assert.equal(plan.response.dualRiskRecoveryReadiness.status,
+    "BLOCKED_RECOVERY_PREWRITE");
+  assert.equal(plan.response.dualRiskRecoveryReadiness.externalWriteAuthorized, false);
   assert.equal(plan.response.nonceCreated, false);
   assert.equal(plan.response.signatureCreated, false);
   assert.equal(plan.response.networkCalled, false);
@@ -191,6 +196,8 @@ test("M2B-001 Gateway read reruns resource hashes and revocation is exact", asyn
   state.authorization = createPlan.response.authorization;
   const view = await read.execute(state.context);
   assert.equal(view.readyForIntent, true);
+  assert.equal(view.executionPrewriteReadiness.compositionAvailable, false);
+  assert.equal(view.dualRiskRecoveryReadiness.currentStage, "FREEZE_NEW_RISK");
   state.values[CoreProjectionType.POOL_OBLIGATION_PROJECTION].projectionHash = H("drifted");
   await assert.rejects(() => read.execute(state.context), {
     code: "agent_secured_facility_resource_drift"

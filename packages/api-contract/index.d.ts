@@ -4380,6 +4380,42 @@ export interface AgentSecuredFacilityAuthorization {
 export interface AgentSecuredFacilityAuthorizationResponse {
   authorization: AgentSecuredFacilityAuthorization;
   readyForIntent: boolean;
+  executionPrewriteReadiness: {
+    status: "BLOCKED_PREWRITE";
+    launchProfileId: "live_testnet_secured_pool_agent_execution";
+    compositionAvailable: false;
+    compositionHash: null;
+    blockers: Array<
+      | "distinct_agent_venue_launch_profile_missing"
+      | "durable_exact_composition_not_supplied"
+      | "fresh_reconciled_hyperliquid_account_observation_missing"
+      | "fresh_non_exporting_signer_handoff_missing"
+      | "exact_one_use_founder_run_approval_missing"
+      | "current_facility_authorization_unavailable"
+    >;
+    externalNonceAllocated: false;
+    signatureCreated: false;
+    networkCalled: false;
+    submissionAuthorized: false;
+    schemaVersion: "agent_hyperliquid_prewrite_readiness.v1";
+  };
+  dualRiskRecoveryReadiness: {
+    status: "BLOCKED_RECOVERY_PREWRITE";
+    combinedRiskState: "UNKNOWN";
+    currentStage: "FREEZE_NEW_RISK";
+    blockers: Array<
+      | "fresh_dual_risk_snapshot_missing"
+      | "durable_recovery_incident_missing"
+      | "external_protective_run_approval_missing"
+      | "current_facility_authorization_unavailable"
+    >;
+    externalWriteAuthorized: false;
+    externalNonceAllocated: false;
+    signatureCreated: false;
+    networkCalled: false;
+    protectiveAuthorityCanExpandRisk: false;
+    schemaVersion: "m2b_003_recovery_readiness.v1";
+  };
   preSigningOnly: true;
   nonceCreated: false;
   signatureCreated: false;

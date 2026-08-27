@@ -48,6 +48,14 @@ function ports() {
     async readPerformance() {
       calls.push("credit.readPerformance");
       return { creditState: "REPAID" };
+    },
+    async readCreditOutcome() {
+      calls.push("credit.readCreditOutcome");
+      return { status: "FINALIZED", creditOutcome: { outcomeLabel: "on_time_repaid" } };
+    },
+    async readCreditState() {
+      calls.push("credit.readCreditState");
+      return { status: "PROJECTED", creditState: { projectionVersion: 1 } };
     }
   };
   const executionVenue = {
@@ -104,6 +112,8 @@ test("independent Agent uses only replaceable CreditProvider and ExecutionVenue 
     runId: "reference_agent_portability_001"
   });
   assert.equal(result.performance.creditState, "REPAID");
+  assert.equal(result.creditOutcome.creditOutcome.outcomeLabel, "on_time_repaid");
+  assert.equal(result.creditState.creditState.projectionVersion, 1);
   assert.deepEqual(harness.calls, [
     "credit.authenticate",
     "credit.discover",
@@ -122,7 +132,9 @@ test("independent Agent uses only replaceable CreditProvider and ExecutionVenue 
     "venue.reconcile",
     "credit.repay",
     "credit.readEvidence",
-    "credit.readPerformance"
+    "credit.readPerformance",
+    "credit.readCreditOutcome",
+    "credit.readCreditState"
   ]);
 });
 
