@@ -271,31 +271,36 @@ rotated once; the old value fails with `28P01`, and the new in-memory value
 completed the 69/69 read-only ledger verification. The new password was not
 printed or persisted, and runtime roles and business rows were not changed.
 
-This closes `AUTHN-008` through `CUTOVER` as
-`PASS — DEPLOYED AND USER-VERIFIED`. Stage `RETIRE` is not implied by this
-verdict: the v1 environment material and dual-key rollback release remain until
-a bounded observation window is explicitly defined, completed and separately
-approved for retirement.
+This closed `AUTHN-008` through `CUTOVER` as
+`PASS — DEPLOYED AND USER-VERIFIED`. `RETIRE` was then executed only after a
+separate Founder decision and exact per-deployment classification.
 
 Evidence:
 `artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
 
-## RETIRE observation gate
+## RETIRE completion
 
-The Founder authorized the next step on 2026-08-27. A 24-hour observation
-window started from the immutable cutover Event at
-`2026-08-27T04:27:16.783Z` and cannot complete before
-`2026-08-28T04:27:16.783Z`. The start baseline passed with all six v1 dependency
-counters at zero, exact 69/69 migrations, forced RLS, healthy `single_v2`
-readiness, successful Cron, and no bounded auth/5xx/error log.
+The Founder authorized the observation gate, then explicitly shortened its
+elapsed-time criterion without waiving the technical checks. The complete
+Vercel API inventory contained 58 READY Production deployments, correcting the
+earlier 20-item CLI page. Every deployment received an exact KEEP / DELETE /
+REVIEW record.
 
-This authorization does not execute `RETIRE`. Vercel changes to environment
-variables do not alter prior deployments, and 20 READY Production deployments
-remain visible. Every retained deployment must be classified before an exact
-destructive target list can receive separate Founder approval.
+Fifty-five obsolete deployments were deleted after live alias, traffic,
+environment-name and workflow-dependency revalidation. Three READY deployments
+remain: current Production, one clean single-v2 fallback and one no-v1 REVIEW
+deployment. No remaining READY deployment contains legacy v1 configuration.
+The final read-only checks retain exact 69/69 migrations, all six v1 blocker
+classes at zero, forced RLS, exact Production SHA and clean auth/5xx/error logs.
 
 Gate:
 `docs/codex/tasks/AUTHN_008_RETIRE_OBSERVATION_GATE.md`.
 
 Baseline Evidence:
 `artifacts/m2b-006/authn-008-retire-observation-baseline.json`.
+
+Final Evidence:
+`artifacts/m2b-006/authn-008-retire-final.json`.
+
+Final `AUTHN-008` verdict: `PASS — DEPLOYED AND USER-VERIFIED` through
+`RETIRE`.

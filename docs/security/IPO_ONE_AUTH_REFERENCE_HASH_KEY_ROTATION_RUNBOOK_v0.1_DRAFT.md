@@ -1,6 +1,6 @@
 # IPO.ONE authentication reference-hash key rotation runbook v0.1
 
-Status: `EXECUTED THROUGH CUTOVER — RETIRE NOT AUTHORIZED`
+Status: `EXECUTED THROUGH RETIRE — PASS`
 
 Issue: `AUTHN-008`
 
@@ -173,18 +173,31 @@ Human SIWE and bounded Agent read/revocation acceptance passed, and the final
 v1 active-dependency inventory is zero. The final non-secret record is
 `artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
 
-`RETIRE` remains explicitly unauthorized and unexecuted. No duration was
-defined for the bounded rollback observation window in the original approved
-package. The Founder authorized the next observation step on 2026-08-27. The
-window is now fixed at 24 hours from the cutover Event:
-`2026-08-27T04:27:16.783Z` through no earlier than
-`2026-08-28T04:27:16.783Z`. This duration covers the database's 24-hour maximum
-Session lifetime and therefore also covers shorter challenge, replay,
-rate-bucket and Cron intervals.
+The original observation design fixed a 24-hour window from the cutover Event:
+`2026-08-27T04:27:16.783Z` through
+`2026-08-28T04:27:16.783Z`. The Founder later explicitly shortened only that
+elapsed-time criterion and authorized the exact safe DELETE set after all
+technical end checks and per-deployment classifications passed.
 
-The start baseline is recorded in
-`artifacts/m2b-006/authn-008-retire-observation-baseline.json`. `RETIRE` remains
-unauthorized and unexecuted. At the end of the window, every retained Vercel
-Production deployment must be classified because environment changes do not
-alter previous deployments. Only a later exact approval may delete named
-deployments or remaining v1 control-plane material.
+The complete inventory corrected the CLI's 20-item default page to 58 READY
+Production deployments. Fifty-five deployments were deleted only after exact
+alias, v1 environment-name, post-cutover traffic and reference checks. Three
+READY deployments remain: current Production, one clean single-v2 fallback,
+and one clean no-alias REVIEW deployment with a historical release-ID mismatch.
+No remaining READY deployment contains a v1 environment name.
+
+The final owner-read-only verification retained exact 69/69 migrations, all
+six v1 blocker classes at zero, six enabled/forced RLS relations and six
+policies. Current Production remains exact SHA
+`3bb525ce168ef274fea862cd3d5e55d35b2577fd`, `single_v2`, no-real-funds and
+healthy, with no authentication 4xx, HTTP 5xx or error/fatal regression.
+
+Vercel marks deleted successful deployments recoverable for a provider-managed
+period. That recovery mechanism grants no IPO.ONE authorization: restoring any
+deleted v1 deployment is prohibited, and defects after RETIRE must be repaired
+forward.
+
+Final Evidence:
+`artifacts/m2b-006/authn-008-retire-final.json`.
+
+Final verdict: `PASS — DEPLOYED AND USER-VERIFIED` for `AUTHN-008 RETIRE`.

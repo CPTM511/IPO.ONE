@@ -1,10 +1,10 @@
 # AUTHN-008 — v1 retirement observation gate
 
-Status: `OBSERVING — RETIRE NOT AUTHORIZED`
+Status: `PASS — DEPLOYED AND USER-VERIFIED`
 
 Observation start: `2026-08-27T04:27:16.783Z`
 
-Earliest end: `2026-08-28T04:27:16.783Z`
+Founder-shortened end decision: `2026-08-27`
 
 Production deployment: `dpl_GqX1Z5y232pmos2WyZLoxicfu88f`
 
@@ -16,14 +16,16 @@ Requirements: `REQ-CORE-001`, `REQ-EVID-001`, `REQ-EVID-002`,
 ## Context
 
 `AUTHN-008` completed `CUTOVER` to `single_v2`, and M2B-006 is
-`PASS — DEPLOYED AND USER-VERIFIED`. The final stage, `RETIRE`, removes the
-remaining v1 rollback material only after a bounded observation window and a
-new exact production approval.
+`PASS — DEPLOYED AND USER-VERIFIED`. The final `RETIRE` stage has now removed
+every active historical READY Production deployment carrying v1 rollback
+configuration while preserving the current Production deployment and a clean
+single-v2 fallback.
 
-The Founder approved starting the next step on 2026-08-27. This approval starts
-and records the observation gate. It does not authorize deleting an environment
-secret, deleting a deployment, changing retention policy, redeploying,
-modifying a runtime role or database row, or retiring rollback capability.
+The Founder first approved starting the observation gate on 2026-08-27, then
+separately shortened the observation window and authorized deletion of the
+exact deterministic safe deployment set after the complete read-only end
+checks. This later decision did not authorize blind bulk deletion, database or
+role mutation, current Production configuration changes, funds or chain state.
 
 ## Window decision
 
@@ -42,24 +44,27 @@ Twenty-four hours therefore dominates every legacy authentication lifetime and
 provides one full operational day without adding an arbitrary multi-day delay.
 The window is measured from the cutover Event, not from this document commit.
 
+The Founder later made an explicit risk decision that the full 24-hour wait was
+not mechanically required. That decision superseded only the elapsed-time
+criterion; every technical end check, per-deployment classification rule and
+post-deletion verification remained mandatory.
+
 ## Scope
 
 - Record a non-secret, owner-read-only start baseline.
 - Keep the current `single_v2` production deployment and v2 project environment
   configuration unchanged.
-- At or after the earliest end, repeat readiness, migration, v1 inventory, RLS,
-  Cron and bounded-log checks.
+- After the Founder-shortened end decision, repeat readiness, migration, v1
+  inventory, RLS, Cron and bounded-log checks.
 - Inventory every retained production deployment before proposing deletion.
 - Produce an exact deployment-ID deletion/revocation list for separate Founder
   approval.
 
 ## Non-goals
 
-- No `RETIRE` execution in this issue state.
-- No deletion of `dpl_9VrySxPRMYDg5amcA88u4GyeqjMm` or any other deployment.
+- No blind, alias-ambiguous, traffic-ambiguous or dependency-ambiguous deletion.
 - No Vercel environment mutation, retention-policy change or redeployment.
-- No secret export, download, printing, local file, shell-history or artifact
-  persistence.
+- No secret export, download, printing, local file or artifact persistence.
 - No database write, credential/session mutation, migration, role/grant change,
   downgrade or historical Event/hash deletion.
 - No signer, chain, Pool/Venue, mainnet, real-funds, custody, transfer or
@@ -78,15 +83,16 @@ The legacy `IPO_ONE_AUTH_REFERENCE_HASH_KEY` and `_REF` names are absent from
 the current project environment. Vercel environment changes do not alter prior
 deployments, so retained deployments must still be classified individually
 ([Vercel environment-variable behavior](https://vercel.com/docs/environment-variables/managing-environment-variables)).
-The known overlap rollback deployment
-`dpl_9VrySxPRMYDg5amcA88u4GyeqjMm` remains `READY`; 20 `READY` Production
-deployments were visible at baseline, of which only the current single-v2
-deployment and the named overlap rollback are conclusively classified in this
-gate. No broader deletion scope may be inferred.
+The complete Vercel API inventory contained 58 READY Production deployments;
+the earlier count of 20 was only the CLI default page, not the full inventory.
+Every one of the 58 was recorded with deployment ID/URL, source SHA or an
+explicit pre-manifest unavailability state, creation time, current alias state,
+v1 environment-name state, bounded activity, references and exact disposition.
 
 ## Acceptance criteria
 
-1. The end check runs at or after `2026-08-28T04:27:16.783Z`.
+1. The Founder explicitly shortens the elapsed-time criterion without waiving
+   any technical end check.
 2. `https://ipo.one/readyz` remains HTTP 200 at exact SHA
    `3bb525ce168ef274fea862cd3d5e55d35b2577fd`, `single_v2`, and
    `realFundsEnabled=false`.
@@ -106,8 +112,9 @@ gate. No broader deletion scope may be inferred.
 9. The proposed destructive target list excludes the current production
    deployment and preserves immutable database credentials, Sessions, Events,
    Evidence and migration history.
-10. A separate Founder decision explicitly approves or rejects the exact
-    `RETIRE` target list. Window completion alone grants no deletion authority.
+10. A separate Founder decision explicitly approves the exact deterministic
+    safe `RETIRE` target list. Window completion alone grants no deletion
+    authority.
 
 ## Test commands
 
@@ -132,25 +139,47 @@ deletion are prohibited.
 - [x] Six v1 dependency counters are zero at start.
 - [x] Migration and RLS start baseline is exact.
 - [x] Known overlap rollback remains available during the window.
-- [ ] Twenty-four-hour end time has elapsed.
-- [ ] End migration, inventory, RLS, readiness, Cron and log checks pass.
-- [ ] All retained Production deployments are classified exactly.
-- [ ] Exact destructive target list receives separate Founder approval.
-- [ ] Post-retirement deployment/environment checks pass.
+- [x] Founder explicitly shortened the observation window.
+- [x] End migration, inventory, RLS, readiness, Cron and log checks pass.
+- [x] All retained Production deployments are classified exactly.
+- [x] Exact destructive target list received separate Founder approval.
+- [x] Post-retirement deployment/environment checks pass.
 
 ## Data, migration and rollback
 
-This observation gate has no data or migration impact. Before a later
-`RETIRE`, rollback remains the forward-only dual-key deployment path recorded
-in the AUTHN-008 runbook. If any end criterion fails, keep all retained
-material unchanged, record `BLOCKED — NOT COMPLETE`, and repair forward.
+This gate had no data or migration impact. After `RETIRE`, v1 restoration is
+prohibited. Defects must be repaired forward from a clean single-v2 release;
+deleted v1 deployments must not be restored during Vercel's provider-managed
+recovery period.
 
 ## Required Evidence
 
 - Start baseline:
   `artifacts/m2b-006/authn-008-retire-observation-baseline.json`.
-- End baseline: a new non-secret artifact created only after the earliest end.
-- Separate exact retirement decision and, if approved, a post-retirement
-  verification artifact.
+- Full pre-delete classification:
+  `artifacts/m2b-006/authn-008-ready-production-classification-predelete.json`.
+- Batch deletion:
+  `artifacts/m2b-006/authn-008-retire-deletion.json`.
+- Final REVIEW resolution:
+  `artifacts/m2b-006/authn-008-retire-review-resolution.json`.
+- Post-delete retained inventory:
+  `artifacts/m2b-006/authn-008-ready-production-classification-postdelete.json`.
+- Final verification:
+  `artifacts/m2b-006/authn-008-retire-final.json`.
 
-Current verdict: `BLOCKED — NOT COMPLETE` for `RETIRE`; observation is active.
+## Final retirement result
+
+- 58 READY Production deployments were classified.
+- 55 exact obsolete deployments were deleted: 54 in the deterministic batch
+  and one after its two non-canonical aliases were proven unnecessary.
+- Current Production `dpl_GqX1Z5y232pmos2WyZLoxicfu88f` remains on exact SHA
+  `3bb525ce168ef274fea862cd3d5e55d35b2577fd` at `https://ipo.one`.
+- Clean single-v2 fallback `dpl_9Gxuxec5wgB1BMRS7UzoUvCYRhWu` is retained.
+- `dpl_FcNXh5b8m6eEE1PrUgeNoEQxuJa6` remains `REVIEW`: it contains no v1
+  environment name and has no alias, but its historical requests returned 503
+  because runtime release ID `07b68bb...` did not match packaged source
+  `3bb525ce...`. It is not an authorized rollback candidate.
+- No remaining READY Production deployment contains a legacy v1 environment
+  name.
+
+Current verdict: `PASS — DEPLOYED AND USER-VERIFIED` for `AUTHN-008 RETIRE`.

@@ -315,10 +315,15 @@ Draft runbook:
   error/fatal log. Four scheduled `/api/cron` requests returned HTTP 200 in the
   preceding 24 hours.
 
-M2B-006 is therefore `PASS — DEPLOYED AND USER-VERIFIED`. `AUTHN-008 RETIRE`
-is deliberately excluded: removing the v1 environment material and dual-key
-rollback release remains a separate production action after a separately
-defined observation window and explicit approval.
+M2B-006 remains `PASS — DEPLOYED AND USER-VERIFIED`. The separately authorized
+`AUTHN-008 RETIRE` stage subsequently classified all 58 historical READY
+Production deployments, deleted 55 exact obsolete targets, and left three
+READY deployments with no v1 environment name. Current Production stayed on
+the same exact SHA and no database, role, business, funds or chain state was
+mutated.
 
 Final non-secret Evidence:
 `artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
+
+RETIRE Evidence:
+`artifacts/m2b-006/authn-008-retire-final.json`.

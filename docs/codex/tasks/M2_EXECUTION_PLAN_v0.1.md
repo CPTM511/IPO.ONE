@@ -448,10 +448,10 @@ revertible without inventing permission for its successor.
   `dpl_GqX1Z5y232pmos2WyZLoxicfu88f` at exact SHA
   `3bb525ce168ef274fea862cd3d5e55d35b2577fd` is
   `PASS — DEPLOYED AND USER-VERIFIED` at `https://ipo.one`, in `single_v2`
-  mode with `realFundsEnabled=false`. `AUTHN-008 RETIRE` remains separately
-  unauthorized and unexecuted. Its 24-hour observation window ends no earlier
-  than `2026-08-28T04:27:16.783Z`; retained deployment classification and a
-  separate exact retirement approval are still required.
+  mode with `realFundsEnabled=false`. The separately authorized `AUTHN-008
+  RETIRE` stage is also `PASS — DEPLOYED AND USER-VERIFIED`: 58 historical
+  READY Production deployments were classified, 55 obsolete deployments were
+  deleted, and no remaining READY deployment contains v1 configuration.
 
 ## Release verdict discipline
 
