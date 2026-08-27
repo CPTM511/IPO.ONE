@@ -174,7 +174,17 @@ v1 active-dependency inventory is zero. The final non-secret record is
 `artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
 
 `RETIRE` remains explicitly unauthorized and unexecuted. No duration was
-defined for the bounded rollback observation window in the approved package.
-The observation duration and its start/end evidence must therefore be decided
-before a later retirement approval; no operator may infer a duration or remove
-v1 environment material from this checkpoint.
+defined for the bounded rollback observation window in the original approved
+package. The Founder authorized the next observation step on 2026-08-27. The
+window is now fixed at 24 hours from the cutover Event:
+`2026-08-27T04:27:16.783Z` through no earlier than
+`2026-08-28T04:27:16.783Z`. This duration covers the database's 24-hour maximum
+Session lifetime and therefore also covers shorter challenge, replay,
+rate-bucket and Cron intervals.
+
+The start baseline is recorded in
+`artifacts/m2b-006/authn-008-retire-observation-baseline.json`. `RETIRE` remains
+unauthorized and unexecuted. At the end of the window, every retained Vercel
+Production deployment must be classified because environment changes do not
+alter previous deployments. Only a later exact approval may delete named
+deployments or remaining v1 control-plane material.

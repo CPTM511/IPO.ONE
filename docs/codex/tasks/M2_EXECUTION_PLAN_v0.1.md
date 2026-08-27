@@ -449,7 +449,9 @@ revertible without inventing permission for its successor.
   `3bb525ce168ef274fea862cd3d5e55d35b2577fd` is
   `PASS — DEPLOYED AND USER-VERIFIED` at `https://ipo.one`, in `single_v2`
   mode with `realFundsEnabled=false`. `AUTHN-008 RETIRE` remains separately
-  unauthorized and unexecuted pending a defined observation window.
+  unauthorized and unexecuted. Its 24-hour observation window ends no earlier
+  than `2026-08-28T04:27:16.783Z`; retained deployment classification and a
+  separate exact retirement approval are still required.
 
 ## Release verdict discipline
 

@@ -279,3 +279,23 @@ approved for retirement.
 
 Evidence:
 `artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
+
+## RETIRE observation gate
+
+The Founder authorized the next step on 2026-08-27. A 24-hour observation
+window started from the immutable cutover Event at
+`2026-08-27T04:27:16.783Z` and cannot complete before
+`2026-08-28T04:27:16.783Z`. The start baseline passed with all six v1 dependency
+counters at zero, exact 69/69 migrations, forced RLS, healthy `single_v2`
+readiness, successful Cron, and no bounded auth/5xx/error log.
+
+This authorization does not execute `RETIRE`. Vercel changes to environment
+variables do not alter prior deployments, and 20 READY Production deployments
+remain visible. Every retained deployment must be classified before an exact
+destructive target list can receive separate Founder approval.
+
+Gate:
+`docs/codex/tasks/AUTHN_008_RETIRE_OBSERVATION_GATE.md`.
+
+Baseline Evidence:
+`artifacts/m2b-006/authn-008-retire-observation-baseline.json`.
