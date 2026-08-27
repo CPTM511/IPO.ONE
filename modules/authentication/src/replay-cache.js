@@ -135,11 +135,11 @@ export class PostgresReplayCache {
         [this.tenantId, now]
       );
       const inserted = await client.query(
-        `INSERT INTO authentication_replay_entries(
+         `INSERT INTO authentication_replay_entries(
            tenant_id, reference_hash, namespace, expires_at, created_at,
-           schema_version
+           reference_hash_key_version, schema_version
          ) VALUES (
-           $1, $2, $3, $4, $5,
+           $1, $2, $3, $4, $5, $6,
            'authentication_replay_entry.v1'
          )
          ON CONFLICT (tenant_id, reference_hash) DO NOTHING
@@ -149,7 +149,8 @@ export class PostgresReplayCache {
           reference,
           namespace,
           new Date(expiration * 1_000),
-          now
+          now,
+          this.referenceHasher.keyVersion
         ]
       );
       if (inserted.rowCount !== 1) {

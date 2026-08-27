@@ -1,0 +1,196 @@
+{
+  "schemaVersion": "authn_008_ready_production_classification.v1",
+  "observedAt": "2026-08-27T08:20:54.885Z",
+  "projectId": "prj_KLyAPHnFCtQAxIbUjdJa012gAq7Y",
+  "teamId": "team_f6TQU7mloG5OnQGNmtXwFkOi",
+  "cutoverAt": "2026-08-27T04:27:16Z",
+  "currentDeploymentId": "dpl_GqX1Z5y232pmos2WyZLoxicfu88f",
+  "readyProductionCount": 3,
+  "firstCleanSingleV2CreatedAt": "2026-08-27T04:24:04.491Z",
+  "designatedRollbackDeploymentId": "dpl_9Gxuxec5wgB1BMRS7UzoUvCYRhWu",
+  "counts": {
+    "KEEP": 2,
+    "DELETE": 0,
+    "REVIEW": 1
+  },
+  "valuesRead": false,
+  "valuesPrinted": false,
+  "records": [
+    {
+      "deploymentId": "dpl_GqX1Z5y232pmos2WyZLoxicfu88f",
+      "url": "https://ipo-one-internal-1avuzgr43-cptm-111-s-projects.vercel.app",
+      "sourceSha": "3bb525ce168ef274fea862cd3d5e55d35b2577fd",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-27T05:59:50.794Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [
+        "www.ipo.one",
+        "ipo-one-internal.vercel.app",
+        "ipo.one"
+      ],
+      "isCurrentProduction": true,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": false,
+      "legacyEnvironmentNames": [],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 20,
+        "firstAt": "2026-08-27T07:40:31.761Z",
+        "lastAt": "2026-08-27T08:19:33.370Z",
+        "domains": [
+          "ipo.one",
+          "ipo-one-internal-1avuzgr43-cptm-111-s-projects.vercel.app"
+        ],
+        "statuses": {
+          "200": 17,
+          "404": 3
+        },
+        "paths": [
+          "/auth/v1/options",
+          "/.well-known/jwks.json",
+          "/.well-known/ipo-one.json",
+          "/readyz",
+          "/livez",
+          "/api/cron",
+          "/app.js",
+          "/wp-content/themes/ipo/assets/img/star1.png",
+          "/wp-content/themes/ipo/assets/img/star2.png",
+          "/favicon.ico",
+          "/"
+        ],
+        "observedReleaseIds": [
+          "3bb525ce168ef274fea862cd3d5e55d35b2577fd"
+        ]
+      },
+      "repositoryReferences": [
+        {
+          "file": "artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json",
+          "line": 21
+        },
+        {
+          "file": "artifacts/m2b-006/authn-008-retire-observation-baseline.json",
+          "line": 27
+        },
+        {
+          "file": "docs/codex/tasks/AUTHN_008_REFERENCE_HASH_KEY_ROTATION.md",
+          "line": 257
+        },
+        {
+          "file": "docs/codex/tasks/AUTHN_008_RETIRE_OBSERVATION_GATE.md",
+          "line": 9
+        },
+        {
+          "file": "docs/codex/tasks/M2B_006_V0_2_1_REMOTE_DEPLOYMENT.md",
+          "line": 288
+        },
+        {
+          "file": "docs/codex/tasks/M2_EXECUTION_PLAN_v0.1.md",
+          "line": 448
+        },
+        {
+          "file": "docs/releases/IPO_ONE_V0_2_1_DEPLOYMENT_DECISION.md",
+          "line": 96
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": false,
+      "rollbackOrReferenceDependency": "current Production",
+      "classification": "KEEP",
+      "classificationReason": "current Production deployment"
+    },
+    {
+      "deploymentId": "dpl_FcNXh5b8m6eEE1PrUgeNoEQxuJa6",
+      "url": "https://ipo-one-internal-n97mhoptd-cptm-111-s-projects.vercel.app",
+      "sourceSha": "3bb525ce168ef274fea862cd3d5e55d35b2577fd",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-27T05:54:54.037Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": false,
+      "legacyEnvironmentNames": [],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 3,
+        "firstAt": "2026-08-27T05:58:47.055Z",
+        "lastAt": "2026-08-27T05:58:48.619Z",
+        "domains": [
+          "ipo.one"
+        ],
+        "statuses": {
+          "503": 3
+        },
+        "paths": [
+          "/auth/v1/options",
+          "/evm-wallet-connector.js",
+          "/readyz"
+        ],
+        "observedReleaseIds": [
+          "07b68bb63d6cd70dc24fcf6730de804917563e71"
+        ]
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": false,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "REVIEW",
+      "classificationReason": "post-cutover request activity requires review"
+    },
+    {
+      "deploymentId": "dpl_9Gxuxec5wgB1BMRS7UzoUvCYRhWu",
+      "url": "https://ipo-one-internal-d8u19hqh7-cptm-111-s-projects.vercel.app",
+      "sourceSha": "07b68bb63d6cd70dc24fcf6730de804917563e71",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-27T04:24:04.491Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": false,
+      "legacyEnvironmentNames": [],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 20,
+        "firstAt": "2026-08-27T05:42:38.429Z",
+        "lastAt": "2026-08-27T06:00:02.091Z",
+        "domains": [
+          "ipo-one-internal-d8u19hqh7-cptm-111-s-projects.vercel.app",
+          "ipo.one"
+        ],
+        "statuses": {
+          "200": 8,
+          "201": 4,
+          "400": 4,
+          "404": 4
+        },
+        "paths": [
+          "/api/cron",
+          "/readyz",
+          "/sw.js",
+          "/auth/v1/wallet/verify",
+          "/favicon.svg",
+          "/auth/v1/wallet/challenge"
+        ],
+        "observedReleaseIds": [
+          "07b68bb63d6cd70dc24fcf6730de804917563e71"
+        ]
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": false,
+      "rollbackOrReferenceDependency": "designated clean post-single_v2 rollback",
+      "classification": "KEEP",
+      "classificationReason": "newest non-current clean single_v2 rollback candidate; no v1 or temporary auth environment name"
+    }
+  ]
+}

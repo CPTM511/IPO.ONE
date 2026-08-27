@@ -165,10 +165,21 @@ function checkedAccountId(value, chainId) {
 }
 
 function checkedMessage(value) {
-  if (typeof value !== "string" || value.length < 1 || value.length > 16_384) {
+  if (typeof value !== "string") {
+    fail("wallet_sign_input_invalid", "Wallet message is outside the approved bound");
+  }
+  const encoded = new TextEncoder().encode(value);
+  if (encoded.byteLength < 1 || encoded.byteLength > 16_384) {
     fail("wallet_sign_input_invalid", "Wallet message is outside the approved bound");
   }
   return value;
+}
+
+function encodedPersonalSignMessage(value) {
+  const bytes = new TextEncoder().encode(checkedMessage(value));
+  return `0x${[...bytes]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")}`;
 }
 
 function checkedTypedData(value) {
@@ -479,7 +490,7 @@ export function createEvmWalletConnector({
     const { address } = await assertCurrentAccount(accountId);
     return checkedSignature(await provider.request({
       method: "personal_sign",
-      params: [checkedMessage(message), address]
+      params: [encodedPersonalSignMessage(message), address]
     }));
   }
 

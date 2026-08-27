@@ -9,6 +9,10 @@ import {
 import { TENANT_OPERATION_POLICIES } from "../modules/authorization/src/index.js";
 import { TENANT_ABUSE_OPERATION_POLICIES } from "../modules/abuse-control/src/index.js";
 import { createTenantFoundationHandlers } from "../modules/tenant-command-gateway/src/index.js";
+import {
+  validateExactTenantCatalogCoverage,
+  validateTraceabilityReleaseMaturity
+} from "./product-traceability-contract.mjs";
 
 const requireFromApiContract = createRequire(
   new URL("../packages/api-contract/package.json", import.meta.url)
@@ -109,32 +113,10 @@ fail(
   "traceability production-credit boundary drifted from the Tenant catalog"
 );
 
-const enabledProfiles = Object.entries(launchPolicy.profiles)
-  .filter(([, profile]) => profile.releaseEnabled)
-  .map(([profileId]) => profileId);
-try {
-  assert.deepEqual(enabledProfiles, ["public_sandbox"]);
-} catch {
-  failures.push("the launch policy no longer enables only public_sandbox");
-}
-fail(
-  launchPolicy.profiles.closed_non_funds_pilot.releaseEnabled ===
-    manifest.releaseMaturity.closedPilotReleaseEnabled,
-  "closed-pilot release state drifted"
-);
-fail(
-  launchPolicy.profiles.controlled_agent_credit_pilot.releaseEnabled ===
-    manifest.releaseMaturity.controlledCreditReleaseEnabled,
-  "controlled-credit release state drifted"
-);
-fail(
-  launchPolicy.profiles.live_testnet_secured_pool.releaseEnabled === false,
-  "M2 secured-pool testnet profile must remain policy-locked"
-);
-fail(
-  manifest.releaseMaturity.enabledReleaseProfile === "public_sandbox",
-  "traceability enabled release profile drifted"
-);
+failures.push(...validateTraceabilityReleaseMaturity({
+  launchPolicy,
+  releaseMaturity: manifest.releaseMaturity
+}));
 
 for (const [index, expected] of destinations.entries()) {
   const actual = manifest.destinations?.[index];
@@ -228,11 +210,6 @@ for (const binding of manifest.operationBindings ?? []) {
 
 const catalogIds = [...catalogByOperation.keys()].sort();
 const bindingIds = [...bindingByOperation.keys()].sort();
-try {
-  assert.deepEqual(bindingIds, catalogIds);
-} catch {
-  failures.push("operation bindings must cover the exact closed Tenant catalog");
-}
 
 const allActions = [
   ...(manifest.destinations ?? []).flatMap((destination) => destination.actions ?? []),
@@ -303,11 +280,11 @@ for (const action of allActions) {
   }
 }
 
-try {
-  assert.deepEqual([...classifiedCatalogIds].sort(), catalogIds);
-} catch {
-  failures.push("REAL_LOCAL V9 actions must account for every operation in the closed Tenant catalog");
-}
+failures.push(...validateExactTenantCatalogCoverage({
+  catalogIds,
+  bindingIds,
+  classifiedCatalogIds
+}));
 
 fail(allActions.length >= 1, "traceability manifest has no classified actions");
 for (const classification of classifications.filter((value) => value !== "REAL_TESTNET_READ")) {

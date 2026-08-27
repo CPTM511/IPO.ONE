@@ -7589,6 +7589,7 @@
         "authorization",
         "readyForIntent",
         "executionPrewriteReadiness",
+        "dualRiskRecoveryReadiness",
         "preSigningOnly",
         "nonceCreated",
         "signatureCreated",
@@ -7602,6 +7603,9 @@
         },
         "executionPrewriteReadiness": {
           "$ref": "#/$defs/agentHyperliquidPrewriteReadiness"
+        },
+        "dualRiskRecoveryReadiness": {
+          "$ref": "#/$defs/m2bDualRiskRecoveryReadiness"
         },
         "readyForIntent": { "type": "boolean" },
         "preSigningOnly": { "const": true },
@@ -7663,6 +7667,46 @@
         "schemaVersion": {
           "const": "agent_hyperliquid_prewrite_readiness.v1"
         }
+      }
+    },
+    "m2bDualRiskRecoveryReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "combinedRiskState",
+        "currentStage",
+        "blockers",
+        "externalWriteAuthorized",
+        "externalNonceAllocated",
+        "signatureCreated",
+        "networkCalled",
+        "protectiveAuthorityCanExpandRisk",
+        "schemaVersion"
+      ],
+      "properties": {
+        "status": { "const": "BLOCKED_RECOVERY_PREWRITE" },
+        "combinedRiskState": { "const": "UNKNOWN" },
+        "currentStage": { "const": "FREEZE_NEW_RISK" },
+        "blockers": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "fresh_dual_risk_snapshot_missing",
+              "durable_recovery_incident_missing",
+              "external_protective_run_approval_missing",
+              "current_facility_authorization_unavailable"
+            ]
+          }
+        },
+        "externalWriteAuthorized": { "const": false },
+        "externalNonceAllocated": { "const": false },
+        "signatureCreated": { "const": false },
+        "networkCalled": { "const": false },
+        "protectiveAuthorityCanExpandRisk": { "const": false },
+        "schemaVersion": { "const": "m2b_003_recovery_readiness.v1" }
       }
     },
     "tradingFacilityOrderResponse": {

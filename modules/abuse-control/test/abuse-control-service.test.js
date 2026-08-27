@@ -409,6 +409,38 @@ test("credential and discovery limits use only server-created hashed contexts", 
     (error) => error.code === "request_budget_exceeded"
   );
 
+  const overlapState = harness();
+  const legacyNetworkHash = abuseHash("test_network", "network-legacy-budget");
+  const legacyOnlyNetwork = createTrustedNetworkContext({
+    networkRefHash: legacyNetworkHash,
+    source: "verified_proxy"
+  });
+  for (let index = 0; index < 10; index += 1) {
+    const admission = await overlapState.service.admitCredentialAttempt({
+      networkContext: legacyOnlyNetwork,
+      accountContext: createTrustedAccountContext({
+        accountRefHash: abuseHash("test_account", `legacy-budget-account-${index}`),
+        source: "normalized_login_identifier"
+      })
+    });
+    await complete(overlapState.service, admission);
+  }
+  const overlapNetwork = createTrustedNetworkContext({
+    networkRefHash: abuseHash("test_network", "network-primary-v2-budget"),
+    legacyNetworkRefHash: legacyNetworkHash,
+    source: "verified_proxy"
+  });
+  await assert.rejects(
+    () => overlapState.service.admitCredentialAttempt({
+      networkContext: overlapNetwork,
+      accountContext: createTrustedAccountContext({
+        accountRefHash: abuseHash("test_account", "overlap-budget-account"),
+        source: "normalized_login_identifier"
+      })
+    }),
+    (error) => error.code === "request_budget_exceeded"
+  );
+
   const discoveryNetwork = createTrustedNetworkContext({
     networkRefHash: abuseHash("test_network", "network-discovery"),
     source: "direct_socket"

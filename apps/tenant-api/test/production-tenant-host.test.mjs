@@ -37,11 +37,19 @@ function get(port, path, headers = {}) {
   });
 }
 
-async function fixture({ deploymentRole = "primary" } = {}) {
+async function fixture({
+  authenticationReferenceHash = {
+    mode: "overlap_v2_write_v1_lookup",
+    writeKeyVersion: "v2",
+    legacyLookupKeyVersion: "v1"
+  },
+  deploymentRole = "primary"
+} = {}) {
   const port = await unusedPort();
   let ready = true;
   let gatewayCalls = 0;
   const host = createProductionTenantHost({
+    authenticationReferenceHash,
     gateway: { async execute() { gatewayCalls += 1; } },
     humanBff: { async authenticateSession() { throw new Error("not expected"); } },
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
@@ -66,6 +74,11 @@ async function fixture({ deploymentRole = "primary" } = {}) {
 async function workspaceFixture(workspaceName) {
   const port = await unusedPort();
   const host = createProductionTenantHost({
+    authenticationReferenceHash: {
+      mode: "single_v2",
+      writeKeyVersion: "v2",
+      legacyLookupKeyVersion: null
+    },
     gateway: { async execute() { throw new Error("not expected"); } },
     humanBff: { async authenticateSession() { throw new Error("not expected"); } },
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },
@@ -111,7 +124,12 @@ test("production Host exposes bounded liveness/readiness without a DEMO route", 
     deploymentRole: "primary",
     profile: "closed_non_funds_pilot",
     realFundsEnabled: false,
-    schemaVersion: "production_readiness.v1"
+    authenticationReferenceHash: {
+      mode: "overlap_v2_write_v1_lookup",
+      writeKeyVersion: "v2",
+      legacyLookupKeyVersion: "v1"
+    },
+    schemaVersion: "production_readiness.v2"
   });
   assert.match(ready.headers["strict-transport-security"], /max-age=63072000/);
 
@@ -264,10 +282,28 @@ test("production Host requires all real authentication and edge adapters", () =>
   );
 });
 
+test("production Host rejects a reference-hash readiness claim inconsistent with its mode", async () => {
+  await assert.rejects(
+    () => fixture({
+      authenticationReferenceHash: {
+        mode: "single_v2",
+        writeKeyVersion: "v1",
+        legacyLookupKeyVersion: null
+      }
+    }),
+    (error) => error?.code === "invalid_production_tenant_host_config"
+  );
+});
+
 test("production Host injects only the configured public Agent account into the web shell", async (t) => {
   const port = await unusedPort();
   const account = `0x${"4".repeat(40)}`;
   const host = createProductionTenantHost({
+    authenticationReferenceHash: {
+      mode: "single_v2",
+      writeKeyVersion: "v2",
+      legacyLookupKeyVersion: null
+    },
     gateway: { async execute() { throw new Error("not expected"); } },
     humanBff: { async authenticateSession() { throw new Error("not expected"); } },
     machineAuthenticator: { async authenticate() { throw new Error("not expected"); } },

@@ -13,6 +13,12 @@ import {
   createHypercoreStablePolicyConstraint,
   createM2BSecuredFacilityComposition,
   createM2BProtectiveCloseReceipt,
+  createM2B003RecoveryReadiness,
+  createM2BDualRiskRecoveryIncident,
+  createM2BDualRiskSnapshot,
+  assertM2BRecoveryTransition,
+  M2B_RECOVERY_STAGE_ORDER,
+  PostgresM2BDualRiskRepository,
   PostgresM2BCompositionRepository,
   evaluateM2B002PrewriteReadiness,
   verifyM2BSecuredFacilityComposition
@@ -356,4 +362,185 @@ test("M2B-002 PostgreSQL repository prepares once and rejects idempotency drift"
     composition: drifted,
     idempotencyKey: "m2b-002-durable-composition"
   }), { code: "m2b_composition_idempotency_conflict" });
+});
+
+function dualRisk(composition, overrides = {}) {
+  return createM2BDualRiskSnapshot({
+    composition,
+    poolRisk: {
+      poolObservationHash: H("pool_observation"),
+      poolProjectionHash: composition.poolProjectionHash,
+      freshness: "FRESH",
+      reconciliationStatus: "RECONCILED",
+      healthState: "HEALTHY",
+      riskState: "NORMAL",
+      newRiskFrozen: false,
+      liquidatable: false,
+      ...overrides.poolRisk
+    },
+    venueRisk: {
+      venueObservationHash: H("venue_observation"),
+      compositionHash: composition.compositionHash,
+      freshness: "FRESH",
+      reconciliationStatus: "RECONCILED",
+      marginState: "HEALTHY",
+      riskState: "NORMAL",
+      unknownOutcome: false,
+      ...overrides.venueRisk
+    },
+    observedAt: new Date(NOW.getTime() + 2_000)
+  });
+}
+
+test("M2B-003 combines healthy Pool and Venue truth without opening an incident", () => {
+  const composition = compose(fixture());
+  const snapshot = dualRisk(composition);
+  assert.equal(snapshot.combinedRiskState, "NORMAL");
+  assert.equal(snapshot.freezeNewRiskRequired, false);
+  assert.equal(snapshot.networkCalled, false);
+  assert.throws(() => createM2BDualRiskRecoveryIncident({
+    snapshot,
+    openedAt: new Date(NOW.getTime() + 3_000)
+  }), { code: "m2b_recovery_incident_not_required" });
+});
+
+test("M2B-003 stale or unknown truth freezes risk and uses exact recovery order", () => {
+  const composition = compose(fixture());
+  const snapshot = dualRisk(composition, {
+    venueRisk: {
+      freshness: "UNKNOWN",
+      reconciliationStatus: "UNKNOWN",
+      marginState: "UNKNOWN",
+      unknownOutcome: true
+    }
+  });
+  assert.equal(snapshot.combinedRiskState, "REDUCE_ONLY");
+  assert.equal(snapshot.freezeNewRiskRequired, true);
+  assert.equal(snapshot.lossDisposition, "CANONICAL_OBLIGATION_REMAINS_OUTSTANDING");
+  const incident = createM2BDualRiskRecoveryIncident({
+    snapshot,
+    openedAt: new Date(NOW.getTime() + 3_000)
+  });
+  assert.deepEqual(incident.stagePlan.map(({ stage }) => stage), M2B_RECOVERY_STAGE_ORDER);
+  assert.equal(incident.currentStage, "FREEZE_NEW_RISK");
+  assert.equal(incident.stagePlan[1].status, "BLOCKED_EXTERNAL_APPROVAL");
+  assert.ok(incident.stagePlan.every(({ externalWriteAuthorized }) => !externalWriteAuthorized));
+  assert.equal(createM2B003RecoveryReadiness({ snapshot, incident }).status,
+    "BLOCKED_RECOVERY_PREWRITE");
+});
+
+test("M2B-003 critical margin or liquidation escalates and cannot auto-relax", () => {
+  const composition = compose(fixture());
+  const snapshot = dualRisk(composition, {
+    poolRisk: { healthState: "LIQUIDATABLE", liquidatable: true },
+    venueRisk: { marginState: "CRITICAL" }
+  });
+  assert.equal(snapshot.combinedRiskState, "FLATTEN");
+  const incident = createM2BDualRiskRecoveryIncident({
+    snapshot,
+    openedAt: new Date(NOW.getTime() + 3_000)
+  });
+  assert.throws(() => assertM2BRecoveryTransition({
+    incident,
+    nextCombinedRiskState: "REDUCE_ONLY",
+    completedStage: "FREEZE_NEW_RISK",
+    evidenceHash: H("freeze_evidence")
+  }), { code: "m2b_recovery_automatic_relaxation_denied" });
+  assert.equal(assertM2BRecoveryTransition({
+    incident,
+    nextCombinedRiskState: "FLATTEN",
+    completedStage: "FREEZE_NEW_RISK",
+    evidenceHash: H("freeze_evidence")
+  }), true);
+  assert.throws(() => assertM2BRecoveryTransition({
+    incident,
+    nextCombinedRiskState: "SETTLEMENT",
+    completedStage: "CANCEL",
+    evidenceHash: H("cancel_evidence")
+  }), { code: "m2b_recovery_external_action_denied" });
+});
+
+test("M2B-003 PostgreSQL repository opens immutable Evidence once", async () => {
+  const rows = [];
+  const transitions = [];
+  const client = {
+    async query(statement, values = []) {
+      if (statement.startsWith("SELECT pg_advisory_xact_lock")) {
+        return { rowCount: 1, rows: [{}] };
+      }
+      if (statement.includes("WHERE idempotency_key_hash = $1 FOR UPDATE")) {
+        const row = rows.find((item) => item.idempotency_key_hash === values[0]);
+        return { rowCount: row ? 1 : 0, rows: row ? [row] : [] };
+      }
+      if (statement.startsWith("INSERT INTO agent_dual_risk_incidents")) {
+        rows.push({
+          id: values[0],
+          incident_hash: values[1],
+          idempotency_key_hash: values[2],
+          trading_facility_id: values[9],
+          snapshot_record: JSON.parse(values[13]),
+          incident_record: JSON.parse(values[14])
+        });
+        return { rowCount: 1, rows: [] };
+      }
+      if (statement.startsWith("INSERT INTO agent_dual_risk_incident_transitions")) {
+        transitions.push({ id: values[0], incidentId: values[1] });
+        return { rowCount: 1, rows: [] };
+      }
+      if (statement.includes("WHERE id = $1")) {
+        const row = rows.find((item) => item.id === values[0]);
+        return { rowCount: row ? 1 : 0, rows: row ? [row] : [] };
+      }
+      if (statement.includes("WHERE trading_facility_id = $1")) {
+        const row = rows.find((item) => item.trading_facility_id === values[0]);
+        return { rowCount: row ? 1 : 0, rows: row ? [row] : [] };
+      }
+      throw new Error(`unexpected SQL: ${statement}`);
+    }
+  };
+  const eventRepository = {
+    withTenantWrite: (operation) => operation(client),
+    withTenantRead: (operation) => operation(client)
+  };
+  const repository = new PostgresM2BDualRiskRepository({ eventRepository });
+  const composition = compose(fixture());
+  const snapshot = dualRisk(composition, {
+    venueRisk: { freshness: "STALE", reconciliationStatus: "UNRECONCILED" }
+  });
+  const incident = createM2BDualRiskRecoveryIncident({
+    snapshot,
+    openedAt: new Date(NOW.getTime() + 3_000)
+  });
+  const first = await repository.open({
+    snapshot,
+    incident,
+    idempotencyKey: "m2b-003-durable-incident"
+  });
+  assert.equal(first.replayed, false);
+  assert.equal(rows.length, 1);
+  assert.equal(transitions.length, 1);
+  const replay = await repository.open({
+    snapshot,
+    incident,
+    idempotencyKey: "m2b-003-durable-incident"
+  });
+  assert.equal(replay.replayed, true);
+  assert.equal(rows.length, 1);
+  assert.equal((await repository.findById(incident.dualRiskIncidentId))
+    .incident.incidentHash, incident.incidentHash);
+  assert.equal((await repository.findLatestByFacility(composition.tradingFacilityId))
+    .snapshot.snapshotHash, snapshot.snapshotHash);
+
+  const changedSnapshot = dualRisk(composition, {
+    venueRisk: { marginState: "CRITICAL" }
+  });
+  const changedIncident = createM2BDualRiskRecoveryIncident({
+    snapshot: changedSnapshot,
+    openedAt: new Date(NOW.getTime() + 4_000)
+  });
+  await assert.rejects(() => repository.open({
+    snapshot: changedSnapshot,
+    incident: changedIncident,
+    idempotencyKey: "m2b-003-durable-incident"
+  }), { code: "m2b_dual_risk_idempotency_conflict" });
 });

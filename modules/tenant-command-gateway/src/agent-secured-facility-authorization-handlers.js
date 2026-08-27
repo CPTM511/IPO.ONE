@@ -164,6 +164,23 @@ function response(authorization, { readyForIntent, schemaVersion }) {
       submissionAuthorized: false,
       schemaVersion: "agent_hyperliquid_prewrite_readiness.v1"
     },
+    dualRiskRecoveryReadiness: {
+      status: "BLOCKED_RECOVERY_PREWRITE",
+      combinedRiskState: "UNKNOWN",
+      currentStage: "FREEZE_NEW_RISK",
+      blockers: [
+        "fresh_dual_risk_snapshot_missing",
+        "durable_recovery_incident_missing",
+        "external_protective_run_approval_missing",
+        ...(readyForIntent ? [] : ["current_facility_authorization_unavailable"])
+      ],
+      externalWriteAuthorized: false,
+      externalNonceAllocated: false,
+      signatureCreated: false,
+      networkCalled: false,
+      protectiveAuthorityCanExpandRisk: false,
+      schemaVersion: "m2b_003_recovery_readiness.v1"
+    },
     preSigningOnly: true,
     nonceCreated: false,
     signatureCreated: false,

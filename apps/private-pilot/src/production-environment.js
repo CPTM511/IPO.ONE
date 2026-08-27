@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import {
   PinnedJwksResolver,
   createOidcCodeExchangeAdapter,
-  createReferenceHasher,
+  createReferenceHashKeyring,
   createTrustedMtlsSenderEvidence,
   loadAuthenticationRuntimeConfig
 } from "../../../modules/authentication/src/index.js";
@@ -507,12 +507,38 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     { originOnly: true }
   );
   if (vercelSandbox) assertVercelPublicOrigin(environment, browserOrigin);
-  const referenceHashKey = await readKey(environment, {
-    fileName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE",
-    valueName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY",
-    referenceName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
-    vercelSandbox
-  });
+  const referenceHashMode = runtimeConfig.referenceHashMode;
+  if (
+    referenceHashMode === "single_v2" &&
+    [
+      "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE",
+      "IPO_ONE_AUTH_REFERENCE_HASH_KEY",
+      "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF"
+    ].some((name) => environment[name] !== undefined)
+  ) {
+    throw configError("single-v2 authentication rejects legacy reference hash key material");
+  }
+  const referenceHashKey = await readKey(environment, referenceHashMode === "single_v1"
+    ? {
+        fileName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE",
+        valueName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY",
+        referenceName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        vercelSandbox
+      }
+    : {
+        fileName: "IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE",
+        valueName: "IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY",
+        referenceName: "IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF",
+        vercelSandbox
+      });
+  const legacyReferenceHashKey = referenceHashMode === "overlap_v2_write_v1_lookup"
+    ? await readKey(environment, {
+        fileName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE",
+        valueName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY",
+        referenceName: "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        vercelSandbox
+      })
+    : undefined;
   const encryptionKey = await readKey(environment, {
     fileName: "IPO_ONE_AUTH_ENCRYPTION_KEY_FILE",
     valueName: "IPO_ONE_AUTH_ENCRYPTION_KEY",
@@ -535,7 +561,21 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     profile,
     signatureVerifier: identity.walletSignatureVerifier
   })));
-  const referenceHasher = createReferenceHasher(referenceHashKey);
+  const referenceHasher = createReferenceHashKeyring({
+    mode: referenceHashMode,
+    primary: {
+      keyVersion: referenceHashMode === "single_v1" ? "v1" : "v2",
+      secret: referenceHashKey
+    },
+    ...(legacyReferenceHashKey === undefined
+      ? {}
+      : {
+          legacy: {
+            keyVersion: "v1",
+            secret: legacyReferenceHashKey
+          }
+        })
+  });
   const port = Number(environment.PORT ?? 8080);
   if (!Number.isSafeInteger(port) || port < 1_024 || port > 65_535) throw configError("PORT is invalid");
   const gatewayPool = createPostgresPool({
@@ -570,6 +610,13 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     runtimeConfig,
     referenceHashKey,
     referenceHashKeyRef: runtimeConfig.referenceHashKeyRef,
+    referenceHashMode,
+    ...(legacyReferenceHashKey === undefined
+      ? {}
+      : {
+          legacyReferenceHashKey,
+          legacyReferenceHashKeyRef: runtimeConfig.legacyReferenceHashKeyRef
+        }),
     encryptionKey,
     encryptionKeyRef: runtimeConfig.encryptionKeyRef,
     oidcProviders: identity.providers,
@@ -605,6 +652,16 @@ export async function loadProductionClosedPilotEnvironment(environment = process
           "verified_proxy_network",
           referenceHasher.hash("network.forwarded", forwardedFor)
         ),
+        ...(referenceHasher.legacyKeyVersion === undefined ? {} : {
+          legacyNetworkRefHash: abuseHash(
+            "verified_proxy_network",
+            referenceHasher.hashForVersion(
+              referenceHasher.legacyKeyVersion,
+              "network.forwarded",
+              forwardedFor
+            )
+          )
+        }),
         source: "verified_proxy"
       });
     }
