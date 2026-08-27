@@ -137,6 +137,29 @@ test("injected EIP-1193 provider is normalized behind one closed connector SPI",
     true
   );
 });
+
+test("personal_sign sends the exact UTF-8 message bytes as wallet-compatible hex", async () => {
+  const { connector, provider } = injectedFixture();
+  await connector.connect({ chainId: "eip155:84532" });
+
+  const signature = await connector.signMessage({
+    accountId: ACCOUNT_ID,
+    message: "IPO.ONE sign-in\nNonce: abc123"
+  });
+
+  assert.match(signature, /^0x[0-9a-f]{130}$/);
+  assert.deepEqual(
+    provider.requests.findLast(({ method }) => method === "personal_sign"),
+    {
+      method: "personal_sign",
+      params: [
+        "0x49504f2e4f4e45207369676e2d696e0a4e6f6e63653a20616263313233",
+        ACCOUNT
+      ]
+    }
+  );
+});
+
 test("WalletConnect-shaped provider satisfies the same SPI without raw request exposure", async () => {
   const provider = fakeProvider();
   let connected = 0;

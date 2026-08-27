@@ -4,6 +4,7 @@ import {
   ClientAuthenticationMethod,
   SenderConstraintMethod,
   assertPostgresAuthenticationRole,
+  createReferenceHashKeyring,
   createReferenceHasher
 } from "../../../modules/authentication/src/index.js";
 import {
@@ -558,6 +559,7 @@ function goldenFlowAgentBootstrapResult({
 export async function provisionProductionGoldenFlowAgent({
   adminConnectionString,
   referenceHashKey,
+  referenceHashKeyVersion = "v1",
   tenantId,
   controllerActorId,
   actorId,
@@ -581,6 +583,9 @@ export async function provisionProductionGoldenFlowAgent({
   const checkedPerformer = id("performedByActorId", performedByActorId);
   const checkedPolicyVersion = id("policyVersion", policyVersion);
   const checkedExpiresAt = canonicalTimestamp("expiresAt", expiresAt);
+  if (referenceHashKeyVersion !== "v1" && referenceHashKeyVersion !== "v2") {
+    throw fail("reference hash key version is invalid");
+  }
   if (!BASE64URL.test(senderThumbprint ?? "") || senderThumbprint.length !== 43) {
     throw fail("Agent sender thumbprint is invalid");
   }
@@ -591,7 +596,10 @@ export async function provisionProductionGoldenFlowAgent({
   if (lifetime <= 0 || lifetime > MAXIMUM_CREDENTIAL_LIFETIME_MS) {
     throw fail("credential provisioning window is invalid");
   }
-  const referenceHasher = createReferenceHasher(referenceHashKey);
+  const referenceHasher = createReferenceHashKeyring({
+    mode: referenceHashKeyVersion === "v1" ? "single_v1" : "single_v2",
+    primary: { keyVersion: referenceHashKeyVersion, secret: referenceHashKey }
+  });
   const subjectRefHash = referenceHasher.hash(
     "subject",
     `${checkedIssuer}\0${checkedExternalSubject}`
@@ -749,6 +757,7 @@ export async function provisionProductionGoldenFlowAgent({
           credential.client_authentication_method !== ClientAuthenticationMethod.PRIVATE_KEY_JWT ||
           credential.sender_constraint_method !== SenderConstraintMethod.DPOP ||
           credential.sender_constraint_ref_hash !== senderConstraintRefHash ||
+          credential.reference_hash_key_version !== referenceHashKeyVersion ||
           credential.policy_version !== checkedPolicyVersion ||
           new Date(credential.expires_at).toISOString() !== checkedExpiresAt ||
           invitation.rowCount !== 1 ||
@@ -781,13 +790,13 @@ export async function provisionProductionGoldenFlowAgent({
            client_id, client_authentication_method, sender_constraint_method,
            sender_constraint_ref_hash, roles, allowed_capabilities,
            policy_version, status, version, expires_at, created_at, updated_at,
-           schema_version
+           schema_version, reference_hash_key_version
          ) VALUES (
            $1, $2, $3, 'agent', $4, $5,
            $6, 'private_key_jwt', 'dpop',
            $7, $8::jsonb, $9::jsonb,
            $10, 'active', 1, $11, $12, $12,
-           'authentication_credential.v1'
+           'authentication_credential.v1', $13
          )`,
         [
           credentialId,
@@ -801,7 +810,8 @@ export async function provisionProductionGoldenFlowAgent({
           JSON.stringify(profile.capabilities),
           checkedPolicyVersion,
           checkedExpiresAt,
-          now
+          now,
+          referenceHashKeyVersion
         ]
       );
       await client.query(
@@ -823,6 +833,7 @@ export async function provisionProductionGoldenFlowAgent({
             actorType: ActorType.AGENT,
             clientAuthenticationMethod: ClientAuthenticationMethod.PRIVATE_KEY_JWT,
             invitationRefHash,
+            referenceHashKeyVersion,
             senderConstraintMethod: SenderConstraintMethod.DPOP,
             version: 1
           })
@@ -839,6 +850,298 @@ export async function provisionProductionGoldenFlowAgent({
         senderThumbprint,
         credentialId,
         replayed: false
+      });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function reprovisionProductionAgentReference({
+  authenticationConnectionString,
+  referenceHashKey,
+  referenceHashMode,
+  tenantId,
+  oldCredentialId,
+  actorId,
+  clientId,
+  issuer,
+  externalSubject,
+  invitationId,
+  senderThumbprint,
+  performedByActorId,
+  now = new Date()
+}) {
+  const checkedTenantId = id("tenantId", tenantId);
+  const checkedOldCredentialId = id("oldCredentialId", oldCredentialId);
+  const checkedActorId = id("actorId", actorId);
+  const checkedClientId = id("clientId", clientId);
+  const checkedIssuer = httpsOrigin("credential issuer", issuer);
+  const checkedExternalSubject = text("externalSubject", externalSubject);
+  const checkedInvitationId = id("invitationId", invitationId, INVITATION_ID);
+  const checkedPerformer = id("performedByActorId", performedByActorId);
+  if (referenceHashMode !== "overlap_v2_write_v1_lookup") {
+    throw fail("Agent reference reprovisioning requires overlap mode");
+  }
+  if (!BASE64URL.test(senderThumbprint ?? "") || senderThumbprint.length !== 43) {
+    throw fail("Agent sender thumbprint is invalid");
+  }
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+    throw fail("Agent reprovisioning time is invalid");
+  }
+  const referenceHasher = createReferenceHashKeyring({
+    mode: "single_v2",
+    primary: { keyVersion: "v2", secret: referenceHashKey }
+  });
+  const subjectRefHash = referenceHasher.hash(
+    "subject",
+    `${checkedIssuer}\0${checkedExternalSubject}`
+  );
+  const invitationRefHash = referenceHasher.hash(
+    "pilot.invitation",
+    `${checkedTenantId}\0${checkedInvitationId}`
+  );
+  const senderConstraintRefHash = referenceHasher.hash(
+    "sender.constraint",
+    senderThumbprint
+  );
+  const pool = createPostgresPool({
+    connectionString: authenticationConnectionString,
+    max: 1,
+    applicationName: "ipo-one-authn-008-agent-reprovision"
+  });
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('authentication_reference_rebind'), hashtext($1 || ':' || $2))",
+        [checkedTenantId, checkedActorId]
+      );
+      await setTenantTransactionContext(client, createTenantSecurityContext({
+        tenantId: checkedTenantId,
+        actorId: checkedPerformer,
+        policyVersion: "security_001.v1",
+        source: "system_worker"
+      }));
+      const selected = await client.query(
+        `SELECT c.*, t.status AS tenant_status,
+                a.status AS actor_status, a.actor_type AS bound_actor_type,
+                m.status AS membership_status, m.role_bundle,
+                m.capabilities AS membership_capabilities,
+                m.client_ids AS membership_client_ids,
+                m.policy_version AS membership_policy_version
+           FROM authentication_credentials c
+           JOIN tenants t ON t.id = c.tenant_id
+           JOIN actors a ON a.id = c.actor_id
+           JOIN memberships m
+             ON m.tenant_id = c.tenant_id AND m.actor_id = c.actor_id
+          WHERE c.tenant_id = $1 AND c.id = $2 AND c.actor_id = $3
+            AND c.client_id = $4 AND c.issuer = $5
+          FOR UPDATE OF c`,
+        [
+          checkedTenantId,
+          checkedOldCredentialId,
+          checkedActorId,
+          checkedClientId,
+          checkedIssuer
+        ]
+      );
+      const oldCredential = selected.rows[0];
+      const oldRoles = oldCredential?.roles ?? [];
+      const oldCapabilities = oldCredential?.allowed_capabilities ?? [];
+      const membershipCapabilities = oldCredential?.membership_capabilities ?? [];
+      const membershipClientIds = oldCredential?.membership_client_ids ?? [];
+      if (
+        selected.rowCount !== 1 ||
+        oldCredential.tenant_status !== "active" ||
+        oldCredential.actor_status !== "active" ||
+        oldCredential.bound_actor_type !== "agent" ||
+        oldCredential.actor_type !== "agent" ||
+        oldCredential.membership_status !== "active" ||
+        oldCredential.role_bundle !== "agent_runtime" ||
+        oldCredential.membership_policy_version !== oldCredential.policy_version ||
+        oldCredential.reference_hash_key_version !== "v1" ||
+        oldCredential.client_authentication_method !== "private_key_jwt" ||
+        oldCredential.sender_constraint_method !== "dpop" ||
+        JSON.stringify(oldRoles) !== JSON.stringify(["agent_runtime"]) ||
+        JSON.stringify(oldCapabilities) !== JSON.stringify(membershipCapabilities) ||
+        !membershipClientIds.includes(checkedClientId) ||
+        !oldCredential.expires_at ||
+        new Date(oldCredential.expires_at) <= now
+      ) {
+        throw fail("existing Agent Credential does not match the reviewed workload authority");
+      }
+      const v2Rows = await client.query(
+        `SELECT * FROM authentication_credentials
+          WHERE tenant_id = $1 AND actor_id = $2
+            AND reference_hash_key_version = 'v2'
+          ORDER BY id
+          FOR UPDATE`,
+        [checkedTenantId, checkedActorId]
+      );
+      const invitation = await client.query(
+        `SELECT credential_id
+           FROM authentication_events
+          WHERE tenant_id = $1
+            AND payload->>'invitationRefHash' = $2
+          ORDER BY occurred_at, id`,
+        [checkedTenantId, invitationRefHash]
+      );
+      if (v2Rows.rowCount === 1) {
+        const current = v2Rows.rows[0];
+        if (
+          oldCredential.status !== "revoked" ||
+          current.status !== "active" ||
+          current.actor_id !== checkedActorId ||
+          current.client_id !== checkedClientId ||
+          current.issuer !== checkedIssuer ||
+          current.subject_ref_hash !== subjectRefHash ||
+          current.sender_constraint_ref_hash !== senderConstraintRefHash ||
+          current.client_authentication_method !== "private_key_jwt" ||
+          current.sender_constraint_method !== "dpop" ||
+          current.policy_version !== oldCredential.policy_version ||
+          JSON.stringify(current.roles) !== JSON.stringify(oldRoles) ||
+          JSON.stringify(current.allowed_capabilities) !== JSON.stringify(oldCapabilities) ||
+          new Date(current.expires_at).toISOString() !== new Date(oldCredential.expires_at).toISOString() ||
+          invitation.rowCount !== 1 ||
+          invitation.rows[0].credential_id !== current.id
+        ) {
+          throw fail("existing v2 Agent Credential does not match the reviewed reprovisioning");
+        }
+        await client.query("COMMIT");
+        return Object.freeze({
+          schemaVersion: "production_agent_reference_reprovision.v1",
+          tenantId: checkedTenantId,
+          actorId: checkedActorId,
+          oldCredentialId: checkedOldCredentialId,
+          credentialId: current.id,
+          oldReferenceHashKeyVersion: "v1",
+          newReferenceHashKeyVersion: "v2",
+          replayed: true,
+          privateKeyIncluded: false,
+          productionFundsAuthority: false
+        });
+      }
+      if (
+        v2Rows.rowCount !== 0 ||
+        oldCredential.status !== "active" ||
+        invitation.rowCount !== 0
+      ) {
+        throw fail("Agent Credential cannot be reprovisioned from its current state");
+      }
+      const credentialId = createOperationalId("credential");
+      await client.query(
+        `UPDATE authentication_credentials
+            SET status = 'revoked', updated_at = $3
+          WHERE tenant_id = $1 AND id = $2`,
+        [checkedTenantId, checkedOldCredentialId, now]
+      );
+      await client.query(
+        `INSERT INTO authentication_credentials(
+           id, tenant_id, actor_id, actor_type, issuer, subject_ref_hash,
+           client_id, client_authentication_method, sender_constraint_method,
+           sender_constraint_ref_hash, roles, allowed_capabilities,
+           policy_version, status, version, expires_at, created_at, updated_at,
+           schema_version, reference_hash_key_version
+         ) VALUES (
+           $1, $2, $3, 'agent', $4, $5,
+           $6, 'private_key_jwt', 'dpop', $7, $8::jsonb, $9::jsonb,
+           $10, 'active', 1, $11, $12, $12,
+           'authentication_credential.v1', 'v2'
+         )`,
+        [
+          credentialId,
+          checkedTenantId,
+          checkedActorId,
+          checkedIssuer,
+          subjectRefHash,
+          checkedClientId,
+          senderConstraintRefHash,
+          JSON.stringify(oldRoles),
+          JSON.stringify(oldCapabilities),
+          oldCredential.policy_version,
+          oldCredential.expires_at,
+          now
+        ]
+      );
+      await client.query(
+        `INSERT INTO authentication_events(
+           id, tenant_id, event_type, actor_id, credential_id, reason_code,
+           occurred_at, payload, schema_version
+         ) VALUES ($1, $2, 'credential_revoked', $3, $4,
+          'reference_hash_key_rotation', $5, $6::jsonb,
+          'authentication_event.v1')`,
+        [
+          createOperationalId("auth_event"),
+          checkedTenantId,
+          checkedPerformer,
+          checkedOldCredentialId,
+          now,
+          JSON.stringify({ status: "revoked" })
+        ]
+      );
+      await client.query(
+        `INSERT INTO authentication_events(
+           id, tenant_id, event_type, actor_id, credential_id, reason_code,
+           occurred_at, payload, schema_version
+         ) VALUES ($1, $2, 'credential_registered', $3, $4,
+          'approved_workload_reprovision', $5, $6::jsonb,
+          'authentication_event.v1')`,
+        [
+          createOperationalId("auth_event"),
+          checkedTenantId,
+          checkedPerformer,
+          credentialId,
+          now,
+          JSON.stringify({
+            actorType: "agent",
+            clientAuthenticationMethod: "private_key_jwt",
+            invitationRefHash,
+            referenceHashKeyVersion: "v2",
+            senderConstraintMethod: "dpop",
+            version: 1
+          })
+        ]
+      );
+      await client.query(
+        `INSERT INTO authentication_events(
+           id, tenant_id, event_type, actor_id, credential_id, reason_code,
+           occurred_at, payload, schema_version
+         ) VALUES ($1, $2, 'credential_reference_rebound', $3, $4,
+          'approved_workload_reprovision', $5, $6::jsonb,
+          'authentication_event.v1')`,
+        [
+          createOperationalId("auth_event"),
+          checkedTenantId,
+          checkedPerformer,
+          credentialId,
+          now,
+          JSON.stringify({
+            oldCredentialId: checkedOldCredentialId,
+            newCredentialId: credentialId,
+            oldReferenceHashKeyVersion: "v1",
+            newReferenceHashKeyVersion: "v2"
+          })
+        ]
+      );
+      await client.query("COMMIT");
+      return Object.freeze({
+        schemaVersion: "production_agent_reference_reprovision.v1",
+        tenantId: checkedTenantId,
+        actorId: checkedActorId,
+        oldCredentialId: checkedOldCredentialId,
+        credentialId,
+        oldReferenceHashKeyVersion: "v1",
+        newReferenceHashKeyVersion: "v2",
+        replayed: false,
+        privateKeyIncluded: false,
+        productionFundsAuthority: false
       });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
@@ -883,11 +1186,13 @@ export async function revokeProductionGoldenFlowAgentCredential({
           FOR UPDATE`,
         [checkedTenantId, checkedActorId]
       );
-      if (selected.rowCount !== 1) {
+      if (selected.rowCount === 0) {
         throw fail("Golden Flow Agent Credential is unavailable");
       }
-      const credential = selected.rows[0];
-      if (credential.status === "revoked") {
+      const revocable = selected.rows.filter((row) =>
+        row.status === "active" || row.status === "suspended"
+      );
+      if (revocable.length === 0 && selected.rows.every((row) => row.status === "revoked")) {
         await client.query("COMMIT");
         return Object.freeze({
           schemaVersion: "production_golden_flow_agent_revocation.v1",
@@ -898,9 +1203,10 @@ export async function revokeProductionGoldenFlowAgentCredential({
           privateKeyIncluded: false
         });
       }
-      if (credential.status !== "active" && credential.status !== "suspended") {
+      if (revocable.length !== 1) {
         throw fail("Golden Flow Agent Credential cannot be revoked from its current state");
       }
+      const credential = revocable[0];
       await client.query(
         `UPDATE authentication_credentials
             SET status = 'revoked', updated_at = $3
@@ -982,13 +1288,14 @@ async function configureRole(client, { roleName, password, authenticationOnly })
   if (authenticationOnly) {
     await client.query(`GRANT SELECT ON tenants, actors, memberships, authentication_credentials, authentication_role_enrollments, authentication_oidc_transactions, authentication_wallet_transactions, authentication_sessions, authentication_session_invalidations, authentication_replay_entries, authentication_events TO ${role}`);
     await client.query(`GRANT INSERT, UPDATE ON authentication_credentials TO ${role}`);
+    await client.query(`GRANT INSERT, UPDATE ON authentication_role_enrollments TO ${role}`);
     await client.query(`GRANT INSERT, DELETE ON authentication_oidc_transactions, authentication_wallet_transactions TO ${role}`);
     await client.query(`GRANT INSERT, UPDATE ON authentication_sessions TO ${role}`);
     await client.query(`GRANT INSERT ON authentication_session_invalidations TO ${role}`);
     await client.query(`GRANT INSERT, DELETE ON authentication_replay_entries TO ${role}`);
     await client.query(`GRANT INSERT ON authentication_events TO ${role}`);
     await client.query(
-      `GRANT UPDATE (id) ON actors, memberships, authentication_role_enrollments TO ${role}`
+      `GRANT UPDATE (id) ON actors, memberships TO ${role}`
     );
     return;
   }

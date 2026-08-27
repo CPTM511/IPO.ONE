@@ -16,7 +16,7 @@ import {
   assertSafeIdentifier,
   authenticationError,
   createAuthenticationSecretBox,
-  createReferenceHasher
+  createReferenceHashKeyring
 } from "../../../modules/authentication/src/index.js";
 import {
   PostgresEventRepository,
@@ -35,6 +35,8 @@ const ROOT_KEYS = new Set([
   "encryptionKey",
   "encryptionKeyRef",
   "idleTimeoutMs",
+  "legacyReferenceHashKey",
+  "legacyReferenceHashKeyRef",
   "maximumSessions",
   "oidcProviders",
   "policyVersion",
@@ -43,6 +45,7 @@ const ROOT_KEYS = new Set([
   "profile",
   "referenceHashKey",
   "referenceHashKeyRef",
+  "referenceHashMode",
   "runtimeConfig",
   "sessionAbsoluteTimeoutMs",
   "systemActorId",
@@ -273,10 +276,21 @@ export async function createPostgresHumanAccessComposition(input) {
     ? `https://${new URL(browserOrigin).host}`
     : browserOrigin;
   let referenceHashKeyRef;
+  let legacyReferenceHashKeyRef;
   let encryptionKeyRef;
+  const referenceHashMode = closedPilot
+    ? runtimeConfig.referenceHashMode
+    : input.referenceHashMode ?? "single_v1";
   if (localProfile) {
+    const expectedPrimaryRef = referenceHashMode === "single_v1"
+      ? "local-secret://authentication/reference-hash-key"
+      : "local-secret://authentication/reference-hash-key-v2";
+    const expectedLegacyRef = referenceHashMode === "overlap_v2_write_v1_lookup"
+      ? "local-secret://authentication/reference-hash-key-v1"
+      : undefined;
     if (
-      input.referenceHashKeyRef !== "local-secret://authentication/reference-hash-key" ||
+      input.referenceHashKeyRef !== expectedPrimaryRef ||
+      input.legacyReferenceHashKeyRef !== expectedLegacyRef ||
       input.encryptionKeyRef !== "local-secret://authentication/encryption-key"
     ) {
       throw authenticationError(
@@ -285,12 +299,20 @@ export async function createPostgresHumanAccessComposition(input) {
       );
     }
     referenceHashKeyRef = input.referenceHashKeyRef;
+    legacyReferenceHashKeyRef = input.legacyReferenceHashKeyRef;
     encryptionKeyRef = input.encryptionKeyRef;
   } else {
     referenceHashKeyRef = immutableSecretRef("referenceHashKeyRef", input.referenceHashKeyRef);
+    legacyReferenceHashKeyRef = input.legacyReferenceHashKeyRef === undefined
+      ? undefined
+      : immutableSecretRef(
+          "legacyReferenceHashKeyRef",
+          input.legacyReferenceHashKeyRef
+        );
     encryptionKeyRef = immutableSecretRef("encryptionKeyRef", input.encryptionKeyRef);
     if (
       runtimeConfig.referenceHashKeyRef !== referenceHashKeyRef ||
+      runtimeConfig.legacyReferenceHashKeyRef !== legacyReferenceHashKeyRef ||
       runtimeConfig.encryptionKeyRef !== encryptionKeyRef
     ) {
       throw authenticationError(
@@ -299,6 +321,21 @@ export async function createPostgresHumanAccessComposition(input) {
       );
     }
   }
+  const referenceHasher = createReferenceHashKeyring({
+    mode: referenceHashMode,
+    primary: {
+      keyVersion: referenceHashMode === "single_v1" ? "v1" : "v2",
+      secret: input.referenceHashKey
+    },
+    ...(referenceHashMode === "overlap_v2_write_v1_lookup"
+      ? {
+          legacy: {
+            keyVersion: "v1",
+            secret: input.legacyReferenceHashKey
+          }
+        }
+      : {})
+  });
   const providers = normalizeOidcProviders(input.oidcProviders);
   const wallet = input.wallet === undefined
     ? undefined
@@ -332,7 +369,6 @@ export async function createPostgresHumanAccessComposition(input) {
   await assertSystemIdentity(baseEventRepository, systemBoundary);
   const eventRepository = revalidatingAuthenticationRepository(baseEventRepository, systemBoundary);
 
-  const referenceHasher = createReferenceHasher(input.referenceHashKey);
   const machineReplayCache = new PostgresReplayCache({
     eventRepository,
     tenantId,

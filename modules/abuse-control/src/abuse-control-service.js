@@ -150,6 +150,7 @@ export class AbuseControlService {
       actorRefHash,
       clientRefHash,
       networkRefHash: network?.referenceHash,
+      networkLegacyRefHash: network?.legacyReferenceHash,
       operationId: operation.operationId,
       profile: operation.profile,
       idempotencyKey: input.idempotencyKey,
@@ -176,6 +177,7 @@ export class AbuseControlService {
       surface: "discovery",
       tenantId: "public_boundary",
       networkRefHash: network.referenceHash,
+      networkLegacyRefHash: network.legacyReferenceHash,
       operationId: AbuseProfileId.DISCOVERY,
       profile: getPublicAbuseProfile(AbuseProfileId.DISCOVERY),
       requestMetrics: input.requestMetrics,
@@ -195,7 +197,9 @@ export class AbuseControlService {
       surface: "credential",
       tenantId: "authentication_boundary",
       networkRefHash: network.referenceHash,
+      networkLegacyRefHash: network.legacyReferenceHash,
       accountRefHash: account.referenceHash,
+      accountLegacyRefHash: account.legacyReferenceHash,
       operationId: AbuseProfileId.CREDENTIAL,
       profile: getPublicAbuseProfile(AbuseProfileId.CREDENTIAL),
       requestMetrics: input.requestMetrics,
@@ -435,7 +439,9 @@ export class AbuseControlService {
     actorRefHash,
     clientRefHash,
     networkRefHash,
+    networkLegacyRefHash,
     accountRefHash,
+    accountLegacyRefHash,
     operationId,
     profile,
     idempotencyKey,
@@ -483,16 +489,18 @@ export class AbuseControlService {
           clientRefHash
         });
     const rateReservations = [];
-    const rateDimensions = {
-      actor: actorRefHash,
-      client: clientRefHash,
-      tenant: abuseHash("tenant_reference", { tenantId }),
-      operation: abuseHash("operation_reference", { tenantId, operationId }),
-      service: abuseHash("service_reference", { policyVersion: ABUSE_POLICY_VERSION, quotaClass: profile.quotaClass }),
-      network: networkRefHash,
-      account: accountRefHash
-    };
-    for (const [dimension, referenceHash] of Object.entries(rateDimensions)) {
+    const rateDimensions = [
+      ["actor", actorRefHash],
+      ["client", clientRefHash],
+      ["tenant", abuseHash("tenant_reference", { tenantId })],
+      ["operation", abuseHash("operation_reference", { tenantId, operationId })],
+      ["service", abuseHash("service_reference", { policyVersion: ABUSE_POLICY_VERSION, quotaClass: profile.quotaClass })],
+      ["network", networkRefHash],
+      ["network", networkLegacyRefHash],
+      ["account", accountRefHash],
+      ["account", accountLegacyRefHash]
+    ];
+    for (const [dimension, referenceHash] of rateDimensions) {
       const limit = profile.rate[dimension];
       if (limit > 0 && referenceHash) {
         rateReservations.push(rateReservation({

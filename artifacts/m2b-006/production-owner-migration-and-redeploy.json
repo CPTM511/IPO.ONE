@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "m2b_006_production_owner_migration_and_redeploy.v1",
+  "issueId": "M2B-006",
+  "candidateId": "M2B-005-V0.2.1-RC-20260826-002",
+  "observedAt": "2026-08-26T12:47:40Z",
+  "authorization": {
+    "ownerReadOnlyInspection": true,
+    "conditionalAdditiveMigration": true,
+    "runtimePrivilegeRepair": false,
+    "stableAliasPromotion": false,
+    "downgrade": false,
+    "destructiveMigration": false
+  },
+  "database": {
+    "provider": "neon",
+    "projectId": "falling-king-09359147",
+    "branchId": "br-nameless-hill-avcw7qpp",
+    "branchName": "main",
+    "database": "neondb",
+    "ownerRole": "neondb_owner",
+    "postgresMajor": 17,
+    "historyRetentionSeconds": 21600,
+    "snapshot": {
+      "id": "snap-lively-flower-av7nl8qq",
+      "name": "m2b-006-pre-0064-0068-20260826",
+      "createdAt": "2026-08-26T12:42:54Z"
+    },
+    "preMigration": {
+      "appliedCount": 63,
+      "expectedCount": 68,
+      "head": "0063_selected_human_role_enrollment",
+      "contiguousPrefix": true,
+      "checksumsMatch": true,
+      "unknownMigrations": false,
+      "databaseAhead": false
+    },
+    "applied": [
+      "0064_pool_chain_reconciliation",
+      "0065_pool_obligation_integration",
+      "0066_agent_secured_facility_authorizations",
+      "0067_m2b_hyperliquid_compositions",
+      "0068_m2b_dual_risk_recovery"
+    ],
+    "postMigration": {
+      "appliedCount": 68,
+      "expectedCount": 68,
+      "head": "0068_m2b_dual_risk_recovery",
+      "headAppliedAt": "2026-08-26T12:43:48.267Z",
+      "exactNames": true,
+      "checksumsMatch": true
+    },
+    "runtimePrivilegeAudit": {
+      "newTables": 18,
+      "missingGatewaySelect": 18,
+      "unexpectedAuthenticationSelect": 0,
+      "repairApplied": false
+    },
+    "ownerCredentialPersisted": false,
+    "ownerCredentialExposed": false
+  },
+  "deployment": {
+    "id": "dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94",
+    "url": "https://ipo-one-internal-620el8est-cptm-111-s-projects.vercel.app",
+    "target": "production",
+    "readyState": "READY",
+    "aliases": [],
+    "nodeFunctions": 2,
+    "sourceCommit": "33d60105f9ba229c5827d831d2991aee3c78112c",
+    "sourceTree": "37fbef1dcc249e6316b1c824d36c8d679a5f2bb8",
+    "livez": 200,
+    "readyz": 200,
+    "discovery": 421,
+    "cronWithoutCredential": 401,
+    "realFundsEnabled": false,
+    "runtimeErrorsInBoundedScan": 0
+  },
+  "stableRollback": {
+    "url": "https://ipo.one",
+    "deploymentId": "dpl_qLgKAkpyTEdeZpsjMw8trL5gtNLj",
+    "releaseId": "71786a3c72237320f7bacf77b64496dd1a0c526f",
+    "readyz": 200,
+    "aliasChanged": false
+  },
+  "authority": {
+    "mainnetAuthorized": false,
+    "realFundsAuthorized": false,
+    "signerLoaded": false,
+    "chainWrite": false,
+    "venueWrite": false,
+    "dnsMutation": false,
+    "customDomainMutation": false
+  },
+  "productTruth": {
+    "code": "EXACT_SHA_VERIFIED",
+    "runtime": "REMOTE_HEALTHY_UNALIASED",
+    "deployed": "UNALIASED_PRIMARY_CANDIDATE",
+    "reachable": "OPERATIONAL_PATHS_ONLY_AT_CANDIDATE_HOST",
+    "verified": "MIGRATION_HEALTH_CRON_DENIAL_AND_LOGS",
+    "verdict": "BLOCKED — NOT COMPLETE",
+    "blockers": [
+      "EXACT_RUNTIME_PRIVILEGE_REPAIR_AUTHORIZATION_REQUIRED",
+      "STABLE_ALIAS_PROMOTION_AUTHORIZATION_REQUIRED_FOR_ACTUAL_ORIGIN_ACCEPTANCE"
+    ]
+  }
+}

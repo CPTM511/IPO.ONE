@@ -6,11 +6,20 @@ import {
 } from "../../../modules/persistence/src/index.js";
 import { PostgresCreditOutcomeMaterializer } from "../../../modules/credit-learning/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
+import { parseStrictJson } from "../../../modules/authentication/src/strict-json.js";
 import { runLocalWorkerCycle } from "./local-worker.js";
+import {
+  reprovisionProductionAgentReference,
+  revokeProductionGoldenFlowAgentCredential
+} from "./production-bootstrap.js";
+import { loadProductionClosedPilotEnvironment } from "./production-environment.js";
 
 const CRON_LOCK_NAMESPACE = "ipo.one";
 const CRON_LOCK_NAME = "vercel-sandbox-cron";
 const FIVE_MINUTES_MS = 5 * 60 * 1_000;
+const OPERATION_SCHEMA = "authn_008_agent_operation.v1";
+const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/;
+const BASE64URL_43 = /^[A-Za-z0-9_-]{43}$/;
 
 function required(environment, name, pattern, maximum = 16_384) {
   const value = environment[name];
@@ -44,6 +53,147 @@ function assertVercelCronEnvironment(environment) {
       "invalid_vercel_sandbox_cron_configuration",
       "Vercel Sandbox Cron deployment authority is invalid"
     );
+  }
+}
+
+function exactKeys(value, keys) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype &&
+    Object.keys(value).length === keys.length &&
+    keys.every((key) => Object.hasOwn(value, key))
+  );
+}
+
+function authn008AgentOperation(environment, releaseId) {
+  const source = environment.IPO_ONE_AUTHN_008_AGENT_OPERATION_JSON;
+  if (source === undefined) return undefined;
+  if (typeof source !== "string" || source.length < 2 || source.length > 8_192) {
+    throw new DomainError(
+      "invalid_vercel_sandbox_cron_configuration",
+      "AUTHN-008 Agent operation is invalid"
+    );
+  }
+  let operation;
+  try {
+    operation = parseStrictJson(source, {
+      maximumBytes: 8_192,
+      maximumDepth: 2,
+      maximumKeys: 10
+    });
+  } catch {
+    throw new DomainError(
+      "invalid_vercel_sandbox_cron_configuration",
+      "AUTHN-008 Agent operation is invalid"
+    );
+  }
+  const commonValid =
+    operation?.schemaVersion === OPERATION_SCHEMA &&
+    operation?.releaseId === releaseId &&
+    SAFE_ID.test(operation?.actorId ?? "");
+  if (operation?.action === "reprovision") {
+    if (
+      !exactKeys(operation, [
+        "schemaVersion",
+        "action",
+        "releaseId",
+        "oldCredentialId",
+        "actorId",
+        "clientId",
+        "issuer",
+        "externalSubject",
+        "invitationId",
+        "senderThumbprint"
+      ]) ||
+      !commonValid ||
+      !SAFE_ID.test(operation.oldCredentialId) ||
+      !SAFE_ID.test(operation.clientId) ||
+      !SAFE_ID.test(operation.invitationId) ||
+      !BASE64URL_43.test(operation.senderThumbprint) ||
+      typeof operation.externalSubject !== "string" ||
+      operation.externalSubject.length < 1 ||
+      operation.externalSubject.length > 512
+    ) {
+      throw new DomainError(
+        "invalid_vercel_sandbox_cron_configuration",
+        "AUTHN-008 Agent reprovision operation is invalid"
+      );
+    }
+    try {
+      const issuer = new URL(operation.issuer);
+      if (
+        issuer.protocol !== "https:" ||
+        issuer.username ||
+        issuer.password ||
+        issuer.pathname !== "/" ||
+        issuer.search ||
+        issuer.hash ||
+        issuer.origin !== operation.issuer
+      ) throw new Error("invalid issuer");
+    } catch {
+      throw new DomainError(
+        "invalid_vercel_sandbox_cron_configuration",
+        "AUTHN-008 Agent issuer is invalid"
+      );
+    }
+    return Object.freeze(operation);
+  }
+  if (
+    operation?.action === "revoke" &&
+    exactKeys(operation, ["schemaVersion", "action", "releaseId", "actorId"]) &&
+    commonValid
+  ) {
+    return Object.freeze(operation);
+  }
+  throw new DomainError(
+    "invalid_vercel_sandbox_cron_configuration",
+    "AUTHN-008 Agent operation is invalid"
+  );
+}
+
+async function runAuthn008AgentOperation({ environment, operation }) {
+  if (operation === undefined) return undefined;
+  const configuration = await loadProductionClosedPilotEnvironment(environment);
+  try {
+    if (
+      configuration.referenceHashMode !== "overlap_v2_write_v1_lookup" ||
+      configuration.deploymentRole !== "primary" ||
+      configuration.releaseId !== operation.releaseId
+    ) {
+      throw new DomainError(
+        "invalid_vercel_sandbox_cron_configuration",
+        "AUTHN-008 Agent operation requires the exact overlap release"
+      );
+    }
+    if (operation.action === "reprovision") {
+      return reprovisionProductionAgentReference({
+        authenticationConnectionString: environment.IPO_ONE_AUTH_DATABASE_URL,
+        referenceHashKey: configuration.referenceHashKey,
+        referenceHashMode: configuration.referenceHashMode,
+        tenantId: configuration.tenantId,
+        oldCredentialId: operation.oldCredentialId,
+        actorId: operation.actorId,
+        clientId: operation.clientId,
+        issuer: operation.issuer,
+        externalSubject: operation.externalSubject,
+        invitationId: operation.invitationId,
+        senderThumbprint: operation.senderThumbprint,
+        performedByActorId: configuration.systemActorId
+      });
+    }
+    return revokeProductionGoldenFlowAgentCredential({
+      adminConnectionString: environment.IPO_ONE_AUTH_DATABASE_URL,
+      tenantId: configuration.tenantId,
+      actorId: operation.actorId,
+      performedByActorId: configuration.systemActorId
+    });
+  } finally {
+    await Promise.allSettled([
+      configuration.gatewayPool.end(),
+      configuration.authenticationPool.end()
+    ]);
   }
 }
 
@@ -83,6 +233,7 @@ export async function runVercelSandboxCronCycle({
     /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/,
     128
   );
+  const agentOperation = authn008AgentOperation(environment, releaseId);
   const systemActorId = required(
     environment,
     "IPO_ONE_SYSTEM_ACTOR_ID",
@@ -141,6 +292,10 @@ export async function runVercelSandboxCronCycle({
     const creditOutcomeMaterializer = new PostgresCreditOutcomeMaterializer({
       eventRepository: repository
     });
+    const authenticationRotation = await runAuthn008AgentOperation({
+      environment,
+      operation: agentOperation
+    });
     const bucket = Math.floor(now.getTime() / FIVE_MINUTES_MS);
     const result = await runLocalWorkerCycle({
       repository,
@@ -164,6 +319,7 @@ export async function runVercelSandboxCronCycle({
       creditStateUpdatedCount:
         result.creditOutcomes?.creditStateUpdatedCount ?? 0,
       reconciliationStatus: result.reconciliation?.status ?? "not_due",
+      ...(authenticationRotation === undefined ? {} : { authenticationRotation }),
       realFundsEnabled: false
     });
   } finally {

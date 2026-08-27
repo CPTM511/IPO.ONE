@@ -1,0 +1,2402 @@
+{
+  "schemaVersion": "authn_008_ready_production_classification.v1",
+  "observedAt": "2026-08-27T08:13:21.841Z",
+  "projectId": "prj_KLyAPHnFCtQAxIbUjdJa012gAq7Y",
+  "teamId": "team_f6TQU7mloG5OnQGNmtXwFkOi",
+  "cutoverAt": "2026-08-27T04:27:16Z",
+  "currentDeploymentId": "dpl_GqX1Z5y232pmos2WyZLoxicfu88f",
+  "readyProductionCount": 58,
+  "firstCleanSingleV2CreatedAt": "2026-08-27T04:24:04.491Z",
+  "designatedRollbackDeploymentId": "dpl_9Gxuxec5wgB1BMRS7UzoUvCYRhWu",
+  "counts": {
+    "KEEP": 2,
+    "DELETE": 54,
+    "REVIEW": 2
+  },
+  "valuesRead": false,
+  "valuesPrinted": false,
+  "records": [
+    {
+      "deploymentId": "dpl_GqX1Z5y232pmos2WyZLoxicfu88f",
+      "url": "https://ipo-one-internal-1avuzgr43-cptm-111-s-projects.vercel.app",
+      "sourceSha": "3bb525ce168ef274fea862cd3d5e55d35b2577fd",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-27T05:59:50.794Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [
+        "www.ipo.one",
+        "ipo-one-internal.vercel.app",
+        "ipo.one"
+      ],
+      "isCurrentProduction": true,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": false,
+      "legacyEnvironmentNames": [],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 20,
+        "firstAt": "2026-08-27T07:36:04.920Z",
+        "lastAt": "2026-08-27T08:04:18.836Z",
+        "domains": [
+          "ipo.one",
+          "ipo-one-internal-1avuzgr43-cptm-111-s-projects.vercel.app"
+        ],
+        "statuses": {
+          "200": 17,
+          "404": 3
+        },
+        "paths": [
+          "/wp-content/themes/ipo/assets/img/star1.png",
+          "/wp-content/themes/ipo/assets/img/star2.png",
+          "/api/cron",
+          "/favicon.ico",
+          "/",
+          "/readyz",
+          "/sw.js",
+          "/manifest.webmanifest",
+          "/official-report-download.js",
+          "/evm-wallet-connector.js",
+          "/v9-trust-surfaces.js",
+          "/.well-known/ipo-one.json",
+          "/wallet-sign-out.js"
+        ],
+        "observedReleaseIds": [
+          "3bb525ce168ef274fea862cd3d5e55d35b2577fd"
+        ]
+      },
+      "repositoryReferences": [
+        {
+          "file": "artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json",
+          "line": 21
+        },
+        {
+          "file": "artifacts/m2b-006/authn-008-retire-observation-baseline.json",
+          "line": 27
+        },
+        {
+          "file": "docs/codex/tasks/AUTHN_008_REFERENCE_HASH_KEY_ROTATION.md",
+          "line": 257
+        },
+        {
+          "file": "docs/codex/tasks/AUTHN_008_RETIRE_OBSERVATION_GATE.md",
+          "line": 9
+        },
+        {
+          "file": "docs/codex/tasks/M2B_006_V0_2_1_REMOTE_DEPLOYMENT.md",
+          "line": 288
+        },
+        {
+          "file": "docs/codex/tasks/M2_EXECUTION_PLAN_v0.1.md",
+          "line": 448
+        },
+        {
+          "file": "docs/releases/IPO_ONE_V0_2_1_DEPLOYMENT_DECISION.md",
+          "line": 96
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": false,
+      "rollbackOrReferenceDependency": "current Production",
+      "classification": "KEEP",
+      "classificationReason": "current Production deployment"
+    },
+    {
+      "deploymentId": "dpl_FcNXh5b8m6eEE1PrUgeNoEQxuJa6",
+      "url": "https://ipo-one-internal-n97mhoptd-cptm-111-s-projects.vercel.app",
+      "sourceSha": "3bb525ce168ef274fea862cd3d5e55d35b2577fd",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-27T05:54:54.037Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": false,
+      "legacyEnvironmentNames": [],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 3,
+        "firstAt": "2026-08-27T05:58:47.055Z",
+        "lastAt": "2026-08-27T05:58:48.619Z",
+        "domains": [
+          "ipo.one"
+        ],
+        "statuses": {
+          "503": 3
+        },
+        "paths": [
+          "/auth/v1/options",
+          "/evm-wallet-connector.js",
+          "/readyz"
+        ],
+        "observedReleaseIds": [
+          "07b68bb63d6cd70dc24fcf6730de804917563e71"
+        ]
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": false,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "REVIEW",
+      "classificationReason": "post-cutover request activity requires review"
+    },
+    {
+      "deploymentId": "dpl_9Gxuxec5wgB1BMRS7UzoUvCYRhWu",
+      "url": "https://ipo-one-internal-d8u19hqh7-cptm-111-s-projects.vercel.app",
+      "sourceSha": "07b68bb63d6cd70dc24fcf6730de804917563e71",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-27T04:24:04.491Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": false,
+      "legacyEnvironmentNames": [],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 20,
+        "firstAt": "2026-08-27T05:42:38.429Z",
+        "lastAt": "2026-08-27T06:00:02.091Z",
+        "domains": [
+          "ipo-one-internal-d8u19hqh7-cptm-111-s-projects.vercel.app",
+          "ipo.one"
+        ],
+        "statuses": {
+          "200": 8,
+          "201": 4,
+          "400": 4,
+          "404": 4
+        },
+        "paths": [
+          "/api/cron",
+          "/readyz",
+          "/sw.js",
+          "/auth/v1/wallet/verify",
+          "/favicon.svg",
+          "/auth/v1/wallet/challenge"
+        ],
+        "observedReleaseIds": [
+          "07b68bb63d6cd70dc24fcf6730de804917563e71"
+        ]
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": false,
+      "rollbackOrReferenceDependency": "designated clean post-single_v2 rollback",
+      "classification": "KEEP",
+      "classificationReason": "newest non-current clean single_v2 rollback candidate; no v1 or temporary auth environment name"
+    },
+    {
+      "deploymentId": "dpl_9VrySxPRMYDg5amcA88u4GyeqjMm",
+      "url": "https://ipo-one-internal-fzos29uns-cptm-111-s-projects.vercel.app",
+      "sourceSha": "07b68bb63d6cd70dc24fcf6730de804917563e71",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T18:02:24.308Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 144,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json",
+          "line": 31
+        },
+        {
+          "file": "artifacts/m2b-006/authn-008-retire-observation-baseline.json",
+          "line": 102
+        },
+        {
+          "file": "docs/codex/tasks/AUTHN_008_RETIRE_OBSERVATION_GATE.md",
+          "line": 59
+        },
+        {
+          "file": "docs/codex/tasks/AUTHN_008_RETIRE_OBSERVATION_GATE.md",
+          "line": 82
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (4 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_CFdBXeiKfGctGvgJcK3tGvNk6Rfm",
+      "url": "https://ipo-one-internal-70m5po7pm-cptm-111-s-projects.vercel.app",
+      "sourceSha": "07b68bb63d6cd70dc24fcf6730de804917563e71",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T17:56:08.884Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 147,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF",
+        "IPO_ONE_AUTHN_008_AGENT_OPERATION_JSON"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_FQwmebqw1touJuF9dfSk8UhaUbVZ",
+      "url": "https://ipo-one-internal-hp1m5zhfz-cptm-111-s-projects.vercel.app",
+      "sourceSha": "07b68bb63d6cd70dc24fcf6730de804917563e71",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T17:54:42.191Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 147,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF",
+        "IPO_ONE_AUTHN_008_AGENT_OPERATION_JSON"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_2SmpMTc7KVqEBb4NGoP5DbJnGBDy",
+      "url": "https://ipo-one-internal-4anusq2ub-cptm-111-s-projects.vercel.app",
+      "sourceSha": "761e2cdbd5d71a5b1df1060d82b9e077e10f3812",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T17:35:03.656Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 147,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF",
+        "IPO_ONE_AUTHN_008_AGENT_OPERATION_JSON"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_84cq5tnW8rPp2NnXgN5oq515Ye7S",
+      "url": "https://ipo-one-internal-mvh2bcpdd-cptm-111-s-projects.vercel.app",
+      "sourceSha": "48cace53157fe99a489b243ed5bcc6ac76e44536",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T17:09:21.780Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 144,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_3nhn5ZFjxYi9yZ58CxV82NaBdZE5",
+      "url": "https://ipo-one-internal-nl0gsrkjq-cptm-111-s-projects.vercel.app",
+      "sourceSha": "5a15daadcb70c52e4b1ba99523f5e1452eda2984",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T16:48:31.509Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 144,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_83wN9mHMb6rEPQ8DzLHPg1ve86eq",
+      "url": "https://ipo-one-internal-ildtgqb0w-cptm-111-s-projects.vercel.app",
+      "sourceSha": "5a15daadcb70c52e4b1ba99523f5e1452eda2984",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T16:36:25.967Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 144,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": true,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_752hsJ9pDzK8WnRwxaKBzGNBgP94",
+      "url": "https://ipo-one-internal-620el8est-cptm-111-s-projects.vercel.app",
+      "sourceSha": "33d60105f9ba229c5827d831d2991aee3c78112c",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-26T12:45:50.530Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "artifacts/m2b-006/production-owner-migration-and-redeploy.json",
+          "line": 62
+        },
+        {
+          "file": "artifacts/m2b-006/production-promotion-and-acceptance.json",
+          "line": 71
+        },
+        {
+          "file": "docs/codex/tasks/M2B_006_V0_2_1_REMOTE_DEPLOYMENT.md",
+          "line": 178
+        },
+        {
+          "file": "docs/codex/tasks/M2B_006_V0_2_1_REMOTE_DEPLOYMENT.md",
+          "line": 203
+        },
+        {
+          "file": "docs/releases/IPO_ONE_V0_2_1_DEPLOYMENT_DECISION.md",
+          "line": 51
+        },
+        {
+          "file": "docs/releases/IPO_ONE_V0_2_1_DEPLOYMENT_DECISION.md",
+          "line": 61
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (6 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_qLgKAkpyTEdeZpsjMw8trL5gtNLj",
+      "url": "https://ipo-one-internal-58xgdlgyr-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-21T11:22:17.614Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "artifacts/m2b-006/production-owner-migration-and-redeploy.json",
+          "line": 79
+        },
+        {
+          "file": "artifacts/m2b-006/production-promotion-and-acceptance.json",
+          "line": 130
+        },
+        {
+          "file": "artifacts/m2b-006/remote-deployment-attempt.json",
+          "line": 59
+        },
+        {
+          "file": "docs/codex/tasks/M2B_006_V0_2_1_REMOTE_DEPLOYMENT.md",
+          "line": 146
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (4 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_ZAZ8vD5BFrfAxALc4iAjap9puEiD",
+      "url": "https://ipo-one-internal-4r0m020b4-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-21T10:15:37.368Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 140,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_GNaoeCE7MLRbfVyCAqjg67vkDa2K",
+      "url": "https://ipo-one-internal-dg0hx4mud-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-21T10:06:38.915Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 140,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_BwApzWAp7qjUWzXWLdEX21BM5BVq",
+      "url": "https://ipo-one-internal-e4t3m3plo-cptm-111-s-projects.vercel.app",
+      "sourceSha": "330dd41027c75aa8c725ab3777121460ae131115",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-20T10:11:32.048Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/codex/tasks/OPS_007_NEON_FREE_RUNTIME_RECOVERY.md",
+          "line": 164
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (1 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_8iBxcDq1fHWZzy52mgzWiPmmiHp8",
+      "url": "https://ipo-one-internal-ioeg7e0sq-cptm-111-s-projects.vercel.app",
+      "sourceSha": "2aec35b59b107fe86a9411187ab69f70e7273613",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-20T09:42:03.629Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/codex/tasks/PRODUCT_BASELINE_FREEZE_001_PUBLIC_CANONICALIZATION.md",
+          "line": 236
+        },
+        {
+          "file": "docs/releases/PRODUCT_BASELINE_CHECKPOINT_2026_08_20.md",
+          "line": 18
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (2 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_B7VcAfv5CHrHrermwr8K71aswDNp",
+      "url": "https://ipo-one-internal-dg3flzn0t-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-20T04:08:27.667Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/codex/tasks/IDENTITY_ACCEPTANCE_UNBLOCK_001.md",
+          "line": 99
+        },
+        {
+          "file": "docs/codex/tasks/PRODUCT_BASELINE_FREEZE_001_PUBLIC_CANONICALIZATION.md",
+          "line": 14
+        },
+        {
+          "file": "docs/releases/FINAL_CREDIT_LOOP_001_COMPLETION.md",
+          "line": 10
+        },
+        {
+          "file": "docs/releases/FINAL_CREDIT_LOOP_001_COMPLETION.md",
+          "line": 156
+        },
+        {
+          "file": "docs/releases/PRODUCT_BASELINE_CHECKPOINT_2026_08_20.md",
+          "line": 21
+        },
+        {
+          "file": "docs/releases/PRODUCT_BASELINE_CHECKPOINT_2026_08_20.md",
+          "line": 154
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (6 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_Gom6g7NPDQpwyTh345eEcCVxz9nZ",
+      "url": "https://ipo-one-internal-hmfw1smm9-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-20T03:46:12.517Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/releases/FINAL_CREDIT_LOOP_001_COMPLETION.md",
+          "line": 34
+        },
+        {
+          "file": "docs/releases/FINAL_CREDIT_LOOP_001_COMPLETION.md",
+          "line": 160
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (2 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_8eG1M2rLmB5qu6kgQXokfd8cFYdi",
+      "url": "https://ipo-one-internal-5282lgxca-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-20T02:55:47.699Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/releases/FINAL_CREDIT_LOOP_001_COMPLETION.md",
+          "line": 159
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (1 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_22tqSMdMhaS5r8EPmJcVrRZ9C4f8",
+      "url": "https://ipo-one-internal-fn8an219x-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-20T02:47:52.040Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_Bd3MssKDuaD1XYUc6AkwGTv6kRfa",
+      "url": "https://ipo-one-internal-8jmp1tlog-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-20T02:18:42.010Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_ApQgSbJbqmVxw93kikcRVNcmSAnk",
+      "url": "https://ipo-one-internal-d6i02kfli-cptm-111-s-projects.vercel.app",
+      "sourceSha": "c19c3925aa350f9fccd35c0f22fea84838fb24f4",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-20T01:17:35.743Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 141,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_A636ENDevjZkFK11FXhCbzF2t9a1",
+      "url": "https://ipo-one-internal-b90vh2lp1-cptm-111-s-projects.vercel.app",
+      "sourceSha": "9f748640b5071c622c0973d6e0be9f79c853e54f",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-19T16:05:08.128Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_2ZQfcippkD5pKQNKWe1WxMtRbu4Y",
+      "url": "https://ipo-one-internal-itnygorpe-cptm-111-s-projects.vercel.app",
+      "sourceSha": "9f748640b5071c622c0973d6e0be9f79c853e54f",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-19T16:00:23.961Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 140,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_2KHDLvpvxXuGZ5kJuUVbDTw4muk6",
+      "url": "https://ipo-one-internal-gjhp9azwg-cptm-111-s-projects.vercel.app",
+      "sourceSha": "9f2a4f8b7f6d8fad1747ddbf2e48b420c4d43034",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-19T13:26:16.430Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 140,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_Am1PR1udE1czHQnydsLAAdfRKwrk",
+      "url": "https://ipo-one-internal-bp1e2r0ut-cptm-111-s-projects.vercel.app",
+      "sourceSha": "bd5ebb0f6d29e321b10d5cf9d500508963a0d89e",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-19T12:55:31.978Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 140,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_4UtLa4BCSpGUPtCytRqTtSZzwawE",
+      "url": "https://ipo-one-internal-k801101j6-cptm-111-s-projects.vercel.app",
+      "sourceSha": "6f8c5ad696551edf616176f06e02d997859fffe2",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-19T11:09:19.977Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 140,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_AaUQxbfBeKiovpWLGMxFsTexsEjk",
+      "url": "https://ipo-one-internal-manwul85g-cptm-111-s-projects.vercel.app",
+      "sourceSha": "79a4b99f7580ecee529df54d2c28f8720be87908",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-19T07:19:04.488Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_2itgD32WQpJL45ntHaawrjzKSs2p",
+      "url": "https://ipo-one-internal-29t26saau-cptm-111-s-projects.vercel.app",
+      "sourceSha": "5327e085107f0a98a6a7b74f0ade1528f96df4e3",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-19T07:06:33.729Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 142,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_2VgkVcfwGNA92A5AMzuwkkRQtpUf",
+      "url": "https://ipo-one-internal-baru0mily-cptm-111-s-projects.vercel.app",
+      "sourceSha": "4a3aae740d16aefb6c35148e27f36f06936f6835",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-18T14:19:23.161Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 139,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_4UojsLACiUUMCVPhduVaVwWNLahy",
+      "url": "https://ipo-one-internal-hu808yi9h-cptm-111-s-projects.vercel.app",
+      "sourceSha": "ef4b33e6532a957db8e1a69d7118c28fca7e0e65",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-18T14:12:17.534Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 139,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_B25ArZdhy8fSzwPAJTSQaCXXRjuc",
+      "url": "https://ipo-one-internal-pywb4bdcm-cptm-111-s-projects.vercel.app",
+      "sourceSha": "ef4b33e6532a957db8e1a69d7118c28fca7e0e65",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-18T14:10:55.022Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 139,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_795F6n2Co3bwoFxTjt6c7oUNYVtZ",
+      "url": "https://ipo-one-internal-94n9wb3p6-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-18T05:05:32.121Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 139,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON",
+        "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF"
+      ],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_GQH6WSphB5MgJ8BFZ9xzKBGHDo2s",
+      "url": "https://ipo-one-internal-6t4aheye7-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-18T04:50:18.565Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 137,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_7F6VsiYf21y4FaFiRxsBGHjjkiXE",
+      "url": "https://ipo-one-internal-g5aqn523m-cptm-111-s-projects.vercel.app",
+      "sourceSha": "a1319d30ebc38de94bf7e9546919471587ab10de",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-17T15:47:35.770Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 139,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_9B4meZBVqZ29fXJorsdTQbmsBa2K",
+      "url": "https://ipo-one-internal-r6aqr54qs-cptm-111-s-projects.vercel.app",
+      "sourceSha": "a1319d30ebc38de94bf7e9546919471587ab10de",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-17T08:35:15.121Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 137,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_DbrnZMfPG9Ya1KvvAjf6vmukE7fj",
+      "url": "https://ipo-one-internal-gsuvmwwx8-cptm-111-s-projects.vercel.app",
+      "sourceSha": "faf29321b3ee1de722ab41bceac3a8feed89d9ed",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-17T08:20:36.118Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 137,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_48YWsQfqWBnYgHy5jZ6wjDSVCMVS",
+      "url": "https://ipo-one-internal-h3ej38os9-cptm-111-s-projects.vercel.app",
+      "sourceSha": "6c11a7fd23a815a8ae2a4c9ff1d08670eea1132a",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-17T07:26:43.040Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 137,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_GYsPPTJ49pB4KrxFdHNJow5PTeUg",
+      "url": "https://ipo-one-internal-8y9a1jmfx-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-15T06:50:10.990Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 137,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/releases/M1_B_RELEASE.md",
+          "line": 13
+        },
+        {
+          "file": "docs/releases/M1_B_RELEASE.md",
+          "line": 125
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (2 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_491k2nW5gjahKiCk63duBXQjc2wk",
+      "url": "https://ipo-one-internal-cdzytxwva-cptm-111-s-projects.vercel.app",
+      "sourceSha": "8754408098c8bba6ed8e978e0a2955d3a54f80e3",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-14T01:50:31.519Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 136,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_C3cSHa5vHYaHm7gEKBKJpYcRGaXM",
+      "url": "https://ipo-one-internal-fi8awyom3-cptm-111-s-projects.vercel.app",
+      "sourceSha": "93b0303ff83f9bd15ba19f397f98b09b98a9dcd6",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-13T20:00:22.251Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 136,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_8FHpFiLYT8FxiZaDqj6XHLLFo3dy",
+      "url": "https://ipo-one-internal-h8n9nfhlm-cptm-111-s-projects.vercel.app",
+      "sourceSha": "422b9da51b0343c9545af64f4c09397e67799ac1",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-13T19:50:55.386Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 136,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_5ncXoxr33w6VzL29ncwGbAXgpy1G",
+      "url": "https://ipo-one-internal-qaz4j1k59-cptm-111-s-projects.vercel.app",
+      "sourceSha": "a0f182e40f23333903afe03af9f457aecad181ab",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-13T19:15:47.595Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 136,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_Dq8wuS6vFBzJVTpDVLTiMcm4ouPr",
+      "url": "https://ipo-one-internal-jlehte0oz-cptm-111-s-projects.vercel.app",
+      "sourceSha": "642d9f439989f9a0bb236fbadd0491408973875f",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-13T18:58:04.016Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 136,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_5NgM79iL5ojLVvkfj49Tw2cNS457",
+      "url": "https://ipo-one-internal-b8s2rnlnb-cptm-111-s-projects.vercel.app",
+      "sourceSha": "f00885316b8580c77f65d13662dded6027c05125",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-13T18:46:53.098Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 136,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_C4uas9sDTt26Zoz13gzvQm1cWdDk",
+      "url": "https://ipo-one-internal-96wbjegwz-cptm-111-s-projects.vercel.app",
+      "sourceSha": "e77a17633cc3375b3c563c02456c3a2bfb3c68b1",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-13T18:19:12.485Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 136,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_2JBesAqB2MXZZBCEDypMq5Gzm7Ue",
+      "url": "https://ipo-one-internal-8cbtv7ara-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-11T16:16:57.584Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [
+        "ipo-one-internal-liumao8844-2883-cptm-111-s-projects.vercel.app",
+        "ipo-one-internal-cptm-111-s-projects.vercel.app"
+      ],
+      "isCurrentProduction": false,
+      "environmentNameCount": 135,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-002/audit.md",
+          "line": 18
+        },
+        {
+          "file": "docs/codex/tasks/PROD_CUTOVER_002_FORMAL_DOMAIN_AND_ZERO_FUNDED_REAL_VALUE_SUPPORT.md",
+          "line": 159
+        },
+        {
+          "file": "docs/deployment/VERCEL_ROLLBACK_AND_RECOVERY.md",
+          "line": 19
+        },
+        {
+          "file": "docs/releases/M1_B_RELEASE.md",
+          "line": 16
+        },
+        {
+          "file": "docs/releases/M1_B_RELEASE.md",
+          "line": 128
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (5 references); no executable workflow dependency",
+      "classification": "REVIEW",
+      "classificationReason": "non-current alias requires dependency review"
+    },
+    {
+      "deploymentId": "dpl_6gDN62RphEfXPAMMxas7cTw7jixe",
+      "url": "https://ipo-one-internal-prmhekkkj-cptm-111-s-projects.vercel.app",
+      "sourceSha": "3320b7c62d59853a0adfed570cd6bbd8762950e3",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-11T14:57:02.420Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 137,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md",
+          "line": 37
+        },
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md",
+          "line": 173
+        },
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-001/managed-postgres-migration-handoff.md",
+          "line": 56
+        },
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-002/audit.md",
+          "line": 20
+        },
+        {
+          "file": "docs/codex/tasks/PROD_CUTOVER_001_INTEGRATED_PRODUCT_DEPLOYMENT_AND_PRODUCTION_CUTOVER.md",
+          "line": 62
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (5 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_7NhTtf5Px5nuP3maXowDeftJNQz5",
+      "url": "https://ipo-one-internal-fnghelc95-cptm-111-s-projects.vercel.app",
+      "sourceSha": "f1c38b8d9ed9d0e3a08462754106c212983f5d9b",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-07T01:29:19.736Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 134,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md",
+          "line": 56
+        },
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md",
+          "line": 131
+        },
+        {
+          "file": "docs/codex/audits/PROD-CUTOVER-001/deployment-candidates.md",
+          "line": 168
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (3 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_H75rvtTNCLasdzETw5HpT1h5UgQe",
+      "url": "https://ipo-one-internal-m971fhawi-cptm-111-s-projects.vercel.app",
+      "sourceSha": "879e48fe465e06ed0dc1f84e97178371be403543",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-06T19:22:07.577Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 133,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_GJG82Bi13cdjd7pZ4dKvQgkw4yLG",
+      "url": "https://ipo-one-internal-5e60quxsg-cptm-111-s-projects.vercel.app",
+      "sourceSha": "53c0ec842650632a5f4a2e46c5413596154fdbd0",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-06T16:41:52.537Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 133,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_HJD6haHAkSPH2Nk93VwzGsTxU7e5",
+      "url": "https://ipo-one-internal-4qae8qoxw-cptm-111-s-projects.vercel.app",
+      "sourceSha": "5fe2470567390070ef6144236c1dd1b83c2e9b6c",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-05T15:45:54.772Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 132,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_D36KZ5vZL6x4MoN21QkqbVMyTa3n",
+      "url": "https://ipo-one-internal-nlt5bw6d5-cptm-111-s-projects.vercel.app",
+      "sourceSha": "349b5bd4674e45ec34f564f84cbdf928cb4e1188",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-05T15:14:48.754Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 132,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_4PC8ANEn7Eq8TKRyo4s5SJLsauke",
+      "url": "https://ipo-one-internal-c0l0h94ak-cptm-111-s-projects.vercel.app",
+      "sourceSha": "f400aca9995a2bc558c58caf4aebb2d5dd3587c2",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-05T14:20:05.762Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 132,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_DjX78y2HdYcXz7GQqCexofURr6QQ",
+      "url": "https://ipo-one-internal-bk15qumb7-cptm-111-s-projects.vercel.app",
+      "sourceSha": "3d24b6258cfcbf97ad3e921192af2936fc8f5e7e",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-05T13:07:40.331Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 133,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_8q1SUFsvYjkyzbPVgukEK1eJVF3n",
+      "url": "https://ipo-one-internal-3gjmsfluc-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-08-05T04:20:53.379Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 133,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_2BmCvBJ1Qoh51FPHK9rc3B6NMc2U",
+      "url": "https://ipo-one-internal-milowvi4i-cptm-111-s-projects.vercel.app",
+      "sourceSha": "f935ba3633f3ad53e8a78391a546bd654bd7d734",
+      "sourceMetadata": "deployment artifact manifest",
+      "createdAt": "2026-08-05T03:44:31.480Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 133,
+      "hasLegacyV1Environment": true,
+      "legacyEnvironmentNames": [
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF",
+        "IPO_ONE_AUTH_REFERENCE_HASH_KEY"
+      ],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "none observed in current Vercel metadata or repository",
+      "classification": "DELETE",
+      "classificationReason": "obsolete v1 auth environment retained; no alias or post-cutover activity"
+    },
+    {
+      "deploymentId": "dpl_5GkjnPJrJ2YLUqqv9nJNaYz6KpNH",
+      "url": "https://ipo-one-internal-90k7e5oen-cptm-111-s-projects.vercel.app",
+      "sourceSha": null,
+      "sourceMetadata": "unavailable",
+      "createdAt": "2026-07-27T01:53:45.460Z",
+      "target": "production",
+      "readyState": "READY",
+      "aliases": [],
+      "isCurrentProduction": false,
+      "environmentNameCount": 103,
+      "hasLegacyV1Environment": false,
+      "legacyEnvironmentNames": [],
+      "hasV2Environment": false,
+      "temporaryEnvironmentNames": [],
+      "recentActivity": {
+        "observable": true,
+        "requestCount": 0,
+        "firstAt": null,
+        "lastAt": null,
+        "domains": [],
+        "statuses": {},
+        "paths": [],
+        "observedReleaseIds": []
+      },
+      "repositoryReferences": [
+        {
+          "file": "docs/codex/audits/REALVALUE-001/vercel-migration-001/audit.md",
+          "line": 16
+        },
+        {
+          "file": "docs/codex/audits/REALVALUE-001/vercel-migration-001/audit.md",
+          "line": 88
+        },
+        {
+          "file": "docs/codex/checkpoints/IPO_ONE_CHECKPOINT_2026-07-27_PRE_STRATEGY.md",
+          "line": 48
+        }
+      ],
+      "executableRepositoryReferences": [],
+      "predatesSingleV2": true,
+      "rollbackOrReferenceDependency": "historical documentation/Evidence only (3 references); no executable workflow dependency",
+      "classification": "DELETE",
+      "classificationReason": "predates the clean single_v2 boundary; no alias or post-cutover activity"
+    }
+  ]
+}

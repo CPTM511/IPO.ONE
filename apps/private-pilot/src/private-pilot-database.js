@@ -215,6 +215,9 @@ async function provisionAuthenticationRole(ownerPool, password) {
     `GRANT INSERT, UPDATE ON authentication_credentials TO ${quotedRole}`
   );
   await ownerPool.query(
+    `GRANT INSERT, UPDATE ON authentication_role_enrollments TO ${quotedRole}`
+  );
+  await ownerPool.query(
     `GRANT INSERT, DELETE ON
        authentication_oidc_transactions, authentication_wallet_transactions
      TO ${quotedRole}`
@@ -232,7 +235,7 @@ async function provisionAuthenticationRole(ownerPool, password) {
     `GRANT INSERT ON authentication_events TO ${quotedRole}`
   );
   await ownerPool.query(
-    `GRANT UPDATE (id) ON actors, memberships, authentication_role_enrollments TO ${quotedRole}`
+    `GRANT UPDATE (id) ON actors, memberships TO ${quotedRole}`
   );
 }
 

@@ -1,5 +1,6 @@
 import {
   CreditAuthorityType,
+  CREDIT_APPLICATION_RISK_STATE_QUERY_VERSION,
   MandateCapability,
   PrincipalType,
   RepaymentFrequency,
@@ -14,7 +15,7 @@ import {
   createCapitalPartnerCreditOffer,
   createCreditIntent,
   createCreditOfferAcceptance,
-  createDeterministicCreditDecisionOutcome,
+  createEvidenceDerivedCreditDecisionOutcome,
   createMandate,
   createPrincipal,
   createSubject,
@@ -129,14 +130,49 @@ export function createAgentCreditOffer({ identity, requestedPrincipalMinor, now 
     installmentCount: 1,
     now
   });
-  const evaluated = createDeterministicCreditDecisionOutcome({
+  const sourceEvidence = [
+    ["credit_intent", "credit_intent", intent.creditIntentId, intent],
+    ["subject", "subject", identity.subject.subjectId, identity.subject],
+    ["principal", "principal", identity.principal.principalId, identity.principal],
+    ["authority", "mandate", identity.mandate.mandateId, identity.mandate]
+  ].map(([role, entityType, entityId, entity]) => ({
+    role,
+    entityType,
+    entityIdHash: hashId("agent_credit_risk_entity_id", { entityId }),
+    entityHash: hashId("agent_credit_risk_entity", entity),
+    aggregateVersion: 1,
+    eventId: `event_agent_credit_risk_${role}`,
+    evidenceHash: hashId("agent_credit_risk_source_evidence", {
+      role,
+      entityId
+    }),
+    sourceFinality: "finalized"
+  }));
+  const evaluated = createEvidenceDerivedCreditDecisionOutcome({
     intent,
+    eligibilityFacts: {
+      subjectEligible: true,
+      subjectSuspended: false,
+      principalEligible: true,
+      authorityCurrent: true,
+      identityEvidenceCurrent: null,
+      principalBindingCurrent: true
+    },
+    sourceEvidence,
+    riskState: {
+      adverseObligationCount: 0,
+      frozenCreditLineCount: 0,
+      liveStateVersion: 1,
+      queryVersion: CREDIT_APPLICATION_RISK_STATE_QUERY_VERSION,
+      stateHash: hashId("agent_credit_risk_state", {
+        subjectId: identity.subject.subjectId,
+        adverseObligationCount: 0,
+        frozenCreditLineCount: 0
+      })
+    },
     now
   });
-  const decision = {
-    ...evaluated.decision,
-    schemaVersion: "risk_decision.v3"
-  };
+  const decision = evaluated.decision;
   const decidedIntent = {
     ...intent,
     status: "decided",

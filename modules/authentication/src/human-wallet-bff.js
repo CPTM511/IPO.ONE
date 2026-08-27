@@ -140,7 +140,11 @@ export class HumanWalletBff {
     if (verification === undefined) {
       throw authenticationError("wallet_signature_rejected", "wallet signature verification failed");
     }
-    const credential = await this.credentialRegistry.findBySubject({
+    const findVerifiedSubject =
+      typeof this.credentialRegistry.findOrRebindVerifiedHumanSubject === "function"
+        ? this.credentialRegistry.findOrRebindVerifiedHumanSubject.bind(this.credentialRegistry)
+        : this.credentialRegistry.findBySubject.bind(this.credentialRegistry);
+    const credential = await findVerifiedSubject({
       issuer: this.issuer,
       tenantId: this.tenantId,
       externalSubject: `eip155:${transaction.chainId}:${transaction.address.toLowerCase()}`,

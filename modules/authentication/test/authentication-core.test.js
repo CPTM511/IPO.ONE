@@ -11,6 +11,7 @@ import {
   assertAuthenticationContext,
   assertPostgresAuthenticationRole,
   createReferenceHasher,
+  createReferenceHashKeyring,
   loadAuthenticationRuntimeConfig
 } from "../src/index.js";
 import { createAuthenticationContext } from "../src/authentication-context.js";
@@ -69,6 +70,75 @@ test("Authentication Context is server-created, frozen, and never an authorizati
     () => assertAuthenticationContext(structuredClone(context)),
     (error) => error.code === "authentication_context_required"
   );
+});
+
+test("reference hash keyring permits one primary writer and one bounded legacy lookup key", () => {
+  const primarySecret = Buffer.alloc(32, 1);
+  const legacySecret = Buffer.alloc(32, 2);
+  const overlap = createReferenceHashKeyring({
+    mode: "overlap_v2_write_v1_lookup",
+    primary: { keyVersion: "v2", secret: primarySecret },
+    legacy: { keyVersion: "v1", secret: legacySecret }
+  });
+  assert.equal(overlap.mode, "overlap_v2_write_v1_lookup");
+  assert.equal(overlap.keyVersion, "v2");
+  assert.equal(overlap.legacyKeyVersion, "v1");
+  assert.equal(overlap.hash("subject", "wallet"), overlap.hashForVersion("v2", "subject", "wallet"));
+  assert.notEqual(
+    overlap.hashForVersion("v1", "subject", "wallet"),
+    overlap.hashForVersion("v2", "subject", "wallet")
+  );
+  assert.deepEqual(
+    overlap.lookupHashes("subject", "wallet").map(({ keyVersion }) => keyVersion),
+    ["v2", "v1"]
+  );
+  assert.equal(Object.isFrozen(overlap.lookupHashes("subject", "wallet")), true);
+
+  const singleV2 = createReferenceHashKeyring({
+    mode: "single_v2",
+    primary: { keyVersion: "v2", secret: primarySecret }
+  });
+  assert.deepEqual(
+    singleV2.lookupHashes("subject", "wallet").map(({ keyVersion }) => keyVersion),
+    ["v2"]
+  );
+  assert.throws(
+    () => singleV2.hashForVersion("v1", "subject", "wallet"),
+    (error) => error.code === "reference_hash_key_version_rejected"
+  );
+});
+
+test("reference hash keyring rejects ambiguous or mode-inconsistent key material", () => {
+  const first = Buffer.alloc(32, 1);
+  const second = Buffer.alloc(32, 2);
+  const make = (input) => () => createReferenceHashKeyring(input);
+  for (const input of [
+    {
+      mode: "overlap_v2_write_v1_lookup",
+      primary: { keyVersion: "v2", secret: first }
+    },
+    {
+      mode: "single_v2",
+      primary: { keyVersion: "v2", secret: first },
+      legacy: { keyVersion: "v1", secret: second }
+    },
+    {
+      mode: "overlap_v2_write_v1_lookup",
+      primary: { keyVersion: "v2", secret: first },
+      legacy: { keyVersion: "v2", secret: second }
+    },
+    {
+      mode: "overlap_v2_write_v1_lookup",
+      primary: { keyVersion: "v2", secret: first },
+      legacy: { keyVersion: "v1", secret: first }
+    },
+    {
+      mode: "single_v1",
+      primary: { keyVersion: "v2", secret: first }
+    }
+  ]) {
+    assert.throws(make(input), (error) => error.code === "invalid_authentication_configuration");
+  }
 });
 
 test("credential records hash external subjects and lifecycle events contain no raw credentials", () => {
@@ -277,6 +347,58 @@ test("production authentication fails closed without IdP approval and secret-man
     IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
   });
   assert.equal(approved.deploymentGateSatisfied, true);
+  assert.equal(approved.referenceHashMode, "single_v1");
+  assert.equal(approved.referenceHashKeyRef,
+    "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3");
+  assert.equal(Object.hasOwn(approved, "legacyReferenceHashKeyRef"), false);
+  const overlap = loadAuthenticationRuntimeConfig({
+    IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
+    IPO_ONE_IDP_VENDOR_ID: "wallet_only",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "b".repeat(40),
+    IPO_ONE_IDP_CONFIGURATION_REF: "projects/ipo-one-pilot/secrets/idp-issuer/versions/1",
+    IPO_ONE_AUTH_REFERENCE_HASH_MODE: "overlap_v2_write_v1_lookup",
+    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF:
+      "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3",
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF:
+      "projects/ipo-one-pilot/secrets/auth-reference-key/versions/4",
+    IPO_ONE_AUTH_ENCRYPTION_KEY_REF:
+      "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
+  });
+  assert.equal(overlap.referenceHashMode, "overlap_v2_write_v1_lookup");
+  assert.equal(overlap.referenceHashKeyRef,
+    "projects/ipo-one-pilot/secrets/auth-reference-key/versions/4");
+  assert.equal(overlap.legacyReferenceHashKeyRef,
+    "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3");
+  for (const input of [
+    {
+      IPO_ONE_AUTH_REFERENCE_HASH_MODE: "overlap_v2_write_v1_lookup",
+      IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF:
+        "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3"
+    },
+    {
+      IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2",
+      IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF:
+        "projects/ipo-one-pilot/secrets/auth-reference-key/versions/3",
+      IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF:
+        "projects/ipo-one-pilot/secrets/auth-reference-key/versions/4"
+    }
+  ]) {
+    assert.throws(
+      () => loadAuthenticationRuntimeConfig({
+        IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+        IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
+        IPO_ONE_IDP_VENDOR_ID: "wallet_only",
+        IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "b".repeat(40),
+        IPO_ONE_IDP_CONFIGURATION_REF:
+          "projects/ipo-one-pilot/secrets/idp-issuer/versions/1",
+        IPO_ONE_AUTH_ENCRYPTION_KEY_REF:
+          "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4",
+        ...input
+      }),
+      (error) => error.code === "authentication_deployment_gate_closed"
+    );
+  }
   const walletOnly = loadAuthenticationRuntimeConfig({
     IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
