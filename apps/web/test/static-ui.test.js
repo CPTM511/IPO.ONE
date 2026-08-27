@@ -591,7 +591,9 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(html.includes("Provider sandbox capability status"));
   assert.ok(html.includes("Capability status only — this Obligation has no Provider execution"));
   assert.ok(html.includes("public or remote Provider access remains disabled"));
-  assert.equal((html.match(/data-private-session-surface/g) ?? []).length, 6);
+  assert.equal((html.match(/data-private-session-surface/g) ?? []).length, 7);
+  assert.ok(html.includes('data-view="secured-pool"'));
+  assert.ok(html.includes("Secured Pool, <em>read from server truth.</em>"));
   assert.equal((html.match(/data-legacy-demo-surface/g) ?? []).length, 0);
   assert.ok(js.includes("renderPrivateProductSurfaces"));
   assert.ok(js.includes('setMode("human");\n    showView("overview");'));

@@ -30,6 +30,74 @@
   gap: 1rem;
 }
 
+.secured-pool-surface {
+  display: grid;
+  gap: 18px;
+}
+
+.pool-truth-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.pool-truth-grid > div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: .85rem;
+  padding: .95rem;
+  background: var(--surface-subtle);
+  display: grid;
+  gap: .3rem;
+}
+
+.pool-truth-grid span,
+.pool-truth-grid small,
+.pool-technical-facts dt {
+  color: var(--muted);
+  font-size: .76rem;
+}
+
+.pool-truth-grid strong {
+  font-size: .92rem;
+  overflow-wrap: anywhere;
+}
+
+.pool-technical-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem 1rem;
+  margin: 0;
+}
+
+.pool-technical-facts > div {
+  min-width: 0;
+  border-top: 1px solid var(--line);
+  padding-top: .65rem;
+}
+
+.pool-technical-facts dd {
+  margin: .2rem 0 0;
+  overflow-wrap: anywhere;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.pool-scenario-review {
+  border-top: 1px solid var(--line);
+  padding-top: .75rem;
+}
+
+.pool-scenario-review summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.pool-scenario-review > p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .secured-pool-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -66,6 +134,8 @@
 }
 
 @media (max-width: 760px) {
+  .pool-truth-grid,
+  .pool-technical-facts { grid-template-columns: 1fr; }
   .secured-pool-metrics { grid-template-columns: 1fr 1fr; }
   .secured-pool-review-form { align-items: stretch; width: 100%; }
   .secured-pool-review-form label,

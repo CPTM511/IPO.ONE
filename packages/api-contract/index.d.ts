@@ -4692,9 +4692,9 @@ export interface SecuredPoolActionReviewResponse {
 export interface SecuredPoolRiskViewResponse {
   portfolioId: string;
   market: Record<string, unknown>;
-  positionCount: number;
-  liquidatablePositionCount: number;
-  discrepancyCount: number;
+  positionCount: number | null;
+  liquidatablePositionCount: number | null;
+  discrepancyCount: number | null;
   controls: Record<string, boolean>;
   submission: Record<string, unknown>;
   serverDerived: true;

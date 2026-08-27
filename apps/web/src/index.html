@@ -20,7 +20,7 @@
     <link rel="canonical" href="https://ipo.one/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=web018" />
+    <link rel="stylesheet" href="/styles.css?v=web019" />
   </head>
   <body class="private-session-closed">
     <a class="skip-link" href="#mainContent">Skip to workspace</a>
@@ -59,6 +59,10 @@
             <button class="nav-item nav-product" type="button" data-view="request-credit">
               <svg aria-hidden="true"><use href="/icons.svg#credit-card"></use></svg>
               <span><strong>Credit</strong><small data-v9-maturity="request-credit">Checking server</small></span>
+            </button>
+            <button class="nav-item nav-product" type="button" data-view="secured-pool">
+              <svg aria-hidden="true"><use href="/icons.svg#server"></use></svg>
+              <span><strong>Secured Pool</strong><small data-v9-maturity="secured-pool">Checking server</small></span>
             </button>
             <button class="nav-item nav-product" type="button" data-view="trading-capital">
               <svg aria-hidden="true"><use href="/icons.svg#activity"></use></svg>
@@ -468,6 +472,96 @@
 
           </section>
 
+          <section class="view" data-view-panel="secured-pool" aria-labelledby="securedPoolViewTitle">
+            <section class="product-surface private-page-surface secured-pool-surface" data-private-session-surface>
+              <header class="private-page-heading secured-pool-heading">
+                <div>
+                  <p class="eyebrow">Base Sepolia · one exact market · test assets only</p>
+                  <h2 id="securedPoolViewTitle">Secured Pool, <em>read from server truth.</em></h2>
+                  <p>The same canonical Pool state supports Human liquidity and secured-credit positions. IPO.ONE verifies the approved deployment and reads a safe block; this page cannot sign or submit a transaction.</p>
+                </div>
+                <span id="securedPoolStatus" class="state-pill neutral" role="status">Not loaded</span>
+              </header>
+
+              <section class="panel pool-truth-panel" aria-labelledby="securedPoolTruthTitle">
+                <div class="panel-heading stacked-mobile">
+                  <div>
+                    <p class="eyebrow">Independent truth axes</p>
+                    <h3 id="securedPoolTruthTitle">What IPO.ONE can verify right now</h3>
+                    <p>A deployed contract can remain true even when RPC, indexer, reconciliation, or a private AccountBinding is unavailable.</p>
+                  </div>
+                  <button id="refreshSecuredPoolBtn" class="primary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Refresh Pool state</button>
+                </div>
+                <div class="pool-truth-grid" role="list" aria-label="Secured Pool truth states">
+                  <div role="listitem"><span>Deployment</span><strong id="securedPoolDeploymentState">Not loaded</strong><small id="securedPoolDeploymentDetail">Exact profile not yet checked</small></div>
+                  <div role="listitem"><span>RPC</span><strong id="securedPoolRpcState">Not loaded</strong><small id="securedPoolRpcDetail">No safe block observed</small></div>
+                  <div role="listitem"><span>Indexer</span><strong id="securedPoolIndexerState">Not loaded</strong><small id="securedPoolIndexerDetail">Finalized projection not yet checked</small></div>
+                  <div role="listitem"><span>Reconciliation</span><strong id="securedPoolReconciliationState">Not loaded</strong><small id="securedPoolReconciliationDetail">No current comparison loaded</small></div>
+                  <div role="listitem"><span>Market</span><strong id="securedPoolMarketState">Not loaded</strong><small id="securedPoolMarketDetail">Liquidity remains unknown until read</small></div>
+                  <div role="listitem"><span>Submission</span><strong id="securedPoolSubmissionState">Unavailable</strong><small>No signer or transaction primitive</small></div>
+                </div>
+              </section>
+
+              <section class="panel secured-pool-card" aria-labelledby="securedPoolMarketTitle">
+                <div class="panel-heading stacked-mobile">
+                  <div>
+                    <p class="eyebrow">Public market · test USDC / WETH</p>
+                    <h3 id="securedPoolMarketTitle">Current read-only market</h3>
+                    <p id="securedPoolMarket">Base Sepolia exact Pool · waiting for server read</p>
+                  </div>
+                  <span class="state-pill">No real funds</span>
+                </div>
+                <div class="secured-pool-metrics" aria-label="Secured Pool market metrics">
+                  <div><span>Available liquidity</span><strong id="securedPoolLiquidity">Unavailable</strong><small>Test USDC asset units</small></div>
+                  <div><span>Gross debt</span><strong id="securedPoolDebt">Unavailable</strong><small>Test USDC asset units</small></div>
+                  <div><span>Utilization</span><strong id="securedPoolUtilization">Unavailable</strong><small>Server-derived basis points</small></div>
+                  <div><span>LP claim</span><strong id="securedPoolLpClaim">Unavailable</strong><small>Test USDC asset units</small></div>
+                </div>
+                <dl class="pool-technical-facts">
+                  <div><dt>Contract</dt><dd id="securedPoolContract">Unavailable</dd></div>
+                  <div><dt>Market ID</dt><dd id="securedPoolMarketId">Unavailable</dd></div>
+                  <div><dt>Safe block</dt><dd id="securedPoolSafeBlock">Unavailable</dd></div>
+                  <div><dt>Observed</dt><dd id="securedPoolObservedAt">Unavailable</dd></div>
+                  <div><dt>Oracle</dt><dd id="securedPoolOracle">Unavailable</dd></div>
+                  <div><dt>New-risk control</dt><dd id="securedPoolRiskControl">Unavailable</dd></div>
+                </dl>
+              </section>
+
+              <section class="panel secured-pool-card" aria-labelledby="securedPoolPositionTitle">
+                <div class="panel-heading stacked-mobile">
+                  <div>
+                    <p class="eyebrow">Private position · Subject + AccountBinding required</p>
+                    <h3 id="securedPoolPositionTitle">My authorized Pool position</h3>
+                    <p>Public market data never grants access to a private position. IPO.ONE returns position values only for the authenticated Actor's owned Subject and active execution AccountBinding.</p>
+                  </div>
+                  <span id="securedPoolPositionState" class="state-pill neutral">Not loaded</span>
+                </div>
+                <div class="secured-pool-metrics" aria-label="Authorized Pool position">
+                  <div><span>AccountBinding</span><strong id="securedPoolAccountBinding">Unavailable</strong></div>
+                  <div><span>My position</span><strong id="securedPoolPosition">Unavailable</strong></div>
+                  <div><span>Supply claim</span><strong id="securedPoolSupplyClaim">Unavailable</strong></div>
+                  <div><span>Health</span><strong id="securedPoolHealth">Unavailable</strong></div>
+                </div>
+
+                <details class="pool-scenario-review">
+                  <summary>Read-only scenario review</summary>
+                  <p>Reviewing a hypothetical action only reports blockers and a preview. It creates no signature, allowance, RPC write, transaction, or funds movement.</p>
+                  <form id="securedPoolReviewForm" class="secured-pool-review-form">
+                    <label>Scenario<select id="securedPoolActionType"><option value="supply">Supply liquidity</option><option value="withdraw">Withdraw liquidity</option><option value="deposit_collateral">Deposit collateral</option><option value="borrow">Borrow</option><option value="repay">Repay</option><option value="release_collateral">Release collateral</option></select></label>
+                    <label>Asset units<input id="securedPoolAmount" type="text" inputmode="numeric" pattern="[1-9][0-9]{0,77}" value="1000000" required /></label>
+                    <button id="reviewSecuredPoolActionBtn" class="secondary" type="submit">Review without submitting</button>
+                  </form>
+                  <dl class="secured-pool-review-facts">
+                    <div><dt>Reviewed scenario</dt><dd id="securedPoolReviewAction">—</dd></div>
+                    <div><dt>Exact amount</dt><dd id="securedPoolReviewAmount">—</dd></div>
+                    <div><dt>Submission authority</dt><dd id="securedPoolSubmission">Unavailable · no transaction will be submitted</dd></div>
+                  </dl>
+                </details>
+                <p id="securedPoolReviewHelper" class="risk-helper" role="status" aria-live="polite">Refresh server truth first. An authoritative zero will be shown as zero; unavailable data will remain unavailable.</p>
+              </section>
+            </section>
+          </section>
+
           <section class="view human-view" data-view-panel="request-credit" aria-label="Request Credit">
             <div class="request-credit-mode request-credit-human">
             <section class="human-entry" aria-label="Human credit pilot entry">
@@ -549,33 +643,6 @@
                 </div>
                 <p class="readiness-note">Intent, Decision, Offer, exact acceptance, and shared Obligation use one approved private protocol. Capital, custody, disbursement, and production funds stay disabled.</p>
               </details>
-            </section>
-
-            <section class="panel secured-pool-card" aria-labelledby="securedPoolTitle">
-              <div class="panel-heading stacked-mobile">
-                <div><p class="eyebrow">M2 · secured Pool · local synthetic state</p><h3 id="securedPoolTitle">Review liquidity or secured borrowing</h3><p>Load the current server-derived Pool position, then review one exact action. This surface cannot sign or submit a transaction.</p></div>
-                <span id="securedPoolStatus" class="state-pill neutral">Not loaded</span>
-              </div>
-              <div class="secured-pool-metrics" aria-label="Secured Pool workspace">
-                <div><span>Curated market</span><strong id="securedPoolMarket">Base Sepolia reference market</strong></div>
-                <div><span>Available liquidity</span><strong id="securedPoolLiquidity">0</strong></div>
-                <div><span>My position</span><strong id="securedPoolPosition">No server-derived position</strong></div>
-                <div><span>Health</span><strong id="securedPoolHealth">Unavailable</strong></div>
-              </div>
-              <div class="secured-pool-actions">
-                <button id="refreshSecuredPoolBtn" class="secondary" type="button">Refresh Pool state</button>
-                <form id="securedPoolReviewForm" class="secured-pool-review-form">
-                  <label>Exact action<select id="securedPoolActionType"><option value="supply">Supply liquidity</option><option value="withdraw">Withdraw liquidity</option><option value="deposit_collateral">Deposit collateral</option><option value="borrow">Borrow</option><option value="repay">Repay</option><option value="release_collateral">Release collateral</option></select></label>
-                  <label>Asset units<input id="securedPoolAmount" type="text" inputmode="numeric" pattern="[1-9][0-9]{0,77}" value="1000000" required /></label>
-                  <button id="reviewSecuredPoolActionBtn" class="primary" type="submit">Review exact action</button>
-                </form>
-              </div>
-              <dl class="secured-pool-review-facts">
-                <div><dt>Reviewed action</dt><dd id="securedPoolReviewAction">—</dd></div>
-                <div><dt>Exact amount</dt><dd id="securedPoolReviewAmount">—</dd></div>
-                <div><dt>Submission</dt><dd id="securedPoolSubmission">Unavailable until separately approved M2A-008 deployment</dd></div>
-              </dl>
-              <p id="securedPoolReviewHelper" class="risk-helper" role="status" aria-live="polite">Refresh current state first. Review produces no signature, RPC call, transaction, or funds movement.</p>
             </section>
 
             <section class="panel credit-application-workbench" id="humanApplication" tabindex="-1" aria-labelledby="humanApplicationTitle">
@@ -2342,6 +2409,12 @@
                   <div><p class="eyebrow">M2 Pool control view · aggregate only</p><h3 id="riskSecuredPoolTitle">Solvency, oracle, reconciliation</h3><p>No account address, raw transaction, signer, or liquidation submission is exposed.</p></div>
                   <span id="riskSecuredPoolStatus" class="state-pill neutral">Not loaded</span>
                 </div>
+                <div class="pool-truth-grid" role="list" aria-label="Risk view Pool truth states">
+                  <div role="listitem"><span>Deployment</span><strong id="riskSecuredPoolDeployment">Not loaded</strong><small id="riskSecuredPoolDeploymentDetail">Exact profile not yet checked</small></div>
+                  <div role="listitem"><span>RPC</span><strong id="riskSecuredPoolRpc">Not loaded</strong><small id="riskSecuredPoolRpcDetail">No safe block observed</small></div>
+                  <div role="listitem"><span>Indexer</span><strong id="riskSecuredPoolIndexer">Not loaded</strong><small id="riskSecuredPoolIndexerDetail">Projection not yet checked</small></div>
+                  <div role="listitem"><span>Reconciliation</span><strong id="riskSecuredPoolReconciliation">Not loaded</strong><small id="riskSecuredPoolReconciliationDetail">No comparison loaded</small></div>
+                </div>
                 <div class="secured-pool-metrics" aria-label="Secured Pool risk posture">
                   <div><span>Market</span><strong id="riskSecuredPoolMarket">Base Sepolia reference market</strong></div>
                   <div><span>Positions</span><strong id="riskSecuredPoolPositions">0</strong></div>
@@ -2922,6 +2995,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="operationStatus" class="sr-only" role="status" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=web019"></script>
+    <script type="module" src="/app.js?v=web020"></script>
   </body>
 </html>

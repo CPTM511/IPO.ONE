@@ -35,6 +35,9 @@ export const WORKSPACE_NAVIGATION_MANIFEST = Object.freeze({
       pageTitle: "Your portfolio overview"
     }),
     "request-credit": view("Credit", "Human entry · shared kernel"),
+    "secured-pool": view("Secured Pool", "Base Sepolia · read-only test assets", {
+      pageTitle: "Secured Pool market and positions"
+    }),
     "repay-settle": view("Repay & Settle", "Obligation workspace"),
     "credit-passport": view("Credit Passport", "Explainable Decision Evidence"),
     obligations: view("Obligations", "Shared obligation kernel"),
@@ -53,8 +56,9 @@ export const WORKSPACE_NAVIGATION_MANIFEST = Object.freeze({
     borrower: workspace("overview", [
       entry("overview", "primary"),
       entry("request-credit", "primary"),
+      entry("secured-pool", "primary"),
       entry("obligations", "primary"),
-      entry("activity-proofs", "primary"),
+      entry("activity-proofs", "advanced"),
       entry("repay-settle", "advanced"),
       entry("credit-passport", "advanced"),
       entry("wallet-permissions", "advanced"),
@@ -64,8 +68,9 @@ export const WORKSPACE_NAVIGATION_MANIFEST = Object.freeze({
     controller: workspace("overview", [
       entry("overview", "primary"),
       entry("request-credit", "primary"),
+      entry("secured-pool", "primary"),
       entry("agent-console", "primary"),
-      entry("obligations", "primary"),
+      entry("obligations", "advanced"),
       entry("wallet-permissions", "advanced"),
       entry("activity-proofs", "advanced"),
       entry("credit-track-record", "advanced"),

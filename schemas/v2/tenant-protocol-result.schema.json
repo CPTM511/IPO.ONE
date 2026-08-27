@@ -1475,9 +1475,9 @@
       "properties": {
         "portfolioId": { "type": "string", "minLength": 1, "maxLength": 128 },
         "market": { "type": "object" },
-        "positionCount": { "type": "integer", "minimum": 0 },
-        "liquidatablePositionCount": { "type": "integer", "minimum": 0 },
-        "discrepancyCount": { "type": "integer", "minimum": 0 },
+        "positionCount": { "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+        "liquidatablePositionCount": { "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+        "discrepancyCount": { "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
         "controls": {
           "type": "object",
           "additionalProperties": false,

@@ -630,6 +630,55 @@ function resultFor(command) {
   if (operationId === "pilotReadOwnSecuredPool") {
     const result = securedPoolResult(operationId);
     result.response.subjectId = command.resource.resourceId;
+    result.response.market = {
+      status: "live_testnet_read_only",
+      chainId: "eip155:84532",
+      contractAddress: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+      marketId: "0x47532f3aab0c30648bc01029b09b586f67bfc0c91fddbbb6b2100ae87b1459cf",
+      deployment: {
+        state: "verified",
+        chainId: "eip155:84532",
+        contractAddress: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+        testAssetsOnly: true
+      },
+      rpc: {
+        state: "available",
+        providerSlot: "primary",
+        blockNumber: "46000000",
+        blockTimestamp: "2026-08-26T23:59:00.000Z",
+        observedAt: "2026-08-27T00:00:00.000Z"
+      },
+      indexer: {
+        state: "unavailable",
+        reasonCode: "pool_indexer_state_unavailable"
+      },
+      accounting: {
+        cashAssets: "0",
+        grossDebtAssets: "0",
+        performingDebtAssets: "0",
+        reservesAssets: "0",
+        badDebtAssets: "0",
+        lpClaimAssets: "0",
+        totalSupplyShares: "0",
+        totalDebtShares: "0",
+        utilizationBps: "0"
+      },
+      oracle: {
+        state: "fresh",
+        observedAt: "2026-08-26T23:58:00.000Z"
+      },
+      reconciliation: {
+        state: "unavailable",
+        reasonCode: "reconciliation_unavailable"
+      },
+      riskControl: {
+        newRiskFrozen: true,
+        protocolNewRiskPaused: false,
+        reasonCode: "risk_control_unavailable"
+      },
+      testAssetsOnly: true,
+      readOnly: true
+    };
     return result;
   }
   if (operationId === "pilotReviewSecuredPoolAction") {

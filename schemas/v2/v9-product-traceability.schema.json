@@ -71,8 +71,8 @@
     },
     "destinations": {
       "type": "array",
-      "minItems": 13,
-      "maxItems": 13,
+      "minItems": 14,
+      "maxItems": 14,
       "items": { "$ref": "#/$defs/destination" }
     },
     "crossCuttingAreas": {
@@ -273,7 +273,7 @@
         "order": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 13
+          "maximum": 14
         },
         "actions": {
           "type": "array",

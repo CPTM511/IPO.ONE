@@ -10266,6 +10266,13 @@ function showView(viewName, { focus = true, historyMode = "push" } = {}) {
     el("mainContent").focus({ preventScroll: true });
     announce(`${VIEW_META[nextView].title} view selected`);
   }
+  if (
+    nextView === "secured-pool" && tenantPilot.connected &&
+    securedPoolPilot.readAvailable && exactResourceId(securedPoolSubjectId()) &&
+    !securedPoolPilot.workspace && !securedPoolPilot.busy
+  ) {
+    void loadSecuredPoolWorkspace();
+  }
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
@@ -12314,6 +12321,12 @@ async function freezeRiskSubject() {
   }
 }
 
+function securedPoolSubjectId() {
+  return currentWorkspaceName() === "controller"
+    ? agentAuthorityPilot.subject?.subjectId ?? ""
+    : tenantInputValue("humanSubjectId");
+}
+
 function renderSecuredPool() {
   if (!el("securedPoolStatus")) return;
   const presentation = createSecuredPoolPresentation({
@@ -12321,7 +12334,7 @@ function renderSecuredPool() {
     review: securedPoolPilot.review,
     risk: securedPoolPilot.risk
   });
-  const subjectId = tenantInputValue("humanSubjectId");
+  const subjectId = securedPoolSubjectId();
   const status = el("securedPoolStatus");
   status.className = `state-pill ${securedPoolPilot.error ? "warning" : securedPoolPilot.workspace ? "" : "neutral"}`;
   status.textContent = securedPoolPilot.busy
@@ -12329,10 +12342,35 @@ function renderSecuredPool() {
     : !securedPoolPilot.readAvailable
       ? "Operation unavailable"
       : presentation.workspaceState;
+  el("securedPoolDeploymentState").textContent = presentation.deploymentState;
+  el("securedPoolDeploymentDetail").textContent = presentation.deploymentDetail;
+  el("securedPoolRpcState").textContent = presentation.rpcState;
+  el("securedPoolRpcDetail").textContent = presentation.rpcDetail;
+  el("securedPoolIndexerState").textContent = presentation.indexerState;
+  el("securedPoolIndexerDetail").textContent = presentation.indexerDetail;
+  el("securedPoolReconciliationState").textContent = presentation.reconciliationState;
+  el("securedPoolReconciliationDetail").textContent = presentation.reconciliationDetail;
+  el("securedPoolMarketState").textContent = presentation.marketState;
+  el("securedPoolMarketDetail").textContent = presentation.marketDetail;
+  el("securedPoolSubmissionState").textContent = presentation.submissionState;
   el("securedPoolMarket").textContent = presentation.market;
   el("securedPoolLiquidity").textContent = presentation.liquidity;
+  el("securedPoolDebt").textContent = presentation.grossDebt;
+  el("securedPoolUtilization").textContent = presentation.utilization;
+  el("securedPoolLpClaim").textContent = presentation.lpClaim;
+  el("securedPoolContract").textContent = presentation.contractAddress;
+  el("securedPoolMarketId").textContent = presentation.marketId;
+  el("securedPoolSafeBlock").textContent = presentation.safeBlock;
+  el("securedPoolObservedAt").textContent = presentation.observedAt;
+  el("securedPoolOracle").textContent = presentation.oracle;
+  el("securedPoolRiskControl").textContent = presentation.riskControl;
+  el("securedPoolAccountBinding").textContent = presentation.accountBinding;
   el("securedPoolPosition").textContent = presentation.position;
+  el("securedPoolSupplyClaim").textContent = presentation.supplyClaim;
   el("securedPoolHealth").textContent = presentation.health;
+  const positionStatus = el("securedPoolPositionState");
+  positionStatus.textContent = presentation.positionState;
+  positionStatus.className = `state-pill ${securedPoolPilot.workspace?.position ? "" : "neutral"}`;
   el("securedPoolSubmission").textContent = presentation.submission;
   el("securedPoolReviewAction").textContent = presentation.reviewAction;
   el("securedPoolReviewAmount").textContent = presentation.reviewAmount;
@@ -12353,6 +12391,14 @@ function renderSecuredPool() {
       ? "Operation unavailable"
       : presentation.riskState;
   el("riskSecuredPoolMarket").textContent = presentation.market;
+  el("riskSecuredPoolDeployment").textContent = presentation.deploymentState;
+  el("riskSecuredPoolDeploymentDetail").textContent = presentation.deploymentDetail;
+  el("riskSecuredPoolRpc").textContent = presentation.rpcState;
+  el("riskSecuredPoolRpcDetail").textContent = presentation.rpcDetail;
+  el("riskSecuredPoolIndexer").textContent = presentation.indexerState;
+  el("riskSecuredPoolIndexerDetail").textContent = presentation.indexerDetail;
+  el("riskSecuredPoolReconciliation").textContent = presentation.reconciliationState;
+  el("riskSecuredPoolReconciliationDetail").textContent = presentation.reconciliationDetail;
   el("riskSecuredPoolPositions").textContent = presentation.riskPositions;
   el("riskSecuredPoolLiquidatable").textContent = presentation.riskLiquidatable;
   el("riskSecuredPoolDiscrepancies").textContent = presentation.riskDiscrepancies;
@@ -12365,10 +12411,12 @@ function renderSecuredPool() {
 
 async function loadSecuredPoolWorkspace() {
   if (securedPoolPilot.busy) return;
-  const subjectId = tenantInputValue("humanSubjectId");
+  const subjectId = securedPoolSubjectId();
   if (!exactResourceId(subjectId)) {
     securedPoolPilot.error = true;
-    securedPoolPilot.helper = "Create or recover the authenticated Human Subject before loading Pool state.";
+    securedPoolPilot.helper = currentWorkspaceName() === "controller"
+      ? "Create or recover the authenticated Principal-owned Agent Subject before loading private Pool state."
+      : "Create or recover the authenticated Human Subject before loading private Pool state.";
     renderSecuredPool();
     return;
   }
@@ -12384,7 +12432,9 @@ async function loadSecuredPoolWorkspace() {
     });
     securedPoolPilot.workspace = result.response;
     securedPoolPilot.review = null;
-    securedPoolPilot.helper = "Current local synthetic projection loaded for the deployed Base Sepolia test Pool. Chain submission remains unavailable.";
+    securedPoolPilot.helper = result.response.market?.status === "live_testnet_read_only"
+      ? "Exact deployment and current safe-block market state loaded. Private position remains AccountBinding-bound; chain submission is disabled."
+      : "Deployment truth loaded with an explicitly degraded RPC or indexer state. Chain submission remains disabled.";
   } catch (error) {
     securedPoolPilot.error = true;
     securedPoolPilot.helper = `Pool state is unavailable. Request ID: ${error.requestId ?? "unavailable"}`;
@@ -12396,7 +12446,7 @@ async function loadSecuredPoolWorkspace() {
 
 async function reviewSecuredPoolAction() {
   if (securedPoolPilot.busy) return;
-  const subjectId = tenantInputValue("humanSubjectId");
+  const subjectId = securedPoolSubjectId();
   const amountAssets = tenantInputValue("securedPoolAmount");
   const actionType = el("securedPoolActionType").value;
   if (!exactResourceId(subjectId) || !/^[1-9][0-9]{0,77}$/.test(amountAssets)) {
@@ -13337,6 +13387,13 @@ async function boot() {
   }
   if (postLoginView) {
     showView(postLoginView, { focus: false, historyMode: "replace" });
+  }
+  if (
+    currentView === "secured-pool" && tenantPilot.connected &&
+    securedPoolPilot.readAvailable && exactResourceId(securedPoolSubjectId()) &&
+    !securedPoolPilot.workspace
+  ) {
+    await loadSecuredPoolWorkspace();
   }
   render();
   announce(tenantPilot.connected

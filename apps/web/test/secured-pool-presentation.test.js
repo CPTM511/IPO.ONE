@@ -15,14 +15,14 @@ test("Secured Pool presentation distinguishes indexed state from deployment auth
       submission: { state: "unavailable" }
     }
   });
-  assert.equal(presentation.workspaceState, "Synthetic state loaded");
+  assert.equal(presentation.workspaceState, "Local projection loaded");
   assert.equal(
     presentation.market,
-    "USDC / WETH · Base Sepolia test Pool deployed · local synthetic projection"
+    "test USDC / WETH · Unavailable"
   );
   assert.equal(
     presentation.submission,
-    "Unavailable in this local synthetic view · no chain transaction will be submitted"
+    "Unavailable · no chain transaction will be submitted"
   );
 });
 
@@ -52,7 +52,38 @@ test("Secured Pool presentation shows a deployed test Pool without inventing ind
       submission: { state: "unavailable" }
     }
   });
-  assert.match(presentation.market, /Base Sepolia test Pool deployed/);
-  assert.match(presentation.market, /local indexer state unavailable/);
-  assert.equal(presentation.workspaceState, "Awaiting indexed state");
+  assert.match(presentation.market, /0x3FB68c/);
+  assert.match(presentation.market, /exact deployment known/);
+  assert.equal(presentation.workspaceState, "Deployment known · state unavailable");
+});
+
+test("Secured Pool presentation keeps authoritative zero distinct from unavailable", () => {
+  const current = createSecuredPoolPresentation({
+    workspace: {
+      market: {
+        status: "live_testnet_read_only",
+        contractAddress: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+        accounting: {
+          cashAssets: "0",
+          grossDebtAssets: "0",
+          utilizationBps: "0",
+          lpClaimAssets: "0"
+        },
+        deployment: { state: "verified", chainId: "eip155:84532" },
+        rpc: { state: "available", providerSlot: "primary", blockNumber: "46000000" },
+        indexer: { state: "unavailable", reasonCode: "pool_indexer_state_unavailable" },
+        reconciliation: { state: "unavailable", reasonCode: "reconciliation_unavailable" }
+      },
+      accountBindingAvailable: false,
+      position: null,
+      submission: { state: "unavailable" }
+    }
+  });
+  assert.equal(current.liquidity, "0");
+  assert.equal(current.grossDebt, "0");
+  assert.equal(current.utilization, "0 bps");
+  assert.equal(current.position, "Unavailable");
+  assert.equal(current.deploymentState, "Exact deployment verified");
+  assert.equal(current.rpcState, "Connected");
+  assert.equal(current.indexerState, "Unavailable");
 });
