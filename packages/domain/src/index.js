@@ -34,3 +34,4 @@ export * from "./secured-pool-reference-math.js";
 export * from "./secured-pool-reference-state.js";
 export * from "./secured-pool-reference-model.js";
 export * from "./pool-obligation-integration.js";
+export * from "./agent-secured-facility-authorization.js";

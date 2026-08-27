@@ -20,14 +20,14 @@ const fixtures = JSON.parse(
   )
 );
 
-test("TC-104 local MCP derives exact closed schemas for all 25 operations", () => {
+test("TC-104 and M2B-001 local MCP derive exact closed schemas for all 28 operations", () => {
   assert.deepEqual(
     TRADING_CAPITAL_MCP_TOOLS.map(({ operationId }) => operationId),
     TRADING_CAPITAL_OPERATION_IDS
   );
   assert.equal(
     new Set(TRADING_CAPITAL_MCP_TOOLS.map(({ name }) => name)).size,
-    25
+    28
   );
   for (const tool of TRADING_CAPITAL_MCP_TOOLS) {
     assert.equal(tool.inputSchema.type, "object");
@@ -36,6 +36,54 @@ test("TC-104 local MCP derives exact closed schemas for all 25 operations", () =
     assert.equal(tool.inputSchema.required.includes("payload"), true);
     assert.equal(tool.description.includes("local no-funds"), true);
   }
+});
+
+test("M2B-001 Principal exposes create/read/revoke while Agent exposes read only", async () => {
+  const readRequest = fixtures.validRequests.find(
+    ({ operationId }) => operationId === "agentReadSecuredFacilityAuthorization"
+  );
+  const readResult = fixtures.validResults.find(
+    ({ operationId }) => operationId === "agentReadSecuredFacilityAuthorization"
+  );
+  const principal = new IpoOneTradingCapitalClient({
+    actorType: "human",
+    transportProfile: "local_in_process",
+    execute: async () => readResult
+  });
+  const agent = new IpoOneTradingCapitalClient({
+    actorType: "agent",
+    transportProfile: "local_in_process",
+    execute: async () => readResult
+  });
+  const principalAdapter = createTradingCapitalMcpAdapter({ client: principal });
+  const agentAdapter = createTradingCapitalMcpAdapter({ client: agent });
+  const principalNames = principalAdapter.listTools().map(({ name }) => name);
+  const agentNames = agentAdapter.listTools().map(({ name }) => name);
+
+  assert.equal(principalNames.some((name) => name.includes("agent_create_secured")), true);
+  assert.equal(principalNames.some((name) => name.includes("agent_revoke_secured")), true);
+  assert.equal(agentNames.some((name) => name.includes("agent_create_secured")), false);
+  assert.equal(agentNames.some((name) => name.includes("agent_revoke_secured")), false);
+
+  const readTool = TRADING_CAPITAL_MCP_TOOLS.find(
+    ({ operationId }) => operationId === readRequest.operationId
+  );
+  const args = {
+    resourceId: readRequest.resource.resourceId,
+    payload: readRequest.payload,
+    requestId: readRequest.requestId,
+    correlationId: readRequest.correlationId
+  };
+  const result = await agentAdapter.callTool(readTool.name, args);
+  assert.equal(result.structuredContent.response.preSigningOnly, true);
+  assert.equal(result.structuredContent.response.nonceCreated, false);
+  assert.equal(result.structuredContent.response.signatureCreated, false);
+  assert.equal(result.structuredContent.response.networkCalled, false);
+  assert.equal(result.structuredContent.response.fundsMoved, false);
+  await assert.rejects(
+    () => agentAdapter.callTool(readTool.name, { ...args, nonce: "forbidden" }),
+    /arguments are invalid/
+  );
 });
 
 test("TC-104 local MCP is role-scoped and calls the typed SDK", async () => {

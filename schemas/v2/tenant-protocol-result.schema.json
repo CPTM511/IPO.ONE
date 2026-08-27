@@ -95,6 +95,9 @@
         "tradingReadSettlement",
         "tradingIssuePerformanceProof",
         "tradingReadFacilityEvidence",
+        "agentCreateSecuredFacilityAuthorization",
+        "agentReadSecuredFacilityAuthorization",
+        "agentRevokeSecuredFacilityAuthorization",
         "walletPrepareAccountBinding",
         "walletSubmitAccountBinding",
         "walletReadAccountBindings",
@@ -365,6 +368,69 @@
         },
         "response": {
           "$ref": "#/$defs/tradingFacilityEvidenceResponse"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "agentCreateSecuredFacilityAuthorization"
+        },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/agentSecuredFacilityAuthorizationResponse" },
+            {
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": "tenant_agent_secured_facility_authorization_created.v1"
+                },
+                "readyForIntent": { "const": true }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "agentReadSecuredFacilityAuthorization"
+        },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/agentSecuredFacilityAuthorizationResponse" },
+            {
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": "tenant_agent_secured_facility_authorization_ready.v1"
+                },
+                "readyForIntent": { "const": true }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "agentRevokeSecuredFacilityAuthorization"
+        },
+        "response": {
+          "allOf": [
+            { "$ref": "#/$defs/agentSecuredFacilityAuthorizationResponse" },
+            {
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": "tenant_agent_secured_facility_authorization_revoked.v1"
+                },
+                "readyForIntent": { "const": false }
+              }
+            }
+          ]
         }
       }
     },
@@ -7514,6 +7580,133 @@
             "tenant_trading_facility_new_risk_paused.v1"
           ]
         }
+      }
+    },
+    "agentSecuredFacilityAuthorizationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization",
+        "readyForIntent",
+        "executionPrewriteReadiness",
+        "dualRiskRecoveryReadiness",
+        "preSigningOnly",
+        "nonceCreated",
+        "signatureCreated",
+        "networkCalled",
+        "fundsMoved",
+        "schemaVersion"
+      ],
+      "properties": {
+        "authorization": {
+          "$ref": "https://schemas.ipo.one/v2/agent-secured-facility-authorization.schema.json"
+        },
+        "executionPrewriteReadiness": {
+          "$ref": "#/$defs/agentHyperliquidPrewriteReadiness"
+        },
+        "dualRiskRecoveryReadiness": {
+          "$ref": "#/$defs/m2bDualRiskRecoveryReadiness"
+        },
+        "readyForIntent": { "type": "boolean" },
+        "preSigningOnly": { "const": true },
+        "nonceCreated": { "const": false },
+        "signatureCreated": { "const": false },
+        "networkCalled": { "const": false },
+        "fundsMoved": { "const": false },
+        "schemaVersion": {
+          "enum": [
+            "tenant_agent_secured_facility_authorization_created.v1",
+            "tenant_agent_secured_facility_authorization_ready.v1",
+            "tenant_agent_secured_facility_authorization_revoked.v1"
+          ]
+        }
+      }
+    },
+    "agentHyperliquidPrewriteReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "launchProfileId",
+        "compositionAvailable",
+        "compositionHash",
+        "blockers",
+        "externalNonceAllocated",
+        "signatureCreated",
+        "networkCalled",
+        "submissionAuthorized",
+        "schemaVersion"
+      ],
+      "properties": {
+        "status": { "const": "BLOCKED_PREWRITE" },
+        "launchProfileId": {
+          "const": "live_testnet_secured_pool_agent_execution"
+        },
+        "compositionAvailable": { "const": false },
+        "compositionHash": { "type": "null" },
+        "blockers": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "distinct_agent_venue_launch_profile_missing",
+              "durable_exact_composition_not_supplied",
+              "fresh_reconciled_hyperliquid_account_observation_missing",
+              "fresh_non_exporting_signer_handoff_missing",
+              "exact_one_use_founder_run_approval_missing",
+              "current_facility_authorization_unavailable"
+            ]
+          }
+        },
+        "externalNonceAllocated": { "const": false },
+        "signatureCreated": { "const": false },
+        "networkCalled": { "const": false },
+        "submissionAuthorized": { "const": false },
+        "schemaVersion": {
+          "const": "agent_hyperliquid_prewrite_readiness.v1"
+        }
+      }
+    },
+    "m2bDualRiskRecoveryReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "combinedRiskState",
+        "currentStage",
+        "blockers",
+        "externalWriteAuthorized",
+        "externalNonceAllocated",
+        "signatureCreated",
+        "networkCalled",
+        "protectiveAuthorityCanExpandRisk",
+        "schemaVersion"
+      ],
+      "properties": {
+        "status": { "const": "BLOCKED_RECOVERY_PREWRITE" },
+        "combinedRiskState": { "const": "UNKNOWN" },
+        "currentStage": { "const": "FREEZE_NEW_RISK" },
+        "blockers": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "fresh_dual_risk_snapshot_missing",
+              "durable_recovery_incident_missing",
+              "external_protective_run_approval_missing",
+              "current_facility_authorization_unavailable"
+            ]
+          }
+        },
+        "externalWriteAuthorized": { "const": false },
+        "externalNonceAllocated": { "const": false },
+        "signatureCreated": { "const": false },
+        "networkCalled": { "const": false },
+        "protectiveAuthorityCanExpandRisk": { "const": false },
+        "schemaVersion": { "const": "m2b_003_recovery_readiness.v1" }
       }
     },
     "tradingFacilityOrderResponse": {

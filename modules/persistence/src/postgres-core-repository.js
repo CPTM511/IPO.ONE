@@ -20,6 +20,7 @@ export const CoreProjectionType = Object.freeze({
   POOL_OBLIGATION_PROJECTION: "pool_obligation_projection",
   POOL_EXECUTION_RECEIPT: "pool_execution_receipt",
   POOL_OBLIGATION_EFFECT_RECEIPT: "pool_obligation_effect_receipt",
+  AGENT_SECURED_FACILITY_AUTHORIZATION: "agent_secured_facility_authorization",
   AGENT_ACCOUNT_CHALLENGE: "agent_account_challenge",
   AGENT_ACCOUNT_PROOF_ATTEMPT: "agent_account_proof_attempt",
   EXECUTION_ACCOUNT_BINDING_CHALLENGE: "execution_account_binding_challenge",
@@ -77,6 +78,7 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.POOL_OBLIGATION_PROJECTION]: "poolObligationProjectionId",
   [CoreProjectionType.POOL_EXECUTION_RECEIPT]: "poolExecutionReceiptId",
   [CoreProjectionType.POOL_OBLIGATION_EFFECT_RECEIPT]: "poolObligationEffectReceiptId",
+  [CoreProjectionType.AGENT_SECURED_FACILITY_AUTHORIZATION]: "agentSecuredFacilityAuthorizationId",
   [CoreProjectionType.AGENT_ACCOUNT_CHALLENGE]: "challengeId",
   [CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT]: "proofAttemptId",
   [CoreProjectionType.EXECUTION_ACCOUNT_BINDING_CHALLENGE]: "challengeId",
@@ -495,6 +497,11 @@ function mapPoolExecutionReceipt(row) {
 function mapPoolObligationEffectReceipt(row) {
   if (!row) return undefined;
   return row.receipt;
+}
+
+function mapAgentSecuredFacilityAuthorization(row) {
+  if (!row) return undefined;
+  return row.authorization_record;
 }
 
 function mapAgentAccountChallenge(row) {
@@ -2249,6 +2256,31 @@ export class PostgresCoreRepository {
       "SELECT * FROM pool_obligation_effect_receipts WHERE id = $1",
       mapPoolObligationEffectReceipt
     );
+  }
+
+  async getAgentSecuredFacilityAuthorization(agentSecuredFacilityAuthorizationId) {
+    return this.#getOne(
+      "agentSecuredFacilityAuthorizationId",
+      agentSecuredFacilityAuthorizationId,
+      "SELECT * FROM agent_secured_facility_authorizations WHERE id = $1",
+      mapAgentSecuredFacilityAuthorization
+    );
+  }
+
+  async findAgentSecuredFacilityAuthorizationForFacilityInTransaction(
+    client,
+    tradingFacilityId,
+    { lock = false } = {}
+  ) {
+    assertQueryable(client);
+    assertString("tradingFacilityId", tradingFacilityId);
+    const result = await client.query(
+      `SELECT * FROM agent_secured_facility_authorizations
+        WHERE trading_facility_id = $1
+        ${lock ? "FOR UPDATE" : ""}`,
+      [tradingFacilityId]
+    );
+    return mapAgentSecuredFacilityAuthorization(result.rows[0]);
   }
 
   async getAgentAccountChallenge(challengeId) {
@@ -4501,6 +4533,9 @@ export class PostgresCoreRepository {
       case CoreProjectionType.POOL_OBLIGATION_EFFECT_RECEIPT:
         value = await this.getPoolObligationEffectReceipt(entityId);
         break;
+      case CoreProjectionType.AGENT_SECURED_FACILITY_AUTHORIZATION:
+        value = await this.getAgentSecuredFacilityAuthorization(entityId);
+        break;
       case CoreProjectionType.AGENT_ACCOUNT_CHALLENGE:
         value = await this.getAgentAccountChallenge(entityId);
         break;
@@ -4725,6 +4760,8 @@ export class PostgresCoreRepository {
         return this.#writePoolExecutionReceipt(client, value);
       case CoreProjectionType.POOL_OBLIGATION_EFFECT_RECEIPT:
         return this.#writePoolObligationEffectReceipt(client, value, write.eventId);
+      case CoreProjectionType.AGENT_SECURED_FACILITY_AUTHORIZATION:
+        return this.#writeAgentSecuredFacilityAuthorization(client, value);
       case CoreProjectionType.AGENT_ACCOUNT_CHALLENGE:
         return this.#writeAgentAccountChallenge(client, value);
       case CoreProjectionType.AGENT_ACCOUNT_PROOF_ATTEMPT:
@@ -4977,6 +5014,56 @@ export class PostgresCoreRepository {
     );
     if (result.rowCount !== 1) {
       throw projectionConflict(CoreProjectionType.POOL_OBLIGATION_BINDING, value.poolObligationBindingId);
+    }
+  }
+
+  async #writeAgentSecuredFacilityAuthorization(client, value) {
+    const result = await client.query(
+      `INSERT INTO agent_secured_facility_authorizations(
+         id, authorization_hash, subject_id, principal_id, mandate_id,
+         mandate_hash, account_binding_id, account_hash,
+         pool_obligation_binding_id, pool_binding_hash, pool_projection_hash,
+         obligation_id, obligation_hash, trading_facility_id, facility_hash,
+         facility_state_hash, facility_version, chain_id, operation_family,
+         allowed_intent_kinds, valid_from, expires_at, status, version,
+         revoked_at, revocation_hash, sandbox_only, production_authority,
+         funds_authority, signing_authority, nonce_authority, network_authority,
+         withdrawal_allowed, transfer_allowed, authorization_record, schema_version
+       ) VALUES (
+         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
+         $20::jsonb,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,
+         $35::jsonb,$36
+       ) ON CONFLICT (tenant_id, id) DO UPDATE SET
+         status = EXCLUDED.status,
+         version = EXCLUDED.version,
+         revoked_at = EXCLUDED.revoked_at,
+         revocation_hash = EXCLUDED.revocation_hash,
+         authorization_record = EXCLUDED.authorization_record
+       WHERE agent_secured_facility_authorizations.authorization_hash = EXCLUDED.authorization_hash
+         AND agent_secured_facility_authorizations.status = 'active'
+         AND EXCLUDED.status = 'revoked'
+         AND EXCLUDED.version = agent_secured_facility_authorizations.version + 1
+       RETURNING id`,
+      [
+        value.agentSecuredFacilityAuthorizationId, value.authorizationHash,
+        value.subjectId, value.principalId, value.mandateId, value.mandateHash,
+        value.accountBindingId, value.accountHash, value.poolObligationBindingId,
+        value.poolBindingHash, value.poolProjectionHash, value.obligationId,
+        value.obligationHash, value.tradingFacilityId, value.facilityHash,
+        value.facilityStateHash, value.facilityVersion, value.chainId,
+        value.operationFamily, json(value.allowedIntentKinds), value.validFrom,
+        value.expiresAt, value.status, value.version, value.revokedAt,
+        value.revocationHash, value.sandboxOnly, value.productionAuthority,
+        value.fundsAuthority, value.signingAuthority, value.nonceAuthority,
+        value.networkAuthority, value.withdrawalAllowed, value.transferAllowed,
+        value, value.schemaVersion
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(
+        CoreProjectionType.AGENT_SECURED_FACILITY_AUTHORIZATION,
+        value.agentSecuredFacilityAuthorizationId
+      );
     }
   }
 

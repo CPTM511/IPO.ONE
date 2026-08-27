@@ -1319,6 +1319,52 @@
       "fundsAuthority": false
     },
     {
+      "operationId": "agentCreateSecuredFacilityAuthorization",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "agent.facility_authorization.create.owned",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_secured_facility_authorization_created.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "agentReadSecuredFacilityAuthorization",
+      "kind": "query",
+      "actorTypes": [
+        "human",
+        "agent"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "agent.facility_authorization.read.bound",
+      "idempotency": "prohibited",
+      "quotaClass": "read",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_secured_facility_authorization_ready.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
+      "operationId": "agentRevokeSecuredFacilityAuthorization",
+      "kind": "command",
+      "actorTypes": [
+        "human"
+      ],
+      "resourceType": "trading_facility",
+      "requiredCapability": "agent.facility_authorization.revoke.owned",
+      "idempotency": "required",
+      "quotaClass": "mutation",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_agent_secured_facility_authorization_revoked.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
       "operationId": "walletPrepareAccountBinding",
       "kind": "command",
       "actorTypes": [

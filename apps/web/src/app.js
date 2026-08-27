@@ -209,6 +209,12 @@ const tradingCapitalPilot = {
   settlement: null,
   performanceProof: null,
   evidence: null,
+  authorization: null,
+  executionPrewriteReadiness: null,
+  dualRiskRecoveryReadiness: null,
+  authorizationError: false,
+  authorizationHelper:
+    "Load one exact Facility first. Creation and revocation require the authenticated Principal workspace; the Agent may only read the current authorization.",
   helper:
     "Use the Facility ID returned by an authorized Trading Capital API/SDK workflow. This page does not create or discover Facilities; denied, missing, and cross-Tenant resources remain non-enumerating."
 };
@@ -7513,6 +7519,56 @@ function tradingCapitalSummaryItem(label, value) {
   return item;
 }
 
+function safeAgentFacilityAuthorizationResponse(result, facilityId) {
+  const response = result?.response;
+  const authorization = response?.authorization;
+  const readiness = response?.executionPrewriteReadiness;
+  const recoveryReadiness = response?.dualRiskRecoveryReadiness;
+  if (
+    !authorization ||
+    authorization.schemaVersion !== "agent_secured_facility_authorization.v1" ||
+    authorization.tradingFacilityId !== facilityId ||
+    authorization.operationFamily !== "agent_trading_capital_intent.v1" ||
+    JSON.stringify(authorization.allowedIntentKinds) !== JSON.stringify(["open", "close"]) ||
+    authorization.sandboxOnly !== true ||
+    authorization.productionAuthority !== false ||
+    authorization.fundsAuthority !== false ||
+    authorization.signingAuthority !== false ||
+    authorization.nonceAuthority !== false ||
+    authorization.networkAuthority !== false ||
+    authorization.withdrawalAllowed !== false ||
+    authorization.transferAllowed !== false ||
+    response.preSigningOnly !== true ||
+    response.nonceCreated !== false ||
+    response.signatureCreated !== false ||
+    response.networkCalled !== false ||
+    response.fundsMoved !== false ||
+    readiness?.status !== "BLOCKED_PREWRITE" ||
+    readiness.launchProfileId !== "live_testnet_secured_pool_agent_execution" ||
+    readiness.compositionAvailable !== false ||
+    readiness.compositionHash !== null ||
+    !Array.isArray(readiness.blockers) || readiness.blockers.length < 5 ||
+    readiness.externalNonceAllocated !== false ||
+    readiness.signatureCreated !== false ||
+    readiness.networkCalled !== false ||
+    readiness.submissionAuthorized !== false ||
+    readiness.schemaVersion !== "agent_hyperliquid_prewrite_readiness.v1" ||
+    recoveryReadiness?.status !== "BLOCKED_RECOVERY_PREWRITE" ||
+    recoveryReadiness.combinedRiskState !== "UNKNOWN" ||
+    recoveryReadiness.currentStage !== "FREEZE_NEW_RISK" ||
+    !Array.isArray(recoveryReadiness.blockers) || recoveryReadiness.blockers.length < 3 ||
+    recoveryReadiness.externalWriteAuthorized !== false ||
+    recoveryReadiness.externalNonceAllocated !== false ||
+    recoveryReadiness.signatureCreated !== false ||
+    recoveryReadiness.networkCalled !== false ||
+    recoveryReadiness.protectiveAuthorityCanExpandRisk !== false ||
+    recoveryReadiness.schemaVersion !== "m2b_003_recovery_readiness.v1"
+  ) {
+    throw new Error("agent_facility_authorization_presentation_rejected");
+  }
+  return { authorization, readiness, recoveryReadiness };
+}
+
 function renderTradingCapital() {
   if (!el("tradingCapitalOperationCount")) return;
   const catalogCount = TRADING_CAPITAL_OPERATION_IDS.filter((operationId) =>
@@ -7528,8 +7584,8 @@ function renderTradingCapital() {
   el("tradingCapitalOperationCount").textContent =
     `${catalogCount} / ${TRADING_CAPITAL_OPERATION_IDS.length}`;
   el("tradingCapitalNavState").textContent = parity
-    ? "25 local operations"
-    : `${catalogCount} / 25 available`;
+    ? `${TRADING_CAPITAL_OPERATION_IDS.length} local operations`
+    : `${catalogCount} / ${TRADING_CAPITAL_OPERATION_IDS.length} available`;
   el("tradingCapitalCatalogStatus").textContent = parity
     ? "Local contract verified"
     : "Contract unavailable";
@@ -7546,6 +7602,56 @@ function renderTradingCapital() {
       : "Not loaded";
   el("tradingCapitalHelper").textContent = tradingCapitalPilot.helper;
   el("tradingCapitalHelper").classList.toggle("error", tradingCapitalPilot.error);
+  const authorization = tradingCapitalPilot.authorization;
+  const principalWorkspace = hasPrincipalAgentAuthorityWorkspace();
+  el("tradingCapitalAuthorizationStatus").textContent = authorization
+    ? titleize(authorization.status)
+    : "Not checked";
+  el("tradingCapitalAuthorizationStatus").classList.toggle(
+    "available",
+    authorization?.status === "active"
+  );
+  el("tradingCapitalAuthorizationStatus").classList.toggle(
+    "warning",
+    authorization?.status !== "active"
+  );
+  el("tradingCapitalAuthorizationHash").textContent = authorization
+    ? compactDecisionProofHash(authorization.authorizationHash)
+    : "Unavailable";
+  el("tradingCapitalAuthorizationHash").title = authorization?.authorizationHash ?? "";
+  el("tradingCapitalAuthorizationExpiry").textContent = authorization
+    ? new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(new Date(authorization.expiresAt))
+    : "Unavailable";
+  el("tradingCapitalAuthorizationHelper").textContent =
+    tradingCapitalPilot.authorizationHelper;
+  el("tradingCapitalAuthorizationHelper").classList.toggle(
+    "error",
+    tradingCapitalPilot.authorizationError
+  );
+  const prewrite = tradingCapitalPilot.executionPrewriteReadiness;
+  el("tradingCapitalPrewriteStatus").textContent = prewrite
+    ? "Blocked pre-write · server verified"
+    : "Blocked pre-write";
+  el("tradingCapitalCompositionState").textContent = prewrite?.compositionAvailable
+    ? "Prepared"
+    : "Not available";
+  el("tradingCapitalPrewriteHelper").textContent = prewrite
+    ? `STOP receipt verified. ${prewrite.blockers.length} recovery conditions remain; no nonce, signature, or network submission exists.`
+    : "This is a queryable STOP receipt, not an execution control. Load the exact Facility and authorization to recover current server truth.";
+  const recoveryReadiness = tradingCapitalPilot.dualRiskRecoveryReadiness;
+  el("tradingCapitalRecoveryStatus").textContent = recoveryReadiness
+    ? "STOP · server verified"
+    : "STOP · no current incident";
+  el("tradingCapitalCombinedRiskState").textContent =
+    recoveryReadiness?.combinedRiskState ?? "Unknown";
+  el("tradingCapitalRecoveryStage").textContent =
+    recoveryReadiness?.currentStage ?? "Freeze new risk";
+  el("tradingCapitalRecoveryHelper").textContent = recoveryReadiness
+    ? `Recovery remains read-only. ${recoveryReadiness.blockers.length} conditions remain; protective authority cannot expand risk.`
+    : "Load the exact Facility and authorization to recover current dual-risk STOP truth.";
   el("tradingCapitalActiveEyebrow").textContent = view.label;
   el("tradingCapitalViewStatus").textContent = parity
     ? "Authenticated local contract"
@@ -7602,6 +7708,13 @@ function renderTradingCapital() {
   el("tradingCapitalIssueProofBtn").disabled =
     blocked ||
     presentation?.actions.issuePerformanceProofAvailable !== true;
+  el("tradingCapitalReadAuthorizationBtn").disabled =
+    blocked || !presentation;
+  el("tradingCapitalCreateAuthorizationBtn").disabled =
+    blocked || !presentation || !principalWorkspace || Boolean(authorization);
+  el("tradingCapitalRevokeAuthorizationBtn").disabled =
+    blocked || !presentation || !principalWorkspace ||
+    authorization?.status !== "active";
 }
 
 async function loadTradingCapitalFacility({ evidence = false } = {}) {
@@ -7646,6 +7759,12 @@ async function loadTradingCapitalFacility({ evidence = false } = {}) {
       tradingCapitalPilot.performanceProof = null;
       tradingCapitalPilot.evidence = null;
     }
+    tradingCapitalPilot.authorization = null;
+    tradingCapitalPilot.executionPrewriteReadiness = null;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = null;
+    tradingCapitalPilot.authorizationError = false;
+    tradingCapitalPilot.authorizationHelper =
+      "Facility loaded. Check current authorization before creating or revoking Principal authority.";
     if (!currentTradingCapitalPresentation()) {
       throw new Error("trading_capital_presentation_contract_rejected");
     }
@@ -7660,12 +7779,145 @@ async function loadTradingCapitalFacility({ evidence = false } = {}) {
     tradingCapitalPilot.settlement = null;
     tradingCapitalPilot.performanceProof = null;
     tradingCapitalPilot.evidence = null;
+    tradingCapitalPilot.authorization = null;
+    tradingCapitalPilot.authorizationError = false;
     tradingCapitalPilot.error = true;
     tradingCapitalPilot.helper = tradingCapitalResourceUnavailable(error)
       ? "Bound access is required, or the exact Facility is unavailable."
       : `Trading Capital read failed. Request ID: ${error.requestId ?? "unavailable"}`;
     toast(tradingCapitalPilot.helper, "error");
     announce(tradingCapitalPilot.helper);
+  } finally {
+    tradingCapitalPilot.busy = false;
+    renderTradingCapital();
+  }
+}
+
+async function readTradingCapitalAuthorization() {
+  const presentation = currentTradingCapitalPresentation();
+  if (tradingCapitalPilot.busy || !presentation) return;
+  tradingCapitalPilot.busy = true;
+  tradingCapitalPilot.authorizationError = false;
+  tradingCapitalPilot.authorizationHelper =
+    "Checking the exact current shared-kernel authorization…";
+  renderTradingCapital();
+  try {
+    const result = await tenantApi("agentReadSecuredFacilityAuthorization", {
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: presentation.facilityId
+      },
+      payload: {},
+      idempotent: false
+    });
+    const checked = safeAgentFacilityAuthorizationResponse(
+      result,
+      presentation.facilityId
+    );
+    tradingCapitalPilot.authorization = checked.authorization;
+    tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = checked.recoveryReadiness;
+    tradingCapitalPilot.authorizationHelper =
+      "Current authorization is bound to this Facility, canonical Obligation, Mandate, execution AccountBinding, and finalized Pool projection. It grants no nonce, signer, network, withdrawal, transfer, or funds authority.";
+    toast("Agent Facility authorization loaded");
+  } catch (error) {
+    tradingCapitalPilot.authorization = null;
+    tradingCapitalPilot.executionPrewriteReadiness = null;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = null;
+    tradingCapitalPilot.authorizationError = true;
+    tradingCapitalPilot.authorizationHelper = tradingCapitalResourceUnavailable(error)
+      ? "No current authorization is available for this bound Facility and workspace."
+      : `Authorization check failed. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    tradingCapitalPilot.busy = false;
+    renderTradingCapital();
+  }
+}
+
+async function createTradingCapitalAuthorization() {
+  const presentation = currentTradingCapitalPresentation();
+  if (
+    tradingCapitalPilot.busy || !presentation ||
+    !hasPrincipalAgentAuthorityWorkspace() || tradingCapitalPilot.authorization
+  ) return;
+  tradingCapitalPilot.busy = true;
+  tradingCapitalPilot.authorizationError = false;
+  tradingCapitalPilot.authorizationHelper =
+    "Creating exact Principal-controlled Agent authorization. This records authority but creates no nonce, signature, network call, or funds movement…";
+  renderTradingCapital();
+  try {
+    const result = await tenantApi("agentCreateSecuredFacilityAuthorization", {
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: presentation.facilityId
+      },
+      payload: {},
+      idempotent: true
+    });
+    const checked = safeAgentFacilityAuthorizationResponse(
+      result,
+      presentation.facilityId
+    );
+    tradingCapitalPilot.authorization = checked.authorization;
+    tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = checked.recoveryReadiness;
+    tradingCapitalPilot.authorizationHelper =
+      "Agent authorization created. It permits only goal-level open and protective close intent checks before signing; all external authority remains disabled.";
+    toast("Agent Facility authorization created");
+    announce(tradingCapitalPilot.authorizationHelper);
+  } catch (error) {
+    tradingCapitalPilot.authorizationError = true;
+    tradingCapitalPilot.authorizationHelper = tradingCapitalResourceUnavailable(error)
+      ? "Principal authority is required, a current authorization already exists, or one bound resource is stale or unavailable."
+      : `Authorization creation failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(tradingCapitalPilot.authorizationHelper, "error");
+  } finally {
+    tradingCapitalPilot.busy = false;
+    renderTradingCapital();
+  }
+}
+
+async function revokeTradingCapitalAuthorization() {
+  const presentation = currentTradingCapitalPresentation();
+  const authorization = tradingCapitalPilot.authorization;
+  if (
+    tradingCapitalPilot.busy || !presentation ||
+    !hasPrincipalAgentAuthorityWorkspace() || authorization?.status !== "active"
+  ) return;
+  tradingCapitalPilot.busy = true;
+  tradingCapitalPilot.authorizationError = false;
+  tradingCapitalPilot.authorizationHelper =
+    "Revoking this exact Agent authorization. Revocation is terminal and blocks new-risk use after restart…";
+  renderTradingCapital();
+  try {
+    const result = await tenantApi("agentRevokeSecuredFacilityAuthorization", {
+      resource: {
+        resourceType: "trading_facility",
+        resourceId: presentation.facilityId
+      },
+      payload: {
+        expectedAuthorizationHash: authorization.authorizationHash,
+        expectedVersion: authorization.version
+      },
+      idempotent: true
+    });
+    const checked = safeAgentFacilityAuthorizationResponse(
+      result,
+      presentation.facilityId
+    );
+    tradingCapitalPilot.authorization = checked.authorization;
+    tradingCapitalPilot.executionPrewriteReadiness = checked.readiness;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = checked.recoveryReadiness;
+    tradingCapitalPilot.authorizationHelper =
+      "Agent authorization revoked. Historical Event and Evidence remain queryable; new-risk Agent intent remains denied.";
+    toast("Agent Facility authorization revoked");
+    announce(tradingCapitalPilot.authorizationHelper);
+  } catch (error) {
+    tradingCapitalPilot.authorizationError = true;
+    tradingCapitalPilot.authorizationHelper = tradingCapitalResourceUnavailable(error)
+      ? "Revocation authority is unavailable, or the exact authorization changed. Check current authorization and retry."
+      : `Authorization revocation failed. Request ID: ${error.requestId ?? "unavailable"}`;
+    toast(tradingCapitalPilot.authorizationHelper, "error");
   } finally {
     tradingCapitalPilot.busy = false;
     renderTradingCapital();
@@ -12467,6 +12719,18 @@ function bindActions() {
     "click",
     issueTradingCapitalProof
   );
+  el("tradingCapitalReadAuthorizationBtn").addEventListener(
+    "click",
+    readTradingCapitalAuthorization
+  );
+  el("tradingCapitalCreateAuthorizationBtn").addEventListener(
+    "click",
+    createTradingCapitalAuthorization
+  );
+  el("tradingCapitalRevokeAuthorizationBtn").addEventListener(
+    "click",
+    revokeTradingCapitalAuthorization
+  );
   const tradingCapitalTabs = [
     ...document.querySelectorAll("[data-trading-capital-view]")
   ];
@@ -12509,6 +12773,12 @@ function bindActions() {
     tradingCapitalPilot.settlement = null;
     tradingCapitalPilot.performanceProof = null;
     tradingCapitalPilot.evidence = null;
+    tradingCapitalPilot.authorization = null;
+    tradingCapitalPilot.executionPrewriteReadiness = null;
+    tradingCapitalPilot.dualRiskRecoveryReadiness = null;
+    tradingCapitalPilot.authorizationError = false;
+    tradingCapitalPilot.authorizationHelper =
+      "Load one exact Facility first. Creation and revocation require the authenticated Principal workspace; the Agent may only read the current authorization.";
     tradingCapitalPilot.error = false;
     tradingCapitalPilot.helper =
       "Enter one exact bound ID. Denied, missing, and cross-Tenant resources remain non-enumerating.";

@@ -96,6 +96,9 @@
         "tradingReadSettlement",
         "tradingIssuePerformanceProof",
         "tradingReadFacilityEvidence",
+        "agentCreateSecuredFacilityAuthorization",
+        "agentReadSecuredFacilityAuthorization",
+        "agentRevokeSecuredFacilityAuthorization",
         "walletPrepareAccountBinding",
         "walletSubmitAccountBinding",
         "walletReadAccountBindings",
@@ -549,6 +552,63 @@
               "reasonCode"
             ]
           }
+        ]
+      }
+    },
+    {
+      "title": "Create Agent Secured Facility Authorization",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": {
+          "const": "agentCreateSecuredFacilityAuthorization"
+        },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/tradingFacilityResourceReference" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] },
+          { "required": ["purpose"] }
+        ]
+      }
+    },
+    {
+      "title": "Read Agent Secured Facility Authorization",
+      "required": ["resource"],
+      "properties": {
+        "operationId": {
+          "const": "agentReadSecuredFacilityAuthorization"
+        },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/tradingFacilityResourceReference" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["idempotencyKey"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] },
+          { "required": ["purpose"] }
+        ]
+      }
+    },
+    {
+      "title": "Revoke Agent Secured Facility Authorization",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": {
+          "const": "agentRevokeSecuredFacilityAuthorization"
+        },
+        "payload": {
+          "$ref": "#/$defs/agentSecuredFacilityAuthorizationRevokePayload"
+        },
+        "resource": { "$ref": "#/$defs/tradingFacilityResourceReference" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] },
+          { "required": ["purpose"] }
         ]
       }
     },
@@ -4550,6 +4610,15 @@
           "type": "string",
           "pattern": "^0x[0-9a-f]{64}$"
         }
+      }
+    },
+    "agentSecuredFacilityAuthorizationRevokePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expectedAuthorizationHash", "expectedVersion"],
+      "properties": {
+        "expectedAuthorizationHash": { "$ref": "#/$defs/hash" },
+        "expectedVersion": { "const": 1 }
       }
     },
     "tradingAccountBindingChallengePayload": {

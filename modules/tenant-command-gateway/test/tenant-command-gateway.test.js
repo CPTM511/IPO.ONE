@@ -149,6 +149,9 @@ test("handler registry is closed, unique, and distinguishes commands from querie
 test("foundation registry exposes only the reviewed durable operations", () => {
   const registry = new TenantCommandHandlerRegistry(createTenantFoundationHandlers());
   assert.deepEqual(registry.listOperationIds(), [
+    "agentCreateSecuredFacilityAuthorization",
+    "agentReadSecuredFacilityAuthorization",
+    "agentRevokeSecuredFacilityAuthorization",
     "pilotAcceptCreditOffer",
     "pilotAcknowledgeProviderIntent",
     "pilotActivateSandboxMandate",

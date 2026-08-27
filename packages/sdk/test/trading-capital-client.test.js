@@ -19,16 +19,47 @@ const fixtures = JSON.parse(
   )
 );
 
-test("TC-104 typed SDK covers the exact 25-operation Trading Capital catalog", () => {
+test("TC-104 and M2B-001 typed SDK cover the exact 28-operation catalog", () => {
   assert.deepEqual(
     TENANT_PROTOCOL_OPERATIONS
       .map(({ operationId }) => operationId)
-      .filter((operationId) => operationId.startsWith("trading")),
+      .filter((operationId) =>
+        operationId.startsWith("trading") ||
+        operationId.includes("SecuredFacilityAuthorization")
+      ),
     TRADING_CAPITAL_OPERATION_IDS
   );
   assert.deepEqual(
     [...new Set(Object.values(TRADING_CAPITAL_ROLE_OPERATIONS).flat())].sort(),
     [...TRADING_CAPITAL_OPERATION_IDS].sort()
+  );
+});
+
+test("M2B-001 SDK preserves Principal mutation and Agent read-only boundaries", async () => {
+  const readRequest = fixtures.validRequests.find(
+    ({ operationId }) => operationId === "agentReadSecuredFacilityAuthorization"
+  );
+  const readResult = fixtures.validResults.find(
+    ({ operationId }) => operationId === "agentReadSecuredFacilityAuthorization"
+  );
+  const createRequest = fixtures.validRequests.find(
+    ({ operationId }) => operationId === "agentCreateSecuredFacilityAuthorization"
+  );
+  const agent = new IpoOneTradingCapitalClient({
+    actorType: "agent",
+    transportProfile: "local_in_process",
+    execute: async () => readResult
+  });
+  assert.deepEqual(await agent.executeOperation(readRequest), readResult);
+  await assert.rejects(
+    () => agent.executeOperation(createRequest),
+    (error) => error.code === "trading_capital_sdk_scope_denied"
+  );
+  assert.equal(
+    TRADING_CAPITAL_ROLE_OPERATIONS.human.includes(
+      "agentRevokeSecuredFacilityAuthorization"
+    ),
+    true
   );
 });
 

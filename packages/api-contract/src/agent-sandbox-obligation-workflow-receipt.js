@@ -21,6 +21,7 @@ import tradingFacilityRiskEvaluationSchema from "../../../schemas/v2/trading-fac
 import tradingFacilityCloseRequestSchema from "../../../schemas/v2/trading-facility-close-request.schema.json" with { type: "json" };
 import tradingSettlementSchema from "../../../schemas/v2/trading-settlement.schema.json" with { type: "json" };
 import tradingPerformanceProofSchema from "../../../schemas/v2/trading-performance-proof.schema.json" with { type: "json" };
+import agentSecuredFacilityAuthorizationSchema from "../../../schemas/v2/agent-secured-facility-authorization.schema.json" with { type: "json" };
 import tenantProtocolResultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
 
 export const AGENT_SANDBOX_OBLIGATION_WORKFLOW_RECEIPT_SCHEMA_VERSION =
@@ -65,6 +66,7 @@ ajv.addSchema(tradingFacilityRiskEvaluationSchema);
 ajv.addSchema(tradingFacilityCloseRequestSchema);
 ajv.addSchema(tradingSettlementSchema);
 ajv.addSchema(tradingPerformanceProofSchema);
+ajv.addSchema(agentSecuredFacilityAuthorizationSchema);
 ajv.addSchema(tenantProtocolResultSchema);
 const validateReceipt = ajv.compile(receiptSchema);
 

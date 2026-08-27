@@ -81,6 +81,9 @@ export type TenantProtocolOperationId =
   | "tradingReadSettlement"
   | "tradingIssuePerformanceProof"
   | "tradingReadFacilityEvidence"
+  | "agentCreateSecuredFacilityAuthorization"
+  | "agentReadSecuredFacilityAuthorization"
+  | "agentRevokeSecuredFacilityAuthorization"
   | "walletPrepareAccountBinding"
   | "walletSubmitAccountBinding"
   | "walletReadAccountBindings"
@@ -1492,6 +1495,26 @@ export interface ReadTradingFacilityEvidenceRequest extends TenantProtocolReques
   resource: { resourceType: "trading_facility"; resourceId: string };
 }
 
+export interface CreateAgentSecuredFacilityAuthorizationRequest extends TenantProtocolRequestBase {
+  operationId: "agentCreateSecuredFacilityAuthorization";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ReadAgentSecuredFacilityAuthorizationRequest extends TenantProtocolRequestBase {
+  operationId: "agentReadSecuredFacilityAuthorization";
+  payload: Record<string, never>;
+  resource: { resourceType: "trading_facility"; resourceId: string };
+}
+
+export interface RevokeAgentSecuredFacilityAuthorizationRequest extends TenantProtocolRequestBase {
+  operationId: "agentRevokeSecuredFacilityAuthorization";
+  payload: { expectedAuthorizationHash: string; expectedVersion: number };
+  resource: { resourceType: "trading_facility"; resourceId: string };
+  idempotencyKey: string;
+}
+
 export type CreditPassportClaim =
   | "decision_outcome"
   | "factor_authority"
@@ -1930,7 +1953,10 @@ export type TenantProtocolRequest =
   | RunTradingSettlementRequest
   | ReadTradingSettlementRequest
   | IssueTradingPerformanceProofRequest
-  | ReadTradingFacilityEvidenceRequest;
+  | ReadTradingFacilityEvidenceRequest
+  | CreateAgentSecuredFacilityAuthorizationRequest
+  | ReadAgentSecuredFacilityAuthorizationRequest
+  | RevokeAgentSecuredFacilityAuthorizationRequest;
 
 export interface AgentAccountBindingSummary {
   accountBindingId: string;
@@ -4313,6 +4339,94 @@ export interface TradingFacilityEvidenceResponse {
   schemaVersion: "trading_facility_evidence.v1";
 }
 
+export interface AgentSecuredFacilityAuthorization {
+  agentSecuredFacilityAuthorizationId: string;
+  authorizationHash: string;
+  subjectId: string;
+  principalId: string;
+  mandateId: string;
+  mandateHash: string;
+  accountBindingId: string;
+  accountHash: string;
+  poolObligationBindingId: string;
+  poolBindingHash: string;
+  poolProjectionHash: string;
+  obligationId: string;
+  obligationHash: string;
+  tradingFacilityId: string;
+  facilityHash: string;
+  facilityStateHash: string;
+  facilityVersion: number;
+  chainId: "eip155:84532";
+  operationFamily: "agent_trading_capital_intent.v1";
+  allowedIntentKinds: readonly ["open", "close"];
+  validFrom: string;
+  expiresAt: string;
+  sandboxOnly: true;
+  productionAuthority: false;
+  fundsAuthority: false;
+  signingAuthority: false;
+  nonceAuthority: false;
+  networkAuthority: false;
+  withdrawalAllowed: false;
+  transferAllowed: false;
+  status: "active" | "revoked" | "expired";
+  version: 1 | 2;
+  revokedAt: string | null;
+  revocationHash: string | null;
+  schemaVersion: "agent_secured_facility_authorization.v1";
+}
+
+export interface AgentSecuredFacilityAuthorizationResponse {
+  authorization: AgentSecuredFacilityAuthorization;
+  readyForIntent: boolean;
+  executionPrewriteReadiness: {
+    status: "BLOCKED_PREWRITE";
+    launchProfileId: "live_testnet_secured_pool_agent_execution";
+    compositionAvailable: false;
+    compositionHash: null;
+    blockers: Array<
+      | "distinct_agent_venue_launch_profile_missing"
+      | "durable_exact_composition_not_supplied"
+      | "fresh_reconciled_hyperliquid_account_observation_missing"
+      | "fresh_non_exporting_signer_handoff_missing"
+      | "exact_one_use_founder_run_approval_missing"
+      | "current_facility_authorization_unavailable"
+    >;
+    externalNonceAllocated: false;
+    signatureCreated: false;
+    networkCalled: false;
+    submissionAuthorized: false;
+    schemaVersion: "agent_hyperliquid_prewrite_readiness.v1";
+  };
+  dualRiskRecoveryReadiness: {
+    status: "BLOCKED_RECOVERY_PREWRITE";
+    combinedRiskState: "UNKNOWN";
+    currentStage: "FREEZE_NEW_RISK";
+    blockers: Array<
+      | "fresh_dual_risk_snapshot_missing"
+      | "durable_recovery_incident_missing"
+      | "external_protective_run_approval_missing"
+      | "current_facility_authorization_unavailable"
+    >;
+    externalWriteAuthorized: false;
+    externalNonceAllocated: false;
+    signatureCreated: false;
+    networkCalled: false;
+    protectiveAuthorityCanExpandRisk: false;
+    schemaVersion: "m2b_003_recovery_readiness.v1";
+  };
+  preSigningOnly: true;
+  nonceCreated: false;
+  signatureCreated: false;
+  networkCalled: false;
+  fundsMoved: false;
+  schemaVersion:
+    | "tenant_agent_secured_facility_authorization_created.v1"
+    | "tenant_agent_secured_facility_authorization_ready.v1"
+    | "tenant_agent_secured_facility_authorization_revoked.v1";
+}
+
 export interface WalletSafetyFields {
   transactionsAllowed: false;
   sandboxOnly: true;
@@ -4695,7 +4809,10 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"tradingRunSettlement", TradingSettlementFinalizedResponse>
   | TenantProtocolResultBase<"tradingReadSettlement", TradingSettlementViewResponse>
   | TenantProtocolResultBase<"tradingIssuePerformanceProof", TradingPerformanceProofResponse>
-  | TenantProtocolResultBase<"tradingReadFacilityEvidence", TradingFacilityEvidenceResponse>;
+  | TenantProtocolResultBase<"tradingReadFacilityEvidence", TradingFacilityEvidenceResponse>
+  | TenantProtocolResultBase<"agentCreateSecuredFacilityAuthorization", AgentSecuredFacilityAuthorizationResponse>
+  | TenantProtocolResultBase<"agentReadSecuredFacilityAuthorization", AgentSecuredFacilityAuthorizationResponse>
+  | TenantProtocolResultBase<"agentRevokeSecuredFacilityAuthorization", AgentSecuredFacilityAuthorizationResponse>;
 
 export type TenantProtocolResultFor<OperationId extends TenantProtocolOperationId> = Extract<
   TenantProtocolResult,
@@ -5114,6 +5231,36 @@ export type TenantProtocolOperation =
       "prohibited",
       "read",
       "trading_facility_evidence.v1"
+    >
+  | TenantProtocolOperationBase<
+      "agentCreateSecuredFacilityAuthorization",
+      "command",
+      readonly ["human"],
+      "trading_facility",
+      "agent.facility_authorization.create.owned",
+      "required",
+      "mutation",
+      "tenant_agent_secured_facility_authorization_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "agentReadSecuredFacilityAuthorization",
+      "query",
+      readonly ["human", "agent"],
+      "trading_facility",
+      "agent.facility_authorization.read.bound",
+      "prohibited",
+      "read",
+      "tenant_agent_secured_facility_authorization_ready.v1"
+    >
+  | TenantProtocolOperationBase<
+      "agentRevokeSecuredFacilityAuthorization",
+      "command",
+      readonly ["human"],
+      "trading_facility",
+      "agent.facility_authorization.revoke.owned",
+      "required",
+      "mutation",
+      "tenant_agent_secured_facility_authorization_revoked.v1"
     >
   | TenantProtocolOperationBase<
       "pilotAcceptCreditOffer",

@@ -1,6 +1,7 @@
 export * from "./agent-subject-handlers.js";
 export * from "./agent-account-proof-handlers.js";
 export * from "./execution-account-binding-handlers.js";
+export * from "./agent-secured-facility-authorization-handlers.js";
 export * from "./credit-intent-handlers.js";
 export * from "./credit-decision-handlers.js";
 export * from "./credit-passport-handlers.js";

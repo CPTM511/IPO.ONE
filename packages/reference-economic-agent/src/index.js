@@ -10,7 +10,9 @@ const CREDIT_METHODS = Object.freeze([
   "readFacility",
   "repay",
   "readEvidence",
-  "readPerformance"
+  "readPerformance",
+  "readCreditOutcome",
+  "readCreditState"
 ]);
 
 const VENUE_METHODS = Object.freeze([
@@ -190,6 +192,14 @@ export class ReferenceEconomicAgent {
       facilityId: facility.facilityId,
       runId
     });
+    const creditOutcome = await this.#creditProvider.readCreditOutcome({
+      facilityId: facility.facilityId,
+      runId
+    });
+    const creditState = await this.#creditProvider.readCreditState({
+      facilityId: facility.facilityId,
+      runId
+    });
 
     return immutable({
       account,
@@ -197,6 +207,8 @@ export class ReferenceEconomicAgent {
       binding,
       closed,
       creditCapabilities,
+      creditOutcome,
+      creditState,
       evidence,
       facility,
       openState,

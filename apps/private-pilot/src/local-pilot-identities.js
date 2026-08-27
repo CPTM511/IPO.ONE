@@ -20,7 +20,7 @@ import { DEFAULT_PRIVATE_PILOT_PROFILE, assertPrivatePilotProfile } from "./priv
 export const LOCAL_PILOT_TENANT_ID = DEFAULT_PRIVATE_PILOT_PROFILE.tenantId;
 export const LOCAL_PILOT_RISK_PORTFOLIO_ID = DEFAULT_PRIVATE_PILOT_PROFILE.riskPortfolioId;
 export const LOCAL_PILOT_SERVICING_QUEUE_ID = DEFAULT_PRIVATE_PILOT_PROFILE.servicingQueueId;
-export const LOCAL_PILOT_CREDENTIAL_GENERATION = "phase5";
+export const LOCAL_PILOT_CREDENTIAL_GENERATION = "phase6";
 
 const IDENTITY_SPECS = Object.freeze({
   borrower: Object.freeze({
@@ -79,6 +79,9 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.MANDATE_DRAFT_CREATE,
       PilotCapability.MANDATE_DRAFT_REVOKE,
       PilotCapability.MANDATE_ACTIVATE_OWNED,
+      PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_CREATE_OWNED,
+      PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND,
+      PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_REVOKE_OWNED,
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.EVIDENCE_READ_OWNED,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
@@ -106,6 +109,7 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.OBLIGATION_READ_OWNED,
       PilotCapability.POOL_READ_SELF,
       PilotCapability.POOL_ACTION_REVIEW_SELF,
+      PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND,
       PilotCapability.EVIDENCE_READ_OWNED,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
       PilotCapability.CREDIT_PASSPORT_READ_SELF,

@@ -460,6 +460,10 @@ export const CreditEventType = Object.freeze({
   TRADING_FACILITY_PROVIDER_FUNDING_RECORDED:
     "trading_facility_provider_funding_recorded",
   TRADING_FACILITY_ACTIVATED: "trading_facility_activated",
+  AGENT_SECURED_FACILITY_AUTHORIZATION_CREATED:
+    "agent_secured_facility_authorization_created",
+  AGENT_SECURED_FACILITY_AUTHORIZATION_REVOKED:
+    "agent_secured_facility_authorization_revoked",
   TRADING_ORDER_INTENT_SUBMITTED: "trading_order_intent_submitted",
   TRADING_ORDER_INTENT_CANCELED: "trading_order_intent_canceled",
   TRADING_FACILITY_RISK_EVALUATED: "trading_facility_risk_evaluated",

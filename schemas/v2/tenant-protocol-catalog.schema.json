@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 106,
-      "maxItems": 106,
+      "minItems": 109,
+      "maxItems": 109,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -343,6 +343,9 @@
             "tradingReadSettlement",
             "tradingIssuePerformanceProof",
             "tradingReadFacilityEvidence",
+            "agentCreateSecuredFacilityAuthorization",
+            "agentReadSecuredFacilityAuthorization",
+            "agentRevokeSecuredFacilityAuthorization",
             "walletPrepareAccountBinding",
             "walletSubmitAccountBinding",
             "walletReadAccountBindings",
@@ -505,6 +508,9 @@
             "trading.settlement.read.bound",
             "trading.performance_proof.issue.bound",
             "trading.facility.evidence.read.bound",
+            "agent.facility_authorization.create.owned",
+            "agent.facility_authorization.read.bound",
+            "agent.facility_authorization.revoke.owned",
             "wallet.account_binding.prepare.owned",
             "wallet.account_binding.submit.owned",
             "wallet.account_binding.read.owned",
@@ -634,6 +640,9 @@
             "trading_settlement_view.v1",
             "tenant_trading_performance_proof_issued.v1",
             "trading_facility_evidence.v1",
+            "tenant_agent_secured_facility_authorization_created.v1",
+            "tenant_agent_secured_facility_authorization_ready.v1",
+            "tenant_agent_secured_facility_authorization_revoked.v1",
             "tenant_execution_account_binding_challenge_created.v1",
             "tenant_execution_account_binding_verified.v1",
             "tenant_execution_account_bindings_view.v1",
@@ -993,6 +1002,42 @@
             "responseSchemaVersion": {
               "const": "trading_facility_evidence.v1"
             }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "agentCreateSecuredFacilityAuthorization" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "trading_facility" },
+            "requiredCapability": { "const": "agent.facility_authorization.create.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_agent_secured_facility_authorization_created.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "agentReadSecuredFacilityAuthorization" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "trading_facility" },
+            "requiredCapability": { "const": "agent.facility_authorization.read.bound" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_agent_secured_facility_authorization_ready.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "agentRevokeSecuredFacilityAuthorization" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human"] },
+            "resourceType": { "const": "trading_facility" },
+            "requiredCapability": { "const": "agent.facility_authorization.revoke.owned" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_agent_secured_facility_authorization_revoked.v1" }
           }
         },
         {

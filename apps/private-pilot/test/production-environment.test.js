@@ -82,6 +82,43 @@ test("production environment supports reviewed wallet-only access without an OID
   });
   assert.match(network.referenceHash, /^0x[0-9a-f]{64}$/);
   assert.equal(JSON.stringify(network).includes("203.0.113.8"), false);
+
+  const nextReferenceKey = join(directory, "reference-key-v2");
+  await writeFile(nextReferenceKey, Buffer.alloc(32, 8).toString("base64url"));
+  const overlapEnvironment = {
+    ...environment,
+    IPO_ONE_AUTH_REFERENCE_HASH_MODE: "overlap_v2_write_v1_lookup",
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF:
+      "projects/ipo-one-prod/secrets/auth-reference-v2/versions/1",
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: nextReferenceKey
+  };
+  const overlap = await loadProductionClosedPilotEnvironment(overlapEnvironment);
+  t.after(async () => Promise.allSettled([
+    overlap.gatewayPool.end(),
+    overlap.authenticationPool.end()
+  ]));
+  assert.equal(overlap.referenceHashMode, "overlap_v2_write_v1_lookup");
+  assert.equal(overlap.runtimeConfig.referenceHashKeyRef, overlapEnvironment.IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF);
+  assert.equal(overlap.runtimeConfig.legacyReferenceHashKeyRef, SECRET_REF);
+  const overlapNetwork = overlap.createNetworkContext({
+    request: { headers: { "x-forwarded-for": "203.0.113.8" } }
+  });
+  assert.match(overlapNetwork.legacyReferenceHash, /^0x[0-9a-f]{64}$/);
+  assert.notEqual(overlapNetwork.referenceHash, overlapNetwork.legacyReferenceHash);
+  await assert.rejects(
+    () => loadProductionClosedPilotEnvironment({
+      ...overlapEnvironment,
+      IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2"
+    }),
+    (error) => error?.code === "authentication_deployment_gate_closed"
+  );
+  await assert.rejects(
+    () => loadProductionClosedPilotEnvironment({
+      ...overlapEnvironment,
+      IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: referenceKey
+    }),
+    (error) => error?.code === "invalid_authentication_configuration"
+  );
 });
 
 test("production environment has no disabled or local-test identity fallback", async () => {

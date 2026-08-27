@@ -26,7 +26,10 @@ export const TRADING_CAPITAL_OPERATION_IDS = Object.freeze([
   "tradingRunSettlement",
   "tradingReadSettlement",
   "tradingIssuePerformanceProof",
-  "tradingReadFacilityEvidence"
+  "tradingReadFacilityEvidence",
+  "agentCreateSecuredFacilityAuthorization",
+  "agentReadSecuredFacilityAuthorization",
+  "agentRevokeSecuredFacilityAuthorization"
 ]);
 
 export const TRADING_CAPITAL_VIEW_DEFINITIONS = Object.freeze([
@@ -74,6 +77,11 @@ export const TRADING_CAPITAL_VIEW_DEFINITIONS = Object.freeze([
     id: "proof",
     label: "Proof",
     operationIds: Object.freeze(TRADING_CAPITAL_OPERATION_IDS.slice(23, 25))
+  }),
+  Object.freeze({
+    id: "authorization",
+    label: "Agent authorization",
+    operationIds: Object.freeze(TRADING_CAPITAL_OPERATION_IDS.slice(25, 28))
   })
 ]);
 

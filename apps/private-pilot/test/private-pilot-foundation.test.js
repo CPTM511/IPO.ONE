@@ -15,6 +15,7 @@ import {
   LOCAL_PILOT_RISK_PORTFOLIO_ID,
   LOCAL_PILOT_SERVICING_QUEUE_ID,
   LOCAL_PILOT_TENANT_ID,
+  LOCAL_PILOT_CREDENTIAL_GENERATION,
   createLocalPilotIdentities
 } from "../src/local-pilot-identities.js";
 import {
@@ -186,6 +187,13 @@ test("private pilot identities are role-separated over one Tenant", () => {
   const runtime = createLocalPilotIdentities();
   const { borrower, capitalPartner, controller, agent, risk } = runtime.identities;
 
+  assert.equal(LOCAL_PILOT_CREDENTIAL_GENERATION, "phase6");
+  assert.equal(
+    controller.clientId,
+    "client_phase6_actor_principal_controller_pilot"
+  );
+  assert.equal(agent.clientId, "client_phase6_actor_agent_pilot_alpha");
+
   assert.equal(borrower.actorType, ActorType.HUMAN);
   assert.equal(borrower.roleBundle, RoleBundle.HUMAN_BORROWER);
   assert.ok(borrower.capabilities.includes(PilotCapability.CREDIT_OFFER_ACCEPT_SELF));
@@ -201,12 +209,21 @@ test("private pilot identities are role-separated over one Tenant", () => {
 
   assert.equal(controller.roleBundle, RoleBundle.PRINCIPAL_CONTROLLER);
   assert.ok(controller.capabilities.includes(PilotCapability.MANDATE_ACTIVATE_OWNED));
+  assert.ok(controller.capabilities.includes(
+    PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_CREATE_OWNED
+  ));
+  assert.ok(controller.capabilities.includes(
+    PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_REVOKE_OWNED
+  ));
   assert.ok(controller.capabilities.includes(PilotCapability.OBLIGATION_READ_OWNED));
   assert.equal(controller.capabilities.includes(PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF), false);
 
   assert.equal(agent.actorId, "actor_agent_pilot_alpha");
   assert.equal(agent.controllerActorId, controller.actorId);
   assert.equal(agent.actorType, ActorType.AGENT);
+  assert.ok(agent.capabilities.includes(
+    PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND
+  ));
   assert.ok(agent.capabilities.includes(PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF));
 
   assert.equal(risk.actorType, ActorType.RISK_OPERATOR);

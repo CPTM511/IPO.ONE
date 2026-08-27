@@ -1,12 +1,12 @@
 {
   "schemaVersion": "ipo.one.vercel-m1-b-sandbox/v2",
-  "status": "current_release_closure_configuration_deployment_pending",
+  "status": "founder_authorized_staged_primary_deployment",
   "productProfile": "deployable_sandbox_vertical_slice",
   "deliveryMode": "L1_PUBLIC_SANDBOX",
   "vercelTargetEnvironment": "production",
   "vercelTargetReason": "Vercel Cron can invoke only production-target deployments; this is configuration, not hosting or deployment authority",
   "productionTargetConfigured": true,
-  "deploymentStatus": "DEPLOYMENT_PENDING_AUTHORIZATION",
+  "deploymentStatus": "STAGED_PRIMARY_DEPLOYMENT_AUTHORIZED",
   "deployedReleaseId": null,
   "productProductionClaim": false,
   "productionHostingClaim": false,
@@ -61,8 +61,8 @@
   "authority": {
     "currentAuthoritySource": "docs/PRODUCT_CONSTITUTION.md",
     "mergeAuthorized": false,
-    "deploymentAuthorized": false,
-    "deploymentEvidenceCollectionAuthorized": false,
+    "deploymentAuthorized": true,
+    "deploymentEvidenceCollectionAuthorized": true,
     "deploymentPromotionAuthorized": false,
     "aliasMutationAuthorized": false,
     "dnsMutationAuthorized": false,
@@ -73,7 +73,7 @@
     "paidExternalIntegrationAuthorized": false,
     "zeroFundedRealValueSupportAuthorized": false,
     "realValueActivationAuthorized": false,
-    "maximumVercelProjectsAuthorizedForDeployment": 0
+    "maximumVercelProjectsAuthorizedForDeployment": 1
   },
   "conditionalInterfaces": {
     "riskProject": {
