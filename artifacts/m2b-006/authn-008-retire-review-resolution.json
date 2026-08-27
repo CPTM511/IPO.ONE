@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "authn_008_retire_review_resolution.v1",
+  "issueId": "AUTHN-008",
+  "resolvedAt": "2026-08-27T08:20:30Z",
+  "deployment": {
+    "id": "dpl_2JBesAqB2MXZZBCEDypMq5Gzm7Ue",
+    "url": "https://ipo-one-internal-8cbtv7ara-cptm-111-s-projects.vercel.app",
+    "sourceSha": null,
+    "sourceShaStatus": "UNAVAILABLE_PRE_MANIFEST_CLI_DEPLOYMENT",
+    "createdAt": "2026-08-11T16:16:57.584Z",
+    "target": "production",
+    "readyStateBeforeDeletion": "READY",
+    "predatesSingleV2": true,
+    "legacyV1EnvironmentPresent": true,
+    "legacyV1EnvironmentNames": [
+      "IPO_ONE_AUTH_REFERENCE_HASH_KEY",
+      "IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF"
+    ],
+    "aliases": [
+      "ipo-one-internal-liumao8844-2883-cptm-111-s-projects.vercel.app",
+      "ipo-one-internal-cptm-111-s-projects.vercel.app"
+    ],
+    "requiredProductionAliasPresent": false,
+    "postCutoverRequests": 0,
+    "executableWorkflowDependency": false,
+    "repositoryReferences": "historical documentation/Evidence only",
+    "rollbackValue": "unnecessary because restoring this deployment would reintroduce v1 authentication configuration",
+    "classification": "DELETE",
+    "classificationReason": "both aliases are obsolete non-canonical project aliases; no required alias, traffic or executable dependency remains"
+  },
+  "deletion": {
+    "httpStatus": 200,
+    "providerState": "DELETED",
+    "deleted": true,
+    "postDeleteApiStatus": 404,
+    "postDeleteApiErrorCode": "not_found"
+  },
+  "valuesRead": false,
+  "valuesPrinted": false,
+  "databaseMutation": false,
+  "runtimeRoleMutation": false,
+  "businessDataMutation": false,
+  "fundsMutation": false,
+  "chainMutation": false,
+  "passed": true
+}

@@ -14,19 +14,44 @@ const EVENT_PAYLOAD_FIELDS = new Map([
   [AuthenticationEventType.CREDENTIAL_REGISTERED, [
     "actorType",
     "clientAuthenticationMethod",
+    "invitationRefHash",
+    "referenceHashKeyVersion",
     "senderConstraintMethod",
     "version"
   ]],
-  [AuthenticationEventType.CREDENTIAL_ROTATED, ["senderConstraintMethod", "version"]],
+  [AuthenticationEventType.CREDENTIAL_ROTATED, [
+    "referenceHashKeyVersion",
+    "senderConstraintMethod",
+    "version"
+  ]],
   [AuthenticationEventType.CREDENTIAL_SUSPENDED, ["status"]],
   [AuthenticationEventType.CREDENTIAL_REVOKED, ["status"]],
   [AuthenticationEventType.CREDENTIAL_EXPIRED, ["status"]],
-  [AuthenticationEventType.SESSION_CREATED, ["sessionRefHash", "rotation"]],
-  [AuthenticationEventType.SESSION_ROTATED, ["sessionRefHash", "rotation"]],
-  [AuthenticationEventType.SESSION_REVOKED, ["sessionRefHash", "rotation"]],
-  [AuthenticationEventType.SESSION_EXPIRED, ["sessionRefHash", "rotation"]],
+  [AuthenticationEventType.CREDENTIAL_REFERENCE_REBOUND, [
+    "oldCredentialId",
+    "newCredentialId",
+    "oldReferenceHashKeyVersion",
+    "newReferenceHashKeyVersion"
+  ]],
+  [AuthenticationEventType.SESSION_CREATED, [
+    "sessionRefHash", "rotation", "referenceHashKeyVersion"
+  ]],
+  [AuthenticationEventType.SESSION_ROTATED, [
+    "sessionRefHash", "rotation", "referenceHashKeyVersion"
+  ]],
+  [AuthenticationEventType.SESSION_REVOKED, [
+    "sessionRefHash", "rotation", "referenceHashKeyVersion"
+  ]],
+  [AuthenticationEventType.SESSION_EXPIRED, [
+    "sessionRefHash", "rotation", "referenceHashKeyVersion"
+  ]],
   [AuthenticationEventType.ROLE_ENROLLED, ["roleBundle", "enrollmentId", "version"]],
-  [AuthenticationEventType.ROLE_SELECTED, ["roleBundle", "sessionRefHash"]]
+  [AuthenticationEventType.ROLE_SELECTED, [
+    "roleBundle", "sessionRefHash", "referenceHashKeyVersion"
+  ]],
+  [AuthenticationEventType.REFERENCE_HASH_CUTOVER, [
+    "fromKeyVersion", "toKeyVersion", "mode"
+  ]]
 ]);
 
 function assertCredentialFree(value, path = "event") {

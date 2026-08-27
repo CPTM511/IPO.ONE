@@ -12,11 +12,13 @@ import {
   PostgresCredentialRegistry,
   PostgresHumanSessionStore,
   PostgresLoginTransactionStore,
+  PostgresReferenceHashRotationService,
   PostgresReplayCache,
   PostgresWalletLoginTransactionStore,
   SenderConstraintMethod,
   assertPostgresAuthenticationRole,
   createAuthenticationSecretBox,
+  createReferenceHashKeyring,
   createReferenceHasher,
   loadAuthenticationRuntimeConfig,
   sha256Base64Url
@@ -180,6 +182,7 @@ async function createApplicationPool(ownerPool) {
      TO ${APP_ROLE}`
   );
   await ownerPool.query(`GRANT INSERT, UPDATE ON authentication_credentials TO ${APP_ROLE}`);
+  await ownerPool.query(`GRANT INSERT, UPDATE ON authentication_role_enrollments TO ${APP_ROLE}`);
   await ownerPool.query(
     `GRANT INSERT, DELETE ON
        authentication_oidc_transactions,
@@ -191,7 +194,7 @@ async function createApplicationPool(ownerPool) {
   await ownerPool.query(`GRANT INSERT ON authentication_session_invalidations TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT INSERT ON authentication_events TO ${APP_ROLE}`);
   await ownerPool.query(
-    `GRANT UPDATE (id) ON actors, memberships, authentication_role_enrollments TO ${APP_ROLE}`
+    `GRANT UPDATE (id) ON actors, memberships TO ${APP_ROLE}`
   );
   const connection = new URL(CONNECTION_STRING);
   connection.username = APP_ROLE;
@@ -494,6 +497,169 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       clientId: WALLET_CLIENT_ID
     });
 
+    await t.test("verified Human reference rebind is atomic, bounded, and retry-safe", async () => {
+      const legacySubject = "eip155:84532:0x2222222222222222222222222222222222222222";
+      const legacyCredential = await registry.register({
+        tenantId: TENANT_ID,
+        actorId: HUMAN_ACTOR_ID,
+        actorType: ActorType.HUMAN,
+        issuer: ORIGIN,
+        externalSubject: legacySubject,
+        clientId: WALLET_CLIENT_ID,
+        clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
+        senderConstraint: {
+          method: SenderConstraintMethod.HOST_SESSION,
+          thumbprint: "r".repeat(43)
+        },
+        roles: ["human_borrower"],
+        allowedCapabilities: ["subject.read", "integration.manage"],
+        policyVersion: "security_001.v1",
+        performedByActorId: SYSTEM_ACTOR_ID,
+        reasonCode: "wallet_rotation_fixture_provisioned",
+        now: NOW
+      });
+      await enrollHumanRole(ownerPool, context, {
+        actorId: HUMAN_ACTOR_ID,
+        credentialId: legacyCredential.credentialId,
+        roleBundle: "human_borrower",
+        capabilities: legacyCredential.allowedCapabilities,
+        clientId: WALLET_CLIENT_ID
+      });
+      const legacySessionStore = new PostgresHumanSessionStore({
+        eventRepository: repository,
+        tenantId: TENANT_ID,
+        referenceHasher,
+        origin: ORIGIN
+      });
+      const legacySession = await legacySessionStore.create(sessionInput(legacyCredential));
+      const legacyChallengeStore = new PostgresWalletLoginTransactionStore({
+        eventRepository: repository,
+        tenantId: TENANT_ID,
+        referenceHasher,
+        secretBox,
+        domain: "ipo.one",
+        uri: "https://ipo.one/auth/wallet"
+      });
+      const pendingLegacyChallenge = await legacyChallengeStore.create({
+        address: "0x2222222222222222222222222222222222222222",
+        chainId: 84532,
+        requestedRole: "human_borrower",
+        now: NOW
+      });
+      const overlapHasher = createReferenceHashKeyring({
+        mode: "overlap_v2_write_v1_lookup",
+        primary: { keyVersion: "v2", secret: randomBytes(32) },
+        legacy: { keyVersion: "v1", secret: referenceKey }
+      });
+      const overlapRegistry = new PostgresCredentialRegistry({
+        eventRepository: repository,
+        tenantId: TENANT_ID,
+        referenceHasher: overlapHasher,
+        systemActorId: SYSTEM_ACTOR_ID
+      });
+      const rotation = new PostgresReferenceHashRotationService({
+        eventRepository: repository,
+        tenantId: TENANT_ID,
+        referenceHasher: overlapHasher,
+        systemActorId: SYSTEM_ACTOR_ID
+      });
+      const beforeRetirement = await rotation.inventory({ now: new Date(NOW.getTime() + 500) });
+      assert.equal(beforeRetirement.pendingV1WalletTransactions >= 1, true);
+      assert.equal(beforeRetirement.secretMaterialIncluded, false);
+      const retirement = await rotation.retireLegacySessionsAndChallenges({
+        now: new Date(NOW.getTime() + 750)
+      });
+      assert.equal(retirement.revokedSessions >= 1, true);
+      assert.equal(retirement.deletedWalletTransactions >= 1, true);
+      await assert.rejects(
+        () => legacyChallengeStore.consume({
+          handle: pendingLegacyChallenge.handle,
+          now: new Date(NOW.getTime() + 800)
+        }),
+        (error) => error.code === "wallet_transaction_rejected"
+      );
+      await assert.rejects(
+        () => overlapRegistry.findOrRebindVerifiedHumanSubject({
+          tenantId: TENANT_ID,
+          issuer: ORIGIN,
+          externalSubject: `${legacySubject}-mismatch`,
+          clientId: WALLET_CLIENT_ID,
+          now: new Date(NOW.getTime() + 1_000)
+        }),
+        (error) => error.code === "authentication_credential_rejected"
+      );
+      const rebound = await overlapRegistry.findOrRebindVerifiedHumanSubject({
+        tenantId: TENANT_ID,
+        issuer: ORIGIN,
+        externalSubject: legacySubject,
+        clientId: WALLET_CLIENT_ID,
+        now: new Date(NOW.getTime() + 2_000)
+      });
+      assert.equal(rebound.referenceHashKeyVersion, "v2");
+      assert.equal(rebound.actorId, legacyCredential.actorId);
+      assert.deepEqual(rebound.roles, legacyCredential.roles);
+      assert.deepEqual(rebound.allowedCapabilities, legacyCredential.allowedCapabilities);
+      await assert.rejects(
+        () => legacySessionStore.authenticate({
+          sessionHandle: legacySession.cookie.value,
+          requestMethod: "GET",
+          now: new Date(NOW.getTime() + 3_000)
+        }),
+        (error) => error.code === "authentication_session_rejected"
+      );
+      const repeated = await overlapRegistry.findOrRebindVerifiedHumanSubject({
+        tenantId: TENANT_ID,
+        issuer: ORIGIN,
+        externalSubject: legacySubject,
+        clientId: WALLET_CLIENT_ID,
+        now: new Date(NOW.getTime() + 4_000)
+      });
+      assert.equal(repeated.credentialId, rebound.credentialId);
+      const rows = await repository.withTenantRead((client) => client.query(
+        `SELECT id, status, reference_hash_key_version
+           FROM authentication_credentials
+          WHERE tenant_id = $1 AND id = ANY($2::text[])
+          ORDER BY reference_hash_key_version`,
+        [TENANT_ID, [legacyCredential.credentialId, rebound.credentialId]]
+      ));
+      assert.deepEqual(rows.rows.map((row) => [row.reference_hash_key_version, row.status]), [
+        ["v1", "revoked"],
+        ["v2", "active"]
+      ]);
+      const enrollments = await repository.withTenantRead((client) => client.query(
+        `SELECT credential_id, status, role_bundle, capabilities, client_ids, policy_version
+           FROM authentication_role_enrollments
+          WHERE tenant_id = $1 AND credential_id = ANY($2::text[])
+          ORDER BY credential_id`,
+        [TENANT_ID, [legacyCredential.credentialId, rebound.credentialId]]
+      ));
+      assert.equal(enrollments.rowCount, 2);
+      const oldEnrollment = enrollments.rows.find((row) => row.credential_id === legacyCredential.credentialId);
+      const newEnrollment = enrollments.rows.find((row) => row.credential_id === rebound.credentialId);
+      assert.equal(oldEnrollment.status, "revoked");
+      assert.equal(newEnrollment.status, "active");
+      assert.deepEqual(newEnrollment.capabilities, oldEnrollment.capabilities);
+      assert.deepEqual(newEnrollment.client_ids, oldEnrollment.client_ids);
+      assert.equal(newEnrollment.policy_version, oldEnrollment.policy_version);
+      const rebindEvents = await repository.withTenantRead((client) => client.query(
+        `SELECT payload
+           FROM authentication_events
+          WHERE tenant_id = $1 AND event_type = 'credential_reference_rebound'`,
+        [TENANT_ID]
+      ));
+      assert.equal(rebindEvents.rowCount, 1);
+      assert.deepEqual(rebindEvents.rows[0].payload, {
+        oldCredentialId: legacyCredential.credentialId,
+        newCredentialId: rebound.credentialId,
+        oldReferenceHashKeyVersion: "v1",
+        newReferenceHashKeyVersion: "v2"
+      });
+      await assert.rejects(
+        () => rotation.assertCutoverReady({ now: new Date(NOW.getTime() + 5_000) }),
+        (error) => error.code === "authentication_reference_cutover_blocked"
+      );
+    });
+
     await t.test("one wallet selects one durable Human role without capability union", async () => {
       const sessionStore = new PostgresHumanSessionStore({
         eventRepository: repository,
@@ -524,7 +690,8 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       const roleEvents = await repository.withTenantRead((client) => client.query(
         `SELECT event_type, payload
            FROM authentication_events
-          WHERE tenant_id = $1 AND event_type = 'role_selected'`,
+          WHERE tenant_id = $1 AND event_type = 'role_selected'
+            AND payload->>'roleBundle' = 'principal_controller'`,
         [TENANT_ID]
       ));
       assert.equal(roleEvents.rowCount >= 1, true);
@@ -659,6 +826,31 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
           rotation: "9007199254740992"
         }),
         (error) => error.code === "23514" && error.constraint === "authentication_sessions_rotation_check"
+      );
+
+      const versionBoundSessionRef = referenceHasher.hash(
+        "session.handle",
+        `version-bound-session-${RUN_ID}`
+      );
+      await insertRawSession(repository, {
+        credential: walletCredential,
+        sessionRefHash: versionBoundSessionRef,
+        csrfRefHash: referenceHasher.hash("session.csrf", `version-bound-csrf-${RUN_ID}`)
+      });
+      await assert.rejects(
+        () => repository.withTenantWrite((client) => client.query(
+          `INSERT INTO authentication_session_invalidations(
+             tenant_id, idempotency_ref_hash, session_ref_hash, reason_code,
+             occurred_at, reference_hash_key_version, schema_version
+           ) VALUES ($1, $2, $3, 'human_logout', $4, 'v2', 'wallet_session_invalidation.v1')`,
+          [
+            TENANT_ID,
+            referenceHasher.hash("session.invalidation", `version-mismatch-${RUN_ID}`),
+            versionBoundSessionRef,
+            NOW
+          ]
+        )),
+        (error) => error.code === "23514"
       );
     });
 
@@ -1119,7 +1311,14 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
         now: new Date(NOW.getTime() + 14_000)
       });
       assert.equal(deprovisioned.credential.status, "revoked");
-      assert.equal(deprovisioned.revokedSessions, 1);
+      assert.equal(deprovisioned.revokedSessions >= 1, true);
+      const remainingActiveSessions = await repository.withTenantRead((client) => client.query(
+        `SELECT count(*)::int AS count
+           FROM authentication_sessions
+          WHERE tenant_id = $1 AND credential_id = $2 AND status = 'active'`,
+        [TENANT_ID, walletCredential.credentialId]
+      ));
+      assert.equal(remainingActiveSessions.rows[0].count, 0);
       await assert.rejects(
         () => walletSessionStore.authenticate({
           sessionHandle: activeBeforeDeprovision.cookie.value,

@@ -1,6 +1,6 @@
 # M2 execution plan v0.1
 
-Status: Phase 0 proposal prepared; M2A/M2B blocked on ratification
+Status: bounded v0.2.1 no-funds milestone passed; external/real-value execution gated
 
 Base: `71786a3c72237320f7bacf77b64496dd1a0c526f`
 
@@ -28,6 +28,7 @@ M2A-003 + M2A-004 -> M2A-005 -> M2A-006 -> M2A-007
 M2A-003..007 -> M2A-008 -> M2A-009 -> v0.2.0 review
 
 v0.2.0 review -> M2B-001 -> M2B-002 -> M2B-003 -> M2B-004 -> M2B-005
+M2B-005 -> M2B-006 -> v0.2.1 bounded no-funds closure
 ```
 
 No node represents “implement all M2.” Each node must be reviewable and
@@ -425,8 +426,32 @@ revertible without inventing permission for its successor.
   is implemented at exact SHA
   `e2e8bf460fcd17ba64974b6100bc0731c4c4a733`; its exact two-profile and
   109-operation traceability gate is repaired and aggregate-CI enforced.
-  Independent review, Founder candidate decision and any remote/external
-  deployment remain blocked.
+  Independent review and the Founder candidate decision subsequently passed;
+  the sealed evidence head is
+  `34ac9d982b5a0061b645940f1532ed6f19e18290`. Remote no-funds deployment and
+  acceptance continued under the separately scoped M2B-006 issue.
+
+### M2B-006 — v0.2.1 authorized remote deployment and acceptance
+
+- Context/scope: deploy the exact no-funds release, apply only approved additive
+  production migrations and least-privilege repairs, promote only after exact
+  authorization, and verify Human/Agent paths on the deployed SHA.
+- Non-goals: mainnet, real funds, production custody, signer/chain/Venue writes,
+  transfer, withdrawal or inference of later credential-retirement authority.
+- Acceptance: exact deployment identity, readiness, forced RLS, Human SIWE,
+  bounded Agent read/revocation, Cron, logs and zero active legacy auth
+  dependencies all pass; any exposed operator credential is rotated and
+  revalidated without persistence.
+- Tests: full 1,209-test repository suite, product traceability, Vercel static
+  gate, exact 69/69 owner-read migration check and remote bounded acceptance.
+- Dependency/status: M2B-005. Production deployment
+  `dpl_GqX1Z5y232pmos2WyZLoxicfu88f` at exact SHA
+  `3bb525ce168ef274fea862cd3d5e55d35b2577fd` is
+  `PASS — DEPLOYED AND USER-VERIFIED` at `https://ipo.one`, in `single_v2`
+  mode with `realFundsEnabled=false`. The separately authorized `AUTHN-008
+  RETIRE` stage is also `PASS — DEPLOYED AND USER-VERIFIED`: 58 historical
+  READY Production deployments were classified, 55 obsolete deployments were
+  deleted, and no remaining READY deployment contains v1 configuration.
 
 ## Release verdict discipline
 
@@ -436,3 +461,8 @@ remain `BLOCKED — NOT COMPLETE`. Phase 0 may conclude only
 
 Permission/funds/deployment impact of this plan: **none**. It sequences future
 approval requests and cannot activate any successor issue.
+
+Current checkpoint: the bounded v0.2.1 no-funds release is
+`PASS — DEPLOYED AND USER-VERIFIED`. M2 external Venue execution, mainnet,
+real-value activation and every later phase remain separately gated; this plan
+does not authorize them.
