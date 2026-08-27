@@ -1,6 +1,6 @@
 # IPO.ONE authentication reference-hash key rotation runbook v0.1
 
-Status: `IMPLEMENTED LOCALLY — NO PRODUCTION EXECUTION AUTHORITY`
+Status: `EXECUTED THROUGH CUTOVER — RETIRE NOT AUTHORIZED`
 
 Issue: `AUTHN-008`
 
@@ -162,3 +162,19 @@ The final package must contain no secret values and must bind:
 
 Until every required production stage is separately authorized and verified,
 the verdict remains `BLOCKED — NOT COMPLETE`.
+
+## 2026-08-27 execution checkpoint
+
+Stages `IMPLEMENT`, `PREPARE`, `OVERLAP`, `REBIND` and `CUTOVER` were separately
+authorized and completed. The deployed SHA is
+`3bb525ce168ef274fea862cd3d5e55d35b2577fd`; production reports `single_v2`,
+the database is exactly at `0069_auth_reference_hash_key_rotation`, Founder
+Human SIWE and bounded Agent read/revocation acceptance passed, and the final
+v1 active-dependency inventory is zero. The final non-secret record is
+`artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
+
+`RETIRE` remains explicitly unauthorized and unexecuted. No duration was
+defined for the bounded rollback observation window in the approved package.
+The observation duration and its start/end evidence must therefore be decided
+before a later retirement approval; no operator may infer a duration or remove
+v1 environment material from this checkpoint.

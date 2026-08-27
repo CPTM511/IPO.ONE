@@ -1,6 +1,6 @@
 # M2B-006 — v0.2.1 authorized remote deployment
 
-Status: `BLOCKED — DEPLOYED; FINAL SECURITY AND AUTHENTICATED ACCEPTANCE REQUIRED`
+Status: `PASS — DEPLOYED AND USER-VERIFIED`
 
 Baseline: `34ac9d982b5a0061b645940f1532ed6f19e18290`
 
@@ -277,3 +277,48 @@ Plan: `docs/codex/tasks/AUTHN_008_REFERENCE_HASH_KEY_ROTATION.md`.
 
 Draft runbook:
 `docs/security/IPO_ONE_AUTH_REFERENCE_HASH_KEY_ROTATION_RUNBOOK_v0.1_DRAFT.md`.
+
+## 2026-08-27 AUTHN-008 cutover and final closure
+
+- The separately approved `AUTHN-008` implementation, production migration,
+  overlap, Human/workload rebind and cutover stages completed. Production now
+  reports `single_v2`, writes and reads authentication references with `v2`,
+  and retains no active `v1` credential, Session or pending wallet transaction.
+- The exact production deployment is
+  `dpl_GqX1Z5y232pmos2WyZLoxicfu88f`, source
+  `3bb525ce168ef274fea862cd3d5e55d35b2577fd`, tree
+  `3b8369f581506842ab84fde0f392c55060e359ea`, at
+  `https://ipo.one`. Readiness is HTTP 200, profile
+  `closed_non_funds_pilot`, and `realFundsEnabled=false`.
+- A fresh OKX Wallet SIWE flow completed after the wallet message was encoded
+  according to the provider's `personal_sign` contract. The Founder confirmed
+  entry into the Human workspace; the durable active Session is `v2`, uses
+  SIWE, and recovers the `human_borrower` role from server truth.
+- The bounded Agent v2 credential completed the authorized Tenant read, then
+  was revoked and its private key destroyed. The prior v1 credential remains
+  revoked. No production Agent credential was left active for acceptance.
+- Cutover inventory proved zero active v1 credentials, zero active v1 Sessions
+  and zero pending v1 wallet transactions. Six authentication relations retain
+  forced RLS and one tenant-isolation policy each.
+- A later owner connection-string handling error exposed the then-current
+  `neondb_owner` credential only in private tool output. Under explicit Founder
+  authorization, Neon rotated that password exactly once. The old password now
+  fails with PostgreSQL `28P01`; the new password, held only in process memory,
+  verified `neondb_owner` on `neondb`, a non-recovery primary, and 69/69 exact
+  migration names/checksums at `0069_auth_reference_hash_key_rotation`.
+- Rotation did not change runtime roles or database business rows. The new
+  password was neither printed nor persisted. No funds, signer, chain, Pool,
+  Venue, custody, transfer or withdrawal state changed.
+- Post-remediation readiness remained healthy. A one-hour scan of the current
+  deployment produced 50 unique entries: 48 HTTP 200 and two expected
+  `/sw.js` HTTP 404 responses, with no unexpected client error, HTTP 5xx, or
+  error/fatal log. Four scheduled `/api/cron` requests returned HTTP 200 in the
+  preceding 24 hours.
+
+M2B-006 is therefore `PASS — DEPLOYED AND USER-VERIFIED`. `AUTHN-008 RETIRE`
+is deliberately excluded: removing the v1 environment material and dual-key
+rollback release remains a separate production action after a separately
+defined observation window and explicit approval.
+
+Final non-secret Evidence:
+`artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.

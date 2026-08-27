@@ -86,3 +86,35 @@ alternate hash key or runtime privilege expansion was introduced. Final status
 therefore remains `BLOCKED — NOT COMPLETE` pending the original key through an
 owner-only local file (or a separately reviewed key-rotation migration) and the
 Founder's production wallet sign-in plus refresh verification.
+
+## Final release closure — 2026-08-27
+
+The Founder separately approved `AUTHN-008` implementation and local testing,
+production preparation, overlap, rebind and cutover. Those stages completed on
+the production database and deployment. Migration
+`0069_auth_reference_hash_key_rotation` is the exact 69/69 verified head;
+production deployment `dpl_GqX1Z5y232pmos2WyZLoxicfu88f` serves exact source
+`3bb525ce168ef274fea862cd3d5e55d35b2577fd` at `https://ipo.one` in
+`single_v2` mode with `realFundsEnabled=false`.
+
+The Founder completed the visible OKX Wallet SIWE path and confirmed entry into
+the Human workspace. The bounded Agent v2 credential completed its authorized
+read and was revoked with its private key destroyed. The cutover inventory now
+contains zero active v1 credentials, zero active v1 Sessions and zero pending
+v1 wallet transactions.
+
+The subsequently disclosed `neondb_owner` credential was rotated under an
+exact, owner-only authorization. The old password fails with PostgreSQL
+`28P01`; the new password existed only in process memory and completed a 69/69
+read-only migration verification. It was neither printed nor persisted, and
+no runtime role, business row, funds or chain state was changed. Post-rotation
+readiness, RLS, Cron and bounded logs remained healthy.
+
+The v0.2.1 and M2B-006 verdict is now
+`PASS — DEPLOYED AND USER-VERIFIED`. This does not authorize real funds,
+mainnet, signer use, chain/Venue writes, custody, transfer or withdrawal.
+`AUTHN-008 RETIRE` remains separately gated and unexecuted pending a defined
+and observed rollback window plus explicit retirement approval.
+
+Final Evidence:
+`artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.

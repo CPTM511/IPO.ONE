@@ -1,6 +1,6 @@
 # AUTHN-008 — Authentication reference-hash key rotation
 
-Status: `IMPLEMENTED LOCALLY — PRODUCTION EXECUTION NOT AUTHORIZED`
+Status: `PASS — DEPLOYED AND USER-VERIFIED` through `CUTOVER`; `RETIRE` not authorized
 
 Requirements: `REQ-CORE-001`, `REQ-EVID-001`, `REQ-EVID-002`,
 `REQ-UX-001`, `REQ-UX-002`, `REQ-UX-005`
@@ -246,3 +246,36 @@ passed with no funds and no chain writes. Production key creation, production
 schema migration, Vercel configuration, deployment, production rebind,
 cutover and old-key deletion remain separately approved actions under
 `docs/security/IPO_ONE_AUTH_REFERENCE_HASH_KEY_ROTATION_RUNBOOK_v0.1_DRAFT.md`.
+
+## 2026-08-27 production execution record
+
+The Founder separately approved and the system completed `PREPARE`, `OVERLAP`,
+`REBIND` and `CUTOVER` after the previously completed `IMPLEMENT` stage:
+
+- additive migration `0069_auth_reference_hash_key_rotation` is the exact
+  production head and all 69 migration names/checksums match the release;
+- production deployment `dpl_GqX1Z5y232pmos2WyZLoxicfu88f` runs exact source
+  `3bb525ce168ef274fea862cd3d5e55d35b2577fd` in `single_v2` mode;
+- the Founder completed a visible OKX Wallet SIWE sign-in and confirmed entry
+  into the Human workspace; the active Human credential and Session are v2;
+- the bounded Agent v2 credential completed its authorized read and was then
+  revoked with its private key destroyed;
+- active v1 credentials, active v1 Sessions and pending v1 wallet transactions
+  are all zero; and
+- readiness, forced RLS, scheduled Cron and the bounded production log window
+  passed with `realFundsEnabled=false` and no chain write.
+
+After a private tool-output disclosure of the database owner credential, the
+Founder explicitly approved rotation of only `neondb_owner`. The password was
+rotated once; the old value fails with `28P01`, and the new in-memory value
+completed the 69/69 read-only ledger verification. The new password was not
+printed or persisted, and runtime roles and business rows were not changed.
+
+This closes `AUTHN-008` through `CUTOVER` as
+`PASS — DEPLOYED AND USER-VERIFIED`. Stage `RETIRE` is not implied by this
+verdict: the v1 environment material and dual-key rollback release remain until
+a bounded observation window is explicitly defined, completed and separately
+approved for retirement.
+
+Evidence:
+`artifacts/m2b-006/authn-008-cutover-and-owner-credential-closure.json`.
