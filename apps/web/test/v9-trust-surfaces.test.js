@@ -13,10 +13,10 @@ const catalog = JSON.parse(await readFile(
   "utf8"
 ));
 
-test("all thirteen V9 destinations map to checked-in runtime truth", () => {
-  assert.equal(Object.keys(V9_DESTINATION_OPERATION_MAP).length, 13);
+test("all fourteen V9 destinations map to checked-in runtime truth", () => {
+  assert.equal(Object.keys(V9_DESTINATION_OPERATION_MAP).length, 14);
   const matrix = createV9DestinationCapabilityMatrix(catalog);
-  assert.equal(matrix.length, 13);
+  assert.equal(matrix.length, 14);
   assert.equal(matrix.every(({ catalogBacked }) => catalogBacked), true);
   const architecture = createArchitectureCapabilityPresentation(catalog);
   assert.equal(architecture.operationCount, catalog.operations.length);

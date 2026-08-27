@@ -56,6 +56,7 @@ const classifications = [
 const destinations = [
   ["overview", "Overview"],
   ["request_credit", "Request Credit"],
+  ["secured_pool", "Secured Pool"],
   ["repay_settle", "Repay & Settle"],
   ["credit_passport", "Credit Passport"],
   ["obligations", "Obligations"],

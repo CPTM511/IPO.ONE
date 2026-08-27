@@ -88,14 +88,22 @@ test("Borrower sees exact-release chain writing as explicitly disabled", async (
 
 test("Borrower visibly reviews an exact secured-Pool action without submission", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/#request-credit");
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await page.getByRole("button", { name: /^Secured Pool/ }).click();
 
-  const pool = page.getByRole("region", { name: "Review liquidity or secured borrowing" });
+  const pool = page.getByRole("region", { name: /Secured Pool, read from server truth/ });
   await expect(pool).toBeVisible();
   await pool.getByRole("button", { name: "Refresh Pool state" }).click();
-  await expect(page.locator("#securedPoolStatus")).toHaveText("Awaiting indexed state");
+  await expect(page.locator("#securedPoolStatus")).toHaveText("Live read-only state");
+  await expect(page.locator("#securedPoolDeploymentState")).toHaveText("Exact deployment verified");
+  await expect(page.locator("#securedPoolRpcState")).toHaveText("Connected");
+  await expect(page.locator("#securedPoolIndexerState")).toHaveText("Unavailable");
+  await expect(page.locator("#securedPoolLiquidity")).toHaveText("0");
+  await expect(page.locator("#securedPoolPosition")).toHaveText("Unavailable");
   await expect(page.locator("#securedPoolSubmission")).toContainText("no chain transaction will be submitted");
 
+  await page.getByText("Read-only scenario review", { exact: true }).click();
   await page.locator("#securedPoolActionType").focus();
   await page.keyboard.press("b");
   await page.keyboard.press("Tab");
@@ -114,7 +122,7 @@ test("Borrower visibly reviews an exact secured-Pool action without submission",
 
 test("secured-Pool controls remain usable at 200 percent zoom", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto("/#request-credit");
+  await page.goto("/#secured-pool");
   await page.evaluate(() => {
     document.documentElement.style.zoom = "200%";
   });
@@ -123,8 +131,9 @@ test("secured-Pool controls remain usable at 200 percent zoom", async ({ page })
   await refresh.scrollIntoViewIfNeeded();
   await expect(refresh).toBeVisible();
   await refresh.click();
+  await page.getByText("Read-only scenario review", { exact: true }).click();
   await expect(page.locator("#securedPoolReviewForm")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Review exact action" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Review without submitting" })).toBeEnabled();
 });
 
 test("Capital Partner reaches the bilateral workspace without public-pool authority", async ({ page }) => {

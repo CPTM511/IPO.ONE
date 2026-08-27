@@ -2443,37 +2443,6 @@
           "humanGateRequired": true
         },
         {
-          "actionId": "request_credit.review_secured_pool_action",
-          "label": "Read the owned secured-Pool position and review one exact no-funds action",
-          "prototypeLabels": [
-            "Refresh Pool state",
-            "Review exact action"
-          ],
-          "classification": "REAL_LOCAL",
-          "authorityType": "tenant_protocol",
-          "operationIds": [
-            "pilotReadOwnSecuredPool",
-            "pilotReviewSecuredPoolAction"
-          ],
-          "authorityReferences": [],
-          "uiAdapters": [
-            "apps/web/src/app.js",
-            "apps/web/src/secured-pool-presentation.js",
-            "packages/sdk/src/secured-pool-client.js",
-            "apps/agent-mcp/src/secured-pool-mcp-adapter.js"
-          ],
-          "testFiles": [
-            "apps/web/test/e2e/workspace-navigation.spec.mjs",
-            "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
-            "packages/sdk/test/secured-pool-client.test.js"
-          ],
-          "truthBoundary": "Only local synthetic PostgreSQL projection facts are authoritative. The enabled launch profile may identify the exact deployed Base Sepolia test Pool when local indexer state is unavailable; review never signs or submits and pool_submission_unavailable remains mandatory.",
-          "nextTaskIds": [
-            "M2A-008"
-          ],
-          "humanGateRequired": false
-        },
-        {
           "actionId": "request_credit.best_available_router",
           "label": "Route a request to a best-available lender or capital source",
           "prototypeLabels": [
@@ -2520,9 +2489,92 @@
       ]
     },
     {
+      "destinationId": "secured_pool",
+      "label": "Secured Pool",
+      "order": 3,
+      "actions": [
+        {
+          "actionId": "secured_pool.verify_exact_base_sepolia_market",
+          "label": "Verify the exact Base Sepolia Pool deployment and safe-block market state",
+          "prototypeLabels": [
+            "Exact deployment verified",
+            "Current safe-block read"
+          ],
+          "classification": "REAL_TESTNET_READ",
+          "authorityType": "testnet_read_adapter",
+          "operationIds": [],
+          "authorityReferences": [
+            "deploy/launch-policy.v1.json",
+            "modules/chain-adapter/src/secured-pool-v1-read-adapter.js"
+          ],
+          "uiAdapters": [
+            "apps/private-pilot/src/production-runtime.js",
+            "apps/web/src/secured-pool-presentation.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
+            "apps/web/test/secured-pool-presentation.test.js"
+          ],
+          "truthBoundary": "Only the exact approved test-assets profile may be read. Runtime bytecode and the full configuration hash must match at one safe block; RPC failure never erases deployment identity or invents market values.",
+          "nextTaskIds": [
+            "PHASE3-POOL-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "secured_pool.read_owned_position_and_review",
+          "label": "Read a separately authorized owned position and review one blocked scenario",
+          "prototypeLabels": [
+            "Secured Pool",
+            "Refresh Pool state",
+            "Review without submitting"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotReadOwnSecuredPool",
+            "pilotReviewSecuredPoolAction"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js",
+            "apps/web/src/secured-pool-presentation.js",
+            "packages/sdk/src/secured-pool-client.js",
+            "apps/agent-mcp/src/secured-pool-mcp-adapter.js"
+          ],
+          "testFiles": [
+            "apps/web/test/e2e/workspace-navigation.spec.mjs",
+            "modules/tenant-command-gateway/test/secured-pool-workspace-handlers.test.js",
+            "packages/sdk/test/secured-pool-client.test.js"
+          ],
+          "truthBoundary": "The finalized indexer projection, reconciliation, private AccountBinding position and disabled submission authority remain independent. Only an Actor-owned Subject with an active matching AccountBinding may receive private position values.",
+          "nextTaskIds": [
+            "PHASE3-POOL-001"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "secured_pool.submit_transaction",
+          "label": "Sign or submit a secured-Pool transaction",
+          "prototypeLabels": [],
+          "classification": "SPECIFIED_DISABLED",
+          "authorityType": "none",
+          "operationIds": [],
+          "authorityReferences": [],
+          "uiAdapters": [],
+          "testFiles": [],
+          "truthBoundary": "This repair contains no signer, allowance, transaction primitive or economic write. Every scenario review is blocked before submission.",
+          "nextTaskIds": [
+            "PHASE3-POOL-001"
+          ],
+          "humanGateRequired": true
+        }
+      ]
+    },
+    {
       "destinationId": "repay_settle",
       "label": "Repay & Settle",
-      "order": 3,
+      "order": 4,
       "actions": [
         {
           "actionId": "repay_settle.read_owned_obligation",
@@ -2692,7 +2744,7 @@
     {
       "destinationId": "credit_passport",
       "label": "Credit Passport",
-      "order": 4,
+      "order": 5,
       "actions": [
         {
           "actionId": "credit_passport.read_decision_passport",
@@ -2826,7 +2878,7 @@
     {
       "destinationId": "obligations",
       "label": "Obligations",
-      "order": 5,
+      "order": 6,
       "actions": [
         {
           "actionId": "obligations.inspect_owned_obligation_and_evidence",
@@ -2905,7 +2957,7 @@
     {
       "destinationId": "agent_console",
       "label": "Agent Console",
-      "order": 6,
+      "order": 7,
       "actions": [
         {
           "actionId": "agent_console.create_and_bind_agent",
@@ -3130,7 +3182,7 @@
     {
       "destinationId": "capital_network",
       "label": "Capital Network",
-      "order": 7,
+      "order": 8,
       "actions": [
         {
           "actionId": "capital_network.synthetic_bilateral_marketplace",
@@ -3319,7 +3371,7 @@
     {
       "destinationId": "wallet_permissions",
       "label": "Wallet & Permissions",
-      "order": 8,
+      "order": 9,
       "actions": [
         {
           "actionId": "wallet_permissions.human_wallet_authentication",
@@ -3582,7 +3634,7 @@
     {
       "destinationId": "activity_proofs",
       "label": "Activity & Proofs",
-      "order": 9,
+      "order": 10,
       "actions": [
         {
           "actionId": "activity_proofs.read_and_verify_evidence",
@@ -3696,7 +3748,7 @@
     {
       "destinationId": "credit_track_record",
       "label": "Credit Track Record",
-      "order": 10,
+      "order": 11,
       "actions": [
         {
           "actionId": "credit_track_record.read_evidence_derived_record",
@@ -3804,7 +3856,7 @@
     {
       "destinationId": "reports_exports",
       "label": "Reports & Exports",
-      "order": 11,
+      "order": 12,
       "actions": [
         {
           "actionId": "reports_exports.generate_official_artifact",
@@ -3896,7 +3948,7 @@
     {
       "destinationId": "risk_operations",
       "label": "Risk & Operations",
-      "order": 12,
+      "order": 13,
       "actions": [
         {
           "actionId": "risk_operations.read_portfolio_health_feedback_and_queue",
@@ -4095,7 +4147,7 @@
     {
       "destinationId": "architecture",
       "label": "Architecture",
-      "order": 13,
+      "order": 14,
       "actions": [
         {
           "actionId": "architecture.inspect_machine_contracts",

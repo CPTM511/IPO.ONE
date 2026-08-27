@@ -24,6 +24,7 @@ const EMPTY_POSITION = Object.freeze({
   debtAssets: "0",
   badDebtAssets: "0"
 });
+const EVM_ACCOUNT = /^0x[0-9a-fA-F]{40}$/;
 
 function fail(code, message) {
   throw new DomainError(code, message);
@@ -216,28 +217,99 @@ function healthView(position, state) {
   });
 }
 
-function marketView(context, now, deploymentProfile) {
-  if (!context) {
+function marketView({
+  context,
+  now,
+  deploymentProfile,
+  liveRead,
+  liveErrorCode,
+  contextErrorCode
+}) {
+  const liveState = liveRead?.state ?? null;
+  const indexedState = context?.projection.state ?? null;
+  const state = liveState ?? indexedState;
+  const deployed = Boolean(deploymentProfile);
+  const deploymentState = liveRead?.deployment ?? Object.freeze({
+    state: liveErrorCode === "secured_pool_exact_profile_mismatch"
+      ? "verification_failed"
+      : deployed
+        ? "configured"
+        : "unavailable",
+    chainId: deploymentProfile?.chainId ?? "eip155:84532",
+    contractAddress: deploymentProfile?.poolContract ?? null,
+    bytecodeHash: deploymentProfile?.poolBytecodeHash ?? null,
+    configurationHash: deploymentProfile?.configurationHash ?? null,
+    deploymentApprovalRef: deploymentProfile?.deploymentApprovalRef ?? null,
+    testAssetsOnly: deploymentProfile?.realValueClassification === "test_assets_only"
+  });
+  const rpcState = liveRead?.rpc ?? Object.freeze({
+    state: "unavailable",
+    providerSlot: null,
+    blockNumber: null,
+    blockTimestamp: null,
+    observedAt: null,
+    reasonCode: liveErrorCode ?? (deployed
+      ? "pool_rpc_adapter_unavailable"
+      : "pool_deployment_unavailable")
+  });
+  const indexerState = Object.freeze(context
+    ? {
+        state: "indexed",
+        source: "finalized_event_projection",
+        effectHash: context.effect.effect_hash,
+        recordedAt: iso(context.effect.recorded_at)
+      }
+    : {
+        state: "unavailable",
+        source: null,
+        effectHash: null,
+        recordedAt: null,
+        reasonCode: contextErrorCode ?? "pool_indexer_state_unavailable"
+      });
+  const reconciliation = Object.freeze(context?.reconciliation
+    ? {
+        state: context.reconciliation.consistent ? "reconciled" : "discrepancy",
+        reasonCode: context.reconciliation.reason_code,
+        checkedAt: iso(context.reconciliation.checked_at),
+        reconciliationHash: context.reconciliation.reconciliation_hash
+      }
+    : {
+        state: "unavailable",
+        reasonCode: "reconciliation_unavailable",
+        checkedAt: null,
+        reconciliationHash: null
+      });
+  if (!state) {
     return Object.freeze({
-      status: deploymentProfile ? "deployed_not_indexed" : "not_indexed",
+      status: deployed ? "deployed_not_indexed" : "not_indexed",
       chainId: deploymentProfile?.chainId ?? "eip155:84532",
       contractAddress: deploymentProfile?.poolContract ?? null,
       marketId: null,
+      deployment: deploymentState,
+      rpc: rpcState,
+      indexer: indexerState,
       accounting: null,
       oracle: Object.freeze({ state: "unavailable", observedAt: null }),
-      reconciliation: Object.freeze({ state: "unavailable", reasonCode: "pool_state_unavailable" }),
-      riskControl: Object.freeze({ newRiskFrozen: true, reasonCode: "pool_state_unavailable" }),
+      reconciliation,
+      riskControl: Object.freeze({
+        newRiskFrozen: true,
+        protocolNewRiskPaused: null,
+        reasonCode: "risk_control_unavailable",
+        changedAt: null
+      }),
       testAssetsOnly: deploymentProfile?.realValueClassification === "test_assets_only",
       deploymentApprovalRef: deploymentProfile?.deploymentApprovalRef ?? null,
       readOnly: true
     });
   }
-  const state = context.projection.state;
   return Object.freeze({
-    status: "local_synthetic_indexed",
+    status: liveState ? "live_testnet_read_only" : "local_synthetic_indexed",
     chainId: state.chainId,
     contractAddress: state.contractAddress,
     marketId: state.marketId,
+    deployment: deploymentState,
+    rpc: rpcState,
+    indexer: indexerState,
     debtAsset: state.configuration.debtAsset,
     collateralAsset: state.configuration.collateralAsset,
     liquidationThresholdBps: state.configuration.liquidationThresholdBps,
@@ -251,15 +323,8 @@ function marketView(context, now, deploymentProfile) {
       priceUsdWad: state.acceptedPriceUsdWad,
       deviationHalted: state.oracleDeviationHalted === true
     }),
-    reconciliation: Object.freeze(context.reconciliation
-      ? {
-          state: context.reconciliation.consistent ? "reconciled" : "discrepancy",
-          reasonCode: context.reconciliation.reason_code,
-          checkedAt: iso(context.reconciliation.checked_at),
-          reconciliationHash: context.reconciliation.reconciliation_hash
-        }
-      : { state: "unavailable", reasonCode: "reconciliation_unavailable", checkedAt: null }),
-    riskControl: Object.freeze(context.control
+    reconciliation,
+    riskControl: Object.freeze(context?.control
       ? {
           newRiskFrozen: context.control.new_risk_frozen || state.newRiskPaused,
           protocolNewRiskPaused: state.newRiskPaused,
@@ -267,33 +332,93 @@ function marketView(context, now, deploymentProfile) {
           changedAt: iso(context.control.changed_at),
           controlHash: context.control.control_hash
         }
-      : { newRiskFrozen: true, protocolNewRiskPaused: state.newRiskPaused, reasonCode: "risk_control_unavailable", changedAt: null }),
-    fixtureOnly: true,
+      : {
+          newRiskFrozen: true,
+          protocolNewRiskPaused: state.newRiskPaused,
+          reasonCode: "risk_control_unavailable",
+          changedAt: null
+        }),
+    source: liveState ? "base_sepolia_safe_block" : "finalized_event_projection",
+    fixtureOnly: !liveState,
+    testAssetsOnly: deploymentProfile?.realValueClassification === "test_assets_only",
     readOnly: true
   });
 }
 
-async function ownPosition(client, coreRepository, subjectId, context) {
-  if (!context) return Object.freeze({ accountBinding: null, position: null, obligationProjection: null });
+async function ownAccountBinding(client, coreRepository, subjectId, chainId) {
   const bindings = await coreRepository.listExecutionAccountBindingsForSubjectInTransaction(
     client,
     subjectId,
     { lock: false }
   );
   const active = bindings.filter((binding) =>
-    binding.status === "active" && binding.chainId === context.projection.state.chainId
+    binding.status === "active" && binding.chainId === chainId
   );
   if (active.length > 1) {
     fail("projection_integrity_mismatch", "Subject has multiple active Pool execution accounts");
   }
   const accountBinding = active[0] ?? null;
+  if (!accountBinding) return Object.freeze({ accountBinding: null, account: null });
+  const prefix = `${chainId}:`;
+  if (!accountBinding.accountIdRef.startsWith(prefix)) {
+    fail("projection_integrity_mismatch", "Pool AccountBinding is inconsistent");
+  }
+  const account = accountBinding.accountIdRef.slice(prefix.length);
+  if (!EVM_ACCOUNT.test(account)) {
+    fail("projection_integrity_mismatch", "Pool AccountBinding account is invalid");
+  }
+  return Object.freeze({ accountBinding, account });
+}
+
+async function readLivePool(readAdapter, account) {
+  if (!readAdapter?.readSnapshot) {
+    return Object.freeze({ liveRead: null, liveErrorCode: null });
+  }
+  try {
+    return Object.freeze({
+      liveRead: await readAdapter.readSnapshot(account ? { account } : {}),
+      liveErrorCode: null
+    });
+  } catch (error) {
+    return Object.freeze({
+      liveRead: null,
+      liveErrorCode: new Set([
+        "secured_pool_rpc_unavailable",
+        "secured_pool_exact_profile_mismatch"
+      ]).has(error?.code)
+        ? error.code
+        : "secured_pool_rpc_unavailable"
+    });
+  }
+}
+
+function admittedPoolContext(context, deploymentProfile, liveRead) {
+  if (!context) return Object.freeze({ context: null, contextErrorCode: null });
+  const state = context.projection.state;
+  const expectedChainId = deploymentProfile?.chainId ?? liveRead?.state.chainId ?? state.chainId;
+  const expectedContract = deploymentProfile?.poolContract ?? liveRead?.state.contractAddress ?? state.contractAddress;
+  const expectedMarketId = liveRead?.state.marketId ?? state.marketId;
+  if (
+    state.chainId !== expectedChainId ||
+    state.contractAddress.toLowerCase() !== expectedContract.toLowerCase() ||
+    state.marketId.toLowerCase() !== expectedMarketId.toLowerCase()
+  ) {
+    return Object.freeze({
+      context: null,
+      contextErrorCode: "pool_indexer_profile_mismatch"
+    });
+  }
+  return Object.freeze({ context, contextErrorCode: null });
+}
+
+async function ownPosition(client, subjectId, context, binding, liveRead) {
   let position = null;
-  if (accountBinding) {
-    const prefix = `${context.projection.state.chainId}:`;
-    if (!accountBinding.accountIdRef.startsWith(prefix)) {
-      fail("projection_integrity_mismatch", "Pool AccountBinding is inconsistent");
-    }
-    const account = accountBinding.accountIdRef.slice(prefix.length);
+  let positionSource = null;
+  if (binding.accountBinding && liveRead?.position) {
+    position = liveRead.position;
+    positionSource = "base_sepolia_safe_block";
+  } else if (binding.accountBinding && context) {
+    const account = binding.account;
     const accountHash = hashId("pool_position_account", {
       chainId: context.projection.state.chainId,
       account
@@ -311,6 +436,15 @@ async function ownPosition(client, coreRepository, subjectId, context) {
     } else {
       position = { ...EMPTY_POSITION };
     }
+    positionSource = "finalized_event_projection";
+  }
+  if (!context) {
+    return Object.freeze({
+      accountBinding: binding.accountBinding,
+      position,
+      positionSource,
+      obligationProjection: null
+    });
   }
   const obligationResult = await client.query(
     `SELECT b.id AS binding_id, b.obligation_id, p.projection
@@ -333,14 +467,39 @@ async function ownPosition(client, coreRepository, subjectId, context) {
     (obligationProjection.projection?.schemaVersion !== "pool_obligation_projection.v1" ||
       obligationProjection.projection.obligationId !== obligationProjection.obligation_id)
   ) fail("projection_integrity_mismatch", "Pool Obligation projection is inconsistent");
-  return Object.freeze({ accountBinding, position, obligationProjection });
+  return Object.freeze({
+    accountBinding: binding.accountBinding,
+    position,
+    positionSource,
+    obligationProjection
+  });
 }
 
-function ownWorkspaceResponse({ subjectId, context, owned, now, deploymentProfile }) {
-  const market = marketView(context, now, deploymentProfile);
+function ownWorkspaceResponse({
+  subjectId,
+  context,
+  owned,
+  now,
+  deploymentProfile,
+  liveRead,
+  liveErrorCode,
+  contextErrorCode
+}) {
+  const market = marketView({
+    context,
+    now,
+    deploymentProfile,
+    liveRead,
+    liveErrorCode,
+    contextErrorCode
+  });
+  const healthState = liveRead?.state ?? context?.projection.state ?? null;
   const position = owned.position ? Object.freeze({
     ...owned.position,
-    health: healthView(owned.position, context.projection.state)
+    source: owned.positionSource,
+    health: healthState
+      ? healthView(owned.position, healthState)
+      : Object.freeze({ state: "unavailable", healthFactorWad: null, liquidatable: false })
   }) : null;
   return Object.freeze({
     subjectId,
@@ -367,7 +526,7 @@ function ownWorkspaceResponse({ subjectId, context, owned, now, deploymentProfil
     submission: Object.freeze({
       state: "unavailable",
       reasonCode: "pool_submission_unavailable",
-      recoveryCondition: "This local synthetic workspace is review-only and has no transaction submission authority",
+      recoveryCondition: "This read-only Pool product has no transaction submission authority; a separately approved execution task is required",
       transactionHash: null,
       finality: "not_applicable"
     }),
@@ -395,7 +554,11 @@ function actionReview({ workspace, actionType, amountAssets, now }) {
   const position = workspace.position;
   const amount = decimal("amountAssets", amountAssets, { positive: true });
   if (!workspace.accountBindingAvailable) blockers.push("pool_account_binding_unavailable");
-  if (market.status !== "local_synthetic_indexed") blockers.push("pool_state_unavailable");
+  const marketReadable = new Set([
+    "local_synthetic_indexed",
+    "live_testnet_read_only"
+  ]).has(market.status);
+  if (!marketReadable) blockers.push("pool_state_unavailable");
   if (!position && POSITION_REQUIRED_ACTIONS.has(actionType)) blockers.push("pool_position_unavailable");
   if (market.reconciliation.state !== "reconciled" && NEW_RISK_ACTIONS.has(actionType)) {
     blockers.push("pool_reconciliation_unavailable");
@@ -412,7 +575,7 @@ function actionReview({ workspace, actionType, amountAssets, now }) {
     debtAssetsAfter: null,
     healthAfter: null
   });
-  if (market.status === "local_synthetic_indexed" && position) {
+  if (marketReadable && position) {
     const cash = decimal("cashAssets", market.accounting.cashAssets);
     const supplyShares = decimal("supplyShares", position.supplyShares);
     const debt = decimal("debtAssets", position.debtAssets) + decimal("badDebtAssets", position.badDebtAssets);
@@ -490,49 +653,96 @@ function actionReview({ workspace, actionType, amountAssets, now }) {
     submittable: false,
     transactionState: "not_submitted",
     finality: "not_applicable",
-    recoveryCondition: "This local synthetic workspace is review-only and has no transaction submission authority",
+    recoveryCondition: "This read-only Pool product has no transaction submission authority; a separately approved execution task is required",
     schemaVersion: "tenant_secured_pool_action_review.v1"
   });
 }
 
-export function readOwnSecuredPoolQueryHandler({ deploymentProfile } = {}) {
+export function readOwnSecuredPoolQueryHandler({ deploymentProfile, readAdapter } = {}) {
   return Object.freeze({
     operationId: "pilotReadOwnSecuredPool",
     kind: "query",
     async execute({ client, coreRepository, resource, payload, now }) {
       emptyPayload(payload, "Own Secured Pool workspace");
       const subjectId = ownResource(resource);
-      const context = await loadPoolContext(client);
-      const owned = await ownPosition(client, coreRepository, subjectId, context);
-      return ownWorkspaceResponse({ subjectId, context, owned, now, deploymentProfile });
+      const loadedContext = await loadPoolContext(client);
+      const chainId = deploymentProfile?.chainId ?? loadedContext?.projection.state.chainId ?? "eip155:84532";
+      const binding = await ownAccountBinding(client, coreRepository, subjectId, chainId);
+      const { liveRead, liveErrorCode } = await readLivePool(readAdapter, binding.account);
+      const { context, contextErrorCode } = admittedPoolContext(
+        loadedContext,
+        deploymentProfile,
+        liveRead
+      );
+      const owned = await ownPosition(client, subjectId, context, binding, liveRead);
+      return ownWorkspaceResponse({
+        subjectId,
+        context,
+        owned,
+        now,
+        deploymentProfile,
+        liveRead,
+        liveErrorCode,
+        contextErrorCode
+      });
     }
   });
 }
 
-export function reviewSecuredPoolActionQueryHandler({ deploymentProfile } = {}) {
+export function reviewSecuredPoolActionQueryHandler({ deploymentProfile, readAdapter } = {}) {
   return Object.freeze({
     operationId: "pilotReviewSecuredPoolAction",
     kind: "query",
     async execute({ client, coreRepository, resource, payload, now }) {
       const checked = actionPayload(payload);
       const subjectId = ownResource(resource);
-      const context = await loadPoolContext(client);
-      const owned = await ownPosition(client, coreRepository, subjectId, context);
-      const workspace = ownWorkspaceResponse({ subjectId, context, owned, now, deploymentProfile });
+      const loadedContext = await loadPoolContext(client);
+      const chainId = deploymentProfile?.chainId ?? loadedContext?.projection.state.chainId ?? "eip155:84532";
+      const binding = await ownAccountBinding(client, coreRepository, subjectId, chainId);
+      const { liveRead, liveErrorCode } = await readLivePool(readAdapter, binding.account);
+      const { context, contextErrorCode } = admittedPoolContext(
+        loadedContext,
+        deploymentProfile,
+        liveRead
+      );
+      const owned = await ownPosition(client, subjectId, context, binding, liveRead);
+      const workspace = ownWorkspaceResponse({
+        subjectId,
+        context,
+        owned,
+        now,
+        deploymentProfile,
+        liveRead,
+        liveErrorCode,
+        contextErrorCode
+      });
       return actionReview({ workspace, ...checked, now });
     }
   });
 }
 
-export function readSecuredPoolRiskQueryHandler({ deploymentProfile } = {}) {
+export function readSecuredPoolRiskQueryHandler({ deploymentProfile, readAdapter } = {}) {
   return Object.freeze({
     operationId: "pilotReadSecuredPoolRisk",
     kind: "query",
     async execute({ client, authorizationDecision, payload, now }) {
       emptyPayload(payload, "Secured Pool Risk/Ops workspace");
       const portfolioId = riskResource(authorizationDecision);
-      const context = await loadPoolContext(client);
-      const market = marketView(context, now, deploymentProfile);
+      const loadedContext = await loadPoolContext(client);
+      const { liveRead, liveErrorCode } = await readLivePool(readAdapter, null);
+      const { context, contextErrorCode } = admittedPoolContext(
+        loadedContext,
+        deploymentProfile,
+        liveRead
+      );
+      const market = marketView({
+        context,
+        now,
+        deploymentProfile,
+        liveRead,
+        liveErrorCode,
+        contextErrorCode
+      });
       const positions = context?.projection.state.accounts ?? [];
       const liquidatablePositions = context
         ? positions.filter((position) => healthView(position, context.projection.state).liquidatable).length
@@ -551,9 +761,9 @@ export function readSecuredPoolRiskQueryHandler({ deploymentProfile } = {}) {
       return Object.freeze({
         portfolioId,
         market,
-        positionCount: positions.length,
-        liquidatablePositionCount: liquidatablePositions,
-        discrepancyCount: discrepancyResult.rows[0].count,
+        positionCount: context ? positions.length : null,
+        liquidatablePositionCount: context ? liquidatablePositions : null,
+        discrepancyCount: context?.reconciliation ? discrepancyResult.rows[0].count : null,
         controls: Object.freeze({
           freezeNewRisk: market.riskControl.newRiskFrozen,
           automaticRecoveryEnabled: false,

@@ -15,6 +15,11 @@ import {
   HyperliquidTestnetInfoAdapter
 } from "../../../modules/hyperliquid-info/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
+import { createSecuredPoolV1ReadAdapter } from "../../../modules/chain-adapter/src/index.js";
+import {
+  getLiveTestnetConfig,
+  resolveApprovedRpc
+} from "../../../modules/event-indexer/src/index.js";
 import {
   migrationChecksumMatches,
   readMigrationSet
@@ -65,6 +70,33 @@ const DEPLOYMENT_ROLES = new Set(["container", "primary", "risk"]);
 const PRODUCTION_WORKSPACE_BY_DEPLOYMENT_ROLE = Object.freeze({
   risk: "risk"
 });
+
+function createProductionSecuredPoolReadBoundary() {
+  const profile = launchPolicy.profiles.live_testnet_secured_pool;
+  if (
+    profile?.releaseEnabled !== true ||
+    profile.capabilities?.realFundsEnabled !== false ||
+    profile.capabilities?.testAssetsEnabled !== true ||
+    profile.capabilities?.securedPoolEnabled !== true ||
+    profile.capabilities?.marketCreationEnabled !== false ||
+    profile.exactProfile?.realValueClassification !== "test_assets_only"
+  ) return Object.freeze({ deploymentProfile: undefined, readAdapter: undefined });
+  const liveConfig = getLiveTestnetConfig(profile.exactProfile.chainId);
+  const providers = ["primary", "secondary"].map((providerSlot) =>
+    resolveApprovedRpc({
+      chainId: profile.exactProfile.chainId,
+      providerSlot,
+      rpcUrl: liveConfig.rpcSlots[providerSlot]
+    })
+  );
+  return Object.freeze({
+    deploymentProfile: profile.exactProfile,
+    readAdapter: createSecuredPoolV1ReadAdapter({
+      deploymentProfile: profile.exactProfile,
+      providers
+    })
+  });
+}
 
 export function productionWorkspaceNameForDeploymentRole(deploymentRole) {
   return PRODUCTION_WORKSPACE_BY_DEPLOYMENT_ROLE[deploymentRole];
@@ -172,6 +204,7 @@ async function composeProductionClosedPilotRuntime(input) {
   const policyRegistry = new AuthorizationPolicyRegistry({
     policyVersion: input.policyVersion
   });
+  const securedPool = createProductionSecuredPoolReadBoundary();
   const durableGateway = new TenantCommandGateway({
     pool: input.gatewayPool,
     handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
@@ -179,8 +212,8 @@ async function composeProductionClosedPilotRuntime(input) {
       hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
       hyperliquidBindingProofVerifier:
         new HyperliquidBindingProofVerifier(),
-      securedPoolDeploymentProfile:
-        launchPolicy.profiles.live_testnet_secured_pool.exactProfile
+      securedPoolDeploymentProfile: securedPool.deploymentProfile,
+      securedPoolReadAdapter: securedPool.readAdapter
     })),
     policyRegistry,
     credentialRegistry: humanAccess.credentialRegistry,

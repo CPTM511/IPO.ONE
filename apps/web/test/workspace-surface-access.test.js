@@ -12,7 +12,7 @@ test("controller exposes Principal and Agent surfaces without deferred role dest
   assert.equal(access.defaultView, "overview");
   assert.deepEqual(
     [...access.primaryViews],
-    ["overview", "request-credit", "agent-console", "obligations"]
+    ["overview", "request-credit", "secured-pool", "agent-console"]
   );
   assert.equal(access.allowedViews.has("agent-console"), true);
   assert.equal(access.allowedViews.has("capital-partners"), false);
@@ -20,6 +20,7 @@ test("controller exposes Principal and Agent surfaces without deferred role dest
   assert.deepEqual(
     [...access.advancedViews],
     [
+      "obligations",
       "wallet-permissions",
       "activity-proofs",
       "credit-track-record",
@@ -47,7 +48,7 @@ test("borrower does not advertise Capital Partner or Risk", () => {
   const access = workspaceSurfaceAccess("borrower");
   assert.deepEqual(
     [...access.primaryViews],
-    ["overview", "request-credit", "obligations", "activity-proofs"]
+    ["overview", "request-credit", "secured-pool", "obligations"]
   );
   assert.equal(access.allowedViews.has("request-credit"), true);
   assert.equal(access.allowedViews.has("capital-partners"), false);
@@ -55,6 +56,7 @@ test("borrower does not advertise Capital Partner or Risk", () => {
   assert.deepEqual(
     [...access.advancedViews],
     [
+      "activity-proofs",
       "repay-settle",
       "credit-passport",
       "wallet-permissions",

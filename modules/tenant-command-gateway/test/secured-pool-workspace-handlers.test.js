@@ -15,7 +15,7 @@ const emptyPoolClient = {
 };
 const coreRepository = {
   async listExecutionAccountBindingsForSubjectInTransaction() {
-    throw new Error("must not query bindings without one indexed Pool market");
+    return [];
   }
 };
 
@@ -28,6 +28,9 @@ test("own Secured Pool workspace is server-derived and truthfully unavailable be
     now
   });
   assert.equal(response.market.status, "not_indexed");
+  assert.equal(response.market.deployment.state, "unavailable");
+  assert.equal(response.market.rpc.state, "unavailable");
+  assert.equal(response.market.indexer.state, "unavailable");
   assert.equal(response.accountBindingAvailable, false);
   assert.equal(response.submission.state, "unavailable");
   assert.equal(response.submission.transactionHash, null);
@@ -50,6 +53,9 @@ test("own Secured Pool workspace identifies the deployed test Pool without inven
     now
   });
   assert.equal(response.market.status, "deployed_not_indexed");
+  assert.equal(response.market.deployment.state, "configured");
+  assert.equal(response.market.rpc.state, "unavailable");
+  assert.equal(response.market.indexer.state, "unavailable");
   assert.equal(response.market.contractAddress, "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da");
   assert.equal(response.market.accounting, null);
   assert.equal(response.market.readOnly, true);
@@ -82,10 +88,103 @@ test("Risk/Ops Pool view is aggregate, read-only, and contains no account addres
     payload: {},
     now
   });
-  assert.equal(response.positionCount, 0);
+  assert.equal(response.positionCount, null);
+  assert.equal(response.liquidatablePositionCount, null);
+  assert.equal(response.discrepancyCount, null);
   assert.equal(response.controls.freezeNewRisk, true);
   assert.equal(response.controls.liquidationSubmissionAvailable, false);
   assert.equal(JSON.stringify(response).includes("0x1111111111111111111111111111111111111111"), false);
+});
+
+test("authorized AccountBinding receives exact live position while public and private axes stay separate", async () => {
+  const boundRepository = {
+    async listExecutionAccountBindingsForSubjectInTransaction(_client, subjectId) {
+      assert.equal(subjectId, "subject_pool_fixture");
+      return [{
+        status: "active",
+        chainId: "eip155:84532",
+        accountIdRef: "eip155:84532:0x9999999999999999999999999999999999999999"
+      }];
+    }
+  };
+  const readAdapter = {
+    async readSnapshot({ account }) {
+      assert.equal(account, "0x9999999999999999999999999999999999999999");
+      return {
+        deployment: {
+          state: "verified",
+          chainId: "eip155:84532",
+          contractAddress: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+          bytecodeHash: `0x${"1".repeat(64)}`,
+          configurationHash: `0x${"2".repeat(64)}`,
+          deploymentApprovalRef: "M2A-008-DEPLOY-20260824-004",
+          testAssetsOnly: true
+        },
+        rpc: {
+          state: "available",
+          providerSlot: "primary",
+          blockNumber: "46000000",
+          blockTimestamp: "2026-08-26T23:59:00.000Z",
+          observedAt: "2026-08-27T00:00:00.000Z"
+        },
+        state: {
+          chainId: "eip155:84532",
+          contractAddress: "0x3fb68c0776d610a57ed94c012afa81b7c3c632da",
+          marketId: `0x${"3".repeat(64)}`,
+          configuration: {
+            debtAsset: "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+            collateralAsset: "0x4200000000000000000000000000000000000006",
+            liquidationThresholdBps: "8000"
+          },
+          cashAssets: "0",
+          grossDebtAssets: "0",
+          reservesAssets: "0",
+          badDebtAssets: "0",
+          totalSupplyShares: "0",
+          totalDebtShares: "0",
+          acceptedPriceUsdWad: "2500000000000000000000",
+          acceptedOracleObservedAt: "1787788770",
+          acceptedOracleRoundId: "1",
+          oracleDeviationHalted: false,
+          newRiskPaused: false
+        },
+        position: {
+          supplyShares: "0",
+          collateralAssets: "0",
+          debtShares: "0",
+          debtAssets: "0",
+          badDebtAssets: "0",
+          supplyClaimAssets: "0",
+          totalOutstandingDebtAssets: "0"
+        }
+      };
+    }
+  };
+  const response = await readOwnSecuredPoolQueryHandler({
+    deploymentProfile: {
+      chainId: "eip155:84532",
+      poolContract: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+      deploymentApprovalRef: "M2A-008-DEPLOY-20260824-004",
+      realValueClassification: "test_assets_only"
+    },
+    readAdapter
+  }).execute({
+    client: emptyPoolClient,
+    coreRepository: boundRepository,
+    resource: { resourceType: "subject", resourceId: "subject_pool_fixture" },
+    payload: {},
+    now
+  });
+  assert.equal(response.market.status, "live_testnet_read_only");
+  assert.equal(response.market.deployment.state, "verified");
+  assert.equal(response.market.rpc.state, "available");
+  assert.equal(response.market.indexer.state, "unavailable");
+  assert.equal(response.market.reconciliation.state, "unavailable");
+  assert.equal(response.accountBindingAvailable, true);
+  assert.equal(response.position.supplyShares, "0");
+  assert.equal(response.position.source, "base_sepolia_safe_block");
+  assert.equal(response.submission.state, "unavailable");
+  assert.equal(JSON.stringify(response).includes("0x9999999999999999999999999999999999999999"), false);
 });
 
 test("Pool action review rejects hidden submission fields", async () => {

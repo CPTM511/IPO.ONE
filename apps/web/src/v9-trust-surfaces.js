@@ -5,6 +5,10 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
     "pilotReadCreditApplication",
     "pilotEvaluateCreditApplication"
   ]),
+  "secured-pool": Object.freeze([
+    "pilotReadOwnSecuredPool",
+    "pilotReviewSecuredPoolAction"
+  ]),
   "repay-settle": Object.freeze([
     "pilotReadOwnObligation",
     "pilotPostSandboxRepayment"
