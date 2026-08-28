@@ -18,6 +18,7 @@ import {
 export const PRODUCTION_TENANT_ROUTES = Object.freeze({
   agentOpenApi: "/agent-openapi.json",
   deploymentCapability: "/.well-known/ipo-one.json",
+  securedPoolMarket: "/tenant/v1/secured-pool/market",
   operations: "/tenant/v1/operations",
   catalog: "/tenant/v1/catalog",
   health: "/tenant/v1/healthz",
@@ -52,6 +53,7 @@ const CONFIG_KEYS = new Set([
   "readinessCheck",
   "releaseId",
   "requestTimeoutMs",
+  "securedPoolMarketProvider",
   "serveAuthentication",
   "sessionHandleProvider",
   "verifyEdgeRequest",
@@ -396,6 +398,8 @@ export function createProductionTenantRequestHandler(input) {
     (input.workspaceNameProvider !== undefined && typeof input.workspaceNameProvider !== "function") ||
     (input.chainCapabilityProvider !== undefined &&
       typeof input.chainCapabilityProvider !== "function") ||
+    (input.securedPoolMarketProvider !== undefined &&
+      typeof input.securedPoolMarketProvider !== "function") ||
     !boundedInteger(port, 1_024, 65_535) ||
     !boundedInteger(requestTimeoutMs, 100, REQUEST_TIMEOUT_MS) ||
     !boundedInteger(maximumConcurrency, 1, MAX_CONCURRENCY) ||
@@ -523,6 +527,24 @@ export function createProductionTenantRequestHandler(input) {
         url,
         requestId
       })) return;
+      if (
+        new Set(["GET", "HEAD"]).has(request.method) &&
+        url.search === "" &&
+        url.pathname === PRODUCTION_TENANT_ROUTES.securedPoolMarket
+      ) {
+        if (!input.securedPoolMarketProvider) {
+          throw new ApiBoundaryError("not_found", "Tenant route is not available");
+        }
+        const authenticationContext = await resolveAuthenticationContext({
+          request,
+          requestUrl: url.toString()
+        });
+        const snapshot = await input.securedPoolMarketProvider({
+          authenticationContext,
+          requestId
+        });
+        return json(response, 200, snapshot, requestId, headOnly);
+      }
       if (request.method === "GET" && url.pathname === PRODUCTION_TENANT_ROUTES.catalog) {
         await resolveAuthenticationContext({ request, requestUrl: url.toString() });
         return json(response, 200, TENANT_PROTOCOL_CATALOG, requestId);

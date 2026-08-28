@@ -437,6 +437,7 @@ let currentServicingAction;
 let secondaryCurrentObligation = secondaryDelinquentObligation();
 let secondaryServicingAction;
 let currentSubjectCreated = true;
+let browserQaSuppressRecoveredSubject = false;
 let currentConsentCreated = true;
 let currentOfficialReport;
 let failNextEvidenceRead = false;
@@ -744,7 +745,7 @@ function resultFor(command) {
         relationship: "owner"
       });
     }
-    if (currentSubjectCreated) {
+    if (currentSubjectCreated && !browserQaSuppressRecoveredSubject) {
       resources.push({
         resourceType: "subject",
         resourceId: subject.subjectId,
@@ -1242,6 +1243,11 @@ async function serveAuthentication({ request, response, url, requestId }) {
   return true;
 }
 
+const browserQaWebAssetHandler = createTenantWebAssetHandler({
+  csrfTokenProvider: async () => browserSessionActive ? csrfToken : undefined,
+  workspaceNameProvider: async () => browserQaRole
+});
+
 const host = createTenantHttpServer({
   port: browserQaPort,
   environment: "development",
@@ -1267,11 +1273,29 @@ const host = createTenantHttpServer({
     return authenticationContext;
   },
   createNetworkContext: async () => ({ source: "human_lifecycle_browser_qa" }),
+  securedPoolMarketProvider: async () => {
+    const workspace = resultFor({
+      operationId: "pilotReadOwnSecuredPool",
+      resource: { resourceType: "subject", resourceId: subject.subjectId }
+    }).response;
+    return {
+      market: workspace.market,
+      submission: workspace.submission,
+      serverDerived: true,
+      syntheticOnly: true,
+      productionFundsMoved: false,
+      schemaVersion: "secured_pool_market_snapshot.v1"
+    };
+  },
   serveAuthentication,
-  serveWebAsset: createTenantWebAssetHandler({
-    csrfTokenProvider: async () => browserSessionActive ? csrfToken : undefined,
-    workspaceNameProvider: async () => browserQaRole
-  })
+  serveWebAsset: async (context) => {
+    if (context.request.method === "GET" && context.pathname === "/") {
+      const url = new URL(context.request.url, "http://127.0.0.1");
+      browserQaSuppressRecoveredSubject =
+        url.searchParams.get("browser_qa_workspace") === "no_subject";
+    }
+    return browserQaWebAssetHandler(context);
+  }
 });
 
 const address = await host.listen();

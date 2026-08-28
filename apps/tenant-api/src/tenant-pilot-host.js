@@ -13,6 +13,7 @@ const CONFIG_KEYS = new Set([
   "localAgentAccountProvider",
   "machineAuthenticator",
   "port",
+  "securedPoolMarketProvider",
   "serveAuthentication",
   "serveEvidenceAnchors",
   "serveReferenceAgent",
@@ -51,6 +52,7 @@ export function createTenantPilotHost(input) {
     serveAuthentication,
     serveEvidenceAnchors,
     serveReferenceAgent,
+    securedPoolMarketProvider,
     sessionHandleProvider,
     workspaceNameProvider,
     clock,
@@ -83,6 +85,7 @@ export function createTenantPilotHost(input) {
     serveAuthentication,
     serveEvidenceAnchors,
     serveReferenceAgent,
+    securedPoolMarketProvider,
     serveWebAsset: createTenantWebAssetHandler({
       csrfTokenProvider,
       sessionHandleProvider,

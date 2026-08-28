@@ -54,6 +54,9 @@ import {
   createSyntheticIdentityGateway
 } from "./local-synthetic-identity-provider.js";
 import {
+  createPostgresSecuredPoolMarketProvider
+} from "./secured-pool-market-provider.js";
+import {
   loadLocalAgentKeyMaterial,
   loadLocalAuthenticationInvitation,
   loadLocalAuthenticationServerMaterial
@@ -403,6 +406,11 @@ export async function createPrivatePilotRuntime({
         ...(referenceAgent === undefined
           ? {}
           : { serveReferenceAgent: referenceAgent }),
+        securedPoolMarketProvider: createPostgresSecuredPoolMarketProvider({
+          pool,
+          deploymentProfile:
+            launchPolicy.profiles.live_testnet_secured_pool.exactProfile
+        }),
         port: profile.port
       });
       const address = await host.listen();

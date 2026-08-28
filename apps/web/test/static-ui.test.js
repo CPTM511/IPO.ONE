@@ -697,6 +697,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
   assert.ok(js.includes("tenant_protocol_request.v1"));
   assert.ok(js.includes("/tenant/v1/operations"));
   assert.ok(js.includes("/tenant/v1/catalog"));
+  assert.ok(js.includes("/tenant/v1/secured-pool/market"));
   assert.ok(js.includes("principal_authorizes_sandbox_credit_v1"));
   for (const capability of [
     "request_credit",
@@ -1660,6 +1661,7 @@ test("closed-pilot browser has no demo route, reset control, or hidden fallback"
   }
   assert.ok(js.includes('fetch("/tenant/v1/catalog"'));
   assert.ok(js.includes('fetch("/tenant/v1/operations"'));
+  assert.ok(js.includes('const path = "/tenant/v1/secured-pool/market"'));
   assert.ok(js.includes("setConnection(tenantPilot.connected)"));
   assert.ok(js.includes("No product data is available without an authenticated session."));
   assert.ok(html.includes("Protocol fees disabled · Fee Policy deferred"));
