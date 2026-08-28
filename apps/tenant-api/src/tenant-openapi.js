@@ -105,6 +105,36 @@ const CHAIN_CAPABILITY_DOCUMENT_SCHEMA = Object.freeze({
   })
 });
 
+const SECURED_POOL_MARKET_SNAPSHOT_SCHEMA = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  required: Object.freeze([
+    "market",
+    "submission",
+    "serverDerived",
+    "syntheticOnly",
+    "productionFundsMoved",
+    "schemaVersion"
+  ]),
+  properties: Object.freeze({
+    market: Object.freeze({ type: "object", additionalProperties: true }),
+    submission: Object.freeze({
+      type: "object",
+      additionalProperties: true,
+      required: Object.freeze(["state", "reasonCode", "transactionHash"]),
+      properties: Object.freeze({
+        state: Object.freeze({ const: "unavailable" }),
+        reasonCode: Object.freeze({ const: "pool_submission_unavailable" }),
+        transactionHash: Object.freeze({ type: "null" })
+      })
+    }),
+    serverDerived: Object.freeze({ const: true }),
+    syntheticOnly: Object.freeze({ const: true }),
+    productionFundsMoved: Object.freeze({ const: false }),
+    schemaVersion: Object.freeze({ const: "secured_pool_market_snapshot.v1" })
+  })
+});
+
 function exactOrigin(value, { httpsOnly = false } = {}) {
   const origin = value instanceof URL ? value : new URL(value);
   if (
@@ -199,6 +229,28 @@ export function createTenantOpenApiDocument(publicOrigin) {
           responses: Object.freeze({
             200: Object.freeze({ description: "Versioned Tenant operation catalog" }),
             401: Object.freeze({ description: "Authentication required" })
+          })
+        })
+      }),
+      "/tenant/v1/secured-pool/market": Object.freeze({
+        get: Object.freeze({
+          operationId: "readSecuredPoolMarket",
+          summary: "Read exact public Pool market truth without private position data",
+          security: Object.freeze([
+            Object.freeze({ humanSession: [] }),
+            Object.freeze({ workloadBearer: [], mutualTls: [] })
+          ]),
+          responses: Object.freeze({
+            200: Object.freeze({
+              description: "Read-only exact Pool market snapshot",
+              content: Object.freeze({
+                "application/json": Object.freeze({
+                  schema: SECURED_POOL_MARKET_SNAPSHOT_SCHEMA
+                })
+              })
+            }),
+            401: problemResponse("Authentication required"),
+            503: problemResponse("Pool market dependencies are unavailable")
           })
         })
       })
@@ -340,6 +392,27 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
             503: problemResponse("A required trusted dependency is unavailable")
           })
         })
+      }),
+      "/tenant/v1/secured-pool/market": Object.freeze({
+        get: Object.freeze({
+          operationId: "readAgentSecuredPoolMarket",
+          summary: "Read exact public Pool market truth without private position data",
+          parameters: Object.freeze([requestIdParameter]),
+          security: agentSecurity,
+          responses: Object.freeze({
+            200: Object.freeze({
+              description: "Read-only exact Pool market snapshot",
+              content: Object.freeze({
+                "application/json": Object.freeze({
+                  schema: SECURED_POOL_MARKET_SNAPSHOT_SCHEMA
+                })
+              })
+            }),
+            401: problemResponse("Workload authentication required or rejected"),
+            421: problemResponse("Request did not arrive through the approved edge"),
+            503: problemResponse("Pool market dependencies are unavailable")
+          })
+        })
       })
     }),
     components: Object.freeze({
@@ -359,7 +432,8 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
       }),
       schemas: Object.freeze({
         ProblemDetails: PROBLEM_DETAILS_SCHEMA,
-        ChainCapabilityDocument: CHAIN_CAPABILITY_DOCUMENT_SCHEMA
+        ChainCapabilityDocument: CHAIN_CAPABILITY_DOCUMENT_SCHEMA,
+        SecuredPoolMarketSnapshot: SECURED_POOL_MARKET_SNAPSHOT_SCHEMA
       })
     }),
     "x-ipo-one-schema-version": AGENT_HTTPS_OPENAPI_SCHEMA_VERSION,

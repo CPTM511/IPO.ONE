@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   readOwnSecuredPoolQueryHandler,
+  readSecuredPoolMarketSnapshot,
   readSecuredPoolRiskQueryHandler,
   reviewSecuredPoolActionQueryHandler
 } from "../src/secured-pool-workspace-handlers.js";
@@ -60,6 +61,28 @@ test("own Secured Pool workspace identifies the deployed test Pool without inven
   assert.equal(response.market.accounting, null);
   assert.equal(response.market.readOnly, true);
   assert.equal(response.submission.reasonCode, "pool_submission_unavailable");
+});
+
+test("public Secured Pool market truth does not require a Subject locator", async () => {
+  const response = await readSecuredPoolMarketSnapshot({
+    client: emptyPoolClient,
+    deploymentProfile: {
+      chainId: "eip155:84532",
+      poolContract: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+      deploymentApprovalRef: "M2A-008-DEPLOY-20260824-004",
+      realValueClassification: "test_assets_only"
+    },
+    now
+  });
+  assert.equal(response.market.status, "deployed_not_indexed");
+  assert.equal(response.market.deployment.state, "configured");
+  assert.equal(response.market.contractAddress, "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da");
+  assert.equal(response.submission.reasonCode, "pool_submission_unavailable");
+  assert.equal(response.submission.transactionHash, null);
+  assert.equal(response.productionFundsMoved, false);
+  assert.equal(response.schemaVersion, "secured_pool_market_snapshot.v1");
+  assert.equal("subjectId" in response, false);
+  assert.equal("position" in response, false);
 });
 
 test("exact Pool action review fails closed before any submission path", async () => {

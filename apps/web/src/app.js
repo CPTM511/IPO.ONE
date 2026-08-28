@@ -391,6 +391,7 @@ const securedPoolPilot = {
   riskAvailable: false,
   busy: false,
   riskBusy: false,
+  marketSnapshot: null,
   workspace: null,
   review: null,
   risk: null,
@@ -2197,6 +2198,76 @@ async function tenantApi(operationId, {
   return includeTransportMeta
     ? Object.freeze({ correlationId, requestId: responseRequestId, result })
     : result;
+}
+
+async function securedPoolMarketApi() {
+  const requestDataEpoch = authenticatedDataEpoch;
+  walletAuthorityLifecycle.assertProtectedAvailable();
+  const requestId = tenantRequestToken("web_pool_market_request");
+  const path = "/tenant/v1/secured-pool/market";
+  let response;
+  try {
+    response = await fetch(path, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: {
+        accept: "application/json, application/problem+json",
+        "x-ipo-one-authentication-mode": "human_session",
+        "x-request-id": requestId
+      }
+    });
+  } catch (cause) {
+    throw Object.assign(
+      new Error("The secured Pool market reader is unavailable.", { cause }),
+      { requestId }
+    );
+  }
+  const responseRequestId = response.headers.get("x-request-id") ?? requestId;
+  const text = await response.text();
+  if (requestDataEpoch !== authenticatedDataEpoch) {
+    throw Object.assign(
+      new Error("The authenticated session ended before this response completed."),
+      { code: "authenticated_session_ended", requestId: responseRequestId }
+    );
+  }
+  let result;
+  try {
+    result = text ? JSON.parse(text) : undefined;
+  } catch {
+    throw Object.assign(
+      new Error("The secured Pool market reader returned an invalid response."),
+      { requestId: responseRequestId }
+    );
+  }
+  recordRequest({
+    method: "GET",
+    path,
+    status: response.status,
+    requestId: responseRequestId
+  });
+  if (!response.ok) {
+    const error = new Error(result?.detail ?? "The secured Pool market read was rejected.");
+    error.code = result?.code ?? "secured_pool_market_unavailable";
+    error.status = response.status;
+    error.requestId = result?.requestId ?? responseRequestId;
+    quarantineRejectedAuthenticationSession(error);
+    throw error;
+  }
+  if (
+    result?.schemaVersion !== "secured_pool_market_snapshot.v1" ||
+    result.serverDerived !== true ||
+    result.syntheticOnly !== true ||
+    result.productionFundsMoved !== false ||
+    result.submission?.reasonCode !== "pool_submission_unavailable" ||
+    result.submission?.transactionHash !== null
+  ) {
+    throw Object.assign(
+      new Error("The secured Pool market response lost its read-only safety contract."),
+      { code: "secured_pool_market_safety_drift", requestId: responseRequestId }
+    );
+  }
+  walletAuthorityLifecycle.assertProtectedAvailable();
+  return result;
 }
 
 async function evidenceAnchorApi(path, { body, method = "POST" } = {}) {
@@ -10268,8 +10339,8 @@ function showView(viewName, { focus = true, historyMode = "push" } = {}) {
   }
   if (
     nextView === "secured-pool" && tenantPilot.connected &&
-    securedPoolPilot.readAvailable && exactResourceId(securedPoolSubjectId()) &&
-    !securedPoolPilot.workspace && !securedPoolPilot.busy
+    securedPoolPilot.readAvailable && !securedPoolPilot.marketSnapshot &&
+    !securedPoolPilot.busy
   ) {
     void loadSecuredPoolWorkspace();
   }
@@ -12330,11 +12401,11 @@ function securedPoolSubjectId() {
 function renderSecuredPool() {
   if (!el("securedPoolStatus")) return;
   const presentation = createSecuredPoolPresentation({
+    marketSnapshot: securedPoolPilot.marketSnapshot,
     workspace: securedPoolPilot.workspace,
     review: securedPoolPilot.review,
     risk: securedPoolPilot.risk
   });
-  const subjectId = securedPoolSubjectId();
   const status = el("securedPoolStatus");
   status.className = `state-pill ${securedPoolPilot.error ? "warning" : securedPoolPilot.workspace ? "" : "neutral"}`;
   status.textContent = securedPoolPilot.busy
@@ -12379,7 +12450,7 @@ function renderSecuredPool() {
     : securedPoolPilot.helper;
   el("securedPoolReviewHelper").classList.toggle("error", securedPoolPilot.error);
   el("refreshSecuredPoolBtn").disabled =
-    securedPoolPilot.busy || !securedPoolPilot.readAvailable || !exactResourceId(subjectId);
+    securedPoolPilot.busy || !securedPoolPilot.readAvailable || !tenantPilot.connected;
   el("reviewSecuredPoolActionBtn").disabled =
     securedPoolPilot.busy || !securedPoolPilot.reviewAvailable || !securedPoolPilot.workspace;
 
@@ -12412,29 +12483,35 @@ function renderSecuredPool() {
 async function loadSecuredPoolWorkspace() {
   if (securedPoolPilot.busy) return;
   const subjectId = securedPoolSubjectId();
-  if (!exactResourceId(subjectId)) {
-    securedPoolPilot.error = true;
-    securedPoolPilot.helper = currentWorkspaceName() === "controller"
-      ? "Create or recover the authenticated Principal-owned Agent Subject before loading private Pool state."
-      : "Create or recover the authenticated Human Subject before loading private Pool state.";
-    renderSecuredPool();
-    return;
-  }
   securedPoolPilot.busy = true;
   securedPoolPilot.error = false;
-  securedPoolPilot.helper = "Loading current Pool projection and exact owned position from server truth…";
+  securedPoolPilot.helper = "Loading exact public Pool market truth and any authorized private position…";
   renderSecuredPool();
   try {
-    const result = await tenantApi("pilotReadOwnSecuredPool", {
-      resource: { resourceType: "subject", resourceId: subjectId },
-      payload: {},
-      idempotent: false
-    });
-    securedPoolPilot.workspace = result.response;
+    securedPoolPilot.marketSnapshot = await securedPoolMarketApi();
+    if (exactResourceId(subjectId)) {
+      try {
+        const result = await tenantApi("pilotReadOwnSecuredPool", {
+          resource: { resourceType: "subject", resourceId: subjectId },
+          payload: {},
+          idempotent: false
+        });
+        securedPoolPilot.workspace = result.response;
+      } catch (error) {
+        if (!new Set([401, 403, 404]).has(error.status)) throw error;
+        securedPoolPilot.workspace = null;
+      }
+    } else {
+      securedPoolPilot.workspace = null;
+    }
     securedPoolPilot.review = null;
-    securedPoolPilot.helper = result.response.market?.status === "live_testnet_read_only"
-      ? "Exact deployment and current safe-block market state loaded. Private position remains AccountBinding-bound; chain submission is disabled."
-      : "Deployment truth loaded with an explicitly degraded RPC or indexer state. Chain submission remains disabled.";
+    const live = securedPoolPilot.marketSnapshot.market?.status === "live_testnet_read_only";
+    const privatePosition = Boolean(securedPoolPilot.workspace);
+    securedPoolPilot.helper = live
+      ? privatePosition
+        ? "Exact deployment and current safe-block market state loaded. Private position remains AccountBinding-bound; chain submission is disabled."
+        : "Exact deployment and current safe-block market state loaded. No authorized Subject position was returned; chain submission is disabled."
+      : "Deployment truth loaded with an explicitly degraded RPC or indexer state. Private position and chain submission remain unavailable.";
   } catch (error) {
     securedPoolPilot.error = true;
     securedPoolPilot.helper = `Pool state is unavailable. Request ID: ${error.requestId ?? "unavailable"}`;
@@ -13390,8 +13467,7 @@ async function boot() {
   }
   if (
     currentView === "secured-pool" && tenantPilot.connected &&
-    securedPoolPilot.readAvailable && exactResourceId(securedPoolSubjectId()) &&
-    !securedPoolPilot.workspace
+    securedPoolPilot.readAvailable && !securedPoolPilot.marketSnapshot
   ) {
     await loadSecuredPoolWorkspace();
   }

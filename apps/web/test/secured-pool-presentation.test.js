@@ -87,3 +87,32 @@ test("Secured Pool presentation keeps authoritative zero distinct from unavailab
   assert.equal(current.rpcState, "Connected");
   assert.equal(current.indexerState, "Unavailable");
 });
+
+test("Secured Pool public market remains visible without a private workspace", () => {
+  const presentation = createSecuredPoolPresentation({
+    marketSnapshot: {
+      market: {
+        status: "live_testnet_read_only",
+        contractAddress: "0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da",
+        accounting: {
+          cashAssets: "0",
+          grossDebtAssets: "0",
+          utilizationBps: "0",
+          lpClaimAssets: "0"
+        },
+        deployment: { state: "verified", chainId: "eip155:84532" },
+        rpc: { state: "available", providerSlot: "primary", blockNumber: "46000001" },
+        indexer: { state: "unavailable", reasonCode: "pool_indexer_state_unavailable" },
+        reconciliation: { state: "unavailable", reasonCode: "reconciliation_unavailable" }
+      },
+      submission: { state: "unavailable" }
+    }
+  });
+  assert.equal(presentation.workspaceState, "Live read-only state");
+  assert.equal(presentation.deploymentState, "Exact deployment verified");
+  assert.equal(presentation.positionState, "No authorized AccountBinding");
+  assert.equal(
+    presentation.submission,
+    "Unavailable · no chain transaction will be submitted"
+  );
+});

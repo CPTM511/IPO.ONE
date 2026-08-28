@@ -91,8 +91,13 @@ function reconciliationPresentation(reconciliation) {
   };
 }
 
-export function createSecuredPoolPresentation({ workspace, review, risk } = {}) {
-  const market = workspace?.market ?? risk?.market ?? null;
+export function createSecuredPoolPresentation({
+  marketSnapshot,
+  workspace,
+  review,
+  risk
+} = {}) {
+  const market = workspace?.market ?? marketSnapshot?.market ?? risk?.market ?? null;
   const live = market?.status === "live_testnet_read_only";
   const indexed = market?.status === "local_synthetic_indexed";
   const deployed = live || indexed || market?.status === "deployed_not_indexed";
@@ -113,7 +118,7 @@ export function createSecuredPoolPresentation({ workspace, review, risk } = {}) 
   const oracle = market?.oracle ?? null;
   const riskControl = market?.riskControl ?? null;
   return Object.freeze({
-    workspaceState: workspace
+    workspaceState: market
       ? live
         ? "Live read-only state"
         : indexed
@@ -164,7 +169,9 @@ export function createSecuredPoolPresentation({ workspace, review, risk } = {}) 
       : "Unavailable",
     supplyClaim: positionAvailable ? text(position.supplyClaimAssets, "0") : "Unavailable",
     health: position?.health?.state ? stateLabel(position.health.state) : "Unavailable",
-    submission: workspace?.submission?.state === "unavailable" || risk?.submission?.state === "unavailable"
+    submission: workspace?.submission?.state === "unavailable" ||
+      marketSnapshot?.submission?.state === "unavailable" ||
+      risk?.submission?.state === "unavailable"
       ? "Unavailable · no chain transaction will be submitted"
       : "Unavailable",
     submissionState: "Disabled by task authority",

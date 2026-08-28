@@ -345,6 +345,16 @@ function marketView({
   });
 }
 
+function submissionView() {
+  return Object.freeze({
+    state: "unavailable",
+    reasonCode: "pool_submission_unavailable",
+    recoveryCondition: "This read-only Pool product has no transaction submission authority; a separately approved execution task is required",
+    transactionHash: null,
+    finality: "not_applicable"
+  });
+}
+
 async function ownAccountBinding(client, coreRepository, subjectId, chainId) {
   const bindings = await coreRepository.listExecutionAccountBindingsForSubjectInTransaction(
     client,
@@ -523,17 +533,45 @@ function ownWorkspaceResponse({
       repay: "review_only",
       releaseCollateral: "review_only"
     }),
-    submission: Object.freeze({
-      state: "unavailable",
-      reasonCode: "pool_submission_unavailable",
-      recoveryCondition: "This read-only Pool product has no transaction submission authority; a separately approved execution task is required",
-      transactionHash: null,
-      finality: "not_applicable"
-    }),
+    submission: submissionView(),
     serverDerived: true,
     syntheticOnly: true,
     productionFundsMoved: false,
     schemaVersion: "tenant_secured_pool_workspace.v1"
+  });
+}
+
+export async function readSecuredPoolMarketSnapshot({
+  client,
+  deploymentProfile,
+  readAdapter,
+  now = new Date()
+}) {
+  if (
+    !client?.query || !(now instanceof Date) ||
+    !Number.isFinite(now.getTime())
+  ) fail("invalid_secured_pool_workspace", "Secured Pool market reader configuration is invalid");
+  const loadedContext = await loadPoolContext(client);
+  const { liveRead, liveErrorCode } = await readLivePool(readAdapter, null);
+  const { context, contextErrorCode } = admittedPoolContext(
+    loadedContext,
+    deploymentProfile,
+    liveRead
+  );
+  return Object.freeze({
+    market: marketView({
+      context,
+      now,
+      deploymentProfile,
+      liveRead,
+      liveErrorCode,
+      contextErrorCode
+    }),
+    submission: submissionView(),
+    serverDerived: true,
+    syntheticOnly: true,
+    productionFundsMoved: false,
+    schemaVersion: "secured_pool_market_snapshot.v1"
   });
 }
 

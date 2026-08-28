@@ -14,6 +14,7 @@ export const TENANT_HTTP_HOST = "127.0.0.1";
 export const TENANT_HTTP_ROUTES = Object.freeze({
   operations: "/tenant/v1/operations",
   catalog: "/tenant/v1/catalog",
+  securedPoolMarket: "/tenant/v1/secured-pool/market",
   health: "/tenant/v1/healthz",
   openapi: "/openapi.json"
 });
@@ -99,6 +100,7 @@ export function createTenantHttpServer({
   serveAuthentication,
   serveEvidenceAnchors,
   serveReferenceAgent,
+  securedPoolMarketProvider,
   serveWebAsset
 }) {
   assertConfig({ host, trustProxy, environment, credentialSource });
@@ -128,6 +130,8 @@ export function createTenantHttpServer({
         typeof serveReferenceAgent.routes !== "object"
       )
     ) ||
+    (securedPoolMarketProvider !== undefined &&
+      typeof securedPoolMarketProvider !== "function") ||
     (serveWebAsset !== undefined && typeof serveWebAsset !== "function")
   ) {
     throw new DomainError("invalid_tenant_transport_config", "Tenant HTTP adapter configuration is invalid");
@@ -215,6 +219,25 @@ export function createTenantHttpServer({
         ) {
           return;
         }
+      }
+      if (
+        request.method === "GET" &&
+        url.search === "" &&
+        url.pathname === TENANT_HTTP_ROUTES.securedPoolMarket
+      ) {
+        if (!securedPoolMarketProvider) {
+          throw new ApiBoundaryError("not_found", "Tenant route is not available");
+        }
+        const authenticationContext = await resolveAuthenticationContext({
+          request,
+          requestUrl: url.toString()
+        });
+        return json(
+          response,
+          200,
+          await securedPoolMarketProvider({ authenticationContext, requestId }),
+          requestId
+        );
       }
       if (request.method === "GET" && url.pathname === TENANT_HTTP_ROUTES.catalog) {
         await resolveAuthenticationContext({

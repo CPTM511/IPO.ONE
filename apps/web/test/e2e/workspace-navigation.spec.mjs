@@ -120,6 +120,26 @@ test("Borrower visibly reviews an exact secured-Pool action without submission",
   await expect(page.locator("#securedPoolSubmission")).toContainText("no chain transaction will be submitted");
 });
 
+test("Borrower without a recovered Subject still sees public Pool truth", async ({ page }) => {
+  await page.goto("/?browser_qa_workspace=no_subject");
+  await page.getByRole("button", { name: /^Secured Pool/ }).click();
+
+  await expect(page.locator("#securedPoolStatus")).toHaveText("Live read-only state");
+  await expect(page.locator("#securedPoolDeploymentState")).toHaveText(
+    "Exact deployment verified"
+  );
+  await expect(page.locator("#securedPoolRpcState")).toHaveText("Connected");
+  await expect(page.locator("#securedPoolPositionState")).toHaveText(
+    "No authorized AccountBinding"
+  );
+  await expect(page.locator("#securedPoolReviewHelper")).toContainText(
+    "No authorized Subject position was returned"
+  );
+  await page.getByText("Read-only scenario review", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Review without submitting" }))
+    .toBeDisabled();
+});
+
 test("secured-Pool controls remain usable at 200 percent zoom", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto("/#secured-pool");

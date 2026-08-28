@@ -156,6 +156,49 @@ test("local client, loopback HTTP, and local MCP preserve one normalized Agent o
   }
 });
 
+test("authenticated Pool market read is independent from a Subject resource", async () => {
+  const context = humanContext();
+  let authLookups = 0;
+  let marketReads = 0;
+  const snapshot = Object.freeze({
+    market: Object.freeze({ status: "deployed_not_indexed" }),
+    submission: Object.freeze({
+      state: "unavailable",
+      reasonCode: "pool_submission_unavailable",
+      transactionHash: null
+    }),
+    serverDerived: true,
+    syntheticOnly: true,
+    productionFundsMoved: false,
+    schemaVersion: "secured_pool_market_snapshot.v1"
+  });
+  const listener = createTenantHttpServer({
+    gateway: { execute: async () => assert.fail("market read reached Tenant Gateway") },
+    resolveAuthenticationContext: async () => {
+      authLookups += 1;
+      return context;
+    },
+    createNetworkContext: async () => ({}),
+    securedPoolMarketProvider: async ({ authenticationContext }) => {
+      marketReads += 1;
+      assert.equal(authenticationContext, context);
+      return snapshot;
+    }
+  });
+  const address = await listener.listen();
+  try {
+    const response = await fetch(
+      `http://${address.host}:${address.port}${TENANT_HTTP_ROUTES.securedPoolMarket}`
+    );
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), snapshot);
+    assert.equal(authLookups, 1);
+    assert.equal(marketReads, 1);
+  } finally {
+    await listener.close();
+  }
+});
+
 test("Tenant HTTP fails closed outside loopback and rejects caller authority fields", async () => {
   const context = agentContext();
   assert.throws(() => createTenantHttpServer({
@@ -293,7 +336,8 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.deepEqual(Object.keys(openApi.paths).sort(), [
       "/.well-known/ipo-one.json",
       "/tenant/v1/catalog",
-      "/tenant/v1/operations"
+      "/tenant/v1/operations",
+      "/tenant/v1/secured-pool/market"
     ]);
     assert.equal(
       openApi.paths["/.well-known/ipo-one.json"].get.operationId,

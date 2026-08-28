@@ -33,6 +33,9 @@ import {
   createProductionSyntheticIdentityProvider,
   createSyntheticIdentityGateway
 } from "./local-synthetic-identity-provider.js";
+import {
+  createPostgresSecuredPoolMarketProvider
+} from "./secured-pool-market-provider.js";
 import launchPolicy from "../../../deploy/launch-policy.v1.json" with { type: "json" };
 
 const CONFIG_KEYS = new Set([
@@ -269,6 +272,12 @@ async function composeProductionClosedPilotRuntime(input) {
     deploymentRole: input.deploymentRole,
     chainCapabilityProvider: async () =>
       createDisabledChainCapability({ releaseId: input.releaseId }),
+    securedPoolMarketProvider: createPostgresSecuredPoolMarketProvider({
+      pool: input.gatewayPool,
+      deploymentProfile: securedPool.deploymentProfile,
+      readAdapter: securedPool.readAdapter,
+      ...(input.clock === undefined ? {} : { clock: input.clock })
+    }),
     ...(productionWorkspaceNameForDeploymentRole(input.deploymentRole) === undefined
       ? {}
       : {
