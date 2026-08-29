@@ -1,6 +1,6 @@
 # PHASE3-POOL-001 — Remote read-only Pool product integration repair
 
-Status: `ACTIVE — FOUNDER APPROVED; IMPLEMENTATION IN PROGRESS`
+Status: `PASS — DEPLOYED AND USER-VERIFIED`
 
 Date: 2026-08-27
 
@@ -255,4 +255,44 @@ mainnetAuthorized=false
 realFundsAuthorized=false
 ```
 
-Current verdict: `BLOCKED — NOT COMPLETE`.
+## Completion result — 2026-08-29
+
+- Starting implementation baseline: `39bdf32709d896e1debaa0f8c72c98aad8a9b3e0`.
+- Final merged `main` and deployed release SHA:
+  `316de8f0c2188c5f4d0b15a1cffbc50713b2972e`.
+- Pull requests: `#60` for the vertical repair and `#61` for the final public-
+  market/private-position authorization correction.
+- Production deployment: `dpl_5KLezhu9ZA3vcob8xgpMp5GSNPkq`, promoted to
+  `https://ipo.one`.
+- Visible entry: `Products -> Secured Pool`, with the final review left at
+  `https://ipo.one/#secured-pool`.
+- Exact server-derived profile read: Base Sepolia `eip155:84532`, Pool
+  `0x3FB68c0776d610A57ED94C012AFa81b7C3c632Da`, WETH collateral and test USDC
+  debt.
+- Production browser result: exact deployment verified, RPC connected, safe-
+  block market reads current, authoritative market zeroes shown as zero, and
+  indexer/reconciliation unavailability shown independently.
+- Private-position result for the acceptance Actor: no authorized
+  AccountBinding, so owned position fields remained unavailable and the read-
+  only scenario review submit control remained disabled.
+- Refresh and complete page reload restored the authenticated server workspace
+  and current Pool market truth through visible navigation.
+- Production request Evidence included HTTP 200 for
+  `GET /tenant/v1/secured-pool/market`; browser console warning/error result was
+  empty.
+- Complete repository checks passed with 1,216 aggregate checks, 92 PostgreSQL
+  checks, 25 contract checks plus two explicit fork-only skips, nine visible-
+  click browser paths, and two successful CI runs.
+
+```text
+signerCreated=false
+poolTransactionSubmitted=false
+venueTransactionSubmitted=false
+mainnetAuthorized=false
+realFundsAuthorized=false
+```
+
+Completion Evidence:
+`docs/codex/audits/PHASE3-POOL-001/completion-evidence.md`.
+
+Final verdict: `PASS — DEPLOYED AND USER-VERIFIED`.

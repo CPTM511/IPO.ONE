@@ -1,6 +1,6 @@
 # PILOT-008 — Invited closed no-funds cohort
 
-Status: `PREPARED — BLOCKED; PREREQUISITE AND APPROVAL GATES OPEN`
+Status: `PILOT-008A LOCALLY VERIFIED; PILOT-008B/C BLOCKED`
 
 Canonical mode: `L2_CLOSED_NO_FUNDS`
 
@@ -11,8 +11,11 @@ Requirements: `REQ-PILOT-001`, `REQ-PILOT-002`, `REQ-CORE-001`,
 ## Context and current baseline
 
 M2B-006 provides a remotely deployed, user-verified no-funds baseline at
-`https://ipo.one`. It does not activate the closed-pilot launch profile or
-authorize an invited cohort. Launch policy v1.3.3 keeps
+`https://ipo.one`. `PHASE3-POOL-001` subsequently reached
+`PASS — DEPLOYED AND USER-VERIFIED` at merged/deployed SHA
+`316de8f0c2188c5f4d0b15a1cffbc50713b2972e`. Neither result activates the
+closed-pilot launch profile or authorizes an invited cohort. Launch policy
+v1.3.3 keeps
 `closed_non_funds_pilot.releaseEnabled=false`, and the approval template is
 pending.
 
@@ -20,10 +23,12 @@ Constitution v1.3 requires both `REQ-PILOT-001` and `REQ-PILOT-002` before an
 L2 pilot. Current Evidence finds no durable dispute/appeal/correction case
 workflow and only partial feedback/support/incident capability.
 
-This file is an umbrella planning contract. It does not satisfy the
-Engineering Standard's active-issue requirement for implementation. Before
-code or external mutation, split and activate issue-sized `PILOT-008A`,
-`PILOT-008B`, and `PILOT-008C` contracts.
+This file remains the umbrella planning contract. The Founder direction to
+continue after the Pool completion report activates only the issue-sized
+`PILOT-008A` contract in
+`PILOT_008A_PREREQUISITE_AND_CANDIDATE_CLOSURE.md`. `PILOT-008B` and
+`PILOT-008C` still require separate active contracts and approvals before any
+deployment/profile activation, participant provisioning or cohort operation.
 
 ## Scope
 
@@ -81,7 +86,8 @@ code or external mutation, split and activate issue-sized `PILOT-008A`,
 
 ## Likely files
 
-- New issue-sized task files for `PILOT-008A/B/C`
+- `docs/codex/tasks/PILOT_008A_PREREQUISITE_AND_CANDIDATE_CLOSURE.md`
+- Later issue-sized task files for `PILOT-008B/C`
 - `docs/PRODUCT_CONSTITUTION.md` only if a real governance conflict is found;
   no change is currently proposed
 - `packages/domain/`, `packages/api-contract/`, `modules/persistence/`,
@@ -200,4 +206,5 @@ Dependencies:
   Founder decisions; and
 - reviewed launch-policy revision.
 
-Current verdict: `BLOCKED — NOT COMPLETE`.
+Current verdict: `PILOT-008A PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT
+AUTHORIZED`; the umbrella cohort remains `BLOCKED — NOT COMPLETE`.

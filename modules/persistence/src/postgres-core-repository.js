@@ -67,6 +67,7 @@ export const CoreProjectionType = Object.freeze({
   TRADING_PERFORMANCE_PROOF: "trading_performance_proof",
   ADMIN_ACTION: "admin_action",
   PILOT_FEEDBACK_RECORD: "pilot_feedback_record",
+  PILOT_CASE: "pilot_case",
   ...ApprovalProjectionType
 });
 
@@ -128,6 +129,7 @@ const ENTITY_ID_FIELDS = Object.freeze({
     "tradingPerformanceProofId",
   [CoreProjectionType.ADMIN_ACTION]: "adminActionId",
   [CoreProjectionType.PILOT_FEEDBACK_RECORD]: "pilotFeedbackId",
+  [CoreProjectionType.PILOT_CASE]: "pilotCaseId",
   [CoreProjectionType.APPROVAL_PROPOSAL]: "approvalProposalId",
   [CoreProjectionType.APPROVAL_DECISION]: "approvalDecisionId",
   [CoreProjectionType.APPROVAL_EXECUTION]: "approvalExecutionId",
@@ -1728,6 +1730,11 @@ function mapPilotFeedbackRecord(row) {
   };
 }
 
+function mapPilotCase(row) {
+  if (!row) return undefined;
+  return clone(row.projection);
+}
+
 export class PostgresCoreRepository {
   constructor({ pool, eventRepository, tenantContext } = {}) {
     if (!pool || typeof pool.query !== "function") {
@@ -1950,6 +1957,14 @@ export class PostgresCoreRepository {
       client,
       "pilot_feedback_records",
       "SELECT count(*)::bigint AS count FROM pilot_feedback_records"
+    );
+  }
+
+  async countPilotCasesForCapacityInTransaction(client) {
+    return this.#lockAndCountPersistentResource(
+      client,
+      "pilot_cases",
+      "SELECT count(*)::bigint AS count FROM pilot_cases"
     );
   }
 
@@ -4321,6 +4336,71 @@ export class PostgresCoreRepository {
     );
   }
 
+  async getPilotCase(pilotCaseId) {
+    return this.#getOne(
+      "pilotCaseId",
+      pilotCaseId,
+      "SELECT projection FROM pilot_cases WHERE id = $1",
+      mapPilotCase
+    );
+  }
+
+  async listPilotCasesForSubjectInTransaction(client, subjectId, { limit = 50 } = {}) {
+    assertQueryable(client);
+    assertString("subjectId", subjectId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 51) {
+      throw new DomainError("invalid_core_projection", "Pilot case list limit must be between 1 and 51");
+    }
+    const result = await client.query(
+      `SELECT id FROM pilot_cases
+        WHERE subject_id = $1
+        ORDER BY updated_at DESC, id
+        LIMIT $2`,
+      [subjectId, limit]
+    );
+    const items = [];
+    for (const row of result.rows) {
+      const state = await this.getProjectionStateInTransaction(
+        client,
+        CoreProjectionType.PILOT_CASE,
+        row.id
+      );
+      if (!state) {
+        throw new DomainError("projection_integrity_mismatch", "Pilot case registry is unavailable");
+      }
+      items.push(state.value);
+    }
+    return items;
+  }
+
+  async listPilotCaseQueueInTransaction(client, { limit = 100 } = {}) {
+    assertQueryable(client);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 101) {
+      throw new DomainError("invalid_core_projection", "Pilot case queue limit must be between 1 and 101");
+    }
+    const result = await client.query(
+      `SELECT id FROM pilot_cases
+        WHERE status IN ('open', 'assigned')
+        ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'assigned' THEN 1 ELSE 2 END,
+                 updated_at DESC, id
+        LIMIT $1`,
+      [limit]
+    );
+    const items = [];
+    for (const row of result.rows) {
+      const state = await this.getProjectionStateInTransaction(
+        client,
+        CoreProjectionType.PILOT_CASE,
+        row.id
+      );
+      if (!state) {
+        throw new DomainError("projection_integrity_mismatch", "Pilot case registry is unavailable");
+      }
+      items.push(state.value);
+    }
+    return items;
+  }
+
   async getCreditPassportArtifact(creditPassportArtifactId) {
     return this.#getOne(
       "creditPassportArtifactId",
@@ -4674,6 +4754,9 @@ export class PostgresCoreRepository {
       case CoreProjectionType.PILOT_FEEDBACK_RECORD:
         value = await this.getPilotFeedbackRecord(entityId);
         break;
+      case CoreProjectionType.PILOT_CASE:
+        value = await this.getPilotCase(entityId);
+        break;
       case CoreProjectionType.APPROVAL_PROPOSAL:
         value = await this.getApprovalProposal(entityId);
         break;
@@ -4854,6 +4937,8 @@ export class PostgresCoreRepository {
         return this.#writeAdminAction(client, value);
       case CoreProjectionType.PILOT_FEEDBACK_RECORD:
         return this.#writePilotFeedbackRecord(client, value);
+      case CoreProjectionType.PILOT_CASE:
+        return this.#writePilotCase(client, value);
       case CoreProjectionType.APPROVAL_PROPOSAL:
         return this.#writeApprovalProposal(client, value);
       case CoreProjectionType.APPROVAL_DECISION:
@@ -8169,6 +8254,62 @@ export class PostgresCoreRepository {
         CoreProjectionType.PILOT_FEEDBACK_RECORD,
         value.pilotFeedbackId
       );
+    }
+  }
+
+  async #writePilotCase(client, value) {
+    const result = await client.query(
+      `INSERT INTO pilot_cases(
+         id, case_identity_hash, subject_id, entry_mode, filer_actor_ref_hash,
+         target_type, target_id, target_ref_hash, reason_code, status, sequence,
+         filed_at, updated_at, projection, sandbox_only, production_authority,
+         economic_mutation_authorized, schema_version
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18
+       )
+       ON CONFLICT (id) DO UPDATE
+         SET status = EXCLUDED.status,
+             sequence = EXCLUDED.sequence,
+             updated_at = EXCLUDED.updated_at,
+             projection = EXCLUDED.projection
+       WHERE pilot_cases.case_identity_hash = EXCLUDED.case_identity_hash
+         AND pilot_cases.subject_id = EXCLUDED.subject_id
+         AND pilot_cases.entry_mode = EXCLUDED.entry_mode
+         AND pilot_cases.target_type = EXCLUDED.target_type
+         AND pilot_cases.target_id = EXCLUDED.target_id
+         AND pilot_cases.target_ref_hash = EXCLUDED.target_ref_hash
+         AND pilot_cases.reason_code = EXCLUDED.reason_code
+         AND pilot_cases.sequence = EXCLUDED.sequence - 1
+       RETURNING id`,
+      [
+        value.pilotCaseId,
+        value.caseIdentityHash,
+        value.subjectId,
+        value.entryMode,
+        value.filerActorRefHash,
+        value.targetType,
+        value.targetId,
+        value.targetRefHash,
+        value.reasonCode,
+        value.status,
+        value.sequence,
+        value.filedAt,
+        value.updatedAt,
+        json(value),
+        value.sandboxOnly,
+        value.productionAuthority,
+        value.economicMutationAuthorized,
+        value.schemaVersion
+      ]
+    );
+    if (result.rowCount === 1) return;
+    const existing = await client.query("SELECT projection FROM pilot_cases WHERE id = $1", [value.pilotCaseId]);
+    if (
+      hashId("projection_compare", mapPilotCase(existing.rows[0])) !==
+      hashId("projection_compare", value)
+    ) {
+      throw projectionConflict(CoreProjectionType.PILOT_CASE, value.pilotCaseId);
     }
   }
 

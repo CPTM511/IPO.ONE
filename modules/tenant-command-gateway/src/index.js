@@ -31,6 +31,8 @@ export * from "./owned-obligation-query-handlers.js";
 export * from "./official-report-handlers.js";
 export * from "./pilot-health-query-handlers.js";
 export * from "./pilot-feedback-handlers.js";
+export * from "./pilot-case-handlers.js";
+export * from "./closed-pilot-readiness-handlers.js";
 export * from "./servicing-queue-query-handlers.js";
 export * from "./tenant-command-clients.js";
 export * from "./tenant-command-execution-store.js";

@@ -3,6 +3,43 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+test("PILOT-008A exposes closed Human and operator case controls without free text", async () => {
+  const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const humanCaseForm = html.match(/<form id="pilotCaseForm"[\s\S]*?<\/form>/)?.[0] ?? "";
+  assert.ok(humanCaseForm.includes('id="pilotCaseTarget"'));
+  assert.ok(humanCaseForm.includes('id="pilotCaseReason"'));
+  assert.equal(/<textarea|type="text"/i.test(humanCaseForm), false);
+  for (const id of [
+    "filePilotCaseBtn", "refreshPilotCasesBtn", "loadPilotCaseQueueBtn",
+    "pilotCaseQueueRows"
+  ]) assert.ok(html.includes(`id="${id}"`), `${id} case control missing`);
+  for (const operationId of [
+    "pilotFileCase", "pilotListOwnCases", "pilotReadCaseQueue", "pilotTransitionCase"
+  ]) assert.ok(js.includes(operationId), `${operationId} browser binding missing`);
+  assert.ok(js.includes('dataset.pilotCaseTransition = "assign"'));
+  assert.ok(js.includes('dataset.pilotCaseTransition = "correct"'));
+  assert.ok(html.includes("none changes balances, limits, or the original record"));
+});
+
+test("REQ-PILOT-002 exposes a truthful fail-closed readiness view", async () => {
+  const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
+  const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  for (const id of [
+    "closedPilotReadinessStatus",
+    "loadClosedPilotReadinessBtn",
+    "closedPilotReadinessRows",
+    "closedPilotReleasePolicy",
+    "closedPilotCandidateStatus"
+  ]) assert.ok(html.includes(`id="${id}"`), `${id} readiness control missing`);
+  assert.ok(html.includes("Missing approval or a named owner remains visibly pending"));
+  assert.ok(html.includes("This view cannot activate the pilot"));
+  assert.ok(js.includes("pilotReadClosedPilotReadiness"));
+  assert.ok(js.includes("Blocked · approvals pending"));
+  assert.ok(js.includes("release disabled, zero controls approved"));
+  assert.equal(/closedPilotReadiness[\s\S]{0,2000}(activate|approve)ClosedPilot/i.test(js), false);
+});
+
 test("public README and Founding Edition II sources remain canonical", async () => {
   const [readme, whitepaper, whitepaperPage, whitepaperCss, whitepaperJs, pdf] = await Promise.all([
     readFile(new URL("../../../README.md", import.meta.url)),
@@ -162,7 +199,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Agent API",
     "Your integration path",
     "The Principal approves. The Agent executes only that scope.",
-    "View handoff packet, 12 Agent operations, OpenAPI, and request log",
+    "View handoff packet, 15 Agent operations, OpenAPI, and request log",
     "Authorize once. <em>Keep every limit visible.</em>",
     "From approval to action. <em>No hidden authority.</em>",
     "Your guided path",
@@ -178,7 +215,9 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Reference Agent runner",
     "A server-restored eligible Draft Mandate creates the application packet",
     "Principal → Agent capability packet",
-    "One manifest. Thirteen local tools. No ambient authority.",
+    "One manifest. Fifteen local tools. No ambient authority.",
+    "Flag a record without rewriting it.",
+    "Cases &amp; additive corrections",
     "Approved local stdio MCP tools",
     "Three staged workflows",
     "Decision &amp; Offer",

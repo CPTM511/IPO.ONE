@@ -523,6 +523,27 @@ export class HumanTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async filePilotCase({ subjectId, payload, idempotencyKey, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotFileCase",
+      payload,
+      resource: { resourceType: "subject", resourceId: subjectId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async listOwnPilotCases({ subjectId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotListOwnCases",
+      payload: {},
+      resource: { resourceType: "subject", resourceId: subjectId },
+      requestId,
+      correlationId
+    });
+  }
+
   async createTradingAccountBindingChallenge({
     subjectId,
     masterAccountAddress,
@@ -1202,6 +1223,27 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async filePilotCase({ subjectId, payload, idempotencyKey, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotFileCase",
+      payload,
+      resource: { resourceType: "subject", resourceId: subjectId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
+  async listOwnPilotCases({ subjectId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotListOwnCases",
+      payload: {},
+      resource: { resourceType: "subject", resourceId: subjectId },
+      requestId,
+      correlationId
+    });
+  }
+
   async createTradingAccountBindingChallenge({
     subjectId,
     masterAccountAddress,
@@ -1546,6 +1588,37 @@ export class AgentTenantCommandClient extends TenantProtocolClient {
 export class OperatorTenantCommandClient extends TenantProtocolClient {
   constructor(input) {
     super({ ...input, allowedActorTypes: OPERATOR_CLIENT_ACTOR_TYPES });
+  }
+
+  async getClosedPilotReadiness({ portfolioId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadClosedPilotReadiness",
+      payload: {},
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getPilotCaseQueue({ portfolioId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadCaseQueue",
+      payload: {},
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async transitionPilotCase({ pilotCaseId, payload, idempotencyKey, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotTransitionCase",
+      payload,
+      resource: { resourceType: "pilot_case", resourceId: pilotCaseId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
   }
 
   async getCreditRegistryEvidence({
@@ -2007,6 +2080,26 @@ export class RiskTenantQueryClient extends TenantProtocolClient {
     });
   }
 
+  async getClosedPilotReadiness({ portfolioId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadClosedPilotReadiness",
+      payload: {},
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getPilotCaseQueue({ portfolioId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadCaseQueue",
+      payload: {},
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      requestId,
+      correlationId
+    });
+  }
+
   async getServicingQueue({
     queueId,
     classifications,
@@ -2041,6 +2134,26 @@ export class RiskTenantQueryClient extends TenantProtocolClient {
 export class AuditorTenantQueryClient extends TenantProtocolClient {
   constructor(input) {
     super({ ...input, allowedActorTypes: new Set([ActorType.AUDITOR]) });
+  }
+
+  async getClosedPilotReadiness({ portfolioId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadClosedPilotReadiness",
+      payload: {},
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      requestId,
+      correlationId
+    });
+  }
+
+  async getPilotCaseQueue({ portfolioId, requestId, correlationId }) {
+    return this.execute({
+      operationId: "pilotReadCaseQueue",
+      payload: {},
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      requestId,
+      correlationId
+    });
   }
 
   async getCreditRegistryEvidence({

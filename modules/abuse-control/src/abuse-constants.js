@@ -38,6 +38,7 @@ export const ResourceKind = Object.freeze({
   CREDENTIALS: "credentials",
   ACCESS_GRANTS: "access_grants",
   PILOT_FEEDBACK_RECORDS: "pilot_feedback_records",
+  PILOT_CASES: "pilot_cases",
   CREDIT_PASSPORT_ARTIFACTS: "credit_passport_artifacts",
   OFFICIAL_REPORT_ARTIFACTS: "official_report_artifacts"
 });

@@ -140,6 +140,27 @@ test("Borrower without a recovered Subject still sees public Pool truth", async 
     .toBeDisabled();
 });
 
+test("Borrower files and reloads one closed-category case through visible controls", async ({ page }) => {
+  await page.goto("/#request-credit");
+
+  await page.getByRole("button", { name: "Load timeline" }).click();
+  const target = page.locator("#pilotCaseTarget");
+  await expect.poll(() => target.locator("option").count()).toBeGreaterThan(1);
+  await target.selectOption({ index: 1 });
+  await page.locator("#pilotCaseReason").selectOption("context_missing");
+  await page.getByRole("button", { name: "File case for review" }).click();
+
+  await expect(page.locator("#pilotCaseStatus")).toHaveText("1 case");
+  await expect(page.locator("#pilotCaseRows")).toContainText("Context Missing");
+  await expect(page.locator("#pilotCaseRows")).toContainText("Open");
+  await expect(page.locator("#pilotCaseHelper")).toContainText(
+    "Original records remain unchanged"
+  );
+
+  await page.getByRole("button", { name: "Refresh my cases" }).click();
+  await expect(page.locator("#pilotCaseStatus")).toHaveText("1 case");
+});
+
 test("secured-Pool controls remain usable at 200 percent zoom", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto("/#secured-pool");
@@ -194,5 +215,24 @@ test("Risk reaches the aggregate secured-Pool control view with visible clicks",
   await expect(page.locator("#riskSecuredPoolDiscrepancies")).toHaveText("0");
   await expect(page.locator("#riskSecuredPoolHelper")).toContainText(
     "no address or liquidation submission authority was returned"
+  );
+});
+
+test("Risk reads the fail-closed pilot readiness contract through a visible control", async ({ page }) => {
+  await page.goto("http://127.0.0.1:4175/#risk-operations");
+
+  const readiness = page.getByRole("button", { name: "Load readiness" });
+  await expect(readiness).toBeEnabled();
+  await readiness.click();
+
+  await expect(page.locator("#closedPilotReadinessStatus")).toHaveText(/Blocked/);
+  await expect(page.locator("#closedPilotRequiredControls")).toHaveText("7");
+  await expect(page.locator("#closedPilotApprovedControls")).toHaveText("0");
+  await expect(page.locator("#closedPilotPendingControls")).toHaveText("7");
+  await expect(page.locator("#closedPilotUnavailableControls")).toHaveText("2");
+  await expect(page.locator("#closedPilotReleasePolicy")).toHaveText("Disabled");
+  await expect(page.locator("#closedPilotCandidateStatus")).toHaveText("Unverified");
+  await expect(page.locator("#closedPilotReadinessHelper")).toContainText(
+    "release disabled"
   );
 });

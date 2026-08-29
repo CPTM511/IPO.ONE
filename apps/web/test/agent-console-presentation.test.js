@@ -79,8 +79,8 @@ test("waiting Agent Console is closed, non-authorizing and catalog-derived", () 
   const presentation = createAgentConsolePresentation(stateFor(manifests.waiting));
   assert.equal(presentation.schemaVersion, AGENT_CONSOLE_PRESENTATION_VERSION);
   assert.equal(presentation.status, "waiting");
-  assert.equal(presentation.registry.toolCount, 13);
-  assert.equal(presentation.registry.catalogBoundCount, 13);
+  assert.equal(presentation.registry.toolCount, 15);
+  assert.equal(presentation.registry.catalogBoundCount, 15);
   assert.equal(presentation.registry.catalogParity, true);
   assert.equal(
     presentation.registry.tools.every(({ availability }) =>
@@ -178,7 +178,7 @@ test("catalog absence remains visible and never becomes implied authority", () =
   );
   const presentation = createAgentConsolePresentation(state);
   assert.equal(presentation.registry.catalogParity, false);
-  assert.equal(presentation.registry.catalogBoundCount, 12);
+  assert.equal(presentation.registry.catalogBoundCount, 14);
   assert.equal(
     presentation.registry.tools.find(
       ({ operationId }) => operationId === "pilotPostSandboxRepayment"

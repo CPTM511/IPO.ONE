@@ -290,6 +290,44 @@ export const AGENT_MCP_TOOLS = Object.freeze([
       }
     },
     operationId: AGENT_MCP_CLIENT_TOOLS[12].operationId
+  }),
+  Object.freeze({
+    name: "ipo_one_file_pilot_case",
+    description: "File one closed-category, privacy-safe case against an owned Agent record.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["subjectId", "payload", "idempotencyKey", "requestId", "correlationId"],
+      properties: {
+        subjectId: IDENTIFIER,
+        payload: {
+          type: "object",
+          additionalProperties: false,
+          required: ["targetType", "targetId", "reasonCode", "schemaVersion"],
+          properties: {
+            targetType: { enum: ["decision", "offer_disclosure", "payment", "servicing_action", "evidence_item", "report"] },
+            targetId: IDENTIFIER,
+            reasonCode: { enum: ["record_inaccurate", "context_missing", "payment_mismatch", "servicing_error", "evidence_mismatch", "report_mismatch"] },
+            schemaVersion: { const: "pilot_case_file.v1" }
+          }
+        },
+        idempotencyKey: IDEMPOTENCY,
+        requestId: REQUEST_IDENTIFIER,
+        correlationId: REQUEST_IDENTIFIER
+      }
+    },
+    operationId: AGENT_MCP_CLIENT_TOOLS[13].operationId
+  }),
+  Object.freeze({
+    name: "ipo_one_list_pilot_cases",
+    description: "List the authenticated Agent's own privacy-safe pilot cases and additive outcomes.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["subjectId", "requestId", "correlationId"],
+      properties: { subjectId: IDENTIFIER, requestId: REQUEST_IDENTIFIER, correlationId: REQUEST_IDENTIFIER }
+    },
+    operationId: AGENT_MCP_CLIENT_TOOLS[14].operationId
   })
 ]);
 
@@ -318,7 +356,9 @@ export function createAgentMcpAdapter({ client }) {
     !client?.executeSandboxObligation ||
     !client?.postSandboxRepayment ||
     !client?.getCreditRegistryEvidence ||
-    !client?.getOwnCreditState
+    !client?.getOwnCreditState ||
+    !client?.filePilotCase ||
+    !client?.listOwnPilotCases
   ) {
     throw new DomainError("invalid_agent_mcp_config", "Agent MCP requires one authenticated Agent client");
   }
@@ -387,6 +427,13 @@ export function createAgentMcpAdapter({ client }) {
       } else if (name === "ipo_one_read_credit_state") {
         assertExactKeys(args, ["subjectId", "requestId", "correlationId"]);
         result = await client.getOwnCreditState(args);
+      } else if (name === "ipo_one_file_pilot_case") {
+        assertExactKeys(args, ["subjectId", "payload", "idempotencyKey", "requestId", "correlationId"]);
+        assertExactKeys(args.payload, ["targetType", "targetId", "reasonCode", "schemaVersion"]);
+        result = await client.filePilotCase(args);
+      } else if (name === "ipo_one_list_pilot_cases") {
+        assertExactKeys(args, ["subjectId", "requestId", "correlationId"]);
+        result = await client.listOwnPilotCases(args);
       } else {
         assertExactKeys(args, [
           "authorizationHash",

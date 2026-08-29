@@ -75,7 +75,9 @@ export interface AgentMcpToolOperation {
     | "ipo_one_execute_sandbox_obligation"
     | "ipo_one_post_sandbox_repayment"
     | "ipo_one_read_credit_registry_evidence"
-    | "ipo_one_read_credit_state";
+    | "ipo_one_read_credit_state"
+    | "ipo_one_file_pilot_case"
+    | "ipo_one_list_pilot_cases";
   readonly operationId:
     | "pilotReadAgentSelf"
     | "pilotRequestCredit"
@@ -89,10 +91,32 @@ export interface AgentMcpToolOperation {
     | "pilotExecuteSandboxObligation"
     | "pilotPostSandboxRepayment"
     | "pilotReadCreditRegistryEvidence"
-    | "pilotReadOwnCreditState";
+    | "pilotReadOwnCreditState"
+    | "pilotFileCase"
+    | "pilotListOwnCases";
 }
 
 export const AGENT_MCP_CLIENT_TOOLS: readonly AgentMcpToolOperation[];
+
+export class IpoOneAgentPilotCaseClient {
+  constructor(options: {
+    execute: AgentTenantProtocolExecute;
+    manifest: ApplicationReadyAgentHandoffManifest | ReadyAgentHandoffManifest;
+    transportProfile: "local_in_process";
+  });
+  fileCase(input: {
+    subjectId: string;
+    pilotCase: Extract<TenantProtocolRequest, { operationId: "pilotFileCase" }>["payload"];
+    idempotencyKey: string;
+    requestId: string;
+    correlationId: string;
+  }): Promise<Extract<TenantProtocolResult, { operationId: "pilotFileCase" }>["response"]>;
+  listCases(input: {
+    subjectId: string;
+    requestId: string;
+    correlationId: string;
+  }): Promise<Extract<TenantProtocolResult, { operationId: "pilotListOwnCases" }>["response"]>;
+}
 
 export interface AgentCreditRequest {
   assetId: string;

@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 109,
-      "maxItems": 109,
+      "minItems": 113,
+      "maxItems": 114,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -298,6 +298,7 @@
             "pilotReadTenantRisk",
             "pilotReadPilotHealth",
             "pilotReadPilotFeedbackSummary",
+            "pilotReadClosedPilotReadiness",
             "pilotReadServicingQueue",
             "pilotReadEvidence",
             "pilotReadOwnObligation",
@@ -313,6 +314,10 @@
             "pilotReadCapitalPartnerPortfolio",
             "pilotSubmitAgentAccountProof",
             "pilotSubmitPilotFeedback",
+            "pilotFileCase",
+            "pilotListOwnCases",
+            "pilotReadCaseQueue",
+            "pilotTransitionCase",
             "pilotWriteOffSandboxObligation",
             "workerAdvanceSandboxServicing",
             "pilotReadProviderIntent",
@@ -412,6 +417,7 @@
             "provider",
             "risk_portfolio",
             "servicing_queue",
+            "pilot_case",
             "trading_capital_request",
             "trading_credit_profile",
             "trading_match_proposal",
@@ -470,7 +476,12 @@
             "risk.read.tenant",
             "pilot.health.read",
             "pilot.feedback.read.tenant",
+            "pilot.readiness.read.tenant",
             "pilot.feedback.submit.self",
+            "pilot.case.file.self",
+            "pilot.case.read.self",
+            "pilot.case.read.tenant",
+            "pilot.case.transition.tenant",
             "risk.freeze",
             "repayment.post.sandbox.self",
             "servicing.queue.read",
@@ -600,7 +611,12 @@
             "tenant_risk_portfolio_view.v1",
             "tenant_pilot_health_view.v1",
             "tenant_pilot_feedback_summary_view.v1",
+            "tenant_closed_pilot_readiness_view.v1",
             "tenant_pilot_feedback_recorded.v1",
+            "tenant_pilot_case_filed.v1",
+            "tenant_pilot_case_list.v1",
+            "tenant_pilot_case_queue.v1",
+            "tenant_pilot_case_transitioned.v1",
             "tenant_servicing_queue_view.v1",
             "tenant_credit_registry_evidence_view.v1",
             "tenant_obligation_evidence_view.v1",
@@ -1869,6 +1885,38 @@
         {
           "properties": {
             "operationId": {
+              "const": "pilotReadClosedPilotReadiness"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "actorTypes": {
+              "const": [
+                "risk_operator",
+                "operations_operator",
+                "auditor"
+              ]
+            },
+            "resourceType": {
+              "const": "risk_portfolio"
+            },
+            "requiredCapability": {
+              "const": "pilot.readiness.read.tenant"
+            },
+            "idempotency": {
+              "const": "prohibited"
+            },
+            "quotaClass": {
+              "const": "read"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_closed_pilot_readiness_view.v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operationId": {
               "const": "pilotSubmitPilotFeedback"
             },
             "kind": {
@@ -1895,6 +1943,54 @@
             "responseSchemaVersion": {
               "const": "tenant_pilot_feedback_recorded.v1"
             }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotFileCase" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "pilot.case.file.self" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_pilot_case_filed.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotListOwnCases" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["human", "agent"] },
+            "resourceType": { "const": "subject" },
+            "requiredCapability": { "const": "pilot.case.read.self" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_pilot_case_list.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotReadCaseQueue" },
+            "kind": { "const": "query" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator", "auditor"] },
+            "resourceType": { "const": "risk_portfolio" },
+            "requiredCapability": { "const": "pilot.case.read.tenant" },
+            "idempotency": { "const": "prohibited" },
+            "quotaClass": { "const": "read" },
+            "responseSchemaVersion": { "const": "tenant_pilot_case_queue.v1" }
+          }
+        },
+        {
+          "properties": {
+            "operationId": { "const": "pilotTransitionCase" },
+            "kind": { "const": "command" },
+            "actorTypes": { "const": ["risk_operator", "operations_operator"] },
+            "resourceType": { "const": "pilot_case" },
+            "requiredCapability": { "const": "pilot.case.transition.tenant" },
+            "idempotency": { "const": "required" },
+            "quotaClass": { "const": "mutation" },
+            "responseSchemaVersion": { "const": "tenant_pilot_case_transitioned.v1" }
           }
         },
         {

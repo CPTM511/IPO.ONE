@@ -91,6 +91,14 @@ function manifestBoundClient(client, manifest) {
       requireSubject(input.subjectId, manifest.subjectId);
       return client.getOwnCreditState(input);
     },
+    async filePilotCase(input) {
+      requireSubject(input.subjectId, manifest.subjectId);
+      return client.filePilotCase(input);
+    },
+    async listOwnPilotCases(input) {
+      requireSubject(input.subjectId, manifest.subjectId);
+      return client.listOwnPilotCases(input);
+    },
     async acceptCreditOffer(input) {
       requireRuntimeHandoff();
       return client.acceptCreditOffer(input);
@@ -122,6 +130,8 @@ export function createAgentMcpHost(input) {
       "getOwnObligationEvidence",
       "getCreditRegistryEvidence",
       "getOwnCreditState",
+      "filePilotCase",
+      "listOwnPilotCases",
       "acceptCreditOffer",
       "executeSandboxObligation",
       "postSandboxRepayment"

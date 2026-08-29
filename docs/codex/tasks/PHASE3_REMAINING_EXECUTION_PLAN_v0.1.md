@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `FOUNDER-AMENDED — PHASE3-POOL-001 ACTIVE`
+Status: `FOUNDER-AMENDED — PILOT-008A LOCALLY VERIFIED`
 
 Date: 2026-08-27
 
@@ -118,7 +118,8 @@ completion claims remain strictly sequential.
 - Exit: final merged main SHA is deployed and user-verified on `ipo.one`; Human,
   LP, Risk/Ops and applicable Agent reads agree; no P0/P1 remains; final verdict
   is `PASS — DEPLOYED AND USER-VERIFIED` or `BLOCKED — NOT COMPLETE`.
-- Current status: `ACTIVE — FOUNDER APPROVED; IMPLEMENTATION IN PROGRESS`.
+- Current status: `PASS — DEPLOYED AND USER-VERIFIED` at merged/deployed SHA
+  `316de8f0c2188c5f4d0b15a1cffbc50713b2972e`.
 
 ### PILOT-008 — invited closed no-funds cohort
 
@@ -139,7 +140,8 @@ completion claims remain strictly sequential.
 - Exit: invited users finish without database intervention; cross-Tenant,
   duplicate, replay, restart, restore, credential revocation, pause, incident,
   rollback, and Evidence reconciliation gates pass; no P0/P1 remains.
-- Current status: `BLOCKED — NOT COMPLETE`.
+- Current status: `PILOT-008A PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT
+  AUTHORIZED`; `PILOT-008B/C` remain `BLOCKED — NOT COMPLETE`.
 
 ### HL-TESTNET-001 — restricted Hyperliquid Testnet proof
 

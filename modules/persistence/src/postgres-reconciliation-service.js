@@ -684,6 +684,7 @@ export class PostgresReconciliationService {
           FROM trading_performance_proofs
         UNION ALL SELECT 'admin_action', id FROM admin_actions
         UNION ALL SELECT 'pilot_feedback_record', id FROM pilot_feedback_records
+        UNION ALL SELECT 'pilot_case', id FROM pilot_cases
         UNION ALL SELECT 'approval_proposal', id FROM approval_proposals
         UNION ALL SELECT 'approval_decision', id FROM approval_decisions
         UNION ALL SELECT 'approval_execution', id FROM approval_executions

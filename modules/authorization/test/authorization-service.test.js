@@ -110,7 +110,7 @@ test("SIWE-only Risk and Operations sessions fail closed for every recent-MFA po
     }));
   }
 
-  assert.equal(protectedPolicies.length, 22);
+  assert.equal(protectedPolicies.length, 25);
   for (const policy of protectedPolicies) {
     const actorType = policy.requiresRecentMfaActorTypes.includes(ActorType.RISK_OPERATOR)
       ? ActorType.RISK_OPERATOR

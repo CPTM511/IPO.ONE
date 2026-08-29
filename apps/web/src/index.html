@@ -938,6 +938,26 @@
               <div class="pilot-feedback-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span>Categorical only · actor-owned Subject · no third party · no underwriting effect · sandbox only</span></div>
             </section>
 
+            <section class="panel pilot-feedback-card" aria-labelledby="pilotCaseTitle">
+              <div class="panel-heading stacked-mobile">
+                <div>
+                  <p class="eyebrow">PILOT-008A · cases &amp; corrections</p>
+                  <h3 id="pilotCaseTitle">Flag a record without rewriting it.</h3>
+                  <p>Select one record already visible in your workspace and a closed reason. The original remains immutable; any correction is an additive Evidence event.</p>
+                </div>
+                <span id="pilotCaseStatus" class="state-pill neutral">Not loaded</span>
+              </div>
+              <form id="pilotCaseForm" class="pilot-feedback-form">
+                <label for="pilotCaseTarget"><span>Record</span><select id="pilotCaseTarget"><option value="">Complete or load a record first</option></select></label>
+                <label for="pilotCaseReason"><span>What needs review</span><select id="pilotCaseReason"><option value="record_inaccurate">Record appears inaccurate</option><option value="context_missing">Important context is missing</option><option value="payment_mismatch">Payment does not match</option><option value="servicing_error">Servicing action appears wrong</option><option value="evidence_mismatch">Evidence does not match</option><option value="report_mismatch">Report does not match</option></select></label>
+                <button id="filePilotCaseBtn" class="primary" type="submit">File case for review</button>
+                <button id="refreshPilotCasesBtn" class="secondary" type="button">Refresh my cases</button>
+              </form>
+              <p id="pilotCaseHelper" class="pilot-feedback-helper" role="status" aria-live="polite">Create or restore your Human Subject, then select one current record.</p>
+              <div id="pilotCaseRows" class="risk-summary-list" aria-label="Your cases"></div>
+              <div class="pilot-feedback-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span>No free text or uploads · original record immutable · additive correction only · no automatic credit or balance change</span></div>
+            </section>
+
             <details class="agent-authority-disclosure" id="agentAuthorityDisclosure">
               <summary>
                 <span><small>Optional Agent path</small><strong>Need an Agent to act for you?</strong><em>Configure identity and bounded authority without sharing credentials or funds access.</em></span>
@@ -1374,7 +1394,7 @@
                   <p class="eyebrow">Versioned integration truth</p>
                   <h3 id="agentConsoleContractTitle">One online Agent path. Thirteen protected operations.</h3>
                   <p>Run the registered local reference Agent online or connect an external Agent through the protected HTTPS contract. Credentials remain server-side and every call is reauthorized.</p>
-                  <p>One manifest. Thirteen local tools. No ambient authority.</p>
+                  <p>One manifest. Fifteen local tools. No ambient authority.</p>
                 </div>
                 <div class="agent-console-contract-actions">
                   <span class="state-pill neutral" id="agentConsoleContractStatus">Checking contract</span>
@@ -2514,6 +2534,44 @@
                 <div class="pilot-health-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span>Aggregate only · identifiers and PII excluded · no third-party analytics · no underwriting effect.</span></div>
               </section>
 
+              <section class="panel pilot-feedback-summary-card" aria-labelledby="pilotCaseQueueTitle">
+                <div class="panel-heading stacked-mobile">
+                  <div>
+                    <p class="eyebrow">PILOT-008A · remediation queue</p>
+                    <h3 id="pilotCaseQueueTitle">Cases &amp; additive corrections</h3>
+                    <p>Review closed-category Human and Agent cases. Assigning, upholding, and correcting are explicit actions; none changes balances, limits, or the original record.</p>
+                  </div>
+                  <span id="pilotCaseQueueStatus" class="state-pill neutral">Not loaded</span>
+                </div>
+                <div class="button-row compact"><button id="loadPilotCaseQueueBtn" class="secondary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load case queue</button></div>
+                <p id="pilotCaseQueueHelper" class="risk-helper" role="status" aria-live="polite">Risk, Operations, or Auditor access with recent MFA is required to read this queue.</p>
+                <div id="pilotCaseQueueRows" class="risk-summary-list" aria-label="Pilot case queue"></div>
+                <div class="pilot-health-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span>Closed categories · no free text or PII · immutable source · additive correction Event · sandbox only.</span></div>
+              </section>
+
+              <section class="panel pilot-feedback-summary-card" aria-labelledby="closedPilotReadinessTitle">
+                <div class="panel-heading stacked-mobile">
+                  <div>
+                    <p class="eyebrow">REQ-PILOT-002 · fail-closed readiness</p>
+                    <h3 id="closedPilotReadinessTitle">Closed-pilot operating readiness</h3>
+                    <p>Queryable status for retention, support, incident, restore, rollback, on-call, and notification ownership. Missing approval or a named owner remains visibly pending.</p>
+                  </div>
+                  <span id="closedPilotReadinessStatus" class="state-pill warning">Blocked</span>
+                </div>
+                <div class="button-row compact"><button id="loadClosedPilotReadinessBtn" class="secondary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load readiness</button></div>
+                <p id="closedPilotReadinessHelper" class="risk-helper" role="status" aria-live="polite">Risk, Operations, or Auditor access with recent MFA is required. This view cannot activate the pilot.</p>
+                <div class="pilot-feedback-summary-metrics" aria-label="Closed-pilot readiness summary">
+                  <div><span>Required controls</span><strong id="closedPilotRequiredControls">7</strong></div>
+                  <div><span>Approved</span><strong id="closedPilotApprovedControls">0</strong></div>
+                  <div><span>Pending</span><strong id="closedPilotPendingControls">7</strong></div>
+                  <div><span>Unavailable</span><strong id="closedPilotUnavailableControls">2</strong></div>
+                  <div><span>Release policy</span><strong id="closedPilotReleasePolicy">Disabled</strong></div>
+                  <div><span>Current candidate</span><strong id="closedPilotCandidateStatus">Unverified</strong></div>
+                </div>
+                <div id="closedPilotReadinessRows" class="risk-summary-list" aria-label="Closed-pilot readiness controls"></div>
+                <div class="pilot-health-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span>Read-only · no names or contact details · no activation authority · no launch-policy mutation.</span></div>
+              </section>
+
               <section class="panel servicing-queue-card" aria-labelledby="servicingQueueTitle">
                 <div class="panel-heading servicing-queue-heading stacked-mobile">
                   <div>
@@ -2749,7 +2807,7 @@
 
             <details class="panel agent-protocol-disclosure" id="agentProtocolDetails" tabindex="-1">
               <summary>
-                <span><small>Machine-readable integration</small><strong>View handoff packet, 12 Agent operations, OpenAPI, and request log</strong></span>
+                <span><small>Machine-readable integration</small><strong>View handoff packet, 15 Agent operations, OpenAPI, and request log</strong></span>
                 <span class="state-pill neutral" id="agentProtocolDisclosureStatus">Waiting for authority</span>
               </summary>
               <div class="agent-protocol-content">

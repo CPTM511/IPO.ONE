@@ -1000,7 +1000,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.OFFICIAL_REPORT_READ_OWNED,
           PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
           PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
-          PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+          PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF,
+          PilotCapability.PILOT_CASE_FILE_SELF,
+          PilotCapability.PILOT_CASE_READ_SELF
         ],
         now: IDENTITY_NOW
       }),
@@ -1116,7 +1118,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.CREDIT_EVALUATE_SELF,
           PilotCapability.CREDIT_PASSPORT_READ_SELF,
           PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
-          PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+          PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF,
+          PilotCapability.PILOT_CASE_FILE_SELF,
+          PilotCapability.PILOT_CASE_READ_SELF
         ],
         now: IDENTITY_NOW
       }),
@@ -1202,7 +1206,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.RISK_FREEZE,
           PilotCapability.RISK_READ_TENANT,
           PilotCapability.SERVICING_QUEUE_READ,
-          PilotCapability.PILOT_FEEDBACK_READ_TENANT
+          PilotCapability.PILOT_FEEDBACK_READ_TENANT,
+          PilotCapability.PILOT_READINESS_READ_TENANT,
+          PilotCapability.PILOT_CASE_READ_TENANT,
+          PilotCapability.PILOT_CASE_TRANSITION_TENANT
         ],
         now: IDENTITY_NOW
       }),
@@ -1214,7 +1221,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         capabilities: [
           PilotCapability.RISK_READ_TENANT,
           PilotCapability.EVIDENCE_READ,
-          PilotCapability.PILOT_FEEDBACK_READ_TENANT
+          PilotCapability.PILOT_FEEDBACK_READ_TENANT,
+          PilotCapability.PILOT_READINESS_READ_TENANT,
+          PilotCapability.PILOT_CASE_READ_TENANT
         ],
         now: IDENTITY_NOW
       }),
@@ -1223,7 +1232,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_stale_risk_${RUN_ID}`,
         actorType: ActorType.RISK_OPERATOR,
         roleBundle: RoleBundle.RISK_OPERATOR,
-        capabilities: [PilotCapability.RISK_READ_TENANT, PilotCapability.SERVICING_QUEUE_READ],
+        capabilities: [
+          PilotCapability.RISK_READ_TENANT,
+          PilotCapability.SERVICING_QUEUE_READ,
+          PilotCapability.PILOT_READINESS_READ_TENANT,
+          PilotCapability.PILOT_CASE_READ_TENANT,
+          PilotCapability.PILOT_CASE_TRANSITION_TENANT
+        ],
         now: new Date(Date.now() - 20 * 60_000)
       }),
       tenantOneOperations: harness.addIdentity({
@@ -1231,7 +1246,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_operations_${RUN_ID}`,
         actorType: ActorType.OPERATIONS_OPERATOR,
         roleBundle: RoleBundle.OPERATIONS_OPERATOR,
-        capabilities: [PilotCapability.RISK_FREEZE, PilotCapability.SERVICING_QUEUE_READ],
+        capabilities: [
+          PilotCapability.RISK_FREEZE,
+          PilotCapability.SERVICING_QUEUE_READ,
+          PilotCapability.PILOT_READINESS_READ_TENANT,
+          PilotCapability.PILOT_CASE_READ_TENANT,
+          PilotCapability.PILOT_CASE_TRANSITION_TENANT
+        ],
         now: IDENTITY_NOW
       }),
       tenantOneWorker: harness.addIdentity({
@@ -1279,7 +1300,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
           PilotCapability.OFFICIAL_REPORT_READ_OWNED,
           PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
-          PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED
+          PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
+          PilotCapability.PILOT_CASE_FILE_SELF,
+          PilotCapability.PILOT_CASE_READ_SELF
         ],
         now: IDENTITY_NOW
       }),
@@ -1317,7 +1340,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           PilotCapability.RISK_FREEZE,
           PilotCapability.RISK_READ_TENANT,
           PilotCapability.SERVICING_QUEUE_READ,
-          PilotCapability.PILOT_FEEDBACK_READ_TENANT
+          PilotCapability.PILOT_FEEDBACK_READ_TENANT,
+          PilotCapability.PILOT_READINESS_READ_TENANT,
+          PilotCapability.PILOT_CASE_READ_TENANT,
+          PilotCapability.PILOT_CASE_TRANSITION_TENANT
         ],
         now: IDENTITY_NOW
       }),
@@ -1452,7 +1478,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
          delegated_wallet_pending_exposures, wallet_prepared_executions,
          wallet_simulation_reports, wallet_transaction_preflight_receipts,
          aggregate_stream_heads, domain_events, credit_events,
-         pilot_feedback_records, credit_passport_artifacts, credit_outcomes,
+         pilot_feedback_records, pilot_cases, credit_passport_artifacts, credit_outcomes,
          credit_state_projections,
          tenant_command_pauses,
          official_report_artifacts, trading_credit_profiles,
@@ -1518,13 +1544,13 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       runtime,
       identities.tenantOneAuditor.authenticationContext
     );
-    const tenantOneEvidenceQuery = auditorQueryClient(
-      runtime,
-      identities.tenantOneAuditor.authenticationContext
-    );
     const tenantOneStaleRiskQuery = riskQueryClient(
       runtime,
       identities.tenantOneStaleRisk.authenticationContext
+    );
+    const tenantOneEvidenceQuery = auditorQueryClient(
+      runtime,
+      identities.tenantOneAuditor.authenticationContext
     );
     const tenantOneOperations = operatorClient(
       runtime,
@@ -3561,6 +3587,201 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         )),
         /Pilot feedback records are immutable/
       );
+    });
+
+    await t.test("REQ-PILOT-002 readiness is queryable, fail-closed and MFA-gated", async () => {
+      const readiness = await tenantOneRiskQuery.getClosedPilotReadiness({
+        portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+        requestId: `request-closed-pilot-readiness-${RUN_ID}`,
+        correlationId: `correlation-closed-pilot-readiness-${RUN_ID}`
+      });
+      assert.equal(readiness.response.requirementId, "REQ-PILOT-002");
+      assert.equal(readiness.response.releaseEnabled, false);
+      assert.equal(readiness.response.activationAuthorized, false);
+      assert.equal(readiness.response.summary.approvedControlCount, 0);
+      assert.equal(readiness.response.summary.pendingControlCount, 7);
+      assert.equal(readiness.response.sourceBaseline.currentCandidateVerified, false);
+      assert.equal(readiness.response.safety.productionAuthority, false);
+      assert.doesNotMatch(JSON.stringify(readiness.response), /\[APPROVER\]|approvedBy|approvalUrl/i);
+
+      await assert.rejects(
+        () => tenantOneStaleRiskQuery.getClosedPilotReadiness({
+          portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+          requestId: `request-closed-pilot-readiness-stale-mfa-${RUN_ID}`,
+          correlationId: `correlation-closed-pilot-readiness-stale-mfa-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      const auditorReadiness = await tenantOneAuditorQuery.getClosedPilotReadiness({
+        portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+        requestId: `request-closed-pilot-readiness-auditor-${RUN_ID}`,
+        correlationId: `correlation-closed-pilot-readiness-auditor-${RUN_ID}`
+      });
+      assert.equal(auditorReadiness.response.overallStatus, "blocked_pending_approvals");
+    });
+
+    await t.test("PILOT-008A cases are durable, RLS-isolated, additive, restart-safe and MFA-gated", async () => {
+      assert.ok(tenantOneHumanSubjectId);
+      const target = await ownerPool.query(
+        `SELECT id, evidence_hash
+           FROM evidence_envelopes
+          WHERE tenant_id = $1
+            AND subject_id = $2
+            AND aggregate_type = 'pilot_feedback'
+          ORDER BY recorded_at DESC, id
+          LIMIT 1`,
+        [TENANT_ONE, tenantOneHumanSubjectId]
+      );
+      assert.equal(target.rowCount, 1);
+      const command = {
+        subjectId: tenantOneHumanSubjectId,
+        payload: {
+          targetType: "evidence_item",
+          targetId: target.rows[0].id,
+          reasonCode: "context_missing",
+          schemaVersion: "pilot_case_file.v1"
+        },
+        idempotencyKey: `pilot-case-human-${RUN_ID}-0001`,
+        requestId: `request-pilot-case-human-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-human-${RUN_ID}`
+      };
+      const filed = await tenantOneBorrower.filePilotCase(command);
+      assert.equal(filed.replayed, false);
+      assert.equal(filed.response.pilotCase.entryMode, "human");
+      assert.equal(filed.response.pilotCase.status, "open");
+      assert.equal(filed.response.pilotCase.safety.economicMutationAuthorized, false);
+      assert.deepEqual(
+        (await tenantOneBorrower.filePilotCase(command)).response,
+        filed.response
+      );
+      const pilotCaseId = filed.response.pilotCase.pilotCaseId;
+      const owned = await tenantOneBorrower.listOwnPilotCases({
+        subjectId: tenantOneHumanSubjectId,
+        requestId: `request-pilot-case-list-human-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-list-human-${RUN_ID}`
+      });
+      assert.equal(owned.response.items.length, 1);
+      assert.equal(owned.response.items[0].pilotCaseId, pilotCaseId);
+      assert.equal("subjectId" in owned.response.items[0], false);
+
+      await assert.rejects(
+        () => tenantTwoBorrower.listOwnPilotCases({
+          subjectId: tenantOneHumanSubjectId,
+          requestId: `request-pilot-case-cross-tenant-${RUN_ID}`,
+          correlationId: `correlation-pilot-case-cross-tenant-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+      await assert.rejects(
+        () => tenantOneStaleRiskQuery.getPilotCaseQueue({
+          portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+          requestId: `request-pilot-case-stale-mfa-${RUN_ID}`,
+          correlationId: `correlation-pilot-case-stale-mfa-${RUN_ID}`
+        }),
+        (error) => error.code === "authorization_denied"
+      );
+
+      const queue = await tenantOneRiskQuery.getPilotCaseQueue({
+        portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+        requestId: `request-pilot-case-queue-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-queue-${RUN_ID}`
+      });
+      assert.equal(queue.response.items.length, 1);
+      assert.equal(queue.response.items[0].subjectId, tenantOneHumanSubjectId);
+      assert.equal(queue.response.safety.freeTextIncluded, false);
+      const isolated = await tenantTwoRiskQuery.getPilotCaseQueue({
+        portfolioId: TENANT_TWO_RISK_PORTFOLIO,
+        requestId: `request-pilot-case-queue-isolated-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-queue-isolated-${RUN_ID}`
+      });
+      assert.equal(isolated.response.items.length, 0);
+
+      const assignCommand = {
+        pilotCaseId,
+        payload: { transition: "assign", schemaVersion: "pilot_case_transition.v1" },
+        idempotencyKey: `pilot-case-assign-${RUN_ID}-0001`,
+        requestId: `request-pilot-case-assign-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-assign-${RUN_ID}`
+      };
+      const assigned = await tenantOneRisk.transitionPilotCase(assignCommand);
+      assert.equal(assigned.response.pilotCase.status, "assigned");
+      assert.deepEqual(
+        (await tenantOneRisk.transitionPilotCase(assignCommand)).response,
+        assigned.response
+      );
+      const corrected = await tenantOneOperations.transitionPilotCase({
+        pilotCaseId,
+        payload: {
+          transition: "correct",
+          correctionCode: "evidence_reference_linked",
+          schemaVersion: "pilot_case_transition.v1"
+        },
+        idempotencyKey: `pilot-case-correct-${RUN_ID}-0001`,
+        requestId: `request-pilot-case-correct-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-correct-${RUN_ID}`
+      });
+      assert.equal(corrected.response.pilotCase.status, "resolved_corrected");
+      assert.equal(corrected.response.pilotCase.sequence, 3);
+      assert.equal(corrected.response.pilotCase.safety.originalRecordImmutable, true);
+
+      const queueAfter = await tenantOneAuditorQuery.getPilotCaseQueue({
+        portfolioId: TENANT_ONE_RISK_PORTFOLIO,
+        requestId: `request-pilot-case-queue-resolved-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-queue-resolved-${RUN_ID}`
+      });
+      assert.equal(queueAfter.response.items.length, 0);
+      const finalOwned = await tenantOneBorrower.listOwnPilotCases({
+        subjectId: tenantOneHumanSubjectId,
+        requestId: `request-pilot-case-list-final-${RUN_ID}`,
+        correlationId: `correlation-pilot-case-list-final-${RUN_ID}`
+      });
+      assert.equal(finalOwned.response.items[0].status, "resolved_corrected");
+      assert.equal(finalOwned.response.items[0].correctionCode, "evidence_reference_linked");
+
+      const tenantTwoContext = createTenantSecurityContext({
+        tenantId: TENANT_TWO,
+        actorId: identities.tenantTwoRisk.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      const hidden = await withTenantTransaction(appPool, tenantTwoContext, (client) =>
+        client.query("SELECT id FROM pilot_cases WHERE id = $1", [pilotCaseId])
+      );
+      assert.equal(hidden.rowCount, 0);
+      await assert.rejects(
+        () => ownerPool.query(
+          "UPDATE pilot_cases SET target_id = $2 WHERE tenant_id = $1 AND id = $3",
+          [TENANT_ONE, "evidence_rewritten", pilotCaseId]
+        ),
+        /Pilot case original truth is immutable/
+      );
+
+      const restarted = new PostgresCoreRepository({
+        pool: appPool,
+        eventRepository: new PostgresEventRepository({
+          pool: appPool,
+          tenantContext: createTenantSecurityContext({
+            tenantId: TENANT_ONE,
+            actorId: identities.tenantOneBorrower.authenticationContext.actorId,
+            policyVersion: "security_001.v1",
+            source: "local_test"
+          })
+        })
+      });
+      const restored = await restarted.getPilotCase(pilotCaseId);
+      assert.equal(restored.status, "resolved_corrected");
+      assert.equal(restored.targetRefHash, target.rows[0].evidence_hash);
+      assert.equal(restored.history.length, 3);
+      const durable = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM pilot_cases WHERE tenant_id = $1 AND id = $2) AS cases,
+           (SELECT count(*)::int FROM domain_events
+             WHERE tenant_id = $1 AND aggregate_type = 'pilot_case' AND aggregate_id = $2) AS events,
+           (SELECT count(*)::int FROM evidence_envelopes
+             WHERE tenant_id = $1 AND aggregate_type = 'pilot_case' AND aggregate_id = $2) AS evidence`,
+        [TENANT_ONE, pilotCaseId]
+      );
+      assert.deepEqual(durable.rows[0], { cases: 1, events: 3, evidence: 3 });
     });
 
     await t.test("Human Borrower owns a durable Consent lifecycle and bounded synthetic Identity view", async () => {
