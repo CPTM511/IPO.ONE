@@ -40,9 +40,42 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0070_pilot_cases"
+      "0071_pilot_cases_runtime_privileges"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
+    const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
+    await target.query(
+      `CREATE ROLE "${runtimePrivilegeRole}" NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`
+    );
+    try {
+      await target.query(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON pilot_feedback_records TO "${runtimePrivilegeRole}"`
+      );
+      assert.deepEqual(await migrateDown({ pool: target, steps: 1 }), [
+        "0071_pilot_cases_runtime_privileges"
+      ]);
+      assert.deepEqual(await migrateUp({ pool: target }), [
+        "0071_pilot_cases_runtime_privileges"
+      ]);
+      const copiedPrivileges = await target.query(
+        `SELECT privilege_type
+           FROM information_schema.role_table_grants
+          WHERE grantee = $1
+            AND table_schema = 'public'
+            AND table_name = 'pilot_cases'
+          ORDER BY privilege_type`,
+        [runtimePrivilegeRole]
+      );
+      assert.deepEqual(
+        copiedPrivileges.rows.map(({ privilege_type }) => privilege_type),
+        ["DELETE", "INSERT", "SELECT", "UPDATE"]
+      );
+    } finally {
+      await target.query(
+        `REVOKE SELECT, INSERT, UPDATE, DELETE ON pilot_feedback_records, pilot_cases FROM "${runtimePrivilegeRole}"`
+      );
+      await target.query(`DROP ROLE "${runtimePrivilegeRole}"`);
+    }
     const bootstrap = await bootstrapProductionDatabase({
       adminConnectionString: targetUrl.toString(),
       config: assertProductionBootstrapConfig({
@@ -182,7 +215,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0070_pilot_cases"
+      "0071_pilot_cases_runtime_privileges"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -194,7 +227,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 8 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 9 }), [
+      "0071_pilot_cases_runtime_privileges",
       "0070_pilot_cases",
       "0069_auth_reference_hash_key_rotation",
       "0068_m2b_dual_risk_recovery",
@@ -212,7 +246,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0067_m2b_hyperliquid_compositions",
       "0068_m2b_dual_risk_recovery",
       "0069_auth_reference_hash_key_rotation",
-      "0070_pilot_cases"
+      "0070_pilot_cases",
+      "0071_pilot_cases_runtime_privileges"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count

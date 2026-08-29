@@ -115,6 +115,7 @@ for (const required of [
   "CREATE TABLE trading_testnet_settlement_runs",
   "CREATE TABLE credit_outcomes",
   "CREATE TABLE tenant_command_pauses",
+  "GRANT %s ON TABLE pilot_cases TO %I",
   "memberships_controller_fk",
   "controller_actor_id",
   "DEFERRABLE INITIALLY DEFERRED",

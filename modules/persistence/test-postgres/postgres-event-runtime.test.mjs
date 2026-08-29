@@ -1173,12 +1173,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
         "0069_auth_reference_hash_key_rotation",
-        "0070_pilot_cases"
+        "0070_pilot_cases",
+        "0071_pilot_cases_runtime_privileges"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 70 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 71 }), [
+        "0071_pilot_cases_runtime_privileges",
         "0070_pilot_cases",
         "0069_auth_reference_hash_key_rotation",
         "0068_m2b_dual_risk_recovery",
@@ -1320,10 +1322,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
         "0069_auth_reference_hash_key_rotation",
-        "0070_pilot_cases"
+        "0070_pilot_cases",
+        "0071_pilot_cases_runtime_privileges"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 68 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 69 }), [
+        "0071_pilot_cases_runtime_privileges",
         "0070_pilot_cases",
         "0069_auth_reference_hash_key_rotation",
         "0068_m2b_dual_risk_recovery",
@@ -1474,7 +1478,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
         "0069_auth_reference_hash_key_rotation",
-        "0070_pilot_cases"
+        "0070_pilot_cases",
+        "0071_pilot_cases_runtime_privileges"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5153,7 +5158,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 13 }),
+        () => migrateDown({ pool, steps: 14 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5234,7 +5239,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
         "0069_auth_reference_hash_key_rotation",
-        "0070_pilot_cases"
+        "0070_pilot_cases",
+        "0071_pilot_cases_runtime_privileges"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(
