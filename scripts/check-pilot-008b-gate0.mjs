@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import {
   PILOT_008B_APPROVAL_GATES,
@@ -25,6 +25,12 @@ const providers = parseProviderSelection(
 const operations = parseClosedPilotOperations(
   await readFile(record.sourceTruth.operationsPath, "utf8")
 );
+const vercelManifest = JSON.parse(
+  await readFile(record.sourceTruth.vercelManifestPath, "utf8")
+);
+const vercelConfiguration = JSON.parse(
+  await readFile(record.sourceTruth.vercelConfigurationPath, "utf8")
+);
 
 const profile = policy.profiles[record.profile];
 assert.equal(policy.policyVersion, record.sourceTruth.launchPolicyVersion);
@@ -46,7 +52,12 @@ assert.equal(
 );
 
 assert.equal(topology.launchBlocked, true);
-assert.equal(providers.provisioningBlocked, true);
+assert.equal(topology.runtime.provider, "vercel");
+assert.equal(topology.database.provider, "neon");
+assert.equal(topology.database.additionalDatabaseRequired, false);
+assert.equal(providers.status, "founder_approved_existing_stack");
+assert.equal(providers.newProviderProvisioningBlocked, true);
+assert.equal(providers.recommendation.optionId, "existing_vercel_neon");
 assert.equal(operations.launchBlocked, true);
 assert.deepEqual(operations.satisfiedActivationGates, []);
 assert.equal(
@@ -58,24 +69,53 @@ assert.notEqual(
   record.prerequisite.localCommitSha
 );
 assert.equal(record.sourceTruth.operationsSourceCurrentCandidate, false);
+assert.equal(record.authority.technicalDeploymentPreparationEnabled, true);
+assert.equal(record.authority.approvedAdditiveMigrationEnabled, true);
+for (const boundary of [
+  "newProviderProvisioningEnabled",
+  "planOrBillingMutationEnabled",
+  "secretValueExportEnabled",
+  "identityCredentialIssuanceEnabled",
+  "remoteParticipantAccessEnabled",
+  "profileActivationEnabled",
+  "trafficCutoverEnabled",
+  "notificationDeliveryEnabled",
+  "realFundsEnabled",
+  "externalProviderExecutionEnabled",
+  "venueSignerEnabled",
+  "chainWriteEnabled"
+]) {
+  assert.equal(record.authority[boundary], false, `${boundary} must remain false`);
+}
+assert.equal(record.deploymentCandidate.ready, false);
+assert.equal(record.infrastructureObservation.activationEvidence, false);
+assert.equal(record.infrastructureObservation.databaseProvider, "neon");
+assert.equal(record.infrastructureObservation.databaseProject, "ipo-one-m1-b-sandbox");
+assert.equal(record.infrastructureObservation.databasePlan, "launch");
+assert.equal(record.infrastructureObservation.databaseRegion, "aws-us-east-1");
+assert.equal(record.infrastructureObservation.tenantTablesWithRls, record.infrastructureObservation.tenantScopedTables);
+assert.equal(record.infrastructureObservation.tenantTablesWithForcedRls, record.infrastructureObservation.tenantScopedTables);
 assert.equal(
-  Object.values(record.authority).every((value) => value === false),
+  record.obsoleteGcpRequirements.every((requirement) => requirement.status === "not_applicable"),
   true
 );
-assert.equal(record.deploymentCandidate.ready, false);
-assert.equal(record.cloudObservation.activationEvidence, false);
+
+assert.equal(vercelManifest.topology.canonicalState, "neon_postgresql");
+assert.equal(vercelManifest.topology.projectCount, 1);
+assert.equal(vercelManifest.topology.continuousWorker, false);
+assert.equal(vercelConfiguration.fluid, true);
+assert.deepEqual(vercelConfiguration.crons, [{
+  path: "/api/cron",
+  schedule: "*/15 * * * *"
+}]);
 
 execFileSync(
   "git",
   ["cat-file", "-e", `${record.prerequisite.localCommitSha}^{commit}`],
   { stdio: "ignore" }
 );
-const mergedToMain = spawnSync(
-  "git",
-  ["merge-base", "--is-ancestor", record.prerequisite.localCommitSha, "origin/main"],
-  { stdio: "ignore" }
-).status === 0;
-assert.equal(mergedToMain, record.prerequisite.mergedToOriginMain);
+assert.equal(record.prerequisite.mergedToOriginMainAtObservation, false);
+assert.equal(record.prerequisite.deployedAtObservation, false);
 
 const packageManifest = JSON.parse(await readFile("package.json", "utf8"));
 assert.equal(
@@ -85,7 +125,8 @@ assert.equal(
 assert.match(packageManifest.scripts.check, /pnpm run check:pilot-008b-gate0/);
 
 console.log(
-  "PILOT-008B Gate 0 passed: the exact local prerequisite and current " +
-    "read-only cloud observation are recorded; deployment, credentials, " +
-    "profile activation, traffic, external execution and funds remain blocked."
+  "PILOT-008B Gate 0 passed: the existing Vercel + Neon Launch stack is " +
+    "selected and observed without secret disclosure; Cloud SQL/Cloud Run " +
+    "requirements are not applicable, while cohort activation, credentials, " +
+    "traffic, external execution and funds remain blocked."
 );

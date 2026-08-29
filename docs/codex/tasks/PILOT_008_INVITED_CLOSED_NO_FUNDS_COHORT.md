@@ -1,6 +1,6 @@
 # PILOT-008 — Invited closed no-funds cohort
 
-Status: `PILOT-008A LOCALLY VERIFIED; PILOT-008B GATE 0 READY; PILOT-008C BLOCKED`
+Status: `PILOT-008A LOCALLY VERIFIED; PILOT-008B VERCEL + NEON TECHNICAL READINESS IN PROGRESS; PILOT-008C BLOCKED`
 
 Canonical mode: `L2_CLOSED_NO_FUNDS`
 
@@ -24,8 +24,9 @@ L2 pilot. Current Evidence finds no durable dispute/appeal/correction case
 workflow and only partial feedback/support/incident capability.
 
 This file remains the umbrella planning contract. `PILOT-008A` is locally
-verified. The later Founder direction to continue activates only the read-only,
-non-authorizing `PILOT-008B` Gate 0 contract in
+verified. The later Founder direction selects the existing Vercel + Neon stack
+and authorizes technical-readiness deployment and approved additive migrations
+under the `PILOT-008B` Gate 0 contract in
 `PILOT_008B_GATE_0_EXACT_DEPLOYMENT_ACTIVATION_READINESS.md`. Actual
 deployment, profile activation, participant provisioning and `PILOT-008C`
 cohort operation still require their separate exact contracts and approvals.
@@ -208,5 +209,6 @@ Dependencies:
 - reviewed launch-policy revision.
 
 Current verdict: `PILOT-008A PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT
-AUTHORIZED`; `PILOT-008B GATE 0 READY — DEPLOYMENT/ACTIVATION BLOCKED`; the
+AUTHORIZED`; `PILOT-008B GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS;
+ACTIVATION BLOCKED`; the
 umbrella cohort remains `BLOCKED — NOT COMPLETE`.

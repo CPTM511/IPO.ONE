@@ -1,107 +1,78 @@
 # DEPLOY-001 — Durable Hosted Pilot Topology
 
-Status: Implemented locally on 2026-07-27; vendor selection and activation pending
+Status: Amended 2026-08-30; existing Vercel + Neon selected; activation pending
 
 ## Context
 
-The public Vercel deployment is a synthetic process-local sandbox. IPO.ONE also
-has a PostgreSQL-backed authenticated private runtime locally, but the former
-GCP closed-pilot runtime is offboarded. The approved delivery guide requires a
-cost-controlled durable topology contract before purchasing infrastructure or
-opening remote access.
+The repository now has a PostgreSQL-backed hosted runtime on the existing
+Vercel project. Founder direction selects that runtime and the existing
+Vercel-managed Neon PostgreSQL source of truth for PILOT-008B. The former OCI,
+Cloud Run and Cloud SQL proposals are superseded for this pilot.
 
-This issue selects and composes the minimum architecture shape. It does not
-select a managed PostgreSQL or OCI runtime vendor and does not deploy anything.
+## Selected topology
 
-## Scope
+```text
+Human wallet/browser ---\
+                         -> Vercel HTTPS edge and Node Function
+Agent API/MCP ----------/                 |
+                                           v
+                           Neon PostgreSQL 17 canonical truth
+                                           |
+                                           v
+                           bounded Vercel Cron automation
+```
 
-- keep Vercel as the selected Web provider;
-- select one OCI private-pilot runtime with PostgreSQL-only canonical state;
-- require one managed PostgreSQL 17 service with separate migration, gateway,
-  and authentication roles, forced Tenant RLS, encryption, pooling, backups,
-  PITR, and restore evidence;
-- select a separate same-release worker shape for outbox, reconciliation,
-  synthetics, Evidence finalization, credit outcomes, and alert delivery;
-- prefer PostgreSQL outbox/leases before Redis;
-- define the same-origin private API edge and deny direct runtime origin access;
-- keep all remote, cloud, signer, testnet-write, Provider-execution, Human
-  credit, and real-funds authority disabled;
-- add a canonical machine-validated topology contract and negative tests; and
-- add the contract to the repository-wide quality gate.
+- one Vercel project: `ipo-one-internal`;
+- one Neon project: `ipo-one-m1-b-sandbox`;
+- one bounded Node Function request runtime;
+- one bounded Cron function using PostgreSQL leases and idempotency;
+- no continuous worker, external queue, cache or second control plane;
+- no Cloud Run or Cloud SQL; and
+- no process-local canonical private state.
 
-## Non-goals
+## Mandatory properties
 
-- no cloud resource, Vercel project, DNS, database, service, job, secret, or
-  alert mutation;
-- no PostgreSQL or container vendor selection or cost commitment;
-- no remote Human/Agent access, public signup, credential issuance, or IdP;
-- no private API edge activation or direct runtime ingress;
-- no Hyperliquid Testnet write, signer, external Provider execution, contract,
-  custody, withdrawal, capital, lending, or real funds;
-- no background worker activation; and
-- no launch-policy unlock.
+- distinct migration, Gateway and Authentication database roles;
+- transaction-local Tenant/Actor/Policy context;
+- RLS and FORCE RLS on tenant-scoped tables;
+- TLS and bounded application pools;
+- advisory locks and `SKIP LOCKED` lease semantics;
+- backup/restore and restore drill;
+- reconciliation, synthetics, alerting and runtime logs;
+- exact deployment and rollback receipts; and
+- fail-closed participant and launch activation.
 
-## Likely files
+## Authority
 
-- `deploy/closed-pilot/topology.v1.json`
-- `deploy/closed-pilot/README.md`
-- `packages/deployment-topology/src/index.js`
-- `packages/deployment-topology/test/deployment-topology.test.js`
-- `scripts/check-deploy-topology.mjs`
-- `package.json`
+Technical-readiness deployment and approved additive migrations are enabled.
+New provider provisioning, participant access, profile activation, public
+signup, real funds, Human cash credit, testnet writes, external execution,
+signer and mainnet authority remain false.
 
 ## Acceptance criteria
 
-- one canonical topology names Vercel Web, one OCI runtime, managed PostgreSQL
-  17, and one separate same-release worker;
-- the current public Vercel sandbox remains process-local, public-sandbox only,
-  and unattached to the private runtime;
-- private canonical state cannot use Vercel or runtime process memory;
-- all authority-expanding flags are exactly false and launch is blocked;
-- vendor selection remains a named human decision;
-- runtime Node version matches the repository runtime contract;
-- RLS, encrypted transport, connection pooling, backups, PITR, restore drills,
-  reconciliation, synthetics, alert ownership, and rollback remain mandatory;
-- Redis, Kubernetes, warehouse, multi-cloud, and mainnet indexer are absent;
-- mutation tests reject remote access, real funds, signer activation, process
-  state, weaker durability, runtime drift, missing gates, and unknown fields;
-  and
-- the repository-wide check executes the topology contract.
+- the machine topology matches the selected one-project Vercel and one-project
+  Neon stack;
+- Neon PostgreSQL is canonical and process memory is not;
+- no Cloud Run, Cloud SQL, Redis, Kubernetes, warehouse or multi-cloud
+  failover is introduced;
+- provider-neutral durability, Tenant isolation, recovery, reconciliation and
+  observability requirements remain mandatory;
+- activation gates remain complete and launch policy remains disabled; and
+- negative tests reject authority, provider, state, signer and durability
+  expansion.
 
 ## Test commands
 
 ```sh
 pnpm run check:deploy-topology
 node --test packages/deployment-topology/test/deployment-topology.test.js
-pnpm run check
+pnpm run check:pilot-008b-gate0
 git diff --check
 ```
 
-## Security checklist
+## Rollback
 
-- [x] No endpoint, credential, secret value, key, token, private data, or PII is
-  added.
-- [x] Cloud mutation and remote access are explicitly false.
-- [x] Public signup, external Provider execution, testnet writes, signers,
-  Human credit, and real funds are explicitly false.
-- [x] Direct runtime origin access is denied by the selected edge shape.
-- [x] Tenant RLS, encrypted transport, least-privilege database roles, backup,
-  restore, replay, reconciliation, and rollback are mandatory.
-- [x] Current public Vercel behavior is not relabelled as the private pilot.
-- [x] Later `AUTHN-005`, `TRANSPORT-003`, `OPS-004`, independent reviews,
-  deployment approval, and launch-policy revision remain required.
-
-## Verification evidence
-
-- `pnpm run check:deploy-topology` passes and confirms launch remains blocked.
-- Four topology contract tests pass, including negative mutation coverage for
-  remote access, real funds, testnet writes, signer activation, process-local
-  private state, worker activation, weaker database durability, runtime drift,
-  missing gates, and unknown fields.
-- Exact Node 26.5.0 `pnpm run check` passes 562/562 with the topology contract in
-  the default release gate.
-- Exact Node 26.5.0 security 33/33, transport 52/52, and isolated PostgreSQL 17
-  integration 77/77 pass.
-- No cloud, Vercel, database, DNS, secret, identity, signer, Provider, contract,
-  or funds resource was created or changed.
-- `git diff --check` passes.
+Roll back to the prior exact Vercel release and, if necessary before cohort
+activation, use the reviewed additive migration down script. Do not introduce
+a different provider as a rollback shortcut.

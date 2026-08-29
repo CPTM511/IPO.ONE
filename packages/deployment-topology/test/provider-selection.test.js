@@ -19,31 +19,32 @@ function changed(change) {
   return value;
 }
 
-test("DEPLOY-001B recommends a compatible low-cost stack without procurement authority", () => {
-  assert.equal(selection.status, "recommended_pending_founder_approval");
-  assert.equal(selection.provisioningBlocked, true);
-  assert.equal(selection.recommendation.optionId, "vercel_neon_cloud_run");
+test("DEPLOY-001B selects the existing Vercel and Neon stack without new-provider authority", () => {
+  assert.equal(selection.status, "founder_approved_existing_stack");
+  assert.equal(selection.newProviderProvisioningBlocked, true);
+  assert.equal(selection.recommendation.optionId, "existing_vercel_neon");
   assert.equal(selection.recommendation.databasePlan, "launch");
-  assert.equal(selection.recommendation.databaseConnectionMode, "direct_tls_application_pool");
-  assert.equal(selection.recommendation.workerActivation, "disabled");
-  assert.equal(selection.compatibility.providerTransactionPoolAllowed, false);
-  assert.equal(selection.compatibility.vercelDirectDatabaseAccessAllowed, false);
-  assert.equal(Object.values(selection.authority).every((value) => value === false), true);
+  assert.equal(selection.recommendation.databaseConnectionMode, "managed_tls_role_scoped_pool");
+  assert.equal(selection.recommendation.runtimeProvider, "vercel_functions");
+  assert.equal(selection.recommendation.workerActivation, "configured_not_cohort_activated");
+  assert.equal(selection.compatibility.runtimeDatabaseAccessAllowed, true);
+  assert.equal(selection.compatibility.runtimeMigrationsAllowed, false);
+  assert.equal(selection.authority.existingVercelProjectUseEnabled, true);
+  assert.equal(selection.authority.existingNeonProjectUseEnabled, true);
+  assert.equal(selection.authority.newProviderProvisioningEnabled, false);
 });
 
 test("DEPLOY-001B rejects approval, provisioning, access, and billing expansion", () => {
   for (const value of [
-    changed((candidate) => { candidate.status = "approved"; }),
-    changed((candidate) => { candidate.provisioningBlocked = false; }),
-    changed((candidate) => { candidate.authority.vercelProjectLinkEnabled = true; }),
-    changed((candidate) => { candidate.authority.marketplaceInstallEnabled = true; }),
-    changed((candidate) => { candidate.authority.billingCommitmentEnabled = true; }),
-    changed((candidate) => { candidate.authority.databaseProvisioningEnabled = true; }),
-    changed((candidate) => { candidate.authority.runtimeProvisioningEnabled = true; }),
-    changed((candidate) => { candidate.authority.workerProvisioningEnabled = true; }),
-    changed((candidate) => { candidate.authority.secretWriteEnabled = true; }),
+    changed((candidate) => { candidate.status = "recommended_pending_founder_approval"; }),
+    changed((candidate) => { candidate.newProviderProvisioningBlocked = false; }),
+    changed((candidate) => { candidate.authority.newProviderProvisioningEnabled = true; }),
+    changed((candidate) => { candidate.authority.planUpgradeEnabled = true; }),
+    changed((candidate) => { candidate.authority.additionalControlPlaneEnabled = true; }),
     changed((candidate) => { candidate.authority.dnsMutationEnabled = true; }),
-    changed((candidate) => { candidate.authority.remoteAccessEnabled = true; })
+    changed((candidate) => { candidate.authority.remoteParticipantAccessEnabled = true; }),
+    changed((candidate) => { candidate.authority.profileActivationEnabled = true; }),
+    changed((candidate) => { candidate.authority.realFundsEnabled = true; })
   ]) {
     assert.throws(
       () => validateProviderSelection(value),
@@ -55,14 +56,14 @@ test("DEPLOY-001B rejects approval, provisioning, access, and billing expansion"
 test("DEPLOY-001B rejects incompatible database, runtime, pooling, and worker changes", () => {
   for (const value of [
     changed((candidate) => { candidate.recommendation.databasePlan = "free"; }),
-    changed((candidate) => { candidate.recommendation.databaseConnectionMode = "provider_transaction_pool"; }),
-    changed((candidate) => { candidate.recommendation.runtimeMaximumInstances = 10; }),
-    changed((candidate) => { candidate.recommendation.workerActivation = "enabled"; }),
+    changed((candidate) => { candidate.recommendation.databaseConnectionMode = "unmanaged_direct"; }),
+    changed((candidate) => { candidate.recommendation.runtimeProvider = "google_cloud_run"; }),
+    changed((candidate) => { candidate.recommendation.workerActivation = "cohort_activated"; }),
     changed((candidate) => { candidate.compatibility.postgresMajorVersion = 18; }),
-    changed((candidate) => { candidate.compatibility.nodeVersion = "26.0.0"; }),
-    changed((candidate) => { candidate.compatibility.providerTransactionPoolAllowed = true; }),
-    changed((candidate) => { candidate.compatibility.vercelDirectDatabaseAccessAllowed = true; }),
-    changed((candidate) => { candidate.approvalInputs.pop(); }),
+    changed((candidate) => { candidate.compatibility.deployedNodeVersion = "26.0.0"; }),
+    changed((candidate) => { candidate.compatibility.runtimeMigrationsAllowed = true; }),
+    changed((candidate) => { candidate.compatibility.runtimeSeedingAllowed = true; }),
+    changed((candidate) => { candidate.remainingInputs.pop(); }),
     changed((candidate) => { candidate.endpoint = "https://example.invalid"; })
   ]) {
     assert.throws(

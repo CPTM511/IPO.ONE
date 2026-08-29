@@ -19,20 +19,25 @@ function changed(change) {
   return candidate;
 }
 
-test("PILOT-008B Gate 0 records a blocked exact prerequisite", () => {
+test("PILOT-008B Gate 0 records the existing Vercel and Neon stack with activation blocked", () => {
   assert.equal(record.prerequisite.issueId, "PILOT-008A");
-  assert.equal(record.prerequisite.mergedToOriginMain, false);
-  assert.equal(record.prerequisite.deployed, false);
+  assert.equal(record.prerequisite.mergedToOriginMainAtObservation, false);
+  assert.equal(record.prerequisite.deployedAtObservation, false);
   assert.equal(record.deploymentCandidate.ready, false);
   assert.equal(record.launchBlocked, true);
   assert.equal(record.approvalGates.length, 8);
   assert.equal(record.approvalGates.every((gate) => gate.status === "pending"), true);
-  assert.equal(Object.values(record.authority).every((value) => value === false), true);
+  assert.equal(record.authority.technicalDeploymentPreparationEnabled, true);
+  assert.equal(record.authority.approvedAdditiveMigrationEnabled, true);
+  assert.equal(record.authority.remoteParticipantAccessEnabled, false);
+  assert.equal(record.authority.profileActivationEnabled, false);
+  assert.equal(record.infrastructureObservation.databaseProvider, "neon");
+  assert.equal(record.obsoleteGcpRequirements.every((entry) => entry.status === "not_applicable"), true);
 });
 
 test("PILOT-008B Gate 0 rejects premature authority and activation", () => {
   for (const value of [
-    changed((candidate) => { candidate.authority.cloudMutationEnabled = true; }),
+    changed((candidate) => { candidate.authority.newProviderProvisioningEnabled = true; }),
     changed((candidate) => { candidate.authority.identityCredentialIssuanceEnabled = true; }),
     changed((candidate) => { candidate.authority.profileActivationEnabled = true; }),
     changed((candidate) => { candidate.authority.trafficCutoverEnabled = true; }),
@@ -61,10 +66,12 @@ test("PILOT-008B Gate 0 rejects invented readiness and approval", () => {
   }
 });
 
-test("PILOT-008B Gate 0 rejects stronger cloud claims and unknown fields", () => {
+test("PILOT-008B Gate 0 rejects false infrastructure claims and unknown fields", () => {
   for (const value of [
-    changed((candidate) => { candidate.cloudObservation.databaseState = "running"; }),
-    changed((candidate) => { candidate.cloudObservation.activationEvidence = true; }),
+    changed((candidate) => { candidate.infrastructureObservation.databaseProvider = "cloud_sql"; }),
+    changed((candidate) => { candidate.infrastructureObservation.tenantTablesWithRls -= 1; }),
+    changed((candidate) => { candidate.infrastructureObservation.activationEvidence = true; }),
+    changed((candidate) => { candidate.obsoleteGcpRequirements[0].status = "blocking"; }),
     changed((candidate) => { candidate.endpoint = "https://example.invalid"; })
   ]) {
     assert.throws(

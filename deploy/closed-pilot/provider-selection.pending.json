@@ -1,70 +1,72 @@
 {
   "schemaVersion": "ipo.one.deploy-provider-selection/v1",
   "decisionId": "DEPLOY-001B",
-  "pricingObservedAt": "2026-07-27",
-  "status": "recommended_pending_founder_approval",
-  "provisioningBlocked": true,
+  "pricingObservedAt": "2026-08-30",
+  "status": "founder_approved_existing_stack",
+  "newProviderProvisioningBlocked": true,
   "recommendation": {
-    "optionId": "vercel_neon_cloud_run",
+    "optionId": "existing_vercel_neon",
     "webProvider": "vercel",
+    "runtimeProvider": "vercel_functions",
     "databaseProvider": "neon",
+    "databaseProject": "ipo-one-m1-b-sandbox",
     "databasePlan": "launch",
-    "runtimeProvider": "google_cloud_run",
-    "workerShape": "google_cloud_run_jobs_and_scheduler",
-    "databaseConnectionMode": "direct_tls_application_pool",
-    "runtimeMinimumInstances": 0,
-    "runtimeMaximumInstances": 1,
-    "workerActivation": "disabled",
-    "regionDecisionState": "founder_approval_required"
+    "databaseRegion": "aws-us-east-1",
+    "databaseConnectionMode": "managed_tls_role_scoped_pool",
+    "workerShape": "vercel_cron_bounded_function",
+    "workerActivation": "configured_not_cohort_activated",
+    "functionMaximumDurationSeconds": 30,
+    "cronSchedule": "*/15 * * * *"
   },
   "authority": {
-    "vercelProjectLinkEnabled": false,
-    "marketplaceInstallEnabled": false,
-    "billingCommitmentEnabled": false,
-    "databaseProvisioningEnabled": false,
-    "runtimeProvisioningEnabled": false,
-    "workerProvisioningEnabled": false,
-    "secretWriteEnabled": false,
+    "existingVercelProjectUseEnabled": true,
+    "existingNeonProjectUseEnabled": true,
+    "technicalReadinessDeploymentEnabled": true,
+    "approvedAdditiveMigrationEnabled": true,
+    "newProviderProvisioningEnabled": false,
+    "planUpgradeEnabled": false,
+    "additionalControlPlaneEnabled": false,
     "dnsMutationEnabled": false,
-    "remoteAccessEnabled": false
+    "remoteParticipantAccessEnabled": false,
+    "profileActivationEnabled": false,
+    "realFundsEnabled": false
   },
   "compatibility": {
     "postgresMajorVersion": 17,
-    "nodeVersion": "26.5.0",
+    "buildNodeVersion": "26.5.0",
+    "deployedNodeVersion": "24.x",
     "applicationPoolRequired": true,
-    "providerTransactionPoolAllowed": false,
     "transactionLocalTenantContextRequired": true,
     "advisoryLocksRequired": true,
     "skipLockedLeasesRequired": true,
-    "privateApiDatabaseAccessOnly": true,
-    "vercelDirectDatabaseAccessAllowed": false
+    "runtimeDatabaseAccessAllowed": true,
+    "runtimeMigrationsAllowed": false,
+    "runtimeSeedingAllowed": false,
+    "forcedTenantRlsRequired": true
   },
   "options": [
     {
+      "id": "existing_vercel_neon",
+      "decision": "selected",
+      "score": 100,
+      "reason": "Founder-selected existing stack: one Vercel project, bounded Vercel Functions and Cron, and the active Vercel-managed Neon Launch PostgreSQL source of truth."
+    },
+    {
       "id": "vercel_neon_cloud_run",
-      "decision": "recommended",
-      "score": 86,
-      "reason": "Best low-usage cost profile while preserving PostgreSQL 17, the existing OCI runtime, scale-to-zero API compute, and separately scheduled lease-safe work."
+      "decision": "superseded_not_applicable",
+      "score": 0,
+      "reason": "Cloud Run is not required by the current runtime and would add a second deployment control plane without an unmet requirement."
     },
     {
       "id": "vercel_cloud_sql_cloud_run",
-      "decision": "control_first_alternative",
-      "score": 83,
-      "reason": "Best control and private Google integration, but Cloud SQL introduces a materially higher fixed pilot cost because database compute remains allocated while active."
-    },
-    {
-      "id": "vercel_render",
-      "decision": "single_runtime_vendor_alternative",
-      "score": 78,
-      "reason": "Good Docker, worker, private-service, and paid PostgreSQL recovery support, but adds an always-on service floor and does not simplify the retained Vercel edge."
+      "decision": "withdrawn_not_applicable",
+      "score": 0,
+      "reason": "Cloud SQL and Cloud Run were explicitly withdrawn for PILOT-008B because the authoritative durable IPO.ONE database and runtime already exist on Neon and Vercel."
     }
   ],
-  "approvalInputs": [
-    "pilot_region",
+  "remainingInputs": [
     "monthly_cost_ceiling_usd",
     "billing_owner",
-    "provider_account_owner",
-    "public_tls_database_risk_acceptance",
     "restore_drill_owner",
     "incident_owner"
   ]

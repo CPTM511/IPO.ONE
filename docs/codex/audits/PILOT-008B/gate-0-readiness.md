@@ -1,84 +1,96 @@
 # PILOT-008B Gate 0 readiness Evidence
 
-Date: 2026-08-29
+Date: 2026-08-30
 
-Verdict: `GATE 0 READY — DEPLOYMENT/ACTIVATION BLOCKED`
+Verdict: `GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED`
 
 Prerequisite: `PILOT-008A` local commit
 `bb72a66f8627f9751c493f464a814bb53da9f403`
 
-## Repository truth
+## Founder-selected stack
 
-- The prerequisite commit exists locally but is not an ancestor of the current
-  `origin/main`; therefore there is no exact merged deployment candidate.
-- No immutable CI run, image digest, migration receipt or new rollback target
-  exists for `PILOT-008B`.
-- `deploy/closed-pilot/operations.v1.json` remains correctly bound to the
-  historical July local release candidate at
-  `129f8bb28ff53d6dfb4e175b953a537b987a2a84`; it is not relabeled as current.
-- Launch policy v1.3.3 keeps
-  `closed_non_funds_pilot.releaseEnabled=false`.
-- All eight launch Evidence gates remain pending and the checked-in provider
-  recommendation still has provisioning blocked.
-- The provider sources require a new decision: the July recommendation names
-  Neon, while the later GCP stack and existing resource use Cloud SQL. Gate 0
-  does not silently choose or provision either option.
+The previous Cloud SQL preference is withdrawn. The smallest selected stack is:
 
-## Read-only cloud observation
+```text
+IPO.ONE
+  -> existing Vercel project ipo-one-internal
+  -> Vercel Node Functions and bounded Vercel Cron
+  -> existing Vercel-managed Neon PostgreSQL project ipo-one-m1-b-sandbox
+```
 
-The current project was queried through non-mutating `gcloud ... describe` and
-`... list` commands. No secret values, IAM policy contents or participant data
-were requested or recorded.
+No Cloud SQL, Cloud Run, GCP Secret Manager, second PostgreSQL provider or
+second deployment control plane is required by current repository truth.
 
-| Observation | Current state |
+## Sanitized read-only observation
+
+No connection string, password, token, private identifier or secret value was
+printed or recorded. The two production PostgreSQL variables are stored as
+Vercel `sensitive` values and cannot be exported from the CLI by design.
+
+| Observation | Verified state |
 | --- | --- |
-| GCP project | active |
-| Closed-pilot PostgreSQL | PostgreSQL 17, regional HA, deletion protected, connector enforcement required, encrypted-only, 14 backups, PITR enabled, stopped |
-| Closed-pilot Cloud Run service | absent |
-| Closed-pilot Cloud Run Job | absent |
-| Runtime and migrator service-account names | present |
-| Billing | disabled |
-| Secret Manager inspection | unavailable because billing is disabled |
-| Compute API / proposed edge policy | API disabled; no edge policy Evidence |
-| Activation Evidence | none |
+| Vercel project | `ipo-one-internal`, ready |
+| Hosted readiness | release `316de8f0c2188c5f4d0b15a1cffbc50713b2972e`, role `primary`, profile `closed_non_funds_pilot`, real funds false |
+| PostgreSQL provider | Neon |
+| Neon organization | managed by Vercel, Launch plan |
+| Neon project | `ipo-one-m1-b-sandbox`, active |
+| Region | `aws-us-east-1` |
+| Branch | one `main` branch, ready |
+| PostgreSQL | version 17 over TLS |
+| Applied migration head | `0069_auth_reference_hash_key_rotation` (69 migrations) |
+| Candidate migration head | `0070_pilot_cases` (approved additive migration, not yet applied) |
+| Public schema | 157 tables |
+| Tenant isolation | 152 tenant-scoped tables; 152 RLS enabled; 152 FORCE RLS |
+| Policies | 163 public-schema policies |
+| Core durable schema | 12/12 expected core tables present |
+| Durable state | present; about 49,572 rows across PostgreSQL statistics, 54 populated tables |
 
-The stopped database and disabled services were not started. Billing, APIs,
-secrets, IAM, edge configuration and Cloud Run were not changed.
+The hosted readiness endpoint uses the repository's production runtime, which
+requires the distinct Gateway and Authentication PostgreSQL connections. Its
+ready state and release binding, combined with the exact Neon schema and
+migration history above, confirm that the existing Neon project is the durable
+IPO.ONE source of truth. There is no evidence of a second active PostgreSQL
+source of truth.
 
-## Gate 0 contract
+## GCP requirements now not applicable
 
-`deploy/closed-pilot/pilot-008b-gate0.v1.json` records:
+The following former blockers were implementation details of an unselected
+architecture and are now `NOT APPLICABLE`:
 
-- five unavailable release bindings: merged candidate, green CI, immutable
-  image, migration receipt and rollback target;
-- eighteen pending human/provider/operations inputs;
-- eight pending launch gates;
-- fourteen permission-expanding authorities fixed to false; and
-- current cloud observation classified as read-only and non-authorizing.
+- Cloud SQL instance stopped;
+- Cloud Run service and Job absent;
+- GCP billing and Compute API disabled;
+- GCP Secret Manager unavailable; and
+- GCP edge/WAF Evidence absent.
 
-The validator cross-checks that record against launch policy, the pending
-approval template, topology, provider selection and the historical operations
-source. It rejects premature authority, invented approval, candidate readiness,
-profile enablement, stronger cloud claims and unknown fields.
+Their underlying provider-neutral gates remain. Vercel runtime/TLS/firewall,
+Vercel sensitive environment values, Neon durability/restore, Tenant RLS,
+runtime logging and monitoring must still be proven on the selected stack.
 
-## Verification
+## Genuine blockers retained
 
-- `check:pilot-008b-gate0`: passed;
-- targeted deployment-topology unit tests: 5 passed, 0 failed;
-- source and boundary lint: passed;
-- deploy topology: passed with launch blocked;
-- closed-pilot operations: passed with cloud mutation and launch disabled; and
-- launch policy: passed with pending Evidence failing closed.
+- exact merged candidate SHA, green CI and Vercel deployment receipt;
+- additive migration `0070` receipt and rollback target;
+- hosted tenant/authn/authz acceptance;
+- Neon backup/restore drill Evidence;
+- reconciliation, synthetic and alert-delivery Evidence;
+- Vercel edge/firewall and runtime observability Evidence;
+- independent security review or an explicit Founder policy decision changing
+  that requirement;
+- Legal/Privacy, jurisdiction, retention and participant approval;
+- named operational ownership, support channel, on-call, incident, restore and
+  rollback procedures;
+- monthly cost ceiling and billing owner; and
+- launch-policy revision and distinct Founder activation decision.
 
-## Required next decisions
+One person may hold multiple non-independent operational roles. Independent
+Security must remain genuinely independent and is not fabricated here.
 
-No deployment turn may begin until the Founder supplies or names the accountable
-owners for provider/topology and cost, jurisdiction and Legal/Privacy,
-retention, support and on-call, incident/restore/rollback, notifications,
-secret management, independent security review and participant references.
-After `PILOT-008A` is merged and CI is green, a separate exact decision must
-bind the resulting SHA, image digest, migration plan and rollback target.
+## Authority boundary
 
-Zero-traffic deployment verification, profile unlock and traffic cutover are
-three separate future actions; approval of this Gate 0 record authorizes none
-of them.
+The Founder decision authorizes selecting this existing stack, technical
+readiness deployment, approved additive migrations and non-secret Evidence
+collection. It does not authorize participant credentials, invitation,
+cohort access, launch-policy unlock, traffic activation, real funds, Pool
+economic writes, mainnet, signer or external Venue execution, unrestricted
+transfer, `PILOT-008C`, `HL-TESTNET-001`, `RISK-003B` or M3.

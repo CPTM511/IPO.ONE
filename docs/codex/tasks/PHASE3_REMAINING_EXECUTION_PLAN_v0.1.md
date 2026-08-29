@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `FOUNDER-AMENDED — PILOT-008B GATE 0 READY; ACTIVATION BLOCKED`
+Status: `FOUNDER-AMENDED — PILOT-008B VERCEL + NEON TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED`
 
 Date: 2026-08-27
 
@@ -141,7 +141,7 @@ completion claims remain strictly sequential.
   duplicate, replay, restart, restore, credential revocation, pause, incident,
   rollback, and Evidence reconciliation gates pass; no P0/P1 remains.
 - Current status: `PILOT-008A PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT
-  AUTHORIZED`; `PILOT-008B GATE 0 READY — DEPLOYMENT/ACTIVATION BLOCKED`;
+  AUTHORIZED`; `PILOT-008B GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED`;
   `PILOT-008C` remains `BLOCKED — NOT COMPLETE`.
 
 ### HL-TESTNET-001 — restricted Hyperliquid Testnet proof

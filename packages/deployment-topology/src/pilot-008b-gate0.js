@@ -19,10 +19,13 @@ export const PILOT_008B_APPROVAL_GATES = Object.freeze([
 export const PILOT_008B_DECISION_INPUTS = Object.freeze([
   "exact_merged_candidate",
   "green_ci_run",
-  "immutable_image_digest",
+  "vercel_deployment_receipt",
   "migration_receipt",
   "rollback_target",
   "pilot_region",
+  "provider_selection",
+  "database_project",
+  "database_plan",
   "monthly_cost_ceiling_usd",
   "billing_owner",
   "provider_account_owner",
@@ -42,22 +45,32 @@ export const PILOT_008B_DECISION_INPUTS = Object.freeze([
   "launch_policy_revision"
 ]);
 
-const AUTHORITY_KEYS = Object.freeze([
-  "cloudMutationEnabled",
-  "billingOrApiEnablementEnabled",
-  "databaseStartEnabled",
-  "secretOrIamWriteEnabled",
-  "identityCredentialIssuanceEnabled",
-  "remoteParticipantAccessEnabled",
-  "profileActivationEnabled",
-  "trafficCutoverEnabled",
-  "workerScheduleEnabled",
-  "notificationDeliveryEnabled",
-  "realFundsEnabled",
-  "externalProviderExecutionEnabled",
-  "venueSignerEnabled",
-  "chainWriteEnabled"
+export const PILOT_008B_OBSOLETE_GCP_REQUIREMENTS = Object.freeze([
+  "cloud_sql_instance_state",
+  "cloud_run_service_and_job",
+  "gcp_billing_and_compute_api",
+  "gcp_secret_manager",
+  "gcp_edge_and_waf"
 ]);
+
+const AUTHORITY = Object.freeze({
+  readOnlyEvidenceEnabled: true,
+  existingStackSelectionEnabled: true,
+  technicalDeploymentPreparationEnabled: true,
+  approvedAdditiveMigrationEnabled: true,
+  newProviderProvisioningEnabled: false,
+  planOrBillingMutationEnabled: false,
+  secretValueExportEnabled: false,
+  identityCredentialIssuanceEnabled: false,
+  remoteParticipantAccessEnabled: false,
+  profileActivationEnabled: false,
+  trafficCutoverEnabled: false,
+  notificationDeliveryEnabled: false,
+  realFundsEnabled: false,
+  externalProviderExecutionEnabled: false,
+  venueSignerEnabled: false,
+  chainWriteEnabled: false
+});
 
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -92,22 +105,6 @@ function exactArray(value, expected, path, issues) {
   }
 }
 
-function allFalse(value, path, issues) {
-  if (!exactKeys(value, AUTHORITY_KEYS, path, issues)) return;
-  for (const key of AUTHORITY_KEYS) exact(value[key], false, `${path}.${key}`, issues);
-}
-
-function boundedString(value, path, issues, max = 256) {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    value.length > max ||
-    /\p{Cc}/u.test(value)
-  ) {
-    issues.push(`${path} must be a non-empty bounded string without control characters.`);
-  }
-}
-
 function sha(value, path, issues) {
   if (typeof value !== "string" || !SHA.test(value)) {
     issues.push(`${path} must be an exact lowercase Git commit SHA.`);
@@ -136,7 +133,8 @@ export function validatePilot008BGate0(value) {
     "sourceTruth",
     "approvalGates",
     "decisionInputs",
-    "cloudObservation",
+    "infrastructureObservation",
+    "obsoleteGcpRequirements",
     "verdict"
   ], "gate0", issues)) {
     throw new Pilot008BGate0Error(issues);
@@ -144,7 +142,7 @@ export function validatePilot008BGate0(value) {
 
   exact(value.schemaVersion, "ipo.one.pilot-008b-gate0/v1", "gate0.schemaVersion", issues);
   exact(value.issueId, "PILOT-008B", "gate0.issueId", issues);
-  exact(value.status, "blocked_pending_named_approvals", "gate0.status", issues);
+  exact(value.status, "technical_readiness_in_progress_activation_blocked", "gate0.status", issues);
   exact(value.profile, "closed_non_funds_pilot", "gate0.profile", issues);
   exact(value.launchBlocked, true, "gate0.launchBlocked", issues);
 
@@ -152,42 +150,35 @@ export function validatePilot008BGate0(value) {
     "issueId",
     "localCommitSha",
     "verdict",
-    "mergedToOriginMain",
-    "deployed"
+    "mergedToOriginMainAtObservation",
+    "deployedAtObservation"
   ], "gate0.prerequisite", issues)) {
     exact(value.prerequisite.issueId, "PILOT-008A", "gate0.prerequisite.issueId", issues);
     sha(value.prerequisite.localCommitSha, "gate0.prerequisite.localCommitSha", issues);
-    exact(
-      value.prerequisite.verdict,
-      "PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT AUTHORIZED",
-      "gate0.prerequisite.verdict",
-      issues
-    );
-    exact(value.prerequisite.mergedToOriginMain, false, "gate0.prerequisite.mergedToOriginMain", issues);
-    exact(value.prerequisite.deployed, false, "gate0.prerequisite.deployed", issues);
+    exact(value.prerequisite.verdict, "PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT AUTHORIZED", "gate0.prerequisite.verdict", issues);
+    exact(value.prerequisite.mergedToOriginMainAtObservation, false, "gate0.prerequisite.mergedToOriginMainAtObservation", issues);
+    exact(value.prerequisite.deployedAtObservation, false, "gate0.prerequisite.deployedAtObservation", issues);
   }
 
   if (exactKeys(value.deploymentCandidate, [
     "commitSha",
     "ciRunUrl",
-    "imageUri",
+    "deploymentUrl",
     "migrationEvidenceUrl",
     "rollbackTarget",
     "ready"
   ], "gate0.deploymentCandidate", issues)) {
-    for (const key of [
-      "commitSha",
-      "ciRunUrl",
-      "imageUri",
-      "migrationEvidenceUrl",
-      "rollbackTarget"
-    ]) {
+    for (const key of ["commitSha", "ciRunUrl", "deploymentUrl", "migrationEvidenceUrl", "rollbackTarget"]) {
       exact(value.deploymentCandidate[key], null, `gate0.deploymentCandidate.${key}`, issues);
     }
     exact(value.deploymentCandidate.ready, false, "gate0.deploymentCandidate.ready", issues);
   }
 
-  allFalse(value.authority, "gate0.authority", issues);
+  if (exactKeys(value.authority, Object.keys(AUTHORITY), "gate0.authority", issues)) {
+    for (const [key, expected] of Object.entries(AUTHORITY)) {
+      exact(value.authority[key], expected, `gate0.authority.${key}`, issues);
+    }
+  }
 
   if (exactKeys(value.sourceTruth, [
     "launchPolicyPath",
@@ -198,7 +189,9 @@ export function validatePilot008BGate0(value) {
     "providerSelectionPath",
     "operationsPath",
     "operationsSourceCommitSha",
-    "operationsSourceCurrentCandidate"
+    "operationsSourceCurrentCandidate",
+    "vercelManifestPath",
+    "vercelConfigurationPath"
   ], "gate0.sourceTruth", issues)) {
     exact(value.sourceTruth.launchPolicyPath, "deploy/launch-policy.v1.json", "gate0.sourceTruth.launchPolicyPath", issues);
     exact(value.sourceTruth.launchPolicyVersion, "1.3.3", "gate0.sourceTruth.launchPolicyVersion", issues);
@@ -209,6 +202,8 @@ export function validatePilot008BGate0(value) {
     exact(value.sourceTruth.operationsPath, "deploy/closed-pilot/operations.v1.json", "gate0.sourceTruth.operationsPath", issues);
     sha(value.sourceTruth.operationsSourceCommitSha, "gate0.sourceTruth.operationsSourceCommitSha", issues);
     exact(value.sourceTruth.operationsSourceCurrentCandidate, false, "gate0.sourceTruth.operationsSourceCurrentCandidate", issues);
+    exact(value.sourceTruth.vercelManifestPath, "deploy/vercel/m1-b-sandbox.manifest.v2.json", "gate0.sourceTruth.vercelManifestPath", issues);
+    exact(value.sourceTruth.vercelConfigurationPath, "vercel.json", "gate0.sourceTruth.vercelConfigurationPath", issues);
   }
 
   if (!Array.isArray(value.approvalGates)) {
@@ -227,42 +222,82 @@ export function validatePilot008BGate0(value) {
   } else {
     exactArray(value.decisionInputs.map((entry) => entry?.id), PILOT_008B_DECISION_INPUTS, "gate0.decisionInputs ids", issues);
     for (const [index, entry] of value.decisionInputs.entries()) {
-      if (exactKeys(entry, ["id", "status"], `gate0.decisionInputs[${index}]`, issues)) {
-        if (!["pending", "unavailable"].includes(entry.status)) {
-          issues.push(`gate0.decisionInputs[${index}].status must be pending or unavailable.`);
-        }
+      if (exactKeys(entry, ["id", "status"], `gate0.decisionInputs[${index}]`, issues) && !["pending", "unavailable", "satisfied"].includes(entry.status)) {
+        issues.push(`gate0.decisionInputs[${index}].status must be pending, unavailable or satisfied.`);
       }
     }
   }
 
-  if (exactKeys(value.cloudObservation, [
+  const observation = value.infrastructureObservation;
+  if (exactKeys(observation, [
     "observedAt",
     "classification",
-    "projectState",
-    "databaseState",
-    "closedPilotServiceState",
-    "closedPilotJobState",
-    "billingState",
-    "secretManagerState",
-    "computeApiState",
+    "vercelProject",
+    "vercelProjectState",
+    "runtimeReleaseSha",
+    "runtimeProfile",
+    "runtimeRealFundsEnabled",
+    "databaseProvider",
+    "databaseProject",
+    "databaseProjectState",
+    "databasePlan",
+    "databaseManagedBy",
+    "databaseRegion",
+    "databaseBranch",
+    "databaseBranchState",
+    "postgresMajorVersion",
+    "migrationCount",
+    "migrationHead",
+    "candidateMigrationHead",
+    "tenantScopedTables",
+    "tenantTablesWithRls",
+    "tenantTablesWithForcedRls",
+    "policyCount",
+    "expectedCoreTablesPresent",
+    "expectedCoreTableCount",
+    "durableStatePresent",
+    "secretValuesRecorded",
     "activationEvidence"
-  ], "gate0.cloudObservation", issues)) {
-    boundedString(value.cloudObservation.observedAt, "gate0.cloudObservation.observedAt", issues);
-    if (Number.isNaN(Date.parse(value.cloudObservation.observedAt))) {
-      issues.push("gate0.cloudObservation.observedAt must be an ISO timestamp.");
-    }
-    exact(value.cloudObservation.classification, "read_only_non_authorizing", "gate0.cloudObservation.classification", issues);
-    exact(value.cloudObservation.projectState, "active", "gate0.cloudObservation.projectState", issues);
-    exact(value.cloudObservation.databaseState, "stopped", "gate0.cloudObservation.databaseState", issues);
-    exact(value.cloudObservation.closedPilotServiceState, "absent", "gate0.cloudObservation.closedPilotServiceState", issues);
-    exact(value.cloudObservation.closedPilotJobState, "absent", "gate0.cloudObservation.closedPilotJobState", issues);
-    exact(value.cloudObservation.billingState, "disabled", "gate0.cloudObservation.billingState", issues);
-    exact(value.cloudObservation.secretManagerState, "unavailable_billing_disabled", "gate0.cloudObservation.secretManagerState", issues);
-    exact(value.cloudObservation.computeApiState, "disabled", "gate0.cloudObservation.computeApiState", issues);
-    exact(value.cloudObservation.activationEvidence, false, "gate0.cloudObservation.activationEvidence", issues);
+  ], "gate0.infrastructureObservation", issues)) {
+    if (Number.isNaN(Date.parse(observation.observedAt))) issues.push("gate0.infrastructureObservation.observedAt must be an ISO timestamp.");
+    exact(observation.classification, "read_only_non_authorizing", "gate0.infrastructureObservation.classification", issues);
+    exact(observation.vercelProject, "ipo-one-internal", "gate0.infrastructureObservation.vercelProject", issues);
+    exact(observation.vercelProjectState, "ready", "gate0.infrastructureObservation.vercelProjectState", issues);
+    sha(observation.runtimeReleaseSha, "gate0.infrastructureObservation.runtimeReleaseSha", issues);
+    exact(observation.runtimeProfile, "closed_non_funds_pilot", "gate0.infrastructureObservation.runtimeProfile", issues);
+    exact(observation.runtimeRealFundsEnabled, false, "gate0.infrastructureObservation.runtimeRealFundsEnabled", issues);
+    exact(observation.databaseProvider, "neon", "gate0.infrastructureObservation.databaseProvider", issues);
+    exact(observation.databaseProject, "ipo-one-m1-b-sandbox", "gate0.infrastructureObservation.databaseProject", issues);
+    exact(observation.databaseProjectState, "active", "gate0.infrastructureObservation.databaseProjectState", issues);
+    exact(observation.databasePlan, "launch", "gate0.infrastructureObservation.databasePlan", issues);
+    exact(observation.databaseManagedBy, "vercel", "gate0.infrastructureObservation.databaseManagedBy", issues);
+    exact(observation.databaseRegion, "aws-us-east-1", "gate0.infrastructureObservation.databaseRegion", issues);
+    exact(observation.databaseBranch, "main", "gate0.infrastructureObservation.databaseBranch", issues);
+    exact(observation.databaseBranchState, "ready", "gate0.infrastructureObservation.databaseBranchState", issues);
+    exact(observation.postgresMajorVersion, 17, "gate0.infrastructureObservation.postgresMajorVersion", issues);
+    exact(observation.migrationCount, 69, "gate0.infrastructureObservation.migrationCount", issues);
+    exact(observation.migrationHead, "0069_auth_reference_hash_key_rotation", "gate0.infrastructureObservation.migrationHead", issues);
+    exact(observation.candidateMigrationHead, "0070_pilot_cases", "gate0.infrastructureObservation.candidateMigrationHead", issues);
+    exact(observation.tenantTablesWithRls, observation.tenantScopedTables, "gate0.infrastructureObservation.tenantTablesWithRls", issues);
+    exact(observation.tenantTablesWithForcedRls, observation.tenantScopedTables, "gate0.infrastructureObservation.tenantTablesWithForcedRls", issues);
+    exact(observation.expectedCoreTablesPresent, observation.expectedCoreTableCount, "gate0.infrastructureObservation.expectedCoreTablesPresent", issues);
+    exact(observation.durableStatePresent, true, "gate0.infrastructureObservation.durableStatePresent", issues);
+    exact(observation.secretValuesRecorded, false, "gate0.infrastructureObservation.secretValuesRecorded", issues);
+    exact(observation.activationEvidence, false, "gate0.infrastructureObservation.activationEvidence", issues);
   }
 
-  exact(value.verdict, "GATE 0 READY — DEPLOYMENT/ACTIVATION BLOCKED", "gate0.verdict", issues);
+  if (!Array.isArray(value.obsoleteGcpRequirements)) {
+    issues.push("gate0.obsoleteGcpRequirements must be an array.");
+  } else {
+    exactArray(value.obsoleteGcpRequirements.map((entry) => entry?.id), PILOT_008B_OBSOLETE_GCP_REQUIREMENTS, "gate0.obsoleteGcpRequirements ids", issues);
+    for (const [index, entry] of value.obsoleteGcpRequirements.entries()) {
+      if (exactKeys(entry, ["id", "status"], `gate0.obsoleteGcpRequirements[${index}]`, issues)) {
+        exact(entry.status, "not_applicable", `gate0.obsoleteGcpRequirements[${index}].status`, issues);
+      }
+    }
+  }
+
+  exact(value.verdict, "GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED", "gate0.verdict", issues);
 
   if (issues.length > 0) throw new Pilot008BGate0Error(issues);
   return value;
