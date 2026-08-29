@@ -845,6 +845,24 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.REQUIRED
   }),
   tenantOperation({
+    operationId: "pilotFileCase",
+    action: "pilot.case.file.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.PILOT_CASE_FILE_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED
+  }),
+  tenantOperation({
+    operationId: "pilotListOwnCases",
+    action: "pilot.case.read.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN, ActorType.AGENT],
+    requiredCapability: PilotCapability.PILOT_CASE_READ_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED
+  }),
+  tenantOperation({
     operationId: "pilotRequestCredit",
     action: "credit.request",
     resourceType: "subject",
@@ -1174,6 +1192,44 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
       ActorType.OPERATIONS_OPERATOR,
       ActorType.AUDITOR
     ]
+  }),
+  tenantOperation({
+    operationId: "pilotReadClosedPilotReadiness",
+    action: "pilot.readiness.read.tenant",
+    resourceType: "risk_portfolio",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.PILOT_READINESS_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ]
+  }),
+  tenantOperation({
+    operationId: "pilotReadCaseQueue",
+    action: "pilot.case.read.tenant",
+    resourceType: "risk_portfolio",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.PILOT_CASE_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [
+      ActorType.RISK_OPERATOR,
+      ActorType.OPERATIONS_OPERATOR,
+      ActorType.AUDITOR
+    ]
+  }),
+  tenantOperation({
+    operationId: "pilotTransitionCase",
+    action: "pilot.case.transition.tenant",
+    resourceType: "pilot_case",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR],
+    requiredCapability: PilotCapability.PILOT_CASE_TRANSITION_TENANT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR]
   }),
   tenantOperation({
     operationId: "pilotReadServicingQueueReference",

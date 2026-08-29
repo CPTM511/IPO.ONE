@@ -21,7 +21,7 @@
       "mcp": {
         "registryVersion": "agent_mcp_registry.v2",
         "transportProfile": "mcp_stdio_local",
-        "toolCount": 13,
+        "toolCount": 15,
         "tools": [
           {
             "name": "ipo_one_read_self",
@@ -74,6 +74,14 @@
           {
             "name": "ipo_one_read_credit_state",
             "operationId": "pilotReadOwnCreditState"
+          },
+          {
+            "name": "ipo_one_file_pilot_case",
+            "operationId": "pilotFileCase"
+          },
+          {
+            "name": "ipo_one_list_pilot_cases",
+            "operationId": "pilotListOwnCases"
           }
         ],
         "economicLifecycleToolsIncluded": true
@@ -196,38 +204,46 @@
               "name": "ipo_one_submit_account_proof",
               "operationId": "pilotSubmitAgentAccountProof"
             },
-          {
-            "name": "ipo_one_read_account_binding",
-            "operationId": "pilotReadAgentAccountBinding"
-          },
-          {
-            "name": "ipo_one_read_obligation",
-            "operationId": "pilotReadOwnObligation"
-          },
-          {
-            "name": "ipo_one_read_obligation_evidence",
-            "operationId": "pilotReadOwnObligationEvidence"
-          },
-          {
-            "name": "ipo_one_accept_credit_offer",
-            "operationId": "pilotAcceptCreditOffer"
-          },
-          {
-            "name": "ipo_one_execute_sandbox_obligation",
-            "operationId": "pilotExecuteSandboxObligation"
-          },
-          {
-            "name": "ipo_one_post_sandbox_repayment",
-            "operationId": "pilotPostSandboxRepayment"
-          },
-          {
-            "name": "ipo_one_read_credit_registry_evidence",
-            "operationId": "pilotReadCreditRegistryEvidence"
-          },
-          {
-            "name": "ipo_one_read_credit_state",
-            "operationId": "pilotReadOwnCreditState"
-          }
+            {
+              "name": "ipo_one_read_account_binding",
+              "operationId": "pilotReadAgentAccountBinding"
+            },
+            {
+              "name": "ipo_one_read_obligation",
+              "operationId": "pilotReadOwnObligation"
+            },
+            {
+              "name": "ipo_one_read_obligation_evidence",
+              "operationId": "pilotReadOwnObligationEvidence"
+            },
+            {
+              "name": "ipo_one_accept_credit_offer",
+              "operationId": "pilotAcceptCreditOffer"
+            },
+            {
+              "name": "ipo_one_execute_sandbox_obligation",
+              "operationId": "pilotExecuteSandboxObligation"
+            },
+            {
+              "name": "ipo_one_post_sandbox_repayment",
+              "operationId": "pilotPostSandboxRepayment"
+            },
+            {
+              "name": "ipo_one_read_credit_registry_evidence",
+              "operationId": "pilotReadCreditRegistryEvidence"
+            },
+            {
+              "name": "ipo_one_read_credit_state",
+              "operationId": "pilotReadOwnCreditState"
+            },
+            {
+              "name": "ipo_one_file_pilot_case",
+              "operationId": "pilotFileCase"
+            },
+            {
+              "name": "ipo_one_list_pilot_cases",
+              "operationId": "pilotListOwnCases"
+            }
           ]
         },
         "credentialDelivery": "out_of_band",
@@ -239,7 +255,7 @@
       "mcp": {
         "registryVersion": "agent_mcp_registry.v2",
         "transportProfile": "mcp_stdio_local",
-        "toolCount": 13,
+        "toolCount": 15,
         "tools": [
           {
             "name": "ipo_one_read_self",
@@ -292,6 +308,14 @@
           {
             "name": "ipo_one_read_credit_state",
             "operationId": "pilotReadOwnCreditState"
+          },
+          {
+            "name": "ipo_one_file_pilot_case",
+            "operationId": "pilotFileCase"
+          },
+          {
+            "name": "ipo_one_list_pilot_cases",
+            "operationId": "pilotListOwnCases"
           }
         ],
         "economicLifecycleToolsIncluded": true
@@ -413,38 +437,46 @@
               "name": "ipo_one_submit_account_proof",
               "operationId": "pilotSubmitAgentAccountProof"
             },
-          {
-            "name": "ipo_one_read_account_binding",
-            "operationId": "pilotReadAgentAccountBinding"
-          },
-          {
-            "name": "ipo_one_read_obligation",
-            "operationId": "pilotReadOwnObligation"
-          },
-          {
-            "name": "ipo_one_read_obligation_evidence",
-            "operationId": "pilotReadOwnObligationEvidence"
-          },
-          {
-            "name": "ipo_one_accept_credit_offer",
-            "operationId": "pilotAcceptCreditOffer"
-          },
-          {
-            "name": "ipo_one_execute_sandbox_obligation",
-            "operationId": "pilotExecuteSandboxObligation"
-          },
-          {
-            "name": "ipo_one_post_sandbox_repayment",
-            "operationId": "pilotPostSandboxRepayment"
-          },
-          {
-            "name": "ipo_one_read_credit_registry_evidence",
-            "operationId": "pilotReadCreditRegistryEvidence"
-          },
-          {
-            "name": "ipo_one_read_credit_state",
-            "operationId": "pilotReadOwnCreditState"
-          }
+            {
+              "name": "ipo_one_read_account_binding",
+              "operationId": "pilotReadAgentAccountBinding"
+            },
+            {
+              "name": "ipo_one_read_obligation",
+              "operationId": "pilotReadOwnObligation"
+            },
+            {
+              "name": "ipo_one_read_obligation_evidence",
+              "operationId": "pilotReadOwnObligationEvidence"
+            },
+            {
+              "name": "ipo_one_accept_credit_offer",
+              "operationId": "pilotAcceptCreditOffer"
+            },
+            {
+              "name": "ipo_one_execute_sandbox_obligation",
+              "operationId": "pilotExecuteSandboxObligation"
+            },
+            {
+              "name": "ipo_one_post_sandbox_repayment",
+              "operationId": "pilotPostSandboxRepayment"
+            },
+            {
+              "name": "ipo_one_read_credit_registry_evidence",
+              "operationId": "pilotReadCreditRegistryEvidence"
+            },
+            {
+              "name": "ipo_one_read_credit_state",
+              "operationId": "pilotReadOwnCreditState"
+            },
+            {
+              "name": "ipo_one_file_pilot_case",
+              "operationId": "pilotFileCase"
+            },
+            {
+              "name": "ipo_one_list_pilot_cases",
+              "operationId": "pilotListOwnCases"
+            }
           ]
         },
         "credentialDelivery": "out_of_band",
@@ -456,7 +488,7 @@
       "mcp": {
         "registryVersion": "agent_mcp_registry.v2",
         "transportProfile": "mcp_stdio_local",
-        "toolCount": 13,
+        "toolCount": 15,
         "tools": [
           {
             "name": "ipo_one_read_self",
@@ -509,6 +541,14 @@
           {
             "name": "ipo_one_read_credit_state",
             "operationId": "pilotReadOwnCreditState"
+          },
+          {
+            "name": "ipo_one_file_pilot_case",
+            "operationId": "pilotFileCase"
+          },
+          {
+            "name": "ipo_one_list_pilot_cases",
+            "operationId": "pilotListOwnCases"
           }
         ],
         "economicLifecycleToolsIncluded": true

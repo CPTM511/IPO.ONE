@@ -932,6 +932,90 @@
       ]
     },
     {
+      "operationId": "pilotFileCase",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_case_filed.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/pilot-case-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "packages/sdk/src/agent-pilot-case-client.js",
+        "apps/agent-mcp/src/agent-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/pilot-case-handlers.test.js",
+        "packages/sdk/test/agent-pilot-case-client.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotListOwnCases",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_case_list.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/pilot-case-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "packages/sdk/src/agent-pilot-case-client.js",
+        "apps/agent-mcp/src/agent-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/pilot-case-handlers.test.js",
+        "packages/sdk/test/agent-pilot-case-client.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadCaseQueue",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_case_queue.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/pilot-case-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/pilot-case-handlers.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotTransitionCase",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_pilot_case_transitioned.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/pilot-case-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/pilot-case-handlers.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
       "operationId": "pilotReadPilotFeedbackSummary",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_pilot_feedback_summary_view.v1",
@@ -947,6 +1031,26 @@
       ],
       "testFiles": [
         "modules/tenant-command-gateway/test/pilot-feedback-handlers.test.js",
+        "apps/web/test/static-ui.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadClosedPilotReadiness",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_closed_pilot_readiness_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/closed-pilot-readiness-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/closed-pilot-readiness-handlers.test.js",
         "apps/web/test/static-ui.test.js"
       ]
     },
@@ -2462,6 +2566,30 @@
           "humanGateRequired": true
         },
         {
+          "actionId": "request_credit.file_and_review_cases",
+          "label": "File and review a closed-category case against a current record",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotFileCase",
+            "pilotListOwnCases"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/pilot-case-handlers.test.js",
+            "apps/web/test/static-ui.test.js"
+          ],
+          "truthBoundary": "The authenticated Subject selects an already loaded record and a closed reason. Filing does not rewrite that record, change economic state, accept free text, or grant production authority.",
+          "nextTaskIds": [
+            "PILOT-008A"
+          ],
+          "humanGateRequired": false
+        },
+        {
           "actionId": "request_credit.open_official_fee_policy",
           "label": "Inspect the versioned production fee-policy boundary",
           "prototypeLabels": [
@@ -3083,20 +3211,24 @@
             "pilotReadOwnCreditState",
             "pilotReadOwnObligation",
             "pilotReadOwnObligationEvidence",
-            "pilotSubmitPilotFeedback"
+            "pilotSubmitPilotFeedback",
+            "pilotFileCase",
+            "pilotListOwnCases"
           ],
           "authorityReferences": [],
           "uiAdapters": [
             "apps/web/src/agent-console-presentation.js",
             "apps/web/src/app.js",
             "apps/agent-mcp/src/agent-mcp-adapter.js",
-            "packages/sdk/src/agent-mcp-client.js"
+            "packages/sdk/src/agent-mcp-client.js",
+            "packages/sdk/src/agent-pilot-case-client.js"
           ],
           "testFiles": [
             "apps/web/test/agent-console-presentation.test.js",
             "apps/web/test/static-ui.test.js",
             "apps/agent-mcp/test/agent-mcp.test.mjs",
-            "packages/sdk/test/agent-mcp-client.test.js"
+            "packages/sdk/test/agent-mcp-client.test.js",
+            "packages/sdk/test/agent-pilot-case-client.test.js"
           ],
           "truthBoundary": "Agent and Human use the same server operations and obligation kernel; the Agent path does not create a second ledger.",
           "nextTaskIds": [
@@ -3952,7 +4084,7 @@
       "actions": [
         {
           "actionId": "risk_operations.read_portfolio_health_feedback_and_queue",
-          "label": "Read tenant risk, pilot health, feedback summary, and servicing queue",
+          "label": "Read tenant risk, pilot health, feedback, readiness, cases, and servicing queue",
           "prototypeLabels": [
             "Inspect versioned policy"
           ],
@@ -3963,6 +4095,8 @@
             "pilotReadTenantRisk",
             "pilotReadPilotHealth",
             "pilotReadPilotFeedbackSummary",
+            "pilotReadClosedPilotReadiness",
+            "pilotReadCaseQueue",
             "pilotReadServicingQueueReference",
             "pilotReadServicingQueue"
           ],
@@ -3976,11 +4110,36 @@
             "apps/web/test/risk-workspace-selection.test.js",
             "modules/tenant-command-gateway/test/risk-workspace-reference-handlers.test.js",
             "modules/tenant-command-gateway/test/pilot-health-query-handlers.test.js",
+            "modules/tenant-command-gateway/test/closed-pilot-readiness-handlers.test.js",
+            "modules/tenant-command-gateway/test/pilot-case-handlers.test.js",
             "modules/tenant-command-gateway/test/servicing-queue-query-handlers.test.js"
           ],
           "truthBoundary": "Only tenant-scoped server projections and persisted operational signals are authoritative.",
           "nextTaskIds": [
             "V9-008"
+          ],
+          "humanGateRequired": false
+        },
+        {
+          "actionId": "risk_operations.resolve_pilot_case",
+          "label": "Assign a case and record an explicit uphold or additive correction",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotTransitionCase"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/pilot-case-handlers.test.js",
+            "apps/web/test/static-ui.test.js"
+          ],
+          "truthBoundary": "Each mutation is visible and role-gated. A correction appends a versioned Event linked to immutable source truth and cannot change a balance, limit, Offer, Obligation, or production authority.",
+          "nextTaskIds": [
+            "PILOT-008A"
           ],
           "humanGateRequired": false
         },

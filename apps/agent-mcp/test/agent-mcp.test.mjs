@@ -55,6 +55,12 @@ function client() {
     },
     async getOwnCreditState(input) {
       return { operationId: "pilotReadOwnCreditState", input };
+    },
+    async filePilotCase(input) {
+      return { operationId: "pilotFileCase", input };
+    },
+    async listOwnPilotCases(input) {
+      return { operationId: "pilotListOwnCases", input };
     }
   };
 }
@@ -268,12 +274,20 @@ function workflowClient({ selfSubjectId = applicationHandoff.subjectId } = {}) {
       async getOwnCreditState(input) {
         calls.push({ method: "getOwnCreditState", input: structuredClone(input) });
         return protocolResult("pilotReadOwnCreditState");
+      },
+      async filePilotCase(input) {
+        calls.push({ method: "filePilotCase", input: structuredClone(input) });
+        return protocolResult("pilotFileCase");
+      },
+      async listOwnPilotCases(input) {
+        calls.push({ method: "listOwnPilotCases", input: structuredClone(input) });
+        return protocolResult("pilotListOwnCases");
       }
     }
   };
 }
 
-test("local Agent MCP publishes exactly the thirteen approved bounded tools", async () => {
+test("local Agent MCP publishes exactly the fifteen approved bounded tools", async () => {
   const adapter = createAgentMcpAdapter({ client: client() });
   assert.deepEqual(
     AGENT_MCP_TOOLS.map(({ name, operationId }) => ({ name, operationId })),
@@ -292,12 +306,14 @@ test("local Agent MCP publishes exactly the thirteen approved bounded tools", as
     "ipo_one_execute_sandbox_obligation",
     "ipo_one_post_sandbox_repayment",
     "ipo_one_read_credit_registry_evidence",
-    "ipo_one_read_credit_state"
+    "ipo_one_read_credit_state",
+    "ipo_one_file_pilot_case",
+    "ipo_one_list_pilot_cases"
   ]);
   const rpc = createAgentMcpJsonRpcHandler({ adapter });
   const listed = await rpc({ jsonrpc: "2.0", id: 1, method: "tools/list" });
   assert.deepEqual(listed.result.tools.map((tool) => tool.name), AGENT_MCP_TOOLS.map((tool) => tool.name));
-  assert.equal(listed.result.tools.some((tool) => /shell|file|url|human|operator|mandate/i.test(tool.name)), false);
+  assert.equal(listed.result.tools.some((tool) => /shell|url|human|operator|mandate/i.test(tool.name)), false);
   const unknown = await rpc({
     jsonrpc: "2.0",
     id: 2,

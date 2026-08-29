@@ -51,6 +51,7 @@
         "pilotReadTenantRisk",
         "pilotReadPilotHealth",
         "pilotReadPilotFeedbackSummary",
+        "pilotReadClosedPilotReadiness",
         "pilotReadServicingQueue",
         "pilotReadEvidence",
         "pilotReadOwnObligation",
@@ -66,6 +67,10 @@
         "pilotReadCapitalPartnerPortfolio",
         "pilotSubmitAgentAccountProof",
         "pilotSubmitPilotFeedback",
+        "pilotFileCase",
+        "pilotListOwnCases",
+        "pilotReadCaseQueue",
+        "pilotTransitionCase",
         "pilotWriteOffSandboxObligation",
         "workerAdvanceSandboxServicing",
         "pilotReadProviderIntent",
@@ -2316,6 +2321,36 @@
       }
     },
     {
+      "title": "Read Fail-closed Closed-pilot Readiness",
+      "required": [
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotReadClosedPilotReadiness"
+        },
+        "payload": {
+          "$ref": "#/$defs/emptyPayload"
+        },
+        "resource": {
+          "$ref": "#/$defs/riskPortfolioResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": ["idempotencyKey"]
+          },
+          {
+            "required": ["reasonCode"]
+          },
+          {
+            "required": ["approvalArtifact"]
+          }
+        ]
+      }
+    },
+    {
       "title": "Read Private Servicing Operations Queue",
       "required": [
         "resource"
@@ -2721,6 +2756,46 @@
           }
         ]
       }
+    },
+    {
+      "title": "File a Privacy-safe Pilot Case",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "pilotFileCase" },
+        "payload": { "$ref": "#/$defs/pilotCaseFilePayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["purpose"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
+    },
+    {
+      "title": "List Own Pilot Cases",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "pilotListOwnCases" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/subjectResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
+    },
+    {
+      "title": "Read Pilot Case Queue",
+      "required": ["resource"],
+      "properties": {
+        "operationId": { "const": "pilotReadCaseQueue" },
+        "payload": { "$ref": "#/$defs/emptyPayload" },
+        "resource": { "$ref": "#/$defs/riskPortfolioResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["idempotencyKey"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
+    },
+    {
+      "title": "Transition a Pilot Case",
+      "required": ["idempotencyKey", "resource"],
+      "properties": {
+        "operationId": { "const": "pilotTransitionCase" },
+        "payload": { "$ref": "#/$defs/pilotCaseTransitionPayload" },
+        "resource": { "$ref": "#/$defs/pilotCaseResourceReference" }
+      },
+      "not": { "anyOf": [{ "required": ["purpose"] }, { "required": ["reasonCode"] }, { "required": ["approvalArtifact"] }] }
     }
   ],
   "allOf": [
@@ -2957,6 +3032,7 @@
             "provider",
             "risk_portfolio",
             "servicing_queue",
+            "pilot_case",
             "delegated_wallet_grant",
             "trading_capital_request",
         "trading_credit_profile",
@@ -3183,6 +3259,40 @@
         }
       }
     },
+    "pilotCaseFilePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetType", "targetId", "reasonCode", "schemaVersion"],
+      "properties": {
+        "targetType": { "enum": ["decision", "offer_disclosure", "payment", "servicing_action", "evidence_item", "report"] },
+        "targetId": { "$ref": "#/$defs/domainIdentifier" },
+        "reasonCode": { "enum": ["record_inaccurate", "context_missing", "payment_mismatch", "servicing_error", "evidence_mismatch", "report_mismatch"] },
+        "schemaVersion": { "const": "pilot_case_file.v1" }
+      }
+    },
+    "pilotCaseTransitionPayload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["transition", "schemaVersion"],
+          "properties": {
+            "transition": { "enum": ["assign", "uphold"] },
+            "schemaVersion": { "const": "pilot_case_transition.v1" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["transition", "correctionCode", "schemaVersion"],
+          "properties": {
+            "transition": { "const": "correct" },
+            "correctionCode": { "enum": ["record_version_added", "attribution_corrected", "status_context_added", "payment_reference_linked", "evidence_reference_linked", "report_metadata_versioned"] },
+            "schemaVersion": { "const": "pilot_case_transition.v1" }
+          }
+        }
+      ]
+    },
     "pilotFeedbackPayload": {
       "type": "object",
       "additionalProperties": false,
@@ -3336,6 +3446,15 @@
         "resourceId": {
           "$ref": "#/$defs/domainIdentifier"
         }
+      }
+    },
+    "pilotCaseResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceType", "resourceId"],
+      "properties": {
+        "resourceType": { "const": "pilot_case" },
+        "resourceId": { "$ref": "#/$defs/domainIdentifier" }
       }
     },
     "riskPortfolioResourceReference": {

@@ -162,7 +162,324 @@ function boundedString(value, path, issues, max = 500) {
   }
 }
 
+function validateExistingVercelNeonTopology(value) {
+  const issues = [];
+  const topKeys = [
+    "schemaVersion",
+    "decisionId",
+    "status",
+    "releaseProfile",
+    "launchBlocked",
+    "currentPublicSurface",
+    "authority",
+    "runtime",
+    "database",
+    "worker",
+    "edge",
+    "operations",
+    "costControls",
+    "activationGates"
+  ];
+  if (!exactKeys(value, topKeys, "topology", issues)) {
+    throw new DeployTopologyError(issues);
+  }
+  exact(value.schemaVersion, "ipo.one.deploy-topology/v1", "topology.schemaVersion", issues);
+  exact(value.decisionId, "DEPLOY-001", "topology.decisionId", issues);
+  exact(value.status, "founder_approved_existing_stack_pre_activation", "topology.status", issues);
+  exact(value.releaseProfile, "closed_non_funds_pilot", "topology.releaseProfile", issues);
+  exact(value.launchBlocked, true, "topology.launchBlocked", issues);
+
+  if (exactKeys(value.currentPublicSurface, [
+    "provider",
+    "project",
+    "profile",
+    "stateModel",
+    "technicalRuntimeReady",
+    "participantAccessAuthorized"
+  ], "topology.currentPublicSurface", issues)) {
+    exact(value.currentPublicSurface.provider, "vercel", "topology.currentPublicSurface.provider", issues);
+    exact(value.currentPublicSurface.project, "ipo-one-internal", "topology.currentPublicSurface.project", issues);
+    exact(value.currentPublicSurface.profile, "closed_non_funds_pilot", "topology.currentPublicSurface.profile", issues);
+    exact(value.currentPublicSurface.stateModel, "managed_neon_postgresql", "topology.currentPublicSurface.stateModel", issues);
+    exact(value.currentPublicSurface.technicalRuntimeReady, true, "topology.currentPublicSurface.technicalRuntimeReady", issues);
+    exact(value.currentPublicSurface.participantAccessAuthorized, false, "topology.currentPublicSurface.participantAccessAuthorized", issues);
+  }
+
+  const authority = {
+    technicalReadinessDeploymentEnabled: true,
+    approvedAdditiveMigrationEnabled: true,
+    remoteParticipantAccessEnabled: false,
+    realFundsEnabled: false,
+    humanCashCreditEnabled: false,
+    testnetWritesEnabled: false,
+    externalProviderExecutionEnabled: false,
+    venueSignerEnabled: false,
+    publicSignupEnabled: false,
+    profileActivationEnabled: false
+  };
+  if (exactKeys(value.authority, Object.keys(authority), "topology.authority", issues)) {
+    for (const [key, expected] of Object.entries(authority)) {
+      exact(value.authority[key], expected, `topology.authority.${key}`, issues);
+    }
+  }
+
+  if (exactKeys(value.runtime, [
+    "providerDecisionState",
+    "provider",
+    "shape",
+    "entrypoint",
+    "buildNodeVersion",
+    "deployedNodeVersion",
+    "httpsIngress",
+    "scaleToZero",
+    "functionMaximumDurationSeconds",
+    "canonicalState",
+    "processLocalPrivateStateAllowed",
+    "signerEnabled"
+  ], "topology.runtime", issues)) {
+    exact(value.runtime.providerDecisionState, "founder_approved_existing", "topology.runtime.providerDecisionState", issues);
+    exact(value.runtime.provider, "vercel", "topology.runtime.provider", issues);
+    exact(value.runtime.shape, "vercel_node_function", "topology.runtime.shape", issues);
+    exact(value.runtime.entrypoint, "api/vercel-sandbox.mjs", "topology.runtime.entrypoint", issues);
+    exact(value.runtime.buildNodeVersion, "26.5.0", "topology.runtime.buildNodeVersion", issues);
+    exact(value.runtime.deployedNodeVersion, "24.x", "topology.runtime.deployedNodeVersion", issues);
+    exact(value.runtime.httpsIngress, true, "topology.runtime.httpsIngress", issues);
+    exact(value.runtime.scaleToZero, true, "topology.runtime.scaleToZero", issues);
+    exact(value.runtime.functionMaximumDurationSeconds, 30, "topology.runtime.functionMaximumDurationSeconds", issues);
+    exact(value.runtime.canonicalState, "managed_neon_postgresql", "topology.runtime.canonicalState", issues);
+    exact(value.runtime.processLocalPrivateStateAllowed, false, "topology.runtime.processLocalPrivateStateAllowed", issues);
+    exact(value.runtime.signerEnabled, false, "topology.runtime.signerEnabled", issues);
+  }
+
+  if (exactKeys(value.database, [
+    "providerDecisionState",
+    "provider",
+    "project",
+    "plan",
+    "region",
+    "branch",
+    "shape",
+    "majorVersion",
+    "requiredRoles",
+    "forcedTenantRls",
+    "encryptedTransport",
+    "connectionPoolingRequired",
+    "backupRestoreRequired",
+    "restoreDrillRequired",
+    "publicUnauthenticatedAccess",
+    "additionalDatabaseRequired"
+  ], "topology.database", issues)) {
+    exact(value.database.providerDecisionState, "founder_approved_existing", "topology.database.providerDecisionState", issues);
+    exact(value.database.provider, "neon", "topology.database.provider", issues);
+    exact(value.database.project, "ipo-one-m1-b-sandbox", "topology.database.project", issues);
+    exact(value.database.plan, "launch", "topology.database.plan", issues);
+    exact(value.database.region, "aws-us-east-1", "topology.database.region", issues);
+    exact(value.database.branch, "main", "topology.database.branch", issues);
+    exact(value.database.shape, "managed_postgresql", "topology.database.shape", issues);
+    exact(value.database.majorVersion, 17, "topology.database.majorVersion", issues);
+    exactArray(value.database.requiredRoles, ["migrator", "gateway", "authentication"], "topology.database.requiredRoles", issues);
+    for (const key of ["forcedTenantRls", "encryptedTransport", "connectionPoolingRequired", "backupRestoreRequired", "restoreDrillRequired"]) {
+      exact(value.database[key], true, `topology.database.${key}`, issues);
+    }
+    exact(value.database.publicUnauthenticatedAccess, false, "topology.database.publicUnauthenticatedAccess", issues);
+    exact(value.database.additionalDatabaseRequired, false, "topology.database.additionalDatabaseRequired", issues);
+  }
+
+  if (exactKeys(value.worker, [
+    "providerDecisionState",
+    "shape",
+    "entrypoint",
+    "schedule",
+    "cohortActivation",
+    "responsibilities",
+    "leaseAndIdempotencyRequired",
+    "signerEnabled"
+  ], "topology.worker", issues)) {
+    exact(value.worker.providerDecisionState, "founder_approved_existing", "topology.worker.providerDecisionState", issues);
+    exact(value.worker.shape, "vercel_cron_bounded_function", "topology.worker.shape", issues);
+    exact(value.worker.entrypoint, "api/vercel-sandbox-cron.mjs", "topology.worker.entrypoint", issues);
+    exact(value.worker.schedule, "*/15 * * * *", "topology.worker.schedule", issues);
+    exact(value.worker.cohortActivation, "blocked", "topology.worker.cohortActivation", issues);
+    exactArray(value.worker.responsibilities, WORKER_RESPONSIBILITIES, "topology.worker.responsibilities", issues);
+    exact(value.worker.leaseAndIdempotencyRequired, true, "topology.worker.leaseAndIdempotencyRequired", issues);
+    exact(value.worker.signerEnabled, false, "topology.worker.signerEnabled", issues);
+  }
+
+  if (exactKeys(value.edge, [
+    "provider",
+    "shape",
+    "tlsActive",
+    "participantActivation",
+    "firewallEvidenceRequired",
+    "secretValuesStoredAsSensitive"
+  ], "topology.edge", issues)) {
+    exact(value.edge.provider, "vercel", "topology.edge.provider", issues);
+    exact(value.edge.shape, "same_project_https_edge", "topology.edge.shape", issues);
+    exact(value.edge.tlsActive, true, "topology.edge.tlsActive", issues);
+    exact(value.edge.participantActivation, "blocked", "topology.edge.participantActivation", issues);
+    exact(value.edge.firewallEvidenceRequired, true, "topology.edge.firewallEvidenceRequired", issues);
+    exact(value.edge.secretValuesStoredAsSensitive, true, "topology.edge.secretValuesStoredAsSensitive", issues);
+  }
+
+  if (exactKeys(value.operations, [
+    "backupRestoreRequired",
+    "reconciliationRequired",
+    "syntheticsRequired",
+    "alertDeliveryRequired",
+    "namedIncidentOwnerRequired",
+    "rollbackReceiptRequired",
+    "runtimeLogsRequired"
+  ], "topology.operations", issues)) {
+    for (const key of Object.keys(value.operations)) exact(value.operations[key], true, `topology.operations.${key}`, issues);
+  }
+
+  if (exactKeys(value.costControls, [
+    "databaseSizing",
+    "vercelProjectCount",
+    "neonProjectCount",
+    "redisEnabled",
+    "kubernetesEnabled",
+    "dataWarehouseEnabled",
+    "multiCloudFailoverEnabled",
+    "mainnetIndexerEnabled",
+    "cloudRunEnabled",
+    "cloudSqlEnabled"
+  ], "topology.costControls", issues)) {
+    exact(value.costControls.databaseSizing, "existing_launch_plan", "topology.costControls.databaseSizing", issues);
+    exact(value.costControls.vercelProjectCount, 1, "topology.costControls.vercelProjectCount", issues);
+    exact(value.costControls.neonProjectCount, 1, "topology.costControls.neonProjectCount", issues);
+    for (const key of ["redisEnabled", "kubernetesEnabled", "dataWarehouseEnabled", "multiCloudFailoverEnabled", "mainnetIndexerEnabled", "cloudRunEnabled", "cloudSqlEnabled"]) {
+      exact(value.costControls[key], false, `topology.costControls.${key}`, issues);
+    }
+  }
+
+  exactArray(value.activationGates, ACTIVATION_GATES, "topology.activationGates", issues);
+  if (issues.length > 0) throw new DeployTopologyError(issues);
+  return value;
+}
+
+function validateExistingVercelNeonProviderSelection(value) {
+  const issues = [];
+  if (!exactKeys(value, [
+    "schemaVersion",
+    "decisionId",
+    "pricingObservedAt",
+    "status",
+    "newProviderProvisioningBlocked",
+    "recommendation",
+    "authority",
+    "compatibility",
+    "options",
+    "remainingInputs"
+  ], "providerSelection", issues)) {
+    throw new ProviderSelectionError(issues);
+  }
+  exact(value.schemaVersion, "ipo.one.deploy-provider-selection/v1", "providerSelection.schemaVersion", issues);
+  exact(value.decisionId, "DEPLOY-001B", "providerSelection.decisionId", issues);
+  exact(value.pricingObservedAt, "2026-08-30", "providerSelection.pricingObservedAt", issues);
+  exact(value.status, "founder_approved_existing_stack", "providerSelection.status", issues);
+  exact(value.newProviderProvisioningBlocked, true, "providerSelection.newProviderProvisioningBlocked", issues);
+
+  if (exactKeys(value.recommendation, [
+    "optionId",
+    "webProvider",
+    "runtimeProvider",
+    "databaseProvider",
+    "databaseProject",
+    "databasePlan",
+    "databaseRegion",
+    "databaseConnectionMode",
+    "workerShape",
+    "workerActivation",
+    "functionMaximumDurationSeconds",
+    "cronSchedule"
+  ], "providerSelection.recommendation", issues)) {
+    const expected = {
+      optionId: "existing_vercel_neon",
+      webProvider: "vercel",
+      runtimeProvider: "vercel_functions",
+      databaseProvider: "neon",
+      databaseProject: "ipo-one-m1-b-sandbox",
+      databasePlan: "launch",
+      databaseRegion: "aws-us-east-1",
+      databaseConnectionMode: "managed_tls_role_scoped_pool",
+      workerShape: "vercel_cron_bounded_function",
+      workerActivation: "configured_not_cohort_activated",
+      functionMaximumDurationSeconds: 30,
+      cronSchedule: "*/15 * * * *"
+    };
+    for (const [key, expectedValue] of Object.entries(expected)) {
+      exact(value.recommendation[key], expectedValue, `providerSelection.recommendation.${key}`, issues);
+    }
+  }
+
+  const authority = {
+    existingVercelProjectUseEnabled: true,
+    existingNeonProjectUseEnabled: true,
+    technicalReadinessDeploymentEnabled: true,
+    approvedAdditiveMigrationEnabled: true,
+    newProviderProvisioningEnabled: false,
+    planUpgradeEnabled: false,
+    additionalControlPlaneEnabled: false,
+    dnsMutationEnabled: false,
+    remoteParticipantAccessEnabled: false,
+    profileActivationEnabled: false,
+    realFundsEnabled: false
+  };
+  if (exactKeys(value.authority, Object.keys(authority), "providerSelection.authority", issues)) {
+    for (const [key, expected] of Object.entries(authority)) exact(value.authority[key], expected, `providerSelection.authority.${key}`, issues);
+  }
+
+  if (exactKeys(value.compatibility, [
+    "postgresMajorVersion",
+    "buildNodeVersion",
+    "deployedNodeVersion",
+    "applicationPoolRequired",
+    "transactionLocalTenantContextRequired",
+    "advisoryLocksRequired",
+    "skipLockedLeasesRequired",
+    "runtimeDatabaseAccessAllowed",
+    "runtimeMigrationsAllowed",
+    "runtimeSeedingAllowed",
+    "forcedTenantRlsRequired"
+  ], "providerSelection.compatibility", issues)) {
+    exact(value.compatibility.postgresMajorVersion, 17, "providerSelection.compatibility.postgresMajorVersion", issues);
+    exact(value.compatibility.buildNodeVersion, "26.5.0", "providerSelection.compatibility.buildNodeVersion", issues);
+    exact(value.compatibility.deployedNodeVersion, "24.x", "providerSelection.compatibility.deployedNodeVersion", issues);
+    for (const key of ["applicationPoolRequired", "transactionLocalTenantContextRequired", "advisoryLocksRequired", "skipLockedLeasesRequired", "runtimeDatabaseAccessAllowed", "forcedTenantRlsRequired"]) {
+      exact(value.compatibility[key], true, `providerSelection.compatibility.${key}`, issues);
+    }
+    exact(value.compatibility.runtimeMigrationsAllowed, false, "providerSelection.compatibility.runtimeMigrationsAllowed", issues);
+    exact(value.compatibility.runtimeSeedingAllowed, false, "providerSelection.compatibility.runtimeSeedingAllowed", issues);
+  }
+
+  const expectedOptions = [
+    ["existing_vercel_neon", "selected", 100],
+    ["vercel_neon_cloud_run", "superseded_not_applicable", 0],
+    ["vercel_cloud_sql_cloud_run", "withdrawn_not_applicable", 0]
+  ];
+  if (!Array.isArray(value.options) || value.options.length !== expectedOptions.length) {
+    issues.push("providerSelection.options must contain the reviewed ordered option set.");
+  } else {
+    value.options.forEach((option, index) => {
+      const path = `providerSelection.options[${index}]`;
+      if (exactKeys(option, ["id", "decision", "score", "reason"], path, issues)) {
+        exact(option.id, expectedOptions[index][0], `${path}.id`, issues);
+        exact(option.decision, expectedOptions[index][1], `${path}.decision`, issues);
+        exact(option.score, expectedOptions[index][2], `${path}.score`, issues);
+        boundedString(option.reason, `${path}.reason`, issues);
+      }
+    });
+  }
+  exactArray(value.remainingInputs, ["monthly_cost_ceiling_usd", "billing_owner", "restore_drill_owner", "incident_owner"], "providerSelection.remainingInputs", issues);
+  if (issues.length > 0) throw new ProviderSelectionError(issues);
+  return value;
+}
+
 export function validateDeployTopology(value) {
+  if (value?.status === "founder_approved_existing_stack_pre_activation") {
+    return validateExistingVercelNeonTopology(value);
+  }
   const issues = [];
   const topKeys = [
     "schemaVersion",
@@ -420,6 +737,9 @@ export function parseDeployTopology(text) {
 }
 
 export function validateProviderSelection(value) {
+  if (value?.status === "founder_approved_existing_stack") {
+    return validateExistingVercelNeonProviderSelection(value);
+  }
   const issues = [];
   const topKeys = [
     "schemaVersion",
@@ -1183,3 +1503,11 @@ export function parseClosedPilotOperations(text) {
   }
   return validateClosedPilotOperations(value);
 }
+
+export {
+  PILOT_008B_APPROVAL_GATES,
+  PILOT_008B_DECISION_INPUTS,
+  Pilot008BGate0Error,
+  parsePilot008BGate0,
+  validatePilot008BGate0
+} from "./pilot-008b-gate0.js";

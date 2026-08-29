@@ -380,6 +380,7 @@ const TENANT_OWNED_TABLES = [
   "operational_alerts",
   "operational_synthetic_runs",
   "outbox_messages",
+  "pilot_cases",
   "pilot_feedback_records",
   "pool_chain_cursors",
   "pool_chain_finalized_effects",
@@ -1171,12 +1172,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0066_agent_secured_facility_authorizations",
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
-        "0069_auth_reference_hash_key_rotation"
+        "0069_auth_reference_hash_key_rotation",
+        "0070_pilot_cases"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 69 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 70 }), [
+        "0070_pilot_cases",
         "0069_auth_reference_hash_key_rotation",
         "0068_m2b_dual_risk_recovery",
         "0067_m2b_hyperliquid_compositions",
@@ -1316,10 +1319,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0066_agent_secured_facility_authorizations",
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
-        "0069_auth_reference_hash_key_rotation"
+        "0069_auth_reference_hash_key_rotation",
+        "0070_pilot_cases"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 67 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 68 }), [
+        "0070_pilot_cases",
         "0069_auth_reference_hash_key_rotation",
         "0068_m2b_dual_risk_recovery",
         "0067_m2b_hyperliquid_compositions",
@@ -1468,7 +1473,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0066_agent_secured_facility_authorizations",
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
-        "0069_auth_reference_hash_key_rotation"
+        "0069_auth_reference_hash_key_rotation",
+        "0070_pilot_cases"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5147,7 +5153,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 12 }),
+        () => migrateDown({ pool, steps: 13 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5227,7 +5233,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0066_agent_secured_facility_authorizations",
         "0067_m2b_hyperliquid_compositions",
         "0068_m2b_dual_risk_recovery",
-        "0069_auth_reference_hash_key_rotation"
+        "0069_auth_reference_hash_key_rotation",
+        "0070_pilot_cases"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(

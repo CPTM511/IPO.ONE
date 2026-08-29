@@ -53,6 +53,14 @@ export const AGENT_PILOT_MCP_TOOLS = Object.freeze([
   Object.freeze({
     name: "ipo_one_read_credit_state",
     operationId: "pilotReadOwnCreditState"
+  }),
+  Object.freeze({
+    name: "ipo_one_file_pilot_case",
+    operationId: "pilotFileCase"
+  }),
+  Object.freeze({
+    name: "ipo_one_list_pilot_cases",
+    operationId: "pilotListOwnCases"
   })
 ]);
 

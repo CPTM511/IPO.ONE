@@ -7,6 +7,17 @@
 - Applies to: local development, invited no-real-funds pilot, and bounded live
   testnet validation
 
+## 2026-08-30 infrastructure amendment
+
+The Founder selected the existing `ipo-one-internal` Vercel Functions/Cron
+runtime and the existing Vercel-managed Neon Launch PostgreSQL project
+`ipo-one-m1-b-sandbox` in `aws-us-east-1` for PILOT-008B. This amendment
+supersedes the older Cloud Run/Cloud SQL implementation proposals in this
+non-canonical guide. Their provider-neutral security, durability, isolation,
+recovery and observability gates remain mandatory. Cloud SQL, Cloud Run and a
+second control plane are not selected and must not be provisioned without a
+new concrete requirement and approval.
+
 ## 1. Purpose and Authority
 
 This guide turns the current IPO.ONE implementation into a cost-controlled,
@@ -51,8 +62,7 @@ subsequent local shadow-credit work. At that baseline:
 
 - the shared durable Human/Agent kernel and closed Tenant protocol exist
   locally;
-- the hosted Vercel product is a synthetic process-local surface, not the
-  private PostgreSQL system of record;
+- the hosted Vercel product uses the durable Neon PostgreSQL system of record;
 - the former GCP closed-pilot runtime is offboarded;
 - remote Agent access is not yet an approved hosted transport;
 - Hyperliquid live signed Testnet execution and complete venue reconciliation
@@ -63,17 +73,14 @@ Before implementing any proposed issue, the issue owner must re-check this
 baseline against the current branch and record material drift. This guide is a
 sequence and gate definition, not a substitute for release evidence.
 
-`DEPLOY-001` completed its local preflight contract on 2026-07-27. It selected
-Vercel Web, one OCI private runtime, managed PostgreSQL 17, and one separate
-same-release worker as the minimum topology shape. Vendor selection, cloud
-mutation, remote access, worker activation, and launch remain disabled and
-unapproved.
+`DEPLOY-001` is amended to the existing one-project Vercel Functions and
+bounded Cron topology with Neon PostgreSQL 17 canonical state. Technical
+readiness deployment is approved; participant access and launch remain
+blocked.
 
-`DEPLOY-001B` records a dated recommendation of Vercel Web, Neon Launch
-PostgreSQL 17, Google Cloud Run for the private API, and Cloud Run
-Jobs/Scheduler for bounded background work. Founder approval, region and cost
-decisions, provider installation/provisioning, remote access, worker
-activation, and launch remain disabled and unapproved.
+`DEPLOY-001B` selects the existing Vercel-managed Neon Launch project in
+`aws-us-east-1`. New provider provisioning, plan upgrades, remote access,
+profile activation and real funds remain disabled and unapproved.
 
 `LOCAL-STACK-001` implements the L0 topology in a dedicated local Lima VM:
 rootless Docker, digest-pinned PostgreSQL 17, the three-workspace Private Pilot,

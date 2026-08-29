@@ -117,6 +117,8 @@ const supportedBrowserQaOperationIds = new Set([
   "pilotRevokeCreditPassportArtifact",
   "pilotAcceptCreditOffer",
   "pilotExecuteSandboxObligation",
+  "pilotFileCase",
+  "pilotListOwnCases",
   "pilotPostSandboxRepayment",
   "pilotReadOwnObligation",
   "pilotReadOwnObligationEvidence",
@@ -139,6 +141,8 @@ const roleOperationIds = Object.freeze({
     "pilotReadCapitalPartnerPortfolio"
   ]),
   risk: new Set([
+    "pilotReadCaseQueue",
+    "pilotReadClosedPilotReadiness",
     "pilotReadTenantRiskPortfolioReference",
     "pilotReadTenantRisk",
     "pilotReadSecuredPoolRisk"
@@ -440,6 +444,7 @@ let currentSubjectCreated = true;
 let browserQaSuppressRecoveredSubject = false;
 let currentConsentCreated = true;
 let currentOfficialReport;
+let currentPilotCases = [];
 let failNextEvidenceRead = false;
 
 function obligationEvidence(obligationId, evidenceObligation) {
@@ -627,6 +632,28 @@ function resultFor(command) {
   }
   if (operationId === "pilotReadSecuredPoolRisk") {
     return securedPoolResult(operationId);
+  }
+  if (operationId === "pilotReadClosedPilotReadiness") {
+    return tenantProtocolResult(operationId);
+  }
+  if (operationId === "pilotReadCaseQueue") {
+    return tenantProtocolResult(operationId);
+  }
+  if (operationId === "pilotFileCase") {
+    const result = tenantProtocolResult(operationId);
+    result.response.pilotCase = {
+      ...result.response.pilotCase,
+      targetType: command.payload.targetType,
+      targetId: command.payload.targetId,
+      reasonCode: command.payload.reasonCode
+    };
+    currentPilotCases = [structuredClone(result.response.pilotCase)];
+    return result;
+  }
+  if (operationId === "pilotListOwnCases") {
+    const result = tenantProtocolResult(operationId);
+    result.response.items = structuredClone(currentPilotCases);
+    return result;
   }
   if (operationId === "pilotReadOwnSecuredPool") {
     const result = securedPoolResult(operationId);

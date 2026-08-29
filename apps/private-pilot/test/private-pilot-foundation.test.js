@@ -187,17 +187,19 @@ test("private pilot identities are role-separated over one Tenant", () => {
   const runtime = createLocalPilotIdentities();
   const { borrower, capitalPartner, controller, agent, risk } = runtime.identities;
 
-  assert.equal(LOCAL_PILOT_CREDENTIAL_GENERATION, "phase6");
+  assert.equal(LOCAL_PILOT_CREDENTIAL_GENERATION, "phase7");
   assert.equal(
     controller.clientId,
-    "client_phase6_actor_principal_controller_pilot"
+    "client_phase7_actor_principal_controller_pilot"
   );
-  assert.equal(agent.clientId, "client_phase6_actor_agent_pilot_alpha");
+  assert.equal(agent.clientId, "client_phase7_actor_agent_pilot_alpha");
 
   assert.equal(borrower.actorType, ActorType.HUMAN);
   assert.equal(borrower.roleBundle, RoleBundle.HUMAN_BORROWER);
   assert.ok(borrower.capabilities.includes(PilotCapability.CREDIT_OFFER_ACCEPT_SELF));
   assert.ok(borrower.capabilities.includes(PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF));
+  assert.ok(borrower.capabilities.includes(PilotCapability.PILOT_CASE_FILE_SELF));
+  assert.ok(borrower.capabilities.includes(PilotCapability.PILOT_CASE_READ_SELF));
   assert.equal(borrower.capabilities.includes(PilotCapability.RISK_READ_TENANT), false);
   assert.equal(borrower.capabilities.includes(PilotCapability.PILOT_HEALTH_READ), false);
 
@@ -225,10 +227,15 @@ test("private pilot identities are role-separated over one Tenant", () => {
     PilotCapability.AGENT_SECURED_FACILITY_AUTHORIZATION_READ_BOUND
   ));
   assert.ok(agent.capabilities.includes(PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF));
+  assert.ok(agent.capabilities.includes(PilotCapability.PILOT_CASE_FILE_SELF));
+  assert.ok(agent.capabilities.includes(PilotCapability.PILOT_CASE_READ_SELF));
 
   assert.equal(risk.actorType, ActorType.RISK_OPERATOR);
   assert.ok(risk.capabilities.includes(PilotCapability.PILOT_HEALTH_READ));
   assert.ok(risk.capabilities.includes(PilotCapability.PILOT_FEEDBACK_READ_TENANT));
+  assert.ok(risk.capabilities.includes(PilotCapability.PILOT_READINESS_READ_TENANT));
+  assert.ok(risk.capabilities.includes(PilotCapability.PILOT_CASE_READ_TENANT));
+  assert.ok(risk.capabilities.includes(PilotCapability.PILOT_CASE_TRANSITION_TENANT));
   assert.ok(risk.capabilities.includes(PilotCapability.SERVICING_QUEUE_READ));
   assert.equal(risk.capabilities.includes(PilotCapability.CREDIT_REQUEST), false);
 

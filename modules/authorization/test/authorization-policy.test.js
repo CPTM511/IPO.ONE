@@ -186,7 +186,9 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
     PilotCapability.TRADING_SETTLEMENT_READ_BOUND,
     PilotCapability.TRADING_PERFORMANCE_PROOF_ISSUE_BOUND,
     PilotCapability.TRADING_FACILITY_EVIDENCE_READ_BOUND,
-    PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+    PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF,
+    PilotCapability.PILOT_CASE_FILE_SELF,
+    PilotCapability.PILOT_CASE_READ_SELF
   ]);
   const tradingPause = registry.getAuthenticated("tradingPauseNewRisk");
   assert.equal(
@@ -220,6 +222,14 @@ test("the policy registry classifies every OpenAPI operation and keeps the publi
   assert.equal(readFeedback.ownershipRule, "tenant");
   assert.deepEqual(
     readFeedback.requiresRecentMfaActorTypes,
+    ["risk_operator", "operations_operator", "auditor"]
+  );
+  const readReadiness = registry.getAuthenticated("pilotReadClosedPilotReadiness");
+  assert.equal(readReadiness.requiredCapability, PilotCapability.PILOT_READINESS_READ_TENANT);
+  assert.equal(readReadiness.ownershipRule, "tenant");
+  assert.equal(readReadiness.idempotencyRequirement, "prohibited");
+  assert.deepEqual(
+    readReadiness.requiresRecentMfaActorTypes,
     ["risk_operator", "operations_operator", "auditor"]
   );
   const ownedObligation = registry.getAuthenticated("pilotReadOwnObligation");

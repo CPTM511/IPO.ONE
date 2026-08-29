@@ -35,3 +35,4 @@ export * from "./secured-pool-reference-state.js";
 export * from "./secured-pool-reference-model.js";
 export * from "./pool-obligation-integration.js";
 export * from "./agent-secured-facility-authorization.js";
+export * from "./pilot-case.js";

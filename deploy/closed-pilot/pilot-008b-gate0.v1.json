@@ -1,0 +1,246 @@
+{
+  "schemaVersion": "ipo.one.pilot-008b-gate0/v1",
+  "issueId": "PILOT-008B",
+  "status": "technical_readiness_in_progress_activation_blocked",
+  "profile": "closed_non_funds_pilot",
+  "launchBlocked": true,
+  "prerequisite": {
+    "issueId": "PILOT-008A",
+    "localCommitSha": "bb72a66f8627f9751c493f464a814bb53da9f403",
+    "verdict": "PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT AUTHORIZED",
+    "mergedToOriginMainAtObservation": false,
+    "deployedAtObservation": false
+  },
+  "deploymentCandidate": {
+    "commitSha": null,
+    "ciRunUrl": null,
+    "deploymentUrl": null,
+    "migrationEvidenceUrl": null,
+    "rollbackTarget": null,
+    "ready": false
+  },
+  "authority": {
+    "readOnlyEvidenceEnabled": true,
+    "existingStackSelectionEnabled": true,
+    "technicalDeploymentPreparationEnabled": true,
+    "approvedAdditiveMigrationEnabled": true,
+    "newProviderProvisioningEnabled": false,
+    "planOrBillingMutationEnabled": false,
+    "secretValueExportEnabled": false,
+    "identityCredentialIssuanceEnabled": false,
+    "remoteParticipantAccessEnabled": false,
+    "profileActivationEnabled": false,
+    "trafficCutoverEnabled": false,
+    "notificationDeliveryEnabled": false,
+    "realFundsEnabled": false,
+    "externalProviderExecutionEnabled": false,
+    "venueSignerEnabled": false,
+    "chainWriteEnabled": false
+  },
+  "sourceTruth": {
+    "launchPolicyPath": "deploy/launch-policy.v1.json",
+    "launchPolicyVersion": "1.3.3",
+    "launchPolicyReleaseEnabled": false,
+    "approvalTemplatePath": "deploy/approvals/closed-non-funds-pilot.pending.json",
+    "topologyPath": "deploy/closed-pilot/topology.v1.json",
+    "providerSelectionPath": "deploy/closed-pilot/provider-selection.pending.json",
+    "operationsPath": "deploy/closed-pilot/operations.v1.json",
+    "operationsSourceCommitSha": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
+    "operationsSourceCurrentCandidate": false,
+    "vercelManifestPath": "deploy/vercel/m1-b-sandbox.manifest.v2.json",
+    "vercelConfigurationPath": "vercel.json"
+  },
+  "approvalGates": [
+    {
+      "id": "security_001_approval",
+      "status": "pending"
+    },
+    {
+      "id": "tenant_authn_authz_tests",
+      "status": "pending"
+    },
+    {
+      "id": "durable_data_restore",
+      "status": "pending"
+    },
+    {
+      "id": "reconciliation_operations",
+      "status": "pending"
+    },
+    {
+      "id": "independent_pentest",
+      "status": "pending"
+    },
+    {
+      "id": "privacy_legal_terms",
+      "status": "pending"
+    },
+    {
+      "id": "support_slo_oncall",
+      "status": "pending"
+    },
+    {
+      "id": "pilot_participant_approval",
+      "status": "pending"
+    }
+  ],
+  "decisionInputs": [
+    {
+      "id": "exact_merged_candidate",
+      "status": "unavailable"
+    },
+    {
+      "id": "green_ci_run",
+      "status": "unavailable"
+    },
+    {
+      "id": "vercel_deployment_receipt",
+      "status": "unavailable"
+    },
+    {
+      "id": "migration_receipt",
+      "status": "unavailable"
+    },
+    {
+      "id": "rollback_target",
+      "status": "unavailable"
+    },
+    {
+      "id": "pilot_region",
+      "status": "satisfied"
+    },
+    {
+      "id": "provider_selection",
+      "status": "satisfied"
+    },
+    {
+      "id": "database_project",
+      "status": "satisfied"
+    },
+    {
+      "id": "database_plan",
+      "status": "satisfied"
+    },
+    {
+      "id": "monthly_cost_ceiling_usd",
+      "status": "pending"
+    },
+    {
+      "id": "billing_owner",
+      "status": "pending"
+    },
+    {
+      "id": "provider_account_owner",
+      "status": "pending"
+    },
+    {
+      "id": "pilot_jurisdiction",
+      "status": "pending"
+    },
+    {
+      "id": "legal_privacy_approval",
+      "status": "pending"
+    },
+    {
+      "id": "retention_policy",
+      "status": "pending"
+    },
+    {
+      "id": "ordinary_support_channel",
+      "status": "pending"
+    },
+    {
+      "id": "support_owner",
+      "status": "pending"
+    },
+    {
+      "id": "incident_owner",
+      "status": "pending"
+    },
+    {
+      "id": "on_call_owner",
+      "status": "pending"
+    },
+    {
+      "id": "restore_owner",
+      "status": "pending"
+    },
+    {
+      "id": "rollback_owner",
+      "status": "pending"
+    },
+    {
+      "id": "notification_recipients",
+      "status": "pending"
+    },
+    {
+      "id": "secret_manager",
+      "status": "satisfied"
+    },
+    {
+      "id": "independent_security_reviewer",
+      "status": "pending"
+    },
+    {
+      "id": "participant_references",
+      "status": "pending"
+    },
+    {
+      "id": "launch_policy_revision",
+      "status": "pending"
+    }
+  ],
+  "infrastructureObservation": {
+    "observedAt": "2026-08-30T00:00:00Z",
+    "classification": "read_only_non_authorizing",
+    "vercelProject": "ipo-one-internal",
+    "vercelProjectState": "ready",
+    "runtimeReleaseSha": "316de8f0c2188c5f4d0b15a1cffbc50713b2972e",
+    "runtimeProfile": "closed_non_funds_pilot",
+    "runtimeRealFundsEnabled": false,
+    "databaseProvider": "neon",
+    "databaseProject": "ipo-one-m1-b-sandbox",
+    "databaseProjectState": "active",
+    "databasePlan": "launch",
+    "databaseManagedBy": "vercel",
+    "databaseRegion": "aws-us-east-1",
+    "databaseBranch": "main",
+    "databaseBranchState": "ready",
+    "postgresMajorVersion": 17,
+    "migrationCount": 69,
+    "migrationHead": "0069_auth_reference_hash_key_rotation",
+    "candidateMigrationHead": "0070_pilot_cases",
+    "tenantScopedTables": 152,
+    "tenantTablesWithRls": 152,
+    "tenantTablesWithForcedRls": 152,
+    "policyCount": 163,
+    "expectedCoreTablesPresent": 12,
+    "expectedCoreTableCount": 12,
+    "durableStatePresent": true,
+    "secretValuesRecorded": false,
+    "activationEvidence": false
+  },
+  "obsoleteGcpRequirements": [
+    {
+      "id": "cloud_sql_instance_state",
+      "status": "not_applicable"
+    },
+    {
+      "id": "cloud_run_service_and_job",
+      "status": "not_applicable"
+    },
+    {
+      "id": "gcp_billing_and_compute_api",
+      "status": "not_applicable"
+    },
+    {
+      "id": "gcp_secret_manager",
+      "status": "not_applicable"
+    },
+    {
+      "id": "gcp_edge_and_waf",
+      "status": "not_applicable"
+    }
+  ],
+  "verdict": "GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED"
+}

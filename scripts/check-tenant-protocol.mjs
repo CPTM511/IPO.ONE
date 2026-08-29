@@ -193,8 +193,8 @@ const mcpOperationIds = new Set(AGENT_MCP_TOOLS.map((tool) => tool.operationId))
 
 fail(handlerByOperation.size === TENANT_PROTOCOL_OPERATIONS.length, "handler/catalog operation count drifted");
 fail(catalogIds.size === TENANT_PROTOCOL_OPERATIONS.length, "catalog operation IDs must be unique");
-fail(AGENT_MCP_TOOLS.length === 13, "Agent MCP must expose exactly thirteen approved tools");
-fail(mcpOperationIds.size === 13, "Agent MCP operation IDs must be unique");
+fail(AGENT_MCP_TOOLS.length === 15, "Agent MCP must expose exactly fifteen approved tools");
+fail(mcpOperationIds.size === 15, "Agent MCP operation IDs must be unique");
 try {
   assert.deepEqual(
     AGENT_MCP_CLIENT_TOOLS,

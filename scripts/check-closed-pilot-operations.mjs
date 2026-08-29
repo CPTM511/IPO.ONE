@@ -51,8 +51,10 @@ assert.equal(
 
 assert.equal(topology.launchBlocked, true);
 assert.equal(topology.activationGates.includes("OPS-004"), true);
-assert.equal(providers.provisioningBlocked, true);
-assert.equal(providers.recommendation.workerActivation, "disabled");
+assert.equal(providers.newProviderProvisioningBlocked, true);
+assert.equal(providers.recommendation.workerActivation, "configured_not_cohort_activated");
+assert.equal(providers.authority.newProviderProvisioningEnabled, false);
+assert.equal(providers.authority.remoteParticipantAccessEnabled, false);
 assert.equal(operations.launchBlocked, true);
 assert.deepEqual(operations.satisfiedActivationGates, []);
 assert.equal(

@@ -138,11 +138,13 @@
             { "$ref": "#/$defs/postSandboxRepaymentTool" }
             ,
             { "$ref": "#/$defs/readCreditRegistryEvidenceTool" },
-            { "$ref": "#/$defs/readCreditStateTool" }
+            { "$ref": "#/$defs/readCreditStateTool" },
+            { "$ref": "#/$defs/filePilotCaseTool" },
+            { "$ref": "#/$defs/listPilotCasesTool" }
           ],
           "items": false,
-          "minItems": 13,
-          "maxItems": 13
+          "minItems": 15,
+          "maxItems": 15
         }
       }
     },
@@ -295,6 +297,24 @@
       "properties": {
         "name": { "const": "ipo_one_read_credit_state" },
         "operationId": { "const": "pilotReadOwnCreditState" }
+      }
+    },
+    "filePilotCaseTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_file_pilot_case" },
+        "operationId": { "const": "pilotFileCase" }
+      }
+    },
+    "listPilotCasesTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operationId"],
+      "properties": {
+        "name": { "const": "ipo_one_list_pilot_cases" },
+        "operationId": { "const": "pilotListOwnCases" }
       }
     },
     "acceptCreditOfferTool": {

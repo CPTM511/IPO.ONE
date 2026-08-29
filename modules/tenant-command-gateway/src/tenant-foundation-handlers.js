@@ -17,6 +17,8 @@ import { createOwnedObligationQueryHandlers } from "./owned-obligation-query-han
 import { createOfficialReportHandlers } from "./official-report-handlers.js";
 import { createPilotHealthQueryHandlers } from "./pilot-health-query-handlers.js";
 import { createPilotFeedbackHandlers } from "./pilot-feedback-handlers.js";
+import { createPilotCaseHandlers } from "./pilot-case-handlers.js";
+import { createClosedPilotReadinessHandlers } from "./closed-pilot-readiness-handlers.js";
 import { createServicingQueueQueryHandlers } from "./servicing-queue-query-handlers.js";
 import { createSecuredPoolWorkspaceHandlers } from "./secured-pool-workspace-handlers.js";
 import { createProviderHandlers } from "./provider-handlers.js";
@@ -60,6 +62,8 @@ export function createTenantFoundationHandlers(options) {
     ...createOfficialReportHandlers(),
     ...createPilotHealthQueryHandlers(),
     ...createPilotFeedbackHandlers(),
+    ...createPilotCaseHandlers(),
+    ...createClosedPilotReadinessHandlers(),
     ...createServicingQueueQueryHandlers(),
     ...createSecuredPoolWorkspaceHandlers({
       deploymentProfile: options?.securedPoolDeploymentProfile,

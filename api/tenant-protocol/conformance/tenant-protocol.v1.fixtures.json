@@ -392,6 +392,17 @@
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
+      "operationId": "pilotReadClosedPilotReadiness",
+      "payload": {},
+      "resource": {
+        "resourceType": "risk_portfolio",
+        "resourceId": "risk_portfolio_fixture"
+      },
+      "requestId": "request-fixture-read-closed-pilot-readiness",
+      "correlationId": "correlation-fixture-read-closed-pilot-readiness",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
       "operationId": "pilotSubmitPilotFeedback",
       "payload": {
         "surface": "human_application",
@@ -408,6 +419,45 @@
       "idempotencyKey": "pilot-feedback-fixture-0001",
       "requestId": "request-fixture-submit-pilot-feedback",
       "correlationId": "correlation-fixture-submit-pilot-feedback",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotFileCase",
+      "payload": {
+        "targetType": "decision",
+        "targetId": "risk_decision_fixture",
+        "reasonCode": "context_missing",
+        "schemaVersion": "pilot_case_file.v1"
+      },
+      "resource": { "resourceType": "subject", "resourceId": "subject_human_fixture" },
+      "idempotencyKey": "pilot-case-file-fixture-0001",
+      "requestId": "request-fixture-file-pilot-case",
+      "correlationId": "correlation-fixture-file-pilot-case",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotListOwnCases",
+      "payload": {},
+      "resource": { "resourceType": "subject", "resourceId": "subject_human_fixture" },
+      "requestId": "request-fixture-list-own-pilot-cases",
+      "correlationId": "correlation-fixture-list-own-pilot-cases",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotReadCaseQueue",
+      "payload": {},
+      "resource": { "resourceType": "risk_portfolio", "resourceId": "risk_portfolio_fixture" },
+      "requestId": "request-fixture-read-pilot-case-queue",
+      "correlationId": "correlation-fixture-read-pilot-case-queue",
+      "schemaVersion": "tenant_protocol_request.v1"
+    },
+    {
+      "operationId": "pilotTransitionCase",
+      "payload": { "transition": "correct", "correctionCode": "status_context_added", "schemaVersion": "pilot_case_transition.v1" },
+      "resource": { "resourceType": "pilot_case", "resourceId": "pilot_case_fixture" },
+      "idempotencyKey": "pilot-case-transition-fixture-0001",
+      "requestId": "request-fixture-transition-pilot-case",
+      "correlationId": "correlation-fixture-transition-pilot-case",
       "schemaVersion": "tenant_protocol_request.v1"
     },
     {
@@ -2906,6 +2956,134 @@
       "schemaVersion": "tenant_protocol_result.v1"
     },
     {
+      "operationId": "pilotReadClosedPilotReadiness",
+      "replayed": false,
+      "response": {
+        "asOf": "2026-08-29T04:00:00.000Z",
+        "profile": "closed_non_funds_pilot",
+        "requirementId": "REQ-PILOT-002",
+        "overallStatus": "blocked_pending_approvals",
+        "releaseEnabled": false,
+        "activationAuthorized": false,
+        "productFeedback": {
+          "source": "pilot_feedback_record.v1",
+          "categoricalOnly": true,
+          "thirdPartyAnalytics": false,
+          "underwritingEffect": false
+        },
+        "controls": [
+          {
+            "controlId": "retention",
+            "implementationState": "specified_unverified",
+            "approvalStatus": "pending",
+            "ownerRole": "Legal/Privacy",
+            "namedOwnerConfigured": false,
+            "evidenceRefs": [
+              "deploy/launch-policy.v1.json",
+              "deploy/approvals/closed-non-funds-pilot.pending.json",
+              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+            ],
+            "blockerCode": "jurisdiction_retention_owner_and_approval_pending"
+          },
+          {
+            "controlId": "ordinary_support",
+            "implementationState": "specified_unverified",
+            "approvalStatus": "pending",
+            "ownerRole": "Operations/Product",
+            "namedOwnerConfigured": false,
+            "evidenceRefs": [
+              "deploy/launch-policy.v1.json",
+              "deploy/approvals/closed-non-funds-pilot.pending.json",
+              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+            ],
+            "blockerCode": "support_slo_named_owner_and_approval_pending"
+          },
+          {
+            "controlId": "incident",
+            "implementationState": "implemented_unverified",
+            "approvalStatus": "pending",
+            "ownerRole": "Operations/Security",
+            "namedOwnerConfigured": false,
+            "evidenceRefs": [
+              "deploy/closed-pilot/operations.v1.json",
+              "modules/operations-control/policy/private-pilot-alert-policy.v1.json",
+              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+            ],
+            "blockerCode": "incident_owner_delivery_and_drill_pending"
+          },
+          {
+            "controlId": "restore",
+            "implementationState": "specified_unverified",
+            "approvalStatus": "pending",
+            "ownerRole": "Backend/DevOps",
+            "namedOwnerConfigured": false,
+            "evidenceRefs": [
+              "deploy/closed-pilot/operations.v1.json",
+              "deploy/approvals/closed-non-funds-pilot.pending.json"
+            ],
+            "blockerCode": "provider_objectives_owner_and_restore_drill_pending"
+          },
+          {
+            "controlId": "rollback",
+            "implementationState": "specified_unverified",
+            "approvalStatus": "pending",
+            "ownerRole": "Operations/Release",
+            "namedOwnerConfigured": false,
+            "evidenceRefs": [
+              "deploy/closed-pilot/operations.v1.json",
+              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+            ],
+            "blockerCode": "rollback_owner_activation_and_drill_pending"
+          },
+          {
+            "controlId": "on_call",
+            "implementationState": "unavailable",
+            "approvalStatus": "pending",
+            "ownerRole": "Operations/Product",
+            "namedOwnerConfigured": false,
+            "evidenceRefs": [
+              "deploy/approvals/closed-non-funds-pilot.pending.json",
+              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+            ],
+            "blockerCode": "named_rota_owner_and_approval_pending"
+          },
+          {
+            "controlId": "notification",
+            "implementationState": "unavailable",
+            "approvalStatus": "pending",
+            "ownerRole": "Operations/Security",
+            "namedOwnerConfigured": false,
+            "evidenceRefs": [
+              "deploy/closed-pilot/operations.v1.json",
+              "modules/operations-control/policy/private-pilot-alert-policy.v1.json",
+              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+            ],
+            "blockerCode": "provider_named_recipients_owner_and_delivery_drill_pending"
+          }
+        ],
+        "summary": {
+          "requiredControlCount": 7,
+          "approvedControlCount": 0,
+          "pendingControlCount": 7,
+          "unavailableControlCount": 2,
+          "activationReady": false
+        },
+        "sourceBaseline": {
+          "operationsReleaseCandidateId": "ipo-one-local-rc-20260730-003",
+          "commitSha": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
+          "currentCandidateVerified": false
+        },
+        "safety": {
+          "piiIncluded": false,
+          "contactDetailsIncluded": false,
+          "productionAuthority": false,
+          "releasePolicyMutated": false
+        },
+        "schemaVersion": "tenant_closed_pilot_readiness_view.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
       "operationId": "pilotSubmitPilotFeedback",
       "replayed": false,
       "response": {
@@ -2924,6 +3102,77 @@
           "productionAuthority": false
         },
         "schemaVersion": "tenant_pilot_feedback_recorded.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotFileCase",
+      "replayed": false,
+      "response": {
+        "pilotCase": {
+          "pilotCaseId": "pilot_case_fixture",
+          "entryMode": "human",
+          "targetType": "decision",
+          "targetId": "risk_decision_fixture",
+          "reasonCode": "context_missing",
+          "status": "open",
+          "sequence": 1,
+          "filedAt": "2026-07-14T01:00:00.000Z",
+          "updatedAt": "2026-07-14T01:00:00.000Z",
+          "assigned": false,
+          "resolution": null,
+          "correctionCode": null,
+          "safety": { "originalRecordImmutable": true, "additiveCorrectionOnly": true, "freeTextAccepted": false, "piiIncluded": false, "sandboxOnly": true, "productionAuthority": false, "economicMutationAuthorized": false },
+          "schemaVersion": "tenant_pilot_case_view.v1"
+        },
+        "schemaVersion": "tenant_pilot_case_filed.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotListOwnCases",
+      "replayed": false,
+      "response": {
+        "items": [],
+        "hasMore": false,
+        "schemaVersion": "tenant_pilot_case_list.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotReadCaseQueue",
+      "replayed": false,
+      "response": {
+        "asOf": "2026-07-14T01:00:00.000Z",
+        "items": [],
+        "hasMore": false,
+        "safety": { "freeTextIncluded": false, "piiIncluded": false, "sandboxOnly": true, "productionAuthority": false },
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
+    {
+      "operationId": "pilotTransitionCase",
+      "replayed": false,
+      "response": {
+        "pilotCase": {
+          "pilotCaseId": "pilot_case_fixture",
+          "subjectId": "subject_human_fixture",
+          "entryMode": "human",
+          "targetType": "decision",
+          "targetId": "risk_decision_fixture",
+          "reasonCode": "context_missing",
+          "status": "resolved_corrected",
+          "sequence": 3,
+          "filedAt": "2026-07-14T01:00:00.000Z",
+          "updatedAt": "2026-07-14T03:00:00.000Z",
+          "assigned": true,
+          "resolution": "correct",
+          "correctionCode": "status_context_added",
+          "safety": { "originalRecordImmutable": true, "additiveCorrectionOnly": true, "freeTextAccepted": false, "piiIncluded": false, "sandboxOnly": true, "productionAuthority": false, "economicMutationAuthorized": false },
+          "schemaVersion": "tenant_pilot_case_view.v1"
+        },
+        "schemaVersion": "tenant_pilot_case_transitioned.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },

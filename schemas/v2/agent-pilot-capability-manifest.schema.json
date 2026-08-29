@@ -50,11 +50,11 @@
       "properties": {
         "registryVersion": { "const": "agent_mcp_registry.v2" },
         "transportProfile": { "const": "mcp_stdio_local" },
-        "toolCount": { "const": 13 },
+        "toolCount": { "const": 15 },
         "tools": {
           "type": "array",
-          "minItems": 13,
-          "maxItems": 13,
+          "minItems": 15,
+          "maxItems": 15,
           "prefixItems": [
             { "$ref": "#/$defs/readSelfTool" },
             { "$ref": "#/$defs/requestCreditTool" },
@@ -69,7 +69,9 @@
             { "$ref": "#/$defs/postSandboxRepaymentTool" }
             ,
             { "$ref": "#/$defs/readCreditRegistryEvidenceTool" },
-            { "$ref": "#/$defs/readCreditStateTool" }
+            { "$ref": "#/$defs/readCreditStateTool" },
+            { "$ref": "#/$defs/filePilotCaseTool" },
+            { "$ref": "#/$defs/listPilotCasesTool" }
           ],
           "items": false
         },
@@ -183,6 +185,18 @@
             "operationId": { "const": "pilotReadOwnCreditState" }
           }
         }
+      ]
+    },
+    "filePilotCaseTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_file_pilot_case" }, "operationId": { "const": "pilotFileCase" } } }
+      ]
+    },
+    "listPilotCasesTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        { "type": "object", "properties": { "name": { "const": "ipo_one_list_pilot_cases" }, "operationId": { "const": "pilotListOwnCases" } } }
       ]
     },
     "acceptCreditOfferTool": {

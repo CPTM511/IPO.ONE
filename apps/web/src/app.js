@@ -120,7 +120,9 @@ const riskRequestOwners = {
   portfolio: null,
   health: null,
   feedback: null,
+  readiness: null,
   insights: null,
+  cases: null,
   queue: null
 };
 let requestLog = [];
@@ -223,6 +225,15 @@ const pilotFeedback = {
   busy: false,
   submitted: null,
   helper: "Create or restore your Human Subject to submit one immutable categorical receipt.",
+  error: false
+};
+const pilotCases = {
+  fileAvailable: false,
+  listAvailable: false,
+  busy: false,
+  queried: false,
+  items: [],
+  helper: "Create or restore your Human Subject, then select one current record.",
   error: false
 };
 const agentAuthorityPilot = {
@@ -347,6 +358,8 @@ const riskOperations = {
   readCatalogAvailable: false,
   healthCatalogAvailable: false,
   feedbackCatalogAvailable: false,
+  caseReadCatalogAvailable: false,
+  caseTransitionCatalogAvailable: false,
   queueCatalogAvailable: false,
   freezeCatalogAvailable: false,
   catalogBusy: false,
@@ -369,6 +382,17 @@ const riskOperations = {
   feedbackQueried: false,
   feedbackHelper: "Load supporting insights after the Tenant portfolio is restored.",
   feedbackError: false,
+  readinessCatalogAvailable: false,
+  readinessBusy: false,
+  readinessQueried: false,
+  readiness: null,
+  readinessHelper: "Load the fail-closed readiness view after the Tenant portfolio is restored.",
+  readinessError: false,
+  caseBusy: false,
+  caseQueried: false,
+  caseItems: [],
+  caseHelper: "Load the authorized case queue after the Tenant portfolio is restored.",
+  caseError: false,
   helper: "Restoring the authorized Tenant portfolio from authenticated server truth.",
   error: false,
   freezeResult: null,
@@ -422,6 +446,7 @@ const AUTHENTICATED_BROWSER_STATE_BASELINES = new Map([
   [capitalPartnerPilot, structuredClone(capitalPartnerPilot)],
   [tradingCapitalPilot, structuredClone(tradingCapitalPilot)],
   [pilotFeedback, structuredClone(pilotFeedback)],
+  [pilotCases, structuredClone(pilotCases)],
   [agentAuthorityPilot, structuredClone(agentAuthorityPilot)],
   [agentOnlinePilot, structuredClone(agentOnlinePilot)],
   [auditorEvidence, structuredClone(auditorEvidence)],
@@ -450,6 +475,9 @@ function clearRiskCatalogAvailability() {
   riskOperations.readCatalogAvailable = false;
   riskOperations.healthCatalogAvailable = false;
   riskOperations.feedbackCatalogAvailable = false;
+  riskOperations.readinessCatalogAvailable = false;
+  riskOperations.caseReadCatalogAvailable = false;
+  riskOperations.caseTransitionCatalogAvailable = false;
   riskOperations.queueCatalogAvailable = false;
   riskOperations.freezeCatalogAvailable = false;
   securedPoolPilot.readAvailable = false;
@@ -6453,6 +6481,194 @@ async function submitPilotFeedback() {
   }
 }
 
+function availablePilotCaseTargets() {
+  return [
+    tenantPilot.decision?.riskDecisionId && {
+      type: "decision", id: tenantPilot.decision.riskDecisionId, label: "Latest credit decision"
+    },
+    tenantPilot.offer?.creditOfferId && {
+      type: "offer_disclosure", id: tenantPilot.offer.creditOfferId, label: "Current Offer disclosure"
+    },
+    tenantPilot.repayment?.repaymentId && {
+      type: "payment", id: tenantPilot.repayment.repaymentId, label: "Latest sandbox payment"
+    },
+    tenantPilot.servicingAction?.servicingActionId && {
+      type: "servicing_action", id: tenantPilot.servicingAction.servicingActionId, label: "Latest servicing action"
+    },
+    ownedEvidence.items.at(-1)?.evidenceId && {
+      type: "evidence_item", id: ownedEvidence.items.at(-1).evidenceId, label: "Latest loaded Evidence item"
+    },
+    officialReportPilot.report?.officialReportId && {
+      type: "report", id: officialReportPilot.report.officialReportId, label: "Current official report"
+    }
+  ].filter(Boolean);
+}
+
+function pilotCaseRow(item, { operator = false } = {}) {
+  const row = document.createElement("div");
+  row.className = "risk-summary-item";
+  const copy = document.createElement("div");
+  const title = document.createElement("strong");
+  const detail = document.createElement("small");
+  title.textContent = `${titleize(item.targetType)} · ${titleize(item.reasonCode)}`;
+  detail.textContent = `${titleize(item.status)} · updated ${privateDate(item.updatedAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${item.correctionCode ? ` · ${titleize(item.correctionCode)}` : ""}`;
+  copy.append(title, detail);
+  row.append(copy);
+  if (operator && item.status === "open") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.dataset.pilotCaseTransition = "assign";
+    button.dataset.pilotCaseId = item.pilotCaseId;
+    button.textContent = "Assign to me";
+    row.append(button);
+  } else if (operator && item.status === "assigned") {
+    const controls = document.createElement("div");
+    controls.className = "button-row compact";
+    const uphold = document.createElement("button");
+    uphold.type = "button";
+    uphold.className = "secondary";
+    uphold.dataset.pilotCaseTransition = "uphold";
+    uphold.dataset.pilotCaseId = item.pilotCaseId;
+    uphold.textContent = "Uphold original";
+    const correction = document.createElement("select");
+    correction.setAttribute("aria-label", "Additive correction type");
+    correction.dataset.pilotCaseCorrection = item.pilotCaseId;
+    for (const [value, label] of [
+      ["record_version_added", "Add record version"],
+      ["attribution_corrected", "Correct attribution"],
+      ["status_context_added", "Add status context"],
+      ["payment_reference_linked", "Link payment reference"],
+      ["evidence_reference_linked", "Link Evidence reference"],
+      ["report_metadata_versioned", "Version report metadata"]
+    ]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      correction.append(option);
+    }
+    const correct = document.createElement("button");
+    correct.type = "button";
+    correct.className = "primary";
+    correct.dataset.pilotCaseTransition = "correct";
+    correct.dataset.pilotCaseId = item.pilotCaseId;
+    correct.textContent = "Add correction event";
+    controls.append(uphold, correction, correct);
+    row.append(controls);
+  }
+  return row;
+}
+
+function renderPilotCases() {
+  if (!el("pilotCaseForm")) return;
+  const subjectId = tenantInputValue("humanSubjectId");
+  const targets = availablePilotCaseTargets();
+  const select = el("pilotCaseTarget");
+  const previous = select.value;
+  select.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = targets.length ? "Select a current record" : "Complete or load a record first";
+  select.append(placeholder);
+  targets.forEach((target, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = target.label;
+    select.append(option);
+  });
+  if ([...select.options].some((option) => option.value === previous)) select.value = previous;
+  const ready = tenantPilot.connected && pilotCases.fileAvailable &&
+    exactResourceId(subjectId) && targets.length > 0 && select.value !== "";
+  const status = el("pilotCaseStatus");
+  status.classList.remove("neutral", "warning");
+  if (!pilotCases.fileAvailable || !pilotCases.listAvailable) {
+    status.textContent = "Operation unavailable";
+    status.classList.add("warning");
+  } else if (pilotCases.error) {
+    status.textContent = "Action required";
+    status.classList.add("warning");
+  } else if (pilotCases.busy) {
+    status.textContent = "Working";
+    status.classList.add("neutral");
+  } else if (pilotCases.queried) {
+    status.textContent = pilotCases.items.length ? `${pilotCases.items.length} case${pilotCases.items.length === 1 ? "" : "s"}` : "No cases";
+  } else {
+    status.textContent = "Not loaded";
+    status.classList.add("neutral");
+  }
+  select.disabled = pilotCases.busy;
+  el("pilotCaseReason").disabled = pilotCases.busy;
+  el("filePilotCaseBtn").disabled = pilotCases.busy || !ready;
+  el("refreshPilotCasesBtn").disabled = pilotCases.busy || !tenantPilot.connected || !pilotCases.listAvailable || !exactResourceId(subjectId);
+  el("pilotCaseHelper").textContent = pilotCases.helper;
+  el("pilotCaseHelper").classList.toggle("error", pilotCases.error);
+  el("pilotCaseRows").replaceChildren(...(pilotCases.items.length
+    ? pilotCases.items.map((item) => pilotCaseRow(item))
+    : [emptyRow(pilotCases.queried ? "No cases are recorded for this Subject." : "Refresh to load your server-derived cases.")]));
+}
+
+async function loadOwnPilotCases({ quiet = false } = {}) {
+  if (pilotCases.busy) return;
+  const subjectId = tenantInputValue("humanSubjectId");
+  if (!tenantPilot.connected || !pilotCases.listAvailable || !exactResourceId(subjectId)) return;
+  pilotCases.busy = true;
+  pilotCases.error = false;
+  pilotCases.helper = "Loading your server-derived case history…";
+  renderPilotCases();
+  try {
+    const result = await tenantApi("pilotListOwnCases", {
+      resource: { resourceType: "subject", resourceId: subjectId },
+      payload: {},
+      idempotent: false
+    });
+    pilotCases.items = result.response.items;
+    pilotCases.queried = true;
+    pilotCases.helper = "Cases loaded from authenticated server truth. Original records remain unchanged.";
+    if (!quiet) toast("Your pilot cases are current");
+  } catch (error) {
+    pilotCases.error = true;
+    pilotCases.helper = `Cases could not be loaded. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    pilotCases.busy = false;
+    renderPilotCases();
+  }
+}
+
+async function filePilotCase() {
+  if (pilotCases.busy) return;
+  const subjectId = tenantInputValue("humanSubjectId");
+  const targets = availablePilotCaseTargets();
+  const target = targets[Number(el("pilotCaseTarget").value)];
+  if (!target || !exactResourceId(subjectId)) return;
+  pilotCases.busy = true;
+  pilotCases.error = false;
+  pilotCases.helper = "Filing a closed-category case without changing the selected record…";
+  renderPilotCases();
+  let filed = false;
+  try {
+    await tenantApi("pilotFileCase", {
+      resource: { resourceType: "subject", resourceId: subjectId },
+      payload: {
+        targetType: target.type,
+        targetId: target.id,
+        reasonCode: el("pilotCaseReason").value,
+        schemaVersion: "pilot_case_file.v1"
+      },
+      idempotent: true
+    });
+    filed = true;
+    pilotCases.helper = "Case filed. The original record is immutable; remediation can only append a correction Event.";
+    toast("Case filed for review");
+  } catch (error) {
+    pilotCases.error = true;
+    pilotCases.helper = `Case could not be filed. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    pilotCases.busy = false;
+    if (filed) await loadOwnPilotCases({ quiet: true });
+    renderPilotCases();
+  }
+}
+
 function creditPassportDisclosureRow(disclosure) {
   const row = document.createElement("div");
   const label = document.createElement("strong");
@@ -8291,6 +8507,7 @@ function renderTenantPilot() {
   renderPrivateProductSurfaces();
   renderRuntimeGate();
   renderPilotFeedback();
+  renderPilotCases();
   renderCapitalNetwork();
 }
 
@@ -9355,11 +9572,16 @@ async function runTenantPilotProbe(probeOwner) {
       available.has("pilotRevokeOfficialReport");
     tenantPilot.obligationReadAvailable = available.has("pilotReadOwnObligation");
     pilotFeedback.catalogAvailable = available.has("pilotSubmitPilotFeedback");
+    pilotCases.fileAvailable = available.has("pilotFileCase");
+    pilotCases.listAvailable = available.has("pilotListOwnCases");
     riskOperations.readCatalogAvailable = available.has("pilotReadTenantRisk");
     riskOperations.portfolioReferenceCatalogAvailable =
       available.has("pilotReadTenantRiskPortfolioReference");
     riskOperations.healthCatalogAvailable = available.has("pilotReadPilotHealth");
     riskOperations.feedbackCatalogAvailable = available.has("pilotReadPilotFeedbackSummary");
+    riskOperations.readinessCatalogAvailable = available.has("pilotReadClosedPilotReadiness");
+    riskOperations.caseReadCatalogAvailable = available.has("pilotReadCaseQueue");
+    riskOperations.caseTransitionCatalogAvailable = available.has("pilotTransitionCase");
     riskOperations.queueCatalogAvailable = available.has("pilotReadServicingQueue");
     riskOperations.queueReferenceCatalogAvailable =
       available.has("pilotReadServicingQueueReference");
@@ -9482,6 +9704,8 @@ async function runTenantPilotProbe(probeOwner) {
     creditRegistryEvidence.catalogAvailable = false;
     tenantPilot.obligationReadAvailable = false;
     pilotFeedback.catalogAvailable = false;
+    pilotCases.fileAvailable = false;
+    pilotCases.listAvailable = false;
     clearRiskCatalogAvailability();
     officialReportPilot.createAvailable = false;
     officialReportPilot.readAvailable = false;
@@ -11418,6 +11642,22 @@ function riskSummaryItem(label, value) {
   return wrapper;
 }
 
+function closedPilotReadinessRow(control) {
+  const row = document.createElement("div");
+  row.className = "risk-summary-item";
+  const copy = document.createElement("div");
+  const title = document.createElement("strong");
+  const detail = document.createElement("small");
+  title.textContent = titleize(control.controlId);
+  detail.textContent = `${titleize(control.implementationState)} · ${control.ownerRole} · named owner not configured`;
+  copy.append(title, detail);
+  const status = document.createElement("span");
+  status.className = "state-pill warning";
+  status.textContent = "Pending";
+  row.append(copy, status);
+  return row;
+}
+
 function utilizationLabel(utilizedMinor, limitMinor) {
   const utilized = asBigInt(utilizedMinor);
   const limit = asBigInt(limitMinor);
@@ -11670,6 +11910,7 @@ function renderRiskOperations() {
     riskOperations.busy ||
     riskOperations.healthBusy ||
     riskOperations.feedbackBusy ||
+    riskOperations.caseBusy ||
     riskOperations.queueBusy;
   refreshButton.disabled = riskReadBusy;
   refreshButton.toggleAttribute("aria-busy", riskReadBusy);
@@ -11785,13 +12026,84 @@ function renderRiskOperations() {
   el("pilotFeedbackSummaryTopBlocker").textContent = pilotFeedbackTopBlocker(feedback);
   const insightButton = el("loadRiskInsightsBtn");
   insightButton.hidden = !portfolio || !(
-    riskOperations.healthCatalogAvailable || riskOperations.feedbackCatalogAvailable
+    riskOperations.healthCatalogAvailable ||
+    riskOperations.feedbackCatalogAvailable ||
+    riskOperations.readinessCatalogAvailable
   );
-  insightButton.disabled = riskOperations.healthBusy || riskOperations.feedbackBusy;
+  insightButton.disabled = riskOperations.healthBusy ||
+    riskOperations.feedbackBusy || riskOperations.readinessBusy;
   insightButton.toggleAttribute(
     "aria-busy",
-    riskOperations.healthBusy || riskOperations.feedbackBusy
+    riskOperations.healthBusy || riskOperations.feedbackBusy || riskOperations.readinessBusy
   );
+
+  const caseStatus = el("pilotCaseQueueStatus");
+  caseStatus.classList.remove("neutral", "warning");
+  if (!riskOperations.caseReadCatalogAvailable) {
+    caseStatus.textContent = "Operation unavailable";
+    caseStatus.classList.add("warning");
+  } else if (riskOperations.caseError) {
+    caseStatus.textContent = "Access required";
+    caseStatus.classList.add("warning");
+  } else if (riskOperations.caseBusy) {
+    caseStatus.textContent = "Working";
+    caseStatus.classList.add("neutral");
+  } else if (riskOperations.caseQueried) {
+    caseStatus.textContent = riskOperations.caseItems.length ? "Review ready" : "Queue clear";
+  } else {
+    caseStatus.textContent = "Not loaded";
+    caseStatus.classList.add("neutral");
+  }
+  el("pilotCaseQueueHelper").textContent = riskOperations.caseHelper;
+  el("pilotCaseQueueHelper").classList.toggle("error", riskOperations.caseError);
+  el("pilotCaseQueueRows").replaceChildren(...(riskOperations.caseItems.length
+    ? riskOperations.caseItems.map((item) => pilotCaseRow(item, { operator: true }))
+    : [emptyRow(riskOperations.caseQueried
+        ? "No open or assigned pilot cases require review."
+        : "Load the authorized, privacy-safe case queue.")]));
+  const caseLoadButton = el("loadPilotCaseQueueBtn");
+  caseLoadButton.disabled = riskOperations.caseBusy ||
+    !riskOperations.caseReadCatalogAvailable ||
+    riskOperations.portfolioSelection.status !== "selected";
+  caseLoadButton.toggleAttribute("aria-busy", riskOperations.caseBusy);
+
+  const readiness = riskOperations.readiness;
+  const readinessStatus = el("closedPilotReadinessStatus");
+  readinessStatus.classList.remove("neutral", "warning");
+  if (!riskOperations.readinessCatalogAvailable) {
+    readinessStatus.textContent = "Operation unavailable";
+    readinessStatus.classList.add("warning");
+  } else if (riskOperations.readinessError) {
+    readinessStatus.textContent = "Access required";
+    readinessStatus.classList.add("warning");
+  } else if (riskOperations.readinessBusy) {
+    readinessStatus.textContent = "Checking";
+    readinessStatus.classList.add("neutral");
+  } else if (riskOperations.readinessQueried && readiness) {
+    readinessStatus.textContent = "Blocked · approvals pending";
+    readinessStatus.classList.add("warning");
+  } else {
+    readinessStatus.textContent = "Not loaded · remains blocked";
+    readinessStatus.classList.add("warning");
+  }
+  el("closedPilotReadinessHelper").textContent = riskOperations.readinessHelper;
+  el("closedPilotReadinessHelper").classList.toggle("error", riskOperations.readinessError);
+  el("closedPilotRequiredControls").textContent = String(readiness?.summary.requiredControlCount ?? 7);
+  el("closedPilotApprovedControls").textContent = String(readiness?.summary.approvedControlCount ?? 0);
+  el("closedPilotPendingControls").textContent = String(readiness?.summary.pendingControlCount ?? 7);
+  el("closedPilotUnavailableControls").textContent = String(readiness?.summary.unavailableControlCount ?? 2);
+  el("closedPilotReleasePolicy").textContent = readiness?.releaseEnabled ? "Enabled" : "Disabled";
+  el("closedPilotCandidateStatus").textContent = readiness?.sourceBaseline.currentCandidateVerified
+    ? "Verified"
+    : "Unverified";
+  el("closedPilotReadinessRows").replaceChildren(...(readiness?.controls.length
+    ? readiness.controls.map(closedPilotReadinessRow)
+    : [emptyRow("Load the versioned readiness view. Missing facts remain pending or unavailable.")]));
+  const readinessButton = el("loadClosedPilotReadinessBtn");
+  readinessButton.disabled = riskOperations.readinessBusy ||
+    !riskOperations.readinessCatalogAvailable ||
+    riskOperations.portfolioSelection.status !== "selected";
+  readinessButton.toggleAttribute("aria-busy", riskOperations.readinessBusy);
 
   const queueReady = riskOperations.queueCatalogAvailable;
   const queueStatus = el("servicingQueueStatus");
@@ -11969,6 +12281,126 @@ async function loadPilotFeedbackSummary({ quiet = false } = {}) {
   }
 }
 
+async function loadClosedPilotReadiness({ quiet = false } = {}) {
+  if (riskOperations.readinessBusy || !riskOperations.readinessCatalogAvailable) return;
+  const portfolioId = riskOperations.portfolioSelection.resourceId;
+  if (!exactResourceId(portfolioId)) return;
+  const requestOwner = beginRiskRequest("readiness");
+  riskOperations.readinessBusy = true;
+  riskOperations.readinessError = false;
+  riskOperations.readinessHelper = "Verifying recent MFA and reading checked-in fail-closed operating contracts…";
+  renderRiskOperations();
+  try {
+    const result = await tenantApi("pilotReadClosedPilotReadiness", {
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      payload: {},
+      idempotent: false
+    });
+    if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
+    riskOperations.readiness = result.response;
+    riskOperations.readinessQueried = true;
+    riskOperations.readinessHelper =
+      "Verified fail-closed view: release disabled, zero controls approved, named owners absent, and the historical operations baseline is not the current candidate.";
+    if (!quiet) {
+      toast("Closed-pilot readiness loaded");
+      announce(riskOperations.readinessHelper);
+    }
+  } catch (error) {
+    if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
+    const nonEnumerating = error.status === 401 || error.status === 403 || error.status === 404 ||
+      new Set(["authorization_denied", "tenant_resource_unavailable", "resource_not_found"]).has(error.code);
+    riskOperations.readiness = null;
+    riskOperations.readinessQueried = false;
+    riskOperations.readinessError = true;
+    riskOperations.readinessHelper = nonEnumerating
+      ? "Risk, Operations, or Auditor access with recent MFA is required. The pilot remains blocked."
+      : `Closed-pilot readiness query failed closed. Request ID: ${error.requestId ?? "unavailable"}`;
+    if (!quiet) {
+      toast(riskOperations.readinessHelper, "error");
+      announce(riskOperations.readinessHelper);
+    }
+  } finally {
+    if (finishRiskRequest(requestOwner)) {
+      riskOperations.readinessBusy = false;
+      renderRiskOperations();
+    }
+  }
+}
+
+async function loadPilotCaseQueue({ quiet = false } = {}) {
+  if (riskOperations.caseBusy || !riskOperations.caseReadCatalogAvailable) return;
+  const portfolioId = riskOperations.portfolioSelection.resourceId;
+  if (!exactResourceId(portfolioId)) return;
+  const requestOwner = beginRiskRequest("cases");
+  riskOperations.caseBusy = true;
+  riskOperations.caseError = false;
+  riskOperations.caseHelper = "Verifying recent MFA and loading privacy-safe cases…";
+  renderRiskOperations();
+  try {
+    const result = await tenantApi("pilotReadCaseQueue", {
+      resource: { resourceType: "risk_portfolio", resourceId: portfolioId },
+      payload: {},
+      idempotent: false
+    });
+    if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
+    riskOperations.caseItems = result.response.items;
+    riskOperations.caseQueried = true;
+    riskOperations.caseHelper = "Queue loaded from durable case projections. Free text and PII are excluded.";
+    if (!quiet) toast("Pilot case queue loaded");
+  } catch (error) {
+    if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
+    riskOperations.caseItems = [];
+    riskOperations.caseQueried = false;
+    riskOperations.caseError = true;
+    riskOperations.caseHelper = `Case queue could not be loaded. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    if (finishRiskRequest(requestOwner)) {
+      riskOperations.caseBusy = false;
+      renderRiskOperations();
+    }
+  }
+}
+
+async function transitionPilotCase(pilotCaseId, transition) {
+  if (riskOperations.caseBusy || !riskOperations.caseTransitionCatalogAvailable) return;
+  if (!riskOperations.caseItems.some((item) => item.pilotCaseId === pilotCaseId)) return;
+  const correction = el("pilotCaseQueueRows").querySelector(
+    `select[data-pilot-case-correction="${CSS.escape(pilotCaseId)}"]`
+  );
+  riskOperations.caseBusy = true;
+  riskOperations.caseError = false;
+  riskOperations.caseHelper = transition === "assign"
+    ? "Assigning this case to the authenticated operator…"
+    : transition === "uphold"
+      ? "Recording an explicit resolution that upholds the immutable original…"
+      : "Appending a correction Event without rewriting the original or changing economics…";
+  renderRiskOperations();
+  let transitioned = false;
+  try {
+    await tenantApi("pilotTransitionCase", {
+      resource: { resourceType: "pilot_case", resourceId: pilotCaseId },
+      payload: {
+        transition,
+        ...(transition === "correct" ? { correctionCode: correction?.value ?? "status_context_added" } : {}),
+        schemaVersion: "pilot_case_transition.v1"
+      },
+      idempotent: true
+    });
+    transitioned = true;
+    riskOperations.caseHelper = transition === "correct"
+      ? "Correction Event appended. Original record and economic state remain unchanged."
+      : `Case ${transition === "assign" ? "assigned" : "resolved with the original upheld"}.`;
+    toast(transition === "correct" ? "Additive correction recorded" : "Case updated");
+  } catch (error) {
+    riskOperations.caseError = true;
+    riskOperations.caseHelper = `Case action failed. Request ID: ${error.requestId ?? "unavailable"}`;
+  } finally {
+    riskOperations.caseBusy = false;
+    if (transitioned) await loadPilotCaseQueue({ quiet: true });
+    renderRiskOperations();
+  }
+}
+
 async function loadRiskPortfolio({
   quiet = false,
   includeSupportingReads = true
@@ -12007,6 +12439,10 @@ async function loadRiskPortfolio({
       if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
       await loadPilotFeedbackSummary({ quiet: true });
       if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
+      await loadClosedPilotReadiness({ quiet: true });
+      if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
+      await loadPilotCaseQueue({ quiet: true });
+      if (!riskRequestIsCurrent(requestOwner, "risk_portfolio", portfolioId)) return;
     }
     if (!quiet) {
       toast("Tenant risk posture loaded");
@@ -12032,6 +12468,14 @@ async function loadRiskPortfolio({
     riskOperations.feedbackQueried = false;
     riskOperations.feedbackError = false;
     riskOperations.feedbackHelper = "Load supporting insights after the Tenant portfolio is restored.";
+    riskOperations.readiness = null;
+    riskOperations.readinessQueried = false;
+    riskOperations.readinessError = false;
+    riskOperations.readinessHelper = "Load the fail-closed readiness view after the Tenant portfolio is restored.";
+    riskOperations.caseItems = [];
+    riskOperations.caseQueried = false;
+    riskOperations.caseError = false;
+    riskOperations.caseHelper = "Load the authorized case queue after the Tenant portfolio is restored.";
     riskOperations.error = true;
     riskOperations.helper = nonEnumerating
       ? "Risk or Auditor access is required, or the portfolio is unavailable."
@@ -12165,6 +12609,14 @@ function clearRiskPortfolioRecoveryState({ status = "loading" } = {}) {
   riskOperations.feedbackQueried = false;
   riskOperations.feedbackError = false;
   riskOperations.feedbackHelper = "Load supporting insights after the Tenant portfolio is restored.";
+  riskOperations.readiness = null;
+  riskOperations.readinessQueried = false;
+  riskOperations.readinessError = false;
+  riskOperations.readinessHelper = "Load the fail-closed readiness view after the Tenant portfolio is restored.";
+  riskOperations.caseItems = [];
+  riskOperations.caseQueried = false;
+  riskOperations.caseError = false;
+  riskOperations.caseHelper = "Load the authorized case queue after the Tenant portfolio is restored.";
 }
 
 function clearServicingQueueRecoveryState({ status = "loading" } = {}) {
@@ -12313,6 +12765,8 @@ async function refreshRiskWorkspace() {
     riskOperations.busy ||
     riskOperations.healthBusy ||
     riskOperations.feedbackBusy ||
+    riskOperations.readinessBusy ||
+    riskOperations.caseBusy ||
     riskOperations.queueBusy
   ) return;
   await probeTenantPilot();
@@ -12324,6 +12778,10 @@ async function loadRiskSupportingInsights() {
   await loadPilotHealth();
   if (!isCurrentRiskRequest(requestOwner)) return;
   await loadPilotFeedbackSummary();
+  if (!isCurrentRiskRequest(requestOwner)) return;
+  await loadClosedPilotReadiness();
+  if (!isCurrentRiskRequest(requestOwner)) return;
+  await loadPilotCaseQueue();
   finishRiskRequest(requestOwner);
 }
 
@@ -12952,6 +13410,12 @@ function bindActions() {
     event.preventDefault();
     submitPilotFeedback();
   });
+  el("pilotCaseForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    filePilotCase();
+  });
+  el("refreshPilotCasesBtn").addEventListener("click", () => loadOwnPilotCases());
+  el("pilotCaseTarget").addEventListener("change", renderPilotCases);
   el("officialReportCreateForm").addEventListener("submit", (event) => {
     event.preventDefault();
     createOfficialReport();
@@ -13168,6 +13632,13 @@ function bindActions() {
   });
   el("refreshRiskSecuredPoolBtn").addEventListener("click", loadRiskSecuredPool);
   el("loadRiskInsightsBtn").addEventListener("click", loadRiskSupportingInsights);
+  el("loadClosedPilotReadinessBtn").addEventListener("click", () => loadClosedPilotReadiness());
+  el("loadPilotCaseQueueBtn").addEventListener("click", () => loadPilotCaseQueue());
+  el("pilotCaseQueueRows").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-pilot-case-transition]");
+    if (!button) return;
+    transitionPilotCase(button.dataset.pilotCaseId, button.dataset.pilotCaseTransition);
+  });
   el("servicingQueueFilterForm").addEventListener("submit", (event) => {
     event.preventDefault();
     loadServicingQueue();
@@ -13229,6 +13700,10 @@ function bindActions() {
       tenantPilot.receipt = null;
       tenantPilot.offerReview = null;
       resetHumanObligationWorkflow();
+      pilotCases.queried = false;
+      pilotCases.items = [];
+      pilotCases.error = false;
+      pilotCases.helper = "Create or restore your Human Subject, then select one current record.";
       el("humanOfferAcknowledge").checked = false;
       renderTenantPilot();
     });
@@ -13387,7 +13862,7 @@ function bindActions() {
   el("agentConsoleCopyManifestBtn").addEventListener("click", async () => {
     const presentation = currentAgentConsolePresentation();
     if (!presentation?.registry.catalogParity || presentation.status === "waiting") {
-      return toast("Load an eligible exact handoff with 13/13 catalog parity first.", "error");
+      return toast("Load an eligible exact handoff with 15/15 catalog parity first.", "error");
     }
     try {
       await navigator.clipboard.writeText(
@@ -13403,7 +13878,7 @@ function bindActions() {
     const presentation = currentAgentConsolePresentation();
     const handoff = currentAgentMcpHandoffPacket();
     if (!handoff || !presentation?.registry.catalogParity) {
-      return toast("Load an eligible exact handoff with 13/13 catalog parity first.", "error");
+      return toast("Load an eligible exact handoff with 15/15 catalog parity first.", "error");
     }
     const body = JSON.stringify(handoff, null, 2);
     const url = URL.createObjectURL(new Blob([body], { type: "application/json" }));

@@ -3,7 +3,9 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
   "request-credit": Object.freeze([
     "pilotRequestCredit",
     "pilotReadCreditApplication",
-    "pilotEvaluateCreditApplication"
+    "pilotEvaluateCreditApplication",
+    "pilotFileCase",
+    "pilotListOwnCases"
   ]),
   "secured-pool": Object.freeze([
     "pilotReadOwnSecuredPool",
@@ -41,7 +43,9 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
     "pilotReadCreditRegistryEvidence",
     "pilotAcceptCreditOffer",
     "pilotExecuteSandboxObligation",
-    "pilotPostSandboxRepayment"
+    "pilotPostSandboxRepayment",
+    "pilotFileCase",
+    "pilotListOwnCases"
   ]),
   "capital-network": Object.freeze([
     "pilotReadProviderIntent",
@@ -89,6 +93,9 @@ export const V9_DESTINATION_OPERATION_MAP = Object.freeze({
     "pilotReadTenantRisk",
     "pilotReadPilotHealth",
     "pilotReadPilotFeedbackSummary",
+    "pilotReadClosedPilotReadiness",
+    "pilotReadCaseQueue",
+    "pilotTransitionCase",
     "pilotReadServicingQueue",
     "pilotFreezeSubject",
     "pilotRestructureSandboxObligation",

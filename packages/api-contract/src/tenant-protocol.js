@@ -461,6 +461,32 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotReadClosedPilotReadiness",
+    kind: "query",
+    actorTypes: ["risk_operator", "operations_operator", "auditor"],
+    resourceType: "risk_portfolio",
+    requiredCapability: "pilot.readiness.read.tenant",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_closed_pilot_readiness_view.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotReadCaseQueue",
+    kind: "query",
+    actorTypes: ["risk_operator", "operations_operator", "auditor"],
+    resourceType: "risk_portfolio",
+    requiredCapability: "pilot.case.read.tenant",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_pilot_case_queue.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
     operationId: "pilotReadServicingQueueReference",
     kind: "query",
     actorTypes: ["risk_operator", "operations_operator"],
@@ -762,6 +788,45 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     quotaClass: "mutation",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
     responseSchemaVersion: "tenant_pilot_feedback_recorded.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotFileCase",
+    kind: "command",
+    actorTypes: ["human", "agent"],
+    resourceType: "subject",
+    requiredCapability: "pilot.case.file.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_pilot_case_filed.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotListOwnCases",
+    kind: "query",
+    actorTypes: ["human", "agent"],
+    resourceType: "subject",
+    requiredCapability: "pilot.case.read.self",
+    idempotency: "prohibited",
+    quotaClass: "read",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_pilot_case_list.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "pilotTransitionCase",
+    kind: "command",
+    actorTypes: ["risk_operator", "operations_operator"],
+    resourceType: "pilot_case",
+    requiredCapability: "pilot.case.transition.tenant",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_pilot_case_transitioned.v1",
     public: false,
     fundsAuthority: false
   },

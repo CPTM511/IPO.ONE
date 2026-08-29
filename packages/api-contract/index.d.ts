@@ -37,6 +37,7 @@ export type TenantProtocolOperationId =
   | "pilotReadTenantRisk"
   | "pilotReadPilotHealth"
   | "pilotReadPilotFeedbackSummary"
+  | "pilotReadClosedPilotReadiness"
   | "pilotReadServicingQueue"
   | "pilotReadEvidence"
   | "pilotReadOwnObligation"
@@ -53,6 +54,10 @@ export type TenantProtocolOperationId =
   | "pilotReadCapitalPartnerPortfolio"
   | "pilotSubmitAgentAccountProof"
   | "pilotSubmitPilotFeedback"
+  | "pilotFileCase"
+  | "pilotListOwnCases"
+  | "pilotReadCaseQueue"
+  | "pilotTransitionCase"
   | "pilotWriteOffSandboxObligation"
   | "workerAdvanceSandboxServicing"
   | "workerProcessInbox"
@@ -1155,6 +1160,42 @@ export interface ReadPilotFeedbackSummaryRequest extends TenantProtocolRequestBa
   resource: { resourceType: "risk_portfolio"; resourceId: string };
 }
 
+export interface ReadClosedPilotReadinessRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadClosedPilotReadiness";
+  payload: Record<string, never>;
+  resource: { resourceType: "risk_portfolio"; resourceId: string };
+}
+
+export type PilotCaseTargetType = "decision" | "offer_disclosure" | "payment" | "servicing_action" | "evidence_item" | "report";
+export type PilotCaseReasonCode = "record_inaccurate" | "context_missing" | "payment_mismatch" | "servicing_error" | "evidence_mismatch" | "report_mismatch";
+export type PilotCaseCorrectionCode = "record_version_added" | "attribution_corrected" | "status_context_added" | "payment_reference_linked" | "evidence_reference_linked" | "report_metadata_versioned";
+
+export interface FilePilotCaseRequest extends TenantProtocolRequestBase {
+  operationId: "pilotFileCase";
+  payload: { targetType: PilotCaseTargetType; targetId: string; reasonCode: PilotCaseReasonCode; schemaVersion: "pilot_case_file.v1" };
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+}
+
+export interface ListOwnPilotCasesRequest extends TenantProtocolRequestBase {
+  operationId: "pilotListOwnCases";
+  payload: Record<string, never>;
+  resource: { resourceType: "subject"; resourceId: string };
+}
+
+export interface ReadPilotCaseQueueRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadCaseQueue";
+  payload: Record<string, never>;
+  resource: { resourceType: "risk_portfolio"; resourceId: string };
+}
+
+export interface TransitionPilotCaseRequest extends TenantProtocolRequestBase {
+  operationId: "pilotTransitionCase";
+  payload: { transition: "assign" | "uphold"; schemaVersion: "pilot_case_transition.v1" } | { transition: "correct"; correctionCode: PilotCaseCorrectionCode; schemaVersion: "pilot_case_transition.v1" };
+  resource: { resourceType: "pilot_case"; resourceId: string };
+  idempotencyKey: string;
+}
+
 export type ServicingQueueClassification =
   | "defaulted"
   | "dpd_61_89"
@@ -1909,6 +1950,7 @@ export type TenantProtocolRequest =
   | ReadTenantRiskRequest
   | ReadPilotHealthRequest
   | ReadPilotFeedbackSummaryRequest
+  | ReadClosedPilotReadinessRequest
   | ReadServicingQueueRequest
   | ReadObligationEvidenceRequest
   | ReadCreditRegistryEvidenceRequest
@@ -1928,6 +1970,10 @@ export type TenantProtocolRequest =
   | RevokeOfficialReportRequest
   | SubmitAgentAccountProofRequest
   | SubmitPilotFeedbackRequest
+  | FilePilotCaseRequest
+  | ListOwnPilotCasesRequest
+  | ReadPilotCaseQueueRequest
+  | TransitionPilotCaseRequest
   | ProcessProviderInboxRequest
   | CreateTradingAccountBindingChallengeRequest
   | ImportTradingHistoryRequest
@@ -2809,6 +2855,56 @@ export interface TenantPilotHealthViewResponse {
   schemaVersion: "tenant_pilot_health_view.v1";
 }
 
+export interface PilotCaseView {
+  pilotCaseId: string;
+  subjectId?: string;
+  entryMode: "human" | "agent";
+  targetType: PilotCaseTargetType;
+  targetId: string;
+  reasonCode: PilotCaseReasonCode;
+  status: "open" | "assigned" | "resolved_upheld" | "resolved_corrected";
+  sequence: 1 | 2 | 3;
+  filedAt: string;
+  updatedAt: string;
+  assigned: boolean;
+  resolution: "uphold" | "correct" | null;
+  correctionCode: PilotCaseCorrectionCode | null;
+  safety: {
+    originalRecordImmutable: true;
+    additiveCorrectionOnly: true;
+    freeTextAccepted: false;
+    piiIncluded: false;
+    sandboxOnly: true;
+    productionAuthority: false;
+    economicMutationAuthorized: false;
+  };
+  schemaVersion: "tenant_pilot_case_view.v1";
+}
+
+export interface PilotCaseFiledResponse {
+  pilotCase: PilotCaseView;
+  schemaVersion: "tenant_pilot_case_filed.v1";
+}
+
+export interface PilotCaseListResponse {
+  items: PilotCaseView[];
+  hasMore: boolean;
+  schemaVersion: "tenant_pilot_case_list.v1";
+}
+
+export interface PilotCaseQueueResponse {
+  asOf: string;
+  items: PilotCaseView[];
+  hasMore: boolean;
+  safety: { freeTextIncluded: false; piiIncluded: false; sandboxOnly: true; productionAuthority: false };
+  schemaVersion: "tenant_pilot_case_queue.v1";
+}
+
+export interface PilotCaseTransitionedResponse {
+  pilotCase: PilotCaseView;
+  schemaVersion: "tenant_pilot_case_transitioned.v1";
+}
+
 export interface PilotFeedbackRecordedResponse {
   entryMode: "human" | "agent";
   surface: PilotFeedbackSurface;
@@ -2884,6 +2980,60 @@ export interface TenantPilotFeedbackSummaryViewResponse {
     productionFundsMoved: false;
   };
   schemaVersion: "tenant_pilot_feedback_summary_view.v1";
+}
+
+export type ClosedPilotReadinessControlId =
+  | "retention"
+  | "ordinary_support"
+  | "incident"
+  | "restore"
+  | "rollback"
+  | "on_call"
+  | "notification";
+
+export interface ClosedPilotReadinessControl {
+  controlId: ClosedPilotReadinessControlId;
+  implementationState: "specified_unverified" | "implemented_unverified" | "unavailable";
+  approvalStatus: "pending";
+  ownerRole: string;
+  namedOwnerConfigured: false;
+  evidenceRefs: string[];
+  blockerCode: string;
+}
+
+export interface TenantClosedPilotReadinessViewResponse {
+  asOf: string;
+  profile: "closed_non_funds_pilot";
+  requirementId: "REQ-PILOT-002";
+  overallStatus: "blocked_pending_approvals";
+  releaseEnabled: false;
+  activationAuthorized: false;
+  productFeedback: {
+    source: "pilot_feedback_record.v1";
+    categoricalOnly: true;
+    thirdPartyAnalytics: false;
+    underwritingEffect: false;
+  };
+  controls: ClosedPilotReadinessControl[];
+  summary: {
+    requiredControlCount: 7;
+    approvedControlCount: 0;
+    pendingControlCount: 7;
+    unavailableControlCount: 2;
+    activationReady: false;
+  };
+  sourceBaseline: {
+    operationsReleaseCandidateId: string;
+    commitSha: string;
+    currentCandidateVerified: false;
+  };
+  safety: {
+    piiIncluded: false;
+    contactDetailsIncluded: false;
+    productionAuthority: false;
+    releasePolicyMutated: false;
+  };
+  schemaVersion: "tenant_closed_pilot_readiness_view.v1";
 }
 
 export interface ServicingQueueActionSummary {
@@ -4765,6 +4915,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotReadTenantRisk", TenantRiskPortfolioViewResponse>
   | TenantProtocolResultBase<"pilotReadPilotHealth", TenantPilotHealthViewResponse>
   | TenantProtocolResultBase<"pilotReadPilotFeedbackSummary", TenantPilotFeedbackSummaryViewResponse>
+  | TenantProtocolResultBase<"pilotReadClosedPilotReadiness", TenantClosedPilotReadinessViewResponse>
   | TenantProtocolResultBase<"pilotReadServicingQueue", TenantServicingQueueViewResponse>
   | TenantProtocolResultBase<"pilotReadEvidence", ObligationEvidenceViewResponse>
   | TenantProtocolResultBase<"pilotReadCreditRegistryEvidence", CreditRegistryEvidenceViewResponse>
@@ -4784,6 +4935,10 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotRevokeOfficialReport", OfficialReportRevokedResponse>
   | TenantProtocolResultBase<"pilotSubmitAgentAccountProof", AgentAccountProofVerifiedResponse>
   | TenantProtocolResultBase<"pilotSubmitPilotFeedback", PilotFeedbackRecordedResponse>
+  | TenantProtocolResultBase<"pilotFileCase", PilotCaseFiledResponse>
+  | TenantProtocolResultBase<"pilotListOwnCases", PilotCaseListResponse>
+  | TenantProtocolResultBase<"pilotReadCaseQueue", PilotCaseQueueResponse>
+  | TenantProtocolResultBase<"pilotTransitionCase", PilotCaseTransitionedResponse>
   | TenantProtocolResultBase<"workerProcessInbox", ProviderSandboxCallbackResultResponse>
   | TenantProtocolResultBase<"tradingCreateAccountBindingChallenge", TradingRealBindingChallengeResponse>
   | TenantProtocolResultBase<"tradingImportHyperliquidHistory", TradingRealCreditProfileResponse>
@@ -5563,6 +5718,16 @@ export type TenantProtocolOperation =
       "tenant_pilot_feedback_summary_view.v1"
     >
   | TenantProtocolOperationBase<
+      "pilotReadClosedPilotReadiness",
+      "query",
+      readonly ["risk_operator", "operations_operator", "auditor"],
+      "risk_portfolio",
+      "pilot.readiness.read.tenant",
+      "prohibited",
+      "read",
+      "tenant_closed_pilot_readiness_view.v1"
+    >
+  | TenantProtocolOperationBase<
       "pilotSubmitPilotFeedback",
       "command",
       readonly ["human", "agent"],
@@ -5571,6 +5736,46 @@ export type TenantProtocolOperation =
       "required",
       "mutation",
       "tenant_pilot_feedback_recorded.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotFileCase",
+      "command",
+      readonly ["human", "agent"],
+      "subject",
+      "pilot.case.file.self",
+      "required",
+      "mutation",
+      "tenant_pilot_case_filed.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotListOwnCases",
+      "query",
+      readonly ["human", "agent"],
+      "subject",
+      "pilot.case.read.self",
+      "prohibited",
+      "read",
+      "tenant_pilot_case_list.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotReadCaseQueue",
+      "query",
+      readonly ["risk_operator", "operations_operator", "auditor"],
+      "risk_portfolio",
+      "pilot.case.read.tenant",
+      "prohibited",
+      "read",
+      "tenant_pilot_case_queue.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotTransitionCase",
+      "command",
+      readonly ["risk_operator", "operations_operator"],
+      "pilot_case",
+      "pilot.case.transition.tenant",
+      "required",
+      "mutation",
+      "tenant_pilot_case_transitioned.v1"
     >
   | TenantProtocolOperationBase<
       "pilotReadServicingQueue",

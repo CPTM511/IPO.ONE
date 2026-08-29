@@ -133,7 +133,7 @@ async function provisionApplicationRole(ownerPool, password) {
        delegated_wallet_pending_exposures, wallet_prepared_executions,
        wallet_simulation_reports, wallet_transaction_preflight_receipts,
        repayment_events, aggregate_stream_heads, domain_events, credit_events,
-       pilot_feedback_records, credit_passport_artifacts, credit_outcomes,
+       pilot_feedback_records, pilot_cases, credit_passport_artifacts, credit_outcomes,
        credit_state_projections,
        tenant_command_pauses,
        official_report_artifacts,

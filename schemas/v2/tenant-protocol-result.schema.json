@@ -50,6 +50,7 @@
         "pilotReadTenantRisk",
         "pilotReadPilotHealth",
         "pilotReadPilotFeedbackSummary",
+        "pilotReadClosedPilotReadiness",
         "pilotReadServicingQueue",
         "pilotReadEvidence",
         "pilotReadOwnObligation",
@@ -65,6 +66,10 @@
         "pilotReadCapitalPartnerPortfolio",
         "pilotSubmitAgentAccountProof",
         "pilotSubmitPilotFeedback",
+        "pilotFileCase",
+        "pilotListOwnCases",
+        "pilotReadCaseQueue",
+        "pilotTransitionCase",
         "pilotWriteOffSandboxObligation",
         "workerAdvanceSandboxServicing",
         "pilotReadProviderIntent",
@@ -1283,11 +1288,45 @@
     {
       "properties": {
         "operationId": {
+          "const": "pilotReadClosedPilotReadiness"
+        },
+        "response": {
+          "$ref": "#/$defs/tenantClosedPilotReadinessView"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
           "const": "pilotSubmitPilotFeedback"
         },
         "response": {
           "$ref": "#/$defs/pilotFeedbackRecorded"
         }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotFileCase" },
+        "response": { "$ref": "#/$defs/pilotCaseFiled" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotListOwnCases" },
+        "response": { "$ref": "#/$defs/pilotCaseList" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotReadCaseQueue" },
+        "response": { "$ref": "#/$defs/pilotCaseQueue" }
+      }
+    },
+    {
+      "properties": {
+        "operationId": { "const": "pilotTransitionCase" },
+        "response": { "$ref": "#/$defs/pilotCaseTransitioned" }
       }
     },
     {
@@ -6141,6 +6180,95 @@
         }
       }
     },
+    "pilotCaseView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pilotCaseId", "entryMode", "targetType", "targetId", "reasonCode", "status",
+        "sequence", "filedAt", "updatedAt", "assigned", "resolution", "correctionCode",
+        "safety", "schemaVersion"
+      ],
+      "properties": {
+        "pilotCaseId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$" },
+        "subjectId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$" },
+        "entryMode": { "enum": ["human", "agent"] },
+        "targetType": { "enum": ["decision", "offer_disclosure", "payment", "servicing_action", "evidence_item", "report"] },
+        "targetId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$" },
+        "reasonCode": { "enum": ["record_inaccurate", "context_missing", "payment_mismatch", "servicing_error", "evidence_mismatch", "report_mismatch"] },
+        "status": { "enum": ["open", "assigned", "resolved_upheld", "resolved_corrected"] },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "filedAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "assigned": { "type": "boolean" },
+        "resolution": { "type": ["string", "null"], "enum": ["uphold", "correct", null] },
+        "correctionCode": { "type": ["string", "null"], "enum": ["record_version_added", "attribution_corrected", "status_context_added", "payment_reference_linked", "evidence_reference_linked", "report_metadata_versioned", null] },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["originalRecordImmutable", "additiveCorrectionOnly", "freeTextAccepted", "piiIncluded", "sandboxOnly", "productionAuthority", "economicMutationAuthorized"],
+          "properties": {
+            "originalRecordImmutable": { "const": true },
+            "additiveCorrectionOnly": { "const": true },
+            "freeTextAccepted": { "const": false },
+            "piiIncluded": { "const": false },
+            "sandboxOnly": { "const": true },
+            "productionAuthority": { "const": false },
+            "economicMutationAuthorized": { "const": false }
+          }
+        },
+        "schemaVersion": { "const": "tenant_pilot_case_view.v1" }
+      }
+    },
+    "pilotCaseFiled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pilotCase", "schemaVersion"],
+      "properties": {
+        "pilotCase": { "$ref": "#/$defs/pilotCaseView" },
+        "schemaVersion": { "const": "tenant_pilot_case_filed.v1" }
+      }
+    },
+    "pilotCaseTransitioned": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pilotCase", "schemaVersion"],
+      "properties": {
+        "pilotCase": { "$ref": "#/$defs/pilotCaseView" },
+        "schemaVersion": { "const": "tenant_pilot_case_transitioned.v1" }
+      }
+    },
+    "pilotCaseList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "hasMore", "schemaVersion"],
+      "properties": {
+        "items": { "type": "array", "maxItems": 50, "items": { "$ref": "#/$defs/pilotCaseView" } },
+        "hasMore": { "type": "boolean" },
+        "schemaVersion": { "const": "tenant_pilot_case_list.v1" }
+      }
+    },
+    "pilotCaseQueue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asOf", "items", "hasMore", "safety", "schemaVersion"],
+      "properties": {
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "items": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/pilotCaseView" } },
+        "hasMore": { "type": "boolean" },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["freeTextIncluded", "piiIncluded", "sandboxOnly", "productionAuthority"],
+          "properties": {
+            "freeTextIncluded": { "const": false },
+            "piiIncluded": { "const": false },
+            "sandboxOnly": { "const": true },
+            "productionAuthority": { "const": false }
+          }
+        },
+        "schemaVersion": { "const": "tenant_pilot_case_queue.v1" }
+      }
+    },
     "pilotFeedbackRecorded": {
       "type": "object",
       "additionalProperties": false,
@@ -6521,6 +6649,129 @@
         "schemaVersion": {
           "const": "tenant_pilot_feedback_summary_view.v1"
         }
+      }
+    },
+    "tenantClosedPilotReadinessView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asOf",
+        "profile",
+        "requirementId",
+        "overallStatus",
+        "releaseEnabled",
+        "activationAuthorized",
+        "productFeedback",
+        "controls",
+        "summary",
+        "sourceBaseline",
+        "safety",
+        "schemaVersion"
+      ],
+      "properties": {
+        "asOf": { "$ref": "#/$defs/timestamp" },
+        "profile": { "const": "closed_non_funds_pilot" },
+        "requirementId": { "const": "REQ-PILOT-002" },
+        "overallStatus": { "const": "blocked_pending_approvals" },
+        "releaseEnabled": { "const": false },
+        "activationAuthorized": { "const": false },
+        "productFeedback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "categoricalOnly", "thirdPartyAnalytics", "underwritingEffect"],
+          "properties": {
+            "source": { "const": "pilot_feedback_record.v1" },
+            "categoricalOnly": { "const": true },
+            "thirdPartyAnalytics": { "const": false },
+            "underwritingEffect": { "const": false }
+          }
+        },
+        "controls": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "controlId",
+              "implementationState",
+              "approvalStatus",
+              "ownerRole",
+              "namedOwnerConfigured",
+              "evidenceRefs",
+              "blockerCode"
+            ],
+            "properties": {
+              "controlId": {
+                "enum": ["retention", "ordinary_support", "incident", "restore", "rollback", "on_call", "notification"]
+              },
+              "implementationState": {
+                "enum": ["specified_unverified", "implemented_unverified", "unavailable"]
+              },
+              "approvalStatus": { "const": "pending" },
+              "ownerRole": { "type": "string", "minLength": 3, "maxLength": 64 },
+              "namedOwnerConfigured": { "const": false },
+              "evidenceRefs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 3,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "deploy/launch-policy.v1.json",
+                    "deploy/closed-pilot/operations.v1.json",
+                    "deploy/approvals/closed-non-funds-pilot.pending.json",
+                    "modules/operations-control/policy/private-pilot-alert-policy.v1.json",
+                    "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+                  ]
+                }
+              },
+              "blockerCode": { "$ref": "#/$defs/code" }
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requiredControlCount",
+            "approvedControlCount",
+            "pendingControlCount",
+            "unavailableControlCount",
+            "activationReady"
+          ],
+          "properties": {
+            "requiredControlCount": { "const": 7 },
+            "approvedControlCount": { "const": 0 },
+            "pendingControlCount": { "const": 7 },
+            "unavailableControlCount": { "const": 2 },
+            "activationReady": { "const": false }
+          }
+        },
+        "sourceBaseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["operationsReleaseCandidateId", "commitSha", "currentCandidateVerified"],
+          "properties": {
+            "operationsReleaseCandidateId": { "$ref": "#/$defs/identifier" },
+            "commitSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            "currentCandidateVerified": { "const": false }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["piiIncluded", "contactDetailsIncluded", "productionAuthority", "releasePolicyMutated"],
+          "properties": {
+            "piiIncluded": { "const": false },
+            "contactDetailsIncluded": { "const": false },
+            "productionAuthority": { "const": false },
+            "releasePolicyMutated": { "const": false }
+          }
+        },
+        "schemaVersion": { "const": "tenant_closed_pilot_readiness_view.v1" }
       }
     },
     "servicingQueueActionSummary": {

@@ -62,7 +62,9 @@ const PROFILES = Object.freeze({
       PilotCapability.OFFICIAL_REPORT_READ_OWNED,
       PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
       PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
-      PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+      PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF,
+      PilotCapability.PILOT_CASE_FILE_SELF,
+      PilotCapability.PILOT_CASE_READ_SELF
     ])
   }),
   principal_controller: Object.freeze({
@@ -129,7 +131,9 @@ const PROFILES = Object.freeze({
       PilotCapability.OFFICIAL_REPORT_READ_OWNED,
       PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
       PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
-      PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+      PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF,
+      PilotCapability.PILOT_CASE_FILE_SELF,
+      PilotCapability.PILOT_CASE_READ_SELF
     ])
   }),
   risk_operator: Object.freeze({
@@ -139,6 +143,9 @@ const PROFILES = Object.freeze({
       PilotCapability.RISK_READ_TENANT,
       PilotCapability.PILOT_HEALTH_READ,
       PilotCapability.PILOT_FEEDBACK_READ_TENANT,
+      PilotCapability.PILOT_READINESS_READ_TENANT,
+      PilotCapability.PILOT_CASE_READ_TENANT,
+      PilotCapability.PILOT_CASE_TRANSITION_TENANT,
       PilotCapability.SERVICING_QUEUE_READ,
       PilotCapability.RISK_FREEZE,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT
@@ -166,7 +173,7 @@ const GATEWAY_MUTATION_TABLES = Object.freeze([
   "delegated_wallet_pending_exposures", "wallet_prepared_executions",
   "wallet_simulation_reports", "wallet_transaction_preflight_receipts",
   "repayment_events", "aggregate_stream_heads", "domain_events", "credit_events",
-  "pilot_feedback_records", "credit_passport_artifacts", "credit_outcomes",
+  "pilot_feedback_records", "pilot_cases", "credit_passport_artifacts", "credit_outcomes",
   "credit_state_projections",
   "tenant_command_pauses",
   "official_report_artifacts", "evidence_envelopes", "outbox_messages",

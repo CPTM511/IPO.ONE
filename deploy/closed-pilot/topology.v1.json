@@ -1,41 +1,50 @@
 {
   "schemaVersion": "ipo.one.deploy-topology/v1",
   "decisionId": "DEPLOY-001",
-  "status": "local_preflight",
+  "status": "founder_approved_existing_stack_pre_activation",
   "releaseProfile": "closed_non_funds_pilot",
   "launchBlocked": true,
   "currentPublicSurface": {
     "provider": "vercel",
     "project": "ipo-one-internal",
-    "profile": "public_sandbox",
-    "stateModel": "process_local_ephemeral",
-    "privatePilotAttached": false,
-    "unchangedByDeploy001": true
+    "profile": "closed_non_funds_pilot",
+    "stateModel": "managed_neon_postgresql",
+    "technicalRuntimeReady": true,
+    "participantAccessAuthorized": false
   },
   "authority": {
-    "cloudMutationEnabled": false,
+    "technicalReadinessDeploymentEnabled": true,
+    "approvedAdditiveMigrationEnabled": true,
     "remoteParticipantAccessEnabled": false,
     "realFundsEnabled": false,
-    "humanCreditEnabled": false,
+    "humanCashCreditEnabled": false,
     "testnetWritesEnabled": false,
     "externalProviderExecutionEnabled": false,
     "venueSignerEnabled": false,
-    "publicSignupEnabled": false
+    "publicSignupEnabled": false,
+    "profileActivationEnabled": false
   },
   "runtime": {
-    "providerDecisionState": "human_review_required",
-    "shape": "single_oci_container",
-    "entrypoint": "apps/private-pilot/src/start-production.js",
-    "nodeVersion": "26.5.0",
-    "ingress": "disabled",
-    "minimumInstances": 0,
-    "maximumInstances": 1,
-    "canonicalState": "managed_postgresql",
+    "providerDecisionState": "founder_approved_existing",
+    "provider": "vercel",
+    "shape": "vercel_node_function",
+    "entrypoint": "api/vercel-sandbox.mjs",
+    "buildNodeVersion": "26.5.0",
+    "deployedNodeVersion": "24.x",
+    "httpsIngress": true,
+    "scaleToZero": true,
+    "functionMaximumDurationSeconds": 30,
+    "canonicalState": "managed_neon_postgresql",
     "processLocalPrivateStateAllowed": false,
     "signerEnabled": false
   },
   "database": {
-    "providerDecisionState": "human_review_required",
+    "providerDecisionState": "founder_approved_existing",
+    "provider": "neon",
+    "project": "ipo-one-m1-b-sandbox",
+    "plan": "launch",
+    "region": "aws-us-east-1",
+    "branch": "main",
     "shape": "managed_postgresql",
     "majorVersion": 17,
     "requiredRoles": [
@@ -46,15 +55,17 @@
     "forcedTenantRls": true,
     "encryptedTransport": true,
     "connectionPoolingRequired": true,
-    "automatedBackups": true,
-    "pointInTimeRecovery": true,
+    "backupRestoreRequired": true,
     "restoreDrillRequired": true,
-    "publicUnauthenticatedAccess": false
+    "publicUnauthenticatedAccess": false,
+    "additionalDatabaseRequired": false
   },
   "worker": {
-    "providerDecisionState": "human_review_required",
-    "shape": "same_release_separate_process",
-    "activation": "disabled",
+    "providerDecisionState": "founder_approved_existing",
+    "shape": "vercel_cron_bounded_function",
+    "entrypoint": "api/vercel-sandbox-cron.mjs",
+    "schedule": "*/15 * * * *",
+    "cohortActivation": "blocked",
     "responsibilities": [
       "outbox",
       "reconciliation",
@@ -67,12 +78,12 @@
     "signerEnabled": false
   },
   "edge": {
-    "webProvider": "vercel",
-    "privateApiShape": "same_origin_reverse_proxy",
-    "activation": "disabled",
-    "httpsRequired": true,
-    "directRuntimeOriginDenied": true,
-    "edgeAssertionRequired": true
+    "provider": "vercel",
+    "shape": "same_project_https_edge",
+    "tlsActive": true,
+    "participantActivation": "blocked",
+    "firewallEvidenceRequired": true,
+    "secretValuesStoredAsSensitive": true
   },
   "operations": {
     "backupRestoreRequired": true,
@@ -80,16 +91,20 @@
     "syntheticsRequired": true,
     "alertDeliveryRequired": true,
     "namedIncidentOwnerRequired": true,
-    "rollbackReceiptRequired": true
+    "rollbackReceiptRequired": true,
+    "runtimeLogsRequired": true
   },
   "costControls": {
-    "databaseSizing": "smallest_pitr_capable",
-    "scaleToZeroBeforeCohort": true,
+    "databaseSizing": "existing_launch_plan",
+    "vercelProjectCount": 1,
+    "neonProjectCount": 1,
     "redisEnabled": false,
     "kubernetesEnabled": false,
     "dataWarehouseEnabled": false,
     "multiCloudFailoverEnabled": false,
-    "mainnetIndexerEnabled": false
+    "mainnetIndexerEnabled": false,
+    "cloudRunEnabled": false,
+    "cloudSqlEnabled": false
   },
   "activationGates": [
     "AUTHN-005",
