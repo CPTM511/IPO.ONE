@@ -1183,3 +1183,11 @@ export function parseClosedPilotOperations(text) {
   }
   return validateClosedPilotOperations(value);
 }
+
+export {
+  PILOT_008B_APPROVAL_GATES,
+  PILOT_008B_DECISION_INPUTS,
+  Pilot008BGate0Error,
+  parsePilot008BGate0,
+  validatePilot008BGate0
+} from "./pilot-008b-gate0.js";

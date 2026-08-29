@@ -25,6 +25,7 @@ higher state.
 | `closed_non_funds_pilot` launch authority | Launch policy v1.3.3 and pending approval template | `releaseEnabled=false`; pending gates are not approvals | `PILOT-008` readiness closure, named approvals, exact policy revision, deployment/activation review |
 | `REQ-PILOT-001` dispute/appeal/correction case workflow | `PILOT-008A` domain, forced-RLS migration, gateway, Human/Risk UI, API/SDK/MCP, browser and PostgreSQL Evidence | `PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT AUTHORIZED`; original truth is immutable and corrections are additive | Preserve the exact implementation; deploy and credential-test only through a separately approved `PILOT-008B` candidate |
 | `REQ-PILOT-002` privacy-safe analytics, feedback, support, and incident ownership | Existing `PILOT-006` feedback plus `PILOT-008A` versioned readiness query | Query is locally verified and fail-closed; eight approvals remain pending, seven controls pending, two unavailable, and no owner/contact/jurisdiction was invented | Named Legal/Privacy/Operations/Product inputs, exact current operations Evidence, deployment and activation review in `PILOT-008B` |
+| `PILOT-008B` exact L2 deployment/profile activation | Gate 0 record, validator and 2026-08-29 read-only cloud observation | `GATE 0 READY — DEPLOYMENT/ACTIVATION BLOCKED`; local prerequisite is unmerged, exact release bindings are unavailable, database is stopped, service/job absent, billing disabled and every authority remains false | Resolve provider/cost and named review inputs; merge and bind exact green candidate; approve zero-traffic deployment separately from profile unlock and traffic cutover |
 | Prior `PILOT-007` through `OPS-004` preparation | Task files, local contracts, runbooks, topology/operations JSON | Substantial local/preflight work exists, but several artifacts bind July release candidates and retain disabled/pending inputs | Rebase each retained control to the exact Phase 3 candidate; do not reuse stale release hashes as approval |
 | Base Sepolia secured-pool testnet proof | M2A-008/M2A-009 Evidence and enabled exact `live_testnet_secured_pool` profile | Exact Base Sepolia test-assets pool proof passed; no real value | Preserve as M2 Evidence; it does not satisfy Hyperliquid signed execution |
 | `REQ-TRADE-005` / Hyperliquid delegated execution | M2B-001..004 local composition and recovery Evidence | Architecture and local no-funds composition exist; no approved live account, signer, nonce, action, order, fill, or Venue reconciliation run | `HL-TESTNET-001` after `PILOT-008` exit and exact run approval |
@@ -53,8 +54,10 @@ cross-reference.
 
 1. `PHASE3-POOL-001` is complete. `PILOT-008A` is locally verified for
    `REQ-PILOT-001` and the bounded readiness-query remainder of
-   `REQ-PILOT-002`. It does not authorize deployment, credentials, participant
-   access, profile activation, or cohort operation; those remain `PILOT-008B/C`.
+   `REQ-PILOT-002`. `PILOT-008B` Gate 0 now records the exact blockers, but it
+   does not authorize deployment, credentials, participant access, profile
+   activation, or cohort operation; those permission-expanding steps and
+   `PILOT-008C` remain blocked.
 2. The remote M2B-006 release is a valuable exact baseline, not launch-policy
    proof for an invited cohort.
 3. Hyperliquid Testnet signing cannot inherit M2B local authority or the Base

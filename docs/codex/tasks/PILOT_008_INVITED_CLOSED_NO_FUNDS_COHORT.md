@@ -1,6 +1,6 @@
 # PILOT-008 — Invited closed no-funds cohort
 
-Status: `PILOT-008A LOCALLY VERIFIED; PILOT-008B/C BLOCKED`
+Status: `PILOT-008A LOCALLY VERIFIED; PILOT-008B GATE 0 READY; PILOT-008C BLOCKED`
 
 Canonical mode: `L2_CLOSED_NO_FUNDS`
 
@@ -23,12 +23,12 @@ Constitution v1.3 requires both `REQ-PILOT-001` and `REQ-PILOT-002` before an
 L2 pilot. Current Evidence finds no durable dispute/appeal/correction case
 workflow and only partial feedback/support/incident capability.
 
-This file remains the umbrella planning contract. The Founder direction to
-continue after the Pool completion report activates only the issue-sized
-`PILOT-008A` contract in
-`PILOT_008A_PREREQUISITE_AND_CANDIDATE_CLOSURE.md`. `PILOT-008B` and
-`PILOT-008C` still require separate active contracts and approvals before any
-deployment/profile activation, participant provisioning or cohort operation.
+This file remains the umbrella planning contract. `PILOT-008A` is locally
+verified. The later Founder direction to continue activates only the read-only,
+non-authorizing `PILOT-008B` Gate 0 contract in
+`PILOT_008B_GATE_0_EXACT_DEPLOYMENT_ACTIVATION_READINESS.md`. Actual
+deployment, profile activation, participant provisioning and `PILOT-008C`
+cohort operation still require their separate exact contracts and approvals.
 
 ## Scope
 
@@ -87,7 +87,8 @@ deployment/profile activation, participant provisioning or cohort operation.
 ## Likely files
 
 - `docs/codex/tasks/PILOT_008A_PREREQUISITE_AND_CANDIDATE_CLOSURE.md`
-- Later issue-sized task files for `PILOT-008B/C`
+- `docs/codex/tasks/PILOT_008B_GATE_0_EXACT_DEPLOYMENT_ACTIVATION_READINESS.md`
+- Later issue-sized activation and `PILOT-008C` task files
 - `docs/PRODUCT_CONSTITUTION.md` only if a real governance conflict is found;
   no change is currently proposed
 - `packages/domain/`, `packages/api-contract/`, `modules/persistence/`,
@@ -207,4 +208,5 @@ Dependencies:
 - reviewed launch-policy revision.
 
 Current verdict: `PILOT-008A PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT
-AUTHORIZED`; the umbrella cohort remains `BLOCKED — NOT COMPLETE`.
+AUTHORIZED`; `PILOT-008B GATE 0 READY — DEPLOYMENT/ACTIVATION BLOCKED`; the
+umbrella cohort remains `BLOCKED — NOT COMPLETE`.

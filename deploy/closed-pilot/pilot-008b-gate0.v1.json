@@ -1,0 +1,190 @@
+{
+  "schemaVersion": "ipo.one.pilot-008b-gate0/v1",
+  "issueId": "PILOT-008B",
+  "status": "blocked_pending_named_approvals",
+  "profile": "closed_non_funds_pilot",
+  "launchBlocked": true,
+  "prerequisite": {
+    "issueId": "PILOT-008A",
+    "localCommitSha": "bb72a66f8627f9751c493f464a814bb53da9f403",
+    "verdict": "PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT AUTHORIZED",
+    "mergedToOriginMain": false,
+    "deployed": false
+  },
+  "deploymentCandidate": {
+    "commitSha": null,
+    "ciRunUrl": null,
+    "imageUri": null,
+    "migrationEvidenceUrl": null,
+    "rollbackTarget": null,
+    "ready": false
+  },
+  "authority": {
+    "cloudMutationEnabled": false,
+    "billingOrApiEnablementEnabled": false,
+    "databaseStartEnabled": false,
+    "secretOrIamWriteEnabled": false,
+    "identityCredentialIssuanceEnabled": false,
+    "remoteParticipantAccessEnabled": false,
+    "profileActivationEnabled": false,
+    "trafficCutoverEnabled": false,
+    "workerScheduleEnabled": false,
+    "notificationDeliveryEnabled": false,
+    "realFundsEnabled": false,
+    "externalProviderExecutionEnabled": false,
+    "venueSignerEnabled": false,
+    "chainWriteEnabled": false
+  },
+  "sourceTruth": {
+    "launchPolicyPath": "deploy/launch-policy.v1.json",
+    "launchPolicyVersion": "1.3.3",
+    "launchPolicyReleaseEnabled": false,
+    "approvalTemplatePath": "deploy/approvals/closed-non-funds-pilot.pending.json",
+    "topologyPath": "deploy/closed-pilot/topology.v1.json",
+    "providerSelectionPath": "deploy/closed-pilot/provider-selection.pending.json",
+    "operationsPath": "deploy/closed-pilot/operations.v1.json",
+    "operationsSourceCommitSha": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
+    "operationsSourceCurrentCandidate": false
+  },
+  "approvalGates": [
+    {
+      "id": "security_001_approval",
+      "status": "pending"
+    },
+    {
+      "id": "tenant_authn_authz_tests",
+      "status": "pending"
+    },
+    {
+      "id": "durable_data_restore",
+      "status": "pending"
+    },
+    {
+      "id": "reconciliation_operations",
+      "status": "pending"
+    },
+    {
+      "id": "independent_pentest",
+      "status": "pending"
+    },
+    {
+      "id": "privacy_legal_terms",
+      "status": "pending"
+    },
+    {
+      "id": "support_slo_oncall",
+      "status": "pending"
+    },
+    {
+      "id": "pilot_participant_approval",
+      "status": "pending"
+    }
+  ],
+  "decisionInputs": [
+    {
+      "id": "exact_merged_candidate",
+      "status": "unavailable"
+    },
+    {
+      "id": "green_ci_run",
+      "status": "unavailable"
+    },
+    {
+      "id": "immutable_image_digest",
+      "status": "unavailable"
+    },
+    {
+      "id": "migration_receipt",
+      "status": "unavailable"
+    },
+    {
+      "id": "rollback_target",
+      "status": "unavailable"
+    },
+    {
+      "id": "pilot_region",
+      "status": "pending"
+    },
+    {
+      "id": "monthly_cost_ceiling_usd",
+      "status": "pending"
+    },
+    {
+      "id": "billing_owner",
+      "status": "pending"
+    },
+    {
+      "id": "provider_account_owner",
+      "status": "pending"
+    },
+    {
+      "id": "pilot_jurisdiction",
+      "status": "pending"
+    },
+    {
+      "id": "legal_privacy_approval",
+      "status": "pending"
+    },
+    {
+      "id": "retention_policy",
+      "status": "pending"
+    },
+    {
+      "id": "ordinary_support_channel",
+      "status": "pending"
+    },
+    {
+      "id": "support_owner",
+      "status": "pending"
+    },
+    {
+      "id": "incident_owner",
+      "status": "pending"
+    },
+    {
+      "id": "on_call_owner",
+      "status": "pending"
+    },
+    {
+      "id": "restore_owner",
+      "status": "pending"
+    },
+    {
+      "id": "rollback_owner",
+      "status": "pending"
+    },
+    {
+      "id": "notification_recipients",
+      "status": "pending"
+    },
+    {
+      "id": "secret_manager",
+      "status": "pending"
+    },
+    {
+      "id": "independent_security_reviewer",
+      "status": "pending"
+    },
+    {
+      "id": "participant_references",
+      "status": "pending"
+    },
+    {
+      "id": "launch_policy_revision",
+      "status": "pending"
+    }
+  ],
+  "cloudObservation": {
+    "observedAt": "2026-08-29T12:53:35Z",
+    "classification": "read_only_non_authorizing",
+    "projectState": "active",
+    "databaseState": "stopped",
+    "closedPilotServiceState": "absent",
+    "closedPilotJobState": "absent",
+    "billingState": "disabled",
+    "secretManagerState": "unavailable_billing_disabled",
+    "computeApiState": "disabled",
+    "activationEvidence": false
+  },
+  "verdict": "GATE 0 READY — DEPLOYMENT/ACTIVATION BLOCKED"
+}
