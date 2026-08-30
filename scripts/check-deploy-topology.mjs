@@ -45,7 +45,21 @@ assert.equal(
   `>=24.19.0 <25 || >=${topology.runtime.buildNodeVersion} <27`
 );
 assert.equal(vercelPackage.engines?.node, topology.runtime.deployedNodeVersion);
-assert.equal(launchPolicy.profiles.closed_non_funds_pilot.releaseEnabled, false);
+assert.equal(
+  launchPolicy.profiles.public_authenticated_no_funds_beta.releaseEnabled,
+  true
+);
+assert.equal(
+  launchPolicy.profiles.public_authenticated_no_funds_beta.capabilities.realFundsEnabled,
+  false
+);
+assert.equal(
+  launchPolicy.profiles.public_authenticated_no_funds_beta.gates.some(
+    ({ id }) => id === "pilot_participant_approval"
+  ),
+  false
+);
+assert.equal(Object.hasOwn(launchPolicy.profiles, "closed_non_funds_pilot"), false);
 assert.equal(topology.launchBlocked, true);
 assert.equal(topology.authority.technicalReadinessDeploymentEnabled, true);
 assert.equal(topology.authority.remoteParticipantAccessEnabled, false);
@@ -67,7 +81,8 @@ assert.equal(vercelManifest.topology.projectCount, 1);
 assert.equal(vercelManifest.topology.continuousWorker, false);
 
 console.log(
-  "DEPLOY-001 topology contract passed: one Vercel Functions/Cron project and " +
-  "the existing Neon PostgreSQL 17 project are selected; Cloud Run, Cloud SQL " +
-  "and cohort activation remain disabled."
+  "DEPLOY-001 topology contract passed: the archived closed-pilot observation " +
+  "still proves one Vercel Functions/Cron project and the existing Neon " +
+  "PostgreSQL 17 project; the current launch policy enables public authenticated " +
+  "no-funds access without a participant gate."
 );

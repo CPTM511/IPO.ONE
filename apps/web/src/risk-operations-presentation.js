@@ -8,8 +8,8 @@ export const RISK_OPERATIONS_POLICY_EVIDENCE = Object.freeze({
   namedIncidentOwnerStatus: "unconfigured",
   reconciliationSchemaVersion: "reconciliation_summary.v1",
   approvalPolicyVersion: "security_001.v1",
-  launchPolicyVersion: "1.3.3",
-  closedPilotReleaseEnabled: false
+  launchPolicyVersion: "1.4.0",
+  publicBetaReleaseEnabled: true
 });
 
 const IDENTIFIER = /^[A-Za-z][A-Za-z0-9._:-]{0,127}$/;
@@ -123,8 +123,8 @@ export function createRiskOperationsPresentation(input) {
 
   return deepFreeze({
     schemaVersion: RISK_OPERATIONS_PRESENTATION_VERSION,
-    mode: "closed_non_funds_pilot",
-    maturity: "local_non_funds",
+    mode: "public_authenticated_no_funds_beta",
+    maturity: "public_no_funds_beta",
     availability,
     actorPolicyCeilings: actorPolicyCeilings(availability),
     operationalEvidence: {
@@ -178,8 +178,8 @@ export function createRiskOperationsPresentation(input) {
         state: "checked_in_policy_only",
         policyVersion:
           RISK_OPERATIONS_POLICY_EVIDENCE.launchPolicyVersion,
-        closedPilotReleaseEnabled:
-          RISK_OPERATIONS_POLICY_EVIDENCE.closedPilotReleaseEnabled,
+        publicBetaReleaseEnabled:
+          RISK_OPERATIONS_POLICY_EVIDENCE.publicBetaReleaseEnabled,
         runtimeApprovalInferred: false
       }
     },

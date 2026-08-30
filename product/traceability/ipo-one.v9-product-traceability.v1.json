@@ -16,9 +16,11 @@
     "tenantProtocolMaturity": "local_non_funds",
     "enabledReleaseProfiles": [
       "public_sandbox",
+      "public_authenticated_no_funds_beta",
       "live_testnet_secured_pool"
     ],
     "closedPilotReleaseEnabled": false,
+    "publicAuthenticatedNoFundsBetaEnabled": true,
     "controlledCreditReleaseEnabled": false,
     "realFundsEnabled": false,
     "productionCreditEnabled": false
@@ -1037,7 +1039,7 @@
     {
       "operationId": "pilotReadClosedPilotReadiness",
       "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_closed_pilot_readiness_view.v1",
+      "responseSchemaVersion": "tenant_public_beta_readiness_view.v1",
       "handlerModule": "modules/tenant-command-gateway/src/closed-pilot-readiness-handlers.js",
       "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
       "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",

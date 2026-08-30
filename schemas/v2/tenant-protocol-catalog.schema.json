@@ -611,7 +611,7 @@
             "tenant_risk_portfolio_view.v1",
             "tenant_pilot_health_view.v1",
             "tenant_pilot_feedback_summary_view.v1",
-            "tenant_closed_pilot_readiness_view.v1",
+            "tenant_public_beta_readiness_view.v1",
             "tenant_pilot_feedback_recorded.v1",
             "tenant_pilot_case_filed.v1",
             "tenant_pilot_case_list.v1",
@@ -1910,7 +1910,7 @@
               "const": "read"
             },
             "responseSchemaVersion": {
-              "const": "tenant_closed_pilot_readiness_view.v1"
+              "const": "tenant_public_beta_readiness_view.v1"
             }
           }
         },

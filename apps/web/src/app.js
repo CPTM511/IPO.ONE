@@ -901,8 +901,8 @@ function renderAccess() {
     ? "Sign-in check needs attention"
     : "No sign-in method is enabled";
   el("accessRecoveryCopy").textContent = optionsFailed
-    ? "Check the server again or share a privacy-safe diagnostic through your original invitation channel."
-    : "Check again after your invitation administrator updates access for this workspace.";
+    ? "Check the server again or share a privacy-safe diagnostic with IPO.ONE support."
+    : "Check again after public Beta sign-in is restored.";
   el("retryAccessOptionsBtn").disabled = accessState.optionsBusy;
   el("retryAccessOptionsBtn").setAttribute("aria-busy", String(accessState.optionsBusy));
   el("accessSupportPanel").hidden = !availability.showAccessDiagnostics;
@@ -1242,8 +1242,8 @@ async function probeAccessOptions() {
     accessState.sessionActive = authorityAvailable && tenantPilot.connected;
     if (authorityAvailable) {
       accessState.helper = tenantPilot.connected
-        ? "Private pilot session active. Connect an approved test network when needed."
-        : "IPO.ONE could not verify sign-in availability. Check again or copy the access details for your invitation administrator.";
+        ? "Public Beta session active. Connect an approved test network when needed."
+        : "IPO.ONE could not verify sign-in availability. Check again or copy the access details for IPO.ONE support.";
     }
     return false;
   } finally {
@@ -1322,11 +1322,11 @@ async function copyAccessDiagnostic() {
   const diagnostic = currentAccessDiagnostic();
   try {
     await navigator.clipboard.writeText(JSON.stringify(diagnostic, null, 2));
-    accessState.helper = "Privacy-safe access details copied. Send them through your original IPO.ONE invitation channel.";
+    accessState.helper = "Privacy-safe access details copied. Send them to IPO.ONE support.";
     announce("Privacy-safe access details copied");
     toast("Privacy-safe access details copied");
   } catch {
-    accessState.helper = "Clipboard access is unavailable. Select the visible error and Request ID, then share them through your invitation channel.";
+    accessState.helper = "Clipboard access is unavailable. Select the visible error and Request ID, then share them with IPO.ONE support.";
     announce("Access details could not be copied");
     toast("Access details could not be copied", "error");
   }
@@ -1380,7 +1380,7 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
 
     if (authenticate) {
       if (!accessState.walletAuthenticationEnabled) {
-        accessState.helper = `${chain.name} connected. Wallet session sign-in awaits closed-pilot credential provisioning.`;
+        accessState.helper = `${chain.name} connected. Wallet sign-in is temporarily unavailable for this public Beta.`;
         return;
       }
       const walletChallengeEpoch =
@@ -1429,7 +1429,7 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
 
 function beginOidcSignIn(provider) {
   if (!accessState.authEnabled || !accessState.providers.has(provider)) {
-    accessState.helper = "That sign-in method is not enabled for this closed-pilot deployment.";
+    accessState.helper = "That sign-in method is not enabled for this public Beta deployment.";
     renderAccess();
     return;
   }
@@ -4274,9 +4274,9 @@ function renderAgentAuthorityPilot() {
       ? "Continue in the Principal workspace"
       : "Principal workspace required";
     el("agentAuthorityAccessCopy").textContent = workspaceRoleMismatch
-      ? `This page requires the ${expectedWorkspaceLabel()} role, but the shared local host cookie currently identifies a ${workspaceKindLabel(tenantPilot.workspaceKind)} session. Switch sessions, then sign in again with the invited wallet.`
+      ? `This page requires the ${expectedWorkspaceLabel()} role, but the shared host cookie currently identifies a ${workspaceKindLabel(tenantPilot.workspaceKind)} session. Switch sessions, then sign in again with your connected wallet.`
       : borrowerWorkspace
-      ? "This Borrower workspace can request and repay credit, but it cannot create authority for an Agent. Open the separate Principal workspace and sign in with the invited wallet; no Borrower permission will be widened."
+      ? "This Borrower workspace can request and repay credit, but it cannot create authority for an Agent. Open the separate Principal workspace and sign in with your connected wallet; no Borrower permission will be widened."
       : "Only an authenticated Principal Controller can create an Agent Subject, issue an account-proof request, or activate a Mandate.";
   }
 
@@ -6464,7 +6464,7 @@ async function submitPilotFeedback() {
     });
     pilotFeedback.submitted = result.response;
     pilotFeedback.helper = "Feedback recorded as immutable categorical Evidence. No identifier, free text, or PII was returned.";
-    toast("Private pilot feedback recorded");
+    toast("Public Beta feedback recorded");
     announce(pilotFeedback.helper);
   } catch (error) {
     const nonEnumerating = error.status === 401 || error.status === 403 || error.status === 404 ||
@@ -8830,7 +8830,7 @@ async function runAgentAuthorityAction(
 ) {
   if (!hasPrincipalAgentAuthorityWorkspace()) {
     const message =
-      "Agent authority operations require the authenticated Principal workspace. Open the Principal workspace and sign in with the invited wallet.";
+      "Agent authority operations require the authenticated Principal workspace. Open the Principal workspace and sign in with your connected wallet.";
     agentAuthorityPilot.helper = message;
     renderTenantPilot();
     toast(message, "error");
@@ -11649,11 +11649,12 @@ function closedPilotReadinessRow(control) {
   const title = document.createElement("strong");
   const detail = document.createElement("small");
   title.textContent = titleize(control.controlId);
-  detail.textContent = `${titleize(control.implementationState)} · ${control.ownerRole} · named owner not configured`;
+  detail.textContent = `${titleize(control.implementationState)} · ${control.ownerRole}${control.namedOwnerConfigured ? "" : " · release Evidence pending"}`;
   copy.append(title, detail);
   const status = document.createElement("span");
-  status.className = "state-pill warning";
-  status.textContent = "Pending";
+  const approved = control.approvalStatus === "approved_by_founder_decision";
+  status.className = approved ? "state-pill" : "state-pill warning";
+  status.textContent = approved ? "Authorized" : "Verify release";
   row.append(copy, status);
   return row;
 }
@@ -12080,19 +12081,21 @@ function renderRiskOperations() {
     readinessStatus.textContent = "Checking";
     readinessStatus.classList.add("neutral");
   } else if (riskOperations.readinessQueried && readiness) {
-    readinessStatus.textContent = "Blocked · approvals pending";
-    readinessStatus.classList.add("warning");
+    readinessStatus.textContent = readiness.activationAuthorized
+      ? "Authorized · verify runtime"
+      : "Boundary unavailable";
+    readinessStatus.classList.add(readiness.activationAuthorized ? "neutral" : "warning");
   } else {
-    readinessStatus.textContent = "Not loaded · remains blocked";
-    readinessStatus.classList.add("warning");
+    readinessStatus.textContent = "Not loaded";
+    readinessStatus.classList.add("neutral");
   }
   el("closedPilotReadinessHelper").textContent = riskOperations.readinessHelper;
   el("closedPilotReadinessHelper").classList.toggle("error", riskOperations.readinessError);
   el("closedPilotRequiredControls").textContent = String(readiness?.summary.requiredControlCount ?? 7);
-  el("closedPilotApprovedControls").textContent = String(readiness?.summary.approvedControlCount ?? 0);
-  el("closedPilotPendingControls").textContent = String(readiness?.summary.pendingControlCount ?? 7);
-  el("closedPilotUnavailableControls").textContent = String(readiness?.summary.unavailableControlCount ?? 2);
-  el("closedPilotReleasePolicy").textContent = readiness?.releaseEnabled ? "Enabled" : "Disabled";
+  el("closedPilotApprovedControls").textContent = String(readiness?.summary.approvedControlCount ?? 1);
+  el("closedPilotPendingControls").textContent = String(readiness?.summary.pendingControlCount ?? 6);
+  el("closedPilotUnavailableControls").textContent = String(readiness?.summary.unavailableControlCount ?? 0);
+  el("closedPilotReleasePolicy").textContent = readiness?.releaseEnabled ? "Enabled · no funds" : "Unavailable";
   el("closedPilotCandidateStatus").textContent = readiness?.sourceBaseline.currentCandidateVerified
     ? "Verified"
     : "Unverified";
@@ -12256,7 +12259,7 @@ async function loadPilotFeedbackSummary({ quiet = false } = {}) {
     riskOperations.feedbackQueried = true;
     riskOperations.feedbackHelper = "Verified aggregate only. Identifiers, free text, PII, and third-party analytics are excluded.";
     if (!quiet) {
-      toast("Design-partner feedback loaded");
+      toast("Public Beta feedback loaded");
       announce(riskOperations.feedbackHelper);
     }
   } catch (error) {
@@ -12288,7 +12291,7 @@ async function loadClosedPilotReadiness({ quiet = false } = {}) {
   const requestOwner = beginRiskRequest("readiness");
   riskOperations.readinessBusy = true;
   riskOperations.readinessError = false;
-  riskOperations.readinessHelper = "Verifying recent MFA and reading checked-in fail-closed operating contracts…";
+  riskOperations.readinessHelper = "Verifying recent MFA and reading the bounded Public Beta release contract…";
   renderRiskOperations();
   try {
     const result = await tenantApi("pilotReadClosedPilotReadiness", {
@@ -12300,9 +12303,9 @@ async function loadClosedPilotReadiness({ quiet = false } = {}) {
     riskOperations.readiness = result.response;
     riskOperations.readinessQueried = true;
     riskOperations.readinessHelper =
-      "Verified fail-closed view: release disabled, zero controls approved, named owners absent, and the historical operations baseline is not the current candidate.";
+      "Founder activation is approved. Exact release Evidence and hosted runtime verification remain visible and cannot widen the no-funds boundary.";
     if (!quiet) {
-      toast("Closed-pilot readiness loaded");
+      toast("Public Beta readiness loaded");
       announce(riskOperations.readinessHelper);
     }
   } catch (error) {
@@ -12313,8 +12316,8 @@ async function loadClosedPilotReadiness({ quiet = false } = {}) {
     riskOperations.readinessQueried = false;
     riskOperations.readinessError = true;
     riskOperations.readinessHelper = nonEnumerating
-      ? "Risk, Operations, or Auditor access with recent MFA is required. The pilot remains blocked."
-      : `Closed-pilot readiness query failed closed. Request ID: ${error.requestId ?? "unavailable"}`;
+      ? "Risk, Operations, or Auditor access with recent MFA is required. Public self-service roles cannot open this privileged view."
+      : `Public Beta readiness query failed closed. Request ID: ${error.requestId ?? "unavailable"}`;
     if (!quiet) {
       toast(riskOperations.readinessHelper, "error");
       announce(riskOperations.readinessHelper);
@@ -13948,8 +13951,8 @@ async function boot() {
   }
   render();
   announce(tenantPilot.connected
-    ? "Authenticated closed-pilot workspace ready"
-    : "Sign in to access the closed-pilot workspace");
+    ? "Authenticated public Beta workspace ready"
+    : "Sign in to access the public Beta workspace");
 }
 
 boot().catch((error) => {

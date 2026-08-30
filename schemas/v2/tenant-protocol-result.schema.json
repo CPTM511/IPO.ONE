@@ -1291,7 +1291,7 @@
           "const": "pilotReadClosedPilotReadiness"
         },
         "response": {
-          "$ref": "#/$defs/tenantClosedPilotReadinessView"
+          "$ref": "#/$defs/tenantPublicBetaReadinessView"
         }
       }
     },
@@ -6651,7 +6651,7 @@
         }
       }
     },
-    "tenantClosedPilotReadinessView": {
+    "tenantPublicBetaReadinessView": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -6670,11 +6670,11 @@
       ],
       "properties": {
         "asOf": { "$ref": "#/$defs/timestamp" },
-        "profile": { "const": "closed_non_funds_pilot" },
+        "profile": { "const": "public_authenticated_no_funds_beta" },
         "requirementId": { "const": "REQ-PILOT-002" },
-        "overallStatus": { "const": "blocked_pending_approvals" },
-        "releaseEnabled": { "const": false },
-        "activationAuthorized": { "const": false },
+        "overallStatus": { "const": "authorized_runtime_verification_pending" },
+        "releaseEnabled": { "const": true },
+        "activationAuthorized": { "const": true },
         "productFeedback": {
           "type": "object",
           "additionalProperties": false,
@@ -6705,14 +6705,24 @@
             ],
             "properties": {
               "controlId": {
-                "enum": ["retention", "ordinary_support", "incident", "restore", "rollback", "on_call", "notification"]
+                "enum": [
+                  "repository_quality",
+                  "tenant_authn_authz_tests",
+                  "durable_data_restore",
+                  "reconciliation_operations",
+                  "hosted_abuse_controls",
+                  "public_beta_notice",
+                  "founder_activation_authorization"
+                ]
               },
               "implementationState": {
-                "enum": ["specified_unverified", "implemented_unverified", "unavailable"]
+                "enum": ["authorized", "implemented_pending_release_verification"]
               },
-              "approvalStatus": { "const": "pending" },
+              "approvalStatus": {
+                "enum": ["approved_by_founder_decision", "verification_pending"]
+              },
               "ownerRole": { "type": "string", "minLength": 3, "maxLength": 64 },
-              "namedOwnerConfigured": { "const": false },
+              "namedOwnerConfigured": { "type": "boolean" },
               "evidenceRefs": {
                 "type": "array",
                 "minItems": 2,
@@ -6721,14 +6731,17 @@
                 "items": {
                   "enum": [
                     "deploy/launch-policy.v1.json",
-                    "deploy/closed-pilot/operations.v1.json",
-                    "deploy/approvals/closed-non-funds-pilot.pending.json",
-                    "modules/operations-control/policy/private-pilot-alert-policy.v1.json",
-                    "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+                    "deploy/approvals/public-authenticated-no-funds-beta.pending.json",
+                    "docs/PRODUCT_CONSTITUTION.md"
                   ]
                 }
               },
-              "blockerCode": { "$ref": "#/$defs/code" }
+              "blockerCode": {
+                "anyOf": [
+                  { "$ref": "#/$defs/code" },
+                  { "type": "null" }
+                ]
+              }
             }
           }
         },
@@ -6744,9 +6757,9 @@
           ],
           "properties": {
             "requiredControlCount": { "const": 7 },
-            "approvedControlCount": { "const": 0 },
-            "pendingControlCount": { "const": 7 },
-            "unavailableControlCount": { "const": 2 },
+            "approvedControlCount": { "const": 1 },
+            "pendingControlCount": { "const": 6 },
+            "unavailableControlCount": { "const": 0 },
             "activationReady": { "const": false }
           }
         },
@@ -6755,8 +6768,8 @@
           "additionalProperties": false,
           "required": ["operationsReleaseCandidateId", "commitSha", "currentCandidateVerified"],
           "properties": {
-            "operationsReleaseCandidateId": { "$ref": "#/$defs/identifier" },
-            "commitSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            "operationsReleaseCandidateId": { "type": "null" },
+            "commitSha": { "type": "null" },
             "currentCandidateVerified": { "const": false }
           }
         },
@@ -6771,7 +6784,7 @@
             "releasePolicyMutated": { "const": false }
           }
         },
-        "schemaVersion": { "const": "tenant_closed_pilot_readiness_view.v1" }
+        "schemaVersion": { "const": "tenant_public_beta_readiness_view.v1" }
       }
     },
     "servicingQueueActionSummary": {

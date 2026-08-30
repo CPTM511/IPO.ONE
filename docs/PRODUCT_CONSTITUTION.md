@@ -1,14 +1,14 @@
 # IPO.ONE Product Constitution
 
-Version: v1.3
+Version: v1.4
 
-Effective date: 2026-08-22
+Effective date: 2026-08-30
 
 Status: Founder-directed and ratified for current product-truth governance
 
 Decision owner: IPO.ONE Founder / Product / Governance
 
-Supersedes: Product Constitution v1.2 effective 2026-08-14
+Supersedes: Product Constitution v1.3 effective 2026-08-22
 
 Milestone: M2 — Public Secured Liquidity & Delegated Agent Execution
 
@@ -20,12 +20,15 @@ is an authority index and conflict resolver. It does not replace the detailed
 product thesis, architecture decisions, security invariants, schemas, or
 acceptance specifications it governs.
 
-The M2 direction is made authoritative by recording it in this versioned
-repository document. v1.3 approves only the bounded secured-pool architecture
-and implementation sequence described here. It does not prove or activate
-runtime, testnet, hosting, real value, or production. Conversations remain
-non-authoritative unless their decision is reviewed and incorporated into this
-Constitution or a subordinate approved source.
+The M2 direction and the public authenticated no-funds Beta direction are made
+authoritative by recording them in this versioned repository document. v1.4
+retains the bounded secured-pool architecture and implementation sequence and
+replaces the invited L2 admission assumption with public, authenticated access
+to durable Tenant-isolated no-funds state. It does not activate mainnet, real
+value, custody, withdrawal, external Provider execution or venue-signed
+execution. Conversations remain non-authoritative unless their decision is
+reviewed and incorporated into this Constitution or a subordinate approved
+source.
 
 Approval of a requirement is not evidence that it is implemented, verified,
 hosted, available to users, real-value active, or production ready. Those states
@@ -100,7 +103,7 @@ only if it explicitly records supersession. Otherwise the behavior is
 | --- | --- | --- |
 | `L0_LOCAL_NO_FUNDS` | Durable local synthetic/no-funds product work | Approved only within existing local permissions and policies. |
 | `L1_PUBLIC_SANDBOX` | Public synthetic product with no private Tenant data or real value | Subject to current launch policy and current release Evidence. |
-| `L2_CLOSED_NO_FUNDS` | Invited durable no-funds pilot with private Tenant data | Disabled until all named launch-policy gates and approvals pass. |
+| `L2_PUBLIC_AUTHENTICATED_NO_FUNDS` | Public authenticated no-funds Beta with durable Tenant-isolated private state | Founder-authorized for ordinary self-service Human and Principal entry through the current launch policy; authentication, RLS, object authorization and financial no-go boundaries remain mandatory. |
 | `L3_LIVE_TESTNET` | Separately approved testnet execution/read proof | Every live profile remains disabled until a named policy entry is unlocked. A ratified `live_testnet_secured_pool` profile may authorize public test-asset participation only for its exact chain, contracts, accounts, assets, oracle, caps, owners, and Evidence window. Deployment/admin/signers remain exact-run approvals. Test assets are not real funds or Human production lending. |
 | `L4_CONTROLLED_REAL_VALUE` | Bounded Agent-only real-value candidate | Disabled; requires a complete named decision package and policy revision. |
 | `L5_PRODUCTION` | Production real-value operation | Not approved. |
@@ -109,7 +112,8 @@ Requirement statuses:
 
 - `APPROVED_MVP`: required for the complete L0 shared MVP.
 - `APPROVED_PHASE_2`: required for the synthetic bilateral marketplace.
-- `REQUIRED_BEFORE_CLOSED_PILOT`: must be approved and verified before L2.
+- `REQUIRED_FOR_NO_FUNDS_OPERATIONS`: required operational capability for L2;
+  it does not restore invitation or participant-by-participant approval.
 - `ARCHITECTURE_APPROVED_RUNTIME_GATED`: target architecture is approved, but
   runtime activation remains separately gated.
 - `NOT_APPROVED`: not part of the current product; no implementation inference.
@@ -174,8 +178,8 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-AGENT-POOL-001 | Principal-bound Agent use of secured Facility | ARCHITECTURE_APPROVED_RUNTIME_GATED | L3_LIVE_TESTNET | DEC-AGENT-VENUE-EXEC-001 plus M2 alignment | M2B after M2A; no withdrawal/transfer/leverage-on-leverage |
 | REQ-PRIV-001 | offchain sensitive-data and least-privilege boundary | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 6 | no raw KYC/PII/credentials/onchain sensitive record |
 | REQ-AUTO-001 | queryable fail-closed automation | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Engineering and Experience Standard v1.0 section 5 | A3/A4 authority must be exact; AI never authorizes credit or mutation |
-| REQ-PILOT-001 | dispute/appeal/correction case workflow | REQUIRED_BEFORE_CLOSED_PILOT | L2_CLOSED_NO_FUNDS | DEC-DISPUTE-001 in section 7 | no claim of legal complaint handling; immutable Evidence and correction linkage |
-| REQ-PILOT-002 | privacy-safe analytics, feedback, support, and incident ownership | REQUIRED_BEFORE_CLOSED_PILOT | L2_CLOSED_NO_FUNDS | Product Charter v1.1 section 7 | named privacy, retention, support, and incident approvals |
+| REQ-PILOT-001 | dispute/appeal/correction case workflow | REQUIRED_FOR_NO_FUNDS_OPERATIONS | L2_PUBLIC_AUTHENTICATED_NO_FUNDS | DEC-DISPUTE-001 in section 7 | no claim of legal complaint handling; immutable Evidence and correction linkage |
+| REQ-PILOT-002 | privacy-safe analytics, feedback, support, and incident ownership | REQUIRED_FOR_NO_FUNDS_OPERATIONS | L2_PUBLIC_AUTHENTICATED_NO_FUNDS | Product Charter v1.1 section 7 | minimum-data Beta operations; no invitation or participant approval gate |
 
 ## 6. MVP Build Spec FR crosswalk
 
@@ -247,11 +251,12 @@ requires a separate versioned product decision explaining its user, authority,
 capital, custody, loss, withdrawal, and non-redundancy boundaries. Public LP
 vaults and unrestricted liquidity remain prohibited.
 
-### DEC-DISPUTE-001 — dispute/appeal is a closed-pilot prerequisite
+### DEC-DISPUTE-001 — dispute/appeal remains a no-funds operational capability
 
 A durable user/operator dispute, appeal, and correction case workflow is not a
-required L0 local-MVP capability, but it is required before L2 invited closed
-pilot activation. The minimum approved outcome is:
+required L0 local-MVP capability, but it remains required for L2 public
+authenticated no-funds operation. It is not an invitation or
+participant-approval mechanism. The minimum approved outcome is:
 
 - file a case against a Decision, Offer disclosure, Payment, servicing action,
   Evidence item, or report;
@@ -385,6 +390,42 @@ prohibit arbitrary withdrawal; `REQ-POOL-002` permits only normal withdrawal of
 an LP's valid pool claim under liquidity and pause rules. Architecture approval
 does not claim implementation, verification, hosting, testnet execution, real
 value, or production readiness.
+
+### DEC-PUBLIC-NO-FUNDS-BETA-001 — ordinary access is public and authenticated
+
+Founder direction on 2026-08-30 replaces the invited/cohort admission model
+for ordinary no-funds users with a public authenticated Beta.
+
+1. Any normal user may visit `https://ipo.one`, complete the supported
+   authentication flow and create or recover only their own least-privilege
+   Human or Principal workspace without an invitation, cohort membership,
+   allowlist or participant-by-participant Founder approval.
+2. Private durable state remains authentication-gated, forced-RLS protected,
+   Tenant-bound and object-authorized. Anonymous access and another Actor must
+   not read it.
+3. Self-service cannot assign Capital Partner, Risk, Operations, System,
+   Security or Release authority. Existing Agent workload credentials remain
+   Principal-bound and separately provisioned or delegated under current
+   policy.
+4. The current Vercel + Neon architecture, `single_v2` authentication, session
+   protections, abuse control, reconciliation, restore and rollback boundaries
+   remain mandatory. No additional identity provider or datastore is approved.
+5. `REQ-PILOT-001` and `REQ-PILOT-002` remain operational capabilities for
+   correction, privacy-safe feedback, support and incident handling; they no
+   longer imply invitation or participant approval.
+6. `realFundsEnabled`, mainnet, custody, withdrawal, external Provider
+   execution and Agent venue execution remain false. The exact Base Sepolia
+   secured-Pool profile remains separately governed and gains no new economic
+   write authority from this decision.
+
+### v1.3 to v1.4 requirement crosswalk
+
+No requirement ID is added, deleted or repurposed. The L2 delivery-mode label
+changes from `L2_CLOSED_NO_FUNDS` to
+`L2_PUBLIC_AUTHENTICATED_NO_FUNDS`. `REQ-PILOT-001` and `REQ-PILOT-002` retain
+their capabilities and move from an invitation prerequisite status to a
+no-funds operational status. All M2 Pool, Agent venue, real-value, mainnet,
+custody, withdrawal and external-execution gates remain unchanged.
 
 ## 8. Explicit current non-goals and gates
 

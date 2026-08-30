@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-evidence/v1",
-  "policyVersion": "1.3.3",
+  "policyVersion": "1.4.0",
   "profile": "public_sandbox",
   "release": {
     "repository": "CPTM511/IPO.ONE",
@@ -18,7 +18,10 @@
     "marketCreationEnabled": false,
     "privateTenantDataEnabled": false,
     "externalProviderExecutionEnabled": false,
-    "agentVenueExecutionEnabled": false
+    "agentVenueExecutionEnabled": false,
+    "mainnetAuthorized": false,
+    "custodyAuthorized": false,
+    "withdrawalAuthorized": false
   },
   "externalAuthorization": {
     "system": "protected_environment",

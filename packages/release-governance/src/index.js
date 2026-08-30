@@ -156,6 +156,28 @@ function immutableGitHubRevisionUrl(value, path, issues, repository) {
   }
 }
 
+function immutableVercelDeploymentUrl(value, path, issues, repository) {
+  httpsEvidenceUrl(value, path, issues, repository);
+  if (typeof value !== "string") return;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return;
+  }
+  if (
+    !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.vercel\.app$/.test(
+      url.hostname
+    ) ||
+    url.pathname !== "/" ||
+    url.search
+  ) {
+    issues.push(
+      `${path} must identify one immutable Vercel deployment URL.`
+    );
+  }
+}
+
 function timestamp(value, path, issues, nowMs, { allowFuture = false } = {}) {
   if (!boundedString(value, path, issues, { max: 40 })) return null;
   const milliseconds = Date.parse(value);
@@ -178,7 +200,10 @@ const CAPABILITY_KEYS = [
   "marketCreationEnabled",
   "privateTenantDataEnabled",
   "externalProviderExecutionEnabled",
-  "agentVenueExecutionEnabled"
+  "agentVenueExecutionEnabled",
+  "mainnetAuthorized",
+  "custodyAuthorized",
+  "withdrawalAuthorized"
 ];
 
 function capabilities(value, path, issues) {
@@ -294,6 +319,13 @@ export function validateLaunchPolicy(policy) {
         issues.push(`${path} must not enable market creation under the current Product Constitution.`);
       }
       if (
+        profile.capabilities?.mainnetAuthorized !== false ||
+        profile.capabilities?.custodyAuthorized !== false ||
+        profile.capabilities?.withdrawalAuthorized !== false
+      ) {
+        issues.push(`${path} must not authorize mainnet, custody, or withdrawal under the current Product Constitution.`);
+      }
+      if (
         profile.capabilities?.publicPoolParticipationEnabled === true &&
         (profile.capabilities?.securedPoolEnabled !== true ||
           profile.capabilities?.testAssetsEnabled !== true)
@@ -341,7 +373,28 @@ export function validateLaunchPolicy(policy) {
           issues.push(`${path} must not inherit M2 secured-pool or Agent venue capabilities.`);
         }
       }
-      if (
+      if (profileId === "public_authenticated_no_funds_beta") {
+        if (
+          profile.releaseEnabled !== true ||
+          profile.environment !== "public-authenticated-no-funds-beta" ||
+          profile.capabilities?.realFundsEnabled !== false ||
+          profile.capabilities?.humanCreditEnabled !== false ||
+          profile.capabilities?.testAssetsEnabled !== false ||
+          profile.capabilities?.securedPoolEnabled !== false ||
+          profile.capabilities?.publicPoolParticipationEnabled !== false ||
+          profile.capabilities?.marketCreationEnabled !== false ||
+          profile.capabilities?.privateTenantDataEnabled !== true ||
+          profile.capabilities?.externalProviderExecutionEnabled !== false ||
+          profile.capabilities?.agentVenueExecutionEnabled !== false ||
+          profile.capabilities?.mainnetAuthorized !== false ||
+          profile.capabilities?.custodyAuthorized !== false ||
+          profile.capabilities?.withdrawalAuthorized !== false ||
+          profile.gates?.some(({ id }) => id === "pilot_participant_approval") ||
+          profile.unlockRequirements?.length !== 0
+        ) {
+          issues.push(`${path} drifted from the Founder-authorized public authenticated no-funds Beta.`);
+        }
+      } else if (
         profile.releaseEnabled === true &&
         (profile.capabilities?.realFundsEnabled === true ||
           profile.capabilities?.privateTenantDataEnabled === true ||
@@ -479,6 +532,13 @@ export function verifyLaunchEvidence(
       if (evidence.release.imageUri !== null) {
         issues.push("evidence.release.imageUri must be null for the local closed M2A-008 runner.");
       }
+    } else if (evidence.profile === "public_authenticated_no_funds_beta") {
+      immutableVercelDeploymentUrl(
+        evidence.release.imageUri,
+        "evidence.release.imageUri",
+        issues,
+        policy.repository
+      );
     } else {
       boundedString(evidence.release.imageUri, "evidence.release.imageUri", issues, {
         max: 512,

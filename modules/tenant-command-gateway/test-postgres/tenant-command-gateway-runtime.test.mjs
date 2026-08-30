@@ -3596,10 +3596,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         correlationId: `correlation-closed-pilot-readiness-${RUN_ID}`
       });
       assert.equal(readiness.response.requirementId, "REQ-PILOT-002");
-      assert.equal(readiness.response.releaseEnabled, false);
-      assert.equal(readiness.response.activationAuthorized, false);
-      assert.equal(readiness.response.summary.approvedControlCount, 0);
-      assert.equal(readiness.response.summary.pendingControlCount, 7);
+      assert.equal(readiness.response.releaseEnabled, true);
+      assert.equal(readiness.response.activationAuthorized, true);
+      assert.equal(readiness.response.summary.approvedControlCount, 1);
+      assert.equal(readiness.response.summary.pendingControlCount, 6);
       assert.equal(readiness.response.sourceBaseline.currentCandidateVerified, false);
       assert.equal(readiness.response.safety.productionAuthority, false);
       assert.doesNotMatch(JSON.stringify(readiness.response), /\[APPROVER\]|approvedBy|approvalUrl/i);
@@ -3617,7 +3617,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-closed-pilot-readiness-auditor-${RUN_ID}`,
         correlationId: `correlation-closed-pilot-readiness-auditor-${RUN_ID}`
       });
-      assert.equal(auditorReadiness.response.overallStatus, "blocked_pending_approvals");
+      assert.equal(
+        auditorReadiness.response.overallStatus,
+        "authorized_runtime_verification_pending"
+      );
     });
 
     await t.test("PILOT-008A cases are durable, RLS-isolated, additive, restart-safe and MFA-gated", async () => {

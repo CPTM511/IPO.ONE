@@ -16,7 +16,7 @@ async function source(path) {
 const [policyText, templateText, closedPilotTemplateText, m2TemplateText, schemaText] = await Promise.all([
   source("deploy/launch-policy.v1.json"),
   source("deploy/approvals/public-sandbox.pending.json"),
-  source("deploy/approvals/closed-non-funds-pilot.pending.json"),
+  source("deploy/approvals/public-authenticated-no-funds-beta.pending.json"),
   source("deploy/approvals/m2a-008-secured-pool.pending.json"),
   source("deploy/launch-evidence.v1.schema.json")
 ]);
@@ -25,7 +25,7 @@ const policy = validateLaunchPolicy(parseCanonicalJson(policyText, "Launch polic
 const template = parseCanonicalJson(templateText, "Pending launch evidence template");
 const closedPilotTemplate = parseCanonicalJson(
   closedPilotTemplateText,
-  "Pending closed-pilot launch evidence template"
+  "Pending public authenticated Beta launch evidence template"
 );
 const m2Template = parseCanonicalJson(
   m2TemplateText,
@@ -37,7 +37,29 @@ assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
 assert.equal(schema.$id, "https://schemas.ipo.one/operations/launch-evidence.v1.schema.json");
 assert.equal(schema.additionalProperties, false);
 assert.equal(policy.profiles.public_sandbox.releaseEnabled, true);
-assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
+assert.equal(policy.profiles.public_authenticated_no_funds_beta.releaseEnabled, true);
+assert.equal(
+  policy.profiles.public_authenticated_no_funds_beta.capabilities.privateTenantDataEnabled,
+  true
+);
+assert.equal(
+  policy.profiles.public_authenticated_no_funds_beta.gates.some(
+    ({ id }) => id === "pilot_participant_approval"
+  ),
+  false
+);
+assert.equal(
+  policy.profiles.public_authenticated_no_funds_beta.capabilities.mainnetAuthorized,
+  false
+);
+assert.equal(
+  policy.profiles.public_authenticated_no_funds_beta.capabilities.custodyAuthorized,
+  false
+);
+assert.equal(
+  policy.profiles.public_authenticated_no_funds_beta.capabilities.withdrawalAuthorized,
+  false
+);
 assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
 assert.equal(
   policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,
@@ -95,13 +117,13 @@ assert.throws(
   () =>
     verifyLaunchEvidence(closedPilotTemplate, {
       policy,
-      expectedProfile: "closed_non_funds_pilot",
+      expectedProfile: "public_authenticated_no_funds_beta",
       expectedCommitSha: "b".repeat(40),
       now: new Date("2026-07-18T12:00:00.000Z")
     }),
   (error) =>
     error instanceof LaunchEvidenceError &&
-    error.issues.some((issue) => issue.includes("policy-locked"))
+    error.issues.some((issue) => issue.includes("status must be approved"))
 );
 assert.throws(
   () =>

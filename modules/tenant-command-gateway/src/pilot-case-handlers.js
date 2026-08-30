@@ -327,6 +327,14 @@ export function transitionPilotCaseCommandHandler() {
         "pilot_case.operator_actor",
         authenticationContext.actorId
       );
+      // PostgreSQL records sub-millisecond clock precision while the protocol
+      // timestamp is millisecond ISO. Two consecutive commands can therefore
+      // share one serialized millisecond; keep the additive transition strictly
+      // monotonic as required by the durable projection guard.
+      const previousUpdatedAt = new Date(state.value.updatedAt).getTime();
+      const transitionNow = now.getTime() > previousUpdatedAt
+        ? now
+        : new Date(previousUpdatedAt + 1);
       const event = createCreditEvent({
         eventType: input.transition === PilotCaseTransition.ASSIGN
           ? CreditEventType.PILOT_CASE_ASSIGNED
@@ -344,21 +352,21 @@ export function transitionPilotCaseCommandHandler() {
           causationId: requestId,
           correlationId
         },
-        now
+        now: transitionNow
       });
       const pilotCase = input.transition === PilotCaseTransition.ASSIGN
         ? assignPilotCase(state.value, {
             ownerActorRefHash: operatorActorRefHash,
             operatorActorRefHash,
             eventId: event.eventId,
-            now
+            now: transitionNow
           })
         : resolvePilotCase(state.value, {
             resolution: input.transition,
             correctionCode: input.correctionCode ?? null,
             resolverActorRefHash: operatorActorRefHash,
             eventId: event.eventId,
-            now
+            now: transitionNow
           });
       return {
         aggregateType: state.rootAggregateType,

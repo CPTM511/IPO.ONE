@@ -1,12 +1,12 @@
 {
   "schemaVersion": "ipo.one.launch-evidence/v1",
-  "policyVersion": "1.3.3",
-  "profile": "closed_non_funds_pilot",
+  "policyVersion": "1.4.0",
+  "profile": "public_authenticated_no_funds_beta",
   "release": {
     "repository": "CPTM511/IPO.ONE",
     "commitSha": "[EXACT_GREEN_COMMIT_SHA]",
     "ciRunUrl": "[IMMUTABLE_GITHUB_ACTIONS_RUN_URL]",
-    "imageUri": "[IMMUTABLE_ARTIFACT_REGISTRY_IMAGE_DIGEST]",
+    "imageUri": "[IMMUTABLE_VERCEL_DEPLOYMENT_URL]",
     "builtAt": "[ISO_8601_UTC_TIMESTAMP]"
   },
   "capabilities": {
@@ -18,19 +18,22 @@
     "marketCreationEnabled": false,
     "privateTenantDataEnabled": true,
     "externalProviderExecutionEnabled": false,
-    "agentVenueExecutionEnabled": false
+    "agentVenueExecutionEnabled": false,
+    "mainnetAuthorized": false,
+    "custodyAuthorized": false,
+    "withdrawalAuthorized": false
   },
   "externalAuthorization": {
-    "system": "protected_environment",
-    "environment": "closed-pilot",
-    "approvalUrl": "[PROTECTED_ENVIRONMENT_APPROVAL_URL]",
-    "approvedAt": "[ISO_8601_UTC_TIMESTAMP]"
+    "system": "founder_product_decision",
+    "environment": "public-authenticated-no-funds-beta",
+    "approvalUrl": "[IMMUTABLE_GITHUB_COMMIT_OR_BLOB_URL]",
+    "approvedAt": "2026-08-30T00:00:00.000Z"
   },
   "gates": [
     {
-      "id": "security_001_approval",
+      "id": "repository_quality",
       "status": "pending",
-      "ownerRole": "Founder/CTO/Security",
+      "ownerRole": "Engineering",
       "approvedBy": "[APPROVER]",
       "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
       "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
@@ -64,40 +67,31 @@
       "evidenceUrl": "[EVIDENCE_URL]"
     },
     {
-      "id": "independent_pentest",
+      "id": "hosted_abuse_controls",
       "status": "pending",
-      "ownerRole": "Independent Security",
+      "ownerRole": "Security/Operations",
       "approvedBy": "[APPROVER]",
       "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
       "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
       "evidenceUrl": "[EVIDENCE_URL]"
     },
     {
-      "id": "privacy_legal_terms",
+      "id": "public_beta_notice",
       "status": "pending",
-      "ownerRole": "Legal/Privacy",
+      "ownerRole": "Product/Privacy",
       "approvedBy": "[APPROVER]",
       "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
       "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
       "evidenceUrl": "[EVIDENCE_URL]"
     },
     {
-      "id": "support_slo_oncall",
+      "id": "founder_activation_authorization",
       "status": "pending",
-      "ownerRole": "Operations/Product",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
-    },
-    {
-      "id": "pilot_participant_approval",
-      "status": "pending",
-      "ownerRole": "Founder/Product",
-      "approvedBy": "[APPROVER]",
-      "approvedAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "expiresAt": "[ISO_8601_UTC_TIMESTAMP]",
-      "evidenceUrl": "[EVIDENCE_URL]"
+      "ownerRole": "Founder/Release Owner",
+      "approvedBy": "IPO.ONE Founder",
+      "approvedAt": "2026-08-30T00:00:00.000Z",
+      "expiresAt": "2026-09-29T00:00:00.000Z",
+      "evidenceUrl": "[IMMUTABLE_GITHUB_COMMIT_OR_BLOB_URL]"
     }
   ]
 }

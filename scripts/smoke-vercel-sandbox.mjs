@@ -39,7 +39,7 @@ assert.equal(ready.releaseId, releaseId);
 assert.equal(ready.realFundsEnabled, false);
 
 const auth = await json("/auth/v1/options", 200);
-assert.equal(auth.profile, "closed_non_funds_pilot");
+assert.equal(auth.profile, "public_authenticated_no_funds_beta");
 assert.equal(auth.walletAuthentication, true);
 
 const cron = await json("/api/cron", 401);

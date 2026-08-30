@@ -1,5 +1,6 @@
 export const EXPECTED_ENABLED_RELEASE_PROFILES = Object.freeze([
   "public_sandbox",
+  "public_authenticated_no_funds_beta",
   "live_testnet_secured_pool"
 ]);
 
@@ -26,8 +27,8 @@ export function validateTraceabilityReleaseMaturity({
   if (!sameArray(releaseMaturity?.enabledReleaseProfiles, EXPECTED_ENABLED_RELEASE_PROFILES)) {
     failures.push("traceability enabled release profiles drifted");
   }
-  if (releaseMaturity?.closedPilotReleaseEnabled !== false) {
-    failures.push("traceability closed-pilot release state drifted");
+  if (releaseMaturity?.publicAuthenticatedNoFundsBetaEnabled !== true) {
+    failures.push("traceability public authenticated no-funds Beta state drifted");
   }
   if (releaseMaturity?.controlledCreditReleaseEnabled !== false) {
     failures.push("traceability controlled-credit release state drifted");
@@ -56,6 +57,20 @@ export function validateTraceabilityReleaseMaturity({
     pool?.exactProfile?.chainId !== "eip155:84532" ||
     pool?.exactProfile?.realValueClassification !== "test_assets_only"
   ) failures.push("M2 secured-pool Testnet safety boundary drifted");
+
+  const publicBeta = launchPolicy?.profiles?.public_authenticated_no_funds_beta;
+  if (
+    publicBeta?.releaseEnabled !== true ||
+    publicBeta?.environment !== "public-authenticated-no-funds-beta" ||
+    publicBeta?.capabilities?.realFundsEnabled !== false ||
+    publicBeta?.capabilities?.humanCreditEnabled !== false ||
+    publicBeta?.capabilities?.privateTenantDataEnabled !== true ||
+    publicBeta?.capabilities?.externalProviderExecutionEnabled !== false ||
+    publicBeta?.capabilities?.agentVenueExecutionEnabled !== false ||
+    publicBeta?.capabilities?.mainnetAuthorized !== false ||
+    publicBeta?.capabilities?.custodyAuthorized !== false ||
+    publicBeta?.capabilities?.withdrawalAuthorized !== false
+  ) failures.push("public authenticated no-funds Beta safety boundary drifted");
 
   return Object.freeze(failures);
 }

@@ -29,9 +29,9 @@ Object.assign(supplementalWorkloadPublicJwk, {
   use: "sig"
 });
 
-const singleV1ReferenceHashState = Object.freeze({
-  mode: "single_v1",
-  writeKeyVersion: "v1",
+const singleV2ReferenceHashState = Object.freeze({
+  mode: "single_v2",
+  writeKeyVersion: "v2",
   legacyLookupKeyVersion: null
 });
 
@@ -79,14 +79,15 @@ function vercelEnvironment(overrides = {}) {
     IPO_ONE_POLICY_VERSION: "security_001.v1",
     IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: `0x${"2".repeat(40)}`,
     IPO_ONE_RELEASE_ID: "a".repeat(40),
-    IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+    IPO_ONE_AUTHENTICATION_MODE: "public_beta",
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
     IPO_ONE_IDP_VENDOR_ID: "wallet_only",
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "b".repeat(40),
     IPO_ONE_IDP_CONFIGURATION_REF: secretRef("IPO_ONE_IDENTITY_CONFIG_JSON", identity),
-    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: secretRef("IPO_ONE_AUTH_REFERENCE_HASH_KEY", key),
+    IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2",
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF: secretRef("IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY", key),
     IPO_ONE_AUTH_ENCRYPTION_KEY_REF: secretRef("IPO_ONE_AUTH_ENCRYPTION_KEY", key),
-    IPO_ONE_AUTH_REFERENCE_HASH_KEY: key,
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY: key,
     IPO_ONE_AUTH_ENCRYPTION_KEY: key,
     IPO_ONE_IDENTITY_CONFIG_JSON: identity,
     ...overrides
@@ -223,8 +224,8 @@ test("Golden Flow JWKS supplement fails closed on digest, private material, dupl
 test("Vercel Sandbox environment rejects a mismatched inline secret digest", async () => {
   await assert.rejects(
     () => loadProductionClosedPilotEnvironment(vercelEnvironment({
-      IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF:
-        `vercel://environment/production/IPO_ONE_AUTH_REFERENCE_HASH_KEY@sha256:${"0".repeat(64)}`
+      IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF:
+        `vercel://environment/production/IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY@sha256:${"0".repeat(64)}`
     })),
     (error) => error?.code === "invalid_production_environment"
   );
@@ -363,7 +364,7 @@ test("production request handler runs without opening a listening socket", async
     deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,
-    authenticationReferenceHash: singleV1ReferenceHashState,
+    authenticationReferenceHash: singleV2ReferenceHashState,
     publicOrigin: "https://ipo.one",
     port: 8080,
     releaseId: "a".repeat(40)
@@ -386,7 +387,7 @@ test("serverless request handler fails closed on missing Vercel edge headers", a
     deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: configuration.verifyEdgeRequest,
-    authenticationReferenceHash: singleV1ReferenceHashState,
+    authenticationReferenceHash: singleV2ReferenceHashState,
     publicOrigin: configuration.browserOrigin,
     port: 8080,
     releaseId: "a".repeat(40)
@@ -442,7 +443,7 @@ test("Cron cycle rejects duplicate-key AUTHN-008 operations before opening Postg
 test("Vercel Sandbox rejects file-mounted secrets instead of mixing providers", async () => {
   await assert.rejects(
     () => loadProductionClosedPilotEnvironment(vercelEnvironment({
-      IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE: "/tmp/not-allowed"
+      IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: "/tmp/not-allowed"
     })),
     (error) => error?.code === "invalid_production_environment"
   );
@@ -458,7 +459,7 @@ function requestHandlerFixture(overrides = {}) {
     deploymentRole: "primary",
     readinessCheck: async () => true,
     verifyEdgeRequest: async () => true,
-    authenticationReferenceHash: singleV1ReferenceHashState,
+    authenticationReferenceHash: singleV2ReferenceHashState,
     publicOrigin: "https://ipo.one",
     port: 8080,
     releaseId: "a".repeat(40),

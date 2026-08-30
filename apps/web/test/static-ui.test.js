@@ -22,7 +22,7 @@ test("PILOT-008A exposes closed Human and operator case controls without free te
   assert.ok(html.includes("none changes balances, limits, or the original record"));
 });
 
-test("REQ-PILOT-002 exposes a truthful fail-closed readiness view", async () => {
+test("REQ-PILOT-002 exposes a truthful Public Beta delivery-readiness view", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   for (const id of [
@@ -32,11 +32,11 @@ test("REQ-PILOT-002 exposes a truthful fail-closed readiness view", async () => 
     "closedPilotReleasePolicy",
     "closedPilotCandidateStatus"
   ]) assert.ok(html.includes(`id="${id}"`), `${id} readiness control missing`);
-  assert.ok(html.includes("Missing approval or a named owner remains visibly pending"));
-  assert.ok(html.includes("This view cannot activate the pilot"));
+  assert.ok(html.includes("The Founder activation decision is already approved"));
+  assert.ok(html.includes("cannot change the approved launch policy"));
   assert.ok(js.includes("pilotReadClosedPilotReadiness"));
-  assert.ok(js.includes("Blocked · approvals pending"));
-  assert.ok(js.includes("release disabled, zero controls approved"));
+  assert.ok(js.includes("Authorized · verify runtime"));
+  assert.ok(js.includes("Founder activation is approved"));
   assert.equal(/closedPilotReadiness[\s\S]{0,2000}(activate|approve)ClosedPilot/i.test(js), false);
 });
 
@@ -76,7 +76,7 @@ test("public README and Founding Edition II sources remain canonical", async () 
   assert.ok(whitepaperJs.includes("scrollIntoView"));
 });
 
-test("closed-pilot product includes authenticated Human and Agent workflows", async () => {
+test("public Beta product includes authenticated Human and Agent workflows", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const handoff = await readFile(new URL("../src/agent-handoff-manifest.js", import.meta.url), "utf8");
@@ -183,7 +183,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Recent credit activity",
     "Workspace details",
     "More tools",
-    "Closed Pilot · Synthetic Capital",
+    "Public Beta · No Real Funds",
     "Request Credit",
     "Repay &amp; Settle",
     "Credit Passport",
@@ -227,7 +227,7 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "pilotReadOwnObligation + repayment + Evidence",
     "Dual-chain conformance",
     "Checking manifest",
-    "local stdio MCP · closed_non_funds_pilot",
+    "local stdio MCP · public_authenticated_no_funds_beta",
     "Host context injected out of band",
     "Execution, repayment & servicing",
     "Signed sandbox rail + shared ledger",
@@ -242,12 +242,12 @@ test("closed-pilot product includes authenticated Human and Agent workflows", as
     "Start a new Human loan",
     "Portfolio risk, with <em>protective action.</em>",
     "Tenant portfolio posture",
-    "Design-partner lifecycle health",
+    "Public Beta lifecycle health",
     "privacy-safe product truth",
     "no third-party analytics",
-    "PILOT-006 · design-partner feedback",
+    "PILOT-006 · public Beta feedback",
     "Tell us where the product worked—or blocked you.",
-    "Design-partner experience",
+    "Public Beta experience",
     "Aggregate only · identifiers and PII excluded",
     "Adverse Obligation review",
     "SERVICING-002B · private work queue",

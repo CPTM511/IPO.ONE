@@ -144,13 +144,25 @@ export class HumanWalletBff {
       typeof this.credentialRegistry.findOrRebindVerifiedHumanSubject === "function"
         ? this.credentialRegistry.findOrRebindVerifiedHumanSubject.bind(this.credentialRegistry)
         : this.credentialRegistry.findBySubject.bind(this.credentialRegistry);
-    const credential = await findVerifiedSubject({
+    const verifiedSubject = {
       issuer: this.issuer,
       tenantId: this.tenantId,
       externalSubject: `eip155:${transaction.chainId}:${transaction.address.toLowerCase()}`,
       clientId: this.clientId,
       now
-    });
+    };
+    let credential;
+    try {
+      credential = await findVerifiedSubject(verifiedSubject);
+    } catch (error) {
+      if (
+        error?.code !== "authentication_credential_rejected" ||
+        typeof this.credentialRegistry.provisionVerifiedPublicBetaHumanSubject !==
+          "function"
+      ) throw error;
+      credential = await this.credentialRegistry
+        .provisionVerifiedPublicBetaHumanSubject(verifiedSubject);
+    }
     if (
       !HUMAN_ACTOR_TYPES.has(credential.actorType) ||
       credential.clientAuthenticationMethod !== ClientAuthenticationMethod.SIWE ||

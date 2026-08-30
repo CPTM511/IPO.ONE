@@ -38,6 +38,15 @@ const AUTHOR_KEYS = new Set([
   "disclosureRef",
   "schemaVersion"
 ]);
+
+function monotonicOfferMutationTime(now, offer) {
+  if (!offer) return now;
+  const priorTime = Math.max(
+    Date.parse(offer.createdAt),
+    Date.parse(offer.updatedAt)
+  );
+  return new Date(Math.max(now.getTime(), priorTime + 1));
+}
 const TRANSITION_KEYS = new Set(["nextStatus", "supersedingOfferId", "schemaVersion"]);
 const MANAGEABLE_STATUS_SET = new Set([
   CreditOfferStatus.WITHDRAWN,
@@ -315,6 +324,7 @@ export function authorCapitalPartnerOfferCommandHandler() {
           "Credit Intent does not have one replaceable preliminary Offer"
         );
       }
+      const mutationNow = monotonicOfferMutationTime(now, preliminaryOffer);
       const offer = createCapitalPartnerCreditOffer({
         creditIntent,
         decision: sourceDecision,
@@ -339,7 +349,7 @@ export function authorCapitalPartnerOfferCommandHandler() {
         validUntil: input.validUntil,
         reasonCodes: input.reasonCodes,
         disclosureRef: input.disclosureRef,
-        now
+        now: mutationNow
       });
       const event = createCreditEvent({
         eventType: CreditEventType.CREDIT_OFFER_CREATED,
@@ -362,13 +372,13 @@ export function authorCapitalPartnerOfferCommandHandler() {
           causationId: requestId,
           correlationId
         },
-        now
+        now: mutationNow
       });
       const preliminaryOfferClosed = preliminaryOffer
         ? {
             ...preliminaryOffer,
             status: CreditOfferStatus.DECLINED,
-            updatedAt: now.toISOString()
+            updatedAt: mutationNow.toISOString()
           }
         : undefined;
       const preliminaryOfferEvent = preliminaryOffer
@@ -386,14 +396,14 @@ export function authorCapitalPartnerOfferCommandHandler() {
               causationId: requestId,
               correlationId
             },
-            now
+            now: mutationNow
           })
         : undefined;
       const borrower = await borrowerBindings({
         directory,
         subjectId: creditIntent.subjectId,
         authorityType: creditIntent.authorityType,
-        now
+        now: mutationNow
       });
       return {
         aggregateType: "credit_offer",
@@ -496,6 +506,7 @@ export function transitionCapitalPartnerOfferCommandHandler() {
           replacement.status !== CreditOfferStatus.OFFERED
         ) unavailable();
       }
+      const mutationNow = monotonicOfferMutationTime(now, offer);
       const transitioned = transitionCapitalPartnerCreditOffer({
         offer,
         nextStatus: input.nextStatus,
@@ -504,7 +515,7 @@ export function transitionCapitalPartnerOfferCommandHandler() {
         ...(input.supersedingOfferId
           ? { supersedingOfferId: input.supersedingOfferId }
           : {}),
-        now
+        now: mutationNow
       });
       const event = createCreditEvent({
         eventType: CreditEventType.CREDIT_OFFER_STATUS_CHANGED,
@@ -523,7 +534,7 @@ export function transitionCapitalPartnerOfferCommandHandler() {
           causationId: requestId,
           correlationId
         },
-        now
+        now: mutationNow
       });
       return {
         aggregateType: "credit_offer",

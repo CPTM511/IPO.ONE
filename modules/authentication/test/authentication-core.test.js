@@ -323,7 +323,8 @@ test("production authentication fails closed without IdP approval and secret-man
   assert.deepEqual(loadAuthenticationRuntimeConfig({}), {
     enabled: false,
     mode: "disabled",
-    deploymentGateSatisfied: false
+    deploymentGateSatisfied: false,
+    publicBetaSelfService: false
   });
   assert.throws(
     () => loadAuthenticationRuntimeConfig({ IPO_ONE_AUTHENTICATION_MODE: "closed_pilot" }),
@@ -409,7 +410,23 @@ test("production authentication fails closed without IdP approval and secret-man
     IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
   });
   assert.equal(walletOnly.deploymentGateSatisfied, true);
+  assert.equal(walletOnly.publicBetaSelfService, false);
   assert.equal(Object.hasOwn(walletOnly, "oidcClientCredentialRef"), false);
+
+  const publicBeta = loadAuthenticationRuntimeConfig({
+    IPO_ONE_AUTHENTICATION_MODE: "public_beta",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
+    IPO_ONE_IDP_VENDOR_ID: "wallet_only",
+    IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "a".repeat(40),
+    IPO_ONE_IDP_CONFIGURATION_REF: "projects/ipo-one-pilot/secrets/idp-issuer/versions/1",
+    IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2",
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF: "projects/ipo-one-pilot/secrets/auth-reference-key/versions/4",
+    IPO_ONE_AUTH_ENCRYPTION_KEY_REF: "projects/ipo-one-pilot/secrets/auth-encryption-key/versions/4"
+  });
+  assert.equal(publicBeta.deploymentGateSatisfied, true);
+  assert.equal(publicBeta.publicBetaSelfService, true);
+  assert.equal(publicBeta.referenceHashMode, "single_v2");
+  assert.equal(Object.hasOwn(publicBeta, "legacyReferenceHashKeyRef"), false);
   assert.throws(
     () => loadAuthenticationRuntimeConfig({
       IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",

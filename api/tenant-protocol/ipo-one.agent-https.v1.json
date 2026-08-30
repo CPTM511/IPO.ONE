@@ -233,7 +233,7 @@
     }
   },
   "x-ipo-one-schema-version": "agent_https_openapi.v1",
-  "x-ipo-one-profile": "closed_non_funds_pilot",
+  "x-ipo-one-profile": "public_authenticated_no_funds_beta",
   "x-ipo-one-activation": "disabled_pending_named_deployment_approval",
   "x-ipo-one-safety": {
     "remoteParticipantAccessEnabled": false,

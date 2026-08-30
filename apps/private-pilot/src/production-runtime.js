@@ -36,6 +36,8 @@ import {
 import {
   createPostgresSecuredPoolMarketProvider
 } from "./secured-pool-market-provider.js";
+import { PRODUCTION_BOOTSTRAP_PROFILES } from "./production-bootstrap.js";
+import { createPublicBetaAuthenticationLimiter } from "./public-beta-authentication-limiter.js";
 import launchPolicy from "../../../deploy/launch-policy.v1.json" with { type: "json" };
 
 const CONFIG_KEYS = new Set([
@@ -172,6 +174,7 @@ async function composeProductionClosedPilotRuntime(input) {
     encryptionKeyRef: input.encryptionKeyRef,
     oidcProviders: input.oidcProviders,
     policyVersion: input.policyVersion,
+    profile: "public_authenticated_no_funds_beta",
     pool: input.authenticationPool,
     referenceHashKey: input.referenceHashKey,
     referenceHashKeyRef: input.referenceHashKeyRef,
@@ -185,6 +188,16 @@ async function composeProductionClosedPilotRuntime(input) {
     runtimeConfig: input.runtimeConfig,
     systemActorId: input.systemActorId,
     tenantId: input.tenantId,
+    ...(input.runtimeConfig.publicBetaSelfService === true
+      ? {
+          publicBetaWalletRoleProfiles: Object.freeze({
+            human_borrower:
+              PRODUCTION_BOOTSTRAP_PROFILES.human_borrower.capabilities,
+            principal_controller:
+              PRODUCTION_BOOTSTRAP_PROFILES.principal_controller.capabilities
+          })
+        }
+      : {}),
     ...(input.clock === undefined ? {} : { clock: input.clock }),
     ...(input.wallet === undefined ? {} : { wallet: input.wallet })
   });
@@ -208,6 +221,13 @@ async function composeProductionClosedPilotRuntime(input) {
     policyVersion: input.policyVersion
   });
   const securedPool = createProductionSecuredPoolReadBoundary();
+  const authenticationLimiter = createPublicBetaAuthenticationLimiter({
+    pool: input.gatewayPool,
+    tenantId: input.tenantId,
+    systemActorId: input.systemActorId,
+    policyVersion: input.policyVersion,
+    createNetworkContext: input.createNetworkContext
+  });
   const durableGateway = new TenantCommandGateway({
     pool: input.gatewayPool,
     handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
@@ -254,6 +274,7 @@ async function composeProductionClosedPilotRuntime(input) {
       writeKeyVersion: referenceHasher.keyVersion,
       legacyLookupKeyVersion: referenceHasher.legacyKeyVersion ?? null
     },
+    admitAuthenticationRequest: authenticationLimiter.admit,
     gateway,
     humanBff: humanAccess.humanSessionBff,
     machineAuthenticator,
@@ -268,6 +289,7 @@ async function composeProductionClosedPilotRuntime(input) {
     verifyEdgeRequest: input.verifyEdgeRequest,
     publicOrigin: input.browserOrigin,
     port: input.port,
+    profile: "public_authenticated_no_funds_beta",
     releaseId: input.releaseId,
     deploymentRole: input.deploymentRole,
     chainCapabilityProvider: async () =>
@@ -289,7 +311,7 @@ async function composeProductionClosedPilotRuntime(input) {
 
   let started = false;
   return Object.freeze({
-    profile: "closed_non_funds_pilot",
+    profile: "public_authenticated_no_funds_beta",
     realFundsEnabled: false,
     gatewayRole: Object.freeze({
       roleName: gatewayRole.roleName,

@@ -39,6 +39,7 @@
         "tenantProtocolMaturity",
         "enabledReleaseProfiles",
         "closedPilotReleaseEnabled",
+        "publicAuthenticatedNoFundsBetaEnabled",
         "controlledCreditReleaseEnabled",
         "realFundsEnabled",
         "productionCreditEnabled"
@@ -47,16 +48,18 @@
         "tenantProtocolMaturity": { "const": "local_non_funds" },
         "enabledReleaseProfiles": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 3,
+          "maxItems": 3,
           "uniqueItems": true,
           "prefixItems": [
             { "const": "public_sandbox" },
+            { "const": "public_authenticated_no_funds_beta" },
             { "const": "live_testnet_secured_pool" }
           ],
           "items": false
         },
         "closedPilotReleaseEnabled": { "const": false },
+        "publicAuthenticatedNoFundsBetaEnabled": { "const": true },
         "controlledCreditReleaseEnabled": { "const": false },
         "realFundsEnabled": { "const": false },
         "productionCreditEnabled": { "const": false }

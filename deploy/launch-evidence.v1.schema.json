@@ -57,6 +57,11 @@
               "maxLength": 512
             },
             {
+              "type": "string",
+              "pattern": "^https://[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.vercel\\.app/$",
+              "maxLength": 512
+            },
+            {
               "type": "null"
             }
           ]
@@ -123,7 +128,10 @@
         "marketCreationEnabled",
         "privateTenantDataEnabled",
         "externalProviderExecutionEnabled",
-        "agentVenueExecutionEnabled"
+        "agentVenueExecutionEnabled",
+        "mainnetAuthorized",
+        "custodyAuthorized",
+        "withdrawalAuthorized"
       ],
       "properties": {
         "realFundsEnabled": {
@@ -151,6 +159,15 @@
           "type": "boolean"
         },
         "agentVenueExecutionEnabled": {
+          "type": "boolean"
+        },
+        "mainnetAuthorized": {
+          "type": "boolean"
+        },
+        "custodyAuthorized": {
+          "type": "boolean"
+        },
+        "withdrawalAuthorized": {
           "type": "boolean"
         }
       }

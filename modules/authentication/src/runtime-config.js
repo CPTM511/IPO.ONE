@@ -1,6 +1,11 @@
 import { authenticationError } from "./security-utils.js";
 
-const AUTHENTICATION_MODES = new Set(["disabled", "local_test", "closed_pilot"]);
+const AUTHENTICATION_MODES = new Set([
+  "disabled",
+  "local_test",
+  "closed_pilot",
+  "public_beta"
+]);
 const REFERENCE_HASH_MODES = new Set([
   "single_v1",
   "overlap_v2_write_v1_lookup",
@@ -21,11 +26,18 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
   if (!AUTHENTICATION_MODES.has(mode)) {
     throw authenticationError("invalid_authentication_configuration", "authentication mode is invalid");
   }
-  if (mode === "closed_pilot") {
+  const deployedProtectedMode = new Set(["closed_pilot", "public_beta"]).has(mode);
+  if (deployedProtectedMode) {
     if (!REFERENCE_HASH_MODES.has(referenceHashMode)) {
       throw authenticationError(
         "authentication_deployment_gate_closed",
-        "closed-pilot reference hash mode is invalid"
+        "deployed authentication reference hash mode is invalid"
+      );
+    }
+    if (mode === "public_beta" && referenceHashMode !== "single_v2") {
+      throw authenticationError(
+        "authentication_deployment_gate_closed",
+        "public Beta authentication requires the current single-v2 reference hash boundary"
       );
     }
     if (
@@ -35,7 +47,7 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
     ) {
       throw authenticationError(
         "authentication_deployment_gate_closed",
-        "closed-pilot authentication requires an external IdP deployment approval"
+        "deployed authentication requires an external IdP deployment approval"
       );
     }
     const requiredSecretReferences = [
@@ -75,7 +87,7 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
       ) {
         throw authenticationError(
           "authentication_deployment_gate_closed",
-          "closed-pilot authentication requires approved immutable secret references"
+          "deployed authentication requires approved immutable secret references"
         );
       }
     }
@@ -99,8 +111,9 @@ export function loadAuthenticationRuntimeConfig(environment = process.env) {
   return trustedConfig({
     enabled: mode !== "disabled",
     mode,
-    deploymentGateSatisfied: mode === "closed_pilot",
-    ...(mode === "closed_pilot"
+    deploymentGateSatisfied: deployedProtectedMode,
+    publicBetaSelfService: mode === "public_beta",
+    ...(deployedProtectedMode
       ? {
           vendorId: environment.IPO_ONE_IDP_VENDOR_ID,
           approvalSha: environment.IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA,

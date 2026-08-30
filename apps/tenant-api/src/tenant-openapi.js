@@ -271,7 +271,7 @@ export function createTenantOpenApiDocument(publicOrigin) {
       })
     }),
     "x-ipo-one-schema-version": TENANT_OPENAPI_SCHEMA_VERSION,
-    "x-ipo-one-profile": "closed_non_funds_pilot",
+    "x-ipo-one-profile": "public_authenticated_no_funds_beta",
     "x-ipo-one-wallet-operations": WALLET_EXECUTION_OPENAPI_OPERATION_IDS,
     "x-ipo-one-wallet-submission-enabled": false,
     "x-ipo-one-venue-operations": VENUE_EXECUTION_OPENAPI_OPERATION_IDS,
@@ -437,7 +437,7 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
       })
     }),
     "x-ipo-one-schema-version": AGENT_HTTPS_OPENAPI_SCHEMA_VERSION,
-    "x-ipo-one-profile": "closed_non_funds_pilot",
+    "x-ipo-one-profile": "public_authenticated_no_funds_beta",
     "x-ipo-one-wallet-operations": WALLET_EXECUTION_OPENAPI_OPERATION_IDS,
     "x-ipo-one-wallet-submission-enabled": false,
     "x-ipo-one-activation": "disabled_pending_named_deployment_approval",

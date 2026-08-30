@@ -86,13 +86,13 @@ test("checked-in alert and launch evidence cannot drift into a live readiness cl
     AUTHORIZATION_POLICY_VERSION
   );
   assert.equal(
-    RISK_OPERATIONS_POLICY_EVIDENCE.closedPilotReleaseEnabled,
-    launchPolicy.profiles.closed_non_funds_pilot.releaseEnabled
+    RISK_OPERATIONS_POLICY_EVIDENCE.publicBetaReleaseEnabled,
+    launchPolicy.profiles.public_authenticated_no_funds_beta.releaseEnabled
   );
   assert.equal(result.operationalEvidence.alerts.liveStateLoaded, false);
   assert.equal(result.operationalEvidence.reconciliation.liveStateLoaded, false);
   assert.equal(result.operationalEvidence.launch.runtimeApprovalInferred, false);
-  assert.equal(result.operationalEvidence.launch.closedPilotReleaseEnabled, false);
+  assert.equal(result.operationalEvidence.launch.publicBetaReleaseEnabled, true);
 });
 
 test("Borrower, Risk, Operations and Auditor policy ceilings remain separate", () => {
