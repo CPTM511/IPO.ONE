@@ -225,14 +225,16 @@ test("Risk reads the fail-closed pilot readiness contract through a visible cont
   await expect(readiness).toBeEnabled();
   await readiness.click();
 
-  await expect(page.locator("#closedPilotReadinessStatus")).toHaveText(/Blocked/);
+  await expect(page.locator("#closedPilotReadinessStatus")).toHaveText(
+    "Authorized · verify runtime"
+  );
   await expect(page.locator("#closedPilotRequiredControls")).toHaveText("7");
-  await expect(page.locator("#closedPilotApprovedControls")).toHaveText("0");
-  await expect(page.locator("#closedPilotPendingControls")).toHaveText("7");
-  await expect(page.locator("#closedPilotUnavailableControls")).toHaveText("2");
-  await expect(page.locator("#closedPilotReleasePolicy")).toHaveText("Disabled");
+  await expect(page.locator("#closedPilotApprovedControls")).toHaveText("1");
+  await expect(page.locator("#closedPilotPendingControls")).toHaveText("6");
+  await expect(page.locator("#closedPilotUnavailableControls")).toHaveText("0");
+  await expect(page.locator("#closedPilotReleasePolicy")).toHaveText("Enabled · no funds");
   await expect(page.locator("#closedPilotCandidateStatus")).toHaveText("Unverified");
   await expect(page.locator("#closedPilotReadinessHelper")).toContainText(
-    "release disabled"
+    "Founder activation is approved"
   );
 });
