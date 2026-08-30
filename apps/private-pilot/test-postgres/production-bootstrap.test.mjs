@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
 import { migrateDown, migrateUp } from "../../../scripts/migrate.mjs";
 import {
@@ -15,6 +16,22 @@ import {
 const { Pool } = pg;
 const futureCredentialExpiry = () =>
   new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString();
+
+async function dropDrainedTestDatabase(admin, database) {
+  assert.match(database, /^ipo_[a-z0-9_]+$/);
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const active = await admin.query(
+      "SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = $1",
+      [database]
+    );
+    if (active.rows[0].count === 0) {
+      await admin.query(`DROP DATABASE IF EXISTS "${database}"`);
+      return;
+    }
+    await delay(25);
+  }
+  assert.fail(`test database connections did not drain for ${database}`);
+}
 
 test("fresh migrations succeed for a non-superuser database owner under forced RLS", async () => {
   const suffix = randomBytes(5).toString("hex");
@@ -122,7 +139,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     ]);
   } finally {
     await target?.end().catch(() => {});
-    await admin.query(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`).catch(() => {});
+    await dropDrainedTestDatabase(admin, database);
     await admin.query(`DROP ROLE IF EXISTS "${gatewayRole}"`).catch(() => {});
     await admin.query(`DROP ROLE IF EXISTS "${authenticationRole}"`).catch(() => {});
     await admin.query(`DROP ROLE IF EXISTS "${role}"`).catch(() => {});
@@ -262,7 +279,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     assert.equal(backfilled.rows[0].count, 2);
   } finally {
     await upgradePool?.end().catch(() => {});
-    await upgradeAdmin.query(`DROP DATABASE IF EXISTS "${upgradeDatabase}" WITH (FORCE)`).catch(() => {});
+    await dropDrainedTestDatabase(upgradeAdmin, upgradeDatabase);
     await upgradeAdmin.query(`DROP ROLE IF EXISTS "${upgradeGatewayRole}"`).catch(() => {});
     await upgradeAdmin.query(`DROP ROLE IF EXISTS "${upgradeAuthenticationRole}"`).catch(() => {});
     await upgradeAdmin.end();
