@@ -43,6 +43,7 @@ const ROOT_KEYS = new Set([
   "pool",
   "postLoginPath",
   "profile",
+  "publicBetaWalletRoleProfiles",
   "referenceHashKey",
   "referenceHashKeyRef",
   "referenceHashMode",
@@ -256,14 +257,23 @@ export async function createPostgresHumanAccessComposition(input) {
     runtimeConfig.enabled === true &&
     runtimeConfig.deploymentGateSatisfied === false &&
     input.profile === "local_no_funds";
-  const closedPilot =
-    runtimeConfig.mode === "closed_pilot" &&
+  const deployedProtected =
+    new Set(["closed_pilot", "public_beta"]).has(runtimeConfig.mode) &&
     runtimeConfig.enabled === true &&
     runtimeConfig.deploymentGateSatisfied === true;
-  if (!closedPilot && !localProfile) {
+  if (!deployedProtected && !localProfile) {
     throw authenticationError(
       "authentication_deployment_gate_closed",
       "PostgreSQL Human access requires the approved closed-pilot or local no-funds runtime"
+    );
+  }
+  if (
+    (runtimeConfig.publicBetaSelfService === true) !==
+    (input.publicBetaWalletRoleProfiles !== undefined)
+  ) {
+    throw authenticationError(
+      "authentication_deployment_gate_closed",
+      "public Beta wallet self-service requires the exact ordinary role profiles"
     );
   }
   const tenantId = assertSafeIdentifier("tenantId", input.tenantId);
@@ -278,7 +288,7 @@ export async function createPostgresHumanAccessComposition(input) {
   let referenceHashKeyRef;
   let legacyReferenceHashKeyRef;
   let encryptionKeyRef;
-  const referenceHashMode = closedPilot
+  const referenceHashMode = deployedProtected
     ? runtimeConfig.referenceHashMode
     : input.referenceHashMode ?? "single_v1";
   if (localProfile) {
@@ -379,7 +389,10 @@ export async function createPostgresHumanAccessComposition(input) {
     eventRepository,
     tenantId,
     referenceHasher,
-    systemActorId
+    systemActorId,
+    ...(runtimeConfig.publicBetaSelfService === true
+      ? { publicBetaWalletRoleProfiles: input.publicBetaWalletRoleProfiles }
+      : {})
   });
   const sessionStore = new PostgresHumanSessionStore({
     eventRepository,
@@ -508,7 +521,9 @@ export async function createPostgresHumanAccessComposition(input) {
       idpApprovalSha: localProfile ? undefined : runtimeConfig.approvalSha,
       referenceHashKeyRef,
       encryptionKeyRef,
-      credentialProvisioning: "pre_provisioned_only",
+      credentialProvisioning: runtimeConfig.publicBetaSelfService === true
+        ? "verified_wallet_self_service"
+        : "pre_provisioned_only",
       authority: "authentication_only",
       realFundsEnabled: false
     })

@@ -131,7 +131,7 @@ export function createAuthenticationAvailabilityPresentation(input = {}) {
     status = "Wallet selected. Choose an approved test network, then sign in.";
   } else if (noConfiguredMethods) {
     recoveryKind = "no_methods";
-    status = "No sign-in method is enabled for this invited workspace.";
+    status = "No public Beta sign-in method is currently available.";
   }
 
   return Object.freeze({
@@ -196,7 +196,7 @@ export function createAccessSupportDiagnostic(input = {}) {
     walletProviderState,
     walletProviderCount,
     observedAt,
-    instruction: "Send this privacy-safe diagnostic through your original IPO.ONE invitation channel.",
+    instruction: "Send this privacy-safe diagnostic to IPO.ONE support.",
     credentialsIncluded: false,
     privateResourceIdentifiersIncluded: false,
     fundsAuthority: false

@@ -17,7 +17,20 @@ function launchPolicy() {
           externalProviderExecutionEnabled: false
         }
       },
-      closed_non_funds_pilot: { releaseEnabled: false, capabilities: {} },
+      public_authenticated_no_funds_beta: {
+        releaseEnabled: true,
+        environment: "public-authenticated-no-funds-beta",
+        capabilities: {
+          realFundsEnabled: false,
+          humanCreditEnabled: false,
+          privateTenantDataEnabled: true,
+          externalProviderExecutionEnabled: false,
+          agentVenueExecutionEnabled: false,
+          mainnetAuthorized: false,
+          custodyAuthorized: false,
+          withdrawalAuthorized: false
+        }
+      },
       live_testnet_secured_pool: {
         releaseEnabled: true,
         environment: "live-testnet-secured-pool",
@@ -45,6 +58,7 @@ function maturity() {
   return {
     enabledReleaseProfiles: [...EXPECTED_ENABLED_RELEASE_PROFILES],
     closedPilotReleaseEnabled: false,
+    publicAuthenticatedNoFundsBetaEnabled: true,
     controlledCreditReleaseEnabled: false
   };
 }

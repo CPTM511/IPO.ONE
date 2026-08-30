@@ -63,7 +63,11 @@ function createSyntheticIdentityProvider({ pool, profile }) {
         if (existing) return existing;
 
         const consent = await coreRepository.getConsentRecordInTransaction(client, consentId);
-        const now = new Date();
+        // The Consent timestamp is derived from the database-backed admission lock.
+        // Reuse the database clock here so small host/database clock skew cannot make
+        // an immediately issued Consent appear to be in the future.
+        const clock = await client.query("SELECT clock_timestamp() AS now");
+        const now = new Date(clock.rows[0].now);
         const expiresAt = new Date(Math.min(
           new Date(consent.expiresAt).getTime(),
           now.getTime() + 30 * 86_400_000

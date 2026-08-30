@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ipo.one.launch-policy/v1",
-  "policyVersion": "1.3.3",
+  "policyVersion": "1.4.0",
   "repository": "CPTM511/IPO.ONE",
   "evidenceSchemaVersion": "ipo.one.launch-evidence/v1",
   "profiles": {
@@ -18,7 +18,10 @@
         "marketCreationEnabled": false,
         "privateTenantDataEnabled": false,
         "externalProviderExecutionEnabled": false,
-        "agentVenueExecutionEnabled": false
+        "agentVenueExecutionEnabled": false,
+        "mainnetAuthorized": false,
+        "custodyAuthorized": false,
+        "withdrawalAuthorized": false
       },
       "exactProfile": null,
       "gates": [
@@ -85,10 +88,10 @@
       ],
       "unlockRequirements": []
     },
-    "closed_non_funds_pilot": {
-      "displayName": "Closed commercial non-funds pilot",
-      "releaseEnabled": false,
-      "environment": "closed-pilot",
+    "public_authenticated_no_funds_beta": {
+      "displayName": "Public authenticated no-funds Beta",
+      "releaseEnabled": true,
+      "environment": "public-authenticated-no-funds-beta",
       "maxReleaseAgeHours": 24,
       "capabilities": {
         "realFundsEnabled": false,
@@ -99,14 +102,17 @@
         "marketCreationEnabled": false,
         "privateTenantDataEnabled": true,
         "externalProviderExecutionEnabled": false,
-        "agentVenueExecutionEnabled": false
+        "agentVenueExecutionEnabled": false,
+        "mainnetAuthorized": false,
+        "custodyAuthorized": false,
+        "withdrawalAuthorized": false
       },
       "exactProfile": null,
       "gates": [
         {
-          "id": "security_001_approval",
-          "ownerRole": "Founder/CTO/Security",
-          "maxAgeHours": 720
+          "id": "repository_quality",
+          "ownerRole": "Engineering",
+          "maxAgeHours": 72
         },
         {
           "id": "tenant_authn_authz_tests",
@@ -124,32 +130,22 @@
           "maxAgeHours": 168
         },
         {
-          "id": "independent_pentest",
-          "ownerRole": "Independent Security",
+          "id": "hosted_abuse_controls",
+          "ownerRole": "Security/Operations",
+          "maxAgeHours": 168
+        },
+        {
+          "id": "public_beta_notice",
+          "ownerRole": "Product/Privacy",
           "maxAgeHours": 720
         },
         {
-          "id": "privacy_legal_terms",
-          "ownerRole": "Legal/Privacy",
-          "maxAgeHours": 2160
-        },
-        {
-          "id": "support_slo_oncall",
-          "ownerRole": "Operations/Product",
-          "maxAgeHours": 720
-        },
-        {
-          "id": "pilot_participant_approval",
-          "ownerRole": "Founder/Product",
+          "id": "founder_activation_authorization",
+          "ownerRole": "Founder/Release Owner",
           "maxAgeHours": 720
         }
       ],
-      "unlockRequirements": [
-        "Approve SECURITY-001 SEC-D01 through SEC-D09 and record jurisdiction and retention owner.",
-        "Complete TENANT-001, AUTHN-001, AUTHZ-001, DATA-003, APPROVAL-001, and ABUSE-001.",
-        "Pass independent penetration, backup/restore, reconciliation, privacy, incident, and support gates.",
-        "Approve a policy revision that unlocks this profile; evidence alone cannot unlock it."
-      ]
+      "unlockRequirements": []
     },
     "live_testnet_secured_pool": {
       "displayName": "Public Base Sepolia secured-pool test",
@@ -165,7 +161,10 @@
         "marketCreationEnabled": false,
         "privateTenantDataEnabled": false,
         "externalProviderExecutionEnabled": false,
-        "agentVenueExecutionEnabled": false
+        "agentVenueExecutionEnabled": false,
+        "mainnetAuthorized": false,
+        "custodyAuthorized": false,
+        "withdrawalAuthorized": false
       },
       "exactProfile": {
         "chainId": "eip155:84532",
@@ -230,7 +229,10 @@
         "marketCreationEnabled": false,
         "privateTenantDataEnabled": true,
         "externalProviderExecutionEnabled": true,
-        "agentVenueExecutionEnabled": false
+        "agentVenueExecutionEnabled": false,
+        "mainnetAuthorized": false,
+        "custodyAuthorized": false,
+        "withdrawalAuthorized": false
       },
       "exactProfile": null,
       "gates": [

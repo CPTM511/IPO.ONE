@@ -40,7 +40,7 @@ untracked notes.
 
 Guidance hierarchy:
 
-- Product Constitution v1.3 is the highest product-truth authority and conflict
+- Product Constitution v1.4 is the highest product-truth authority and conflict
   resolver. It assigns stable requirement IDs, records approved/gated/rejected
   capabilities, and resolves the current CreditLine, Agent Lockbox, Strategy
   Vault, and dispute-workflow decisions. Approval in the Constitution is not

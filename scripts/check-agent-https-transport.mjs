@@ -106,7 +106,7 @@ if (
 }
 if (
   topology.authority?.remoteParticipantAccessEnabled !== false ||
-  topology.edge?.activation !== "disabled" ||
+  topology.edge?.participantActivation !== "blocked" ||
   topology.launchBlocked !== true
 ) {
   failures.push("TRANSPORT-003 must not activate the closed-pilot topology");

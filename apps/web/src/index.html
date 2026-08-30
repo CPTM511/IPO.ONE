@@ -136,7 +136,7 @@
         </nav>
 
         <div class="sidebar-footer">
-          <div class="pilot-boundary"><span class="pilot-boundary-dot" aria-hidden="true"></span><strong>Closed Pilot · Synthetic Capital</strong></div>
+          <div class="pilot-boundary"><span class="pilot-boundary-dot" aria-hidden="true"></span><strong>Public Beta · No Real Funds</strong></div>
           <div><span>API</span><strong id="sidebarApiStatus">Connecting</strong></div>
           <div><span>Rail</span><strong>Sandbox only</strong></div>
           <a href="/openapi.json" target="_blank" rel="noreferrer">
@@ -181,13 +181,14 @@
           <section class="safety-banner" aria-label="Sandbox safety boundary">
             <div>
               <svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg>
-              <strong>No-funds product sandbox</strong>
+              <strong>Public Beta · No-funds product sandbox</strong>
             </div>
             <div class="safety-items">
               <span>No real lending</span>
               <span>No real funds</span>
               <span>No financial advice</span>
               <span>Synthetic identity only</span>
+              <span>Early-access data is retained for operation, Evidence, security, and debugging under the applicable privacy terms</span>
               <span>Protocol fees disabled · Fee Policy deferred</span>
             </div>
           </section>
@@ -920,7 +921,7 @@
             <section class="panel pilot-feedback-card" aria-labelledby="pilotFeedbackTitle">
               <div class="panel-heading stacked-mobile">
                 <div>
-                  <p class="eyebrow">PILOT-006 · design-partner feedback</p>
+                  <p class="eyebrow">PILOT-006 · public Beta feedback</p>
                   <h3 id="pilotFeedbackTitle">Tell us where the product worked—or blocked you.</h3>
                   <p>Choose structured signals only. This form has no comment box and accepts no name, contact detail, wallet address, KYC, or other PII.</p>
                 </div>
@@ -2490,14 +2491,14 @@
                 <div class="panel-heading pilot-health-heading stacked-mobile">
                   <div>
                     <p class="eyebrow">PILOT-005 · privacy-safe product truth</p>
-                    <h3 id="pilotHealthTitle">Design-partner lifecycle health</h3>
+                    <h3 id="pilotHealthTitle">Public Beta lifecycle health</h3>
                     <p>Aggregate Human and Agent progress from durable protocol facts—without trackers, raw identifiers, KYC, or borrower PII.</p>
                   </div>
                   <span id="pilotHealthStatus" class="state-pill neutral">Not loaded</span>
                 </div>
                 <p id="pilotHealthHelper" class="risk-helper" role="status" aria-live="polite">Load the Tenant portfolio to verify the product funnel.</p>
                 <button id="loadRiskInsightsBtn" class="secondary icon-text" type="button" hidden><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load supporting insights</button>
-                <div class="pilot-health-metrics" aria-label="Private pilot lifecycle summary">
+                <div class="pilot-health-metrics" aria-label="Public Beta lifecycle summary">
                   <div><span>Applications</span><strong id="pilotHealthIntentCount">0</strong><small id="pilotHealthOfferConversion">0% offered</small></div>
                   <div><span>Accepted</span><strong id="pilotHealthAcceptedCount">0</strong><small id="pilotHealthAcceptanceConversion">0% of applications</small></div>
                   <div><span>Executed</span><strong id="pilotHealthExecutedCount">0</strong><small id="pilotHealthExecutionConversion">0% of applications</small></div>
@@ -2517,13 +2518,13 @@
                 <div class="panel-heading stacked-mobile">
                   <div>
                     <p class="eyebrow">PILOT-006 · privacy-safe feedback truth</p>
-                    <h3 id="pilotFeedbackSummaryTitle">Design-partner experience</h3>
+                    <h3 id="pilotFeedbackSummaryTitle">Public Beta experience</h3>
                     <p>Aggregate categorical signals from Human and Agent entry modes. No feedback, Subject, Actor, wallet, KYC, or Event identifier is returned.</p>
                   </div>
                   <span id="pilotFeedbackSummaryStatus" class="state-pill neutral">Not loaded</span>
                 </div>
                 <p id="pilotFeedbackSummaryHelper" class="risk-helper" role="status" aria-live="polite">Load the Tenant portfolio to aggregate feedback.</p>
-                <div class="pilot-feedback-summary-metrics" aria-label="Design-partner feedback summary">
+                <div class="pilot-feedback-summary-metrics" aria-label="Public Beta feedback summary">
                   <div><span>Total signals</span><strong id="pilotFeedbackSummaryTotal">0</strong></div>
                   <div><span>Human / Agent</span><strong id="pilotFeedbackSummaryModes">0 / 0</strong></div>
                   <div><span>Completed</span><strong id="pilotFeedbackSummaryCompleted">0</strong></div>
@@ -2552,24 +2553,24 @@
               <section class="panel pilot-feedback-summary-card" aria-labelledby="closedPilotReadinessTitle">
                 <div class="panel-heading stacked-mobile">
                   <div>
-                    <p class="eyebrow">REQ-PILOT-002 · fail-closed readiness</p>
-                    <h3 id="closedPilotReadinessTitle">Closed-pilot operating readiness</h3>
-                    <p>Queryable status for retention, support, incident, restore, rollback, on-call, and notification ownership. Missing approval or a named owner remains visibly pending.</p>
+                    <p class="eyebrow">REQ-PILOT-002 · Public Beta readiness</p>
+                    <h3 id="closedPilotReadinessTitle">Public no-funds Beta operating readiness</h3>
+                    <p>The Founder activation decision is already approved. This read-only view tracks exact release, authentication, recovery, reconciliation, abuse-control, and Beta-notice verification without granting another activation authority.</p>
                   </div>
-                  <span id="closedPilotReadinessStatus" class="state-pill warning">Blocked</span>
+                  <span id="closedPilotReadinessStatus" class="state-pill neutral">Not loaded</span>
                 </div>
                 <div class="button-row compact"><button id="loadClosedPilotReadinessBtn" class="secondary icon-text" type="button"><svg aria-hidden="true"><use href="/icons.svg#refresh"></use></svg>Load readiness</button></div>
-                <p id="closedPilotReadinessHelper" class="risk-helper" role="status" aria-live="polite">Risk, Operations, or Auditor access with recent MFA is required. This view cannot activate the pilot.</p>
-                <div class="pilot-feedback-summary-metrics" aria-label="Closed-pilot readiness summary">
+                <p id="closedPilotReadinessHelper" class="risk-helper" role="status" aria-live="polite">Risk, Operations, or Auditor access with recent MFA is required. This view verifies delivery state and cannot change the approved launch policy.</p>
+                <div class="pilot-feedback-summary-metrics" aria-label="Public Beta readiness summary">
                   <div><span>Required controls</span><strong id="closedPilotRequiredControls">7</strong></div>
-                  <div><span>Approved</span><strong id="closedPilotApprovedControls">0</strong></div>
-                  <div><span>Pending</span><strong id="closedPilotPendingControls">7</strong></div>
-                  <div><span>Unavailable</span><strong id="closedPilotUnavailableControls">2</strong></div>
-                  <div><span>Release policy</span><strong id="closedPilotReleasePolicy">Disabled</strong></div>
+                  <div><span>Authorized</span><strong id="closedPilotApprovedControls">1</strong></div>
+                  <div><span>Verify release</span><strong id="closedPilotPendingControls">6</strong></div>
+                  <div><span>Unavailable</span><strong id="closedPilotUnavailableControls">0</strong></div>
+                  <div><span>Release policy</span><strong id="closedPilotReleasePolicy">Enabled · no funds</strong></div>
                   <div><span>Current candidate</span><strong id="closedPilotCandidateStatus">Unverified</strong></div>
                 </div>
-                <div id="closedPilotReadinessRows" class="risk-summary-list" aria-label="Closed-pilot readiness controls"></div>
-                <div class="pilot-health-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span>Read-only · no names or contact details · no activation authority · no launch-policy mutation.</span></div>
+                <div id="closedPilotReadinessRows" class="risk-summary-list" aria-label="Public Beta readiness controls"></div>
+                <div class="pilot-health-boundary"><svg aria-hidden="true"><use href="/icons.svg#shield-check"></use></svg><span>Read-only · no names or contact details · no new activation decision · no launch-policy mutation · no real funds.</span></div>
               </section>
 
               <section class="panel servicing-queue-card" aria-labelledby="servicingQueueTitle">
@@ -2734,7 +2735,7 @@
               <div class="human-entry-stats" aria-label="Agent integration status">
                 <div><span>Identity</span><strong id="agentRuntimeIdentity">Principal setup required</strong></div>
                 <div><span>Handoff</span><strong id="agentRuntimeAuthority">Awaiting Mandate</strong></div>
-                <div><span>Transport</span><strong>local stdio MCP · closed_non_funds_pilot</strong></div>
+                <div><span>Transport</span><strong>local stdio MCP · public_authenticated_no_funds_beta</strong></div>
               </div>
             </section>
 
@@ -2842,7 +2843,7 @@
                   <div><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg><span><strong>ipo_one_read_credit_registry_evidence</strong><small>pilotReadCreditRegistryEvidence</small></span><em data-mcp-tool-status="evidence">Waiting</em></div>
                 </div>
                 <div class="mcp-transport-boundary">
-                  <div><span>Transport</span><strong>local stdio MCP · closed_non_funds_pilot</strong></div>
+                  <div><span>Transport</span><strong>local stdio MCP · public_authenticated_no_funds_beta</strong></div>
                   <div><span>Authentication</span><strong>Host context injected out of band</strong></div>
                   <div><span>API contract</span><strong>Loopback OpenAPI + local MCP registry</strong></div>
                   <div><span>Funds authority</span><strong>None</strong></div>
@@ -2940,7 +2941,7 @@
             <div class="access-recovery" id="accessRecoveryPanel" hidden>
               <div>
                 <strong id="accessRecoveryTitle">Sign-in check needs attention</strong>
-                <p id="accessRecoveryCopy">Check the server again or share a privacy-safe diagnostic through your original invitation channel.</p>
+                <p id="accessRecoveryCopy">Check the server again or share a privacy-safe diagnostic with IPO.ONE support.</p>
               </div>
               <div class="button-row">
                 <button class="primary" id="retryAccessOptionsBtn" type="button">Check sign-in again</button>
@@ -2962,8 +2963,8 @@
             </div>
             <div class="access-support" id="accessSupportPanel" hidden>
               <div>
-                <strong>Need help with invited access?</strong>
-                <p>Copy a privacy-safe diagnostic and send it through your original IPO.ONE invitation channel. It excludes cookies, wallet addresses, tokens, and private resource IDs.</p>
+                <strong>Need help signing in?</strong>
+                <p>Copy a privacy-safe diagnostic and send it to IPO.ONE support. It excludes cookies, wallet addresses, tokens, and private resource IDs.</p>
                 <dl class="access-diagnostic-summary" aria-label="Access diagnostic summary">
                   <div><dt>Error</dt><dd><code id="accessDiagnosticError">authentication_unavailable</code></dd></div>
                   <div><dt>Request ID</dt><dd><code id="accessDiagnosticRequest">unavailable</code></dd></div>

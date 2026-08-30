@@ -1,0 +1,4 @@
+DROP FUNCTION IF EXISTS provision_public_beta_human_wallet_identity(
+  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT,
+  TEXT, TEXT, TEXT, TEXT, JSONB, JSONB, TIMESTAMPTZ
+);

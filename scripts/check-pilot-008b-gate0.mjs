@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import {
-  PILOT_008B_APPROVAL_GATES,
   parseClosedPilotOperations,
   parseDeployTopology,
   parsePilot008BGate0,
@@ -12,10 +11,7 @@ import {
 const record = parsePilot008BGate0(
   await readFile("deploy/closed-pilot/pilot-008b-gate0.v1.json", "utf8")
 );
-const policy = JSON.parse(await readFile(record.sourceTruth.launchPolicyPath, "utf8"));
-const approvalTemplate = JSON.parse(
-  await readFile(record.sourceTruth.approvalTemplatePath, "utf8")
-);
+const policy = JSON.parse(await readFile("deploy/launch-policy.v1.json", "utf8"));
 const topology = parseDeployTopology(
   await readFile(record.sourceTruth.topologyPath, "utf8")
 );
@@ -32,23 +28,21 @@ const vercelConfiguration = JSON.parse(
   await readFile(record.sourceTruth.vercelConfigurationPath, "utf8")
 );
 
-const profile = policy.profiles[record.profile];
-assert.equal(policy.policyVersion, record.sourceTruth.launchPolicyVersion);
-assert.equal(profile.releaseEnabled, false);
-assert.equal(record.sourceTruth.launchPolicyReleaseEnabled, false);
-assert.equal(approvalTemplate.policyVersion, policy.policyVersion);
-assert.equal(approvalTemplate.profile, record.profile);
-assert.deepEqual(
-  profile.gates.map((gate) => gate.id),
-  PILOT_008B_APPROVAL_GATES
-);
-assert.deepEqual(
-  approvalTemplate.gates.map((gate) => gate.id),
-  PILOT_008B_APPROVAL_GATES
-);
+const publicBeta = policy.profiles.public_authenticated_no_funds_beta;
+assert.equal(policy.policyVersion, "1.4.0");
+assert.equal(publicBeta.releaseEnabled, true);
+assert.equal(publicBeta.capabilities.realFundsEnabled, false);
+assert.equal(publicBeta.capabilities.privateTenantDataEnabled, true);
 assert.equal(
-  approvalTemplate.gates.every((gate) => gate.status === "pending"),
-  true
+  publicBeta.gates.some(({ id }) => id === "pilot_participant_approval"),
+  false
+);
+assert.equal(Object.hasOwn(policy.profiles, record.profile), false);
+assert.equal(record.sourceTruth.launchPolicyVersion, "1.3.3");
+assert.equal(record.sourceTruth.launchPolicyReleaseEnabled, false);
+assert.equal(
+  record.sourceTruth.approvalTemplatePath,
+  "deploy/approvals/closed-non-funds-pilot.pending.json"
 );
 
 assert.equal(topology.launchBlocked, true);
@@ -125,8 +119,7 @@ assert.equal(
 assert.match(packageManifest.scripts.check, /pnpm run check:pilot-008b-gate0/);
 
 console.log(
-  "PILOT-008B Gate 0 passed: the existing Vercel + Neon Launch stack is " +
-    "selected and observed without secret disclosure; Cloud SQL/Cloud Run " +
-    "requirements are not applicable, while cohort activation, credentials, " +
-    "traffic, external execution and funds remain blocked."
+  "PILOT-008B archival check passed: the old Gate 0 record remains internally " +
+    "consistent as historical evidence, while the current Public Beta policy " +
+    "supersedes its cohort and participant-activation assumptions."
 );

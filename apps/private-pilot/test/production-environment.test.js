@@ -52,14 +52,15 @@ test("production environment supports reviewed wallet-only access without an OID
     IPO_ONE_SYSTEM_ACTOR_ID: "actor_authentication_system",
     IPO_ONE_POLICY_VERSION: "security_001.v1",
     IPO_ONE_RELEASE_ID: "a".repeat(40),
-    IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+    IPO_ONE_AUTHENTICATION_MODE: "public_beta",
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
     IPO_ONE_IDP_VENDOR_ID: "wallet_only",
     IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "b".repeat(40),
     IPO_ONE_IDP_CONFIGURATION_REF: SECRET_REF,
-    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: SECRET_REF,
+    IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2",
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF: SECRET_REF,
     IPO_ONE_AUTH_ENCRYPTION_KEY_REF: SECRET_REF,
-    IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE: referenceKey,
+    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: referenceKey,
     IPO_ONE_AUTH_ENCRYPTION_KEY_FILE: encryptionKey,
     IPO_ONE_EDGE_ASSERTION_KEY_FILE: edgeKey,
     IPO_ONE_IDENTITY_CONFIG_FILE: identityConfig
@@ -83,41 +84,18 @@ test("production environment supports reviewed wallet-only access without an OID
   assert.match(network.referenceHash, /^0x[0-9a-f]{64}$/);
   assert.equal(JSON.stringify(network).includes("203.0.113.8"), false);
 
-  const nextReferenceKey = join(directory, "reference-key-v2");
-  await writeFile(nextReferenceKey, Buffer.alloc(32, 8).toString("base64url"));
+  const legacyReferenceKey = join(directory, "reference-key-v1");
+  await writeFile(legacyReferenceKey, Buffer.alloc(32, 8).toString("base64url"));
   const overlapEnvironment = {
     ...environment,
     IPO_ONE_AUTH_REFERENCE_HASH_MODE: "overlap_v2_write_v1_lookup",
-    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF:
-      "projects/ipo-one-prod/secrets/auth-reference-v2/versions/1",
-    IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: nextReferenceKey
+    IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF:
+      "projects/ipo-one-prod/secrets/auth-reference-v1/versions/1",
+    IPO_ONE_AUTH_REFERENCE_HASH_KEY_FILE: legacyReferenceKey
   };
-  const overlap = await loadProductionClosedPilotEnvironment(overlapEnvironment);
-  t.after(async () => Promise.allSettled([
-    overlap.gatewayPool.end(),
-    overlap.authenticationPool.end()
-  ]));
-  assert.equal(overlap.referenceHashMode, "overlap_v2_write_v1_lookup");
-  assert.equal(overlap.runtimeConfig.referenceHashKeyRef, overlapEnvironment.IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF);
-  assert.equal(overlap.runtimeConfig.legacyReferenceHashKeyRef, SECRET_REF);
-  const overlapNetwork = overlap.createNetworkContext({
-    request: { headers: { "x-forwarded-for": "203.0.113.8" } }
-  });
-  assert.match(overlapNetwork.legacyReferenceHash, /^0x[0-9a-f]{64}$/);
-  assert.notEqual(overlapNetwork.referenceHash, overlapNetwork.legacyReferenceHash);
   await assert.rejects(
-    () => loadProductionClosedPilotEnvironment({
-      ...overlapEnvironment,
-      IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2"
-    }),
+    () => loadProductionClosedPilotEnvironment(overlapEnvironment),
     (error) => error?.code === "authentication_deployment_gate_closed"
-  );
-  await assert.rejects(
-    () => loadProductionClosedPilotEnvironment({
-      ...overlapEnvironment,
-      IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: referenceKey
-    }),
-    (error) => error?.code === "invalid_authentication_configuration"
   );
 });
 

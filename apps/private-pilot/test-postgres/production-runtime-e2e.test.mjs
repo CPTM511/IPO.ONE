@@ -10,7 +10,7 @@ import {
 import {
   CSRF_BOOTSTRAP_COOKIE_NAME,
   SESSION_COOKIE_NAME,
-  createReferenceHasher,
+  createReferenceHashKeyring,
   loadAuthenticationRuntimeConfig
 } from "../../../modules/authentication/src/index.js";
 import {
@@ -80,7 +80,7 @@ function cookieValue(cookies, name) {
 }
 
 test(
-  "production closed pilot executes a durable Human command, logs out, and signs in again with real EIP-191 signatures",
+  "production public Beta self-provisions a wallet, executes a durable Human command, logs out, and signs in again with real EIP-191 signatures",
   { timeout: 120_000 },
   async () => {
     assert.ok(
@@ -95,6 +95,7 @@ test(
     const referenceHashKey = randomBytes(32);
     const encryptionKey = randomBytes(32);
     const edgeAssertion = randomBytes(32).toString("base64url");
+    const preprovisionedAccount = privateKeyToAccount(generatePrivateKey());
     const account = privateKeyToAccount(generatePrivateKey());
     const port = await availablePort();
     const browserOrigin = `https://127.0.0.1:${port}`;
@@ -125,7 +126,7 @@ test(
         clientId: walletClientId,
         issuer: browserOrigin,
         externalSubject:
-          `eip155:84532:${account.address.toLowerCase()}`,
+          `eip155:84532:${preprovisionedAccount.address.toLowerCase()}`,
         invitationId: `invite_predeploy_borrower_${suffix}`,
         expiresAt:
           new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString()
@@ -158,18 +159,22 @@ test(
     });
     const runtimeConfig = loadAuthenticationRuntimeConfig({
       NODE_ENV: "production",
-      IPO_ONE_AUTHENTICATION_MODE: "closed_pilot",
+      IPO_ONE_AUTHENTICATION_MODE: "public_beta",
       IPO_ONE_IDP_DEPLOYMENT_APPROVAL: "APPROVED",
       IPO_ONE_IDP_VENDOR_ID: "wallet_only",
       IPO_ONE_IDP_DEPLOYMENT_APPROVAL_SHA: "a".repeat(40),
       IPO_ONE_IDP_CONFIGURATION_REF: SECRET_REF,
-      IPO_ONE_AUTH_REFERENCE_HASH_KEY_REF: SECRET_REF,
+      IPO_ONE_AUTH_REFERENCE_HASH_MODE: "single_v2",
+      IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_REF: SECRET_REF,
       IPO_ONE_AUTH_ENCRYPTION_KEY_REF: SECRET_REF
     });
     const walletSignatureVerifier = new EvmWalletSignatureVerifier({
       fetchImpl: localReadOnlyEoaRpc
     });
-    const referenceHasher = createReferenceHasher(referenceHashKey);
+    const referenceHasher = createReferenceHashKeyring({
+      mode: "single_v2",
+      primary: { keyVersion: "v2", secret: referenceHashKey }
+    });
     let runtime;
     const ownerPool = new Pool({
       connectionString: CONNECTION_STRING,
@@ -258,7 +263,7 @@ test(
         await options.json(),
         {
           schemaVersion: "ipo_one_authentication_options.v1",
-          profile: "closed_non_funds_pilot",
+          profile: "public_authenticated_no_funds_beta",
           enabled: true,
           sessionActive: false,
           sessionAuthenticationMethod: null,
@@ -312,6 +317,26 @@ test(
         verifyResponse.status,
         200,
         JSON.stringify(await verifyResponse.clone().json())
+      );
+      const publicIdentity = await ownerPool.query(
+        `SELECT credential.actor_id, enrollment.role_bundle
+           FROM authentication_credentials AS credential
+           JOIN authentication_role_enrollments AS enrollment
+             ON enrollment.tenant_id = credential.tenant_id
+            AND enrollment.credential_id = credential.id
+          WHERE credential.tenant_id = $1
+            AND credential.reference_hash_key_version = 'v2'
+          ORDER BY enrollment.role_bundle`,
+        [tenantId]
+      );
+      assert.equal(publicIdentity.rowCount, 2);
+      assert.deepEqual(
+        publicIdentity.rows.map(({ role_bundle }) => role_bundle),
+        ["human_borrower", "principal_controller"]
+      );
+      assert.match(
+        publicIdentity.rows[0].actor_id,
+        /^actor_public_beta_[0-9a-f]{32}$/
       );
       const setCookies = verifyResponse.headers.getSetCookie();
       assert.equal(setCookies.length, 2);
@@ -602,6 +627,48 @@ test(
       );
       assert.equal(signedInAgainCatalog.status, 200);
       assert.ok((await signedInAgainCatalog.json()).operations.length >= 71);
+
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const boundedChallenge = await fetch(
+          `${baseUrl}/auth/v1/wallet/challenge`,
+          {
+            method: "POST",
+            headers: {
+              ...edgeHeaders,
+              "content-type": "application/json",
+              origin: browserOrigin
+            },
+            body: JSON.stringify({
+              address: account.address,
+              chainId: 84532,
+              workspaceRole: "human_borrower"
+            })
+          }
+        );
+        assert.equal(boundedChallenge.status, 201);
+      }
+      const exhaustedChallenge = await fetch(
+        `${baseUrl}/auth/v1/wallet/challenge`,
+        {
+          method: "POST",
+          headers: {
+            ...edgeHeaders,
+            "content-type": "application/json",
+            origin: browserOrigin
+          },
+          body: JSON.stringify({
+            address: account.address,
+            chainId: 84532,
+            workspaceRole: "human_borrower"
+          })
+        }
+      );
+      assert.equal(exhaustedChallenge.status, 429);
+      assert.equal(exhaustedChallenge.headers.get("retry-after"), "600");
+      assert.equal(
+        (await exhaustedChallenge.json()).code,
+        "request_budget_exceeded"
+      );
     } finally {
       await runtime?.close().catch(() => {});
       await Promise.allSettled([

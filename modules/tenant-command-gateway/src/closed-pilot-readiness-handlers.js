@@ -1,28 +1,24 @@
 import { DomainError } from "../../../packages/domain/src/index.js";
-import approvalEvidence from "../../../deploy/approvals/closed-non-funds-pilot.pending.json" with { type: "json" };
-import operationsBaseline from "../../../deploy/closed-pilot/operations.v1.json" with { type: "json" };
+import approvalEvidence from "../../../deploy/approvals/public-authenticated-no-funds-beta.pending.json" with { type: "json" };
 import launchPolicy from "../../../deploy/launch-policy.v1.json" with { type: "json" };
-import alertPolicy from "../../operations-control/policy/private-pilot-alert-policy.v1.json" with { type: "json" };
 
-const PROFILE = "closed_non_funds_pilot";
+const PROFILE = "public_authenticated_no_funds_beta";
 const REQUIREMENT_ID = "REQ-PILOT-002";
 const EXPECTED_APPROVAL_GATES = Object.freeze([
-  "security_001_approval",
+  "repository_quality",
   "tenant_authn_authz_tests",
   "durable_data_restore",
   "reconciliation_operations",
-  "independent_pentest",
-  "privacy_legal_terms",
-  "support_slo_oncall",
-  "pilot_participant_approval"
+  "hosted_abuse_controls",
+  "public_beta_notice",
+  "founder_activation_authorization"
 ]);
 
 const SOURCES = Object.freeze({
   launch: "deploy/launch-policy.v1.json",
-  operations: "deploy/closed-pilot/operations.v1.json",
-  approvals: "deploy/approvals/closed-non-funds-pilot.pending.json",
-  alerts: "modules/operations-control/policy/private-pilot-alert-policy.v1.json",
-  runbook: "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+  approvals:
+    "deploy/approvals/public-authenticated-no-funds-beta.pending.json",
+  constitution: "docs/PRODUCT_CONSTITUTION.md"
 });
 
 function failClosed(message) {
@@ -39,24 +35,27 @@ function assertEmptyPayload(payload) {
   ) {
     throw new DomainError(
       "invalid_tenant_command_payload",
-      "Closed-pilot readiness payload must be empty"
+      "Public Beta readiness payload must be empty"
     );
   }
 }
 
 function assertFailClosedSourceContracts() {
   const profile = launchPolicy?.profiles?.[PROFILE];
-  if (!profile || profile.releaseEnabled !== false || profile.exactProfile !== null) {
-    failClosed("Closed-pilot launch policy is not fail-closed");
-  }
   if (
-    operationsBaseline?.profile !== PROFILE ||
-    operationsBaseline.launchBlocked !== true ||
-    operationsBaseline.authority?.remoteParticipantAccessEnabled !== false ||
-    operationsBaseline.authority?.notificationDeliveryEnabled !== false ||
-    operationsBaseline.authority?.realFundsEnabled !== false
+    !profile ||
+    profile.releaseEnabled !== true ||
+    profile.exactProfile !== null ||
+    profile.capabilities?.privateTenantDataEnabled !== true ||
+    profile.capabilities?.realFundsEnabled !== false ||
+    profile.capabilities?.externalProviderExecutionEnabled !== false ||
+    profile.capabilities?.agentVenueExecutionEnabled !== false ||
+    profile.capabilities?.mainnetAuthorized !== false ||
+    profile.capabilities?.custodyAuthorized !== false ||
+    profile.capabilities?.withdrawalAuthorized !== false ||
+    profile.gates?.some(({ id }) => id === "pilot_participant_approval")
   ) {
-    failClosed("Closed-pilot operations baseline is not fail-closed");
+    failClosed("Public Beta launch policy is outside the approved no-funds boundary");
   }
   const gates = approvalEvidence?.gates;
   if (
@@ -65,83 +64,37 @@ function assertFailClosedSourceContracts() {
     gates.length !== EXPECTED_APPROVAL_GATES.length ||
     gates.some((gate, index) => gate?.id !== EXPECTED_APPROVAL_GATES[index] || gate.status !== "pending")
   ) {
-    failClosed("Closed-pilot approval evidence is not the expected pending template");
-  }
-  if (
-    alertPolicy?.environment !== "closed-pilot" ||
-    alertPolicy.delivery?.notificationTargetStatus !== "unconfigured" ||
-    alertPolicy.delivery?.namedOwnerStatus !== "unconfigured" ||
-    alertPolicy.safetyBoundary?.productionReleaseAuthority !== false
-  ) {
-    failClosed("Closed-pilot alert policy is not the expected unconfigured baseline");
+    failClosed("Public Beta release evidence is not the expected bounded template");
   }
   return profile;
 }
 
-function control({ controlId, ownerRole, implementationState, evidenceRefs, blockerCode }) {
-  return Object.freeze({
-    controlId,
-    implementationState,
-    approvalStatus: "pending",
-    ownerRole,
-    namedOwnerConfigured: false,
-    evidenceRefs: Object.freeze(evidenceRefs),
-    blockerCode
-  });
-}
-
 function buildControls() {
-  return Object.freeze([
-    control({
-      controlId: "retention",
-      ownerRole: "Legal/Privacy",
-      implementationState: "specified_unverified",
-      evidenceRefs: [SOURCES.launch, SOURCES.approvals, SOURCES.runbook],
-      blockerCode: "jurisdiction_retention_owner_and_approval_pending"
-    }),
-    control({
-      controlId: "ordinary_support",
-      ownerRole: "Operations/Product",
-      implementationState: "specified_unverified",
-      evidenceRefs: [SOURCES.launch, SOURCES.approvals, SOURCES.runbook],
-      blockerCode: "support_slo_named_owner_and_approval_pending"
-    }),
-    control({
-      controlId: "incident",
-      ownerRole: "Operations/Security",
-      implementationState: "implemented_unverified",
-      evidenceRefs: [SOURCES.operations, SOURCES.alerts, SOURCES.runbook],
-      blockerCode: "incident_owner_delivery_and_drill_pending"
-    }),
-    control({
-      controlId: "restore",
-      ownerRole: "Backend/DevOps",
-      implementationState: "specified_unverified",
-      evidenceRefs: [SOURCES.operations, SOURCES.approvals],
-      blockerCode: "provider_objectives_owner_and_restore_drill_pending"
-    }),
-    control({
-      controlId: "rollback",
-      ownerRole: "Operations/Release",
-      implementationState: "specified_unverified",
-      evidenceRefs: [SOURCES.operations, SOURCES.runbook],
-      blockerCode: "rollback_owner_activation_and_drill_pending"
-    }),
-    control({
-      controlId: "on_call",
-      ownerRole: "Operations/Product",
-      implementationState: "unavailable",
-      evidenceRefs: [SOURCES.approvals, SOURCES.runbook],
-      blockerCode: "named_rota_owner_and_approval_pending"
-    }),
-    control({
-      controlId: "notification",
-      ownerRole: "Operations/Security",
-      implementationState: "unavailable",
-      evidenceRefs: [SOURCES.operations, SOURCES.alerts, SOURCES.runbook],
-      blockerCode: "provider_named_recipients_owner_and_delivery_drill_pending"
-    })
-  ]);
+  return Object.freeze(EXPECTED_APPROVAL_GATES.map((controlId) => {
+    const gate = launchPolicy.profiles[PROFILE].gates.find(
+      ({ id }) => id === controlId
+    );
+    const founderAuthorized = controlId === "founder_activation_authorization";
+    return Object.freeze({
+      controlId,
+      implementationState: founderAuthorized
+        ? "authorized"
+        : "implemented_pending_release_verification",
+      approvalStatus: founderAuthorized
+        ? "approved_by_founder_decision"
+        : "verification_pending",
+      ownerRole: gate.ownerRole,
+      namedOwnerConfigured: founderAuthorized,
+      evidenceRefs: Object.freeze([
+        SOURCES.launch,
+        SOURCES.approvals,
+        ...(founderAuthorized ? [SOURCES.constitution] : [])
+      ]),
+      blockerCode: founderAuthorized
+        ? null
+        : `${controlId}_release_evidence_pending`
+    });
+  }));
 }
 
 export function readClosedPilotReadinessQueryHandler() {
@@ -162,16 +115,13 @@ export function readClosedPilotReadinessQueryHandler() {
       }
       const profile = assertFailClosedSourceContracts();
       const controls = buildControls();
-      const unavailableControlCount = controls.filter(
-        (item) => item.implementationState === "unavailable"
-      ).length;
       return {
         asOf: now.toISOString(),
         profile: PROFILE,
         requirementId: REQUIREMENT_ID,
-        overallStatus: "blocked_pending_approvals",
+        overallStatus: "authorized_runtime_verification_pending",
         releaseEnabled: profile.releaseEnabled,
-        activationAuthorized: false,
+        activationAuthorized: true,
         productFeedback: {
           source: "pilot_feedback_record.v1",
           categoricalOnly: true,
@@ -181,14 +131,14 @@ export function readClosedPilotReadinessQueryHandler() {
         controls,
         summary: {
           requiredControlCount: controls.length,
-          approvedControlCount: 0,
-          pendingControlCount: controls.length,
-          unavailableControlCount,
+          approvedControlCount: 1,
+          pendingControlCount: controls.length - 1,
+          unavailableControlCount: 0,
           activationReady: false
         },
         sourceBaseline: {
-          operationsReleaseCandidateId: operationsBaseline.sourceRelease.releaseCandidateId,
-          commitSha: operationsBaseline.sourceRelease.commitSha,
+          operationsReleaseCandidateId: null,
+          commitSha: null,
           currentCandidateVerified: false
         },
         safety: {
@@ -197,7 +147,7 @@ export function readClosedPilotReadinessQueryHandler() {
           productionAuthority: false,
           releasePolicyMutated: false
         },
-        schemaVersion: "tenant_closed_pilot_readiness_view.v1"
+        schemaVersion: "tenant_public_beta_readiness_view.v1"
       };
     }
   });

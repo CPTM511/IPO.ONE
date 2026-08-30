@@ -539,7 +539,10 @@ test("Tenant protocol contracts are closed, non-authoritative, and private", asy
   assert.equal(handoffSchema.properties.remoteMcpEnabled.const, false);
   assert.equal(handoffSchema.properties.fundsAuthority.const, false);
   assert.match(webHtml, /Non-authorizing manifest/);
-  assert.match(webHtml, /local stdio MCP · closed_non_funds_pilot/);
+  assert.match(
+    webHtml,
+    /local stdio MCP · public_authenticated_no_funds_beta/
+  );
   assert.match(webHtml, /Host context injected out of band/);
   assert.match(webApp, /No HTTP, SSE, WebSocket or public MCP listener/);
   assert.match(webApp, /No token, client certificate or private key is issued here/);

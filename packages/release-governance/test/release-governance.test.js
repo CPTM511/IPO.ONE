@@ -39,7 +39,9 @@ function validEvidence(profileId = "public_sandbox", selectedPolicy = policy) {
       ciRunUrl: "https://github.com/CPTM511/IPO.ONE/actions/runs/123456789",
       imageUri: m2aTestnet
         ? null
-        : `asia-southeast1-docker.pkg.dev/ipo-one/ipo-one/app@sha256:${IMAGE_DIGEST}`,
+        : profileId === "public_authenticated_no_funds_beta"
+          ? "https://ipo-one-public-beta-a1b2c3-cptm.vercel.app/"
+          : `asia-southeast1-docker.pkg.dev/ipo-one/ipo-one/app@sha256:${IMAGE_DIGEST}`,
       builtAt: "2026-07-12T10:00:00.000Z"
     },
     capabilities: { ...profile.capabilities },
@@ -85,9 +87,24 @@ function hasIssue(fragment) {
     error.issues.some((issue) => issue.includes(fragment));
 }
 
-test("launch policy exposes five staged M2 testnet gates and one exact enabled profile", () => {
+test("launch policy exposes the public no-funds Beta and five staged M2 testnet gates", () => {
   assert.equal(policy.profiles.public_sandbox.releaseEnabled, true);
-  assert.equal(policy.profiles.closed_non_funds_pilot.releaseEnabled, false);
+  assert.equal(
+    policy.profiles.public_authenticated_no_funds_beta.releaseEnabled,
+    true
+  );
+  assert.equal(
+    policy.profiles.public_authenticated_no_funds_beta.capabilities.privateTenantDataEnabled,
+    true
+  );
+  assert.equal(
+    policy.profiles.public_authenticated_no_funds_beta.capabilities.realFundsEnabled,
+    false
+  );
+  assert.equal(
+    policy.profiles.public_authenticated_no_funds_beta.unlockRequirements.length,
+    0
+  );
   assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
   assert.equal(
     policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,
@@ -127,11 +144,10 @@ test("launch policy exposes five staged M2 testnet gates and one exact enabled p
   assert.equal(policy.profiles.public_sandbox.capabilities.privateTenantDataEnabled, false);
 
   const unsafePolicy = structuredClone(policy);
-  unsafePolicy.profiles.closed_non_funds_pilot.releaseEnabled = true;
-  unsafePolicy.profiles.closed_non_funds_pilot.unlockRequirements = [];
+  unsafePolicy.profiles.public_authenticated_no_funds_beta.capabilities.realFundsEnabled = true;
   assert.throws(
     () => validateLaunchPolicy(unsafePolicy),
-    hasIssue("must remain policy-locked while private tenant data")
+    hasIssue("drifted from the Founder-authorized public authenticated no-funds Beta")
   );
 
   const prematureM2Policy = structuredClone(policy);
@@ -248,7 +264,7 @@ test("complete fresh public-sandbox evidence verifies", () => {
   const result = verify(validEvidence());
   assert.deepEqual(result, {
     status: "verified",
-    policyVersion: "1.3.3",
+    policyVersion: "1.4.0",
     profile: "public_sandbox",
     repository: "CPTM511/IPO.ONE",
     commitSha: COMMIT_SHA,
@@ -352,17 +368,33 @@ test("gate set rejects pending, missing, duplicate, extra, and wrong-owner evide
   assert.throws(() => verify(wrongOwner), hasIssue("ownerRole does not match policy"));
 });
 
-test("capability escalation and remaining policy-locked profiles fail closed", () => {
+test("capability escalation fails closed while the controlled real-value profile stays locked", () => {
   const escalation = validEvidence();
   escalation.capabilities.realFundsEnabled = true;
   assert.throws(() => verify(escalation), hasIssue("realFundsEnabled does not match"));
 
-  const closedPilot = validEvidence("closed_non_funds_pilot");
-  assert.throws(() => verify(closedPilot), hasIssue("profile is policy-locked"));
-
   const creditPilot = validEvidence("controlled_agent_credit_pilot");
   assert.throws(() => verify(creditPilot), hasIssue("profile is policy-locked"));
 
+});
+
+test("complete fresh public authenticated no-funds Beta evidence verifies", () => {
+  const evidence = validEvidence("public_authenticated_no_funds_beta");
+  const result = verify(evidence);
+  assert.equal(result.status, "verified");
+  assert.equal(result.profile, "public_authenticated_no_funds_beta");
+  assert.equal(result.policyVersion, "1.4.0");
+  assert.equal(
+    result.imageUri,
+    "https://ipo-one-public-beta-a1b2c3-cptm.vercel.app/"
+  );
+
+  const mutableAlias = validEvidence("public_authenticated_no_funds_beta");
+  mutableAlias.release.imageUri = "https://ipo.one/";
+  assert.throws(
+    () => verify(mutableAlias),
+    hasIssue("immutable Vercel deployment URL")
+  );
 });
 
 test("stale, expired, and future evidence fails closed", () => {

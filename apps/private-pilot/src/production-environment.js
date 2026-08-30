@@ -498,8 +498,8 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     );
   }
   const runtimeConfig = loadAuthenticationRuntimeConfig(environment);
-  if (runtimeConfig.mode !== "closed_pilot" || runtimeConfig.deploymentGateSatisfied !== true) {
-    throw configError("closed-pilot authentication approval is required");
+  if (runtimeConfig.mode !== "public_beta" || runtimeConfig.deploymentGateSatisfied !== true) {
+    throw configError("public Beta authentication approval is required");
   }
   const browserOrigin = exactHttpsUrl(
     "IPO_ONE_PUBLIC_ORIGIN",

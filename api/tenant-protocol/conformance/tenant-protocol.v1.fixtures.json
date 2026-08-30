@@ -2960,11 +2960,11 @@
       "replayed": false,
       "response": {
         "asOf": "2026-08-29T04:00:00.000Z",
-        "profile": "closed_non_funds_pilot",
+        "profile": "public_authenticated_no_funds_beta",
         "requirementId": "REQ-PILOT-002",
-        "overallStatus": "blocked_pending_approvals",
-        "releaseEnabled": false,
-        "activationAuthorized": false,
+        "overallStatus": "authorized_runtime_verification_pending",
+        "releaseEnabled": true,
+        "activationAuthorized": true,
         "productFeedback": {
           "source": "pilot_feedback_record.v1",
           "categoricalOnly": true,
@@ -2973,104 +2973,101 @@
         },
         "controls": [
           {
-            "controlId": "retention",
-            "implementationState": "specified_unverified",
-            "approvalStatus": "pending",
-            "ownerRole": "Legal/Privacy",
+            "controlId": "repository_quality",
+            "implementationState": "implemented_pending_release_verification",
+            "approvalStatus": "verification_pending",
+            "ownerRole": "Engineering",
             "namedOwnerConfigured": false,
             "evidenceRefs": [
               "deploy/launch-policy.v1.json",
-              "deploy/approvals/closed-non-funds-pilot.pending.json",
-              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+              "deploy/approvals/public-authenticated-no-funds-beta.pending.json"
             ],
-            "blockerCode": "jurisdiction_retention_owner_and_approval_pending"
+            "blockerCode": "repository_quality_release_evidence_pending"
           },
           {
-            "controlId": "ordinary_support",
-            "implementationState": "specified_unverified",
-            "approvalStatus": "pending",
-            "ownerRole": "Operations/Product",
+            "controlId": "tenant_authn_authz_tests",
+            "implementationState": "implemented_pending_release_verification",
+            "approvalStatus": "verification_pending",
+            "ownerRole": "Security/Engineering",
             "namedOwnerConfigured": false,
             "evidenceRefs": [
               "deploy/launch-policy.v1.json",
-              "deploy/approvals/closed-non-funds-pilot.pending.json",
-              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+              "deploy/approvals/public-authenticated-no-funds-beta.pending.json"
             ],
-            "blockerCode": "support_slo_named_owner_and_approval_pending"
+            "blockerCode": "tenant_authn_authz_tests_release_evidence_pending"
           },
           {
-            "controlId": "incident",
-            "implementationState": "implemented_unverified",
-            "approvalStatus": "pending",
-            "ownerRole": "Operations/Security",
-            "namedOwnerConfigured": false,
-            "evidenceRefs": [
-              "deploy/closed-pilot/operations.v1.json",
-              "modules/operations-control/policy/private-pilot-alert-policy.v1.json",
-              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
-            ],
-            "blockerCode": "incident_owner_delivery_and_drill_pending"
-          },
-          {
-            "controlId": "restore",
-            "implementationState": "specified_unverified",
-            "approvalStatus": "pending",
+            "controlId": "durable_data_restore",
+            "implementationState": "implemented_pending_release_verification",
+            "approvalStatus": "verification_pending",
             "ownerRole": "Backend/DevOps",
             "namedOwnerConfigured": false,
             "evidenceRefs": [
-              "deploy/closed-pilot/operations.v1.json",
-              "deploy/approvals/closed-non-funds-pilot.pending.json"
+              "deploy/launch-policy.v1.json",
+              "deploy/approvals/public-authenticated-no-funds-beta.pending.json"
             ],
-            "blockerCode": "provider_objectives_owner_and_restore_drill_pending"
+            "blockerCode": "durable_data_restore_release_evidence_pending"
           },
           {
-            "controlId": "rollback",
-            "implementationState": "specified_unverified",
-            "approvalStatus": "pending",
-            "ownerRole": "Operations/Release",
+            "controlId": "reconciliation_operations",
+            "implementationState": "implemented_pending_release_verification",
+            "approvalStatus": "verification_pending",
+            "ownerRole": "Operations/Risk",
             "namedOwnerConfigured": false,
             "evidenceRefs": [
-              "deploy/closed-pilot/operations.v1.json",
-              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+              "deploy/launch-policy.v1.json",
+              "deploy/approvals/public-authenticated-no-funds-beta.pending.json"
             ],
-            "blockerCode": "rollback_owner_activation_and_drill_pending"
+            "blockerCode": "reconciliation_operations_release_evidence_pending"
           },
           {
-            "controlId": "on_call",
-            "implementationState": "unavailable",
-            "approvalStatus": "pending",
-            "ownerRole": "Operations/Product",
+            "controlId": "hosted_abuse_controls",
+            "implementationState": "implemented_pending_release_verification",
+            "approvalStatus": "verification_pending",
+            "ownerRole": "Security/Operations",
             "namedOwnerConfigured": false,
             "evidenceRefs": [
-              "deploy/approvals/closed-non-funds-pilot.pending.json",
-              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+              "deploy/launch-policy.v1.json",
+              "deploy/approvals/public-authenticated-no-funds-beta.pending.json"
             ],
-            "blockerCode": "named_rota_owner_and_approval_pending"
+            "blockerCode": "hosted_abuse_controls_release_evidence_pending"
           },
           {
-            "controlId": "notification",
-            "implementationState": "unavailable",
-            "approvalStatus": "pending",
-            "ownerRole": "Operations/Security",
+            "controlId": "public_beta_notice",
+            "implementationState": "implemented_pending_release_verification",
+            "approvalStatus": "verification_pending",
+            "ownerRole": "Product/Privacy",
             "namedOwnerConfigured": false,
             "evidenceRefs": [
-              "deploy/closed-pilot/operations.v1.json",
-              "modules/operations-control/policy/private-pilot-alert-policy.v1.json",
-              "docs/operations/PRIVATE_PILOT_ALERT_AND_INCIDENT_RUNBOOK.md"
+              "deploy/launch-policy.v1.json",
+              "deploy/approvals/public-authenticated-no-funds-beta.pending.json"
             ],
-            "blockerCode": "provider_named_recipients_owner_and_delivery_drill_pending"
+            "blockerCode": "public_beta_notice_release_evidence_pending"
+          },
+          {
+            "controlId": "founder_activation_authorization",
+            "implementationState": "authorized",
+            "approvalStatus": "approved_by_founder_decision",
+            "ownerRole": "Founder/Release Owner",
+            "namedOwnerConfigured": true,
+            "evidenceRefs": [
+              "deploy/launch-policy.v1.json",
+              "deploy/approvals/public-authenticated-no-funds-beta.pending.json",
+              "docs/PRODUCT_CONSTITUTION.md"
+            ],
+            "blockerCode": null
           }
         ],
         "summary": {
           "requiredControlCount": 7,
-          "approvedControlCount": 0,
-          "pendingControlCount": 7,
-          "unavailableControlCount": 2,
+          "approvedControlCount": 1,
+          "pendingControlCount": 6,
+          "unavailableControlCount": 0,
           "activationReady": false
         },
         "sourceBaseline": {
-          "operationsReleaseCandidateId": "ipo-one-local-rc-20260730-003",
-          "commitSha": "129f8bb28ff53d6dfb4e175b953a537b987a2a84",
+          "operationsReleaseCandidateId": null,
+          "commitSha": null,
           "currentCandidateVerified": false
         },
         "safety": {
@@ -3079,7 +3076,7 @@
           "productionAuthority": false,
           "releasePolicyMutated": false
         },
-        "schemaVersion": "tenant_closed_pilot_readiness_view.v1"
+        "schemaVersion": "tenant_public_beta_readiness_view.v1"
       },
       "schemaVersion": "tenant_protocol_result.v1"
     },

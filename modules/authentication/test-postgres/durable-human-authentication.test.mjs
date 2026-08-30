@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import test from "node:test";
 import { hashId } from "../../../packages/domain/src/index.js";
 import { createPostgresHumanAccessComposition } from "../../../apps/tenant-api/src/index.js";
+import { PRODUCTION_BOOTSTRAP_PROFILES } from "../../../apps/private-pilot/src/production-bootstrap.js";
 import { migrateUp } from "../../../scripts/migrate.mjs";
 import {
   ActorType,
@@ -437,6 +438,110 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       referenceHasher,
       systemActorId: SYSTEM_ACTOR_ID
     });
+
+    await t.test("verified public Beta wallets self-provision only ordinary Human roles and remain Tenant-isolated", async () => {
+      const publicBetaProfiles = Object.freeze({
+        human_borrower: PRODUCTION_BOOTSTRAP_PROFILES.human_borrower.capabilities,
+        principal_controller:
+          PRODUCTION_BOOTSTRAP_PROFILES.principal_controller.capabilities
+      });
+      const publicBetaHasher = createReferenceHashKeyring({
+        mode: "single_v2",
+        primary: { keyVersion: "v2", secret: randomBytes(32) }
+      });
+      const publicBetaRegistry = new PostgresCredentialRegistry({
+        eventRepository: repository,
+        tenantId: TENANT_ID,
+        referenceHasher: publicBetaHasher,
+        systemActorId: SYSTEM_ACTOR_ID,
+        publicBetaWalletRoleProfiles: publicBetaProfiles
+      });
+      const subject =
+        "eip155:84532:0x9999999999999999999999999999999999999999";
+      const provision = () => publicBetaRegistry
+        .provisionVerifiedPublicBetaHumanSubject({
+          tenantId: TENANT_ID,
+          issuer: ORIGIN,
+          externalSubject: subject,
+          clientId: WALLET_CLIENT_ID,
+          now: NOW
+        });
+      const created = await provision();
+      const replayed = await provision();
+      assert.equal(replayed.credentialId, created.credentialId);
+      assert.equal(created.actorType, ActorType.HUMAN);
+      assert.deepEqual(created.roles, ["human_borrower"]);
+      assert.deepEqual(
+        created.allowedCapabilities,
+        publicBetaProfiles.human_borrower
+      );
+      const enrollments = await repository.withTenantRead((client) =>
+        client.query(
+          `SELECT role_bundle, capabilities, status
+             FROM authentication_role_enrollments
+            WHERE tenant_id = $1 AND credential_id = $2
+            ORDER BY role_bundle`,
+          [TENANT_ID, created.credentialId]
+        )
+      );
+      assert.deepEqual(
+        enrollments.rows.map(({ role_bundle }) => role_bundle),
+        ["human_borrower", "principal_controller"]
+      );
+      assert.equal(
+        enrollments.rows.some(({ role_bundle }) =>
+          new Set([
+            "risk_operator",
+            "operations_operator",
+            "auditor",
+            "capital_partner_operator"
+          ]).has(role_bundle)
+        ),
+        false
+      );
+      assert.deepEqual(
+        enrollments.rows.find(({ role_bundle }) =>
+          role_bundle === "principal_controller"
+        ).capabilities,
+        publicBetaProfiles.principal_controller
+      );
+      await assert.rejects(
+        () => appPool.query(
+          `INSERT INTO actors(
+             id, actor_hash, actor_type, status, created_at, updated_at,
+             schema_version
+           ) VALUES (
+             'actor_public_beta_direct_write', $1, 'human', 'active',
+             clock_timestamp(), clock_timestamp(), 'actor.v1'
+           )`,
+          [hashId("forbidden_public_beta_actor", "direct")]
+        ),
+        (error) => error.code === "42501"
+      );
+
+      const otherRegistry = new PostgresCredentialRegistry({
+        eventRepository: otherRepository,
+        tenantId: OTHER_TENANT_ID,
+        referenceHasher: publicBetaHasher,
+        systemActorId: OTHER_SYSTEM_ACTOR_ID,
+        publicBetaWalletRoleProfiles: publicBetaProfiles
+      });
+      const other = await otherRegistry.provisionVerifiedPublicBetaHumanSubject({
+        tenantId: OTHER_TENANT_ID,
+        issuer: ORIGIN,
+        externalSubject: subject,
+        clientId: WALLET_CLIENT_ID,
+        now: NOW
+      });
+      assert.notEqual(other.actorId, created.actorId);
+      const leaked = await repository.withTenantRead((client) => client.query(
+        `SELECT id FROM authentication_credentials
+          WHERE tenant_id = $1 AND id = $2`,
+        [TENANT_ID, other.credentialId]
+      ));
+      assert.equal(leaked.rowCount, 0);
+    });
+
     const oidcCredential = await registry.register({
       tenantId: TENANT_ID,
       actorId: HUMAN_ACTOR_ID,
@@ -1227,7 +1332,18 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
         eventRepository: otherRepository,
         tenantId: OTHER_TENANT_ID
       });
-      assert.deepEqual(await otherEvents.list(), []);
+      const isolatedOtherEvents = await otherEvents.list();
+      assert.equal(isolatedOtherEvents.length, 1);
+      assert.equal(isolatedOtherEvents[0].tenantId, OTHER_TENANT_ID);
+      assert.equal(isolatedOtherEvents[0].eventType, "credential_registered");
+      assert.equal(
+        isolatedOtherEvents[0].reasonCode,
+        "public_beta_verified_wallet_self_provisioned"
+      );
+      assert.equal(
+        JSON.stringify(isolatedOtherEvents).includes("0x9999999999999999999999999999999999999999"),
+        false
+      );
       assert.throws(
         () => new PostgresAuthenticationEventStore({
           eventRepository: otherRepository,

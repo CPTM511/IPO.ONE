@@ -17,7 +17,7 @@ const [
   closedPilotService,
   closedPilotMigrationJob,
   closedPilotArmor,
-  closedPilotPendingText,
+  publicBetaPendingText,
   closedPilotAudit,
   productionContainerSmoke
 ] = await Promise.all([
@@ -32,7 +32,7 @@ const [
   source("deploy/gcp/closed-pilot/cloud-run-service.yaml.tmpl"),
   source("deploy/gcp/closed-pilot/cloud-run-migration-job.yaml.tmpl"),
   source("deploy/gcp/closed-pilot/cloud-armor-policy.yaml"),
-  source("deploy/approvals/closed-non-funds-pilot.pending.json"),
+  source("deploy/approvals/public-authenticated-no-funds-beta.pending.json"),
   source("scripts/audit-closed-pilot-cloud.mjs"),
   source("scripts/prepare-production-container-smoke.mjs")
 ]);
@@ -218,15 +218,26 @@ assert.match(closedPilotArmor, /wallet\/verify/);
 assert.equal((closedPilotArmor.match(/preview: false/g) ?? []).length, 7);
 assert.doesNotMatch(closedPilotArmor, /preview: true/);
 
-const closedPilotPending = JSON.parse(closedPilotPendingText);
-assert.equal(closedPilotPending.profile, "closed_non_funds_pilot");
-assert.deepEqual(closedPilotPending.capabilities, closedPilotStack.capabilities);
-assert.equal(closedPilotPending.gates.length, 8);
-assert.ok(closedPilotPending.gates.every((gate) => gate.status === "pending"));
+const publicBetaPending = JSON.parse(publicBetaPendingText);
+assert.equal(
+  publicBetaPending.profile,
+  "public_authenticated_no_funds_beta"
+);
+assert.equal(publicBetaPending.policyVersion, "1.4.0");
+assert.equal(publicBetaPending.capabilities.realFundsEnabled, false);
+assert.equal(publicBetaPending.capabilities.privateTenantDataEnabled, true);
+assert.equal(publicBetaPending.capabilities.mainnetAuthorized, false);
+assert.equal(publicBetaPending.capabilities.custodyAuthorized, false);
+assert.equal(publicBetaPending.capabilities.withdrawalAuthorized, false);
+assert.equal(publicBetaPending.gates.length, 7);
+assert.ok(publicBetaPending.gates.every((gate) => gate.status === "pending"));
 assert.match(closedPilotAudit, /ipo\.one\.closed-pilot-cloud-observation\/v1/);
 assert.match(closedPilotAudit, /--output must end in \.local\.json/);
 assert.match(closedPilotAudit, /cloud_sql_successful_backup_exists/);
 assert.match(closedPilotAudit, /edge_authentication_admission/);
 assert.match(closedPilotAudit, /closed_pilot_alerts_with_notification/);
 
-console.log("Deployment artifacts satisfy the public-sandbox and closed-pilot static baselines.");
+console.log(
+  "Deployment artifacts satisfy the public-sandbox and archived closed-pilot " +
+  "static baselines, plus the current Public Beta pending-Evidence contract."
+);

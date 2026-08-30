@@ -492,7 +492,7 @@
       "idempotency": "prohibited",
       "quotaClass": "read",
       "requestSchemaVersion": "tenant_protocol_request.v1",
-      "responseSchemaVersion": "tenant_closed_pilot_readiness_view.v1",
+      "responseSchemaVersion": "tenant_public_beta_readiness_view.v1",
       "public": false,
       "fundsAuthority": false
     },

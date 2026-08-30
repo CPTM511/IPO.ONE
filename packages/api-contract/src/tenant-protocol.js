@@ -469,7 +469,7 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     idempotency: "prohibited",
     quotaClass: "read",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
-    responseSchemaVersion: "tenant_closed_pilot_readiness_view.v1",
+    responseSchemaVersion: "tenant_public_beta_readiness_view.v1",
     public: false,
     fundsAuthority: false
   },

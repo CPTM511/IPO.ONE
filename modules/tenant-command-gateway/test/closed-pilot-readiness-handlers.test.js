@@ -4,7 +4,7 @@ import { readClosedPilotReadinessQueryHandler } from "../src/closed-pilot-readin
 
 const NOW = new Date("2026-08-29T04:00:00.000Z");
 
-test("closed-pilot readiness remains queryable, versioned, and fail-closed", async () => {
+test("public Beta readiness remains queryable, versioned, and no-funds bounded", async () => {
   const response = await readClosedPilotReadinessQueryHandler().execute({
     authorizationDecision: {
       resourceType: "risk_portfolio",
@@ -14,22 +14,36 @@ test("closed-pilot readiness remains queryable, versioned, and fail-closed", asy
     now: NOW
   });
 
-  assert.equal(response.schemaVersion, "tenant_closed_pilot_readiness_view.v1");
+  assert.equal(response.schemaVersion, "tenant_public_beta_readiness_view.v1");
   assert.equal(response.requirementId, "REQ-PILOT-002");
-  assert.equal(response.overallStatus, "blocked_pending_approvals");
-  assert.equal(response.releaseEnabled, false);
-  assert.equal(response.activationAuthorized, false);
+  assert.equal(response.profile, "public_authenticated_no_funds_beta");
+  assert.equal(response.overallStatus, "authorized_runtime_verification_pending");
+  assert.equal(response.releaseEnabled, true);
+  assert.equal(response.activationAuthorized, true);
   assert.equal(response.summary.requiredControlCount, 7);
-  assert.equal(response.summary.approvedControlCount, 0);
-  assert.equal(response.summary.pendingControlCount, 7);
-  assert.equal(response.summary.unavailableControlCount, 2);
+  assert.equal(response.summary.approvedControlCount, 1);
+  assert.equal(response.summary.pendingControlCount, 6);
+  assert.equal(response.summary.unavailableControlCount, 0);
   assert.equal(response.summary.activationReady, false);
   assert.deepEqual(
     response.controls.map(({ controlId }) => controlId),
-    ["retention", "ordinary_support", "incident", "restore", "rollback", "on_call", "notification"]
+    [
+      "repository_quality",
+      "tenant_authn_authz_tests",
+      "durable_data_restore",
+      "reconciliation_operations",
+      "hosted_abuse_controls",
+      "public_beta_notice",
+      "founder_activation_authorization"
+    ]
   );
-  assert.ok(response.controls.every((control) => control.approvalStatus === "pending"));
-  assert.ok(response.controls.every((control) => control.namedOwnerConfigured === false));
+  assert.equal(
+    response.controls.find(({ controlId }) =>
+      controlId === "founder_activation_authorization"
+    ).approvalStatus,
+    "approved_by_founder_decision"
+  );
+  assert.equal(response.controls.filter(({ namedOwnerConfigured }) => namedOwnerConfigured).length, 1);
   assert.equal(response.productFeedback.categoricalOnly, true);
   assert.equal(response.productFeedback.thirdPartyAnalytics, false);
   assert.equal(response.productFeedback.underwritingEffect, false);
@@ -40,7 +54,7 @@ test("closed-pilot readiness remains queryable, versioned, and fail-closed", asy
   assert.doesNotMatch(JSON.stringify(response), /\[APPROVER\]|EVIDENCE_URL|approvalUrl|approvedBy/i);
 });
 
-test("closed-pilot readiness rejects non-empty input and unscoped resources", async () => {
+test("public Beta readiness rejects non-empty input and unscoped resources", async () => {
   const handler = readClosedPilotReadinessQueryHandler();
   await assert.rejects(
     handler.execute({

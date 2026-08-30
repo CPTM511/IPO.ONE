@@ -2982,49 +2982,49 @@ export interface TenantPilotFeedbackSummaryViewResponse {
   schemaVersion: "tenant_pilot_feedback_summary_view.v1";
 }
 
-export type ClosedPilotReadinessControlId =
-  | "retention"
-  | "ordinary_support"
-  | "incident"
-  | "restore"
-  | "rollback"
-  | "on_call"
-  | "notification";
+export type PublicBetaReadinessControlId =
+  | "repository_quality"
+  | "tenant_authn_authz_tests"
+  | "durable_data_restore"
+  | "reconciliation_operations"
+  | "hosted_abuse_controls"
+  | "public_beta_notice"
+  | "founder_activation_authorization";
 
-export interface ClosedPilotReadinessControl {
-  controlId: ClosedPilotReadinessControlId;
-  implementationState: "specified_unverified" | "implemented_unverified" | "unavailable";
-  approvalStatus: "pending";
+export interface PublicBetaReadinessControl {
+  controlId: PublicBetaReadinessControlId;
+  implementationState: "authorized" | "implemented_pending_release_verification";
+  approvalStatus: "approved_by_founder_decision" | "verification_pending";
   ownerRole: string;
-  namedOwnerConfigured: false;
+  namedOwnerConfigured: boolean;
   evidenceRefs: string[];
-  blockerCode: string;
+  blockerCode: string | null;
 }
 
-export interface TenantClosedPilotReadinessViewResponse {
+export interface TenantPublicBetaReadinessViewResponse {
   asOf: string;
-  profile: "closed_non_funds_pilot";
+  profile: "public_authenticated_no_funds_beta";
   requirementId: "REQ-PILOT-002";
-  overallStatus: "blocked_pending_approvals";
-  releaseEnabled: false;
-  activationAuthorized: false;
+  overallStatus: "authorized_runtime_verification_pending";
+  releaseEnabled: true;
+  activationAuthorized: true;
   productFeedback: {
     source: "pilot_feedback_record.v1";
     categoricalOnly: true;
     thirdPartyAnalytics: false;
     underwritingEffect: false;
   };
-  controls: ClosedPilotReadinessControl[];
+  controls: PublicBetaReadinessControl[];
   summary: {
     requiredControlCount: 7;
-    approvedControlCount: 0;
-    pendingControlCount: 7;
-    unavailableControlCount: 2;
+    approvedControlCount: 1;
+    pendingControlCount: 6;
+    unavailableControlCount: 0;
     activationReady: false;
   };
   sourceBaseline: {
-    operationsReleaseCandidateId: string;
-    commitSha: string;
+    operationsReleaseCandidateId: null;
+    commitSha: null;
     currentCandidateVerified: false;
   };
   safety: {
@@ -3033,8 +3033,15 @@ export interface TenantClosedPilotReadinessViewResponse {
     productionAuthority: false;
     releasePolicyMutated: false;
   };
-  schemaVersion: "tenant_closed_pilot_readiness_view.v1";
+  schemaVersion: "tenant_public_beta_readiness_view.v1";
 }
+
+/** @deprecated Use PublicBetaReadinessControlId. */
+export type ClosedPilotReadinessControlId = PublicBetaReadinessControlId;
+/** @deprecated Use PublicBetaReadinessControl. */
+export type ClosedPilotReadinessControl = PublicBetaReadinessControl;
+/** @deprecated Use TenantPublicBetaReadinessViewResponse. */
+export type TenantClosedPilotReadinessViewResponse = TenantPublicBetaReadinessViewResponse;
 
 export interface ServicingQueueActionSummary {
   servicingActionId: string;
@@ -4915,7 +4922,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotReadTenantRisk", TenantRiskPortfolioViewResponse>
   | TenantProtocolResultBase<"pilotReadPilotHealth", TenantPilotHealthViewResponse>
   | TenantProtocolResultBase<"pilotReadPilotFeedbackSummary", TenantPilotFeedbackSummaryViewResponse>
-  | TenantProtocolResultBase<"pilotReadClosedPilotReadiness", TenantClosedPilotReadinessViewResponse>
+  | TenantProtocolResultBase<"pilotReadClosedPilotReadiness", TenantPublicBetaReadinessViewResponse>
   | TenantProtocolResultBase<"pilotReadServicingQueue", TenantServicingQueueViewResponse>
   | TenantProtocolResultBase<"pilotReadEvidence", ObligationEvidenceViewResponse>
   | TenantProtocolResultBase<"pilotReadCreditRegistryEvidence", CreditRegistryEvidenceViewResponse>
@@ -5725,7 +5732,7 @@ export type TenantProtocolOperation =
       "pilot.readiness.read.tenant",
       "prohibited",
       "read",
-      "tenant_closed_pilot_readiness_view.v1"
+      "tenant_public_beta_readiness_view.v1"
     >
   | TenantProtocolOperationBase<
       "pilotSubmitPilotFeedback",

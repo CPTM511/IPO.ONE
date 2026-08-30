@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { createSiweMessage } from "viem/siwe";
 import { getAddress } from "viem";
-import { createOperationalId } from "../../../packages/domain/src/index.js";
+import { createOperationalId, hashId } from "../../../packages/domain/src/index.js";
 import { createAuthenticationContext } from "./authentication-context.js";
 import { createAuthenticationEvent } from "./authentication-event-store.js";
 import {
@@ -40,6 +40,10 @@ const HUMAN_AUTHENTICATION_METHODS = new Set([
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const APPROVED_CHAIN_IDS = new Set([84532, 1952]);
 const SELECTABLE_HUMAN_ROLES = new Set(["human_borrower", "principal_controller"]);
+const PUBLIC_BETA_ROLE_PROFILE_KEYS = new Set([
+  "human_borrower",
+  "principal_controller"
+]);
 const TRANSACTION_COOKIE_NAME = "__Host-ipo_one_login";
 const SESSION_COOKIE_NAME = "__Host-ipo_one_session";
 const TENANT_ROW_POLICY = "(tenant_id = current_app_tenant_id())";
@@ -843,12 +847,40 @@ function sameValues(left, right) {
   return left.length === right.length && left.every((value) => right.includes(value));
 }
 
+function publicBetaRoleProfiles(value) {
+  if (value === undefined) return undefined;
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Object.prototype ||
+    Object.keys(value).length !== PUBLIC_BETA_ROLE_PROFILE_KEYS.size ||
+    Object.keys(value).some((key) => !PUBLIC_BETA_ROLE_PROFILE_KEYS.has(key))
+  ) {
+    throw authenticationError(
+      "invalid_authentication_configuration",
+      "public Beta wallet role profiles are invalid"
+    );
+  }
+  return Object.freeze(Object.fromEntries(
+    [...PUBLIC_BETA_ROLE_PROFILE_KEYS].map((roleBundle) => [
+      roleBundle,
+      assertStringList(
+        `${roleBundle} public Beta capabilities`,
+        value[roleBundle],
+        { allowEmpty: false }
+      )
+    ])
+  ));
+}
+
 export class PostgresCredentialRegistry {
   constructor({
     eventRepository,
     tenantId: configuredTenantId,
     referenceHasher,
     systemActorId,
+    publicBetaWalletRoleProfiles,
     maximumCredentials = 10_000
   }) {
     this.tenantId = tenantId(configuredTenantId);
@@ -861,7 +893,101 @@ export class PostgresCredentialRegistry {
     }
     this.referenceHasher = referenceHasher;
     this.systemActorId = assertSafeIdentifier("systemActorId", systemActorId);
+    this.publicBetaWalletRoleProfiles = publicBetaRoleProfiles(
+      publicBetaWalletRoleProfiles
+    );
     this.maximumCredentials = maximumCredentials;
+  }
+
+  async provisionVerifiedPublicBetaHumanSubject({
+    issuer,
+    tenantId: requestedTenantId,
+    externalSubject,
+    clientId,
+    now = new Date()
+  }) {
+    if (!this.publicBetaWalletRoleProfiles) {
+      throw authenticationError(
+        "authentication_credential_rejected",
+        "credential is not active"
+      );
+    }
+    assertTenant(this.tenantId, requestedTenantId);
+    const normalizedIssuer = exactHttpsOrigin("issuer", issuer);
+    const normalizedClientId = assertSafeIdentifier("clientId", clientId);
+    const normalizedSubject = assertBoundedString(
+      "externalSubject",
+      externalSubject,
+      {
+        maximum: 512,
+        pattern: /^eip155:(?:84532|1952):0x[0-9a-f]{40}$/
+      }
+    );
+    const subjectRefHash = this.referenceHasher.hash(
+      "subject",
+      `${normalizedIssuer}\0${normalizedSubject}`
+    );
+    const stableIdentityHash = hashId("public_beta_wallet_identity", {
+      tenantId: this.tenantId,
+      issuer: normalizedIssuer,
+      clientId: normalizedClientId,
+      subjectRefHash
+    });
+    const actorId = `actor_public_beta_${stableIdentityHash.slice(2, 34)}`;
+    const membershipId = `membership_${actorId}`;
+    const actorHash = hashId("public_beta_actor", actorId);
+    const membershipHash = hashId(
+      "public_beta_membership",
+      `${this.tenantId}:${actorId}`
+    );
+    const senderConstraintRefHash = this.referenceHasher.hash(
+      "sender.constraint",
+      `public-beta-host-session\0${actorId}`
+    );
+    const credentialId = createOperationalId("credential");
+    const humanEnrollmentId = createOperationalId("role_enrollment");
+    const principalEnrollmentId = createOperationalId("role_enrollment");
+    const roles = this.publicBetaWalletRoleProfiles;
+
+    return this.repository.withTenantWrite(async (client) => {
+      const result = await client.query(
+        `SELECT provision_public_beta_human_wallet_identity(
+           $1, $2, $3, $4, $5, $6, $7, $8, $9,
+           $10, $11, $12, $13, $14, $15, $16::jsonb, $17::jsonb, $18
+         ) AS credential_id`,
+        [
+          this.tenantId,
+          this.systemActorId,
+          actorId,
+          actorHash,
+          membershipId,
+          membershipHash,
+          credentialId,
+          humanEnrollmentId,
+          principalEnrollmentId,
+          normalizedIssuer,
+          subjectRefHash,
+          this.referenceHasher.keyVersion,
+          normalizedClientId,
+          senderConstraintRefHash,
+          this.repository.tenantContext.policyVersion,
+          JSON.stringify(roles.human_borrower),
+          JSON.stringify(roles.principal_controller),
+          now
+        ]
+      );
+      if (result.rowCount !== 1 || typeof result.rows[0]?.credential_id !== "string") {
+        throw authenticationError(
+          "authentication_credential_rejected",
+          "credential is not active"
+        );
+      }
+      return this.#activeInTransaction(
+        client,
+        result.rows[0].credential_id,
+        now
+      );
+    });
   }
 
   async register(input) {

@@ -37,6 +37,7 @@ const REFERENCE_HASH_MODES = new Set([
 ]);
 const CONFIG_KEYS = new Set([
   "authenticationReferenceHash",
+  "admitAuthenticationRequest",
   "clock",
   "chainCapabilityProvider",
   "createNetworkContext",
@@ -49,6 +50,7 @@ const CONFIG_KEYS = new Set([
   "machineAuthenticator",
   "maximumConcurrency",
   "port",
+  "profile",
   "publicOrigin",
   "readinessCheck",
   "releaseId",
@@ -207,14 +209,35 @@ function securityHeaders(requestId) {
   };
 }
 
-function json(response, status, value, requestId, headOnly = false) {
+function json(
+  response,
+  status,
+  value,
+  requestId,
+  headOnly = false,
+  responseHeaders = {}
+) {
   const body = JSON.stringify(value);
   response.writeHead(status, {
+    ...responseHeaders,
     ...securityHeaders(requestId),
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body)
   });
   response.end(headOnly ? undefined : body);
+}
+
+function boundedProblemResponseHeaders(error) {
+  const retryAfter = error instanceof ApiBoundaryError
+    ? error.headers?.["retry-after"]
+    : undefined;
+  if (
+    retryAfter === undefined ||
+    typeof retryAfter !== "string" ||
+    !/^(?:[1-9]|[1-9][0-9]{1,2}|[1-3][0-9]{3})$/.test(retryAfter) ||
+    Number(retryAfter) > 3_600
+  ) return {};
+  return { "retry-after": retryAfter };
 }
 
 export function createDisabledChainCapability({ releaseId }) {
@@ -378,6 +401,7 @@ export function createProductionTenantRequestHandler(input) {
   const port = input.port ?? 8080;
   const requestTimeoutMs = input.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   const maximumConcurrency = input.maximumConcurrency ?? MAX_CONCURRENCY;
+  const profile = input.profile ?? "closed_non_funds_pilot";
   const authenticationReferenceHash = authenticationReferenceHashState(
     input.authenticationReferenceHash
   );
@@ -387,6 +411,8 @@ export function createProductionTenantRequestHandler(input) {
     !input.machineAuthenticator?.authenticate ||
     !DEPLOYMENT_ROLES.has(input.deploymentRole) ||
     typeof input.createNetworkContext !== "function" ||
+    (input.admitAuthenticationRequest !== undefined &&
+      typeof input.admitAuthenticationRequest !== "function") ||
     typeof input.csrfTokenProvider !== "function" ||
     (input.localAgentAccountProvider !== undefined &&
       typeof input.localAgentAccountProvider !== "function") ||
@@ -403,6 +429,10 @@ export function createProductionTenantRequestHandler(input) {
     !boundedInteger(port, 1_024, 65_535) ||
     !boundedInteger(requestTimeoutMs, 100, REQUEST_TIMEOUT_MS) ||
     !boundedInteger(maximumConcurrency, 1, MAX_CONCURRENCY) ||
+    !new Set([
+      "closed_non_funds_pilot",
+      "public_authenticated_no_funds_beta"
+    ]).has(profile) ||
     typeof input.releaseId !== "string" ||
     !/^[0-9a-f]{40}$/.test(input.releaseId)
   ) throw invalidConfig();
@@ -456,7 +486,7 @@ export function createProductionTenantRequestHandler(input) {
           status: ready ? "ready" : "unavailable",
           releaseId: input.releaseId,
           deploymentRole: input.deploymentRole,
-          profile: "closed_non_funds_pilot",
+          profile,
           realFundsEnabled: false,
           authenticationReferenceHash,
           schemaVersion: "production_readiness.v2"
@@ -515,18 +545,21 @@ export function createProductionTenantRequestHandler(input) {
           status: ready ? "ready" : "unavailable",
           releaseId: input.releaseId,
           deploymentRole: input.deploymentRole,
-          profile: "closed_non_funds_pilot",
+          profile,
           realFundsEnabled: false,
           authenticationReferenceHash,
           schemaVersion: "production_readiness.v2"
         }, requestId, headOnly);
       }
-      if (input.serveAuthentication && await input.serveAuthentication({
-        request,
-        response,
-        url,
-        requestId
-      })) return;
+      if (input.serveAuthentication && url.pathname.startsWith("/auth/v1/")) {
+        await input.admitAuthenticationRequest?.({ request, url, requestId });
+        if (await input.serveAuthentication({
+          request,
+          response,
+          url,
+          requestId
+        })) return;
+      }
       if (
         new Set(["GET", "HEAD"]).has(request.method) &&
         url.search === "" &&
@@ -570,7 +603,14 @@ export function createProductionTenantRequestHandler(input) {
       return json(response, 200, result, requestId);
     } catch (error) {
       const problem = createProblemDetails(error, { requestId });
-      return json(response, problem.status, problem, requestId);
+      return json(
+        response,
+        problem.status,
+        problem,
+        requestId,
+        false,
+        boundedProblemResponseHeaders(error)
+      );
     } finally {
       active -= 1;
     }

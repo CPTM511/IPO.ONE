@@ -285,7 +285,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(page, /One manifest\. Fifteen local tools\. No ambient authority\./);
     assert.match(page, /Approved local stdio MCP tools/);
     assert.match(page, /Three staged workflows/);
-    assert.match(page, /local stdio MCP · closed_non_funds_pilot/);
+    assert.match(page, /local stdio MCP · public_authenticated_no_funds_beta/);
     assert.match(page, /Obligation Evidence/);
     assert.match(page, /Durable audit timeline/);
     assert.match(page, /New Subjects remain pending/);
@@ -331,7 +331,10 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     );
     assert.equal(openApi.servers[0].url, baseUrl);
     assert.equal(openApi["x-ipo-one-schema-version"], "tenant_openapi.v1");
-    assert.equal(openApi["x-ipo-one-profile"], "closed_non_funds_pilot");
+    assert.equal(
+      openApi["x-ipo-one-profile"],
+      "public_authenticated_no_funds_beta"
+    );
     assert.equal(openApi["x-real-funds-enabled"], false);
     assert.deepEqual(Object.keys(openApi.paths).sort(), [
       "/.well-known/ipo-one.json",
