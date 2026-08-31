@@ -119,8 +119,8 @@ Evidence 中查看。
 
 | 步骤 | 点击 / 输入 | 功能 | 成功标志 |
 | --- | --- | --- | --- |
-| 1 | `Create Human Subject` | 创建不含姓名和 raw KYC 的 opaque Human Subject | `Profile ready` |
-| 2 | `Create scoped Consent` | 对用途、金额、期限和身份引用进行范围授权 | helper 显示 Consent ready |
+| 1 | `Create Human Subject`；已创建或恢复后显示 `Human Subject ready` 并锁定 | 创建不含姓名和 raw KYC 的 opaque Human Subject | `Profile ready` |
+| 2 | `Create scoped Consent`；已创建或恢复后显示 `Scoped Consent ready` 并锁定 | 对用途、金额、期限和身份引用进行范围授权 | helper 显示 Consent ready |
 | 3 | 填写 `Requested amount (USD)`、`Term (days)`、`Installments` | 定义 Credit Intent | 输入通过界面校验 |
 | 4 | 点击 `Request & evaluate credit` | 创建 Intent，运行确定性评估，生成 Decision、reason codes 和 exact Offer | `Your Offer` 显示 Approved/Declined、金额、利率、期限和理由 |
 | 5 | 阅读 `Decision Passport` 与 `Protocol reference` | 核对 policy、Evidence lineage、Offer hash 和 terms hash | `Exact server Offer` 校验一致 |

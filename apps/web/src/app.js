@@ -1831,9 +1831,16 @@ function requestEconomicActionConfirmation({
   }
   const walletConfirmation = sessionConfirmationMethod === "siwe";
   if (walletConfirmation && (!accessState.walletAddress || !connector)) {
-    return Promise.reject(new Error(
-      "Reconnect the wallet used for this SIWE session before confirming the exact sandbox action."
-    ));
+    const error = Object.assign(
+      new Error(
+        "Reconnect the wallet used for this SIWE session before confirming the exact sandbox action."
+      ),
+      { code: "wallet_reconnect_required" }
+    );
+    accessState.helper =
+      "Your secure session is active. Reconnect its wallet in this tab, then retry the exact sandbox action.";
+    openAccess();
+    return Promise.reject(error);
   }
   const requestedAt = new Date();
   const expiresAt = new Date(requestedAt.getTime() + 5 * 60_000);
@@ -8311,10 +8318,20 @@ function renderTenantPilot() {
   const privateBusy = tenantPilot.busy || agentAuthorityPilot.busy;
   const humanWorkspace = hasHumanBorrowerWorkspace();
   const reviewState = humanCreditReviewState();
-  el("createHumanSubjectBtn").disabled =
-    privateBusy || !tenantPilot.connected || !humanWorkspace;
-  el("createHumanConsentBtn").disabled =
-    privateBusy || !tenantPilot.connected || !humanWorkspace || !subjectId;
+  const subjectReady = exactResourceId(subjectId);
+  const consentReady = exactResourceId(consentId);
+  const createSubjectButton = el("createHumanSubjectBtn");
+  const createConsentButton = el("createHumanConsentBtn");
+  createSubjectButton.disabled =
+    privateBusy || !tenantPilot.connected || !humanWorkspace || subjectReady;
+  createSubjectButton.textContent = subjectReady
+    ? "Human Subject ready"
+    : "Create Human Subject";
+  createConsentButton.disabled =
+    privateBusy || !tenantPilot.connected || !humanWorkspace || !subjectReady || consentReady;
+  createConsentButton.textContent = consentReady
+    ? "Scoped Consent ready"
+    : "Create scoped Consent";
   el("submitHumanCreditBtn").disabled = privateBusy || !tenantPilot.connected ||
     !humanWorkspace || !subjectId || !consentId || Boolean(tenantPilot.offer && reviewState.current);
   el("submitHumanCreditBtn").textContent = tenantPilot.offer && !reviewState.current
@@ -9737,6 +9754,7 @@ async function runTenantPilotProbe(probeOwner) {
 }
 
 async function createHumanSubject() {
+  if (exactResourceId(tenantInputValue("humanSubjectId"))) return;
   if (!hasHumanBorrowerWorkspace()) {
     const message = humanWorkspaceUnavailableMessage();
     tenantPilot.helper = message;
@@ -9767,6 +9785,7 @@ async function createHumanSubject() {
 }
 
 async function createHumanConsent() {
+  if (exactResourceId(tenantInputValue("humanConsentId"))) return;
   await runTenantAction(
     el("createHumanConsentBtn"),
     async () => {
