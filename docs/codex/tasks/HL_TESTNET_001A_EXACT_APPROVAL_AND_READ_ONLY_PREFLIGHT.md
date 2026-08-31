@@ -16,17 +16,28 @@ The exact Principal, account structure, signer method, action envelope,
 numerical caps, code/config hashes, recovery and retirement procedure are
 defined in the compact decision package.
 
-The package cannot truthfully bind the exact master address because no current
-Founder-controlled Hyperliquid Testnet account was exposed to this task. The
-historical `HYPERLIQUID-002D` API wallet is terminal, logically destroyed and
-must not be reused. This task therefore stops before `HL-TESTNET-001B` with no
-signer, signature, economic nonce or Venue mutation.
+Founder has now explicitly selected the existing `HYPERLIQUID-002D` Testnet
+**master account** for reuse. The currently connected official Testnet UI shows
+the candidate as `0x8C2c…217e`, about `998.99` Testnet USDC and no open
+position, consistent with the historical 002D observation of `999` Testnet
+USDC and the historical master-account address hash
+`0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038`.
+This is strong candidate evidence, but not yet an exact binding: the complete
+42-character public address still must be copied after the locked Mac is
+unlocked, hashed with the canonical account-address function, and matched to
+the historical binding before account-specific `/info` reads are accepted.
+
+The historical `HYPERLIQUID-002D` **API wallet signer** remains terminal,
+logically destroyed and must not be reused. Reusing the master account does not
+reuse or revive that signer. This task therefore still stops before
+`HL-TESTNET-001B` with no signer, signature, economic nonce or Venue mutation.
 
 ## Proposed exact run
 
 - Principal: IPO.ONE Founder, accountable controller for one synthetic Agent
   Facility.
-- Account structure: one existing Founder-controlled Hyperliquid Testnet
+- Account structure: the existing Founder-controlled `HYPERLIQUID-002D`
+  Hyperliquid Testnet
   **master** account, no subaccount. The current runner binds
   `accountType=master` and `vaultAddress=null`; selecting a subaccount would
   require a separately reviewed code change.
@@ -77,6 +88,9 @@ git diff --check
 - [x] Testnet-only origin, no real-funds authority and no mainnet authority
       passed the local gate.
 - [x] Current BTC metadata, mid and order book were read through `/info` only.
+- [x] Founder explicitly selected the historical 002D Testnet master account
+      for reuse; official Testnet UI visibly shows candidate `0x8C2c…217e`,
+      about `998.99` Testnet USDC and no open position.
 - [ ] Exact master address, its role, account value, withdrawable value, open
       orders, positions and subaccount inventory must be observed read-only.
 - [ ] Fresh API-wallet identity and registration require the later exact
@@ -101,7 +115,8 @@ residual risk; no key remains capable of signing after local destruction.
 - Audit:
   `docs/codex/audits/HL-TESTNET-001A/read-only-preflight.md`.
 
-`HL-TESTNET-001B` remains `BLOCKED — NOT COMPLETE`. Supply or visibly connect
-the exact Founder-controlled Hyperliquid Testnet master account, then refresh
-the account-specific read-only Evidence and return the final signed-run
-approval marker. No B action is authorized by this task.
+`HL-TESTNET-001B` remains `BLOCKED — NOT COMPLETE`. Unlock the Mac so the
+already-visible account can be copied locally; then bind the exact address,
+match the historical address hash, refresh account-specific read-only Evidence
+and return the final signed-run approval marker. No B action is authorized by
+this task.

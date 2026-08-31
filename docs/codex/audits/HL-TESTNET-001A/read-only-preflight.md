@@ -42,9 +42,21 @@ Response SHA-256 bindings:
 
 The public market preflight does not prove a specific account. Hyperliquid's
 read API requires the actual master or subaccount address; an API-wallet
-address returns the wrong account view. No exact current master address was
-available in the repository or existing browser session. Historical raw
-addresses are deliberately absent and the historical signer is retired.
+address returns the wrong account view.
+
+Founder explicitly chose the historical `HYPERLIQUID-002D` master account for
+reuse. The official Testnet UI is connected to candidate `0x8C2c…217e`, showing
+about `998.99` Testnet USDC and no open position. That presentation is
+consistent with the historical 002D `999` Testnet USDC master-account evidence
+whose canonical address hash is
+`0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038`.
+
+The exact 42-character public address was not yet copied because the Mac locked
+before the final local copy step. Historical raw addresses are deliberately
+absent and the historical API-wallet signer is retired. The exact address must
+be copied after unlock, deterministically matched to the historical hash and
+queried through account-specific read-only `/info` calls. No signer reuse is
+permitted.
 
 Verdict: `BLOCKED — NOT COMPLETE (EXACT TESTNET MASTER ADDRESS REQUIRED)`.
 

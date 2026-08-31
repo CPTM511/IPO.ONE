@@ -11,7 +11,11 @@
     "environment": "hyperliquid_testnet",
     "type": "master",
     "address": null,
-    "addressStatus": "founder_input_required",
+    "addressStatus": "historical_002d_reuse_confirmed_exact_address_pending_local_copy_after_unlock",
+    "visibleCandidate": "0x8C2c…217e",
+    "historicalCanonicalAddressHash": "0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038",
+    "historicalAccountEvidenceSha256": "c548058a98e92e63c22a2678d9ceb869ea4ac927fd7a20b9435be6bd6139b4ec",
+    "founderReuseDecision": true,
     "subaccount": null,
     "subaccountSelected": false,
     "requiredBaseline": {
@@ -85,6 +89,16 @@
     "exchangeRequests": 0,
     "signerCreatedOrLoaded": false,
     "venueMutation": false,
+    "connectedAccountCandidate": {
+      "source": "official Hyperliquid Testnet UI",
+      "visibleAddress": "0x8C2c…217e",
+      "perpsAccountEquityTestnetUsdc": "998.99",
+      "availableToTradeTestnetUsdc": "998.98",
+      "visibleOpenPositions": 0,
+      "observedAt": "2026-08-31T15:23:53Z",
+      "exactAddressCopied": false,
+      "historicalHashMatched": false
+    },
     "btc": {"mid": "78751.0", "bestBid": "78739.0", "bestAsk": "78755.0"}
   },
   "recovery": [
@@ -102,7 +116,7 @@
     "venueDeregistrationImplemented": false
   },
   "remainingRisks": [
-    "exact Founder-controlled Testnet master address and account-specific baseline are missing",
+    "Founder selected historical 002D master-account reuse, but the exact public address and deterministic historical-hash match remain pending until the Mac is unlocked",
     "fresh API Wallet does not exist and has not been registered",
     "Venue-side API-wallet deregistration is not implemented by the current runner",
     "UNKNOWN response requires manual read reconciliation and cannot be retried",
