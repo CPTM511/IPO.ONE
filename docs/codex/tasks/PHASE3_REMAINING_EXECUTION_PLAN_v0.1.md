@@ -1,11 +1,11 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `FOUNDER-AMENDED — PILOT-008B VERCEL + NEON TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED`
+Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001A STOPPED BEFORE B — EXACT ACCOUNT REQUIRED`
 
-Date: 2026-08-27
+Date: 2026-08-31
 
 Baseline: `origin/main` at
-`39bdf32709d896e1debaa0f8c72c98aad8a9b3e0`
+`c4cc81f09f1c7aeb78871373d29ed581e428daca`
 
 ## 1. Executive conclusion
 
@@ -13,24 +13,17 @@ The proposed direction is correct: M2 has reached its bounded no-funds end,
 there is no `M2B-007`, and the repository contains no approved post-M2 M3
 Task/API/Compute execution plan.
 
-Two corrections are required before the sequence is executable:
+Constitution v1.4 and `DEC-PUBLIC-NO-FUNDS-BETA-001` supersede ordinary invited
+cohort admission. The production Public Beta remains live while later Phase 3
+work proceeds. `PUBLIC-BETA-001C` binds its exact production truth and removes
+`PILOT-008B/008C` as active blockers.
 
-1. Treat the current `ipo.one` deployment as the exact remote no-funds
-   baseline, not as an activated closed pilot. Its runtime profile label does
-   not override `closed_non_funds_pilot.releaseEnabled=false` or the explicit
-   M2B-006 no-promotion boundary.
-2. Put the Constitution prerequisites in front of the `PILOT-008` cohort:
-   `REQ-PILOT-001` is absent and `REQ-PILOT-002` is incomplete. They must close
-   through issue-sized work and named review before invited L2 activation.
-
-With those corrections and the Founder-approved Pool integration amendment,
-the controlling order is:
+The controlling order is:
 
 ```text
-PHASE3-000 alignment
-  -> PHASE3-POOL-001 remote read-only Pool product integration repair
-  -> PILOT-008 prerequisite closure and exact cohort
-  -> HL-TESTNET-001 exact restricted signed proof
+PUBLIC-BETA-001C production Evidence closure and Phase 3 rebase
+  -> HL-TESTNET-001A exact no-write approval package and preflight
+  -> HL-TESTNET-001B one separately approved bounded signed proof
   -> RISK-003B finalized-outcome shadow loop
   -> PHASE3-CLOSE-001 release closure
   -> M3-000 Constitution and execution alignment
@@ -39,7 +32,7 @@ PHASE3-000 alignment
 
 ## 2. Authority and invariants
 
-This plan is subordinate to Product Constitution v1.3, Product Charter v1.1,
+This plan is subordinate to Product Constitution v1.4, Product Charter v1.1,
 the Product Optimization Measure, Engineering Standard, M2 decisions, launch
 policy, and exact issue approvals. It does not activate a successor.
 
@@ -62,7 +55,8 @@ Every successor must preserve:
 New tasks must use Constitution modes. Historical Local-to-Closed-Pilot labels
 may be included only as cross-references:
 
-- `L2_CLOSED_NO_FUNDS` = the guide's L1 hosted closed pilot.
+- `L2_PUBLIC_AUTHENTICATED_NO_FUNDS` = the live public authenticated no-funds
+  Beta; it replaces ordinary invited/cohort admission.
 - `L3_LIVE_TESTNET` = the guide's L2 live testnet execution.
 - `L4_CONTROLLED_REAL_VALUE` = the guide's L3 controlled real value.
 
@@ -71,20 +65,11 @@ not proof that the corresponding launch-policy mode is enabled or exited.
 
 ## 4. Dependency graph and issue sizing
 
-`PILOT-008` and `HL-TESTNET-001` are retained as the umbrella IDs from the
-approved delivery guide, but implementation must be split into the following
-issue-sized gates. Child issue documents must be active before code or external
-mutation begins.
+`HL-TESTNET-001` remains the umbrella ID from the approved delivery guide.
+Child issue documents must be active before code or external mutation begins.
 
 ```text
-PHASE3-000
-  -> PHASE3-POOL-001 remote read-only Pool product integration repair
-  -> PILOT-008A  prerequisite and current-candidate rebase
-       - REQ-PILOT-001 case/correction workflow
-       - REQ-PILOT-002 support/privacy/incident closure
-       - current 55-requirement traceability and release-control rebase
-  -> PILOT-008B  exact L2 deployment/profile activation
-  -> PILOT-008C  invited cohort run and L2 exit
+PUBLIC-BETA-001C production Evidence closure and Phase 3 rebase
   -> HL-TESTNET-001A exact account/signer/action/cap/run approval package
   -> HL-TESTNET-001B one bounded signed Hyperliquid Testnet run and recovery
   -> RISK-003B finalized/reconciled outcome ingestion and shadow evaluation
@@ -121,28 +106,17 @@ completion claims remain strictly sequential.
 - Current status: `PASS — DEPLOYED AND USER-VERIFIED` at merged/deployed SHA
   `316de8f0c2188c5f4d0b15a1cffbc50713b2972e`.
 
-### PILOT-008 — invited closed no-funds cohort
+### PUBLIC-BETA-001C — L2 production Evidence closure and Phase 3 rebase
 
-- Canonical mode: `L2_CLOSED_NO_FUNDS`.
-- Outcome: a small Human, Agent, and Capital Partner cohort completes the
-  shared product without database intervention.
-- Required precursor work:
-  - complete `PHASE3-POOL-001` with the final deployed/user-verified verdict;
-  - implement and verify `REQ-PILOT-001` through visible Human controls and an
-    equivalent authorized versioned API/MCP operation;
-  - close `REQ-PILOT-002` with named privacy, retention, ordinary support,
-    incident, restore, rollback, and on-call owners;
-  - rebase July topology/operations artifacts and all release Evidence to the
-    exact current candidate;
-  - pass independent security, backup/restore, reconciliation, revocation,
-    pause, incident, support, privacy/legal, and participant gates; and
-  - approve the exact launch-policy revision. Evidence cannot self-enable it.
-- Exit: invited users finish without database intervention; cross-Tenant,
-  duplicate, replay, restart, restore, credential revocation, pause, incident,
-  rollback, and Evidence reconciliation gates pass; no P0/P1 remains.
-- Current status: `PILOT-008A PASS — LOCALLY VERIFIED; PILOT ACTIVATION NOT
-  AUTHORIZED`; `PILOT-008B GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED`;
-  `PILOT-008C` remains `BLOCKED — NOT COMPLETE`.
+- Canonical mode: `L2_PUBLIC_AUTHENTICATED_NO_FUNDS`.
+- Outcome: bind the already-live Public Beta production truth and replace
+  obsolete invited-pilot semantics without changing runtime authority.
+- Exit: `PUBLIC-BETA-001: PASS — DEPLOYED AND USER-VERIFIED` and
+  `L2 DELIVERY GATE: COMPLETE — PUBLIC BETA ACTIVE`.
+- Current status: complete at final main/deployed SHA
+  `c4cc81f09f1c7aeb78871373d29ed581e428daca`.
+- Superseded: `PILOT-008B` invited activation and `PILOT-008C` invited cohort.
+  They are historical preparation, not active blockers.
 
 ### HL-TESTNET-001 — restricted Hyperliquid Testnet proof
 
@@ -157,7 +131,11 @@ completion claims remain strictly sequential.
 - Exit: no unauthorized action, duplicate nonce, unresolved unknown outcome,
   withdrawal, transfer, or authority expansion; pause, cancel, reduce-only,
   flatten, restart, signer revocation, settlement, and reconciliation pass.
-- Current status: `BLOCKED — NOT COMPLETE`.
+- Current status: the generic no-write gate and live market preflight pass, but
+  `HL-TESTNET-001A` is `BLOCKED — NOT COMPLETE` until the exact
+  Founder-controlled Testnet master address and account-specific read proof are
+  bound. `HL-TESTNET-001B` remains blocked on the completed compact package and
+  exact Founder signed-run approval.
 
 ### RISK-003B — finalized-outcome shadow learning
 
@@ -172,7 +150,7 @@ completion claims remain strictly sequential.
 
 ### PHASE3-CLOSE-001 — Phase 3 closure
 
-- Outcome: one exact Phase 3 report reconciles L2 cohort Evidence, L3 signed
+- Outcome: one exact Phase 3 report reconciles the live L2 Public Beta baseline, L3 signed
   execution, shadow learning, recovery drills, defects, and remaining gates.
 - Exit: every required CODE/RUNTIME/DEPLOYED/REACHABLE/VERIFIED state is
   explicit, no required verification is substituted, and the exact scoped
@@ -192,18 +170,6 @@ completion claims remain strictly sequential.
 - Current status: `NOT AUTHORIZED`.
 
 ## 6. Required decision inputs
-
-### Before PILOT-008B activation
-
-- exact cohort composition and invited participant references;
-- pilot jurisdiction and Legal/Privacy approval;
-- ordinary support channel, support owner, incident owner, on-call owner,
-  restore owner, rollback owner, and notification recipients;
-- retention policy, RPO/RTO, cost ceiling, billing/provider owners, deployment
-  topology, secret manager, and independent security reviewer;
-- exact candidate SHA, image, migrations, database, worker, edge, identity,
-  and rollback target; and
-- reviewed launch-policy revision.
 
 ### Before HL-TESTNET-001B
 
@@ -238,9 +204,9 @@ unavailable. The truthful verdict remains `BLOCKED — NOT COMPLETE`.
 ## 8. Rollback posture
 
 - Alignment: remove proposal documents only.
-- Closed pilot: preserve canonical Events/Evidence/idempotency; revoke cohort
-  credentials; return traffic to the exact prior immutable release; repair
-  forward; never weaken RLS/authentication/edge controls.
+- Public Beta: preserve canonical Events/Evidence/idempotency; return traffic
+  to the exact prior immutable release when required; repair forward; never
+  weaken RLS/authentication/edge controls or delete durable user state.
 - Hyperliquid Testnet: freeze, cancel, reduce-only/flatten, reconcile, retire
   signer, preserve redacted Evidence, and disable the exact profile.
 - Shadow learning: disable challenger evaluation and preserve immutable input,

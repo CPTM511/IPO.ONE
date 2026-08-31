@@ -1,6 +1,6 @@
 # HL-TESTNET-001 — Restricted signed Hyperliquid Testnet execution proof
 
-Status: `PREPARED — BLOCKED; NO ACCOUNT, SIGNER, CAPS, OR RUN APPROVAL`
+Status: `HL-TESTNET-001A BLOCKED ON EXACT ACCOUNT; HL-TESTNET-001B BLOCKED`
 
 Canonical mode: exact `L3_LIVE_TESTNET` Venue profile
 
@@ -123,7 +123,8 @@ Venue reconciliation, restart replay, and signer retirement verification.
 
 ## Security checklist
 
-- [ ] `PILOT-008` has formally exited and an exact L3 go/no-go exists.
+- [x] `PUBLIC-BETA-001` is PASS and the L2 Public Authenticated No-Funds
+      production baseline is healthy.
 - [ ] Account, signer, action allowlist, caps, owner, incident responder, and
       one-run window have named approval.
 - [ ] No withdrawal, transfer, controller authority, arbitrary action, mainnet,
@@ -159,8 +160,17 @@ profile. Never resend an unknown action blindly or delete history.
 
 ## Required Evidence and dependencies
 
-Dependencies: `PILOT-008` exit, exact L3 decision, current candidate, current
-threat model, approved signer/account/action/caps/owners, and one-run
-authorization.
+Dependencies: `PUBLIC-BETA-001: PASS — DEPLOYED AND USER-VERIFIED`, a healthy
+L2 Public Authenticated No-Funds production baseline, exact L3 decision,
+current candidate, current threat model, approved signer/account/action/caps/
+owners, and one-run authorization.
 
-Current verdict: `BLOCKED — NOT COMPLETE`.
+Current verdict:
+`HL-TESTNET-001A BLOCKED — NOT COMPLETE (EXACT TESTNET MASTER ADDRESS REQUIRED)`.
+
+`HL-TESTNET-001B` remains `BLOCKED — NOT COMPLETE` until the Founder approves
+the completed exact compact execution package. The generic no-write gate and
+live BTC market preflight pass, but account-specific role/balance/order/
+position/subaccount proof awaits the exact Founder-controlled master address.
+`HL-TESTNET-001A` creates or loads no signer, allocates no economic submission
+nonce and performs no Venue mutation.

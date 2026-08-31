@@ -1,24 +1,24 @@
 # PHASE3-CLOSE-001 — Phase 3 release closure
 
-Status: `PREPARED — BLOCKED ON PILOT-008, HL-TESTNET-001, AND RISK-003B`
+Status: `PREPARED — BLOCKED ON HL-TESTNET-001B AND RISK-003B`
 
 ## Context
 
 Phase 3 closure is not a merge, a deployment, a screenshot, a healthy endpoint,
-or a single testnet transaction. It is the exact reconciliation of the invited
-closed no-funds cohort, restricted Hyperliquid Testnet proof, shadow-learning
-loop, operations/recovery drills, current defects, and all CODE/RUNTIME/
-DEPLOYED/REACHABLE/VERIFIED states required by the Product Constitution and
-Optimization Measure.
+or a single testnet transaction. It is the exact reconciliation of the live
+Public Authenticated No-Funds Beta baseline, restricted Hyperliquid Testnet
+proof, shadow-learning loop, operations/recovery drills, current defects, and
+all CODE/RUNTIME/DEPLOYED/REACHABLE/VERIFIED states required by the Product
+Constitution and Optimization Measure.
 
 ## Scope
 
 - Bind one exact release SHA, tree, migrations, image(s), configuration,
   launch-policy version, deployment(s), database, workers, identities, testnet
   account/signer lifecycle, and Evidence manifests.
-- Reconcile `PILOT-008`, `HL-TESTNET-001`, and `RISK-003B` acceptance and all
-  unresolved findings.
-- Verify invited Human, Agent, Capital Partner, Risk/Operations, and support
+- Reconcile `PUBLIC-BETA-001C`, `HL-TESTNET-001`, and `RISK-003B` acceptance
+  and all unresolved findings.
+- Verify Human, Agent, Capital Partner, Risk/Operations, and support
   journeys through visible Human controls and equivalent authorized Agent
   operations.
 - Verify restart, redeploy, restore, duplicate/replay, revocation, pause,
@@ -48,7 +48,7 @@ Optimization Measure.
 
 1. The exact Phase 3 candidate and every deployed/runtime component are
    immutable and identity-matched.
-2. Invited users complete the complete shared lifecycle without database
+2. Public Beta users complete the complete shared lifecycle without database
    intervention; all role-allowed views and actions are discoverable.
 3. `REQ-PILOT-001` and `REQ-PILOT-002` pass deployed Human and Agent
    acceptance with named operational owners.
@@ -62,7 +62,7 @@ Optimization Measure.
 7. Mainnet, real funds, arbitrary withdrawal/transfer, production Human credit,
    external authority expansion, and automatic model promotion remain off.
 8. The final report separately states CODE, RUNTIME, DEPLOYED, REACHABLE,
-   VERIFIED, TESTNET VERIFIED, PILOT EXITED, and REAL-VALUE ACTIVE truth.
+   VERIFIED, TESTNET VERIFIED, PUBLIC BETA ACTIVE, and REAL-VALUE ACTIVE truth.
 9. Missing required verification yields `BLOCKED — NOT COMPLETE`; it is never
    substituted by code, CI, screenshots, or historical Evidence.
 10. M3 remains blocked unless the closure report separately recommends and the

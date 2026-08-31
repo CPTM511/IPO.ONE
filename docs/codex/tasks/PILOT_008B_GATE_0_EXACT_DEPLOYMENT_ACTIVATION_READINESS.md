@@ -1,8 +1,13 @@
 # PILOT-008B Gate 0 — Vercel + Neon technical readiness
 
-Status: `GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED`
+Status: `HISTORICAL — SUPERSEDED BY PUBLIC-BETA-001`
 
 Date: 2026-08-30
+
+Superseded: 2026-08-31 by Founder-approved
+`L2_PUBLIC_AUTHENTICATED_NO_FUNDS`. This task and its Gate 0 record are retained
+as preparation Evidence; they are no longer active work or an activation
+blocker. The live public-Beta truth is closed by `PUBLIC-BETA-001C`.
 
 Prerequisite candidate: `PILOT-008A` local commit
 `bb72a66f8627f9751c493f464a814bb53da9f403`
@@ -136,4 +141,4 @@ use the exact prior Vercel release as rollback target. If migration `0070` must
 be rolled back before cohort activation, run its reviewed down migration and
 record the receipt. Do not change providers.
 
-Current verdict: `GATE 0 REBASED — TECHNICAL READINESS IN PROGRESS; ACTIVATION BLOCKED`.
+Historical verdict: `SUPERSEDED — RETAINED AS PREPARATION EVIDENCE ONLY`.

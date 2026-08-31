@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "hl-testnet-001a-decision-package.v1",
+  "issueId": "HL-TESTNET-001A",
+  "observedAt": "2026-08-31T14:13:21.484Z",
+  "decision": "BLOCKED_MISSING_EXACT_TESTNET_MASTER_ADDRESS",
+  "principal": {
+    "name": "IPO.ONE Founder",
+    "role": "accountable Principal and controller for one synthetic Agent Facility"
+  },
+  "account": {
+    "environment": "hyperliquid_testnet",
+    "type": "master",
+    "address": null,
+    "addressStatus": "founder_input_required",
+    "subaccount": null,
+    "subaccountSelected": false,
+    "requiredBaseline": {
+      "role": "user",
+      "minimumAccountValueTestnetUsdc": "12",
+      "minimumWithdrawableTestnetUsdc": "12",
+      "openOrders": 0,
+      "positions": 0
+    }
+  },
+  "restrictedSigner": {
+    "method": "fresh dedicated named Hyperliquid API Wallet",
+    "provisionOnlyAfterHlTestnet001B": true,
+    "ownerOnlyDirectory": "/private/tmp/ipo-one-agent-credit-exec-001/",
+    "historicalSignerReuse": false,
+    "rawKeyInGitDatabaseLogsBrowserEvidenceOrPrompt": false
+  },
+  "market": {
+    "product": "BTC perpetual",
+    "assetIndex": 3,
+    "sizeDecimals": 5
+  },
+  "allowedActions": {
+    "opening": "one BTC buy IOC order",
+    "closing": "one reduce-only IOC order for the exact observed position",
+    "emergencyClosing": "at most one reduce-only IOC order for exact residual position",
+    "protectiveCancel": "cancelByCloid only for an exact cloid created by this run",
+    "modify": false,
+    "scheduleCancel": false,
+    "transfer": false,
+    "withdrawal": false,
+    "leverageChange": false,
+    "accountAdministration": false
+  },
+  "caps": {
+    "openingNotionalTestnetUsdc": {"exclusiveMinimum": "10", "maximum": "12"},
+    "maximumLeverage": 1,
+    "maximumConcurrentPositions": 1,
+    "tradeCycles": 1,
+    "runCount": 1,
+    "maximumFacilityLossOrDrawdownTestnetUsdc": "12",
+    "maximumExchangeSubmissionAttempts": 6,
+    "terminalOpenOrders": 0,
+    "terminalPositions": 0,
+    "openingPriceDeviationBps": 100,
+    "closingPriceDeviationBps": 100,
+    "preparationWindowMs": 1800000,
+    "infoRequestTimeoutMs": 10000,
+    "signedRequestExpiryMs": 9000
+  },
+  "expiry": "30 minutes from exact preparation; every signed request expires 9 seconds after nonce",
+  "codeAndConfig": {
+    "runtimeBaseCommit": "c4cc81f09f1c7aeb78871373d29ed581e428daca",
+    "runtimeSourceBinding": "0xc0939601a86f57f4740e2eb86eebb339ca3ea2b1740b78cb381141fc627eded5",
+    "gateSha256": "54e493e2c6d1ab28354996ed6832c7fed34c88f3ab1c5c92392e4d51cefb83fa",
+    "cliSha256": "7fb657488b5eb9a9dc05f974d37d367492b8cbe23e9e2e5dd8e7951e91bc98cc",
+    "liveRunnerSha256": "333c038b250df20ebb5fbfa6db8bdcff8f537350e46940662ac6cbd92b609b55",
+    "signerBoundarySha256": "885a801c270c81e77308a02bbed1f0b7168d63a32be5ac9f141893c54ade90fb",
+    "launchPolicyVersion": "1.4.0",
+    "launchPolicySha256": "e7e72c74941c4cdbc9c09fe49cc9fc9759bc60baed7758b4c9f1cca3ecbadb2a"
+  },
+  "nonceAndUnknown": {
+    "nonceAllocatedDuring001A": false,
+    "allocationPoint": "immediately before one exact signature after JIT revalidation",
+    "automaticRetry": false,
+    "unknownOutcome": "persist UNKNOWN, freeze new risk, reconcile read-only before any separate decision"
+  },
+  "readOnlyPreflight": {
+    "localGatePassed": true,
+    "infoRequests": 3,
+    "exchangeRequests": 0,
+    "signerCreatedOrLoaded": false,
+    "venueMutation": false,
+    "btc": {"mid": "78751.0", "bestBid": "78739.0", "bestAsk": "78755.0"}
+  },
+  "recovery": [
+    "freeze new risk and preserve durable run state",
+    "query userRole, clearinghouseState, openOrders, fills and exact run cloid",
+    "never retry an UNKNOWN request from inference",
+    "cancel only an exact observed run cloid",
+    "reduce-only close only an exact observed residual position",
+    "require zero open orders and zero positions before settlement and Evidence closure"
+  ],
+  "signerRetirement": {
+    "procedure": "overwrite, fsync, truncate, fsync and unlink owner-only key; verify absence; record no-reuse tombstone",
+    "logicalDestructionOnly": true,
+    "storageMediumSecureEraseClaimed": false,
+    "venueDeregistrationImplemented": false
+  },
+  "remainingRisks": [
+    "exact Founder-controlled Testnet master address and account-specific baseline are missing",
+    "fresh API Wallet does not exist and has not been registered",
+    "Venue-side API-wallet deregistration is not implemented by the current runner",
+    "UNKNOWN response requires manual read reconciliation and cannot be retried",
+    "the closed runner structurally permits up to six submission attempts although the normal filled lifecycle uses two",
+    "all assets are Testnet-only and have no real monetary authority"
+  ],
+  "authority": {
+    "hlTestnet001AReadOnly": true,
+    "hlTestnet001B": false,
+    "signerCreationOrLoad": false,
+    "venueMutation": false,
+    "risk003B": false,
+    "m3": false
+  }
+}
