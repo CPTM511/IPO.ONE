@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "hl-testnet-001b-founder-approval.v1",
+  "issueId": "HL-TESTNET-001B",
+  "approvedAt": "2026-08-31T16:20:05.564Z",
+  "approvedBy": "IPO.ONE Founder",
+  "approvalText": "可以做，我同意，你自动执行到全部完成",
+  "approvalPackage": {
+    "path": "artifacts/testnet/hl-testnet-001a-decision-package-20260831.json",
+    "sha256": "f2bdafba8c042d0efb9985572a6260799f27adaec31a83cf3d337715c309cc49",
+    "decision": "PASS_READY_FOR_HL_TESTNET_001B_EXPLICIT_APPROVAL"
+  },
+  "runId": "agent-credit-exec-001-l3-hltestnet001b-20260901-001",
+  "principal": "IPO.ONE Founder",
+  "account": {
+    "environment": "hyperliquid_testnet",
+    "type": "master",
+    "address": "0x8c2cbe747578c03c385dfd4d2e45774e5541217e",
+    "subaccount": null
+  },
+  "signer": {
+    "fresh": true,
+    "method": "owner-only isolated Hyperliquid API Wallet",
+    "agentName": "ipo1-l3-002",
+    "historicalKeyOrAddressReuse": false
+  },
+  "execution": {
+    "market": "BTC perpetual",
+    "opening": "one buy IOC",
+    "closing": "one reduce-only IOC for the exact observed position",
+    "emergency": "one reduce-only IOC only for an exact residual position",
+    "maximumOpeningNotionalTestnetUsdc": "12",
+    "exclusiveMinimumOpeningNotionalTestnetUsdc": "10",
+    "maximumLeverage": 1,
+    "maximumConcurrentPositions": 1,
+    "tradeCycles": 1,
+    "runCount": 1,
+    "maximumFacilityLossOrDrawdownTestnetUsdc": "12",
+    "preparationWindowMs": 1800000,
+    "signedRequestExpiryMs": 9000,
+    "automaticRetry": false
+  },
+  "authority": {
+    "signerProvisioning": true,
+    "approveAgentRegistration": true,
+    "boundedOrderCycle": true,
+    "exactRunReconciliation": true,
+    "signerRetirement": true,
+    "transfer": false,
+    "withdrawal": false,
+    "mainnet": false,
+    "realFunds": false,
+    "production": false,
+    "secondRun": false,
+    "risk003B": false,
+    "m3": false
+  }
+}
