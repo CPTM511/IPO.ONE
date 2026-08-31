@@ -1,6 +1,6 @@
 # HL-TESTNET-001 — Restricted signed Hyperliquid Testnet execution proof
 
-Status: `HL-TESTNET-001A BLOCKED ON EXACT ACCOUNT; HL-TESTNET-001B BLOCKED`
+Status: `HL-TESTNET-001A PASS; HL-TESTNET-001B BLOCKED ON EXPLICIT APPROVAL`
 
 Canonical mode: exact `L3_LIVE_TESTNET` Venue profile
 
@@ -138,10 +138,11 @@ Venue reconciliation, restart replay, and signer retirement verification.
 
 ## Permission boundary
 
-This prepared task grants no account access, signer creation/load, credential,
-network, nonce, action, deployment, testnet write, risk-value, or run authority.
-Each child issue and the exact signed run require separate Founder, Security,
-Risk, Operations, and Release approval.
+This umbrella grants no account mutation, signer creation/load, credential,
+nonce, economic action, deployment, testnet write, risk-value, or run
+authority. `HL-TESTNET-001A` has only its completed official `/info` read
+authority. `HL-TESTNET-001B` and the exact signed run require explicit Founder
+approval.
 
 ## Data and migration impact
 
@@ -166,11 +167,12 @@ current candidate, current threat model, approved signer/account/action/caps/
 owners, and one-run authorization.
 
 Current verdict:
-`HL-TESTNET-001A BLOCKED — NOT COMPLETE (EXACT TESTNET MASTER ADDRESS REQUIRED)`.
+`HL-TESTNET-001A PASS — READ-ONLY PREFLIGHT COMPLETE`.
 
 `HL-TESTNET-001B` remains `BLOCKED — NOT COMPLETE` until the Founder approves
-the completed exact compact execution package. The generic no-write gate and
-live BTC market preflight pass, but account-specific role/balance/order/
-position/subaccount proof awaits the exact Founder-controlled master address.
-`HL-TESTNET-001A` creates or loads no signer, allocates no economic submission
-nonce and performs no Venue mutation.
+the completed exact compact execution package. The exact historical 002D
+master address canonically matches its prior binding; fresh account-specific
+reads prove role `user`, `998.989328` Testnet USDC account and withdrawable
+value, zero positions, zero open orders and no subaccounts. `HL-TESTNET-001A`
+created or loaded no signer, allocated no economic submission nonce and
+performed no Venue mutation.

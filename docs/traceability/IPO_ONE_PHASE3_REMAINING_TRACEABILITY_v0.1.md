@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining traceability v0.1
 
-Status: Public Beta L2 closure complete; HL-TESTNET-001A stopped before B on exact account
+Status: Public Beta L2 closure and HL-TESTNET-001A complete; HL-TESTNET-001B awaiting explicit approval
 
 Date: 2026-08-31
 
@@ -28,7 +28,7 @@ higher state.
 | Historical `PILOT-008B/008C` | Gate 0 and Vercel + Neon preparation Evidence | Superseded by `DEC-PUBLIC-NO-FUNDS-BETA-001`; neither task is an active blocker | Retain only as historical preparation Evidence |
 | Prior `PILOT-007` through `OPS-004` preparation | Task files, local contracts, runbooks, topology/operations JSON | Substantial local/preflight work exists, but several artifacts bind July release candidates and retain disabled/pending inputs | Rebase each retained control to the exact Phase 3 candidate; do not reuse stale release hashes as approval |
 | Base Sepolia secured-pool testnet proof | M2A-008/M2A-009 Evidence and enabled exact `live_testnet_secured_pool` profile | Exact Base Sepolia test-assets pool proof passed; no real value | Preserve as M2 Evidence; it does not satisfy Hyperliquid signed execution |
-| `REQ-TRADE-005` / Hyperliquid delegated execution | M2B-001..004 local composition plus `HL-TESTNET-001A` generic gate and live market preflight | No-write gate and market reads pass; exact Testnet master/account proof is missing; no new signer, nonce, action, order, fill or Venue run is approved | Bind the exact Founder-controlled Testnet master and read-only baseline; then return the compact package for explicit `HL-TESTNET-001B` approval |
+| `REQ-TRADE-005` / Hyperliquid delegated execution | M2B-001..004 local composition plus completed `HL-TESTNET-001A` exact account binding, generic gate, market preflight and account-specific reads | `HL-TESTNET-001A: PASS — READ-ONLY PREFLIGHT COMPLETE`; exact historical 002D master binding matches; role `user`, `998.989328` Testnet USDC account/withdrawable value, zero positions, zero orders and no subaccounts; no new signer, nonce, action, order, fill or Venue mutation occurred | Founder must explicitly approve the compact package before `HL-TESTNET-001B`; no B authority is inferred |
 | `RISK-003B` shadow learning | Existing deterministic active policy and local shadow foundations | No finalized Hyperliquid execution/repayment outcome set exists for this gate | Ingest only finalized/reconciled outcomes after `HL-TESTNET-001`; remain non-authorizing |
 | Phase 3 closure | Optimization Measure, Public Beta production baseline and L3 criteria | Public Beta baseline complete; no new Hyperliquid proof or finalized shadow outcome | `PHASE3-CLOSE-001` after `HL-TESTNET-001B` and `RISK-003B` |
 | Post-M2 M3 Task/API/Compute | M2 Pre-Development Alignment says only `deferred to M3` | Directional mention only; no Constitution requirement, governing decision, execution plan, or code authority | `M3-000` Constitution vNext proposal and execution-plan review after Phase 3 closure |
@@ -59,8 +59,9 @@ cross-reference.
    signer or Venue-write authority.
 3. Hyperliquid Testnet signing cannot inherit M2B local authority or the Base
    Sepolia pool approval.
-4. `HL-TESTNET-001A` cannot infer or recover an exact master address from
-   historical hashes; the retired historical signer is non-reusable.
+4. `HL-TESTNET-001A` is complete using the exact Founder-controlled historical
+   002D master account and fresh read-only proof. The retired historical signer
+   remains non-reusable; B requires a fresh dedicated signer after approval.
 5. Shadow learning cannot begin with synthetic or pending Venue outcomes and
    cannot change active credit authority.
 6. M3 code cannot begin until a new Constitution decision and reviewed

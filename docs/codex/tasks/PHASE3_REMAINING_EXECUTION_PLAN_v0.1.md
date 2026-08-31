@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001A STOPPED BEFORE B — EXACT ACCOUNT REQUIRED`
+Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001A PASS; HL-TESTNET-001B BLOCKED ON EXPLICIT APPROVAL`
 
 Date: 2026-08-31
 
@@ -131,11 +131,11 @@ completion claims remain strictly sequential.
 - Exit: no unauthorized action, duplicate nonce, unresolved unknown outcome,
   withdrawal, transfer, or authority expansion; pause, cancel, reduce-only,
   flatten, restart, signer revocation, settlement, and reconciliation pass.
-- Current status: the generic no-write gate and live market preflight pass, but
-  `HL-TESTNET-001A` is `BLOCKED — NOT COMPLETE` until the exact
-  Founder-controlled Testnet master address and account-specific read proof are
-  bound. `HL-TESTNET-001B` remains blocked on the completed compact package and
-  exact Founder signed-run approval.
+- Current status: `HL-TESTNET-001A` is `PASS — READ-ONLY PREFLIGHT COMPLETE`.
+  The exact historical 002D Testnet master address matches its canonical prior
+  binding, and current account-specific reads meet the zero-order/zero-position
+  baseline. `HL-TESTNET-001B` remains `BLOCKED — NOT COMPLETE` pending exact
+  Founder signed-run approval of the compact execution package.
 
 ### RISK-003B — finalized-outcome shadow learning
 
