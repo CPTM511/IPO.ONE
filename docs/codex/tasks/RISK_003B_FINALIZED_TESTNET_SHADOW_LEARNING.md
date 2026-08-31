@@ -1,6 +1,6 @@
 # RISK-003B — Finalized testnet outcome shadow-learning loop
 
-Status: `PREPARED — BLOCKED ON HL-TESTNET-001 FINALIZED OUTCOMES`
+Status: `READY — FINALIZED INPUT AVAILABLE; NOT STARTED`
 
 Requirements: `REQ-CREDIT-002..003`, `REQ-EVID-001..004`,
 `REQ-RISK-001..002`, `REQ-PRIV-001`, `REQ-AUTO-001`
@@ -14,9 +14,13 @@ input is the finalized and reconciled performance, risk, repayment, loss, and
 intervention outcome set produced by `HL-TESTNET-001` and other explicitly
 admitted Phase 3 testnet Evidence.
 
-No such finalized Hyperliquid outcome set currently exists. Synthetic fixtures,
-pending submissions, HTTP success, Venue balance, historical artifacts, or the
-M2B local composition cannot be promoted to live outcome truth.
+One finalized Hyperliquid outcome set now exists at
+`artifacts/testnet/hl-testnet-001b-live-20260901-001.json`: an exact bounded BTC
+open/close cycle, reconciled fills, `1198/1200` repayment, `2` minor units
+outstanding and `LOSS_OUTSTANDING`. This makes the task ready but does not
+authorize it. Synthetic fixtures, pending submissions, HTTP success, Venue
+balance, historical artifacts, or the M2B local composition still cannot be
+promoted to live outcome truth.
 
 ## Scope
 

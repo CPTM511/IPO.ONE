@@ -1,6 +1,6 @@
 # HL-TESTNET-001B — One bounded signed Hyperliquid Testnet execution
 
-Status: `APPROVED — EXACT ONE-RUN EXECUTION IN PROGRESS`
+Status: `PASS — TESTNET VERIFIED`
 
 Date: 2026-09-01
 
@@ -75,13 +75,30 @@ git diff --check
 - [x] Founder approval is bound to the exact A package and one run ID.
 - [x] Historical signer reuse is denied.
 - [x] Testnet-only origin and no-real-funds boundary are exact.
-- [ ] Fresh signer is registered and independently verified.
-- [ ] Exact open/close cycle is reconciled.
-- [ ] Signer retirement and final Evidence are complete.
+- [x] Fresh signer is registered and independently verified.
+- [x] Exact open/close cycle is reconciled.
+- [x] Signer retirement and final Evidence are complete.
 
 On timeout or ambiguous submission, persist `UNKNOWN`, freeze new risk and use
 read-only account/order/fill reconciliation. Never resubmit from inference.
 Cancel only the exact run cloid and reduce-only close only an observed residual
 position. Preserve immutable Evidence and retire the signer even when the run
 is partial or blocked.
+
+## Final result
+
+Run `agent-credit-exec-001-l3-hltestnet001b-20260901-001` completed at repair
+commit `eb3c0fa718bb82c141c34a7717df3e8ac7597033`. The fresh API Wallet read back
+as role `agent`; one `0.00013 BTC` IOC open and one exact reduce-only close both
+filled. Independent Venue reads returned zero positions and zero open orders.
+
+Actual realized loss plus fees was `0.015984` Testnet USDC, so the canonical
+Obligation truth is `1198/1200` repaid, `2` minor units outstanding,
+`partially_repaid`, and `LOSS_OUTSTANDING`. The signer key was logically
+destroyed and confirmed absent. No mainnet, real funds, transfer, withdrawal,
+automatic retry, second run or successor authority occurred.
+
+Final Evidence:
+`artifacts/testnet/hl-testnet-001b-live-20260901-001.json` at SHA-256
+`eeb1f5e77de5397d7f2317c080770da44412cca3876145752ad1a2837f50aaa3`.
 

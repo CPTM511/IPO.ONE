@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001A PASS; HL-TESTNET-001B BLOCKED ON EXPLICIT APPROVAL`
+Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001 PASS; RISK-003B READY — NOT STARTED`
 
 Date: 2026-08-31
 
@@ -131,11 +131,13 @@ completion claims remain strictly sequential.
 - Exit: no unauthorized action, duplicate nonce, unresolved unknown outcome,
   withdrawal, transfer, or authority expansion; pause, cancel, reduce-only,
   flatten, restart, signer revocation, settlement, and reconciliation pass.
-- Current status: `HL-TESTNET-001A` is `PASS — READ-ONLY PREFLIGHT COMPLETE`.
-  The exact historical 002D Testnet master address matches its canonical prior
-  binding, and current account-specific reads meet the zero-order/zero-position
-  baseline. `HL-TESTNET-001B` remains `BLOCKED — NOT COMPLETE` pending exact
-  Founder signed-run approval of the compact execution package.
+- Current status: `HL-TESTNET-001A` is `PASS — READ-ONLY PREFLIGHT COMPLETE`
+  and `HL-TESTNET-001B` is `PASS — TESTNET VERIFIED`. One exact BTC Testnet
+  open/close cycle filled and independently reconciled to zero positions and
+  zero orders. Actual loss and fees produced `1198/1200` repayment and `2`
+  minor units outstanding; the signer was logically destroyed and confirmed
+  absent. Evidence is
+  `artifacts/testnet/hl-testnet-001b-live-20260901-001.json`.
 
 ### RISK-003B — finalized-outcome shadow learning
 
@@ -146,7 +148,8 @@ completion claims remain strictly sequential.
 - Exit: replay is idempotent; lineage is complete; Human/Agent privacy is
   preserved; active policy, Offers, limits, price, terms, Facilities, and
   external actions are unchanged.
-- Current status: `BLOCKED — NOT COMPLETE`.
+- Current status: `READY — FINALIZED INPUT AVAILABLE; NOT STARTED`. This plan
+  does not itself authorize `RISK-003B` mutation.
 
 ### PHASE3-CLOSE-001 — Phase 3 closure
 

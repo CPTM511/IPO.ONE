@@ -1,6 +1,6 @@
 # PHASE3-CLOSE-001 — Phase 3 release closure
 
-Status: `PREPARED — BLOCKED ON HL-TESTNET-001B AND RISK-003B`
+Status: `PREPARED — BLOCKED ON RISK-003B`
 
 ## Context
 

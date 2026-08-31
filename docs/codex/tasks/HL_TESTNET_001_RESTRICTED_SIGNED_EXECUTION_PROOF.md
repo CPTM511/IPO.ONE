@@ -1,6 +1,6 @@
 # HL-TESTNET-001 — Restricted signed Hyperliquid Testnet execution proof
 
-Status: `HL-TESTNET-001A PASS; HL-TESTNET-001B BLOCKED ON EXPLICIT APPROVAL`
+Status: `PASS — TESTNET VERIFIED`
 
 Canonical mode: exact `L3_LIVE_TESTNET` Venue profile
 
@@ -125,15 +125,15 @@ Venue reconciliation, restart replay, and signer retirement verification.
 
 - [x] `PUBLIC-BETA-001` is PASS and the L2 Public Authenticated No-Funds
       production baseline is healthy.
-- [ ] Account, signer, action allowlist, caps, owner, incident responder, and
+- [x] Account, signer, action allowlist, caps, owner, incident responder, and
       one-run window have named approval.
-- [ ] No withdrawal, transfer, controller authority, arbitrary action, mainnet,
+- [x] No withdrawal, transfer, controller authority, arbitrary action, mainnet,
       or real value is reachable.
-- [ ] Signer/key material is private, least-privilege, rotatable, revocable,
+- [x] Signer/key material is private, least-privilege, rotatable, revocable,
       non-browser, non-database, and absent from Evidence.
-- [ ] Unknown outcomes block new risk and reconcile before exact replay.
-- [ ] Pool/Venue dual-risk recovery can only hold or reduce risk.
-- [ ] Final Evidence distinguishes request, signature, submission,
+- [x] Unknown outcomes block new risk and reconcile before exact replay.
+- [x] Pool/Venue dual-risk recovery can only hold or reduce risk.
+- [x] Final Evidence distinguishes request, signature, submission,
       observation, fill, finality, settlement, repayment, and reconciliation.
 
 ## Permission boundary
@@ -166,13 +166,11 @@ L2 Public Authenticated No-Funds production baseline, exact L3 decision,
 current candidate, current threat model, approved signer/account/action/caps/
 owners, and one-run authorization.
 
-Current verdict:
-`HL-TESTNET-001A PASS — READ-ONLY PREFLIGHT COMPLETE`.
+Current verdict: `PASS — TESTNET VERIFIED`.
 
-`HL-TESTNET-001B` remains `BLOCKED — NOT COMPLETE` until the Founder approves
-the completed exact compact execution package. The exact historical 002D
-master address canonically matches its prior binding; fresh account-specific
-reads prove role `user`, `998.989328` Testnet USDC account and withdrawable
-value, zero positions, zero open orders and no subaccounts. `HL-TESTNET-001A`
-created or loaded no signer, allocated no economic submission nonce and
-performed no Venue mutation.
+`HL-TESTNET-001A` completed its read-only preflight. Founder-authorized
+`HL-TESTNET-001B` then registered one fresh API Wallet, executed one exact
+bounded BTC Testnet open/reduce-only-close cycle, reconciled both fills to zero
+positions and zero open orders, recorded the true `1198/1200` repayment and `2`
+minor-unit outstanding loss, and logically destroyed the signer. Evidence:
+`artifacts/testnet/hl-testnet-001b-live-20260901-001.json`.
