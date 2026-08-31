@@ -29,7 +29,9 @@
       listeners,
       async request(input) {
         requests.push(structuredClone(input));
-        if (input.method === "eth_requestAccounts") return [definition.address];
+        if (new Set(["eth_requestAccounts", "eth_accounts"]).has(input.method)) {
+          return [definition.address];
+        }
         if (input.method === "eth_chainId") return "0x14a34";
         if (input.method === "wallet_switchEthereumChain") return null;
         throw Object.assign(new Error("Fixture method rejected"), { code: 4200 });

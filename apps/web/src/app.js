@@ -1076,6 +1076,7 @@ const walletProviderRegistry = createWalletProviderRegistry({
       }
     }
     renderAccess();
+    renderTenantPilot();
   }
 });
 
@@ -1291,6 +1292,7 @@ async function retryWalletAuthorityInvalidation() {
   } finally {
     accessState.busy = false;
     renderAccess();
+    renderTenantPilot();
   }
 }
 
@@ -1424,6 +1426,7 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
   } finally {
     accessState.busy = false;
     renderAccess();
+    renderTenantPilot();
   }
 }
 
@@ -2827,6 +2830,11 @@ function humanCreditReviewMessage(reviewState) {
       "The exact server review binding is unavailable. Request a fresh Offer before acceptance."
   };
   return messages[reviewState.reasonCode] ?? messages.review_binding_invalid;
+}
+
+function humanOfferRequiresWalletReconnect() {
+  return accessState.sessionAuthenticationMethod === "siwe" &&
+    (!accessState.walletAddress || !walletProviderRegistry.getSelectedConnector());
 }
 
 function normalizedServerReceipt(step) {
@@ -8427,6 +8435,7 @@ function renderTenantPilot() {
     ? "Copy lifecycle receipt"
     : "Copy receipt";
   const acknowledgement = el("humanOfferAcknowledge");
+  const walletReconnectRequired = Boolean(offer) && humanOfferRequiresWalletReconnect();
   el("humanOfferAcceptance").hidden = offerAccepted;
   acknowledgement.disabled =
     privateBusy || !offer || offerAccepted || offer.status !== "offered" ||
@@ -8439,7 +8448,9 @@ function renderTenantPilot() {
     ? "Offer accepted"
     : tenantPilot.busy
       ? "Accepting exact Offer…"
-      : "Confirm & create sandbox Obligation";
+      : walletReconnectRequired
+        ? "Reconnect wallet to continue"
+        : "Confirm & create sandbox Obligation";
 
   const obligationCard = el("humanObligationCard");
   obligationCard.hidden = !obligation;
@@ -8515,7 +8526,9 @@ function renderTenantPilot() {
       : "Obligation recorded · execute through the signed non-redeemable sandbox rail when ready. No production funds can move."
     : offer && !reviewState.current
       ? "Acceptance blocked: visible authority or request terms no longer match the exact server Offer. Request a fresh evaluation."
-      : "Acceptance creates one auditable Obligation and deterministic schedule. No production funds can move.";
+      : offer && walletReconnectRequired
+        ? "Reconnect the SIWE wallet in this tab before creating the sandbox Obligation. No server write occurs until the exact wallet confirmation succeeds."
+        : "Acceptance creates one auditable Obligation and deterministic schedule. No production funds can move.";
   renderHumanRequestCreditReceipts();
   renderOwnedEvidence();
   renderHumanGuide();
@@ -9940,6 +9953,22 @@ async function requestAndEvaluateHumanCredit() {
 }
 
 async function acceptHumanCreditOffer() {
+  if (humanOfferRequiresWalletReconnect()) {
+    accessState.helper =
+      "Your secure session is active. Reconnect its wallet in this tab before creating the sandbox Obligation.";
+    openAccess();
+    requestAnimationFrame(() => {
+      const selectedProvider = el("walletProviderList").querySelector(
+        "button[data-wallet-provider-id][aria-pressed='true']"
+      );
+      const firstProvider = el("walletProviderList").querySelector(
+        "button[data-wallet-provider-id]"
+      );
+      (selectedProvider ? el("walletSignInBtn") : firstProvider)?.focus();
+    });
+    announce("Reconnect the session wallet before creating the sandbox Obligation");
+    return;
+  }
   await runTenantAction(
     el("acceptHumanOfferBtn"),
     async () => {

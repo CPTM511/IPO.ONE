@@ -238,3 +238,40 @@ test("Risk reads the fail-closed pilot readiness contract through a visible cont
     "Founder activation is approved"
   );
 });
+
+test("restored SIWE session exposes wallet reconnect before Obligation creation", async ({ page }) => {
+  await page.addInitScript({
+    path: "apps/web/test/support/wallet-provider-browser-init.js"
+  });
+  await page.goto("/?browser_qa_workspace=siwe_reconnect#request-credit");
+
+  await page.getByRole("button", { name: "Request fresh Offer" }).click();
+  await expect(page.locator("#humanApplicationStatus")).toHaveText("Offer ready");
+
+  await expect(page.locator("#humanOfferAcknowledge")).toBeEnabled();
+  await page.locator("#humanOfferAcknowledge").check();
+  const acceptOffer = page.getByRole("button", { name: "Reconnect wallet to continue" });
+  await expect(acceptOffer).toBeEnabled();
+  await expect(page.locator("#humanOfferBoundary")).toContainText(
+    "No server write occurs"
+  );
+
+  await acceptOffer.click();
+
+  await expect(page.getByRole("heading", { name: "Reconnect the session wallet" }))
+    .toBeVisible();
+  await expect(page.locator("#signInMethodCopy")).toContainText(
+    "before an exact sandbox confirmation"
+  );
+  await expect.poll(() => page.evaluate(() => window.__ipoWalletFixture.requestCount()))
+    .toBe(0);
+  await expect(page.locator("#humanObligationCard")).toBeHidden();
+
+  await page.getByRole("button", { name: /Alpha Wallet/ }).click();
+  await page.getByRole("button", { name: "Reconnect session wallet" }).click();
+  await expect(page.locator("#walletAddressStatus")).not.toHaveText("Not connected");
+  await page.locator("#accessCloseBtn").click();
+  await expect(page.getByRole("button", {
+    name: "Confirm & create sandbox Obligation"
+  })).toBeEnabled();
+});

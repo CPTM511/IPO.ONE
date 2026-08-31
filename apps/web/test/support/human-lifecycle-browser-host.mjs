@@ -59,6 +59,7 @@ if (!EVIDENCE_SCENARIOS.has(evidenceScenario)) {
 }
 const EVIDENCE_READ_DELAY_MS = 250;
 let browserSessionActive = true;
+let browserQaSiweReconnectScenario = false;
 const offerReceipt = JSON.parse(await readFile(
   new URL(
     "../../../../api/tenant-protocol/conformance/human-credit-offer-workflow-receipt.v1.fixtures.json",
@@ -755,11 +756,13 @@ function resultFor(command) {
         relationship: "owner"
       });
     }
-    resources.push({
-      resourceType: "obligation",
-      resourceId: secondaryCurrentObligation.obligationId,
-      relationship: "owner"
-    });
+    if (!browserQaSiweReconnectScenario) {
+      resources.push({
+        resourceType: "obligation",
+        resourceId: secondaryCurrentObligation.obligationId,
+        relationship: "owner"
+      });
+    }
     if (currentConsentCreated) {
       resources.push({
         resourceType: "consent",
@@ -1252,9 +1255,19 @@ async function serveAuthentication({ request, response, url, requestId }) {
     profile: "closed_non_funds_pilot",
     enabled: true,
     sessionActive: browserSessionActive,
-    sessionAuthenticationMethod: browserSessionActive ? "oidc_pkce_bff" : null,
+    sessionAuthenticationMethod: browserSessionActive
+      ? browserQaSiweReconnectScenario
+        ? "siwe"
+        : "oidc_pkce_bff"
+      : null,
+    sessionWorkspaceRole: browserQaSiweReconnectScenario
+      ? "human_borrower"
+      : undefined,
     oidcProviders: [],
-    walletAuthentication: false,
+    walletAuthentication: browserQaSiweReconnectScenario,
+    walletWorkspaceRoles: browserQaSiweReconnectScenario
+      ? ["human_borrower", "principal_controller"]
+      : [],
     supportedChains: ["eip155:84532", "eip155:1952"],
     boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
   });
@@ -1320,6 +1333,9 @@ const host = createTenantHttpServer({
       const url = new URL(context.request.url, "http://127.0.0.1");
       browserQaSuppressRecoveredSubject =
         url.searchParams.get("browser_qa_workspace") === "no_subject";
+      browserQaSiweReconnectScenario =
+        url.searchParams.get("browser_qa_workspace") === "siwe_reconnect";
+      if (browserQaSiweReconnectScenario) currentObligation = null;
     }
     return browserQaWebAssetHandler(context);
   }
