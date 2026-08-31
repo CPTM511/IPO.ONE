@@ -820,6 +820,12 @@ test("public Beta product includes authenticated Human and Agent workflows", asy
   assert.ok(html.includes("Explicit action confirmation"));
   assert.ok(html.includes("This confirmation does not create a blockchain transaction."));
   assert.ok(js.includes("requestEconomicActionConfirmation"));
+  assert.ok(html.includes("Server-bound review"));
+  assert.ok(js.includes('{ code: "wallet_reconnect_required" }'));
+  assert.ok(js.includes("Your secure session is active. Reconnect its wallet in this tab"));
+  assert.ok(js.includes("openAccess();"));
+  assert.ok(js.includes('? "Human Subject ready"'));
+  assert.ok(js.includes('? "Scoped Consent ready"'));
   assert.ok(js.includes('"wallet_personal_sign"'));
   assert.ok(js.includes("rawSignaturePersisted: false"));
   assert.ok(js.includes("blockchainTransactionSubmitted: false"));

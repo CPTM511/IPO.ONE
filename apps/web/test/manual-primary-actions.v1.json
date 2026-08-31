@@ -12,13 +12,13 @@
       "journey": "human",
       "view": "request-credit",
       "id": "createHumanSubjectBtn",
-      "labels": ["Create Human Subject"]
+      "labels": ["Create Human Subject", "Human Subject ready"]
     },
     {
       "journey": "human",
       "view": "request-credit",
       "id": "createHumanConsentBtn",
-      "labels": ["Create scoped Consent"]
+      "labels": ["Create scoped Consent", "Scoped Consent ready"]
     },
     {
       "journey": "human",
