@@ -18,7 +18,7 @@ claim, mainnet or real-value operation, Phase 3 closure, or M3 work.
 | Source Evidence | `artifacts/testnet/hl-testnet-001b-live-20260901-001.json` |
 | Source SHA-256 | `eeb1f5e77de5397d7f2317c080770da44412cca3876145752ad1a2837f50aaa3` |
 | Shadow artifact | `artifacts/risk-003b/risk-003b-shadow-run-20260901-001.json` |
-| Shadow artifact SHA-256 | `2c8a97b510fea6b170b273ba2eba0c2810d9df58927977155fd1680de3546d65` |
+| Shadow artifact SHA-256 | `97f7a6a8821203455fd71a958b5cb81cda42f3fa00e04c09fb048d87bd22e20b` |
 | Shadow run hash | `0x30989bd247b0e355f29f26331e30df7e3e52af405a607b12bfe6189d20b780a2` |
 | Source-manifest hash | `0x55ca98c3bb7443e516a22808f9e3ca934fc800155d93faac6afc4e6fab2853af` |
 | Feature-snapshot hash | `0x748ee978b08aa55981555afe695742796eedf9cc7d91aec9ac5c0df84301ac6c` |

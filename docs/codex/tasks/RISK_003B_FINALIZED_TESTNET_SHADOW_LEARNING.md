@@ -147,7 +147,7 @@ approval.
   `eeb1f5e77de5397d7f2317c080770da44412cca3876145752ad1a2837f50aaa3`.
 - Exact shadow result:
   `artifacts/risk-003b/risk-003b-shadow-run-20260901-001.json`, SHA-256
-  `2c8a97b510fea6b170b273ba2eba0c2810d9df58927977155fd1680de3546d65`.
+  `97f7a6a8821203455fd71a958b5cb81cda42f3fa00e04c09fb048d87bd22e20b`.
 - One Agent sample preserves `1198/1200` repayment, `2` minor units
   outstanding, and `loss_outstanding`; it does not rewrite the source outcome.
 - Challenger verdict: `insufficient_sample`, uncertainty `very_high`, no

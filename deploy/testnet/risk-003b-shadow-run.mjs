@@ -26,7 +26,6 @@ function argument(name, fallback = null) {
   }
   return process.argv[index + 1];
 }
-
 function requireApproval(env) {
   if (env.IPO_ONE_APPROVE_RISK_003B_SHADOW_RUN !== RISK_003B_APPROVAL_MARKER) {
     throw new Error(
@@ -103,4 +102,3 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   });
   process.stdout.write(`RISK_003B_SHADOW_RUN ${JSON.stringify(result)}\n`);
 }
-
