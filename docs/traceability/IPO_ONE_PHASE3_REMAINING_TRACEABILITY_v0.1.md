@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining traceability v0.1
 
-Status: Public Beta L2, HL-TESTNET-001 and RISK-003B complete; PHASE3-CLOSE-001 ready but not started
+Status: Phase 3 closed; Public Beta active; M3-000 not authorized
 
 Date: 2026-08-31
 
@@ -30,8 +30,8 @@ higher state.
 | Base Sepolia secured-pool testnet proof | M2A-008/M2A-009 Evidence and enabled exact `live_testnet_secured_pool` profile | Exact Base Sepolia test-assets pool proof passed; no real value | Preserve as M2 Evidence; it does not satisfy Hyperliquid signed execution |
 | `REQ-TRADE-005` / Hyperliquid delegated execution | `HL-TESTNET-001A` read-only package plus `HL-TESTNET-001B` Evidence `hl-testnet-001b-live-20260901-001.json` | `PASS — TESTNET VERIFIED`; one exact `0.00013 BTC` open and reduce-only close filled; independent reads returned zero positions/orders; `1198/1200` repaid, `2` minor units outstanding; signer key destroyed | No second run or inherited authority; use only the finalized redacted outcome as an explicitly approved successor input |
 | `RISK-003B` shadow learning | Exact source SHA-256 `eeb1f5e...`, shadow artifact SHA-256 `97f7a6a...`, deterministic replay and full repository checks | `PASS — SHADOW EVALUATION COMPLETE`; one Agent sample preserves `1198/1200` repayment and `2` minor units outstanding; challenger is `insufficient_sample`; active-policy hash is unchanged | Preserve immutable lineage; do not promote, loosen policy or infer production validity from one Testnet sample |
-| Phase 3 closure | Optimization Measure, Public Beta production baseline, completed L3 proof and completed `RISK-003B` shadow artifact | All named predecessors are complete; closure is ready but has not started | Separately execute `PHASE3-CLOSE-001`; readiness grants no M3 authority |
-| Post-M2 M3 Task/API/Compute | M2 Pre-Development Alignment says only `deferred to M3` | Directional mention only; no Constitution requirement, governing decision, execution plan, or code authority | `M3-000` Constitution vNext proposal and execution-plan review after Phase 3 closure |
+| Phase 3 closure | Exact closure input `8408a30...`, production SHA `c4cc81f...`, finalized Base Sepolia/Hyperliquid Evidence, RISK-003B artifact and full repository checks | `PASS — PHASE 3 CLOSED`; Public Beta remains active; zero scoped P0/P1 and zero unexplained reconciliation discrepancy | Preserve immutable Evidence and current safety boundaries; no successor authority is inherited |
+| Post-M2 M3 Task/API/Compute | M2 Pre-Development Alignment says only `deferred to M3`; Phase 3 predecessor is now complete | Entry predecessor satisfied, but no Constitution requirement, governing decision, execution plan, or code authority exists | Separate Founder direction for `M3-000` Constitution vNext proposal and execution-plan review |
 | Phase 4 / controlled real value | Constitution and launch policy | Disabled; real-value launch profile remains locked | Future complete decision package, policy revision, external review, and Founder go/no-go |
 
 ## Naming reconciliation
@@ -64,9 +64,10 @@ cross-reference.
    authorized.
 5. `RISK-003B` completed one deterministic shadow evaluation. The sample is
    insufficient for calibration, drift, promotion, or active-policy change.
-6. `PHASE3-CLOSE-001` is now ready, but has not started and grants no M3
-   authority.
-7. M3 code cannot begin until a new Constitution decision and reviewed
+6. `PHASE3-CLOSE-001` is complete. Public Beta remains live; the Testnet and
+   shadow results grant no production or real-value authority.
+7. M3 code cannot begin until separate Founder direction, a new Constitution
+   decision and reviewed
    execution plan exist.
 
 Permission/funds/deployment impact: **none**. This matrix records current truth

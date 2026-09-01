@@ -1,6 +1,11 @@
 # PHASE3-CLOSE-001 — Phase 3 release closure
 
-Status: `READY — PREDECESSORS COMPLETE; NOT STARTED`
+Status: `PASS — PHASE 3 CLOSED`
+
+Founder authorization: `好的，批准，按计划完成` on 2026-09-01. This
+authorizes the exact closure scope and verification in this issue. It grants
+no M3, Phase 4, mainnet, real-value, signer, external mutation, deployment, or
+active-policy authority.
 
 ## Context
 
@@ -87,13 +92,13 @@ git diff --check
 
 ## Security checklist
 
-- [ ] Exact candidate, deployment, migrations, policies, accounts, signers,
+- [x] Exact candidate, deployment, migrations, policies, accounts, signers,
       configs, and Evidence are identity bound.
-- [ ] No P0/P1, secret/PII leakage, cross-Tenant access, unknown outcome, or
+- [x] No P0/P1, secret/PII leakage, cross-Tenant access, unknown outcome, or
       unexplained reconciliation discrepancy remains.
-- [ ] Signers and acceptance credentials are retired/revoked as required.
-- [ ] Every protective control reduces/holds risk and cannot expand authority.
-- [ ] No M3, Phase 4, mainnet, or real-value authority is inferred.
+- [x] Signers and acceptance credentials are retired/revoked as required.
+- [x] Every protective control reduces/holds risk and cannot expand authority.
+- [x] No M3, Phase 4, mainnet, or real-value authority is inferred.
 
 ## Permission boundary
 
@@ -113,8 +118,28 @@ Closure documentation can be withdrawn if its Evidence is invalid. Runtime
 rollback follows the exact predecessor runbooks and preserves canonical Event,
 Evidence, Ledger, idempotency, outcome, and incident history.
 
-Current verdict: `READY — NOT STARTED`.
+## Completion Evidence
 
-Readiness is based on completed `PUBLIC-BETA-001C`, `HL-TESTNET-001A/B`, and
-`RISK-003B` predecessor Evidence. It grants no authority to begin closure,
-change runtime/deployment state, or start `M3-000`.
+- Formal release closure:
+  `docs/releases/IPO_ONE_PHASE3_CLOSURE_v0.1.md`.
+- Detailed Evidence:
+  `docs/codex/audits/PHASE3-CLOSE-001/final-evidence.md`.
+- Machine-readable manifest:
+  `artifacts/phase3-close-001/phase3-closure-20260901.json`.
+- Public Beta remains exact SHA `c4cc81f...`, deployed, reachable and
+  user-verified; fresh health and read-only browser checks passed.
+- Base Sepolia Gate E and the one Hyperliquid Testnet run are finalized,
+  restart/replay safe and reconciled with zero unexplained discrepancy.
+- RISK-003B preserves the `2`-minor-unit loss and reports
+  `insufficient_sample` without any active-policy change.
+- Full `pnpm check` passes with an isolated PostgreSQL 17 test database: 34
+  security, 89 transport, 95 PostgreSQL, 1247 root and 25 runnable Foundry
+  tests passed; 2 fork-only tests were explicitly skipped without a fork URL.
+- Scoped open P0/P1: `0/0`; real-value profile remains disabled.
+
+Current verdict: `PASS — PHASE 3 CLOSED`.
+
+Closure is based on completed `PUBLIC-BETA-001C`, `HL-TESTNET-001A/B`, and
+`RISK-003B` predecessor Evidence. `M3-000` has its predecessor condition
+satisfied but remains not authorized; no runtime/deployment authority is
+created by this result.

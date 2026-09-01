@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001 PASS; RISK-003B PASS; PHASE3-CLOSE-001 READY — NOT STARTED`
+Status: `PHASE 3 CLOSED; PUBLIC BETA ACTIVE; M3-000 NOT AUTHORIZED`
 
 Date: 2026-08-31
 
@@ -160,8 +160,10 @@ completion claims remain strictly sequential.
 - Exit: every required CODE/RUNTIME/DEPLOYED/REACHABLE/VERIFIED state is
   explicit, no required verification is substituted, and the exact scoped
   verdict is recorded.
-- Current status: `READY — PREDECESSORS COMPLETE; NOT STARTED`. Readiness does
-  not authorize closure execution or M3.
+- Current status: `PASS — PHASE 3 CLOSED`. Public Beta remains active, the
+  exact Testnet proofs are finalized and reconciled, and RISK-003B remains
+  non-authorizing. Detailed Evidence is in
+  `docs/codex/audits/PHASE3-CLOSE-001/final-evidence.md`.
 
 ### M3-000 — post-M2 Task/API/Compute alignment
 
@@ -172,8 +174,9 @@ completion claims remain strictly sequential.
   capital, signer, or funds.
 - Naming rule: this post-M2 M3 is not the historical `M3 Backend Alpha` row in
   the July MVP Build Spec.
-- Entry: only after `PHASE3-CLOSE-001` and explicit Founder direction.
-- Current status: `NOT AUTHORIZED`.
+- Entry: `PHASE3-CLOSE-001` is complete; explicit Founder direction is still
+  required.
+- Current status: `PREDECESSOR SATISFIED — NOT AUTHORIZED`.
 
 ## 6. Required decision inputs
 
