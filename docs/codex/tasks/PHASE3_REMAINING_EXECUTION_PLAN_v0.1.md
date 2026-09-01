@@ -1,10 +1,13 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `PHASE 3 CLOSED; PUBLIC BETA ACTIVE; M3-000 NOT AUTHORIZED`
+Status: `PHASE 3 CLOSED; PUBLIC BETA ACTIVE; M3-000 ALIGNMENT COMPLETE — IMPLEMENTATION NOT AUTHORIZED`
 
 Date: 2026-08-31
 
-Baseline: `origin/main` at
+Repository baseline after Phase 3 closure merge: `origin/main` at
+`06509847ab6e63889b4aa4df5928815f1abcb966`
+
+Production baseline remains:
 `c4cc81f09f1c7aeb78871373d29ed581e428daca`
 
 ## 1. Executive conclusion
@@ -174,9 +177,15 @@ completion claims remain strictly sequential.
   capital, signer, or funds.
 - Naming rule: this post-M2 M3 is not the historical `M3 Backend Alpha` row in
   the July MVP Build Spec.
-- Entry: `PHASE3-CLOSE-001` is complete; explicit Founder direction is still
-  required.
-- Current status: `PREDECESSOR SATISFIED — NOT AUTHORIZED`.
+- Entry: `PHASE3-CLOSE-001` is complete and the Founder direction required for
+  alignment was received after the closure merge. Implementation retains a
+  separate approval gate.
+- Current status: Founder authorized alignment after the closure merge.
+  `M3-000` is `ALIGNMENT COMPLETE — NARROW — NO RUNTIME CHANGE`; the exact
+  package is
+  `docs/codex/tasks/M3_000_POST_M2_TASK_API_COMPUTE_AGENT_CREDIT_ALIGNMENT.md`.
+  Constitution change and implementation remain separately gated and are not
+  authorized.
 
 ## 6. Required decision inputs
 
