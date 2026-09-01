@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/metered-usage-evidence.schema.json",
+  "title": "IPO.ONE Metered Usage Evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "usageEvidenceId", "usageEvidenceHash", "providerEventId", "nonce",
+    "tenantId", "subjectId", "principalId", "mandateId", "facilityId",
+    "authorizationId", "obligationId", "providerId", "resourceClass",
+    "measurementUnit", "quantity", "priceScheduleHash", "unitPriceMinor",
+    "chargeMinor", "assetId", "windowStartedAt", "windowEndedAt",
+    "observedAt", "finality", "reconciliation", "providerKeyId",
+    "providerPayloadHash", "sandboxOnly", "productionFundsMoved",
+    "schemaVersion"
+  ],
+  "properties": {
+    "usageEvidenceId": { "$ref": "#/$defs/identifier" },
+    "usageEvidenceHash": { "$ref": "#/$defs/hash" },
+    "providerEventId": { "$ref": "#/$defs/identifier" },
+    "nonce": { "$ref": "#/$defs/identifier" },
+    "tenantId": { "$ref": "#/$defs/identifier" },
+    "subjectId": { "$ref": "#/$defs/identifier" },
+    "principalId": { "$ref": "#/$defs/identifier" },
+    "mandateId": { "$ref": "#/$defs/identifier" },
+    "facilityId": { "$ref": "#/$defs/identifier" },
+    "authorizationId": { "$ref": "#/$defs/identifier" },
+    "obligationId": { "$ref": "#/$defs/identifier" },
+    "providerId": { "$ref": "#/$defs/identifier" },
+    "resourceClass": { "$ref": "#/$defs/identifier" },
+    "measurementUnit": { "$ref": "#/$defs/identifier" },
+    "quantity": { "$ref": "#/$defs/positiveMinor" },
+    "priceScheduleHash": { "$ref": "#/$defs/hash" },
+    "unitPriceMinor": { "$ref": "#/$defs/positiveMinor" },
+    "chargeMinor": { "$ref": "#/$defs/positiveMinor" },
+    "assetId": { "$ref": "#/$defs/identifier" },
+    "windowStartedAt": { "type": "string", "format": "date-time" },
+    "windowEndedAt": { "type": "string", "format": "date-time" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "finality": { "enum": ["pending", "finalized"] },
+    "reconciliation": { "enum": ["pending", "reconciled", "disputed"] },
+    "providerKeyId": { "$ref": "#/$defs/identifier" },
+    "providerPayloadHash": { "$ref": "#/$defs/hash" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "schemaVersion": { "const": "metered_usage_evidence.v1" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "positiveMinor": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" }
+  }
+}
