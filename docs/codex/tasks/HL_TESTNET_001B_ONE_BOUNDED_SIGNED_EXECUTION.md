@@ -101,4 +101,3 @@ automatic retry, second run or successor authority occurred.
 Final Evidence:
 `artifacts/testnet/hl-testnet-001b-live-20260901-001.json` at SHA-256
 `eeb1f5e77de5397d7f2317c080770da44412cca3876145752ad1a2837f50aaa3`.
-
