@@ -16,3 +16,12 @@ to change limits, approve credit, move funds or release a model.
 
 Public interfaces: `CreditLearningService`,
 `PostgresCreditOutcomeMaterializer`.
+
+`RISK-003B` adds one deliberately narrow finalized-Testnet shadow adapter in
+`packages/domain/src/risk-003b-shadow-learning.js`. It preserves a reconciled
+`loss_outstanding` outcome without falsely mapping it to `fully_repaid` or
+`written_off`, separates decision-time features from the outcome window, and
+produces only versioned, privacy-safe, non-authorizing offline Evidence. A
+single sample must remain `insufficient_sample`; it cannot promote a model,
+loosen a limit, change the deterministic active policy, or call an external
+action.

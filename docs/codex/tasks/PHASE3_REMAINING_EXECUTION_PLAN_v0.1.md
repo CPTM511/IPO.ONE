@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001 PASS; RISK-003B READY — NOT STARTED`
+Status: `PUBLIC-BETA-001C PASS; HL-TESTNET-001 PASS; RISK-003B PASS; PHASE3-CLOSE-001 READY — NOT STARTED`
 
 Date: 2026-08-31
 
@@ -148,8 +148,10 @@ completion claims remain strictly sequential.
 - Exit: replay is idempotent; lineage is complete; Human/Agent privacy is
   preserved; active policy, Offers, limits, price, terms, Facilities, and
   external actions are unchanged.
-- Current status: `READY — FINALIZED INPUT AVAILABLE; NOT STARTED`. This plan
-  does not itself authorize `RISK-003B` mutation.
+- Current status: `PASS — SHADOW EVALUATION COMPLETE`. The exact finalized
+  Testnet outcome produced one deterministic, privacy-safe shadow sample. The
+  challenger returned `insufficient_sample`; active policy, Offers, limits,
+  pricing, terms, Facilities and external authority remain unchanged.
 
 ### PHASE3-CLOSE-001 — Phase 3 closure
 
@@ -158,7 +160,8 @@ completion claims remain strictly sequential.
 - Exit: every required CODE/RUNTIME/DEPLOYED/REACHABLE/VERIFIED state is
   explicit, no required verification is substituted, and the exact scoped
   verdict is recorded.
-- Current status: `BLOCKED — NOT COMPLETE`.
+- Current status: `READY — PREDECESSORS COMPLETE; NOT STARTED`. Readiness does
+  not authorize closure execution or M3.
 
 ### M3-000 — post-M2 Task/API/Compute alignment
 

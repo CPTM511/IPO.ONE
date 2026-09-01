@@ -1,6 +1,6 @@
 # PHASE3-CLOSE-001 — Phase 3 release closure
 
-Status: `PREPARED — BLOCKED ON RISK-003B`
+Status: `READY — PREDECESSORS COMPLETE; NOT STARTED`
 
 ## Context
 
@@ -113,4 +113,8 @@ Closure documentation can be withdrawn if its Evidence is invalid. Runtime
 rollback follows the exact predecessor runbooks and preserves canonical Event,
 Evidence, Ledger, idempotency, outcome, and incident history.
 
-Current verdict: `BLOCKED — NOT COMPLETE`.
+Current verdict: `READY — NOT STARTED`.
+
+Readiness is based on completed `PUBLIC-BETA-001C`, `HL-TESTNET-001A/B`, and
+`RISK-003B` predecessor Evidence. It grants no authority to begin closure,
+change runtime/deployment state, or start `M3-000`.

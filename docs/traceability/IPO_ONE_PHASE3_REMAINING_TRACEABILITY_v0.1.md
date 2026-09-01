@@ -1,6 +1,6 @@
 # IPO.ONE Phase 3 remaining traceability v0.1
 
-Status: Public Beta L2 closure and HL-TESTNET-001 complete; RISK-003B ready but not started
+Status: Public Beta L2, HL-TESTNET-001 and RISK-003B complete; PHASE3-CLOSE-001 ready but not started
 
 Date: 2026-08-31
 
@@ -29,8 +29,8 @@ higher state.
 | Prior `PILOT-007` through `OPS-004` preparation | Task files, local contracts, runbooks, topology/operations JSON | Substantial local/preflight work exists, but several artifacts bind July release candidates and retain disabled/pending inputs | Rebase each retained control to the exact Phase 3 candidate; do not reuse stale release hashes as approval |
 | Base Sepolia secured-pool testnet proof | M2A-008/M2A-009 Evidence and enabled exact `live_testnet_secured_pool` profile | Exact Base Sepolia test-assets pool proof passed; no real value | Preserve as M2 Evidence; it does not satisfy Hyperliquid signed execution |
 | `REQ-TRADE-005` / Hyperliquid delegated execution | `HL-TESTNET-001A` read-only package plus `HL-TESTNET-001B` Evidence `hl-testnet-001b-live-20260901-001.json` | `PASS — TESTNET VERIFIED`; one exact `0.00013 BTC` open and reduce-only close filled; independent reads returned zero positions/orders; `1198/1200` repaid, `2` minor units outstanding; signer key destroyed | No second run or inherited authority; use only the finalized redacted outcome as an explicitly approved successor input |
-| `RISK-003B` shadow learning | Existing deterministic active policy, local shadow foundations and finalized `HL-TESTNET-001B` Evidence | Finalized reconciled input now exists; `RISK-003B` is ready but not started and remains non-authorizing | Separate execution of the prepared `RISK-003B` task; never change active policy or external authority |
-| Phase 3 closure | Optimization Measure, Public Beta production baseline and completed L3 proof | Public Beta and Hyperliquid proof are complete; finalized shadow outcome is not yet produced | `PHASE3-CLOSE-001` after `RISK-003B` |
+| `RISK-003B` shadow learning | Exact source SHA-256 `eeb1f5e...`, shadow artifact SHA-256 `2c8a97b...`, deterministic replay and full repository checks | `PASS — SHADOW EVALUATION COMPLETE`; one Agent sample preserves `1198/1200` repayment and `2` minor units outstanding; challenger is `insufficient_sample`; active-policy hash is unchanged | Preserve immutable lineage; do not promote, loosen policy or infer production validity from one Testnet sample |
+| Phase 3 closure | Optimization Measure, Public Beta production baseline, completed L3 proof and completed `RISK-003B` shadow artifact | All named predecessors are complete; closure is ready but has not started | Separately execute `PHASE3-CLOSE-001`; readiness grants no M3 authority |
 | Post-M2 M3 Task/API/Compute | M2 Pre-Development Alignment says only `deferred to M3` | Directional mention only; no Constitution requirement, governing decision, execution plan, or code authority | `M3-000` Constitution vNext proposal and execution-plan review after Phase 3 closure |
 | Phase 4 / controlled real value | Constitution and launch policy | Disabled; real-value launch profile remains locked | Future complete decision package, policy revision, external review, and Founder go/no-go |
 
@@ -62,9 +62,11 @@ cross-reference.
 4. `HL-TESTNET-001A/B` are complete. The exact fresh signer performed one
    bounded run, was logically destroyed and is non-reusable. No second run is
    authorized.
-5. Shadow learning now has one finalized reconciled input, but cannot start
-   from this Evidence alone and cannot change active credit authority.
-6. M3 code cannot begin until a new Constitution decision and reviewed
+5. `RISK-003B` completed one deterministic shadow evaluation. The sample is
+   insufficient for calibration, drift, promotion, or active-policy change.
+6. `PHASE3-CLOSE-001` is now ready, but has not started and grants no M3
+   authority.
+7. M3 code cannot begin until a new Constitution decision and reviewed
    execution plan exist.
 
 Permission/funds/deployment impact: **none**. This matrix records current truth
