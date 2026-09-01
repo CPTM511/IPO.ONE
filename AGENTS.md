@@ -40,7 +40,7 @@ untracked notes.
 
 Guidance hierarchy:
 
-- Product Constitution v1.4 is the highest product-truth authority and conflict
+- Product Constitution v1.5 is the highest product-truth authority and conflict
   resolver. It assigns stable requirement IDs, records approved/gated/rejected
   capabilities, and resolves the current CreditLine, Agent Lockbox, Strategy
   Vault, and dispute-workflow decisions. Approval in the Constitution is not
@@ -149,6 +149,11 @@ Current core constraints:
   factory, mainnet, real funds, multiple markets/assets, flash loans, recursive
   leverage, or unrestricted withdrawal is authorized. Each L3 profile,
   contract, asset, oracle, account, signer, and run remains separately reviewed.
+- M3 is narrowly limited to Metered Usage Evidence and deterministic charge
+  admission as a Provider Spend Facility profile over the shared kernel. The
+  first implementation is L0 local no-funds only; no separate Task/API/Compute
+  product, ledger, orchestration platform, external Provider or real value is
+  authorized.
 - Do not enable real Human cash loans, tokens/DAO governance, arbitrary
   withdrawals, or black-box credit scoring before real repayment events exist.
 - Sensitive human data and raw KYC/PII should stay offchain by default; use
