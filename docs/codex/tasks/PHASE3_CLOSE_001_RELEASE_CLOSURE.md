@@ -1,24 +1,29 @@
 # PHASE3-CLOSE-001 — Phase 3 release closure
 
-Status: `PREPARED — BLOCKED ON PILOT-008, HL-TESTNET-001, AND RISK-003B`
+Status: `PASS — PHASE 3 CLOSED`
+
+Founder authorization: `好的，批准，按计划完成` on 2026-09-01. This
+authorizes the exact closure scope and verification in this issue. It grants
+no M3, Phase 4, mainnet, real-value, signer, external mutation, deployment, or
+active-policy authority.
 
 ## Context
 
 Phase 3 closure is not a merge, a deployment, a screenshot, a healthy endpoint,
-or a single testnet transaction. It is the exact reconciliation of the invited
-closed no-funds cohort, restricted Hyperliquid Testnet proof, shadow-learning
-loop, operations/recovery drills, current defects, and all CODE/RUNTIME/
-DEPLOYED/REACHABLE/VERIFIED states required by the Product Constitution and
-Optimization Measure.
+or a single testnet transaction. It is the exact reconciliation of the live
+Public Authenticated No-Funds Beta baseline, restricted Hyperliquid Testnet
+proof, shadow-learning loop, operations/recovery drills, current defects, and
+all CODE/RUNTIME/DEPLOYED/REACHABLE/VERIFIED states required by the Product
+Constitution and Optimization Measure.
 
 ## Scope
 
 - Bind one exact release SHA, tree, migrations, image(s), configuration,
   launch-policy version, deployment(s), database, workers, identities, testnet
   account/signer lifecycle, and Evidence manifests.
-- Reconcile `PILOT-008`, `HL-TESTNET-001`, and `RISK-003B` acceptance and all
-  unresolved findings.
-- Verify invited Human, Agent, Capital Partner, Risk/Operations, and support
+- Reconcile `PUBLIC-BETA-001C`, `HL-TESTNET-001`, and `RISK-003B` acceptance
+  and all unresolved findings.
+- Verify Human, Agent, Capital Partner, Risk/Operations, and support
   journeys through visible Human controls and equivalent authorized Agent
   operations.
 - Verify restart, redeploy, restore, duplicate/replay, revocation, pause,
@@ -48,7 +53,7 @@ Optimization Measure.
 
 1. The exact Phase 3 candidate and every deployed/runtime component are
    immutable and identity-matched.
-2. Invited users complete the complete shared lifecycle without database
+2. Public Beta users complete the complete shared lifecycle without database
    intervention; all role-allowed views and actions are discoverable.
 3. `REQ-PILOT-001` and `REQ-PILOT-002` pass deployed Human and Agent
    acceptance with named operational owners.
@@ -62,7 +67,7 @@ Optimization Measure.
 7. Mainnet, real funds, arbitrary withdrawal/transfer, production Human credit,
    external authority expansion, and automatic model promotion remain off.
 8. The final report separately states CODE, RUNTIME, DEPLOYED, REACHABLE,
-   VERIFIED, TESTNET VERIFIED, PILOT EXITED, and REAL-VALUE ACTIVE truth.
+   VERIFIED, TESTNET VERIFIED, PUBLIC BETA ACTIVE, and REAL-VALUE ACTIVE truth.
 9. Missing required verification yields `BLOCKED — NOT COMPLETE`; it is never
    substituted by code, CI, screenshots, or historical Evidence.
 10. M3 remains blocked unless the closure report separately recommends and the
@@ -87,13 +92,13 @@ git diff --check
 
 ## Security checklist
 
-- [ ] Exact candidate, deployment, migrations, policies, accounts, signers,
+- [x] Exact candidate, deployment, migrations, policies, accounts, signers,
       configs, and Evidence are identity bound.
-- [ ] No P0/P1, secret/PII leakage, cross-Tenant access, unknown outcome, or
+- [x] No P0/P1, secret/PII leakage, cross-Tenant access, unknown outcome, or
       unexplained reconciliation discrepancy remains.
-- [ ] Signers and acceptance credentials are retired/revoked as required.
-- [ ] Every protective control reduces/holds risk and cannot expand authority.
-- [ ] No M3, Phase 4, mainnet, or real-value authority is inferred.
+- [x] Signers and acceptance credentials are retired/revoked as required.
+- [x] Every protective control reduces/holds risk and cannot expand authority.
+- [x] No M3, Phase 4, mainnet, or real-value authority is inferred.
 
 ## Permission boundary
 
@@ -113,4 +118,28 @@ Closure documentation can be withdrawn if its Evidence is invalid. Runtime
 rollback follows the exact predecessor runbooks and preserves canonical Event,
 Evidence, Ledger, idempotency, outcome, and incident history.
 
-Current verdict: `BLOCKED — NOT COMPLETE`.
+## Completion Evidence
+
+- Formal release closure:
+  `docs/releases/IPO_ONE_PHASE3_CLOSURE_v0.1.md`.
+- Detailed Evidence:
+  `docs/codex/audits/PHASE3-CLOSE-001/final-evidence.md`.
+- Machine-readable manifest:
+  `artifacts/phase3-close-001/phase3-closure-20260901.json`.
+- Public Beta remains exact SHA `c4cc81f...`, deployed, reachable and
+  user-verified; fresh health and read-only browser checks passed.
+- Base Sepolia Gate E and the one Hyperliquid Testnet run are finalized,
+  restart/replay safe and reconciled with zero unexplained discrepancy.
+- RISK-003B preserves the `2`-minor-unit loss and reports
+  `insufficient_sample` without any active-policy change.
+- Full `pnpm check` passes with an isolated PostgreSQL 17 test database: 34
+  security, 89 transport, 95 PostgreSQL, 1247 root and 25 runnable Foundry
+  tests passed; 2 fork-only tests were explicitly skipped without a fork URL.
+- Scoped open P0/P1: `0/0`; real-value profile remains disabled.
+
+Current verdict: `PASS — PHASE 3 CLOSED`.
+
+Closure is based on completed `PUBLIC-BETA-001C`, `HL-TESTNET-001A/B`, and
+`RISK-003B` predecessor Evidence. `M3-000` has its predecessor condition
+satisfied but remains not authorized; no runtime/deployment authority is
+created by this result.

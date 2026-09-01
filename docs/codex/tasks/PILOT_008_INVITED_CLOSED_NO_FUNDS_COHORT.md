@@ -1,6 +1,12 @@
 # PILOT-008 — Invited closed no-funds cohort
 
-Status: `PILOT-008A LOCALLY VERIFIED; PILOT-008B VERCEL + NEON TECHNICAL READINESS IN PROGRESS; PILOT-008C BLOCKED`
+Status: `HISTORICAL — PILOT-008B/008C SUPERSEDED BY PUBLIC-BETA-001`
+
+Supersession: Founder decision `DEC-PUBLIC-NO-FUNDS-BETA-001` replaced the
+invited activation/cohort route with the live
+`L2_PUBLIC_AUTHENTICATED_NO_FUNDS` baseline. `PILOT-008B` and `PILOT-008C`
+remain historical preparation Evidence only; neither is an active Phase 3
+task, dependency or blocker.
 
 Canonical mode: `L2_CLOSED_NO_FUNDS`
 
@@ -23,13 +29,11 @@ Constitution v1.3 requires both `REQ-PILOT-001` and `REQ-PILOT-002` before an
 L2 pilot. Current Evidence finds no durable dispute/appeal/correction case
 workflow and only partial feedback/support/incident capability.
 
-This file remains the umbrella planning contract. `PILOT-008A` is locally
-verified. The later Founder direction selects the existing Vercel + Neon stack
-and authorizes technical-readiness deployment and approved additive migrations
-under the `PILOT-008B` Gate 0 contract in
-`PILOT_008B_GATE_0_EXACT_DEPLOYMENT_ACTIVATION_READINESS.md`. Actual
-deployment, profile activation, participant provisioning and `PILOT-008C`
-cohort operation still require their separate exact contracts and approvals.
+This file is retained as the historical invited-pilot planning contract.
+`PILOT-008A` was locally verified and `PILOT-008B` supplied useful Vercel +
+Neon preparation Evidence, but the later public-Beta Founder decision
+superseded the unexecuted invited activation and cohort sequence. Current work
+is governed by `PUBLIC-BETA-001C` and the rebased Phase 3 execution plan.
 
 ## Scope
 

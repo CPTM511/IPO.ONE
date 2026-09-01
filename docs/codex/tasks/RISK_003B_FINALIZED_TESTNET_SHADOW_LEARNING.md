@@ -1,6 +1,10 @@
 # RISK-003B — Finalized testnet outcome shadow-learning loop
 
-Status: `PREPARED — BLOCKED ON HL-TESTNET-001 FINALIZED OUTCOMES`
+Status: `PASS — SHADOW EVALUATION COMPLETE`
+
+Founder authorization: `同意，开搞` on 2026-09-01. This authorizes only the
+shadow-only scope and non-goals in this issue; it grants no active-policy,
+external-action, production-risk, mainnet, real-value or M3 authority.
 
 Requirements: `REQ-CREDIT-002..003`, `REQ-EVID-001..004`,
 `REQ-RISK-001..002`, `REQ-PRIV-001`, `REQ-AUTO-001`
@@ -14,9 +18,13 @@ input is the finalized and reconciled performance, risk, repayment, loss, and
 intervention outcome set produced by `HL-TESTNET-001` and other explicitly
 admitted Phase 3 testnet Evidence.
 
-No such finalized Hyperliquid outcome set currently exists. Synthetic fixtures,
-pending submissions, HTTP success, Venue balance, historical artifacts, or the
-M2B local composition cannot be promoted to live outcome truth.
+One finalized Hyperliquid outcome set now exists at
+`artifacts/testnet/hl-testnet-001b-live-20260901-001.json`: an exact bounded BTC
+open/close cycle, reconciled fills, `1198/1200` repayment, `2` minor units
+outstanding and `LOSS_OUTSTANDING`. This makes the task ready but does not
+authorize it. Synthetic fixtures, pending submissions, HTTP success, Venue
+balance, historical artifacts, or the M2B local composition still cannot be
+promoted to live outcome truth.
 
 ## Scope
 
@@ -97,13 +105,13 @@ policy immutability, mutation denial, and challenger-disabled behavior.
 
 ## Security checklist
 
-- [ ] `HL-TESTNET-001` provides finalized and reconciled source Evidence.
-- [ ] No self-reported or unverified positive signal is admitted.
-- [ ] No raw PII, credential, private policy, signer, or free text is processed.
-- [ ] Point-in-time boundaries and outcome windows prevent look-ahead leakage.
-- [ ] Shadow output cannot mutate policy, authority, limits, terms, or external
+- [x] `HL-TESTNET-001` provides finalized and reconciled source Evidence.
+- [x] No self-reported or unverified positive signal is admitted.
+- [x] No raw PII, credential, private policy, signer, or free text is processed.
+- [x] Point-in-time boundaries and outcome windows prevent look-ahead leakage.
+- [x] Shadow output cannot mutate policy, authority, limits, terms, or external
       state.
-- [ ] Model/feature/report versions, owners, hashes, lineage, and rollback are
+- [x] Model/feature/report versions, owners, hashes, lineage, and rollback are
       durable and queryable.
 
 ## Permission boundary
@@ -132,4 +140,30 @@ Dependencies: `HL-TESTNET-001` exact finalized/reconciled outcome manifest,
 current source definitions, named shadow owner, privacy review, and active issue
 approval.
 
-Current verdict: `BLOCKED — NOT COMPLETE`.
+## Completion Evidence
+
+- Exact source:
+  `artifacts/testnet/hl-testnet-001b-live-20260901-001.json`, SHA-256
+  `eeb1f5e77de5397d7f2317c080770da44412cca3876145752ad1a2837f50aaa3`.
+- Exact shadow result:
+  `artifacts/risk-003b/risk-003b-shadow-run-20260901-001.json`, SHA-256
+  `97f7a6a8821203455fd71a958b5cb81cda42f3fa00e04c09fb048d87bd22e20b`.
+- One Agent sample preserves `1198/1200` repayment, `2` minor units
+  outstanding, and `loss_outstanding`; it does not rewrite the source outcome.
+- Challenger verdict: `insufficient_sample`, uncertainty `very_high`, no
+  capacity multiplier, no recommended policy change, and no promotion.
+- The active deterministic policy hash is identical before and after shadow
+  evaluation:
+  `0xd91aa0acf5ee8e10aa18fac3b48614c341c0666b1669da2216ac6973961b194e`.
+- Exact replay, duplicate delivery, conflict, finality, revocation,
+  reconciliation, privacy, time-leakage, mutation-denial, disabled-challenger,
+  CLI byte-drift, and read-only report tests pass.
+- Full repository `pnpm check` passes with an isolated PostgreSQL 17 test
+  database. The two Base Sepolia fork tests are explicitly skipped because no
+  fork URL was supplied; all 25 locally runnable contract tests pass.
+- Detailed audit: `docs/codex/audits/RISK-003B/final-evidence.md`.
+
+No database migration, production dependency, production deployment, Venue
+mutation, active credit-policy change, or external authority was introduced.
+
+Current verdict: `PASS — SHADOW EVALUATION COMPLETE`.

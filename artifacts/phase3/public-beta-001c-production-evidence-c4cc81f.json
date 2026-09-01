@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "public-beta-001c-production-evidence.v1",
+  "observedAt": "2026-08-31",
+  "verdict": "PASS — DEPLOYED AND USER-VERIFIED",
+  "l2DeliveryGate": "COMPLETE — PUBLIC BETA ACTIVE",
+  "release": {
+    "mainSha": "c4cc81f09f1c7aeb78871373d29ed581e428daca",
+    "deployedSha": "c4cc81f09f1c7aeb78871373d29ed581e428daca",
+    "productionUrl": "https://ipo.one",
+    "vercelDeploymentId": "dpl_XF9tYaYWe8qBuiXrQkWGrV4yChGt",
+    "vercelState": "Ready",
+    "qualityGateRun": "https://github.com/CPTM511/IPO.ONE/actions/runs/33375795085"
+  },
+  "runtime": {
+    "status": "ready",
+    "deploymentRole": "primary",
+    "profile": "public_authenticated_no_funds_beta",
+    "authenticationMode": "single_v2",
+    "realFundsEnabled": false,
+    "externalVenueWritesEnabled": false,
+    "chainEvidenceEnabled": false,
+    "boundedLogEntries": 50,
+    "reconciliationPassed": true,
+    "observedServerErrors": 0
+  },
+  "migration": {
+    "count": 72,
+    "head": "0072_public_beta_self_service_identity",
+    "digestSha256": "8c43be9dda92baa491b0904b9849d36e7c6683b87d019be0afc7aba084ee6808",
+    "publicRelations": 158,
+    "rlsEnabledRelations": 155,
+    "forceRlsRelations": 155,
+    "publicPolicyCount": 164,
+    "schemaObjectDigestSha256": "11025810ae49e53749aa70d14fe5c91a835654c949c4e4302bf3fba2fe9fda55"
+  },
+  "restore": {
+    "method": "temporary expiring Neon branch with read-only compute",
+    "productionAndRestoredSnapshotsExactMatch": true,
+    "temporaryBranchDeleted": true,
+    "postDrillBranches": ["main"]
+  },
+  "productAcceptance": {
+    "siweSelfService": "verified",
+    "humanLifecycle": "verified",
+    "obligationExecution": "verified_synthetic_no_funds",
+    "fullRepayment": "verified_120_usd_sandbox",
+    "evidenceEventsFinalized": 9,
+    "refreshRecovery": "verified",
+    "principalAgent": "verified_shared_kernel_authorized_entry",
+    "pool": "verified_read_only",
+    "crossUserCrossTenantDenial": "bound_to_green_quality_gates",
+    "abuseControls": "bound_to_green_quality_gates"
+  },
+  "rollback": {
+    "preparedDeploymentId": "dpl_6Y47KqGKzNN1sR3vjr4Dfgwod2XB",
+    "preparedReleaseSha": "aab982eb32792c072e0250eb886210e339cf6c90",
+    "executed": false,
+    "reasonNotExecuted": "current production remained healthy"
+  },
+  "authority": {
+    "publicBetaRemainsLive": true,
+    "hlTestnet001AReadOnlyPreparation": true,
+    "hlTestnet001B": false,
+    "risk003B": false,
+    "m3": false,
+    "realFunds": false,
+    "mainnet": false
+  }
+}

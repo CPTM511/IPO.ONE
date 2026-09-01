@@ -1,0 +1,169 @@
+{
+  "schemaVersion": "hl-testnet-001a-decision-package.v1",
+  "issueId": "HL-TESTNET-001A",
+  "observedAt": "2026-08-31T15:39:25.079Z",
+  "decision": "PASS_READY_FOR_HL_TESTNET_001B_EXPLICIT_APPROVAL",
+  "principal": {
+    "name": "IPO.ONE Founder",
+    "role": "accountable Principal and controller for one synthetic Agent Facility"
+  },
+  "account": {
+    "environment": "hyperliquid_testnet",
+    "type": "master",
+    "address": "0x8c2cbe747578c03c385dfd4d2e45774e5541217e",
+    "addressStatus": "exact_address_historical_hash_matched_and_read_only_verified",
+    "visibleCandidate": "0x8C2c…217e",
+    "historicalCanonicalAddressHash": "0xda35abd4f31d5e8c9a5d87f289535c6164d1d587c49bb1deb206f906a1802038",
+    "historicalAccountEvidenceSha256": "c548058a98e92e63c22a2678d9ceb869ea4ac927fd7a20b9435be6bd6139b4ec",
+    "founderReuseDecision": true,
+    "subaccount": null,
+    "subaccountSelected": false,
+    "requiredBaseline": {
+      "role": "user",
+      "minimumAccountValueTestnetUsdc": "12",
+      "minimumWithdrawableTestnetUsdc": "12",
+      "openOrders": 0,
+      "positions": 0
+    }
+  },
+  "restrictedSigner": {
+    "method": "fresh dedicated named Hyperliquid API Wallet",
+    "provisionOnlyAfterHlTestnet001B": true,
+    "ownerOnlyDirectory": "/private/tmp/ipo-one-agent-credit-exec-001/",
+    "historicalSignerReuse": false,
+    "rawKeyInGitDatabaseLogsBrowserEvidenceOrPrompt": false
+  },
+  "market": {
+    "product": "BTC perpetual",
+    "assetIndex": 3,
+    "sizeDecimals": 5
+  },
+  "allowedActions": {
+    "opening": "one BTC buy IOC order",
+    "closing": "one reduce-only IOC order for the exact observed position",
+    "emergencyClosing": "at most one reduce-only IOC order for exact residual position",
+    "protectiveCancel": "cancelByCloid only for an exact cloid created by this run",
+    "modify": false,
+    "scheduleCancel": false,
+    "transfer": false,
+    "withdrawal": false,
+    "leverageChange": false,
+    "accountAdministration": false
+  },
+  "caps": {
+    "openingNotionalTestnetUsdc": {"exclusiveMinimum": "10", "maximum": "12"},
+    "maximumLeverage": 1,
+    "maximumConcurrentPositions": 1,
+    "tradeCycles": 1,
+    "runCount": 1,
+    "maximumFacilityLossOrDrawdownTestnetUsdc": "12",
+    "maximumExchangeSubmissionAttempts": 6,
+    "terminalOpenOrders": 0,
+    "terminalPositions": 0,
+    "openingPriceDeviationBps": 100,
+    "closingPriceDeviationBps": 100,
+    "preparationWindowMs": 1800000,
+    "infoRequestTimeoutMs": 10000,
+    "signedRequestExpiryMs": 9000
+  },
+  "expiry": "30 minutes from exact preparation; every signed request expires 9 seconds after nonce",
+  "codeAndConfig": {
+    "runtimeBaseCommit": "c4cc81f09f1c7aeb78871373d29ed581e428daca",
+    "runtimeSourceBinding": "0xc0939601a86f57f4740e2eb86eebb339ca3ea2b1740b78cb381141fc627eded5",
+    "gateSha256": "54e493e2c6d1ab28354996ed6832c7fed34c88f3ab1c5c92392e4d51cefb83fa",
+    "cliSha256": "7fb657488b5eb9a9dc05f974d37d367492b8cbe23e9e2e5dd8e7951e91bc98cc",
+    "liveRunnerSha256": "333c038b250df20ebb5fbfa6db8bdcff8f537350e46940662ac6cbd92b609b55",
+    "signerBoundarySha256": "885a801c270c81e77308a02bbed1f0b7168d63a32be5ac9f141893c54ade90fb",
+    "launchPolicyVersion": "1.4.0",
+    "launchPolicySha256": "e7e72c74941c4cdbc9c09fe49cc9fc9759bc60baed7758b4c9f1cca3ecbadb2a"
+  },
+  "nonceAndUnknown": {
+    "nonceAllocatedDuring001A": false,
+    "allocationPoint": "immediately before one exact signature after JIT revalidation",
+    "automaticRetry": false,
+    "unknownOutcome": "persist UNKNOWN, freeze new risk, reconcile read-only before any separate decision"
+  },
+  "readOnlyPreflight": {
+    "localGatePassed": true,
+    "regressionTests": {"passed": 18, "failed": 0},
+    "infoRequests": 7,
+    "exchangeRequests": 0,
+    "signerCreatedOrLoaded": false,
+    "venueMutation": false,
+    "connectedAccountCandidate": {
+      "source": "official Hyperliquid Testnet UI",
+      "visibleAddress": "0x8C2c…217e",
+      "perpsAccountEquityTestnetUsdc": "998.99",
+      "availableToTradeTestnetUsdc": "998.98",
+      "visibleOpenPositions": 0,
+      "observedAt": "2026-08-31T15:23:53Z",
+      "exactAddressCopied": true,
+      "historicalHashMatched": true
+    },
+    "accountSpecificInfo": {
+      "observedAt": "2026-08-31T15:39:25.079Z",
+      "userRole": {
+        "httpStatus": 200,
+        "responseSha256": "6b3061507ef8cc2ca95320f790a9f9ccb3c850ae081df4b6f6e56e40d57203e4",
+        "role": "user"
+      },
+      "clearinghouseState": {
+        "httpStatus": 200,
+        "responseSha256": "f18752cbca04fd6e58e4b2530602a5b4fbffc0e23475a63260b5d27526d6401f",
+        "accountValueTestnetUsdc": "998.989328",
+        "withdrawableTestnetUsdc": "998.989328",
+        "totalNotionalPositionTestnetUsdc": "0.0",
+        "totalMarginUsedTestnetUsdc": "0.0",
+        "positions": 0,
+        "venueTimeMs": 1788190745095
+      },
+      "openOrders": {
+        "httpStatus": 200,
+        "responseSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "count": 0
+      },
+      "subAccounts": {
+        "httpStatus": 200,
+        "responseSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "count": 0,
+        "response": null
+      }
+    },
+    "btc": {
+      "observedAt": "2026-08-31T14:13:21.484Z",
+      "mid": "78751.0",
+      "bestBid": "78739.0",
+      "bestAsk": "78755.0",
+      "mustRefreshAfterHlTestnet001BBeforeAnySignature": true
+    }
+  },
+  "recovery": [
+    "freeze new risk and preserve durable run state",
+    "query userRole, clearinghouseState, openOrders, fills and exact run cloid",
+    "never retry an UNKNOWN request from inference",
+    "cancel only an exact observed run cloid",
+    "reduce-only close only an exact observed residual position",
+    "require zero open orders and zero positions before settlement and Evidence closure"
+  ],
+  "signerRetirement": {
+    "procedure": "overwrite, fsync, truncate, fsync and unlink owner-only key; verify absence; record no-reuse tombstone",
+    "logicalDestructionOnly": true,
+    "storageMediumSecureEraseClaimed": false,
+    "venueDeregistrationImplemented": false
+  },
+  "remainingRisks": [
+    "fresh API Wallet does not exist and has not been registered",
+    "Venue-side API-wallet deregistration is not implemented by the current runner",
+    "UNKNOWN response requires manual read reconciliation and cannot be retried",
+    "the closed runner structurally permits up to six submission attempts although the normal filled lifecycle uses two",
+    "all assets are Testnet-only and have no real monetary authority"
+  ],
+  "authority": {
+    "hlTestnet001AReadOnly": true,
+    "hlTestnet001B": false,
+    "signerCreationOrLoad": false,
+    "venueMutation": false,
+    "risk003B": false,
+    "m3": false
+  }
+}

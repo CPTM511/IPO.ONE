@@ -332,10 +332,16 @@ test("002D handoff fails closed before wallet signing on chain or account drift"
     "utf8"
   );
   assert.match(source, /EXPECTED_SIGNING_CHAIN=421614n/);
+  assert.match(source, /EXPECTED_SIGNING_CHAIN_HEX="0x66eee"/);
   assert.match(source, /method:"eth_chainId"/);
+  assert.match(source, /method:"wallet_switchEthereumChain"/);
   assert.match(source, /numericChainId!==EXPECTED_SIGNING_CHAIN/);
   assert.match(source, /method:"eth_accounts"/);
   assert.match(source, /current!==account\?\.toLowerCase\(\)/);
+  assert.ok(
+    source.indexOf('method:"wallet_switchEthereumChain"') <
+      source.indexOf('method:"eth_signTypedData_v4"')
+  );
   assert.ok(
     source.indexOf("await requireSigningContext(p)") <
       source.indexOf('method:"eth_signTypedData_v4"')

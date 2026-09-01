@@ -1,6 +1,6 @@
 # PUBLIC-BETA-001 — Public Authenticated No-Funds Activation
 
-Status: In progress
+Status: `PASS — DEPLOYED AND USER-VERIFIED`
 
 Decision owner: IPO.ONE Founder / Product / Release
 
@@ -169,4 +169,57 @@ and `controlled_agent_credit_pilot` retain their separate exact gates.
 
 ## Completion Evidence
 
-Pending.
+Closed by `PUBLIC-BETA-001C` on 2026-08-31 against final main and deployed SHA
+`c4cc81f09f1c7aeb78871373d29ed581e428daca`.
+
+- Vercel production deployment:
+  `dpl_XF9tYaYWe8qBuiXrQkWGrV4yChGt` at
+  `https://ipo-one-internal-b15cn0kov-cptm-111-s-projects.vercel.app`, promoted
+  to `https://ipo.one` and reported `Ready`.
+- GitHub Quality Gate:
+  `https://github.com/CPTM511/IPO.ONE/actions/runs/33375795085`, success for the
+  final SHA. The public-Beta activation and hosted UX repair merge gates also
+  passed as runs `33312950818` and `33352962070`.
+- Production health reports `status=ready`, role `primary`, profile
+  `public_authenticated_no_funds_beta`, `single_v2` authentication and
+  `realFundsEnabled=false` for the exact final SHA.
+- Migration `0072_public_beta_self_service_identity` is the repository and
+  deployed Public Beta head. Successful ordinary-wallet self-provisioning and
+  authenticated durable recovery exercise the exact function introduced by
+  `0072`; no later migration exists in this release.
+- Actual production visible-click acceptance completed SIWE self-service,
+  Offer acceptance, Obligation creation, `$120.00` synthetic execution,
+  `$120.00` full repayment, `Fully Repaid`, `$0.00` outstanding, 9 finalized
+  Evidence events and refresh recovery from authenticated PostgreSQL truth.
+- Current production logs bind the final release and report reconciliation
+  passed with no observed 5xx in the bounded closure query.
+- Principal/Agent entry and operations remain reachable through the shared
+  kernel and least-privilege role boundary; `PHASE3-POOL-001` read-only Pool
+  acceptance remains current because the subsequent changes did not add Pool
+  economic writes or alter the Pool read model.
+- Cross-Tenant denial, invalid/replayed SIWE, privileged-role denial, durable
+  abuse controls and runtime-role boundaries reuse the green
+  `PUBLIC-BETA-001`, historical `PILOT-008B`, production cutover and current
+  Quality Gate Evidence identified in the closure audit.
+- The only genuinely missing closure item was a current restore proof. A
+  temporary Neon read-only branch was created from production, compared and
+  deleted. Production and restored snapshots matched exactly at 72 migrations,
+  head `0072_public_beta_self_service_identity`, migration digest
+  `8c43be9dda92baa491b0904b9849d36e7c6683b87d019be0afc7aba084ee6808`,
+  schema digest
+  `11025810ae49e53749aa70d14fe5c91a835654c949c4e4302bf3fba2fe9fda55`,
+  158 relations, 155 RLS + FORCE RLS relations and 164 policies.
+- Rollback readiness is bound to the prior Ready production deployment
+  `dpl_6Y47KqGKzNN1sR3vjr4Dfgwod2XB` at release
+  `aab982eb32792c072e0250eb886210e339cf6c90`; no rollback was executed because
+  current production remained healthy.
+
+Canonical audit:
+`docs/codex/audits/PUBLIC-BETA-001C/production-evidence.md`.
+
+Machine-readable record:
+`artifacts/phase3/public-beta-001c-production-evidence-c4cc81f.json`.
+
+Final verdict: `PASS — DEPLOYED AND USER-VERIFIED`.
+
+L2 delivery gate: `COMPLETE — PUBLIC BETA ACTIVE`.
