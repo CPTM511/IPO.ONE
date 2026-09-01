@@ -1,16 +1,16 @@
 # IPO.ONE Product Constitution
 
-Version: v1.4
+Version: v1.5
 
-Effective date: 2026-08-30
+Effective date: 2026-09-02
 
 Status: Founder-directed and ratified for current product-truth governance
 
 Decision owner: IPO.ONE Founder / Product / Governance
 
-Supersedes: Product Constitution v1.3 effective 2026-08-22
+Supersedes: Product Constitution v1.4 effective 2026-08-30
 
-Milestone: M2 — Public Secured Liquidity & Delegated Agent Execution
+Milestone: M3 — Metered Machine-Service Agent Credit
 
 ## 1. Purpose and authority
 
@@ -20,15 +20,14 @@ is an authority index and conflict resolver. It does not replace the detailed
 product thesis, architecture decisions, security invariants, schemas, or
 acceptance specifications it governs.
 
-The M2 direction and the public authenticated no-funds Beta direction are made
-authoritative by recording them in this versioned repository document. v1.4
-retains the bounded secured-pool architecture and implementation sequence and
-replaces the invited L2 admission assumption with public, authenticated access
-to durable Tenant-isolated no-funds state. It does not activate mainnet, real
-value, custody, withdrawal, external Provider execution or venue-signed
-execution. Conversations remain non-authoritative unless their decision is
-reviewed and incorporated into this Constitution or a subordinate approved
-source.
+The M2 direction, public authenticated no-funds Beta direction and narrow M3
+metered machine-service direction are made authoritative by this versioned
+repository document. v1.5 retains all v1.4 boundaries and defines metered
+machine service as a thin Provider Spend Facility profile over the existing
+kernel. It does not activate mainnet, real value, custody, withdrawal, external
+Provider execution, production metering or venue-signed execution.
+Conversations remain non-authoritative unless their decision is reviewed and
+incorporated into this Constitution or a subordinate approved source.
 
 Approval of a requirement is not evidence that it is implemented, verified,
 hosted, available to users, real-value active, or production ready. Those states
@@ -144,6 +143,7 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-EXEC-002 | allowlisted Provider spend with caps | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-AECL-INTEGRATION-001 in section 7 | canonical TransferIntent plus versioned server registry only; ambiguous/unsupported resolution denies; external Provider separately approved |
 | REQ-EXEC-003 | Agent Lockbox revenue capture and repayment profile | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-LOCKBOX-001 in section 7 | must become durable/authenticated before L4; no arbitrary balance release |
 | REQ-EXEC-004 | withdrawal and transfer denial boundary | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 8 | no arbitrary withdrawal/unrestricted external transfer |
+| REQ-EXEC-005 | Mandate-bound metered machine-service usage Evidence and deterministic charge admission | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-METERED-RESOURCE-CREDIT-001 in section 7 | one shared Provider Spend Facility profile; exact Provider/resource/unit/price schedule/caps; signed replay-safe Evidence; external Provider and real funds separately gated |
 | REQ-PAY-001 | canonical double-entry Ledger | APPROVED_MVP | L0_LOCAL_NO_FUNDS | ADR-010 | Ledger is source of economic truth; local approval is not production authority |
 | REQ-PAY-002 | deterministic repayment waterfall and receipt | APPROVED_MVP | L0_LOCAL_NO_FUNDS | MVP Build Spec FR-007 | exact fee/interest/principal allocation; idempotent and evidenced |
 | REQ-PAY-003 | DPD/default/cure/restructure/repurchase/write-off | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 8 | Human/Agent shared servicing; protected actions keep named authority |
@@ -426,6 +426,48 @@ changes from `L2_CLOSED_NO_FUNDS` to
 their capabilities and move from an invitation prerequisite status to a
 no-funds operational status. All M2 Pool, Agent venue, real-value, mainnet,
 custody, withdrawal and external-execution gates remain unchanged.
+
+### DEC-METERED-RESOURCE-CREDIT-001 — metered machine service is a Provider Spend Facility profile
+
+Founder direction on 2026-09-02 accepts the M3-000 `NARROW` recommendation and
+approves one local no-funds implementation direction:
+
+1. Task/API/Compute credit is not a separate product primitive. `Task` is
+   optional external context; API, inference, compute, storage, RPC and data
+   are resource classes under one Provider policy.
+2. The existing Subject, Principal, Mandate, Credit Intent, Risk Decision,
+   Capital Partner Offer, Facility, CreditLine, Authorization, Obligation,
+   Ledger, Payment, repayment, Event, Evidence, Credit State and reconciliation
+   kernel remains canonical.
+3. The only new component is typed, versioned Metered Usage Evidence that binds
+   an exact Provider, resource class, measurement unit, quantity, observation
+   window, accepted price-schedule hash, deterministic capped charge,
+   authority, finality, correction and reconciliation state.
+4. A caller-supplied invoice, task completion, HTTP success, self-reported
+   token count or unfinalized callback cannot create utilization. Stale,
+   revoked, disputed, ambiguous, duplicate-conflicting or unreconciled usage
+   denies new risk and cannot duplicate a charge.
+5. The first implementation is one synthetic Provider, one resource class, one
+   unit, one price schedule and one Agent/Principal Facility at
+   `L0_LOCAL_NO_FUNDS`. It reuses the existing Provider Spend, Tenant Command
+   Gateway, PostgreSQL, Ledger, Lockbox and repayment paths.
+6. No Task Ledger, Compute Ledger, API Credit Ledger, second Obligation,
+   Provider marketplace, orchestration framework, compute cloud, new risk
+   model or universal score is approved.
+7. This decision approves issue-sized local no-funds implementation only. It
+   does not approve deployment, external Provider integration, credentials,
+   production metering, pricing, risk-limit changes, capital, custody, signing,
+   mainnet, real value, withdrawal or funds movement.
+
+### v1.4 to v1.5 requirement crosswalk
+
+v1.5 adds only `REQ-EXEC-005` and
+`DEC-METERED-RESOURCE-CREDIT-001`. No v1.4 requirement ID is deleted,
+repurposed, downgraded or broadened. `REQ-EXEC-002` remains the allowlisted
+Provider Spend authority; `REQ-EXEC-005` adds the missing metered-usage
+Evidence and deterministic charge admission semantics. Approval does not claim
+implementation, verification, hosting, external Provider execution, real
+value or production readiness.
 
 ## 8. Explicit current non-goals and gates
 
