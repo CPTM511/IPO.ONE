@@ -46,6 +46,7 @@ services:
       IPO_ONE_LOCAL_AGENT_KEY_FILE: /run/secrets/agent-key.v1.json
       IPO_ONE_LOCAL_AUTH_INVITATION_FILE: /run/secrets/authentication-invitation.v1.json
       IPO_ONE_LOCAL_AUTH_SERVER_FILE: /run/secrets/authentication-server.v1.json
+      IPO_ONE_LOCAL_METERED_PROVIDER_KEY_FILE: /run/secrets/metered-provider-key.v1.json
       IPO_ONE_PILOT_DB_SECRET_FILE: /run/secrets/private-pilot-db-secret
       IPO_ONE_PILOT_PROFILE_FILE: /app/deploy/local/private-pilot-profile.v1.json
       IPO_ONE_PILOT_PORT: "${IPO_ONE_M1_B_PORT_BASE:-8787}"
@@ -56,6 +57,7 @@ services:
       - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/agent-key.v1.json:/run/secrets/agent-key.v1.json:ro
       - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/authentication-server.v1.json:/run/secrets/authentication-server.v1.json:ro
       - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/authentication-invitation.v1.json:/run/secrets/authentication-invitation.v1.json:ro
+      - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/metered-provider-key.v1.json:/run/secrets/metered-provider-key.v1.json:ro
       - ${IPO_ONE_LOCAL_SECRET_DIR:?local secret directory is required}/private-pilot-db-secret:/run/secrets/private-pilot-db-secret:ro
     depends_on:
       postgres:

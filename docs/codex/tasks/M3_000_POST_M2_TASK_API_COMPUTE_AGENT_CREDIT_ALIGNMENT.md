@@ -448,11 +448,13 @@ authorized the single L0 local no-funds implementation. `M3-RESOURCE-001`
 completed at `b3cdfe9e5f242a785752ffee3036e6b6d638f8b8` with migration head
 `0073_metered_usage_evidence`.
 
-The proposed `M3-RESOURCE-002` Principal Web and Agent API/MCP acceptance work
-was completed inside the same issue-sized vertical slice instead of creating a
-second product path. The exact local verdict and Evidence are recorded in
-`docs/codex/tasks/M3_RESOURCE_001_METERED_MACHINE_SERVICE_NO_FUNDS_SLICE.md`
-and `docs/codex/audits/M3-RESOURCE-001/audit.md`.
+`M3-RESOURCE-001` completed the shared kernel, PostgreSQL, Tenant Gateway and
+receipt projections. A later truth audit found that its injected Provider
+acceptance remained test-only: the actual local private-pilot runtime retained
+fail-closed Provider defaults and had no operable Provider-to-admission path.
+`M3-RESOURCE-002` therefore remains the active runtime and co-equal product
+acceptance issue. It must reuse the existing slice and grants no second product
+path.
 
 This later record does not rewrite the authority available when M3-000 was
 authored and grants no deployment, external Provider or real-value authority.

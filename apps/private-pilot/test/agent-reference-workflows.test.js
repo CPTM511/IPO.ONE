@@ -1,24 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import handoffFixtures from "../../../api/tenant-protocol/conformance/agent-handoff-manifest.v1.fixtures.json" with { type: "json" };
 import protocolFixtures from "../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json" with { type: "json" };
 import { hashId } from "../../../packages/domain/src/index.js";
 import {
   createLocalAgentMcpTransport,
   createLocalAgentApplicationInput,
   createLocalAgentRuntimeInput,
-  persistLocalAgentContinuationReceipt
+  persistLocalAgentContinuationReceipt,
+  runLocalAgentMeteredRuntimeWorkflow
 } from "../src/agent-reference-workflows.js";
 
-const manifest = Object.freeze({
-  mandateHash: `0x${"a".repeat(64)}`,
-  authority: Object.freeze({
-    assetIds: Object.freeze([
-      "urn:ipo-one:sandbox-asset:usd-cent"
-    ]),
-    perActionLimitMinor: "25000",
-    aggregateLimitMinor: "100000"
-  })
-});
+const manifest = Object.freeze(structuredClone(handoffFixtures.valid[2]));
 
 function protocolResult(operationId) {
   return structuredClone(
@@ -263,6 +256,73 @@ test("reference Agent runtime maps the exact closed lifecycle through MCP", asyn
   assert.equal(receipt.fundsAuthority, false);
   assert.equal(Object.isFrozen(receipt), true);
   assert.equal(Object.isFrozen(receipt.steps), true);
+});
+
+test("reference Agent admits metered usage between execution and repayment", async () => {
+  const calls = [];
+  const session = {
+    host: {
+      async handle(message) {
+        calls.push(message.params.name);
+        const operationId = {
+          ipo_one_accept_credit_offer: "pilotAcceptCreditOffer",
+          ipo_one_execute_sandbox_obligation: "pilotExecuteSandboxObligation",
+          ipo_one_post_sandbox_repayment: "pilotPostSandboxRepayment",
+          ipo_one_read_obligation_evidence: "pilotReadOwnObligationEvidence"
+        }[message.params.name];
+        const structuredContent = protocolResult(operationId);
+        if (operationId === "pilotReadOwnObligationEvidence") {
+          structuredContent.response.obligationId =
+            message.params.arguments.obligationId;
+        }
+        return {
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            isError: false,
+            structuredContent
+          }
+        };
+      }
+    }
+  };
+  const offerReceipt = {
+    offer: {
+      creditIntentId: "credit_intent_agent_reference",
+      creditOfferId: "credit_offer_agent_reference",
+      creditOfferHash: `0x${"1".repeat(64)}`,
+      termsHash: `0x${"2".repeat(64)}`,
+      approvedPrincipalMinor: "7500"
+    }
+  };
+  const result = await runLocalAgentMeteredRuntimeWorkflow({
+    manifest,
+    offerReceipt,
+    session,
+    async admitMeteredUsage({ obligationId }) {
+      calls.push("provider_metered_usage_admission");
+      return {
+        status: "passed",
+        obligationId,
+        sandboxOnly: true,
+        productionFundsMoved: false
+      };
+    }
+  });
+
+  assert.deepEqual(calls, [
+    "ipo_one_accept_credit_offer",
+    "ipo_one_execute_sandbox_obligation",
+    "provider_metered_usage_admission",
+    "ipo_one_read_obligation_evidence",
+    "ipo_one_post_sandbox_repayment",
+    "ipo_one_read_obligation_evidence"
+  ]);
+  assert.equal(result.status, "evidence_read");
+  assert.equal(result.meteredUsage.status, "passed");
+  assert.equal(result.mcpReceipt.steps.length, 4);
+  assert.equal(result.sandboxOnly, true);
+  assert.equal(result.productionFundsMoved, false);
 });
 
 test("reference Agent MCP transport rejects unsupported, widened, and incomplete commands", async () => {

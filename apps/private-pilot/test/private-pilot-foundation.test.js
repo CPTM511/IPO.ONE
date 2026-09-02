@@ -78,6 +78,21 @@ test("private pilot worker can persist durable credit-state projections", async 
   );
 });
 
+test("private pilot Metered Usage grants are narrowed to repository columns", async () => {
+  const source = await readFile(
+    new URL("../src/private-pilot-database.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /REVOKE UPDATE ON[\s\S]*?metered_usage_admissions/);
+  assert.match(source, /GRANT UPDATE \(status, risk_tier\) ON providers/);
+  assert.match(source, /GRANT UPDATE \(id\) ON[\s\S]*?metered_usage_admissions/);
+  assert.doesNotMatch(
+    source,
+    /GRANT INSERT, UPDATE ON[\s\S]*?metered_usage_admissions/
+  );
+});
+
 test("private pilot wallet bootstrap enrolls each selectable Human role", async () => {
   const source = await readFile(
     new URL("../src/private-pilot-database.js", import.meta.url),
@@ -185,7 +200,14 @@ function agentAccountChallenge(account, overrides = {}) {
 
 test("private pilot identities are role-separated over one Tenant", () => {
   const runtime = createLocalPilotIdentities();
-  const { borrower, capitalPartner, controller, agent, risk } = runtime.identities;
+  const {
+    borrower,
+    capitalPartner,
+    controller,
+    agent,
+    risk,
+    meteredUsageWorker
+  } = runtime.identities;
 
   assert.equal(LOCAL_PILOT_CREDENTIAL_GENERATION, "phase7");
   assert.equal(
@@ -239,12 +261,33 @@ test("private pilot identities are role-separated over one Tenant", () => {
   assert.ok(risk.capabilities.includes(PilotCapability.SERVICING_QUEUE_READ));
   assert.equal(risk.capabilities.includes(PilotCapability.CREDIT_REQUEST), false);
 
+  assert.equal(meteredUsageWorker.actorType, ActorType.SYSTEM_WORKER);
+  assert.equal(meteredUsageWorker.roleBundle, RoleBundle.SYSTEM_WORKER);
+  assert.deepEqual(meteredUsageWorker.capabilities, [
+    PilotCapability.WORKER_METERED_USAGE_ADMIT
+  ]);
+
   for (const identity of Object.values(runtime.identities)) {
     const context = assertAuthenticationContext(identity.createContext());
     assert.equal(context.tenantId, LOCAL_PILOT_TENANT_ID);
     assert.equal(context.actorId, identity.actorId);
     assert.equal(context.roles[0], identity.roleBundle);
   }
+});
+
+test("private pilot identity references are stable when bound to the durable database secret", () => {
+  const referenceHashKey = Buffer.alloc(32, 7);
+  const first = createLocalPilotIdentities({ referenceHashKey });
+  const replay = createLocalPilotIdentities({ referenceHashKey });
+
+  assert.equal(
+    first.referenceHasher.hash("pilot.token.jti", "actor_agent_pilot_alpha"),
+    replay.referenceHasher.hash("pilot.token.jti", "actor_agent_pilot_alpha")
+  );
+  assert.equal(
+    first.identities.meteredUsageWorker.createContext().tokenJtiHash,
+    replay.identities.meteredUsageWorker.createContext().tokenJtiHash
+  );
 });
 
 test("private pilot exposes authenticated local options without enabling a credential provider", async () => {

@@ -95,10 +95,12 @@ The implementation and acceptance record is bound in
 - Runtime flags remain `sandboxOnly=true`, `productionFundsMoved=false` and
   `realFundsEnabled=false`; no external Provider or Venue mutation occurred.
 
-`M3-RESOURCE-002` is not an active implementation blocker: its proposed
-co-equal Principal Web and Agent API/MCP acceptance scope was deliberately
-completed in this same issue-sized slice to avoid a second product path. Stop
-again before deployment, external Provider integration, another resource
-profile, production credentials or any real-value authority.
+This issue completed the shared kernel, durability, Tenant Gateway operation
+and receipt projections. It did not wire the synthetic Provider dependencies
+into the actual local private-pilot runtime or perform a real local
+Provider-to-admission product run. That remaining product acceptance is tracked
+by `M3-RESOURCE-002`; it must reuse this same path and must not create a second
+product kernel. Stop again before deployment, external Provider integration,
+another resource profile, production credentials or any real-value authority.
 
 Final verdict: `PASS — L0 LOCAL NO-FUNDS VERIFIED`.

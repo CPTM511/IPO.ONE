@@ -115,6 +115,49 @@ async function provisionApplicationRole(ownerPool, password) {
     `GRANT UPDATE (status, version, updated_at) ON authorization_resources TO ${APP_ROLE}`
   );
   await ownerPool.query(
+    `GRANT INSERT ON
+       mandate_releases
+     TO ${APP_ROLE}`
+  );
+  // Re-provisioning must narrow any broader UPDATE grant from an earlier local
+  // build before restoring only the columns required by repository writes and
+  // row locks.
+  await ownerPool.query(
+    `REVOKE UPDATE ON
+       providers, spend_policies, spend_requests, mandate_reservations,
+       metered_usage_evidence, metered_usage_admissions
+     FROM ${APP_ROLE}`
+  );
+  await ownerPool.query(
+    `GRANT INSERT ON
+       providers, spend_policies, spend_requests, mandate_reservations,
+       metered_usage_evidence, metered_usage_admissions
+     TO ${APP_ROLE}`
+  );
+  await ownerPool.query(
+    `GRANT UPDATE (status, risk_tier) ON providers TO ${APP_ROLE}`
+  );
+  await ownerPool.query(
+    `GRANT UPDATE (
+       daily_spent_minor, daily_spent_date, status, updated_at
+     ) ON spend_policies TO ${APP_ROLE}`
+  );
+  await ownerPool.query(
+    `GRANT UPDATE (
+       status, rejection_reason, updated_at
+     ) ON spend_requests TO ${APP_ROLE}`
+  );
+  await ownerPool.query(
+    `GRANT UPDATE (released_minor) ON mandate_reservations TO ${APP_ROLE}`
+  );
+  // PostgreSQL requires some UPDATE privilege to acquire SELECT ... FOR UPDATE
+  // row locks. Immutable triggers still reject actual Metered Usage mutation.
+  await ownerPool.query(
+    `GRANT UPDATE (id) ON
+       metered_usage_evidence, metered_usage_admissions
+     TO ${APP_ROLE}`
+  );
+  await ownerPool.query(
     `GRANT INSERT, UPDATE, DELETE ON
        abuse_rate_buckets, abuse_capacity_buckets, abuse_admissions,
        abuse_command_charges, principals, subjects, mandates,
@@ -777,6 +820,23 @@ export async function provisionPrivatePilotAuthentication({
         referenceHasher,
         expiresAt: invitation.credentialExpiresAt,
         invitationLabel: "local-agent-runtime-v1",
+        now
+      });
+      await seedAuthenticationCredential(client, {
+        tenantId: checkedProfile.tenantId,
+        actor: identities.meteredUsageWorker,
+        issuer: "https://metered-usage-worker.local.ipo.one",
+        externalSubject: "urn:ipo.one:local-worker:metered-usage",
+        clientAuthenticationMethod:
+          ClientAuthenticationMethod.PRIVATE_KEY_JWT,
+        senderConstraintMethod: SenderConstraintMethod.DPOP,
+        senderThumbprint: referenceHasher.hash(
+          "local.metered-usage-worker",
+          identities.meteredUsageWorker.actorId
+        ),
+        referenceHasher,
+        expiresAt: invitation.credentialExpiresAt,
+        invitationLabel: "local-metered-usage-worker-v1",
         now
       });
     });

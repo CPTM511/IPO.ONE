@@ -138,6 +138,14 @@ const IDENTITY_SPECS = Object.freeze({
       PilotCapability.POOL_RISK_READ_TENANT,
       PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT
     ])
+  }),
+  meteredUsageWorker: Object.freeze({
+    actorId: "actor_local_metered_usage_worker",
+    actorType: ActorType.SYSTEM_WORKER,
+    roleBundle: RoleBundle.SYSTEM_WORKER,
+    capabilities: Object.freeze([
+      PilotCapability.WORKER_METERED_USAGE_ADMIT
+    ])
   })
 });
 
@@ -150,10 +158,13 @@ const HUMAN_ACTOR_TYPES = new Set([
 
 export function createLocalPilotIdentities({
   now = new Date(),
-  profile = DEFAULT_PRIVATE_PILOT_PROFILE
+  profile = DEFAULT_PRIVATE_PILOT_PROFILE,
+  referenceHashKey
 } = {}) {
   const checkedProfile = assertPrivatePilotProfile(profile);
-  const referenceHasher = createReferenceHasher(randomBytes(32));
+  const referenceHasher = createReferenceHasher(
+    referenceHashKey ?? randomBytes(32)
+  );
   const eventStore = new InMemoryAuthenticationEventStore();
   const actorDirectory = new InMemoryActorDirectory();
   const credentialRegistry = new InMemoryCredentialRegistry({
@@ -167,7 +178,7 @@ export function createLocalPilotIdentities({
   for (const [name, template] of Object.entries(IDENTITY_SPECS)) {
     const spec = Object.freeze({
       ...template,
-      actorId: checkedProfile.identities[name].actorId,
+      actorId: checkedProfile.identities[name]?.actorId ?? template.actorId,
       controllerActorId: name === "agent"
         ? checkedProfile.identities.controller.actorId
         : template.controllerActorId
