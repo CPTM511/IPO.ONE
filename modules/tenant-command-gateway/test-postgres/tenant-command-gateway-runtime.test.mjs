@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { createHash, generateKeyPairSync, randomBytes } from "node:crypto";
+import {
+  createHash,
+  generateKeyPairSync,
+  randomBytes,
+  sign as signMessage,
+  verify as verifyMessage
+} from "node:crypto";
 import test from "node:test";
 import { privateKeyToAccount } from "viem/accounts";
 import {
@@ -7,8 +13,12 @@ import {
   createCapitalPartnerProfile,
   createCreditEvent,
   createHumanIdentityReference,
+  createMeteredUsageEvidence,
+  createMeteredUsagePolicy,
+  createProvider,
   createProviderIntentDelivery,
   createSignedProviderSandboxCallback,
+  createSpendPolicy,
   hashId,
   replayAgentCreditLineProjection,
   verifyCreditLineProjection
@@ -81,6 +91,7 @@ const TENANT_TWO_RISK_PORTFOLIO = `risk_portfolio_gateway_two_${RUN_ID}`;
 const TENANT_ONE_SERVICING_QUEUE = `servicing_queue_gateway_one_${RUN_ID}`;
 const TENANT_TWO_SERVICING_QUEUE = `servicing_queue_gateway_two_${RUN_ID}`;
 const PROVIDER_CALLBACK_KEYS = generateKeyPairSync("ed25519");
+const METERED_PROVIDER_KEYS = generateKeyPairSync("ed25519");
 
 async function withTenantTransaction(pool, context, operation) {
   const client = await pool.connect();
@@ -1260,7 +1271,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_one_servicing_worker_${RUN_ID}`,
         actorType: ActorType.SYSTEM_WORKER,
         roleBundle: RoleBundle.SYSTEM_WORKER,
-        capabilities: [PilotCapability.SERVICING_ADVANCE_SANDBOX],
+        capabilities: [
+          PilotCapability.SERVICING_ADVANCE_SANDBOX,
+          PilotCapability.WORKER_METERED_USAGE_ADMIT
+        ],
         now: IDENTITY_NOW
       }),
       tenantTwoHuman: harness.addIdentity({
@@ -1363,7 +1377,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         actorId: `actor_gateway_two_worker_${RUN_ID}`,
         actorType: ActorType.SYSTEM_WORKER,
         roleBundle: RoleBundle.SYSTEM_WORKER,
-        capabilities: [PilotCapability.WORKER_INBOX_PROCESS],
+        capabilities: [
+          PilotCapability.WORKER_INBOX_PROCESS,
+          PilotCapability.WORKER_METERED_USAGE_ADMIT
+        ],
         now: IDENTITY_NOW
       })
     };
@@ -1462,6 +1479,8 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       `GRANT INSERT, UPDATE, DELETE ON
          abuse_rate_buckets, abuse_capacity_buckets, abuse_admissions,
          abuse_command_charges, principals, subjects, mandates,
+         mandate_reservations, mandate_releases, providers, spend_policies, spend_requests,
+         metered_usage_evidence, metered_usage_admissions,
          agent_account_challenges, agent_account_proof_attempts,
          execution_account_binding_challenges, execution_account_binding_proof_attempts,
          account_bindings,
@@ -5444,6 +5463,421 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.equal(agentExecutions[0].response.executionReceipt.providerCategory, "compute");
       assert.equal(agentExecutions[0].response.executionReceipt.purposeCode, "working_capital");
 
+      const meteredTenantContext = createTenantSecurityContext({
+        tenantId: TENANT_ONE,
+        actorId: identities.tenantOneWorker.authenticationContext.actorId,
+        policyVersion: "security_001.v1",
+        source: "local_test"
+      });
+      const meteredEventRepository = new PostgresEventRepository({
+        pool: appPool,
+        tenantContext: meteredTenantContext
+      });
+      const meteredCoreRepository = new PostgresCoreRepository({
+        pool: appPool,
+        eventRepository: meteredEventRepository
+      });
+      const [meteredObligation, meteredMandate, meteredLockboxRow] = await Promise.all([
+        meteredCoreRepository.getObligation(agentAcceptance.obligation.obligationId),
+        meteredCoreRepository.getMandate(creditAgentMandate.response.mandateId),
+        ownerPool.query(
+          `SELECT id, credit_line_id
+             FROM lockboxes
+            WHERE tenant_id = $1 AND obligation_id = $2`,
+          [TENANT_ONE, agentAcceptance.obligation.obligationId]
+        )
+      ]);
+      assert.equal(meteredLockboxRow.rowCount, 1);
+      const meteredNow = new Date();
+      const meteredProvider = {
+        ...createProvider({
+          name: "IPO.ONE Synthetic Inference Provider",
+          settlementAccountId: `urn:ipo.one:sandbox:settlement:${RUN_ID}`,
+          now: meteredNow
+        }),
+        providerId: "provider_gateway_compute"
+      };
+      const meteredSpendPolicy = {
+        ...createSpendPolicy({
+          subjectId: meteredObligation.subjectId,
+          providerId: meteredProvider.providerId,
+          assetId: meteredObligation.assetId,
+          perTxLimitMinor: "2000",
+          dailyLimitMinor: "5000",
+          obligationCapMinor: "5000",
+          category: "model_api",
+          now: meteredNow
+        }),
+        spendPolicyId: `spend_policy_metered_${RUN_ID}`
+      };
+      const providerAllowlistedEvent = createCreditEvent({
+        eventType: CreditEventType.PROVIDER_ALLOWLISTED,
+        subjectId: meteredObligation.subjectId,
+        obligationId: meteredObligation.obligationId,
+        payload: {
+          providerId: meteredProvider.providerId,
+          providerHash: meteredProvider.providerHash,
+          syntheticOnly: true,
+          productionFundsMoved: false
+        },
+        now: meteredNow
+      });
+      const spendPolicyCreatedEvent = createCreditEvent({
+        eventType: CreditEventType.SPEND_POLICY_CREATED,
+        subjectId: meteredObligation.subjectId,
+        obligationId: meteredObligation.obligationId,
+        payload: {
+          spendPolicyId: meteredSpendPolicy.spendPolicyId,
+          spendPolicyHash: meteredSpendPolicy.spendPolicyHash,
+          providerId: meteredProvider.providerId,
+          syntheticOnly: true,
+          productionFundsMoved: false
+        },
+        now: meteredNow
+      });
+      await meteredCoreRepository.commitCommand({
+        aggregateType: "provider",
+        aggregateId: meteredProvider.providerId,
+        idempotencyKey: `provision-metered-provider-${RUN_ID}`,
+        commandHash: hashId("gateway_metered_provider_provision", {
+          providerHash: meteredProvider.providerHash,
+          spendPolicyHash: meteredSpendPolicy.spendPolicyHash
+        }),
+        events: [
+          {
+            aggregateType: "provider",
+            aggregateId: meteredProvider.providerId,
+            expectedVersion: 0,
+            event: providerAllowlistedEvent
+          },
+          {
+            aggregateType: "spend_policy",
+            aggregateId: meteredSpendPolicy.spendPolicyId,
+            expectedVersion: 0,
+            event: spendPolicyCreatedEvent
+          }
+        ],
+        writes: [
+          {
+            type: CoreProjectionType.PROVIDER,
+            value: meteredProvider,
+            eventId: providerAllowlistedEvent.eventId
+          },
+          {
+            type: CoreProjectionType.SPEND_POLICY,
+            value: meteredSpendPolicy,
+            eventId: spendPolicyCreatedEvent.eventId
+          }
+        ],
+        response: {
+          providerId: meteredProvider.providerId,
+          spendPolicyId: meteredSpendPolicy.spendPolicyId,
+          sandboxOnly: true,
+          productionFundsMoved: false,
+          schemaVersion: "metered_provider_provisioned.v1"
+        }
+      });
+      const priceScheduleHash = hashId("gateway_metered_price_schedule", {
+        resourceClass: "inference_tokens",
+        measurementUnit: "token",
+        unitPriceMinor: "2"
+      });
+      const meteredPolicy = createMeteredUsagePolicy({
+        policyId: meteredSpendPolicy.spendPolicyId,
+        tenantId: TENANT_ONE,
+        subjectId: meteredObligation.subjectId,
+        principalId: meteredObligation.principalId,
+        mandateId: meteredMandate.mandateId,
+        facilityId: meteredLockboxRow.rows[0].credit_line_id,
+        authorizationId: meteredObligation.creditOfferAcceptanceId,
+        obligationId: meteredObligation.obligationId,
+        providerId: meteredProvider.providerId,
+        resourceClass: "inference_tokens",
+        measurementUnit: "token",
+        priceScheduleHash,
+        unitPriceMinor: "2",
+        assetId: meteredObligation.assetId,
+        maxQuantityPerEvent: "1000",
+        maxChargePerEventMinor: "2000",
+        maxChargePerWindowMinor: "5000",
+        validFrom: new Date(meteredNow.getTime() - 60_000).toISOString(),
+        expiresAt: new Date(meteredNow.getTime() + 3_600_000).toISOString()
+      });
+      const createGatewayMeteredEvidence = (overrides = {}) => createMeteredUsageEvidence({
+        usageEvidenceId: `usage_metered_${RUN_ID}`,
+        providerEventId: `provider_event_metered_${RUN_ID}`,
+        nonce: `nonce_metered_${RUN_ID}`,
+        tenantId: TENANT_ONE,
+        subjectId: meteredPolicy.subjectId,
+        principalId: meteredPolicy.principalId,
+        mandateId: meteredPolicy.mandateId,
+        facilityId: meteredPolicy.facilityId,
+        authorizationId: meteredPolicy.authorizationId,
+        obligationId: meteredPolicy.obligationId,
+        providerId: meteredPolicy.providerId,
+        resourceClass: meteredPolicy.resourceClass,
+        measurementUnit: meteredPolicy.measurementUnit,
+        quantity: "250",
+        priceScheduleHash: meteredPolicy.priceScheduleHash,
+        unitPriceMinor: meteredPolicy.unitPriceMinor,
+        chargeMinor: "500",
+        assetId: meteredPolicy.assetId,
+        windowStartedAt: new Date(meteredNow.getTime() - 300_000).toISOString(),
+        windowEndedAt: new Date(meteredNow.getTime() - 2_000).toISOString(),
+        observedAt: new Date(meteredNow.getTime() - 1_000).toISOString(),
+        finality: "finalized",
+        reconciliation: "reconciled",
+        providerKeyId: `synthetic_metered_key_${RUN_ID}`,
+        providerPayloadHash: hashId("gateway_metered_provider_payload", {
+          providerEventId: `provider_event_metered_${RUN_ID}`
+        }),
+        ...overrides
+      });
+      const signMeteredEvidence = (evidence) => signMessage(
+        null,
+        Buffer.from(evidence.usageEvidenceHash, "utf8"),
+        METERED_PROVIDER_KEYS.privateKey
+      ).toString("base64url");
+      const meteredHandlers = createTenantFoundationHandlers({
+        meteredUsagePolicyResolver: async ({ tenantId, providerId }) => (
+          tenantId === TENANT_ONE && providerId === meteredProvider.providerId
+            ? meteredPolicy
+            : undefined
+        ),
+        meteredUsageSignatureVerifier: async ({ evidence, providerSignature }) => {
+          try {
+            return verifyMessage(
+              null,
+              Buffer.from(evidence.usageEvidenceHash, "utf8"),
+              METERED_PROVIDER_KEYS.publicKey,
+              Buffer.from(providerSignature, "base64url")
+            );
+          } catch {
+            return false;
+          }
+        }
+      });
+      const meteredRuntime = gateway(appPool, harness, meteredHandlers);
+      const meteredWorker = workerClient(
+        meteredRuntime,
+        identities.tenantOneWorker.authenticationContext
+      );
+      const meteredEvidence = createGatewayMeteredEvidence();
+      const meteredCommand = {
+        obligationId: meteredObligation.obligationId,
+        evidence: meteredEvidence,
+        expectedPolicyHash: meteredPolicy.policyHash,
+        providerSignature: signMeteredEvidence(meteredEvidence),
+        idempotencyKey: `admit-metered-usage-${RUN_ID}`,
+        requestId: `request-admit-metered-usage-${RUN_ID}`,
+        correlationId: `correlation-admit-metered-usage-${RUN_ID}`
+      };
+      const admittedMeteredUsage = await meteredWorker.admitMeteredUsage(meteredCommand);
+      const replayedMeteredUsage = await meteredWorker.admitMeteredUsage(meteredCommand);
+      assert.equal(admittedMeteredUsage.replayed, false);
+      assert.equal(replayedMeteredUsage.replayed, true);
+      assert.deepEqual(replayedMeteredUsage.response, admittedMeteredUsage.response);
+      assert.equal(admittedMeteredUsage.response.admission.chargeMinor, "500");
+      assert.equal(admittedMeteredUsage.response.sandboxOnly, true);
+      assert.equal(admittedMeteredUsage.response.productionFundsMoved, false);
+
+      const driftedMeteredEvidence = createGatewayMeteredEvidence({
+        usageEvidenceId: `usage_metered_drift_${RUN_ID}`,
+        providerEventId: `provider_event_metered_drift_${RUN_ID}`,
+        nonce: `nonce_metered_drift_${RUN_ID}`,
+        quantity: "251",
+        chargeMinor: "502"
+      });
+      await assert.rejects(
+        () => meteredWorker.admitMeteredUsage({
+          ...meteredCommand,
+          evidence: driftedMeteredEvidence,
+          providerSignature: signMeteredEvidence(driftedMeteredEvidence),
+          requestId: `request-admit-metered-usage-drift-${RUN_ID}`
+        }),
+        (error) => error.code === "event_idempotency_conflict"
+      );
+      await assert.rejects(
+        () => meteredWorker.admitMeteredUsage({
+          ...meteredCommand,
+          idempotencyKey: `admit-metered-usage-duplicate-identity-${RUN_ID}`,
+          requestId: `request-admit-metered-usage-duplicate-identity-${RUN_ID}`
+        }),
+        (error) => ["authorization_denied", "metered_usage_replay_conflict"].includes(error.code)
+      );
+      const tenantTwoMeteredWorker = workerClient(
+        meteredRuntime,
+        identities.tenantTwoWorker.authenticationContext
+      );
+      await assert.rejects(
+        () => tenantTwoMeteredWorker.admitMeteredUsage({
+          ...meteredCommand,
+          idempotencyKey: `admit-metered-usage-cross-tenant-${RUN_ID}`,
+          requestId: `request-admit-metered-usage-cross-tenant-${RUN_ID}`
+        }),
+        (error) => ["authorization_denied", "tenant_resource_unavailable"].includes(error.code)
+      );
+
+      const correctionEvidence = createGatewayMeteredEvidence({
+        usageEvidenceId: `usage_metered_correction_${RUN_ID}`,
+        providerEventId: `provider_event_metered_correction_${RUN_ID}`,
+        nonce: `nonce_metered_correction_${RUN_ID}`,
+        correctionOfUsageEvidenceId: meteredEvidence.usageEvidenceId,
+        quantity: "200",
+        chargeMinor: "400",
+        providerPayloadHash: hashId("gateway_metered_provider_payload", {
+          providerEventId: `provider_event_metered_correction_${RUN_ID}`
+        })
+      });
+      const correctedMeteredUsage = await meteredWorker.admitMeteredUsage({
+        obligationId: meteredObligation.obligationId,
+        evidence: correctionEvidence,
+        expectedPolicyHash: meteredPolicy.policyHash,
+        providerSignature: signMeteredEvidence(correctionEvidence),
+        idempotencyKey: `correct-metered-usage-${RUN_ID}`,
+        requestId: `request-correct-metered-usage-${RUN_ID}`,
+        correlationId: `correlation-correct-metered-usage-${RUN_ID}`
+      });
+      assert.equal(correctedMeteredUsage.response.admission.chargeMinor, "400");
+      assert.equal(correctedMeteredUsage.response.admission.chargeDeltaMinor, "-100");
+      assert.equal(correctedMeteredUsage.response.admission.windowChargeAfterMinor, "400");
+      assert.equal(correctedMeteredUsage.response.spendRequestId, null);
+      assert.equal(correctedMeteredUsage.response.productionFundsMoved, false);
+      const conflictingCorrection = createGatewayMeteredEvidence({
+        usageEvidenceId: `usage_metered_second_correction_${RUN_ID}`,
+        providerEventId: `provider_event_metered_second_correction_${RUN_ID}`,
+        nonce: `nonce_metered_second_correction_${RUN_ID}`,
+        correctionOfUsageEvidenceId: meteredEvidence.usageEvidenceId,
+        quantity: "190",
+        chargeMinor: "380",
+        providerPayloadHash: hashId("gateway_metered_provider_payload", {
+          providerEventId: `provider_event_metered_second_correction_${RUN_ID}`
+        })
+      });
+      await assert.rejects(
+        () => meteredWorker.admitMeteredUsage({
+          obligationId: meteredObligation.obligationId,
+          evidence: conflictingCorrection,
+          expectedPolicyHash: meteredPolicy.policyHash,
+          providerSignature: signMeteredEvidence(conflictingCorrection),
+          idempotencyKey: `second-correct-metered-usage-${RUN_ID}`,
+          requestId: `request-second-correct-metered-usage-${RUN_ID}`,
+          correlationId: `correlation-second-correct-metered-usage-${RUN_ID}`
+        }),
+        (error) => ["authorization_denied", "metered_usage_replay_conflict"].includes(error.code)
+      );
+
+      const principalMeteredEvidence = await tenantOneController.getOwnObligationEvidence({
+        obligationId: meteredObligation.obligationId,
+        limit: 50,
+        requestId: `request-read-principal-metered-evidence-${RUN_ID}`,
+        correlationId: `correlation-read-metered-evidence-${RUN_ID}`
+      });
+      const agentMeteredEvidence = await callAgentMcpTool(creditAgentRuntimeMcpHost, {
+        id: `rpc-read-agent-metered-evidence-${RUN_ID}`,
+        name: "ipo_one_read_obligation_evidence",
+        arguments: {
+          obligationId: meteredObligation.obligationId,
+          limit: 50,
+          requestId: `request-read-agent-metered-evidence-${RUN_ID}`,
+          correlationId: `correlation-read-metered-evidence-${RUN_ID}`
+        }
+      });
+      assert.equal(agentMeteredEvidence.error, undefined);
+      const principalMeteredItem = principalMeteredEvidence.response.items.find(
+        ({ eventType }) => eventType === CreditEventType.METERED_USAGE_ADMITTED
+      );
+      const agentMeteredItem = agentMeteredEvidence.result.structuredContent.response.items.find(
+        ({ eventType }) => eventType === CreditEventType.METERED_USAGE_ADMITTED
+      );
+      assert.deepEqual(agentMeteredItem.meteredUsage, principalMeteredItem.meteredUsage);
+      assert.equal(principalMeteredItem.meteredUsage.quantity, "250");
+      assert.equal(principalMeteredItem.meteredUsage.chargeMinor, "500");
+      assert.equal(principalMeteredItem.meteredUsage.finality, "finalized");
+      assert.equal(principalMeteredItem.meteredUsage.reconciliation, "reconciled");
+      assert.equal(JSON.stringify(principalMeteredItem).includes("providerSignature"), false);
+      assert.equal(JSON.stringify(principalMeteredItem).includes(meteredCommand.providerSignature), false);
+      const principalCorrectionItem = principalMeteredEvidence.response.items.find(
+        ({ eventType }) => eventType === CreditEventType.METERED_USAGE_CORRECTED
+      );
+      const agentCorrectionItem = agentMeteredEvidence.result.structuredContent.response.items.find(
+        ({ eventType }) => eventType === CreditEventType.METERED_USAGE_CORRECTED
+      );
+      assert.deepEqual(agentCorrectionItem.meteredUsage, principalCorrectionItem.meteredUsage);
+      assert.equal(
+        principalCorrectionItem.meteredUsage.correctionOfUsageEvidenceId,
+        meteredEvidence.usageEvidenceId
+      );
+      assert.equal(principalCorrectionItem.meteredUsage.chargeDeltaMinor, "-100");
+
+      const restartedMeteredRuntime = gateway(appPool, harness, meteredHandlers);
+      const restartedMeteredAgent = agentClient(
+        restartedMeteredRuntime,
+        identities.tenantOneCreditAgent.authenticationContext
+      );
+      const restartedMeteredEvidence = await restartedMeteredAgent.getOwnObligationEvidence({
+        obligationId: meteredObligation.obligationId,
+        limit: 50,
+        requestId: `request-read-restarted-metered-evidence-${RUN_ID}`,
+        correlationId: `correlation-read-restarted-metered-evidence-${RUN_ID}`
+      });
+      assert.deepEqual(
+        restartedMeteredEvidence.response.items.find(
+          ({ eventType }) => eventType === CreditEventType.METERED_USAGE_ADMITTED
+        ).meteredUsage,
+        principalMeteredItem.meteredUsage
+      );
+      const meteredDurability = await ownerPool.query(
+        `SELECT
+           (SELECT count(*)::int FROM metered_usage_evidence
+             WHERE tenant_id = $1 AND obligation_id = $2) AS evidence,
+           (SELECT count(*)::int FROM metered_usage_admissions
+             WHERE tenant_id = $1 AND obligation_id = $2) AS admissions,
+           (SELECT count(*)::int FROM spend_requests
+             WHERE tenant_id = $1 AND mandate_id = $3 AND status = 'settled') AS spend_requests,
+           (SELECT count(*)::int FROM ledger_transactions
+             WHERE tenant_id = $1 AND reference_type = 'metered_usage_admission') AS ledger_transactions,
+           (SELECT count(*)::int FROM ledger_entries le
+             JOIN ledger_transactions lt ON lt.tenant_id = le.tenant_id AND lt.id = le.transaction_id
+             WHERE le.tenant_id = $1 AND lt.reference_type = 'metered_usage_admission') AS ledger_entries,
+           (SELECT bool_and(debit_total_minor = credit_total_minor)
+             FROM ledger_transactions
+             WHERE tenant_id = $1 AND reference_type = 'metered_usage_admission') AS balanced,
+           (SELECT count(*)::int FROM credit_events
+             WHERE tenant_id = $1 AND obligation_id = $2
+               AND event_type IN ('metered_usage_admitted', 'metered_usage_corrected')) AS events`,
+        [TENANT_ONE, meteredObligation.obligationId, meteredMandate.mandateId]
+      );
+      assert.deepEqual(meteredDurability.rows[0], {
+        evidence: 2,
+        admissions: 2,
+        spend_requests: 1,
+        ledger_transactions: 2,
+        ledger_entries: 4,
+        balanced: true,
+        events: 2
+      });
+      const tenantTwoMeteredVisibility = await withTenantTransaction(
+        appPool,
+        createTenantSecurityContext({
+          tenantId: TENANT_TWO,
+          actorId: identities.tenantTwoWorker.authenticationContext.actorId,
+          policyVersion: "security_001.v1",
+          source: "local_test"
+        }),
+        (client) => client.query(
+          "SELECT count(*)::int AS rows FROM metered_usage_evidence"
+        )
+      );
+      assert.equal(tenantTwoMeteredVisibility.rows[0].rows, 0);
+      await assert.rejects(
+        () => withTenantTransaction(appPool, meteredTenantContext, (client) => client.query(
+          "UPDATE metered_usage_evidence SET record = record WHERE id = $1",
+          [meteredEvidence.usageEvidenceId]
+        )),
+        (error) => error.code === "23514"
+      );
+
       const humanRepaymentCommand = {
         obligationId: humanAcceptance.obligation.obligationId,
         payload: { amountMinor: "3000", sourceCode: "synthetic_bank" },
@@ -5671,7 +6105,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       assert.deepEqual(executionDurability.rows[0], {
         receipts: 2,
         provider_bound_receipts: 1,
-        accounts: 16,
+        accounts: 18,
         executions: 2,
         repayments: 2,
         repayment_events: 2,

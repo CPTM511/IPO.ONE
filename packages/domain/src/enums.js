@@ -397,6 +397,8 @@ export const CreditEventType = Object.freeze({
   SPEND_APPROVED: "spend_approved",
   SPEND_REJECTED: "spend_rejected",
   SPEND_SETTLED: "spend_settled",
+  METERED_USAGE_ADMITTED: "metered_usage_admitted",
+  METERED_USAGE_CORRECTED: "metered_usage_corrected",
   CREDIT_LINE_DECIDED: "credit_line_decided",
   CREDIT_LINE_GRANTED: "credit_line_granted",
   CREDIT_LINE_UTILIZED: "credit_line_utilized",

@@ -145,6 +145,7 @@
         "workerPublishOutbox",
         "workerExpireApproval",
         "workerProcessInbox",
+        "workerAdmitMeteredUsage",
         "workerAdvanceSandboxServicing",
         "workerAutoRepay",
         "workerRunReconciliation",
@@ -198,6 +199,18 @@
         "venueRevokeDelegate"
       ],
       "properties": {
+        "pilotReadOwnSecuredPool": { "const": "read" },
+        "pilotReviewSecuredPoolAction": { "const": "read" },
+        "pilotReadSecuredPoolRisk": { "const": "read" },
+        "pilotReadClosedPilotReadiness": { "const": "read" },
+        "pilotListOwnCases": { "const": "read" },
+        "pilotReadCaseQueue": { "const": "read" },
+        "pilotReadOwnCreditState": { "const": "read" },
+        "agentReadSecuredFacilityAuthorization": { "const": "read" },
+        "pilotFileCase": { "const": "mutation" },
+        "pilotTransitionCase": { "const": "mutation" },
+        "agentCreateSecuredFacilityAuthorization": { "const": "mutation" },
+        "agentRevokeSecuredFacilityAuthorization": { "const": "mutation" },
         "pilotAcceptCreditOffer": {
           "const": "economic"
         },
@@ -466,6 +479,9 @@
           "const": "worker"
         },
         "workerProcessInbox": {
+          "const": "worker"
+        },
+        "workerAdmitMeteredUsage": {
           "const": "worker"
         },
         "workerAdvanceSandboxServicing": {

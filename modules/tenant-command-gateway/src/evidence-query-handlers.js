@@ -51,7 +51,7 @@ function createCursor(item) {
 }
 
 function summarizeEvidence(item) {
-  return {
+  const summary = {
     evidenceId: item.evidenceId,
     evidenceHash: item.evidenceHash,
     eventType: item.eventType,
@@ -65,6 +65,37 @@ function summarizeEvidence(item) {
     recordedAt: item.recordedAt,
     schemaVersion: "obligation_evidence_summary.v1"
   };
+  if (["metered_usage_admitted", "metered_usage_corrected"].includes(item.eventType)) {
+    const payload = item.payload;
+    if (
+      !payload || typeof payload !== "object" || Array.isArray(payload) ||
+      payload.obligationId !== item.obligationId ||
+      payload.sandboxOnly !== true || payload.productionFundsMoved !== false
+    ) unavailable();
+    summary.meteredUsage = {
+      usageEvidenceId: payload.usageEvidenceId,
+      usageEvidenceHash: payload.usageEvidenceHash,
+      correctionOfUsageEvidenceId: payload.correctionOfUsageEvidenceId,
+      meteredUsageAdmissionId: payload.meteredUsageAdmissionId,
+      admissionHash: payload.admissionHash,
+      providerId: payload.providerId,
+      resourceClass: payload.resourceClass,
+      measurementUnit: payload.measurementUnit,
+      quantity: payload.quantity,
+      chargeMinor: payload.chargeMinor,
+      chargeDeltaMinor: payload.chargeDeltaMinor,
+      assetId: payload.assetId,
+      policyHash: payload.policyHash,
+      ledgerTransactionId: payload.ledgerTransactionId,
+      finality: "finalized",
+      reconciliation: "reconciled",
+      nextAction: "review_metered_usage_receipt",
+      sandboxOnly: true,
+      productionFundsMoved: false,
+      schemaVersion: "metered_usage_evidence_summary.v1"
+    };
+  }
+  return summary;
 }
 
 export function readObligationEvidenceQueryHandler({

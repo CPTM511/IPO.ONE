@@ -22,6 +22,9 @@ import tradingFacilityCloseRequestSchema from "../../../schemas/v2/trading-facil
 import tradingSettlementSchema from "../../../schemas/v2/trading-settlement.schema.json" with { type: "json" };
 import tradingPerformanceProofSchema from "../../../schemas/v2/trading-performance-proof.schema.json" with { type: "json" };
 import agentSecuredFacilityAuthorizationSchema from "../../../schemas/v2/agent-secured-facility-authorization.schema.json" with { type: "json" };
+import meteredUsageEvidenceSchema from "../../../schemas/v2/metered-usage-evidence.schema.json" with { type: "json" };
+import meteredUsageAdmissionSchema from "../../../schemas/v2/metered-usage-admission.schema.json" with { type: "json" };
+import tenantMeteredUsageAdmittedSchema from "../../../schemas/v2/tenant-metered-usage-admitted.schema.json" with { type: "json" };
 import tenantProtocolResultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
 
 export const HUMAN_CREDIT_OFFER_WORKFLOW_RECEIPT_SCHEMA_VERSION =
@@ -67,6 +70,9 @@ ajv.addSchema(tradingFacilityCloseRequestSchema);
 ajv.addSchema(tradingSettlementSchema);
 ajv.addSchema(tradingPerformanceProofSchema);
 ajv.addSchema(agentSecuredFacilityAuthorizationSchema);
+ajv.addSchema(meteredUsageEvidenceSchema);
+ajv.addSchema(meteredUsageAdmissionSchema);
+ajv.addSchema(tenantMeteredUsageAdmittedSchema);
 ajv.addSchema(tenantProtocolResultSchema);
 const validateReceipt = ajv.compile(receiptSchema);
 

@@ -1395,6 +1395,28 @@
       ]
     },
     {
+      "operationId": "workerAdmitMeteredUsage",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_metered_usage_admitted.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/metered-usage-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/tenant-api/src/tenant-http-adapter.js",
+        "apps/web/src/app.js",
+        "apps/agent-mcp/src/agent-mcp-adapter.js"
+      ],
+      "testFiles": [
+        "packages/domain/test/metered-usage-evidence.test.js",
+        "modules/tenant-command-gateway/test/metered-usage-handlers.test.js",
+        "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs"
+      ]
+    },
+    {
       "operationId": "tradingCreateFacility",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_trading_facility_created.v1",
@@ -3213,6 +3235,7 @@
             "pilotReadOwnCreditState",
             "pilotReadOwnObligation",
             "pilotReadOwnObligationEvidence",
+            "workerAdmitMeteredUsage",
             "pilotSubmitPilotFeedback",
             "pilotFileCase",
             "pilotListOwnCases"
@@ -3229,6 +3252,8 @@
             "apps/web/test/agent-console-presentation.test.js",
             "apps/web/test/static-ui.test.js",
             "apps/agent-mcp/test/agent-mcp.test.mjs",
+            "modules/tenant-command-gateway/test/metered-usage-handlers.test.js",
+            "modules/tenant-command-gateway/test-postgres/tenant-command-gateway-runtime.test.mjs",
             "packages/sdk/test/agent-mcp-client.test.js",
             "packages/sdk/test/agent-pilot-case-client.test.js"
           ],

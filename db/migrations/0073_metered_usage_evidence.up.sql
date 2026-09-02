@@ -6,6 +6,7 @@ CREATE TABLE metered_usage_evidence (
   evidence_hash TEXT NOT NULL CHECK (evidence_hash ~ '^0x[0-9a-f]{64}$'),
   provider_event_id TEXT NOT NULL,
   nonce_hash TEXT NOT NULL CHECK (nonce_hash ~ '^0x[0-9a-f]{64}$'),
+  correction_of_usage_evidence_id TEXT,
   subject_id TEXT NOT NULL,
   principal_id TEXT NOT NULL,
   mandate_id TEXT NOT NULL,
@@ -32,7 +33,12 @@ CREATE TABLE metered_usage_evidence (
   CONSTRAINT metered_usage_evidence_tenant_id_id_key UNIQUE (tenant_id, id),
   CONSTRAINT metered_usage_evidence_tenant_hash_key UNIQUE (tenant_id, evidence_hash),
   CONSTRAINT metered_usage_evidence_provider_event_key UNIQUE (tenant_id, provider_id, provider_event_id),
-  CONSTRAINT metered_usage_evidence_nonce_key UNIQUE (tenant_id, provider_id, nonce_hash)
+  CONSTRAINT metered_usage_evidence_nonce_key UNIQUE (tenant_id, provider_id, nonce_hash),
+  CONSTRAINT metered_usage_evidence_single_correction_key
+    UNIQUE (tenant_id, correction_of_usage_evidence_id),
+  CONSTRAINT metered_usage_evidence_correction_fk
+    FOREIGN KEY (tenant_id, correction_of_usage_evidence_id)
+    REFERENCES metered_usage_evidence(tenant_id, id)
 );
 
 CREATE TABLE metered_usage_admissions (
@@ -44,9 +50,11 @@ CREATE TABLE metered_usage_admissions (
   policy_hash TEXT NOT NULL CHECK (policy_hash ~ '^0x[0-9a-f]{64}$'),
   obligation_id TEXT NOT NULL,
   charge_minor NUMERIC(78,0) NOT NULL CHECK (charge_minor > 0),
+  charge_delta_minor NUMERIC(78,0) NOT NULL CHECK (charge_delta_minor <> 0),
   window_charge_before_minor NUMERIC(78,0) NOT NULL CHECK (window_charge_before_minor >= 0),
   window_charge_after_minor NUMERIC(78,0) NOT NULL CHECK (
-    window_charge_after_minor = window_charge_before_minor + charge_minor
+    window_charge_after_minor >= 0
+    AND window_charge_after_minor = window_charge_before_minor + charge_delta_minor
   ),
   record JSONB NOT NULL CHECK (record->>'schemaVersion' = 'metered_usage_admission.v1'),
   sandbox_only BOOLEAN NOT NULL CHECK (sandbox_only = TRUE),

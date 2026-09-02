@@ -19,6 +19,7 @@ export * from "./mandate-handlers.js";
 export * from "./servicing-handlers.js";
 export * from "./postgres-live-policy-adapter.js";
 export * from "./provider-handlers.js";
+export * from "./metered-usage-handlers.js";
 export * from "./subject-risk-handlers.js";
 export * from "./tenant-risk-query-handlers.js";
 export * from "./risk-workspace-reference-handlers.js";

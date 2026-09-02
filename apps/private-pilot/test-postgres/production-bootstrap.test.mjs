@@ -57,7 +57,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0072_public_beta_self_service_identity"
+      "0073_metered_usage_evidence"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
@@ -68,13 +68,15 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       await target.query(
         `GRANT SELECT, INSERT, UPDATE, DELETE ON pilot_feedback_records TO "${runtimePrivilegeRole}"`
       );
-      assert.deepEqual(await migrateDown({ pool: target, steps: 2 }), [
+      assert.deepEqual(await migrateDown({ pool: target, steps: 3 }), [
+        "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
         "0071_pilot_cases_runtime_privileges"
       ]);
       assert.deepEqual(await migrateUp({ pool: target }), [
         "0071_pilot_cases_runtime_privileges",
-        "0072_public_beta_self_service_identity"
+        "0072_public_beta_self_service_identity",
+        "0073_metered_usage_evidence"
       ]);
       const copiedPrivileges = await target.query(
         `SELECT privilege_type
@@ -234,7 +236,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0072_public_beta_self_service_identity"
+      "0073_metered_usage_evidence"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -246,7 +248,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 10 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 11 }), [
+      "0073_metered_usage_evidence",
       "0072_public_beta_self_service_identity",
       "0071_pilot_cases_runtime_privileges",
       "0070_pilot_cases",
@@ -268,7 +271,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0069_auth_reference_hash_key_rotation",
       "0070_pilot_cases",
       "0071_pilot_cases_runtime_privileges",
-      "0072_public_beta_self_service_identity"
+      "0072_public_beta_self_service_identity",
+      "0073_metered_usage_evidence"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count

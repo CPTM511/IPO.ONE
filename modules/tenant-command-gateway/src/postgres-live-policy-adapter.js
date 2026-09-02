@@ -1,10 +1,14 @@
 import {
   ConsentStatus,
   DomainError,
+  MandateCapability,
   MandateStatus,
   PrincipalStatus,
+  ProviderStatus,
+  SpendPolicyStatus,
   SubjectStatus,
-  SubjectType
+  SubjectType,
+  hashId
 } from "../../../packages/domain/src/index.js";
 import { CoreProjectionType } from "../../persistence/src/index.js";
 import { resolveCreditIntentAuthority } from "./credit-intent-handlers.js";
@@ -691,6 +695,125 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
         return Object.freeze({
           liveStateVersion: delivery.aggregateVersion,
           evaluatedChecks: Object.freeze(["provider_assignment", "provider_state", "transfer_intent_state"])
+        });
+      }
+
+      if (
+        handler.operationId === "workerAdmitMeteredUsage" &&
+        hasExactChecks(policy, ["mandate", "spend_policy", "risk", "cap", "freeze", "inbox_replay"]) &&
+        resource?.resourceType === "obligation"
+      ) {
+        const evidence = payload?.evidence;
+        if (
+          !evidence || typeof evidence !== "object" || Array.isArray(evidence) ||
+          evidence.obligationId !== resource.resourceId ||
+          evidence.tenantId !== authenticationContext.tenantId ||
+          typeof evidence.nonce !== "string" || evidence.nonce.length === 0 ||
+          typeof payload?.expectedPolicyHash !== "string" ||
+          !/^0x[0-9a-f]{64}$/.test(payload.expectedPolicyHash)
+        ) {
+          throw new DomainError("authorization_live_policy_rejected", "live Metered Usage scope is unavailable");
+        }
+        const obligationState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.OBLIGATION,
+          resource.resourceId,
+          { lock: true }
+        );
+        const mandateState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.MANDATE,
+          evidence.mandateId,
+          { lock: true }
+        );
+        const providerState = await coreRepository.getProjectionStateInTransaction(
+          client,
+          CoreProjectionType.PROVIDER,
+          evidence.providerId,
+          { lock: true }
+        );
+        const spendPolicy = await coreRepository.findActiveSpendPolicyForMeteredUsageInTransaction(
+          client,
+          {
+            subjectId: evidence.subjectId,
+            providerId: evidence.providerId,
+            assetId: evidence.assetId
+          },
+          { lock: true }
+        );
+        const spendPolicyState = spendPolicy
+          ? await coreRepository.getProjectionStateInTransaction(
+              client,
+              CoreProjectionType.SPEND_POLICY,
+              spendPolicy.spendPolicyId,
+              { lock: true }
+            )
+          : undefined;
+        const lockbox = await coreRepository.findAgentLockboxByObligationInTransaction(
+          client,
+          resource.resourceId,
+          { lock: true }
+        );
+        const duplicates = await coreRepository.findMeteredUsageEvidenceIdentityInTransaction(
+          client,
+          {
+            usageEvidenceId: evidence.usageEvidenceId,
+            providerId: evidence.providerId,
+            providerEventId: evidence.providerEventId,
+            nonceHash: hashId("metered_usage_nonce", evidence.nonce)
+          },
+          { lock: true }
+        );
+        const obligation = obligationState?.value;
+        const mandate = mandateState?.value;
+        const provider = providerState?.value;
+        if (
+          !obligation || obligation.schemaVersion !== "obligation.v2" ||
+          obligation.obligationId !== evidence.obligationId ||
+          obligation.subjectId !== evidence.subjectId ||
+          obligation.principalId !== evidence.principalId ||
+          obligation.mandateId !== evidence.mandateId ||
+          obligation.creditOfferAcceptanceId !== evidence.authorizationId ||
+          obligation.assetId !== evidence.assetId || obligation.status !== "active" ||
+          obligation.executionStatus !== "executed" || obligation.sandboxOnly !== true ||
+          obligation.productionFundsMoved !== false || obligation.withdrawable !== false ||
+          !mandate || mandate.status !== MandateStatus.ACTIVE ||
+          mandate.subjectId !== evidence.subjectId || mandate.principalId !== evidence.principalId ||
+          mandate.sandboxOnly !== true || mandate.productionAuthority !== false ||
+          !mandate.capabilities.includes(MandateCapability.PROVIDER_SPEND) ||
+          !mandate.allowedProviderIds.includes(evidence.providerId) ||
+          !mandate.assetIds.includes(evidence.assetId) ||
+          new Date(mandate.validFrom) > now || new Date(mandate.expiresAt) <= now ||
+          BigInt(evidence.chargeMinor) > BigInt(mandate.perActionLimitMinor) ||
+          BigInt(mandate.utilizedMinor) + BigInt(evidence.chargeMinor) > BigInt(mandate.aggregateLimitMinor) ||
+          !provider || provider.status !== ProviderStatus.ALLOWLISTED ||
+          !spendPolicyState || spendPolicyState.value.status !== SpendPolicyStatus.ACTIVE ||
+          spendPolicyState.value.subjectId !== evidence.subjectId ||
+          spendPolicyState.value.providerId !== evidence.providerId ||
+          spendPolicyState.value.assetId !== evidence.assetId ||
+          BigInt(evidence.chargeMinor) > BigInt(spendPolicyState.value.perTxLimitMinor) ||
+          BigInt(evidence.chargeMinor) > BigInt(spendPolicyState.value.obligationCapMinor) ||
+          (spendPolicyState.value.dailySpentDate === now.toISOString().slice(0, 10) &&
+            BigInt(spendPolicyState.value.dailySpentMinor) + BigInt(evidence.chargeMinor) >
+              BigInt(spendPolicyState.value.dailyLimitMinor)) ||
+          !lockbox || lockbox.status !== "active" ||
+          lockbox.obligationId !== evidence.obligationId ||
+          lockbox.subjectId !== evidence.subjectId || lockbox.principalId !== evidence.principalId ||
+          lockbox.mandateId !== evidence.mandateId || lockbox.creditLineId !== evidence.facilityId ||
+          lockbox.assetId !== evidence.assetId || !lockbox.allowedProviderIds.includes(evidence.providerId) ||
+          lockbox.sandboxOnly !== true || lockbox.productionFundsMoved !== false ||
+          lockbox.withdrawable !== false || duplicates.length !== 0
+        ) {
+          throw new DomainError("authorization_live_policy_rejected", "live Metered Usage state rejected admission");
+        }
+        const liveStateVersion = obligationState.aggregateVersion + mandateState.aggregateVersion +
+          providerState.aggregateVersion + spendPolicyState.aggregateVersion;
+        if (!Number.isSafeInteger(liveStateVersion) || liveStateVersion < 1) {
+          throw new DomainError("authorization_live_policy_rejected", "live Metered Usage version is unavailable");
+        }
+        return Object.freeze({
+          liveStateVersion,
+          evaluatedChecks: Object.freeze([...policy.liveChecks])
         });
       }
 

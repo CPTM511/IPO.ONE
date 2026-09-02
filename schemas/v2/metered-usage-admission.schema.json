@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ipo.one/v2/metered-usage-admission.schema.json",
+  "title": "IPO.ONE Metered Usage Admission v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "meteredUsageAdmissionId", "admissionHash", "policyId", "policyHash",
+    "usageEvidenceId", "usageEvidenceHash", "correctionOfUsageEvidenceId",
+    "obligationId", "chargeMinor", "chargeDeltaMinor",
+    "windowChargeBeforeMinor", "windowChargeAfterMinor", "admittedAt",
+    "sandboxOnly", "productionFundsMoved", "schemaVersion"
+  ],
+  "properties": {
+    "meteredUsageAdmissionId": { "$ref": "#/$defs/identifier" },
+    "admissionHash": { "$ref": "#/$defs/hash" },
+    "policyId": { "$ref": "#/$defs/identifier" },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "usageEvidenceId": { "$ref": "#/$defs/identifier" },
+    "usageEvidenceHash": { "$ref": "#/$defs/hash" },
+    "correctionOfUsageEvidenceId": {
+      "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+    },
+    "obligationId": { "$ref": "#/$defs/identifier" },
+    "chargeMinor": { "$ref": "#/$defs/positiveMinor" },
+    "chargeDeltaMinor": { "$ref": "#/$defs/signedNonZeroMinor" },
+    "windowChargeBeforeMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "windowChargeAfterMinor": { "$ref": "#/$defs/nonNegativeMinor" },
+    "admittedAt": { "type": "string", "format": "date-time" },
+    "sandboxOnly": { "const": true },
+    "productionFundsMoved": { "const": false },
+    "schemaVersion": { "const": "metered_usage_admission.v1" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "positiveMinor": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" },
+    "signedNonZeroMinor": { "type": "string", "pattern": "^-?[1-9][0-9]{0,77}$" },
+    "nonNegativeMinor": { "type": "string", "pattern": "^(0|[1-9][0-9]{0,77})$" }
+  }
+}

@@ -5075,16 +5075,25 @@ function obligationHistoryPresentationRow(item) {
   const badge = document.createElement("em");
   row.className = `obligation-detail-history-row ${item.historyKind}`;
   marker.setAttribute("aria-hidden", "true");
-  title.textContent = titleize(item.eventType);
-  detail.textContent =
-    `${titleize(item.aggregateType)} v${item.aggregateVersion} · ${formatEvidenceTime(item.recordedAt, { short: true })} · ${compactDecisionProofHash(item.evidenceHash)}`;
-  badge.textContent = item.historyKind === "explicit_correction"
-    ? "Correction"
-    : item.historyKind === "explicit_resolution"
-      ? "Resolution"
-      : item.historyKind === "invalidated_observation"
-        ? titleize(item.sourceFinality)
-        : titleize(item.sourceFinality);
+  title.textContent = item.meteredUsage
+    ? item.eventType === "metered_usage_corrected"
+      ? `Metered usage corrected · ${item.meteredUsage.quantity} tokens`
+      : `Metered usage · ${item.meteredUsage.quantity} tokens`
+    : titleize(item.eventType);
+  detail.textContent = item.meteredUsage
+    ? item.eventType === "metered_usage_corrected"
+      ? `${usdMinorToMoney(item.meteredUsage.chargeMinor)} corrected total · ${item.meteredUsage.chargeDeltaMinor} minor-unit additive delta · finalized and reconciled · ${formatEvidenceTime(item.recordedAt, { short: true })} · ${compactDecisionProofHash(item.meteredUsage.admissionHash)}`
+      : `${usdMinorToMoney(item.meteredUsage.chargeMinor)} synthetic charge · finalized and reconciled · ${formatEvidenceTime(item.recordedAt, { short: true })} · ${compactDecisionProofHash(item.meteredUsage.admissionHash)}`
+    : `${titleize(item.aggregateType)} v${item.aggregateVersion} · ${formatEvidenceTime(item.recordedAt, { short: true })} · ${compactDecisionProofHash(item.evidenceHash)}`;
+  badge.textContent = item.meteredUsage
+    ? item.eventType === "metered_usage_corrected" ? "No-funds correction" : "No-funds receipt"
+    : item.historyKind === "explicit_correction"
+      ? "Correction"
+      : item.historyKind === "explicit_resolution"
+        ? "Resolution"
+        : item.historyKind === "invalidated_observation"
+          ? titleize(item.sourceFinality)
+          : titleize(item.sourceFinality);
   copy.append(title, detail);
   row.append(marker, copy, badge);
   return row;

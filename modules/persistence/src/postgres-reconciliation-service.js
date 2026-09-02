@@ -643,6 +643,8 @@ export class PostgresReconciliationService {
         UNION ALL SELECT 'provider_intent_delivery', id FROM provider_intent_deliveries
         UNION ALL SELECT 'provider_intent_acknowledgement', id FROM provider_intent_acknowledgements
         UNION ALL SELECT 'provider_callback_inbox', callback_id FROM provider_callback_inbox
+        UNION ALL SELECT 'metered_usage_evidence', id FROM metered_usage_evidence
+        UNION ALL SELECT 'metered_usage_admission', id FROM metered_usage_admissions
         UNION ALL SELECT 'spend_policy', id FROM spend_policies
         UNION ALL SELECT 'spend_request', id FROM spend_requests
         UNION ALL SELECT 'ledger_account', id FROM ledger_accounts

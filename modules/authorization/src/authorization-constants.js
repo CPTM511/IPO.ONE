@@ -209,7 +209,8 @@ export const PilotCapability = Object.freeze({
   APPROVAL_CANCEL: "approval.cancel",
   APPROVAL_EXPIRE: "approval.expire",
   WORKER_OUTBOX_PUBLISH: "worker.outbox.publish",
-  WORKER_INBOX_PROCESS: "worker.inbox.process"
+  WORKER_INBOX_PROCESS: "worker.inbox.process",
+  WORKER_METERED_USAGE_ADMIT: "worker.metered_usage.admit"
 });
 
 export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
@@ -506,6 +507,7 @@ export const ROLE_BUNDLE_CAPABILITIES = Object.freeze({
   [RoleBundle.SYSTEM_WORKER]: Object.freeze([
     PilotCapability.WORKER_OUTBOX_PUBLISH,
     PilotCapability.WORKER_INBOX_PROCESS,
+    PilotCapability.WORKER_METERED_USAGE_ADMIT,
     PilotCapability.REPAYMENT_EXECUTE,
     PilotCapability.SERVICING_ADVANCE_SANDBOX,
     PilotCapability.RECONCILIATION_READ,

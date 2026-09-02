@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "required": [
     "usageEvidenceId", "usageEvidenceHash", "providerEventId", "nonce",
+    "correctionOfUsageEvidenceId",
     "tenantId", "subjectId", "principalId", "mandateId", "facilityId",
     "authorizationId", "obligationId", "providerId", "resourceClass",
     "measurementUnit", "quantity", "priceScheduleHash", "unitPriceMinor",
@@ -19,6 +20,9 @@
     "usageEvidenceHash": { "$ref": "#/$defs/hash" },
     "providerEventId": { "$ref": "#/$defs/identifier" },
     "nonce": { "$ref": "#/$defs/identifier" },
+    "correctionOfUsageEvidenceId": {
+      "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+    },
     "tenantId": { "$ref": "#/$defs/identifier" },
     "subjectId": { "$ref": "#/$defs/identifier" },
     "principalId": { "$ref": "#/$defs/identifier" },

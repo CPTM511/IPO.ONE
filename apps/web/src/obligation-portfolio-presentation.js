@@ -5,6 +5,7 @@ export const OBLIGATION_PORTFOLIO_PRESENTATION_VERSION =
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/;
 const MINOR = /^(?:0|[1-9][0-9]{0,30})$/;
+const SIGNED_NONZERO_MINOR = /^-?[1-9][0-9]{0,30}$/;
 const HASH = /^0x[a-fA-F0-9]{64}$/;
 const ENTRY_MODES = new Set(["human", "agent"]);
 const RELATIONSHIPS = new Set(["owner", "controller"]);
@@ -15,7 +16,7 @@ const FINALITIES = new Set([
   "reorged",
   "invalidated"
 ]);
-const CORRECTION_EVENTS = new Set(["projection_repaired"]);
+const CORRECTION_EVENTS = new Set(["projection_repaired", "metered_usage_corrected"]);
 const RESOLUTION_EVENTS = new Set([
   "obligation_restructured",
   "obligation_repurchased",
@@ -67,6 +68,7 @@ function deepFreeze(value) {
 }
 
 function normalizeEvidenceItem(item, obligationId) {
+  const metered = item?.meteredUsage;
   if (
     !closedRecord(item, [
       "evidenceId",
@@ -81,7 +83,7 @@ function normalizeEvidenceItem(item, obligationId) {
       "occurredAt",
       "recordedAt",
       "schemaVersion"
-    ]) ||
+    ], ["meteredUsage"]) ||
     !IDENTIFIER.test(item.evidenceId ?? "") ||
     !IDENTIFIER.test(item.eventType ?? "") ||
     !IDENTIFIER.test(item.aggregateType ?? "") ||
@@ -97,6 +99,37 @@ function normalizeEvidenceItem(item, obligationId) {
     new Date(item.recordedAt).getTime() < new Date(item.occurredAt).getTime() ||
     item.schemaVersion !== "obligation_evidence_summary.v1"
   ) return null;
+  if (metered !== undefined && (
+    !new Set(["metered_usage_admitted", "metered_usage_corrected"]).has(item.eventType) ||
+    !closedRecord(metered, [
+      "usageEvidenceId", "usageEvidenceHash", "meteredUsageAdmissionId",
+      "correctionOfUsageEvidenceId", "admissionHash", "providerId",
+      "resourceClass", "measurementUnit", "quantity", "chargeMinor",
+      "chargeDeltaMinor", "assetId", "policyHash",
+      "ledgerTransactionId", "finality", "reconciliation", "nextAction",
+      "sandboxOnly", "productionFundsMoved", "schemaVersion"
+    ]) ||
+    !IDENTIFIER.test(metered.usageEvidenceId ?? "") ||
+    !HASH.test(metered.usageEvidenceHash ?? "") ||
+    !(metered.correctionOfUsageEvidenceId === null ||
+      IDENTIFIER.test(metered.correctionOfUsageEvidenceId ?? "")) ||
+    (item.eventType === "metered_usage_admitted" && metered.correctionOfUsageEvidenceId !== null) ||
+    (item.eventType === "metered_usage_corrected" && metered.correctionOfUsageEvidenceId === null) ||
+    !IDENTIFIER.test(metered.meteredUsageAdmissionId ?? "") ||
+    !HASH.test(metered.admissionHash ?? "") ||
+    !IDENTIFIER.test(metered.providerId ?? "") ||
+    metered.resourceClass !== "inference_tokens" || metered.measurementUnit !== "token" ||
+    minor(metered.quantity) === null || minor(metered.quantity) <= 0n ||
+    minor(metered.chargeMinor) === null || minor(metered.chargeMinor) <= 0n ||
+    typeof metered.chargeDeltaMinor !== "string" ||
+    !SIGNED_NONZERO_MINOR.test(metered.chargeDeltaMinor) ||
+    !IDENTIFIER.test(metered.assetId ?? "") || !HASH.test(metered.policyHash ?? "") ||
+    !IDENTIFIER.test(metered.ledgerTransactionId ?? "") ||
+    metered.finality !== "finalized" || metered.reconciliation !== "reconciled" ||
+    metered.nextAction !== "review_metered_usage_receipt" ||
+    metered.sandboxOnly !== true || metered.productionFundsMoved !== false ||
+    metered.schemaVersion !== "metered_usage_evidence_summary.v1"
+  )) return null;
 
   const historyKind = CORRECTION_EVENTS.has(item.eventType)
     ? "explicit_correction"
@@ -116,6 +149,7 @@ function normalizeEvidenceItem(item, obligationId) {
     sourceFinality: item.sourceFinality,
     occurredAt: item.occurredAt,
     recordedAt: item.recordedAt,
+    ...(metered === undefined ? {} : { meteredUsage: structuredClone(metered) }),
     historyKind,
     appendOnly: true,
     schemaVersion: "obligation_history_item.v1"

@@ -1001,6 +1001,21 @@
       "fundsAuthority": false
     },
     {
+      "operationId": "workerAdmitMeteredUsage",
+      "kind": "command",
+      "actorTypes": [
+        "system_worker"
+      ],
+      "resourceType": "obligation",
+      "requiredCapability": "worker.metered_usage.admit",
+      "idempotency": "required",
+      "quotaClass": "worker",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_metered_usage_admitted.v1",
+      "public": false,
+      "fundsAuthority": false
+    },
+    {
       "operationId": "tradingCreateAccountBindingChallenge",
       "kind": "command",
       "actorTypes": [

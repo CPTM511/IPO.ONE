@@ -261,6 +261,7 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "walletRevokeGrant",
     "walletSubmitAccountBinding",
     "walletSubmitExecution",
+    "workerAdmitMeteredUsage",
     "workerAdvanceSandboxServicing",
     "workerProcessInbox"
   ]);
@@ -850,6 +851,65 @@ test("Evidence query returns a bounded redacted Obligation timeline with a stabl
     }),
     (error) => error.code === "invalid_tenant_command_payload"
   );
+});
+
+test("owned Evidence exposes the same redacted Metered Usage receipt to Web and Agent MCP", async () => {
+  const obligationId = "obligation_metered_evidence";
+  const item = {
+    evidenceId: "event_metered_evidence_1",
+    evidenceHash: `0x${"1".repeat(64)}`,
+    eventType: "metered_usage_admitted",
+    aggregateType: "obligation",
+    aggregateId: obligationId,
+    aggregateVersion: 9,
+    obligationId,
+    sourceFinality: "finalized",
+    payloadHash: `0x${"2".repeat(64)}`,
+    payload: {
+      obligationId,
+      usageEvidenceId: "usage_metered_evidence_1",
+      usageEvidenceHash: `0x${"3".repeat(64)}`,
+      correctionOfUsageEvidenceId: null,
+      meteredUsageAdmissionId: "metered_usage_admission_evidence_1",
+      admissionHash: `0x${"4".repeat(64)}`,
+      providerId: "provider_metered_evidence_1",
+      resourceClass: "inference_tokens",
+      measurementUnit: "token",
+      quantity: "250",
+      chargeMinor: "500",
+      chargeDeltaMinor: "500",
+      assetId: "iso4217:USD",
+      policyHash: `0x${"5".repeat(64)}`,
+      ledgerTransactionId: "ledger_transaction_metered_evidence_1",
+      sandboxOnly: true,
+      productionFundsMoved: false,
+      providerSignature: "must-not-leak"
+    },
+    occurredAt: "2026-09-02T01:05:02.000Z",
+    recordedAt: "2026-09-02T01:05:02.100Z",
+    schemaVersion: "evidence_event.v2"
+  };
+  const result = await readObligationEvidenceQueryHandler({
+    operationId: "pilotReadOwnObligationEvidence"
+  }).execute({
+    client: {},
+    coreRepository: {
+      async getProjectionStateInTransaction() {
+        return { value: { obligationId } };
+      },
+      async listObligationEvidenceInTransaction() {
+        return [item];
+      }
+    },
+    authorizationDecision: { resourceType: "evidence", resourceId: obligationId },
+    payload: {},
+    now: new Date("2026-09-02T01:05:03.000Z")
+  });
+  assert.equal(result.items[0].meteredUsage.chargeMinor, "500");
+  assert.equal(result.items[0].meteredUsage.nextAction, "review_metered_usage_receipt");
+  assert.equal(result.items[0].meteredUsage.productionFundsMoved, false);
+  assert.equal(JSON.stringify(result).includes("providerSignature"), false);
+  assert.equal(JSON.stringify(result).includes("must-not-leak"), false);
 });
 
 test("protective Subject freeze plans one reason-coded terminal restriction", async () => {

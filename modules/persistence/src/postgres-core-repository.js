@@ -33,6 +33,8 @@ export const CoreProjectionType = Object.freeze({
   PROVIDER_INTENT_DELIVERY: "provider_intent_delivery",
   PROVIDER_INTENT_ACKNOWLEDGEMENT: "provider_intent_acknowledgement",
   PROVIDER_CALLBACK_INBOX: "provider_callback_inbox",
+  METERED_USAGE_EVIDENCE: "metered_usage_evidence",
+  METERED_USAGE_ADMISSION: "metered_usage_admission",
   SPEND_POLICY: "spend_policy",
   SPEND_REQUEST: "spend_request",
   LEDGER_ACCOUNT: "ledger_account",
@@ -92,6 +94,8 @@ const ENTITY_ID_FIELDS = Object.freeze({
   [CoreProjectionType.PROVIDER_INTENT_DELIVERY]: "deliveryId",
   [CoreProjectionType.PROVIDER_INTENT_ACKNOWLEDGEMENT]: "acknowledgementId",
   [CoreProjectionType.PROVIDER_CALLBACK_INBOX]: "callbackId",
+  [CoreProjectionType.METERED_USAGE_EVIDENCE]: "usageEvidenceId",
+  [CoreProjectionType.METERED_USAGE_ADMISSION]: "meteredUsageAdmissionId",
   [CoreProjectionType.SPEND_POLICY]: "spendPolicyId",
   [CoreProjectionType.SPEND_REQUEST]: "spendRequestId",
   [CoreProjectionType.LEDGER_ACCOUNT]: "ledgerAccountId",
@@ -731,6 +735,16 @@ function mapProviderCallbackInbox(row) {
     withdrawable: row.withdrawable,
     schemaVersion: row.schema_version
   };
+}
+
+function mapMeteredUsageEvidence(row) {
+  if (!row) return undefined;
+  return clone(row.record);
+}
+
+function mapMeteredUsageAdmission(row) {
+  if (!row) return undefined;
+  return clone(row.record);
 }
 
 function mapSpendPolicy(row) {
@@ -2554,6 +2568,106 @@ export class PostgresCoreRepository {
     return mapProviderCallbackInbox(result.rows[0]);
   }
 
+  async getMeteredUsageEvidence(usageEvidenceId) {
+    return this.#getOne(
+      "usageEvidenceId",
+      usageEvidenceId,
+      "SELECT record FROM metered_usage_evidence WHERE id = $1",
+      mapMeteredUsageEvidence
+    );
+  }
+
+  async getMeteredUsageAdmission(meteredUsageAdmissionId) {
+    return this.#getOne(
+      "meteredUsageAdmissionId",
+      meteredUsageAdmissionId,
+      "SELECT record FROM metered_usage_admissions WHERE id = $1",
+      mapMeteredUsageAdmission
+    );
+  }
+
+  async findMeteredUsageEvidenceIdentityInTransaction(
+    client,
+    { usageEvidenceId, providerId, providerEventId, nonceHash },
+    { lock = true } = {}
+  ) {
+    assertQueryable(client);
+    for (const [name, value] of Object.entries({
+      usageEvidenceId,
+      providerId,
+      providerEventId,
+      nonceHash
+    })) assertString(name, value);
+    const result = await client.query(
+      `SELECT record FROM metered_usage_evidence
+        WHERE id = $1
+           OR (provider_id = $2 AND provider_event_id = $3)
+           OR (provider_id = $2 AND nonce_hash = $4)
+        ORDER BY id
+        LIMIT 2
+        ${lock ? "FOR UPDATE" : ""}`,
+      [usageEvidenceId, providerId, providerEventId, nonceHash]
+    );
+    return result.rows.map(mapMeteredUsageEvidence);
+  }
+
+  async getMeteredUsageAdmissionByEvidenceInTransaction(
+    client,
+    usageEvidenceId,
+    { lock = false } = {}
+  ) {
+    assertQueryable(client);
+    assertString("usageEvidenceId", usageEvidenceId);
+    const result = await client.query(
+      `SELECT record FROM metered_usage_admissions
+        WHERE usage_evidence_id = $1
+        ${lock ? "FOR UPDATE" : ""}`,
+      [usageEvidenceId]
+    );
+    return mapMeteredUsageAdmission(result.rows[0]);
+  }
+
+  async getMeteredUsageCorrectionByPriorEvidenceInTransaction(
+    client,
+    usageEvidenceId,
+    { lock = false } = {}
+  ) {
+    assertQueryable(client);
+    assertString("usageEvidenceId", usageEvidenceId);
+    const result = await client.query(
+      `SELECT record FROM metered_usage_evidence
+        WHERE correction_of_usage_evidence_id = $1
+        ${lock ? "FOR UPDATE" : ""}`,
+      [usageEvidenceId]
+    );
+    return mapMeteredUsageEvidence(result.rows[0]);
+  }
+
+  async getMeteredUsageWindowChargeInTransaction(client, {
+    policyId,
+    windowStartedAt,
+    windowEndedAt
+  }) {
+    assertQueryable(client);
+    for (const [name, value] of Object.entries({ policyId, windowStartedAt, windowEndedAt })) {
+      assertString(name, value);
+    }
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('metered_usage_window'), hashtext($1 || ':' || $2 || ':' || $3))",
+      [policyId, windowStartedAt, windowEndedAt]
+    );
+    const result = await client.query(
+      `SELECT COALESCE(SUM(a.charge_delta_minor), 0)::text AS charge_minor
+         FROM metered_usage_admissions a
+         JOIN metered_usage_evidence e ON e.id = a.usage_evidence_id
+        WHERE a.policy_id = $1
+          AND e.window_started_at = $2
+          AND e.window_ended_at = $3`,
+      [policyId, windowStartedAt, windowEndedAt]
+    );
+    return result.rows[0].charge_minor;
+  }
+
   async getSpendPolicy(spendPolicyId) {
     return this.#getOne(
       "spendPolicyId",
@@ -2561,6 +2675,36 @@ export class PostgresCoreRepository {
       "SELECT *, daily_spent_date::text AS daily_spent_date_text FROM spend_policies WHERE id = $1",
       mapSpendPolicy
     );
+  }
+
+  async findActiveSpendPolicyForMeteredUsageInTransaction(
+    client,
+    { subjectId, providerId, assetId },
+    { lock = true } = {}
+  ) {
+    assertQueryable(client);
+    for (const [name, value] of Object.entries({ subjectId, providerId, assetId })) {
+      assertString(name, value);
+    }
+    const result = await client.query(
+      `SELECT *, daily_spent_date::text AS daily_spent_date_text
+         FROM spend_policies
+        WHERE subject_id = $1
+          AND provider_id = $2
+          AND asset_id = $3
+          AND status = 'active'
+        ORDER BY created_at DESC, id
+        LIMIT 2
+        ${lock ? "FOR UPDATE" : ""}`,
+      [subjectId, providerId, assetId]
+    );
+    if (result.rowCount > 1) {
+      throw new DomainError(
+        "projection_integrity_mismatch",
+        "Metered Usage requires exactly one active SpendPolicy"
+      );
+    }
+    return mapSpendPolicy(result.rows[0]);
   }
 
   async getSpendRequest(spendRequestId) {
@@ -3551,7 +3695,7 @@ export class PostgresCoreRepository {
     const result = await client.query(
       `SELECT id, evidence_hash, event_type, aggregate_type, aggregate_id,
               aggregate_version, obligation_id, source_finality, payload_hash,
-              occurred_at, recorded_at, schema_version
+              payload, occurred_at, recorded_at, schema_version
          FROM evidence_envelopes
         WHERE obligation_id = $1
           AND ($2::timestamptz IS NULL OR (recorded_at, id) > ($2::timestamptz, $3::text))
@@ -3569,6 +3713,7 @@ export class PostgresCoreRepository {
       obligationId: row.obligation_id,
       sourceFinality: row.source_finality,
       payloadHash: row.payload_hash,
+      payload: clone(row.payload),
       occurredAt: timestamp(row.occurred_at),
       recordedAt: timestamp(row.recorded_at),
       schemaVersion: row.schema_version
@@ -4652,6 +4797,12 @@ export class PostgresCoreRepository {
       case CoreProjectionType.PROVIDER_CALLBACK_INBOX:
         value = await this.getProviderCallbackInbox(entityId);
         break;
+      case CoreProjectionType.METERED_USAGE_EVIDENCE:
+        value = await this.getMeteredUsageEvidence(entityId);
+        break;
+      case CoreProjectionType.METERED_USAGE_ADMISSION:
+        value = await this.getMeteredUsageAdmission(entityId);
+        break;
       case CoreProjectionType.SPEND_POLICY:
         value = await this.getSpendPolicy(entityId);
         break;
@@ -4869,6 +5020,10 @@ export class PostgresCoreRepository {
         return this.#writeProviderIntentAcknowledgement(client, value);
       case CoreProjectionType.PROVIDER_CALLBACK_INBOX:
         return this.#writeProviderCallbackInbox(client, value);
+      case CoreProjectionType.METERED_USAGE_EVIDENCE:
+        return this.#writeMeteredUsageEvidence(client, value);
+      case CoreProjectionType.METERED_USAGE_ADMISSION:
+        return this.#writeMeteredUsageAdmission(client, value);
       case CoreProjectionType.SPEND_POLICY:
         return this.#writeSpendPolicy(client, value, occurredAt);
       case CoreProjectionType.SPEND_REQUEST:
@@ -6048,6 +6203,96 @@ export class PostgresCoreRepository {
     );
     if (result.rowCount !== 1) {
       throw projectionConflict(CoreProjectionType.PROVIDER_CALLBACK_INBOX, value.callbackId);
+    }
+  }
+
+  async #writeMeteredUsageEvidence(client, value) {
+    const result = await client.query(
+      `INSERT INTO metered_usage_evidence(
+         id, evidence_hash, provider_event_id, nonce_hash,
+         correction_of_usage_evidence_id, subject_id,
+         principal_id, mandate_id, facility_id, authorization_id, obligation_id,
+         provider_id, resource_class, measurement_unit, quantity,
+         price_schedule_hash, unit_price_minor, charge_minor, asset_id,
+         window_started_at, window_ended_at, observed_at, provider_key_id,
+         provider_payload_hash, record, sandbox_only, production_funds_moved
+       ) VALUES (
+         $1, $2, $3, $4, $5,
+         $6, $7, $8, $9, $10, $11,
+         $12, $13, $14, $15,
+         $16, $17, $18, $19,
+         $20, $21, $22, $23,
+         $24, $25::jsonb, $26, $27
+       )
+       RETURNING id`,
+      [
+        value.usageEvidenceId,
+        value.usageEvidenceHash,
+        value.providerEventId,
+        hashId("metered_usage_nonce", value.nonce),
+        value.correctionOfUsageEvidenceId,
+        value.subjectId,
+        value.principalId,
+        value.mandateId,
+        value.facilityId,
+        value.authorizationId,
+        value.obligationId,
+        value.providerId,
+        value.resourceClass,
+        value.measurementUnit,
+        value.quantity,
+        value.priceScheduleHash,
+        value.unitPriceMinor,
+        value.chargeMinor,
+        value.assetId,
+        value.windowStartedAt,
+        value.windowEndedAt,
+        value.observedAt,
+        value.providerKeyId,
+        value.providerPayloadHash,
+        json(value),
+        value.sandboxOnly,
+        value.productionFundsMoved
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.METERED_USAGE_EVIDENCE, value.usageEvidenceId);
+    }
+  }
+
+  async #writeMeteredUsageAdmission(client, value) {
+    const result = await client.query(
+      `INSERT INTO metered_usage_admissions(
+         id, admission_hash, usage_evidence_id, policy_id, policy_hash,
+         obligation_id, charge_minor, charge_delta_minor, window_charge_before_minor,
+         window_charge_after_minor, record, sandbox_only,
+         production_funds_moved, admitted_at
+       ) VALUES (
+         $1, $2, $3, $4, $5,
+         $6, $7, $8, $9,
+         $10, $11::jsonb, $12,
+         $13, $14
+       )
+       RETURNING id`,
+      [
+        value.meteredUsageAdmissionId,
+        value.admissionHash,
+        value.usageEvidenceId,
+        value.policyId,
+        value.policyHash,
+        value.obligationId,
+        value.chargeMinor,
+        value.chargeDeltaMinor,
+        value.windowChargeBeforeMinor,
+        value.windowChargeAfterMinor,
+        json(value),
+        value.sandboxOnly,
+        value.productionFundsMoved,
+        value.admittedAt
+      ]
+    );
+    if (result.rowCount !== 1) {
+      throw projectionConflict(CoreProjectionType.METERED_USAGE_ADMISSION, value.meteredUsageAdmissionId);
     }
   }
 
