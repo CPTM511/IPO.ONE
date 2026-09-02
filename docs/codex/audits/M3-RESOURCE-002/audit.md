@@ -8,6 +8,8 @@ Baseline: `2c6d2493b1ab514b4ae1a8628ed00fc4f9d21036`
 
 Implementation: `18cbdea64a7168b60633d3ce81a29f6b9669d3ff`
 
+Security follow-up: `25d87d77877c454e8a7a565d66737ff3a1fd3eb6`
+
 This record accepts the local runtime integration and co-equal product
 acceptance for the single Founder-authorized synthetic Metered Usage profile.
 It grants no deployment, external Provider, production credential, pricing or
@@ -78,6 +80,7 @@ Metered Usage receipt and 17-event timeline.
 | Gate | Result |
 | --- | --- |
 | Focused Agent/runtime/Provider suites | PASS `26/26` |
+| Production dependency audit | PASS; `fast-uri` patched from `3.1.5` to `3.1.6`, no known vulnerabilities |
 | PostgreSQL/RLS integration | PASS `95/95` |
 | Root JavaScript suite | PASS `1262/1262` |
 | Foundry contracts | PASS `25`; `2` explicit fork-only tests skipped |

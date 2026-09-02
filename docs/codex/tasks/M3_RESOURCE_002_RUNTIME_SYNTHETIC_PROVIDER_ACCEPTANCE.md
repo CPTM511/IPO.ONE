@@ -6,6 +6,8 @@ Baseline: `2c6d2493b1ab514b4ae1a8628ed00fc4f9d21036`
 
 Implementation: `18cbdea64a7168b60633d3ce81a29f6b9669d3ff`
 
+Security follow-up: `25d87d77877c454e8a7a565d66737ff3a1fd3eb6`
+
 Evidence: `docs/codex/audits/M3-RESOURCE-002/audit.md`
 
 Requirements: `REQ-EXEC-002`, `REQ-EXEC-005`, `REQ-CREDIT-005..009`,
