@@ -95,6 +95,10 @@ assert.match(
   dockerignore,
   /^!deploy\/local\/private-pilot-profile\.v1\.json$/m
 );
+assert.match(
+  dockerignore,
+  /^!deploy\/approvals\/public-authenticated-no-funds-beta\.pending\.json$/m
+);
 assert.match(dockerignore, /^\.ipo-one$/m);
 assert.match(localStackScript, /hostAgentPID/);
 assert.match(localStackScript, /limaHostAgentOwnsProductPorts/);
