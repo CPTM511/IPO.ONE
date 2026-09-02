@@ -22,7 +22,9 @@ const [
   localProfile,
   evidenceAnchorCompose,
   localEvidenceAnchor,
-  localReleaseIdentity
+  localReleaseIdentity,
+  localSyntheticMeteredProvider,
+  localMeteredUsage
 ] = await Promise.all([
   source("deploy/local/stack.v1.json"),
   source("deploy/local/compose.yaml"),
@@ -39,7 +41,9 @@ const [
   source("deploy/local/private-pilot-profile.v1.json"),
   source("deploy/local/evidence-anchor.compose.yaml"),
   source("scripts/local-evidence-anchor.mjs"),
-  source("scripts/local-release-identity.mjs")
+  source("scripts/local-release-identity.mjs"),
+  source("apps/private-pilot/src/local-synthetic-metered-provider.js"),
+  source("apps/private-pilot/src/local-metered-usage.js")
 ]);
 
 const stack = parseLocalStack(stackText);
@@ -72,6 +76,8 @@ assert.match(
 );
 assert.match(privatePilotDatabase, /seedCapitalPartnerProfile/);
 assert.match(compose, /IPO_ONE_PILOT_PROFILE_FILE: \/app\/deploy\/local\/private-pilot-profile\.v1\.json/g);
+assert.match(compose, /IPO_ONE_LOCAL_METERED_PROVIDER_KEY_FILE: \/run\/secrets\/metered-provider-key\.v1\.json/);
+assert.match(compose, /metered-provider-key\.v1\.json:\/run\/secrets\/metered-provider-key\.v1\.json:ro/);
 assert.match(
   compose,
   /BUILD_REVISION: \$\{IPO_ONE_M1_B_RELEASE_SHA:-local-stack\}/
@@ -111,6 +117,7 @@ assert.match(localStackScript, /IPO_ONE_M1_B_RELEASE_SHA=/);
 assert.match(localStackScript, /IPO_ONE_M1_B_PORT_BASE=/);
 assert.match(localStackScript, /IPO_ONE_M1_B_BUILD_CONTEXT=/);
 assert.match(localStackScript, /prepareLocalReleaseBuildContext/);
+assert.match(localStackScript, /loadOrCreateLocalSyntheticMeteredProviderMaterial/);
 assert.match(localReleaseIdentity, /requested SHA/);
 assert.match(localReleaseIdentity, /requires a clean source worktree/);
 assert.match(localAcceptance, /authenticationOptions\.profile,\s*"local_no_funds"/);
@@ -145,6 +152,14 @@ assert.equal(
   "node scripts/local-agent.mjs prove"
 );
 assert.equal(manifest.scripts["local:agent"], "node scripts/local-agent.mjs run");
+assert.equal(
+  manifest.scripts["local:metered-usage"],
+  "node apps/private-pilot/src/local-metered-usage.js"
+);
+assert.match(localSyntheticMeteredProvider, /Ed25519|ed25519/i);
+assert.match(localSyntheticMeteredProvider, /quantity conflicts with the finalized Evidence/);
+assert.match(localMeteredUsage, /I_UNDERSTAND_LOCAL_SYNTHETIC_METERED_USAGE_ONLY/);
+assert.doesNotMatch(localMeteredUsage, /privateKeyDer/);
 assert.equal(
   manifest.scripts["local:evidence-attestor:init"],
   "node scripts/local-evidence-anchor.mjs init"

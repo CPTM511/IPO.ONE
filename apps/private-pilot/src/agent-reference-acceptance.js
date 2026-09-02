@@ -17,8 +17,10 @@ import {
 import {
   persistLocalAgentContinuationReceipt,
   runLocalAgentApplicationWorkflow,
+  runLocalAgentMeteredRuntimeWorkflow,
   runLocalAgentRuntimeWorkflow
 } from "./agent-reference-workflows.js";
+import { runLocalSyntheticMeteredUsage } from "./local-metered-usage.js";
 import {
   deriveReferenceAgentAcceptanceSecret,
   loadReferenceAgentAcceptanceScope,
@@ -967,11 +969,23 @@ try {
     manifest: runtimeHandoff,
     networkSource: "local_reference_agent_runtime"
   });
-  const lifecycle = await runLocalAgentRuntimeWorkflow({
-    manifest: runtimeHandoff,
-    offerReceipt,
-    session: agentSession
-  });
+  const meteredRunId = process.env.IPO_ONE_LOCAL_METERED_USAGE_RUN_ID;
+  const lifecycle = meteredRunId
+    ? await runLocalAgentMeteredRuntimeWorkflow({
+        manifest: runtimeHandoff,
+        offerReceipt,
+        session: agentSession,
+        admitMeteredUsage: () => runLocalSyntheticMeteredUsage({
+          databaseUrl: process.env.DATABASE_URL,
+          runId: meteredRunId,
+          quantity: process.env.IPO_ONE_LOCAL_METERED_USAGE_QUANTITY ?? "250"
+        })
+      })
+    : await runLocalAgentRuntimeWorkflow({
+        manifest: runtimeHandoff,
+        offerReceipt,
+        session: agentSession
+      });
   if (
     lifecycle.status !== "evidence_read" ||
     lifecycle.workflowReceipt.status !== "repayment_posted" ||
@@ -1067,7 +1081,7 @@ try {
   }
 } catch (error) {
   process.stderr.write(
-    `Local Agent acceptance failed: ${error?.code ?? error?.message ?? "unknown"}\n`
+    `Local Agent acceptance failed: ${error?.code ?? "unknown"}: ${error?.message ?? "unknown"}\n`
   );
   process.exitCode = 1;
 } finally {

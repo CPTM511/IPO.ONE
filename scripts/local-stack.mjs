@@ -18,6 +18,9 @@ import {
   loadLocalAuthenticationServerMaterial
 } from "../apps/private-pilot/src/local-authentication-material.js";
 import {
+  loadOrCreateLocalSyntheticMeteredProviderMaterial
+} from "../apps/private-pilot/src/local-synthetic-metered-provider.js";
+import {
   assertExactLocalReleaseSource,
   prepareLocalReleaseBuildContext,
   resolveLocalReviewPorts,
@@ -49,6 +52,10 @@ const AUTHENTICATION_INVITATION_FILE = resolve(
 const AGENT_KEY_FILE = resolve(
   SECRET_DIRECTORY,
   "agent-key.v1.json"
+);
+const METERED_PROVIDER_KEY_FILE = resolve(
+  SECRET_DIRECTORY,
+  "metered-provider-key.v1.json"
 );
 const LIMA_CONFIG = resolve(homedir(), ".lima", INSTANCE, "lima.yaml");
 const releaseIdentity = resolveLocalReleaseIdentity();
@@ -212,6 +219,9 @@ async function ensureLocalSecrets() {
     fail("existing local stack environment does not match the closed contract");
   }
   await chmod(ENV_FILE, 0o600);
+  await loadOrCreateLocalSyntheticMeteredProviderMaterial(
+    METERED_PROVIDER_KEY_FILE
+  );
 }
 
 async function ensureLocalAuthentication({ invitedWalletAddress, required }) {

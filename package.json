@@ -143,6 +143,7 @@
     "local:agent:application": "node scripts/local-agent.mjs application",
     "local:agent:runtime": "node scripts/local-agent.mjs runtime",
     "local:agent:acceptance": "node scripts/local-agent-reference-acceptance.mjs",
+    "local:metered-usage": "node apps/private-pilot/src/local-metered-usage.js",
     "local:restart": "node scripts/local-stack.mjs restart",
     "local:down": "node scripts/local-stack.mjs down",
     "local:vm:stop": "node scripts/local-stack.mjs vm-stop",

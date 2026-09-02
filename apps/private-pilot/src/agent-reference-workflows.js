@@ -364,3 +364,125 @@ export async function runLocalAgentRuntimeWorkflow({
     evidence
   };
 }
+
+export async function runLocalAgentMeteredRuntimeWorkflow({
+  manifest,
+  offerReceipt,
+  session,
+  admitMeteredUsage
+}) {
+  if (typeof admitMeteredUsage !== "function") {
+    throw new DomainError(
+      "invalid_local_metered_workflow",
+      "local Metered Usage admission callback is required"
+    );
+  }
+  const transport = createLocalAgentMcpTransport({ handle: session.host.handle });
+  const input = createLocalAgentRuntimeInput(manifest, offerReceipt);
+  const suffix = workflowSuffix(manifest);
+  const correlationId = `correlation-agent-metered-${suffix}`;
+  const acceptance = await transport.execute({
+    schemaVersion: "tenant_protocol_request.v1",
+    operationId: "pilotAcceptCreditOffer",
+    payload: {
+      expectedOfferHash: offerReceipt.offer.creditOfferHash,
+      expectedTermsHash: offerReceipt.offer.termsHash,
+      acknowledgementHash: input.acknowledgementHash
+    },
+    resource: {
+      resourceType: "credit_offer",
+      resourceId: offerReceipt.offer.creditOfferId
+    },
+    idempotencyKey: `idempotency-agent-metered-${suffix}-01`,
+    requestId: `request-agent-metered-${suffix}-01`,
+    correlationId
+  });
+  const obligationId = acceptance.response.obligation.obligationId;
+  const execution = await transport.execute({
+    schemaVersion: "tenant_protocol_request.v1",
+    operationId: "pilotExecuteSandboxObligation",
+    payload: {
+      providerId: manifest.authority.allowedProviderIds[0],
+      providerCategory: manifest.authority.allowedCategories[0]
+    },
+    resource: { resourceType: "obligation", resourceId: obligationId },
+    idempotencyKey: `idempotency-agent-metered-${suffix}-02`,
+    requestId: `request-agent-metered-${suffix}-02`,
+    correlationId
+  });
+  const meteredUsage = await admitMeteredUsage({
+    obligationId,
+    execution: execution.response
+  });
+  if (
+    meteredUsage?.status !== "passed" ||
+    meteredUsage.obligationId !== obligationId ||
+    meteredUsage.sandboxOnly !== true ||
+    meteredUsage.productionFundsMoved !== false
+  ) {
+    throw new DomainError(
+      "local_metered_workflow_admission_failed",
+      "local Metered Usage admission did not produce a bounded receipt"
+    );
+  }
+  const meteredEvidenceTransport = createLocalAgentMcpTransport({
+    handle: session.host.handle
+  });
+  const meteredEvidenceClient = new IpoOneAgentEvidenceClient({
+    execute: meteredEvidenceTransport.execute.bind(meteredEvidenceTransport),
+    manifest,
+    transportProfile: "local_in_process"
+  });
+  const meteredEvidence = await meteredEvidenceClient.readObligationEvidence({
+    obligationId,
+    limit: 50,
+    requestId: `request-agent-metered-${suffix}-03`,
+    correlationId
+  });
+  const repayment = await transport.execute({
+    schemaVersion: "tenant_protocol_request.v1",
+    operationId: "pilotPostSandboxRepayment",
+    payload: input.repayment,
+    resource: { resourceType: "obligation", resourceId: obligationId },
+    idempotencyKey: `idempotency-agent-metered-${suffix}-04`,
+    requestId: `request-agent-metered-${suffix}-04`,
+    correlationId
+  });
+  const evidenceClient = new IpoOneAgentEvidenceClient({
+    execute: transport.execute.bind(transport),
+    manifest,
+    transportProfile: "local_in_process"
+  });
+  const finalEvidence = await evidenceClient.readObligationEvidence({
+    obligationId,
+    limit: 50,
+    requestId: `request-agent-metered-${suffix}-05`,
+    correlationId
+  });
+  return Object.freeze({
+    schemaVersion: "local_agent_metered_reference_workflow_result.v1",
+    status: "evidence_read",
+    sandboxOnly: true,
+    productionFundsMoved: false,
+    workflowReceipt: Object.freeze({
+      schemaVersion: "local_agent_metered_obligation_workflow_receipt.v1",
+      status: "repayment_posted",
+      mandateId: manifest.mandateId,
+      creditIntentId: offerReceipt.offer.creditIntentId,
+      creditOfferId: offerReceipt.offer.creditOfferId,
+      obligation: repayment.response.obligation,
+      executionReceipt: execution.response.executionReceipt,
+      repayment: repayment.response.repayment,
+      sandboxOnly: true,
+      productionFundsMoved: false
+    }),
+    mcpReceipt: transport.createReceipt({
+      obligationId,
+      providerId: manifest.authority.allowedProviderIds[0],
+      providerCategory: manifest.authority.allowedCategories[0]
+    }),
+    meteredUsage,
+    meteredEvidence,
+    evidence: finalEvidence
+  });
+}

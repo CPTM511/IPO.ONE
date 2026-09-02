@@ -57,6 +57,10 @@ import {
   createPostgresSecuredPoolMarketProvider
 } from "./secured-pool-market-provider.js";
 import {
+  createLocalSyntheticMeteredProvider,
+  loadOrCreateLocalSyntheticMeteredProviderMaterial
+} from "./local-synthetic-metered-provider.js";
+import {
   loadLocalAgentKeyMaterial,
   loadLocalAuthenticationInvitation,
   loadLocalAuthenticationServerMaterial
@@ -96,7 +100,8 @@ function createGateway(
   authentication,
   {
     credentialRegistry = authentication.credentialRegistry,
-    referenceHasher = authentication.referenceHasher
+    referenceHasher = authentication.referenceHasher,
+    meteredUsageProvider
   } = {}
 ) {
   const durableGateway = new TenantCommandGateway({
@@ -108,6 +113,14 @@ function createGateway(
           new HyperliquidBindingProofVerifier(),
         walletExecutionApplication: createPostgresWalletExecutionApplication(),
         venueExecutionApplication: createPostgresVenueExecutionApplication(),
+        ...(meteredUsageProvider === undefined
+          ? {}
+          : {
+              meteredUsagePolicyResolver:
+                meteredUsageProvider.resolvePolicy,
+              meteredUsageSignatureVerifier:
+                meteredUsageProvider.verifySignature
+            }),
         securedPoolDeploymentProfile:
           launchPolicy.profiles.live_testnet_secured_pool.exactProfile
       })
@@ -204,8 +217,11 @@ export async function createPrivatePilotRuntime({
   }
   assertPort("basePort", basePort);
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
-  const authentication = createLocalPilotIdentities({ profile: checkedProfile });
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
+  const authentication = createLocalPilotIdentities({
+    profile: checkedProfile,
+    referenceHashKey: Buffer.from(password, "base64url")
+  });
   const [serverMaterial, invitation] =
     await loadLocalDurableAuthenticationMaterial();
   const localAgentKey = await loadLocalAgentKeyMaterial(
@@ -213,6 +229,9 @@ export async function createPrivatePilotRuntime({
   );
   const localAgentAccount = derivePrivatePilotAgentAccount(password, {
     tenantId: authentication.profile.tenantId
+  });
+  const meteredUsageProvider = createLocalSyntheticMeteredProvider({
+    keyMaterial: await loadOrCreateLocalSyntheticMeteredProviderMaterial()
   });
   const pool = await provisionPrivatePilotDatabase({
     ownerConnectionString,
@@ -263,7 +282,8 @@ export async function createPrivatePilotRuntime({
         humanAccessProfiles[0].humanAccess.credentialRegistry,
       referenceHasher: createReferenceHasher(
         durableAuthentication.referenceHashKey
-      )
+      ),
+      meteredUsageProvider
     });
     const evidenceAnchors = evidenceAnchorContractAddress
       ? Object.freeze({
@@ -432,6 +452,11 @@ export async function createPrivatePilotRuntime({
       address: localAgentAccount.address,
       accountIds: localAgentAccount.accountIds
     }),
+    meteredUsageProvider: Object.freeze({
+      providerId: meteredUsageProvider.providerId,
+      providerKeyId: meteredUsageProvider.providerKeyId,
+      priceScheduleHash: meteredUsageProvider.priceScheduleHash
+    }),
     pool,
     workspaces: Object.freeze(hosts.map(({ name, address, hash }) => Object.freeze({
       name,
@@ -494,8 +519,14 @@ export async function createPrivatePilotGateway(
   } = {}
 ) {
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
-  const authentication = createLocalPilotIdentities({ profile: checkedProfile });
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
+  const authentication = createLocalPilotIdentities({
+    profile: checkedProfile,
+    referenceHashKey: Buffer.from(password, "base64url")
+  });
+  const meteredUsageProvider = createLocalSyntheticMeteredProvider({
+    keyMaterial: await loadOrCreateLocalSyntheticMeteredProviderMaterial()
+  });
   const pool = await provisionPrivatePilotDatabase({
     ownerConnectionString,
     identities: authentication.identities,
@@ -505,7 +536,8 @@ export async function createPrivatePilotGateway(
   });
   return Object.freeze({
     authentication,
-    gateway: createGateway(pool, authentication),
+    gateway: createGateway(pool, authentication, { meteredUsageProvider }),
+    meteredUsageProvider,
     pool
   });
 }
@@ -521,10 +553,14 @@ export async function createPrivatePilotDurableAgentGateway(
   } = {}
 ) {
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
-  const authentication = createLocalPilotIdentities({
-    profile: checkedProfile
-  });
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
+  const authentication = createLocalPilotIdentities({
+    profile: checkedProfile,
+    referenceHashKey: Buffer.from(password, "base64url")
+  });
+  const meteredUsageProvider = createLocalSyntheticMeteredProvider({
+    keyMaterial: await loadOrCreateLocalSyntheticMeteredProviderMaterial()
+  });
   const [serverMaterial, invitation] =
     await loadLocalDurableAuthenticationMaterial();
   const pool = await provisionPrivatePilotDatabase({
@@ -556,8 +592,10 @@ export async function createPrivatePilotDurableAgentGateway(
         credentialRegistry: humanAccess.credentialRegistry,
         referenceHasher: createReferenceHasher(
           durableAuthentication.referenceHashKey
-        )
+        ),
+        meteredUsageProvider
       }),
+      meteredUsageProvider,
       pool,
       authenticationPool: durableAuthentication.pool,
       agentAuthenticator: new LocalDurableAgentAuthenticator({
