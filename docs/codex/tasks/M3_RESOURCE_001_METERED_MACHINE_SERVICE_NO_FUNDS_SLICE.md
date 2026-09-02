@@ -1,8 +1,10 @@
 # M3-RESOURCE-001 — Metered machine-service no-funds vertical slice
 
-Status: `IN PROGRESS — L0 LOCAL NO-FUNDS ONLY`
+Status: `PASS — L0 LOCAL NO-FUNDS VERIFIED`
 
 Baseline: `475b7baa6b65fc5d439e79d1fd07da4c4794e590`
+
+Implementation: `b3cdfe9e5f242a785752ffee3036e6b6d638f8b8`
 
 Requirements: `REQ-EXEC-002`, `REQ-EXEC-005`, `REQ-CREDIT-005..009`,
 `REQ-PAY-001..002`, `REQ-EVID-001..002`, `REQ-PRIV-001`, `REQ-AUTO-001`
@@ -71,3 +73,32 @@ correction, restart/RLS and Web/API/MCP parity; reconciliation; zero scoped
 P0/P1; explicit `sandboxOnly=true` and `productionFundsMoved=false`.
 
 Permission/funds/deployment impact: **none**.
+
+## Completion Evidence
+
+The implementation and acceptance record is bound in
+`docs/codex/audits/M3-RESOURCE-001/audit.md`.
+
+- Migration head: `0073_metered_usage_evidence` (`73` ordered up/down pairs).
+- Contracts: `147` JSON Schemas and `115` closed Tenant operations.
+- Exact synthetic profile: one Provider, `inference_tokens`, `token`, one
+  accepted price schedule and one existing Agent/Principal obligation path.
+- Positive signed admission, byte-stable replay, conflicting duplicate denial,
+  cross-Tenant/RLS denial, additive negative correction, immutable original
+  Evidence, restart recovery, balanced Ledger, reconciliation and repayment
+  all passed against PostgreSQL 17.
+- Principal Web and Agent API/MCP consume the same bounded owned-Evidence
+  result and expose the same review action.
+- Full `pnpm check`: PASS, including `1257/1257` ordinary tests, security,
+  transport, PostgreSQL, schema, protocol, migration, traceability, Web bundle,
+  contract and local-stack checks.
+- Runtime flags remain `sandboxOnly=true`, `productionFundsMoved=false` and
+  `realFundsEnabled=false`; no external Provider or Venue mutation occurred.
+
+`M3-RESOURCE-002` is not an active implementation blocker: its proposed
+co-equal Principal Web and Agent API/MCP acceptance scope was deliberately
+completed in this same issue-sized slice to avoid a second product path. Stop
+again before deployment, external Provider integration, another resource
+profile, production credentials or any real-value authority.
+
+Final verdict: `PASS — L0 LOCAL NO-FUNDS VERIFIED`.
