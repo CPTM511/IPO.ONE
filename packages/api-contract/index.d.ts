@@ -61,6 +61,7 @@ export type TenantProtocolOperationId =
   | "pilotWriteOffSandboxObligation"
   | "workerAdvanceSandboxServicing"
   | "workerProcessInbox"
+  | "workerAdmitMeteredUsage"
   | "tradingCreateAccountBindingChallenge"
   | "tradingImportHyperliquidHistory"
   | "tradingFinalizeEvidenceSnapshot"
@@ -1306,6 +1307,50 @@ export interface ProcessProviderInboxRequest extends TenantProtocolRequestBase {
   idempotencyKey: string;
 }
 
+export interface MeteredUsageEvidence {
+  usageEvidenceId: string;
+  usageEvidenceHash: string;
+  providerEventId: string;
+  nonce: string;
+  correctionOfUsageEvidenceId: string | null;
+  tenantId: string;
+  subjectId: string;
+  principalId: string;
+  mandateId: string;
+  facilityId: string;
+  authorizationId: string;
+  obligationId: string;
+  providerId: string;
+  resourceClass: "inference_tokens";
+  measurementUnit: "token";
+  quantity: string;
+  priceScheduleHash: string;
+  unitPriceMinor: string;
+  chargeMinor: string;
+  assetId: string;
+  windowStartedAt: string;
+  windowEndedAt: string;
+  observedAt: string;
+  finality: "pending" | "finalized";
+  reconciliation: "pending" | "reconciled" | "disputed";
+  providerKeyId: string;
+  providerPayloadHash: string;
+  sandboxOnly: true;
+  productionFundsMoved: false;
+  schemaVersion: "metered_usage_evidence.v1";
+}
+
+export interface AdmitMeteredUsageRequest extends TenantProtocolRequestBase {
+  operationId: "workerAdmitMeteredUsage";
+  payload: {
+    evidence: MeteredUsageEvidence;
+    expectedPolicyHash: string;
+    providerSignature: string;
+  };
+  resource: { resourceType: "obligation"; resourceId: string };
+  idempotencyKey: string;
+}
+
 export interface CreateTradingAccountBindingChallengeRequest extends TenantProtocolRequestBase {
   operationId: "tradingCreateAccountBindingChallenge";
   payload: {
@@ -1975,6 +2020,7 @@ export type TenantProtocolRequest =
   | ReadPilotCaseQueueRequest
   | TransitionPilotCaseRequest
   | ProcessProviderInboxRequest
+  | AdmitMeteredUsageRequest
   | CreateTradingAccountBindingChallengeRequest
   | ImportTradingHistoryRequest
   | FinalizeTradingEvidenceSnapshotRequest
@@ -3118,6 +3164,28 @@ export interface ObligationEvidenceSummary {
   payloadHash: string;
   occurredAt: string;
   recordedAt: string;
+  meteredUsage?: {
+    usageEvidenceId: string;
+    usageEvidenceHash: string;
+    correctionOfUsageEvidenceId: string | null;
+    meteredUsageAdmissionId: string;
+    admissionHash: string;
+    providerId: string;
+    resourceClass: "inference_tokens";
+    measurementUnit: "token";
+    quantity: string;
+    chargeMinor: string;
+    chargeDeltaMinor: string;
+    assetId: string;
+    policyHash: string;
+    ledgerTransactionId: string;
+    finality: "finalized";
+    reconciliation: "reconciled";
+    nextAction: "review_metered_usage_receipt";
+    sandboxOnly: true;
+    productionFundsMoved: false;
+    schemaVersion: "metered_usage_evidence_summary.v1";
+  };
   schemaVersion: "obligation_evidence_summary.v1";
 }
 
@@ -3324,6 +3392,38 @@ export interface ProviderSandboxCallbackResultResponse {
   productionFundsMoved: false;
   withdrawable: false;
   schemaVersion: "provider_sandbox_callback_result.v1";
+}
+
+export interface MeteredUsageAdmission {
+  meteredUsageAdmissionId: string;
+  admissionHash: string;
+  policyId: string;
+  policyHash: string;
+  usageEvidenceId: string;
+  usageEvidenceHash: string;
+  correctionOfUsageEvidenceId: string | null;
+  obligationId: string;
+  chargeMinor: string;
+  chargeDeltaMinor: string;
+  windowChargeBeforeMinor: string;
+  windowChargeAfterMinor: string;
+  admittedAt: string;
+  sandboxOnly: true;
+  productionFundsMoved: false;
+  schemaVersion: "metered_usage_admission.v1";
+}
+
+export interface MeteredUsageAdmittedResponse {
+  evidence: MeteredUsageEvidence;
+  admission: MeteredUsageAdmission;
+  spendRequestId: string | null;
+  ledgerTransactionId: string;
+  obligationId: string;
+  facilityId: string;
+  nextAction: "review_metered_usage_receipt";
+  sandboxOnly: true;
+  productionFundsMoved: false;
+  schemaVersion: "tenant_metered_usage_admitted.v1";
 }
 
 export interface CreditPassportReasonLineage {
@@ -4947,6 +5047,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotReadCaseQueue", PilotCaseQueueResponse>
   | TenantProtocolResultBase<"pilotTransitionCase", PilotCaseTransitionedResponse>
   | TenantProtocolResultBase<"workerProcessInbox", ProviderSandboxCallbackResultResponse>
+  | TenantProtocolResultBase<"workerAdmitMeteredUsage", MeteredUsageAdmittedResponse>
   | TenantProtocolResultBase<"tradingCreateAccountBindingChallenge", TradingRealBindingChallengeResponse>
   | TenantProtocolResultBase<"tradingImportHyperliquidHistory", TradingRealCreditProfileResponse>
   | TenantProtocolResultBase<"tradingFinalizeEvidenceSnapshot", TradingRealCreditProfileResponse>
@@ -5989,6 +6090,16 @@ export type TenantProtocolOperation =
       "required",
       "worker",
       "provider_sandbox_callback_result.v1"
+    >
+  | TenantProtocolOperationBase<
+      "workerAdmitMeteredUsage",
+      "command",
+      readonly ["system_worker"],
+      "obligation",
+      "worker.metered_usage.admit",
+      "required",
+      "worker",
+      "tenant_metered_usage_admitted.v1"
     >
   | TenantProtocolOperationBase<
       "pilotReadOwnSecuredPool",

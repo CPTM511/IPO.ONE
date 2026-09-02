@@ -324,6 +324,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
     "workerPublishOutbox",
     "workerExpireApproval",
     "workerProcessInbox",
+    "workerAdmitMeteredUsage",
     "workerAdvanceSandboxServicing",
     "tradingRunSettlement"
   ]

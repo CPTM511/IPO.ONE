@@ -439,3 +439,20 @@ runtime implementation. The current product, launch policy, production
 deployment and real-value gates remain unchanged.
 
 Permission/funds/deployment impact: **none**.
+
+## 17. Subsequent execution record
+
+After this alignment was accepted, Product Constitution v1.5 ratified
+`REQ-EXEC-005` and `DEC-METERED-RESOURCE-CREDIT-001`, and the Founder separately
+authorized the single L0 local no-funds implementation. `M3-RESOURCE-001`
+completed at `b3cdfe9e5f242a785752ffee3036e6b6d638f8b8` with migration head
+`0073_metered_usage_evidence`.
+
+The proposed `M3-RESOURCE-002` Principal Web and Agent API/MCP acceptance work
+was completed inside the same issue-sized vertical slice instead of creating a
+second product path. The exact local verdict and Evidence are recorded in
+`docs/codex/tasks/M3_RESOURCE_001_METERED_MACHINE_SERVICE_NO_FUNDS_SLICE.md`
+and `docs/codex/audits/M3-RESOURCE-001/audit.md`.
+
+This later record does not rewrite the authority available when M3-000 was
+authored and grants no deployment, external Provider or real-value authority.

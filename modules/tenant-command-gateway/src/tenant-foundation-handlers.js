@@ -22,6 +22,7 @@ import { createClosedPilotReadinessHandlers } from "./closed-pilot-readiness-han
 import { createServicingQueueQueryHandlers } from "./servicing-queue-query-handlers.js";
 import { createSecuredPoolWorkspaceHandlers } from "./secured-pool-workspace-handlers.js";
 import { createProviderHandlers } from "./provider-handlers.js";
+import { createMeteredUsageHandlers } from "./metered-usage-handlers.js";
 import { createSandboxServicingHandlers } from "./servicing-handlers.js";
 import { createSubjectRiskHandlers } from "./subject-risk-handlers.js";
 import { createTenantRiskQueryHandlers } from "./tenant-risk-query-handlers.js";
@@ -76,6 +77,7 @@ export function createTenantFoundationHandlers(options) {
     ...createHumanConsentHandlers(),
     ...createMandateHandlers(),
     ...createProviderHandlers(options),
+    ...createMeteredUsageHandlers(options),
     ...createSandboxServicingHandlers(),
     ...createSubjectRiskHandlers(),
     ...createRiskWorkspaceReferenceHandlers(),

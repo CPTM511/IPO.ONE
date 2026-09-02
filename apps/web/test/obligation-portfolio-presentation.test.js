@@ -107,6 +107,43 @@ test("history marks correction, resolution and invalidated observations explicit
   assert.equal(result.history.correctionsAreExplicit, true);
 });
 
+test("Principal portfolio keeps a redacted Metered Usage receipt in the shared Evidence history", () => {
+  const evidence = evidenceFor();
+  const source = structuredClone(evidence.items[0]);
+  evidence.items = [{
+    ...source,
+    evidenceId: "event_metered_usage_admitted",
+    eventType: "metered_usage_admitted",
+    meteredUsage: {
+      usageEvidenceId: "usage_metered_web_001",
+      usageEvidenceHash: `0x${"1".repeat(64)}`,
+      correctionOfUsageEvidenceId: null,
+      meteredUsageAdmissionId: "metered_usage_admission_web_001",
+      admissionHash: `0x${"2".repeat(64)}`,
+      providerId: "provider_metered_web_001",
+      resourceClass: "inference_tokens",
+      measurementUnit: "token",
+      quantity: "250",
+      chargeMinor: "500",
+      chargeDeltaMinor: "500",
+      assetId: "iso4217:USD",
+      policyHash: `0x${"3".repeat(64)}`,
+      ledgerTransactionId: "ledger_transaction_metered_web_001",
+      finality: "finalized",
+      reconciliation: "reconciled",
+      nextAction: "review_metered_usage_receipt",
+      sandboxOnly: true,
+      productionFundsMoved: false,
+      schemaVersion: "metered_usage_evidence_summary.v1"
+    }
+  }];
+  const result = createObligationPortfolioPresentation(input({ evidence }));
+  assert.equal(result.history.items[0].meteredUsage.quantity, "250");
+  assert.equal(result.history.items[0].meteredUsage.chargeMinor, "500");
+  assert.equal(result.history.items[0].meteredUsage.nextAction, "review_metered_usage_receipt");
+  assert.equal(result.history.items[0].meteredUsage.productionFundsMoved, false);
+});
+
 test("unqueried Evidence remains explicit and does not invent history", () => {
   const result = createObligationPortfolioPresentation(input({ evidence: null }));
   assert.equal(result.history.queried, false);

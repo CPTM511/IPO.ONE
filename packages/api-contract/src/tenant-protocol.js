@@ -22,6 +22,9 @@ import tradingFacilityCloseRequestSchema from "../../../schemas/v2/trading-facil
 import tradingSettlementSchema from "../../../schemas/v2/trading-settlement.schema.json" with { type: "json" };
 import tradingPerformanceProofSchema from "../../../schemas/v2/trading-performance-proof.schema.json" with { type: "json" };
 import agentSecuredFacilityAuthorizationSchema from "../../../schemas/v2/agent-secured-facility-authorization.schema.json" with { type: "json" };
+import meteredUsageEvidenceSchema from "../../../schemas/v2/metered-usage-evidence.schema.json" with { type: "json" };
+import meteredUsageAdmissionSchema from "../../../schemas/v2/metered-usage-admission.schema.json" with { type: "json" };
+import tenantMeteredUsageAdmittedSchema from "../../../schemas/v2/tenant-metered-usage-admitted.schema.json" with { type: "json" };
 import catalogSchema from "../../../schemas/v2/tenant-protocol-catalog.schema.json" with { type: "json" };
 import requestSchema from "../../../schemas/v2/tenant-protocol-request.schema.json" with { type: "json" };
 import resultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
@@ -77,6 +80,9 @@ ajv.addSchema(tradingFacilityCloseRequestSchema);
 ajv.addSchema(tradingSettlementSchema);
 ajv.addSchema(tradingPerformanceProofSchema);
 ajv.addSchema(agentSecuredFacilityAuthorizationSchema);
+ajv.addSchema(meteredUsageEvidenceSchema);
+ajv.addSchema(meteredUsageAdmissionSchema);
+ajv.addSchema(tenantMeteredUsageAdmittedSchema);
 
 const validateRequest = ajv.compile(requestSchema);
 const validateResult = ajv.compile(resultSchema);
@@ -892,6 +898,19 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     quotaClass: "worker",
     requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
     responseSchemaVersion: "provider_sandbox_callback_result.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
+    operationId: "workerAdmitMeteredUsage",
+    kind: "command",
+    actorTypes: ["system_worker"],
+    resourceType: "obligation",
+    requiredCapability: "worker.metered_usage.admit",
+    idempotency: "required",
+    quotaClass: "worker",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_metered_usage_admitted.v1",
     public: false,
     fundsAuthority: false
   },

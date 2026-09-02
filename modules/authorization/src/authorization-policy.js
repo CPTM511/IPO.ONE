@@ -1412,6 +1412,17 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     worker: true
   }),
   tenantOperation({
+    operationId: "workerAdmitMeteredUsage",
+    action: "worker.metered_usage.admit",
+    resourceType: "obligation",
+    allowedActorTypes: [ActorType.SYSTEM_WORKER],
+    requiredCapability: PilotCapability.WORKER_METERED_USAGE_ADMIT,
+    ownershipRule: OwnershipRule.TENANT,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["mandate", "spend_policy", "risk", "cap", "freeze", "inbox_replay"],
+    worker: true
+  }),
+  tenantOperation({
     operationId: "workerAutoRepay",
     action: "repayment.execute",
     resourceType: "obligation",

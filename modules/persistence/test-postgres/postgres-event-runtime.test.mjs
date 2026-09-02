@@ -373,6 +373,8 @@ const TENANT_OWNED_TABLES = [
   "mandate_reservations",
   "mandates",
   "memberships",
+  "metered_usage_admissions",
+  "metered_usage_evidence",
   "obligation_installments",
   "obligations",
   "official_report_artifacts",
@@ -1175,12 +1177,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0069_auth_reference_hash_key_rotation",
         "0070_pilot_cases",
         "0071_pilot_cases_runtime_privileges",
-        "0072_public_beta_self_service_identity"
+        "0072_public_beta_self_service_identity",
+        "0073_metered_usage_evidence"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 72 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 73 }), [
+        "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
         "0071_pilot_cases_runtime_privileges",
         "0070_pilot_cases",
@@ -1326,10 +1330,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0069_auth_reference_hash_key_rotation",
         "0070_pilot_cases",
         "0071_pilot_cases_runtime_privileges",
-        "0072_public_beta_self_service_identity"
+        "0072_public_beta_self_service_identity",
+        "0073_metered_usage_evidence"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 70 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 71 }), [
+        "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
         "0071_pilot_cases_runtime_privileges",
         "0070_pilot_cases",
@@ -1484,7 +1490,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0069_auth_reference_hash_key_rotation",
         "0070_pilot_cases",
         "0071_pilot_cases_runtime_privileges",
-        "0072_public_beta_self_service_identity"
+        "0072_public_beta_self_service_identity",
+        "0073_metered_usage_evidence"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5163,7 +5170,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 15 }),
+        () => migrateDown({ pool, steps: 16 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5246,7 +5253,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0069_auth_reference_hash_key_rotation",
         "0070_pilot_cases",
         "0071_pilot_cases_runtime_privileges",
-        "0072_public_beta_self_service_identity"
+        "0072_public_beta_self_service_identity",
+        "0073_metered_usage_evidence"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(

@@ -75,6 +75,7 @@
         "pilotReadProviderIntent",
         "pilotAcknowledgeProviderIntent",
         "workerProcessInbox",
+        "workerAdmitMeteredUsage",
         "tradingCreateAccountBindingChallenge",
         "tradingImportHyperliquidHistory",
         "tradingFinalizeEvidenceSnapshot",
@@ -1426,6 +1427,16 @@
         },
         "response": {
           "$ref": "#/$defs/providerSandboxCallbackResult"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "workerAdmitMeteredUsage"
+        },
+        "response": {
+          "$ref": "https://schemas.ipo.one/v2/tenant-metered-usage-admitted.schema.json"
         }
       }
     }
@@ -7150,6 +7161,42 @@
         },
         "recordedAt": {
           "$ref": "#/$defs/timestamp"
+        },
+        "meteredUsage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "usageEvidenceId", "usageEvidenceHash", "meteredUsageAdmissionId",
+            "correctionOfUsageEvidenceId", "admissionHash", "providerId",
+            "resourceClass", "measurementUnit", "quantity", "chargeMinor",
+            "chargeDeltaMinor", "assetId", "policyHash",
+            "ledgerTransactionId", "finality", "reconciliation", "nextAction",
+            "sandboxOnly", "productionFundsMoved", "schemaVersion"
+          ],
+          "properties": {
+            "usageEvidenceId": { "$ref": "#/$defs/identifier" },
+            "usageEvidenceHash": { "$ref": "#/$defs/hash" },
+            "correctionOfUsageEvidenceId": {
+              "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+            },
+            "meteredUsageAdmissionId": { "$ref": "#/$defs/identifier" },
+            "admissionHash": { "$ref": "#/$defs/hash" },
+            "providerId": { "$ref": "#/$defs/identifier" },
+            "resourceClass": { "const": "inference_tokens" },
+            "measurementUnit": { "const": "token" },
+            "quantity": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" },
+            "chargeMinor": { "type": "string", "pattern": "^[1-9][0-9]{0,77}$" },
+            "chargeDeltaMinor": { "type": "string", "pattern": "^-?[1-9][0-9]{0,77}$" },
+            "assetId": { "$ref": "#/$defs/identifier" },
+            "policyHash": { "$ref": "#/$defs/hash" },
+            "ledgerTransactionId": { "$ref": "#/$defs/identifier" },
+            "finality": { "const": "finalized" },
+            "reconciliation": { "const": "reconciled" },
+            "nextAction": { "const": "review_metered_usage_receipt" },
+            "sandboxOnly": { "const": true },
+            "productionFundsMoved": { "const": false },
+            "schemaVersion": { "const": "metered_usage_evidence_summary.v1" }
+          }
         },
         "schemaVersion": {
           "const": "obligation_evidence_summary.v1"

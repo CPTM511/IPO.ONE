@@ -76,6 +76,7 @@
         "pilotReadProviderIntent",
         "pilotAcknowledgeProviderIntent",
         "workerProcessInbox",
+        "workerAdmitMeteredUsage",
         "tradingCreateAccountBindingChallenge",
         "tradingImportHyperliquidHistory",
         "tradingFinalizeEvidenceSnapshot",
@@ -2717,6 +2718,47 @@
               "approvalArtifact"
             ]
           }
+        ]
+      }
+    },
+    {
+      "title": "Admit Signed Reconciled Metered Usage",
+      "required": [
+        "idempotencyKey",
+        "resource"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "workerAdmitMeteredUsage"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["evidence", "expectedPolicyHash", "providerSignature"],
+          "properties": {
+            "evidence": {
+              "$ref": "https://schemas.ipo.one/v2/metered-usage-evidence.schema.json"
+            },
+            "expectedPolicyHash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            },
+            "providerSignature": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 2048
+            }
+          }
+        },
+        "resource": {
+          "$ref": "#/$defs/obligationResourceReference"
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["purpose"] },
+          { "required": ["reasonCode"] },
+          { "required": ["approvalArtifact"] }
         ]
       }
     },

@@ -28,6 +28,7 @@ export * from "./human-consent.js";
 export * from "./human-identity-reference.js";
 export * from "./protocol-v2.js";
 export * from "./provider-sandbox.js";
+export * from "./metered-usage-evidence.js";
 export * from "./rail.js";
 export * from "./state-machines.js";
 export * from "./validators.js";

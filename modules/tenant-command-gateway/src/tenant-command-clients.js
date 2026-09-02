@@ -1843,6 +1843,25 @@ export class SystemWorkerTenantCommandClient extends TenantProtocolClient {
     });
   }
 
+  async admitMeteredUsage({
+    obligationId,
+    evidence,
+    expectedPolicyHash,
+    providerSignature,
+    idempotencyKey,
+    requestId,
+    correlationId
+  }) {
+    return this.execute({
+      operationId: "workerAdmitMeteredUsage",
+      payload: { evidence, expectedPolicyHash, providerSignature },
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      idempotencyKey,
+      requestId,
+      correlationId
+    });
+  }
+
   async runTradingSettlement({
     tradingFacilityCloseRequestId,
     payload,
