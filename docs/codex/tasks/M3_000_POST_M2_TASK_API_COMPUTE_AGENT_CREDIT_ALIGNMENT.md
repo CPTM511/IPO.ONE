@@ -452,9 +452,12 @@ completed at `b3cdfe9e5f242a785752ffee3036e6b6d638f8b8` with migration head
 receipt projections. A later truth audit found that its injected Provider
 acceptance remained test-only: the actual local private-pilot runtime retained
 fail-closed Provider defaults and had no operable Provider-to-admission path.
-`M3-RESOURCE-002` therefore remains the active runtime and co-equal product
-acceptance issue. It must reuse the existing slice and grants no second product
-path.
+`M3-RESOURCE-002` subsequently completed the local runtime and co-equal product
+acceptance at `18cbdea64a7168b60633d3ce81a29f6b9669d3ff`, with security follow-up
+`25d87d77877c454e8a7a565d66737ff3a1fd3eb6` and exact Evidence in
+`docs/codex/audits/M3-RESOURCE-002/audit.md`. The accepted result reuses the
+existing slice and grants no second product path.
 
 This later record does not rewrite the authority available when M3-000 was
 authored and grants no deployment, external Provider or real-value authority.
+The authorized M3 sequence stops again at that boundary.
