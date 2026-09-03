@@ -155,6 +155,33 @@ const PROFILES = Object.freeze({
 
 export const PRODUCTION_BOOTSTRAP_PROFILES = PROFILES;
 
+// The hosted Golden Flow credential is intentionally narrower than the
+// evolving general Agent role. Keep this ceiling stable so adding unrelated
+// Agent capabilities does not silently expand an existing production Agent or
+// make its reviewed no-funds credential impossible to replace.
+export const PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES = Object.freeze([
+  PilotCapability.SUBJECT_READ_SELF,
+  PilotCapability.WORKSPACE_RESUME_SELF,
+  PilotCapability.AGENT_ACCOUNT_PROOF_SUBMIT_SELF,
+  PilotCapability.AGENT_ACCOUNT_BINDING_READ_SELF,
+  PilotCapability.CREDIT_REQUEST,
+  PilotCapability.CREDIT_READ_SELF,
+  PilotCapability.CREDIT_EVALUATE_SELF,
+  PilotCapability.CREDIT_OFFER_ACCEPT_SELF,
+  PilotCapability.CREDIT_EXECUTE_SANDBOX_SELF,
+  PilotCapability.REPAYMENT_POST_SANDBOX_SELF,
+  PilotCapability.OBLIGATION_READ_OWNED,
+  PilotCapability.EVIDENCE_READ_OWNED,
+  PilotCapability.CREDIT_REGISTRY_EVIDENCE_READ_TENANT,
+  PilotCapability.CREDIT_PASSPORT_READ_SELF,
+  PilotCapability.CREDIT_PASSPORT_VERIFY_BOUND,
+  PilotCapability.OFFICIAL_REPORT_CREATE_OWNED,
+  PilotCapability.OFFICIAL_REPORT_READ_OWNED,
+  PilotCapability.OFFICIAL_REPORT_RETRIEVE_OWNED,
+  PilotCapability.OFFICIAL_REPORT_REVOKE_OWNED,
+  PilotCapability.PILOT_FEEDBACK_SUBMIT_SELF
+]);
+
 const GATEWAY_MUTATION_TABLES = Object.freeze([
   "abuse_rate_buckets", "abuse_capacity_buckets", "abuse_admissions",
   "abuse_command_charges", "principals", "subjects", "mandates",
@@ -708,7 +735,7 @@ export async function provisionProductionGoldenFlowAgent({
             hashId("production_membership", `${checkedTenantId}:${checkedActorId}`),
             checkedTenantId,
             checkedActorId,
-            JSON.stringify(profile.capabilities),
+            JSON.stringify(PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES),
             JSON.stringify([checkedClientId]),
             checkedPolicyVersion,
             checkedControllerId,
@@ -733,7 +760,8 @@ export async function provisionProductionGoldenFlowAgent({
         agent.membership_status !== "active" ||
         agent.policy_version !== checkedPolicyVersion ||
         agent.controller_actor_id !== checkedControllerId ||
-        JSON.stringify(agent.capabilities) !== JSON.stringify(profile.capabilities) ||
+        JSON.stringify(agent.capabilities) !==
+          JSON.stringify(PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES) ||
         JSON.stringify(agent.client_ids) !== JSON.stringify([checkedClientId])
       ) {
         throw fail("existing Golden Flow Agent identity does not match the reviewed profile");
@@ -822,7 +850,7 @@ export async function provisionProductionGoldenFlowAgent({
           checkedClientId,
           senderConstraintRefHash,
           JSON.stringify([profile.roleBundle]),
-          JSON.stringify(profile.capabilities),
+          JSON.stringify(PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES),
           checkedPolicyVersion,
           checkedExpiresAt,
           now,

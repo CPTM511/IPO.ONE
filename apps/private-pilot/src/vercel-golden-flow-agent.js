@@ -21,33 +21,16 @@ import {
   createLocalAgentApplicationInput,
   createLocalAgentRuntimeInput
 } from "./agent-reference-workflows.js";
-import { PRODUCTION_BOOTSTRAP_PROFILES } from "./production-bootstrap.js";
+import {
+  PRODUCTION_BOOTSTRAP_PROFILES,
+  PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES
+} from "./production-bootstrap.js";
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$/;
 const PRIVATE_KEY = /^0x[0-9a-f]{64}$/;
 const AGENT_PROFILE = PRODUCTION_BOOTSTRAP_PROFILES.agent_runtime;
-const GOLDEN_FLOW_AGENT_CAPABILITIES = Object.freeze([
-  "subject.read.self",
-  "workspace.resume.self",
-  "agent_account.proof.submit.self",
-  "agent_account.binding.read.self",
-  "credit.request",
-  "credit.read.self",
-  "credit.evaluate.self",
-  "credit.offer.accept.self",
-  "credit.execute.sandbox.self",
-  "repayment.post.sandbox.self",
-  "obligation.read.owned",
-  "evidence.read.owned",
-  "credit_registry.evidence.read.tenant",
-  "credit_passport.read.self",
-  "credit_passport.verify.bound",
-  "official_report.create.owned",
-  "official_report.read.owned",
-  "official_report.retrieve.owned",
-  "official_report.revoke.owned",
-  "pilot.feedback.submit.self"
-]);
+const GOLDEN_FLOW_AGENT_CAPABILITIES =
+  PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES;
 if (
   GOLDEN_FLOW_AGENT_CAPABILITIES.some(
     (capability) => !AGENT_PROFILE.capabilities.includes(capability)
