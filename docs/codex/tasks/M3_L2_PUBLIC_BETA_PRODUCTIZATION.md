@@ -24,9 +24,9 @@ acceptance unit authorized by that directive.
 - activate one canonical launch-policy capability only for
   `public_authenticated_no_funds_beta`;
 - reuse the `0073_metered_usage_evidence` schema and advance the migration head
-  only through `0074_metered_usage_runtime_privileges`, the least-privilege
-  production repair for the already-approved hosted path;
-  Metered Usage, Ledger, Evidence, repayment and reconciliation paths;
+  only through `0075_metered_usage_system_worker_capability`: `0074` repairs
+  least-privilege runtime table access and `0075` reconciles the one already
+  authorized admission capability into pre-M3 System Worker memberships;
 - load one fresh hosted Ed25519 synthetic Provider signing identity from an
   immutable-version-bound Vercel secret;
 - expose one sender-constrained Agent resource-consumption endpoint for the
@@ -70,7 +70,8 @@ Phase 4, or `M3-RESOURCE-003` is authorized.
    no database intervention.
 5. Duplicate exact requests replay one receipt and create no second charge.
 6. Refresh/relogin/recovery, worker/reconciliation, restore and rollback remain
-   operational against migration head `0074_metered_usage_runtime_privileges`.
+   operational against migration head
+   `0075_metered_usage_system_worker_capability`.
 7. CI is green, the exact merged SHA is deployed to `https://ipo.one`, and the
    normal visible Principal journey is verified in a real browser.
 
@@ -101,11 +102,13 @@ git diff --check
 
 ## Migration and rollback
 
-Migration head is `0074_metered_usage_runtime_privileges`: `0073` owns the
-immutable Metered Usage schema and `0074` grants only the existing Gateway
+Migration head is `0075_metered_usage_system_worker_capability`: `0073` owns
+the immutable Metered Usage schema, `0074` grants only the existing Gateway
 runtime role the exact reads, inserts and column-bounded upserts needed by the
-hosted synthetic path. Apply both through the existing production Neon
-migration path and verify exact checksums. Rollback
+hosted synthetic path, and `0075` version-reconciles
+`worker.metered_usage.admit` only into active `system_worker` memberships that
+lack it. Apply the migrations through the existing production Neon migration
+path and verify exact checksums. Rollback
 reverts the Vercel deployment and disables the canonical capability in the
 prior release. Immutable Evidence and balanced Ledger history remain readable;
 the hosted Provider key is retired from the production environment after

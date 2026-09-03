@@ -59,7 +59,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0074_metered_usage_runtime_privileges"
+      "0075_metered_usage_system_worker_capability"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
@@ -73,7 +73,8 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       await target.query(
         `GRANT INSERT ON obligations TO "${runtimePrivilegeRole}"`
       );
-      assert.deepEqual(await migrateDown({ pool: target, steps: 4 }), [
+      assert.deepEqual(await migrateDown({ pool: target, steps: 5 }), [
+        "0075_metered_usage_system_worker_capability",
         "0074_metered_usage_runtime_privileges",
         "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
@@ -83,8 +84,32 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
         "0071_pilot_cases_runtime_privileges",
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
-        "0074_metered_usage_runtime_privileges"
+        "0074_metered_usage_runtime_privileges",
+        "0075_metered_usage_system_worker_capability"
       ]);
+      const capabilityClient = await target.connect();
+      let systemWorkerCapability;
+      try {
+        await capabilityClient.query("BEGIN");
+        await capabilityClient.query(
+          "SET LOCAL app.tenant_id = 'tenant_ipo_one_local_pilot'"
+        );
+        systemWorkerCapability = await capabilityClient.query(
+          `SELECT version, capabilities
+             FROM memberships
+            WHERE id = 'membership_local_system'`
+        );
+        await capabilityClient.query("ROLLBACK");
+      } finally {
+        capabilityClient.release();
+      }
+      assert.equal(systemWorkerCapability.rowCount, 1);
+      assert.equal(
+        systemWorkerCapability.rows[0].capabilities.filter(
+          (capability) => capability === "worker.metered_usage.admit"
+        ).length,
+        1
+      );
       const copiedPrivileges = await target.query(
         `SELECT privilege_type
            FROM information_schema.role_table_grants
@@ -286,7 +311,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0074_metered_usage_runtime_privileges"
+      "0075_metered_usage_system_worker_capability"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -298,7 +323,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 12 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 13 }), [
+      "0075_metered_usage_system_worker_capability",
       "0074_metered_usage_runtime_privileges",
       "0073_metered_usage_evidence",
       "0072_public_beta_self_service_identity",
@@ -324,7 +350,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0071_pilot_cases_runtime_privileges",
       "0072_public_beta_self_service_identity",
       "0073_metered_usage_evidence",
-      "0074_metered_usage_runtime_privileges"
+      "0074_metered_usage_runtime_privileges",
+      "0075_metered_usage_system_worker_capability"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count
