@@ -23,7 +23,9 @@ acceptance unit authorized by that directive.
 - supersede Product Constitution v1.5 with the minimal v1.6 L2 amendment;
 - activate one canonical launch-policy capability only for
   `public_authenticated_no_funds_beta`;
-- reuse migration head `0073_metered_usage_evidence` and the existing shared
+- reuse the `0073_metered_usage_evidence` schema and advance the migration head
+  only through `0074_metered_usage_runtime_privileges`, the least-privilege
+  production repair for the already-approved hosted path;
   Metered Usage, Ledger, Evidence, repayment and reconciliation paths;
 - load one fresh hosted Ed25519 synthetic Provider signing identity from an
   immutable-version-bound Vercel secret;
@@ -68,7 +70,7 @@ Phase 4, or `M3-RESOURCE-003` is authorized.
    no database intervention.
 5. Duplicate exact requests replay one receipt and create no second charge.
 6. Refresh/relogin/recovery, worker/reconciliation, restore and rollback remain
-   operational against migration head `0073_metered_usage_evidence`.
+   operational against migration head `0074_metered_usage_runtime_privileges`.
 7. CI is green, the exact merged SHA is deployed to `https://ipo.one`, and the
    normal visible Principal journey is verified in a real browser.
 
@@ -99,8 +101,11 @@ git diff --check
 
 ## Migration and rollback
 
-Migration head remains `0073_metered_usage_evidence`; apply it through the
-existing production Neon migration path and verify exact checksums. Rollback
+Migration head is `0074_metered_usage_runtime_privileges`: `0073` owns the
+immutable Metered Usage schema and `0074` grants only the existing Gateway
+runtime role the exact reads, inserts and column-bounded upserts needed by the
+hosted synthetic path. Apply both through the existing production Neon
+migration path and verify exact checksums. Rollback
 reverts the Vercel deployment and disables the canonical capability in the
 prior release. Immutable Evidence and balanced Ledger history remain readable;
 the hosted Provider key is retired from the production environment after
@@ -117,4 +122,3 @@ scoped P0/P1 count, external Provider decision package and exact STOP boundary.
 
 Final verdict must be either `PASS — DEPLOYED AND USER-VERIFIED` or
 `BLOCKED — NOT COMPLETE`.
-

@@ -59,7 +59,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0073_metered_usage_evidence"
+      "0074_metered_usage_runtime_privileges"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
@@ -70,7 +70,11 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       await target.query(
         `GRANT SELECT, INSERT, UPDATE, DELETE ON pilot_feedback_records TO "${runtimePrivilegeRole}"`
       );
-      assert.deepEqual(await migrateDown({ pool: target, steps: 3 }), [
+      await target.query(
+        `GRANT INSERT ON obligations TO "${runtimePrivilegeRole}"`
+      );
+      assert.deepEqual(await migrateDown({ pool: target, steps: 4 }), [
+        "0074_metered_usage_runtime_privileges",
         "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
         "0071_pilot_cases_runtime_privileges"
@@ -78,7 +82,8 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       assert.deepEqual(await migrateUp({ pool: target }), [
         "0071_pilot_cases_runtime_privileges",
         "0072_public_beta_self_service_identity",
-        "0073_metered_usage_evidence"
+        "0073_metered_usage_evidence",
+        "0074_metered_usage_runtime_privileges"
       ]);
       const copiedPrivileges = await target.query(
         `SELECT privilege_type
@@ -93,10 +98,53 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
         copiedPrivileges.rows.map(({ privilege_type }) => privilege_type),
         ["DELETE", "INSERT", "SELECT", "UPDATE"]
       );
+      const meteredPrivileges = await target.query(
+        `SELECT table_name, privilege_type
+           FROM information_schema.role_table_grants
+          WHERE grantee = $1
+            AND table_schema = 'public'
+            AND table_name = ANY($2::text[])
+          ORDER BY table_name, privilege_type`,
+        [runtimePrivilegeRole, ["metered_usage_admissions", "metered_usage_evidence"]]
+      );
+      assert.deepEqual(meteredPrivileges.rows, [
+        { table_name: "metered_usage_admissions", privilege_type: "INSERT" },
+        { table_name: "metered_usage_admissions", privilege_type: "SELECT" },
+        { table_name: "metered_usage_evidence", privilege_type: "INSERT" },
+        { table_name: "metered_usage_evidence", privilege_type: "SELECT" }
+      ]);
+      const boundedUpdates = await target.query(
+        `SELECT table_name, column_name
+           FROM information_schema.column_privileges
+          WHERE grantee = $1
+            AND privilege_type = 'UPDATE'
+            AND table_name = ANY($2::text[])
+          ORDER BY table_name, column_name`,
+        [runtimePrivilegeRole, ["mandate_reservations", "providers", "spend_policies", "spend_requests"]]
+      );
+      assert.deepEqual(boundedUpdates.rows, [
+        { table_name: "mandate_reservations", column_name: "released_minor" },
+        { table_name: "providers", column_name: "risk_tier" },
+        { table_name: "providers", column_name: "status" },
+        { table_name: "spend_policies", column_name: "daily_spent_date" },
+        { table_name: "spend_policies", column_name: "daily_spent_minor" },
+        { table_name: "spend_policies", column_name: "status" },
+        { table_name: "spend_policies", column_name: "updated_at" },
+        { table_name: "spend_requests", column_name: "rejection_reason" },
+        { table_name: "spend_requests", column_name: "status" },
+        { table_name: "spend_requests", column_name: "updated_at" }
+      ]);
     } finally {
       await target.query(
-        `REVOKE SELECT, INSERT, UPDATE, DELETE ON pilot_feedback_records, pilot_cases FROM "${runtimePrivilegeRole}"`
+        `REVOKE ALL PRIVILEGES ON pilot_feedback_records, pilot_cases, obligations,
+           metered_usage_evidence, metered_usage_admissions, providers,
+           spend_policies, spend_requests, mandate_reservations, mandate_releases
+         FROM "${runtimePrivilegeRole}"`
       );
+      await target.query(`REVOKE UPDATE (status, risk_tier) ON providers FROM "${runtimePrivilegeRole}"`);
+      await target.query(`REVOKE UPDATE (daily_spent_minor, daily_spent_date, status, updated_at) ON spend_policies FROM "${runtimePrivilegeRole}"`);
+      await target.query(`REVOKE UPDATE (status, rejection_reason, updated_at) ON spend_requests FROM "${runtimePrivilegeRole}"`);
+      await target.query(`REVOKE UPDATE (released_minor) ON mandate_reservations FROM "${runtimePrivilegeRole}"`);
       await target.query(`DROP ROLE "${runtimePrivilegeRole}"`);
     }
     const bootstrap = await bootstrapProductionDatabase({
@@ -238,7 +286,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0073_metered_usage_evidence"
+      "0074_metered_usage_runtime_privileges"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -250,7 +298,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 11 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 12 }), [
+      "0074_metered_usage_runtime_privileges",
       "0073_metered_usage_evidence",
       "0072_public_beta_self_service_identity",
       "0071_pilot_cases_runtime_privileges",
@@ -274,7 +323,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0070_pilot_cases",
       "0071_pilot_cases_runtime_privileges",
       "0072_public_beta_self_service_identity",
-      "0073_metered_usage_evidence"
+      "0073_metered_usage_evidence",
+      "0074_metered_usage_runtime_privileges"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count

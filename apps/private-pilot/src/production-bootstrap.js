@@ -1344,6 +1344,11 @@ async function configureRole(client, { roleName, password, authenticationOnly })
   }
   await client.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${role}`);
   await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${role}`);
+  await client.query(`GRANT INSERT ON providers, spend_policies, spend_requests, mandate_reservations, mandate_releases, metered_usage_evidence, metered_usage_admissions TO ${role}`);
+  await client.query(`GRANT UPDATE (status, risk_tier) ON providers TO ${role}`);
+  await client.query(`GRANT UPDATE (daily_spent_minor, daily_spent_date, status, updated_at) ON spend_policies TO ${role}`);
+  await client.query(`GRANT UPDATE (status, rejection_reason, updated_at) ON spend_requests TO ${role}`);
+  await client.query(`GRANT UPDATE (released_minor) ON mandate_reservations TO ${role}`);
   await client.query(`GRANT UPDATE (id) ON actors, memberships, access_grants TO ${role}`);
   await client.query(`GRANT UPDATE (status) ON obligations, credit_lines TO ${role}`);
   await client.query(`GRANT INSERT ON authorization_resources, authorization_resource_bindings, authorization_audit_events, tenant_command_executions, agent_hyperliquid_compositions, agent_hyperliquid_composition_transitions, agent_dual_risk_incidents, agent_dual_risk_incident_transitions TO ${role}`);
