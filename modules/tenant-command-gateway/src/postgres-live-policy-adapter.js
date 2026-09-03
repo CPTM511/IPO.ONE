@@ -762,7 +762,11 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
             providerEventId: evidence.providerEventId,
             nonceHash: hashId("metered_usage_nonce", evidence.nonce)
           },
-          { lock: true }
+          // Metered Usage Evidence is immutable and the runtime role
+          // intentionally has no UPDATE privilege. A row lock would widen
+          // authority without preventing the absent-row race; the unique
+          // Evidence constraints remain the concurrency arbiter.
+          { lock: false }
         );
         const obligation = obligationState?.value;
         const mandate = mandateState?.value;
