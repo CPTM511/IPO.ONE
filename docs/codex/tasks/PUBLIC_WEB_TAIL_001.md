@@ -1,6 +1,6 @@
 # PUBLIC-WEB-TAIL-001 — Retire stale service workers and publish crawler policy
 
-Status: `LOCAL VERIFIED — REVIEW AND DEPLOYMENT PENDING`
+Status: `PASS — DEPLOYED AND USER-VERIFIED`
 
 Date: 2026-09-03
 
@@ -165,5 +165,33 @@ Local Evidence on 2026-09-03:
   and product-home link worked, desktop and 390 x 844 layouts had zero
   horizontal overflow, and the console had zero errors or warnings.
 
-Normal review, CI, merged-SHA deployment and production verification remain
-pending.
+Release and production Evidence on 2026-09-03:
+
+- [PR #78](https://github.com/CPTM511/IPO.ONE/pull/78) merged normally as
+  `cde1146526c3a8f98837e81fd0db9f35a684ab63` after both full GitHub Quality
+  Gates passed (`7m39s` and `7m27s`); no administrative bypass was used.
+- Exact-source deployment `dpl_DooPuq5oYWtm6eyLkhtNHY82CRtc` reached `READY`
+  and became the source for `ipo.one` and `www.ipo.one`.
+- `https://ipo.one/readyz` and `/.well-known/ipo-one.json` both reported release
+  `cde1146526c3a8f98837e81fd0db9f35a684ab63`, the primary public authenticated
+  no-funds profile, `realFundsEnabled: false`, no production signer, withdrawal
+  or venue-write authority, and synthetic/redacted data only.
+- Production `GET` and `HEAD` requests for `/sw.js` and `/robots.txt` returned
+  `200` with exact JavaScript/text MIME, matching content lengths, standard
+  security headers and `no-store`. The worker has no fetch handler, and the
+  crawler policy retains `/api/`, `/auth/`, `/tenant/` and `/v1/` exclusions.
+- Founding Edition III remained reachable at `/whitepaper`; the production PDF
+  SHA-256 matched the repository at
+  `c64fff8fbb22f2cd97ee7c9df12a404b4342e576bac37ab8fbb75d61823890af`.
+- Real Chromium on the production domain used visible controls to open the
+  document-status anchor and return to the public product. Desktop and 390 x
+  844 layouts had zero horizontal overflow and zero console errors/warnings.
+  A root-scoped production worker registration then retired to zero remaining
+  registrations after activation.
+- The latest 500 log entries for the implementation deployment were all HTTP
+  `200`, with no `404`, `5xx`, failed event or
+  `invalid_production_bootstrap` observation.
+
+This completion update is documentation-only. Its final merge SHA and
+exact-source redeployment are verified in the Founder handoff so this record
+does not embed a self-referential commit identifier.
