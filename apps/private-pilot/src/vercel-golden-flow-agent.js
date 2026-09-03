@@ -81,6 +81,13 @@ function identifier(prefix) {
   return `${prefix}-${randomUUID()}`;
 }
 
+export function createStableVercelAgentRuntimeIdentifier(prefix, workflowId) {
+  return `${prefix}-${createHash("sha256")
+    .update(`${prefix}\0${workflowId}`, "utf8")
+    .digest("hex")
+    .slice(0, 32)}`;
+}
+
 export async function createVercelGoldenFlowAgentClient({
   origin,
   audience,
@@ -375,7 +382,10 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
   let workflowReceipt;
   let meteredUsage;
   try {
-    const correlationId = identifier("correlation-agent-metered-runtime");
+    const correlationId = createStableVercelAgentRuntimeIdentifier(
+      "correlation-agent-metered-runtime",
+      baseInput.workflowId
+    );
     const accepted = await execute({
       schemaVersion: "tenant_protocol_request.v1",
       operationId: "pilotAcceptCreditOffer",
@@ -389,7 +399,10 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
         resourceId: exactOfferReceipt.offer.creditOfferId
       },
       idempotencyKey: `${baseInput.workflowId}:accept`,
-      requestId: identifier("request-agent-metered-accept"),
+      requestId: createStableVercelAgentRuntimeIdentifier(
+        "request-agent-metered-accept",
+        baseInput.workflowId
+      ),
       correlationId
     });
     const obligationId = accepted.response?.obligation?.obligationId;
@@ -402,7 +415,10 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
       },
       resource: { resourceType: "obligation", resourceId: obligationId },
       idempotencyKey: `${baseInput.workflowId}:execute`,
-      requestId: identifier("request-agent-metered-execute"),
+      requestId: createStableVercelAgentRuntimeIdentifier(
+        "request-agent-metered-execute",
+        baseInput.workflowId
+      ),
       correlationId
     });
     const meteredMcp = createProductionMcpHandle(client);
@@ -416,7 +432,10 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
           obligationId,
           quantity: "250",
           idempotencyKey: `${baseInput.workflowId}:metered-resource`,
-          requestId: identifier("request-agent-metered-resource")
+          requestId: createStableVercelAgentRuntimeIdentifier(
+            "request-agent-metered-resource",
+            baseInput.workflowId
+          )
         }
       }
     });
@@ -430,12 +449,16 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
       },
       resource: { resourceType: "obligation", resourceId: obligationId },
       idempotencyKey: `${baseInput.workflowId}:partial-repayment`,
-      requestId: identifier("request-agent-metered-partial-repayment"),
+      requestId: createStableVercelAgentRuntimeIdentifier(
+        "request-agent-metered-partial-repayment",
+        baseInput.workflowId
+      ),
       correlationId
     });
     workflowReceipt = Object.freeze({
       schemaVersion: "vercel_metered_agent_obligation_workflow_receipt.v1",
       status: "repayment_posted",
+      correlationId,
       subjectId: manifest.subjectId,
       mandateId: manifest.mandateId,
       creditIntentId: exactOfferReceipt.offer.creditIntentId,
@@ -480,8 +503,11 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
       resourceType: "obligation",
       resourceId: workflowReceipt.obligation.obligationId
     },
-    idempotencyKey: `vercel-agent-full-repayment-${manifest.mandateHash.slice(2, 26)}`,
-    requestId: identifier("request-agent-full-repayment"),
+    idempotencyKey: `${baseInput.workflowId}:full-repayment`,
+    requestId: createStableVercelAgentRuntimeIdentifier(
+      "request-agent-full-repayment",
+      baseInput.workflowId
+    ),
     correlationId: workflowReceipt.correlationId
   };
   const fullRepayment = await execute(fullRepaymentCommand);

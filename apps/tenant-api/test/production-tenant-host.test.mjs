@@ -359,6 +359,88 @@ test("production Host exposes the synthetic Metered Resource only through authen
   assert.deepEqual(consumed.networkContext, { trusted: true });
 });
 
+test("production Host emits bounded diagnostics for an internal Metered Resource failure", async (t) => {
+  const port = await unusedPort();
+  const authenticationContext = createAuthenticationContext({
+    tenantId: "tenant_metered_host",
+    actorId: "actor_metered_agent",
+    actorType: "agent",
+    clientId: "client_metered_agent",
+    credentialId: "credential_metered_agent",
+    credentialVersion: 1,
+    policyVersion: "security_001.v1",
+    capabilities: ["obligation.read.owned"],
+    roles: ["agent_runtime"],
+    tokenJtiHash: "a".repeat(64),
+    authenticationMethod: "private_key_jwt",
+    senderConstraintMethod: "dpop",
+    authenticatedAt: new Date(),
+    amr: []
+  });
+  const host = createProductionTenantHost({
+    authenticationReferenceHash: {
+      mode: "single_v2",
+      writeKeyVersion: "v2",
+      legacyLookupKeyVersion: null
+    },
+    gateway: { async execute() { throw new Error("not expected"); } },
+    humanBff: { async authenticateSession() { throw new Error("not expected"); } },
+    machineAuthenticator: { async authenticate() { return authenticationContext; } },
+    createNetworkContext: async () => ({ trusted: true }),
+    csrfTokenProvider: async () => undefined,
+    deploymentRole: "primary",
+    readinessCheck: async () => true,
+    verifyEdgeRequest: async () => true,
+    publicOrigin: "https://ipo.one",
+    port,
+    releaseId: "a".repeat(40),
+    syntheticMeteredResourceService: {
+      profile: { status: "AVAILABLE" },
+      async consume() {
+        const error = new Error("secret database detail");
+        error.code = "23505";
+        error.constraint = "metered_usage_provider_event_unique";
+        error.table = "metered_usage_evidence";
+        error.routine = "_bt_check_unique";
+        throw error;
+      }
+    }
+  });
+  await host.listen();
+  t.after(() => host.close());
+  const messages = [];
+  const original = console.error;
+  console.error = (message) => messages.push(message);
+  t.after(() => { console.error = original; });
+
+  const response = await post(port, "/tenant/v1/synthetic-metered-resource", {
+    schemaVersion: "ipo_one_synthetic_metered_resource_request.v1",
+    obligationId: "obligation_metered_host_001",
+    quantity: "250",
+    idempotencyKey: "hosted-metered-resource-0001"
+  }, {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https",
+    authorization: "Bearer test",
+    "x-request-id": "request-metered-host-failure-0001"
+  });
+
+  assert.equal(response.status, 500);
+  assert.equal(JSON.parse(response.body).code, "internal_error");
+  assert.equal(messages.length, 1);
+  assert.deepEqual(JSON.parse(messages[0]), {
+    event: "production_tenant_internal_error",
+    requestId: "request-metered-host-failure-0001",
+    errorName: "Error",
+    errorCode: "23505",
+    constraint: "metered_usage_provider_event_unique",
+    table: "metered_usage_evidence",
+    routine: "_bt_check_unique"
+  });
+  assert.equal(messages[0].includes("secret database detail"), false);
+});
+
 test("production Host publishes the exact configured deployment role", async (t) => {
   const runtime = await fixture({ deploymentRole: "risk" });
   t.after(() => runtime.host.close());
