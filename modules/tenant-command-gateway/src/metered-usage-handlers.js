@@ -171,7 +171,11 @@ export function admitMeteredUsageCommandHandler({
           providerEventId: evidence.providerEventId,
           nonceHash: hashId("metered_usage_nonce", evidence.nonce)
         },
-        { lock: true }
+        // Evidence is immutable and the runtime role deliberately cannot
+        // UPDATE it. PostgreSQL requires UPDATE privilege for FOR UPDATE,
+        // while the unique Evidence constraints already arbitrate concurrent
+        // duplicate inserts.
+        { lock: false }
       );
       if (identities.length > 0) {
         throw new DomainError("metered_usage_replay_conflict", "Metered Usage identity was already consumed");
