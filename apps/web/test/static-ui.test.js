@@ -3,6 +3,22 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+test("public tail assets retire stale workers and declare crawler boundaries", async () => {
+  const [retirementWorker, robots] = await Promise.all([
+    readFile(new URL("../src/sw.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/robots.txt", import.meta.url), "utf8")
+  ]);
+  assert.match(retirementWorker, /addEventListener\("install"/);
+  assert.match(retirementWorker, /addEventListener\("activate"/);
+  assert.match(retirementWorker, /self\.skipWaiting\(\)/);
+  assert.match(retirementWorker, /self\.registration\.unregister\(\)/);
+  assert.doesNotMatch(retirementWorker, /addEventListener\(["']fetch["']/);
+  assert.equal(
+    robots,
+    "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/\nDisallow: /tenant/\nDisallow: /v1/\n"
+  );
+});
+
 test("PILOT-008A exposes closed Human and operator case controls without free text", async () => {
   const html = await readFile(new URL("../src/index.html", import.meta.url), "utf8");
   const js = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

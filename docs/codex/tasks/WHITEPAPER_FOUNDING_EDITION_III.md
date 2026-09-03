@@ -166,10 +166,14 @@ Release and production Evidence as of 2026-09-03:
   operation, back-to-top, product-site round trip, zero horizontal overflow
   and zero console errors were verified through visible controls.
 - Deployment logs for the verified release contained successful whitepaper
-  requests and no server error. An unrelated pre-existing Sandbox Cron
-  `invalid_production_bootstrap` failure was observed on predecessor release
-  `c27e97699ed1327c8f6e74378edf59e9cf8805f8`; this task neither changes nor
-  claims authority to repair credential or financial-runtime configuration.
+  requests and no server error. An unrelated Sandbox Cron
+  `invalid_production_bootstrap` failure observed on predecessor release
+  `c27e97699ed1327c8f6e74378edf59e9cf8805f8` did not persist: the one-shot M3
+  operation variable is absent and final release
+  `1177f2afccda10878146e9e7afbfe5adde2fa0b9` subsequently completed the
+  scheduled Cron with HTTP `200`, `reconciliationStatus: passed` and
+  `realFundsEnabled: false`. The whitepaper task did not change credential or
+  financial-runtime authority.
 
 The pull request that closes this Evidence record changes only this task file.
 Its final merge SHA and exact-source deployment verification belong in the

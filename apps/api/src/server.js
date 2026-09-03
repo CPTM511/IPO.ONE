@@ -47,8 +47,7 @@ const OPERATIONAL_PATHS = new Set(["/healthz", "/livez", "/readyz"]);
 const DISCOVERY_PATHS = new Set([
   "/.well-known/ipo-one",
   "/.well-known/ipo-one.json",
-  "/.well-known/security.txt",
-  "/robots.txt"
+  "/.well-known/security.txt"
 ]);
 const PUBLIC_AUTH_PATHS = new Set(["/auth/v1/options"]);
 
@@ -58,6 +57,7 @@ const contentTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
   ".webmanifest": "application/manifest+json; charset=utf-8"
 };
 
@@ -538,12 +538,6 @@ function handleSystemResource(request, response, pathname) {
   }
   if (pathname === "/.well-known/security.txt") {
     sendText(response, 200, securityText(), "text/plain; charset=utf-8", {
-      "cache-control": "public, max-age=3600"
-    });
-    return true;
-  }
-  if (pathname === "/robots.txt") {
-    sendText(response, 200, "User-agent: *\nAllow: /\nDisallow: /v1/\n", "text/plain; charset=utf-8", {
       "cache-control": "public, max-age=3600"
     });
     return true;
