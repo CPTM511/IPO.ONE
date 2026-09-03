@@ -1,6 +1,6 @@
 # WHITEPAPER-FOUNDING-EDITION-III — Performance → Credit → Capital Canonicalization
 
-Status: `LOCAL VERIFIED — PREVIEW, MERGE AND PRODUCTION PENDING`
+Status: `PASS — DEPLOYED AND USER-VERIFIED`
 
 Date: 2026-09-03
 
@@ -129,7 +129,7 @@ format independently. No economic data rollback is involved.
 
 ## Completion Evidence
 
-Local release-candidate Evidence as of 2026-09-03:
+Release and production Evidence as of 2026-09-03:
 
 - Canonical source, generated HTML and export manifest are SHA-256 bound.
 - The PDF is a deterministic 43-page A4 export; its CreationDate and ModDate are
@@ -149,7 +149,28 @@ Local release-candidate Evidence as of 2026-09-03:
   and a clipped back-to-top target.
 - Claim red-team review found no unauthorized mainnet, real-value, custody,
   Provider, Venue, model-authority, partnership, user, revenue or return claim.
+- Implementation PR
+  [#75](https://github.com/CPTM511/IPO.ONE/pull/75) merged normally as
+  `f5e40010d91f0967724b09eb84de7749e6ae180e`; both required Quality Gates
+  completed successfully, including PostgreSQL-backed checks.
+- Production deployment `dpl_F967bgi7qahAVe9cQCYTtVhoWLoG` reached `READY`
+  and aliased `https://ipo.one`; deployment metadata and `/readyz` both report
+  the exact merged SHA above with `realFundsEnabled: false`.
+- Production HTTP verification passed for `/whitepaper`, its versioned CSS and
+  JavaScript, and the Edition III PDF. The page exposes all seven diagrams;
+  the removed Edition II PDF returns `404`.
+- The production PDF is 43 A4 pages and hashes to
+  `c64fff8fbb22f2cd97ee7c9df12a404b4342e576bac37ab8fbb75d61823890af`.
+- Deployed-browser acceptance passed at 1440×1000 and 390×844: the Capital
+  shortcut, numbered mobile section selection, diagram pointer and Enter-key
+  operation, back-to-top, product-site round trip, zero horizontal overflow
+  and zero console errors were verified through visible controls.
+- Deployment logs for the verified release contained successful whitepaper
+  requests and no server error. An unrelated pre-existing Sandbox Cron
+  `invalid_production_bootstrap` failure was observed on predecessor release
+  `c27e97699ed1327c8f6e74378edf59e9cf8805f8`; this task neither changes nor
+  claims authority to repair credential or financial-runtime configuration.
 
-Final source commit, PR, merged SHA, CI result, production deployment ID, live
-HTTP/metadata/PDF checks and deployed desktop/mobile Evidence remain pending.
-The final verdict must use the repository completion vocabulary.
+The pull request that closes this Evidence record changes only this task file.
+Its final merge SHA and exact-source deployment verification belong in the
+Founder handoff so this record does not create a self-referential SHA cycle.
