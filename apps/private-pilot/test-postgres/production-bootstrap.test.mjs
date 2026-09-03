@@ -8,6 +8,8 @@ import {
   assertProductionBootstrapConfig,
   bootstrapProductionDatabase,
   enrollProductionHumanRole,
+  PRODUCTION_BOOTSTRAP_PROFILES,
+  PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES,
   provisionProductionGoldenFlowAgent,
   reprovisionProductionAgentReference,
   revokeProductionGoldenFlowAgentCredential
@@ -545,6 +547,17 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   assert.equal(replayedRevocation.replayed, true);
 
   const hostedAcceptanceAgentReferenceKey = randomBytes(32);
+  assert.equal(PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES.length, 20);
+  assert.ok(
+    PRODUCTION_BOOTSTRAP_PROFILES.agent_runtime.capabilities.length >
+      PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES.length
+  );
+  assert.equal(
+    PRODUCTION_GOLDEN_FLOW_AGENT_CAPABILITIES.includes(
+      "agent.facility_authorization.read.bound"
+    ),
+    false
+  );
   const hostedAcceptanceAgent = await provisionProductionGoldenFlowAgent({
     ...goldenFlowInput,
     adminConnectionString: authenticationUrl.toString(),
