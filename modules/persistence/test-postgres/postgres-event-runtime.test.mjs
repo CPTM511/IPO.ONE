@@ -1179,12 +1179,14 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0071_pilot_cases_runtime_privileges",
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
-        "0074_metered_usage_runtime_privileges"
+        "0074_metered_usage_runtime_privileges",
+        "0075_metered_usage_system_worker_capability"
       ]);
       const firstStatus = await migrationStatus({ pool });
       assert.equal(firstStatus.every((migration) => migration.applied && migration.checksum.length === 64), true);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 74 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 75 }), [
+        "0075_metered_usage_system_worker_capability",
         "0074_metered_usage_runtime_privileges",
         "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
@@ -1334,10 +1336,12 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0071_pilot_cases_runtime_privileges",
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
-        "0074_metered_usage_runtime_privileges"
+        "0074_metered_usage_runtime_privileges",
+        "0075_metered_usage_system_worker_capability"
       ]);
 
-      assert.deepEqual(await migrateDown({ pool, steps: 72 }), [
+      assert.deepEqual(await migrateDown({ pool, steps: 73 }), [
+        "0075_metered_usage_system_worker_capability",
         "0074_metered_usage_runtime_privileges",
         "0073_metered_usage_evidence",
         "0072_public_beta_self_service_identity",
@@ -1496,7 +1500,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0071_pilot_cases_runtime_privileges",
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
-        "0074_metered_usage_runtime_privileges"
+        "0074_metered_usage_runtime_privileges",
+        "0075_metered_usage_system_worker_capability"
       ]);
       assert.equal(
         (await pool.query("SELECT primary_principal_id FROM subjects WHERE id = 'subject_legacy_upgrade'"))
@@ -5175,7 +5180,7 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         (error) => error.code === "23514"
       );
       await assert.rejects(
-        () => migrateDown({ pool, steps: 17 }),
+        () => migrateDown({ pool, steps: 18 }),
         (error) => error.code === "23514"
       );
       assert.equal(
@@ -5260,7 +5265,8 @@ test("PostgreSQL event runtime proves atomicity, recovery, and replay", { timeou
         "0071_pilot_cases_runtime_privileges",
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
-        "0074_metered_usage_runtime_privileges"
+        "0074_metered_usage_runtime_privileges",
+        "0075_metered_usage_system_worker_capability"
       ]);
 
       const subjectContribution = contributeTradingSubjectCollateral(
