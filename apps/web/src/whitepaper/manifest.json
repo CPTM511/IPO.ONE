@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "ipo_one_whitepaper_export.v1",
+  "edition": "Founding Edition III",
+  "publicationDate": "2026-09-03",
+  "source": "docs/WHITEPAPER.md",
+  "html": "apps/web/src/whitepaper.html",
+  "pdf": "apps/web/src/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf",
+  "generator": "scripts/generate-whitepaper-pdf.mjs",
+  "sourceSha256": "a98c02f56c0a8dcaf02d4b340714abe0634bd6f7b2e26f6e519cc647a6083766",
+  "htmlSha256": "6a9d6d164af056c81e81cde86f7e0c2586acfaff6b08559db7772e8680ea67c1",
+  "pdfSha256": "c64fff8fbb22f2cd97ee7c9df12a404b4342e576bac37ab8fbb75d61823890af",
+  "pageCount": 43
+}

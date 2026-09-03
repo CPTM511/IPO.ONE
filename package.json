@@ -9,8 +9,10 @@
     "node": ">=24.19.0 <25 || >=26.5.0 <27"
   },
   "scripts": {
-    "build:whitepaper": "node scripts/generate-whitepaper.mjs",
-    "check:whitepaper": "node scripts/generate-whitepaper.mjs --check",
+    "build:whitepaper": "node scripts/generate-whitepaper.mjs && node scripts/generate-whitepaper-pdf.mjs",
+    "build:whitepaper:html": "node scripts/generate-whitepaper.mjs",
+    "build:whitepaper:pdf": "node scripts/generate-whitepaper-pdf.mjs",
+    "check:whitepaper": "node scripts/generate-whitepaper.mjs --check && node scripts/generate-whitepaper-pdf.mjs --check",
     "check:runtime": "node scripts/check-runtime.mjs",
     "build:web:walletconnect": "node scripts/build-walletconnect-browser.mjs",
     "test": "node scripts/run-tests.mjs",
@@ -119,7 +121,7 @@
     "db:rollback": "node scripts/migrate.mjs down",
     "db:status": "node scripts/migrate.mjs status",
     "smoke:api": "node scripts/smoke-api.mjs",
-    "check": "pnpm run check:runtime && pnpm run lint && pnpm run typecheck && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm run check:tenant-protocol && pnpm run check:product-traceability && pnpm run test:security && pnpm run test:transport && pnpm run test:postgres && pnpm run check:deploy-topology && pnpm run check:local-stack && pnpm run check:launch-policy && pnpm run check:closed-pilot-operations && pnpm run check:pilot-008b-gate0 && pnpm run check:m2-contract-toolchain && pnpm run test:contracts:foundry && pnpm run check:web-bundle && pnpm test",
+    "check": "pnpm run check:runtime && pnpm run lint && pnpm run typecheck && pnpm run check:schemas && pnpm run check:openapi && pnpm run check:migrations && pnpm run check:tenant-protocol && pnpm run check:product-traceability && pnpm run test:security && pnpm run test:transport && pnpm run test:postgres && pnpm run check:deploy-topology && pnpm run check:local-stack && pnpm run check:launch-policy && pnpm run check:closed-pilot-operations && pnpm run check:pilot-008b-gate0 && pnpm run check:m2-contract-toolchain && pnpm run test:contracts:foundry && pnpm run check:whitepaper && pnpm run check:web-bundle && pnpm test",
     "dev": "node scripts/local-stack.mjs up",
     "dev:api": "node apps/private-pilot/src/start.js",
     "dev:legacy-demo": "node apps/api/src/server.js",
