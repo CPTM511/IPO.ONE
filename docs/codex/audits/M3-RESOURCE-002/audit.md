@@ -10,8 +10,13 @@ Implementation: `18cbdea64a7168b60633d3ce81a29f6b9669d3ff`
 
 Security follow-up: `25d87d77877c454e8a7a565d66737ff3a1fd3eb6`
 
+Provenance correction (2026-09-03): this L0 result was completed and accepted,
+but independent Evidence of prior Founder implementation authorization was not
+established. The Founder now explicitly ratifies this completed L0 scope; that
+ratification does not rewrite the authority available when the work occurred.
+
 This record accepts the local runtime integration and co-equal product
-acceptance for the single Founder-authorized synthetic Metered Usage profile.
+acceptance for the single synthetic Metered Usage profile.
 It grants no deployment, external Provider, production credential, pricing or
 risk-policy change, signer, custody, transfer, withdrawal, mainnet or real-funds
 authority.

@@ -852,6 +852,22 @@
                       </div>
                     </div>
                   </div>
+                  <section class="obligation-chain-anchor" id="syntheticMeteredResourcePanel" aria-labelledby="syntheticMeteredResourceTitle">
+                    <div>
+                      <p class="eyebrow">M3 · public authenticated no-funds</p>
+                      <h4 id="syntheticMeteredResourceTitle">Metered inference resource</h4>
+                      <p id="syntheticMeteredResourceCopy">Checking the exact hosted synthetic Provider profile. No external Provider or real funds are used.</p>
+                    </div>
+                    <span id="syntheticMeteredResourceState" class="state-pill warning">Checking</span>
+                    <dl class="evidence-receipt-states" aria-label="Metered resource status">
+                      <div><dt>Provider / resource</dt><dd id="syntheticMeteredResourceProvider">Not loaded</dd></div>
+                      <div><dt>Authorization cap</dt><dd id="syntheticMeteredResourceCap">Not loaded</dd></div>
+                      <div><dt>Consumed / remaining</dt><dd id="syntheticMeteredResourceCapacity">Load Evidence</dd></div>
+                      <div><dt>Current Obligation</dt><dd id="syntheticMeteredResourceObligation">Not created</dd></div>
+                      <div><dt>Repayment</dt><dd id="syntheticMeteredResourceRepayment">Not available</dd></div>
+                      <div><dt>Usage Evidence</dt><dd id="syntheticMeteredResourceEvidence">Not loaded</dd></div>
+                    </dl>
+                  </section>
                   <section class="obligation-chain-anchor" aria-labelledby="humanObligationChainAnchorTitle">
                     <div>
                       <p class="eyebrow">Public-chain verification</p>
@@ -2069,6 +2085,16 @@
                         <div><span>Past due</span><strong id="obligationDetailPastDue">—</strong></div>
                         <div><span>Total repaid</span><strong id="obligationDetailRepaid">—</strong></div>
                       </div>
+                      <section class="obligation-detail-section" aria-labelledby="obligationDetailMeteredTitle">
+                        <div class="obligation-portfolio-subheading"><span>Hosted synthetic Provider</span><h5 id="obligationDetailMeteredTitle">Metered inference resource</h5></div>
+                        <dl class="evidence-receipt-states" aria-label="Selected Obligation Metered Resource status">
+                          <div><dt>Provider / resource</dt><dd id="obligationDetailMeteredProvider">Not loaded</dd></div>
+                          <div><dt>Authorization cap</dt><dd id="obligationDetailMeteredCap">Not loaded</dd></div>
+                          <div><dt>Consumed / remaining</dt><dd id="obligationDetailMeteredCapacity">Load Evidence</dd></div>
+                          <div><dt>Latest usage Evidence</dt><dd id="obligationDetailMeteredEvidence">Not loaded</dd></div>
+                        </dl>
+                        <p id="obligationDetailMeteredBoundary">No external Provider or real funds are enabled.</p>
+                      </section>
                       <section class="obligation-detail-section" aria-labelledby="obligationDetailScheduleTitle">
                         <div class="obligation-portfolio-subheading"><span>Canonical schedule</span><h5 id="obligationDetailScheduleTitle">Payment plan</h5></div>
                         <div id="obligationDetailSchedule" class="obligation-detail-schedule"></div>

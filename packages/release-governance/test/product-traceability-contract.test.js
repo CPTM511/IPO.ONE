@@ -14,7 +14,8 @@ function launchPolicy() {
         capabilities: {
           realFundsEnabled: false,
           humanCreditEnabled: false,
-          externalProviderExecutionEnabled: false
+          externalProviderExecutionEnabled: false,
+          syntheticMeteredResourceEnabled: false
         }
       },
       public_authenticated_no_funds_beta: {
@@ -25,6 +26,7 @@ function launchPolicy() {
           humanCreditEnabled: false,
           privateTenantDataEnabled: true,
           externalProviderExecutionEnabled: false,
+          syntheticMeteredResourceEnabled: true,
           agentVenueExecutionEnabled: false,
           mainnetAuthorized: false,
           custodyAuthorized: false,
@@ -42,6 +44,7 @@ function launchPolicy() {
           publicPoolParticipationEnabled: true,
           marketCreationEnabled: false,
           externalProviderExecutionEnabled: false,
+          syntheticMeteredResourceEnabled: false,
           agentVenueExecutionEnabled: false
         },
         exactProfile: {

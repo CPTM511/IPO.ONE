@@ -6,27 +6,27 @@ import {
 
 const contractPath =
   "api/tenant-protocol/ipo-one.agent-https.v1.json";
-const topologyPath = "deploy/closed-pilot/topology.v1.json";
+const launchPolicyPath = "deploy/launch-policy.v1.json";
 const packagePath = "packages/sdk/package.json";
 const clientPath = "packages/sdk/src/production-agent-client.js";
 const hostPath = "apps/tenant-api/src/production-tenant-host.js";
 
 const [
   contractSource,
-  topologySource,
+  launchPolicySource,
   packageSource,
   clientSource,
   hostSource
 ] = await Promise.all([
   readFile(contractPath, "utf8"),
-  readFile(topologyPath, "utf8"),
+  readFile(launchPolicyPath, "utf8"),
   readFile(packagePath, "utf8"),
   readFile(clientPath, "utf8"),
   readFile(hostPath, "utf8")
 ]);
 
 const contract = JSON.parse(contractSource);
-const topology = JSON.parse(topologySource);
+const launchPolicy = JSON.parse(launchPolicySource);
 const sdkPackage = JSON.parse(packageSource);
 const runtimeContract = createAgentHttpsOpenApiDocument(
   "https://closed-pilot.invalid"
@@ -61,8 +61,11 @@ const runtimeOperation =
   runtimeContract.paths?.["/tenant/v1/operations"]?.post;
 requireEqual(
   operation?.security,
-  [{ workloadBearer: [], mutualTls: [] }],
-  "Agent operation must require both workload JWT and mutual TLS"
+  [
+    { workloadBearer: [], mutualTls: [] },
+    { workloadBearer: [], dpopProof: [] }
+  ],
+  "Agent operation must require workload JWT plus one approved sender constraint"
 );
 requireEqual(
   operation?.security,
@@ -92,24 +95,38 @@ if (
 ) {
   failures.push("Remote Agent timeout must be represented as an unknown outcome");
 }
+if (
+  contract.paths?.["/tenant/v1/synthetic-metered-resource"]?.post?.operationId !==
+    "consumeSyntheticMeteredResource" ||
+  !clientSource.includes('new URL("/tenant/v1/synthetic-metered-resource"') ||
+  !hostSource.includes('syntheticMeteredResource: "/tenant/v1/synthetic-metered-resource"')
+) {
+  failures.push("Synthetic Metered Resource route is not aligned across contract, client, and host");
+}
 
-for (const [key, value] of Object.entries(
-  contract["x-ipo-one-safety"] ?? {}
-)) {
-  if (value !== false) failures.push(`Remote Agent safety flag ${key} must remain false`);
+if (contract["x-ipo-one-safety"]?.remoteParticipantAccessEnabled !== true) {
+  failures.push("Remote Agent access must match the active public authenticated no-funds product");
+}
+for (const key of [
+  "realFundsEnabled", "humanCreditEnabled", "testnetWritesEnabled",
+  "venueSignerEnabled", "arbitraryWithdrawalEnabled"
+]) if (contract["x-ipo-one-safety"]?.[key] !== false) {
+  failures.push(`Remote Agent safety flag ${key} must remain false`);
 }
 if (
   contract["x-ipo-one-activation"] !==
-  "disabled_pending_named_deployment_approval"
+  "active_public_authenticated_no_funds"
 ) {
-  failures.push("Remote Agent contract must remain deployment-disabled");
+  failures.push("Remote Agent contract must match the active L2 product");
 }
 if (
-  topology.authority?.remoteParticipantAccessEnabled !== false ||
-  topology.edge?.participantActivation !== "blocked" ||
-  topology.launchBlocked !== true
+  launchPolicy.profiles?.public_authenticated_no_funds_beta?.releaseEnabled !== true ||
+  launchPolicy.profiles.public_authenticated_no_funds_beta.capabilities
+    ?.syntheticMeteredResourceEnabled !== true ||
+  launchPolicy.profiles.public_authenticated_no_funds_beta.capabilities
+    ?.externalProviderExecutionEnabled !== false
 ) {
-  failures.push("TRANSPORT-003 must not activate the closed-pilot topology");
+  failures.push("Remote Agent transport drifted from the canonical L2 launch policy");
 }
 
 const productionExport =
@@ -144,5 +161,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "TRANSPORT-003 checks passed (disabled remote Agent contract, mTLS client, unknown-outcome semantics)."
+  "Agent HTTPS checks passed (active L2 contract, sender-bound client, synthetic Metered Resource, unknown-outcome semantics)."
 );

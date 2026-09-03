@@ -3,6 +3,7 @@ import { request as httpRequest } from "node:http";
 import { createServer as createNetServer } from "node:net";
 import test from "node:test";
 import { createProductionTenantHost } from "../src/production-tenant-host.js";
+import { createAuthenticationContext } from "../../../modules/authentication/src/authentication-context.js";
 
 async function unusedPort() {
   const server = createNetServer();
@@ -34,6 +35,33 @@ function get(port, path, headers = {}) {
     });
     request.once("error", reject);
     request.end();
+  });
+}
+
+function post(port, path, body, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body);
+    const request = httpRequest({
+      hostname: "127.0.0.1",
+      port,
+      path,
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "content-length": Buffer.byteLength(payload),
+        ...headers
+      }
+    }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => resolve({
+        status: response.statusCode,
+        headers: response.headers,
+        body: Buffer.concat(chunks).toString("utf8")
+      }));
+    });
+    request.once("error", reject);
+    request.end(payload);
   });
 }
 
@@ -157,7 +185,7 @@ test("production Host rejects direct and downgraded traffic before authenticatio
   assert.equal(runtime.gatewayCalls, 0);
 });
 
-test("production Host publishes the disabled remote Agent HTTPS contract behind the approved edge", async (t) => {
+test("production Host publishes the active no-funds remote Agent HTTPS contract behind the approved edge", async (t) => {
   const runtime = await fixture();
   t.after(() => runtime.host.close());
 
@@ -173,7 +201,7 @@ test("production Host publishes the disabled remote Agent HTTPS contract behind 
   assert.equal(contract["x-ipo-one-schema-version"], "agent_https_openapi.v1");
   assert.equal(
     contract["x-ipo-one-activation"],
-    "disabled_pending_named_deployment_approval"
+    "active_public_authenticated_no_funds"
   );
   assert.equal(
     contract.paths["/.well-known/ipo-one.json"].get.operationId,
@@ -185,7 +213,10 @@ test("production Host publishes the disabled remote Agent HTTPS contract behind 
   );
   assert.deepEqual(
     contract.paths["/tenant/v1/operations"].post.security,
-    [{ workloadBearer: [], mutualTls: [] }]
+    [
+      { workloadBearer: [], mutualTls: [] },
+      { workloadBearer: [], dpopProof: [] }
+    ]
   );
   assert.equal(
     contract.paths["/tenant/v1/operations"].post[
@@ -195,7 +226,7 @@ test("production Host publishes the disabled remote Agent HTTPS contract behind 
   );
   assert.equal(
     contract["x-ipo-one-safety"].remoteParticipantAccessEnabled,
-    false
+    true
   );
   assert.equal(runtime.gatewayCalls, 0);
 });
@@ -226,6 +257,7 @@ test("production Host publishes zero-funded real-value and Provider capability t
   assert.equal(document.realValue.productionFundsMoved, false);
   assert.equal(document.providers.providerSandbox, "AVAILABLE");
   assert.equal(document.providers.externalProviderExecution, "DISABLED");
+  assert.equal(document.providers.syntheticMeteredResource.status, "UNAVAILABLE");
   assert.equal(
     document.providers.hyperCoreProductionExecution,
     "BLOCKED_EXTERNAL_DEPENDENCY"
@@ -256,6 +288,75 @@ test("production Host publishes zero-funded real-value and Provider capability t
     schemaVersion: "ipo_one_chain_capability.v1"
   });
   assert.equal(runtime.gatewayCalls, 0);
+});
+
+test("production Host exposes the synthetic Metered Resource only through authenticated Agent transport", async (t) => {
+  const port = await unusedPort();
+  const authenticationContext = createAuthenticationContext({
+    tenantId: "tenant_metered_host",
+    actorId: "actor_metered_agent",
+    actorType: "agent",
+    clientId: "client_metered_agent",
+    credentialId: "credential_metered_agent",
+    credentialVersion: 1,
+    policyVersion: "security_001.v1",
+    capabilities: ["obligation.read.owned"],
+    roles: ["agent_runtime"],
+    tokenJtiHash: "a".repeat(64),
+    authenticationMethod: "private_key_jwt",
+    senderConstraintMethod: "dpop",
+    authenticatedAt: new Date(),
+    amr: []
+  });
+  let consumed;
+  const host = createProductionTenantHost({
+    authenticationReferenceHash: {
+      mode: "single_v2",
+      writeKeyVersion: "v2",
+      legacyLookupKeyVersion: null
+    },
+    gateway: { async execute() { throw new Error("not expected"); } },
+    humanBff: { async authenticateSession() { throw new Error("not expected"); } },
+    machineAuthenticator: { async authenticate() { return authenticationContext; } },
+    createNetworkContext: async () => ({ trusted: true }),
+    csrfTokenProvider: async () => undefined,
+    deploymentRole: "primary",
+    readinessCheck: async () => true,
+    verifyEdgeRequest: async () => true,
+    publicOrigin: "https://ipo.one",
+    port,
+    releaseId: "a".repeat(40),
+    syntheticMeteredResourceService: {
+      profile: { status: "AVAILABLE" },
+      async consume(input) {
+        consumed = input;
+        return {
+          status: "consumed",
+          obligationId: input.body.obligationId,
+          schemaVersion: "ipo_one_synthetic_metered_resource_receipt.v1"
+        };
+      }
+    }
+  });
+  await host.listen();
+  t.after(() => host.close());
+  const body = {
+    schemaVersion: "ipo_one_synthetic_metered_resource_request.v1",
+    obligationId: "obligation_metered_host_001",
+    quantity: "250",
+    idempotencyKey: "hosted-metered-resource-0001"
+  };
+  const response = await post(port, "/tenant/v1/synthetic-metered-resource", body, {
+    host: "ipo.one",
+    "x-forwarded-host": "ipo.one",
+    "x-forwarded-proto": "https",
+    authorization: "Bearer test",
+    "x-request-id": "request-metered-host-0001"
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(consumed.body, body);
+  assert.equal(consumed.authenticationContext.actorId, "actor_metered_agent");
+  assert.deepEqual(consumed.networkContext, { trusted: true });
 });
 
 test("production Host publishes the exact configured deployment role", async (t) => {

@@ -20,6 +20,8 @@ import {
 } from "../../../modules/abuse-control/src/index.js";
 import { createPostgresPool } from "../../../modules/persistence/src/index.js";
 import { DomainError } from "../../../packages/domain/src/index.js";
+import { createHostedSyntheticMeteredProvider } from "./local-synthetic-metered-provider.js";
+import launchPolicy from "../../../deploy/launch-policy.v1.json" with { type: "json" };
 
 const PROVIDER_KEYS = new Set([
   "allowedAlgorithms",
@@ -48,6 +50,10 @@ const ADDITIONAL_WORKLOAD_JWKS_VALUE =
   "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_JSON";
 const ADDITIONAL_WORKLOAD_JWKS_REF =
   "IPO_ONE_ADDITIONAL_WORKLOAD_PUBLIC_JWKS_REF";
+const HOSTED_METERED_PROVIDER_KEY_VALUE =
+  "IPO_ONE_HOSTED_METERED_PROVIDER_KEY_JSON";
+const HOSTED_METERED_PROVIDER_KEY_REF =
+  "IPO_ONE_HOSTED_METERED_PROVIDER_KEY_REF";
 
 function configError(message = "Production environment configuration is invalid") {
   return new DomainError("invalid_production_environment", message);
@@ -245,6 +251,37 @@ function additionalWorkloadJwks(environment, { vercelSandbox }) {
     maximumDepth: 5,
     maximumKeys: 64
   }));
+}
+
+async function hostedMeteredProvider(environment, { vercelSandbox }) {
+  const enabled = launchPolicy.profiles.public_authenticated_no_funds_beta
+    ?.capabilities?.syntheticMeteredResourceEnabled === true;
+  const primary = !vercelSandbox || environment.IPO_ONE_VERCEL_PROJECT_ROLE === "primary";
+  const configured = [
+    "IPO_ONE_HOSTED_METERED_PROVIDER_KEY_FILE",
+    HOSTED_METERED_PROVIDER_KEY_VALUE,
+    HOSTED_METERED_PROVIDER_KEY_REF
+  ].some((name) => environment[name] !== undefined);
+  if (!enabled || !primary) {
+    if (configured) {
+      throw configError("Hosted Metered Provider key is outside the enabled Primary profile");
+    }
+    return undefined;
+  }
+  const source = await readDeploymentSecret(environment, {
+    fileName: "IPO_ONE_HOSTED_METERED_PROVIDER_KEY_FILE",
+    valueName: HOSTED_METERED_PROVIDER_KEY_VALUE,
+    referenceName: HOSTED_METERED_PROVIDER_KEY_REF,
+    maximum: 8 * 1024,
+    vercelSandbox
+  });
+  return createHostedSyntheticMeteredProvider({
+    keyMaterial: parseStrictJson(source, {
+      maximumBytes: 8 * 1024,
+      maximumDepth: 4,
+      maximumKeys: 8
+    })
+  });
 }
 
 function constantTimeMatch(actual, expected) {
@@ -554,6 +591,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
         vercelSandbox
       });
   const identity = await loadProviderConfig(environment, browserOrigin, { vercelSandbox });
+  const meteredUsageProvider = await hostedMeteredProvider(environment, { vercelSandbox });
   const proofAdapters = Object.freeze([
     BASE_SEPOLIA_PROFILE,
     X_LAYER_TESTNET_PROFILE
@@ -603,6 +641,7 @@ export async function loadProductionClosedPilotEnvironment(environment = process
     browserOrigin: browserOrigin.origin,
     tenantId: required(environment, "IPO_ONE_TENANT_ID", /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/u, 128),
     systemActorId: required(environment, "IPO_ONE_SYSTEM_ACTOR_ID", /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/u, 128),
+    ...(meteredUsageProvider === undefined ? {} : { meteredUsageProvider }),
     policyVersion: required(environment, "IPO_ONE_POLICY_VERSION", /^[A-Za-z0-9][A-Za-z0-9._:@/-]{1,255}$/u, 256),
     releaseId: required(environment, "IPO_ONE_RELEASE_ID", /^[0-9a-f]{40}$/u, 40),
     deploymentRole: vercelSandbox ? environment.IPO_ONE_VERCEL_PROJECT_ROLE : "container",

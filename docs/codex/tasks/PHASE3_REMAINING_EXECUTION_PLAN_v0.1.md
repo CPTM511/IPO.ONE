@@ -1,11 +1,13 @@
 # IPO.ONE Phase 3 remaining execution plan v0.1
 
-Status: `PHASE 3 CLOSED; PUBLIC BETA ACTIVE; M3-000 ALIGNMENT COMPLETE — IMPLEMENTATION NOT AUTHORIZED`
+Status: `PHASE 3 CLOSED; PUBLIC BETA ACTIVE; M3 L0 RATIFIED; EXACT M3 L2 PRODUCTIZATION IN PROGRESS`
 
 Date: 2026-08-31
 
-Repository baseline after Phase 3 closure merge: `origin/main` at
-`06509847ab6e63889b4aa4df5928815f1abcb966`
+Last updated: 2026-09-03
+
+Current repository baseline: `origin/main` at
+`6b18501b564664167b67bb1489c2678f46c494df`
 
 Production baseline remains:
 `c4cc81f09f1c7aeb78871373d29ed581e428daca`
@@ -35,7 +37,14 @@ PUBLIC-BETA-001C production Evidence closure and Phase 3 rebase
 
 ## 2. Authority and invariants
 
-This plan is subordinate to Product Constitution v1.4, Product Charter v1.1,
+Current successor authority: the 2026-09-03 Founder directive ratifies the
+already-completed M3 L0 record without backdating authorization and separately
+authorizes one coherent `M3-L2-001` productization objective under Constitution
+v1.6. Only the existing synthetic `provider_gateway_compute` /
+`inference_tokens` / `token` profile may reach L2. The hard stop remains before
+external Provider credentials/execution, any second profile or real value.
+
+This plan is subordinate to Product Constitution v1.6, Product Charter v1.1,
 the Product Optimization Measure, Engineering Standard, M2 decisions, launch
 policy, and exact issue approvals. It does not activate a successor.
 

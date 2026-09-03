@@ -223,7 +223,7 @@ assert.equal(
   publicBetaPending.profile,
   "public_authenticated_no_funds_beta"
 );
-assert.equal(publicBetaPending.policyVersion, "1.4.0");
+assert.equal(publicBetaPending.policyVersion, "1.5.0");
 assert.equal(publicBetaPending.capabilities.realFundsEnabled, false);
 assert.equal(publicBetaPending.capabilities.privateTenantDataEnabled, true);
 assert.equal(publicBetaPending.capabilities.mainnetAuthorized, false);

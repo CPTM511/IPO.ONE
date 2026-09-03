@@ -340,7 +340,8 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/.well-known/ipo-one.json",
       "/tenant/v1/catalog",
       "/tenant/v1/operations",
-      "/tenant/v1/secured-pool/market"
+      "/tenant/v1/secured-pool/market",
+      "/tenant/v1/synthetic-metered-resource"
     ]);
     assert.equal(
       openApi.paths["/.well-known/ipo-one.json"].get.operationId,

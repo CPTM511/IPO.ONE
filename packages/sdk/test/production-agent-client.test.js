@@ -150,6 +150,60 @@ test("remote Agent client sends one exact DPoP-bound HTTPS protocol request with
   assert.equal(Object.hasOwn(options, "key"), false);
 });
 
+test("remote Agent client consumes the exact hosted synthetic Metered Resource", async () => {
+  const requestId = "request-hosted-metered-resource-0001";
+  const token = dpopAccessToken();
+  const receipt = {
+    status: "consumed",
+    providerId: "provider_gateway_compute",
+    resourceClass: "inference_tokens",
+    measurementUnit: "token",
+    quantity: "250",
+    unitPriceMinor: "2",
+    chargeMinor: "500",
+    consumedWindowMinor: "500",
+    remainingWindowMinor: "4500",
+    maxChargePerWindowMinor: "5000",
+    obligationId: "obligation_hosted_metered_001",
+    usageEvidenceId: "usage_hosted_metered_001",
+    meteredUsageAdmissionId: "metered_usage_admission_hosted_001",
+    ledgerTransactionId: "ledger_transaction_hosted_001",
+    replayed: false,
+    nextAction: "review_metered_usage_receipt",
+    sandboxOnly: true,
+    productionFundsMoved: false,
+    realFundsEnabled: false,
+    schemaVersion: "ipo_one_synthetic_metered_resource_receipt.v1"
+  };
+  const transport = fakeHttpsRequest({
+    responseBody: receipt,
+    responseRequestId: requestId
+  });
+  const agent = new ProductionAgentClient({
+    baseUrl: "https://closed-pilot.invalid",
+    accessTokenProvider: async () => token,
+    dpopProofProvider: async ({ url }) => dpopProof(token, { htu: url }),
+    request: transport.request,
+    clock: () => NOW
+  });
+  assert.deepEqual(await agent.consumeSyntheticMeteredResource({
+    obligationId: receipt.obligationId,
+    quantity: "250",
+    idempotencyKey: "hosted-metered-resource-test-0001",
+    requestId
+  }), receipt);
+  assert.equal(
+    transport.calls[0].url.toString(),
+    "https://closed-pilot.invalid/tenant/v1/synthetic-metered-resource"
+  );
+  assert.deepEqual(JSON.parse(transport.calls[0].body), {
+    schemaVersion: "ipo_one_synthetic_metered_resource_request.v1",
+    obligationId: receipt.obligationId,
+    quantity: "250",
+    idempotencyKey: "hosted-metered-resource-test-0001"
+  });
+});
+
 test("remote Agent client rejects unsafe origins and non-short-lived tokens before transport", async () => {
   const transport = fakeHttpsRequest();
   assert.throws(

@@ -442,10 +442,11 @@ Permission/funds/deployment impact: **none**.
 
 ## 17. Subsequent execution record
 
-After this alignment was accepted, Product Constitution v1.5 ratified
-`REQ-EXEC-005` and `DEC-METERED-RESOURCE-CREDIT-001`, and the Founder separately
-authorized the single L0 local no-funds implementation. `M3-RESOURCE-001`
-completed at `b3cdfe9e5f242a785752ffee3036e6b6d638f8b8` with migration head
+After this alignment was recorded, Product Constitution v1.5 ratified
+`REQ-EXEC-005` and `DEC-METERED-RESOURCE-CREDIT-001`. The repository did not
+independently establish a prior Founder implementation approval for the single
+L0 local no-funds implementation. `M3-RESOURCE-001` nevertheless completed at
+`b3cdfe9e5f242a785752ffee3036e6b6d638f8b8` with migration head
 `0073_metered_usage_evidence`.
 
 `M3-RESOURCE-001` completed the shared kernel, PostgreSQL, Tenant Gateway and
@@ -461,3 +462,11 @@ existing slice and grants no second product path.
 This later record does not rewrite the authority available when M3-000 was
 authored and grants no deployment, external Provider or real-value authority.
 The authorized M3 sequence stops again at that boundary.
+
+On 2026-09-03 the Founder explicitly reviewed and ratified M3-000,
+Constitution v1.5 M3 direction, M3-RESOURCE-001 and M3-RESOURCE-002 for their
+already-completed L0 scope, without rewriting the earlier authority state. The
+same directive separately authorized only the exact synthetic Metered Resource
+profile for L2 Public Beta productization under Constitution v1.6 and the
+canonical launch policy. External Provider credentials/execution, a second
+profile and all real-value authority remain separately gated.

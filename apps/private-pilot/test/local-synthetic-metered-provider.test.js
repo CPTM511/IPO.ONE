@@ -6,6 +6,8 @@ import { test } from "node:test";
 import { createMeteredUsageEvidence, hashId } from "../../../packages/domain/src/index.js";
 import {
   LOCAL_METERED_PROVIDER_ID,
+  assertHostedSyntheticMeteredProviderMaterial,
+  createHostedSyntheticMeteredProvider,
   createLocalSyntheticMeteredProvider,
   loadOrCreateLocalSyntheticMeteredProviderMaterial
 } from "../src/local-synthetic-metered-provider.js";
@@ -56,6 +58,32 @@ test("local synthetic Metered Provider persists a private key with restrictive p
   assert.equal((await stat(join(directory, "nested"))).mode & 0o777, 0o700);
   const serialized = JSON.parse(await readFile(path, "utf8"));
   assert.equal(serialized.providerKeyId, created.providerKeyId);
+});
+
+test("hosted synthetic Metered Provider requires a fresh hosted key identity", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "ipo-one-metered-provider-"));
+  const localMaterial = await loadOrCreateLocalSyntheticMeteredProviderMaterial(
+    join(directory, "provider.json")
+  );
+  assert.throws(
+    () => assertHostedSyntheticMeteredProviderMaterial(localMaterial),
+    (error) => error?.code === "invalid_local_metered_provider"
+  );
+  const hostedMaterial = assertHostedSyntheticMeteredProviderMaterial({
+    ...localMaterial,
+    schemaVersion: "ipo_one_hosted_synthetic_metered_provider_key.v1",
+    providerKeyId: `hosted_metered_${hashId(
+      "hosted_metered_provider_key",
+      localMaterial.publicKeyDer
+    ).slice(2, 34)}`
+  });
+  const hosted = createHostedSyntheticMeteredProvider({ keyMaterial: hostedMaterial });
+  const policy = hosted.createPolicy(binding());
+  const signedEvidence = evidence(hosted, policy);
+  const signature = hosted.signEvidence(signedEvidence);
+  assert.match(hosted.providerKeyId, /^hosted_metered_/);
+  assert.equal(hosted.verifySignature({ evidence: signedEvidence, providerSignature: signature }), true);
+  assert.notEqual(hosted.providerKeyId, localMaterial.providerKeyId);
 });
 
 test("local synthetic Metered Provider binds policy, key and signature exactly", async () => {

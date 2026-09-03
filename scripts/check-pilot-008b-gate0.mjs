@@ -29,10 +29,11 @@ const vercelConfiguration = JSON.parse(
 );
 
 const publicBeta = policy.profiles.public_authenticated_no_funds_beta;
-assert.equal(policy.policyVersion, "1.4.0");
+assert.equal(policy.policyVersion, "1.5.0");
 assert.equal(publicBeta.releaseEnabled, true);
 assert.equal(publicBeta.capabilities.realFundsEnabled, false);
 assert.equal(publicBeta.capabilities.privateTenantDataEnabled, true);
+assert.equal(publicBeta.capabilities.syntheticMeteredResourceEnabled, true);
 assert.equal(
   publicBeta.gates.some(({ id }) => id === "pilot_participant_approval"),
   false

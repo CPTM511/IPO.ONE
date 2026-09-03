@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { createServer } from "node:net";
 import test from "node:test";
 import pg from "pg";
@@ -24,10 +24,12 @@ import {
   X_LAYER_TESTNET_PROFILE
 } from "../../../modules/chain-adapter/src/index.js";
 import { createPostgresPool } from "../../../modules/persistence/src/index.js";
+import { hashId } from "../../../packages/domain/src/index.js";
 import {
   assertProductionBootstrapConfig,
   bootstrapProductionDatabase
 } from "../src/production-bootstrap.js";
+import { createHostedSyntheticMeteredProvider } from "../src/local-synthetic-metered-provider.js";
 import { createProductionClosedPilotRuntime } from "../src/production-runtime.js";
 
 const { Pool } = pg;
@@ -77,6 +79,20 @@ function cookieValue(cookies, name) {
   const cookie = cookies.find((value) => value.startsWith(prefix));
   assert.ok(cookie, `${name} cookie is required`);
   return cookie.slice(prefix.length).split(";", 1)[0];
+}
+
+function hostedMeteredProvider() {
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+  const privateKeyDer = privateKey.export({ format: "der", type: "pkcs8" }).toString("base64url");
+  const publicKeyDer = publicKey.export({ format: "der", type: "spki" }).toString("base64url");
+  return createHostedSyntheticMeteredProvider({
+    keyMaterial: {
+      privateKeyDer,
+      publicKeyDer,
+      providerKeyId: `hosted_metered_${hashId("hosted_metered_provider_key", publicKeyDer).slice(2, 34)}`,
+      schemaVersion: "ipo_one_hosted_synthetic_metered_provider_key.v1"
+    }
+  });
 }
 
 test(
@@ -188,6 +204,7 @@ test(
         deploymentRole: "primary",
         tenantId,
         systemActorId,
+        meteredUsageProvider: hostedMeteredProvider(),
         policyVersion,
         releaseId: "b".repeat(40),
         port,

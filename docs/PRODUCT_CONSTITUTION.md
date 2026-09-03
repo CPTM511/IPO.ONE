@@ -1,14 +1,14 @@
 # IPO.ONE Product Constitution
 
-Version: v1.5
+Version: v1.6
 
-Effective date: 2026-09-02
+Effective date: 2026-09-03
 
 Status: Founder-directed and ratified for current product-truth governance
 
 Decision owner: IPO.ONE Founder / Product / Governance
 
-Supersedes: Product Constitution v1.4 effective 2026-08-30
+Supersedes: Product Constitution v1.5 effective 2026-09-02
 
 Milestone: M3 — Metered Machine-Service Agent Credit
 
@@ -22,10 +22,12 @@ acceptance specifications it governs.
 
 The M2 direction, public authenticated no-funds Beta direction and narrow M3
 metered machine-service direction are made authoritative by this versioned
-repository document. v1.5 retains all v1.4 boundaries and defines metered
-machine service as a thin Provider Spend Facility profile over the existing
-kernel. It does not activate mainnet, real value, custody, withdrawal, external
-Provider execution, production metering or venue-signed execution.
+repository document. v1.6 retains all v1.5 boundaries, defines metered machine
+service as a thin Provider Spend Facility profile over the existing kernel and
+authorizes the already-proven exact synthetic profile at
+`L2_PUBLIC_AUTHENTICATED_NO_FUNDS`. It does not activate mainnet, real value,
+custody, withdrawal, external Provider execution, external credentials,
+production pricing/risk changes or venue-signed execution.
 Conversations remain non-authoritative unless their decision is reviewed and
 incorporated into this Constitution or a subordinate approved source.
 
@@ -143,7 +145,7 @@ detail but cannot change the status, mode, or gate without updating this file.
 | REQ-EXEC-002 | allowlisted Provider spend with caps | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-AECL-INTEGRATION-001 in section 7 | canonical TransferIntent plus versioned server registry only; ambiguous/unsupported resolution denies; external Provider separately approved |
 | REQ-EXEC-003 | Agent Lockbox revenue capture and repayment profile | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-LOCKBOX-001 in section 7 | must become durable/authenticated before L4; no arbitrary balance release |
 | REQ-EXEC-004 | withdrawal and transfer denial boundary | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 8 | no arbitrary withdrawal/unrestricted external transfer |
-| REQ-EXEC-005 | Mandate-bound metered machine-service usage Evidence and deterministic charge admission | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-METERED-RESOURCE-CREDIT-001 in section 7 | one shared Provider Spend Facility profile; exact Provider/resource/unit/price schedule/caps; signed replay-safe Evidence; external Provider and real funds separately gated |
+| REQ-EXEC-005 | Mandate-bound metered machine-service usage Evidence and deterministic charge admission | APPROVED_MVP | L0_LOCAL_NO_FUNDS | DEC-METERED-RESOURCE-CREDIT-001 in section 7 | exact `provider_gateway_compute` / `inference_tokens` / `token` synthetic profile may operate at L0 and L2; signed replay-safe Evidence and canonical Ledger only; external Provider and real funds separately gated |
 | REQ-PAY-001 | canonical double-entry Ledger | APPROVED_MVP | L0_LOCAL_NO_FUNDS | ADR-010 | Ledger is source of economic truth; local approval is not production authority |
 | REQ-PAY-002 | deterministic repayment waterfall and receipt | APPROVED_MVP | L0_LOCAL_NO_FUNDS | MVP Build Spec FR-007 | exact fee/interest/principal allocation; idempotent and evidenced |
 | REQ-PAY-003 | DPD/default/cure/restructure/repurchase/write-off | APPROVED_MVP | L0_LOCAL_NO_FUNDS | Product Charter v1.1 section 3.3 step 8 | Human/Agent shared servicing; protected actions keep named authority |
@@ -429,8 +431,13 @@ custody, withdrawal and external-execution gates remain unchanged.
 
 ### DEC-METERED-RESOURCE-CREDIT-001 — metered machine service is a Provider Spend Facility profile
 
-Founder direction on 2026-09-02 accepts the M3-000 `NARROW` recommendation and
-approves one local no-funds implementation direction:
+The repository previously recorded M3-000 and the completed L0 implementation,
+but independent Evidence of an earlier Founder implementation approval was not
+established. Founder direction on 2026-09-03 now explicitly ratifies the
+existing M3-000 `NARROW` direction, Constitution v1.5 M3 direction,
+M3-RESOURCE-001 and M3-RESOURCE-002 for their completed L0 scope, without
+rewriting that historical authority state, and separately authorizes the exact
+synthetic profile for L2 Public Beta productization:
 
 1. Task/API/Compute credit is not a separate product primitive. `Task` is
    optional external context; API, inference, compute, storage, RPC and data
@@ -448,16 +455,19 @@ approves one local no-funds implementation direction:
    revoked, disputed, ambiguous, duplicate-conflicting or unreconciled usage
    denies new risk and cannot duplicate a charge.
 5. The first implementation is one synthetic Provider, one resource class, one
-   unit, one price schedule and one Agent/Principal Facility at
-   `L0_LOCAL_NO_FUNDS`. It reuses the existing Provider Spend, Tenant Command
-   Gateway, PostgreSQL, Ledger, Lockbox and repayment paths.
+   unit, one price schedule and one Agent/Principal Facility. It reuses the
+   existing Provider Spend, Tenant Command Gateway, PostgreSQL, Ledger, Lockbox
+   and repayment paths. The exact `provider_gateway_compute` /
+   `inference_tokens` / `token` profile proven at `L0_LOCAL_NO_FUNDS` is also
+   authorized at `L2_PUBLIC_AUTHENTICATED_NO_FUNDS` through the canonical launch
+   policy, with a fresh hosted signing identity and no external Provider call.
 6. No Task Ledger, Compute Ledger, API Credit Ledger, second Obligation,
    Provider marketplace, orchestration framework, compute cloud, new risk
    model or universal score is approved.
-7. This decision approves issue-sized local no-funds implementation only. It
-   does not approve deployment, external Provider integration, credentials,
-   production metering, pricing, risk-limit changes, capital, custody, signing,
-   mainnet, real value, withdrawal or funds movement.
+7. This decision now approves deployment and user operation only for that exact
+   synthetic L2 profile. It does not approve a second Provider/resource/unit,
+   external Provider integration or credentials, production pricing/risk-limit
+   changes, capital, custody, mainnet, real value, withdrawal or funds movement.
 
 ### v1.4 to v1.5 requirement crosswalk
 
@@ -468,6 +478,17 @@ Provider Spend authority; `REQ-EXEC-005` adds the missing metered-usage
 Evidence and deterministic charge admission semantics. Approval does not claim
 implementation, verification, hosting, external Provider execution, real
 value or production readiness.
+
+### v1.5 to v1.6 requirement crosswalk
+
+No requirement ID is added, deleted, repurposed or broadened to external or
+real-value operation. `REQ-EXEC-005` retains its exact shared-kernel semantics;
+its already-proven single synthetic profile gains L2 hosted authority. The
+canonical launch-policy capability must remain false for every other profile.
+The change approves one fresh hosted Provider signing identity and one
+authenticated Agent resource endpoint, but no user receives the System Worker
+credential or Provider private key. All external Provider, second-resource,
+mainnet, custody, withdrawal, real-value and Phase 4 gates remain closed.
 
 ## 8. Explicit current non-goals and gates
 

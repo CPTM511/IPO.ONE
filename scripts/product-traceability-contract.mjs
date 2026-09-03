@@ -66,6 +66,7 @@ export function validateTraceabilityReleaseMaturity({
     publicBeta?.capabilities?.humanCreditEnabled !== false ||
     publicBeta?.capabilities?.privateTenantDataEnabled !== true ||
     publicBeta?.capabilities?.externalProviderExecutionEnabled !== false ||
+    publicBeta?.capabilities?.syntheticMeteredResourceEnabled !== true ||
     publicBeta?.capabilities?.agentVenueExecutionEnabled !== false ||
     publicBeta?.capabilities?.mainnetAuthorized !== false ||
     publicBeta?.capabilities?.custodyAuthorized !== false ||

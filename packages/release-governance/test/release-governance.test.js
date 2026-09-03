@@ -264,7 +264,7 @@ test("complete fresh public-sandbox evidence verifies", () => {
   const result = verify(validEvidence());
   assert.deepEqual(result, {
     status: "verified",
-    policyVersion: "1.4.0",
+    policyVersion: "1.5.0",
     profile: "public_sandbox",
     repository: "CPTM511/IPO.ONE",
     commitSha: COMMIT_SHA,
@@ -383,7 +383,7 @@ test("complete fresh public authenticated no-funds Beta evidence verifies", () =
   const result = verify(evidence);
   assert.equal(result.status, "verified");
   assert.equal(result.profile, "public_authenticated_no_funds_beta");
-  assert.equal(result.policyVersion, "1.4.0");
+  assert.equal(result.policyVersion, "1.5.0");
   assert.equal(
     result.imageUri,
     "https://ipo-one-public-beta-a1b2c3-cptm.vercel.app/"
