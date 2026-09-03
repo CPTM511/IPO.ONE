@@ -544,6 +544,48 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
   });
   assert.equal(replayedRevocation.replayed, true);
 
+  const hostedAcceptanceAgentReferenceKey = randomBytes(32);
+  const hostedAcceptanceAgent = await provisionProductionGoldenFlowAgent({
+    ...goldenFlowInput,
+    adminConnectionString: authenticationUrl.toString(),
+    referenceHashKey: hostedAcceptanceAgentReferenceKey,
+    referenceHashKeyVersion: "v2",
+    existingIdentityOnly: true,
+    externalSubject: `golden-flow-agent-hosted-${suffix}`,
+    invitationId: `invite_golden_flow_hosted_${suffix}`,
+    senderThumbprint: "j".repeat(43)
+  });
+  assert.equal(hostedAcceptanceAgent.replayed, false);
+  assert.equal(hostedAcceptanceAgent.privateKeyIncluded, false);
+  assert.equal(hostedAcceptanceAgent.productionFundsAuthority, false);
+  assert.equal(
+    hostedAcceptanceAgent.runnerBootstrap.credentials[0].senderThumbprint,
+    "j".repeat(43)
+  );
+  const replayedHostedAcceptanceAgent = await provisionProductionGoldenFlowAgent({
+    ...goldenFlowInput,
+    adminConnectionString: authenticationUrl.toString(),
+    referenceHashKey: hostedAcceptanceAgentReferenceKey,
+    referenceHashKeyVersion: "v2",
+    existingIdentityOnly: true,
+    externalSubject: `golden-flow-agent-hosted-${suffix}`,
+    invitationId: `invite_golden_flow_hosted_${suffix}`,
+    senderThumbprint: "j".repeat(43)
+  });
+  assert.equal(replayedHostedAcceptanceAgent.replayed, true);
+  assert.equal(
+    replayedHostedAcceptanceAgent.credentialId,
+    hostedAcceptanceAgent.credentialId
+  );
+  const revokedHostedAcceptanceAgent = await revokeProductionGoldenFlowAgentCredential({
+    adminConnectionString: authenticationUrl.toString(),
+    tenantId: input.tenant.tenantId,
+    actorId: goldenFlowInput.actorId,
+    performedByActorId: input.systemActor.actorId
+  });
+  assert.equal(revokedHostedAcceptanceAgent.status, "revoked");
+  assert.equal(revokedHostedAcceptanceAgent.replayed, false);
+
   await assert.rejects(
     () => bootstrapProductionDatabase({
       ...parameters,
