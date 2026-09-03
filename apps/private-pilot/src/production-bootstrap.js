@@ -567,6 +567,7 @@ export async function provisionProductionGoldenFlowAgent({
   adminConnectionString,
   referenceHashKey,
   referenceHashKeyVersion = "v1",
+  existingIdentityOnly = false,
   tenantId,
   controllerActorId,
   actorId,
@@ -590,6 +591,9 @@ export async function provisionProductionGoldenFlowAgent({
   const checkedPerformer = id("performedByActorId", performedByActorId);
   const checkedPolicyVersion = id("policyVersion", policyVersion);
   const checkedExpiresAt = canonicalTimestamp("expiresAt", expiresAt);
+  if (typeof existingIdentityOnly !== "boolean") {
+    throw fail("existingIdentityOnly is invalid");
+  }
   if (referenceHashKeyVersion !== "v1" && referenceHashKeyVersion !== "v2") {
     throw fail("reference hash key version is invalid");
   }
@@ -661,7 +665,9 @@ export async function provisionProductionGoldenFlowAgent({
           WHERE t.id = $1
             AND controller_membership.role_bundle = 'principal_controller'
             AND performer_membership.role_bundle = 'system_worker'
-          FOR SHARE OF t, controller, controller_membership, performer, performer_membership`,
+          ${existingIdentityOnly
+            ? ""
+            : "FOR SHARE OF t, controller, controller_membership, performer, performer_membership"}`,
         [checkedTenantId, checkedControllerId, checkedPerformer]
       );
       const bound = authority.rows[0];
@@ -679,35 +685,37 @@ export async function provisionProductionGoldenFlowAgent({
       ) {
         throw fail("Golden Flow Agent provisioning authority is unavailable");
       }
-      await client.query(
-        `INSERT INTO actors(
-           id, actor_hash, actor_type, status, created_at, updated_at, schema_version
-         ) VALUES ($1, $2, 'agent', 'active', $3, $3, 'actor.v1')
-         ON CONFLICT (id) DO NOTHING`,
-        [checkedActorId, hashId("production_actor", checkedActorId), now]
-      );
-      await client.query(
-        `INSERT INTO memberships(
-           id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
-           client_ids, policy_version, controller_actor_id, status, valid_from,
-           expires_at, created_at, updated_at, version, schema_version
-         ) VALUES (
-           $1, $2, $3, $4, 'agent_runtime', $5::jsonb,
-           $6::jsonb, $7, $8, 'active', $9,
-           NULL, $9, $9, 1, 'membership.v1'
-         ) ON CONFLICT (tenant_id, actor_id, role_bundle) DO NOTHING`,
-        [
-          `membership_${checkedActorId}`,
-          hashId("production_membership", `${checkedTenantId}:${checkedActorId}`),
-          checkedTenantId,
-          checkedActorId,
-          JSON.stringify(profile.capabilities),
-          JSON.stringify([checkedClientId]),
-          checkedPolicyVersion,
-          checkedControllerId,
-          now
-        ]
-      );
+      if (!existingIdentityOnly) {
+        await client.query(
+          `INSERT INTO actors(
+             id, actor_hash, actor_type, status, created_at, updated_at, schema_version
+           ) VALUES ($1, $2, 'agent', 'active', $3, $3, 'actor.v1')
+           ON CONFLICT (id) DO NOTHING`,
+          [checkedActorId, hashId("production_actor", checkedActorId), now]
+        );
+        await client.query(
+          `INSERT INTO memberships(
+             id, membership_hash, tenant_id, actor_id, role_bundle, capabilities,
+             client_ids, policy_version, controller_actor_id, status, valid_from,
+             expires_at, created_at, updated_at, version, schema_version
+           ) VALUES (
+             $1, $2, $3, $4, 'agent_runtime', $5::jsonb,
+             $6::jsonb, $7, $8, 'active', $9,
+             NULL, $9, $9, 1, 'membership.v1'
+           ) ON CONFLICT (tenant_id, actor_id, role_bundle) DO NOTHING`,
+          [
+            `membership_${checkedActorId}`,
+            hashId("production_membership", `${checkedTenantId}:${checkedActorId}`),
+            checkedTenantId,
+            checkedActorId,
+            JSON.stringify(profile.capabilities),
+            JSON.stringify([checkedClientId]),
+            checkedPolicyVersion,
+            checkedControllerId,
+            now
+          ]
+        );
+      }
       const identity = await client.query(
         `SELECT a.actor_type, a.status AS actor_status,
                 m.role_bundle, m.capabilities, m.client_ids, m.policy_version,
