@@ -36,6 +36,19 @@ const REFERENCE_HASH_MODES = new Set([
   "overlap_v2_write_v1_lookup",
   "single_v2"
 ]);
+
+function reportInternalRequestFailure(error, requestId) {
+  const value = {
+    event: "production_tenant_internal_error",
+    requestId,
+    errorName: typeof error?.name === "string" ? error.name.slice(0, 96) : "Error",
+    errorCode: typeof error?.code === "string" ? error.code.slice(0, 96) : "unknown",
+    constraint: typeof error?.constraint === "string" ? error.constraint.slice(0, 128) : undefined,
+    table: typeof error?.table === "string" ? error.table.slice(0, 128) : undefined,
+    routine: typeof error?.routine === "string" ? error.routine.slice(0, 128) : undefined
+  };
+  console.error(JSON.stringify(value));
+}
 const CONFIG_KEYS = new Set([
   "authenticationReferenceHash",
   "admitAuthenticationRequest",
@@ -638,6 +651,7 @@ export function createProductionTenantRequestHandler(input) {
       return json(response, 200, result, requestId);
     } catch (error) {
       const problem = createProblemDetails(error, { requestId });
+      if (problem.status === 500) reportInternalRequestFailure(error, requestId);
       return json(
         response,
         problem.status,

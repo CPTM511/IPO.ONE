@@ -12,6 +12,7 @@ import {
 import fixtures from "../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json" with { type: "json" };
 import {
   confirmVercelAgentEconomicCommand,
+  createStableVercelAgentRuntimeIdentifier,
   createProductionMcpHandle,
   createVercelGoldenFlowAgentClient,
   resolveVercelAgentOfferReceipt
@@ -22,6 +23,29 @@ const REQUEST = fixtures.validRequests[0];
 const RESULT = fixtures.validResults.find(
   (value) => value.operationId === REQUEST.operationId
 );
+
+test("Golden Flow runtime identities are stable per workflow and stage", () => {
+  const workflowId = "local-agent-obligation-aaaaaaaaaaaaaaaaaaaaaaaa";
+  const accept = createStableVercelAgentRuntimeIdentifier(
+    "request-agent-metered-accept",
+    workflowId
+  );
+  assert.equal(
+    createStableVercelAgentRuntimeIdentifier(
+      "request-agent-metered-accept",
+      workflowId
+    ),
+    accept
+  );
+  assert.notEqual(
+    createStableVercelAgentRuntimeIdentifier(
+      "request-agent-metered-execute",
+      workflowId
+    ),
+    accept
+  );
+  assert.match(accept, /^request-agent-metered-accept-[0-9a-f]{32}$/);
+});
 
 function fakeHttpsRequest() {
   const calls = [];
