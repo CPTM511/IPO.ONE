@@ -325,6 +325,35 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.equal(Number(pdfResponse.headers.get("content-length")), whitepaperPdf.byteLength);
     assert.equal(await pdfResponse.text(), "");
 
+    const retirementWorkerResponse = await fetch(`${baseUrl}/sw.js`);
+    assert.equal(retirementWorkerResponse.status, 200);
+    assert.match(retirementWorkerResponse.headers.get("content-type"), /^text\/javascript/);
+    assert.equal(retirementWorkerResponse.headers.get("cache-control"), "no-store");
+    const retirementWorker = await retirementWorkerResponse.text();
+    assert.match(retirementWorker, /self\.registration\.unregister\(\)/);
+    assert.doesNotMatch(retirementWorker, /addEventListener\(["']fetch["']/);
+    const retirementWorkerHead = await fetch(`${baseUrl}/sw.js`, { method: "HEAD" });
+    assert.equal(retirementWorkerHead.status, 200);
+    assert.equal(
+      Number(retirementWorkerHead.headers.get("content-length")),
+      Buffer.byteLength(retirementWorker)
+    );
+    assert.equal(await retirementWorkerHead.text(), "");
+
+    const robotsResponse = await fetch(`${baseUrl}/robots.txt`);
+    assert.equal(robotsResponse.status, 200);
+    assert.match(robotsResponse.headers.get("content-type"), /^text\/plain/);
+    const robots = await robotsResponse.text();
+    assert.match(robots, /^User-agent: \*$/m);
+    assert.match(robots, /^Allow: \/$/m);
+    for (const prefix of ["/api/", "/auth/", "/tenant/", "/v1/"]) {
+      assert.match(robots, new RegExp(`^Disallow: ${prefix}$`, "m"));
+    }
+    const robotsHead = await fetch(`${baseUrl}/robots.txt`, { method: "HEAD" });
+    assert.equal(robotsHead.status, 200);
+    assert.equal(Number(robotsHead.headers.get("content-length")), Buffer.byteLength(robots));
+    assert.equal(await robotsHead.text(), "");
+
     const openApiResponse = await fetch(`${baseUrl}${TENANT_HTTP_ROUTES.openapi}`);
     assert.equal(openApiResponse.status, 200);
     const openApi = await openApiResponse.json();

@@ -149,6 +149,34 @@ test("public sandbox rejects adversarial HTTP input and bounds mutable state", a
     assert.doesNotMatch(response.headers.get("x-ipo-one-sandbox-session"), /attacker/);
   });
 
+  await t.test("public tail assets retire stale workers and declare crawler boundaries", async () => {
+    const retirementWorkerResponse = await fetch(`${baseUrl}/sw.js`);
+    assert.equal(retirementWorkerResponse.status, 200);
+    assert.match(retirementWorkerResponse.headers.get("content-type"), /^text\/javascript/);
+    const retirementWorker = await retirementWorkerResponse.text();
+    assert.match(retirementWorker, /self\.registration\.unregister\(\)/);
+    assert.doesNotMatch(retirementWorker, /addEventListener\(["']fetch["']/);
+
+    const robotsResponse = await fetch(`${baseUrl}/robots.txt`);
+    assert.equal(robotsResponse.status, 200);
+    assert.match(robotsResponse.headers.get("content-type"), /^text\/plain/);
+    assert.equal(
+      await robotsResponse.text(),
+      "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/\nDisallow: /tenant/\nDisallow: /v1/\n"
+    );
+
+    for (const resource of ["/sw.js", "/robots.txt"]) {
+      const getResponse = await fetch(`${baseUrl}${resource}`);
+      const headResponse = await fetch(`${baseUrl}${resource}`, { method: "HEAD" });
+      assert.equal(headResponse.status, 200);
+      assert.equal(
+        Number(headResponse.headers.get("content-length")),
+        Number(getResponse.headers.get("content-length"))
+      );
+      assert.equal(await headResponse.text(), "");
+    }
+  });
+
   await t.test("unsupported methods and media encodings fail closed", async () => {
     const optionsResponse = await fetch(`${baseUrl}/v1/demo/state`, { method: "OPTIONS" });
     assert.equal(optionsResponse.status, 405);

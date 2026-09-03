@@ -53,7 +53,9 @@ const WEB_ASSETS = Object.freeze({
   "/icons.svg": Object.freeze({ file: "icons.svg", contentType: "image/svg+xml" }),
   "/favicon.svg": Object.freeze({ file: "favicon.svg", contentType: "image/svg+xml" }),
   "/favicon.ico": Object.freeze({ file: "favicon.svg", contentType: "image/svg+xml" }),
-  "/manifest.webmanifest": Object.freeze({ file: "manifest.webmanifest", contentType: "application/manifest+json" })
+  "/manifest.webmanifest": Object.freeze({ file: "manifest.webmanifest", contentType: "application/manifest+json" }),
+  "/robots.txt": Object.freeze({ file: "robots.txt", contentType: "text/plain; charset=utf-8" }),
+  "/sw.js": Object.freeze({ file: "sw.js", contentType: "text/javascript; charset=utf-8" })
 });
 const CSRF_META_PLACEHOLDER = '<meta name="ipo-one-csrf-token" content="" />';
 const LOCAL_AGENT_ACCOUNT_META_PLACEHOLDER =
