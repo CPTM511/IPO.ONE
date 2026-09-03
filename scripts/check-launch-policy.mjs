@@ -60,6 +60,13 @@ assert.equal(
   policy.profiles.public_authenticated_no_funds_beta.capabilities.withdrawalAuthorized,
   false
 );
+assert.equal(
+  policy.profiles.public_authenticated_no_funds_beta.capabilities.syntheticMeteredResourceEnabled,
+  true
+);
+assert.equal(policy.profiles.public_sandbox.capabilities.syntheticMeteredResourceEnabled, false);
+assert.equal(policy.profiles.live_testnet_secured_pool.capabilities.syntheticMeteredResourceEnabled, false);
+assert.equal(policy.profiles.controlled_agent_credit_pilot.capabilities.syntheticMeteredResourceEnabled, false);
 assert.equal(policy.profiles.live_testnet_secured_pool.releaseEnabled, true);
 assert.equal(
   policy.profiles.live_testnet_secured_pool.exactProfile.poolContract,

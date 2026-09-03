@@ -135,6 +135,70 @@ const SECURED_POOL_MARKET_SNAPSHOT_SCHEMA = Object.freeze({
   })
 });
 
+const SYNTHETIC_METERED_RESOURCE_REQUEST_SCHEMA = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  required: Object.freeze(["schemaVersion", "obligationId", "quantity", "idempotencyKey"]),
+  properties: Object.freeze({
+    schemaVersion: Object.freeze({ const: "ipo_one_synthetic_metered_resource_request.v1" }),
+    obligationId: Object.freeze({ type: "string", minLength: 1, maxLength: 256 }),
+    quantity: Object.freeze({ type: "string", pattern: "^[1-9][0-9]{0,17}$" }),
+    idempotencyKey: Object.freeze({ type: "string", minLength: 16, maxLength: 256 })
+  })
+});
+
+const SYNTHETIC_METERED_RESOURCE_RECEIPT_SCHEMA = Object.freeze({
+  type: "object",
+  additionalProperties: true,
+  required: Object.freeze([
+    "status", "providerId", "resourceClass", "measurementUnit", "quantity",
+    "unitPriceMinor", "chargeMinor", "consumedWindowMinor", "remainingWindowMinor",
+    "maxChargePerWindowMinor", "obligationId", "usageEvidenceId",
+    "meteredUsageAdmissionId", "ledgerTransactionId", "replayed", "nextAction",
+    "sandboxOnly", "productionFundsMoved", "realFundsEnabled", "schemaVersion"
+  ]),
+  properties: Object.freeze({
+    schemaVersion: Object.freeze({ const: "ipo_one_synthetic_metered_resource_receipt.v1" }),
+    sandboxOnly: Object.freeze({ const: true }),
+    productionFundsMoved: Object.freeze({ const: false }),
+    realFundsEnabled: Object.freeze({ const: false })
+  })
+});
+
+function syntheticMeteredResourcePath(security, parameters = []) {
+  return Object.freeze({
+    post: Object.freeze({
+      operationId: "consumeSyntheticMeteredResource",
+      summary: "Consume the exact hosted synthetic inference-token resource for an owned sandbox Obligation",
+      parameters: Object.freeze(parameters),
+      security,
+      requestBody: Object.freeze({
+        required: true,
+        content: Object.freeze({
+          "application/json": Object.freeze({ schema: SYNTHETIC_METERED_RESOURCE_REQUEST_SCHEMA })
+        })
+      }),
+      responses: Object.freeze({
+        200: Object.freeze({
+          description: "Signed, admitted, replay-safe synthetic Metered Usage receipt",
+          content: Object.freeze({
+            "application/json": Object.freeze({ schema: SYNTHETIC_METERED_RESOURCE_RECEIPT_SCHEMA })
+          })
+        }),
+        400: problemResponse("Request rejected"),
+        401: problemResponse("Workload authentication required or rejected"),
+        403: problemResponse("Authenticated Agent lacks authority"),
+        404: problemResponse("Owned active Obligation is unavailable"),
+        409: problemResponse("Idempotency or state conflict"),
+        429: problemResponse("Admission or exact cap reached")
+      }),
+      "x-ipo-one-synthetic-only": true,
+      "x-real-funds-enabled": false,
+      "x-external-provider-execution-enabled": false
+    })
+  });
+}
+
 function exactOrigin(value, { httpsOnly = false } = {}) {
   const origin = value instanceof URL ? value : new URL(value);
   if (
@@ -196,7 +260,8 @@ export function createTenantOpenApiDocument(publicOrigin) {
           summary: "Execute one catalogued Tenant operation",
           security: Object.freeze([
             Object.freeze({ humanSession: [] }),
-            Object.freeze({ workloadBearer: [], mutualTls: [] })
+            Object.freeze({ workloadBearer: [], mutualTls: [] }),
+            Object.freeze({ workloadBearer: [], dpopProof: [] })
           ]),
           requestBody: Object.freeze({
             required: true,
@@ -218,13 +283,20 @@ export function createTenantOpenApiDocument(publicOrigin) {
           })
         })
       }),
+      "/tenant/v1/synthetic-metered-resource": syntheticMeteredResourcePath(
+        Object.freeze([
+          Object.freeze({ workloadBearer: [], mutualTls: [] }),
+          Object.freeze({ workloadBearer: [], dpopProof: [] })
+        ])
+      ),
       "/tenant/v1/catalog": Object.freeze({
         get: Object.freeze({
           operationId: "getTenantOperationCatalog",
           summary: "Read the closed operation catalog",
           security: Object.freeze([
             Object.freeze({ humanSession: [] }),
-            Object.freeze({ workloadBearer: [], mutualTls: [] })
+            Object.freeze({ workloadBearer: [], mutualTls: [] }),
+            Object.freeze({ workloadBearer: [], dpopProof: [] })
           ]),
           responses: Object.freeze({
             200: Object.freeze({ description: "Versioned Tenant operation catalog" }),
@@ -238,7 +310,8 @@ export function createTenantOpenApiDocument(publicOrigin) {
           summary: "Read exact public Pool market truth without private position data",
           security: Object.freeze([
             Object.freeze({ humanSession: [] }),
-            Object.freeze({ workloadBearer: [], mutualTls: [] })
+            Object.freeze({ workloadBearer: [], mutualTls: [] }),
+            Object.freeze({ workloadBearer: [], dpopProof: [] })
           ]),
           responses: Object.freeze({
             200: Object.freeze({
@@ -284,7 +357,8 @@ export function createTenantOpenApiDocument(publicOrigin) {
 export function createAgentHttpsOpenApiDocument(publicOrigin) {
   const origin = exactOrigin(publicOrigin, { httpsOnly: true });
   const agentSecurity = Object.freeze([
-    Object.freeze({ workloadBearer: [], mutualTls: [] })
+    Object.freeze({ workloadBearer: [], mutualTls: [] }),
+    Object.freeze({ workloadBearer: [], dpopProof: [] })
   ]);
   const requestIdParameter = Object.freeze({
     name: "X-Request-ID",
@@ -305,7 +379,7 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
       title: "IPO.ONE Remote Agent HTTPS Contract",
       version: "1.0.0",
       description:
-        "Invite-only, sender-constrained HTTPS access to the durable no-real-funds Tenant protocol. Publishing this contract does not activate a remote endpoint."
+        "Sender-constrained HTTPS access to the active public authenticated no-funds Tenant protocol. Agent Credentials remain Principal-bound and least-privilege."
     }),
     servers: Object.freeze([{ url: origin.origin }]),
     security: agentSecurity,
@@ -377,6 +451,10 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
           "x-ipo-one-timeout-outcome": "unknown_after_submission"
         })
       }),
+      "/tenant/v1/synthetic-metered-resource": syntheticMeteredResourcePath(
+        agentSecurity,
+        [requestIdParameter]
+      ),
       "/tenant/v1/catalog": Object.freeze({
         get: Object.freeze({
           operationId: "getAgentTenantOperationCatalog",
@@ -422,12 +500,19 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
           scheme: "bearer",
           bearerFormat: "JWT",
           description:
-            "Issuer- and audience-bound access token with a maximum five-minute lifetime and an x5t#S256 confirmation claim."
+            "Issuer- and audience-bound access token with a maximum five-minute lifetime and either an x5t#S256 or jkt confirmation claim."
         }),
         mutualTls: Object.freeze({
           type: "mutualTLS",
           description:
             "The trusted edge must bind the client certificate thumbprint to the access token and active internal Credential."
+        }),
+        dpopProof: Object.freeze({
+          type: "apiKey",
+          in: "header",
+          name: "DPoP",
+          description:
+            "A short-lived ES256 DPoP proof bound to the exact method, URI, access token and active internal Credential."
         })
       }),
       schemas: Object.freeze({
@@ -440,9 +525,9 @@ export function createAgentHttpsOpenApiDocument(publicOrigin) {
     "x-ipo-one-profile": "public_authenticated_no_funds_beta",
     "x-ipo-one-wallet-operations": WALLET_EXECUTION_OPENAPI_OPERATION_IDS,
     "x-ipo-one-wallet-submission-enabled": false,
-    "x-ipo-one-activation": "disabled_pending_named_deployment_approval",
+    "x-ipo-one-activation": "active_public_authenticated_no_funds",
     "x-ipo-one-safety": Object.freeze({
-      remoteParticipantAccessEnabled: false,
+      remoteParticipantAccessEnabled: true,
       realFundsEnabled: false,
       humanCreditEnabled: false,
       testnetWritesEnabled: false,

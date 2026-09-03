@@ -1,11 +1,13 @@
 # IPO.ONE Phase 3 remaining traceability v0.1
 
-Status: Phase 3 closed; Public Beta active; M3-000 alignment complete; implementation not authorized
+Status: Phase 3 closed; Public Beta active; M3 L0 ratified; exact M3 L2 productization authorized and in progress
 
 Date: 2026-08-31
 
-Repository baseline after Phase 3 closure merge: `origin/main` at
-`06509847ab6e63889b4aa4df5928815f1abcb966`
+Last updated: 2026-09-03
+
+Current repository baseline: `origin/main` at
+`6b18501b564664167b67bb1489c2678f46c494df`
 
 Production baseline remains:
 `c4cc81f09f1c7aeb78871373d29ed581e428daca`
@@ -25,7 +27,7 @@ higher state.
 | M2 bounded v0.2.1 no-funds milestone | `M2_EXECUTION_PLAN_v0.1.md`, `M2B-006`, AUTHN-008 cutover/retirement Evidence | `PASS — DEPLOYED AND USER-VERIFIED` only for the exact no-funds boundary; M2 ends at `M2B-006` | None inside M2; later work is separately gated |
 | Public authenticated no-funds runtime | Production health, capability discovery, Vercel deployment `dpl_XF9tYaYWe8qBuiXrQkWGrV4yChGt` and `PUBLIC-BETA-001C` acceptance | `PASS — DEPLOYED AND USER-VERIFIED` at `c4cc81f...`; profile `public_authenticated_no_funds_beta`; `single_v2`; no real funds; external Provider/Venue/chain writes disabled | Keep Public Beta live while later Phase 3 gates proceed |
 | `PHASE3-POOL-001` remote Pool product | PRs `#60/#61`, deployment `dpl_5KLezhu9ZA3vcob8xgpMp5GSNPkq`, production visible-click and recovery Evidence | `PASS — DEPLOYED AND USER-VERIFIED` at merged/deployed SHA `316de8f0c2188c5f4d0b15a1cffbc50713b2972e`; no signer or transaction | Preserve as the exact prerequisite baseline for `PILOT-008A`; no inherited activation authority |
-| `L2_PUBLIC_AUTHENTICATED_NO_FUNDS` launch authority | Constitution v1.4, launch policy v1.4.0, Founder decision, final production deployment and `PUBLIC-BETA-001C` Evidence | `COMPLETE — PUBLIC BETA ACTIVE`; ordinary Human and Principal self-service is live; privileged roles remain separately controlled | Preserve current gates and no-funds boundary; no invited-cohort blocker remains |
+| `L2_PUBLIC_AUTHENTICATED_NO_FUNDS` launch authority | Constitution v1.6, launch policy v1.5.0, Founder decision, final production deployment and `PUBLIC-BETA-001C` Evidence | `COMPLETE — PUBLIC BETA ACTIVE`; ordinary Human and Principal self-service is live; the one exact hosted synthetic Metered Resource profile is authorized; privileged roles remain separately controlled | Preserve current gates and no-funds boundary; no invited-cohort blocker remains |
 | `REQ-PILOT-001` dispute/appeal/correction case workflow | `PILOT-008A` implementation plus deployed Public Beta shared-kernel and current Quality Gate Evidence | Required L2 operational capability; original truth immutable and corrections additive | Continue operating under Public Beta; no invitation dependency |
 | `REQ-PILOT-002` privacy-safe analytics, feedback, support, and incident ownership | `PILOT-006`, Public Beta notice, existing support/incident/restore/rollback controls and `PUBLIC-BETA-001C` binding | Required L2 operational capability; does not imply invitation or participant approval | Keep operational ownership and Evidence current while Public Beta remains live |
 | Historical `PILOT-008B/008C` | Gate 0 and Vercel + Neon preparation Evidence | Superseded by `DEC-PUBLIC-NO-FUNDS-BETA-001`; neither task is an active blocker | Retain only as historical preparation Evidence |
@@ -34,7 +36,7 @@ higher state.
 | `REQ-TRADE-005` / Hyperliquid delegated execution | `HL-TESTNET-001A` read-only package plus `HL-TESTNET-001B` Evidence `hl-testnet-001b-live-20260901-001.json` | `PASS — TESTNET VERIFIED`; one exact `0.00013 BTC` open and reduce-only close filled; independent reads returned zero positions/orders; `1198/1200` repaid, `2` minor units outstanding; signer key destroyed | No second run or inherited authority; use only the finalized redacted outcome as an explicitly approved successor input |
 | `RISK-003B` shadow learning | Exact source SHA-256 `eeb1f5e...`, shadow artifact SHA-256 `97f7a6a...`, deterministic replay and full repository checks | `PASS — SHADOW EVALUATION COMPLETE`; one Agent sample preserves `1198/1200` repayment and `2` minor units outstanding; challenger is `insufficient_sample`; active-policy hash is unchanged | Preserve immutable lineage; do not promote, loosen policy or infer production validity from one Testnet sample |
 | Phase 3 closure | Exact closure input `8408a30...`, production SHA `c4cc81f...`, finalized Base Sepolia/Hyperliquid Evidence, RISK-003B artifact and full repository checks | `PASS — PHASE 3 CLOSED`; Public Beta remains active; zero scoped P0/P1 and zero unexplained reconciliation discrepancy | Preserve immutable Evidence and current safety boundaries; no successor authority is inherited |
-| Post-M2 M3 Task/API/Compute | Founder-authorized `M3-000` alignment package after merged Phase 3 closure | `ALIGNMENT COMPLETE — NARROW — NO RUNTIME CHANGE`; fixed-price Provider Spend already exists; only metered machine-service usage Evidence is a justified narrow addition | Founder review of proposed `REQ-EXEC-005` and `DEC-METERED-RESOURCE-CREDIT-001`; Constitution change and implementation remain not authorized |
+| Post-M2 M3 Task/API/Compute | Completed `M3-000`, M3-RESOURCE-001/002 L0 Evidence and 2026-09-03 Founder directive | Prior L0 work is now explicitly ratified without rewriting historical authority; Constitution v1.6 separately authorizes only `provider_gateway_compute` / `inference_tokens` / `token` at L2 Public Beta | Complete `M3-L2-001` deployed/user-verified acceptance, then prepare one external Provider decision package and stop before credential or call |
 | Phase 4 / controlled real value | Constitution and launch policy | Disabled; real-value launch profile remains locked | Future complete decision package, policy revision, external review, and Founder go/no-go |
 
 ## Naming reconciliation
@@ -69,10 +71,9 @@ cross-reference.
    insufficient for calibration, drift, promotion, or active-policy change.
 6. `PHASE3-CLOSE-001` is complete. Public Beta remains live; the Testnet and
    shadow results grant no production or real-value authority.
-7. M3-000 alignment is complete with recommendation `NARROW`. M3 code cannot
-   begin until the Founder accepts the recommendation, a new Constitution
-   decision is ratified and the proposed implementation scope is explicitly
-   authorized.
+7. M3-000 and the L0 implementation are now ratified. Exact synthetic L2
+   productization is authorized and in progress; external Provider credentials,
+   execution, any second profile and real value remain hard stops.
 
-Permission/funds/deployment impact: **none**. This matrix records current truth
-and successor gates only.
+Permission/deployment impact: the one exact synthetic L2 profile may be
+deployed to the existing Public Beta. Funds impact: **none**.

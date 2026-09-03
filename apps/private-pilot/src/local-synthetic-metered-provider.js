@@ -35,6 +35,8 @@ export const LOCAL_METERED_PROVIDER_MAX_EVENT_CHARGE_MINOR = "2000";
 export const LOCAL_METERED_PROVIDER_MAX_WINDOW_CHARGE_MINOR = "5000";
 export const LOCAL_METERED_PROVIDER_SCHEMA_VERSION =
   "ipo_one_local_synthetic_metered_provider_key.v1";
+export const HOSTED_METERED_PROVIDER_SCHEMA_VERSION =
+  "ipo_one_hosted_synthetic_metered_provider_key.v1";
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_LOCAL_METERED_PROVIDER_KEY_FILE = resolve(
@@ -74,20 +76,27 @@ function keyBytes(name, value) {
   return value;
 }
 
-export function assertLocalSyntheticMeteredProviderMaterial(value) {
+function assertSyntheticMeteredProviderMaterial(value, profile) {
   exactObject(value, [
     "privateKeyDer",
     "providerKeyId",
     "publicKeyDer",
     "schemaVersion"
   ]);
-  if (value.schemaVersion !== LOCAL_METERED_PROVIDER_SCHEMA_VERSION) {
-    invalid("local synthetic Metered Provider schemaVersion is invalid");
+  const schemaVersion = profile === "hosted"
+    ? HOSTED_METERED_PROVIDER_SCHEMA_VERSION
+    : LOCAL_METERED_PROVIDER_SCHEMA_VERSION;
+  const keyPrefix = profile === "hosted" ? "hosted_metered" : "local_metered";
+  const keyNamespace = profile === "hosted"
+    ? "hosted_metered_provider_key"
+    : "local_metered_provider_key";
+  if (value.schemaVersion !== schemaVersion) {
+    invalid(`${profile} synthetic Metered Provider schemaVersion is invalid`);
   }
   const privateKeyDer = keyBytes("privateKeyDer", value.privateKeyDer);
   const publicKeyDer = keyBytes("publicKeyDer", value.publicKeyDer);
-  const providerKeyId = `local_metered_${hashId(
-    "local_metered_provider_key",
+  const providerKeyId = `${keyPrefix}_${hashId(
+    keyNamespace,
     publicKeyDer
   ).slice(2, 34)}`;
   if (value.providerKeyId !== providerKeyId) {
@@ -118,6 +127,14 @@ export function assertLocalSyntheticMeteredProviderMaterial(value) {
     privateKeyDer,
     publicKeyDer
   });
+}
+
+export function assertLocalSyntheticMeteredProviderMaterial(value) {
+  return assertSyntheticMeteredProviderMaterial(value, "local");
+}
+
+export function assertHostedSyntheticMeteredProviderMaterial(value) {
+  return assertSyntheticMeteredProviderMaterial(value, "hosted");
 }
 
 export async function loadOrCreateLocalSyntheticMeteredProviderMaterial(
@@ -180,8 +197,8 @@ function priceScheduleHash() {
   });
 }
 
-export function createLocalSyntheticMeteredProvider({ keyMaterial }) {
-  const material = assertLocalSyntheticMeteredProviderMaterial(keyMaterial);
+function createSyntheticMeteredProvider({ keyMaterial, profile }) {
+  const material = assertSyntheticMeteredProviderMaterial(keyMaterial, profile);
   const privateKey = createPrivateKey({
     key: Buffer.from(material.privateKeyDer, "base64url"),
     format: "der",
@@ -265,22 +282,35 @@ export function createLocalSyntheticMeteredProvider({ keyMaterial }) {
   });
 }
 
-function repositoryFor(pool, authenticationContext) {
+export function createLocalSyntheticMeteredProvider({ keyMaterial }) {
+  return createSyntheticMeteredProvider({ keyMaterial, profile: "local" });
+}
+
+export function createHostedSyntheticMeteredProvider({ keyMaterial }) {
+  return createSyntheticMeteredProvider({ keyMaterial, profile: "hosted" });
+}
+
+function repositoryFor(pool, authenticationContext, source = "local_test") {
   const tenantContext = createTenantSecurityContext({
     tenantId: authenticationContext.tenantId,
     actorId: authenticationContext.actorId,
     policyVersion: authenticationContext.policyVersion,
-    source: "local_test"
+    source
   });
   const eventRepository = new PostgresEventRepository({ pool, tenantContext });
   return new PostgresCoreRepository({ pool, eventRepository });
 }
 
-async function provisionProvider(repository, { subjectId, obligationId, now }) {
+async function provisionProvider(repository, { subjectId, obligationId, now, profile }) {
+  const hosted = profile === "hosted";
   const provider = {
     ...createProvider({
-      name: "IPO.ONE Local Synthetic Inference Provider",
-      settlementAccountId: "urn:ipo.one:sandbox:settlement:local-metered-provider",
+      name: hosted
+        ? "IPO.ONE Hosted Synthetic Inference Provider"
+        : "IPO.ONE Local Synthetic Inference Provider",
+      settlementAccountId: hosted
+        ? "urn:ipo.one:sandbox:settlement:hosted-metered-provider"
+        : "urn:ipo.one:sandbox:settlement:local-metered-provider",
       now: new Date(POLICY_VALID_FROM)
     }),
     providerId: LOCAL_METERED_PROVIDER_ID
@@ -377,17 +407,24 @@ async function provisionSpendPolicy(repository, { obligation, policy, now }) {
   return spendPolicy;
 }
 
-export async function provisionLocalSyntheticMeteredPolicy({
+async function provisionSyntheticMeteredPolicy({
   pool,
   authenticationContext,
   obligationId,
   provider,
-  now = new Date()
+  now = new Date(),
+  profile
 }) {
   if (authenticationContext?.actorType !== "system_worker") {
     invalid("System Worker authentication is required");
   }
-  const repository = repositoryFor(pool, authenticationContext);
+  const repository = repositoryFor(
+    pool,
+    authenticationContext,
+    profile === "hosted"
+      ? "system_worker"
+      : "local_test"
+  );
   const [obligation, mandate, lockbox] = await repository.withTenantTransaction(async (client) => {
     const obligationState = await repository.getProjectionStateInTransaction(
       client,
@@ -435,26 +472,40 @@ export async function provisionLocalSyntheticMeteredPolicy({
   await provisionProvider(repository, {
     subjectId: obligation.subjectId,
     obligationId: obligation.obligationId,
-    now
+    now,
+    profile
   });
   await provisionSpendPolicy(repository, { obligation, policy, now });
   return Object.freeze({ obligation, mandate, lockbox, policy });
 }
 
-export async function prepareLocalSyntheticMeteredUsage({
+export function provisionLocalSyntheticMeteredPolicy(input) {
+  return provisionSyntheticMeteredPolicy({ ...input, profile: "local" });
+}
+
+export function provisionHostedSyntheticMeteredPolicy(input) {
+  return provisionSyntheticMeteredPolicy({ ...input, profile: "hosted" });
+}
+
+async function prepareSyntheticMeteredUsage({
   pool,
   authenticationContext,
   obligationId,
   provider,
   runId,
   quantity = "250",
-  now = new Date()
+  now = new Date(),
+  profile
 }) {
   if (!RUN_ID.test(runId ?? "") || !POSITIVE_INTEGER.test(quantity ?? "")) {
     invalid("runId or quantity is invalid");
   }
-  const providerEventId = `provider_event_local_metered_${hashId(
-    "local_metered_provider_run",
+  const runPrefix = profile === "hosted" ? "hosted_metered" : "local_metered";
+  const runNamespace = profile === "hosted"
+    ? "hosted_metered_provider_run"
+    : "local_metered_provider_run";
+  const providerEventId = `provider_event_${runPrefix}_${hashId(
+    runNamespace,
     { tenantId: authenticationContext.tenantId, runId }
   ).slice(2)}`;
   const repository = repositoryFor(pool, authenticationContext);
@@ -482,23 +533,24 @@ export async function prepareLocalSyntheticMeteredUsage({
       policy
     });
   }
-  const provisioned = await provisionLocalSyntheticMeteredPolicy({
+  const provisioned = await provisionSyntheticMeteredPolicy({
     pool,
     authenticationContext,
     obligationId,
     provider,
-    now
+    now,
+    profile
   });
-  const identityHash = hashId("local_metered_usage_run", {
+  const identityHash = hashId(`${profile}_metered_usage_run`, {
     tenantId: authenticationContext.tenantId,
     obligationId,
     runId
   });
-  const usageEvidenceId = `usage_local_metered_${identityHash.slice(2)}`;
+  const usageEvidenceId = `usage_${runPrefix}_${identityHash.slice(2)}`;
   const evidence = createMeteredUsageEvidence({
     usageEvidenceId,
     providerEventId,
-    nonce: `nonce_local_metered_${identityHash.slice(2)}`,
+    nonce: `nonce_${runPrefix}_${identityHash.slice(2)}`,
     tenantId: authenticationContext.tenantId,
     subjectId: provisioned.policy.subjectId,
     principalId: provisioned.policy.principalId,
@@ -520,7 +572,7 @@ export async function prepareLocalSyntheticMeteredUsage({
     finality: "finalized",
     reconciliation: "reconciled",
     providerKeyId: provider.providerKeyId,
-    providerPayloadHash: hashId("local_metered_provider_payload", {
+    providerPayloadHash: hashId(`${profile}_metered_provider_payload`, {
       obligationId,
       runId,
       quantity
@@ -534,14 +586,27 @@ export async function prepareLocalSyntheticMeteredUsage({
   });
 }
 
-export async function findLocalSyntheticMeteredUsageRun({
+export function prepareLocalSyntheticMeteredUsage(input) {
+  return prepareSyntheticMeteredUsage({ ...input, profile: "local" });
+}
+
+export function prepareHostedSyntheticMeteredUsage(input) {
+  return prepareSyntheticMeteredUsage({ ...input, profile: "hosted" });
+}
+
+async function findSyntheticMeteredUsageRun({
   pool,
   authenticationContext,
-  runId
+  runId,
+  profile
 }) {
   if (!RUN_ID.test(runId ?? "")) invalid("runId is invalid");
-  const providerEventId = `provider_event_local_metered_${hashId(
-    "local_metered_provider_run",
+  const runPrefix = profile === "hosted" ? "hosted_metered" : "local_metered";
+  const runNamespace = profile === "hosted"
+    ? "hosted_metered_provider_run"
+    : "local_metered_provider_run";
+  const providerEventId = `provider_event_${runPrefix}_${hashId(
+    runNamespace,
     { tenantId: authenticationContext.tenantId, runId }
   ).slice(2)}`;
   const repository = repositoryFor(pool, authenticationContext);
@@ -554,4 +619,13 @@ export async function findLocalSyntheticMeteredUsageRun({
     if (result.rowCount > 1) invalid("Metered Usage run identity is ambiguous");
     return result.rows[0]?.record;
   });
+}
+
+
+export function findLocalSyntheticMeteredUsageRun(input) {
+  return findSyntheticMeteredUsageRun({ ...input, profile: "local" });
+}
+
+export function findHostedSyntheticMeteredUsageRun(input) {
+  return findSyntheticMeteredUsageRun({ ...input, profile: "hosted" });
 }

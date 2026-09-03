@@ -8,8 +8,13 @@ Baseline: `475b7baa6b65fc5d439e79d1fd07da4c4794e590`
 
 Implementation: `b3cdfe9e5f242a785752ffee3036e6b6d638f8b8`
 
-This record accepts one Founder-authorized synthetic metered machine-service
-slice under Constitution v1.5 `REQ-EXEC-005` and
+Provenance correction (2026-09-03): this L0 result was completed and accepted,
+but independent Evidence of prior Founder implementation authorization was not
+established. The Founder now explicitly ratifies this completed L0 scope; that
+ratification does not rewrite the authority available when the work occurred.
+
+This record accepts one synthetic metered machine-service slice under
+Constitution v1.5 `REQ-EXEC-005` and
 `DEC-METERED-RESOURCE-CREDIT-001`. It grants no deployment, external Provider,
 credential, pricing-policy, risk-policy, mainnet, signer, custody, transfer,
 withdrawal or real-funds authority.

@@ -314,6 +314,9 @@ const evidenceAnchorPilot = {
     "Chain status is resolved from hosted capability and current-user Evidence.",
   error: false
 };
+const syntheticMeteredResource = {
+  profile: null
+};
 const creditRegistryEvidence = {
   catalogAvailable: false,
   busy: false,
@@ -5099,7 +5102,102 @@ function obligationHistoryPresentationRow(item) {
   return row;
 }
 
+function renderSyntheticMeteredResource() {
+  const state = el("syntheticMeteredResourceState");
+  if (!state) return;
+  const profile = syntheticMeteredResource.profile;
+  const available = profile?.status === "AVAILABLE" &&
+    profile.schemaVersion === "ipo_one_synthetic_metered_resource_profile.v1" &&
+    profile.syntheticOnly === true && profile.productionFundsMoved === false &&
+    profile.externalProviderExecutionEnabled === false;
+  const obligation = tenantPilot.obligation;
+  const evidenceMatches = Boolean(
+    obligation?.obligationId && ownedEvidence.obligationId === obligation.obligationId
+  );
+  const meteredItems = evidenceMatches
+    ? ownedEvidence.items.filter((item) => item.meteredUsage)
+    : [];
+  const consumedMinor = meteredItems.reduce(
+    (total, item) => total + BigInt(item.meteredUsage.chargeDeltaMinor),
+    0n
+  );
+  const completeEvidence = evidenceMatches && ownedEvidence.queried &&
+    !ownedEvidence.hasMore && !ownedEvidence.capped;
+  state.textContent = available ? "Synthetic profile active" : "Unavailable";
+  state.className = `state-pill ${available ? "neutral" : "warning"}`;
+  el("syntheticMeteredResourceProvider").textContent = available
+    ? `${profile.providerId} · ${profile.resourceClass} / ${profile.measurementUnit}`
+    : "No enabled hosted profile";
+  el("syntheticMeteredResourceCap").textContent = available
+    ? `${usdMinorToMoney(profile.maxChargePerWindowMinor)} window · ${profile.maxQuantityPerEvent} ${profile.measurementUnit} per event`
+    : "Not authorized";
+  el("syntheticMeteredResourceCapacity").textContent = !available
+    ? "Unavailable"
+    : !completeEvidence
+      ? "Load the complete server Evidence timeline"
+      : `${usdMinorToMoney(consumedMinor.toString())} consumed · ${usdMinorToMoney((BigInt(profile.maxChargePerWindowMinor) - consumedMinor).toString())} remaining`;
+  el("syntheticMeteredResourceObligation").textContent = obligation
+    ? `${titleize(obligation.status)} · ${compactOpaqueId(obligation.obligationId)}`
+    : "Awaiting an Agent Obligation";
+  if (obligation) el("syntheticMeteredResourceObligation").title = obligation.obligationId;
+  el("syntheticMeteredResourceRepayment").textContent = obligation
+    ? `${usdMinorToMoney(obligation.totalRepaidMinor)} repaid · ${usdMinorToMoney((
+        BigInt(obligation.outstandingPrincipalMinor) +
+        BigInt(obligation.outstandingInterestMinor) +
+        BigInt(obligation.outstandingFeesMinor)
+      ).toString())} outstanding`
+    : "Not available";
+  const latest = meteredItems.at(-1)?.meteredUsage;
+  el("syntheticMeteredResourceEvidence").textContent = latest
+    ? `${latest.quantity} ${latest.measurementUnit} · ${usdMinorToMoney(latest.chargeMinor)} · finalized / reconciled`
+    : completeEvidence ? "No Metered Usage admitted" : "Not loaded";
+  el("syntheticMeteredResourceCopy").textContent = available
+    ? `The Agent consumes one server-priced synthetic resource. The charge is admitted to the canonical Ledger and remains visible to the accountable Principal; external Provider execution and real funds remain disabled.`
+    : "The hosted synthetic Metered Resource is not enabled for this deployment role. No external Provider or real funds are available.";
+}
+
+function renderObligationDetailMeteredResource(presentation = null) {
+  const provider = el("obligationDetailMeteredProvider");
+  if (!provider) return;
+  const profile = syntheticMeteredResource.profile;
+  const available = profile?.status === "AVAILABLE" &&
+    profile.schemaVersion === "ipo_one_synthetic_metered_resource_profile.v1" &&
+    profile.syntheticOnly === true && profile.productionFundsMoved === false &&
+    profile.externalProviderExecutionEnabled === false;
+  const evidenceMatches = Boolean(
+    presentation?.obligationId && ownedEvidence.obligationId === presentation.obligationId
+  );
+  const meteredItems = evidenceMatches
+    ? ownedEvidence.items.filter((item) => item.meteredUsage)
+    : [];
+  const consumedMinor = meteredItems.reduce(
+    (total, item) => total + BigInt(item.meteredUsage.chargeDeltaMinor),
+    0n
+  );
+  const completeEvidence = evidenceMatches && ownedEvidence.queried &&
+    !ownedEvidence.hasMore && !ownedEvidence.capped;
+  provider.textContent = available
+    ? `${profile.providerId} · ${profile.resourceClass} / ${profile.measurementUnit}`
+    : "No enabled hosted profile";
+  el("obligationDetailMeteredCap").textContent = available
+    ? `${usdMinorToMoney(profile.maxChargePerWindowMinor)} no-funds window`
+    : "Not authorized";
+  el("obligationDetailMeteredCapacity").textContent = !available
+    ? "Unavailable"
+    : !completeEvidence
+      ? "Load the complete server Evidence timeline"
+      : `${usdMinorToMoney(consumedMinor.toString())} consumed · ${usdMinorToMoney((BigInt(profile.maxChargePerWindowMinor) - consumedMinor).toString())} remaining`;
+  const latest = meteredItems.at(-1)?.meteredUsage;
+  el("obligationDetailMeteredEvidence").textContent = latest
+    ? `${latest.quantity} ${latest.measurementUnit} · ${usdMinorToMoney(latest.chargeMinor)} · finalized / reconciled`
+    : completeEvidence ? "No Metered Usage admitted" : "Not loaded";
+  el("obligationDetailMeteredBoundary").textContent = available
+    ? "Server-priced synthetic usage is admitted to this Obligation's canonical Ledger and Evidence. External Provider execution and real funds remain disabled."
+    : "No external Provider or real funds are enabled.";
+}
+
 function renderObligationPortfolio() {
+  renderSyntheticMeteredResource();
   const index = currentServicingPositionIndex();
   const positions = index?.positions ?? [];
   const { presentation, evidenceStale } = currentObligationPortfolioPresentation();
@@ -5155,6 +5253,7 @@ function renderObligationPortfolio() {
   const detailEmpty = el("obligationDetailEmpty");
   const detailContent = el("obligationDetailContent");
   if (!presentation) {
+    renderObligationDetailMeteredResource();
     detailEmpty.hidden = false;
     detailContent.hidden = true;
     el("obligationDetailEmptyCopy").textContent = tenantPilot.obligation
@@ -5165,6 +5264,7 @@ function renderObligationPortfolio() {
 
   detailEmpty.hidden = true;
   detailContent.hidden = false;
+  renderObligationDetailMeteredResource(presentation);
   el("obligationDetailIdentifier").textContent = "Current position";
   el("obligationDetailIdentifier").title = "";
   el("obligationDetailStatus").textContent =
@@ -11006,6 +11106,7 @@ async function probeHostedChainCapability() {
     if (!response.ok) return;
     const document = await response.json();
     const capability = document?.chainEvidence;
+    const meteredProfile = document?.providers?.syntheticMeteredResource;
     if (
       document?.schemaVersion !== "ipo_one_deployment_capability.v1" ||
       capability?.schemaVersion !== "ipo_one_chain_capability.v1" ||
@@ -11017,6 +11118,7 @@ async function probeHostedChainCapability() {
     evidenceAnchorPilot.hostedStatus = capability.status;
     evidenceAnchorPilot.hostedReasonCode = capability.reasonCode;
     evidenceAnchorPilot.hostedReleaseId = capability.releaseId;
+    syntheticMeteredResource.profile = meteredProfile ?? null;
     if (capability.status === "DISABLED") {
       evidenceAnchorPilot.available = false;
       evidenceAnchorPilot.config = null;
@@ -11027,6 +11129,7 @@ async function probeHostedChainCapability() {
     // The composed anchor configuration endpoint remains authoritative for local runtimes.
   } finally {
     renderEvidenceAnchor();
+    renderSyntheticMeteredResource();
   }
 }
 
@@ -11270,6 +11373,7 @@ function renderOwnedEvidence() {
   more.disabled = ownedEvidence.busy || !ownedEvidence.nextCursor || !obligationId;
   more.toggleAttribute("aria-busy", ownedEvidence.busy);
   renderEvidenceAnchor();
+  renderSyntheticMeteredResource();
 }
 
 async function loadOwnedEvidence({ append = false, refreshAnchor = true } = {}) {

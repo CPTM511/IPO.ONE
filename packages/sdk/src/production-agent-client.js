@@ -288,4 +288,110 @@ export class ProductionAgentClient {
     }
     return payload;
   }
+
+  async consumeSyntheticMeteredResource({ obligationId, quantity, idempotencyKey, requestId }, { signal } = {}) {
+    if (
+      typeof obligationId !== "string" || obligationId.length < 1 || obligationId.length > 256 ||
+      typeof quantity !== "string" || !/^[1-9][0-9]{0,17}$/.test(quantity) ||
+      typeof idempotencyKey !== "string" || idempotencyKey.length < 16 || idempotencyKey.length > 256 ||
+      typeof requestId !== "string" || requestId.length < 8 || requestId.length > 128
+    ) throw new TypeError("Synthetic Metered Resource request is invalid");
+    const descriptor = { requestId, operationId: "consumeSyntheticMeteredResource", idempotencyKey };
+    const now = this.#clock();
+    const accessToken = shortLivedJwt(
+      await this.#accessTokenProvider(),
+      this.#senderMethod,
+      now
+    );
+    const body = JSON.stringify({
+      schemaVersion: "ipo_one_synthetic_metered_resource_request.v1",
+      obligationId,
+      quantity,
+      idempotencyKey
+    });
+    const url = new URL("/tenant/v1/synthetic-metered-resource", this.#origin);
+    const proof = this.#senderMethod === "dpop"
+      ? dpopProof(await this.#dpopProofProvider({
+          accessToken,
+          method: "POST",
+          url: url.href
+        }), { accessToken, method: "POST", url: url.href, now })
+      : undefined;
+    const payload = await new Promise((resolve, reject) => {
+      const request = this.#request(url, {
+        method: "POST",
+        headers: {
+          accept: "application/json, application/problem+json",
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(body),
+          "x-request-id": requestId,
+          ...(proof === undefined ? {} : { dpop: proof })
+        },
+        ...(this.#senderMethod === "mtls"
+          ? {
+              cert: this.#cert,
+              key: this.#key,
+              ...(this.#ca === undefined ? {} : { ca: this.#ca })
+            }
+          : {}),
+        rejectUnauthorized: true,
+        minVersion: "TLSv1.2",
+        servername: this.#origin.hostname,
+        signal
+      }, (response) => {
+        const chunks = [];
+        let bytes = 0;
+        response.on("data", (chunk) => {
+          bytes += chunk.length;
+          if (bytes > MAX_RESPONSE_BYTES) {
+            request.destroy(new Error("IPO.ONE Agent response exceeds 1 MiB"));
+            return;
+          }
+          chunks.push(chunk);
+        });
+        response.on("error", (error) => reject(
+          unknownOutcome(error, descriptor, "agent_transport_unknown_outcome")
+        ));
+        response.on("end", () => {
+          const type = response.headers["content-type"]?.split(";", 1)[0]?.trim();
+          if (!new Set(["application/json", "application/problem+json"]).has(type)) {
+            reject(unknownOutcome(new Error("IPO.ONE Agent response content type is invalid"), descriptor, "agent_response_content_type_rejected"));
+            return;
+          }
+          let parsed;
+          try { parsed = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {
+            reject(unknownOutcome(new Error("IPO.ONE Agent response is not valid JSON"), descriptor, "agent_response_json_rejected"));
+            return;
+          }
+          const returnedRequestId = response.headers["x-request-id"] ?? requestId;
+          if (returnedRequestId !== requestId) {
+            reject(unknownOutcome(new Error("IPO.ONE Agent response request ID does not match the command"), descriptor, "agent_response_binding_rejected"));
+            return;
+          }
+          if ((response.statusCode ?? 500) < 200 || (response.statusCode ?? 500) >= 300) {
+            reject(new IpoOneAgentApiError(parsed, { status: response.statusCode, requestId }));
+            return;
+          }
+          resolve(parsed);
+        });
+      });
+      request.once("error", (error) => reject(
+        error instanceof IpoOneAgentTransportError
+          ? error
+          : unknownOutcome(error, descriptor, "agent_transport_unknown_outcome")
+      ));
+      request.setTimeout(30_000, () => request.destroy(
+        unknownOutcome(new Error("IPO.ONE Agent request timed out"), descriptor, "agent_transport_timeout_unknown_outcome")
+      ));
+      request.end(body);
+    });
+    if (
+      payload?.schemaVersion !== "ipo_one_synthetic_metered_resource_receipt.v1" ||
+      payload.status !== "consumed" || payload.obligationId !== obligationId ||
+      payload.quantity !== quantity || payload.sandboxOnly !== true ||
+      payload.productionFundsMoved !== false || payload.realFundsEnabled !== false
+    ) throw unknownOutcome(new Error("Synthetic Metered Resource response failed its closed contract"), descriptor, "agent_response_schema_rejected");
+    return Object.freeze(payload);
+  }
 }

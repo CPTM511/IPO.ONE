@@ -200,6 +200,7 @@ const CAPABILITY_KEYS = [
   "marketCreationEnabled",
   "privateTenantDataEnabled",
   "externalProviderExecutionEnabled",
+  "syntheticMeteredResourceEnabled",
   "agentVenueExecutionEnabled",
   "mainnetAuthorized",
   "custodyAuthorized",
@@ -338,6 +339,13 @@ export function validateLaunchPolicy(policy) {
       ) {
         issues.push(`${path} must not conflate real funds with test assets.`);
       }
+      if (
+        profile.capabilities?.syntheticMeteredResourceEnabled === true &&
+        (profile.capabilities?.realFundsEnabled !== false ||
+          profile.capabilities?.externalProviderExecutionEnabled !== false)
+      ) {
+        issues.push(`${path} cannot combine the synthetic Metered Resource with real funds or external Provider execution.`);
+      }
 
       if (profileId === "live_testnet_secured_pool") {
         if (
@@ -349,6 +357,7 @@ export function validateLaunchPolicy(policy) {
           profile.capabilities?.marketCreationEnabled !== false ||
           profile.capabilities?.privateTenantDataEnabled !== false ||
           profile.capabilities?.externalProviderExecutionEnabled !== false ||
+          profile.capabilities?.syntheticMeteredResourceEnabled !== false ||
           profile.capabilities?.agentVenueExecutionEnabled !== false
         ) {
           issues.push(`${path} capability boundary drifted from the ratified M2A test-asset profile.`);
@@ -385,6 +394,7 @@ export function validateLaunchPolicy(policy) {
           profile.capabilities?.marketCreationEnabled !== false ||
           profile.capabilities?.privateTenantDataEnabled !== true ||
           profile.capabilities?.externalProviderExecutionEnabled !== false ||
+          profile.capabilities?.syntheticMeteredResourceEnabled !== true ||
           profile.capabilities?.agentVenueExecutionEnabled !== false ||
           profile.capabilities?.mainnetAuthorized !== false ||
           profile.capabilities?.custodyAuthorized !== false ||

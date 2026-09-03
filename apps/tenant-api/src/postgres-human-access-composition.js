@@ -191,7 +191,8 @@ async function assertSystemIdentityInClient(client, { tenantId, systemActorId, p
             a.actor_type,
             m.status AS membership_status,
             m.role_bundle,
-            m.policy_version
+            m.policy_version,
+            m.client_ids
        FROM tenants t
        JOIN actors a ON a.id = $2
       JOIN memberships m ON m.tenant_id = t.id AND m.actor_id = a.id
@@ -206,13 +207,17 @@ async function assertSystemIdentityInClient(client, { tenantId, systemActorId, p
     row.actor_type !== ActorType.SYSTEM_WORKER ||
     row.membership_status !== "active" ||
     row.role_bundle !== "system_worker" ||
-    row.policy_version !== policyVersion
+    row.policy_version !== policyVersion ||
+    !Array.isArray(row.client_ids) || row.client_ids.length !== 1
   ) {
     throw authenticationError(
       "authentication_deployment_gate_closed",
       "authentication system identity is not active and exactly Tenant-bound"
     );
   }
+  return Object.freeze({
+    systemClientId: assertSafeIdentifier("systemActorClientId", row.client_ids[0])
+  });
 }
 
 async function assertSystemIdentity(repository, boundary) {
@@ -376,7 +381,7 @@ export async function createPostgresHumanAccessComposition(input) {
     sourceSystem: "ipo.one.authentication"
   });
   const systemBoundary = Object.freeze({ tenantId, systemActorId, policyVersion });
-  await assertSystemIdentity(baseEventRepository, systemBoundary);
+  const systemIdentity = await assertSystemIdentity(baseEventRepository, systemBoundary);
   const eventRepository = revalidatingAuthenticationRepository(baseEventRepository, systemBoundary);
 
   const machineReplayCache = new PostgresReplayCache({
@@ -509,6 +514,7 @@ export async function createPostgresHumanAccessComposition(input) {
     csrfTokenProvider,
     humanSessionBff,
     credentialRegistry,
+    systemClientId: systemIdentity.systemClientId,
     machineReplayCache,
     authenticationEvents: new PostgresAuthenticationEventStore({ eventRepository, tenantId }),
     deploymentBoundary: Object.freeze({

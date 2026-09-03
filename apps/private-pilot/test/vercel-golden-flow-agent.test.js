@@ -126,12 +126,18 @@ test("Vercel Golden Flow Agent creates exact short-lived DPoP-bound requests", a
   assert.equal(JSON.stringify(transport.calls).includes(privateJwk.d), false);
 });
 
-test("production MCP handle maps only the four approved application tools", async () => {
+test("production MCP handle maps the approved application and synthetic Metered Resource tools", async () => {
   const commands = [];
+  const resourceRequests = [];
+  const meteredReceipt = { status: "consumed", schemaVersion: "ipo_one_synthetic_metered_resource_receipt.v1" };
   const client = {
     async execute(command) {
       commands.push(command);
       return RESULT;
+    },
+    async consumeSyntheticMeteredResource(request) {
+      resourceRequests.push(request);
+      return meteredReceipt;
     }
   };
   const handle = createProductionMcpHandle(client);
@@ -162,6 +168,22 @@ test("production MCP handle maps only the four approved application tools", asyn
       resourceId: "subject_golden_flow"
     }
   }]);
+  const resourceArguments = {
+    obligationId: "obligation_golden_flow",
+    quantity: "250",
+    idempotencyKey: "golden-flow-metered-resource-0001",
+    requestId: "request-golden-flow-metered-resource-0001"
+  };
+  const resourceResponse = await handle({
+    ...message,
+    id: "rpc-golden-flow-metered-0001",
+    params: {
+      name: "ipo_one_consume_synthetic_metered_resource",
+      arguments: resourceArguments
+    }
+  });
+  assert.deepEqual(resourceResponse.result.structuredContent, meteredReceipt);
+  assert.deepEqual(resourceRequests, [resourceArguments]);
   await assert.rejects(
     () => handle({ ...message, params: { ...message.params, name: "forbidden_tool" } }),
     /unavailable/

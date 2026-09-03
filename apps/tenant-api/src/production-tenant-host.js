@@ -19,6 +19,7 @@ export const PRODUCTION_TENANT_ROUTES = Object.freeze({
   agentOpenApi: "/agent-openapi.json",
   deploymentCapability: "/.well-known/ipo-one.json",
   securedPoolMarket: "/tenant/v1/secured-pool/market",
+  syntheticMeteredResource: "/tenant/v1/synthetic-metered-resource",
   operations: "/tenant/v1/operations",
   catalog: "/tenant/v1/catalog",
   health: "/tenant/v1/healthz",
@@ -58,6 +59,7 @@ const CONFIG_KEYS = new Set([
   "securedPoolMarketProvider",
   "serveAuthentication",
   "sessionHandleProvider",
+  "syntheticMeteredResourceService",
   "verifyEdgeRequest",
   "workspaceNameProvider"
 ]);
@@ -343,7 +345,8 @@ function deploymentCapabilityDocument({
   publicOrigin,
   releaseId,
   deploymentRole,
-  chainCapability
+  chainCapability,
+  syntheticMeteredResource
 }) {
   return Object.freeze({
     schemaVersion: "ipo_one_deployment_capability.v1",
@@ -378,6 +381,13 @@ function deploymentCapabilityDocument({
     }),
     providers: Object.freeze({
       providerSandbox: "AVAILABLE",
+      syntheticMeteredResource: syntheticMeteredResource ?? Object.freeze({
+        status: "UNAVAILABLE",
+        syntheticOnly: true,
+        productionFundsMoved: false,
+        externalProviderExecutionEnabled: false,
+        schemaVersion: "ipo_one_synthetic_metered_resource_profile.v1"
+      }),
       externalProviderExecution: "DISABLED",
       genericEvmProductionExecution: "BLOCKED_EXTERNAL_DEPENDENCY",
       hyperCoreProductionExecution: "BLOCKED_EXTERNAL_DEPENDENCY",
@@ -426,6 +436,9 @@ export function createProductionTenantRequestHandler(input) {
       typeof input.chainCapabilityProvider !== "function") ||
     (input.securedPoolMarketProvider !== undefined &&
       typeof input.securedPoolMarketProvider !== "function") ||
+    (input.syntheticMeteredResourceService !== undefined &&
+      (typeof input.syntheticMeteredResourceService.consume !== "function" ||
+        typeof input.syntheticMeteredResourceService.profile !== "object")) ||
     !boundedInteger(port, 1_024, 65_535) ||
     !boundedInteger(requestTimeoutMs, 100, REQUEST_TIMEOUT_MS) ||
     !boundedInteger(maximumConcurrency, 1, MAX_CONCURRENCY) ||
@@ -527,7 +540,8 @@ export function createProductionTenantRequestHandler(input) {
           publicOrigin,
           releaseId: input.releaseId,
           deploymentRole: input.deploymentRole,
-          chainCapability
+          chainCapability,
+          syntheticMeteredResource: input.syntheticMeteredResourceService?.profile
         }), requestId, headOnly);
       }
       if (
@@ -581,6 +595,27 @@ export function createProductionTenantRequestHandler(input) {
       if (request.method === "GET" && url.pathname === PRODUCTION_TENANT_ROUTES.catalog) {
         await resolveAuthenticationContext({ request, requestUrl: url.toString() });
         return json(response, 200, TENANT_PROTOCOL_CATALOG, requestId);
+      }
+      if (
+        request.method === "POST" &&
+        url.search === "" &&
+        url.pathname === PRODUCTION_TENANT_ROUTES.syntheticMeteredResource
+      ) {
+        if (!input.syntheticMeteredResourceService) {
+          throw new ApiBoundaryError("not_found", "Tenant route is not available");
+        }
+        const body = await readBody(request);
+        const [authenticationContext, networkContext] = await Promise.all([
+          resolveAuthenticationContext({ request, requestUrl: url.toString() }),
+          input.createNetworkContext({ request })
+        ]);
+        const result = await input.syntheticMeteredResourceService.consume({
+          body,
+          authenticationContext,
+          networkContext,
+          requestId
+        });
+        return json(response, 200, result, requestId);
       }
       if (
         new Set(["GET", "HEAD"]).has(request.method) &&

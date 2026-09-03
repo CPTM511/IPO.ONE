@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Readable } from "node:stream";
 import test from "node:test";
@@ -11,6 +11,7 @@ import {
 } from "../../tenant-api/src/production-tenant-host.js";
 import { loadProductionClosedPilotEnvironment } from "../src/production-environment.js";
 import { runVercelSandboxCronCycle } from "../src/vercel-sandbox-cron.js";
+import { hashId } from "../../../packages/domain/src/index.js";
 
 const workloadKeyPair = await generateKeyPair("ES256", { extractable: true });
 const workloadPublicJwk = await exportJWK(workloadKeyPair.publicKey);
@@ -27,6 +28,16 @@ Object.assign(supplementalWorkloadPublicJwk, {
   kid: "golden-flow-workload-001",
   key_ops: ["verify"],
   use: "sig"
+});
+const meteredProviderKeyPair = generateKeyPairSync("ed25519");
+const meteredProviderPublicKeyDer = meteredProviderKeyPair.publicKey
+  .export({ format: "der", type: "spki" }).toString("base64url");
+const meteredProviderKey = JSON.stringify({
+  schemaVersion: "ipo_one_hosted_synthetic_metered_provider_key.v1",
+  providerKeyId: `hosted_metered_${hashId("hosted_metered_provider_key", meteredProviderPublicKeyDer).slice(2, 34)}`,
+  privateKeyDer: meteredProviderKeyPair.privateKey
+    .export({ format: "der", type: "pkcs8" }).toString("base64url"),
+  publicKeyDer: meteredProviderPublicKeyDer
 });
 
 const singleV2ReferenceHashState = Object.freeze({
@@ -90,6 +101,11 @@ function vercelEnvironment(overrides = {}) {
     IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY: key,
     IPO_ONE_AUTH_ENCRYPTION_KEY: key,
     IPO_ONE_IDENTITY_CONFIG_JSON: identity,
+    IPO_ONE_HOSTED_METERED_PROVIDER_KEY_JSON: meteredProviderKey,
+    IPO_ONE_HOSTED_METERED_PROVIDER_KEY_REF: secretRef(
+      "IPO_ONE_HOSTED_METERED_PROVIDER_KEY_JSON",
+      meteredProviderKey
+    ),
     ...overrides
   };
 }
@@ -307,7 +323,9 @@ test("Vercel Sandbox requires a valid public Agent account only on the primary p
   }
   const risk = await loadProductionClosedPilotEnvironment(vercelEnvironment({
     IPO_ONE_VERCEL_PROJECT_ROLE: "risk",
-    IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: undefined
+    IPO_ONE_SANDBOX_AGENT_ACCOUNT_ADDRESS: undefined,
+    IPO_ONE_HOSTED_METERED_PROVIDER_KEY_JSON: undefined,
+    IPO_ONE_HOSTED_METERED_PROVIDER_KEY_REF: undefined
   }));
   t.after(() => Promise.allSettled([
     risk.gatewayPool.end(),

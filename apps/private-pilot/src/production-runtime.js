@@ -38,6 +38,10 @@ import {
 } from "./secured-pool-market-provider.js";
 import { PRODUCTION_BOOTSTRAP_PROFILES } from "./production-bootstrap.js";
 import { createPublicBetaAuthenticationLimiter } from "./public-beta-authentication-limiter.js";
+import {
+  createHostedMeteredSystemBoundary,
+  createHostedSyntheticMeteredResourceService
+} from "./hosted-synthetic-metered-provider.js";
 import launchPolicy from "../../../deploy/launch-policy.v1.json" with { type: "json" };
 
 const CONFIG_KEYS = new Set([
@@ -56,6 +60,7 @@ const CONFIG_KEYS = new Set([
   "machineAudience",
   "machineIssuer",
   "machineResolver",
+  "meteredUsageProvider",
   "oidcProviders",
   "policyVersion",
   "port",
@@ -228,6 +233,26 @@ async function composeProductionClosedPilotRuntime(input) {
     policyVersion: input.policyVersion,
     createNetworkContext: input.createNetworkContext
   });
+  const meteredUsageEnabled = launchPolicy.profiles
+    .public_authenticated_no_funds_beta.capabilities
+    .syntheticMeteredResourceEnabled === true;
+  const meteredUsageDeployment =
+    input.deploymentRole === "primary" || input.deploymentRole === "container";
+  if (
+    meteredUsageEnabled !== (meteredUsageDeployment &&
+      input.meteredUsageProvider !== undefined)
+  ) throw invalidConfig("Synthetic Metered Resource configuration does not match the launch policy and deployment role");
+  const meteredSystemBoundary = meteredUsageEnabled
+    ? createHostedMeteredSystemBoundary({
+        credentialRegistry: humanAccess.credentialRegistry,
+        referenceHasher,
+        tenantId: input.tenantId,
+        systemActorId: input.systemActorId,
+        systemClientId: humanAccess.systemClientId,
+        policyVersion: input.policyVersion,
+        ...(input.clock === undefined ? {} : { clock: input.clock })
+      })
+    : undefined;
   const durableGateway = new TenantCommandGateway({
     pool: input.gatewayPool,
     handlers: new TenantCommandHandlerRegistry(createTenantFoundationHandlers({
@@ -236,10 +261,14 @@ async function composeProductionClosedPilotRuntime(input) {
       hyperliquidBindingProofVerifier:
         new HyperliquidBindingProofVerifier(),
       securedPoolDeploymentProfile: securedPool.deploymentProfile,
-      securedPoolReadAdapter: securedPool.readAdapter
+      securedPoolReadAdapter: securedPool.readAdapter,
+      ...(meteredUsageEnabled ? {
+        meteredUsagePolicyResolver: input.meteredUsageProvider.resolvePolicy,
+        meteredUsageSignatureVerifier: input.meteredUsageProvider.verifySignature
+      } : {})
     })),
     policyRegistry,
-    credentialRegistry: humanAccess.credentialRegistry,
+    credentialRegistry: meteredSystemBoundary?.credentialRegistry ?? humanAccess.credentialRegistry,
     referenceHasher,
     livePolicyAdapterFactory: createPostgresTenantLivePolicyAdapter
   });
@@ -249,6 +278,15 @@ async function composeProductionClosedPilotRuntime(input) {
       pool: input.gatewayPool
     })
   });
+  const syntheticMeteredResourceService = meteredUsageEnabled
+    ? createHostedSyntheticMeteredResourceService({
+        gateway,
+        pool: input.gatewayPool,
+        provider: input.meteredUsageProvider,
+        systemBoundary: meteredSystemBoundary,
+        ...(input.clock === undefined ? {} : { clock: input.clock })
+      })
+    : undefined;
   const machineAuthenticator = new MachineAuthenticator({
     issuer: input.machineIssuer,
     audience: input.machineAudience,
@@ -299,6 +337,9 @@ async function composeProductionClosedPilotRuntime(input) {
       deploymentProfile: securedPool.deploymentProfile,
       readAdapter: securedPool.readAdapter,
       ...(input.clock === undefined ? {} : { clock: input.clock })
+    }),
+    ...(syntheticMeteredResourceService === undefined ? {} : {
+      syntheticMeteredResourceService
     }),
     ...(productionWorkspaceNameForDeploymentRole(input.deploymentRole) === undefined
       ? {}

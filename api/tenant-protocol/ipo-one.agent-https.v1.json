@@ -4,18 +4,22 @@
   "info": {
     "title": "IPO.ONE Remote Agent HTTPS Contract",
     "version": "1.0.0",
-    "description": "Invite-only, sender-constrained HTTPS access to the durable no-real-funds Tenant protocol. Publishing this contract does not activate a remote endpoint."
+    "description": "Sender-constrained HTTPS access to the active public authenticated no-funds Tenant protocol. Agent Credentials remain Principal-bound and least-privilege."
   },
   "servers": [
     {
       "url": "https://closed-pilot.invalid",
-      "description": "Non-routable contract publication origin; deployment remains disabled."
+      "description": "Non-routable contract publication origin; the active deployment publishes its exact HTTPS origin."
     }
   ],
   "security": [
     {
       "workloadBearer": [],
       "mutualTls": []
+    },
+    {
+      "workloadBearer": [],
+      "dpopProof": []
     }
   ],
   "paths": {
@@ -32,6 +36,10 @@
           {
             "workloadBearer": [],
             "mutualTls": []
+          },
+          {
+            "workloadBearer": [],
+            "dpopProof": []
           }
         ],
         "requestBody": {
@@ -99,6 +107,89 @@
         "x-ipo-one-timeout-outcome": "unknown_after_submission"
       }
     },
+    "/tenant/v1/synthetic-metered-resource": {
+      "post": {
+        "operationId": "consumeSyntheticMeteredResource",
+        "summary": "Consume the exact hosted synthetic inference-token resource for an owned sandbox Obligation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          }
+        ],
+        "security": [
+          {
+            "workloadBearer": [],
+            "mutualTls": []
+          },
+          {
+            "workloadBearer": [],
+            "dpopProof": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "schemaVersion",
+                  "obligationId",
+                  "quantity",
+                  "idempotencyKey"
+                ],
+                "properties": {
+                  "schemaVersion": {
+                    "const": "ipo_one_synthetic_metered_resource_request.v1"
+                  },
+                  "obligationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,17}$"
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 16,
+                    "maxLength": 256
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed, admitted, replay-safe synthetic Metered Usage receipt"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-ipo-one-synthetic-only": true,
+        "x-real-funds-enabled": false,
+        "x-external-provider-execution-enabled": false
+      }
+    },
     "/tenant/v1/catalog": {
       "get": {
         "operationId": "getAgentTenantOperationCatalog",
@@ -112,6 +203,10 @@
           {
             "workloadBearer": [],
             "mutualTls": []
+          },
+          {
+            "workloadBearer": [],
+            "dpopProof": []
           }
         ],
         "responses": {
@@ -163,11 +258,17 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "Issuer- and audience-bound access token with a maximum five-minute lifetime and an x5t#S256 confirmation claim."
+        "description": "Issuer- and audience-bound access token with a maximum five-minute lifetime and either an x5t#S256 or jkt confirmation claim."
       },
       "mutualTls": {
         "type": "mutualTLS",
         "description": "The trusted edge must bind the client certificate thumbprint to the access token and active internal Credential."
+      },
+      "dpopProof": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "DPoP",
+        "description": "A short-lived ES256 DPoP proof bound to the exact method, URI, access token and active internal Credential."
       }
     },
     "schemas": {
@@ -234,9 +335,9 @@
   },
   "x-ipo-one-schema-version": "agent_https_openapi.v1",
   "x-ipo-one-profile": "public_authenticated_no_funds_beta",
-  "x-ipo-one-activation": "disabled_pending_named_deployment_approval",
+  "x-ipo-one-activation": "active_public_authenticated_no_funds",
   "x-ipo-one-safety": {
-    "remoteParticipantAccessEnabled": false,
+    "remoteParticipantAccessEnabled": true,
     "realFundsEnabled": false,
     "humanCreditEnabled": false,
     "testnetWritesEnabled": false,

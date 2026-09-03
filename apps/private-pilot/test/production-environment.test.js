@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
 import { loadProductionClosedPilotEnvironment } from "../src/production-environment.js";
 import {
@@ -22,6 +23,11 @@ test("production environment supports reviewed wallet-only access without an OID
   const encryptionKey = join(directory, "encryption-key");
   const edgeKey = join(directory, "edge-key");
   const identityConfig = join(directory, "identity.json");
+  const meteredProviderKey = join(directory, "metered-provider-key.json");
+  const pair = generateKeyPairSync("ed25519");
+  const publicKeyDer = pair.publicKey.export({ format: "der", type: "spki" })
+    .toString("base64url");
+  const { hashId } = await import("../../../packages/domain/src/index.js");
   await Promise.all([
     writeFile(referenceKey, key),
     writeFile(encryptionKey, key),
@@ -40,6 +46,12 @@ test("production environment supports reviewed wallet-only access without an OID
         jwksUri: "https://workload.ipo.one/.well-known/jwks.json",
         allowedAlgorithms: ["ES256"]
       }
+    })),
+    writeFile(meteredProviderKey, JSON.stringify({
+      schemaVersion: "ipo_one_hosted_synthetic_metered_provider_key.v1",
+      providerKeyId: `hosted_metered_${hashId("hosted_metered_provider_key", publicKeyDer).slice(2, 34)}`,
+      privateKeyDer: pair.privateKey.export({ format: "der", type: "pkcs8" }).toString("base64url"),
+      publicKeyDer
     }))
   ]);
   const environment = {
@@ -63,7 +75,8 @@ test("production environment supports reviewed wallet-only access without an OID
     IPO_ONE_AUTH_NEXT_REFERENCE_HASH_KEY_FILE: referenceKey,
     IPO_ONE_AUTH_ENCRYPTION_KEY_FILE: encryptionKey,
     IPO_ONE_EDGE_ASSERTION_KEY_FILE: edgeKey,
-    IPO_ONE_IDENTITY_CONFIG_FILE: identityConfig
+    IPO_ONE_IDENTITY_CONFIG_FILE: identityConfig,
+    IPO_ONE_HOSTED_METERED_PROVIDER_KEY_FILE: meteredProviderKey
   };
   const configuration = await loadProductionClosedPilotEnvironment(environment);
   t.after(async () => Promise.allSettled([

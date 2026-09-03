@@ -7,8 +7,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import {
   IpoOneAgentEvidenceClient,
-  IpoOneAgentMcpClient,
-  IpoOneAgentSandboxObligationClient
+  IpoOneAgentMcpClient
 } from "../../../packages/sdk/src/index.js";
 import { ProductionAgentClient } from "../../../packages/sdk/src/production-agent-client.js";
 import {
@@ -206,9 +205,22 @@ function tenantRequest(operationId, args) {
 }
 
 export function createProductionMcpHandle(client) {
-  if (typeof client?.execute !== "function") throw new TypeError("Agent API client is required");
+  if (
+    typeof client?.execute !== "function" ||
+    typeof client?.consumeSyntheticMeteredResource !== "function"
+  ) throw new TypeError("Agent API client is required");
   return async (message) => {
     const name = message?.params?.name;
+    if (name === "ipo_one_consume_synthetic_metered_resource") {
+      const result = await client.consumeSyntheticMeteredResource(
+        message.params.arguments
+      );
+      return {
+        jsonrpc: "2.0",
+        id: message.id,
+        result: { isError: false, structuredContent: result }
+      };
+    }
     const operationId = MCP_OPERATION_BY_TOOL[name];
     if (!operationId) throw new TypeError("Agent MCP tool is unavailable");
     const result = await client.execute(tenantRequest(
@@ -375,21 +387,84 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
       throw error;
     }
   };
-  const runtime = new IpoOneAgentSandboxObligationClient({
-    execute,
-    manifest,
-    transportProfile: "local_in_process"
-  });
   const baseInput = createLocalAgentRuntimeInput(manifest, exactOfferReceipt);
   const partialMinor = (approvedMinor / 2n).toString();
   let workflowReceipt;
+  let meteredUsage;
   try {
-    workflowReceipt = await runtime.runObligationWorkflow({
-      ...baseInput,
-      repayment: {
+    const correlationId = identifier("correlation-agent-metered-runtime");
+    const accepted = await execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotAcceptCreditOffer",
+      payload: {
+        expectedOfferHash: exactOfferReceipt.offer.creditOfferHash,
+        expectedTermsHash: exactOfferReceipt.offer.termsHash,
+        acknowledgementHash: baseInput.acknowledgementHash
+      },
+      resource: {
+        resourceType: "credit_offer",
+        resourceId: exactOfferReceipt.offer.creditOfferId
+      },
+      idempotencyKey: `${baseInput.workflowId}:accept`,
+      requestId: identifier("request-agent-metered-accept"),
+      correlationId
+    });
+    const obligationId = accepted.response?.obligation?.obligationId;
+    const execution = await execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotExecuteSandboxObligation",
+      payload: {
+        providerId: manifest.authority.allowedProviderIds[0],
+        providerCategory: manifest.authority.allowedCategories[0]
+      },
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      idempotencyKey: `${baseInput.workflowId}:execute`,
+      requestId: identifier("request-agent-metered-execute"),
+      correlationId
+    });
+    const meteredMcp = createProductionMcpHandle(client);
+    const meteredResponse = await meteredMcp({
+      jsonrpc: "2.0",
+      id: identifier("mcp-agent-metered-resource"),
+      method: "tools/call",
+      params: {
+        name: "ipo_one_consume_synthetic_metered_resource",
+        arguments: {
+          obligationId,
+          quantity: "250",
+          idempotencyKey: `${baseInput.workflowId}:metered-resource`,
+          requestId: identifier("request-agent-metered-resource")
+        }
+      }
+    });
+    meteredUsage = meteredResponse.result.structuredContent;
+    const partialRepayment = await execute({
+      schemaVersion: "tenant_protocol_request.v1",
+      operationId: "pilotPostSandboxRepayment",
+      payload: {
         amountMinor: partialMinor,
         sourceCode: "synthetic_revenue"
-      }
+      },
+      resource: { resourceType: "obligation", resourceId: obligationId },
+      idempotencyKey: `${baseInput.workflowId}:partial-repayment`,
+      requestId: identifier("request-agent-metered-partial-repayment"),
+      correlationId
+    });
+    workflowReceipt = Object.freeze({
+      schemaVersion: "vercel_metered_agent_obligation_workflow_receipt.v1",
+      status: "repayment_posted",
+      subjectId: manifest.subjectId,
+      mandateId: manifest.mandateId,
+      creditIntentId: exactOfferReceipt.offer.creditIntentId,
+      creditOfferId: exactOfferReceipt.offer.creditOfferId,
+      acceptance: accepted.response.acceptance,
+      obligation: partialRepayment.response.obligation,
+      executionReceipt: execution.response.executionReceipt,
+      principalLedgerTransactionId: execution.response.principalLedgerTransactionId,
+      repayment: partialRepayment.response.repayment,
+      meteredUsage,
+      sandboxOnly: true,
+      productionFundsMoved: false
     });
   } catch (error) {
     if (failedCommand) {
@@ -451,6 +526,7 @@ export async function runVercelAgentRuntime({ client, manifest, offerReceipt }) 
     schemaVersion: "vercel_golden_flow_agent_runtime.v1",
     status: "fully_repaid_with_evidence",
     workflowReceipt,
+    meteredUsage,
     fullRepayment: fullRepayment.response,
     duplicateRepaymentReplayed: true,
     evidence,
