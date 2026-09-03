@@ -22,6 +22,10 @@ const tenantProtocolFixtures = JSON.parse(await readFile(
   new URL("../../../api/tenant-protocol/conformance/tenant-protocol.v1.fixtures.json", import.meta.url),
   "utf8"
 ));
+const whitepaperPdf = await readFile(new URL(
+  "../../web/src/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf",
+  import.meta.url
+));
 
 function agentContext() {
   return createAuthenticationContext({
@@ -303,7 +307,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.match(whitepaperResponse.headers.get("content-type"), /^text\/html/);
     assert.equal(whitepaperResponse.headers.get("vary"), null);
     const whitepaper = await whitepaperResponse.text();
-    assert.match(whitepaper, /Founding Edition II/);
+    assert.match(whitepaper, /Founding Edition III/);
     assert.match(whitepaper, /The Credit Layer for the <em>Agentic Economy<\/em>/);
     assert.match(whitepaper, /No offer of credit, securities, tokens, or investment products/);
 
@@ -313,12 +317,12 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
     assert.equal(await whitepaperScriptResponse.text(), "");
 
     const pdfResponse = await fetch(
-      `${baseUrl}/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf`,
+      `${baseUrl}/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf`,
       { method: "HEAD" }
     );
     assert.equal(pdfResponse.status, 200);
     assert.equal(pdfResponse.headers.get("content-type"), "application/pdf");
-    assert.equal(Number(pdfResponse.headers.get("content-length")), 2310065);
+    assert.equal(Number(pdfResponse.headers.get("content-length")), whitepaperPdf.byteLength);
     assert.equal(await pdfResponse.text(), "");
 
     const openApiResponse = await fetch(`${baseUrl}${TENANT_HTTP_ROUTES.openapi}`);

@@ -2,7 +2,7 @@
 title: "IPO.ONE"
 subtitle: "The Credit Layer for the Agentic Economy"
 author: "IPO.ONE"
-date: "Founding Edition II · August 2026"
+date: "Founding Edition III · September 2026"
 lang: en-US
 ---
 
@@ -10,1768 +10,887 @@ lang: en-US
 
 ## The Credit Layer for the Agentic Economy
 
-### Verifiable Credit and Obligation Infrastructure for Humans and Autonomous Agents
+### Turn verified Agent performance into capital.
 
 # BORROW. BUILD. PROVE.
 
-**Turn verified economic performance into portable, programmable credit.**
+**Perform. Prove. Build Credit. Access Capital. Scale.**
 
-**Founding Edition II · August 2026**
+**Founding Edition III · September 2026**
 
 ---
 
 ## Document Status
 
-This whitepaper defines the founding thesis, protocol architecture, commercial logic, safety boundaries, and long-term direction of IPO.ONE.
+This whitepaper defines the founding economic thesis, protocol architecture, commercial logic, safety boundaries and long-term direction of IPO.ONE. It is a strategic protocol document, not a claim that every described capability is active.
 
-It distinguishes three categories:
+The document uses three status lenses:
 
-- **Current Foundation** describes capabilities represented by the deployed IPO.ONE product baseline and its canonical public repository as of August 20, 2026.
-- **Product Evolution** describes staged capabilities intended for controlled pilots and subsequent product releases.
-- **Protocol Horizon** describes the long-term infrastructure role IPO.ONE is designed to serve. It is not a claim that every component is currently active.
+| Lens | Meaning in this edition |
+| --- | --- |
+| **Current Foundation** | Capabilities supported by current repository authority and verified runtime or deployment Evidence as of September 3, 2026. |
+| **Product Evolution** | Approved or intended work whose activation still depends on named product, risk, legal, operational, deployment or counterparty gates. |
+| **Protocol Horizon** | Long-term applications of the architecture. These are directions, not current products or commitments. |
 
-This document is not an offer of credit, securities, tokens, or investment products. It is not legal, regulatory, tax, or investment advice. Credit, capital movement, custody, settlement, and regulated activity require product-specific agreements, qualified counterparties, applicable approvals, and jurisdictional review.
+At publication inspection, the public product is an authenticated, durable, **no-real-funds** Beta. Its verified Human and Principal journeys operate through one obligation kernel. Separate bounded Base Sepolia and Hyperliquid Testnet exercises established specific test-asset and reconciliation Evidence; they are not production real-value finance. Product Constitution v1.6 also authorizes one exact synthetic metered machine-service profile for the public no-funds Beta, but the repository did not yet contain completed hosted acceptance Evidence for that profile when this edition was prepared.
+
+No current status in this document authorizes mainnet lending, real-value capital, custody, unrestricted transfer or withdrawal, external Provider execution, production venue signing, automatic model authority, public real-value liquidity or Human cash lending. The canonical [Product Constitution](https://github.com/CPTM511/IPO.ONE/blob/main/docs/PRODUCT_CONSTITUTION.md) resolves runtime product truth.
+
+This document is not an offer of credit, securities, tokens or investment products. It is not legal, regulatory, tax or investment advice. Any actual credit or capital relationship requires applicable agreements, qualified counterparties, approvals and jurisdiction-specific review.
 
 ---
 
 ## Foundational Proposition
 
-> **The Agentic Economy does not only need faster payments. It needs a system for responsibility, credit, and obligations.**
+The Internet made information programmable.
 
-The internet made information interoperable. Blockchains made ownership and settlement programmable. Artificial intelligence is making economic activity autonomous.
+Crypto made ownership and settlement programmable.
 
-The next missing layer is credit.
+AI Agents are making economic action programmable.
 
-A wallet can hold value. A payment protocol can move it. An Agent protocol can discover tools or coordinate work. None of these systems, by themselves, establishes the complete economic truth required for credit:
+The next missing primitive is **programmable credit**.
 
-- who acted;
-- who authorized the action;
-- who bears responsibility;
-- what capital was requested and for what purpose;
-- which terms were accepted;
-- what became owed;
-- how execution and repayment occurred;
-- whether the result was final and reconciled; and
-- whether that outcome should improve access to future capital.
+Autonomous economic actors can already purchase services, allocate resources, trade, operate software and produce economically useful work. Yet most still depend on pre-funded balances, the balance sheet of a Principal, or an allowance that disappears at the edge of one platform. Capability is increasing faster than accountable access to capital.
 
-IPO.ONE is designed to provide that missing layer.
+> **A trustworthy economic actor should be able to earn greater access to capital through verifiable performance.**
 
-It connects **Identity, Payment, and Obligation** through one deterministic credit lifecycle. Humans and autonomous Agents enter through different interfaces and authority models, but they converge on one canonical economic truth. Verified outcomes become permissioned economic memory. That memory can support the next decision, the next application, and the next source of capital.
+IPO.ONE is designed to make that process machine-readable, portable, governable and interoperable:
+
+> **Economic Activity → Verifiable Performance → Evidence → Credit State → Underwriting → Capital Access → New Economic Activity**
+
+In operating language:
+
+> **Perform. Prove. Build Credit. Access Capital. Scale.**
+
+Capital is the resource an economic actor gains access to. Credit is why that access can be rationally extended. A bank, lender, fund, Provider, pool or prime broker can supply capital. IPO.ONE's differentiated role is to connect responsibility, authority, Evidence, Obligations and economic outcomes so that trustworthy performance can become credit capacity.
+
+> **Payments let Agents spend what they have. Credit lets Agents operate beyond what they have.**
 
 ---
 
 ## Abstract
 
-IPO.ONE is verifiable credit and obligation infrastructure for an economy shared by humans and autonomous Agents.
+IPO.ONE is the Credit Layer for the Agentic Economy: subject-neutral credit and obligation infrastructure with an Agent-first market narrative.
 
-The protocol begins from a simple observation: payment is not credit. Payment records movement of value. Credit requires a durable representation of responsibility across time. It must establish who may commit, under whose authority, on what terms, what became owed, what happened afterward, and how the outcome affects future access.
+The protocol starts from a distinction. Payment records movement of value. Credit records responsibility across time. A complete credit relationship must identify who acted, who authorized the action, who remains accountable, why resources were extended, which terms were accepted, what became owed, how the Obligation performed and what the outcome should mean for future access.
 
-This requirement becomes more urgent as software Agents become economic actors. Agents can already discover services, call tools, purchase digital resources, operate strategies, create work product, and coordinate with other machines. Yet most remain economically dependent on pre-funded balances, operator-controlled accounts, or isolated platform allowances. They can transact, but they cannot carry responsibility, obligations, and repayment history across environments in a standardized form.
+IPO.ONE represents that relationship through one shared kernel. Human and Agent interfaces normalize into the same Subjects, Principals, Consent or Mandates, Credit Intents, Decisions, Offers, Facilities, Obligations, Ledger entries, servicing states, Events, Evidence, reconciliation and Credit State. The **Obligation** is the atomic economic commitment. The **Ledger** is canonical accounting truth. **Evidence** establishes what occurred and with what provenance. **Credit State** preserves longitudinal credit performance.
 
-Humans face a parallel problem. Account ownership and digital activity have expanded globally, but financial resilience and portable credit remain uneven. The World Bank's Global Findex 2025 reports that 79% of adults globally have a financial account, while access to emergency funds remains materially lower, particularly in low- and middle-income economies. A large population produces legitimate cash-flow and repayment evidence that still fails to become reusable credit history.[1]
+This edition adds an explicit semantic layer: **Domain Performance Evidence**. An Agent may possess attributable economic history before it has ever borrowed through IPO.ONE. Trading performance, machine-service unit economics, commerce operations or service revenue may be relevant to a future capital decision if the Evidence is trustworthy, permitted and appropriate to that Facility. Domain Performance does not become a second score or a second source of truth. It remains typed Evidence interpreted in context.
 
-IPO.ONE addresses both problems through **Single Kernel, Dual-Native Access**. Human applications and Agent-native interfaces - including APIs, SDKs, MCP-compatible tools, and other machine protocols - normalize into the same Subjects, Principals, Consent or Mandates, Credit Intents, Decisions, Offers, Authorizations, Obligations, Ledger events, Credit Outcomes, Evidence, and Credit States.
+Credit can be portable. Underwriting remains contextual. Strong performance in one domain may improve confidence, but it does not automatically justify capital in another. Capital Providers retain the economic lending decision. Models may observe, forecast and recommend; approved deterministic policy authorizes, and the kernel executes.
 
-The protocol's central primitive is the **Obligation**: the canonical accepted economic commitment that records who owes what, to whom, under which terms, schedule, authority, and servicing rules. An Obligation is independent of any one wallet, payment network, blockchain, Agent runtime, or capital provider. Replaceable adapters connect those external systems without allowing them to redefine canonical credit truth.
-
-IPO.ONE converts verified performance into **Credit State** - a longitudinal, provenance-aware representation of economic outcomes. A permissioned **Credit Passport** enables relevant performance to travel across approved applications and providers without turning raw identity or transaction data into a public dossier. Over time, a governed **Credit Intelligence Network** can improve risk understanding, capital matching, terms, intervention, and portfolio controls. Models may observe, forecast, diagnose, and recommend. Only approved deterministic policy may authorize financial state changes.
-
-The current IPO.ONE foundation implements a complete Human-Agent Credit Loop: identity and responsibility, Consent or Mandate, Credit Intent, explainable Decision and Offer, canonical Obligation, controlled execution, repayment, terminal Credit Outcome, durable Credit State, Track Record, Passport, and Evidence. Product evolution proceeds from this foundation toward purpose-bound Agent working capital, independent capital providers, multi-rail settlement, governed intelligence, and cross-platform credit portability.
-
-The long-term objective is a neutral credit and obligation protocol through which a trustworthy Human or Agent can establish responsibility, access appropriately governed capital, fulfill obligations, and carry verified progress across applications, institutions, and economic environments.
+Trading Capital and Metered Machine-Service Credit demonstrate how materially different activities can reuse one protocol. Neither defines IPO.ONE. The long-term system is **one kernel, many Facility profiles, one evolving Credit State**.
 
 ---
 
 ## Executive Summary
 
-### The thesis
+### The category
 
-Autonomous economic action is advancing faster than the infrastructure required to finance it responsibly.
+IPO.ONE is **The Credit Layer for the Agentic Economy**. It is not a wallet, payment rail, exchange, identity provider, reputation score or universal lender.
 
-Today's Agent stack is rapidly developing standards for tool access, agent-to-agent communication, identity, wallets, and machine payments. These layers are necessary, but they do not create credit. Credit is trust extended across time. It requires accountable authority before value moves, a canonical Obligation while exposure exists, and verifiable performance after settlement.
+### The value proposition
 
-IPO.ONE defines this missing responsibility and credit layer.
+> **Turn verified economic performance into credit — and credit into capital capacity.**
 
-### The product
+For the Agent-first frontier:
 
-IPO.ONE coordinates one canonical lifecycle:
+> **Turn verified Agent performance into capital.**
 
-> **Identity / Principal → Consent / Mandate → Credit Intent → Decision → Capital Offer → Obligation → Controlled Execution → Repayment → Verified Outcome → Credit State → Credit Passport**
+### The protocol
 
-Humans and Agents use different interfaces and security profiles, but the economic objects and state transitions remain shared.
+IPO.ONE connects one canonical lifecycle:
+
+> **Subject → Principal / Authority → Evidence → Credit Intent → Decision → Capital Offer → Obligation → Controlled Execution → Repayment / Resolution → Credit State → Future Capital Access**
+
+Human and Agent modes differ at the edge. They do not fork the Obligation, Ledger, Evidence, servicing or credit truth.
 
 ### The architecture
 
-IPO.ONE uses **Stable Kernel + Replaceable Adapters**.
+The architecture is **Stable Kernel + Replaceable Adapters + Extensible Facility Profiles**. Adapters can connect identity, Agent protocols, wallets, payment systems, chains, capital sources, Providers and venues. They may transport, observe, verify, reconcile or execute within authority. They cannot create credit authority, rewrite accepted terms, expand exposure or redefine an Obligation.
 
-The deterministic kernel owns identity relationships, authority, policy versions, Offers, Obligations, Ledger state, servicing, Evidence, reconciliation, Credit Outcomes, and Credit State.
+### The market discipline
 
-Adapters connect Human interfaces, Agent protocols, identity providers, payment rails, blockchains, smart accounts, capital facilities, and execution venues. An adapter may transport, verify, or execute. It cannot create authority, alter accepted terms, expand exposure, or redefine an Obligation.
+The protocol ceiling is broad; commercial execution must remain narrow. Early validation should focus on environments where performance is observable, attribution is reliable, authority is bounded, capital need is material and repayment or economic resolution can be verified.
 
-### The economic model
+### The permanent boundary
 
-IPO.ONE is designed as neutral infrastructure around external capital. Banks, fintech lenders, private-credit facilities, Provider credit, institutional capital, and compatible onchain facilities can supply funding under explicit policies. Capital Providers retain control over economic decisions and terms. IPO.ONE coordinates lifecycle integrity and can earn transparent infrastructure, execution, routing, servicing, reconciliation, and realized-revenue participation fees.
-
-### The intelligence model
-
-Verified outcomes create a compounding information advantage. Credit Intelligence can improve evidence confidence, affordability, risk estimates, Facility structure, Mandate limits, pricing recommendations, anomaly detection, repayment forecasting, interventions, and capital routing.
-
-The authority boundary is permanent:
-
-> **Intelligence may learn and recommend. Approved deterministic policy authorizes. The kernel executes.**
-
-### The market entry
-
-The first differentiated wedge is purpose-bound working capital for verified Agents and autonomous businesses purchasing productive digital resources such as compute, APIs, data, software, and approved services. This environment offers observable use of proceeds, machine-readable execution, short durations, bounded authority, and measurable repayment sources.
-
-Human productive credit remains a native mode of the same protocol, not a separate architecture. Both paths compound into one Credit State and capital network.
-
-### The end state
-
-IPO.ONE is designed to become a shared credit and obligation protocol for the Agentic Economy: a system in which verified economic performance becomes portable capacity, multiple capital providers compete to finance qualified obligations, and Humans and Agents can carry trustworthy progress across applications and rails.
+> **Intelligence may observe, learn, forecast, diagnose and recommend. Approved deterministic policy authorizes. The kernel executes.**
 
 ---
 
-# Part I - The Agentic Economic Transition
+# Part I — The Agentic Economic Transition
 
 ## 1. From Programmable Information to Programmable Credit
 
-The modern digital economy has developed in layers.
+The digital economy has advanced through successive primitives.
 
-The internet separated information from physical distribution. Open protocols made publishing, messaging, and computation interoperable across networks.
+The Internet separated information from physical distribution. Open protocols made publishing, messaging and computation interoperable across networks.
 
-Blockchains separated digital ownership from centralized ledgers. Assets, signatures, and settlement could become globally verifiable and programmable.
+Crypto and blockchains made digital ownership, signatures and settlement programmable across shared ledgers.
 
-Artificial intelligence is now separating economic action from continuous human operation. Software can interpret goals, discover services, negotiate parameters, call tools, coordinate tasks, and produce outcomes with increasing autonomy.
+AI Agents are separating economic action from continuous human operation. Software can interpret goals, discover services, call tools, coordinate with other systems, allocate resources and produce outcomes.
 
-Each transition creates a new infrastructure requirement.
+Each transition exposes the next missing layer. Autonomous action without accountable credit remains limited by whatever balance has already been deposited.
 
 ```mermaid
+%% title: Four programmable primitives
+%% caption: Economic action becomes scalable when responsibility across time is also machine-readable.
 flowchart LR
-    Information["Internet\nProgrammable Information"] --> Ownership["Crypto\nProgrammable Ownership"]
-    Ownership --> Autonomy["AI Agents\nProgrammable Action"]
-    Autonomy --> Credit["IPO.ONE\nProgrammable Credit"]
+    Information["Internet\nProgrammable information"] --> Ownership["Crypto\nProgrammable ownership"]
+    Ownership --> Action["AI Agents\nProgrammable action"]
+    Action --> Credit["IPO.ONE\nProgrammable credit"]
 ```
 
-Autonomous action can scale only as far as capital, trust, and accountability allow.
+Credit does not merely add another payment method. It allows a responsible actor to use present resources against an accountable commitment to future performance. That creates productive capacity, but also risk. Authority, terms, exposure, repayment, default, correction and loss must become explicit.
 
-A prepaid Agent can spend until its balance reaches zero. A sponsored Agent can operate until its owner stops funding it. A platform Agent can receive internal allowances that disappear outside the platform. These are useful operating models, but they are not portable credit.
+The Agentic Economy does not only need faster payments. It needs a system for responsibility, credit and obligations.
 
-Credit allows an economic actor to access resources in the present against an accountable commitment to future performance. It expands productive capacity beyond current cash. It also introduces risk: someone must define authority, assess repayment capacity, price uncertainty, record the Obligation, control use, reconcile payment, and absorb or allocate loss.
+## 2. Why Payment Is Not Credit
 
-For Humans, institutions evolved legal contracts, identity systems, bureaus, underwriting models, servicing infrastructure, and collections processes to perform these functions. The systems are imperfect and fragmented, but the underlying questions are known.
+A payment system answers operational questions:
 
-For Agents, the questions must be answered in machine-readable form from the beginning.
+- Did value move?
+- Through which rail?
+- When was it observed?
+- Was technical finality reached?
 
-The Agentic Economy therefore requires more than a payment layer. It requires a protocol for responsibility across time.
+A credit system must answer additional economic questions:
 
-## 2. Payments Are Necessary but Insufficient
+- Who acted, and under whose authority?
+- Who is accountable?
+- Why was capital extended?
+- What terms were accepted?
+- What became owed?
+- Was the Obligation fulfilled, cured, restructured, written off or otherwise resolved?
+- What should the outcome mean for future capital access?
 
-A payment proves or asserts that value moved. Credit must establish the economic relationship around that movement.
+The same transfer can be an advance, a purchase, a principal repayment, a fee, a refund, collateral movement, a reversal or an unrelated payment. A transaction hash alone does not identify which economic fact occurred.
+
+> **Payment records movement of value. Credit records responsibility across time.**
+
+A wallet can hold money. A payment protocol can move money. Identity can prove a credential or account relationship. Reputation can expose signals. An execution venue can perform an action. None of these alone creates a canonical credit relationship.
+
+IPO.ONE does not replace these systems. It gives their observations economic meaning inside an accepted Obligation.
+
+## 3. Economic Memory: Performance Becomes Credit
+
+An economically productive Agent should not have to begin from zero in every new environment.
+
+Repeated performance can create economic memory. Economic memory can strengthen underwriting confidence. Under an approved Capital Provider policy, stronger confidence may support greater capacity, better terms or access to a more appropriate Facility. It never creates automatic entitlement to capital.
 
 ```mermaid
-flowchart TB
-    Payment["Payment"] --> P1["Did value move?"]
-    Payment --> P2["When and through which rail?"]
-    Payment --> P3["Was technical finality reached?"]
-
-    Credit["Credit & Obligation"] --> C1["Who committed?"]
-    Credit --> C2["Under whose authority?"]
-    Credit --> C3["On what terms and for what purpose?"]
-    Credit --> C4["What became owed?"]
-    Credit --> C5["Was the Obligation fulfilled?"]
-    Credit --> C6["How should the outcome affect future access?"]
+%% title: Performance to Credit to Capital flywheel
+%% caption: Verified outcomes return as Evidence for the next contextual decision.
+flowchart LR
+    Activity["Economic activity\nWork, trade, production"] --> Performance["Verifiable performance\nAttributable outcomes"]
+    Performance --> Evidence["Evidence\nProvenance and finality"]
+    Evidence --> State["Credit State\nLongitudinal memory"]
+    State --> Capacity["Capital capacity\nContextual Offer"]
+    Capacity --> Scale["More economic activity\nGoverned scale"]
+    Scale --> Activity
 ```
 
-The distinction matters because identical transfers can represent different economic facts.
+Performance matters on both sides of the first Obligation.
 
-A payment may be:
+Before credit, relevant external Domain Performance may inform an initial decision. After credit, utilization, repayment, Mandate compliance, delinquency, cure, loss and recovery strengthen the protocol's own longitudinal Credit State.
 
-- an advance under a credit Facility;
-- a purchase funded from current cash;
-- a repayment of principal;
-- payment of interest or fees;
-- a refund;
-- collateral movement;
-- a Provider settlement;
-- a mistaken duplicate;
-- a reversible processor event;
-- an onchain transaction that later becomes non-canonical; or
-- a transfer unrelated to any credit relationship.
+Economic performance does not automatically become credit. Evidence must be attributable, trustworthy, relevant, sufficiently complete, permitted for the decision and evaluated under current risk policy.
 
-Without identity, authority, accepted terms, allocation rules, servicing state, and Evidence, a payment cannot reliably update credit.
+## 4. Why Economic Agents Need Capital Beyond Pre-Funded Balances
 
-IPO.ONE does not replace payment networks. It gives payment events economic meaning inside a canonical Obligation.
+Pre-funding is safe but restrictive. It forces every activity to remain inside existing cash, even when the actor has a strong, verifiable record and a productive use for additional resources.
 
-## 3. Credit Is Trust Across Time
+An Agent may face a timing gap between cost and outcome:
 
-Credit is often described as money lent with an expectation of repayment. That definition is incomplete.
+- inference or compute is consumed before customer revenue arrives;
+- inventory is purchased before commerce settles;
+- a receivable is earned before it is paid;
+- an approved trading strategy needs bounded capital before it can produce a new result;
+- advertising or software is purchased before the associated revenue cycle closes; or
+- a service Agent performs contracted work before settlement.
 
-Credit is a governed transfer of present capacity based on a judgment about future accountable performance.
+Credit can bridge that timing gap. The economic case is strongest when the use of proceeds is constrained, the activity is observable, authority is narrow, outcomes are measurable and repayment or resolution can be reconciled.
 
-It contains at least six elements:
-
-1. **Identity** - the relevant economic Subject and responsible Principal.
-2. **Authority** - the right to request, accept, draw, spend, or settle.
-3. **Terms** - amount, price, duration, schedule, purpose, conditions, and remedies.
-4. **Obligation** - the canonical future commitment created by acceptance and use.
-5. **Performance** - execution, repayment, delinquency, cure, loss, recovery, and resolution.
-6. **Memory** - the durable evidence through which past performance informs future decisions.
-
-Traditional systems often compress these elements into a private bureau score or lender-specific account history. That approach produces scale within institutions but weak portability across platforms, countries, payment rails, and emerging digital actors.
-
-The Agentic Economy creates an opportunity to define credit more precisely:
-
-> **Credit is permissioned access to present resources under accountable authority, canonical obligations, and verifiable future performance.**
-
-This definition is subject-neutral. It can apply to a Human, organization, Agent, or machine while preserving the legal and risk differences among them.
-
-## 4. Why the Transition Matters Now
-
-Several infrastructure shifts are converging.
-
-### 4.1 Agents are becoming economic interfaces
-
-Agents increasingly sit between users and digital services. They search, compare, plan, call APIs, operate software, and coordinate other Agents. Protocols such as MCP and A2A are reducing integration friction between models, tools, and remote Agents.[7][8]
-
-Interoperability increases economic opportunity, but it also increases the need for standardized authority and accountability. A system that can call any tool must not be assumed to have permission to accept any financial obligation.
-
-### 4.2 Machine payments are becoming native
-
-HTTP-native and onchain payment protocols, including x402, make it possible for software to discover a paid resource, satisfy a payment request, and receive service programmatically.[9]
-
-This improves settlement. It does not answer who may borrow, how much, for what purpose, or how repayment history should travel.
-
-### 4.3 Digital identity is becoming more verifiable
-
-Standards such as W3C Verifiable Credentials 2.0 provide issuer-holder-verifier patterns for machine-verifiable, privacy-aware claims.[3] Wallet authentication, sender-constrained tokens, workload credentials, and account-control proofs make it possible to separate identity from authorization more cleanly than many legacy systems.
-
-### 4.4 Capital remains fragmented
-
-Capital providers operate under different laws, risk appetites, data requirements, currencies, and settlement systems. A global balance sheet is neither necessary nor desirable as the default architecture. What is needed is a common obligation language through which many capital providers can evaluate, price, fund, and monitor compatible credit relationships.
-
-### 4.5 Account access has not solved credit access
-
-The Global Findex 2025 shows substantial progress in account ownership, yet financial resilience remains weaker than account access. In low- and middle-income economies, many people have mobile connectivity and digital transaction histories but lack mechanisms that convert lawful cash flow and repayment into portable credit.[1]
-
-Humans and Agents therefore arrive at the same structural gap from different directions:
-
-- Humans may have economic activity without a portable credit file.
-- Agents may have execution capability without a portable responsibility and repayment history.
-
-IPO.ONE is designed around the shared infrastructure problem beneath both.
+This does not mean every Agent should receive credit. It means qualified economic actors should have a standardized way to prove why capital can be extended responsibly.
 
 ---
 
-# Part II - The Missing Protocol Primitive
+# Part II — The IPO.ONE Credit Protocol
 
-## 5. Identity, Payment, and Obligation
+## 5. Identity + Payment + Obligation
 
-IPO.ONE retains the original **I-P-O model**:
+IPO.ONE retains the foundational public primitive:
 
 > **Identity + Payment + Obligation**
 
-Credit Intent acts as the request envelope that connects these primitives.
+Credit Intent is the request envelope. Mandate or Consent constrains authority. Evidence explains what actually happened.
 
 | Primitive | Question | Protocol role |
 | --- | --- | --- |
-| **Identity** | Who is acting, who authorized the action, and who is responsible? | Resolve Subjects, Principals, accounts, roles, credentials, and attestations. |
-| **Intent** | What value is requested, for what purpose, under which constraints, and from which repayment source? | Represent a subject-neutral Credit Intent and optional Execution Plan. |
-| **Payment / Settlement** | How does value move, reach technical finality, and reconcile? | Produce rail-neutral instructions and normalize authenticated receipts. |
-| **Obligation** | What future commitment exists? | Create canonical terms, exposure, schedule, servicing, delinquency, default, correction, and resolution state. |
-| **Evidence** | What actually happened, and how do we know? | Bind observations, receipts, state transitions, provenance, finality, and reconciliation. |
+| **Identity** | Who is acting? Who authorized the action? Who bears responsibility? | Resolve Subject, Principal, account, role and permitted attestations. |
+| **Payment / Settlement** | How does value move, reach technical finality and reconcile? | Normalize rail-specific instructions and authenticated receipts. |
+| **Obligation** | What is owed, by whom, to whom and under which terms? | Preserve the accepted commitment, exposure, schedule, servicing and resolution. |
+| **Evidence** | What actually happened, how do we know and how reliable is the provenance? | Bind observations, Events, receipts, finality, corrections and reconciliation. |
 
-Identity without obligation produces authentication but no credit relationship.
-
-Payment without obligation produces settlement but no durable representation of responsibility.
-
-Obligation without Evidence produces a claim that cannot be trusted across systems.
-
-IPO.ONE combines the three into a lifecycle that can be interpreted by Humans, Agents, capital providers, applications, and auditors.
+Identity without an Obligation is authentication, not credit. Payment without an Obligation is settlement, not credit history. An Obligation without reliable Evidence cannot become trustworthy portable credit.
 
 ## 6. Obligation as the Atomic Unit of Credit
 
-The atomic unit of a payment network is a transfer.
+The atomic unit of a payment system is usually a transfer. The atomic unit of IPO.ONE credit is an **Obligation**.
 
-The atomic unit of a credit system is an **Obligation**.
+An Obligation records the economic commitment created from exact acceptance of an Offer. It may include:
 
-An Obligation records:
-
-- the obligor and responsible Principal;
-- the Capital Provider or beneficiary;
-- the accepted Offer version;
-- principal, price, fees, and total cost;
-- asset or currency;
+- Subject and responsible Principal;
+- Capital Provider and accepted Offer version;
+- amount, asset, price, fees and total cost;
 - purpose and permitted use;
-- term and repayment schedule;
-- repayment source;
+- duration, schedule and repayment source;
 - servicing and allocation rules;
-- applicable policy and authority;
-- permitted execution and settlement environments;
-- current state;
-- Evidence and reconciliation lineage; and
-- remedies, correction, and resolution rules.
+- authority and applicable policy;
+- execution and settlement boundaries;
+- current state and exposure;
+- Evidence lineage, correction and reconciliation; and
+- cure, restructuring, default, recovery, write-off or other resolution.
 
-The Obligation is not merely a database row or legal-document hash. It is the canonical protocol representation of the accepted economic commitment. Legal agreements, disclosures, and jurisdiction-specific rights remain controlled by the applicable lender, Originator, counterparties, and law. IPO.ONE does not claim that software overrides those instruments.
+An Obligation is not a transaction hash, agreement hash, payment or score. It is the canonical protocol representation of the commitment across time.
 
-The protocol requirement is narrower and more durable: every system participating in the lifecycle must refer to one canonical economic commitment and must not create contradictory sources of truth.
+Applicable legal rights remain governed by counterparties, agreements and law. Software does not supersede those instruments. The protocol requirement is that participating systems refer to one economic commitment instead of inventing contradictory truths.
 
-## 7. Responsibility Before Autonomy
+## 7. Single Kernel, Dual-Native Access
 
-Autonomy without responsibility produces unbounded risk.
+IPO.ONE is subject-neutral at the kernel and Agent-first in its category narrative.
 
-IPO.ONE separates three concepts that are often collapsed:
+Human and Agent are native Subjects. They use different identity, authority, disclosure and interaction profiles, yet converge on one economic lifecycle.
 
-- **Identity** answers which actor or account is present.
-- **Responsibility** answers which person or organization ultimately bears economic accountability.
-- **Authority** answers what exact action is currently permitted.
-
-For a Human, these concepts may overlap but are not identical. A wallet can authenticate an address, while role selection, Consent, eligibility, Offer acceptance, and product policy determine what the Human may do.
-
-For an Agent, the separation is essential. An Agent identity describes a workload or software actor. It does not establish legal personhood, balance-sheet capacity, or open-ended permission to borrow.
-
-An accountable Principal establishes the relationship. A Mandate narrows authority. Deterministic authorization evaluates each exact action against current scope and state.
-
-```mermaid
-flowchart LR
-    Principal["Accountable Principal"] --> AgentID["Agent Identity"]
-    Principal --> Mandate["Bounded Mandate"]
-    AgentID --> Mandate
-    Mandate --> Request["Exact Request"]
-    Request --> Policy["Deterministic Authorization"]
-    Policy --> Obligation["Canonical Obligation"]
-    Obligation --> Execution["Controlled Execution"]
-    Execution --> Evidence["Verified Outcome"]
-    Evidence --> State["Credit State"]
-```
-
-This design allows Agents to become more economically capable without granting them undefined autonomy.
-
-## 8. Single Kernel, Dual-Native Access
-
-Humans and Agents are equal first-class Subjects of the protocol. Equal status does not mean identical law, identity assurance, underwriting, user experience, or liability.
-
-It means the protocol does not treat Humans as a legacy mode or Agents as an API wrapper around Human forms.
-
-```mermaid
-flowchart TD
-    Human["Human"] --> HumanEdge["Human-Native Access\nWallet authentication · Consent · Disclosure"]
-    Agent["Autonomous Agent"] --> AgentEdge["Agent-Native Access\nPrincipal · Workload identity · Mandate"]
-    Provider["Capital Provider"] --> ProviderEdge["Provider Access\nPolicy · Offer · Portfolio"]
-
-    HumanEdge --> Kernel["Single Credit & Obligation Kernel"]
-    AgentEdge --> Kernel
-    ProviderEdge --> Kernel
-
-    Kernel --> Objects["Shared Objects\nIntent · Decision · Offer · Obligation"]
-    Objects --> Ledger["Shared Ledger & Servicing"]
-    Ledger --> Evidence["Shared Evidence & Reconciliation"]
-    Evidence --> Credit["Shared Credit State & Passport"]
-```
-
-The edges differ:
-
-| Dimension | Human-native profile | Agent-native profile | Shared kernel |
+| Dimension | Agent-native edge | Human-native edge | Shared kernel |
 | --- | --- | --- | --- |
-| Interaction | Product interface, embedded SDK, partner workflow | API, SDK, MCP-compatible tool, A2A-compatible adapter | Canonical commands and resources |
-| Identity | Human authentication and identity attestations | Workload identity and account binding | Subject and Principal relationships |
-| Authority | Consent, role, legal capacity, deliberate acceptance | Principal, Mandate, key binding, purpose and budget limits | Deterministic Authorization |
-| Disclosure | Human-readable terms, schedule, cost, remediation | Machine-readable terms, constraints, receipts, errors | Versioned Offer and Obligation |
-| Execution | User-directed approved operation | Replay-safe machine command | Shared Ledger and state machine |
-| Output | Credit State, Track Record, Passport, Evidence | Same | One economic truth |
+| Identity | Workload identity, account binding, Principal relationship | Human authentication, role, identity attestations | Subject and Principal |
+| Authority | Bounded, revocable Mandate | Consent, deliberate acceptance, legal capacity | Deterministic authorization |
+| Interface | API, SDK, MCP-compatible and A2A-compatible adapters | Product UI and partner workflow | Versioned commands and resources |
+| Disclosure | Machine-readable terms, constraints, receipts and errors | Understandable terms, cost, schedule and remedies | Offer and Obligation |
+| Outcome | Queryable Events and Evidence | Visible records and explanations | Ledger, servicing, Credit State |
 
-The canonical lifecycle remains:
+Agent-first does not mean Agent-only. Humans remain Principals, Operators, owners, guarantors where applicable, Capital Providers, counterparties, beneficiaries and native borrowers where law and product policy permit.
 
-> **Subject → Authority → Credit Intent → Decision → Offer → Obligation → Execution → Repayment → Credit Outcome → Credit State**
+## 8. Stable Kernel + Replaceable Adapters
 
----
-
-# Part III - The IPO.ONE Credit System
-
-## 9. The Canonical Credit Loop
-
-The IPO.ONE Credit Loop turns one accountable request into a durable economic outcome.
+The deterministic kernel owns long-lived credit truth. Adapters connect systems that will change faster than the economic ontology.
 
 ```mermaid
-flowchart LR
-    S1["1. Establish Subject"] --> S2["2. Bind Authority"]
-    S2 --> S3["3. Submit Credit Intent"]
-    S3 --> S4["4. Evaluate & Issue Offer"]
-    S4 --> S5["5. Accept & Create Obligation"]
-    S5 --> S6["6. Execute Under Controls"]
-    S6 --> S7["7. Service & Repay"]
-    S7 --> S8["8. Finalize Outcome"]
-    S8 --> S9["9. Update Credit State"]
-    S9 --> S3
-```
-
-### 9.1 Establish Subject and responsibility
-
-A Human or Agent becomes a canonical Subject. The system binds the relevant Principal relationship, role, Tenant, account-control evidence, and verification attestations.
-
-### 9.2 Establish authority
-
-A Human grants Consent and performs explicit lifecycle actions. An Agent operates under a bounded Mandate. Authority is versioned, revocable, and evaluated at the moment of action.
-
-### 9.3 Submit Credit Intent
-
-The Subject requests capital and states amount, asset, purpose, duration, repayment source, constraints, and preferred execution environment. Complex or restricted-use requests may include an Execution Plan.
-
-### 9.4 Evaluate and issue Offer
-
-Verified Evidence, active policy, affordability or repayment capacity, current exposure, and Capital Provider requirements inform an explainable Decision. The Capital Provider authors binding or conditional terms in a versioned Offer.
-
-### 9.5 Accept and create Obligation
-
-The authorized Subject or Principal accepts an exact Offer version. Acceptance creates the canonical Obligation and its servicing schedule. No later change may silently rewrite the original terms.
-
-### 9.6 Controlled execution
-
-Use of capital occurs only through approved operations, counterparties, Providers, assets, venues, or rails. Execution receipts remain linked to the Obligation.
-
-### 9.7 Service and repay
-
-Principal, financial charges, fees, refunds, reversals, corrections, delinquency, cure, restructuring, loss, and recovery update an append-only Ledger under explicit allocation rules.
-
-### 9.8 Finalize outcome
-
-A terminal Credit Outcome is created when the relevant obligation state, Evidence, and reconciliation conditions are satisfied.
-
-### 9.9 Update Credit State
-
-The verified outcome becomes part of longitudinal Credit State and can support future authorized decisions and disclosures.
-
-## 10. Human Credit Access
-
-Human access is a native protocol mode.
-
-A Human journey should be understandable without requiring knowledge of blockchains, Agent protocols, or credit-system internals.
-
-A complete Human lifecycle includes:
-
-1. authenticate and select the intended role;
-2. establish or recover the Human Subject;
-3. grant purpose-limited Consent;
-4. connect approved identity or economic Evidence;
-5. submit Credit Intent;
-6. receive an explainable Decision;
-7. review exact Offer terms, cost, schedule, conditions, and lender identity;
-8. deliberately accept the Offer;
-9. create and inspect the resulting Obligation;
-10. execute or receive the approved benefit;
-11. repay according to schedule;
-12. see delinquency, cure, dispute, or remediation state where relevant;
-13. receive terminal Credit Outcome;
-14. inspect Credit State, Track Record, Passport, and Evidence; and
-15. recover the same canonical state across sessions and devices under current authorization.
-
-Human product requirements include:
-
-- clear total cost and repayment schedule;
-- understandable reason codes;
-- explicit Consent and disclosure scope;
-- correction, complaint, and appeal mechanisms where required;
-- affordability and overextension controls;
-- privacy-preserving attestations rather than unnecessary raw documents;
-- accessible remediation and support; and
-- no implication that a wallet balance or onchain history alone defines identity or creditworthiness.
-
-## 11. Agent Credit Access
-
-Agent access is designed around structured authority, machine-readable constraints, and deterministic execution.
-
-An Agent credit lifecycle includes:
-
-1. establish the responsible Principal or Operator;
-2. register a verifiable workload identity and approved key material;
-3. bind the Agent to a Subject, account, or smart-account relationship;
-4. create a bounded Mandate;
-5. submit Credit Intent and, where needed, an Execution Plan;
-6. validate purpose, Provider, amount, duration, current exposure, and repayment source;
-7. receive a deterministic Decision and versioned Offer;
-8. accept under explicit authority;
-9. create the shared canonical Obligation;
-10. execute only approved actions;
-11. service repayment through replay-safe, idempotent commands;
-12. finalize the Credit Outcome; and
-13. recover durable Credit State, Passport, and Evidence through authorized machine interfaces.
-
-### 11.1 The Mandate
-
-A Mandate is not a general permission string. It is a versioned economic control object.
-
-It may constrain:
-
-- maximum amount and aggregate exposure;
-- asset or currency;
-- purpose and permitted use;
-- approved Providers, counterparties, or venues;
-- permitted operation types;
-- duration and expiry;
-- per-action and per-period limits;
-- repayment source;
-- revenue-capture or settlement routing;
-- risk and loss limits;
-- required Evidence;
-- escalation and human-approval thresholds;
-- revocation and stop conditions.
-
-### 11.2 Sender-constrained authentication
-
-Bearer credentials are inadequate for high-consequence Agent actions because copied secrets can be replayed by a different sender. IPO.ONE's Agent architecture uses sender-constrained authentication patterns, including proof-of-possession, so a request must demonstrate control of approved key material. RFC 9449 DPoP provides a relevant standards-track mechanism for sender-constraining OAuth tokens and detecting replay.[4]
-
-Authentication is necessary but still not sufficient. The system evaluates current Mandate, role, expiry, revocation, resource ownership, amount, state, and reconciliation before authorizing an exact command.
-
-### 11.3 Idempotency and concurrency
-
-Machine systems retry. Networks duplicate. Workers restart. A financial protocol must expect this behavior.
-
-Every mutating command requires a stable idempotency boundary. Concurrent requests cannot create duplicate Offers, Obligations, draws, repayments, or Evidence. The canonical outcome is derived from durable server state, not from browser memory, local process state, or an optimistic client assertion.
-
-### 11.4 Controlled use of proceeds
-
-Early Agent credit should be purpose-bound. Capital can be directed toward approved compute, APIs, data, software, infrastructure, inventory, or services rather than unrestricted cash withdrawal.
-
-This structure improves observability and risk containment:
-
-- the Provider is known;
-- the intended resource is known;
-- the amount and timing are bounded;
-- execution can produce machine-readable receipts;
-- productive outcomes may be observable;
-- revenue or repayment sources can be linked; and
-- authority can be revoked without granting general custody.
-
-## 12. Capital Providers and Offer Formation
-
-IPO.ONE is designed to coordinate external capital rather than require one universal balance sheet.
-
-Capital Providers may include:
-
-- banks and licensed non-bank lenders;
-- fintech and embedded-credit providers;
-- private-credit facilities;
-- Provider or vendor trade-credit programs;
-- institutional facilities;
-- protocol or digital-asset capital;
-- specialized Agent-finance providers; and
-- compatible onchain capital facilities with defined legal, custody, investor, and servicing controls.
-
-A Capital Provider publishes or applies a machine-readable policy or Capital Mandate defining:
-
-- eligible jurisdictions and Subject classes;
-- product and purpose;
-- amount and tenor bounds;
-- pricing and total-cost limits;
-- required identity and Evidence standards;
-- affordability or repayment-capacity rules;
-- concentration and portfolio limits;
-- permitted assets and rails;
-- finality and reconciliation requirements;
-- recourse, reserve, and loss-allocation terms;
-- servicing obligations; and
-- delegated decision authority.
-
-IPO.ONE supports several decision modes:
-
-| Mode | IPO.ONE role | Capital Provider control |
-| --- | --- | --- |
-| **Advisory** | Produce Credit Profile, reason codes, and recommended terms | Provider makes the final decision in its own system |
-| **Delegated policy** | Approve, decline, or step up inside a signed policy envelope | Provider pre-approves policy, caps, pricing, exceptions, and oversight |
-| **Request for Offer** | Route a standardized request to eligible Providers | Each Provider returns binding or conditional terms |
-
-The Capital Provider owns the economic Offer. IPO.ONE preserves the integrity of the accepted Offer version and resulting lifecycle.
-
-## 13. The Obligation Kernel and Ledger
-
-The Obligation Kernel is the source of canonical economic state.
-
-It manages:
-
-- Offer acceptance and version binding;
-- Obligation creation;
-- Facility projection and available capacity;
-- execution and draw state;
-- repayment schedule;
-- principal, financial income, fees, and total due;
-- payment allocation;
-- days past due;
-- delinquency and cure;
-- modification, restructure, repurchase, or refinance references;
-- default, write-off, recovery, and resolution;
-- Evidence and reconciliation status; and
-- Credit Outcome finalization.
-
-### 13.1 Append-only economic truth
-
-Financial state must be reconstructable.
-
-Funding, repayment, refund, reversal, correction, write-off, and recovery events are recorded additively. Historical events are not silently mutated to make projections appear correct. Derived balances and Credit State must be recomputable from canonical events and accepted terms.
-
-### 13.2 Double-entry discipline
-
-Where value is represented economically, the Ledger should preserve balanced accounting entries. A single external receipt may result in multiple internal allocations, but total recognized value cannot exceed the valid Obligation amount.
-
-### 13.3 Technical finality and legal discharge
-
-Technical finality is not always legal settlement.
-
-Onchain finality may depend on inclusion, confirmation depth, protocol finality, or an accepted attestation. Traditional-rail finality may remain subject to return, chargeback, bank, processor, or scheme rules. The applicable agreement and law determine legal discharge.
-
-IPO.ONE records both without conflating them.
-
-## 14. Evidence
-
-Evidence is the bridge between events and trust.
-
-An Evidence item should be:
-
-- typed;
-- attributable;
-- time-bounded;
-- linked to the relevant Subject, authority, Obligation, and event;
-- provenance-aware;
-- immutable or additively correctable;
-- explicit about observation and finality state;
-- permissioned according to sensitivity; and
-- sufficient to reconstruct why a state transition occurred.
-
-Evidence may include:
-
-- identity or account-control attestations;
-- Consent and Mandate versions;
-- Credit Intent and Decision snapshots;
-- Offer and acceptance receipts;
-- execution receipts;
-- payment and rail receipts;
-- finality proofs;
-- Ledger allocation events;
-- delinquency, cure, default, and recovery events;
-- dispute or correction records;
-- model and policy versions; and
-- reconciliation outcomes.
-
-A hash can help prove integrity. It does not, by itself, prove the meaning, truth, authority, or legal effect of the underlying event.
-
-## 15. Credit State and the Credit Passport
-
-Credit State is the longitudinal economic state derived from canonical obligations and verified outcomes.
-
-It may include:
-
-- active and completed Obligations;
-- total funded and repaid value;
-- repayment ratio;
-- payment timing;
-- maximum days past due;
-- delinquency and cure history;
-- default, loss, write-off, and recovery;
-- purpose and Mandate compliance;
-- execution quality;
-- Evidence confidence;
-- disputes and corrections;
-- relevant concentration or stability factors; and
-- policy-specific progression status.
-
-Credit State is not a browser profile and not an opaque score generated without provenance. It is a recomputable projection over canonical economic truth.
-
-The Credit Passport is a permissioned representation of relevant Credit State. It can disclose the minimum information required for a defined purpose:
-
-- a proof of completed obligations;
-- a repayment-performance summary;
-- a purpose-specific Decision Passport;
-- a bounded factor set;
-- a Provider or lender-specific Evidence package;
-- a credential or attestation reference; or
-- a verifier-readable provenance chain.
-
-W3C Verifiable Credentials 2.0 provides a useful interoperable issuer-holder-verifier pattern for machine-verifiable, privacy-aware claims.[3] IPO.ONE may use compatible credential formats where they improve portability, while each recipient remains responsible for its own decision rules.
-
-## 16. Economic Memory
-
-A central IPO.ONE concept is **economic memory**.
-
-Economic systems remember unevenly. A bank remembers the accounts it services. A platform remembers activity inside its own marketplace. A blockchain remembers public transactions. A wallet remembers assets and signatures. An Agent runtime remembers local tasks.
-
-None of these records necessarily forms a portable, permissioned account of responsibility and performance.
-
-IPO.ONE economic memory is built from:
-
-> **Accountable identity + bounded authority + canonical obligations + reconciled outcomes + provenance**
-
-```mermaid
-flowchart LR
-    Identity["Accountable Identity"] --> Authority["Bounded Authority"]
-    Authority --> Obligation["Canonical Obligation"]
-    Obligation --> Events["Execution & Repayment Events"]
-    Events --> Outcome["Verified Credit Outcome"]
-    Outcome --> Memory["Economic Memory"]
-    Memory --> Passport["Permissioned Credit Passport"]
-    Passport --> Capital["Future Capital Decision"]
-```
-
-Economic memory changes the strategic value of a completed transaction. The outcome is not merely closed. It becomes an input into future capacity.
-
-## 17. The Obligation Graph
-
-As the network grows, IPO.ONE can represent a permissioned **Obligation Graph**.
-
-The graph connects:
-
-- Subjects;
-- Principals;
-- Agents;
-- Mandates and Consent;
-- Capital Providers;
-- Offers and Facilities;
-- Obligations;
-- Providers and counterparties;
-- execution environments;
-- payment rails;
-- Evidence issuers;
-- outcomes; and
-- Credit State.
-
-```mermaid
-flowchart TD
-    Principal["Principal"] --> Subject["Human / Agent Subject"]
-    Principal --> Mandate["Consent / Mandate"]
-    Mandate --> Intent["Credit Intent"]
-    Provider["Capital Provider"] --> Offer["Offer / Facility"]
-    Intent --> Offer
-    Offer --> Obligation["Obligation"]
-    Obligation --> Service["Provider / Execution Venue"]
-    Obligation --> Rail["Payment / Settlement Rail"]
-    Service --> Evidence["Execution Evidence"]
-    Rail --> Evidence
-    Evidence --> Outcome["Credit Outcome"]
-    Outcome --> State["Credit State"]
-    State --> Passport["Credit Passport"]
-```
-
-The Obligation Graph is not intended to become a public surveillance graph. Access remains purpose-limited and policy-controlled. Its value comes from normalized relationships and verified outcomes, not unrestricted visibility.
-
-A mature graph can improve:
-
-- duplicate-financing detection;
-- authority and ownership resolution;
-- Provider and attester quality assessment;
-- concentration analysis;
-- portfolio correlation;
-- capital matching;
-- fraud and collusion detection;
-- cross-platform performance portability; and
-- systemic-risk understanding.
-
----
-
-# Part IV - Protocol Architecture
-
-## 18. Stable Kernel + Replaceable Adapters
-
-IPO.ONE uses a deliberately asymmetric architecture:
-
-> **Stable Protocol Kernel + Replaceable Adapters**
-
-The kernel changes slowly because it defines the meaning of credit and obligations. Adapters change more quickly because external systems, standards, Providers, chains, and payment rails evolve.
-
-```mermaid
+%% title: Stable Kernel and Replaceable Adapters
+%% caption: External systems connect at governed edges; none can redefine canonical credit truth.
 flowchart TB
-    HumanUI["Human Interfaces"]
-    AgentInterfaces["Agent API · SDK · MCP · A2A"]
-    CapitalInterfaces["Capital Provider Interfaces"]
-
-    HumanUI --> Gateway["Authenticated Command & Authorization Gateway"]
-    AgentInterfaces --> Gateway
-    CapitalInterfaces --> Gateway
-
-    Gateway --> Kernel["Deterministic Credit & Obligation Kernel"]
-
-    Kernel --> Identity["Identity & Authority"]
-    Kernel --> Decision["Decision & Offer"]
-    Kernel --> Obligation["Obligation Engine"]
-    Kernel --> Ledger["Ledger & Servicing"]
-    Kernel --> Evidence["Evidence & Reconciliation"]
-    Kernel --> State["Credit State & Passport"]
-
-    Kernel --> AdapterLayer["Versioned Adapter Layer"]
-
-    AdapterLayer --> KYC["Identity / KYC / Attestation"]
-    AdapterLayer --> Payments["Payment & Settlement Rails"]
-    AdapterLayer --> Chains["Chains & Smart Accounts"]
-    AdapterLayer --> Venues["Providers & Execution Venues"]
-    AdapterLayer --> Capital["Capital Facilities"]
+    IdentityAdapter["Identity adapters\nCredentials and accounts"] --> Kernel["Stable credit kernel\nAuthority · Offer · Obligation · Ledger · Evidence · Credit State"]
+    AgentAdapter["Agent adapters\nAPI · SDK · MCP · A2A"] --> Kernel
+    CapitalAdapter["Capital adapters\nProviders and facilities"] --> Kernel
+    Kernel --> PaymentAdapter["Settlement adapters\nPayments and chains"]
+    Kernel --> ProviderAdapter["Provider adapters\nServices and commerce"]
+    Kernel --> VenueAdapter["Venue adapters\nExecution and observation"]
 ```
-
-### 18.1 Kernel responsibilities
 
 The kernel owns:
 
-- canonical identifiers;
 - Subject and Principal relationships;
-- roles, Consent, Mandates, and Authorizations;
-- Credit Intent;
-- active policy versions;
-- Decision and Offer versions;
-- accepted Obligations;
-- Facility projections;
-- Ledger and servicing state;
-- Evidence and outbox state;
-- finality and reconciliation status;
-- Credit Outcomes;
-- Credit State and Passport permissions; and
-- audit history.
+- Consent and Mandates;
+- policy versions and authorization;
+- Decisions, Offers, Facilities and Obligations;
+- double-entry Ledger and servicing state;
+- Events, Evidence, finality and reconciliation; and
+- Credit State and permissioned Passport disclosures.
 
-### 18.2 Adapter responsibilities
+Adapters may transport, verify, observe, reconcile or execute exact authorized operations. They must not independently create credit authority, broaden a Mandate, change accepted terms, expand exposure, declare settlement final or rewrite Credit State.
 
-Adapters may:
+This boundary prevents a payment rail, wallet vendor, Provider, blockchain or venue from becoming the protocol itself.
 
-- normalize external identity or account-control proofs;
-- translate Human or machine messages into canonical commands;
-- prepare payment or execution instructions;
-- submit an approved operation;
-- observe external events;
-- confirm technical finality;
-- reconcile partial, reversed, or corrected events;
-- register capital mandates;
-- obtain Offers; or
-- anchor and verify permitted proofs.
+## 9. The Credit Lifecycle
 
-Adapters may not:
+One shared lifecycle converts intent into an accountable outcome:
+
+1. Establish the Subject and responsible Principal.
+2. Establish Consent or a bounded Mandate.
+3. Admit relevant, authorized Evidence.
+4. Submit Credit Intent with amount, purpose, asset, duration and repayment source.
+5. Evaluate under deterministic policy and Capital Provider requirements.
+6. Author a versioned Offer.
+7. Accept the exact Offer and create one Obligation and Facility.
+8. Execute or utilize only within current authority.
+9. Service, account, repay or resolve.
+10. Finalize and reconcile Evidence.
+11. Update Credit State for future permitted decisions.
+
+No stage silently grants the next. A Decision is not an Offer. An Offer is not accepted authority. A Facility does not permit use outside its Mandate. External execution acknowledgement is not Ledger settlement. Credit State may inform a new Offer; it cannot silently increase a limit.
+
+---
+
+# Part III — Performance, Credit and Capital
+
+## 10. Evidence and Domain Performance
+
+Evidence is the protocol's provenance-aware record of what happened. It can bind source identity, observation time, ingest time, payload or record hash, policy version, finality, reconciliation, correction and revocation state.
+
+**Domain Performance Evidence** is Evidence about how a Subject or Agent has performed in a particular economic context. It is a semantic classification inside the existing Evidence architecture, not a parallel canonical object.
+
+| Domain | Potentially relevant Evidence | Context that remains necessary |
+| --- | --- | --- |
+| Trading / capital deployment | Realized P&L, risk-adjusted return, drawdown, volatility, leverage, liquidation history, execution quality, track-record duration, strategy consistency, Mandate compliance | Venue, account attribution, market regime, liquidity, capacity, fees, finality and reconciliation |
+| Machine services / digital production | Metered usage, productive output, revenue where observable, resource efficiency, Provider concentration, operating consistency, repayment | Resource class, unit, price schedule, Provider provenance, output attribution and repayment source |
+| Commerce / procurement | Revenue, GMV, margin, inventory turnover, fulfillment, refunds, disputes, cash conversion, settlement reliability | Merchant identity, returns policy, seasonality, channel concentration and lawful data use |
+| Service Agents / autonomous businesses | Completed economic tasks, contracted revenue, receivables, retention, margins, settlement and operating consistency | Contract attribution, counterparty quality, delivery acceptance and collection risk |
+
+Other future domains may include advertising, logistics, robotics, asset operations, digital labor, procurement or machine-to-machine commerce. These examples show protocol range; they do not constitute a launch roadmap.
+
+The governing principle is narrow:
+
+> If an economic actor repeatedly creates measurable outcomes, those outcomes may become Evidence. If that Evidence is trustworthy, attributable, relevant and permitted for underwriting, it may contribute to credit.
+
+## 11. Credit State and Credit Passport
+
+**Credit State** is longitudinal economic trust and credit performance. It can include prior Obligations, utilization, repayment, delinquency, cure, restructuring, default, recovery, Mandate compliance, capital utilization, Evidence provenance and prior economic outcomes.
+
+**Domain Performance** is contextual performance in a specific activity. It may inform Credit State and underwriting, but it should not erase distinctions between domains.
+
+The **Credit Passport** is a permissioned, purpose-limited representation of relevant verified Credit State. It is not:
+
+- a public dossier;
+- a universal public score;
+- raw identity, transaction or strategy history;
+- an identity document; or
+- a permanent ranking system.
+
+A disclosure should reveal only what a specific authorized verifier needs. Different Capital Providers may request different factors and apply different policies. The underlying Evidence and context matter more than one display number.
+
+## 12. Facility-Specific Underwriting
+
+Credit may travel; underwriting remains contextual.
+
+A conceptual capital decision can be expressed as:
+
+> **Capital Decision = f(Credit State, Relevant Domain Performance, Principal / Recourse, Facility Structure, Existing Exposure, Risk, Mandate, Controls, Evidence Confidence)**
+
+This is a conceptual framework, not one current production formula.
+
+```mermaid
+%% title: Portable credit, contextual underwriting
+%% caption: Shared history is interpreted alongside domain relevance and the exact Facility structure.
+flowchart TB
+    Shared["Shared Credit State\nObligations and outcomes"] --> Decision["Facility-specific decision\nCapital Provider policy"]
+    Domain["Domain Performance\nRelevant economic Evidence"] --> Decision
+    Context["Facility context\nRecourse · exposure · controls"] --> Decision
+    Decision --> Offer["Versioned Offer\nAmount · price · term · purpose"]
+```
+
+A strong Hyperliquid trading record does not automatically prove commerce, procurement, advertising or GPU-resale competence. Good performance in one domain may improve general trust or Evidence confidence, but it does not justify equivalent capacity everywhere.
+
+One shared Credit State avoids fragmentation. Facility-specific interpretation avoids false universality.
+
+## 13. Progressive Credit
+
+Capital access should be earned through verified outcomes, not granted through narrative.
+
+A progressive path may begin with low exposure, narrow purpose, short duration and strong controls. Successful repayment and policy-compliant performance create new Evidence. A Capital Provider may then choose to extend greater capacity, different pricing or a longer term through a new disclosed Offer.
+
+Progression is conditional. It depends on:
+
+- current repayment and servicing state;
+- relevant Domain Performance;
+- Evidence quality and freshness;
+- existing exposure and concentration;
+- Facility structure and loss allocation;
+- Principal support or recourse where applicable;
+- current policy and Capital Provider appetite; and
+- absence of stale, unknown or unreconciled state.
+
+No model, UI, wallet balance or prior success can silently raise a limit. Broader authority requires a new exact decision and acceptance.
+
+## 14. Capital Providers, Offers and Facilities
+
+Capital Providers retain control of the actual economic capital decision. They may include banks, fintech lenders, private credit, institutional capital, Provider credit, specialized Agent finance or compatible approved onchain facilities.
+
+A Capital Provider may author:
+
+- amount and asset;
+- price and fees;
+- term and schedule;
+- purpose and permitted environment;
+- conditions, covenants and Evidence requirements;
+- recourse, collateral or first-loss structure; and
+- risk appetite and portfolio limits.
+
+IPO.ONE coordinates permission integrity, versioning, acceptance, Obligations, Ledger, servicing, Evidence and reconciliation. It need not become the universal balance-sheet lender.
+
+An **Offer** communicates exact proposed economics. Exact acceptance creates an **Obligation**. A **Facility** is the governed application profile through which the accepted capital relationship can be used. These objects are related but not interchangeable.
+
+## 15. Credit Intelligence and Deterministic Authority
+
+Verified outcomes can improve risk understanding, Evidence confidence, affordability estimates, Facility structure, limit and pricing recommendations, anomaly detection, repayment forecasting, portfolio controls and capital routing.
+
+That learning belongs to a governed intelligence plane.
+
+Models may:
+
+- observe and classify Evidence;
+- estimate or forecast;
+- diagnose anomalies and drift;
+- recommend terms or interventions; and
+- operate as versioned shadow challengers.
+
+Models may not independently:
 
 - grant credit authority;
-- bypass Consent or Mandate;
-- alter accepted terms;
-- create or expand exposure outside policy;
-- finalize an Obligation without required Evidence;
-- rewrite Ledger history;
-- substitute external state for canonical state; or
-- treat a chain, wallet, or Provider as the universal source of credit truth.
-
-## 19. Interface Architecture
-
-IPO.ONE exposes one application protocol through role-appropriate interfaces.
-
-### 19.1 Human interface
-
-The Human interface supports:
-
-- identity and role selection;
-- Consent and disclosure;
-- Credit Intent;
-- Decision explanation;
-- Offer review and acceptance;
-- Obligation and schedule visibility;
-- repayment;
-- remediation;
-- Evidence;
-- Track Record; and
-- Credit Passport.
-
-### 19.2 Agent API and SDK
-
-The Agent interface supports:
-
-- capability discovery;
-- authenticated operation catalog;
-- Subject and Mandate retrieval;
-- Credit Intent submission;
-- Offer and Obligation operations;
-- controlled execution;
-- repayment;
-- structured receipts;
-- stable error semantics;
-- Evidence and Passport retrieval; and
-- server-derived state recovery.
-
-### 19.3 MCP and A2A-compatible adapters
-
-MCP standardizes Agent-to-tool interaction, while A2A standardizes communication between independent Agents.[7][8] IPO.ONE treats these protocols as interaction environments, not sources of financial authority.
-
-An MCP tool call or A2A message is normalized into a canonical IPO.ONE command. The same authentication, Mandate, policy, idempotency, ownership, and state checks apply. No hidden financial action exists only because a machine protocol can invoke it.
-
-### 19.4 Capital Provider interface
-
-Capital Providers can access:
-
-- authorized underwriting packages;
-- policy and Capital Mandate configuration;
-- Offer creation;
-- portfolio and Facility state;
-- exposure and concentration;
-- servicing and repayment;
-- Evidence and reconciliation;
-- disputes and exceptions; and
-- audit exports.
-
-### 19.5 Operator and risk interface
-
-Authorized operators require:
-
-- Tenant and portfolio exposure;
-- per-Subject, per-Agent, per-Provider, and per-rail limits;
-- stop conditions;
-- freeze and pause controls;
-- dual-control actions;
-- reconciliation discrepancies;
-- incident state;
-- model and policy versions;
-- credential and Mandate revocation; and
-- privacy-safe drill-down.
-
-## 20. Multi-Rail Settlement
-
-IPO.ONE is rail-neutral at the kernel and rail-aware at the adapter boundary.
-
-Supported rail categories may include:
-
-- bank and payment-processor rails;
-- mobile-money and platform settlement;
-- card or account-based payment where appropriate;
-- stable-value and digital-asset settlement;
-- smart-account execution;
-- onchain capital facilities;
-- Provider-internal credit; and
-- hybrid settlement across multiple environments.
-
-A Multi-Rail Adapter provides a common control surface for:
-
-1. account binding;
-2. instruction preparation;
-3. approved submission;
-4. event observation;
-5. finality confirmation;
-6. partial reconciliation;
-7. reversal or reorganization handling;
-8. correction; and
-9. audit linking.
-
-A single Obligation may receive multiple partial payments across different rails. IPO.ONE recognizes only authenticated, policy-valid, reconciled events and prevents the sum of recognized settlement from exceeding the valid Obligation.
-
-Chain-aware identifiers can use interoperable account and network standards such as CAIP-2 and CAIP-10. The business Obligation remains chain-agnostic.
-
-## 21. Onchain Components
-
-Blockchains provide useful properties:
-
-- programmable settlement;
-- account-control proofs;
-- public finality evidence;
-- smart-account permissions;
-- verifiable asset representation;
-- shared event ordering; and
-- portable anchoring.
-
-They also introduce constraints:
-
-- public data permanence;
-- key and signer risk;
-- reorganization or finality assumptions;
-- contract risk;
-- network and asset fragmentation;
-- transaction-cost variability;
-- legal ambiguity across jurisdictions; and
-- the possibility of confusing public transactions with complete credit truth.
-
-IPO.ONE uses onchain systems where they improve verifiability, coordination, or settlement. It does not place raw KYC documents, sensitive financial data, private policy, credentials, or unrestricted Credit State on public chains.
-
-Tokenization is optional. A tokenized credit asset can represent an eligible legal or economic claim only when rights, custody, transfer restrictions, servicing, and investor eligibility are defined. Tokenization does not create the underlying claim and must never duplicate financing.
-
-## 22. Reliability and Failure Isolation
-
-A credit protocol must remain correct when external systems fail.
-
-### 22.1 Fail closed
-
-Unknown, stale, revoked, unauthorized, or unreconciled state cannot create new risk.
-
-### 22.2 Durable truth
-
-Canonical state is server-derived and persistent. A browser, Agent process, wallet UI, or adapter cache cannot become the authoritative record of an Obligation.
-
-### 22.3 Atomic state transitions
-
-A successful command should commit the relevant state transition, economic Event, Evidence reference, and downstream work atomically or through a durable outbox pattern.
-
-### 22.4 Replay resistance
-
-Authentication proofs, nonces, and idempotency keys prevent duplicated authorization and economic effects.
-
-### 22.5 Isolation
-
-A rail outage, chain reorganization, Provider failure, Agent protocol error, or identity-service interruption may pause affected operations. It cannot silently finalize an Obligation or corrupt unrelated state.
-
-### 22.6 Reconciliation before expansion
-
-Unreconciled discrepancies restrict further draw, settlement, or authority according to policy. The protocol does not compensate for uncertain state by assuming success.
-
----
-
-# Part V - Credit Intelligence and Economics
-
-## 23. The Credit Intelligence Network
-
-Credit systems improve when they learn from real outcomes.
-
-IPO.ONE's long-term intelligence layer is a governed network built on verified longitudinal Evidence, not an opaque universal score.
-
-It can process signals across three scopes:
-
-| Scope | Relevant signals | Potential outputs |
-| --- | --- | --- |
-| **Individual** | cash-flow stability, repayment, utilization, execution quality, Mandate compliance, intervention response | risk understanding, capacity, tenor, schedule, purpose limits, improvement actions |
-| **Cohort** | comparable Subjects, products, Providers, tasks, jurisdictions, and vintages | calibration, pricing recommendations, policy thresholds, intervention effectiveness |
-| **Network** | fraud rings, attester quality, Provider performance, capital performance, rail reliability, concentration, macro drift | anomaly controls, capital routing, diversification, fallback policy, systemic-risk signals |
-
-### 23.1 Multiple outputs, not one score
-
-A useful credit system produces several explainable outputs:
-
-- probability of default or non-performance;
-- loss given default;
-- exposure at default;
-- affordability or repayment capacity;
-- fraud risk;
-- Evidence confidence;
-- stability and concentration;
-- recommended limit;
-- recommended tenor and schedule;
-- required controls;
-- indicative risk price;
-- intervention or remediation recommendation; and
-- capital-provider fit.
-
-A single display score may improve usability, but it cannot override affordability, policy, identity, Mandate, Evidence quality, or legal constraints.
-
-### 23.2 Governed learning loop
-
-```mermaid
-flowchart LR
-    Events["Verified Outcomes"] --> Features["Versioned Features & Labels"]
-    Features --> Models["Candidate Models"]
-    Models --> Validate["Independent Validation"]
-    Validate --> Shadow["Shadow Evaluation"]
-    Shadow --> Approve["Human / Provider Approval"]
-    Approve --> Policy["Deterministic Policy Envelope"]
-    Policy --> Monitor["Production Monitoring"]
-    Monitor --> Events
-```
-
-Candidate techniques may include deterministic scorecards, supervised learning, graph methods, Bayesian updating, causal inference, anomaly detection, contextual bandits, and constrained optimization.
-
-NIST's AI Risk Management Framework provides a useful governance reference built around mapping, measuring, managing, and governing AI risk.[6]
-
-### 23.3 Permanent authority boundary
-
-No learning system may:
-
-- approve outside an authorized policy envelope;
-- increase exposure beyond current limits;
-- alter an accepted Offer or Obligation;
-- expand a Mandate;
-- remove a stop condition;
+- expand a Mandate or exposure;
+- increase a limit or remove controls;
 - move funds;
-- conceal the responsible Capital Provider;
-- rewrite protocol invariants;
-- self-promote into production; or
-- optimize solely for borrowing volume or platform revenue.
+- rewrite accepted terms or protocol invariants; or
+- promote themselves into active authority.
 
-## 24. Credit Decisioning
+The active policy is deterministic, versioned and explainable. Every material decision should retain inputs, Evidence lineage, policy version, reason codes and binding constraints.
 
-Credit decisions combine Evidence, policy, economics, and authority.
+---
 
-### 24.1 Expected loss
+# Part IV — Applications of the Credit Layer
 
-> **EL = PD × LGD × EAD**
+## 16. Facility Profiles
 
-Where:
+A Facility Profile applies the shared credit infrastructure to a particular capital relationship. Profiles may vary by purpose, Evidence, Provider, repayment source, recourse, collateral, loss allocation, execution environment, controls, price, tenor and permitted operations.
 
-- **PD** is probability of default or defined non-performance over the relevant horizon;
-- **LGD** is expected economic loss after recoveries; and
-- **EAD** is expected exposure at default.
-
-All three are product-, cohort-, purpose-, and jurisdiction-specific.
-
-### 24.2 Recommended capacity
-
-A conceptual capacity bound is:
-
-> **Limit\* = max(0, min(Affordability Cap, Cash-Flow Cap, Policy Cap, Facility Cap) × Evidence Confidence × Stress Haircut − Existing Exposure)**
-
-For Agents, equivalent caps may include Principal capacity, observable revenue, Provider limits, Mandate limits, reserve requirements, execution performance, and purpose-specific loss bounds.
-
-### 24.3 Indicative price
-
-> **Price\* = Cost of Capital + Expected Loss + Operations + Compliance + Capital Charge + Margin**
-
-Pricing remains subject to law, disclosure, lender policy, competition, and borrower protection.
-
-### 24.4 Decision receipt
-
-Every material decision should record:
-
-- Subject and responsible Principal;
-- requested product and purpose;
-- Evidence snapshot and provenance;
-- policy and model versions;
-- reason codes;
-- confidence and uncertainty;
-- recommended or approved terms;
-- responsible Capital Provider;
-- decision authority; and
-- timestamp and expiry.
-
-## 25. Progressive Credit
-
-Inclusive credit should not infer large unsecured exposure from weak Evidence.
-
-IPO.ONE uses a progression principle:
-
-> **Start bounded. Observe verified performance. Expand only when evidence, borrower benefit, and Capital Provider policy support it.**
+They should not duplicate the kernel.
 
 ```mermaid
-flowchart LR
-    T0["T0\nVerified Identity"] --> T1["T1\nConnected Evidence"]
-    T1 --> T2["T2\nStarter Capacity"]
-    T2 --> T3["T3\nProven Repayment"]
-    T3 --> T4["T4\nPortable Credit"]
-    T4 --> T5["T5\nBroader Bounded Autonomy"]
+%% title: One Credit Layer, many Facility profiles
+%% caption: Different economic applications return outcomes to the same Evidence and Credit State.
+flowchart TB
+    Kernel["IPO.ONE Credit Layer\nIdentity · Mandate · Evidence · Offer · Obligation"] --> Trading["Trading Capital\nControlled venue execution"]
+    Kernel --> Machine["Machine-Service Credit\nMetered productive resources"]
+    Kernel --> Commerce["Commerce / Working Capital\nFuture contextual profile"]
+    Trading --> Outcomes["Verified outcomes\nRepayment · loss · compliance"]
+    Machine --> Outcomes
+    Commerce --> Outcomes
+    Outcomes --> State["One evolving Credit State\nPermissioned portability"]
+    State --> Kernel
 ```
 
-Progression may improve:
+The architecture is general because the economic ontology is durable. Commercial activation remains narrow because each Facility introduces distinct risk, legal, operational and Evidence requirements.
 
-- amount;
-- duration;
-- price;
-- repayment flexibility;
-- eligible Providers;
-- per-Agent sub-limits;
-- settlement options;
-- approval speed; or
-- disclosure burden where legally reusable.
+## 17. Reference Use Case: Trading Capital
 
-Progress is earned through verified behavior. It is not purchased through token ownership, social status, or unexplained scoring.
+Trading is a useful reference domain because performance, risk and execution can often be observed continuously. It is not the definition of IPO.ONE.
 
-## 26. Business Model
+```mermaid
+%% title: Trading Capital lifecycle
+%% caption: Venue execution is bounded by Mandate and Facility; reconciled outcomes return to shared Credit State.
+flowchart LR
+    Principal["Principal\nAccountability"] --> Agent["Trading Agent\nIndependent actor"]
+    Agent --> Mandate["Mandate\nMarket and risk bounds"]
+    Mandate --> Performance["Performance Evidence\nReturns · risk · compliance"]
+    Performance --> Offer["Capital Offer\nProvider-authored terms"]
+    Offer --> Facility["Trading Facility\nPurpose-bound capacity"]
+    Facility --> Execution["Controlled execution\nApproved venue adapter"]
+    Execution --> Outcome["Economic outcome\nPnL · fees · exposure"]
+    Outcome --> Resolution["Repayment / resolution\nLedger and reconciliation"]
+    Resolution --> State["Credit State\nVerified history"]
+```
 
-IPO.ONE is designed to monetize useful infrastructure and successful economic coordination.
+Where current repository Evidence supports it, Hyperliquid is a concrete Testnet execution and Evidence environment. It is a venue, adapter domain and Evidence source. It is not the credit protocol, the capital source or canonical settlement truth.
 
-Potential revenue lines include:
+Different structures must remain distinct:
 
-| Revenue line | Typical payer | Economic rationale |
+1. **Credit Facility.** Capital is advanced under an accountable repayment Obligation.
+2. **Structured or first-loss leveraged Facility.** Principal or Agent capital absorbs defined first loss while external capital expands scale under explicit rules.
+3. **Managed, prop or profit-sharing capital.** If the Capital Provider bears downside without a repayment obligation and receives participation instead, the arrangement may be capital allocation rather than debt.
+
+Not every allocation of capital is credit. A credit relationship requires an accountable Obligation.
+
+The reference flywheel is tangible: better verified performance can increase underwriting confidence; a Provider may offer greater or better-priced capacity; additional governed scale creates new performance Evidence.
+
+## 18. Reference Use Case: Metered Machine-Service Credit
+
+Agents and autonomous businesses consume productive resources such as inference, compute, APIs, data, storage, software and other machine services. A timing gap can arise when the service is consumed before the resulting revenue arrives.
+
+```mermaid
+%% title: Metered Machine-Service Credit lifecycle
+%% caption: Signed usage Evidence can create a deterministic charge only inside exact existing authority.
+flowchart LR
+    Principal["Principal\nAccountable obligor"] --> Agent["Agent\nBounded workload identity"]
+    Agent --> Facility["Facility and Mandate\nProvider · resource · cap"]
+    Facility --> Usage["Resource usage\nApproved machine service"]
+    Usage --> Metering["Metering\nUnit · window · price hash"]
+    Metering --> Evidence["Usage Evidence\nSigned · final · reconciled"]
+    Evidence --> Obligation["Obligation and Ledger\nDeterministic charge"]
+    Obligation --> Repayment["Repayment / servicing\nExisting waterfall"]
+    Repayment --> State["Credit State\nOutcome history"]
+```
+
+This profile reuses the same Subject, Principal, Mandate, Offer, Facility, Obligation, Ledger, Evidence, servicing and reconciliation kernel.
+
+The current Constitution permits one exact synthetic profile: one Provider, one resource class, one unit and one accepted price schedule in the no-funds environment. A caller-supplied invoice, task completion, HTTP success or self-reported usage cannot create utilization. External Provider execution, production pricing, real funds and additional resource profiles remain separately gated.
+
+Metered machine services demonstrate that a non-trading activity can use the same credit language. They do not define IPO.ONE.
+
+## 19. The Open-Ended Application Space
+
+IPO.ONE does not need to predict every future use of Agent capital. An activity becomes a plausible credit application when it has:
+
+1. an identifiable economic Subject;
+2. an accountable Principal or authority structure;
+3. economically meaningful activity;
+4. observable or attestable performance;
+5. a definable capital need;
+6. measurable risk;
+7. a governable or enforceable Obligation; and
+8. observable repayment or economic resolution.
+
+Possible future profiles include commerce inventory, procurement, advertising, autonomous business operating capital, Agent-to-Agent trade credit, contracted service work, receivables, asset operations, logistics and physical Agents or robotics.
+
+These are Protocol Horizon examples. They are not claims of current deployment, regulation, availability or commercial commitment.
+
+> **IPO.ONE does not finance one specific kind of Agent activity. IPO.ONE defines how trustworthy economic performance can become financeable.**
+
+## 20. Human Access Within the Shared Kernel
+
+Human functionality remains native, but it no longer needs to share equal narrative weight in every section.
+
+A Human may be:
+
+- a Principal granting and revoking an Agent Mandate;
+- an Operator or responsible owner;
+- a Capital Provider or authorized reviewer;
+- a guarantor, beneficiary or counterparty where applicable; or
+- a borrower under a separately permitted Human credit product.
+
+The Human interface should make identity, Consent, terms, total cost, schedule, actions, Evidence and remediation understandable without exposing internal IDs as the normal workflow. The Agent interface should provide the equivalent authorized operation through a versioned machine contract.
+
+Legal capacity, consumer protection, identity assurance and disclosure may differ materially between Human and Agent profiles. Those differences belong in policy and adapters, not in a second Obligation system.
+
+---
+
+# Part V — Settlement, Safety and Governance
+
+## 21. Multi-Rail Settlement
+
+An Obligation may be funded or repaid through bank rails, card or wallet infrastructure, blockchain settlement, Provider offsets, controlled venue accounts or combinations of these systems.
+
+IPO.ONE separates economic truth from rail implementation:
+
+- a rail instruction expresses what should move;
+- an external receipt shows what a system reports;
+- finality establishes whether the effect is sufficiently settled for that rail;
+- reconciliation connects the external effect to the canonical Ledger and Obligation; and
+- legal discharge remains governed by applicable agreement and law.
+
+Blockchain inclusion is not automatically finality. Venue HTTP success is not automatically execution certainty. Processor acknowledgement is not automatically irreversible settlement. Unknown outcomes block new risk until reconciled.
+
+Multi-chain identifiers and adapters use chain-agnostic Obligation identity and CAIP-style chain/account references so one chain never becomes the protocol boundary.
+
+## 22. Servicing, Reconciliation and Evidence
+
+Credit remains a process after capital is extended. Servicing tracks schedule, utilization, payment allocation, DPD, delinquency, cure, restructuring, repurchase, default, recovery, write-off, correction and closure under applicable policy.
+
+The Ledger is append-only and double-entry. Events explain business transitions. Evidence binds claims to provenance. These records are related but not interchangeable.
+
+Reconciliation is a first-class protocol operation. It compares external observations, canonical domain objects, Ledger entries, Events, Evidence and projections. A discrepancy cannot be hidden by overwriting history. Repair is additive, reason-coded, authorized and reviewable.
+
+Chain claims distinguish digest, transaction, observation, finality and reconciliation. Historical or synthetic artifacts never become a current user's chain record merely because they exist in a repository.
+
+## 23. Identity, Privacy and Mandate Boundaries
+
+Identity establishes which Subject, account or workload is present. It does not establish open-ended financial authority.
+
+For an Agent, the accountable Principal and current Mandate define what may be requested, accepted, used or executed. Effective permission is always the intersection of live identity, role, Mandate, accepted Offer and Facility, policy, caps, target, purpose, asset, current exposure and reconciliation state.
+
+Mandates are exact, versioned, revocable and rechecked at action time. Stale, unknown, revoked, ambiguous or unreconciled authority fails closed.
+
+Sensitive data is minimized:
+
+- raw KYC and PII remain offchain by default;
+- private keys, credentials and raw signatures do not enter public Evidence;
+- lender-private policy and sensitive behavioral data remain access controlled;
+- public proofs favor hashes, attestations and minimum necessary claims; and
+- Passport disclosure is purpose-limited and recipient-scoped.
+
+Portability does not require publicity.
+
+## 24. Risk, Model and Capital Authority
+
+Financial authority is deliberately separated.
+
+| Authority | Responsible party or system | Cannot do by implication |
 | --- | --- | --- |
-| **Platform / API subscription** | Capital Provider, Originator, Provider, platform | Access to workflow, policy, reporting, and integration |
-| **Decision / Offer-routing fee** | Capital Provider or partner; borrower only where lawful and transparent | Eligibility, delegated decisioning, and Offer orchestration |
-| **Protocol execution fee** | Defined participant in a successful funding or draw event | Successful creation and execution of a governed Obligation |
-| **Realized financial revenue participation** | Capital or product partner | Align protocol economics with financial income actually received |
-| **Servicing / reconciliation fee** | Capital Provider, Facility, or Provider | Payment state, allocation, DPD, correction, reconciliation, and audit |
-| **Facility / capital-routing fee** | Capital Provider | Eligibility, allocation, exposure, reserves, and portfolio reporting |
-| **Passport verification / analytics** | Authorized verifier or institution | Purpose-limited proofs and portfolio intelligence |
+| Economic Offer | Authorized Capital Provider | Cannot bypass Subject acceptance or current policy |
+| Principal authority | Accountable Principal through Consent or Mandate | Cannot override portfolio, Tenant or legal constraints |
+| Risk authorization | Approved deterministic policy and named human controls | Cannot be replaced by a model recommendation |
+| Execution | Exact authorized adapter operation | Cannot become custody, withdrawal or Ledger authority |
+| Accounting and servicing | Canonical kernel and Ledger | Cannot accept caller-authored settlement totals |
+| Evidence and reconciliation | Typed append-only records and approved correction | Cannot rewrite history or infer success from ambiguity |
 
-IPO.ONE should not depend on:
+Protective controls include caps, pause, freeze, reduce-only behavior, stop-loss posture, dual control, idempotency, replay resistance and unknown-outcome containment. Exact numerical production policies remain separate decisions.
 
-- undisclosed interest spreads;
-- indiscriminate balance-sheet growth;
-- sale of raw personal data;
-- speculative token issuance before product-market fit;
-- hidden routing incentives that override borrower utility; or
-- borrowing volume that produces negative risk-adjusted value.
-
-The commercial objective is aligned infrastructure economics:
-
-> **Revenue should grow when qualified obligations are created, serviced, repaid, reconciled, and reused safely.**
-
-## 27. Capital Economics
-
-Growth is valuable only when it produces positive risk-adjusted contribution.
-
-A conceptual measure is:
-
-> **Risk-Adjusted Contribution = Fees + Realized Financial Participation − Funding Cost − Expected Loss − Fraud − Servicing − Compliance − Partner Share**
-
-Important operating metrics include:
-
-- qualified Offer match rate;
-- approval certainty;
-- time to decision;
-- time to execution;
-- capital utilization;
-- repayment and delinquency;
-- net loss;
-- fraud and unauthorized use;
-- progression rate;
-- repeat usage and retention;
-- Provider value;
-- reconciliation quality;
-- borrower or Principal benefit; and
-- contribution by cohort and vintage.
-
-A high application count is not product-market fit. Neither is transaction volume without repayment, renewal, Provider value, or positive risk-adjusted economics.
-
-## 28. Compounding Network Effects
-
-The IPO.ONE network compounds through verified outcomes.
-
-```mermaid
-flowchart LR
-    Outcomes["More Verified Outcomes"] --> State["Richer Credit State"]
-    State --> Risk["Lower Underwriting Uncertainty"]
-    Risk --> Capital["More Confident Capital"]
-    Capital --> Terms["Better Capacity & Terms"]
-    Terms --> Activity["More Productive Activity"]
-    Activity --> Outcomes
-```
-
-The moat is not one score, one model, one chain, one wallet, or one balance sheet.
-
-It is the interaction among:
-
-- canonical Obligation history;
-- Human and Agent outcomes;
-- Principal and Mandate relationships;
-- Capital Provider policies;
-- distribution integrations;
-- servicing and reconciliation;
-- Provider and attester quality;
-- compliance adapters;
-- portable Credit Passports;
-- multi-rail state; and
-- governed intelligence.
-
-More Providers increase Offer diversity. More verified outcomes improve decision quality. Better decision quality attracts more capital. More capital creates more useful Facilities. Embedded distribution increases repeated activity. Portable Credit State reduces the need to restart from zero.
-
-This is a network effect based on normalized responsibility and performance, not speculative liquidity.
+No probabilistic model has financial sovereignty. No execution signer becomes capital controller. No Capital Provider integration becomes the shared protocol truth.
 
 ---
 
-# Part VI - Safety, Privacy, and Governance
-
-## 29. Protocol Invariants
-
-IPO.ONE is designed around permanent invariants.
-
-1. No credit exposure without a valid Subject, accountable Principal, and applicable Capital Provider policy.
-2. No automated approval outside an authorized decision envelope.
-3. No Agent authority without a current, bounded, revocable Mandate.
-4. No Obligation without exact accepted terms and a unique state transition.
-5. No adapter may create authority, alter terms, or redefine canonical state.
-6. No funding or repayment becomes final until the applicable Evidence and reconciliation policy is satisfied.
-7. No partial or hybrid settlement may cause recognized value to exceed the valid Obligation.
-8. No repayment, refund, reversal, correction, write-off, or recovery may be counted twice.
-9. No stale, revoked, unknown, unauthorized, or unreconciled state may create new risk.
-10. No model may directly move funds, expand authority, rewrite protocol invariants, or conceal the responsible Capital Provider.
-11. No tokenized representation may duplicate or exceed the underlying claim.
-12. No cross-purpose data reuse without valid authority and permitted use.
-
-## 30. Bounded Authority
-
-Bounded authority is the core safety primitive for Agent finance.
-
-Permissions should be:
-
-- explicit;
-- minimal;
-- purpose-limited;
-- amount-limited;
-- time-limited;
-- asset- and counterparty-aware;
-- revocable;
-- inspectable;
-- attributable; and
-- enforced at the exact action boundary.
-
-A system should prefer:
-
-- Provider payment over unrestricted withdrawal;
-- per-action limits over general account access;
-- short-duration Facilities over undefined rolling exposure;
-- revenue-linked repayment over opaque future funding;
-- stop conditions over human hope;
-- explicit escalation over silent authority expansion; and
-- deterministic rules over model-generated permissions.
-
-## 31. Privacy and Data Minimization
-
-Credit requires information, but more data does not automatically produce better or fairer decisions.
-
-IPO.ONE follows several principles:
-
-- collect only information relevant to the declared purpose;
-- store minimum necessary identity results and provenance;
-- keep raw KYC documents with the qualified party where possible;
-- separate raw data from derived Evidence;
-- use purpose-limited Consent and Mandates;
-- disclose minimal proofs rather than unrestricted dossiers;
-- preserve correction and revocation state;
-- encrypt sensitive data offchain;
-- avoid public-chain publication of raw personal or commercially sensitive information;
-- prohibit unconsented contact lists, private messages, or social content as default underwriting data;
-- avoid opaque third-party scores without provenance and correction rights; and
-- prevent persistent wallet or device surveillance unrelated to defined fraud, account-control, or underwriting needs.
-
-FATF guidance recognizes that reliable digital identity can improve identification efficiency and inclusion while requiring risk-based assessment of assurance and use.[2] Identity verification is necessary, but it is not a substitute for affordability, authority, or credit assessment.
-
-## 32. Human Protection and Fairness
-
-Human credit products require explicit protections.
-
-- Affordability constrains limits even when predicted default risk appears low.
-- Total cost, lender identity, schedule, conditions, and material reasons are visible before acceptance.
-- Repeat borrowing, rollovers, debt stacking, and harmful overextension are monitored.
-- Data correction, complaint, and appeal routes are measurable product requirements.
-- Fairness analysis examines approval, pricing, loss, and intervention outcomes.
-- Proxy variables require explicit justification and review.
-- Product design optimizes sustainable access and productive outcomes, not maximum debt.
-
-Equal protocol status does not erase consumer-protection law or Human vulnerability. Human and Agent products share canonical semantics while applying different policy profiles where meaning, protection, and liability differ.
-
-## 33. Model Governance
-
-Every production model or scorecard requires:
+# Part VI — Economics and Network Evolution
 
-- version and scope;
-- named owner;
-- feature and label provenance;
-- training and observation windows;
-- independent validation;
-- calibration and stability analysis;
-- fairness and harm analysis where applicable;
-- shadow comparison against approved baselines;
-- monitoring thresholds;
-- rollback path;
-- change approval; and
-- auditability.
+## 25. Business Model
 
-Exploration is bounded by explicit exposure, fairness, customer-harm, and loss budgets. Material deterioration triggers fallback to a safer approved policy.
+IPO.ONE does not require an undisclosed balance-sheet spread. Potential commercial models include:
 
-Human and Agent models may share ontology and infrastructure, but feature transfer occurs only when validated, lawful, explainable, and beneficial in the target domain.
+- platform or operating subscriptions;
+- API and decision infrastructure;
+- Offer routing and Capital Provider integrations;
+- Facility administration;
+- execution, servicing and reconciliation fees;
+- Passport verification and authorized analytics; and
+- transparent participation in realized financial revenue where separately approved.
 
-## 34. Regulated Role Separation
+Revenue should follow delivered infrastructure value and valid economic activity. Gross flow, deposits, unrealized P&L or synthetic test volume are not automatically revenue.
 
-IPO.ONE coordinates infrastructure. External entities retain regulated responsibilities according to jurisdiction and product.
+This edition makes no claim of active revenue, profitability, capital volume, users or commercial partnerships.
 
-| Role | Responsibility boundary |
-| --- | --- |
-| **IPO.ONE** | Credit infrastructure, authority, decision technology, routing, canonical state, Evidence, reconciliation, and audit; not automatically lender, broker, servicer, custodian, or Originator in every jurisdiction |
-| **Identity / KYC / KYB provider** | Performs identity, organization, signer, or screening checks within its assurance and contractual scope |
-| **Originator / lender** | Owns regulated approval, agreement, disclosures, capital, servicing, and delegated oversight as applicable |
-| **Capital Provider** | Funds eligible Obligations under a defined policy or Facility and bears agreed economic risk |
-| **Platform / Provider** | Supplies permitted distribution, resources, or Evidence; cannot silently redefine credit state |
-| **Rail / chain provider** | Executes approved external instructions and reports status or finality; cannot approve credit or mutate canonical state |
-| **Operator / Principal** | Establishes Agent authority, responsibility, repayment sources, and supervision within the applicable structure |
-| **Onchain capital facility** | Provides capital or receives eligible asset representations under defined legal, custody, investor, and servicing controls |
+## 26. Network Effects and Moat
 
-## 35. Security Posture
+The durable advantage, if successfully built, is not source code. It is a compounding system of:
 
-Security is not a single contract audit or access-control list. It is an end-to-end authority discipline.
+- longitudinal Credit State;
+- verified Domain Performance;
+- repayment, delinquency, default, recovery and loss history;
+- Capital Provider policies and Facility outcomes;
+- Provider and venue integrations;
+- servicing and reconciliation quality;
+- underwriting feedback and calibration;
+- permissioned portability;
+- distribution; and
+- proven capital performance.
 
-Important controls include:
+More high-quality outcomes can improve Evidence interpretation. Better interpretation can improve Facility structure and capital matching. Better matches can produce more useful outcomes. This loop becomes defensible only when the history is real, attributable and responsibly governed.
 
-- role-bound Human authentication;
-- wallet-domain and nonce binding;
-- sender-constrained Agent authentication;
-- key rotation and credential revocation;
-- replay detection;
-- least privilege;
-- Tenant and Subject isolation;
-- object-level authorization;
-- idempotency and concurrency control;
-- durable state and restart recovery;
-- signed and versioned external instructions;
-- fail-closed adapter behavior;
-- finality and reconciliation gates;
-- separation of production signing from application code;
-- no raw secrets or private keys in Evidence;
-- pause, freeze, and incident controls; and
-- explicit approval before capital movement, custody, external execution, or higher-risk permissions.
+> **Synthetic history proves architecture. Real economic history creates the moat.**
 
----
+## 27. Commercial Entry: Broad Protocol, Narrow Execution
 
-# Part VII - Product Foundation and Protocol Evolution
+The protocol should remain capable of supporting economic activities that do not yet exist. The company should not activate them all at once.
 
-## 36. Current Product Foundation
+Early commercial validation should concentrate on a small number of environments where:
 
-As of August 20, 2026, IPO.ONE has established the first complete Human-Agent Credit Loop as a deployed product foundation.
+- performance is observable and attributable;
+- capital need is economically meaningful;
+- authority and use of proceeds can be bounded;
+- risk can be modeled and monitored;
+- repayment or economic resolution can be verified; and
+- counterparties, law and operations can be defined.
 
-### 36.1 Shared lifecycle
+Trading Capital and Metered Machine-Service Credit are valuable reference profiles because they test materially different activity against one kernel. The strategic objective is not to launch many Facilities. It is to demonstrate that one shared credit architecture can turn different forms of verified performance into governed capital access.
 
-Both Human and Agent paths converge on:
+> **Broad protocol ceiling. Narrow commercial execution.**
 
-- Subject and accountable responsibility;
-- Consent or Mandate;
-- Credit Intent;
-- explainable Decision;
-- versioned Offer;
-- canonical Obligation;
-- controlled execution;
-- repayment;
-- terminal Credit Outcome;
-- durable Credit State;
-- Credit Track Record;
-- Decision Passport;
-- Evidence; and
-- server-derived recovery.
+## 28. Evidence-Gated Roadmap
 
-### 36.2 Human foundation
+Product evolution follows Evidence, not narrative scope.
 
-The Human product supports wallet-based authentication with explicit role selection, Subject and Consent, application, Decision and Offer review, deliberate acceptance, Obligation visibility, repayment, outcome, Credit State, Track Record, Passport, Evidence, logout and login, refresh, and recovery from durable server truth.
+| Stage | Objective | Evidence gate |
+| --- | --- | --- |
+| **Current Foundation** | Public authenticated no-funds Human and Principal journeys; shared obligation, Ledger, Evidence and Credit State; bounded Testnet proofs | Deployed SHA, durable recovery, visible journeys, exact safety state and reconciled records |
+| **Controlled profile validation** | Complete no-funds metered resource and Trading Capital product paths; preserve exact Provider and venue bounds | Co-equal Human/Agent interfaces, replay and negative tests, hosted/runtime Evidence, no P0/P1 defects |
+| **Narrow real-value preparation** | One Capital Provider, one Facility, one asset, one Provider or venue, named loss bearer and operating owners | Legal, capital, custody, pricing, risk, privacy, servicing, recovery and go/no-go decision package |
+| **Governed network evolution** | Additional Providers, capital sources and qualified Facility profiles | Repeat performance, reconciled loss and recovery data, partner renewal, concentration control and safe portability |
+| **Protocol Horizon** | Cross-platform credit language for Humans, Agents, organizations and machines | Independent adoption, durable governance, high-quality Evidence and sustained participant benefit |
 
-### 36.3 Agent foundation
+Current Foundation, Product Evolution and Protocol Horizon remain distinct. A design is not implementation. A merge is not deployment. Testnet Evidence is not production. Hosting is not real-value activation.
 
-The Agent product supports an accountable Principal, registered workload identity, sender-constrained authentication, bounded Mandate, machine-readable Credit Intent, deterministic Decision and Offer, shared canonical Obligation, controlled execution, idempotent repayment, terminal Outcome, durable Credit State, Passport, Evidence, credential revocation, and separate-process recovery.
+## 29. Strategic Non-Goals
 
-### 36.4 Interfaces and architecture
+IPO.ONE is not presented as:
 
-The foundation includes a Human-facing product interface, Agent-facing API and OpenAPI surfaces, SDK-oriented and MCP-compatible operations, Capital Provider and developer boundaries, persistent Ledger and Evidence state, and Stable Kernel + Replaceable Adapter architecture.
-
-### 36.5 Activation boundary
-
-The foundation establishes product and protocol truth. Capital movement, custody, production signing, unrestricted withdrawals, public liquidity, and external execution are separately governed capabilities and require explicit product, legal, compliance, security, risk, capital, and partner approval before activation.
-
-This boundary is not a limitation of the thesis. It is the required sequence for safe financial infrastructure:
-
-> **First establish correct authority, obligations, servicing, Evidence, and recovery. Then activate capital under controlled conditions.**
-
-## 37. Initial Commercial Wedge
-
-The most differentiated first real-value wedge is purpose-bound Agent working capital.
-
-### 37.1 Target activity
-
-Verified Agents or autonomous businesses purchase productive digital resources such as:
-
-- compute;
-- APIs;
-- data;
-- software;
-- infrastructure;
-- approved digital services;
-- controlled inventory or resource access; and
-- bounded execution at approved venues.
-
-### 37.2 Why this wedge is structurally attractive
-
-- use of proceeds can be constrained;
-- Providers and prices are machine-readable;
-- durations can be short;
-- execution receipts can be produced automatically;
-- outcomes and revenue may be observable;
-- limits can be low and progressive;
-- repayment can be linked to captured revenue or Principal support;
-- Agents integrate through native interfaces; and
-- the product demonstrates a category that legacy consumer lending systems were not designed to serve.
-
-### 37.3 Capital structures
-
-Initial capital can come from:
-
-- Provider credit;
-- Principal or sponsor-backed Facilities;
-- closed private-credit programs;
-- specialized Agent-finance partners;
-- revenue-based structures; or
-- compatible onchain Facilities where legal and operational controls are defined.
-
-The product should not begin with unrestricted cash, public liquidity pools, or anonymous capital-provider exposure.
-
-## 38. Human Product Evolution
-
-Human productive credit remains a native protocol mode.
-
-The initial Human product should focus on digitally observable borrowers and productive uses where lawful cash flow and repayment can be verified. Examples include software, equipment, inventory, education, tools, and working capital rather than unrestricted high-cost cash.
-
-Human pilots require:
-
-- one clearly defined jurisdiction;
-- qualified identity and KYC partners;
-- a licensed Originator or lender where required;
-- transparent terms and consumer protection;
-- external capital;
-- reliable servicing;
-- correction and complaint mechanisms;
-- measurable borrower benefit; and
-- evidence that verified performance improves future access.
-
-The protocol remains shared with Agent credit even where product policy, legal structure, and Evidence differ.
-
-## 39. Evidence-Gated Roadmap
-
-IPO.ONE expands through evidence, not narrative.
-
-```mermaid
-flowchart LR
-    P0["Foundation\nComplete Human-Agent Credit Loop"] --> P1["Controlled Pilots\nPurpose-bound capital"]
-    P1 --> P2["Multi-Provider Network\nIndependent capital mandates"]
-    P2 --> P3["Governed Intelligence\nBetter terms and routing"]
-    P3 --> P4["Multi-Rail Expansion\nTraditional + onchain"]
-    P4 --> P5["Cross-Platform Passport\nObligation Graph"]
-    P5 --> P6["Protocol Standard\nAgentic Economy"]
-```
-
-### Phase 0 - Protocol foundation
-
-**Outcome:** complete Human-Agent lifecycle, deterministic authority, canonical Obligations, durable Ledger, Evidence, Credit State, Passport, Human interface, Agent API, and adapter boundaries.
-
-**Gate:** correctness, recovery, security, product clarity, design partners, and approved pilot structure.
-
-### Phase 1 - Controlled credit pilots
-
-**Outcome:** purpose-bound Agent working capital and selected Human productive-credit pilots with named Capital Providers and Providers.
-
-**Gate:** repeat demand, on-time performance, bounded loss, no unauthorized use, reconciliation integrity, partner renewal, and positive contribution.
-
-### Phase 2 - Multi-Provider credit network
-
-**Outcome:** multiple Capital Mandates, Offer competition, Provider integrations, production servicing, and portable Credit Passport.
-
-**Gate:** at least two independent capital sources in qualified segments, measurable improvement in approval or price, concentration control, and complete portfolio Evidence.
-
-### Phase 3 - Governed Credit Intelligence
-
-**Outcome:** model-assisted decisions, term recommendations, intervention, and routing inside explicit Provider-approved policy envelopes.
-
-**Gate:** independent validation, stable out-of-sample performance, explainable benefit, fairness and harm controls, zero policy-envelope breach, and rollback readiness.
-
-### Phase 4 - Multi-rail and onchain capital expansion
-
-**Outcome:** additional settlement adapters, smart-account controls, eligible onchain Facilities, and optional tokenized credit representations.
-
-**Gate:** legally valid structures, custody and signer controls, finality and reorganization handling, no duplicate claims, stable loss, and positive contribution.
-
-### Phase 5 - Cross-platform economic memory
-
-**Outcome:** externally accepted Credit Passports, broader distribution, Obligation Graph intelligence, and privacy-preserving cross-platform learning.
-
-**Gate:** revocation, correction, privacy, fairness, servicing, and jurisdiction controls proven in each market.
-
-### Phase 6 - Credit and obligation protocol standard
-
-**Outcome:** Humans, organizations, Agents, and machines use one interoperable intent-to-credit lifecycle across applications, capital providers, and rails.
-
-**Gate:** sustained utility, resilient governance, high-quality Evidence, independent adoption, and durable participant benefit.
-
-## 40. Strategic Non-Goals
-
-IPO.ONE is not designed to become:
-
-- a global consumer cash-loan application launching in many jurisdictions at once;
-- a universal balance-sheet lender by default;
+- a generic lending application or global consumer cash-loan product;
+- a KYC company, wallet or payment protocol;
+- a universal opaque Agent score;
+- an exchange or trading venue;
+- a generic public vault, market factory or unrestricted liquidity layer;
 - an unrestricted Agent wallet;
-- a public liquidity pool before asset quality and servicing exist;
-- a token project that manufactures activity before product-market fit;
-- a KYC company;
-- an opaque universal credit score;
-- a blockchain or payment-rail replacement;
-- a chain-specific fork of credit semantics;
-- a public repository of raw identity or financial data;
-- an autonomous model that can approve, price, or move funds outside deterministic policy; or
-- a system that maximizes borrowing volume at the expense of repayment capacity and productive outcomes.
+- a token-dependent economy or DAO-first protocol;
+- an autonomous black-box lender;
+- a chain-, asset-, Provider- or venue-specific product; or
+- a system that maximizes originations without accountability and repayment quality.
 
-These boundaries protect the product thesis. IPO.ONE is most valuable when it remains the neutral coordination and verification layer around responsibility, capital, obligations, and outcomes.
-
-## 41. The Protocol Horizon
-
-The mature Agentic Economy will contain vast numbers of software actors that differ in capability, ownership, jurisdiction, risk, and purpose.
-
-Some Agents will remain tools under immediate Human control. Some will operate business processes. Some will purchase resources and coordinate other Agents. Some will manage revenue-generating systems. None should be granted financial authority merely because it can produce a signature or call an API.
-
-A scalable economy needs graduated trust.
-
-Trusted actors should be able to:
-
-- establish identity and responsibility;
-- receive explicit authority;
-- request capital;
-- compare qualified Offers;
-- create canonical Obligations;
-- execute within bounded permissions;
-- repay through approved rails;
-- prove performance;
-- improve terms; and
-- carry progress forward.
-
-Capital Providers should be able to:
-
-- express machine-readable policy;
-- retain legal and economic control;
-- evaluate standardized Evidence;
-- fund through their preferred infrastructure;
-- monitor exposure and performance;
-- reconcile across rails; and
-- reuse trusted outcomes without rebuilding every integration.
-
-Applications and platforms should be able to embed credit without becoming credit bureaus, lenders, or servicing systems by default.
-
-IPO.ONE's protocol horizon is therefore larger than one loan product and more disciplined than an autonomous lender.
-
-It is the shared layer through which responsibility becomes machine-readable, Obligations become interoperable, and verified performance becomes future economic capacity.
+No economic actor receives credit merely for being autonomous. Credit remains conditional on Evidence, accountability, valid authority, risk and Capital Provider policy.
 
 ---
 
 # Conclusion
 
-The next credit system cannot be designed only for the institutional workflows of the past or only for autonomous software at the edge.
+The Agentic Economy is gaining the ability to act, but action alone does not create financeability.
 
-Humans and Agents will increasingly share markets, services, capital, and settlement environments. They require one credit and obligation architecture that recognizes both as first-class Subjects while preserving the legal, identity, authority, and risk distinctions that matter.
+Payments can move existing value. Identity can establish who is present. Reputation can expose signals. Venues can execute activity. Capital Providers can supply resources. The missing shared layer is the one that connects responsibility across time: why capital was extended, what became owed, how the Obligation performed and what the verified outcome should mean next.
 
-IPO.ONE provides that common layer.
+IPO.ONE is building that layer.
 
-**Single Kernel, Dual-Native Access** keeps economic truth coherent.
+Its atomic commitment is the Obligation. Its memory is Evidence and Credit State. Its architecture is one stable kernel connected to replaceable adapters and applied through contextual Facility profiles. Its authority remains deterministic and governed. Its market narrative is Agent-first; its protocol remains subject-neutral.
 
-**Identity, Payment, and Obligation** define the essential primitives.
+Trading, machine services, commerce and future economic domains are applications. None defines the protocol.
 
-**Stable Kernel + Replaceable Adapters** allows external systems to evolve without fragmenting credit semantics.
+The long-term thesis is simple:
 
-**Canonical Obligations, Evidence, and Credit State** convert isolated transactions into permissioned economic memory.
+> **Economic Performance → Evidence → Credit → Capital → Economic Scale**
 
-**External capital neutrality** allows many Providers to compete without forcing participants into one balance sheet.
+And the operating loop is durable:
 
-**Governed Credit Intelligence** improves recommendations and allocation while deterministic policy preserves authority.
+# PERFORM. PROVE. BUILD CREDIT. ACCESS CAPITAL. SCALE.
 
-The end state is clear:
-
-> **A trustworthy Human or Agent can establish responsibility, access appropriately governed capital, fulfill a bounded Obligation, convert verified performance into portable Credit State, and carry that progress across applications, capital providers, and economic environments.**
-
-Payments make autonomous actors economically active.
-
-Credit makes them economically scalable.
-
-# BORROW. BUILD. PROVE.
+**BORROW. BUILD. PROVE.**
 
 ---
 
-# Appendix A - Canonical Objects
+# Appendix A — Canonical Objects
 
-| Object | Definition |
+| Object | Durable meaning |
 | --- | --- |
-| **Tenant** | Security and operational boundary containing authorized Subjects, roles, policy, and resources. |
-| **Subject** | Human, organization, Agent, or machine whose economic activity is represented. |
-| **PrincipalRelationship** | Link to the person or organization granting authority or bearing legal or economic responsibility. |
-| **RoleEnrollment** | Durable record of approved role eligibility and current role selection. |
-| **ConsentGrant** | Purpose, data scope, recipient, duration, permitted use, revocation, and audit state for Human authorization. |
-| **AgentIdentity** | Verifiable workload identity and approved key relationship for an Agent. |
-| **Mandate** | Versioned, bounded, revocable authority defining what an Agent may request, accept, or execute. |
-| **VerificationAttestation** | Externally issued identity, organization, account-control, eligibility, or Evidence result with provenance, expiry, and revocation. |
-| **CreditIntent** | Subject-neutral request for amount, asset, purpose, duration, repayment source, restrictions, and permitted execution environments. |
-| **ExecutionPlan** | Optional bounded task, purchase, Provider, or resource plan linked to a complex or restricted-use Intent. |
-| **CreditProfile** | Multidimensional risk, affordability or capacity, fraud, stability, Evidence confidence, and reason factors. |
-| **Decision** | Versioned, explainable assessment under active policy and a defined Evidence snapshot. |
-| **LenderPolicy / CapitalMandate** | Machine-readable eligibility, pricing, verification, concentration, capital, rail, finality, and servicing rules. |
-| **CreditOffer** | Exact terms issued by an identified Capital Provider, including total cost, purpose, conditions, schedule, permitted rails, and expiry. |
-| **Authorization** | Context-bound permission to perform one exact action under current identity, authority, policy, and state. |
-| **Facility** | Purpose-bound capacity derived from accepted terms and active Obligations; never independent lending authority. |
-| **Obligation** | Canonical accepted economic commitment with obligor, Provider, amount, terms, schedule, authority, and lifecycle state. |
-| **SettlementInstruction** | Rail-neutral command specifying amount, destination, purpose, adapter profile, and idempotency key. |
-| **RailReceipt** | Authenticated external status or transaction record normalized by an adapter. |
-| **FinalityProof** | Evidence that the applicable technical-finality policy has been satisfied. |
-| **LedgerEntry** | Append-only balanced economic record for funding, allocation, repayment, fee, refund, correction, loss, or recovery. |
-| **RepaymentEvent** | Reconciled payment, cure, refund, reversal, correction, write-off, or recovery applied to an Obligation. |
-| **Evidence** | Typed, attributable, provenance-aware record supporting a state transition or observation. |
-| **CreditOutcome** | Finalized performance result such as on-time repayment, cure, default, loss, or resolution. |
-| **CreditState** | Recomputable current exposure and longitudinal performance derived from canonical Obligations and Outcomes. |
-| **CreditTrackRecord** | Authorized history of relevant completed and active credit cycles. |
-| **DecisionPassport** | Permissioned representation of a specific Decision, Evidence snapshot, policy, terms, and provenance. |
-| **CreditPassport** | Permissioned portable representation of relevant factors, Outcomes, and Evidence. |
-| **TokenizedCreditAsset** | Optional onchain representation of an eligible legal or economic claim; never a duplicate source of the claim. |
-| **OnchainCapitalFacility** | Capital Mandate executed through an onchain environment under defined legal, custody, investor, and servicing controls. |
+| **Subject** | Human, Agent, organization or machine whose economic relationship is represented. |
+| **Principal** | Accountable Human or organization that bears or grants relevant authority. |
+| **Consent / Mandate** | Versioned and revocable authority for exact actions and purposes. |
+| **Evidence** | Typed, provenance-aware record of an observation, event, outcome, finality or correction. |
+| **Credit Intent** | Request envelope for amount, asset, purpose, duration, repayment source and constraints. |
+| **Decision** | Explainable evaluation under an exact Evidence and policy snapshot; not itself capital authority. |
+| **Offer** | Capital Provider-authored proposed economics, conditions and permitted environment. |
+| **Facility** | Purpose-bound profile through which an accepted capital relationship may operate. |
+| **Obligation** | Canonical accepted economic commitment and servicing state. |
+| **Ledger** | Append-only, asset-scoped double-entry accounting truth. |
+| **Event** | Typed statement that a protocol transition occurred. |
+| **Credit Outcome** | Terminal or material performance result of an Obligation. |
+| **Credit State** | Longitudinal factor and outcome history available to permitted future decisions. |
+| **Credit Passport** | Purpose-limited disclosure of relevant verified Credit State. |
 
 ---
 
-# Appendix B - Obligation Lifecycle
+# Appendix B — Facility Model
 
-| State | Meaning |
-| --- | --- |
-| **Proposed** | Intent and preliminary terms exist but no binding Offer has been accepted. |
-| **Offered** | Conditional or binding terms are issued by an identified Capital Provider. |
-| **Accepted** | Authorized acceptance binds an exact Offer version. |
-| **Active** | The canonical Obligation exists and may permit controlled execution. |
-| **Execution Pending** | An approved operation has been instructed but required execution or finality Evidence is incomplete. |
-| **Outstanding** | Recognized value is owed under the schedule. |
-| **Partially Repaid** | A valid portion has been allocated and reconciled. |
-| **Due** | A scheduled amount is currently payable. |
-| **Delinquent** | Payment is past due under the applicable DPD definition. |
-| **Cured** | A delinquency has been resolved under accepted rules. |
-| **Restructured** | Terms have been lawfully modified with complete version and Evidence history. |
-| **Fully Repaid** | Principal, financial charges, and applicable fees are reconciled. |
-| **Defaulted** | Defined default conditions are satisfied. |
-| **Written Off** | Economic loss is recognized while recovery history remains possible. |
-| **Resolved** | The Obligation has reached a terminal reconciled outcome. |
-| **Corrected** | A reversal, duplicate, reorganization, or operational error has been handled through additive correction. |
+A Facility Profile should declare at least:
+
+- eligible Subject and Principal relationships;
+- Capital Provider and economic structure;
+- purpose and permitted operations;
+- accepted asset, amount, price, fees, term and schedule;
+- repayment source and servicing path;
+- Domain Performance and other Evidence requirements;
+- recourse, collateral, first-loss and loss allocation where applicable;
+- Mandate, Provider, venue, target and execution limits;
+- settlement, finality and reconciliation policy;
+- risk states, pause and recovery conditions; and
+- privacy, disclosure and jurisdiction boundaries.
+
+Every profile reuses the same Offer, Obligation, Ledger, Event, Evidence, servicing, reconciliation and Credit State unless a future governance decision explicitly changes the protocol.
 
 ---
 
-# Appendix C - Illustrative Interface Surface
+# Appendix C — Conceptual Underwriting Framework
 
-| Domain | Illustrative operations |
-| --- | --- |
-| **Identity and authority** | `create_subject`, `bind_principal`, `register_attestation`, `grant_consent`, `create_mandate`, `revoke_mandate`, `register_agent_identity` |
-| **Credit and Offers** | `submit_credit_intent`, `submit_execution_plan`, `evaluate_intent`, `request_offers`, `accept_offer`, `get_obligation` |
-| **Execution and servicing** | `authorize_action`, `execute_approved_operation`, `record_repayment`, `get_schedule`, `record_cure`, `apply_correction` |
-| **Evidence and reconciliation** | `record_receipt`, `query_finality`, `reconcile_event`, `record_reversal`, `finalize_outcome`, `reconstruct_state` |
-| **Credit State and Passport** | `get_credit_state`, `get_track_record`, `issue_decision_passport`, `issue_credit_passport`, `verify_passport` |
-| **Capital Providers** | `register_capital_mandate`, `create_offer`, `reserve_capacity`, `monitor_exposure`, `export_portfolio_evidence` |
-| **Trust and operations** | `rotate_credential`, `revoke_credential`, `freeze_subject`, `pause_adapter`, `get_incident_state`, `export_audit_receipt` |
+The conceptual relationship is:
 
-These names are illustrative protocol operations, not a representation that every interface uses identical route names.
+```text
+Capital Decision = f(
+  longitudinal Credit State,
+  relevant Domain Performance,
+  Principal and recourse,
+  Facility structure,
+  existing exposure and concentration,
+  risk and controls,
+  current Mandate,
+  Evidence confidence,
+  Capital Provider policy
+)
+```
+
+This framework communicates dependencies. It is not a currently authorized universal formula, score, factor weight or production policy.
+
+A valid decision should make visible:
+
+- which Evidence snapshot was used;
+- which domain factors were relevant;
+- what was missing, stale or excluded;
+- policy and Capital Provider versions;
+- binding constraints and reason codes; and
+- whether the result is an observation, recommendation, denial or eligible Offer path.
 
 ---
 
-# Appendix D - Decision and Portfolio Measures
+# Appendix D — Evidence Taxonomy
 
-| Measure | Illustrative formulation | Use |
+| Evidence class | Examples | Required discipline |
 | --- | --- | --- |
-| **Expected Loss** | `EL = PD × LGD × EAD` | Risk economics and reserve calibration |
-| **Recommended Limit** | `min(capacity, policy, facility, purpose) × confidence × stress haircut − exposure` | Prevent score-only overextension |
-| **Risk-Adjusted Contribution** | `fees + realized financial participation − funding cost − EL − fraud − servicing − compliance − partner share` | Determine whether growth creates economic value |
-| **Offer Match Rate** | `qualified requests receiving ≥1 compliant Offer / qualified requests` | Measure capital-network liquidity |
-| **Progression Rate** | `eligible good performers receiving improved terms / eligible good performers` | Measure whether verified history creates better access |
-| **Capital Utilization** | `average funded exposure / committed Facility capital` | Measure capital efficiency |
-| **Evidence Reconciliation Rate** | `fully reconciled economic events / recognized economic events` | Measure state integrity |
-| **Unauthorized Action Rate** | `unauthorized or out-of-Mandate attempts with economic effect / total attempts` | Measure authority control; target economic effect is zero |
+| Identity and authority | Subject binding, Principal relationship, Consent, Mandate, account control | Least privilege, expiry, revocation, purpose and privacy |
+| Domain Performance | Trading outcomes, metered usage economics, commerce operations, service revenue | Attribution, relevance, provenance, completeness and permitted use |
+| Credit performance | Utilization, repayment, DPD, cure, default, recovery, write-off | Canonical Obligation and Ledger linkage |
+| Execution | Provider delivery, venue order/fill, controlled transfer, service usage | Exact intent, external identity, unknown-outcome handling |
+| Settlement and finality | Bank confirmation, processor receipt, chain observation, venue reconciliation | Rail-specific finality and no premature discharge claim |
+| Policy and decision | Input snapshot, rule version, factors, reason codes, constraints | Deterministic reproducibility and non-authorizing model boundary |
+| Correction and dispute | Supersession, reversal, authorized repair, case outcome | Preserve original record; append rather than rewrite |
 
 ---
 
-# Appendix E - Glossary
+# Appendix E — Interoperability Surfaces
+
+IPO.ONE can integrate adjacent systems without depending on one vendor or protocol:
+
+- Human product interfaces and partner workflows;
+- versioned HTTP APIs and SDKs;
+- [Model Context Protocol](https://modelcontextprotocol.io/) tools and resources;
+- [Agent2Agent Protocol](https://a2a-protocol.org/latest/) adapters;
+- workload identity and sender-constrained authentication;
+- W3C Verifiable Credentials and account-control proofs;
+- CAIP-2 chain and CAIP-10 account identifiers;
+- bank, card, wallet and HTTP-native payment adapters;
+- blockchain indexers and finality adapters;
+- Capital Provider, Provider and execution-venue adapters; and
+- permissioned Evidence and Passport verification.
+
+Interoperability standards provide transport, identity or settlement precedents. They do not create IPO.ONE credit authority or imply partnership or endorsement.
+
+---
+
+# Appendix F — Glossary
 
 | Term | Definition |
 | --- | --- |
-| **Agentic Economy** | An economy in which autonomous or semi-autonomous software Agents participate in discovery, coordination, execution, purchasing, and value creation. |
-| **Economic Memory** | Permissioned longitudinal memory derived from accountable authority, canonical Obligations, verified outcomes, and provenance. |
-| **Obligation Graph** | Permissioned network of Subjects, Principals, Mandates, Offers, Obligations, Providers, rails, Evidence, and Outcomes. |
-| **Bounded Authority** | Explicit permission limited by purpose, amount, time, asset, counterparty, operation, and revocation conditions. |
-| **Single Kernel, Dual-Native Access** | Human and Agent interfaces differ at the edge but normalize into one canonical credit and obligation system. |
-| **Stable Kernel + Replaceable Adapters** | Architecture in which long-lived credit semantics remain stable while external integrations evolve behind versioned boundaries. |
-| **Multi-Rail Adapter** | Replaceable component that maps external account, payment, finality, and reconciliation behavior into canonical IPO.ONE events. |
-| **Onchain Settlement** | Funding or repayment executed in a blockchain environment and recognized only after applicable technical and legal conditions. |
-| **Hybrid Settlement** | Settlement of one Obligation through multiple partial events across traditional and onchain rails. |
-| **Sender-Constrained Authentication** | Authentication in which token use requires proof of possession of approved key material rather than presentation of a freely replayable bearer secret. |
-| **Evidence Confidence** | Versioned assessment of the relevance, provenance, freshness, consistency, and completeness of Evidence used for a decision. |
-| **Credit Intelligence Network** | Governed learning and analytics layer that uses verified outcomes to improve recommendations while remaining subordinate to deterministic authority. |
+| **Subject** | Economic actor represented by the protocol. |
+| **Principal** | Accountable party that bears responsibility or grants authority. |
+| **Mandate** | Exact, versioned and revocable authority delegated to an Agent. |
+| **Evidence** | Provenance-aware record of what occurred and how it was established. |
+| **Domain Performance** | Context-specific economic performance represented through Evidence. |
+| **Credit State** | Longitudinal credit and economic-outcome history. |
+| **Credit Passport** | Permissioned, purpose-limited disclosure of relevant Credit State. |
+| **Capital Provider** | Party that controls the economic decision to offer capital. |
+| **Offer** | Versioned proposal of amount, price, term, purpose and conditions. |
+| **Facility** | Governed profile through which accepted capital may be used. |
+| **Obligation** | Canonical economic commitment created by exact acceptance. |
+| **Ledger** | Append-only double-entry accounting source of truth. |
+| **Reconciliation** | Deterministic comparison of external effects and canonical records. |
+| **Finality** | Rail-specific state at which an external effect is sufficiently settled under accepted policy. |
+| **Agentic Economy** | Economy in which autonomous software increasingly performs economically meaningful actions under accountable authority. |
 
 ---
 
-# Appendix F - Selected References
+# Appendix G — Selected References
 
-[1] World Bank. *The Global Findex Database 2025: Connectivity and Financial Inclusion in the Digital Economy.* 2025.
+[1] IPO.ONE. [Product Constitution v1.6](https://github.com/CPTM511/IPO.ONE/blob/main/docs/PRODUCT_CONSTITUTION.md), [Product Charter v1.1](https://github.com/CPTM511/IPO.ONE/blob/main/docs/guidance/IPO_ONE_PRODUCT_CHARTER_v1.1.md) and accepted architecture decisions in the canonical repository. 2026.
 
-[2] Financial Action Task Force. *Guidance on Digital Identity.* 2020.
+[2] World Wide Web Consortium. [Verifiable Credentials Data Model v2.0](https://www.w3.org/TR/vc-data-model-2.0/). W3C Recommendation, 2025.
 
-[3] World Wide Web Consortium. *Verifiable Credentials Data Model v2.0.* W3C Recommendation, May 15, 2025.
+[3] Internet Engineering Task Force. [RFC 9449: OAuth 2.0 Demonstrating Proof of Possession](https://www.rfc-editor.org/rfc/rfc9449). 2023.
 
-[4] IETF. *RFC 9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP).* September 2023.
+[4] Ethereum Improvement Proposals. [EIP-4361: Sign-In with Ethereum](https://eips.ethereum.org/EIPS/eip-4361).
 
-[5] Ethereum Improvement Proposal 4361. *Sign-In with Ethereum.*
+[5] Chain Agnostic Standards Alliance. [CAIP-2 Blockchain ID Specification](https://chainagnostic.org/CAIPs/caip-2) and [CAIP-10 Account ID Specification](https://chainagnostic.org/CAIPs/caip-10).
 
-[6] National Institute of Standards and Technology. *Artificial Intelligence Risk Management Framework (AI RMF 1.0)* and *Generative Artificial Intelligence Profile.* 2023-2026.
+[6] Model Context Protocol. [Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28). 2026.
 
-[7] Model Context Protocol. *Specification 2026-07-28.* 2026.
+[7] Agent2Agent Protocol. [Official Specification](https://a2a-protocol.org/latest/specification). Linux Foundation project.
 
-[8] Agent2Agent Protocol. *A2A Protocol Specification and Governance.* Linux Foundation project.
+[8] x402 Foundation. [x402 v2 Specification](https://github.com/coinbase/x402/tree/main/specs). Payment interoperability reference.
 
-[9] x402 Foundation / Coinbase Developer Platform. *x402 Protocol v2 Documentation and Specification.*
+[9] Hyperliquid. [API Documentation](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api). Execution-venue reference.
 
-[10] Chain Agnostic Improvement Proposals. *CAIP-2 Blockchain ID Specification* and *CAIP-10 Account ID Specification.*
+[10] National Institute of Standards and Technology. [Artificial Intelligence Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework). Model-governance reference.
 
-[11] W3C, IETF, Ethereum, and chain-agnostic standards are referenced as interoperability and security precedents. Reference does not imply partnership, endorsement, or that IPO.ONE depends exclusively on any named standard.
+[11] Financial Action Task Force. [Guidance on Digital Identity](https://www.fatf-gafi.org/en/publications/Financialinclusionandnpoissues/Digital-identity-guidance.html). 2020.
 
-[12] IPO.ONE. *Product Charter v1.1*, canonical public README, and August 20, 2026 Human-Agent product baseline checkpoint in the public IPO.ONE repository.
+[12] These standards and systems are cited as primary interoperability, identity, safety or execution references. Citation does not imply partnership, endorsement or exclusive dependency.

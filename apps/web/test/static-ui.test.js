@@ -40,20 +40,24 @@ test("REQ-PILOT-002 exposes a truthful Public Beta delivery-readiness view", asy
   assert.equal(/closedPilotReadiness[\s\S]{0,2000}(activate|approve)ClosedPilot/i.test(js), false);
 });
 
-test("public README and Founding Edition II sources remain canonical", async () => {
-  const [readme, whitepaper, whitepaperPage, whitepaperCss, whitepaperJs, pdf] = await Promise.all([
+test("public README and Founding Edition III sources remain canonical", async () => {
+  const [readme, whitepaper, whitepaperPage, whitepaperCss, whitepaperJs, pdf, exportManifest] = await Promise.all([
     readFile(new URL("../../../README.md", import.meta.url)),
     readFile(new URL("../../../docs/WHITEPAPER.md", import.meta.url)),
     readFile(new URL("../src/whitepaper.html", import.meta.url), "utf8"),
     readFile(new URL("../src/whitepaper.css", import.meta.url), "utf8"),
     readFile(new URL("../src/whitepaper.js", import.meta.url), "utf8"),
-    readFile(new URL("../src/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf", import.meta.url))
+    readFile(new URL("../src/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf", import.meta.url)),
+    readFile(new URL("../src/whitepaper/manifest.json", import.meta.url), "utf8")
   ]);
   const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+  const manifest = JSON.parse(exportManifest);
   assert.ok(readme.includes(Buffer.from("https://ipo.one/whitepaper")));
   assert.ok(readme.includes(Buffer.from("docs/WHITEPAPER.md")));
-  assert.equal(sha256(whitepaper), "bcaea0332d415fa474be0f2edaa0a5eb1b27059cea73178606dfa9acc073b91c");
-  assert.equal(sha256(pdf), "0273fd454b47a1033004c175d8b491046d3e284160547a36b1086461e6997572");
+  assert.equal(sha256(whitepaper), manifest.sourceSha256);
+  assert.equal(sha256(Buffer.from(whitepaperPage)), manifest.htmlSha256);
+  assert.equal(sha256(pdf), manifest.pdfSha256);
+  assert.equal(manifest.edition, "Founding Edition III");
   for (const label of [
     "The Credit Layer for the <em>Agentic Economy</em>",
     "Current Foundation",
@@ -61,19 +65,23 @@ test("public README and Founding Edition II sources remain canonical", async () 
     "Protocol Horizon",
     "Single Kernel, Dual-Native Access",
     "Stable Kernel + Replaceable Adapters",
-    "Credit Intelligence Network",
+    "Domain Performance Evidence",
+    "Reference Use Case: Trading Capital",
+    "Reference Use Case: Metered Machine-Service Credit",
     "Evidence-Gated Roadmap",
     "Strategic Non-Goals",
     "BORROW. BUILD. PROVE."
   ]) assert.ok(whitepaperPage.includes(label), `${label} whitepaper section missing`);
-  assert.equal((whitepaperPage.match(/class="protocol-diagram"/g) ?? []).length, 12);
-  assert.equal((whitepaperPage.match(/class="toc-level-/g) ?? []).length, 60);
-  assert.ok(whitepaperPage.includes('href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf" download'));
+  assert.equal((whitepaperPage.match(/class="protocol-diagram"/g) ?? []).length, 7);
+  assert.equal((whitepaperPage.match(/class="toc-level-/g) ?? []).length, 48);
+  assert.ok(whitepaperPage.includes('href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf" download'));
   assert.ok(whitepaperPage.includes('<link rel="canonical" href="https://ipo.one/whitepaper"'));
+  assert.equal(/Founding Edition II(?!I)/.test(whitepaperPage), false);
   assert.ok(whitepaperCss.includes(".reading-progress"));
   assert.ok(whitepaperCss.includes("@media (max-width: 760px)"));
   assert.ok(whitepaperJs.includes("IntersectionObserver"));
   assert.ok(whitepaperJs.includes("scrollIntoView"));
+  assert.ok(whitepaperJs.includes("activateDiagramNode"));
 });
 
 test("public Beta product includes authenticated Human and Agent workflows", async () => {

@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -52,20 +53,53 @@ function tableCells(line) {
 
 function renderDiagram(source, index) {
   const direction = source.match(/flowchart\s+(LR|TB|TD)/)?.[1] ?? "LR";
-  const nodes = [];
-  const seen = new Set();
-  for (const match of source.matchAll(/([A-Za-z][A-Za-z0-9_]*)\["([\s\S]*?)"\]/g)) {
-    if (seen.has(match[1])) continue;
-    seen.add(match[1]);
-    nodes.push(match[2].replaceAll("\\n", " · "));
+  const title = source.match(/^%%\s*title:\s*(.+)$/m)?.[1]?.trim() ?? `Protocol diagram ${index}`;
+  const caption = source.match(/^%%\s*caption:\s*(.+)$/m)?.[1]?.trim() ?? "Canonical protocol relationship.";
+  const nodes = new Map();
+  for (const match of source.matchAll(/([A-Za-z][A-Za-z0-9_]*)\["([^"]+)"\]/g)) {
+    if (nodes.has(match[1])) continue;
+    const [label, ...detail] = match[2].split("\\n");
+    nodes.set(match[1], { id: match[1], label, detail: detail.join(" · ") });
   }
-  const visual = nodes.map((label, nodeIndex) => (
-    `<span class="diagram-node"><small>${String(nodeIndex + 1).padStart(2, "0")}</small>${escapeHtml(label)}</span>`
-  )).join('<span class="diagram-arrow" aria-hidden="true">→</span>');
-  return `<figure class="protocol-diagram" data-direction="${direction}">
-    <div class="diagram-visual" role="img" aria-label="Protocol diagram ${index}">${visual}</div>
-    <figcaption>Protocol relationship · diagram ${index}</figcaption>
-    <details><summary>View diagram source</summary><pre><code>${escapeHtml(source)}</code></pre></details>
+  const edges = [...source.matchAll(/([A-Za-z][A-Za-z0-9_]*)(?:\["[^"]+"\])?\s*-->\s*([A-Za-z][A-Za-z0-9_]*)/g)]
+    .map((match) => [match[1], match[2]])
+    .filter(([from, to]) => nodes.has(from) && nodes.has(to));
+  const incoming = new Map([...nodes.keys()].map((id) => [id, 0]));
+  for (const [, to] of edges) incoming.set(to, (incoming.get(to) ?? 0) + 1);
+  const roots = [...nodes.keys()].filter((id) => incoming.get(id) === 0);
+  if (roots.length === 0 && nodes.size > 0) roots.push(nodes.keys().next().value);
+  const ranks = new Map(roots.map((id) => [id, 0]));
+  const queue = [...roots];
+  while (queue.length > 0) {
+    const from = queue.shift();
+    for (const [, to] of edges.filter(([candidate]) => candidate === from)) {
+      if (ranks.has(to)) continue;
+      ranks.set(to, (ranks.get(from) ?? 0) + 1);
+      queue.push(to);
+    }
+  }
+  for (const id of nodes.keys()) {
+    if (!ranks.has(id)) ranks.set(id, 0);
+  }
+  const stages = new Map();
+  for (const [id, node] of nodes) {
+    const rank = ranks.get(id);
+    const stage = stages.get(rank) ?? [];
+    stage.push(node);
+    stages.set(rank, stage);
+  }
+  const visual = [...stages.entries()].sort(([left], [right]) => left - right).map(([rank, stage], stageIndex, allStages) => {
+    const stageNodes = stage.map((node) => `<button class="diagram-node" type="button" data-diagram-node="${escapeHtml(node.id)}" aria-pressed="false"><span>${escapeHtml(node.label)}</span>${node.detail ? `<small>${escapeHtml(node.detail)}</small>` : ""}</button>`).join("");
+    const connector = stageIndex < allStages.length - 1 ? '<span class="diagram-arrow" aria-hidden="true">→</span>' : "";
+    return `<div class="diagram-stage" data-rank="${rank}">${stageNodes}</div>${connector}`;
+  }).join("");
+  const relationships = edges.map(([from, to]) => `<li data-diagram-edge="${escapeHtml(from)} ${escapeHtml(to)}"><strong>${escapeHtml(nodes.get(from).label)}</strong><span aria-hidden="true">→</span>${escapeHtml(nodes.get(to).label)}</li>`).join("");
+  return `<figure class="protocol-diagram" data-direction="${direction}" data-diagram="${index}" aria-labelledby="diagram-title-${index}">
+    <div class="diagram-heading"><span>Diagram ${String(index).padStart(2, "0")}</span><h3 id="diagram-title-${index}">${escapeHtml(title)}</h3></div>
+    <div class="diagram-visual">${visual}</div>
+    <figcaption>${escapeHtml(caption)}</figcaption>
+    <details class="diagram-relationships"><summary>Read every relationship</summary><ol>${relationships}</ol></details>
+    <details class="diagram-source"><summary>View diagram source</summary><pre><code>${escapeHtml(source)}</code></pre></details>
   </figure>`;
 }
 
@@ -192,26 +226,29 @@ function mobileOptions(toc) {
 
 const source = await readFile(sourcePath, "utf8");
 const { body, toc, diagramCount } = parseMarkdown(source);
+const sourceHash = createHash("sha256").update(source).digest("hex");
 const generated = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0d1520" />
-    <meta name="description" content="IPO.ONE Founding Edition II: the protocol thesis, architecture, safety boundaries, commercial logic, and evidence-gated roadmap for verifiable Human and Agent credit." />
+    <meta name="description" content="IPO.ONE turns verified Agent performance into credit and capital capacity through a shared obligation, Evidence and settlement protocol." />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="IPO.ONE" />
-    <meta property="og:title" content="IPO.ONE Whitepaper — Founding Edition II" />
-    <meta property="og:description" content="The Credit Layer for the Agentic Economy: verifiable credit and obligation infrastructure for Humans and autonomous Agents." />
+    <meta property="og:title" content="IPO.ONE Whitepaper — The Credit Layer for the Agentic Economy" />
+    <meta property="og:description" content="Turn verified economic performance into portable credit and governed capital access." />
     <meta property="og:url" content="https://ipo.one/whitepaper" />
+    <meta property="article:published_time" content="2026-09-03" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="IPO.ONE Whitepaper — Founding Edition II" />
-    <meta name="twitter:description" content="The protocol thesis for verifiable Human and Agent credit." />
-    <title>IPO.ONE Whitepaper — Founding Edition II</title>
+    <meta name="twitter:title" content="IPO.ONE Whitepaper — The Credit Layer for the Agentic Economy" />
+    <meta name="twitter:description" content="Turn verified Agent performance into credit and capital capacity." />
+    <meta name="ipo-one:source-sha256" content="${sourceHash}" />
+    <title>IPO.ONE Whitepaper — The Credit Layer for the Agentic Economy</title>
     <link rel="canonical" href="https://ipo.one/whitepaper" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/whitepaper.css?v=founding-edition-ii-v3" />
-    <script src="/whitepaper.js?v=founding-edition-ii-v3" defer></script>
+    <link rel="stylesheet" href="/whitepaper.css?v=founding-edition-iii-v1" />
+    <script src="/whitepaper.js?v=founding-edition-iii-v1" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#whitepaperContent">Skip to whitepaper</a>
@@ -226,25 +263,32 @@ const generated = `<!doctype html>
       </nav>
     </header>
     <main>
-      <section class="whitepaper-hero" aria-labelledby="whitepaperTitle">
+      <section class="whitepaper-hero" id="whitepaperTop" aria-labelledby="whitepaperTitle">
         <div class="hero-grid" aria-hidden="true"></div>
         <div class="hero-copy">
-          <p class="kicker"><span></span>Founding Edition II · August 2026</p>
+          <p class="kicker"><span></span>Founding Edition III · September 2026</p>
           <h1 id="whitepaperTitle">The Credit Layer for the <em>Agentic Economy</em></h1>
-          <p class="hero-lede">Verifiable credit and obligation infrastructure for Humans and autonomous Agents.</p>
-          <p class="hero-proposition">Turn verified economic performance into portable, programmable credit.</p>
+          <p class="hero-lede">Turn verified Agent performance into capital.</p>
+          <p class="hero-proposition">Economic performance → Evidence → Credit → Capital → Economic scale.</p>
           <p class="hero-motto"><strong>BORROW.</strong><strong>BUILD.</strong><strong>PROVE.</strong></p>
           <div class="hero-actions">
             <a class="primary-action" href="#document-status">Read the whitepaper</a>
-            <a class="secondary-action" href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf" download>Download PDF · 50 pages</a>
+            <a class="secondary-action" href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf" download>Download PDF</a>
           </div>
+          <nav class="reading-lanes" aria-label="Whitepaper reading shortcuts">
+            <a href="#foundational-proposition">Thesis</a>
+            <a href="#part-ii-the-ipo-one-credit-protocol">Protocol</a>
+            <a href="#part-iii-performance-credit-and-capital">Capital</a>
+            <a href="#part-iv-applications-of-the-credit-layer">Applications</a>
+            <a href="#part-v-settlement-safety-and-governance">Governance</a>
+          </nav>
         </div>
         <aside class="hero-status" aria-label="Document status">
           <p>Document lens</p>
           <dl>
-            <div><dt>Current Foundation</dt><dd>Deployed no-funds product baseline</dd></div>
-            <div><dt>Product Evolution</dt><dd>Evidence-gated controlled pilots</dd></div>
-            <div><dt>Protocol Horizon</dt><dd>Long-term direction, not current activation</dd></div>
+            <div><dt>Current Foundation</dt><dd>Public authenticated no-funds product and bounded Testnet Evidence</dd></div>
+            <div><dt>Product Evolution</dt><dd>Controlled Facility profiles behind explicit gates</dd></div>
+            <div><dt>Protocol Horizon</dt><dd>One credit language for future economic activity</dd></div>
           </dl>
           <small>No offer of credit, securities, tokens, or investment products.</small>
         </aside>
@@ -257,13 +301,13 @@ const generated = `<!doctype html>
       </div>
       <div class="reading-shell">
         <aside class="table-of-contents" aria-label="Whitepaper table of contents">
-          <div class="toc-heading"><span>Contents</span><small>Founding Edition II</small></div>
+          <div class="toc-heading"><span>Contents</span><small>Founding Edition III</small></div>
           <nav id="whitepaperToc">
             ${tocMarkup(toc)}
           </nav>
           <div class="toc-footer">
             <span>${diagramCount} protocol diagrams</span>
-            <a href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_II.pdf" download>Download PDF</a>
+            <a href="/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf" download>Download PDF</a>
           </div>
         </aside>
         <article class="whitepaper-content" id="whitepaperContent">
@@ -272,14 +316,15 @@ const generated = `<!doctype html>
       </div>
       <section class="whitepaper-cta" aria-labelledby="whitepaperCtaTitle">
         <p>BORROW. BUILD. PROVE.</p>
-        <h2 id="whitepaperCtaTitle">Responsibility is the missing layer.</h2>
+        <h2 id="whitepaperCtaTitle">Performance becomes financeable when proof, authority and obligation agree.</h2>
         <div>
-          <a href="/">Enter the no-funds product</a>
+          <a href="/">Explore the public no-funds product</a>
           <a href="/agent-openapi.json">Explore the Agent API</a>
           <a href="https://github.com/CPTM511/IPO.ONE">View the canonical repository</a>
         </div>
       </section>
     </main>
+    <a class="back-to-top" href="#whitepaperTop" aria-label="Back to top">↑<span>Back to top</span></a>
     <footer>
       <strong>IPO.ONE</strong>
       <span>Identity · Payment · Obligation</span>
