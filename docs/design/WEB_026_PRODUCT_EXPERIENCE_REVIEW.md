@@ -40,18 +40,24 @@ Review service: `com.ipoone.web026.review` under the user's launchd session, run
 
 Browser artifacts: `output/playwright/web-026/`. Human, Agent, Capital and Risk desktop/mobile samples were visually inspected in addition to layout assertions. This is not a full assistive-technology or WCAG certification.
 
-## Actual service boundary
+## Actual service boundary — WEB-026F update
 
-Read-only local runtime audit found source/process drift and migrations 0070–0073 missing from the database. Current mounted backend would auto-migrate on restart, including identity and permission changes. No existing backend/container was created, stopped, restarted or replaced; no database or credential change occurred. A previous proposed restart script was replaced by an audit-only command before execution.
+The Founder separately approved the local runtime repair on September 5. The actual effective review database was restored/tested before migrations 0071–0073 were applied. Immutable local services now run at [Human](http://127.0.0.1:8895/) and [Principal / Agent](http://127.0.0.1:8896/). Existing wallet bindings and durable records were preserved. The default database was not mutated.
 
-The separately reviewed runtime scope, migration effects and rollback requirements are in `../codex/tasks/WEB_026F_LOCAL_RUNTIME_RECONCILIATION_REVIEW.md`.
+Final runtime source: `d00f1ce747e357e9df4e442e32417922f6e7411b`. This includes a follow-up repayment heading/amount contrast repair verified at minimum 6.47:1 in light and 8.08:1 in dark mode. Pilot and synthetic-only worker are healthy, restart-supervised, and use immutable image contents with no mutable source mount. No cloud deployment or real-funds operation occurred.
+
+Additional evidence: 95 PostgreSQL tests, 35 security tests and 91 transport tests passed. Browser verification used real signatures and restored durable services, with no API mocks, for Human request/accept/execute/repay, refresh, browser-storage clear, re-login and service restart. Principal signature login/task recovery passed. The actual user entry serves the matching CSS, authentication options and authenticated Agent catalog. Backups were restored twice; an exact canonical fallback booted successfully in isolation.
+
+Details: `../codex/tasks/WEB_026F_LOCAL_RUNTIME_RECONCILIATION_REVIEW.md`. Evidence: `output/playwright/web-026-runtime/`.
 
 | Completion state | Evidence |
 | --- | --- |
-| CODE | Presentation and regression changes committed as 12675dd |
-| RUNTIME | Labeled synthetic review hosts running; actual backend integration blocked |
-| DEPLOYED | No cloud deployment or actual deployed-SHA acceptance |
-| REACHABLE | All role-allowed review views reached by visible clicks |
-| VERIFIED | Browser/conformance checks passed; actual login, durable recovery and Founder acceptance pending |
+| CODE | UI source 12675dd, runtime base 9d2caac, final contrast repair d00f1ce |
+| RUNTIME | Final pilot and synthetic worker healthy; effective review DB at migration 0073 |
+| DEPLOYED | Installed in the local no-funds environment only; no cloud/production deployment |
+| REACHABLE | Human/Principal actual entry and labeled four-role preview links available |
+| VERIFIED | Restored-service browser recovery and final-source contrast passed; actual Founder signature still pending |
 
-Product verdict: **BLOCKED — NOT COMPLETE**. UI review readiness is not real-account or deployed product completion.
+Capital Partner and Risk have a separate confirmed authentication gap: the selected-role wallet model supports only Human/Principal, so the management hosts reject login with `authentication_role_rejected`. Their 4193/4194 links remain labeled fixture previews. The correction and permission boundary are recorded in `../codex/tasks/WEB_026G_PRIVILEGED_WORKSPACE_LOGIN_REVIEW.md`.
+
+Product verdict: **BLOCKED — NOT COMPLETE**, pending Founder login confirmation and privileged-role authentication. The local runtime/database repair has been executed; preview or integration evidence is not substituted for user acceptance.
