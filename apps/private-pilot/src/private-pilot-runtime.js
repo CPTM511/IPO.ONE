@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { PRODUCTION_BOOTSTRAP_PROFILES } from "./production-bootstrap.js";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createTrustedNetworkContext } from "../../../modules/abuse-control/src/index.js";
@@ -157,16 +159,18 @@ async function loadLocalDurableAuthenticationMaterial() {
   ]);
 }
 
-function localRuntimeConfig() {
+function localRuntimeConfig({ ordinaryWalletEnrollment = false } = {}) {
   return loadAuthenticationRuntimeConfig({
     NODE_ENV: "development",
-    IPO_ONE_AUTHENTICATION_MODE: "local_test"
+    IPO_ONE_AUTHENTICATION_MODE: "local_test",
+    ...(ordinaryWalletEnrollment ? { IPO_ONE_LOCAL_WALLET_SELF_SERVICE: "ordinary_verified_wallets" } : {})
   });
 }
 
 async function createLocalHumanAccess({
   authenticationPool,
   authenticationMaterial,
+  ordinaryWalletEnrollmentAllowed = true,
   identity,
   port,
   profile
@@ -174,6 +178,16 @@ async function createLocalHumanAccess({
   const browserOrigin = `http://127.0.0.1:${port}`;
   const secureOrigin = `https://127.0.0.1:${port}`;
   const walletSignatureVerifier = new EvmWalletSignatureVerifier();
+  const ordinaryWalletEnrollment = ordinaryWalletEnrollmentAllowed && process.env.IPO_ONE_LOCAL_WALLET_SELF_SERVICE === "ordinary_verified_wallets" &&
+    ["human_borrower", "principal_controller"].includes(identity.roleBundle);
+  let enrollmentReferenceKey;
+  if (ordinaryWalletEnrollment) {
+    const path = process.env.IPO_ONE_LOCAL_AUTH_REFERENCE_V2_FILE;
+    if (!path) throw new Error("Local wallet enrollment requires a durable v2 reference key file");
+    enrollmentReferenceKey = (await readFile(path, "utf8")).trim();
+    if (!/^[A-Za-z0-9_-]{43}$/.test(enrollmentReferenceKey)) throw new Error("Local enrollment reference key is invalid");
+  }
+
   return createPostgresHumanAccessComposition({
     browserOrigin,
     encryptionKey: authenticationMaterial.encryptionKey,
@@ -185,7 +199,18 @@ async function createLocalHumanAccess({
     referenceHashKey: authenticationMaterial.referenceHashKey,
     referenceHashKeyRef:
       "local-secret://authentication/reference-hash-key",
-    runtimeConfig: localRuntimeConfig(),
+    ...(ordinaryWalletEnrollment ? {
+      referenceHashKey: enrollmentReferenceKey,
+      referenceHashKeyRef: "local-secret://authentication/reference-hash-key-v2",
+      referenceHashMode: "overlap_v2_write_v1_lookup",
+      legacyReferenceHashKey: authenticationMaterial.referenceHashKey,
+      legacyReferenceHashKeyRef: "local-secret://authentication/reference-hash-key-v1",
+      publicBetaWalletRoleProfiles: {
+        human_borrower: PRODUCTION_BOOTSTRAP_PROFILES.human_borrower.capabilities,
+        principal_controller: PRODUCTION_BOOTSTRAP_PROFILES.principal_controller.capabilities
+      }
+    } : {}),
+    runtimeConfig: localRuntimeConfig({ ordinaryWalletEnrollment }),
     systemActorId: authenticationMaterial.systemActorId,
     tenantId: profile.tenantId,
     wallet: {
@@ -277,6 +302,11 @@ export async function createPrivatePilotRuntime({
       });
       humanAccessProfiles.push({ profile, humanAccess });
     }
+    // Workload credentials keep their existing v1 identity references. Human
+    // self-enrollment uses v2 independently and cannot rotate Agent authority.
+    const workloadCredentialRegistry = humanAccessProfiles.find(
+      ({ profile }) => profile.name === "risk"
+    ).humanAccess.credentialRegistry;
     gateway = createGateway(pool, authentication, {
       credentialRegistry:
         humanAccessProfiles[0].humanAccess.credentialRegistry,
@@ -311,7 +341,7 @@ export async function createPrivatePilotRuntime({
         policyVersion: authentication.identities.agent.createContext()
           .policyVersion,
         audience: localAgentAudience,
-        credentialRegistry: humanAccess.credentialRegistry,
+        credentialRegistry: workloadCredentialRegistry,
         replayCache: humanAccess.machineReplayCache,
         referenceHasher: createReferenceHasher(
           durableAuthentication.referenceHashKey
@@ -582,6 +612,7 @@ export async function createPrivatePilotDurableAgentGateway(
     const humanAccess = await createLocalHumanAccess({
       authenticationPool: durableAuthentication.pool,
       authenticationMaterial: durableAuthentication,
+      ordinaryWalletEnrollmentAllowed: false,
       identity: authentication.identities.controller,
       port: basePort + 1,
       profile: authentication.profile

@@ -950,6 +950,20 @@ export class PostgresCredentialRegistry {
     const roles = this.publicBetaWalletRoleProfiles;
 
     return this.repository.withTenantWrite(async (client) => {
+      // A failed legacy lookup must never turn a revoked identity into a new
+      // account under the v2 key. Serialize with the verified rebind path.
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('authentication_reference_rebind'), hashtext($1 || ':' || $2 || ':' || $3))",
+        [this.tenantId, normalizedIssuer, normalizedClientId]
+      );
+      const knownHashes = typeof this.referenceHasher.lookupHashes === "function"
+        ? this.referenceHasher.lookupHashes("subject", `${normalizedIssuer}\0${normalizedSubject}`).map(item => item.referenceHash)
+        : [subjectRefHash];
+      const known = await client.query(
+        "SELECT id FROM authentication_credentials WHERE tenant_id=$1 AND issuer=$2 AND client_id=$3 AND subject_ref_hash=ANY($4::text[]) ORDER BY reference_hash_key_version DESC LIMIT 1 FOR UPDATE",
+        [this.tenantId, normalizedIssuer, normalizedClientId, knownHashes]
+      );
+      if (known.rowCount) return this.#activeInTransaction(client, known.rows[0].id, now);
       const result = await client.query(
         `SELECT provision_public_beta_human_wallet_identity(
            $1, $2, $3, $4, $5, $6, $7, $8, $9,

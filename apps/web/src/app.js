@@ -561,7 +561,8 @@ const accessState = {
   providers: new Set(),
   walletAuthenticationEnabled: false,
   walletWorkspaceRoles: new Set(),
-  selectedWorkspaceRole: "human_borrower",
+  selectedWorkspaceRole: document.querySelector('meta[name="ipo-one-workspace-name"]')?.content === "controller" ||
+    window.location.hash === "#agent-console" ? "principal_controller" : "human_borrower",
   sessionActive: false,
   sessionAuthenticationMethod: null,
   localSessionSignedOut: false,
@@ -1422,9 +1423,11 @@ async function connectApprovedNetwork({ authenticate = false } = {}) {
       accessState.sessionAuthenticationMethod =
         authentication?.authenticationMethod === "siwe" ? "siwe" : null;
       accessState.pendingWorkspaceBootstrap = true;
-      accessState.helper = "Wallet sign-in complete. Your internal roles and Mandates remain server-controlled.";
+      accessState.helper = "Signed in. Opening your workspace…";
       renderAccess();
-      el("continueAuthenticatedSessionBtn").focus();
+      // The server has verified the signature and issued the selected-role
+      // session. Bootstrap from that session immediately; no second click.
+      window.location.reload();
     }
   } catch (error) {
     accessState.helper = error?.code === 4001

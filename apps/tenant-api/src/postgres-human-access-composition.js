@@ -273,7 +273,7 @@ export async function createPostgresHumanAccessComposition(input) {
     );
   }
   if (
-    (runtimeConfig.publicBetaSelfService === true) !==
+    ((runtimeConfig.publicBetaSelfService === true || runtimeConfig.localWalletSelfService === true)) !==
     (input.publicBetaWalletRoleProfiles !== undefined)
   ) {
     throw authenticationError(
@@ -351,6 +351,11 @@ export async function createPostgresHumanAccessComposition(input) {
         }
       : {})
   });
+  if (runtimeConfig.localWalletSelfService === true && (
+    !localProfile || referenceHashMode !== "overlap_v2_write_v1_lookup"
+  )) {
+    throw authenticationError("authentication_deployment_gate_closed", "local wallet enrollment requires the isolated local profile and compatible v2 reference protection");
+  }
   const providers = normalizeOidcProviders(input.oidcProviders);
   const wallet = input.wallet === undefined
     ? undefined
@@ -395,7 +400,7 @@ export async function createPostgresHumanAccessComposition(input) {
     tenantId,
     referenceHasher,
     systemActorId,
-    ...(runtimeConfig.publicBetaSelfService === true
+    ...((runtimeConfig.publicBetaSelfService === true || runtimeConfig.localWalletSelfService === true)
       ? { publicBetaWalletRoleProfiles: input.publicBetaWalletRoleProfiles }
       : {})
   });
@@ -527,7 +532,7 @@ export async function createPostgresHumanAccessComposition(input) {
       idpApprovalSha: localProfile ? undefined : runtimeConfig.approvalSha,
       referenceHashKeyRef,
       encryptionKeyRef,
-      credentialProvisioning: runtimeConfig.publicBetaSelfService === true
+      credentialProvisioning: (runtimeConfig.publicBetaSelfService === true || runtimeConfig.localWalletSelfService === true)
         ? "verified_wallet_self_service"
         : "pre_provisioned_only",
       authority: "authentication_only",

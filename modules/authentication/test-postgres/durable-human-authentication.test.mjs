@@ -602,6 +602,37 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       clientId: WALLET_CLIENT_ID
     });
 
+    await t.test("local enrollment cannot recreate a revoked v1 wallet under a new v2 identity", async () => {
+      const subject = "eip155:84532:0x7777777777777777777777777777777777777777";
+      const legacy = await registry.register({
+        tenantId: TENANT_ID, actorId: HUMAN_ACTOR_ID, actorType: ActorType.HUMAN,
+        issuer: ORIGIN, externalSubject: subject, clientId: WALLET_CLIENT_ID,
+        clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
+        senderConstraint: { method: SenderConstraintMethod.HOST_SESSION, thumbprint: "z".repeat(43) },
+        roles: ["human_borrower"], allowedCapabilities: ["subject.read", "integration.manage"],
+        policyVersion: "security_001.v1", performedByActorId: SYSTEM_ACTOR_ID,
+        reasonCode: "local_revoked_enrollment_fixture", now: NOW
+      });
+      await withTenantTransaction(ownerPool, context, client => client.query(
+        "UPDATE authentication_credentials SET status='revoked' WHERE id=$1", [legacy.credentialId]
+      ));
+      const upgraded = new PostgresCredentialRegistry({
+        eventRepository: repository, tenantId: TENANT_ID, systemActorId: SYSTEM_ACTOR_ID,
+        referenceHasher: createReferenceHashKeyring({
+          mode: "overlap_v2_write_v1_lookup",
+          primary: { keyVersion: "v2", secret: randomBytes(32) },
+          legacy: { keyVersion: "v1", secret: referenceKey }
+        }),
+        publicBetaWalletRoleProfiles: {
+          human_borrower: PRODUCTION_BOOTSTRAP_PROFILES.human_borrower.capabilities,
+          principal_controller: PRODUCTION_BOOTSTRAP_PROFILES.principal_controller.capabilities
+        }
+      });
+      await assert.rejects(() => upgraded.provisionVerifiedPublicBetaHumanSubject({
+        tenantId: TENANT_ID, issuer: ORIGIN, externalSubject: subject, clientId: WALLET_CLIENT_ID, now: NOW
+      }), error => error.code === "authentication_credential_rejected");
+    });
+
     await t.test("verified Human reference rebind is atomic, bounded, and retry-safe", async () => {
       const legacySubject = "eip155:84532:0x2222222222222222222222222222222222222222";
       const legacyCredential = await registry.register({
