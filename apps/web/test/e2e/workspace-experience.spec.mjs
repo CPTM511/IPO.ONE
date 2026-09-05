@@ -152,3 +152,24 @@ test("Ordinary public entry retains controllable illustrative motion and current
   await expect(page).toHaveURL(/\/whitepaper/);
   await expect(page.locator("#whitepaperToc a")).toHaveCount(48);
 });
+
+
+test("Obligation heading and repayment schedule retain readable contrast in both themes", async ({ page }) => {
+  await openWorkspace(page, roles[0]);
+  for (const theme of ["light", "dark"]) {
+    await page.getByRole("combobox", { name: "Appearance", exact: true }).selectOption(theme);
+    const ratios = await page.evaluate(() => {
+      const luminance = color => {
+        const rgb = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+        return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
+      };
+      const background = luminance(getComputedStyle(document.querySelector(".obligation-card")).backgroundColor);
+      return [...document.querySelectorAll(".obligation-card-heading strong,.obligation-card-heading small,.obligation-schedule strong,.obligation-schedule span")].map(node => {
+        const foreground = luminance(getComputedStyle(node).color);
+        return (Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05);
+      });
+    });
+    expect(ratios.length).toBeGreaterThan(3);
+    for (const ratio of ratios) expect(ratio, `${theme} repayment text contrast`).toBeGreaterThanOrEqual(4.5);
+  }
+});

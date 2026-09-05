@@ -220,6 +220,9 @@ body.product-experience :is(.technical-details,.human-guide-details,.obligation-
 body.product-experience .obligation-card { border-top: 2px solid var(--b-accent); border-radius: 8px; }
 body.product-experience .obligation-card :is(h4,dt,dd,p,li) { color: var(--b-ink); }
 body.product-experience .obligation-card :is(dt,p,.eyebrow) { color: var(--b-soft); }
+body.product-experience :is(.obligation-card-heading strong,.obligation-schedule strong) { color: var(--b-ink); }
+body.product-experience :is(.obligation-card-heading small,.obligation-schedule span) { color: var(--b-soft); }
+body.product-experience .obligation-card :is(dl,dl > div,.obligation-schedule,.obligation-schedule li) { border-color: var(--b-line); }
 body.product-experience .technical-details > summary { min-height: 44px; cursor: pointer; padding-block: 12px; color: var(--b-soft); }
 body.product-experience .technical-details :is(code,dd) { overflow-wrap: anywhere; }
 body.product-experience :is(.agent-console-authority-card,.agent-console-contract,.agent-console-unavailable-card) :is(dt,small,p) { color: var(--b-soft); }
