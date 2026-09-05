@@ -26,7 +26,10 @@ async function authoredJavaScriptFiles(directory) {
 }
 
 const html = await readFile(htmlPath, "utf8");
-const scriptTags = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
+const allScriptTags = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
+const themeTag = allScriptTags.filter(([, attributes, body]) => attributes.trim() === 'src="/web-theme.js"' && body.trim() === "");
+fail(themeTag.length === 1, "web shell must include one external presentation-theme bootstrap");
+const scriptTags = allScriptTags.filter((tag) => !themeTag.includes(tag));
 fail(scriptTags.length === 1, "web shell must contain exactly one script element");
 if (scriptTags.length === 1) {
   const [, attributes, body] = scriptTags[0];
@@ -82,5 +85,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Web bundle integrity checks passed (1 external module, ${files.length} authored modules, ${ids.length} unique IDs).`
+  `Web bundle integrity checks passed (1 external module + theme bootstrap, ${files.length} authored modules, ${ids.length} unique IDs).`
 );

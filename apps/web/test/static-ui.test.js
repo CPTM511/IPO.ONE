@@ -1955,6 +1955,8 @@ test("every browser button has a discoverable action contract", async () => {
   const missing = [];
   for (const button of buttons) {
     if (genericAction.test(button)) continue;
+    // Imported public presentation modules own these exact delegated controls.
+    if (/\bdata-web(?:009-(?:app-theme|theme|access|path|rail|code)|010-unpin)(?:[\s=>])/.test(button)) continue;
     const id = button.match(/\bid="([^"]+)"/)?.[1];
     if (
       !id ||

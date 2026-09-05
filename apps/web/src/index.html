@@ -18,9 +18,13 @@
     <meta name="ipo-one-workspace-name" content="" />
     <title>IPO.ONE — Verifiable Credit Infrastructure for Humans and Agents</title>
     <link rel="canonical" href="https://ipo.one/" />
+    <link rel="document" href="/whitepaper" title="IPO.ONE Official Whitepaper" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script src="/web-theme.js"></script>
     <link rel="stylesheet" href="/styles.css?v=web019" />
+    <link rel="stylesheet" href="/web-012b.css" />
+    <link rel="stylesheet" href="/workspace-experience.css" />
   </head>
   <body class="private-session-closed">
     <a class="skip-link" href="#mainContent">Skip to workspace</a>
@@ -160,6 +164,13 @@
             </div>
           </div>
 
+          <div class="web009-app-context" id="web009AppContext" aria-label="Authenticated review context" hidden>
+            <span>Workspace<strong id="web009WorkspaceContext">Verifying</strong></span>
+            <span>Role<strong id="web009RoleContext">Server verification pending</strong></span>
+            <span>Context<strong id="web009IdentityContext">Authenticated Actor</strong></span>
+            <button type="button" data-web009-app-theme aria-label="Theme: system">System</button>
+          </div>
+
           <div class="topbar-actions">
             <div class="mode-switch" role="group" aria-label="Interaction mode">
               <button id="operatorModeBtn" class="active" type="button" aria-pressed="true">Human Workspace</button>
@@ -202,6 +213,186 @@
               </span>
             </div>
             <button id="authenticatedRuntimeGateAction" class="primary" type="button" hidden>Review account access</button>
+          </section>
+
+          <section id="web009PublicReview" class="web009-public" aria-labelledby="web009HeroTitle" hidden>
+            <nav class="web009-nav" aria-label="IPO.ONE public site navigation">
+              <a class="web009-brand" href="#web009Product" aria-label="IPO.ONE home"><span>ONE</span><strong>IPO.ONE</strong></a>
+              <div class="web009-nav-links">
+                <a href="#web009Product">Product</a>
+                <a href="#web009AgentCredit">Agent Credit</a>
+                <a href="#web009Passport">Credit Passport</a>
+                <a href="/whitepaper">Whitepaper</a>
+                <a href="#web009Developers">Developers</a>
+                <a href="#web009Trust">Trust</a>
+              </div>
+              <details class="web011-mobile-nav">
+                <summary>Menu</summary>
+                <nav aria-label="IPO.ONE mobile public site navigation">
+                  <a href="#web009Product">Product</a>
+                  <a href="#web009AgentCredit">Agent Credit</a>
+                  <a href="#web009Passport">Credit Passport</a>
+                  <a href="/whitepaper">Whitepaper</a>
+                  <a href="#web009Developers">Developers</a>
+                  <a href="#web009Trust">Trust</a>
+                </nav>
+              </details>
+              <div class="web009-nav-actions">
+                <button class="web009-theme-toggle" type="button" data-web009-theme aria-label="Theme: system">System</button>
+                <button class="web009-login" type="button" data-web009-access>Log in</button>
+                <button class="web009-open" type="button" data-web009-access>Open IPO.ONE</button>
+              </div>
+            </nav>
+
+            <section class="web009-hero" id="web009Product">
+              <div class="web009-hero-copy">
+                <p class="web009-eyebrow">THE CREDIT LAYER FOR THE HUMAN–AGENT ECONOMY</p>
+                <h2 id="web009HeroTitle">Credit for the economy people and AI agents are building together.</h2>
+                <p class="web009-lede">IPO.ONE turns verified activity into a credit record that carries forward—so people and agents can access capital on clear terms, put it to work, repay, and build better access over time.</p>
+                <div class="web009-actions">
+                  <button class="web009-open" type="button" data-web009-access>Open IPO.ONE</button>
+                  <a class="web009-secondary" href="#web009AgentCredit">See Agent Credit in Action</a>
+                </div>
+                <p class="web009-signature">BORROW. <strong>BUILD.</strong> PROVE.</p>
+              </div>
+              <article class="web010-hero-product" aria-label="Agent working capital lifecycle" data-web010-boxed-surface>
+                <header><span>Agent working capital</span><strong>Procurement Agent</strong></header>
+                <div class="web010-hero-amount"><span>Credit Request</span><strong>$18,000</strong><small>Compute + data + approved APIs · 30 days</small></div>
+                <ol data-web009-hero-flow>
+                  <li class="active" data-web010-hero-stage="0"><span>01</span><strong>Request</strong></li>
+                  <li data-web010-hero-stage="1"><span>02</span><strong>Offer</strong></li>
+                  <li data-web010-hero-stage="2"><span>03</span><strong>Obligation</strong></li>
+                  <li data-web010-hero-stage="3"><span>04</span><strong>Approved Use</strong></li>
+                  <li data-web010-hero-stage="4"><span>05</span><strong>Repayment</strong></li>
+                  <li data-web010-hero-stage="5"><span>06</span><strong>Credit State</strong></li>
+                </ol>
+                <footer><span>Accepted terms</span><strong>Explicit Obligation</strong><span>Verified outcome</span></footer>
+              </article>
+            </section>
+
+            <section class="web009-section web009-agent" id="web009AgentCredit" aria-labelledby="web009AgentTitle">
+              <div class="web009-section-heading">
+                <div><p class="web009-eyebrow">AGENT WORKING CAPITAL</p><h3 id="web009AgentTitle">How an AI agent gets working capital.</h3></div>
+                <p>A Principal sets the Mandate. Capital providers set the terms. IPO.ONE records the obligation, approved use, repayment and verified outcome.</p>
+              </div>
+              <p class="web010-walkthrough-label">Illustrative product walkthrough</p>
+              <div class="web010-lifecycle-shell" data-web010-lifecycle data-web010-boxed-surface tabindex="0" role="group" aria-label="Interactive Agent working capital lifecycle. Use arrow keys to move and Enter or Space to pin a state.">
+                <header class="web010-scenario-bar">
+                  <div><span>Agent</span><strong>Procurement Agent</strong></div>
+                  <div><span>Principal</span><strong>Northstar Labs</strong></div>
+                  <div><span>Purpose</span><strong>Compute + data + approved APIs</strong></div>
+                  <div><span>Request</span><strong>$18,000 · 30 days</strong></div>
+                </header>
+                <ol class="web009-step-rail" aria-label="Agent credit lifecycle states" data-web009-agent-steps data-web010-step-rail></ol>
+                <div class="web010-product-window">
+                  <div class="web010-window-heading">
+                    <div><span data-web009-step-number>01</span><small>of 10</small></div>
+                    <div><small data-web010-object-kicker>Principal record</small><h4 data-web009-step-title>Principal verified</h4></div>
+                    <span data-web010-pin-status>Autoplay ready</span>
+                  </div>
+                  <div class="web010-object-stage" data-web010-object-stage aria-live="polite">
+                    <article class="web010-product-object principal-object" data-web010-object="0" data-canonical-object="Principal verification record">
+                      <p>Principal record</p><div class="web010-record-title"><span class="web010-monogram">NL</span><div><strong>Northstar Labs</strong><small>Accountable Principal</small></div><em>Verified</em></div><dl><div><dt>Relationship</dt><dd>Owner / controller</dd></div><div><dt>Authority state</dt><dd>Active</dd></div><div><dt>Review</dt><dd>Current</dd></div></dl>
+                    </article>
+                    <article class="web010-product-object identity-object" data-web010-object="1" data-canonical-object="Agent identity binding">
+                      <p>Identity binding</p><div class="web010-binding"><div><span class="web010-monogram">NL</span><strong>Principal</strong></div><i aria-hidden="true"></i><div><span class="web010-agent-mark">A</span><strong>Procurement Agent</strong></div></div><div class="web010-proof-line"><span>Account proof</span><strong>Bound to Principal</strong><em>Verified</em></div>
+                    </article>
+                    <article class="web010-product-object mandate-object" data-web010-object="2" data-canonical-object="Mandate">
+                      <p>Mandate</p><div class="web010-object-title"><div><strong>Working-capital authority</strong><small>Version 01 · revocable</small></div><em>Active</em></div><dl><div><dt>Purpose</dt><dd>Compute, data, approved APIs</dd></div><div><dt>Aggregate budget</dt><dd>$18,000</dd></div><div><dt>Per action</dt><dd>$4,000</dd></div><div><dt>Providers</dt><dd>Approved catalog</dd></div><div><dt>Expiry</dt><dd>30 days</dd></div><div><dt>Stop conditions</dt><dd>Cap, expiry, revocation</dd></div></dl>
+                    </article>
+                    <article class="web010-product-object request-object" data-web010-object="3" data-canonical-object="Credit Request">
+                      <p>Credit Request</p><div class="web010-request-amount"><strong>$18,000</strong><span>30 days</span></div><div class="web010-purpose-list"><span>Compute</span><span>Data</span><span>Approved APIs</span></div><div class="web010-proof-line"><span>Requested by</span><strong>Procurement Agent</strong><em>Mandate bound</em></div>
+                    </article>
+                    <article class="web010-product-object offers-object" data-web010-object="4" data-canonical-object="Capital Offers">
+                      <p>Capital Offers</p><div class="web010-offer-row"><span>Offer A</span><strong>$14,000</strong><small>21 days · $350 cost</small></div><div class="web010-offer-row selected"><span>Offer B</span><strong>$18,000</strong><small>30 days · $540 cost</small><em>Selected terms</em></div><div class="web010-offer-row"><span>Offer C</span><strong>$18,000</strong><small>45 days · $900 cost</small></div>
+                    </article>
+                    <article class="web010-product-object obligation-object" data-web010-object="5" data-canonical-object="Obligation">
+                      <p>Obligation</p><div class="web010-object-title"><div><strong>$18,000 accepted</strong><small>Total due $18,540 · 30 days</small></div><em>Active</em></div><div class="web010-obligation-track"><span>Offer B</span><i aria-hidden="true"></i><span>Accepted terms</span><i aria-hidden="true"></i><strong>Obligation</strong></div><div class="web010-proof-line"><span>Accepted by</span><strong>Northstar Labs</strong><em>Terms fixed</em></div>
+                    </article>
+                    <article class="web010-product-object authorization-object" data-web010-object="6" data-canonical-object="Authorization">
+                      <p>Authorization</p><div class="web010-scope-ring"><strong>$4,000</strong><span>per approved action</span></div><dl><div><dt>Destination</dt><dd>Approved provider catalog</dd></div><div><dt>Purpose</dt><dd>Compute + data + APIs</dd></div><div><dt>Expires</dt><dd>With Mandate</dd></div><div><dt>Stop</dt><dd>Cap or revocation</dd></div></dl>
+                    </article>
+                    <article class="web010-product-object usage-object" data-web010-object="7" data-canonical-object="Approved Use receipt">
+                      <p>Approved Use</p><div class="web010-receipt"><div><span>Provider execution</span><strong>$6,240</strong></div><div><span>Purpose</span><strong>Compute + data</strong></div><div><span>Policy</span><strong>Inside Mandate</strong></div><footer><em>Completed</em><span>Execution Evidence recorded</span></footer></div>
+                    </article>
+                    <article class="web010-product-object repayment-object" data-web010-object="8" data-canonical-object="Repayment receipt">
+                      <p>Repayment</p><div class="web010-settlement-mark"><span aria-hidden="true">✓</span><div><strong>$18,540 settled</strong><small>Principal + agreed cost</small></div></div><div class="web010-proof-line"><span>Obligation</span><strong>Repaid in full</strong><em>Verified</em></div><div class="web010-proof-line"><span>Outcome</span><strong>Execution + repayment linked</strong><em>Recorded</em></div>
+                    </article>
+                    <article class="web010-product-object credit-state-object" data-web010-object="9" data-canonical-object="Credit State">
+                      <p>Credit State</p><div class="web010-credit-shift"><div><span>Before verified outcome</span><strong>$18,000</strong><small>30-day indicative capacity</small></div><i aria-hidden="true">→</i><div><span>Next indicative access</span><strong>$24,000</strong><small>45-day indicative tenor</small></div></div><div class="web010-proof-line"><span>New Evidence</span><strong>Obligation settled + approved use</strong><em>Available</em></div><small class="web010-credit-note">A future Offer still requires a new capital-provider decision.</small>
+                    </article>
+                  </div>
+                  <dl class="web010-state-facts">
+                    <div><dt>Authorized by</dt><dd data-web009-step-authority>Verified Principal</dd></div>
+                    <div><dt>Permitted</dt><dd data-web010-step-permitted>Identity-bound request preparation</dd></div>
+                    <div><dt>Prohibited</dt><dd data-web010-step-prohibited>Self-granted authority</dd></div>
+                    <div><dt>Current object / result</dt><dd data-web009-step-object>Principal verification record</dd></div>
+                  </dl>
+                </div>
+                <footer class="web010-lifecycle-footer"><span data-web010-current-indicator>01 / 10</span><span>Hover or swipe to scrub · click to pin · arrow keys to move</span><button type="button" data-web010-unpin hidden>Release pinned state</button></footer>
+              </div>
+            </section>
+
+            <section class="web009-section" aria-labelledby="web009InterfacesTitle">
+              <div class="web009-section-heading">
+                <div><p class="web009-eyebrow">TWO ENTRY MODES</p><h3 id="web009InterfacesTitle">Two interfaces. One credit system.</h3></div>
+                <p>Human and Agent journeys begin with different authority and converge on the same Offer, Obligation, repayment and Credit State.</p>
+              </div>
+              <div class="web010-interface-selector" role="group" aria-label="Entry mode">
+                <button class="active" type="button" data-web009-path="human" aria-pressed="true">Human</button>
+                <button type="button" data-web009-path="agent" aria-pressed="false">Agent</button>
+              </div>
+              <div class="web010-convergence"><ol class="web009-object-flow" data-web009-path-flow aria-live="polite"></ol><p class="web009-flow-note" data-web009-path-note></p><strong>Shared credit record</strong></div>
+            </section>
+
+            <section class="web009-section web009-progression" id="web009Passport" aria-labelledby="web009ProgressTitle">
+              <div class="web009-section-heading">
+                <div><p class="web009-eyebrow">VERIFIED PERFORMANCE</p><h3 id="web009ProgressTitle">A settled outcome becomes useful credit history.</h3></div>
+                <p>Credit Passport is a permissioned view of selected Evidence—not a public profile and not a universal score.</p>
+              </div>
+              <div class="web010-performance-layout">
+                <div class="web009-before-after">
+                  <article><span>BEFORE VERIFIED OUTCOME</span><h4>Limited history</h4><dl><div><dt>Indicative capacity</dt><dd>$18,000</dd></div><div><dt>Indicative tenor</dt><dd>30 days</dd></div><div><dt>Credit Tier</dt><dd>Emerging</dd></div></dl></article>
+                  <div aria-hidden="true">→</div>
+                  <article class="verified"><span>AFTER VERIFIED OUTCOME</span><h4>Obligation settled</h4><dl><div><dt>New Evidence</dt><dd>Repayment + execution</dd></div><div><dt>Indicative access</dt><dd>$24,000 · 45 days</dd></div><div><dt>Credit Tier</dt><dd>Established</dd></div></dl></article>
+                </div>
+                <div class="web009-passport-grid" data-web010-boxed-surface>
+                  <div><span class="web010-passport-title">Credit Passport</span>
+                  <label>Recipient<select data-web009-passport-recipient><option>Selected capital provider</option><option>Selected service provider</option></select></label>
+                  <label>Purpose<select data-web009-passport-purpose><option>Working-capital decision</option><option>Provider-credit review</option></select></label>
+                  <p>Only the selected recipient and purpose may receive the approved Evidence set.</p></div>
+                  <ul><li>Identity assurance <strong>Included</strong></li><li>Obligation history <strong>Included</strong></li><li>Repayment performance <strong>Included</strong></li><li>Execution quality <strong>Included</strong></li><li>Mandate compliance <strong>Included</strong></li><li>Evidence provenance <strong>Included</strong></li><li>Credit Tier <strong>Included</strong></li></ul>
+                </div>
+              </div>
+            </section>
+
+            <section class="web009-section web009-capital" aria-labelledby="web009CapitalTitle">
+              <div class="web009-section-heading"><div><p class="web009-eyebrow">CAPITAL PROVIDERS + RAILS</p><h3 id="web009CapitalTitle">Capital providers set the terms.</h3></div><p>IPO.ONE coordinates the request, Offer, Obligation, settlement Evidence and credit history while each provider retains its economic decision.</p></div>
+              <div class="web010-rail-experience">
+                <div><p class="web009-capital-line">One Obligation remains fixed while the selected execution rail changes.</p><div class="web010-rail-selector" role="group" aria-label="Settlement rail"><button class="active" type="button" aria-pressed="true" data-web009-rail="Bank">Bank</button><button type="button" aria-pressed="false" data-web009-rail="Stablecoin">Stablecoin</button><button type="button" aria-pressed="false" data-web009-rail="Hybrid">Hybrid</button></div></div>
+                <article class="web009-rail-card" data-web010-boxed-surface><header><span>Obligation</span><strong>OBL · 18,000 · 30D</strong><em>Terms fixed</em></header><dl><div><dt>Accepted amount</dt><dd>$18,000</dd></div><div><dt>Total due</dt><dd>$18,540</dd></div><div><dt>Selected rail</dt><dd data-web009-rail-value>Bank</dd></div><div><dt>Credit history</dt><dd>One continuous record</dd></div></dl><footer>Provider policy + accepted Offer</footer></article>
+              </div>
+            </section>
+
+            <section class="web009-section web009-developers" id="web009Developers" aria-labelledby="web009DevelopersTitle">
+              <div class="web009-section-heading"><div><p class="web009-eyebrow">DEVELOPERS + TRUST</p><h3 id="web009DevelopersTitle">One lifecycle, available through every interface.</h3></div><p>Human interfaces, REST, SDKs, MCP and A2A use the same versioned credit objects and policy boundaries.</p></div>
+              <div class="web010-developer-trust">
+                <div class="web009-code-shell" data-web010-boxed-surface>
+                  <div role="tablist" aria-label="Developer interface examples"><button class="active" role="tab" type="button" aria-selected="true" data-web009-code="rest">REST</button><button role="tab" type="button" aria-selected="false" data-web009-code="typescript">TypeScript</button><button role="tab" type="button" aria-selected="false" data-web009-code="python">Python</button><button role="tab" type="button" aria-selected="false" data-web009-code="mcp">MCP</button><button role="tab" type="button" aria-selected="false" data-web009-code="a2a">A2A</button></div>
+                  <pre role="tabpanel"><code data-web009-code-panel></code></pre>
+                  <footer><span>tenant_protocol_request.v1</span><a href="/agent-openapi.json">Open current Agent API</a></footer>
+                </div>
+                <div class="web009-trust" id="web009Trust" aria-labelledby="web009TrustTitle"><div><p class="web009-eyebrow">DETERMINISTIC AUTHORITY</p><h3 id="web009TrustTitle">Models can recommend. Approved policy authorizes.</h3><p>Every Offer, Authorization, Obligation, settlement event and correction remains traceable.</p></div><ol><li><span>01</span><strong>Assess</strong><small>Models may prepare a recommendation.</small></li><li><span>02</span><strong>Authorize</strong><small>Approved policy decides.</small></li><li><span>03</span><strong>Record</strong><small>Receipts and Evidence preserve the outcome.</small></li></ol></div>
+              </div>
+            </section>
+
+            <section class="web009-closing" id="web009Closing" aria-labelledby="web009ClosingTitle">
+              <p class="web009-eyebrow">BORROW. BUILD. PROVE.</p><h3 id="web009ClosingTitle">Turn performance into your next capital opportunity.</h3><p>Accepted terms become clear obligations. Completed use and repayment become verified history.</p><button class="web009-open" type="button" data-web009-access>Open IPO.ONE</button><small>Availability varies by jurisdiction, capital provider and product configuration.</small>
+            </section>
+            <footer class="web011-public-footer">
+              <a class="web009-brand" href="#web009Product" aria-label="IPO.ONE home"><span>ONE</span><strong>IPO.ONE</strong></a>
+              <nav aria-label="IPO.ONE footer navigation"><a href="#web009Product">Product</a><a href="#web009AgentCredit">Agent Credit</a><a href="#web009Passport">Credit Passport</a><a href="/whitepaper">Whitepaper</a><a href="#web009Developers">Developers</a><a href="#web009Trust">Trust</a></nav>
+            </footer>
           </section>
 
           <section id="signedOutPrivacyShield" class="signed-out-privacy-shield public-canonical-home" aria-labelledby="signedOutPrivacyTitle" aria-live="polite">

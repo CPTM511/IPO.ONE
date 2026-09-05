@@ -819,6 +819,7 @@ const serveReferenceAgent = Object.freeze({
 });
 
 const host = createTenantHttpServer({
+  port: Number(process.env.IPO_ONE_BROWSER_QA_PORT ?? "0"),
   environment: "development",
   credentialSource: "local_test",
   gateway: {

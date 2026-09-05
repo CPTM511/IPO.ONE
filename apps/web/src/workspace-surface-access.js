@@ -53,26 +53,26 @@ export const WORKSPACE_NAVIGATION_MANIFEST = Object.freeze({
     architecture: view("Architecture", "Machine-readable protocol")
   }),
   workspaces: Object.freeze({
-    borrower: workspace("overview", [
-      entry("overview", "primary"),
+    borrower: workspace("request-credit", [
       entry("request-credit", "primary"),
-      entry("secured-pool", "primary"),
       entry("obligations", "primary"),
-      entry("activity-proofs", "advanced"),
+      entry("activity-proofs", "primary"),
+      entry("wallet-permissions", "primary"),
+      entry("overview", "advanced"),
+      entry("secured-pool", "advanced"),
       entry("repay-settle", "advanced"),
       entry("credit-passport", "advanced"),
-      entry("wallet-permissions", "advanced"),
       entry("credit-track-record", "advanced"),
       entry("reports-exports", "advanced")
     ]),
-    controller: workspace("overview", [
-      entry("overview", "primary"),
-      entry("request-credit", "primary"),
-      entry("secured-pool", "primary"),
+    controller: workspace("agent-console", [
       entry("agent-console", "primary"),
+      entry("request-credit", "primary"),
+      entry("activity-proofs", "primary"),
+      entry("wallet-permissions", "primary"),
+      entry("overview", "advanced"),
+      entry("secured-pool", "advanced"),
       entry("obligations", "advanced"),
-      entry("wallet-permissions", "advanced"),
-      entry("activity-proofs", "advanced"),
       entry("credit-track-record", "advanced"),
       entry("reports-exports", "advanced"),
       entry("architecture", "advanced")

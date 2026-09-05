@@ -1,8 +1,10 @@
+import { arrangeWorkspaceNavigation, updateWorkspaceChrome, renderHumanTaskSummary, renderAgentTaskHeading, renderAgentTaskControls } from "./workspace-experience.js";
 import {
-  createApplicationReadyAgentHandoffManifest,
-  createAwaitingAgentHandoffManifest,
+  createApplicationReadyAgentHandoffManifest, createAwaitingAgentHandoffManifest,
   createReadyAgentHandoffManifest
 } from "./agent-handoff-manifest.js";
+import "./web-009-public-review.js";
+import "./web-012b-presentation.js";
 import { createAgentPilotCapabilityManifest } from "./agent-pilot-capability-manifest.js";
 import { createAgentConsolePresentation } from "./agent-console-presentation.js";
 import {
@@ -932,10 +934,8 @@ function renderAccess() {
   el("accessBtn").setAttribute("aria-label", accessButtonLabel);
   el("accessBtn").title = accessButtonLabel;
   el("accessBtn").classList.toggle("authenticated", authenticated);
-  document.body.classList.toggle(
-    "private-session-closed",
-    !privateWorkspaceVisible
-  );
+  document.body.classList.toggle("private-session-closed", !privateWorkspaceVisible);
+  document.body.dataset.web009WorkspaceRole = tenantPilot.workspaceKind ?? "";
   document.body.classList.toggle("authenticated-session-present", authenticated);
   document.body.classList.toggle("workspace-session-active", privateWorkspaceVisible);
   const privacyShield = el("signedOutPrivacyShield");
@@ -943,6 +943,8 @@ function renderAccess() {
   if (!authenticated) {
     el("viewEyebrow").textContent = "IPO.ONE";
     el("viewTitle").textContent = "Verifiable credit for Humans and Agents";
+  } else {
+    updateWorkspaceChrome(currentWorkspaceName(), currentView);
   }
   el("signedOutPrivacyTitle").textContent =
     "Verifiable Credit Infrastructure for Humans and Agents";
@@ -959,13 +961,15 @@ function renderAccess() {
   el("accessSessionPanel").hidden = !authenticated && !localSessionEnded;
   el("accessMethodPanel").hidden =
     localSessionEnded || (authenticated && !walletSession);
-  el("accessMethodStep").textContent = walletSession ? "Session" : "2";
+  el("accessMethodStep").textContent = walletSession ? "Session" : el("accessWorkspacePicker").hidden ? "1" : "2";
   el("signInMethodTitle").textContent = walletSession
     ? "Reconnect the session wallet"
     : "Choose how to sign in";
   el("signInMethodCopy").textContent = walletSession
     ? "Select and connect the wallet again before an exact sandbox confirmation. The server session remains authoritative."
-    : "The signed session receives only the workspace role selected above.";
+    : el("accessWorkspacePicker").hidden
+      ? "Available sign-in methods are checked for this environment and browser."
+      : "Sign in to the workspace selected above. Your existing permissions apply.";
   el("accessDialogGrid").classList.toggle(
     "session-active",
     authenticated || localSessionEnded
@@ -1126,7 +1130,7 @@ function handleAccessKeys(event) {
   if (event.key !== "Tab") return;
   const dialog = el("accessLayer").querySelector(".access-dialog");
   const focusable = [
-    ...dialog.querySelectorAll("button:not(:disabled), a[href], input:not(:disabled)")
+    ...dialog.querySelectorAll("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex='0']")
   ].filter((control) =>
     !control.hidden &&
     control.getAttribute("aria-hidden") !== "true" &&
@@ -2077,6 +2081,7 @@ function applyWorkspaceSurfaceAccess() {
   for (const item of document.querySelectorAll("[data-role-entry]")) {
     item.hidden = item.dataset.roleEntry !== workspaceName;
   }
+  arrangeWorkspaceNavigation(workspaceName, access);
   return access;
 }
 
@@ -3301,6 +3306,7 @@ function renderAgentOnlineWorkflow(presentation) {
       ? agentOnlinePilot.helper
       : defaultHelper;
   el("agentOnlineHelper").classList.toggle("error", agentOnlinePilot.error);
+  renderAgentTaskControls(stage);
 }
 
 function agentConsoleToolRow(tool) {
@@ -4018,6 +4024,7 @@ function renderAgentIntegrationGuide() {
   el("agentRuntimeIdentity").textContent = guide.identity;
   el("agentRuntimeAuthority").textContent = guide.authority;
   el("agentWorkspaceHeroCopy").textContent = guide.copy;
+  renderAgentTaskHeading(guide.title);
   el("agentWorkspaceIdentity").textContent = guide.identity;
   el("agentWorkspaceAuthority").textContent = guide.authority;
   el("agentProtocolDisclosureStatus").textContent = guide.protocol;
@@ -4704,6 +4711,16 @@ function renderHumanGuide() {
   el("humanCreditForm").hidden = !applicationOpen;
   el("humanOfferConsole").hidden = !applicationOpen;
   el("humanApplication").classList.toggle("position-mode", Boolean(obligation && !humanNewApplicationMode));
+  const nextInstallment = privateNextInstallment(obligation);
+  renderHumanTaskSummary({
+    connected: tenantPilot.connected && hasHumanBorrowerWorkspace(),
+    hasObligation: Boolean(obligation),
+    outstanding: obligation ? usdMinorToMoney(obligation.outstandingPrincipalMinor) : "—",
+    repaid: obligation ? usdMinorToMoney(obligation.totalRepaidMinor) : "—",
+    payment: nextInstallment ? usdMinorToMoney(privateInstallmentAmount(nextInstallment)) : "—",
+    due: nextInstallment ? privateDate(nextInstallment.dueAt) : "No scheduled payment",
+    status: guide.journey
+  });
   el("humanApplicationTitle").textContent = obligation && !humanNewApplicationMode
     ? "Your current sandbox credit"
     : humanNewApplicationMode
@@ -4749,6 +4766,7 @@ function runHumanGuideAction(action) {
   if (action === "toggle-details") {
     const details = el("humanGuideDetails");
     details.open = !details.open;
+    details.closest(".workspace-assurance")?.setAttribute("open", "");
     details.querySelector("summary")?.focus();
   }
 }
@@ -6239,6 +6257,7 @@ function renderPrivateProductSurfaces() {
   }
 
   syncPrivateViewMeta();
+  updateWorkspaceChrome(currentWorkspaceName(), currentView);
   const humanMode = interactionMode === "human";
   const obligation = tenantPilot.obligation;
   const offer = tenantPilot.offer;
@@ -10705,6 +10724,7 @@ function showView(viewName, { focus = true, historyMode = "push" } = {}) {
     ? `${interactionMode === "agent" ? "Agent" : "Human"} entry · shared kernel`
     : VIEW_META[nextView].eyebrow;
   el("viewTitle").textContent = VIEW_META[nextView].title;
+  updateWorkspaceChrome(currentWorkspaceName(), nextView);
   if (["agent-console", "architecture"].includes(nextView)) setMode("agent");
   else renderPrivateProductSurfaces();
   setNavigationOpen(false, { moveFocus: false });
@@ -10755,6 +10775,9 @@ function handleWorkspaceLocationChange() {
 
 function focusJumpTarget(target) {
   if (!target) return;
+  for (let ancestor = target.parentElement; ancestor; ancestor = ancestor.parentElement) {
+    if (ancestor.tagName === "DETAILS") ancestor.open = true;
+  }
   target.scrollIntoView({ behavior: reducedMotion.matches ? "auto" : "smooth", block: "start" });
   target.focus({ preventScroll: true });
 }
