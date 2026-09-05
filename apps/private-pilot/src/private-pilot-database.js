@@ -377,6 +377,9 @@ async function seedLocalHumanRoleEnrollment(client, {
   credential
 }) {
   if (
+    // A retired credential is historical. Never recreate its authority during
+    // startup; verified v2 rebinds retain their own durable role enrollment.
+    credential.status !== "active" ||
     actor.actorType !== ActorType.HUMAN ||
     ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER]
       .includes(actor.roleBundle)
