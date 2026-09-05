@@ -1,6 +1,6 @@
 # WEB-026 — Task-first IPO.ONE product experience
 
-Status: Founder-authorized local implementation, 2026-09-05. Parent program, not an all-at-once implementation issue. Active issue begins at WEB-026A.
+Status: Founder-authorized local implementation, 2026-09-05. Parent program, not an all-at-once implementation issue. WEB-026A–D presentation is implemented; WEB-026E records browser evidence and its actual-runtime blocker. WEB-026F is a proposed separately reviewed increment.
 
 ## Objective and authority
 
@@ -54,3 +54,7 @@ Local candidate processes, existing approved local runtime composition, syntheti
 Keep focused presentation modules below 500 lines where practical. Avoid new domain logic in app.js; explicit render hooks are preferable to observing the whole DOM. Preserve handlers when moving controls. Scope files per issue, document intentional markup expectation updates, and keep current source authority clear.
 
 No schema/migration impact is expected. Each increment can be reverted by commit; local runtime rollback restores the prior exact UI/runtime image without deleting PostgreSQL data. No push, merge, cloud deployment, or modification of other worktrees' runtime while changes are unverified.
+
+## Actual runtime finding
+
+Do not execute the initially considered UI overlay/restart: the existing process predates mounted backend changes and its database is missing 0070–0073. Current read-only evidence and the concrete follow-up scope are in WEB-026F. UI/browser readiness does not establish real-account or durable-service completion.

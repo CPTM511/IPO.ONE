@@ -1,6 +1,6 @@
 # WEB-026E — Verify the full candidate and maintain a usable review runtime
 
-Status: ACTIVE — browser regression and local service integration.
+Status: BLOCKED — NOT COMPLETE; UI/browser evidence recorded, actual runtime review required.
 Parent: WEB_026_PRODUCT_EXPERIENCE_DIRECTIVE_v1.0.md. Authority: Founder-approved Alignment v1.0.
 
 ## Context and baseline
@@ -55,8 +55,8 @@ Depends on the prior WEB-026 issue. Record source SHA, host type, visible click 
 
 ## Completion evidence
 
-Local conformance hosts: 24/24 browser tests passed, including 48 role/viewport/theme screenshots and strict mobile header/overflow checks. UI unit suite 203/203, transport/static security suite 91/91, bundle integrity and current Whitepaper checks passed. Public illustrative lifecycle follow-up pending.
+25 browser tests passed (24 workspace checks plus the public ten-state/Whitepaper journey); 203 web unit tests and 91 transport/static security tests passed. Bundle, lint and current 48-section/43-page Whitepaper checks passed. Role/theme/viewport evidence is under `output/playwright/web-026`.
 
-Actual local backend is `ipo-one-pilot008a-review`, serving 8895–8898 from clean source `4bdbabb7ac3782ce80e4c4b7df4f8f8abc5d8d90`, image `sha256:0f9df36d5330e63b308129eb1b79a8a31d3208e4934ed3841b64d96db7d38a44`. Its pre-existing container healthcheck is unhealthy despite all four HTTP/auth discovery endpoints responding. A separate `ipo-one-web026-review` container will preserve the exact backend/configuration and overlay only committed frontend resources plus the fixed static-asset allowlist. Original container remains for rollback; PostgreSQL and credentials are untouched.
+Actual runtime integration is BLOCKED — NOT COMPLETE. Read-only verification found the existing local process predates its mounted backend source, and its database is at migration 0069. Restarting current mounted code would apply 0070–0073, including identity/permission changes, and could create synthetic-provider material. This exceeds the UI-only runtime boundary. No local service was stopped or changed.
 
-Use `node scripts/web026-local-candidate.mjs prepare`, then `start`; `rollback` stops only this candidate and restarts the original. Source identities and non-sensitive runtime evidence live under the main worktree `output/playwright/web-026-runtime`. Authenticated durable acceptance and cloud/deployed verification remain pending. No product-complete claim.
+The proposed runtime review is fully scoped in `WEB_026F_LOCAL_RUNTIME_RECONCILIATION_REVIEW.md`. `node scripts/web026-local-candidate.mjs audit` is read-only; all mutation modes are blocked. Authentication, durable recovery, actual deployed-SHA and Founder verification remain unproven. Independent labeled fixture review remains reachable on 4191–4195; it is not evidence of actual account login.
