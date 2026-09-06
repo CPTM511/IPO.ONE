@@ -810,6 +810,23 @@
               </aside>
             </section>
 
+            <section class="panel human-activation-panel" aria-labelledby="humanActivationPanelTitle">
+              <div class="panel-heading">
+                <div><p class="eyebrow">ACCOUNT READINESS</p><h3 id="humanActivationPanelTitle">Your sandbox identity</h3></div>
+                <button class="secondary" id="activateSandboxHumanBtn" type="button" disabled>Activate sandbox profile</button>
+              </div>
+                  <p id="humanActivationStatus" class="identity-prerequisite" role="status">Create a profile and scoped Consent to prepare sandbox activation.</p>
+                  <dialog id="humanActivationDialog" class="sandbox-activation-dialog" aria-labelledby="humanActivationTitle">
+                    <div>
+                      <p class="eyebrow">SANDBOX PROFILE</p>
+                      <h2 id="humanActivationTitle">Activate your sandbox profile</h2>
+                      <p>Your private profile will change from pending to active using your current scoped Consent and local synthetic identity reference.</p>
+                      <p>This enables account ownership verification in this no-funds sandbox. It does not approve credit, move funds, or certify real KYC.</p>
+                      <div class="button-row"><button class="primary" id="confirmSandboxHumanActivationBtn" type="button">Activate sandbox profile</button><button class="secondary" id="cancelSandboxHumanActivationBtn" type="button">Cancel</button></div>
+                    </div>
+                  </dialog>
+            </section>
+
             <section class="panel human-readiness" id="humanReadiness" tabindex="-1" aria-labelledby="humanReadinessTitle">
               <details class="human-readiness-disclosure">
                 <summary>
@@ -859,21 +876,10 @@
                   <div class="button-row setup-actions">
                     <button class="secondary" id="createHumanSubjectBtn" type="button">Create Human Subject</button>
                     <button class="secondary" id="createHumanConsentBtn" type="button">Create scoped Consent</button>
-                    <button class="secondary" id="activateSandboxHumanBtn" type="button" disabled>Activate sandbox profile</button>
                   </div>
                   <div class="identity-reference-details" id="humanIdentitySummary" role="status" aria-live="polite">
                     <span id="humanIdentitySummaryText">Advanced: load existing identity references</span>
                   </div>
-                  <p id="humanActivationStatus" class="identity-prerequisite" role="status">Create a profile and scoped Consent to prepare sandbox activation.</p>
-                  <dialog id="humanActivationDialog" class="sandbox-activation-dialog" aria-labelledby="humanActivationTitle">
-                    <div>
-                      <p class="eyebrow">SANDBOX PROFILE</p>
-                      <h2 id="humanActivationTitle">Activate your sandbox profile</h2>
-                      <p>Your private profile will change from pending to active using your current scoped Consent and local synthetic identity reference.</p>
-                      <p>This enables account ownership verification in this no-funds sandbox. It does not approve credit, move funds, or certify real KYC.</p>
-                      <div class="button-row"><button class="primary" id="confirmSandboxHumanActivationBtn" type="button">Activate sandbox profile</button><button class="secondary" id="cancelSandboxHumanActivationBtn" type="button">Cancel</button></div>
-                    </div>
-                  </dialog>
                   <input id="humanSubjectId" type="hidden" />
                   <input id="humanConsentId" type="hidden" />
                   <p class="identity-prerequisite"><strong>Server-derived identity:</strong> Subject and Consent are created or recovered through the authenticated workspace. Raw KYC/PII and internal references are never requested here.</p>

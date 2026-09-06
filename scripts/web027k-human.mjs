@@ -52,7 +52,7 @@ async function click(page, selector) {
  actions.push({selector,label:await c.innerText(),at:new Date().toISOString()});await c.click();
 }
 async function prove(page) {
- await navigate(page,"settings");
+ await navigate(page,"wallet-permissions");
  await click(page,"#walletPermissionsAccessBtn");
  await page.getByRole("button",{name:/WEB027 isolated test wallet/}).click();
  await click(page,"#accessCloseBtn");
@@ -72,14 +72,14 @@ try {
  for(const stage of ["fresh","existing"]) {
   let wallet;
   if(stage==="existing") wallet=JSON.parse(await readFile("/Users/cptmao/Documents/IPO.ONE/.ipo-one/web026-runtime/isolated-qa-wallet.json","utf8"));
-  else {const filename=state+"/web027k-human-fresh.json";try {wallet=JSON.parse(await readFile(filename,"utf8"));}catch {wallet={privateKey:generatePrivateKey()};await writeFile(filename,JSON.stringify(wallet),{mode:0o600});}}
+  else {const filename=state+"/web027k-human-final.json";try {wallet=JSON.parse(await readFile(filename,"utf8"));}catch {wallet={privateKey:generatePrivateKey()};await writeFile(filename,JSON.stringify(wallet),{mode:0o600});}}
   const context=await walletContext(privateKeyToAccount(wallet.privateKey));const page=await context.newPage();
   page.on("response",async r=>{if(r.url().endsWith("/tenant/v1/operations")){const q=r.request().postDataJSON();requests.push({stage,operationId:q?.operationId,status:r.status()});}});
   await login(page,8935,"human");
   await expect(page.locator("#humanApplication")).toBeVisible();
   if(stage==="fresh") {
-   if(await page.locator("#createHumanSubjectBtn").isEnabled()) await operation(page,"#createHumanSubjectBtn","pilotCreateHumanSubject");
-   if(await page.locator("#createHumanConsentBtn").isEnabled()) await operation(page,"#createHumanConsentBtn","pilotCreateConsent");
+   if(await page.locator("#createHumanSubjectBtn").innerText() === "Create Human Subject") { await expect(page.locator("#createHumanSubjectBtn")).toBeEnabled();await operation(page,"#createHumanSubjectBtn","pilotCreateHumanSubject"); }
+   if(await page.locator("#createHumanConsentBtn").innerText() === "Create scoped Consent") { await expect(page.locator("#createHumanConsentBtn")).toBeEnabled();await operation(page,"#createHumanConsentBtn","pilotCreateConsent"); }
   }
   if(await page.locator("#activateSandboxHumanBtn").innerText() !== "Sandbox profile active") {
    await expect(page.locator("#activateSandboxHumanBtn")).toBeEnabled();
@@ -98,7 +98,17 @@ try {
   const binding=stage==="fresh"?await prove(page):{alreadyUsedPrincipalAccount:true};
   await navigate(page,"request-credit");
   await page.screenshot({path:out+"/"+stage+"-active.png"});
-  results.push({stage,activation:true,cancelNoMutation:true,refresh:true,binding});
+  await page.getByRole("button",{name:"Sign out",exact:true}).click();
+  await expect(page.getByRole("button",{name:"Log in",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Log in",exact:true}).click();
+  await page.getByRole("button",{name:/WEB027 isolated test wallet/}).click();
+  await page.locator("#walletSignInBtn").click();
+  await expect(page.locator("#activateSandboxHumanBtn")).toHaveText("Sandbox profile active");
+  const restarted=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker","restart","ipo-one-web027-candidate"],{encoding:"utf8"});
+  expect(restarted.status).toBe(0);
+  await expect.poll(async()=>{try{return(await fetch("http://127.0.0.1:8935/tenant/v1/healthz")).status;}catch{return 0;}},{timeout:30000}).toBe(200);
+  await page.reload();await expect(page.locator("#activateSandboxHumanBtn")).toHaveText("Sandbox profile active");
+  results.push({stage,activation:true,cancelNoMutation:true,refresh:true,logoutLogin:true,processRestart:true,binding});
   await context.close();
  }
 } catch(error) { results.push({passed:false,error:error.message}); }
