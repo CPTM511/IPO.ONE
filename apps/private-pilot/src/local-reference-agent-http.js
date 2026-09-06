@@ -444,10 +444,16 @@ export function createLocalReferenceAgentHttpService({
       const input = assertBody(await readJson(), url.pathname);
       if (url.pathname === LOCAL_REFERENCE_AGENT_HTTP_ROUTES.accountProof) {
         const proof = await proveAccount(input.challenge);
+        // AgentTenantCommandClient returns Subject.status, not subjectStatus.
+        // Reject an incomplete result instead of displaying a false success.
+        if (proof.subjectId !== input.subjectId || proof.status !== "active" ||
+            !proof.accountBinding || proof.challengeConsumed !== true) {
+          throw new DomainError("local_agent_account_proof_incomplete", "The Agent account proof did not return an active verified binding");
+        }
         return sendJson(200, {
           status: "account_bound",
           subjectId: proof.subjectId,
-          subjectStatus: proof.subjectStatus,
+          subjectStatus: proof.status,
           accountBinding: proof.accountBinding,
           challengeConsumed: proof.challengeConsumed,
           sandboxOnly: true,

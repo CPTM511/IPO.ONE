@@ -257,8 +257,8 @@ body.web012b-review-mode .mode-switch button:not(.active) { color: var(--b-soft)
 body.web012b-review-mode .mode-switch button.active { background: var(--b-ink); color: var(--b-bg); box-shadow: none; }
 body.web012b-review-mode .sidebar :is(.brand-mark,.nav-item svg) { color: var(--b-accent); border-color: var(--b-line); }
 body.web012b-review-mode .sidebar .brand-mark { background: var(--b-ink); color: var(--b-bg); border-radius: 4px; }
-body.web012b-review-mode.web009-review-mode .view .primary { background: var(--b-ink); border-color: var(--b-ink); color: var(--b-bg); box-shadow: none; }
-body.web012b-review-mode.web009-review-mode .view .primary:hover:not(:disabled) { background: var(--b-accent); border-color: var(--b-accent); color: var(--b-bg); }
+body.web012b-review-mode.web009-review-mode:not(.product-experience) .view .primary { background: var(--b-ink); border-color: var(--b-ink); color: var(--b-bg); box-shadow: none; }
+body.web012b-review-mode.web009-review-mode:not(.product-experience) .view .primary:hover:not(:disabled) { background: var(--b-accent); border-color: var(--b-accent); color: var(--b-bg); }
 body.web012b-review-mode.web009-review-mode:not(.product-experience) .view .human-entry .primary { background: transparent; border: 0; color: var(--b-accent); }
 body.web012b-review-mode.web009-review-mode:not(.product-experience) .view .human-entry .primary:hover:not(:disabled) { background: transparent; color: var(--b-ink); text-decoration: underline; }
 

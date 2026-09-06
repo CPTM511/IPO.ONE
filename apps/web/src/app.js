@@ -4553,21 +4553,27 @@ function humanGuidePresentation() {
   }
 
   if (humanNewApplicationMode && obligation) {
+    const readyToReview = Boolean(offer);
     return {
-      title: "Create another sandbox request",
-      copy: "Your current position is preserved. Choose a new amount and schedule to receive a separate explainable Offer.",
-      status: "New request",
-      action: "focus-request",
-      actionLabel: "Choose request terms",
+      title: !consentReady ? "Approve Consent for your next request"
+        : readyToReview ? "Review your new Offer" : "Create another sandbox request",
+      copy: !consentReady
+        ? "Your current credit plan is preserved. Create fresh, purpose-limited Consent before requesting another Offer."
+        : readyToReview
+          ? "Your current plan is preserved. Review the new amount, rate, schedule and decision before accepting a separate Obligation."
+          : "Your current position is preserved. Choose a new amount and schedule to receive a separate explainable Offer.",
+      status: readyToReview ? "New Offer ready" : "New request",
+      action: !consentReady ? "create-consent" : readyToReview ? "review-offer" : "focus-request",
+      actionLabel: !consentReady ? "Create scoped Consent" : readyToReview ? "Review Offer" : "Choose request terms",
       secondaryAction: "return-current",
       secondaryLabel: "Return to current credit",
-      checkpoints,
-      currentIndex: Math.min(currentIndex < 0 ? 4 : currentIndex, 1),
+      checkpoints: [Boolean(consentReady), Boolean(tenantPilot.intent || offer), false, false, false],
+      currentIndex: !consentReady ? 0 : readyToReview ? 2 : 1,
       journey: "Current position preserved"
     };
   }
 
-  if (!subjectReady) {
+  if (!subjectReady && !obligation) {
     return {
       title: "Start with a private sandbox profile",
       copy: "We will create an opaque profile first. No name, bank login, wallet credential, or raw KYC is requested here.",
@@ -4582,7 +4588,7 @@ function humanGuidePresentation() {
     };
   }
 
-  if (!consentReady) {
+  if (!consentReady && !obligation) {
     return {
       title: "Approve how this sandbox may be used",
       copy: "Create purpose-limited Consent for the amount, term, and identity reference used in this no-funds application.",

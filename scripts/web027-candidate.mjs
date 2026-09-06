@@ -85,4 +85,40 @@ if (action === "build") {
   args.push(image, "apps/private-pilot/src/start.js");
   docker(args); docker(["start", candidate]);
   await report("candidate-runtime", { source: sha, image, candidate, database, ports: [8935,8936,8937,8938], sourceDatabaseUnchanged: true, founderRuntimeUnchanged: true, restoredDumpSha256: createHash("sha256").update(dump).digest("hex"), existingMainMigrationsApplied: pending.map(m => m.name), mode: "local_no_funds", browserVerification: "pending" });
-} else throw Error("Expected build or create. This script cannot cut over or deploy production.");
+} else if (action === "upgrade") {
+  const previous = inspect(candidate);
+  const previousReport = JSON.parse(await readFile(resolve(out, "candidate-runtime.json"), "utf8"));
+  assert.notEqual(previousReport.source, sha, "Candidate already runs this source");
+  const env = envMap(previous);
+  assert.equal(new URL(env.DATABASE_URL).pathname, "/" + database);
+  assert.equal(env.IPO_ONE_PILOT_PORT, String(basePort));
+  const backup = candidate + "-" + previousReport.source.slice(0,12);
+  assert.equal(docker(["ps", "-a", "--filter", `name=^/${backup}$`, "--format", "{{.Names}}"]), "");
+  await secret("before-upgrade-" + sha + ".dump", docker(["exec", pg, "pg_dump", "-U", "ipo_one_owner", "-d", database, "-Fc"], { binary: true }));
+  env.IPO_ONE_M1_B_RELEASE_SHA = sha;
+  const envFile = await secret("candidate.env", Object.entries(env).map(([k,v])=>k+"="+v).join("\n")+"\n");
+  const args = ["create", "--name", candidate, "--network", "host", "--read-only", "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=64m", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--restart", "unless-stopped", "--env-file", envFile];
+  for (const mount of previous.Mounts.filter(m=>m.Destination.startsWith("/run/secrets/"))) args.push("--mount", `type=bind,source=${mount.Source},target=${mount.Destination},readonly`);
+  args.push(image,"apps/private-pilot/src/start.js");
+  // Only this isolated candidate is stopped. Keep the former image/container.
+  docker(["stop",candidate]); docker(["rename",candidate,backup]);
+  try { docker(args); docker(["start",candidate]); }
+  catch(error) {
+    if (docker(["ps","-a","--filter",`name=^/${candidate}$`,"--format","{{.Names}}"])) docker(["rm","-f",candidate]);
+    docker(["rename",backup,candidate]); docker(["start",candidate]); throw error;
+  }
+  await report("candidate-runtime", { ...previousReport, source: sha, image, previousSource: previousReport.source, previousContainer: backup, databasePreserved: true, browserVerification: "pending" });
+} else if (action === "worker") {
+  const name = "ipo-one-web027-worker";
+  assert.equal(docker(["ps","-a","--filter",`name=^/${name}$`,"--format","{{.Names}}"]), "");
+  const env = envMap(inspect(candidate));
+  assert.equal(new URL(env.DATABASE_URL).pathname,"/"+database);
+  assert.ok(!env.IPO_ONE_EVIDENCE_ATTESTOR_KEY_FILE && !env.IPO_ONE_EVIDENCE_ANCHOR_CONTRACT_ADDRESS, "No chain signer or anchor activation");
+  env.IPO_ONE_LOCAL_WORKER_ACK="I_UNDERSTAND_SYNTHETIC_OUTBOX_ONLY";
+  env.IPO_ONE_LOCAL_WORKER_ID="ipo_one_web027_candidate_worker";
+  const envFile=await secret("worker.env",Object.entries(env).map(([k,v])=>k+"="+v).join("\n")+"\n");
+  const args=["create","--name",name,"--network","host","--read-only","--tmpfs","/tmp:rw,noexec,nosuid,nodev,size=64m","--cap-drop","ALL","--security-opt","no-new-privileges:true","--restart","unless-stopped","--env-file",envFile];
+  for (const m of inspect(candidate).Mounts.filter(m=>m.Destination.startsWith("/run/secrets/"))) args.push("--mount",`type=bind,source=${m.Source},target=${m.Destination},readonly`);
+  args.push(image,"apps/private-pilot/src/local-worker.js"); docker(args);docker(["start",name]);
+  await report("candidate-worker",{source:sha,image,name,database,mode:"synthetic_outbox_only",chainSigner:false});
+} else throw Error("Expected build, create, upgrade or worker. This script cannot deploy production.");

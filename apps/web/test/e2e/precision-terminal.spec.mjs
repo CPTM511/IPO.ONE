@@ -50,3 +50,17 @@ test("All original identified controls survive the redesign without duplicate ID
   await page.locator("#principalApplicationDetails > summary").click();
   await expect(page.locator("#agentRequestPrimaryBtn")).toBeVisible();
 });
+
+
+test("Starting another Human request leads to fresh Consent without losing the current credit plan", async ({ page }) => {
+  await page.goto("http://127.0.0.1:4173/?preview_data=fixture#request-credit");
+  await expect(page.locator("#humanGuidePrimaryBtn")).toHaveText("Review next payment");
+  const outstanding = await page.locator('[data-summary="outstanding"]').innerText();
+  await page.locator("#humanGuideSecondaryBtn").click();
+  await expect(page.locator("#humanGuidePrimaryBtn")).toHaveText("Create scoped Consent");
+  await expect(page.locator("#submitHumanCreditBtn")).toBeDisabled();
+  await expect(page.locator('[data-summary="outstanding"]')).toHaveText(outstanding);
+  await page.locator("#humanGuideSecondaryBtn").click();
+  await expect(page.locator("#humanGuidePrimaryBtn")).toHaveText("Review next payment");
+  await expect(page.locator('[data-summary="outstanding"]')).toHaveText(outstanding);
+});

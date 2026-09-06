@@ -59,6 +59,7 @@ function disclose(element, title, className = "") {
 }
 
 function arrangeSecondarySurfaces() {
+  disclose(document.querySelector(".agent-console-authority-grid"), "Authority, account proof & limits", "agent-authority-details");
   disclose(document.querySelector('[aria-labelledby="pilotFeedbackTitle"]'), "Share product feedback");
   disclose(document.querySelector('[aria-labelledby="pilotCaseTitle"]'), "Get help with a record · Cases & corrections");
   // Keep the operational queue and its primary refresh ahead of secondary
