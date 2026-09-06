@@ -85,6 +85,11 @@ async function commonOperations(page,role){
   });
  }
  await navigate(page,"wallet-permissions");
+ await verifyCase(page,role,"wallet-capability-discovery",async()=>{
+  const value=await operation(page,"#executionDiscoverBtn","walletDiscoverCapabilities");
+  expect(value.items[0].adapterId).toBe("local_sandbox");expect(value.transactionsAllowed).toBe(false);
+  return {serverDescriptor:true,noTransactions:true,supportedChains:value.items[0].supportedChains};
+ });
  await verifyCase(page,role,"execution-binding",async()=>{
   await page.locator("#walletPermissionsAccessBtn").click();
   await page.getByRole("button",{name:/WEB027 isolated test wallet/}).click();
