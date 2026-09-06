@@ -22,12 +22,12 @@ const ORIGIN = "https://ipo.one";
 const CLIENT_ID = "ipo_one_wallet_console";
 const TENANT_ID = "tenant_alpha";
 
-function createFixture({ signatureVerifier } = {}) {
+function createFixture({ signatureVerifier, role = "human_borrower", workspaceRoles } = {}) {
   const account = privateKeyToAccount(generatePrivateKey());
   const referenceHasher = createReferenceHasher(randomBytes(32));
   const eventStore = new InMemoryAuthenticationEventStore();
   const actorDirectory = new InMemoryActorDirectory();
-  actorDirectory.register({ actorId: "actor_human_wallet", actorType: ActorType.HUMAN });
+  actorDirectory.register({ actorId: "actor_human_wallet", actorType: role === "risk_operator" ? ActorType.RISK_OPERATOR : ActorType.HUMAN });
   const credentialRegistry = new InMemoryCredentialRegistry({
     referenceHasher,
     eventStore,
@@ -36,7 +36,7 @@ function createFixture({ signatureVerifier } = {}) {
   const credential = credentialRegistry.register({
     tenantId: TENANT_ID,
     actorId: "actor_human_wallet",
-    actorType: ActorType.HUMAN,
+    actorType: role === "risk_operator" ? ActorType.RISK_OPERATOR : ActorType.HUMAN,
     issuer: ORIGIN,
     externalSubject: `eip155:84532:${account.address.toLowerCase()}`,
     clientId: CLIENT_ID,
@@ -45,7 +45,7 @@ function createFixture({ signatureVerifier } = {}) {
       method: SenderConstraintMethod.HOST_SESSION,
       thumbprint: "w".repeat(43)
     },
-    roles: ["human_borrower"],
+    roles: [role],
     allowedCapabilities: ["subject.read", "intent.create"],
     policyVersion: "security_001.v1",
     performedByActorId: "actor_security_admin",
@@ -61,7 +61,8 @@ function createFixture({ signatureVerifier } = {}) {
   const transactionStore = new InMemoryWalletLoginTransactionStore({
     referenceHasher,
     domain: "ipo.one",
-    uri: "https://ipo.one/auth/wallet"
+    uri: "https://ipo.one/auth/wallet",
+    workspaceRoles
   });
   const bff = new HumanWalletBff({
     issuer: ORIGIN,
@@ -88,7 +89,7 @@ function createFixture({ signatureVerifier } = {}) {
       }
     }
   });
-  return { account, bff, credential, eventStore };
+  return { account, bff, credential, eventStore, credentialRegistry };
 }
 
 test("SIWE creates a one-use host session only for a pre-provisioned wallet credential", async () => {
@@ -265,4 +266,32 @@ test("SIWE accepts an eligible ERC-6492 receipt without retaining the raw signat
   });
   assert.deepEqual(issued.session.amr, ["wallet", "siwe", "eip6492_eip191_v1"]);
   assert.equal(JSON.stringify(fixture.eventStore.list()).includes(signature), false);
+});
+
+for (const role of ["capital_partner_operator", "risk_operator"]) {
+  test(`invited ${role} requires the exact configured host role and existing credential`, async () => {
+    const fixture = createFixture({ role, workspaceRoles: [role] });
+    const challenge = await fixture.bff.beginLogin({ address:fixture.account.address, chainId:84532, requestedRole:role, now:NOW });
+    assert.match(challenge.message, role === "risk_operator" ? /Selected workspace: Risk Operations/ : /Selected workspace: Capital Partner/);
+    const issued = await fixture.bff.completeLogin({ transactionHandle:challenge.handle,
+      signature:await fixture.account.signMessage({message:challenge.message}),now:NOW });
+    assert.deepEqual(issued.session.roles,[role]);
+    assert.deepEqual(issued.session.amr,["wallet","siwe","eip191_eoa_v1"]);
+    await assert.rejects(fixture.bff.beginLogin({address:fixture.account.address,chainId:84532,requestedRole:"human_borrower",now:NOW}),
+      error=>error.code==="authentication_role_rejected");
+    let provisioned = false;
+    fixture.credentialRegistry.provisionVerifiedPublicBetaHumanSubject = () => { provisioned=true; throw Error("Must never self-enroll an invited role"); };
+    const stranger = privateKeyToAccount(generatePrivateKey());
+    const denied = await fixture.bff.beginLogin({address:stranger.address,chainId:84532,requestedRole:role,now:NOW});
+    await assert.rejects(fixture.bff.completeLogin({transactionHandle:denied.handle,
+      signature:await stranger.signMessage({message:denied.message}),now:NOW}),error=>error.code==="authentication_credential_rejected");
+    assert.equal(provisioned,false);
+  });
+}
+test("ordinary wallet host rejects invited roles before issuing a challenge", async () => {
+  const fixture=createFixture();
+  for(const requestedRole of ["capital_partner_operator","risk_operator","system_worker"]) {
+    await assert.rejects(fixture.bff.beginLogin({address:fixture.account.address,chainId:84532,requestedRole,now:NOW}),
+      error=>error.code==="authentication_role_rejected");
+  }
 });

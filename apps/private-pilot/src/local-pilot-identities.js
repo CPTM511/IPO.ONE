@@ -1,3 +1,4 @@
+import { LOCAL_ACCESS_GENERATION, localAccessCapabilities } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import {
   ActorType,
@@ -159,7 +160,8 @@ const HUMAN_ACTOR_TYPES = new Set([
 export function createLocalPilotIdentities({
   now = new Date(),
   profile = DEFAULT_PRIVATE_PILOT_PROFILE,
-  referenceHashKey
+  referenceHashKey,
+  localAccessRepair = false
 } = {}) {
   const checkedProfile = assertPrivatePilotProfile(profile);
   const referenceHasher = createReferenceHasher(
@@ -178,6 +180,8 @@ export function createLocalPilotIdentities({
   for (const [name, template] of Object.entries(IDENTITY_SPECS)) {
     const spec = Object.freeze({
       ...template,
+      ...(localAccessRepair && ["borrower", "controller"].includes(name)
+        ? { capabilities: Object.freeze(localAccessCapabilities(template.capabilities)) } : {}),
       actorId: checkedProfile.identities[name]?.actorId ?? template.actorId,
       controllerActorId: name === "agent"
         ? checkedProfile.identities.controller.actorId
@@ -187,7 +191,7 @@ export function createLocalPilotIdentities({
     // Each capability generation therefore rotates the local client binding
     // instead of silently widening an already-issued durable Credential.
     const clientId =
-      `client_${LOCAL_PILOT_CREDENTIAL_GENERATION}_${spec.actorId}`;
+      `client_${localAccessRepair && ["borrower", "controller"].includes(name) ? LOCAL_ACCESS_GENERATION : LOCAL_PILOT_CREDENTIAL_GENERATION}_${spec.actorId}`;
     const human = HUMAN_ACTOR_TYPES.has(spec.actorType);
     actorDirectory.register({ actorId: spec.actorId, actorType: spec.actorType });
     const credential = credentialRegistry.register({

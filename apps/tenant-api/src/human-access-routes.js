@@ -1,3 +1,4 @@
+import { allowedWalletRoles, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   SESSION_COOKIE_NAME,
   CSRF_BOOTSTRAP_COOKIE_NAME,
@@ -29,15 +30,13 @@ const CONFIG_KEYS = new Set([
   "oidcProviders",
   "postLoginPath",
   "profile",
-  "walletBff"
+  "walletBff",
+  "walletWorkspaceRoles"
 ]);
 const PROVIDER_CONFIG_KEYS = new Set(["bff", "redirectUri"]);
 const MAX_AUTH_BODY_BYTES = 8 * 1024;
 const SUPPORTED_CHAINS = Object.freeze(["eip155:84532", "eip155:1952"]);
-const WALLET_WORKSPACE_ROLES = Object.freeze([
-  "human_borrower",
-  "principal_controller"
-]);
+
 
 function assertPlainObject(name, value, allowedKeys) {
   if (
@@ -338,6 +337,7 @@ export function createHumanAccessRouteHandler(input) {
     humanSessionBff,
     oidcProviders = {},
     walletBff,
+    walletWorkspaceRoles = ORDINARY_WALLET_ROLES,
     clock = () => new Date(),
     profile = "closed_non_funds_pilot",
     postLoginPath = "/#request-credit"
@@ -352,6 +352,11 @@ export function createHumanAccessRouteHandler(input) {
     typeof clock !== "function"
   ) {
     throw new DomainError("invalid_human_access_config", "Human access adapters are required");
+  }
+  const checkedWalletRoles = allowedWalletRoles(walletWorkspaceRoles);
+  if (checkedWalletRoles.some(role => !ORDINARY_WALLET_ROLES.includes(role)) &&
+      (profile !== "local_no_funds" || !browserOrigin.startsWith("http://127.0.0.1:"))) {
+    throw new DomainError("invalid_human_access_config", "invited wallet roles require an explicit loopback local profile");
   }
   const checkedProfile = assertSafeIdentifier("profile", profile);
   const successPath = exactPostLoginPath(postLoginPath);
@@ -378,7 +383,7 @@ export function createHumanAccessRouteHandler(input) {
       const roles = Array.isArray(authenticationContext?.roles)
         ? authenticationContext.roles
         : [];
-      const workspaceRole = roles.length === 1 && WALLET_WORKSPACE_ROLES.includes(roles[0])
+      const workspaceRole = roles.length === 1 && checkedWalletRoles.includes(roles[0])
         ? roles[0]
         : null;
       return Object.freeze({ active: true, authenticationMethod, workspaceRole });
@@ -411,7 +416,7 @@ export function createHumanAccessRouteHandler(input) {
         sessionWorkspaceRole: activeSession.workspaceRole,
         oidcProviders: [...providers.keys()],
         walletAuthentication: walletBff !== undefined,
-        walletWorkspaceRoles: walletBff === undefined ? [] : WALLET_WORKSPACE_ROLES,
+        walletWorkspaceRoles: walletBff === undefined ? [] : checkedWalletRoles,
         supportedChains: SUPPORTED_CHAINS,
         boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."
       }, requestId, {}, request.method === "HEAD");
@@ -460,6 +465,7 @@ export function createHumanAccessRouteHandler(input) {
       }
       requireOrigin(request, browserOrigin);
       const body = await readStrictBody(request, ["address", "chainId", "workspaceRole"]);
+      if (!checkedWalletRoles.includes(body.workspaceRole)) throw new ApiBoundaryError("authentication_role_rejected", "selected workspace is not available on this host");
       const challenge = await walletBff.beginLogin({
         address: body.address,
         chainId: body.chainId,

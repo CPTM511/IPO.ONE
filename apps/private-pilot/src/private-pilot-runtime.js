@@ -1,3 +1,4 @@
+import { assertLocalAccessDatabase, localAccessCapabilities, localAccessEnabled } from "./local-access-repair.js";
 import { readFile } from "node:fs/promises";
 import { PRODUCTION_BOOTSTRAP_PROFILES } from "./production-bootstrap.js";
 import { dirname, resolve } from "node:path";
@@ -196,6 +197,8 @@ async function createLocalHumanAccess({
     policyVersion: identity.createContext().policyVersion,
     pool: authenticationPool,
     profile: "local_no_funds",
+    ...(["capital_partner_operator", "risk_operator"].includes(identity.roleBundle)
+      ? { localInvitedWalletRole: identity.roleBundle } : {}),
     referenceHashKey: authenticationMaterial.referenceHashKey,
     referenceHashKeyRef:
       "local-secret://authentication/reference-hash-key",
@@ -205,10 +208,9 @@ async function createLocalHumanAccess({
       referenceHashMode: "overlap_v2_write_v1_lookup",
       legacyReferenceHashKey: authenticationMaterial.referenceHashKey,
       legacyReferenceHashKeyRef: "local-secret://authentication/reference-hash-key-v1",
-      publicBetaWalletRoleProfiles: {
-        human_borrower: PRODUCTION_BOOTSTRAP_PROFILES.human_borrower.capabilities,
-        principal_controller: PRODUCTION_BOOTSTRAP_PROFILES.principal_controller.capabilities
-      }
+      publicBetaWalletRoleProfiles: Object.fromEntries(["human_borrower", "principal_controller"].map(role => [role, localAccessEnabled()
+        ? localAccessCapabilities(PRODUCTION_BOOTSTRAP_PROFILES[role].capabilities)
+        : PRODUCTION_BOOTSTRAP_PROFILES[role].capabilities]))
     } : {}),
     runtimeConfig: localRuntimeConfig({ ordinaryWalletEnrollment }),
     systemActorId: authenticationMaterial.systemActorId,
@@ -241,11 +243,13 @@ export async function createPrivatePilotRuntime({
     );
   }
   assertPort("basePort", basePort);
+  if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
     profile: checkedProfile,
-    referenceHashKey: Buffer.from(password, "base64url")
+    referenceHashKey: Buffer.from(password, "base64url"),
+    localAccessRepair: localAccessEnabled()
   });
   const [serverMaterial, invitation] =
     await loadLocalDurableAuthenticationMaterial();
@@ -263,7 +267,9 @@ export async function createPrivatePilotRuntime({
     identities: authentication.identities,
     password,
     profile: authentication.profile,
-    creditRegistryObservationArtifactPath
+    creditRegistryObservationArtifactPath,
+    localAccessRepair: localAccessEnabled(),
+    basePort
   });
   const durableAuthentication = await provisionPrivatePilotAuthentication({
     ownerConnectionString,
@@ -552,7 +558,8 @@ export async function createPrivatePilotGateway(
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
     profile: checkedProfile,
-    referenceHashKey: Buffer.from(password, "base64url")
+    referenceHashKey: Buffer.from(password, "base64url"),
+    localAccessRepair: localAccessEnabled()
   });
   const meteredUsageProvider = createLocalSyntheticMeteredProvider({
     keyMaterial: await loadOrCreateLocalSyntheticMeteredProviderMaterial()
@@ -562,7 +569,9 @@ export async function createPrivatePilotGateway(
     identities: authentication.identities,
     password,
     profile: authentication.profile,
-    creditRegistryObservationArtifactPath
+    creditRegistryObservationArtifactPath,
+    localAccessRepair: localAccessEnabled(),
+    basePort
   });
   return Object.freeze({
     authentication,
@@ -586,7 +595,8 @@ export async function createPrivatePilotDurableAgentGateway(
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
     profile: checkedProfile,
-    referenceHashKey: Buffer.from(password, "base64url")
+    referenceHashKey: Buffer.from(password, "base64url"),
+    localAccessRepair: localAccessEnabled()
   });
   const meteredUsageProvider = createLocalSyntheticMeteredProvider({
     keyMaterial: await loadOrCreateLocalSyntheticMeteredProviderMaterial()
@@ -598,7 +608,9 @@ export async function createPrivatePilotDurableAgentGateway(
     identities: authentication.identities,
     password,
     profile: authentication.profile,
-    creditRegistryObservationArtifactPath
+    creditRegistryObservationArtifactPath,
+    localAccessRepair: localAccessEnabled(),
+    basePort
   });
   const durableAuthentication = await provisionPrivatePilotAuthentication({
     ownerConnectionString,

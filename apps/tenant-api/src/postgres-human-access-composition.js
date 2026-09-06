@@ -1,3 +1,4 @@
+import { INVITED_WALLET_ROLES, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   ActorType,
   CSRF_BOOTSTRAP_COOKIE_NAME,
@@ -35,6 +36,7 @@ const ROOT_KEYS = new Set([
   "encryptionKey",
   "encryptionKeyRef",
   "idleTimeoutMs",
+  "localInvitedWalletRole",
   "legacyReferenceHashKey",
   "legacyReferenceHashKeyRef",
   "maximumSessions",
@@ -356,6 +358,12 @@ export async function createPostgresHumanAccessComposition(input) {
   )) {
     throw authenticationError("authentication_deployment_gate_closed", "local wallet enrollment requires the isolated local profile and compatible v2 reference protection");
   }
+  if (input.localInvitedWalletRole !== undefined &&
+      (!localProfile || !INVITED_WALLET_ROLES.includes(input.localInvitedWalletRole))) {
+    throw authenticationError("authentication_deployment_gate_closed", "invited wallet role requires an explicit local host");
+  }
+  const walletWorkspaceRoles = input.localInvitedWalletRole === undefined
+    ? ORDINARY_WALLET_ROLES : [input.localInvitedWalletRole];
   const providers = normalizeOidcProviders(input.oidcProviders);
   const wallet = input.wallet === undefined
     ? undefined
@@ -471,7 +479,8 @@ export async function createPostgresHumanAccessComposition(input) {
       referenceHasher,
       secretBox,
       domain: wallet.domain,
-      uri: wallet.uri
+      uri: wallet.uri,
+      workspaceRoles: walletWorkspaceRoles
     });
     walletBff = new HumanWalletBff({
       issuer: wallet.issuer,
@@ -490,6 +499,7 @@ export async function createPostgresHumanAccessComposition(input) {
     humanSessionBff,
     oidcProviders,
     walletBff,
+    walletWorkspaceRoles,
     ...(input.clock === undefined ? {} : { clock: input.clock }),
     ...(input.profile === undefined ? {} : { profile: input.profile }),
     ...(input.postLoginPath === undefined ? {} : { postLoginPath: input.postLoginPath })

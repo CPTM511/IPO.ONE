@@ -841,6 +841,11 @@ function renderOidcProviders(providers) {
   );
 }
 
+function walletWorkspaceLabel(role) {
+  return ({ human_borrower: "Human Borrower", principal_controller: "Principal Controller",
+    capital_partner_operator: "Capital Partner", risk_operator: "Risk Operations" })[role] ?? "Workspace";
+}
+
 function renderAccess() {
   const selected = SUPPORTED_WALLET_CHAINS[accessState.selectedChainId];
   const connected = SUPPORTED_WALLET_CHAINS[accessState.connectedChainId];
@@ -878,7 +883,7 @@ function renderAccess() {
     : "Connect & sign in with wallet";
   el("walletSignInBtn").querySelector("small").textContent = walletSession
     ? "Connect the selected wallet for an exact sandbox confirmation"
-    : `${accessState.selectedWorkspaceRole === "human_borrower" ? "Human Borrower" : "Principal Controller"} · one-use SIWE signature · no transaction or fee`;
+    : `${walletWorkspaceLabel(accessState.selectedWorkspaceRole)} · one-use SIWE signature · no transaction or fee`;
   el("accessWorkspacePicker").hidden =
     authenticated ||
     !accessState.walletAuthenticationEnabled ||
@@ -1202,7 +1207,7 @@ async function probeAccessOptions() {
     accessState.walletWorkspaceRoles = new Set(
       Array.isArray(options?.walletWorkspaceRoles)
         ? options.walletWorkspaceRoles.filter((role) =>
-            new Set(["human_borrower", "principal_controller"]).has(role)
+            new Set(["human_borrower", "principal_controller", "capital_partner_operator", "risk_operator"]).has(role)
           )
         : []
     );
@@ -13407,9 +13412,9 @@ function bindActions() {
         !accessState.walletWorkspaceRoles.has(role)
       ) return;
       accessState.selectedWorkspaceRole = role;
-      accessState.helper = `${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} selected. The next wallet signature will issue only this workspace role.`;
+      accessState.helper = `${walletWorkspaceLabel(role)} selected. The next wallet signature will issue only this workspace role.`;
       renderAccess();
-      announce(`${role === "human_borrower" ? "Human Borrower" : "Principal Controller"} workspace selected`);
+      announce(`${walletWorkspaceLabel(role)} workspace selected`);
     });
   }
   for (const button of document.querySelectorAll("[data-wallet-chain]")) {

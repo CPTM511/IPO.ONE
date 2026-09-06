@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { createSiweMessage } from "viem/siwe";
+import { createSiweMessage, parseSiweMessage } from "viem/siwe";
 import { getAddress } from "viem";
 import { createOperationalId, hashId } from "../../../packages/domain/src/index.js";
 import { createAuthenticationContext } from "./authentication-context.js";
@@ -39,7 +39,7 @@ const HUMAN_AUTHENTICATION_METHODS = new Set([
 ]);
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const APPROVED_CHAIN_IDS = new Set([84532, 1952]);
-const SELECTABLE_HUMAN_ROLES = new Set(["human_borrower", "principal_controller"]);
+import { SELECTABLE_HUMAN_ROLES, WALLET_ROLE_LABELS, allowedWalletRoles } from "./wallet-workspace-roles.js";
 const PUBLIC_BETA_ROLE_PROFILE_KEYS = new Set([
   "human_borrower",
   "principal_controller"
@@ -673,7 +673,8 @@ export class PostgresWalletLoginTransactionStore {
     uri,
     statement = "Sign in to the IPO.ONE no-funds credit workspace.",
     ttlMs = 5 * 60_000,
-    maximumTransactions = 1_000
+    maximumTransactions = 1_000,
+    workspaceRoles
   }) {
     this.tenantId = tenantId(configuredTenantId);
     this.repository = assertRepository(eventRepository, this.tenantId);
@@ -684,6 +685,7 @@ export class PostgresWalletLoginTransactionStore {
     if (parsedUri.host !== domain || parsedUri.origin !== `https://${domain}`) {
       throw authenticationError("invalid_authentication_configuration", "wallet login origin is invalid");
     }
+    this.workspaceRoles = allowedWalletRoles(workspaceRoles);
     this.referenceHasher = referenceHasher;
     this.secretBox = secretBox;
     this.domain = domain;
@@ -700,6 +702,7 @@ export class PostgresWalletLoginTransactionStore {
     const checkedAddress = normalizeAddress(address);
     const checkedChainId = normalizeChainId(chainId);
     const checkedRole = selectableHumanRole(requestedRole);
+    if (!this.workspaceRoles.includes(checkedRole)) throw authenticationError("authentication_role_rejected", "selected workspace is not available on this host");
     const handle = randomOpaqueValue();
     const nonce = randomBytes(16).toString("hex");
     const expirationTime = new Date(now.getTime() + this.ttlMs);
@@ -710,7 +713,7 @@ export class PostgresWalletLoginTransactionStore {
       expirationTime,
       issuedAt: now,
       nonce,
-      statement: `${this.statement} Selected workspace: ${checkedRole === "human_borrower" ? "Human Borrower" : "Principal Controller"}.`,
+      statement: `${this.statement} Selected workspace: ${WALLET_ROLE_LABELS[checkedRole]}.`,
       uri: this.uri,
       version: "1"
     });
@@ -786,11 +789,20 @@ export class PostgresWalletLoginTransactionStore {
       )) {
         throw new Error("wallet transaction binding mismatch");
       }
+      const message = this.secretBox.open("siwe.message", row.message_ciphertext);
+      const signed = parseSiweMessage(message);
+      if (signed.domain !== this.domain || signed.uri !== this.uri ||
+          signed.chainId !== Number(row.chain_id) ||
+          signed.address?.toLowerCase() !== address.toLowerCase() ||
+          !this.workspaceRoles.includes(row.requested_role) ||
+          signed.statement !== `${this.statement} Selected workspace: ${WALLET_ROLE_LABELS[row.requested_role]}.`) {
+        throw new Error("wallet transaction host or role mismatch");
+      }
       return Object.freeze({
         address: normalizeAddress(address),
         chainId: normalizeChainId(Number(row.chain_id)),
         requestedRole: selectableHumanRole(row.requested_role),
-        message: this.secretBox.open("siwe.message", row.message_ciphertext),
+        message,
         expiresAt: timestamp(row.expires_at)
       });
     } catch {
@@ -1454,7 +1466,8 @@ export class PostgresCredentialRegistry {
             AND (e.expires_at IS NULL OR e.expires_at > $5)
             AND e.policy_version = $6
             AND e.client_ids ? $7
-            AND a.actor_type = 'human'
+            AND ((e.role_bundle = 'risk_operator' AND a.actor_type = 'risk_operator')
+              OR (e.role_bundle <> 'risk_operator' AND a.actor_type = 'human'))
             AND a.status = 'active'
           FOR SHARE OF e, a`,
         [

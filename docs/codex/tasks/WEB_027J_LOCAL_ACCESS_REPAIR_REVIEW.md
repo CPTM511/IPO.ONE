@@ -1,13 +1,13 @@
 # WEB-027J — Local access dependencies: concrete review proposal
 
-Status: REVIEW REQUIRED — implementation and activation not approved by this document.
+Status: APPROVED FOR ISOLATED LOCAL IMPLEMENTATION — Founder approved all four repairs with “完全同意，执行！” on 2026-09-06. Hosted activation remains outside this approval.
 Scope: isolated local synthetic/no-funds candidate only. No hosted activation, real user credential import, chain signer, funds, policy/price changes or new product.
 
 ## Evidence and requested decision
 
 WEB-027 preserves the original 330 identified controls and adds a tested Precision Terminal shell. Actual signed browser sessions exposed access gaps that prevent the Founder's all-capability acceptance. These are tracked as dependencies, not waived as pre-existing bugs. On source `a8ab3a8f4de99fe1438c2d9d7ebae3e071933763` the main isolated candidate completes Human repayment and the preassigned Agent lifecycle, including read-only Evidence recovery.
 
-The approved WEB-027 directive section 2.2 explicitly requires a separate review when fixing privileged login changes permissions or migrations; section 10 excludes identity/permission expansion. AGENTS.md also requires human review for permission changes. This review requests approval of the exact local remediation below. It does not ask to reapprove the UI redesign.
+The approved WEB-027 directive section 2.2 explicitly requires a separate review when fixing privileged login changes permissions or migrations; section 10 excludes identity/permission expansion. AGENTS.md also requires human review for permission changes. The Founder has approved the exact local remediation below. It does not ask to reapprove the UI redesign.
 
 | Dependency | Actual observation | Bounded remediation |
 | --- | --- | --- |
@@ -42,4 +42,4 @@ Approval covers implementing and locally verifying these four narrowly stated re
 
 ## Completion
 
-BLOCKED — NOT COMPLETE. The evidence lives in `output/playwright/web-027/access/`, `capabilities/operations.json`, `durable-settle.json` and `durable-agent.json`. No claim that these permission repairs are already implemented or available.
+IN PROGRESS — NOT COMPLETE. Implementation and verification follow the approved scope. The baseline evidence lives in `output/playwright/web-027/access/`, `capabilities/operations.json`, `durable-settle.json` and `durable-agent.json`. No claim that these permission repairs are already implemented or available.

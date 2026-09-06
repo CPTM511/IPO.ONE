@@ -1,3 +1,4 @@
+import { rotateLocalAccessCredentials } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -311,7 +312,7 @@ async function seedIdentity(ownerPool, identity, profile, now) {
     `INSERT INTO actors(
        id, actor_hash, actor_type, status, created_at, updated_at, schema_version
      ) VALUES ($1, $2, $3, 'active', $4, $4, 'actor.v1')
-     ON CONFLICT (id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at`,
+     ON CONFLICT (id) DO NOTHING`,
     [identity.actorId, hashId("private_pilot_actor", identity.actorId), identity.actorType, now]
   );
   const context = createTenantSecurityContext({
@@ -340,11 +341,14 @@ async function seedIdentity(ownerPool, identity, profile, now) {
        status = 'active',
        updated_at = EXCLUDED.updated_at,
        version = memberships.version + 1
-     WHERE memberships.capabilities IS DISTINCT FROM EXCLUDED.capabilities
+     WHERE memberships.status = 'active'
+       AND memberships.valid_from <= EXCLUDED.updated_at
+       AND (memberships.expires_at IS NULL OR memberships.expires_at > EXCLUDED.updated_at)
+       AND (memberships.capabilities IS DISTINCT FROM EXCLUDED.capabilities
         OR memberships.client_ids IS DISTINCT FROM EXCLUDED.client_ids
         OR memberships.policy_version IS DISTINCT FROM EXCLUDED.policy_version
         OR memberships.controller_actor_id IS DISTINCT FROM EXCLUDED.controller_actor_id
-        OR memberships.status IS DISTINCT FROM EXCLUDED.status`,
+        OR memberships.status IS DISTINCT FROM EXCLUDED.status)`,
     [
       identity.membershipId,
       hashId("private_pilot_membership", identity.membershipId),
@@ -380,8 +384,8 @@ async function seedLocalHumanRoleEnrollment(client, {
     // A retired credential is historical. Never recreate its authority during
     // startup; verified v2 rebinds retain their own durable role enrollment.
     credential.status !== "active" ||
-    actor.actorType !== ActorType.HUMAN ||
-    ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER]
+    ![ActorType.HUMAN, ActorType.RISK_OPERATOR].includes(actor.actorType) ||
+    ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER, RoleBundle.CAPITAL_PARTNER_OPERATOR, RoleBundle.RISK_OPERATOR]
       .includes(actor.roleBundle)
   ) {
     return;
@@ -446,6 +450,10 @@ async function seedAuthenticationCredential(client, {
   invitationLabel,
   now
 }) {
+  const membership = await client.query(`SELECT m.status FROM memberships m JOIN actors a ON a.id=m.actor_id
+    WHERE m.tenant_id=$1 AND m.actor_id=$2 AND m.status='active' AND a.status='active'
+      AND m.valid_from<=$3 AND (m.expires_at IS NULL OR m.expires_at>$3)`, [tenantId,actor.actorId,now]);
+  if (!membership.rowCount) return;
   const subjectRefHash = referenceHasher.hash(
     "subject",
     `${issuer}\0${externalSubject}`
@@ -491,8 +499,9 @@ async function seedAuthenticationCredential(client, {
       WHERE tenant_id = $1
         AND issuer = $2
         AND client_id = $3
-        AND subject_ref_hash = $4`,
-    [tenantId, issuer, actor.clientId, subjectRefHash]
+        AND (subject_ref_hash = $4 OR (actor_id = $5 AND reference_hash_key_version = 'v2'))
+      ORDER BY reference_hash_key_version DESC LIMIT 1`,
+    [tenantId, issuer, actor.clientId, subjectRefHash, actor.actorId]
   );
   if (existing.rowCount === 1) {
     const stored = existing.rows[0];
@@ -501,7 +510,7 @@ async function seedAuthenticationCredential(client, {
       stored.actor_type !== actor.actorType ||
       stored.client_authentication_method !== clientAuthenticationMethod ||
       stored.sender_constraint_method !== senderConstraintMethod ||
-      stored.sender_constraint_ref_hash !== senderConstraintRefHash ||
+      (stored.reference_hash_key_version !== "v2" && stored.sender_constraint_ref_hash !== senderConstraintRefHash) ||
       stored.policy_version !== AUTHORIZATION_POLICY_VERSION ||
       JSON.stringify(stored.roles) !== JSON.stringify([actor.roleBundle]) ||
       JSON.stringify(stored.allowed_capabilities) !==
@@ -677,7 +686,9 @@ export async function provisionPrivatePilotDatabase({
   identities,
   password,
   profile,
-  creditRegistryObservationArtifactPath
+  creditRegistryObservationArtifactPath,
+  localAccessRepair = false,
+  basePort
 }) {
   const checkedProfile = assertPrivatePilotProfile(profile);
   const ownerPool = createPostgresPool({
@@ -689,6 +700,10 @@ export async function provisionPrivatePilotDatabase({
     await migrateUp({ pool: ownerPool });
     const now = new Date();
     await seedTenant(ownerPool, checkedProfile, now);
+    if (localAccessRepair) {
+      const manifest = await rotateLocalAccessCredentials({ pool: ownerPool, tenantId: checkedProfile.tenantId, identities, basePort, now });
+      if (manifest.length) console.info(JSON.stringify({ schemaVersion: "local_access_rotation_manifest.v1", entries: manifest }));
+    }
     for (const identity of Object.values(identities)) {
       await seedIdentity(ownerPool, identity, checkedProfile, now);
     }

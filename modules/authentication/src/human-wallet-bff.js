@@ -1,3 +1,4 @@
+import { ORDINARY_WALLET_ROLES } from "./wallet-workspace-roles.js";
 import {
   ActorType,
   ClientAuthenticationMethod,
@@ -156,6 +157,7 @@ export class HumanWalletBff {
       credential = await findVerifiedSubject(verifiedSubject);
     } catch (error) {
       if (
+        !ORDINARY_WALLET_ROLES.includes(transaction.requestedRole) ||
         error?.code !== "authentication_credential_rejected" ||
         typeof this.credentialRegistry.provisionVerifiedPublicBetaHumanSubject !==
           "function"
