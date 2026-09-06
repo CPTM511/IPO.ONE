@@ -35,6 +35,18 @@ test("Principal authority preserves the original controls and activates only the
   await expect(page.locator("#continueAgentCreditBtn")).toBeVisible();
   await page.locator("#continueAgentCreditBtn").click();
   await expect(page.locator('[data-view-panel="agent-console"]')).toBeVisible();
+  await page.locator("#agentOnlineRunBtn").click();
+  await expect(page.locator("#agentOnlineStatus")).toHaveText("Lifecycle verified");
+  await page.reload();
+  await expect(page.locator("#agentOnlineRunBtn")).toHaveText("Verify Agent Evidence");
+  const repeatedGoals = [];
+  page.on("request", request => {
+    if (request.url().endsWith("/local/v1/reference-agent/runtime")) repeatedGoals.push(request.url());
+  });
+  await page.locator("#agentOnlineRunBtn").click();
+  await expect(page.locator("#agentOnlineStatus")).toHaveText("Lifecycle verified");
+  await expect(page.locator("#agentOnlineReviewBtn")).toBeVisible();
+  expect(repeatedGoals).toEqual([]);
   expect(failures).toEqual([]);
 });
 

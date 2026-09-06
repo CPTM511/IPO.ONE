@@ -21,7 +21,7 @@ async function click(page, selector) {
 }
 async function humanLifecycle(page) {
   await click(page, "#humanGuideSecondaryBtn");
-  await page.getByRole("button", { name: "Create scoped Consent", exact: true }).click();
+  await click(page, "#humanGuidePrimaryBtn");
   actionEvidence.push({ selector: "Create scoped Consent", label: "Create scoped Consent", at: new Date().toISOString() });
   await page.locator("#humanCreditAmount").fill("24.50");
   await writeFile(out + "/human-application-before-submit.txt", await page.locator("#mainContent").innerText());
@@ -89,8 +89,15 @@ async function agentLifecycle(page) {
   await click(page, "#agentOnlineReviewBtn");
   await expect(page.locator('[data-view-panel="obligations"]')).toBeVisible();
   await page.reload();
-  await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated");
+  await expect(page.locator("#obligationDetailStatus")).toContainText("Fully Repaid", { timeout: 20_000 });
   await writeFile(out + "/durable-agent-obligation-restored.txt", await page.locator("#mainContent").innerText());
+  await page.getByRole("button", { name: "Tasks", exact: true }).click();
+  await expect(page.locator("#agentOnlineRunBtn")).toHaveText("Verify Agent Evidence");
+  const economicReplays = [];
+  page.on("request", request => { if (request.url().endsWith("/local/v1/reference-agent/runtime")) economicReplays.push(request.url()); });
+  await click(page,"#agentOnlineRunBtn");
+  await expect(page.locator("#agentOnlineStatus")).toHaveText("Lifecycle verified", { timeout: 20_000 });
+  expect(economicReplays).toEqual([]);
 }
 async function walletContext() {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1024 }, reducedMotion: "reduce" });
@@ -121,6 +128,7 @@ try {
   for (const [role, port] of [["borrower", basePort], ["controller", basePort + 1]]) {
     const context = await walletContext();
     const page = await context.newPage();
+    page.setDefaultTimeout(15_000);
     page.on("pageerror", error => errors.push({ role, message: error.message }));
     await login(page, port, role);
     const asset = await (await page.request.get(`http://127.0.0.1:${port}/app.js`)).body();
@@ -142,9 +150,10 @@ try {
       await writeFile(`${out}/durable-principal-authority.txt`, await page.locator("#mainContent").innerText());
     }
     const more = page.locator("#sidebarMoreBtn");
-    if (await more.isVisible()) await more.click();
+    if (await more.isVisible() && await more.getAttribute("aria-expanded") !== "true") await more.click();
     const visited = [];
     for (const { viewId } of WORKSPACE_NAVIGATION_MANIFEST.workspaces[role].views) {
+      if (!await page.locator(`.nav-item[data-view="${viewId}"]`).isVisible()) await more.click();
       await page.locator(`.nav-item[data-view="${viewId}"]`).click();
       await expect(page.locator(`[data-view-panel="${viewId}"]`)).toBeVisible();
       visited.push(viewId);

@@ -1,0 +1,21 @@
+import { spawnSync } from "node:child_process";
+import { writeFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+const database="ipo_one_web027_test_"+Date.now();
+function docker(args){const r=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker",...args],{encoding:"utf8",maxBuffer:16*1024*1024});if(r.status!==0)throw Error("Isolated test setup failed; protected output withheld");return r.stdout;}
+const pg=JSON.parse(docker(["inspect","ipo-one-web026-test-postgres-v2"]))[0];
+const env=Object.fromEntries(pg.Config.Env.map(s=>{const i=s.indexOf("=");return[s.slice(0,i),s.slice(i+1)];}));
+assert.equal(env.POSTGRES_USER,"ipo_one_owner");
+docker(["exec","ipo-one-web026-test-postgres-v2","createdb","-U","ipo_one_owner",database]);
+const url=new URL("postgresql://127.0.0.1:55435/"+database);url.username=env.POSTGRES_USER;url.password=env.POSTGRES_PASSWORD;
+const envFile="/Users/cptmao/Documents/IPO.ONE/.ipo-one/web027-runtime/"+database+".env";
+await writeFile(envFile,"DATABASE_URL="+url.href+"\n",{mode:0o600});
+const container="ipo-one-web027-regression-"+Date.now();
+const image=JSON.parse(docker(["inspect","ipo-one-web027-candidate"]))[0].Config.Image;
+docker(["create","--name",container,"--network","host","--env-file",envFile,image,"scripts/run-postgres-tests.mjs"]);
+const changed=spawnSync("git",["diff","--name-only","0211f75","HEAD"],{encoding:"utf8"}).stdout.trim().split("\n");
+const archive=spawnSync("git",["archive","HEAD"],{maxBuffer:128*1024*1024});assert.equal(archive.status,0);
+const copy=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker","cp","-",container+":/app"],{input:archive.stdout,maxBuffer:16*1024*1024});assert.equal(copy.status,0);
+const r=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker","start","-a",container],{stdio:"inherit"});
+await writeFile("output/playwright/web-027/postgres.json",JSON.stringify({source:spawnSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).stdout.trim(),database,container,isolated:true,exitCode:r.status},null,2));
+process.exit(r.status??1);

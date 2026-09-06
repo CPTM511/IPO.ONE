@@ -3231,7 +3231,8 @@ function renderAgentOnlineWorkflow(presentation) {
       "application",
       "principal_activation",
       "runtime_accept",
-      "active_recovery"
+      "active_recovery",
+      ...(localBrowserRun ? ["runtime_execute", "runtime_repay", "runtime_evidence"] : [])
     ].includes(stage);
   button.toggleAttribute("aria-busy", agentOnlinePilot.busy);
   button.textContent = agentOnlinePilot.busy
@@ -3246,13 +3247,13 @@ function renderAgentOnlineWorkflow(presentation) {
         runtime_accept: localBrowserRun
           ? "Complete sandbox Agent lifecycle"
           : "Check for Agent Obligation",
-        runtime_execute: "Agent Obligation created",
-        runtime_repay: "Approved use executed",
-        runtime_evidence: "Repayment posted",
+        runtime_execute: localBrowserRun ? "Resume sandbox Agent lifecycle" : "Agent Obligation created",
+        runtime_repay: localBrowserRun ? "Resume sandbox Agent lifecycle" : "Approved use executed",
+        runtime_evidence: localBrowserRun ? "Verify Agent Evidence" : "Repayment posted",
         runtime_complete: "Agent lifecycle complete",
         active_recovery: "Check Agent progress"
       }[stage];
-  const localLifecycleComplete = localBrowserRun && Boolean(runtimeResult);
+  const localLifecycleComplete = localBrowserRun && (Boolean(runtimeResult) || stage === "runtime_complete");
   button.hidden = localLifecycleComplete;
   executeButton.hidden = localBrowserRun;
   repayButton.hidden = localBrowserRun;
@@ -3770,6 +3771,10 @@ async function runOnlineReferenceAgent() {
   try {
     if (localBrowserRun && mandate.status === "draft") {
       await runLocalAgentApplication(mandate);
+    } else if (localBrowserRun && currentAgentOnlineObligation(mandate.mandateId)?.status === "fully_repaid") {
+      // A refresh must keep a visible read-only path to current Evidence. Never
+      // replay an economic goal just to restore a completed Agent lifecycle.
+      await checkAgentRuntimeProgress(mandate);
     } else if (localBrowserRun) {
       await runLocalAgentLifecycle(mandate);
     } else if (mandate.status === "draft") {
