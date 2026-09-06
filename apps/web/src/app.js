@@ -841,6 +841,8 @@ function renderOidcProviders(providers) {
   );
 }
 
+let localSandboxAgentRuntime = null;
+
 function walletWorkspaceLabel(role) {
   return ({ human_borrower: "Human Borrower", principal_controller: "Principal Controller",
     capital_partner_operator: "Capital Partner", risk_operator: "Risk Operations" })[role] ?? "Workspace";
@@ -2656,6 +2658,7 @@ function purgeAuthenticatedBrowserState({
   for (const key of [HUMAN_SUBJECT_STORAGE_KEY, HUMAN_CONSENT_STORAGE_KEY]) {
     forgetOpaqueId(key);
   }
+  localSandboxAgentRuntime = null;
   const localAgentAccount = document.querySelector(
     'meta[name="ipo-one-local-agent-account"]'
   );
@@ -4340,6 +4343,17 @@ function renderAgentAuthorityPilot() {
   }
   el("openSelectedAgentWorkspaceBtn").disabled =
     privateBusy || workspaceOptions.length < 2 || !workspaceChoice.value;
+  const localSetupAvailable = accessState.authenticationProfile === "local_no_funds" && principalWorkspace && localSandboxAgentRuntime?.available === true;
+  el("localSandboxAgentSetup").hidden = !localSetupAvailable;
+  el("createLocalSandboxAgentBtn").hidden = !localSetupAvailable || localSandboxAgentRuntime.status !== "not_created" || exactAgentSelected;
+  el("createLocalSandboxAgentBtn").disabled = privateBusy;
+  el("revokeLocalSandboxAgentBtn").hidden = !localSetupAvailable || localSandboxAgentRuntime.status !== "active";
+  el("revokeLocalSandboxAgentBtn").disabled = privateBusy;
+  el("localSandboxAgentStatus").textContent = localSandboxAgentRuntime?.status === "revoked"
+    ? "Runtime credential revoked. Existing records remain available; this Agent cannot start further work."
+    : localSandboxAgentRuntime?.status === "active"
+      ? "Your dedicated local Agent is ready. Account proof and an active Mandate control what it can do."
+      : "Create your own sandbox Agent. Its credential stays encrypted on this local server. No credit or spending is authorized by setup.";
   el("agentAuthoritySelectedWorkflow").hidden = !exactAgentSelected;
   el("agentAuthorityReviewPanel").hidden = !exactAgentSelected || !mandate;
   el("agentSubjectCreationControls").hidden = Boolean(subjectId);
@@ -9351,6 +9365,10 @@ async function recoverAuthenticatedWorkspace({
 
   if (recovery.workspaceKind === "principal_controller") {
     setMode("agent");
+    localSandboxAgentRuntime = accessState.authenticationProfile === "local_no_funds"
+      ? await referenceAgentApi("/local/v1/reference-agent/enrollment/status", {schemaVersion:"local_principal_agent_runtime_request.v1"})
+      : null;
+    if (localSandboxAgentRuntime?.accountAddress) el("agentAccountAddress").value = localSandboxAgentRuntime.accountAddress;
     const workspaceSelection = selectPrincipalAgentWorkspace(recovery);
     const previousWorkspaceSelection = agentAuthorityPilot.workspaceSelection;
     const selectionStateCleared = principalAgentSelectionChanged(
@@ -9364,7 +9382,7 @@ async function recoverAuthenticatedWorkspace({
     if (workspaceSelection.status !== "selected") {
       if (!selectionStateCleared) clearPrincipalAgentSelectionState();
       agentAuthorityPilot.helper = workspaceSelection.status === "empty"
-        ? "No Agent is assigned to this Principal workspace. Ask the pilot administrator to provision one; this browser cannot create an Actor."
+        ? (localSandboxAgentRuntime?.available ? "Create your dedicated local sandbox Agent below, then review its account and authority." : "No Agent is assigned to this Principal workspace. Ask the pilot administrator to provision one.")
         : "This Principal workspace has multiple or incomplete Agent references. An authorized Agent picker is required before authority can be changed.";
       return;
     }
@@ -10441,6 +10459,22 @@ async function postHumanSandboxRepayment({
     },
     "Sandbox repayment posted through the deterministic fee, interest, and principal waterfall."
   );
+}
+
+async function createLocalSandboxAgent() {
+  await runAgentAuthorityAction(el("createLocalSandboxAgentBtn"), async () => {
+    localSandboxAgentRuntime = await referenceAgentApi("/local/v1/reference-agent/enrollment/create", {schemaVersion:"local_principal_agent_runtime_request.v1"});
+    await recoverAuthenticatedWorkspace({selectedAgentActorId: localSandboxAgentRuntime.actorId});
+  }, "Your dedicated sandbox Agent is created. Prove its account next; no Mandate is active yet.");
+}
+
+async function revokeLocalSandboxAgent() {
+  await runAgentAuthorityAction(el("revokeLocalSandboxAgentBtn"), async () => {
+    localSandboxAgentRuntime = await referenceAgentApi("/local/v1/reference-agent/enrollment/revoke", {
+      schemaVersion:"local_principal_agent_runtime_request.v1", actorId:localSandboxAgentRuntime.actorId
+    });
+    await recoverAuthenticatedWorkspace();
+  }, "Local Agent runtime credential revoked. Future Agent requests fail closed; existing records remain available.");
 }
 
 async function createPrivateAgentSubject() {
@@ -14005,6 +14039,8 @@ function bindActions() {
     }
   });
   el("createPrivateAgentSubjectBtn").addEventListener("click", createPrivateAgentSubject);
+  el("createLocalSandboxAgentBtn").addEventListener("click", createLocalSandboxAgent);
+  el("revokeLocalSandboxAgentBtn").addEventListener("click", revokeLocalSandboxAgent);
   el("createAccountChallengeBtn").addEventListener("click", createAgentAccountChallenge);
   el("proveAccountOnlineBtn").addEventListener("click", proveAgentAccountOnline);
   el("refreshAccountBindingBtn").addEventListener("click", refreshAgentAccountBinding);

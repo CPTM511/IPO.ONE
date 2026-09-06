@@ -97,6 +97,12 @@ if (action === "build") {
   const backup = candidate + "-" + previousReport.source.slice(0,12);
   assert.equal(docker(["ps", "-a", "--filter", `name=^/${backup}$`, "--format", "{{.Names}}"]), "");
   await secret("before-upgrade-" + sha + ".dump", docker(["exec", pg, "pg_dump", "-U", "ipo_one_owner", "-d", database, "-Fc"], { binary: true }));
+  const migrationSet = await readMigrationSet(resolve(root, "db/migrations"));
+  const appliedRows = sql("SELECT name,checksum FROM schema_migrations ORDER BY name").split("\n").map(row => row.split("|"));
+  appliedRows.forEach(([name, recordedChecksum], i) => assert.ok(name === migrationSet[i].name && migrationChecksumMatches({name,recordedChecksum,releaseChecksum:migrationSet[i].checksum})));
+  const pendingNames = migrationSet.slice(appliedRows.length).map(m => m.name);
+  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime"].includes(name)), "Only reviewed WEB-027J migrations may activate");
+  env.IPO_ONE_LOCAL_ACCESS_REPAIR = "web027j_v1";
   env.IPO_ONE_M1_B_RELEASE_SHA = sha;
   const envFile = await secret("candidate.env", Object.entries(env).map(([k,v])=>k+"="+v).join("\n")+"\n");
   const args = ["create", "--name", candidate, "--network", "host", "--read-only", "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=64m", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--restart", "unless-stopped", "--env-file", envFile];
@@ -109,9 +115,16 @@ if (action === "build") {
     if (docker(["ps","-a","--filter",`name=^/${candidate}$`,"--format","{{.Names}}"])) docker(["rm","-f",candidate]);
     docker(["rename",backup,candidate]); docker(["start",candidate]); throw error;
   }
-  await report("candidate-runtime", { ...previousReport, source: sha, image, previousSource: previousReport.source, previousContainer: backup, databasePreserved: true, browserVerification: "pending" });
-} else if (action === "worker") {
+  await report("candidate-runtime", { ...previousReport, source: sha, image, previousSource: previousReport.source, previousContainer: backup, databasePreserved: true, reviewedMigrations: pendingNames, localAccessRepair: "web027j_v1", browserVerification: "pending" });
+} else if (action === "worker" || action === "worker-upgrade") {
   const name = "ipo-one-web027-" + profile + "-worker";
+  if (action === "worker-upgrade") {
+    const previousWorker = inspect(name);
+    const previousSha = previousWorker.Config.Labels?.["org.opencontainers.image.revision"] ?? previousWorker.Image.slice(7,19);
+    const backup = name + "-" + previousSha.slice(0,12);
+    assert.equal(docker(["ps","-a","--filter",`name=^/${backup}$`,"--format","{{.Names}}"]), "");
+    docker(["stop",name]); docker(["rename",name,backup]);
+  }
   assert.equal(docker(["ps","-a","--filter",`name=^/${name}$`,"--format","{{.Names}}"]), "");
   const env = envMap(inspect(candidate));
   assert.equal(new URL(env.DATABASE_URL).pathname,"/"+database);

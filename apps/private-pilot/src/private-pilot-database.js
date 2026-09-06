@@ -96,6 +96,7 @@ async function provisionApplicationRole(ownerPool, password) {
   await ownerPool.query(`GRANT CONNECT ON DATABASE ${database} TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT USAGE ON SCHEMA public TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${APP_ROLE}`);
+  await ownerPool.query(`REVOKE ALL ON local_principal_agent_runtimes FROM ${APP_ROLE}`);
   await ownerPool.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT UPDATE (id) ON actors, memberships, access_grants TO ${APP_ROLE}`);
   await ownerPool.query(`GRANT UPDATE (status) ON obligations, credit_lines TO ${APP_ROLE}`);
@@ -527,6 +528,14 @@ async function seedAuthenticationCredential(client, {
       credential: stored
     });
     return stored;
+  }
+  if (actor.clientId.startsWith("client_web027j_")) {
+    const historical = await client.query(`SELECT 1 FROM authentication_credentials
+      WHERE tenant_id=$1 AND issuer=$2 AND actor_id=$3 AND client_id=$4 LIMIT 1`,
+      [tenantId,issuer,actor.actorId,`client_phase7_${actor.actorId}`]);
+    // A generation change must not re-enroll a revoked or expired identity.
+    // Only the reviewed rotation can create a replacement for existing records.
+    if (historical.rowCount) return;
   }
   const credentialId = createOperationalId("credential");
   const inserted = await client.query(

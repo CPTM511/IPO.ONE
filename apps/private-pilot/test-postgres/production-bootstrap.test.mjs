@@ -59,7 +59,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0075_metered_usage_system_worker_capability"
+      "0078_local_principal_agent_runtime"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
@@ -73,7 +73,10 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       await target.query(
         `GRANT INSERT ON obligations TO "${runtimePrivilegeRole}"`
       );
-      assert.deepEqual(await migrateDown({ pool: target, steps: 5 }), [
+      assert.deepEqual(await migrateDown({ pool: target, steps: 8 }), [
+        "0078_local_principal_agent_runtime",
+        "0077_local_ordinary_wallet_access",
+        "0076_invited_wallet_role_enrollment",
         "0075_metered_usage_system_worker_capability",
         "0074_metered_usage_runtime_privileges",
         "0073_metered_usage_evidence",
@@ -85,7 +88,10 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
         "0072_public_beta_self_service_identity",
         "0073_metered_usage_evidence",
         "0074_metered_usage_runtime_privileges",
-        "0075_metered_usage_system_worker_capability"
+        "0075_metered_usage_system_worker_capability",
+        "0076_invited_wallet_role_enrollment",
+        "0077_local_ordinary_wallet_access",
+        "0078_local_principal_agent_runtime"
       ]);
       const capabilityClient = await target.connect();
       let systemWorkerCapability;
@@ -311,7 +317,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0075_metered_usage_system_worker_capability"
+      "0078_local_principal_agent_runtime"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -323,7 +329,10 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 13 }), [
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 16 }), [
+      "0078_local_principal_agent_runtime",
+      "0077_local_ordinary_wallet_access",
+      "0076_invited_wallet_role_enrollment",
       "0075_metered_usage_system_worker_capability",
       "0074_metered_usage_runtime_privileges",
       "0073_metered_usage_evidence",
@@ -351,7 +360,10 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0072_public_beta_self_service_identity",
       "0073_metered_usage_evidence",
       "0074_metered_usage_runtime_privileges",
-      "0075_metered_usage_system_worker_capability"
+      "0075_metered_usage_system_worker_capability",
+      "0076_invited_wallet_role_enrollment",
+      "0077_local_ordinary_wallet_access",
+      "0078_local_principal_agent_runtime"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count
