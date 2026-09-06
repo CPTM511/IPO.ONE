@@ -29,6 +29,7 @@ async function completeHumanRepayment(page) {
     await click(page, "#postHumanRepaymentBtn");
     if (await page.locator("#accessLayer").isVisible()) {
       await page.getByRole("button", { name: /WEB027 isolated test wallet/ }).click();
+      await page.locator("#walletSignInBtn").click();
       if (await page.locator("#accessLayer").isVisible()) await page.locator("#accessCloseBtn").click();
       await click(page, "#postHumanRepaymentBtn");
     }

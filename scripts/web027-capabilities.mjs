@@ -104,8 +104,17 @@ async function commonOperations(page,role){
   const r=await operation(page,"#loadCreditTrackRecordBtn","pilotReadOwnCreditState");return {serverRead:true,schemaVersion:r.schemaVersion};
  });
  if(role==="borrower"){
-  await navigate(page,"credit-passport");
   await verifyCase(page,role,"decision-passport",async()=>{
+   // A revoked artifact is deliberately not reissued for the same exact
+   // Decision/reviewer. Prepare a fresh, unaccepted Decision via the Human UI.
+   await navigate(page,"request-credit");
+   await page.locator("#humanGuideSecondaryBtn").click();
+   await expect(page.locator("#humanGuidePrimaryBtn")).toHaveText("Create scoped Consent");
+   await page.locator("#humanGuidePrimaryBtn").click();
+   await page.locator("#humanCreditAmount").fill("20.00");
+   await page.locator("#submitHumanCreditBtn").click();
+   await expect(page.locator("#humanApplicationStatus")).toHaveText("Offer ready");
+   await navigate(page,"credit-passport");
    await page.locator("#restoreCreditPassportBtn").click();
    await expect(page.locator("#creditPassportStateTitle")).toHaveText("Verified Decision Passport ready");
    await page.getByText("Advanced: share with an exact invited reviewer",{exact:true}).click();
@@ -120,14 +129,16 @@ async function commonOperations(page,role){
    expect(verified.verification.verified).toBe(true);
    await operation(page,"#revokeCreditPassportBtn","pilotRevokeCreditPassportArtifact");
    await expect(page.locator("#creditPassportArtifactStatus")).toContainText(/revoked/i);
-   return {issued:true,read:true,exactQaVerifier:true,verified:true,revoked:true};
+   return {freshUnacceptedDecision:true,issued:true,read:true,exactQaVerifier:true,verified:true,revoked:true};
   });
   await navigate(page,"request-credit");
   await verifyCase(page,role,"owned-evidence",async()=>{
-   const r=await operation(page,"#loadOwnedEvidenceBtn","pilotReadOwnObligationEvidence");
-   await expect(page.locator("#ownedEvidenceCount")).not.toHaveText("0");
+   await navigate(page,"obligations");
+   await page.locator(".obligation-portfolio-position").first().click();
+   const r=await operation(page,"#obligationDetailEvidenceBtn","pilotReadOwnObligationEvidence");
    return {count:r.items?.length,hasMore:r.hasMore};
   });
+  await navigate(page,"request-credit");
   await verifyCase(page,role,"feedback",async()=>{
    await page.getByText("Share product feedback",{exact:true}).click();
    const r=await operation(page,"#submitPilotFeedbackBtn","pilotSubmitPilotFeedback");

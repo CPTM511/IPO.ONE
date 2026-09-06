@@ -1,4 +1,7 @@
 /* WEB-027 Precision Terminal. Public presentation retains its own brand tokens. */
+/* Reserve the public geometry before the deferred experience code starts. */
+body.private-session-closed .app-shell { display: block; }
+body.private-session-closed .main-shell { width: 100%; margin: 0; }
 body.product-experience.workspace-session-active,
 body.product-experience .access-layer {
   --b-bg: #f4f7f6; --b-surface: #ffffff; --b-elevated: #eaf0ee;
@@ -411,3 +414,9 @@ body.product-experience .precision-principal .workbench-heading h3 { margin-top:
 body.product-experience .precision-principal .workbench-heading p:not(.eyebrow) { margin-bottom: 0; }
 body.product-experience .authority-review #agentActivationStage { margin-top: 20px; }
 body.product-experience .authority-review .workbench-step { margin-bottom: 14px; }
+body.product-experience .capital-partner-application-choice {
+  background: var(--b-surface); color: var(--b-ink); border-color: var(--b-line-strong); border-radius: 6px;
+}
+body.product-experience .capital-partner-application-choice:is(:hover,[aria-checked="true"],.selected) {
+  background: var(--b-accent-muted); color: var(--b-ink); border-color: var(--b-accent);
+}
