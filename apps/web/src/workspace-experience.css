@@ -426,7 +426,7 @@ body.product-experience .capital-partner-application-choice:is(:hover,[aria-chec
   max-width: min(520px, calc(100vw - 32px));
   padding: 28px;
   background: var(--surface, #111b20);
-  color: var(--text, #edf3f0);
+  color: var(--ink, #152420);
   border: 1px solid var(--line, #30433d);
   border-radius: 12px;
   box-shadow: 0 24px 96px #0008;
