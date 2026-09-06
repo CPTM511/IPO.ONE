@@ -71,6 +71,7 @@ function arrangeSecondarySurfaces() {
 export function arrangeWorkspaceNavigation(workspaceName, access) {
   initializeChrome();
   document.body.dataset.workspace = workspaceName ?? "";
+  arrangePrincipalSurface(workspaceName);
   const nav = document.querySelector(".nav-list");
   if (!nav) return;
   let primary = document.getElementById("workspacePrimaryNav");
@@ -163,6 +164,119 @@ export function renderHumanTaskSummary(model) {
       : key === "status" ? "Waiting for your workspace" : "—";
   }
   summary.dataset.hasPlan = String(model.connected && model.hasObligation);
+  summary.querySelector("dl").hidden = !model.connected || !model.hasObligation;
+  summary.querySelector(".workspace-summary-note").textContent = model.connected && model.hasObligation
+    ? "No real funds · Selected credit plan"
+    : "Your terms and repayment schedule will appear here after you accept an Offer. No real funds.";
+}
+
+// Move existing controls, not copies: their guards and server operations remain
+// the only way to change authority. The role comes from the existing manifest.
+function arrangePrincipalSurface(workspaceName) {
+  const human = document.querySelector(".request-credit-human");
+  const authority = document.getElementById("agentAuthorityDisclosure");
+  if (!human || !authority) return;
+  let home = document.getElementById("authorityHomePosition");
+  if (!home) {
+    home = document.createElement("span");
+    home.id = "authorityHomePosition";
+    home.hidden = true;
+    authority.before(home);
+  }
+  let principal = document.getElementById("principalAuthoritySurface");
+  if (!principal) {
+    principal = document.createElement("section");
+    principal.id = "principalAuthoritySurface";
+    principal.className = "precision-principal";
+    principal.setAttribute("aria-label", "Your Agents and authority");
+    human.before(principal);
+  }
+  const selected = workspaceName === "controller";
+  principal.hidden = !selected;
+  human.hidden = selected;
+  let applicationHome = document.getElementById("agentApplicationHomePosition");
+  const application = document.querySelector(".request-credit-agent");
+  let context = document.getElementById("principalApplicationDetails");
+  if (application && !applicationHome) {
+    applicationHome = document.createElement("span");
+    applicationHome.id = "agentApplicationHomePosition";
+    applicationHome.hidden = true;
+    application.before(applicationHome);
+    context = document.createElement("details");
+    context.id = "principalApplicationDetails";
+    context.className = "workspace-details precision-agent-context";
+    const summary = document.createElement("summary");
+    summary.textContent = "Application handoff & protocol details";
+    context.append(summary);
+    principal.append(context);
+  }
+  if (selected) {
+    principal.prepend(authority);
+    authority.open = true;
+    if (application) context.append(application);
+  } else {
+    home.after(authority);
+    if (application) applicationHome.after(application);
+  }
+}
+
+function mountPrecisionAuthority() {
+  if (document.getElementById("precisionAuthorityTerms")) return;
+  const form = document.getElementById("agentAuthorityForm");
+  const review = document.getElementById("agentAuthorityReviewPanel");
+  if (!form || !review) return;
+  const identity = document.createElement("div");
+  identity.className = "precision-identity";
+  identity.innerHTML = `<div><span>PRINCIPAL</span><strong>Your Principal account</strong></div><span class="precision-relationship" data-authority="relationship">Prepares authority for</span><div><span>AGENT</span><strong data-authority="name">Assigned Agent</strong></div>`;
+  form.prepend(identity);
+  const terms = document.createElement("section");
+  terms.id = "precisionAuthorityTerms";
+  terms.className = "precision-terms";
+  terms.setAttribute("aria-labelledby", "precisionTermsTitle");
+  terms.innerHTML = `<h3 id="precisionTermsTitle">Review authorization</h3>
+    <div class="precision-amounts"><div><strong data-authority="aggregate"></strong><span>Aggregate spending ceiling</span></div><div><strong data-authority="perAction"></strong><span>Per action limit</span></div></div>
+    <dl class="precision-term-rows"><div><dt>Purpose</dt><dd data-authority="purpose"></dd></div><div><dt>Provider</dt><dd data-authority="provider"></dd></div><div><dt>Valid until</dt><dd data-authority="expiry"></dd></div><div><dt>Wallet withdrawals</dt><dd>Not permitted</dd></div></dl>
+    <p class="precision-footnote">This Mandate sets authority limits. It does not issue credit or move funds.</p>`;
+  identity.after(terms);
+  const history = document.createElement("section");
+  history.className = "precision-preparation";
+  history.innerHTML = `<h3>Preparation status</h3><dl><div><dt>Agent account</dt><dd data-authority="identity"></dd></div><div><dt>Mandate</dt><dd data-authority="draft"></dd></div><div><dt>Application & Offer</dt><dd data-authority="offer"></dd></div></dl>`;
+  terms.after(history);
+  const ticket = document.createElement("div");
+  ticket.className = "precision-ticket-heading";
+  ticket.innerHTML = `<p class="eyebrow">PRINCIPAL CONTROL</p><h3>Your authorization</h3><p data-authority="decision"></p>`;
+  review.prepend(ticket);
+  // The acknowledgement and exact activation button stay together and retain
+  // their original IDs. The application render controls each stage's visibility.
+  ticket.after(document.getElementById("agentActivationStage"), document.getElementById("agentRuntimeStage"));
+}
+
+export function renderPrecisionAuthority(model) {
+  mountPrecisionAuthority();
+  const values = {
+    ...model,
+    relationship: model.active ? "Authorizes" : "Prepares authority for",
+    identity: model.accountBound ? "Account proof verified" : "Account proof required",
+    draft: model.hasMandate ? model.status : "Not prepared",
+    offer: model.continuationReady ? "Exact Offer available" : model.active ? "View current Agent progress" : "Awaiting Agent application",
+    decision: model.active
+      ? "This Mandate is active. Follow its approved use and inspect every result."
+      : model.continuationReady
+        ? "Review the limits and existing Offer, then activate this exact sandbox Mandate."
+        : model.accountBound
+          ? "Your Agent account is verified. Prepare its application and review the Offer before activation."
+          : "Complete account proof and prepare the Agent application before activation."
+  };
+  for (const node of document.querySelectorAll("[data-authority]")) {
+    node.textContent = values[node.dataset.authority] ?? "Not available";
+  }
+  document.getElementById("precisionAuthorityTerms").hidden = !model.hasMandate;
+  document.getElementById("agentAuthorityTitle").textContent = model.name;
+  document.getElementById("agentAuthority").dataset.authorityStage = model.active
+    ? "active" : model.continuationReady ? "review" : model.hasMandate ? "application" : "preparation";
+  const applicationAction = document.getElementById("openAgentApplicationHandoffBtn");
+  applicationAction.classList.toggle("primary", !model.continuationReady && !model.active);
+  applicationAction.classList.toggle("secondary", model.continuationReady || model.active);
 }
 
 export function renderAgentTaskHeading(title) {

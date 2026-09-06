@@ -1,4 +1,4 @@
-import { arrangeWorkspaceNavigation, updateWorkspaceChrome, renderHumanTaskSummary, renderAgentTaskHeading, renderAgentTaskControls } from "./workspace-experience.js";
+import { arrangeWorkspaceNavigation, updateWorkspaceChrome, renderHumanTaskSummary, renderAgentTaskHeading, renderAgentTaskControls, renderPrecisionAuthority } from "./workspace-experience.js";
 import {
   createApplicationReadyAgentHandoffManifest, createAwaitingAgentHandoffManifest,
   createReadyAgentHandoffManifest
@@ -4474,6 +4474,23 @@ function renderAgentAuthorityPilot() {
     ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(mandate.expiresAt))
     : "—";
   el("agentAuthorityEvidenceHash").textContent = agentAuthorityPilot.activationEvidenceHash ?? "—";
+
+  renderPrecisionAuthority({
+    name: agentAuthorityPilot.subject?.displayName || workspaceOptions.find(option =>
+      option.actorId === agentAuthorityPilot.workspaceSelection?.actorId)?.label || (subjectId ? "Your Agent" : "Agent setup"),
+    hasMandate: Boolean(mandate), active: mandate?.status === "active",
+    accountBound, continuationReady, status: mandate ? titleize(mandate.status) : "Not prepared",
+    aggregate: mandate ? usdMinorToMoney(mandate.aggregateLimitMinor) : "Not set",
+    perAction: mandate ? usdMinorToMoney(mandate.perActionLimitMinor) : "Not set",
+    purpose: mandate?.allowedCategories?.map(titleize).join(", ") || "Not specified in this Mandate",
+    provider: mandate?.allowedProviderIds?.length
+      ? mandate.allowedProviderIds.length === 1 && mandate.allowedProviderIds[0] === "provider_gateway_compute"
+        ? "Gateway Compute" : `${mandate.allowedProviderIds.length} providers in Mandate scope`
+      : "Not specified in this Mandate",
+    expiry: mandate?.expiresAt ? new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium", timeStyle: "short", timeZone: "UTC"
+    }).format(new Date(mandate.expiresAt)) + " UTC" : "Not set"
+  });
 
   for (const id of [
     "agentAuthorityPrincipalId",
