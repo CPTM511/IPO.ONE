@@ -75,7 +75,7 @@ async function commonOperations(page,role){
    await operation(page,"#retrieveOfficialReportBtn","pilotRetrieveOfficialReport");
    const download=await pending;const path=`${out}/${role}-report.${format}`;await download.saveAs(path);
    const expected=await page.locator("#officialReportSha256").innerText();
-   const actual=createHash("sha256").update(await readFile(path)).digest("hex");expect(actual).toBe(expected.replace(/^0x/,""));
+   const actual=createHash("sha256").update(await readFile(path)).digest("hex");expect(actual).toBe(expected.replace(/^(?:0x|sha256:)/,""));
    await operation(page,"#revokeOfficialReportBtn","pilotRevokeOfficialReport");
    await expect(page.locator("#officialReportEffectiveStatus")).toHaveText("Revoked");
    await page.reload();await expect(page.locator("#sidebarApiStatus")).toHaveText("Authenticated");
@@ -90,7 +90,7 @@ async function commonOperations(page,role){
   await page.getByRole("button",{name:/WEB027 isolated test wallet/}).click();
   await page.locator("#accessCloseBtn").click();
   await page.locator("#executionConnectBtn").click();
-  const bound=await operation(page,"#executionBindBtn","walletPrepareAccountBinding");
+  const bound=await operation(page,"#executionBindBtn","walletSubmitAccountBinding");
   expect(bound.accountBinding.status).toBe("active");
   await operation(page,"#executionRefreshBindingsBtn","walletReadAccountBindings");
   const capability=await operation(page,"#executionDiscoverBtn","walletDiscoverCapabilities");

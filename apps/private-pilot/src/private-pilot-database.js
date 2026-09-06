@@ -716,6 +716,11 @@ export async function provisionPrivatePilotDatabase({
     for (const identity of Object.values(identities)) {
       await seedIdentity(ownerPool, identity, checkedProfile, now);
     }
+    if (localAccessRepair) await withTenantTransaction(ownerPool, createTenantSecurityContext({
+      tenantId: checkedProfile.tenantId, actorId: identities.controller.actorId, policyVersion: AUTHORIZATION_POLICY_VERSION, source:"local_test"
+    }), client => client.query(`INSERT INTO authorization_resources(tenant_id,resource_type,resource_id,status,version,created_at,updated_at,schema_version)
+      VALUES($1,'wallet_adapter','adapter_local_sandbox','active',1,$2,$2,'authorization_resource.v1')
+      ON CONFLICT (tenant_id,resource_type,resource_id) DO NOTHING`, [checkedProfile.tenantId,now]));
     await seedCapitalPartnerProfile(
       ownerPool,
       identities.capitalPartner,

@@ -10465,7 +10465,7 @@ async function createLocalSandboxAgent() {
   await runAgentAuthorityAction(el("createLocalSandboxAgentBtn"), async () => {
     localSandboxAgentRuntime = await referenceAgentApi("/local/v1/reference-agent/enrollment/create", {schemaVersion:"local_principal_agent_runtime_request.v1"});
     await recoverAuthenticatedWorkspace({selectedAgentActorId: localSandboxAgentRuntime.actorId});
-  }, "Your dedicated sandbox Agent is created. Prove its account next; no Mandate is active yet.");
+  }, "Your dedicated sandbox Agent is created. Prove its account next; no Mandate is active yet.", {requireSelection:false});
 }
 
 async function revokeLocalSandboxAgent() {

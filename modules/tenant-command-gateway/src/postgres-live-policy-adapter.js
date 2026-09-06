@@ -51,6 +51,48 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
         throw new DomainError("authorization_live_policy_rejected", "live policy is unavailable");
       }
 
+      const bindingChecks = {
+        walletPrepareAccountBinding: ["subject_state", "chain_policy"],
+        walletSubmitAccountBinding: ["subject_state", "chain_policy"],
+        walletReadAccountBindings: ["subject_state"],
+        walletRevokeAccountBinding: ["subject_state", "account_binding"]
+      }[handler.operationId];
+      if (bindingChecks && hasExactChecks(policy, bindingChecks) && resource?.resourceType === "subject") {
+        const subject = await coreRepository.getProjectionStateInTransaction(client, CoreProjectionType.SUBJECT, resource.resourceId,
+          {lock: handler.operationId !== "walletReadAccountBindings"});
+        if (resource.status !== "active" || !subject || subject.value.status !== "active" || !["human", "agent"].includes(subject.value.subjectType)) {
+          throw new DomainError("authorization_live_policy_rejected", "Execution account proof requires an active Subject");
+        }
+        let version = subject.aggregateVersion;
+        if (bindingChecks.includes("chain_policy") &&
+            !/^eip155:(84532|1952):0x[0-9a-fA-F]{40}$/.test(payload?.accountId ?? "")) {
+          throw new DomainError("authorization_live_policy_rejected", "Execution account chain is not approved");
+        }
+        if (bindingChecks.includes("account_binding")) {
+          const binding = await coreRepository.getProjectionStateInTransaction(client, CoreProjectionType.ACCOUNT_BINDING, payload?.accountBindingId, {lock:true});
+          if (!binding || binding.value.subjectId !== resource.resourceId || binding.value.schemaVersion !== "account_binding.v3" ||
+              binding.value.status !== "active" || !["eip155:84532", "eip155:1952"].includes(binding.value.chainId)) {
+            throw new DomainError("authorization_live_policy_rejected", "Execution account binding is unavailable");
+          }
+          version += binding.aggregateVersion;
+        }
+        return Object.freeze({liveStateVersion:version,evaluatedChecks:Object.freeze([...bindingChecks])});
+      }
+      if (handler.operationId === "walletDiscoverCapabilities" && hasExactChecks(policy,["adapter_state","chain_policy"]) &&
+          resource?.resourceType === "wallet_adapter" && resource.resourceId === "adapter_local_sandbox" &&
+          typeof handler.readCapabilityDescriptor === "function") {
+        const descriptor = await handler.readCapabilityDescriptor();
+        const adapter = descriptor?.adapters?.find(item => item.adapterId === "local_sandbox");
+        if (resource.status !== "active" || !adapter || adapter.enabled !== true || adapter.externalCallsEnabled !== false ||
+            adapter.transactionsAllowed !== false || adapter.sandboxOnly !== true || adapter.productionAuthority !== false ||
+            adapter.fundsAuthority !== false || adapter.supportedChains?.length !== 2 ||
+            !["eip155:84532", "eip155:1952"].every(chain => adapter.supportedChains.includes(chain))) {
+          throw new DomainError("authorization_live_policy_rejected", "Local wallet descriptor is unavailable");
+        }
+        return Object.freeze({liveStateVersion:1+parseInt(hashId("wallet_descriptor",descriptor).slice(2,10),16),
+          evaluatedChecks:Object.freeze(["adapter_state","chain_policy"])});
+      }
+
       if (
         [
           "pilotAcceptCreditOffer",

@@ -100,6 +100,7 @@ function query(operationId, application, method, normalize, resourceType) {
   return Object.freeze({
     operationId,
     kind: "query",
+    ...(operationId === "walletDiscoverCapabilities" ? { readCapabilityDescriptor: () => application.discoverCapabilities() } : {}),
     preflight: ({ payload, resource: inputResource }) => {
       resource(inputResource, resourceType);
       normalize(payload);
