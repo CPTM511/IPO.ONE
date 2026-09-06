@@ -30,10 +30,15 @@ The source and implementation were opened together in the same tool comparison i
 
 The source falsely says a Draft “Authorizes” and invents names, limits, health and legal claims. The implementation corrects those rather than copying them. The real exact-action checkbox and technical recovery disclosure add necessary content. No arbitrary “all functions complete” claim follows from this visual match.
 
-Visual corrections above are addressed. WEB-027J repaired invited login, legacy reports, Principal execution binding and fresh Principal Agent provisioning. Overall product handoff remains blocked by Human Subject activation, real Risk MFA and the remaining whole-site semantic acceptance matrix. Screen presence is not capability acceptance. Full 200% browser zoom and final hosted role acceptance remain to be recorded before release.
+Visual corrections above are addressed. WEB-027J repaired invited login, legacy reports, Principal execution binding and fresh Principal Agent provisioning. Overall product handoff remains blocked by real Risk MFA and the remaining whole-site semantic acceptance matrix. Screen presence is not capability acceptance. Full 200% browser zoom and final hosted role acceptance remain to be recorded before release.
 
 final result: blocked
 
 ## WEB-027J follow-up
 
 Inspected the actual fresh Principal `j4/before-restart.png` and Capital `capital/partner.png`, with the selected Precision Terminal layout retained. New local Agent enrollment/revocation controls reuse the same native button and form system. Exact runtime and schema hashes were verified separately. Full browser regression has 29 covered cases after the five Agent-host fixture cases were corrected and retested; no fixture result is substituted for durable login or authority.
+
+
+## WEB-027K1 follow-up
+
+Inspected real Human activation and completed-plan screens. Existing position form hiding initially orphaned activation; fixed by keeping the identity panel outside it. Screenshot review found white text on a light confirmation dialog; changed to the existing theme ink token. Final actual-browser contrast exceeds 6.49:1 at 1440/390 in Light/Dark, dialog fits and native Escape cancels. K1 activation and account proof use real local services; Risk Passkey remains pending concrete verifier review, not a fake authenticated state.

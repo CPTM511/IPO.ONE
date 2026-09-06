@@ -704,5 +704,7 @@
     "formal deployed SHA/browser verification"
   ],
   "formalDeployment": false,
-  "productionFundsMoved": false
+  "productionFundsMoved": false,
+  "historicalRecord": "WEB-027J, retained at its explicit source",
+  "latestLocalFollowUp": "k1-verification-evidence.json"
 }

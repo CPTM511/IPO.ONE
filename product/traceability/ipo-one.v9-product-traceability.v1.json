@@ -39,6 +39,26 @@
   },
   "operationBindings": [
     {
+      "operationId": "pilotActivateSandboxHumanSubject",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_sandbox_human_subject_activated.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/human-subject-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/app.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/sandbox-human-activation.test.js",
+        "scripts/web027k-human.mjs"
+      ]
+    },
+    {
       "operationId": "tradingCreateAccountBindingChallenge",
       "requestSchemaVersion": "tenant_protocol_request.v1",
       "responseSchemaVersion": "tenant_trading_account_binding_challenge_created.v2",
@@ -2466,6 +2486,32 @@
       "label": "Request Credit",
       "order": 2,
       "actions": [
+        {
+          "actionId": "request_credit.activate_sandbox_human",
+          "label": "Explicitly activate the current local synthetic Human profile",
+          "prototypeLabels": [
+            "Activate sandbox profile"
+          ],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotActivateSandboxHumanSubject"
+          ],
+          "authorityReferences": [
+            "docs/codex/tasks/WEB_027K_LOCAL_PREREQUISITES_REVIEW.md",
+            "docs/architecture/ADR-WEB-027K1-LOCAL-HUMAN-ACTIVATION.md"
+          ],
+          "uiAdapters": [
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/sandbox-human-activation.test.js",
+            "scripts/web027k-human.mjs"
+          ],
+          "truthBoundary": "Founder-approved WEB-027K1 exact isolated candidate/proof only. Current owned pending synthetic Subject, active Principal/Consent/approved reference, unchanged version and no adverse/frozen state. Explicit confirmation grants no credit, KYC or funds authority. Hosted activation remains closed.",
+          "nextTaskIds": [],
+          "humanGateRequired": false
+        },
         {
           "actionId": "request_credit.establish_human_subject_and_consent",
           "label": "Create and read the Human Subject, Consent, and offchain identity reference",

@@ -1,0 +1,909 @@
+{
+  "schemaVersion": "web027k_local_acceptance.v1",
+  "verdict": "BLOCKED — NOT COMPLETE",
+  "approval": "Founder approved WEB-027K; K2 fixed verifier dependency review remains pending",
+  "runtime": {
+    "source": "5303c906081dd317e32039ae65064fe8b3e8800d",
+    "image": "ipo-one-web027:5303c906081d",
+    "candidate": "ipo-one-web027-candidate",
+    "database": "ipo_one_web027_candidate",
+    "ports": [
+      8935,
+      8936,
+      8937,
+      8938
+    ],
+    "sourceDatabaseUnchanged": true,
+    "founderRuntimeUnchanged": true,
+    "restoredDumpSha256": "3f760ab5626a5fcbbdf6160b29a82904463f4abba8ec68a67091b651ccddede0",
+    "existingMainMigrationsApplied": [
+      "0074_metered_usage_runtime_privileges",
+      "0075_metered_usage_system_worker_capability"
+    ],
+    "mode": "local_no_funds",
+    "browserVerification": "K1 locally verified at exact source; whole-site and Founder acceptance pending",
+    "previousSource": "3fbb438dbc7885c9c291c4b76f8e6b13c1ff818d",
+    "previousContainer": "ipo-one-web027-candidate-3fbb438dbc78",
+    "databasePreserved": true,
+    "reviewedMigrations": [],
+    "localAccessRepair": "web027j_v1"
+  },
+  "worker": {
+    "source": "5303c906081dd317e32039ae65064fe8b3e8800d",
+    "image": "ipo-one-web027:5303c906081d",
+    "name": "ipo-one-web027-candidate-worker",
+    "database": "ipo_one_web027_candidate",
+    "mode": "synthetic_outbox_only",
+    "chainSigner": false
+  },
+  "humanFinalSource": {
+    "source": "5303c906081dd317e32039ae65064fe8b3e8800d",
+    "apiMocks": false,
+    "fixtureQuery": false,
+    "results": [
+      {
+        "stage": "fresh",
+        "activationState": "active",
+        "activationPerformed": true,
+        "cancelNoMutation": true,
+        "durableReplay": true,
+        "repeatActivationDenied": true,
+        "refresh": true,
+        "logoutLogin": true,
+        "processRestart": true,
+        "binding": {
+          "bound": true,
+          "read": true,
+          "capabilityRead": true,
+          "revoked": true,
+          "disconnected": true
+        }
+      },
+      {
+        "stage": "existing",
+        "activationState": "active",
+        "activationPerformed": false,
+        "cancelNoMutation": false,
+        "durableReplay": false,
+        "repeatActivationDenied": false,
+        "refresh": true,
+        "logoutLogin": true,
+        "processRestart": true,
+        "binding": {
+          "alreadyUsedPrincipalAccount": true
+        }
+      }
+    ],
+    "actions": [
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:44:16.234Z"
+      },
+      {
+        "selector": "#cancelSandboxHumanActivationBtn",
+        "label": "Cancel",
+        "at": "2026-09-06T16:44:16.362Z"
+      },
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:44:16.380Z"
+      },
+      {
+        "selector": "#walletPermissionsAccessBtn",
+        "label": "Review sign-in",
+        "at": "2026-09-06T16:44:16.883Z"
+      },
+      {
+        "selector": "#accessCloseBtn",
+        "label": "",
+        "at": "2026-09-06T16:44:16.955Z"
+      },
+      {
+        "selector": "#executionConnectBtn",
+        "label": "Connect execution account",
+        "at": "2026-09-06T16:44:16.978Z"
+      },
+      {
+        "selector": "#executionBindBtn",
+        "label": "Bind account",
+        "at": "2026-09-06T16:44:17.070Z"
+      },
+      {
+        "selector": "#executionDisconnectBtn",
+        "label": "Disconnect execution account",
+        "at": "2026-09-06T16:44:17.411Z"
+      }
+    ],
+    "requests": [
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotActivateSandboxHumanSubject",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotActivateSandboxHumanSubject",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotActivateSandboxHumanSubject",
+        "status": 400
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletPrepareAccountBinding",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletSubmitAccountBinding",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletDiscoverCapabilities",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletRevokeAccountBinding",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      }
+    ]
+  },
+  "existingPendingHumanActivation": {
+    "source": "3fbb438dbc7885c9c291c4b76f8e6b13c1ff818d",
+    "apiMocks": false,
+    "fixtureQuery": false,
+    "results": [
+      {
+        "stage": "fresh",
+        "activation": true,
+        "cancelNoMutation": true,
+        "refresh": true,
+        "logoutLogin": true,
+        "processRestart": true,
+        "binding": {
+          "bound": true,
+          "read": true,
+          "capabilityRead": true,
+          "revoked": true,
+          "disconnected": true
+        }
+      },
+      {
+        "stage": "existing",
+        "activation": true,
+        "cancelNoMutation": true,
+        "refresh": true,
+        "logoutLogin": true,
+        "processRestart": true,
+        "binding": {
+          "alreadyUsedPrincipalAccount": true
+        }
+      }
+    ],
+    "actions": [
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:31:54.917Z"
+      },
+      {
+        "selector": "#cancelSandboxHumanActivationBtn",
+        "label": "Cancel",
+        "at": "2026-09-06T16:31:55.038Z"
+      },
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:31:55.061Z"
+      },
+      {
+        "selector": "#walletPermissionsAccessBtn",
+        "label": "Review sign-in",
+        "at": "2026-09-06T16:31:55.592Z"
+      },
+      {
+        "selector": "#accessCloseBtn",
+        "label": "",
+        "at": "2026-09-06T16:31:55.666Z"
+      },
+      {
+        "selector": "#executionConnectBtn",
+        "label": "Connect execution account",
+        "at": "2026-09-06T16:31:55.688Z"
+      },
+      {
+        "selector": "#executionBindBtn",
+        "label": "Bind account",
+        "at": "2026-09-06T16:31:55.795Z"
+      },
+      {
+        "selector": "#executionDisconnectBtn",
+        "label": "Disconnect execution account",
+        "at": "2026-09-06T16:31:56.098Z"
+      },
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:32:03.488Z"
+      },
+      {
+        "selector": "#cancelSandboxHumanActivationBtn",
+        "label": "Cancel",
+        "at": "2026-09-06T16:32:03.561Z"
+      },
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:32:03.597Z"
+      }
+    ],
+    "requests": [
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotActivateSandboxHumanSubject",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletPrepareAccountBinding",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletSubmitAccountBinding",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletDiscoverCapabilities",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletRevokeAccountBinding",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "walletReadAccountBindings",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "fresh",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotActivateSandboxHumanSubject",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadWorkspaceResume",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadHumanSelf",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadCreditApplication",
+        "status": 200
+      },
+      {
+        "stage": "existing",
+        "operationId": "pilotReadOwnObligation",
+        "status": 200
+      }
+    ]
+  },
+  "visualFinalSource": {
+    "source": "5303c906081dd317e32039ae65064fe8b3e8800d",
+    "results": [
+      {
+        "width": 1440,
+        "theme": "light",
+        "ratios": [
+          6.488201189298102,
+          16.090803482422444,
+          16.090803482422444,
+          16.090803482422444
+        ],
+        "dialogFits": true,
+        "modalOpen": true,
+        "escapeCancelled": true
+      },
+      {
+        "width": 1440,
+        "theme": "dark",
+        "ratios": [
+          10.264156800786102,
+          15.234359962122278,
+          15.234359962122278,
+          15.234359962122278
+        ],
+        "dialogFits": true,
+        "modalOpen": true,
+        "escapeCancelled": true
+      },
+      {
+        "width": 390,
+        "theme": "light",
+        "ratios": [
+          6.488201189298102,
+          16.090803482422444,
+          16.090803482422444,
+          16.090803482422444
+        ],
+        "dialogFits": true,
+        "modalOpen": true,
+        "escapeCancelled": true
+      },
+      {
+        "width": 390,
+        "theme": "dark",
+        "ratios": [
+          10.264156800786102,
+          15.234359962122278,
+          15.234359962122278,
+          15.234359962122278
+        ],
+        "dialogFits": true,
+        "modalOpen": true,
+        "escapeCancelled": true
+      }
+    ],
+    "actions": [
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:36:29.179Z"
+      },
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:36:29.353Z"
+      },
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:36:29.535Z"
+      },
+      {
+        "selector": "#activateSandboxHumanBtn",
+        "label": "Activate sandbox profile",
+        "at": "2026-09-06T16:36:29.710Z"
+      }
+    ]
+  },
+  "audit": {
+    "installedSourceFilesMatch": true,
+    "installedRuntimeFileCount": 52,
+    "health": [
+      {
+        "port": 8935,
+        "status": 200
+      },
+      {
+        "port": 8936,
+        "status": 200
+      },
+      {
+        "port": 8937,
+        "status": 200
+      },
+      {
+        "port": 8938,
+        "status": 200
+      }
+    ],
+    "source": "5303c906081dd317e32039ae65064fe8b3e8800d",
+    "readOnly": true,
+    "results": {
+      "activationEvents": [
+        {
+          "next": "active",
+          "count": 8,
+          "previous": "pending",
+          "event_type": "subject_status_changed"
+        }
+      ],
+      "duplicateActivations": [
+        {
+          "count": 0
+        }
+      ],
+      "previousGeneration": [
+        {
+          "count": 13,
+          "status": "revoked"
+        }
+      ],
+      "activationCapability": [
+        {
+          "count": 21,
+          "roles": [
+            "human_borrower"
+          ]
+        }
+      ],
+      "migrations": [
+        {
+          "count": 79,
+          "latest": "0079_local_human_sandbox_activation"
+        }
+      ],
+      "subjectStates": [
+        {
+          "count": 3,
+          "status": "pending",
+          "subject_type": "human"
+        },
+        {
+          "count": 8,
+          "status": "active",
+          "subject_type": "human"
+        },
+        {
+          "count": 5,
+          "status": "active",
+          "subject_type": "agent"
+        }
+      ],
+      "roleDenials": [
+        {
+          "count": 12,
+          "reason_code": "actor_capability_rejected",
+          "operation_id": "pilotReadServicingQueueReference"
+        },
+        {
+          "count": 12,
+          "reason_code": "actor_capability_rejected",
+          "operation_id": "pilotReadTenantRiskPortfolioReference"
+        }
+      ],
+      "agentRuntimes": [
+        {
+          "count": 4,
+          "status": "revoked",
+          "credential_status": "revoked"
+        }
+      ],
+      "legacyRotation": [
+        {
+          "count": 11,
+          "status": "revoked"
+        }
+      ],
+      "newRotation": [
+        {
+          "count": 22,
+          "status": "active"
+        }
+      ]
+    },
+    "rotation": {
+      "count": 13,
+      "onlyAdded": [
+        "subject.activate.sandbox.self"
+      ],
+      "existingCapabilitiesPreserved": true
+    }
+  },
+  "agentRegression": {
+    "source": "c9213923f038d7708ff15fd3b76a2e14a0d429ee",
+    "apiMocks": false,
+    "results": [
+      {
+        "freshPrincipalLifecycle": true,
+        "fullyRepaid": true,
+        "visibleClicks": true
+      },
+      {
+        "restartRecovery": true,
+        "credentialRevocation": true,
+        "revocationAfterRefresh": true
+      }
+    ],
+    "actionEvidence": [
+      {
+        "selector": "#createLocalSandboxAgentBtn",
+        "label": "Create my sandbox Agent",
+        "at": "2026-09-06T16:26:58.131Z"
+      },
+      {
+        "selector": "#createAccountChallengeBtn",
+        "label": "Create signing request",
+        "at": "2026-09-06T16:26:58.407Z"
+      },
+      {
+        "selector": "#proveAccountOnlineBtn",
+        "label": "Ask registered test Agent to prove",
+        "at": "2026-09-06T16:26:58.607Z"
+      },
+      {
+        "selector": "#createDraftMandateBtn",
+        "label": "Create Draft Mandate",
+        "at": "2026-09-06T16:26:58.840Z"
+      },
+      {
+        "selector": "#openAgentApplicationHandoffBtn",
+        "label": "Run local Agent application",
+        "at": "2026-09-06T16:26:59.055Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Review and activate this Mandate",
+        "at": "2026-09-06T16:26:59.368Z"
+      },
+      {
+        "selector": "#activateMandateBtn",
+        "label": "Activate sandbox Mandate",
+        "at": "2026-09-06T16:26:59.416Z"
+      },
+      {
+        "selector": "#continueAgentCreditBtn",
+        "label": "Open Agent workspace",
+        "at": "2026-09-06T16:26:59.668Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Complete sandbox Agent lifecycle",
+        "at": "2026-09-06T16:26:59.692Z"
+      },
+      {
+        "selector": "#agentOnlineReviewBtn",
+        "label": "Review Agent obligations",
+        "at": "2026-09-06T16:27:00.077Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Verify Agent Evidence",
+        "at": "2026-09-06T16:27:00.432Z"
+      },
+      {
+        "selector": "#revokeLocalSandboxAgentBtn",
+        "label": "Revoke local runtime credential",
+        "at": "2026-09-06T16:27:03.335Z"
+      }
+    ]
+  },
+  "backendUnchangedSinceAgentAndPostgresVerification": {
+    "source": "c9213923f038d7708ff15fd3b76a2e14a0d429ee",
+    "onlyChangesToRuntime": [
+      "apps/web/src/index.html",
+      "apps/web/src/workspace-experience.css"
+    ]
+  },
+  "checks": {
+    "activationCases": 23,
+    "gatewayAndLocalCases": 242,
+    "webCases": 203,
+    "securityCases": 35,
+    "transportCases": 92,
+    "postgresCases": 99,
+    "browserRegressionCases": 29,
+    "protocolOperations": 116,
+    "migrationPairs": 79,
+    "productTraceability": {
+      "destinations": 14,
+      "actions": 77,
+      "operations": 116,
+      "classificationIsNotDeploymentEvidence": true
+    }
+  },
+  "limitations": [
+    "K2 Passkey code/runtime is not implemented pending explicitly required fixed dependency review; Risk SIWE is not MFA.",
+    "Legacy QA wallet already has a Principal-side execution binding; its Human cross-Subject account reuse is not claimed. Fresh Human complete binding was clicked.",
+    "VM clock reversal safely rejected immediate activation before existing Consent/reference validFrom; later visible retry passed, no time guard weakened.",
+    "Automated tests use dedicated synthetic wallets and real services. They do not represent Founder device acceptance or production verification.",
+    "Capital accepted Facility/servicing, dual-control roles, Pool/Provider/venue and whole-site matrix remain open; no full-site percentage."
+  ],
+  "formalDeployment": false,
+  "originalFounderServiceChanged": false,
+  "apiMocksInDurableAcceptance": false
+}

@@ -72,8 +72,10 @@ try {
  for(const stage of ["fresh","existing"]) {
   let wallet;
   if(stage==="existing") wallet=JSON.parse(await readFile("/Users/cptmao/Documents/IPO.ONE/.ipo-one/web026-runtime/isolated-qa-wallet.json","utf8"));
-  else {const filename=state+"/web027k-human-final.json";try {wallet=JSON.parse(await readFile(filename,"utf8"));}catch {wallet={privateKey:generatePrivateKey()};await writeFile(filename,JSON.stringify(wallet),{mode:0o600});}}
+  else {const filename=state+"/web027k-human-final-browser.json";try {wallet=JSON.parse(await readFile(filename,"utf8"));}catch {wallet={privateKey:generatePrivateKey()};await writeFile(filename,JSON.stringify(wallet),{mode:0o600});}}
   const context=await walletContext(privateKeyToAccount(wallet.privateKey));const page=await context.newPage();
+  let activationRequest, activationHeaders, didActivate=false, replayVerified=false, repeatDenied=false;
+  page.on("request",r=>{if(r.url().endsWith("/tenant/v1/operations")&&r.postDataJSON()?.operationId==="pilotActivateSandboxHumanSubject") {activationRequest=r.postDataJSON();activationHeaders=r.allHeaders();}});
   page.on("response",async r=>{if(r.url().endsWith("/tenant/v1/operations")){const q=r.request().postDataJSON();requests.push({stage,operationId:q?.operationId,status:r.status()});}});
   await login(page,8935,"human");
   await expect(page.locator("#humanApplication")).toBeVisible();
@@ -89,6 +91,18 @@ try {
    await click(page,"#activateSandboxHumanBtn");await expect(page.locator("#humanActivationDialog")).toBeVisible();
    await page.screenshot({path:out+"/"+stage+"-activation-review.png"});
    await operation(page,"#confirmSandboxHumanActivationBtn","pilotActivateSandboxHumanSubject");
+   didActivate=true;
+   const originalHeaders=await activationHeaders;
+   const headers={"content-type":"application/json","origin":"http://127.0.0.1:8935","x-csrf-token":originalHeaders["x-csrf-token"],"x-ipo-one-authentication-mode":"human_session","x-request-id":activationRequest.requestId};
+   const send = data => page.evaluate(async ({data,headers}) => {
+     const r=await fetch("/tenant/v1/operations",{method:"POST",credentials:"same-origin",headers:{...headers,"x-request-id":data.requestId},body:JSON.stringify(data)});
+     return {status:r.status,body:await r.json()};
+   },{data,headers});
+   const replay=await send(activationRequest);
+   if(replay.status!==200)throw Error("Replay rejected: "+replay.status+" "+replay.body.code);
+   expect(replay.body.replayed).toBe(true);replayVerified=true;
+   const repeat=await send({...activationRequest,idempotencyKey:activationRequest.idempotencyKey+"-repeat",requestId:activationRequest.requestId+"-repeat"});
+   expect(repeat.status).toBe(400);expect(repeat.body.code).toBe("sandbox_human_activation_rejected");repeatDenied=true;
   }
   await expect(page.locator("#activateSandboxHumanBtn")).toHaveText("Sandbox profile active");
   await expect(page.locator("#activateSandboxHumanBtn")).toBeDisabled();
@@ -108,7 +122,7 @@ try {
   expect(restarted.status).toBe(0);
   await expect.poll(async()=>{try{return(await fetch("http://127.0.0.1:8935/tenant/v1/healthz")).status;}catch{return 0;}},{timeout:30000}).toBe(200);
   await page.reload();await expect(page.locator("#activateSandboxHumanBtn")).toHaveText("Sandbox profile active");
-  results.push({stage,activation:true,cancelNoMutation:true,refresh:true,logoutLogin:true,processRestart:true,binding});
+  results.push({stage,activationState:"active",activationPerformed:didActivate,cancelNoMutation:didActivate,durableReplay:replayVerified,repeatActivationDenied:repeatDenied,refresh:true,logoutLogin:true,processRestart:true,binding});
   await context.close();
  }
 } catch(error) { results.push({passed:false,error:error.message}); }
