@@ -9,12 +9,14 @@ import { readMigrationSet, migrationChecksumMatches } from "./migrate.mjs";
 const root = process.cwd();
 const main = "/Users/cptmao/Documents/IPO.ONE";
 const state = resolve(main, ".ipo-one/web027-runtime");
-const out = resolve(root, "output/playwright/web-027");
+const profile = process.argv[3] ?? "candidate";
+assert.ok(["candidate", "proof"].includes(profile));
+const out = resolve(root, "output/playwright/web-027", profile === "proof" ? "proof" : "");
 const pg = "ipo-one-web026-test-postgres-v2";
-const database = "ipo_one_web027_candidate";
+const database = "ipo_one_web027_" + profile;
 const sourceRuntime = "ipo-one-web026h-copy";
-const candidate = "ipo-one-web027-candidate";
-const basePort = 8935;
+const candidate = "ipo-one-web027-" + profile;
+const basePort = profile === "proof" ? 8945 : 8935;
 function run(bin, args, { input, binary = false } = {}) {
   const result = spawnSync(bin, args, { cwd: root, input, encoding: binary ? undefined : "utf8", maxBuffer: 128 * 1024 * 1024 });
   if (result.status !== 0) throw Error(`${bin} ${args[0]} failed; protected output withheld`);
@@ -84,7 +86,7 @@ if (action === "build") {
   for (const mount of source.Mounts.filter(m => m.Destination.startsWith("/run/secrets/"))) args.push("--mount", `type=bind,source=${mount.Source},target=${mount.Destination},readonly`);
   args.push(image, "apps/private-pilot/src/start.js");
   docker(args); docker(["start", candidate]);
-  await report("candidate-runtime", { source: sha, image, candidate, database, ports: [8935,8936,8937,8938], sourceDatabaseUnchanged: true, founderRuntimeUnchanged: true, restoredDumpSha256: createHash("sha256").update(dump).digest("hex"), existingMainMigrationsApplied: pending.map(m => m.name), mode: "local_no_funds", browserVerification: "pending" });
+  await report("candidate-runtime", { source: sha, image, candidate, database, ports: [0,1,2,3].map(i=>basePort+i), sourceDatabaseUnchanged: true, founderRuntimeUnchanged: true, restoredDumpSha256: createHash("sha256").update(dump).digest("hex"), existingMainMigrationsApplied: pending.map(m => m.name), mode: "local_no_funds", browserVerification: "pending" });
 } else if (action === "upgrade") {
   const previous = inspect(candidate);
   const previousReport = JSON.parse(await readFile(resolve(out, "candidate-runtime.json"), "utf8"));
@@ -109,13 +111,13 @@ if (action === "build") {
   }
   await report("candidate-runtime", { ...previousReport, source: sha, image, previousSource: previousReport.source, previousContainer: backup, databasePreserved: true, browserVerification: "pending" });
 } else if (action === "worker") {
-  const name = "ipo-one-web027-worker";
+  const name = "ipo-one-web027-" + profile + "-worker";
   assert.equal(docker(["ps","-a","--filter",`name=^/${name}$`,"--format","{{.Names}}"]), "");
   const env = envMap(inspect(candidate));
   assert.equal(new URL(env.DATABASE_URL).pathname,"/"+database);
   assert.ok(!env.IPO_ONE_EVIDENCE_ATTESTOR_KEY_FILE && !env.IPO_ONE_EVIDENCE_ANCHOR_CONTRACT_ADDRESS, "No chain signer or anchor activation");
   env.IPO_ONE_LOCAL_WORKER_ACK="I_UNDERSTAND_SYNTHETIC_OUTBOX_ONLY";
-  env.IPO_ONE_LOCAL_WORKER_ID="ipo_one_web027_candidate_worker";
+  env.IPO_ONE_LOCAL_WORKER_ID="ipo_one_web027_"+profile+"_worker";
   const envFile=await secret("worker.env",Object.entries(env).map(([k,v])=>k+"="+v).join("\n")+"\n");
   const args=["create","--name",name,"--network","host","--read-only","--tmpfs","/tmp:rw,noexec,nosuid,nodev,size=64m","--cap-drop","ALL","--security-opt","no-new-privileges:true","--restart","unless-stopped","--env-file",envFile];
   for (const m of inspect(candidate).Mounts.filter(m=>m.Destination.startsWith("/run/secrets/"))) args.push("--mount",`type=bind,source=${m.Source},target=${m.Destination},readonly`);

@@ -4,7 +4,9 @@ import { privateKeyToAccount } from "viem/accounts";
 import { WORKSPACE_NAVIGATION_MANIFEST } from "../apps/web/src/workspace-surface-access.js";
 import { createHash } from "node:crypto";
 
-const out = "output/playwright/web-027";
+const proofProfile = process.argv[3] === "proof";
+const out = "output/playwright/web-027" + (proofProfile ? "/proof" : "");
+const basePort = proofProfile ? 8945 : 8935;
 const account = privateKeyToAccount(JSON.parse(await readFile("/Users/cptmao/Documents/IPO.ONE/.ipo-one/web026-runtime/isolated-qa-wallet.json", "utf8")).privateKey);
 const build = JSON.parse(await readFile(out + "/candidate-runtime.json", "utf8"));
 await mkdir(out, { recursive: true });
@@ -116,7 +118,7 @@ async function login(page, port, role) {
   await expect(page.locator("#accessLayer")).toBeHidden();
 }
 try {
-  for (const [role, port] of [["borrower", 8935], ["controller", 8936]]) {
+  for (const [role, port] of [["borrower", basePort], ["controller", basePort + 1]]) {
     const context = await walletContext();
     const page = await context.newPage();
     page.on("pageerror", error => errors.push({ role, message: error.message }));

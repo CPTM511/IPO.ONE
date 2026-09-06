@@ -396,7 +396,7 @@ body.product-experience .precision-agent-context { margin-top: 28px; }
 
 body.product-experience [tabindex]:focus-visible { outline: 2px solid var(--b-accent); outline-offset: 4px; }
 /* A single semantic action token, including legacy high-specificity buttons. */
-body.product-experience.workspace-session-active button.primary,
+body.product-experience.workspace-session-active .view button.primary,
 body.product-experience .access-layer button.primary {
   background: var(--b-action-bg); color: var(--b-action-ink); border-color: transparent;
 }
