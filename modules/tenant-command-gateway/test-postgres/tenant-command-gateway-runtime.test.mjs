@@ -7508,6 +7508,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
             overrides: { requestedPrincipalMinor, requestedTermDays }
           })
         );
+        await waitForDatabaseClockAfter(ownerPool,
+          new Date(new Date(requested.response.creditIntent.createdAt).getTime() + 5),
+          "Terminal Mandate fixture Decision");
         const evaluated = await tenantOneRevocationAgent.evaluateCreditApplication({
           creditIntentId: requested.response.creditIntent.creditIntentId,
           idempotencyKey: `evaluate-${label}-credit-${RUN_ID}`,

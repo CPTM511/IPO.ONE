@@ -9968,7 +9968,7 @@ async function refreshHumanActivationState() {
   tenantPilot.humanSelf = null;
   const subjectId = tenantInputValue("humanSubjectId");
   if (!subjectId || !hasHumanBorrowerWorkspace()) return;
-  const result = await tenantApi("pilotReadHumanSelf", { resource: { resourceType: "subject", resourceId: subjectId } });
+  const result = await tenantApi("pilotReadHumanSelf", { idempotent: false, resource: { resourceType: "subject", resourceId: subjectId } });
   tenantPilot.humanSelf = result.response;
 }
 
