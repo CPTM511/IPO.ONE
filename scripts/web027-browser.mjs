@@ -15,9 +15,30 @@ const results = [], errors = [];
 const actionEvidence = [];
 async function click(page, selector) {
   const control = page.locator(selector);
+  await expect(control).toBeEnabled();
   const label = await control.innerText();
   await control.click();
   actionEvidence.push({ selector, label, at: new Date().toISOString() });
+}
+async function completeHumanRepayment(page) {
+  const outstanding = await page.locator("#humanObligationOutstanding").innerText();
+  expect(outstanding).toMatch(/^\$[\d,.]+$/);
+  if (outstanding !== "$0.00") {
+    await click(page, "#humanGuidePrimaryBtn");
+    await page.locator("#humanRepaymentAmount").fill(outstanding.replace(/[$,]/g, ""));
+    await click(page, "#postHumanRepaymentBtn");
+    if (await page.locator("#accessLayer").isVisible()) {
+      await page.getByRole("button", { name: /WEB027 isolated test wallet/ }).click();
+      if (await page.locator("#accessLayer").isVisible()) await page.locator("#accessCloseBtn").click();
+      await click(page, "#postHumanRepaymentBtn");
+    }
+    await expect(page.locator("#economicActionLayer")).toBeVisible();
+    await click(page, "#economicActionConfirmBtn");
+    await expect(page.locator("#humanObligationOutstanding")).toHaveText("$0.00");
+  }
+  await page.reload();
+  await expect(page.locator("#humanObligationOutstanding")).toHaveText("$0.00");
+  await page.screenshot({ path: out + "/durable-human-fully-repaid.png" });
 }
 async function humanLifecycle(page) {
   await click(page, "#humanGuideSecondaryBtn");
@@ -138,6 +159,7 @@ try {
     const entry = await page.locator("#mainContent").innerText();
     await writeFile(`${out}/durable-${role}-entry.txt`, entry);
     if (process.argv[2] === "flow" && role === "borrower") await humanLifecycle(page);
+    if (process.argv[2] === "settle" && role === "borrower") await completeHumanRepayment(page);
     if (process.argv[2] === "agent" && role === "controller") {
       try { await agentLifecycle(page); } catch (error) {
         await writeFile(out + "/agent-failure.txt", await page.locator("body").innerText());

@@ -214,7 +214,7 @@ Agent、多个 Subject/Mandate 或不完整分页时，页面保持关闭并等�
 5. 点击 `Review and activate this Mandate`。
 6. 在 Principal 页面核对 exact Mandate、limits、hashes 和 expiry。
 7. 勾选 exact Mandate acknowledgement。
-8. 点击 `Activate exact Sandbox Mandate`。
+8. 点击 `Activate sandbox Mandate`。
 
 Draft Mandate 用于申请与评估；Active Mandate 用于接受已有 Offer 和运行
 Obligation。Activate 不会自动借款，也不会自动花钱。

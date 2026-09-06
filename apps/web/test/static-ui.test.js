@@ -1498,8 +1498,8 @@ test("WEB-023 presents distinct Agent application and runtime handoff stages", a
     "post-activation navigation must open the browser-operable Agent workspace without a mutation"
   );
   assert.ok(html.includes("Run the Agent application"));
-  assert.ok(html.includes("Return after the Agent application produced its Offer workflow receipt."));
-  assert.ok(html.includes("activation unlocks runtime use of an existing Agent Offer"));
+  assert.ok(html.includes("Activation enables acceptance of this existing Offer. It cannot start a new application."));
+  assert.ok(html.includes("I authorize this exact sandbox Mandate for the existing Offer, within the limits shown."));
   assert.ok(js.includes("presentation?.identity?.applicationEligible === true"));
   assert.ok(js.includes("const runtimeReady = runtimeHandoff && economicOperationsAvailable"));
   assert.ok(js.includes('"Runtime ready · existing Offer required"'));

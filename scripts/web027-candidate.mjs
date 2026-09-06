@@ -27,7 +27,7 @@ const inspect = name => JSON.parse(docker(["inspect", name]))[0];
 const envMap = d => Object.fromEntries(d.Config.Env.map(row => { const i = row.indexOf("="); return [row.slice(0, i), row.slice(i + 1)]; }));
 const sql = (query, db = database) => docker(["exec", pg, "psql", "-U", "ipo_one_owner", "-d", db, "-v", "ON_ERROR_STOP=1", "-At", "-c", query]);
 async function secret(name, data) {
-  const path = resolve(state, name);
+  const path = resolve(state, profile + "-" + name);
   await writeFile(path, data, { mode: 0o600 }); await chmod(path, 0o600); return path;
 }
 async function report(name, value) {

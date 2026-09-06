@@ -2,9 +2,10 @@ import { expect, test } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
 
 test("Principal authority preserves the original controls and activates only the exact reviewed Mandate", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   const failures = [];
   page.on("pageerror", error => failures.push(error.message));
-  await page.goto("http://127.0.0.1:4179/?preview_data=fixture#agent-console");
+  await page.goto("http://127.0.0.1:4180/?preview_data=fixture#agent-console");
   await page.getByRole("button", { name: "Agents", exact: true }).click();
   await expect(page.locator("#principalAuthoritySurface")).toBeVisible();
   await expect(page.locator("#humanGuide")).toBeHidden();
@@ -25,8 +26,19 @@ test("Principal authority preserves the original controls and activates only the
       const widthState = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
       expect(widthState.content).toBeLessThanOrEqual(widthState.viewport + 1);
       await expect(page.locator("#activateMandateBtn")).toBeEnabled();
+      const colors = await page.locator("#activateMandateBtn").evaluate(node => {
+        const style = getComputedStyle(node);
+        return { background: style.backgroundColor, color: style.color };
+      });
+      const luminance = color => {
+        const values = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(n => n / 255)
+          .map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4);
+        return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
+      };
+      const values = [luminance(colors.background), luminance(colors.color)].sort((a, b) => b - a);
+      expect((values[0] + .05) / (values[1] + .05), `${theme} action contrast`).toBeGreaterThanOrEqual(4.5);
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.screenshot({ path: `output/playwright/web-027/authority-${width}-${theme}.png` });
+      await page.screenshot({ path: `output/playwright/web-027/authority-${width}-${theme}.png`, animations: "disabled" });
     }
   }
   await page.locator("#activateMandateBtn").click();
@@ -52,7 +64,7 @@ test("Principal authority preserves the original controls and activates only the
 
 test("All original identified controls survive the redesign without duplicate IDs", async ({ page }) => {
   const baseline = JSON.parse(await readFile("docs/design/web-027/baseline-controls.json", "utf8"));
-  await page.goto("http://127.0.0.1:4179/?preview_data=fixture#agent-console");
+  await page.goto("http://127.0.0.1:4180/?preview_data=fixture#agent-console");
   const ids = await page.locator("[id]").evaluateAll(nodes => nodes.map(node => node.id));
   for (const item of baseline.controls.filter(item => item.id)) {
     expect(ids.filter(id => id === item.id), `Preserved control ${item.id}`).toHaveLength(1);

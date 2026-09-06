@@ -403,3 +403,11 @@ body.product-experience .access-layer button.primary {
 body.product-experience .workspace-task-layout { align-items: start; }
 body.product-experience #humanGuide { min-height: 0; }
 body.product-experience .credit-application-workbench { margin-inline: 0; }
+
+body.product-experience .precision-principal .workbench-heading { gap: 16px; align-items: center; margin-bottom: 24px; }
+body.product-experience .precision-principal .workbench-heading > div { flex: 1; min-width: 0; }
+body.product-experience .precision-principal .precision-authority-icon { width: 40px; height: 40px; flex: 0 0 40px; color: var(--b-accent); }
+body.product-experience .precision-principal .workbench-heading h3 { margin-top: 6px; }
+body.product-experience .precision-principal .workbench-heading p:not(.eyebrow) { margin-bottom: 0; }
+body.product-experience .authority-review #agentActivationStage { margin-top: 20px; }
+body.product-experience .authority-review .workbench-step { margin-bottom: 14px; }

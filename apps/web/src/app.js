@@ -4578,7 +4578,7 @@ function humanGuidePresentation() {
     };
   }
 
-  if (!subjectReady && !obligation) {
+  if (!subjectReady) {
     return {
       title: "Start with a private sandbox profile",
       copy: "We will create an opaque profile first. No name, bank login, wallet credential, or raw KYC is requested here.",
@@ -4593,7 +4593,7 @@ function humanGuidePresentation() {
     };
   }
 
-  if (!consentReady && !obligation) {
+  if (!consentReady) {
     return {
       title: "Approve how this sandbox may be used",
       copy: "Create purpose-limited Consent for the amount, term, and identity reference used in this no-funds application.",
@@ -4790,6 +4790,12 @@ function runHumanGuideAction(action) {
   }
   if (action === "return-current") {
     humanNewApplicationMode = false;
+    // Recover the current plan's own authority reference, not the cleared
+    // draft request. The server reauthorizes any later protected operation.
+    const obligation = tenantPilot.obligation;
+    if (obligation?.authorityType === "consent" && exactResourceId(obligation.authorityId)) {
+      el("humanConsentId").value = obligation.authorityId;
+    }
     renderTenantPilot();
     focusJumpTarget(el("humanGuide"));
     return;

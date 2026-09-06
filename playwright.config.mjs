@@ -16,6 +16,11 @@ export default defineConfig({
   },
   webServer: [
     {
+      command: "node apps/web/test/support/agent-console-browser-host.mjs",
+      env: { ...process.env, IPO_ONE_BROWSER_QA_PORT: "4180" },
+      url: "http://127.0.0.1:4180/tenant/v1/healthz", reuseExistingServer: false, timeout: 30_000
+    },
+    {
       command: "node apps/web/test/support/human-lifecycle-browser-host.mjs",
       env: { ...process.env, IPO_ONE_BROWSER_QA_PORT: "4178", IPO_ONE_BROWSER_QA_START_SIGNED_OUT: "1" },
       url: "http://127.0.0.1:4178/tenant/v1/healthz", reuseExistingServer: false, timeout: 30_000

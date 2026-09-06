@@ -1173,10 +1173,11 @@
               </summary>
             <section class="panel agent-authority-workbench" id="agentAuthority" tabindex="-1" aria-labelledby="agentAuthorityTitle">
               <div class="panel-heading workbench-heading">
+                <svg class="precision-authority-icon" aria-hidden="true"><use href="/icons.svg#bot"></use></svg>
                 <div>
                   <p class="eyebrow">Principal-controlled Agent setup</p>
                   <h3 id="agentAuthorityTitle">Create, review, and activate Agent authority</h3>
-                  <p>Set clear limits for your Agent. Review its account, permitted use and existing Offer before you authorize it.</p>
+                  <p>Review the account, limits and existing Offer before authorizing your Agent.</p>
                 </div>
                 <span class="state-pill neutral" id="agentAuthorityStatus">Not started</span>
               </div>
@@ -1328,13 +1329,13 @@
                   <div id="agentActivationStage" hidden>
                   <div class="workbench-step authority-review-step">
                     <span>05</span>
-                    <div><strong>Review terms and activate</strong><small>Return after the Agent application produced its Offer workflow receipt. Activation unlocks acceptance of that existing Offer; it cannot start a new Credit Intent.</small></div>
+                    <div><strong>Review terms and activate</strong><small>Activation enables acceptance of this existing Offer. It cannot start a new application.</small></div>
                   </div>
                   <label class="mandate-acknowledgement" for="principalMandateAcknowledge">
                     <input id="principalMandateAcknowledge" type="checkbox" />
-                    <span>I confirm this exact sandbox Mandate and understand that activation unlocks runtime use of an existing Agent Offer; it does not create or evaluate a new application.</span>
+                    <span>I authorize this exact sandbox Mandate for the existing Offer, within the limits shown.</span>
                   </label>
-                  <button class="primary authority-activate" id="activateMandateBtn" type="button">Activate exact Sandbox Mandate</button>
+                  <button class="primary authority-activate" id="activateMandateBtn" type="button">Activate sandbox Mandate</button>
                   </div>
                   <div id="agentRuntimeStage" hidden>
                     <div class="workbench-step">
