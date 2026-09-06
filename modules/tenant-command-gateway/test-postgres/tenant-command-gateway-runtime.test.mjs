@@ -6664,6 +6664,9 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
           }
         }));
         const creditIntent = requested.response.creditIntent;
+        // The local VM clock can be briefly slewed backwards under load. Wait
+        // for database time instead of weakening monotonic projection guards.
+        await waitForDatabaseClockAfter(ownerPool, new Date(new Date(creditIntent.createdAt).getTime() + 5), "Phase 2 Decision");
         const evaluated = await client.evaluateCreditApplication({
           creditIntentId: creditIntent.creditIntentId,
           idempotencyKey: `phase2-evaluate-${label}-${RUN_ID}`,

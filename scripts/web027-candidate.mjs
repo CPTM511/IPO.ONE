@@ -41,10 +41,10 @@ const image = "ipo-one-web027:" + sha.slice(0, 12);
 const action = process.argv[2];
 
 if (action === "build") {
-  assert.equal(run("git", ["diff", "--name-only", "HEAD", "--", "apps", "modules", "packages", "db", "deploy"]), "", "Commit candidate source before building");
+  assert.equal(run("git", ["diff", "--name-only", "HEAD", "--", "apps", "modules", "packages", "db", "deploy", "schemas", "api", "security", "product"]), "", "Commit candidate source before building");
   const context = resolve(state, "build-" + sha);
   await mkdir(context, { recursive: true });
-  const changed = run("git", ["diff", "--name-only", "0211f75", sha, "--", "apps", "modules", "packages", "db"]).split("\n").filter(Boolean);
+  const changed = run("git", ["diff", "--name-only", "0211f75", sha, "--", "apps", "modules", "packages", "db", "deploy", "schemas", "api", "security", "product"]).split("\n").filter(Boolean);
   const runtimeFiles = changed.filter(path => !path.includes("/test/") && !path.includes("/test-postgres/"));
   for (const path of runtimeFiles) {
     await mkdir(dirname(resolve(context, path)), { recursive: true });

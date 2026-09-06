@@ -634,6 +634,7 @@ async function serveAuthentication({ request, response, url, requestId }) {
 
 const serveReferenceAgent = Object.freeze({
   routes: Object.freeze({
+    enrollmentStatus: "/local/v1/reference-agent/enrollment/status",
     application: "/local/v1/reference-agent/application",
     continuation: "/local/v1/reference-agent/continuation",
     runtime: "/local/v1/reference-agent/runtime",
@@ -644,6 +645,9 @@ const serveReferenceAgent = Object.freeze({
       method: "authenticated_reference_route",
       pathname: url.pathname
     });
+    if (url.pathname === this.routes.enrollmentStatus) {
+      return sendJson(200, { schemaVersion: "local_principal_agent_runtime_view.v1", available: false });
+    }
     if (url.pathname === this.routes.continuation) {
       if (!durableContinuationAvailable) {
         throw new DomainError(
