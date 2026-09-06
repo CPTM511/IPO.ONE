@@ -5,6 +5,7 @@ export type TenantProtocolOperationId =
   | "pilotCreateAgentAccountChallenge"
   | "pilotCreateAgentSubject"
   | "pilotCreateConsent"
+  | "pilotActivateSandboxHumanSubject"
   | "pilotCreateHumanSubject"
   | "pilotCreateDraftMandate"
   | "pilotCreateCreditPassportArtifact"
@@ -894,6 +895,13 @@ export interface ReadAgentAccountBindingRequest extends TenantProtocolRequestBas
   operationId: "pilotReadAgentAccountBinding";
   payload: Record<string, never>;
   resource: { resourceType: "subject"; resourceId: string };
+}
+
+export interface ActivateSandboxHumanSubjectRequest extends TenantProtocolRequestBase {
+  operationId: "pilotActivateSandboxHumanSubject";
+  resource: { resourceType: "subject"; resourceId: string };
+  idempotencyKey: string;
+  payload: { consentId: string; identityReferenceId: string; expectedSubjectUpdatedAt: string; acknowledgement: "activate_synthetic_profile_no_credit_or_funds" };
 }
 
 export interface CreateHumanSubjectRequest extends TenantProtocolRequestBase {
@@ -1964,6 +1972,7 @@ export type TenantProtocolRequest =
   | CreateAgentAccountChallengeRequest
   | CreateAgentSubjectRequest
   | CreateConsentRequest
+  | ActivateSandboxHumanSubjectRequest
   | CreateHumanSubjectRequest
   | CreateDraftMandateRequest
   | CreateCreditPassportArtifactRequest
@@ -2106,6 +2115,14 @@ export interface AgentSubjectCreatedResponse {
   subjectType: "agent";
   status: SubjectStatus;
   schemaVersion: "tenant_agent_subject_created.v1";
+}
+
+export interface SandboxHumanSubjectActivatedResponse extends Omit<HumanSubjectCreatedResponse, "schemaVersion" | "status"> {
+  schemaVersion: "tenant_sandbox_human_subject_activated.v1";
+  status: "active";
+  consentId: string;
+  identityReferenceId: string;
+  updatedAt: string;
 }
 
 export interface HumanSubjectCreatedResponse {
@@ -5006,6 +5023,7 @@ export type TenantProtocolResult =
   | TenantProtocolResultBase<"pilotCreateAgentAccountChallenge", AgentAccountChallengeCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateAgentSubject", AgentSubjectCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateConsent", HumanConsentCreatedResponse>
+  | TenantProtocolResultBase<"pilotActivateSandboxHumanSubject", SandboxHumanSubjectActivatedResponse>
   | TenantProtocolResultBase<"pilotCreateHumanSubject", HumanSubjectCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateDraftMandate", DraftMandateCreatedResponse>
   | TenantProtocolResultBase<"pilotCreateCreditPassportArtifact", CreditPassportArtifactCreatedResponse>
@@ -5653,6 +5671,16 @@ export type TenantProtocolOperation =
       "required",
       "mutation",
       "tenant_consent_created.v1"
+    >
+  | TenantProtocolOperationBase<
+      "pilotActivateSandboxHumanSubject",
+      "command",
+      readonly ["human"],
+      "subject",
+      "subject.activate.sandbox.self",
+      "required",
+      "mutation",
+      "tenant_sandbox_human_subject_activated.v1"
     >
   | TenantProtocolOperationBase<
       "pilotCreateHumanSubject",

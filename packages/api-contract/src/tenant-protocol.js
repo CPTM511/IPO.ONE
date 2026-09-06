@@ -233,6 +233,19 @@ export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
     fundsAuthority: false
   },
   {
+    operationId: "pilotActivateSandboxHumanSubject",
+    kind: "command",
+    actorTypes: ["human"],
+    resourceType: "subject",
+    requiredCapability: "subject.activate.sandbox.self",
+    idempotency: "required",
+    quotaClass: "mutation",
+    requestSchemaVersion: TENANT_PROTOCOL_REQUEST_SCHEMA_VERSION,
+    responseSchemaVersion: "tenant_sandbox_human_subject_activated.v1",
+    public: false,
+    fundsAuthority: false
+  },
+  {
     operationId: "pilotCreateHumanSubject",
     kind: "command",
     actorTypes: ["human"],

@@ -2,13 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createLocalPilotIdentities } from "../src/local-pilot-identities.js";
 import { LOCAL_ACCESS_ADDITIONS, assertLocalAccessDatabase } from "../src/local-access-repair.js";
-test("WEB-027J adds exactly nine reviewed operations to ordinary local profiles",()=>{
+test("WEB-027J/K grants the exact ordinary operations and Human-only activation",()=>{
   const baseline=createLocalPilotIdentities().identities;
   const next=createLocalPilotIdentities({localAccessRepair:true}).identities;
   assert.equal(LOCAL_ACCESS_ADDITIONS.length,9);
   for(const role of Object.keys(baseline)) {
     const additions=next[role].capabilities.filter(c=>!baseline[role].capabilities.includes(c));
-    assert.deepEqual(additions,["borrower","controller"].includes(role)?LOCAL_ACCESS_ADDITIONS:[]);
+    assert.deepEqual(additions,role === "borrower" ? [...LOCAL_ACCESS_ADDITIONS,"subject.activate.sandbox.self"] : role === "controller" ? LOCAL_ACCESS_ADDITIONS : []);
     assert.deepEqual(baseline[role].capabilities.filter(c=>!next[role].capabilities.includes(c)),[]);
     assert.equal(next[role].actorId,baseline[role].actorId);
     if(!["borrower","controller"].includes(role)) assert.equal(next[role].clientId,baseline[role].clientId);

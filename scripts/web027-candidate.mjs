@@ -101,7 +101,7 @@ if (action === "build") {
   const appliedRows = sql("SELECT name,checksum FROM schema_migrations ORDER BY name").split("\n").map(row => row.split("|"));
   appliedRows.forEach(([name, recordedChecksum], i) => assert.ok(name === migrationSet[i].name && migrationChecksumMatches({name,recordedChecksum,releaseChecksum:migrationSet[i].checksum})));
   const pendingNames = migrationSet.slice(appliedRows.length).map(m => m.name);
-  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime"].includes(name)), "Only reviewed WEB-027J migrations may activate");
+  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime","0079_local_human_sandbox_activation"].includes(name)), "Only reviewed WEB-027J/K migrations may activate");
   env.IPO_ONE_LOCAL_ACCESS_REPAIR = "web027j_v1";
   env.IPO_ONE_M1_B_RELEASE_SHA = sha;
   const envFile = await secret("candidate.env", Object.entries(env).map(([k,v])=>k+"="+v).join("\n")+"\n");

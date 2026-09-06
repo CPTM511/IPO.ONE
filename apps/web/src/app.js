@@ -133,6 +133,7 @@ let serverCatalogOperations = new Set();
 let serverCatalogSnapshot = null;
 let explicitWalletReleaseInProgress = false;
 const tenantPilot = {
+  humanSelf: null,
   checked: false,
   connected: false,
   busy: false,
@@ -8514,6 +8515,14 @@ function renderTenantPilot() {
   const consentReady = exactResourceId(consentId);
   const createSubjectButton = el("createHumanSubjectBtn");
   const createConsentButton = el("createHumanConsentBtn");
+  const activation = el("activateSandboxHumanBtn");
+  const self = tenantPilot.humanSelf;
+  const profileStatus = self?.subject?.subjectId === subjectId ? self.subject.status : null;
+  activation.disabled = privateBusy || !tenantPilot.connected || !humanWorkspace || !subjectReady || !consentReady || profileStatus === "active";
+  activation.textContent = profileStatus === "active" ? "Sandbox profile active" : "Activate sandbox profile";
+  el("humanActivationStatus").textContent = profileStatus === "active"
+    ? "Sandbox profile active. You can verify an execution account in Settings. No credit or funds authority was granted."
+    : "Activation requires your current scoped Consent and a local synthetic identity reference. Review and confirm before the profile changes.";
   createSubjectButton.disabled =
     privateBusy || !tenantPilot.connected || !humanWorkspace || subjectReady;
   createSubjectButton.textContent = subjectReady
@@ -9280,6 +9289,7 @@ async function recoverAuthenticatedWorkspace({
     if (subject) {
       el("humanSubjectId").value = subject.resourceId;
       rememberOpaqueId(HUMAN_SUBJECT_STORAGE_KEY, subject.resourceId);
+      await refreshHumanActivationState();
     }
     if (consent) {
       el("humanConsentId").value = consent.resourceId;
@@ -9954,6 +9964,36 @@ async function runTenantPilotProbe(probeOwner) {
   }
 }
 
+async function refreshHumanActivationState() {
+  tenantPilot.humanSelf = null;
+  const subjectId = tenantInputValue("humanSubjectId");
+  if (!subjectId || !hasHumanBorrowerWorkspace()) return;
+  const result = await tenantApi("pilotReadHumanSelf", { resource: { resourceType: "subject", resourceId: subjectId } });
+  tenantPilot.humanSelf = result.response;
+}
+
+async function activateSandboxHumanProfile() {
+  await runTenantAction(el("activateSandboxHumanBtn"), async () => {
+    await refreshHumanActivationState();
+    const self = tenantPilot.humanSelf;
+    const consentId = tenantInputValue("humanConsentId");
+    const reference = self?.identityReferences?.find(item => item.consentId === consentId && item.status === "active" && item.syntheticOnly === true && item.productionVerified === false);
+    if (self?.subject?.status !== "pending" || !reference) throw new Error("Create an active scoped Consent and local synthetic identity reference before activating this pending profile.");
+    const dialog = el("humanActivationDialog");
+    dialog.returnValue = "cancel";
+    const confirmed = new Promise(resolve => dialog.addEventListener("close", () => resolve(dialog.returnValue === "activate"), { once: true }));
+    dialog.showModal();
+    if (!await confirmed) throw Object.assign(new Error("Activation cancelled."), { code: "user_action_cancelled" });
+    await tenantApi("pilotActivateSandboxHumanSubject", {
+      resource: { resourceType: "subject", resourceId: self.subject.subjectId },
+      payload: { consentId, identityReferenceId: reference.identityReferenceId, expectedSubjectUpdatedAt: self.subject.updatedAt,
+        acknowledgement: "activate_synthetic_profile_no_credit_or_funds" }
+    });
+    await refreshHumanActivationState();
+    renderExecutionWallet();
+  }, "Sandbox profile activated. Account ownership verification is now available in Settings.");
+}
+
 async function createHumanSubject() {
   if (exactResourceId(tenantInputValue("humanSubjectId"))) return;
   if (!hasHumanBorrowerWorkspace()) {
@@ -9969,6 +10009,7 @@ async function createHumanSubject() {
     async () => {
       const result = await tenantApi("pilotCreateHumanSubject");
       el("humanSubjectId").value = result.response.subjectId;
+      await refreshHumanActivationState();
       rememberOpaqueId(HUMAN_SUBJECT_STORAGE_KEY, result.response.subjectId);
       tenantPilot.intent = null;
       tenantPilot.decision = null;
@@ -10021,6 +10062,7 @@ async function createHumanConsent() {
       });
       el("humanConsentId").value = result.response.consent.consentId;
       rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, result.response.consent.consentId);
+      await refreshHumanActivationState();
       tenantPilot.intent = null;
       tenantPilot.decision = null;
       tenantPilot.offer = null;
@@ -13663,6 +13705,9 @@ function bindActions() {
     control.addEventListener("input", renderCapitalPartner);
     control.addEventListener("change", renderCapitalPartner);
   }
+  el("confirmSandboxHumanActivationBtn").addEventListener("click", () => el("humanActivationDialog").close("activate"));
+  el("cancelSandboxHumanActivationBtn").addEventListener("click", () => el("humanActivationDialog").close("cancel"));
+  el("activateSandboxHumanBtn").addEventListener("click", activateSandboxHumanProfile);
   el("createHumanSubjectBtn").addEventListener("click", createHumanSubject);
   el("createHumanConsentBtn").addEventListener("click", createHumanConsent);
   el("humanCreditForm").addEventListener("submit", (event) => {

@@ -527,7 +527,7 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
       }
 
       if (
-        handler.operationId === "pilotCreateConsent" &&
+        ["pilotCreateConsent", "pilotActivateSandboxHumanSubject"].includes(handler.operationId) &&
         hasExactChecks(policy, ["subject_state", "principal_state"]) &&
         resource?.resourceType === "subject"
       ) {

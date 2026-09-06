@@ -113,6 +113,7 @@ function createGateway(
     pool,
     handlers: new TenantCommandHandlerRegistry(
       createTenantFoundationHandlers({
+        localSandboxHumanActivation: localAccessEnabled(),
         hyperliquidInfoAdapter: new HyperliquidTestnetInfoAdapter(),
         hyperliquidBindingProofVerifier:
           new HyperliquidBindingProofVerifier(),

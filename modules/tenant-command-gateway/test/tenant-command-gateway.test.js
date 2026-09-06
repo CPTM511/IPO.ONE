@@ -154,6 +154,7 @@ test("foundation registry exposes only the reviewed durable operations", () => {
     "agentRevokeSecuredFacilityAuthorization",
     "pilotAcceptCreditOffer",
     "pilotAcknowledgeProviderIntent",
+    "pilotActivateSandboxHumanSubject",
     "pilotActivateSandboxMandate",
     "pilotAuthorCapitalPartnerOffer",
     "pilotCreateAgentAccountChallenge",

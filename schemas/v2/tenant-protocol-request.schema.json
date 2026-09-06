@@ -19,6 +19,7 @@
         "pilotCreateAgentAccountChallenge",
         "pilotCreateAgentSubject",
         "pilotCreateConsent",
+        "pilotActivateSandboxHumanSubject",
         "pilotCreateHumanSubject",
         "pilotCreateDraftMandate",
         "pilotCreateCreditPassportArtifact",
@@ -190,6 +191,51 @@
     }
   },
   "oneOf": [
+    {
+      "title": "Activate sandbox Human profile",
+      "required": [
+        "resource",
+        "idempotencyKey"
+      ],
+      "properties": {
+        "operationId": {
+          "const": "pilotActivateSandboxHumanSubject"
+        },
+        "resource": {
+          "$ref": "#/$defs/subjectResourceReference"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "consentId",
+            "identityReferenceId",
+            "expectedSubjectUpdatedAt",
+            "acknowledgement"
+          ],
+          "properties": {
+            "consentId": {
+              "$ref": "#/$defs/domainIdentifier"
+            },
+            "identityReferenceId": {
+              "$ref": "#/$defs/domainIdentifier"
+            },
+            "expectedSubjectUpdatedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "acknowledgement": {
+              "const": "activate_synthetic_profile_no_credit_or_funds"
+            }
+          }
+        }
+      },
+      "not": {
+        "required": [
+          "reasonCode"
+        ]
+      }
+    },
     {
       "title": "Read Own Secured Pool Workspace",
       "required": ["resource"],

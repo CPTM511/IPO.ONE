@@ -1,6 +1,23 @@
 {
   "validRequests": [
     {
+      "operationId": "pilotActivateSandboxHumanSubject",
+      "payload": {
+        "consentId": "consent_fixture",
+        "identityReferenceId": "identity_reference_fixture",
+        "expectedSubjectUpdatedAt": "2026-09-07T00:00:00.000Z",
+        "acknowledgement": "activate_synthetic_profile_no_credit_or_funds"
+      },
+      "idempotencyKey": "fixture-create-human-0001",
+      "requestId": "request-fixture-create-human",
+      "correlationId": "correlation-fixture-create-human",
+      "schemaVersion": "tenant_protocol_request.v1",
+      "resource": {
+        "resourceType": "subject",
+        "resourceId": "subject_human_fixture"
+      }
+    },
+    {
       "operationId": "pilotAcceptCreditOffer",
       "payload": {
         "expectedOfferHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
@@ -1766,6 +1783,23 @@
     }
   ],
   "validResults": [
+    {
+      "operationId": "pilotActivateSandboxHumanSubject",
+      "replayed": false,
+      "response": {
+        "principalId": "principal_human_fixture",
+        "subjectId": "subject_human_fixture",
+        "subjectHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "subjectType": "human",
+        "status": "active",
+        "prototypeOnly": true,
+        "schemaVersion": "tenant_sandbox_human_subject_activated.v1",
+        "consentId": "consent_fixture",
+        "identityReferenceId": "identity_reference_fixture",
+        "updatedAt": "2026-09-07T00:00:00.000Z"
+      },
+      "schemaVersion": "tenant_protocol_result.v1"
+    },
     {
       "operationId": "pilotAcceptCreditOffer",
       "replayed": false,

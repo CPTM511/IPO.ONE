@@ -476,6 +476,16 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.REQUIRED
   }),
   tenantOperation({
+    operationId: "pilotActivateSandboxHumanSubject",
+    action: "subject.activate.sandbox.self",
+    resourceType: "subject",
+    allowedActorTypes: [ActorType.HUMAN],
+    requiredCapability: PilotCapability.SUBJECT_ACTIVATE_SANDBOX_SELF,
+    ownershipRule: OwnershipRule.ACTOR,
+    idempotencyRequirement: IdempotencyRequirement.REQUIRED,
+    liveChecks: ["subject_state", "principal_state"]
+  }),
+  tenantOperation({
     operationId: "pilotReadHumanSelf",
     action: "subject.read.self",
     resourceType: "subject",

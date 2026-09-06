@@ -118,8 +118,8 @@
     },
     "operations": {
       "type": "array",
-      "minItems": 114,
-      "maxItems": 115,
+      "minItems": 116,
+      "maxItems": 116,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/operation"
@@ -266,6 +266,7 @@
             "pilotCreateAgentAccountChallenge",
             "pilotCreateAgentSubject",
             "pilotCreateConsent",
+            "pilotActivateSandboxHumanSubject",
             "pilotCreateHumanSubject",
             "pilotCreateDraftMandate",
             "pilotCreateCreditPassportArtifact",
@@ -468,6 +469,7 @@
             "evidence.read",
             "evidence.read.owned",
             "obligation.read.owned",
+            "subject.activate.sandbox.self",
             "human_subject.create.self",
             "identity_reference.read.self",
             "integration.read.owned",
@@ -586,6 +588,7 @@
             "tenant_consent_created.v1",
             "tenant_consent_view.v1",
             "tenant_consent_revoked.v1",
+            "tenant_sandbox_human_subject_activated.v1",
             "tenant_human_subject_created.v1",
             "tenant_credit_intent_created.v1",
             "tenant_credit_application_evaluated.v2",
@@ -696,6 +699,36 @@
         }
       },
       "oneOf": [
+        {
+          "properties": {
+            "operationId": {
+              "const": "pilotActivateSandboxHumanSubject"
+            },
+            "kind": {
+              "const": "command"
+            },
+            "actorTypes": {
+              "const": [
+                "human"
+              ]
+            },
+            "resourceType": {
+              "const": "subject"
+            },
+            "requiredCapability": {
+              "const": "subject.activate.sandbox.self"
+            },
+            "idempotency": {
+              "const": "required"
+            },
+            "quotaClass": {
+              "const": "mutation"
+            },
+            "responseSchemaVersion": {
+              "const": "tenant_sandbox_human_subject_activated.v1"
+            }
+          }
+        },
         {
           "properties": {
             "operationId": { "const": "pilotReadCapitalPartnerSelf" },

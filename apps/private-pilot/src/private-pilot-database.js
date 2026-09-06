@@ -529,10 +529,10 @@ async function seedAuthenticationCredential(client, {
     });
     return stored;
   }
-  if (actor.clientId.startsWith("client_web027j_")) {
+  if (/^client_web027[jk]_/.test(actor.clientId)) {
     const historical = await client.query(`SELECT 1 FROM authentication_credentials
-      WHERE tenant_id=$1 AND issuer=$2 AND actor_id=$3 AND client_id=$4 LIMIT 1`,
-      [tenantId,issuer,actor.actorId,`client_phase7_${actor.actorId}`]);
+      WHERE tenant_id=$1 AND issuer=$2 AND actor_id=$3 AND client_id=ANY($4::text[]) LIMIT 1`,
+      [tenantId,issuer,actor.actorId,[`client_phase7_${actor.actorId}`,`client_web027j_${actor.actorId}`]]);
     // A generation change must not re-enroll a revoked or expired identity.
     // Only the reviewed rotation can create a replacement for existing records.
     if (historical.rowCount) return;

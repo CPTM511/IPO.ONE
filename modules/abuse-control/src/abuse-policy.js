@@ -238,6 +238,7 @@ const CLASSIFIED_OPERATIONS = Object.freeze({
   [QuotaClass.MUTATION]: [
     "pilotCreateAgentSubject",
     "pilotCreateHumanSubject",
+    "pilotActivateSandboxHumanSubject",
     "pilotCreateConsent",
     "pilotRevokeConsent",
     "pilotCreateDraftMandate",

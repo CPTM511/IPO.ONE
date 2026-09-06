@@ -71,7 +71,7 @@ export function createTenantFoundationHandlers(options) {
       readAdapter: options?.securedPoolReadAdapter
     }),
     ...createCreditIntentHandlers(),
-    ...createHumanSubjectHandlers(),
+    ...createHumanSubjectHandlers(options),
     ...createWorkspaceResumeHandlers(),
     ...createWorkspaceContinuationHandlers(),
     ...createHumanConsentHandlers(),
