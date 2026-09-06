@@ -23,13 +23,17 @@ The source and implementation were opened together in the same tool comparison i
 - Colors: graphite/mint selected direction, independent Light palette, distinct semantic states. No fabricated live-health green indicator. Buttons and selected Capital rows use theme tokens.
 - Images/icons: source's fictional logos/avatars and company footer were intentionally omitted. Real brand assets and the existing bot/icon sprite are used; no approximate SVG illustration or CSS art.
 - Copy/state: Draft/Active distinction, exact Mandate acknowledgement and no-funds consequence are explicit. Completed Evidence can be read after refresh without another runtime goal. Human current-plan and new-request states are separate.
-- Additional inspected renders: Human/Agent tasks at 1440 Dark; authority at 390 Dark and 1440 Light; Capital at 1440 Dark; Risk at 390 Light. All four role layouts are captured/tested in six widths and both themes. Capital/Risk screenshots are fixture-only and do not prove their login works.
+- Additional inspected renders: Human/Agent tasks at 1440 Dark; authority at 390 Dark and 1440 Light; Capital at 1440 Dark; Risk at 390 Light. All four role layouts are captured/tested in six widths and both themes. Initial Capital/Risk screenshots were fixture-only. J1 now separately verifies real local invited login/recovery; `capital/partner.png` is a durable-service render. Risk MFA-protected operations remain blocked.
 - Interactions: native navigation, More tools, theme, current-plan action, Agent review/activation, keyboard disclosure focus, login error recovery and reduced-motion checks pass in browser suites. Actual Human/Agent signed flows use durable local services and isolated QA wallets, without API response mocks.
 
 ## Intentional differences and remaining acceptance
 
 The source falsely says a Draft “Authorizes” and invents names, limits, health and legal claims. The implementation corrects those rather than copying them. The real exact-action checkbox and technical recovery disclosure add necessary content. No arbitrary “all functions complete” claim follows from this visual match.
 
-Visual corrections above are addressed. Overall product handoff remains blocked by the reviewed access dependencies: privileged Capital/Risk login, legacy report permissions, execution-account binding and fresh Principal Agent provisioning. Screen presence is not capability acceptance. Full 200% browser zoom and final hosted role acceptance remain to be recorded before release.
+Visual corrections above are addressed. WEB-027J repaired invited login, legacy reports, Principal execution binding and fresh Principal Agent provisioning. Overall product handoff remains blocked by Human Subject activation, real Risk MFA and the remaining whole-site semantic acceptance matrix. Screen presence is not capability acceptance. Full 200% browser zoom and final hosted role acceptance remain to be recorded before release.
 
 final result: blocked
+
+## WEB-027J follow-up
+
+Inspected the actual fresh Principal `j4/before-restart.png` and Capital `capital/partner.png`, with the selected Precision Terminal layout retained. New local Agent enrollment/revocation controls reuse the same native button and form system. Exact runtime and schema hashes were verified separately. Full browser regression has 29 covered cases after the five Agent-host fixture cases were corrected and retested; no fixture result is substituted for durable login or authority.

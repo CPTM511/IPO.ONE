@@ -42,4 +42,16 @@ Approval covers implementing and locally verifying these four narrowly stated re
 
 ## Completion
 
-IN PROGRESS — NOT COMPLETE. Implementation and verification follow the approved scope. The baseline evidence lives in `output/playwright/web-027/access/`, `capabilities/operations.json`, `durable-settle.json` and `durable-agent.json`. No claim that these permission repairs are already implemented or available.
+**BLOCKED — NOT COMPLETE** for the whole-site acceptance requirement. Installed local source `68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b`; worker matches. The original Founder service and formal website are unchanged.
+
+- J1 local login acceptance passed for both invited roles, including refresh, logout/login, process restart, visible workspace refresh and stranger rejection. Risk business reads still fail the existing recent-MFA check; login is not risk-operation completion.
+- J2 passed for Human and Principal: JSON/CSV create/read/download, exact SHA-256, revoke and recovery after refresh. Rotation manifest preserves the previous capabilities and adds only the nine J2/J3 entries. Historical domain ownership is preserved; no active superseded credential remains for the exact two candidate hosts.
+- J3 Principal account bind/read/discovery/revoke passed against durable services. Both roles read the configured non-executing adapter descriptor. Human binding remains blocked because its Subject is pending and the existing policy requires active. No state bypass was added.
+- J4 passed: fresh Principal visibly creates a dedicated Agent, proves its own account, drafts and explicitly activates Mandate, executes and fully repays a synthetic $100 lifecycle, verifies Evidence, recovers after process restart and revokes its runtime credential. Separate signed Principal sessions cannot read, sign for or revoke another Agent; duplicate create remains one identity; revoked credentials remain revoked after restart and logout/login.
+- Additional Capital Partner checks passed: exact invited Passport sharing, Inbox selection, issue exact synthetic Offer, portfolio recovery, withdraw unaccepted Offer, then revoke Passport and remove its access. Accepted/serviced bilateral Facilities remain a separate unverified matrix row.
+
+Browser-discovered corrections include report ownership binding normalization, live account policy wiring, the closed non-executing descriptor response, exact source-schema packaging, and revocation on the binding's original durable stream. These preserve the reviewed authority limits.
+
+Evidence: `output/playwright/web-027/j1/roles.json`, `j4/final.json`, `j4/security.json`, `capabilities/operations.json`, `capital/operations.json`, `local-access-audit.json`, `credential-rotation-manifest.json`, and `postgres.json`. Final PostgreSQL 99 passed; browser 24 initial passes plus all 5 affected Agent cases passed on targeted retest. Fixture browser checks are explicitly separate from durable acceptance.
+
+The two newly established state/authentication prerequisites are concrete proposals in `WEB_027K_LOCAL_PREREQUISITES_REVIEW.md`, not implicit permission to modify Human activation or MFA. No whole-site percentage, hosted usability or Founder wallet acceptance is asserted.

@@ -1,62 +1,67 @@
 # WEB-027 local candidate and release record
 
-Verdict: **BLOCKED — NOT COMPLETE**. This is an available local candidate, not a whole-site completion or a formal deployment. Founder local acceptance and all required role/capability checks remain open.
+Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. The local design and reviewed J repairs are installed and individually verified; Human activation, Risk MFA, remaining semantic coverage and Founder/formal-site acceptance are still open.
 
 ## Experience
 
 - Human: http://127.0.0.1:8935/#request-credit
 - Principal / Agent: http://127.0.0.1:8936/#agent-console
-- Capital/Risk hosts exist at 8938/8937 but their ordinary wallet entry is blocked; they are not presented as usable roles.
-- Original Founder experience on 8895–8898 is preserved. Formal `ipo.one` has not been pushed, merged or deployed by WEB-027.
+- Invited Capital Partner: http://127.0.0.1:8938/#capital-partners
+- Invited Risk: http://127.0.0.1:8937/#risk-operations — login works; MFA-protected business reads remain blocked.
 
-Candidate source: `7f691f1003f7bfc271d24106562bbef526fe4f53`.
-Image: `ipo-one-web027:7f691f1003f7`.
-Container: `ipo-one-web027-candidate`, restart policy `unless-stopped`.
-Database: `ipo_one_web027_candidate`, in the isolated QA PostgreSQL service. Main migrations 0074/0075 were applied to the clone; WEB-027 introduces no schema migration.
+Original Founder service 8895–8898 and its database remain unchanged. No WEB-027 push, PR, merge or formal deployment has occurred.
 
-The existing candidate worker runs the same unchanged worker implementation from `fe87d25`, synthetic outbox/materialization only. No anchor, signer or funds activation. Its version is intentionally reported separately from the UI image. `candidate-runtime.json`, `candidate-build.json`, `candidate-worker.json` and the sanitized verification manifest record concrete versions and test evidence.
+Candidate and worker source: `68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b`.
+Image: `ipo-one-web027:68c5036a50b2`.
+Containers: `ipo-one-web027-candidate`, `ipo-one-web027-candidate-worker`, restart `unless-stopped`.
+Database: `ipo_one_web027_candidate` in the isolated QA PostgreSQL service. Existing main migrations 0074/75 and approved J migrations 0076/77/78 are installed. The worker processes synthetic outbox/outcomes only; no chain signer or funds activation.
 
-## What changed
+The installed hashes of all 39 changed runtime files match the source, including API/schema files. All four health endpoints return 200. Build, runtime, worker and read-only audit records are under `output/playwright/web-027/`. Docker readiness alone is not semantic acceptance.
 
-Precision Terminal uses graphite/mint working surfaces, consistent typography/numeric columns, a stable Agent decision area, clearer selection/focus/empty states and independent Light theme. Original Agent controls are used in the actual Principal surface; Human setup no longer occupies that scene. All previously identified controls survive once and allowed navigation remains reachable through the primary destinations or More tools.
+## Implemented and verified
 
-Three functional corrections accompany the design: the local account-proof adapter now reads the real response's active status; completed Agent Evidence can be recovered without another economic runtime goal; starting/returning from a new Human request correctly guides fresh Consent and preserves the current plan's authority reference. A selected Capital row contrast defect and public first-load layout shift were corrected during browser review.
+Precision Terminal retains the approved graphite/mint hierarchy, tabular figures, stable decision area, Light/Dark themes, original controls and role-allowed navigation. Functional fixes retain real server authority and records: correct Agent proof state, no economic replay during completed Evidence recovery, fresh Consent for new Human requests, report ownership, binding live-policy checks and revocation on its original durable event stream.
 
-## Observed browser outcomes
+J1: both pre-enrolled Capital/Risk wallet roles log in, visibly enter their own workspace, refresh, logout/login and recover after a process restart. Unknown wallets cannot self-enroll privileged roles. SIWE is never represented as MFA.
 
-Human: isolated wallet registration/sign-in; Subject/Consent/Offer; exact acceptance and activation; $24.50 synthetic plan, partial $2.50 repayment and remaining $22.00 repayment; $0 selected-plan balance after refresh. Historical positions remain intact. New unaccepted test Offers may be the current next action; use My credit to choose an existing completed position.
+J2: Human/Principal JSON and CSV reports create, read, download with exact SHA-256, revoke and recover revoked state after refresh. The exact candidate-host ordinary credential rotation retains previous capabilities and adds only four report plus five existing binding/discovery capabilities. Old sessions/credentials are revoked; no identity or domain reset.
 
-Preassigned Agent: account proof on the separate initial-proof clone, then real Draft/application/Offer/exact activation on the main candidate; $100 approved provider spend, $100 repayment and $0 outstanding; returned Evidence verifies. Final `7f691f1` browser run re-read completion and performed refresh/re-login/navigation, confirming no duplicate runtime goal for Evidence recovery.
+J3: Principal execution-account signing, binding, reading, discovery and revocation pass. Both roles discover the exact local non-executing adapter. Human binding remains unavailable because the Human Subject is pending; policy still requires active.
 
-Both ordinary roles read their actual completed Credit Track Record after normal worker materialization. Human also issued/read/verified/revoked a scoped Decision Passport using an exact QA self-verifier, loaded 13 owned Evidence records, submitted feedback and filed/listed a Case. A revoked same-Decision artifact cannot be reissued; a fresh Decision is used for a new QA round trip. That prohibition was preserved.
+J4: a fresh Principal explicitly creates its own Agent and durable server-held credential. Visible controls complete its account proof, Draft Mandate, exact review/acknowledgement/activation, $100 synthetic provider spend, $100 repayment, $0 outstanding and Evidence verification. Process restart recovers the same Agent; credential revocation persists. A second Principal cannot read/sign/revoke it, duplicate creation is idempotent and revoked credentials cannot be revived by restart or login. The preassigned legacy Agent remains separately available.
 
-No fabricated API responses, fixture query, frontend-only success state or actual user wallet was used for these durable operations. The isolated QA provider signs real server challenges with protected test keys. Fixture screenshots are separate visual evidence, not authenticated service acceptance.
+Additional verified functions: both ordinary roles read owned portfolio and materialized terminal Credit Track Record; Human shares/revokes a Decision Passport, reads Evidence, submits feedback and files/lists a Case. Capital Partner receives an exact authorized Passport, selects the application, issues and withdraws a synthetic Offer, restores portfolio, and loses Passport access after revocation. Accepted/serviced bilateral Facility completion remains unverified.
 
-## Open dependencies
-
-See `../codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md` for the concrete permission review. It covers pre-enrolled Capital/Risk wallet login, exact legacy report grants, owned execution-account binding and a fresh Principal's dedicated local Agent setup. None is silently implemented by this report. Full privileged servicing, configured Pool/Provider/venue and different-role disclosure acceptance remain unverified; no whole-site percentage is asserted.
-
-The Founder was asked whether to approve this bounded local repair package. Until an answer arrives, no permission/schema/provisioning change is activated. This follows the already-approved directive's sections 2.2 and 10. It does not re-open ordinary UI implementation approval.
+All durable acceptance uses protected synthetic test wallets signing actual server challenges, candidate services and PostgreSQL. No frontend API mocks or fixture query is used for these results. The separate 29-case browser regression uses clearly labeled fixtures for layout and deterministic guard tests.
 
 ## Verification
 
-| Check | Result / interpretation |
+| Check | Result / limits |
 | --- | --- |
-| Web and local Agent proof unit tests | 209 passed; includes negative proof integrity cases. |
-| Full browser suite | 29 passed. Original controls, reachability, theme, responsive layouts, recovery, keyboard disclosure and guarded actions. Fixtures are limited to this regression suite. |
-| Final public-entry follow-up | 2 passed after the last initial-header CSS correction. |
-| Security / transport | 35 / 92 passed. No auth/permission weakening to obtain success. |
-| PostgreSQL integration | 96 passed in dedicated `ipo_one_web027_test_1788697336341`; never the Founder or candidate data DB. |
-| Lint / product traceability / deploy topology / deployment contract | Passed. Deployment contract checks do not deploy or prove formal usability. |
-| Actual durable browser | Individual passes and exact blocked denials recorded in the capability matrix and evidence manifest. No whole-site PASS. |
-| Public performance comparison | Three interleaved fresh Chromium contexts, same Mac/viewport, no throttling. Initial CLS 0.16944 on old WEB-026H versus 0 on final WEB-027 in all three runs. Median login click-to-dialog around 71ms versus 65ms includes automation overhead, not INP. Resource count typically 43; no performance score claimed. |
+| PostgreSQL | 99/99 on final functional source in a new `ipo_one_web027_test_*` DB; not candidate/Founder data. |
+| Browser regression | 24 initial passes plus all 5 affected Agent cases passed after adding the optional enrollment-status contract to the fixture host. 29 cases covered. |
+| Authentication / web / local unit | 339 initial passes; the one legacy membership-predicate assertion was corrected for the new expiration guard and passed targeted retest. Narrow report/discovery/binding regressions also pass. |
+| Security / transport | 35/35 and 92/92. |
+| Static contracts | Source/boundary lint, 78 migration pairs, type/schema/OpenAPI/protocol, traceability and bundle-integrity checks passed. |
+| Actual ordinary operations | 15 individual cases pass, 1 Human binding blocked. This denominator is not the whole site. |
+| Actual invited roles | Login/recovery both pass; Capital author/withdraw/share-revoke pass; Risk protected reads correctly denied. |
+| Actual fresh Agent | Complete lifecycle and revocation on final source; separate cross-owner/concurrency/restart negatives pass. |
+| Source installation | All 39 changed runtime file hashes match; four role endpoints healthy. |
 
-Tests were run at the corresponding source revisions. Full Human/Agent mutations are versioned separately from later presentation-only fixes; final read/recovery and fresh-access checks are source-bound. Required formal CI, full zoom/assistive-technology coverage and final hosted browser acceptance are still release gates, not substituted by this local report.
+A PostgreSQL test encountered local VM clock slew; it now waits for actual database time within the existing bounded test allowance. Runtime clocks, projection constraints and authorization were not weakened. Final 99-case rerun passed. A fixture-only Agent boot failure was corrected in the test host; actual J4 acceptance had already passed independently.
 
-## Rollback and formal release
+Prior visual performance evidence remains historical: three paired local runs at `7f691f1` measured public initial CLS 0 versus WEB-026H 0.16944. This is not a new final-source performance score.
 
-The previous compatible candidate container is `ipo-one-web027-candidate-8a5a7e66e6b5`. Protected DB backups and configuration are in the main repository's ignored `.ipo-one/web027-runtime/` directory; none is committed or displayed. No destructive data reset is part of rollback.
+## Remaining release gates
 
-If this local candidate must be rolled back, stop only `ipo-one-web027-candidate`, rename it to an unused diagnostic name, rename the recorded previous container back to `ipo-one-web027-candidate`, and start it. Verify Human/Principal login and selected-position reads again. The schema did not change in the final UI update, so retain the candidate database. Do not change the original 8895–8898 service. For a future permission migration, use the separately reviewed J rollback manifest instead of assuming this simple UI rollback is sufficient.
+`../codex/tasks/WEB_027K_LOCAL_PREREQUISITES_REVIEW.md` contains two concrete new proposals: explicit guarded local Human activation and actual invited Risk Passkey/MFA. These are state/credential changes beyond the narrow J approval, not routine UI permission requests. They remain unimplemented pending review.
 
-Formal release remains conditional on all capability gates and Founder experience confirmation. Use the existing canonical Vercel/Neon route and `scripts/build-vercel-sandbox-bundle.mjs`, verify the exact deployment source/assets, and repeat visible role journeys on the formal domain. Do not promote local registration flags, QA wallets/credentials, fixtures or this local Docker topology. No new hosting project is required.
+The complete capability matrix also retains open accepted Capital Facility/servicing, special-role dual control, Pool/Provider/venue, device/accessibility and exact formal-deployment checks. No whole-site 100% claim or formal release is justified yet.
+
+## Rollback and delivery
+
+Previous compatible J candidate: `ipo-one-web027-candidate-1af3db851698`; source `1af3db851698a871d7f1418ae19fa8ca6a838a9c`. The authoritative record is `candidate-runtime.json`. Retain current database and J migrations/credential generation. Protected candidate-only backups/configuration are in the main repository's ignored `.ipo-one/web027-runtime/` directory.
+
+Do not revive revoked credentials, delete events or roll back to a pre-J identity model. Stop only the candidate, retain the failed image/container for diagnosis, start the recorded compatible prior J image against the same approved state, then retest Human/Principal recovery. Do not modify Founder ports or source DB.
+
+Formal release remains contingent on all capability gates and Founder local experience confirmation. Follow the existing canonical Vercel/Neon release route and repeat visible role journeys on the exact hosted SHA. Local flags, credentials, synthetic QA wallets and this Docker topology must never be promoted to the formal site.
