@@ -108,7 +108,10 @@ async function commonOperations(page,role){
    // A revoked artifact is deliberately not reissued for the same exact
    // Decision/reviewer. Prepare a fresh, unaccepted Decision via the Human UI.
    await navigate(page,"request-credit");
-   await page.locator("#humanGuideSecondaryBtn").click();
+   if (await page.locator("#humanGuideSecondaryBtn").getAttribute("data-human-guide-action") === "return-current") {
+    await page.locator("#humanGuideSecondaryBtn").click();
+   }
+   await page.locator("#newHumanApplicationBtn").click();
    await expect(page.locator("#humanGuidePrimaryBtn")).toHaveText("Create scoped Consent");
    await page.locator("#humanGuidePrimaryBtn").click();
    await page.locator("#humanCreditAmount").fill("20.00");

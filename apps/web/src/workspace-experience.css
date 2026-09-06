@@ -2,6 +2,7 @@
 /* Reserve the public geometry before the deferred experience code starts. */
 body.private-session-closed .app-shell { display: block; }
 body.private-session-closed .main-shell { width: 100%; margin: 0; }
+body.private-session-closed .topbar { display: none; }
 body.product-experience.workspace-session-active,
 body.product-experience .access-layer {
   --b-bg: #f4f7f6; --b-surface: #ffffff; --b-elevated: #eaf0ee;
