@@ -82,7 +82,7 @@ export function createPostgresTenantLivePolicyAdapter({ client, coreRepository, 
           resource?.resourceType === "wallet_adapter" && resource.resourceId === "adapter_local_sandbox" &&
           typeof handler.readCapabilityDescriptor === "function") {
         const descriptor = await handler.readCapabilityDescriptor();
-        const adapter = descriptor?.adapters?.find(item => item.adapterId === "local_sandbox");
+        const adapter = descriptor?.items?.find(item => item.adapterId === "local_sandbox");
         if (resource.status !== "active" || !adapter || adapter.enabled !== true || adapter.externalCallsEnabled !== false ||
             adapter.transactionsAllowed !== false || adapter.sandboxOnly !== true || adapter.productionAuthority !== false ||
             adapter.fundsAuthority !== false || adapter.supportedChains?.length !== 2 ||

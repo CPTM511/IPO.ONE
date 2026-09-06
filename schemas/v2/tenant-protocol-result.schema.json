@@ -1568,6 +1568,23 @@
         "fundsAuthority": { "const": false }
       }
     },
+    "walletAdapterDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "adapterId", "providerFamily", "enabled", "externalCallsEnabled", "supportedChains", "transactionsAllowed", "sandboxOnly", "productionAuthority", "fundsAuthority"],
+      "properties": {
+        "schemaVersion": { "const": "wallet_adapter_descriptor.v1" },
+        "adapterId": { "const": "local_sandbox" },
+        "providerFamily": { "const": "ipo_one_local" },
+        "enabled": { "const": true },
+        "externalCallsEnabled": { "const": false },
+        "supportedChains": { "const": ["eip155:84532", "eip155:1952"] },
+        "transactionsAllowed": { "const": false },
+        "sandboxOnly": { "const": true },
+        "productionAuthority": { "const": false },
+        "fundsAuthority": { "const": false }
+      }
+    },
     "walletCapabilityDescriptorListResponse": {
       "type": "object",
       "additionalProperties": false,
@@ -1576,7 +1593,7 @@
         "items": {
           "type": "array",
           "maxItems": 16,
-          "items": { "$ref": "#/$defs/evmWalletConnectorDescriptor" }
+          "items": { "oneOf": [{ "$ref": "#/$defs/evmWalletConnectorDescriptor" }, { "$ref": "#/$defs/walletAdapterDescriptor" }] }
         },
         "count": { "type": "integer", "minimum": 0, "maximum": 16 },
         "transactionsAllowed": { "const": false },

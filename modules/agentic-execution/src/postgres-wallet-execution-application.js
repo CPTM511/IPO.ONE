@@ -24,7 +24,6 @@ import {
 } from "./agentic-execution-preflight.js";
 import {
   createLocalTransferIntentTargetPolicy,
-  describeTransferIntentExecutionResolver,
   resolveTransferIntentExecution
 } from "./transfer-intent-execution-resolver.js";
 
@@ -259,7 +258,8 @@ export function createPostgresWalletExecutionApplication() {
   return Object.freeze({
     async discoverCapabilities() {
       return {
-        adapters: [{
+        items: [{
+          schemaVersion: "wallet_adapter_descriptor.v1",
           adapterId: "local_sandbox",
           providerFamily: "ipo_one_local",
           enabled: true,
@@ -270,8 +270,11 @@ export function createPostgresWalletExecutionApplication() {
           productionAuthority: false,
           fundsAuthority: false
         }],
-        resolver: describeTransferIntentExecutionResolver(),
-        authenticationSessionChanged: false,
+        count: 1,
+        transactionsAllowed: false,
+        sandboxOnly: true,
+        productionAuthority: false,
+        fundsAuthority: false,
         schemaVersion: "wallet_capability_descriptor_list.v1"
       };
     },

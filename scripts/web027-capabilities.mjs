@@ -90,8 +90,19 @@ async function commonOperations(page,role){
   await page.getByRole("button",{name:/WEB027 isolated test wallet/}).click();
   await page.locator("#accessCloseBtn").click();
   await page.locator("#executionConnectBtn").click();
-  const bound=await operation(page,"#executionBindBtn","walletSubmitAccountBinding");
-  expect(bound.accountBinding.status).toBe("active");
+  // Repeated acceptance resumes an existing durable binding instead of
+  // attempting to create it again. Preparation errors must be recorded as such.
+  await operation(page,"#executionRefreshBindingsBtn","walletReadAccountBindings");
+  if (await page.locator("#executionBindBtn").isEnabled()) {
+    const prepared = page.waitForResponse(r=>r.url().endsWith("/tenant/v1/operations") && r.request().postDataJSON()?.operationId==="walletPrepareAccountBinding");
+    const submitted = page.waitForResponse(r=>r.url().endsWith("/tenant/v1/operations") && r.request().postDataJSON()?.operationId==="walletSubmitAccountBinding").catch(()=>null);
+    await page.locator("#executionBindBtn").click();
+    const preparation=await prepared;
+    if (!preparation.ok()) { const rejected=await preparation.json();throw Error(`walletPrepareAccountBinding: ${preparation.status()} ${rejected.code}`); }
+    const result=await submitted;if(!result)throw Error("Account proof was not submitted");
+    const bound=await result.json();if(!result.ok())throw Error(`walletSubmitAccountBinding: ${result.status()} ${bound.code}`);
+    expect(bound.response.accountBinding.status).toBe("active");
+  }
   await operation(page,"#executionRefreshBindingsBtn","walletReadAccountBindings");
   const capability=await operation(page,"#executionDiscoverBtn","walletDiscoverCapabilities");
   await operation(page,"#executionRevokeBindingBtn","walletRevokeAccountBinding");

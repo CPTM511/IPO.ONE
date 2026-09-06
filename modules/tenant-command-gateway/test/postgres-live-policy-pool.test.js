@@ -169,9 +169,9 @@ for (const operationId of ["walletPrepareAccountBinding","walletSubmitAccountBin
 }
 test("wallet discovery reads the configured non-executing descriptor and rejects a widened adapter",async()=>{
   const operationId="walletDiscoverCapabilities",policy=policyRegistry.getAuthenticated(operationId);
-  const value={adapters:[{adapterId:"local_sandbox",enabled:true,externalCallsEnabled:false,transactionsAllowed:false,sandboxOnly:true,productionAuthority:false,fundsAuthority:false,supportedChains:["eip155:84532","eip155:1952"]}]};
+  const value={items:[{adapterId:"local_sandbox",enabled:true,externalCallsEnabled:false,transactionsAllowed:false,sandboxOnly:true,productionAuthority:false,fundsAuthority:false,supportedChains:["eip155:84532","eip155:1952"]}]};
   const evaluate=()=>createPostgresTenantLivePolicyAdapter({client,coreRepository,handler:{operationId,readCapabilityDescriptor:async()=>value},payload:{}})
     .evaluate({policy,resource:{resourceType:"wallet_adapter",resourceId:"adapter_local_sandbox",status:"active"}});
   assert.deepEqual((await evaluate()).evaluatedChecks,policy.liveChecks);
-  value.adapters[0].transactionsAllowed=true;await assert.rejects(evaluate,{code:"authorization_live_policy_rejected"});
+  value.items[0].transactionsAllowed=true;await assert.rejects(evaluate,{code:"authorization_live_policy_rejected"});
 });

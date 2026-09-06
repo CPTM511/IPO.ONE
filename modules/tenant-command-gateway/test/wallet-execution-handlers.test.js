@@ -103,3 +103,19 @@ test("EXEC-003 query handlers preserve exact owned resources", async () => {
   assert.equal(response.fundsAuthority, false);
   assert.equal(calls[0].context.resourceId, "wallet_execution_exact");
 });
+
+
+test("local runtime discovery satisfies the deployed protocol and cannot advertise funds authority", async () => {
+  const { createPostgresWalletExecutionApplication } = await import("../../agentic-execution/src/postgres-wallet-execution-application.js");
+  const { assertTenantProtocolResult } = await import("../../../packages/api-contract/src/tenant-protocol.js");
+  const response = await createPostgresWalletExecutionApplication().discoverCapabilities();
+  const result = { operationId: "walletDiscoverCapabilities", replayed: false, response, schemaVersion: "tenant_protocol_result.v1" };
+  assert.equal(assertTenantProtocolResult(result), result);
+  assert.equal(response.count, response.items.length);
+  assert.equal(response.items[0].adapterId, "local_sandbox");
+  for (const field of ["transactionsAllowed", "productionAuthority", "fundsAuthority", "externalCallsEnabled"]) {
+    const widened = structuredClone(result);
+    widened.response.items[0][field] = true;
+    assert.throws(() => assertTenantProtocolResult(widened), { code: "invalid_tenant_protocol_result" });
+  }
+});

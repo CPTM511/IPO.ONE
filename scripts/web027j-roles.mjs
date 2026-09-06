@@ -19,7 +19,7 @@ async function walletPage(key,behavior='sign'){
   window.addEventListener('eip6963:requestProvider',announce);
  },{address:account.address,behavior});
  const page=await context.newPage();const responses=[];
- page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.url().includes('/auth/'))responses.push({path:new URL(r.url()).pathname,status:r.status()});});
+ page.on('pageerror',e=>errors.push(e.message));page.on("requestfailed",r=>errors.push({url:new URL(r.url()).pathname,error:r.failure()?.errorText}));page.on('response',r=>{if(r.url().includes('/auth/'))responses.push({path:new URL(r.url()).pathname,status:r.status()});});
  return{page,context,signatures:()=>signatures,responses};
 }
 
@@ -32,7 +32,7 @@ try{
     await expect(w.page.locator(`[data-wallet-workspace-role="${role}"]`)).toHaveAttribute("aria-checked","true");
     await w.page.getByRole("button",{name:/WEB027 access test wallet/}).click();
     const pending=w.page.waitForResponse(r=>r.url().endsWith("/auth/v1/wallet/verify"));
-    await w.page.locator("#walletSignInBtn").click();const r=await pending;const response=await r.json();
+    await w.page.locator("#walletSignInBtn").click();const r=await pending;const response=invited?null:await r.json();
     if(invited){
      assert.equal(r.status(),200);
      await expect(w.page.locator("#sidebarApiStatus")).toHaveText("Authenticated",{timeout:20000});
@@ -40,11 +40,15 @@ try{
      const options=await w.page.evaluate(async()=> (await fetch("/auth/v1/options")).json());
      assert.equal(options.sessionWorkspaceRole,role);assert.equal(options.sessionActive,true);
      await expect(w.page.locator("#accessLayer")).toBeHidden({timeout:20000});
-     await w.page.reload();await expect(w.page.locator("#accessLayer")).toBeHidden();
-     results.push({role,invited:true,sessionRole:options.sessionWorkspaceRole,login:true,refresh:true,workspaceStatus:await w.page.locator("#sidebarApiStatus").innerText()});
+     await w.page.reload();await expect(w.page.locator("#sidebarApiStatus")).toHaveText("Authenticated",{timeout:20000});await expect(w.page.locator("#accessLayer")).toBeHidden();
+     await w.page.getByRole("button",{name:"Sign out",exact:true}).click();
+     await expect(w.page.getByRole("button",{name:"Log in",exact:true})).toBeVisible();
+     await w.page.getByRole("button",{name:"Log in",exact:true}).click();await w.page.getByRole("button",{name:/WEB027 access test wallet/}).click();await w.page.locator("#walletSignInBtn").click();
+     await expect(w.page.locator("#sidebarApiStatus")).toHaveText("Authenticated",{timeout:20000});await expect(w.page.locator("#accessLayer")).toBeHidden();
+     results.push({role,invited:true,sessionRole:options.sessionWorkspaceRole,login:true,refresh:true,logoutLogin:true,workspaceStatus:await w.page.locator("#sidebarApiStatus").innerText()});
     }else{assert.ok(r.status()>=400);await expect(w.page.locator("#accessLayer")).toBeVisible();results.push({role,invited:false,denied:true,code:response.code});}
     await w.page.screenshot({path:`${out}/${role}-${invited}.png`});await writeFile(`${out}/${role}-${invited}.txt`,await w.page.locator("body").innerText());
-   }catch(e){results.push({role,invited,error:e.message.slice(0,700)});await w.page.screenshot({path:`${out}/${role}-${invited}-failure.png`});await writeFile(`${out}/${role}-${invited}-failure.txt`,await w.page.locator("body").innerText());}
+   }catch(e){results.push({role,invited,error:e.message.slice(0,700),responses:w.responses});await w.page.screenshot({path:`${out}/${role}-${invited}-failure.png`});await writeFile(`${out}/${role}-${invited}-failure.txt`,await w.page.locator("body").innerText());}
    finally{await w.context.close();}
   }
  }

@@ -4766,8 +4766,17 @@ export interface WalletConnectorDescriptor {
   fundsAuthority: false;
 }
 
+export interface WalletAdapterDescriptor extends WalletSafetyFields {
+  schemaVersion: "wallet_adapter_descriptor.v1";
+  adapterId: "local_sandbox";
+  providerFamily: "ipo_one_local";
+  enabled: true;
+  externalCallsEnabled: false;
+  supportedChains: ["eip155:84532", "eip155:1952"];
+}
+
 export interface WalletCapabilityDescriptorListResponse extends WalletSafetyFields {
-  items: WalletConnectorDescriptor[];
+  items: (WalletConnectorDescriptor | WalletAdapterDescriptor)[];
   count: number;
   schemaVersion: "wallet_capability_descriptor_list.v1";
 }
