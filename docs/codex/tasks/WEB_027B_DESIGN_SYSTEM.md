@@ -1,6 +1,6 @@
 # WEB-027B — 共享视觉系统与真实 Agent 授权样板
 
-Status: IN PROGRESS
+Status: LOCAL SAMPLE VERIFIED — program blocked by access dependencies
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+Shared tokens and actual Agent authority controls implemented. Source/render comparison, contrast correction, Dark/Light and responsive browser captures recorded in root design-qa.md and WEB_027_DESIGN_SYSTEM.md. Preassigned Agent real activation and lifecycle verified; a fresh Principal is not yet operational.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

@@ -1,6 +1,6 @@
 # WEB-027G — 全部原有能力的点击回归和视觉验收
 
-Status: IN PROGRESS
+Status: BLOCKED — NOT COMPLETE
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+29 browser regressions, 209 web/proof units, 35 security, 92 transport and 96 isolated PostgreSQL tests passed; lint, product traceability and deployment contract checks passed. Actual ordinary-role operations have separate pass/failure records. All-site acceptance is not reached; fixtures and test counts do not satisfy 100%.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

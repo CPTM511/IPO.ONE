@@ -1,6 +1,6 @@
 # WEB-027A — 基线、完整能力与可见操作盘点
 
-Status: IN PROGRESS
+Status: LOCAL BASELINE RECORDED — full capability acceptance remains open
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+Main 7ce4b95 plus the seven WEB-026 commits were integrated as c585b50. The original Founder runtime is untouched. Baseline 330 controls are preserved exactly once. The expanded semantic matrix separates local passes, known denials and unverified roles.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

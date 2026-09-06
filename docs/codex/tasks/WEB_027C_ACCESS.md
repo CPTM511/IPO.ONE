@@ -1,6 +1,6 @@
 # WEB-027C — 公开入口、登录、导航及账户恢复
 
-Status: IN PROGRESS
+Status: ORDINARY LOCAL ACCESS VERIFIED — privileged role dependency open
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+Human and Principal real-wallet registration, automatic entry, cancellation, refresh, logout/login and process restart passed. Public hero/Whitepaper interaction regressions pass. Capital/Risk entry is blocked under J1. Public first-paint geometry corrected and measured separately.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

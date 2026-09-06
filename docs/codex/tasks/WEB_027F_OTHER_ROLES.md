@@ -1,6 +1,6 @@
 # WEB-027F — Capital、Risk、Provider 及高级页面
 
-Status: IN PROGRESS
+Status: BLOCKED — NOT COMPLETE
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+Capital/Risk role login is denied; their layouts are fixture-only. Legacy reports and execution-account binding are denied. M3, Capital Network, Trading Capital and all role-gated servicing/venue operations retain implementation but require their actual authorized acceptance. See J1-J4 and the semantic matrix.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

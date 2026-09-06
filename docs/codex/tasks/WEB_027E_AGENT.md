@@ -1,6 +1,6 @@
 # WEB-027E — Agent 任务、授权与 Evidence
 
-Status: IN PROGRESS
+Status: PREASSIGNED LOCAL AGENT VERIFIED — new Principal dependency open
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+Corrected account-proof status adapter and post-refresh Evidence recovery. Preassigned Agent Draft/application/exact activation/acceptance/execution/full repayment/Evidence completed. Refresh issues no duplicate economic goal. New Principal shows No Agent assigned; J4 required.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

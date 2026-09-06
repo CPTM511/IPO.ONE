@@ -1,6 +1,6 @@
 # WEB-027D — Human 信用、Offer、还款与记录
 
-Status: IN PROGRESS
+Status: CORE LOCAL LIFECYCLE VERIFIED — advanced dependencies open
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+Real Subject/Consent/Offer, exact acceptance, controlled execution, partial and full repayment, owned Evidence, portfolio, finalized Credit Track Record, Decision Passport, feedback and Cases have individual durable-browser evidence. Reports/binding and privileged servicing remain blocked or unverified.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.

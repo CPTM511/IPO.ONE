@@ -1,6 +1,6 @@
 # WEB-027H — 稳定本地候选与 Founder 体验
 
-Status: IN PROGRESS
+Status: LOCAL CANDIDATE AVAILABLE — Founder acceptance pending
 
 ## Context and scope
 
@@ -32,4 +32,6 @@ No new schema migration planned. Preserve previously approved migrations from ma
 
 ## Completion evidence
 
-Pending. This document does not claim completion.
+Stable isolated candidate Human 8935 / Principal 8936; original Founder 8895–8898 retained. Source/image/database backup and rollback container recorded in runtime evidence. The candidate is partial; neither Founder acceptance nor a full-scope release is claimed.
+
+References: `docs/design/WEB_027_CAPABILITY_AND_ROUTE_MATRIX.md`, `docs/design/WEB_027_LOCAL_REVIEW.md`, `docs/codex/tasks/WEB_027J_LOCAL_ACCESS_REPAIR_REVIEW.md`. Runtime source and individual evidence are explicit; no formal five-state PASS is implied.
