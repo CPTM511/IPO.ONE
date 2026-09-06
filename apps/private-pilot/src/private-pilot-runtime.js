@@ -199,7 +199,7 @@ async function createLocalHumanAccess({
     policyVersion: identity.createContext().policyVersion,
     pool: authenticationPool,
     profile: "local_no_funds",
-    ...(["capital_partner_operator", "risk_operator"].includes(identity.roleBundle)
+    ...(localAccessEnabled() && ["capital_partner_operator", "risk_operator"].includes(identity.roleBundle)
       ? { localInvitedWalletRole: identity.roleBundle } : {}),
     referenceHashKey: authenticationMaterial.referenceHashKey,
     referenceHashKeyRef:

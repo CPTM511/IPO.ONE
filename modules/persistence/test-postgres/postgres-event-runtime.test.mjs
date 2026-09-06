@@ -368,6 +368,7 @@ const TENANT_OWNED_TABLES = [
   "live_chain_indexer_snapshots",
   "live_chain_observations",
   "live_chain_outbox_messages",
+  "local_principal_agent_runtimes",
   "lockboxes",
   "mandate_releases",
   "mandate_reservations",

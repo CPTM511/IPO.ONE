@@ -796,6 +796,39 @@ test("durable Human authentication is restart-safe, one-use, hash-only, and Tena
       );
     });
 
+    for (const [role, actorType] of [["capital_partner_operator",ActorType.HUMAN],["risk_operator",ActorType.RISK_OPERATOR]]) {
+      await t.test(`invited ${role} restores exactly one enrollment and fails closed after revocation`, async () => {
+        const actorId=`actor_invited_${role}_${RUN_ID}`;
+        const clientId=`client_invited_${role}_${RUN_ID}`;
+        await seedIdentity(ownerPool,{tenantId:TENANT_ID,actorId,actorType,roleBundle:role,capabilities:["subject.read"],clientIds:[clientId]});
+        const credential=await registry.register({tenantId:TENANT_ID,actorId,actorType,issuer:ORIGIN,
+          externalSubject:`invited-${role}`,clientId,clientAuthenticationMethod:ClientAuthenticationMethod.SIWE,
+          senderConstraint:{method:SenderConstraintMethod.HOST_SESSION,thumbprint:"i".repeat(43)},
+          roles:[role],allowedCapabilities:["subject.read"],policyVersion:"security_001.v1",performedByActorId:SYSTEM_ACTOR_ID,
+          reasonCode:"invited_local_role_regression",now:NOW});
+        await assert.rejects(registry.resolveHumanRole({credentialId:credential.credentialId,roleBundle:role,clientId,now:NOW}),e=>e.code==="authentication_role_rejected");
+        const enrollmentId=await enrollHumanRole(ownerPool,context,{actorId,credentialId:credential.credentialId,roleBundle:role,capabilities:["subject.read"],clientId});
+        const selected=await registry.resolveHumanRole({credentialId:credential.credentialId,roleBundle:role,clientId,now:NOW});
+        assert.deepEqual(selected.capabilities,["subject.read"]);
+        for (const wrong of [{roleBundle:"principal_controller",clientId},{roleBundle:role,clientId:WALLET_CLIENT_ID}])
+          await assert.rejects(registry.resolveHumanRole({credentialId:credential.credentialId,...wrong,now:NOW}),e=>e.code==="authentication_role_rejected");
+        const makeStore=()=>new PostgresHumanSessionStore({eventRepository:repository,tenantId:TENANT_ID,referenceHasher,origin:ORIGIN});
+        const issued=await makeStore().create({...sessionInput(credential),acr:"urn:ipo.one:acr:wallet",amr:["wallet","siwe","eip191_eoa_v1"]});
+        const restored=await makeStore().authenticate({sessionHandle:issued.cookie.value,requestMethod:"GET",now:new Date(NOW.getTime()+1000)});
+        assert.deepEqual(restored.roles,[role]);assert.deepEqual(restored.amr,["wallet","siwe","eip191_eoa_v1"]);
+        await withTenantTransaction(ownerPool,context,client=>client.query("UPDATE authentication_role_enrollments SET status='revoked',version=version+1 WHERE id=$1",[enrollmentId]));
+        await assert.rejects(makeStore().authenticate({sessionHandle:issued.cookie.value,requestMethod:"GET",now:new Date(NOW.getTime()+2000)}),e=>e.code==="authentication_session_rejected");
+      });
+    }
+    await t.test("wallet challenges cannot be consumed by a different host even in the same tenant",async()=>{
+      const shared={eventRepository:repository,tenantId:TENANT_ID,referenceHasher,secretBox};
+      const source=new PostgresWalletLoginTransactionStore({...shared,domain:"ipo.one",uri:"https://ipo.one/auth/wallet"});
+      const wrong=new PostgresWalletLoginTransactionStore({...shared,domain:"other.ipo.one",uri:"https://other.ipo.one/auth/wallet"});
+      const challenge=await source.create({address:"0x1111111111111111111111111111111111111111",chainId:84532,requestedRole:"human_borrower",now:NOW});
+      await assert.rejects(wrong.consume({handle:challenge.handle,now:NOW}),e=>e.code==="wallet_transaction_rejected");
+      await assert.rejects(source.consume({handle:challenge.handle,now:NOW}),e=>e.code==="wallet_transaction_rejected");
+    });
+
     await t.test("one wallet selects one durable Human role without capability union", async () => {
       const sessionStore = new PostgresHumanSessionStore({
         eventRepository: repository,
