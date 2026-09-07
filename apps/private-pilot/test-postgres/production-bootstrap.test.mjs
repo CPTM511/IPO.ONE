@@ -59,7 +59,7 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
     const applied = await migrateUp({ pool: target });
     assert.equal(
       applied.at(-1),
-      "0080_local_risk_passkeys"
+      "0081_local_passkey_bounds"
     );
     assert.ok(applied.includes("0008_durable_tenant_command_gateway"));
     const runtimePrivilegeRole = `ipo_privilege_${suffix}`;
@@ -73,7 +73,8 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
       await target.query(
         `GRANT INSERT ON obligations TO "${runtimePrivilegeRole}"`
       );
-      assert.deepEqual(await migrateDown({ pool: target, steps: 10 }), [
+      assert.deepEqual(await migrateDown({ pool: target, steps: 11 }), [
+        "0081_local_passkey_bounds",
         "0080_local_risk_passkeys",
         "0079_local_human_sandbox_activation",
         "0078_local_principal_agent_runtime",
@@ -95,7 +96,8 @@ test("fresh migrations succeed for a non-superuser database owner under forced R
         "0077_local_ordinary_wallet_access",
         "0078_local_principal_agent_runtime",
         "0079_local_human_sandbox_activation",
-        "0080_local_risk_passkeys"
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds"
       ]);
       const capabilityClient = await target.connect();
       let systemWorkerCapability;
@@ -321,7 +323,7 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
     upgradePool = new Pool({ connectionString: upgradeUrl.toString(), max: 1 });
     assert.equal(
       (await migrateUp({ pool: upgradePool })).at(-1),
-      "0080_local_risk_passkeys"
+      "0081_local_passkey_bounds"
     );
     const upgradeBootstrap = await bootstrapProductionDatabase({
       ...parameters,
@@ -333,8 +335,9 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       })
     });
     assert.equal(upgradeBootstrap.insertedCredentials, 4);
-    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 18 }), [
-      "0080_local_risk_passkeys",
+    assert.deepEqual(await migrateDown({ pool: upgradePool, steps: 19 }), [
+      "0081_local_passkey_bounds",
+        "0080_local_risk_passkeys",
         "0079_local_human_sandbox_activation",
       "0078_local_principal_agent_runtime",
       "0077_local_ordinary_wallet_access",
