@@ -695,10 +695,10 @@ async function postRepaymentWithBoundedClockRecovery({
   }
 }
 
-async function waitForDatabaseClockAfter(pool, timestampValue, label) {
+async function waitForDatabaseClockAfter(pool, timestampValue, label, { timeoutMs = 3_000 } = {}) {
   const target = new Date(timestampValue).getTime();
   const startedAt = process.hrtime.bigint();
-  while (Number(process.hrtime.bigint() - startedAt) / 1_000_000 <= 3_000) {
+  while (Number(process.hrtime.bigint() - startedAt) / 1_000_000 <= timeoutMs) {
     const clock = await pool.query("SELECT clock_timestamp() AS database_now");
     const databaseNow = new Date(clock.rows[0].database_now).getTime();
     if (databaseNow >= target) return;
@@ -7129,8 +7129,12 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       });
       await waitForDatabaseClockAfter(
         ownerPool,
-        new Date(new Date(expiredUnderwriting.validUntil).getTime() + 100),
-        "Phase 2 expired Offer"
+        // WEB-027M observed a >332 ms local VM clock slew between the
+        // prior clock sample and admission. Keep the expired-request assertion
+        // strict and wait for one second of expiry headroom in server time.
+        new Date(new Date(expiredUnderwriting.validUntil).getTime() + 1_000),
+        "Phase 2 expired Offer",
+        { timeoutMs: 5_000 }
       );
       await assert.rejects(
         () => tenantOnePhase2BorrowerB.acceptCreditOffer({

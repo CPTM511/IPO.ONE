@@ -65,7 +65,7 @@ export function createLocalApprovalRuntimeFactory({ verifyRecordedProof }) {
             input.policyVersion !== d.policyVersion || !verifyRecordedProof || !(await verifyRecordedProof(d, input.now))) unavailable();
         const rows = await client.query(`SELECT m.*,a.actor_type FROM memberships m JOIN actors a ON a.id=m.actor_id
           WHERE m.tenant_id=$1 AND m.actor_id=$2 AND m.id=$3 AND m.role_bundle=$4 AND m.policy_version=$5
-            AND m.client_ids ? $6 AND a.actor_type=$4 AND a.status='active' AND m.status='active'
+            AND m.client_ids ? $6 AND a.actor_type::text=$4 AND a.status='active' AND m.status='active'
             AND m.valid_from <= $7 AND (m.expires_at IS NULL OR m.expires_at > $7) FOR SHARE OF m,a`,
         [d.tenantId,d.approverActorId,d.approverMembershipId,d.approverRoleBundle,d.policyVersion,d.approverClientId,input.now]);
         if (rows.rowCount !== 1) unavailable();

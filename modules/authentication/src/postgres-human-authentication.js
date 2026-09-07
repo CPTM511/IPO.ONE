@@ -1474,7 +1474,7 @@ export class PostgresCredentialRegistry {
             AND e.policy_version = $6
             AND e.client_ids ? $7
             AND ((e.role_bundle = 'risk_operator' AND a.actor_type = 'risk_operator')
-              OR (e.role_bundle IN ('operations_operator','auditor') AND a.actor_type = e.role_bundle)
+              OR (e.role_bundle IN ('operations_operator','auditor') AND a.actor_type::text = e.role_bundle)
               OR (e.role_bundle IN ('human_borrower','principal_controller','capital_partner_operator') AND a.actor_type = 'human'))
             AND a.status = 'active'
           FOR SHARE OF e, a`,
