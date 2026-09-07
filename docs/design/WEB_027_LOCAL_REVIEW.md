@@ -1,6 +1,6 @@
 # WEB-027 local candidate and release record
 
-Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. The local design and reviewed J repairs are installed and individually verified; K2 Risk Passkeys and protected reads are locally verified; remaining semantic coverage and Founder/formal-site acceptance are still open.
+Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. WEB-027L delegated acceptance has verified the available Human, Principal/Agent, Capital Partner and Risk workflows on installed source `3ecbf4b`; special-role/configured-path and formal hosted gates remain open.
 
 ## Experience
 
@@ -90,3 +90,18 @@ K2 backend source `30bed6f` passed 265 authentication/web tests, 224 transport/s
 The shared local VM filled its disk during repeated isolated builds/regressions. Resulting database failures are recorded as failed attempts. Three this-turn temporary runners/databases and rebuildable Docker cache were removed (2.033 GB cache reclaimed), while images, volumes and business databases were retained. The original synthetic worker exited during the incident and was restored using its unchanged `0211f75` image/configuration. Subsequent full PostgreSQL and browser checks passed; old 8895–8898 and new candidate health endpoints return 200. No production action occurred.
 
 Inspected final desktop Dark Risk and mobile Light native revoke dialog. Light/Dark at 1440/390 has no horizontal overflow; dialog fits, text contrast is at least 15.23:1, and Escape cancels without revocation. Physical Founder Passkey/device acceptance and the remaining release gates above remain open.
+
+
+## WEB-027L — delegated role acceptance, 2026-09-07
+
+The Founder explicitly asked Codex to represent the parties and perform acceptance. Available local role workflows were therefore verified by Codex through actual visible controls and signed isolated identities; no generic Founder manual-click step remains for those software checks. Physical authenticator/device evidence is still distinguished from native WebAuthn virtual-authenticator protocol evidence.
+
+Installed API and worker: `3ecbf4bb93f948ced12f9d6a7b230270d0f29e6e`, image `ipo-one-web027:3ecbf4bb93f9`, 63 installed runtime file hashes match. Same candidate database, 81 migrations, no new dependency or migration. All four experience links above return 200. Original 8895–8898 API and worker remain on `0211f75` and running.
+
+Acceptance found and fixed three concrete defects: multiple pending Human applications hid lender Offers after refresh; Risk Case buttons accepted clicks while their transition/reload was pending; and a populated Capital portfolio was rejected because the UI expected full Facility records instead of the server's nested summaries. Added a visible authorized Facility detail query, truthful anchored/pending counts and distinct dated Offer choices.
+
+Final-source visible acceptance: Human selects the exact Capital Partner Offer, confirms and accepts it, executes, repays in full; the Partner reads the same $0-outstanding Facility and repayment, both sides refresh/re-login, and the Partner recovers after the Agent test restarts the API. Fresh Principal creates its own Agent, proves its account, activates the exact Mandate, completes $100 synthetic execution/repayment, verifies Evidence and revokes the runtime credential with durable restart recovery. Risk uses native cryptographic Passkey assertion, assigns two fresh Human cases, upholds one and adds a correction to the other; both sides recover terminal status. Human/Risk Pool read controls return explicit current states; Human RPC/indexer/reconciliation are unavailable and submission remains disabled.
+
+Validation: 213 web/workspace tests on final source, 99 PostgreSQL tests on `bf02756` (backend unchanged afterward), schema/protocol/types, lint, bundle and traceability checks passed. Human Offer selection is keyboard-operable and revalidates without accepting. Human choices and Capital details were inspected at desktop/mobile Light/Dark with no horizontal overflow. The disposable PostgreSQL test runtime was removed after preserving its results; all candidate business history remains.
+
+Exact evidence: [l-verification-evidence.json](web-027/l-verification-evidence.json). Actual runtime roles include no Operations/Auditor and the current Risk actor has no `approval.*` grants. The servicing queue is empty; no freeze or dual-controlled servicing mutation is claimed. The bounded additional local role configuration is reviewable in [WEB-027M](../codex/tasks/WEB_027M_SPECIAL_ROLE_ACCEPTANCE_REVIEW.md). Metered Resource remains unconfigured for this deployment role; Provider/venue, physical device/full assistive-technology and formal hosted acceptance remain open. No formal promotion occurred.
