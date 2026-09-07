@@ -4280,6 +4280,7 @@ function renderAgentAuthorityPilot() {
     exactResourceId(subjectId) && agentAuthorityPilot.subject?.subjectId === subjectId
   );
   const subjectPending = agentAuthorityPilot.subject?.subjectId === subjectId && agentAuthorityPilot.subject.status === "pending";
+  const subjectSuspended = subjectLoaded && agentAuthorityPilot.subject.status === "suspended";
   const accountBinding = agentAuthorityPilot.accountBinding?.subjectId === subjectId
     ? agentAuthorityPilot.accountBinding.accountBinding
     : null;
@@ -4289,7 +4290,7 @@ function renderAgentAuthorityPilot() {
     ? agentAuthorityPilot.accountChallenge
     : null;
   const challengeExpired = Boolean(challenge && new Date(challenge.expiresAt).getTime() <= Date.now());
-  const challengeOpen = Boolean(challenge && !challengeExpired && !accountBound);
+  const challengeOpen = Boolean(challenge && !challengeExpired && !accountBound && subjectPending);
   const exactDraftLoaded = mandate?.mandateId === mandateId && mandate.status === "draft";
   const exactContinuation = controlledAgentContinuationForMandate(
     tenantPilot.workspaceResume,
@@ -4361,8 +4362,10 @@ function renderAgentAuthorityPilot() {
   el("revokeLocalSandboxAgentBtn").disabled = privateBusy;
   el("localSandboxAgentStatus").textContent = localSandboxAgentRuntime?.status === "revoked"
     ? "Runtime credential revoked. Existing records remain available; this Agent cannot start further work."
+    : subjectSuspended
+      ? "Agent suspended by a protective control. New account proof, authority and execution are blocked. Existing records and credential revocation remain available."
     : localSandboxAgentRuntime?.status === "active"
-      ? "Your dedicated local Agent is ready. Account proof and an active Mandate control what it can do."
+      ? "Your dedicated local Agent runtime is registered. Current Subject state, account proof and an active Mandate control what it can do."
       : "Create your own sandbox Agent. Its credential stays encrypted on this local server. No credit or spending is authorized by setup.";
   el("agentAuthoritySelectedWorkflow").hidden = !exactAgentSelected;
   el("agentAuthorityReviewPanel").hidden = !exactAgentSelected || !mandate;
@@ -4371,10 +4374,10 @@ function renderAgentAuthorityPilot() {
   el("agentMandateStage").hidden = !subjectLoaded || !accountBound || Boolean(mandateId);
   el("agentApplicationStageSection").hidden = !exactDraftLoaded || !accountBound;
   el("agentActivationStage").hidden = !continuationReady || mandate?.status === "active";
-  el("agentRuntimeStage").hidden = mandate?.status !== "active";
+  el("agentRuntimeStage").hidden = mandate?.status !== "active" || !subjectKnownActive;
   el("createPrivateAgentSubjectBtn").hidden = !exactAgentSelected || Boolean(subjectId);
   el("createPrivateAgentSubjectBtn").disabled = privateBusy;
-  el("createAccountChallengeBtn").disabled = privateBusy || !subjectLoaded || !accountProofInputReady || subjectKnownActive || accountBound || challengeOpen;
+  el("createAccountChallengeBtn").disabled = privateBusy || !subjectPending || !accountProofInputReady || subjectKnownActive || accountBound || challengeOpen;
   el("agentAccountAddress").setAttribute(
     "aria-invalid",
     subjectId && !accountProofInputReady ? "true" : "false"
@@ -4391,7 +4394,7 @@ function renderAgentAuthorityPilot() {
   el("downloadAccountChallengeBtn").disabled = privateBusy || !challengeOpen;
   el("refreshAccountBindingBtn").disabled = privateBusy || !subjectId;
   el("createDraftMandateBtn").hidden = !subjectLoaded || Boolean(mandateId);
-  el("createDraftMandateBtn").disabled = privateBusy;
+  el("createDraftMandateBtn").disabled = privateBusy || !accountBound;
   const applicationReady = exactDraftLoaded && accountBound;
   el("openAgentApplicationHandoffBtn").disabled = privateBusy || !applicationReady;
   el("openAgentApplicationHandoffBtn").textContent =
@@ -4475,6 +4478,8 @@ function renderAgentAuthorityPilot() {
       : "Waiting for signing request";
   el("agentAccountActivationStatus").textContent = accountBound
     ? "Subject active"
+    : subjectSuspended
+      ? "Subject suspended"
     : subjectPending
       ? "Subject pending"
       : "Assigned Subject unavailable";
@@ -4483,6 +4488,8 @@ function renderAgentAuthorityPilot() {
     : "Create a signing request to view the closed EIP-712 payload.";
   el("agentAccountProofNextStep").textContent = accountBound
     ? "Account proof verified. Continue to Draft bounded sandbox authority."
+    : subjectSuspended
+      ? "Protective suspension is active. Further account proof and authorization require reviewed recovery; refreshing cannot remove this control."
     : challengeExpired
       ? "This one-use request expired. Create and download a new signing request."
       : challenge
