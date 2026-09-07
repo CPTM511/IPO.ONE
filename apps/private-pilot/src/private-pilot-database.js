@@ -1,3 +1,4 @@
+import { assertLocalSpecialRoleDatabase, LOCAL_SPECIAL_ROLE_SPECS } from "./local-special-role-access.js";
 import { assertLocalAccessDatabase, rotateLocalAccessCredentials } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -389,8 +390,8 @@ async function seedLocalHumanRoleEnrollment(client, {
     // A retired credential is historical. Never recreate its authority during
     // startup; verified v2 rebinds retain their own durable role enrollment.
     credential.status !== "active" ||
-    ![ActorType.HUMAN, ActorType.RISK_OPERATOR].includes(actor.actorType) ||
-    ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER, RoleBundle.CAPITAL_PARTNER_OPERATOR, RoleBundle.RISK_OPERATOR]
+    ![ActorType.HUMAN, ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR].includes(actor.actorType) ||
+    ![RoleBundle.HUMAN_BORROWER, RoleBundle.PRINCIPAL_CONTROLLER, RoleBundle.CAPITAL_PARTNER_OPERATOR, RoleBundle.RISK_OPERATOR, RoleBundle.OPERATIONS_OPERATOR, RoleBundle.AUDITOR]
       .includes(actor.roleBundle)
   ) {
     return;
@@ -516,6 +517,7 @@ async function seedAuthenticationCredential(client, {
       stored.client_authentication_method !== clientAuthenticationMethod ||
       stored.sender_constraint_method !== senderConstraintMethod ||
       (stored.reference_hash_key_version !== "v2" && stored.sender_constraint_ref_hash !== senderConstraintRefHash) ||
+      (actor.durableCredentialId !== undefined && stored.id !== actor.durableCredentialId) ||
       stored.policy_version !== AUTHORIZATION_POLICY_VERSION ||
       JSON.stringify(stored.roles) !== JSON.stringify([actor.roleBundle]) ||
       JSON.stringify(stored.allowed_capabilities) !==
@@ -541,7 +543,7 @@ async function seedAuthenticationCredential(client, {
     // Only the reviewed rotation can create a replacement for existing records.
     if (historical.rowCount) return;
   }
-  const credentialId = createOperationalId("credential");
+  const credentialId = actor.durableCredentialId ?? createOperationalId("credential");
   const inserted = await client.query(
     `INSERT INTO authentication_credentials(
        id, tenant_id, actor_id, actor_type, issuer, subject_ref_hash,
@@ -769,6 +771,7 @@ export async function provisionPrivatePilotDatabase({
 
 export async function provisionPrivatePilotAuthentication({
   localPasskeys = false,
+  specialRoleInvitations,
   ownerConnectionString,
   identities,
   profile,
@@ -778,6 +781,7 @@ export async function provisionPrivatePilotAuthentication({
 }) {
   const checkedProfile = assertPrivatePilotProfile(profile);
   if (localPasskeys) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (specialRoleInvitations) assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
   if (
     !Number.isSafeInteger(basePort) ||
     basePort < 1_024 ||
@@ -820,20 +824,17 @@ export async function provisionPrivatePilotAuthentication({
       source: "system_worker"
     });
     await withTenantTransaction(ownerPool, context, async (client) => {
-      for (const [index, name] of [
-        "borrower",
-        "controller",
-        "risk",
-        "capitalPartner"
-      ].entries()) {
+      const hostBindings = ["borrower", "controller", "risk", "capitalPartner"].map((name, index) => ({ name, port: basePort + index, walletAddress: invitation.walletAddress }));
+      if (specialRoleInvitations) hostBindings.push(...Object.entries(LOCAL_SPECIAL_ROLE_SPECS).map(([name, spec]) => ({ name, port: spec.port, walletAddress: specialRoleInvitations[name] })));
+      for (const { name, port, walletAddress } of hostBindings) {
         const actor = identities[name];
-        const issuer = `https://127.0.0.1:${basePort + index}`;
+        const issuer = `https://127.0.0.1:${port}`;
         await seedAuthenticationCredential(client, {
           tenantId: checkedProfile.tenantId,
           actor,
           issuer,
           externalSubject:
-            `eip155:84532:${invitation.walletAddress.toLowerCase()}`,
+            `eip155:84532:${walletAddress.toLowerCase()}`,
           clientAuthenticationMethod: ClientAuthenticationMethod.SIWE,
           senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
           senderThumbprint: referenceHasher.hash(

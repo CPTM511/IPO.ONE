@@ -1,3 +1,4 @@
+import { localReviewCookieName } from "./local-review-cookies.js";
 import tenantProtocolRequestSchema from "../../../schemas/v2/tenant-protocol-request.schema.json" with { type: "json" };
 import tenantProtocolResultSchema from "../../../schemas/v2/tenant-protocol-result.schema.json" with { type: "json" };
 import { TENANT_PROTOCOL_OPERATIONS } from "../../../packages/api-contract/src/index.js";
@@ -333,7 +334,7 @@ export function createTenantOpenApiDocument(publicOrigin) {
         humanSession: Object.freeze({
           type: "apiKey",
           in: "cookie",
-          name: "__Host-ipo_one_session"
+          name: localReviewCookieName("__Host-ipo_one_session", Number(origin.port))
         }),
         workloadBearer: Object.freeze({
           type: "http",

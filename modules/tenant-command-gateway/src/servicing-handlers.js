@@ -51,7 +51,7 @@ function normalizeAdvancePayload(payload) {
   return {};
 }
 
-function normalizeResolutionPayload(operationId, payload) {
+export function normalizeResolutionPayload(operationId, payload) {
   const keys = operationId === "pilotRestructureSandboxObligation"
     ? ["expectedServicingStateHash", "additionalTermDays"]
     : operationId === "pilotRepurchaseSandboxObligation"

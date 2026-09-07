@@ -391,6 +391,19 @@ export const TENANT_OPERATION_POLICIES = Object.freeze([
     idempotencyRequirement: IdempotencyRequirement.PROHIBITED
   }),
   tenantOperation({
+    operationId: "pilotReadApprovalInbox", action: "approval.inbox.read", resourceType: "approval_proposal",
+    allowedActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR],
+    requiredCapability: PilotCapability.APPROVAL_READ, ownershipRule: OwnershipRule.NONE,
+    idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR, ActorType.OPERATIONS_OPERATOR, ActorType.AUDITOR]
+  }),
+  tenantOperation({
+    operationId: "pilotReadRiskAgentDirectory", action: "risk.agent_directory.read", resourceType: "risk_portfolio",
+    allowedActorTypes: [ActorType.RISK_OPERATOR], requiredCapability: PilotCapability.RISK_READ_TENANT,
+    ownershipRule: OwnershipRule.TENANT, idempotencyRequirement: IdempotencyRequirement.PROHIBITED,
+    requiresRecentMfaActorTypes: [ActorType.RISK_OPERATOR]
+  }),
+  tenantOperation({
     operationId: "pilotProposeApproval",
     action: "approval.propose",
     resourceType: "approval_proposal",

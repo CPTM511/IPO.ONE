@@ -1,3 +1,5 @@
+import approvalProposalSchema from "../../../schemas/v2/approval-proposal.schema.json" with { type: "json" };
+import approvalDecisionSchema from "../../../schemas/v2/approval-decision.schema.json" with { type: "json" };
 import Ajv2020 from "ajv/dist/2020.js";
 import { DomainError } from "../../domain/src/index.js";
 import mandateSchema from "../../../schemas/v2/mandate.schema.json" with { type: "json" };
@@ -84,11 +86,110 @@ ajv.addSchema(meteredUsageEvidenceSchema);
 ajv.addSchema(meteredUsageAdmissionSchema);
 ajv.addSchema(tenantMeteredUsageAdmittedSchema);
 
+ajv.addSchema(approvalProposalSchema);
+ajv.addSchema(approvalDecisionSchema);
 const validateRequest = ajv.compile(requestSchema);
 const validateResult = ajv.compile(resultSchema);
 const validateCatalog = ajv.compile(catalogSchema);
 
 export const TENANT_PROTOCOL_OPERATIONS = deepFreeze([
+  {
+    "operationId": "pilotProposeApproval",
+    "kind": "command",
+    "actorTypes": [
+      "risk_operator",
+      "operations_operator"
+    ],
+    "resourceType": "approval_proposal",
+    "requiredCapability": "approval.propose",
+    "idempotency": "required",
+    "quotaClass": "privileged",
+    "requestSchemaVersion": "tenant_protocol_request.v1",
+    "responseSchemaVersion": "tenant_approval_proposed.v1",
+    "public": false,
+    "fundsAuthority": false
+  },
+  {
+    "operationId": "pilotReadApproval",
+    "kind": "query",
+    "actorTypes": [
+      "risk_operator",
+      "operations_operator",
+      "auditor"
+    ],
+    "resourceType": "approval_proposal",
+    "requiredCapability": "approval.read",
+    "idempotency": "prohibited",
+    "quotaClass": "read",
+    "requestSchemaVersion": "tenant_protocol_request.v1",
+    "responseSchemaVersion": "tenant_approval_view.v1",
+    "public": false,
+    "fundsAuthority": false
+  },
+  {
+    "operationId": "pilotDecideApproval",
+    "kind": "command",
+    "actorTypes": [
+      "risk_operator",
+      "operations_operator"
+    ],
+    "resourceType": "approval_proposal",
+    "requiredCapability": "approval.decide",
+    "idempotency": "required",
+    "quotaClass": "privileged",
+    "requestSchemaVersion": "tenant_protocol_request.v1",
+    "responseSchemaVersion": "tenant_approval_decided.v1",
+    "public": false,
+    "fundsAuthority": false
+  },
+  {
+    "operationId": "pilotCancelApproval",
+    "kind": "command",
+    "actorTypes": [
+      "risk_operator",
+      "operations_operator"
+    ],
+    "resourceType": "approval_proposal",
+    "requiredCapability": "approval.cancel",
+    "idempotency": "required",
+    "quotaClass": "privileged",
+    "requestSchemaVersion": "tenant_protocol_request.v1",
+    "responseSchemaVersion": "tenant_approval_canceled.v1",
+    "public": false,
+    "fundsAuthority": false
+  },
+  {
+    "operationId": "pilotReadApprovalInbox",
+    "kind": "query",
+    "actorTypes": [
+      "risk_operator",
+      "operations_operator",
+      "auditor"
+    ],
+    "resourceType": "approval_proposal",
+    "requiredCapability": "approval.read",
+    "idempotency": "prohibited",
+    "quotaClass": "read",
+    "requestSchemaVersion": "tenant_protocol_request.v1",
+    "responseSchemaVersion": "tenant_approval_inbox.v1",
+    "public": false,
+    "fundsAuthority": false
+  },
+  {
+    "operationId": "pilotReadRiskAgentDirectory",
+    "kind": "query",
+    "actorTypes": [
+      "risk_operator"
+    ],
+    "resourceType": "risk_portfolio",
+    "requiredCapability": "risk.read.tenant",
+    "idempotency": "prohibited",
+    "quotaClass": "read",
+    "requestSchemaVersion": "tenant_protocol_request.v1",
+    "responseSchemaVersion": "tenant_risk_agent_directory.v1",
+    "public": false,
+    "fundsAuthority": false
+  },
   {
     operationId: "pilotAcceptCreditOffer",
     kind: "command",

@@ -452,3 +452,14 @@ body.product-experience .risk-passkey-panel .risk-workspace-actions { display: f
 #capitalPartnerFacilityDetail { display: grid; gap: 10px; margin-top: 16px; }
 #capitalPartnerFacilityDetail[hidden] { display: none; }
 #capitalPartnerFacilityDetail p { color: var(--muted); font-size: .82rem; line-height: 1.5; }
+
+.local-review-panel { margin-block: 20px; padding: 24px; }
+.local-review-list { display: grid; gap: 8px; margin-top: 16px; }
+.local-review-list button { text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.local-servicing-form { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; margin-block: 20px; }
+.local-servicing-form label { display: block; margin-bottom: 8px; }
+.local-servicing-form .risk-acknowledgement { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 12px; }
+.local-servicing-form input:not([type="checkbox"]), .local-servicing-form select { width: 100%; min-height: 42px; }
+.local-approval-detail { border-top: 1px solid var(--b-line); margin-top: 20px; padding-top: 20px; line-height: 1.65; }
+.local-approval-detail pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .local-servicing-form { grid-template-columns: minmax(0,1fr); } .local-review-panel { padding: 16px; } }

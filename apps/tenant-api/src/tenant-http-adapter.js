@@ -1,3 +1,4 @@
+import { isolateLocalReviewCookies } from "./local-review-cookies.js";
 import { createServer } from "node:http";
 import {
   ApiBoundaryError,
@@ -105,7 +106,7 @@ export function createTenantHttpServer({
   serveWebAsset
 }) {
   assertConfig({ host, trustProxy, environment, credentialSource });
-  if (localRiskHostname && (![8937, 8947].includes(port) || environment !== "development" || credentialSource !== "local_test")) throw new DomainError("invalid_tenant_transport_config", "Risk hostname is restricted to the reviewed local listener");
+  if (localRiskHostname && (![8937, 8947, 8939, 8940, 8941].includes(port) || environment !== "development" || credentialSource !== "local_test")) throw new DomainError("invalid_tenant_transport_config", "Risk hostname is restricted to the reviewed local listener");
   if (
     !gateway?.execute ||
     typeof resolveAuthenticationContext !== "function" ||
@@ -150,6 +151,7 @@ export function createTenantHttpServer({
     response.setTimeout(requestTimeoutMs, () => response.destroy());
     try {
       const url = new URL(requestUrl(request, listeningPort, localRiskHostname));
+      if (localRiskHostname) isolateLocalReviewCookies(request,response,listeningPort);
       if (localRiskHostname && url.hostname === "127.0.0.1" && url.pathname === "/" && ["GET", "HEAD"].includes(request.method)) {
         response.writeHead(302, { location: `http://localhost:${listeningPort}/#risk-operations`, "cache-control": "no-store" });
         response.end();

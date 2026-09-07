@@ -66,7 +66,7 @@ function exactBrowserOrigin(value, allowRiskLocalhost = false) {
   }
   const loopbackDevelopment =
     parsed.protocol === "http:" &&
-    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947"].includes(parsed.port))) &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8939", "8940", "8941"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !loopbackDevelopment) ||
@@ -344,7 +344,7 @@ export function createHumanAccessRouteHandler(input) {
     postLoginPath = "/#request-credit"
   } = input;
   const passkeyEnabled = typeof input.passkeyOperation === "function" && profile === "local_no_funds" &&
-    walletWorkspaceRoles.length === 1 && walletWorkspaceRoles[0] === "risk_operator";
+    walletWorkspaceRoles.length === 1 && ({ "http://localhost:8937": "risk_operator", "http://localhost:8947": "risk_operator", "http://localhost:8939": "operations_operator", "http://localhost:8940": "auditor", "http://localhost:8941": "risk_operator" })[input.browserOrigin] === walletWorkspaceRoles[0];
   if (input.passkeyOperation !== undefined && !passkeyEnabled) throw new DomainError("invalid_human_access_config", "Passkeys require the invited local Risk composition");
   const browserOrigin = exactBrowserOrigin(input.browserOrigin, passkeyEnabled);
   const providers = normalizeProviders(oidcProviders);
@@ -359,7 +359,7 @@ export function createHumanAccessRouteHandler(input) {
   }
   const checkedWalletRoles = allowedWalletRoles(walletWorkspaceRoles);
   if (checkedWalletRoles.some(role => !ORDINARY_WALLET_ROLES.includes(role)) &&
-      (profile !== "local_no_funds" || !(browserOrigin.startsWith("http://127.0.0.1:") || (passkeyEnabled && ["http://localhost:8937", "http://localhost:8947"].includes(browserOrigin))))) {
+      (profile !== "local_no_funds" || !(browserOrigin.startsWith("http://127.0.0.1:") || (passkeyEnabled && ["http://localhost:8937", "http://localhost:8947", "http://localhost:8939", "http://localhost:8940", "http://localhost:8941"].includes(browserOrigin))))) {
     throw new DomainError("invalid_human_access_config", "invited wallet roles require an explicit loopback local profile");
   }
   const checkedProfile = assertSafeIdentifier("profile", profile);

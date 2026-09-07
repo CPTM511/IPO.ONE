@@ -39,6 +39,7 @@ const ROOT_KEYS = new Set([
   "idleTimeoutMs",
   "localInvitedWalletRole",
   "localPasskeys",
+  "localSpecialRoles",
   "legacyReferenceHashKey",
   "legacyReferenceHashKeyRef",
   "maximumSessions",
@@ -118,7 +119,7 @@ function exactBrowserOrigin(value, { allowLoopback = false, allowRiskLocalhost =
   const approvedLoopback =
     allowLoopback &&
     parsed.protocol === "http:" &&
-    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947"].includes(parsed.port))) &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947", "8939", "8940", "8941"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !approvedLoopback) ||
@@ -290,7 +291,7 @@ export async function createPostgresHumanAccessComposition(input) {
   const policyVersion = assertSafeIdentifier("policyVersion", input.policyVersion);
   const browserOrigin = exactBrowserOrigin(input.browserOrigin, {
     allowLoopback: localProfile,
-    allowRiskLocalhost: input.localPasskeys === true && input.localInvitedWalletRole === "risk_operator"
+    allowRiskLocalhost: input.localPasskeys === true && (input.localInvitedWalletRole === "risk_operator" || input.localSpecialRoles === true)
   });
   const sessionOrigin = localProfile
     ? `https://${new URL(browserOrigin).host}`
@@ -365,6 +366,7 @@ export async function createPostgresHumanAccessComposition(input) {
       (!localProfile || !INVITED_WALLET_ROLES.includes(input.localInvitedWalletRole))) {
     throw authenticationError("authentication_deployment_gate_closed", "invited wallet role requires an explicit local host");
   }
+  if (["operations_operator", "auditor"].includes(input.localInvitedWalletRole) && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special roles require the exact local acceptance configuration");
   const walletWorkspaceRoles = input.localInvitedWalletRole === undefined
     ? ORDINARY_WALLET_ROLES : [input.localInvitedWalletRole];
   const providers = normalizeOidcProviders(input.oidcProviders);
@@ -384,6 +386,21 @@ export async function createPostgresHumanAccessComposition(input) {
     );
   }
 
+  if (input.localSpecialRoles !== undefined && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special role configuration is invalid");
+  const specialBindings = {
+    "http://localhost:8939": ["operations_operator", "client_web027m_actor_web027m_operations"],
+    "http://localhost:8940": ["auditor", "client_web027m_actor_web027m_auditor"],
+    "http://localhost:8941": ["risk_operator", "client_web027m_actor_web027m_risk_reviewer"]
+  };
+  if (specialBindings[browserOrigin] && input.localSpecialRoles !== true) throw authenticationError("authentication_deployment_gate_closed", "Special origin requires the exact local gate");
+  if (input.localSpecialRoles) {
+    const binding = specialBindings[browserOrigin];
+    const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
+    if (!localProfile || !input.localPasskeys || database !== "ipo_one_web027_candidate" || !binding ||
+        input.localInvitedWalletRole !== binding[0] || input.wallet?.clientId !== binding[1] || runtimeConfig.localWalletSelfService === true) {
+      throw authenticationError("authentication_deployment_gate_closed", "Special roles require the exact isolated identity, origin and database");
+    }
+  }
   if (input.localPasskeys !== undefined && input.localPasskeys !== true) throw authenticationError("authentication_deployment_gate_closed", "Passkey configuration is invalid");
   if (input.localPasskeys) {
     const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
@@ -420,8 +437,8 @@ export async function createPostgresHumanAccessComposition(input) {
       ? { publicBetaWalletRoleProfiles: input.publicBetaWalletRoleProfiles }
       : {})
   });
-  const passkeys = input.localPasskeys && input.localInvitedWalletRole === "risk_operator"
-    ? new LocalRiskPasskeys({ origin: browserOrigin }) : undefined;
+  const passkeys = input.localPasskeys && (input.localInvitedWalletRole === "risk_operator" || input.localSpecialRoles)
+    ? new LocalRiskPasskeys({ origin: browserOrigin, role: input.localInvitedWalletRole, specialRoles: input.localSpecialRoles === true }) : undefined;
   const sessionStore = new PostgresHumanSessionStore({
     ...(passkeys ? { resolveStepUp: (client, session, now) => passkeys.resolveStepUp(client, session, now) } : {}),
     eventRepository,

@@ -1,3 +1,4 @@
+import { createLocalReviewHandlers } from "./local-review-handlers.js";
 import { createAgentSubjectHandlers } from "./agent-subject-handlers.js";
 import { createAgentAccountProofHandlers } from "./agent-account-proof-handlers.js";
 import { createExecutionAccountBindingHandlers } from "./execution-account-binding-handlers.js";
@@ -46,6 +47,7 @@ import {
 
 export function createTenantFoundationHandlers(options) {
   return Object.freeze([
+    ...createLocalReviewHandlers(),
     ...createAgentSubjectHandlers(),
     ...createAgentAccountProofHandlers(options),
     ...createExecutionAccountBindingHandlers(options),

@@ -13,6 +13,7 @@ const WEB_ASSETS = Object.freeze({
   "/whitepaper.css": Object.freeze({ file: "whitepaper.css", contentType: "text/css; charset=utf-8" }),
   "/whitepaper.js": Object.freeze({ file: "whitepaper.js", contentType: "text/javascript; charset=utf-8" }),
   "/whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf": Object.freeze({ file: "whitepaper/IPO_ONE_Whitepaper_Founding_Edition_III.pdf", contentType: "application/pdf" }),
+  "/local-review-workspace.js": Object.freeze({ file: "local-review-workspace.js", contentType: "text/javascript; charset=utf-8" }),
   "/app.js": Object.freeze({ file: "app.js", contentType: "text/javascript; charset=utf-8" }),
   "/agent-console-presentation.js": Object.freeze({ file: "agent-console-presentation.js", contentType: "text/javascript; charset=utf-8" }),
   "/agent-handoff-manifest.js": Object.freeze({ file: "agent-handoff-manifest.js", contentType: "text/javascript; charset=utf-8" }),

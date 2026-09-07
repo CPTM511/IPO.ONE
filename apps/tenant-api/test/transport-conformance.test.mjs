@@ -437,6 +437,7 @@ test("loopback Tenant host can serve the Human pilot shell without exposing priv
       "/evidence-receipt-presentation.js",
       "/human-credit-offer-workflow-receipt.js",
       "/human-sandbox-obligation-workflow-receipt.js",
+      "/local-review-workspace.js",
       "/obligation-portfolio-presentation.js",
       "/official-report-download.js",
       "/owned-evidence-presentation.js",

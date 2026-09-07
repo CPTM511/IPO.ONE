@@ -77,6 +77,9 @@ export const WORKSPACE_NAVIGATION_MANIFEST = Object.freeze({
       entry("reports-exports", "advanced"),
       entry("architecture", "advanced")
     ]),
+    operations: workspace("risk-operations", [entry("risk-operations", "primary")]),
+    auditor: workspace("risk-operations", [entry("risk-operations", "primary")]),
+    riskReviewer: workspace("risk-operations", [entry("risk-operations", "primary")]),
     risk: workspace("risk-operations", [
       entry("risk-operations", "primary")
     ]),

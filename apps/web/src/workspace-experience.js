@@ -14,6 +14,9 @@ const labels = {
     "wallet-permissions": ["Settings", "Account & permissions"]
   },
   capitalPartner: { "capital-partners": ["Inbox & portfolio", "Capital workspace"] },
+  operations: { "risk-operations": ["Servicing & approvals", "Operations workspace"] },
+  auditor: { "risk-operations": ["Portfolio & audit", "Auditor workspace"] },
+  riskReviewer: { "risk-operations": ["Independent review", "Risk reviewer workspace"] },
   risk: { "risk-operations": ["Queue & controls", "Risk workspace"] }
 };
 

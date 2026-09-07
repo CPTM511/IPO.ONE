@@ -1,3 +1,6 @@
+import { createLocalApprovalRuntimeFactory } from "../../../modules/tenant-command-gateway/src/local-approval-runtime.js";
+import { createLocalApprovalProofVerifier } from "./local-approval-proof.js";
+import { localSpecialRolesEnabled, assertLocalSpecialRoleDatabase, loadLocalSpecialRoleInvitations, LOCAL_SPECIAL_ROLE_SPECS } from "./local-special-role-access.js";
 import { createLocalPrincipalAgentRuntime } from "./local-principal-agent-runtime.js";
 import { assertLocalAccessDatabase, localAccessCapabilities, localAccessEnabled } from "./local-access-repair.js";
 import { readFile } from "node:fs/promises";
@@ -106,7 +109,8 @@ function createGateway(
   {
     credentialRegistry = authentication.credentialRegistry,
     referenceHasher = authentication.referenceHasher,
-    meteredUsageProvider
+    meteredUsageProvider,
+    approvalRuntimeFactory
   } = {}
 ) {
   const durableGateway = new TenantCommandGateway({
@@ -131,6 +135,7 @@ function createGateway(
           launchPolicy.profiles.live_testnet_secured_pool.exactProfile
       })
     ),
+    approvalRuntimeFactory,
     policyRegistry: authentication.policyRegistry,
     credentialRegistry,
     referenceHasher,
@@ -179,7 +184,8 @@ async function createLocalHumanAccess({
   port,
   profile
 }) {
-  const riskPasskey = localAccessEnabled() && identity.roleBundle === "risk_operator" && [8937, 8947].includes(port);
+  const specialRole = localSpecialRolesEnabled() && Object.values(LOCAL_SPECIAL_ROLE_SPECS).some(spec => spec.port === port && spec.actorId === identity.actorId && spec.roleBundle === identity.roleBundle);
+  const riskPasskey = specialRole || (localAccessEnabled() && identity.roleBundle === "risk_operator" && [8937, 8947].includes(port));
   const browserOrigin = `http://${riskPasskey ? "localhost" : "127.0.0.1"}:${port}`;
   const secureOrigin = `https://127.0.0.1:${port}`;
   const walletSignatureVerifier = new EvmWalletSignatureVerifier();
@@ -196,13 +202,14 @@ async function createLocalHumanAccess({
   return createPostgresHumanAccessComposition({
     browserOrigin,
     ...(localAccessEnabled() ? { localPasskeys: true } : {}),
+    ...(specialRole ? { localSpecialRoles: true } : {}),
     encryptionKey: authenticationMaterial.encryptionKey,
     encryptionKeyRef: "local-secret://authentication/encryption-key",
     oidcProviders: [],
     policyVersion: identity.createContext().policyVersion,
     pool: authenticationPool,
     profile: "local_no_funds",
-    ...(localAccessEnabled() && ["capital_partner_operator", "risk_operator"].includes(identity.roleBundle)
+    ...(localAccessEnabled() && (["capital_partner_operator", "risk_operator"].includes(identity.roleBundle) || specialRole)
       ? { localInvitedWalletRole: identity.roleBundle } : {}),
     referenceHashKey: authenticationMaterial.referenceHashKey,
     referenceHashKeyRef:
@@ -249,12 +256,18 @@ export async function createPrivatePilotRuntime({
   }
   assertPort("basePort", basePort);
   if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (localSpecialRolesEnabled()) {
+    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
+  }
+  const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
     profile: checkedProfile,
     referenceHashKey: Buffer.from(password, "base64url"),
-    localAccessRepair: localAccessEnabled()
+    localAccessRepair: localAccessEnabled(),
+    localSpecialRoles: localSpecialRolesEnabled()
   });
   const [serverMaterial, invitation] =
     await loadLocalDurableAuthenticationMaterial();
@@ -282,6 +295,7 @@ export async function createPrivatePilotRuntime({
     profile: authentication.profile,
     basePort,
     localPasskeys: localAccessEnabled(),
+    specialRoleInvitations,
     serverMaterial,
     invitation
   });
@@ -300,6 +314,7 @@ export async function createPrivatePilotRuntime({
       hash: "#capital-partners"
     }
   ];
+  if (localSpecialRolesEnabled()) profiles.push(...Object.entries(LOCAL_SPECIAL_ROLE_SPECS).map(([name, spec]) => ({ name, identity: authentication.identities[name], port: spec.port, hash: spec.hash })));
   const hosts = [];
   let gateway;
   let principalAgentRuntime;
@@ -326,7 +341,10 @@ export async function createPrivatePilotRuntime({
       referenceHasher: createReferenceHasher(
         durableAuthentication.referenceHashKey
       ),
-      meteredUsageProvider
+      meteredUsageProvider,
+      ...(localSpecialRolesEnabled() ? { approvalRuntimeFactory:createLocalApprovalRuntimeFactory({
+        verifyRecordedProof:createLocalApprovalProofVerifier({ pool:durableAuthentication.pool, tenantId:authentication.profile.tenantId, systemActorId:durableAuthentication.systemActorId })
+      }) } : {})
     });
     if (localAccessEnabled()) principalAgentRuntime = createLocalPrincipalAgentRuntime({
       ownerConnectionString, basePort, tenantId: authentication.profile.tenantId,
@@ -476,7 +494,7 @@ export async function createPrivatePilotRuntime({
           })
         : undefined;
       const host = createTenantPilotHost({
-        localRiskHostname: localAccessEnabled() && [8937, 8947].includes(profile.port),
+        localRiskHostname: localAccessEnabled() && ([8937, 8947].includes(profile.port) || (localSpecialRolesEnabled() && Object.hasOwn(LOCAL_SPECIAL_ROLE_SPECS, profile.name))),
         gateway,
         humanBff: humanAccess.humanSessionBff,
         machineAuthenticator: {
@@ -600,6 +618,11 @@ export async function createPrivatePilotGateway(
   } = {}
 ) {
   if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (localSpecialRolesEnabled()) {
+    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
+  }
+  const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({
@@ -638,6 +661,11 @@ export async function createPrivatePilotDurableAgentGateway(
   } = {}
 ) {
   if (localAccessEnabled()) assertLocalAccessDatabase(ownerConnectionString, basePort);
+  if (localSpecialRolesEnabled()) {
+    if (!localAccessEnabled()) throw new Error("WEB-027M requires the existing local access gate");
+    assertLocalSpecialRoleDatabase(ownerConnectionString, basePort);
+  }
+  const specialRoleInvitations = localSpecialRolesEnabled() ? await loadLocalSpecialRoleInvitations() : undefined;
   const checkedProfile = profile ?? await loadPrivatePilotProfile();
   const password = await loadOrCreatePrivatePilotDatabaseSecret();
   const authentication = createLocalPilotIdentities({

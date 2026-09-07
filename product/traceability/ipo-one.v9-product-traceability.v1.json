@@ -2399,6 +2399,126 @@
         "modules/tenant-command-gateway/test/venue-execution-handlers.test.js",
         "packages/sdk/test/venue-execution-client.test.js"
       ]
+    },
+    {
+      "operationId": "pilotCancelApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_canceled.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotDecideApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_decided.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotProposeApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_proposed.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadApproval",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_view.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadApprovalInbox",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_approval_inbox.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
+    },
+    {
+      "operationId": "pilotReadRiskAgentDirectory",
+      "requestSchemaVersion": "tenant_protocol_request.v1",
+      "responseSchemaVersion": "tenant_risk_agent_directory.v1",
+      "handlerModule": "modules/tenant-command-gateway/src/local-review-handlers.js",
+      "authorizationPolicyModule": "modules/authorization/src/authorization-policy.js",
+      "admissionPolicyModule": "modules/abuse-control/src/abuse-policy.js",
+      "persistenceModules": [
+        "modules/persistence/src/postgres-core-repository.js",
+        "modules/persistence/src/postgres-event-repository.js"
+      ],
+      "uiAdapters": [
+        "apps/web/src/local-review-workspace.js",
+        "apps/tenant-api/src/tenant-http-adapter.js"
+      ],
+      "testFiles": [
+        "modules/tenant-command-gateway/test/local-review-contract.test.js",
+        "apps/private-pilot/test/local-special-role-access.test.js"
+      ]
     }
   ],
   "destinations": [
@@ -4371,6 +4491,35 @@
           "truthBoundary": "No generic emergency mutation, unfreeze, approval bypass, or limit-increase operation is approved.",
           "nextTaskIds": [
             "V9-008"
+          ],
+          "humanGateRequired": true
+        },
+        {
+          "actionId": "risk_operations.local_invited_servicing_review",
+          "label": "Read invited approval inbox, propose and review exact sandbox servicing actions, and discover Agents for protective freeze",
+          "prototypeLabels": [],
+          "classification": "REAL_LOCAL",
+          "authorityType": "tenant_protocol",
+          "operationIds": [
+            "pilotProposeApproval",
+            "pilotReadApproval",
+            "pilotDecideApproval",
+            "pilotCancelApproval",
+            "pilotReadApprovalInbox",
+            "pilotReadRiskAgentDirectory"
+          ],
+          "authorityReferences": [],
+          "uiAdapters": [
+            "apps/web/src/local-review-workspace.js",
+            "apps/web/src/app.js"
+          ],
+          "testFiles": [
+            "modules/tenant-command-gateway/test/local-review-contract.test.js",
+            "apps/private-pilot/test/local-special-role-access.test.js"
+          ],
+          "truthBoundary": "Exact WEB-027M candidate gate only; existing two independent approvers remain mandatory. The proposer has no approval.decide. No legitimately matured adverse plan or separate Operations approver has yet been established for final execution acceptance. No hosted or real-funds availability is claimed.",
+          "nextTaskIds": [
+            "WEB-027M"
           ],
           "humanGateRequired": true
         }

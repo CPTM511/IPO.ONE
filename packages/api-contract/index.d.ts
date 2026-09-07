@@ -1,4 +1,10 @@
 export type TenantProtocolOperationId =
+  | "pilotProposeApproval"
+  | "pilotReadApproval"
+  | "pilotDecideApproval"
+  | "pilotCancelApproval"
+  | "pilotReadApprovalInbox"
+  | "pilotReadRiskAgentDirectory"
   | "pilotAcceptCreditOffer"
   | "pilotAcknowledgeProviderIntent"
   | "pilotActivateSandboxMandate"
@@ -855,7 +861,7 @@ export function assertDualNativeSandboxObligationParity(input: {
 }): DualNativeObligationEconomicParity;
 
 export interface TenantProtocolResourceReference {
-  resourceType: "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "delegated_wallet_grant" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "risk_portfolio" | "servicing_queue" | "trading_facility" | "trading_order_intent" | "trading_match_proposal" | "transfer_intent" | "wallet_adapter" | "wallet_execution";
+  resourceType: "approval_proposal" | "subject" | "consent" | "credit_intent" | "credit_offer" | "credit_passport_artifact" | "delegated_wallet_grant" | "evidence" | "human_identity_reference" | "inbox_message" | "mandate" | "obligation" | "risk_portfolio" | "servicing_queue" | "trading_facility" | "trading_order_intent" | "trading_match_proposal" | "transfer_intent" | "wallet_adapter" | "wallet_execution";
   resourceId: string;
 }
 
@@ -1941,7 +1947,55 @@ export interface ReadSecuredPoolRiskRequest extends TenantProtocolRequestBase {
   resource: { resourceType: "risk_portfolio"; resourceId: string };
 }
 
+
+export type LocalServicingCommand = {
+  operationId: "pilotRestructureSandboxObligation" | "pilotRepurchaseSandboxObligation" | "pilotWriteOffSandboxObligation";
+  resource: { resourceType: "obligation"; resourceId: string };
+  payload: { expectedServicingStateHash: string; additionalTermDays?: number; servicingOwnerCode?: "sandbox_platform" | "sandbox_originator" };
+  reasonCode: "sandbox_hardship_restructure" | "sandbox_contractual_repurchase" | "sandbox_uncollectible_writeoff";
+  idempotencyKey: string;
+};
+export interface ProposeApprovalRequest extends TenantProtocolRequestBase {
+  operationId: "pilotProposeApproval";
+  payload: { command: LocalServicingCommand; expiresAt: string };
+  idempotencyKey: string;
+}
+export interface ReadApprovalRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadApproval";
+  resource: { resourceType: "approval_proposal"; resourceId: string };
+  payload: Record<string, never>;
+}
+export interface DecideApprovalRequest extends TenantProtocolRequestBase {
+  operationId: "pilotDecideApproval";
+  resource: { resourceType: "approval_proposal"; resourceId: string };
+  payload: { expectedVersion: number; decision: "approve" | "reject" };
+  reasonCode: "approval_confirmed" | "approval_rejected";
+  idempotencyKey: string;
+}
+export interface CancelApprovalRequest extends TenantProtocolRequestBase {
+  operationId: "pilotCancelApproval";
+  resource: { resourceType: "approval_proposal"; resourceId: string };
+  payload: { expectedVersion: number };
+  reasonCode: "proposal_canceled";
+  idempotencyKey: string;
+}
+export interface ReadApprovalInboxRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadApprovalInbox";
+  payload: Record<string, never>;
+}
+export interface ReadRiskAgentDirectoryRequest extends TenantProtocolRequestBase {
+  operationId: "pilotReadRiskAgentDirectory";
+  resource: { resourceType: "risk_portfolio"; resourceId: string };
+  payload: Record<string, never>;
+}
+
 export type TenantProtocolRequest =
+  | ProposeApprovalRequest
+  | ReadApprovalRequest
+  | DecideApprovalRequest
+  | CancelApprovalRequest
+  | ReadApprovalInboxRequest
+  | ReadRiskAgentDirectoryRequest
   | ReadOwnSecuredPoolRequest
   | ReviewSecuredPoolActionRequest
   | ReadSecuredPoolRiskRequest
@@ -4987,7 +5041,99 @@ export interface SecuredPoolRiskViewResponse {
   schemaVersion: "tenant_secured_pool_risk_view.v1";
 }
 
+export type LocalApprovalProposal = {
+  approvalProposalId: string;
+  proposalHash: string;
+  tenantId: string;
+  operationId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  commandActorId: string;
+  commandActorType: "human" | "agent" | "provider" | "risk_operator" | "operations_operator" | "auditor" | "system_worker";
+  commandClientId: string;
+  commandHash: string;
+  idempotencyKeyHash: string;
+  resourceVersion: number;
+  liveStateVersion: number;
+  reasonCode: string;
+  policyVersion: string;
+  approvalPolicyVersion: "approval_001.v1";
+  proposerActorId: string;
+  proposerClientId: string;
+  proposerMembershipId: string;
+  proposerMembershipVersion: number;
+  requiredApproverRoleBundles: ["risk_operator", "operations_operator"];
+  requiredApprovalCount: 2;
+  status: "pending" | "approved" | "rejected" | "canceled" | "expired" | "superseded" | "executed";
+  version: number;
+  expiresAt: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  canceledAt?: string;
+  expiredAt?: string;
+  supersededAt?: string;
+  supersededByProposalId?: string;
+  executedAt?: string;
+  executionId?: string;
+  createdAt: string;
+  updatedAt: string;
+  schemaVersion: "approval_proposal.v1";
+};
+export type LocalApprovalDecision = {
+  approvalDecisionId: string;
+  decisionHash: string;
+  tenantId: string;
+  approvalProposalId: string;
+  proposalVersion: number;
+  proposalHash: string;
+  commandHash: string;
+  policyVersion: string;
+  decision: "approve" | "reject";
+  reasonCode: string;
+  approverActorId: string;
+  approverActorType: "risk_operator" | "operations_operator";
+  approverClientId: string;
+  approverCredentialId: string;
+  approverCredentialVersion: number;
+  approverMembershipId: string;
+  approverMembershipVersion: number;
+  approverRoleBundle: "risk_operator" | "operations_operator";
+  authTime: string;
+  authenticationMethods: (string)[];
+  tokenJtiHash: string;
+  version: 1;
+  createdAt: string;
+  schemaVersion: "approval_decision.v1";
+};
+
+export interface LocalApprovalResponse {
+  schemaVersion: "tenant_approval_proposed.v1" | "tenant_approval_decided.v1" | "tenant_approval_canceled.v1" | "tenant_approval_view.v1";
+  proposal: LocalApprovalProposal;
+  decisions: LocalApprovalDecision[];
+  command: LocalServicingCommand;
+  planSnapshot: Record<string, unknown>;
+  sandboxOnly: true;
+  productionFundsMoved: false;
+}
+export interface LocalApprovalInboxResponse {
+  schemaVersion: "tenant_approval_inbox.v1";
+  asOf: string; readOnly: true; serverTruth: true; hasMore: boolean;
+  proposals: { proposalId: string; operationId: LocalServicingCommand["operationId"]; obligationId: string; status: LocalApprovalProposal["status"]; version: number; expiresAt: string; createdAt: string }[];
+}
+export interface LocalRiskAgentDirectoryResponse {
+  schemaVersion: "tenant_risk_agent_directory.v1";
+  asOf: string; readOnly: true; serverTruth: true; piiIncluded: false; hasMore: boolean;
+  agents: { subjectId: string; status: "active" | "pending"; createdAt: string; reference: string }[];
+}
+
 export type TenantProtocolResult =
+  | TenantProtocolResultBase<"pilotProposeApproval", LocalApprovalResponse>
+  | TenantProtocolResultBase<"pilotReadApproval", LocalApprovalResponse>
+  | TenantProtocolResultBase<"pilotDecideApproval", LocalApprovalResponse>
+  | TenantProtocolResultBase<"pilotCancelApproval", LocalApprovalResponse>
+  | TenantProtocolResultBase<"pilotReadApprovalInbox", LocalApprovalInboxResponse>
+  | TenantProtocolResultBase<"pilotReadRiskAgentDirectory", LocalRiskAgentDirectoryResponse>
   | TenantProtocolResultBase<"pilotReadOwnSecuredPool", SecuredPoolWorkspaceResponse>
   | TenantProtocolResultBase<"pilotReviewSecuredPoolAction", SecuredPoolActionReviewResponse>
   | TenantProtocolResultBase<"pilotReadSecuredPoolRisk", SecuredPoolRiskViewResponse>

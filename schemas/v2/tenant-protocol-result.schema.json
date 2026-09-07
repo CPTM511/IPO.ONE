@@ -13,6 +13,12 @@
   "properties": {
     "operationId": {
       "enum": [
+        "pilotProposeApproval",
+        "pilotReadApproval",
+        "pilotDecideApproval",
+        "pilotCancelApproval",
+        "pilotReadApprovalInbox",
+        "pilotReadRiskAgentDirectory",
         "pilotAcceptCreditOffer",
         "pilotActivateSandboxMandate",
         "pilotCreateAgentAccountChallenge",
@@ -142,6 +148,66 @@
     }
   },
   "oneOf": [
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotProposeApproval"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotProposeApprovalResponse"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadApproval"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotReadApprovalResponse"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotDecideApproval"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotDecideApprovalResponse"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotCancelApproval"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotCancelApprovalResponse"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadApprovalInbox"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotReadApprovalInboxResponse"
+        }
+      }
+    },
+    {
+      "properties": {
+        "operationId": {
+          "const": "pilotReadRiskAgentDirectory"
+        },
+        "response": {
+          "$ref": "#/$defs/pilotReadRiskAgentDirectoryResponse"
+        }
+      }
+    },
     {
       "properties": {
         "operationId": {
@@ -1453,6 +1519,490 @@
     }
   ],
   "$defs": {
+    "localApprovalCommand": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotRestructureSandboxObligation"
+            },
+            "payload": {
+              "$ref": "#/$defs/restructureSandboxObligationPayload"
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "sandbox_hardship_restructure"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotRepurchaseSandboxObligation"
+            },
+            "payload": {
+              "$ref": "#/$defs/repurchaseSandboxObligationPayload"
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "sandbox_contractual_repurchase"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "payload",
+            "resource",
+            "reasonCode",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "operationId": {
+              "const": "pilotWriteOffSandboxObligation"
+            },
+            "payload": {
+              "$ref": "#/$defs/writeOffSandboxObligationPayload"
+            },
+            "resource": {
+              "$ref": "#/$defs/obligationResourceReference"
+            },
+            "reasonCode": {
+              "const": "sandbox_uncollectible_writeoff"
+            },
+            "idempotencyKey": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          }
+        }
+      ]
+    },
+    "restructureSandboxObligationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedServicingStateHash",
+        "additionalTermDays"
+      ],
+      "properties": {
+        "expectedServicingStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "additionalTermDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90
+        }
+      }
+    },
+    "repurchaseSandboxObligationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedServicingStateHash",
+        "servicingOwnerCode"
+      ],
+      "properties": {
+        "expectedServicingStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        },
+        "servicingOwnerCode": {
+          "enum": [
+            "sandbox_platform",
+            "sandbox_originator"
+          ]
+        }
+      }
+    },
+    "writeOffSandboxObligationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedServicingStateHash"
+      ],
+      "properties": {
+        "expectedServicingStateHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{64}$"
+        }
+      }
+    },
+    "obligationResourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "resourceId"
+      ],
+      "properties": {
+        "resourceType": {
+          "const": "obligation"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/domainIdentifier"
+        }
+      }
+    },
+    "domainIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]*$"
+    },
+    "pilotProposeApprovalResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "proposal",
+        "decisions",
+        "command",
+        "planSnapshot",
+        "sandboxOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "planSnapshot": {"$ref": "#/$defs/sharedObligation"},
+        "schemaVersion": {
+          "const": "tenant_approval_proposed.v1"
+        },
+        "proposal": {
+          "$ref": "https://schemas.ipo.one/v2/approval-proposal.schema.json"
+        },
+        "decisions": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "https://schemas.ipo.one/v2/approval-decision.schema.json"
+          }
+        },
+        "command": {
+          "$ref": "#/$defs/localApprovalCommand"
+        },
+        "sandboxOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "pilotReadApprovalResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "proposal",
+        "decisions",
+        "command",
+        "planSnapshot",
+        "sandboxOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "planSnapshot": {"$ref": "#/$defs/sharedObligation"},
+        "schemaVersion": {
+          "const": "tenant_approval_view.v1"
+        },
+        "proposal": {
+          "$ref": "https://schemas.ipo.one/v2/approval-proposal.schema.json"
+        },
+        "decisions": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "https://schemas.ipo.one/v2/approval-decision.schema.json"
+          }
+        },
+        "command": {
+          "$ref": "#/$defs/localApprovalCommand"
+        },
+        "sandboxOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "pilotDecideApprovalResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "proposal",
+        "decisions",
+        "command",
+        "planSnapshot",
+        "sandboxOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "planSnapshot": {"$ref": "#/$defs/sharedObligation"},
+        "schemaVersion": {
+          "const": "tenant_approval_decided.v1"
+        },
+        "proposal": {
+          "$ref": "https://schemas.ipo.one/v2/approval-proposal.schema.json"
+        },
+        "decisions": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "https://schemas.ipo.one/v2/approval-decision.schema.json"
+          }
+        },
+        "command": {
+          "$ref": "#/$defs/localApprovalCommand"
+        },
+        "sandboxOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "pilotCancelApprovalResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "proposal",
+        "decisions",
+        "command",
+        "planSnapshot",
+        "sandboxOnly",
+        "productionFundsMoved"
+      ],
+      "properties": {
+        "planSnapshot": {"$ref": "#/$defs/sharedObligation"},
+        "schemaVersion": {
+          "const": "tenant_approval_canceled.v1"
+        },
+        "proposal": {
+          "$ref": "https://schemas.ipo.one/v2/approval-proposal.schema.json"
+        },
+        "decisions": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "https://schemas.ipo.one/v2/approval-decision.schema.json"
+          }
+        },
+        "command": {
+          "$ref": "#/$defs/localApprovalCommand"
+        },
+        "sandboxOnly": {
+          "const": true
+        },
+        "productionFundsMoved": {
+          "const": false
+        }
+      }
+    },
+    "pilotReadApprovalInboxResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "asOf",
+        "readOnly",
+        "serverTruth",
+        "hasMore",
+        "proposals"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_approval_inbox.v1"
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "readOnly": {
+          "const": true
+        },
+        "serverTruth": {
+          "const": true
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "proposals": {
+          "type": "array",
+          "maxItems": 25,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "proposalId",
+              "operationId",
+              "obligationId",
+              "status",
+              "version",
+              "expiresAt",
+              "createdAt"
+            ],
+            "properties": {
+              "proposalId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+              },
+              "operationId": {
+                "enum": [
+                  "pilotRestructureSandboxObligation",
+                  "pilotRepurchaseSandboxObligation",
+                  "pilotWriteOffSandboxObligation"
+                ]
+              },
+              "obligationId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+              },
+              "status": {
+                "enum": [
+                  "pending",
+                  "approved",
+                  "rejected",
+                  "canceled",
+                  "expired",
+                  "superseded",
+                  "executed"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "pilotReadRiskAgentDirectoryResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "asOf",
+        "readOnly",
+        "serverTruth",
+        "piiIncluded",
+        "hasMore",
+        "agents"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "tenant_risk_agent_directory.v1"
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "readOnly": {
+          "const": true
+        },
+        "serverTruth": {
+          "const": true
+        },
+        "piiIncluded": {
+          "const": false
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "agents": {
+          "type": "array",
+          "maxItems": 25,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "subjectId",
+              "status",
+              "createdAt",
+              "reference"
+            ],
+            "properties": {
+              "subjectId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9:._/%-]{0,255}$"
+              },
+              "status": {
+                "enum": [
+                  "active",
+                  "pending"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reference": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}$"
+              }
+            }
+          }
+        }
+      }
+    },
     "sandboxHumanSubjectActivated": {
       "type": "object",
       "additionalProperties": false,
@@ -6967,6 +7517,7 @@
         "schemaVersion"
       ],
       "properties": {
+        "servicingStateHash": {"type":"string","pattern":"^0x[0-9a-f]{64}$"},
         "obligationId": {
           "$ref": "#/$defs/identifier"
         },

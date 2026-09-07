@@ -2681,18 +2681,44 @@
 
               <section class="panel risk-passkey-panel" id="riskPasskeyPanel" aria-labelledby="riskPasskeyTitle" hidden>
                 <div class="panel-heading"><div><p class="eyebrow">Protected workspace</p><h3 id="riskPasskeyTitle">Verify your presence</h3></div><span class="state-pill neutral" id="riskPasskeyBadge">Verification required</span></div>
-                <p id="riskPasskeyMessage" role="status" aria-live="polite">Use a Passkey to access protected Risk operations.</p>
+                <p id="riskPasskeyMessage" role="status" aria-live="polite">Use a Passkey to access this role’s protected operations.</p>
                 <p class="form-help" id="riskPasskeyTime"></p>
                 <div class="risk-workspace-actions">
                   <button id="registerRiskPasskeyBtn" class="primary" type="button">Register Risk Passkey</button>
                   <button id="verifyRiskPasskeyBtn" class="secondary" type="button">Verify with Passkey</button>
                 </div>
-                <ul id="riskPasskeyKeys" class="risk-passkey-keys" aria-label="Registered Risk Passkeys"></ul>
+                <ul id="riskPasskeyKeys" class="risk-passkey-keys" aria-label="Registered workspace Passkeys"></ul>
                 <dialog id="revokeRiskPasskeyDialog" class="risk-passkey-dialog" aria-labelledby="revokeRiskPasskeyTitle">
                   <h3 id="revokeRiskPasskeyTitle">Revoke this Passkey?</h3>
                   <p>Sessions verified by this key immediately lose access to protected Risk operations. Revoking your last key requires reviewed recovery before another can be registered.</p>
                   <div class="risk-workspace-actions"><button id="cancelRiskPasskeyRevokeBtn" class="secondary" type="button">Cancel</button><button id="confirmRiskPasskeyRevokeBtn" class="primary" type="button">Revoke Passkey</button></div>
                 </dialog>
+              </section>
+
+              <section class="panel local-review-panel" id="localReviewPanel" aria-labelledby="localReviewTitle" hidden>
+                <div class="panel-heading"><div><p class="eyebrow">Servicing governance · Local sandbox</p><h3 id="localReviewTitle">Review an exact action</h3></div><span class="state-pill neutral">Two independent approvals</span></div>
+                <p>Propose, review and execute are separate recorded actions. The proposer cannot approve their own request.</p>
+                <div class="risk-workspace-actions"><button class="secondary" id="refreshLocalApprovalsBtn" type="button">Refresh approval inbox</button><button class="secondary" id="loadLocalServicingBtn" type="button">Load eligible servicing plans</button></div>
+                <p id="localReviewMessage" class="risk-helper" role="status" aria-live="polite">Verify your presence, then load the current server records.</p>
+                <form id="localServicingForm" class="local-servicing-form" hidden>
+                  <div><label for="localServicingPosition">Eligible plan</label><select id="localServicingPosition"><option>No eligible plans loaded</option></select></div>
+                  <div><label for="localServicingAction">Proposed action</label><select id="localServicingAction"><option value="pilotRestructureSandboxObligation">Restructuring — hardship extension</option><option value="pilotRepurchaseSandboxObligation">Repurchase — servicing transfer</option><option value="pilotWriteOffSandboxObligation">Write-off — uncollectible balance</option></select></div>
+                  <div id="localServicingTermField"><label for="localServicingTerm">Additional days</label><input id="localServicingTerm" type="number" min="1" max="90" value="30" required /></div>
+                  <div id="localServicingOwnerField" hidden><label for="localServicingOwner">New servicing owner</label><select id="localServicingOwner"><option value="sandbox_originator">Originator</option><option value="sandbox_platform">Platform</option></select></div>
+                  <label class="risk-acknowledgement"><input id="localServicingAcknowledge" type="checkbox" /><span>I have reviewed this plan and want to record this exact proposal for independent approval. No execution occurs at this step.</span></label>
+                  <button id="proposeLocalServicingBtn" type="submit" class="primary" disabled>Record servicing proposal</button>
+                </form>
+                <div id="localApprovalList" class="local-review-list"></div>
+                <section id="localApprovalDetail" class="local-approval-detail" hidden>
+                  <h4 id="localApprovalTitle"></h4><p id="localApprovalTerms"></p><p id="localApprovalImpact"></p><p id="localApprovalProgress" role="status"></p>
+                  <label class="risk-acknowledgement"><input id="localApprovalAcknowledge" type="checkbox" /><span>I have reviewed the exact plan, reason, impact and expiry above.</span></label>
+                  <div class="risk-workspace-actions"><button id="approveLocalProposalBtn" type="button" class="primary">Approve exact proposal</button><button id="rejectLocalProposalBtn" type="button" class="secondary">Reject proposal</button><button id="cancelLocalProposalBtn" type="button" class="secondary">Cancel my proposal</button><button id="executeLocalProposalBtn" type="button" class="danger-action">Execute approved servicing action</button></div>
+                  <details><summary>Plan schedule and verification references</summary><pre id="localApprovalTechnical"></pre></details>
+                </section>
+              </section>
+              <section class="panel local-review-panel" id="localAgentDirectory" aria-labelledby="localAgentDirectoryTitle" hidden>
+                <div class="panel-heading"><div><p class="eyebrow">Protective review</p><h3 id="localAgentDirectoryTitle">Active Agent directory</h3></div><button id="loadLocalAgentsBtn" class="secondary" type="button">Load authorized Agents</button></div>
+                <p id="localAgentDirectoryStatus" class="risk-helper" role="status" aria-live="polite">Read a bounded list of synthetic Agents, then select one for the existing protective freeze control.</p><div id="localAgentList" class="local-review-list"></div>
               </section>
 
               <section class="panel secured-pool-card" aria-labelledby="riskSecuredPoolTitle">

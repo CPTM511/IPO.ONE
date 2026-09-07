@@ -6,7 +6,14 @@ import {
 import { authenticationError } from "./security-utils.js";
 import { parseStrictJson } from "./strict-json.js";
 
-const ORIGINS = new Set(["http://localhost:8937", "http://localhost:8947"]);
+export const LOCAL_PASSKEY_BINDINGS = Object.freeze({
+  "http://localhost:8937": Object.freeze({ role: "risk_operator" }),
+  "http://localhost:8947": Object.freeze({ role: "risk_operator" }),
+  "http://localhost:8939": Object.freeze({ role: "operations_operator", actorId: "actor_web027m_operations" }),
+  "http://localhost:8940": Object.freeze({ role: "auditor", actorId: "actor_web027m_auditor" }),
+  "http://localhost:8941": Object.freeze({ role: "risk_operator", actorId: "actor_web027m_risk_reviewer" })
+});
+const ORIGINS = new Set(Object.keys(LOCAL_PASSKEY_BINDINGS));
 const TRANSPORTS = new Set(["usb", "nfc", "ble", "internal", "hybrid"]);
 const rejected = () => authenticationError("passkey_verification_rejected", "Passkey verification was not accepted. Start a new verification.");
 export function closedPasskeyObject(value, keys, required = keys) {
@@ -75,24 +82,27 @@ export async function verifyLocalRiskCeremony({ response, challenge, key }) {
 
 // Instantiated only by the exact reviewed loopback composition; no public enrollment.
 export class LocalRiskPasskeys {
-  constructor({ origin }) {
-    if (!ORIGINS.has(origin)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
+  constructor({ origin, role = "risk_operator", specialRoles = false }) {
+    if (!ORIGINS.has(origin) || LOCAL_PASSKEY_BINDINGS[origin].role !== role || (LOCAL_PASSKEY_BINDINGS[origin].actorId && !specialRoles)) throw authenticationError("authentication_deployment_gate_closed", "Risk Passkey origin is not approved");
+    this.binding = LOCAL_PASSKEY_BINDINGS[origin];
     this.origin = origin;
     this.rpID = "localhost";
   }
   async eligible(client, s, now) {
-    if (s.actorType !== "risk_operator" || s.roles.length !== 1 || s.roles[0] !== "risk_operator") throw rejected();
+    if (s.actorType !== this.binding.role || s.roles.length !== 1 || s.roles[0] !== this.binding.role ||
+        (this.binding.actorId && s.actorId !== this.binding.actorId)) throw rejected();
     const enrollment = await client.query(`SELECT e.id FROM authentication_role_enrollments e
-      WHERE e.tenant_id=$1 AND e.actor_id=$2 AND e.credential_id=$3 AND e.role_bundle='risk_operator'
+      WHERE e.tenant_id=$1 AND e.actor_id=$2 AND e.credential_id=$3 AND e.role_bundle=$8
         AND e.status='active' AND e.valid_from <= $4 AND (e.expires_at IS NULL OR e.expires_at > $4)
         AND e.client_ids ? $5 AND e.policy_version=$6 AND e.capabilities=$7::jsonb FOR SHARE`,
-    [s.tenantId, s.actorId, s.credentialId, now, s.clientId, s.policyVersion, JSON.stringify(s.capabilities)]);
+    [s.tenantId, s.actorId, s.credentialId, now, s.clientId, s.policyVersion, JSON.stringify(s.capabilities), this.binding.role]);
     if (enrollment.rowCount !== 1) throw rejected();
     // Serialize all sessions for this actor, including concurrent first-key enrollment/revocation.
     await client.query("SELECT pg_advisory_xact_lock(hashtext('local_risk_passkey'),hashtext($1))", [s.tenantId + ":" + s.actorId]);
   }
   async resolveStepUp(client, s, now) {
-    if (s.roles.length !== 1 || s.roles[0] !== "risk_operator") return undefined;
+    if (s.actorType !== this.binding.role || s.roles.length !== 1 || s.roles[0] !== this.binding.role ||
+        (this.binding.actorId && s.actorId !== this.binding.actorId)) return undefined;
     const result = await client.query(`SELECT e.verified_at, e.expires_at, e.passkey_id
       FROM authentication_passkey_evidence e JOIN authentication_passkeys p ON p.tenant_id=e.tenant_id AND p.id=e.passkey_id
       JOIN authentication_passkey_challenges c ON c.tenant_id=e.tenant_id AND c.id=e.challenge_id
@@ -146,8 +156,8 @@ export class LocalRiskPasskeys {
       WHERE tenant_id=$1 AND session_ref_hash=$2 AND used_at IS NULL`, [s.tenantId, s.sessionRefHash, now]);
     const id = "passkey_challenge_" + randomUUID(), challenge = randomBytes(32).toString("base64url");
     const options = body.purpose === "register"
-      ? await generateRegistrationOptions({ rpName: "IPO.ONE Local Risk", rpID: this.rpID,
-        userName: "Invited local Risk operator", userDisplayName: "IPO.ONE Risk", userID: binary(userHandle(s)),
+      ? await generateRegistrationOptions({ rpName: "IPO.ONE Local Verification", rpID: this.rpID,
+        userName: `Invited local ${this.binding.role}`, userDisplayName: "IPO.ONE verification", userID: binary(userHandle(s)),
         challenge: binary(challenge), timeout: 120000, attestationType: "none", supportedAlgorithmIDs: [-7],
         authenticatorSelection: { residentKey: "required", userVerification: "required" },
         excludeCredentials: keys.map(k => ({ id: k.credential_key })) })

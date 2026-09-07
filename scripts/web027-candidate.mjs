@@ -139,12 +139,19 @@ if (action === "build") {
   const appliedRows = sql("SELECT name,checksum FROM schema_migrations ORDER BY name").split("\n").map(row => row.split("|"));
   appliedRows.forEach(([name, recordedChecksum], i) => assert.ok(name === migrationSet[i].name && migrationChecksumMatches({name,recordedChecksum,releaseChecksum:migrationSet[i].checksum})));
   const pendingNames = migrationSet.slice(appliedRows.length).map(m => m.name);
-  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime","0079_local_human_sandbox_activation","0080_local_risk_passkeys","0081_local_passkey_bounds"].includes(name)), "Only reviewed WEB-027J/K migrations may activate");
+  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime","0079_local_human_sandbox_activation","0080_local_risk_passkeys","0081_local_passkey_bounds","0082_local_special_role_enrollment"].includes(name)), "Only reviewed WEB-027J/K/M migrations may activate");
   env.IPO_ONE_LOCAL_ACCESS_REPAIR = "web027j_v1";
+  if (profile === "candidate") {
+    const manifest = JSON.parse(await readFile("docs/design/web-027/m-activation-manifest.json"));
+    assert.equal(manifest.database,database);assert.equal(manifest.entries.length,3);
+    env.IPO_ONE_LOCAL_SPECIAL_ROLES = "web027m_v1";
+    env.IPO_ONE_LOCAL_SPECIAL_ROLE_INVITATIONS_FILE = "/run/secrets/web027m-invitation-bindings.json";
+  }
   env.IPO_ONE_M1_B_RELEASE_SHA = sha;
   const envFile = await secret("candidate.env", Object.entries(env).map(([k,v])=>k+"="+v).join("\n")+"\n");
   const args = ["create", "--name", candidate, "--network", "host", "--read-only", "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=64m", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--restart", "unless-stopped", "--env-file", envFile];
   for (const mount of previous.Mounts.filter(m=>m.Destination.startsWith("/run/secrets/"))) args.push("--mount", `type=bind,source=${mount.Source},target=${mount.Destination},readonly`);
+  if (profile === "candidate" && !previous.Mounts.some(m=>m.Destination === "/run/secrets/web027m-invitation-bindings.json")) args.push("--mount", `type=bind,source=${state}/web027m-invitation-bindings.json,target=/run/secrets/web027m-invitation-bindings.json,readonly`);
   args.push(image,"apps/private-pilot/src/start.js");
   // Only this isolated candidate is stopped. Keep the former image/container.
   docker(["stop",candidate]); docker(["rename",candidate,backup]);
@@ -153,7 +160,7 @@ if (action === "build") {
     if (docker(["ps","-a","--filter",`name=^/${candidate}$`,"--format","{{.Names}}"])) docker(["rm","-f",candidate]);
     docker(["rename",backup,candidate]); docker(["start",candidate]); throw error;
   }
-  await report("candidate-runtime", { ...previousReport, source: sha, image, previousSource: previousReport.source, previousContainer: backup, databasePreserved: true, reviewedMigrations: pendingNames, localAccessRepair: "web027j_v1", browserVerification: "pending" });
+  await report("candidate-runtime", { ...previousReport, source: sha, image, previousSource: previousReport.source, previousContainer: backup, databasePreserved: true, reviewedMigrations: pendingNames, localAccessRepair: "web027j_v1", ...(profile === "candidate" ? {localSpecialRoles:"web027m_v1",additionalOrigins:["http://localhost:8939","http://localhost:8940","http://localhost:8941"]} : {}), browserVerification: "pending" });
 } else if (action === "worker" || action === "worker-upgrade") {
   const name = "ipo-one-web027-" + profile + "-worker";
   if (action === "worker-upgrade") {

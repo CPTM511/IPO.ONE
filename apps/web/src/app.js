@@ -1,3 +1,4 @@
+import { createLocalReviewWorkspace } from "./local-review-workspace.js";
 import { arrangeWorkspaceNavigation, updateWorkspaceChrome, renderHumanTaskSummary, renderAgentTaskHeading, renderAgentTaskControls, renderPrecisionAuthority } from "./workspace-experience.js";
 import {
   createApplicationReadyAgentHandoffManifest, createAwaitingAgentHandoffManifest,
@@ -112,6 +113,7 @@ let currentView = "overview";
 let interactionMode = "human";
 let humanNewApplicationMode = false;
 let authenticatedDataEpoch = 0;
+let localReviewWorkspace;
 let tenantPilotProbeOwner = null;
 let tenantPilotProbePromise = null;
 let tenantPilotProbeSerial = 0;
@@ -846,7 +848,7 @@ let localSandboxAgentRuntime = null;
 
 function walletWorkspaceLabel(role) {
   return ({ human_borrower: "Human Borrower", principal_controller: "Principal Controller",
-    capital_partner_operator: "Capital Partner", risk_operator: "Risk Operations" })[role] ?? "Workspace";
+    capital_partner_operator: "Capital Partner", risk_operator: "Risk Operations", operations_operator: "Servicing Operations", auditor: "Auditor" })[role] ?? "Workspace";
 }
 
 function renderAccess() {
@@ -2049,6 +2051,8 @@ function localPilotAgentAccount() {
   return /^0x[a-fA-F0-9]{40}$/.test(account) ? account : undefined;
 }
 
+function isReviewWorkspace() { return ["risk", "operations", "auditor", "riskReviewer"].includes(currentWorkspaceName()); }
+
 function currentWorkspaceName() {
   const configuredWorkspaceName = document.querySelector(
     'meta[name="ipo-one-workspace-name"]'
@@ -2187,7 +2191,8 @@ async function tenantApi(operationId, {
   correlationId = tenantRequestToken("web_tenant_correlation"),
   requestId = tenantRequestToken("web_tenant_request"),
   idempotencyKey,
-  includeTransportMeta = false
+  includeTransportMeta = false,
+  approvalArtifact
 } = {}) {
   const requestDataEpoch = authenticatedDataEpoch;
   walletAuthorityLifecycle.assertProtectedAvailable();
@@ -2200,6 +2205,7 @@ async function tenantApi(operationId, {
     correlationId,
     schemaVersion: "tenant_protocol_request.v1"
   };
+  if (approvalArtifact) protocolRequest.approvalArtifact = approvalArtifact;
   if (resource) protocolRequest.resource = resource;
   if (purpose) protocolRequest.purpose = purpose;
   if (reasonCode) protocolRequest.reasonCode = reasonCode;
@@ -2640,6 +2646,7 @@ function purgeAuthenticatedBrowserState({
   reason = "Private browser state was cleared."
 } = {}) {
   authenticatedDataEpoch += 1;
+  localReviewWorkspace?.clear();
   invalidateTenantPilotProbe();
   invalidateRiskRequestOwners();
   humanNewApplicationMode = false;
@@ -9632,7 +9639,7 @@ async function probeTenantPilot() {
     capitalPartnerPilot.refreshBusy = true;
     renderCapitalPartner();
   }
-  if (currentWorkspaceName() === "risk") {
+  if (isReviewWorkspace()) {
     invalidateRiskRequestOwners([
       "recovery", "portfolio", "health", "feedback", "insights", "queue"
     ]);
@@ -9684,7 +9691,7 @@ async function runTenantPilotProbe(probeOwner) {
     tenantPilot.connected = false;
     serverCatalogOperations = new Set();
     serverCatalogSnapshot = null;
-    if (currentWorkspaceName() === "risk") {
+    if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskCatalogAvailability();
       clearRiskPortfolioRecoveryState({ status: "denied" });
@@ -9721,7 +9728,7 @@ async function runTenantPilotProbe(probeOwner) {
     tenantPilot.connected = false;
     serverCatalogOperations = new Set();
     serverCatalogSnapshot = null;
-    if (currentWorkspaceName() === "risk") {
+    if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskCatalogAvailability();
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
@@ -9761,7 +9768,7 @@ async function runTenantPilotProbe(probeOwner) {
       tenantPilot.connectionLabel = response.status === 401 || response.status === 403
         ? "Authenticated session required"
         : "Private gateway unavailable";
-      if (currentWorkspaceName() === "risk") {
+      if (isReviewWorkspace()) {
         ++riskOperations.recoveryEpoch;
         clearRiskCatalogAvailability();
         const status = response.status === 401 || response.status === 403
@@ -9810,6 +9817,7 @@ async function runTenantPilotProbe(probeOwner) {
     ]);
     const available = new Set((catalog.operations ?? []).map((operation) => operation.operationId));
     serverCatalogOperations = available;
+    localReviewWorkspace?.setCatalog(available);
     auditorEvidence.catalogAvailable = available.has("pilotReadEvidence");
     ownedEvidence.catalogAvailable = available.has("pilotReadOwnObligationEvidence");
     creditStatePilot.catalogAvailable = available.has("pilotReadOwnCreditState");
@@ -9906,16 +9914,14 @@ async function runTenantPilotProbe(probeOwner) {
         if (!denied) throw error;
       }
     }
-    const riskBootstrapReady = currentWorkspaceName() === "risk" &&
+    const riskBootstrapReady = isReviewWorkspace() &&
       csrfReady &&
-      riskOperations.portfolioReferenceCatalogAvailable &&
-      riskOperations.readCatalogAvailable &&
-      riskOperations.queueReferenceCatalogAvailable &&
-      riskOperations.queueCatalogAvailable;
+      ((riskOperations.portfolioReferenceCatalogAvailable && riskOperations.readCatalogAvailable) ||
+       (riskOperations.queueReferenceCatalogAvailable && riskOperations.queueCatalogAvailable));
     if (riskBootstrapReady) {
       await recoverRiskWorkspace();
       if (!isCurrentTenantPilotProbe(probeOwner)) return;
-    } else if (currentWorkspaceName() === "risk") {
+    } else if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
       clearServicingQueueRecoveryState({ status: "unavailable" });
@@ -9985,7 +9991,7 @@ async function runTenantPilotProbe(probeOwner) {
     officialReportPilot.retrieveAvailable = false;
     officialReportPilot.revokeAvailable = false;
     clearCapitalPartnerCatalogAvailability();
-    if (currentWorkspaceName() === "risk") {
+    if (isReviewWorkspace()) {
       ++riskOperations.recoveryEpoch;
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
       clearServicingQueueRecoveryState({ status: "unavailable" });
@@ -12497,10 +12503,11 @@ function renderRiskOperations() {
     : "No verified queue loaded.";
 
   const freezeSelection = riskOperations.freezeSubjectSelection;
-  const selectedCaseStillVisible = freezeSelection && riskOperations.queueCases.some(
+  const selectedCaseStillVisible = freezeSelection && (freezeSelection.source === "directory"
+    ? localReviewWorkspace?.hasAgent(freezeSelection.subjectId) : riskOperations.queueCases.some(
     (item) => item.subjectId === freezeSelection.subjectId &&
       item.obligationId === freezeSelection.obligationId
-  );
+  ));
   if (freezeSelection && !selectedCaseStillVisible) {
     riskOperations.freezeSubjectSelection = null;
     el("riskFreezeSubjectId").value = "";
@@ -12524,7 +12531,7 @@ function renderRiskOperations() {
   const selectedFreezeCase = riskOperations.freezeSubjectSelection;
   el("riskFreezeForm").hidden = !selectedFreezeCase;
   el("riskFreezeSubjectLabel").textContent = selectedFreezeCase
-    ? `${titleize(selectedFreezeCase.classification)} · ${selectedFreezeCase.daysPastDue} days past due`
+    ? selectedFreezeCase.source === "directory" ? `Agent ${selectedFreezeCase.reference} · Authorized directory selection` : `${titleize(selectedFreezeCase.classification)} · ${selectedFreezeCase.daysPastDue} days past due`
     : "No case selected";
   el("riskFreezeSelectionState").textContent = selectedFreezeCase
     ? "Case selected for review. Choose a reason and confirm before the protective command is sent."
@@ -13018,7 +13025,7 @@ function riskRequestIsCurrent(owner, resourceType, resourceId) {
 }
 
 async function recoverRiskWorkspace() {
-  if (riskOperations.recoveryBusy || currentWorkspaceName() !== "risk") return;
+  if (riskOperations.recoveryBusy || !isReviewWorkspace()) return;
   const requestOwner = beginRiskRequest("recovery");
   riskOperations.recoveryBusy = true;
   ++riskOperations.recoveryEpoch;
@@ -13065,7 +13072,7 @@ async function recoverRiskWorkspace() {
     } else {
       clearRiskPortfolioRecoveryState({ status: "unavailable" });
       riskOperations.error = true;
-      riskOperations.helper = "The private catalog does not expose authorized portfolio recovery.";
+      riskOperations.helper = "Portfolio access is not granted to this role.";
     }
 
     if (
@@ -13120,12 +13127,12 @@ function renderRiskPasskeys(message) {
   const verified = status?.verified === true && Date.parse(status.expiresAt) > Date.now();
   el("riskPasskeyBadge").textContent = verified ? "Recently verified" : "Verification required";
   el("riskPasskeyBadge").className = `state-pill ${verified ? "success" : "neutral"}`;
-  el("riskPasskeyMessage").textContent = message ?? (!accessState.sessionActive ? "Sign in with the invited Risk wallet first." : status?.recoveryRequired
+  el("riskPasskeyMessage").textContent = message ?? (!accessState.sessionActive ? "Sign in with this workspace’s invited wallet first." : status?.recoveryRequired
     ? "No active Passkey remains. Named operator recovery must be reviewed; wallet sign-in cannot replace a revoked key."
-    : verified ? "Your presence is verified. Existing authorized Risk operations are available."
-      : "Use your device or security key to verify your presence. Protected Risk operations require verification within the last 15 minutes.");
-  el("riskPasskeyTime").textContent = verified ? `Verified ${new Date(status.verifiedAt).toLocaleTimeString()} · Expires ${new Date(status.expiresAt).toLocaleTimeString()}` : "Local Risk workspace · No funds movement";
-  el("registerRiskPasskeyBtn").textContent = status?.keys?.length ? "Add backup Passkey" : "Register Risk Passkey";
+    : verified ? "Your presence is verified. This role’s authorized operations are available."
+      : "Use your device or security key to verify your presence. Protected operations require verification within the last 15 minutes.");
+  el("riskPasskeyTime").textContent = verified ? `Verified ${new Date(status.verifiedAt).toLocaleTimeString()} · Expires ${new Date(status.expiresAt).toLocaleTimeString()}` : "Local invited workspace · No funds movement";
+  el("registerRiskPasskeyBtn").textContent = status?.keys?.length ? "Add backup Passkey" : "Register Passkey";
   el("registerRiskPasskeyBtn").className = status?.keys?.length ? "secondary" : "primary";
   el("registerRiskPasskeyBtn").hidden = !status?.canRegister;
   el("registerRiskPasskeyBtn").disabled = riskPasskeyState.busy || !accessState.sessionActive;
@@ -13236,12 +13243,12 @@ async function freezeRiskSubject() {
     !el("riskFreezeAcknowledge").checked
   ) {
     riskOperations.freezeError = true;
-    riskOperations.freezeHelper = "Select one current authorized queue case, choose an approved protective reason, and confirm the suspension.";
+    riskOperations.freezeHelper = "Select one current authorized Agent or queue case, choose an approved protective reason, and confirm the suspension.";
     renderRiskOperations();
     announce(riskOperations.freezeHelper);
     return;
   }
-  const stillCurrent = riskOperations.queueCases.some(
+  const stillCurrent = selectedCase.source === "directory" ? localReviewWorkspace?.hasAgent(selectedCase.subjectId) : riskOperations.queueCases.some(
     (item) => item.subjectId === selectedCase.subjectId &&
       item.obligationId === selectedCase.obligationId
   );
@@ -14447,6 +14454,20 @@ async function boot() {
     ? "Authenticated public Beta workspace ready"
     : "Sign in to access the public Beta workspace");
 }
+
+localReviewWorkspace = createLocalReviewWorkspace({
+  api:tenantApi,
+  getState:()=>({signedIn:accessState.sessionActive,workspace:currentWorkspaceName()}),
+  selectAgent(agent) {
+    if (riskOperations.freezeBusy) return;
+    riskOperations.freezeSubjectSelection=Object.freeze({source:"directory",subjectId:agent.subjectId,reference:agent.reference});
+    el("riskFreezeSubjectId").value=agent.subjectId;
+    el("riskFreezeReason").value="";el("riskFreezeAcknowledge").checked=false;
+    riskOperations.freezeResult=null;riskOperations.freezeError=false;
+    riskOperations.freezeHelper="Agent selected from the authenticated directory. Choose a protective reason and explicitly confirm the suspension.";
+    renderRiskOperations();el("riskFreezeForm").scrollIntoView({block:"center",behavior:"auto"});el("riskFreezeReason").focus({preventScroll:true});
+  }
+});
 
 boot().catch((error) => {
   const requestSuffix = error?.requestId ? ` Request ID: ${error.requestId}` : "";

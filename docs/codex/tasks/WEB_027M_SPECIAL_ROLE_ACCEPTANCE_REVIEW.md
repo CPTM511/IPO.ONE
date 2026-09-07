@@ -1,6 +1,8 @@
 # WEB-027M — Remaining local role and servicing acceptance prerequisites
 
-Status: REVIEW REQUIRED FOR NEW PRIVILEGED ENROLLMENT / CAPABILITY CONFIGURATION.
+Status: APPROVED for the exact local scope by the Founder on 2026-09-07 ("确认，同意，搞！"). Implementation and acceptance in progress.
+
+Implementation finding: the existing policy requires two approvers (Risk and Operations), both distinct from the proposer/command actor. The exact approved Operations grant has no `approval.decide`, and the approved identity set contains only one Operations actor. No grant or separation rule will be silently broadened. A separate Operations reviewer remains a concrete authorization gap for final execution; the approved three roles and existing policy can still be implemented and tested.
 
 ## Context and verified facts
 
