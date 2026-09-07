@@ -61,7 +61,7 @@ const ACTOR_LOCK_POLICY =
   "((membership_row.expires_at IS NULL) OR " +
   "(membership_row.expires_at > clock_timestamp())))))";
 
-function authenticationRlsPolicies() {
+function authenticationRlsPolicies(localPasskeys = false) {
   const policies = new Map([
     ["tenants\0tenant_self_select", ["SELECT", "(id = current_app_tenant_id())", null]],
     ["tenants\0tenant_self_update", [
@@ -81,7 +81,8 @@ function authenticationRlsPolicies() {
     "authentication_sessions",
     "authentication_session_invalidations",
     "authentication_replay_entries",
-    "authentication_events"
+    "authentication_events",
+    ...(localPasskeys ? ["authentication_passkeys", "authentication_passkey_challenges", "authentication_passkey_evidence", "authentication_passkey_audit"] : [])
   ]) {
     policies.set(`${table}\0tenant_isolation_${table}`, ["ALL", TENANT_ROW_POLICY, TENANT_ROW_POLICY]);
   }
@@ -309,7 +310,7 @@ export async function assertPostgresAuthenticationRole(queryable, { localPasskey
       "authentication tables must enforce the reviewed RLS boundary"
     );
   }
-  const expectedPolicies = authenticationRlsPolicies();
+  const expectedPolicies = authenticationRlsPolicies(localPasskeys);
   const rlsPolicies = await queryable.query(
     `SELECT tablename AS table_name, policyname AS policy_name,
             permissive, roles::text[] AS roles, cmd,
