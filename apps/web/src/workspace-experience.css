@@ -446,3 +446,9 @@ body.product-experience .capital-partner-application-choice:is(:hover,[aria-chec
 
 body.product-experience .risk-passkey-panel .risk-workspace-actions { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
 .risk-passkey-panel .risk-workspace-actions button { flex: 0 1 auto; }
+
+/* WEB-027L: readable recovered application and Facility detail controls. */
+#humanApplicationOptions button { line-height: 1.5; text-align: start; }
+#capitalPartnerFacilityDetail { display: grid; gap: 10px; margin-top: 16px; }
+#capitalPartnerFacilityDetail[hidden] { display: none; }
+#capitalPartnerFacilityDetail p { color: var(--muted); font-size: .82rem; line-height: 1.5; }

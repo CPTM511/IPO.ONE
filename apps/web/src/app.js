@@ -9262,7 +9262,7 @@ function renderHumanApplicationInbox() {
     button.className = "secondary";
     button.dataset.humanReviewOffer = review.offer.creditOfferId;
     button.setAttribute("aria-pressed", String(tenantPilot.offer?.creditOfferId === review.offer.creditOfferId));
-    button.textContent = `${usdMinorToMoney(review.offer.approvedPrincipalMinor)} · ${bpsToPercent(review.offer.annualRateBps)} APR · ${review.offer.installmentCount} payments · Review Offer`;
+    button.textContent = `${review.offer.capitalPartnerId ? "Capital Partner" : "Sandbox evaluation"} · ${usdMinorToMoney(review.offer.approvedPrincipalMinor)} · ${bpsToPercent(review.offer.annualRateBps)} APR · ${review.offer.installmentCount} payments · ${privateDate(review.offer.createdAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit" })} · Review Offer`;
     return button;
   }));
 }
