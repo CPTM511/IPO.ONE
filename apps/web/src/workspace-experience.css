@@ -444,5 +444,5 @@ body.product-experience .capital-partner-application-choice:is(:hover,[aria-chec
 .risk-passkey-dialog::backdrop { background: rgb(0 0 0 / 60%); }
 .risk-passkey-dialog p { line-height: 1.6; }
 
-.risk-passkey-panel .risk-workspace-actions { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+body.product-experience .risk-passkey-panel .risk-workspace-actions { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
 .risk-passkey-panel .risk-workspace-actions button { flex: 0 1 auto; }
