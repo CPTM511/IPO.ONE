@@ -443,3 +443,6 @@ body.product-experience .capital-partner-application-choice:is(:hover,[aria-chec
 .risk-passkey-dialog { color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; width: min(480px, calc(100vw - 32px)); box-sizing: border-box; }
 .risk-passkey-dialog::backdrop { background: rgb(0 0 0 / 60%); }
 .risk-passkey-dialog p { line-height: 1.6; }
+
+.risk-passkey-panel .risk-workspace-actions { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+.risk-passkey-panel .risk-workspace-actions button { flex: 0 1 auto; }

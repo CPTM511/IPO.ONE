@@ -37,7 +37,7 @@ async function login(){
 }
 async function saveAuthenticator(){if(cdp&&authenticatorId){const credentials=await cdp.send('WebAuthn.getCredentials',{authenticatorId});await writeFile(statePath,JSON.stringify(credentials),{mode:0o600});await chmod(statePath,0o600);}}
 async function clickCeremony(selector){const pending=w.page.waitForResponse(r=>r.url().endsWith('/auth/v1/passkey/finish'));await w.page.locator(selector).click();const response=await pending;assert.equal(response.status(),200,JSON.stringify(await response.json()));await expect(w.page.locator('#riskPasskeyBadge')).toHaveText('Recently verified');await saveAuthenticator();}
-async function post(action,body){return w.page.evaluate(async({action,body})=>{const token=document.querySelector('meta[name="ipo-one-csrf-token"]')?.content;const response=await fetch('/auth/v1/passkey/'+action,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json','x-csrf-token':token},body:JSON.stringify(body)});return{status:response.status(),body:await response.json()};},{action,body});}
+async function post(action,body){return w.page.evaluate(async({action,body})=>{const token=document.querySelector('meta[name="ipo-one-csrf-token"]')?.content;const response=await fetch('/auth/v1/passkey/'+action,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json','x-csrf-token':token},body:JSON.stringify(body)});return{status:response.status,body:await response.json()};},{action,body});}
 try {
  w=await walletPage(legacy.privateKey);w.page.on("request",r=>{if(r.url().endsWith("/auth/v1/passkey/finish"))lastCeremony=r.postDataJSON();});cdp=await w.context.newCDPSession(w.page);await cdp.send('WebAuthn.enable');
  ({authenticatorId}=await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{protocol:'ctap2',transport:'internal',hasResidentKey:true,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true}}));
@@ -48,7 +48,7 @@ try {
  await clickCeremony(before.keys.length?'#verifyRiskPasskeyBtn':'#registerRiskPasskeyBtn');
  results.push({name:before.keys.length?'existing key assertion':'fresh registration with real authenticator cryptography',pass:true});
  await expect(w.page.locator('#refreshRiskWorkspaceBtn')).toBeEnabled();await w.page.locator('#refreshRiskWorkspaceBtn').click();
- await expect.poll(async()=>await w.page.locator('#riskPortfolioReference').innerText(),{timeout:20000}).not.toBe('Not recovered');
+ await expect(w.page.locator('#riskPortfolioHelper')).toContainText('Authorized point-in-time exposure loaded',{timeout:20000});
  await w.page.screenshot({path:out+'/verified-risk-desktop.png',fullPage:true});
  await writeFile(out+'/verified-risk.txt',await w.page.locator('body').innerText());
  results.push({name:'visible Risk refresh',pass:true,portfolio:await w.page.locator('#riskPortfolioHelper').innerText()});

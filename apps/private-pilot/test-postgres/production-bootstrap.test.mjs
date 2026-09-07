@@ -374,7 +374,8 @@ test("production bootstrap creates closed roles, seeds identity, and is idempote
       "0077_local_ordinary_wallet_access",
       "0078_local_principal_agent_runtime",
         "0079_local_human_sandbox_activation",
-        "0080_local_risk_passkeys"
+        "0080_local_risk_passkeys",
+        "0081_local_passkey_bounds"
     ]);
     const backfilled = await upgradePool.query(
       `SELECT count(*)::int AS count

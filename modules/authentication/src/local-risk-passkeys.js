@@ -100,6 +100,13 @@ export class LocalRiskPasskeys {
         AND p.credential_id=$4 AND p.credential_version=$3 AND p.actor_id=$5 AND p.revoked_at IS NULL
         AND p.rp_id=$6 AND c.origin=$7 AND c.rp_id=$6 AND c.session_ref_hash=$2 AND c.used_at IS NOT NULL
         AND e.verified_at <= $8 AND e.expires_at > $8
+        -- A revoked proof must never revive an older proof in the same session.
+        AND NOT EXISTS (
+          SELECT 1 FROM authentication_passkey_evidence previous
+          JOIN authentication_passkeys revoked ON revoked.tenant_id=previous.tenant_id AND revoked.id=previous.passkey_id
+          WHERE previous.tenant_id=e.tenant_id AND previous.session_ref_hash=e.session_ref_hash
+            AND revoked.revoked_at IS NOT NULL AND revoked.revoked_at >= e.verified_at
+        )
       ORDER BY e.verified_at DESC LIMIT 1`,
     [s.tenantId, s.sessionRefHash, s.credentialVersion, s.credentialId, s.actorId, this.rpID, this.origin, now]);
     const row = result.rows[0];

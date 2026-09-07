@@ -13079,6 +13079,8 @@ function renderRiskPasskeys(message) {
     : verified ? "Your presence is verified. Existing authorized Risk operations are available."
       : "Use your device or security key to verify your presence. Protected Risk operations require verification within the last 15 minutes.");
   el("riskPasskeyTime").textContent = verified ? `Verified ${new Date(status.verifiedAt).toLocaleTimeString()} · Expires ${new Date(status.expiresAt).toLocaleTimeString()}` : "Local Risk workspace · No funds movement";
+  el("registerRiskPasskeyBtn").textContent = status?.keys?.length ? "Add backup Passkey" : "Register Risk Passkey";
+  el("registerRiskPasskeyBtn").className = status?.keys?.length ? "secondary" : "primary";
   el("registerRiskPasskeyBtn").hidden = !status?.canRegister;
   el("registerRiskPasskeyBtn").disabled = riskPasskeyState.busy || !accessState.sessionActive;
   el("verifyRiskPasskeyBtn").hidden = !status?.keys?.length;
