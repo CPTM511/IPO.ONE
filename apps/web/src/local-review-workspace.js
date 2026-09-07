@@ -6,11 +6,22 @@ const actions = {
 const el = id => document.getElementById(id);
 const money = value => `$${(Number(value ?? 0)/100).toFixed(2)}`;
 const date = value => new Date(value).toLocaleString();
+const roleOperations = Object.freeze({
+  operations: new Set(["pilotProposeApproval","pilotReadApproval","pilotCancelApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue",...Object.keys(actions)]),
+  riskReviewer: new Set(["pilotReadApproval","pilotDecideApproval","pilotReadApprovalInbox","pilotReadServicingQueueReference","pilotReadServicingQueue"]),
+  auditor: new Set(["pilotReadApproval","pilotReadApprovalInbox","pilotReadTenantRisk","pilotReadTenantRiskPortfolioReference","pilotReadCaseQueue"]),
+  risk: new Set(["pilotReadRiskAgentDirectory"])
+});
+// Catalog availability describes the installed interface, not this actor's authority.
+// These reviewed local UI ceilings supplement, and never replace, server authorization.
+export function localReviewOperationAvailable(workspace, operationId, available) {
+  return roleOperations[workspace]?.has(operationId) === true && available.has(operationId);
+}
 
 export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
   let epoch = 0, busy = false, capabilities = new Set(), cases = [], agents = [], selected = null, draft = null;
   const panel = el("localReviewPanel"), directory = el("localAgentDirectory");
-  const has = op => capabilities.has(op);
+  const has = op => localReviewOperationAvailable(getState().workspace, op, capabilities);
   function message(text) { el("localReviewMessage").textContent = text; if (getState().workspace === "risk") el("localAgentDirectoryStatus").textContent = text; }
   function clearSelection() { selected = null; el("localApprovalDetail").hidden = true; el("localApprovalAcknowledge").checked = false; }
   function render() {
@@ -127,6 +138,11 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
   return Object.freeze({
     setCatalog(operations){capabilities=new Set(operations);render();},
     hasAgent(id){return agents.some(agent=>agent.subjectId===id);},
+    forgetAgent(id){
+      agents=agents.filter(agent=>agent.subjectId!==id);
+      for(const button of el("localAgentList").children) if(button.dataset.localRiskAgent===id) button.remove();
+      el("localAgentDirectoryStatus").textContent="The selected Agent is suspended. Refresh to review the remaining eligible Agents.";
+    },
     clear(){epoch++;busy=false;cases=[];agents=[];draft=null;capabilities=new Set();clearSelection();el("localApprovalList").replaceChildren();el("localAgentList").replaceChildren();render();panel.hidden=true;directory.hidden=true;},
     render
   });

@@ -1,4 +1,4 @@
-import { createLocalReviewWorkspace } from "./local-review-workspace.js";
+import { createLocalReviewWorkspace, localReviewOperationAvailable } from "./local-review-workspace.js";
 import { arrangeWorkspaceNavigation, updateWorkspaceChrome, renderHumanTaskSummary, renderAgentTaskHeading, renderAgentTaskControls, renderPrecisionAuthority } from "./workspace-experience.js";
 import {
   createApplicationReadyAgentHandoffManifest, createAwaitingAgentHandoffManifest,
@@ -9855,21 +9855,24 @@ async function runTenantPilotProbe(probeOwner) {
     pilotFeedback.catalogAvailable = available.has("pilotSubmitPilotFeedback");
     pilotCases.fileAvailable = available.has("pilotFileCase");
     pilotCases.listAvailable = available.has("pilotListOwnCases");
-    riskOperations.readCatalogAvailable = available.has("pilotReadTenantRisk");
+    const riskAvailable = ["operations", "auditor", "riskReviewer"].includes(currentWorkspaceName())
+      ? new Set([...available].filter(op => localReviewOperationAvailable(currentWorkspaceName(), op, available)))
+      : available;
+    riskOperations.readCatalogAvailable = riskAvailable.has("pilotReadTenantRisk");
     riskOperations.portfolioReferenceCatalogAvailable =
-      available.has("pilotReadTenantRiskPortfolioReference");
-    riskOperations.healthCatalogAvailable = available.has("pilotReadPilotHealth");
-    riskOperations.feedbackCatalogAvailable = available.has("pilotReadPilotFeedbackSummary");
-    riskOperations.readinessCatalogAvailable = available.has("pilotReadClosedPilotReadiness");
-    riskOperations.caseReadCatalogAvailable = available.has("pilotReadCaseQueue");
-    riskOperations.caseTransitionCatalogAvailable = available.has("pilotTransitionCase");
-    riskOperations.queueCatalogAvailable = available.has("pilotReadServicingQueue");
+      riskAvailable.has("pilotReadTenantRiskPortfolioReference");
+    riskOperations.healthCatalogAvailable = riskAvailable.has("pilotReadPilotHealth");
+    riskOperations.feedbackCatalogAvailable = riskAvailable.has("pilotReadPilotFeedbackSummary");
+    riskOperations.readinessCatalogAvailable = riskAvailable.has("pilotReadClosedPilotReadiness");
+    riskOperations.caseReadCatalogAvailable = riskAvailable.has("pilotReadCaseQueue");
+    riskOperations.caseTransitionCatalogAvailable = riskAvailable.has("pilotTransitionCase");
+    riskOperations.queueCatalogAvailable = riskAvailable.has("pilotReadServicingQueue");
     riskOperations.queueReferenceCatalogAvailable =
-      available.has("pilotReadServicingQueueReference");
-    riskOperations.freezeCatalogAvailable = available.has("pilotFreezeSubject");
-    securedPoolPilot.readAvailable = available.has("pilotReadOwnSecuredPool");
-    securedPoolPilot.reviewAvailable = available.has("pilotReviewSecuredPoolAction");
-    securedPoolPilot.riskAvailable = available.has("pilotReadSecuredPoolRisk");
+      riskAvailable.has("pilotReadServicingQueueReference");
+    riskOperations.freezeCatalogAvailable = riskAvailable.has("pilotFreezeSubject");
+    securedPoolPilot.readAvailable = riskAvailable.has("pilotReadOwnSecuredPool");
+    securedPoolPilot.reviewAvailable = riskAvailable.has("pilotReviewSecuredPoolAction");
+    securedPoolPilot.riskAvailable = riskAvailable.has("pilotReadSecuredPoolRisk");
     const operationsAvailable = [...requiredOperations].every((operationId) => available.has(operationId));
     const csrfReady = Boolean(tenantCsrfToken());
     tenantPilot.connected = operationsAvailable && csrfReady;
@@ -12235,7 +12238,17 @@ function renderRiskOperations() {
   const status = el("privateRiskStatus");
   const catalogReady = riskOperations.readCatalogAvailable;
   status.classList.remove("neutral", "warning");
-  if (!catalogReady) {
+  const reviewHeading = {
+    operations: ["Servicing, with independent review.", "Prepare an exact servicing proposal and track its independent approvals. Execution remains a separate explicit action."],
+    auditor: ["Records, ready for review.", "Read the tenant portfolio, case records and servicing approvals. This workspace has no authority to change them."],
+    riskReviewer: ["Independent risk review.", "Review the exact plan, impact and expiry before recording your approval or rejection. This workspace cannot propose or execute servicing."]
+  }[currentWorkspaceName()];
+  if (reviewHeading) {
+    el("privateRiskTitle").textContent = reviewHeading[0];
+    el("privateRiskDescription").textContent = reviewHeading[1];
+    status.textContent = "Local sandbox";
+    status.classList.add("neutral");
+  } else if (!catalogReady) {
     status.textContent = "Operation unavailable";
     status.classList.add("warning");
   } else if (riskOperations.error) {
@@ -13274,6 +13287,7 @@ async function freezeRiskSubject() {
       idempotent: true
     });
     riskOperations.freezeResult = result.response;
+    if (selectedCase.source === "directory") localReviewWorkspace?.forgetAgent(subjectId);
     riskOperations.freezeHelper = "Protective suspension verified and recorded with immutable Evidence.";
     riskOperations.freezeSubjectSelection = null;
     el("riskFreezeSubjectId").value = "";
