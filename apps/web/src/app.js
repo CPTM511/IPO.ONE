@@ -7285,9 +7285,9 @@ function capitalPartnerFacilityRow(facility) {
   const identityLabel = document.createElement("span");
   const identityValue = document.createElement("strong");
   const identityDetail = document.createElement("small");
-  identityLabel.textContent = "Facility / Obligation";
-  identityValue.textContent = facility.facilityId;
-  identityDetail.textContent = facility.obligationId;
+  identityLabel.textContent = "Credit plan";
+  identityValue.textContent = `${facility.repaidLabel} repaid`;
+  identityDetail.textContent = "Shared Obligation · synthetic funds";
   identity.append(identityLabel, identityValue, identityDetail);
   const fields = [
     ["Status", `${titleize(facility.status)} · ${titleize(facility.servicingClassification)}`],
@@ -7302,7 +7302,15 @@ function capitalPartnerFacilityRow(facility) {
     cell.append(label, value);
     return cell;
   });
-  row.append(identity, ...fields);
+  const details = document.createElement("details");
+  details.className = "technical-details";
+  const summary = document.createElement("summary"); summary.textContent = "Technical references";
+  const references = document.createElement("p"); references.textContent = `${facility.facilityId} · ${facility.obligationId}`;
+  details.append(summary, references);
+  const open = document.createElement("button"); open.className = "secondary"; open.type = "button";
+  open.textContent = "View credit details"; open.dataset.capitalFacility = facility.obligationId;
+  open.disabled = !capitalPartnerPilot.facilityAvailable || capitalPartnerPilot.busy || capitalPartnerPilot.refreshBusy;
+  row.append(identity, ...fields, open, details);
   return row;
 }
 
@@ -7397,6 +7405,8 @@ function clearCapitalPartnerWorkspaceState({
   helper = "This Capital Partner workspace is unavailable or not authorized. No application details were disclosed.",
   error = true
 } = {}) {
+  el("capitalPartnerFacilityDetail").hidden = true;
+  el("capitalPartnerFacilityDetail").replaceChildren();
   capitalPartnerPilot.profile = null;
   capitalPartnerPilot.applications = [];
   capitalPartnerPilot.selectedApplication = null;
@@ -13830,6 +13840,37 @@ function bindActions() {
   el("humanApplicationOptions").addEventListener("click", (event) => {
     const button = event.target.closest("button[data-human-review-offer]");
     if (button && !button.disabled) selectHumanApplication(button.dataset.humanReviewOffer);
+  });
+
+  el("capitalPartnerFacilityRows").addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-capital-facility]");
+    if (!button || button.disabled) return;
+    const obligationId = button.dataset.capitalFacility;
+    if (!capitalPartnerPilot.portfolio?.facilities.some((item) => item.obligationId === obligationId)) return;
+    const epoch = authenticatedDataEpoch;
+    button.disabled = true;
+    const panel = el("capitalPartnerFacilityDetail");
+    panel.hidden = false;
+    panel.textContent = "Loading this exact authorized credit plan…";
+    try {
+      const result = await tenantApi("pilotReadCapitalPartnerFacility", {
+        resource: { resourceType: "obligation", resourceId: obligationId }, payload: {}, idempotent: false
+      });
+      if (epoch !== authenticatedDataEpoch) return;
+      const facility = result.response.facility;
+      if (result.response.schemaVersion !== "tenant_capital_partner_facility_view.v1" ||
+        facility?.obligationId !== obligationId || facility.capitalPartnerId !== capitalPartnerPilot.profile.capitalPartnerId ||
+        facility.schemaVersion !== "facility_view.v1" || facility.sandboxOnly !== true || facility.productionFundsMoved !== false) {
+        throw new Error("Credit details did not match the selected plan.");
+      }
+      const title = document.createElement("h3"); title.textContent = `${titleize(facility.status)} · ${usdMinorToMoney(facility.repaidMinor)} repaid`;
+      const detail = document.createElement("p"); detail.textContent = `Outstanding ${usdMinorToMoney(facility.outstandingMinor)} · ${facility.daysPastDue} days past due · ${titleize(facility.servicingClassification)}`;
+      const next = document.createElement("p"); next.textContent = facility.nextPayment ? `Next payment ${privateDate(facility.nextPayment.dueAt, { month: "short", day: "numeric" })}` : "No remaining scheduled payment.";
+      const boundary = document.createElement("p"); boundary.textContent = "Read from the shared Obligation. No real funds; chain anchoring is tracked separately.";
+      panel.replaceChildren(title, detail, next, boundary); focusJumpTarget(panel);
+    } catch (error) {
+      if (epoch === authenticatedDataEpoch) panel.textContent = `Credit details unavailable. ${error.message}`;
+    } finally { button.disabled = false; }
   });
 
   el("capitalPartnerOfferForm").addEventListener("submit", (event) => {

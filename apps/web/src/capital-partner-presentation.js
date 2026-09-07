@@ -14,14 +14,25 @@ function formatUsdMinor(value) {
   return `$${whole.toLocaleString("en-US")}.${cents}`;
 }
 
+function evidenceCoverageLabel(coverage) {
+  if (!coverage || !Number.isSafeInteger(coverage.anchoredEventCount) ||
+    !Number.isSafeInteger(coverage.pendingEventCount) || coverage.anchoredEventCount < 0 || coverage.pendingEventCount < 0) {
+    return "Chain anchoring unavailable";
+  }
+  return `${coverage.anchoredEventCount} anchored / ${coverage.pendingEventCount} pending` +
+    (coverage.exceptionEventCount > 0 ? ` / ${coverage.exceptionEventCount} exceptions` : "");
+}
+
 function facilityPresentation(facility) {
   if (
     !facility ||
-    facility.schemaVersion !== "facility_view.v1" ||
-    facility.sandboxOnly !== true ||
-    facility.productionFundsMoved !== false
+    typeof facility.facilityId !== "string" ||
+    typeof facility.obligationId !== "string" ||
+    !Number.isSafeInteger(facility.daysPastDue) || facility.daysPastDue < 0 ||
+    (facility.sandboxOnly !== undefined && facility.sandboxOnly !== true) ||
+    (facility.productionFundsMoved !== undefined && facility.productionFundsMoved !== false)
   ) {
-    throw new TypeError("facility must be a no-funds facility_view.v1");
+    throw new TypeError("facility must be a canonical summary inside the no-funds portfolio");
   }
   return Object.freeze({
     facilityId: facility.facilityId,
@@ -30,9 +41,7 @@ function facilityPresentation(facility) {
     servicingClassification: facility.servicingClassification,
     outstandingLabel: formatUsdMinor(facility.outstandingMinor),
     repaidLabel: formatUsdMinor(facility.repaidMinor),
-    evidenceLabel:
-      `${Number(facility.evidenceCoverage?.finalized ?? 0)} finalized / ` +
-      `${Number(facility.evidenceCoverage?.pending ?? 0)} pending`,
+    evidenceLabel: evidenceCoverageLabel(facility.evidenceCoverage),
     adverse:
       facility.daysPastDue > 0 ||
       !new Set(["current", "repaid"]).has(facility.servicingClassification)
@@ -57,12 +66,12 @@ export function createCapitalPartnerPresentation(portfolio) {
     outstandingLabel: formatUsdMinor(portfolio.outstandingMinor),
     repaidLabel: formatUsdMinor(portfolio.repaidMinor),
     evidenceStateLabel: portfolio.facilities.length === 0
-      ? "No active Facilities"
-      : portfolio.facilities.every(
-          ({ evidenceCoverage }) => Number(evidenceCoverage?.pending ?? 0) === 0
-        )
-        ? "Evidence finalized"
-        : "Evidence pending",
+      ? "No recorded Facilities"
+      : portfolio.facilities.every(({ evidenceCoverage: coverage }) => coverage?.status === "complete" &&
+          Number.isSafeInteger(coverage.requiredEventCount) && coverage.requiredEventCount > 0 &&
+          coverage.anchoredEventCount === coverage.requiredEventCount && coverage.pendingEventCount === 0 && coverage.exceptionEventCount === 0)
+        ? "Chain anchoring complete"
+        : "Chain anchoring pending or unavailable",
     facilities: Object.freeze(portfolio.facilities.map(facilityPresentation)),
     asOf: portfolio.asOf
   });
