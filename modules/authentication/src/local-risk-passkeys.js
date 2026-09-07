@@ -141,10 +141,10 @@ export class LocalRiskPasskeys {
     const options = body.purpose === "register"
       ? await generateRegistrationOptions({ rpName: "IPO.ONE Local Risk", rpID: this.rpID,
         userName: "Invited local Risk operator", userDisplayName: "IPO.ONE Risk", userID: binary(userHandle(s)),
-        challenge, timeout: 120000, attestationType: "none", supportedAlgorithmIDs: [-7],
+        challenge: binary(challenge), timeout: 120000, attestationType: "none", supportedAlgorithmIDs: [-7],
         authenticatorSelection: { residentKey: "required", userVerification: "required" },
         excludeCredentials: keys.map(k => ({ id: k.credential_key })) })
-      : await generateAuthenticationOptions({ rpID: this.rpID, challenge, timeout: 120000, userVerification: "required",
+      : await generateAuthenticationOptions({ rpID: this.rpID, challenge: binary(challenge), timeout: 120000, userVerification: "required",
         allowCredentials: active.map(k => ({ id: k.credential_key, transports: k.transports })) });
     await client.query(`INSERT INTO authentication_passkey_challenges(tenant_id,id,session_ref_hash,purpose,challenge,origin,rp_id,created_at,expires_at)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [s.tenantId,id,s.sessionRefHash,body.purpose,challenge,this.origin,this.rpID,now,new Date(now.getTime()+120000)]);

@@ -5895,6 +5895,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-repay-agent-sandbox-credit-${RUN_ID}`,
         correlationId: `correlation-repay-agent-sandbox-credit-${RUN_ID}`
       };
+      // The VM PostgreSQL clock can slew behind a just-recorded accrual timestamp.
+      // Wait for that persisted time before racing the same repayment; keep production fail-closed checks.
+      const agentAccrualClock = await ownerPool.query("SELECT last_accrued_at FROM obligations WHERE id=$1", [agentRepaymentCommand.obligationId]);
+      await waitForDatabaseClockAfter(ownerPool, new Date(new Date(agentAccrualClock.rows[0].last_accrued_at).getTime() + 5), "Agent repayment");
       const agentRepayments = await executeConcurrentMcpDuplicate(
         creditAgentRuntimeMcpHost,
         {

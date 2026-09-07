@@ -51,3 +51,10 @@ test("Risk Passkey composition denies production, IP and unreviewed local ports"
   for(const origin of ["https://ipo.one","http://127.0.0.1:8937","http://localhost:8897","http://localhost:8937.attacker.invalid"])
     assert.throws(()=>new LocalRiskPasskeys({origin}));
 });
+test("generated browser challenge exactly matches the durable nonce without double encoding",async()=>{
+ const service=new LocalRiskPasskeys({origin:"http://localhost:8937"});service.eligible=async()=>{};service.keys=async()=>[];service.audit=async()=>{};
+ let stored;
+ const client={async query(sql,values){if(sql.includes("INSERT INTO authentication_passkey_challenges"))stored=values[4];return {rows:[{count:0}]};}};
+ const response=await service.begin(client,{tenantId:"tenant_test",actorId:"actor_test",sessionRefHash:"hash_test"},new Date(),{purpose:"register"});
+ assert.equal(response.options.challenge,stored);assert.equal(stored.length,43);
+});
