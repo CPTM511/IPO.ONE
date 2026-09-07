@@ -39,7 +39,9 @@ function checkResponse(response, purpose, challenge) {
   closedPasskeyObject(response.response, keys, purpose === "register"
     ? ["clientDataJSON", "attestationObject"] : ["clientDataJSON", "authenticatorData", "signature"]);
   const data = parseStrictJson(binary(response.response.clientDataJSON, 8192).toString("utf8"));
-  closedPasskeyObject(data, ["type", "challenge", "origin", "crossOrigin", "topOrigin"], ["type", "challenge", "origin"]);
+  // WebAuthn CollectedClientData explicitly permits future keys. Parse without duplicate
+  // keys, verify every security field and the original signed bytes; never grant authority from extensions.
+  // https://www.w3.org/TR/webauthn-3/#dictdef-collectedclientdata
   if (data.type !== (purpose === "register" ? "webauthn.create" : "webauthn.get") ||
       data.challenge !== challenge.challenge || data.origin !== challenge.origin ||
       (data.crossOrigin !== undefined && data.crossOrigin !== false) || data.topOrigin !== undefined) throw rejected();
@@ -50,6 +52,25 @@ function checkResponse(response, purpose, challenge) {
   } else {
     binary(response.response.authenticatorData, 4096); binary(response.response.signature, 2048);
   }
+}
+
+export async function verifyLocalRiskCeremony({ response, challenge, key }) {
+  if (!ORIGINS.has(challenge.origin) || challenge.rp_id !== "localhost") throw rejected();
+  checkResponse(response, challenge.purpose, challenge);
+  if (challenge.purpose === "register") {
+    const check = await verifyRegistrationResponse({ response, expectedChallenge: challenge.challenge,
+      expectedOrigin: challenge.origin, expectedRPID: challenge.rp_id, expectedType: "webauthn.create",
+      requireUserPresence: true, requireUserVerification: true, supportedAlgorithmIDs: [-7] });
+    if (!check.verified || !check.registrationInfo.userVerified || check.registrationInfo.fmt !== "none") throw rejected();
+    return check.registrationInfo.credential;
+  }
+  if (challenge.purpose !== "verify" || !key || key.credential_key !== response.id ||
+      (response.response.userHandle != null && response.response.userHandle !== key.user_handle)) throw rejected();
+  const check = await verifyAuthenticationResponse({ response, expectedChallenge: challenge.challenge,
+    expectedOrigin: challenge.origin, expectedRPID: challenge.rp_id, expectedType: "webauthn.get", requireUserVerification: true,
+    credential: { id: key.credential_key, publicKey: new Uint8Array(Buffer.from(key.public_key, "base64url")), counter: Number(key.counter), transports: key.transports } });
+  if (!check.verified || !check.authenticationInfo.userVerified) throw rejected();
+  return { counter: check.authenticationInfo.newCounter };
 }
 
 // Instantiated only by the exact reviewed loopback composition; no public enrollment.
@@ -145,23 +166,13 @@ export class LocalRiskPasskeys {
     const keys = await this.keys(client,s), active = this.activeKeys(keys,s);
     try {
       if (c.origin !== this.origin || c.rp_id !== this.rpID || new Date(c.created_at) > now || new Date(c.expires_at) <= now) throw rejected();
-      checkResponse(body.response,c.purpose,c);
       if (c.purpose === "register") {
         if (active.length >= 5 || (keys.length && !(await this.resolveStepUp(client,s,now)))) throw rejected();
-        const check = await verifyRegistrationResponse({ response: body.response, expectedChallenge: c.challenge,
-          expectedOrigin: this.origin, expectedRPID: this.rpID, expectedType: "webauthn.create",
-          requireUserPresence: true, requireUserVerification: true, supportedAlgorithmIDs: [-7] });
-        if (!check.verified || !check.registrationInfo.userVerified || check.registrationInfo.fmt !== "none") throw rejected();
-        verified = check.registrationInfo.credential;
+        verified = await verifyLocalRiskCeremony({ response: body.response, challenge: c });
         if (keys.some(k => k.credential_key === verified.id)) throw rejected();
       } else {
         key = active.find(k => k.credential_key === body.response.id);
-        if (!key || (body.response.response.userHandle != null && body.response.response.userHandle !== key.user_handle)) throw rejected();
-        const check = await verifyAuthenticationResponse({ response: body.response, expectedChallenge: c.challenge,
-          expectedOrigin: this.origin, expectedRPID: this.rpID, expectedType: "webauthn.get", requireUserVerification: true,
-          credential: { id: key.credential_key, publicKey: new Uint8Array(Buffer.from(key.public_key, "base64url")), counter: Number(key.counter), transports: key.transports } });
-        if (!check.verified || !check.authenticationInfo.userVerified) throw rejected();
-        verified = { counter: check.authenticationInfo.newCounter };
+        verified = await verifyLocalRiskCeremony({ response: body.response, challenge: c, key });
       }
     } catch { return fail("ceremony_rejected"); }
     // SQL failures roll back rather than reporting a successful cryptographic ceremony.
