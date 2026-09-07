@@ -1,0 +1,959 @@
+{
+  "source": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "apiMocks": false,
+  "virtualAuthenticator": true,
+  "physicalWalletOrFounderDeviceVerified": false,
+  "results": [
+    {
+      "name": "server denial",
+      "port": "8939",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "server denial",
+      "port": "8939",
+      "operationId": "pilotDecideApproval",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "server denial",
+      "port": "8939",
+      "operationId": "pilotReadRiskAgentDirectory",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "operations signed wallet, native Passkey, authorized reads and refresh",
+      "pass": true
+    },
+    {
+      "name": "server denial",
+      "port": "8940",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "server denial",
+      "port": "8940",
+      "operationId": "pilotProposeApproval",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "server denial",
+      "port": "8940",
+      "operationId": "pilotReadRiskAgentDirectory",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "auditor signed wallet, native Passkey, authorized reads and refresh",
+      "pass": true
+    },
+    {
+      "name": "server denial",
+      "port": "8941",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "server denial",
+      "port": "8941",
+      "operationId": "pilotProposeApproval",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "server denial",
+      "port": "8941",
+      "operationId": "pilotReadRiskAgentDirectory",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "name": "risk-reviewer signed wallet, native Passkey, authorized reads and refresh",
+      "pass": true
+    },
+    {
+      "name": "three localhost role cookies coexist in one browser",
+      "pass": true
+    },
+    {
+      "name": "Auditor logout isolates other roles and requires a new MFA assertion",
+      "pass": true
+    },
+    {
+      "name": "all special-role sessions and MFA survive process restart",
+      "pass": true
+    },
+    {
+      "name": "Previously frozen exact Agent remains excluded from the live directory",
+      "pass": true,
+      "subjectId": "subject_36e5b0ed-a977-4f0d-af75-11919d67401d"
+    },
+    {
+      "name": "Principal recovers exact suspension and cannot start account proof or Mandate creation",
+      "pass": true
+    },
+    {
+      "name": "Original Risk login also preserves all special-role sessions",
+      "pass": true
+    },
+    {
+      "name": "special-role servicing execution",
+      "status": "BLOCKED",
+      "reason": "No legitimately matured adverse position and no separately authorized Operations approver"
+    }
+  ],
+  "actions": [
+    {
+      "port": "8939",
+      "label": "Log in",
+      "at": "2026-09-07T09:27:40.026Z"
+    },
+    {
+      "port": "8939",
+      "label": "WEB027 role acceptance wallet\nlocal.web027m.test\nSelect",
+      "at": "2026-09-07T09:27:40.068Z"
+    },
+    {
+      "port": "8939",
+      "label": "Connect & sign in with wallet\nServicing Operations · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:27:40.097Z"
+    },
+    {
+      "port": "8939",
+      "label": "Verify with Passkey",
+      "at": "2026-09-07T09:27:41.803Z"
+    },
+    {
+      "port": "8939",
+      "label": "Refresh approval inbox",
+      "at": "2026-09-07T09:27:41.877Z"
+    },
+    {
+      "port": "8939",
+      "label": "Load eligible servicing plans",
+      "at": "2026-09-07T09:27:41.969Z"
+    },
+    {
+      "port": "8940",
+      "label": "Log in",
+      "at": "2026-09-07T09:27:42.661Z"
+    },
+    {
+      "port": "8940",
+      "label": "WEB027 role acceptance wallet\nlocal.web027m.test\nSelect",
+      "at": "2026-09-07T09:27:42.703Z"
+    },
+    {
+      "port": "8940",
+      "label": "Connect & sign in with wallet\nAuditor · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:27:42.737Z"
+    },
+    {
+      "port": "8940",
+      "label": "Verify with Passkey",
+      "at": "2026-09-07T09:27:44.117Z"
+    },
+    {
+      "port": "8940",
+      "label": "Refresh approval inbox",
+      "at": "2026-09-07T09:27:44.170Z"
+    },
+    {
+      "port": "8940",
+      "label": "Load case queue",
+      "at": "2026-09-07T09:27:44.236Z"
+    },
+    {
+      "port": "8941",
+      "label": "Log in",
+      "at": "2026-09-07T09:27:44.843Z"
+    },
+    {
+      "port": "8941",
+      "label": "WEB027 role acceptance wallet\nlocal.web027m.test\nSelect",
+      "at": "2026-09-07T09:27:44.881Z"
+    },
+    {
+      "port": "8941",
+      "label": "Connect & sign in with wallet\nRisk Operations · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:27:44.913Z"
+    },
+    {
+      "port": "8941",
+      "label": "Verify with Passkey",
+      "at": "2026-09-07T09:27:46.244Z"
+    },
+    {
+      "port": "8941",
+      "label": "Refresh approval inbox",
+      "at": "2026-09-07T09:27:46.303Z"
+    },
+    {
+      "port": "8941",
+      "label": "Load eligible servicing plans",
+      "at": "2026-09-07T09:27:46.349Z"
+    },
+    {
+      "port": "8940",
+      "label": "Sign out",
+      "at": "2026-09-07T09:27:47.685Z"
+    },
+    {
+      "port": "8940",
+      "label": "Log in",
+      "at": "2026-09-07T09:27:48.201Z"
+    },
+    {
+      "port": "8940",
+      "label": "WEB027 role acceptance wallet\nlocal.web027m.test\nSelect",
+      "at": "2026-09-07T09:27:48.237Z"
+    },
+    {
+      "port": "8940",
+      "label": "Connect & sign in with wallet\nAuditor · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:27:48.272Z"
+    },
+    {
+      "port": "8940",
+      "label": "Verify with Passkey",
+      "at": "2026-09-07T09:27:49.577Z"
+    },
+    {
+      "port": "8939",
+      "label": "Refresh approval inbox",
+      "at": "2026-09-07T09:27:52.760Z"
+    },
+    {
+      "port": "8940",
+      "label": "Refresh approval inbox",
+      "at": "2026-09-07T09:27:53.001Z"
+    },
+    {
+      "port": "8941",
+      "label": "Refresh approval inbox",
+      "at": "2026-09-07T09:27:53.252Z"
+    },
+    {
+      "port": "8936",
+      "label": "Log in",
+      "at": "2026-09-07T09:27:53.842Z"
+    },
+    {
+      "port": "8936",
+      "label": "WEB027 role acceptance wallet\nlocal.web027m.test\nSelect",
+      "at": "2026-09-07T09:27:53.877Z"
+    },
+    {
+      "port": "8936",
+      "label": "Connect & sign in with wallet\nPrincipal Controller · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:27:53.899Z"
+    },
+    {
+      "port": "8936",
+      "label": "Agents",
+      "at": "2026-09-07T09:27:55.501Z"
+    },
+    {
+      "port": "8937",
+      "label": "Log in",
+      "at": "2026-09-07T09:27:55.813Z"
+    },
+    {
+      "port": "8937",
+      "label": "WEB027 role acceptance wallet\nlocal.web027m.test\nSelect",
+      "at": "2026-09-07T09:27:55.851Z"
+    },
+    {
+      "port": "8937",
+      "label": "Connect & sign in with wallet\nRisk Operations · one-use SIWE signature · no transaction or fee",
+      "at": "2026-09-07T09:27:55.874Z"
+    },
+    {
+      "port": "8937",
+      "label": "Verify with Passkey",
+      "at": "2026-09-07T09:27:57.085Z"
+    },
+    {
+      "port": "8937",
+      "label": "Load authorized Agents",
+      "at": "2026-09-07T09:27:57.151Z"
+    },
+    {
+      "port": "8936",
+      "label": "Agents",
+      "at": "2026-09-07T09:27:57.723Z"
+    }
+  ],
+  "operations": [
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 200,
+      "schemaVersion": "tenant_approval_inbox.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotDecideApproval",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadRiskAgentDirectory",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 200,
+      "schemaVersion": "tenant_approval_inbox.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadCaseQueue",
+      "status": 200,
+      "schemaVersion": "tenant_pilot_case_queue.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotProposeApproval",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadRiskAgentDirectory",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 200,
+      "schemaVersion": "tenant_approval_inbox.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotProposeApproval",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadRiskAgentDirectory",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 200,
+      "schemaVersion": "tenant_approval_inbox.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 200,
+      "schemaVersion": "tenant_approval_inbox.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadApprovalInbox",
+      "status": 200,
+      "schemaVersion": "tenant_approval_inbox.v1"
+    },
+    {
+      "port": "8936",
+      "operationId": "pilotReadWorkspaceResume",
+      "status": 200,
+      "schemaVersion": "tenant_workspace_resume_view.v2"
+    },
+    {
+      "port": "8936",
+      "operationId": "pilotReadAgentAccountBinding",
+      "status": 200,
+      "schemaVersion": "tenant_agent_account_binding_view.v1"
+    },
+    {
+      "port": "8937",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8937",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 404,
+      "code": "authorization_denied"
+    },
+    {
+      "port": "8937",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8937",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8937",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8937",
+      "operationId": "pilotReadRiskAgentDirectory",
+      "status": 200,
+      "schemaVersion": "tenant_risk_agent_directory.v1"
+    },
+    {
+      "port": "8936",
+      "operationId": "pilotReadWorkspaceResume",
+      "status": 200,
+      "schemaVersion": "tenant_workspace_resume_view.v2"
+    },
+    {
+      "port": "8936",
+      "operationId": "pilotReadAgentAccountBinding",
+      "status": 200,
+      "schemaVersion": "tenant_agent_account_binding_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8939",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRiskPortfolioReference",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+    },
+    {
+      "port": "8940",
+      "operationId": "pilotReadTenantRisk",
+      "status": 200,
+      "schemaVersion": "tenant_risk_portfolio_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueueReference",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+    },
+    {
+      "port": "8941",
+      "operationId": "pilotReadServicingQueue",
+      "status": 200,
+      "schemaVersion": "tenant_servicing_queue_view.v1"
+    }
+  ],
+  "errors": [],
+  "signatures": [
+    {
+      "port": "8939",
+      "at": "2026-09-07T09:27:40.119Z"
+    },
+    {
+      "port": "8940",
+      "at": "2026-09-07T09:27:42.759Z"
+    },
+    {
+      "port": "8941",
+      "at": "2026-09-07T09:27:44.920Z"
+    },
+    {
+      "port": "8940",
+      "at": "2026-09-07T09:27:48.276Z"
+    },
+    {
+      "port": "8936",
+      "at": "2026-09-07T09:27:53.920Z"
+    },
+    {
+      "port": "8937",
+      "at": "2026-09-07T09:27:55.895Z"
+    }
+  ],
+  "ceremonies": [
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/begin",
+      "status": 200,
+      "purpose": "verify"
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/finish",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/begin",
+      "status": 200,
+      "purpose": "verify"
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/finish",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/begin",
+      "status": 200,
+      "purpose": "verify"
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/finish",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/begin",
+      "status": 200,
+      "purpose": "verify"
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/finish",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8937",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8937",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8937",
+      "path": "/auth/v1/passkey/begin",
+      "status": 200,
+      "purpose": "verify"
+    },
+    {
+      "port": "8937",
+      "path": "/auth/v1/passkey/finish",
+      "status": 200
+    },
+    {
+      "port": "8939",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8940",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    },
+    {
+      "port": "8941",
+      "path": "/auth/v1/passkey/status",
+      "status": 200
+    }
+  ],
+  "credentialErrors": []
+}

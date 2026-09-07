@@ -1,0 +1,217 @@
+{
+  "source": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "apiMocks": false,
+  "fixtureQuery": false,
+  "operations": [
+    {
+      "step": "partner-issued",
+      "offer": {
+        "creditOfferId": "credit_offer_2ef3e544-36b3-4745-8fee-ee1119c07de1",
+        "creditOfferHash": "0x1f4da3782d5cea3e129ba4cafc38d3c475d5a0190d6266804df4f13460f42410",
+        "termsHash": "0x81f9c8a91851402aba32937efd999b4d055c565e19eba1ac0debd4f440f4107a",
+        "creditIntentId": "credit_intent_8ba3319e-3ebe-4699-b263-844680b36127",
+        "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+        "riskDecisionId": "risk_decision_669edf510ad25b0e3c5be7541079eb8042d92c4f830aa6cbdd465800df742f2b",
+        "capitalPartnerId": "capital_partner_4532c7456323a51390bb401ea32e5789b2f4793709dccd27e9e5764fbe5e6ded",
+        "capitalPartnerOperatorId": "actor_capital_partner_pilot",
+        "creditPassportArtifactId": "credit_passport_artifact_2bbedfccafbc3d8e747a7edd13081c5199649d090e4db5deb728e519247923dc",
+        "creditPassportArtifactHash": "0x51164aaece6c886fb72bfec0cf1bf00eae683716fd2f3a78d686565d10105595",
+        "creditPassportArtifactVersion": 1,
+        "passportVerificationHash": "0x45c55894d6d2d5027ffa1e53300f9b160222038494abf105a558c961b4bb6438",
+        "underwritingSnapshotHash": "0xcebb1541390d30df7d0847bbfa251f9a964049a489da55e4b7fb3c4431839d2e",
+        "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+        "facilityLimitMinor": "25000",
+        "approvedPrincipalMinor": "2300",
+        "perDrawCapMinor": "2300",
+        "annualRateBps": 0,
+        "originationFeeMinor": "0",
+        "repaymentFrequency": "monthly",
+        "installmentCount": 2,
+        "firstPaymentAt": "2026-10-07T09:31:00.000Z",
+        "maturityAt": "2026-11-06T09:31:00.000Z",
+        "permittedPurposeCode": "working_capital",
+        "conditions": [
+          "passport_current_at_acceptance",
+          "authority_current_at_acceptance",
+          "no_adverse_obligation_at_acceptance"
+        ],
+        "undrawnRevocationRule": "capital_partner_before_acceptance",
+        "disclosureRef": "disclosure_capital_partner_standard_v1",
+        "termsVersion": "credit_terms.v2",
+        "validUntil": "2026-09-08T09:31:00.000Z",
+        "reasonCodes": [
+          "capital_partner_underwritten"
+        ],
+        "sandboxOnly": true,
+        "productionFundsApproved": false,
+        "status": "offered",
+        "createdAt": "2026-09-07T09:31:38.873Z",
+        "updatedAt": "2026-09-07T09:31:38.873Z",
+        "schemaVersion": "credit_offer.v2"
+      }
+    },
+    {
+      "step": "human-recovered",
+      "health": 200,
+      "status": "Lifecycle complete",
+      "principal": "—"
+    },
+    {
+      "step": "exact-lender-offer-accepted",
+      "receipt": {
+        "acceptance": {
+          "creditOfferAcceptanceId": "credit_offer_acceptance_6c54a644bb5ef0f55d7a4dd0fe2f1a9cfed049d83921b40079ff37dee0c7988b",
+          "acceptanceHash": "0x6c54a644bb5ef0f55d7a4dd0fe2f1a9cfed049d83921b40079ff37dee0c7988b",
+          "creditOfferId": "credit_offer_2ef3e544-36b3-4745-8fee-ee1119c07de1",
+          "creditOfferHash": "0x1f4da3782d5cea3e129ba4cafc38d3c475d5a0190d6266804df4f13460f42410",
+          "termsHash": "0x81f9c8a91851402aba32937efd999b4d055c565e19eba1ac0debd4f440f4107a",
+          "creditIntentId": "credit_intent_8ba3319e-3ebe-4699-b263-844680b36127",
+          "riskDecisionId": "risk_decision_669edf510ad25b0e3c5be7541079eb8042d92c4f830aa6cbdd465800df742f2b",
+          "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+          "principalId": "principal_c96b85fa-c0d4-4dbd-9a1f-30368446a907",
+          "authorityType": "consent",
+          "authorityId": "consent_4cdfce17-2c23-46a3-8d87-1b233a6db164",
+          "acknowledgementHash": "0x6717939221d1c4deb0023d98d700d64326edb9c53eb47e862f56f3b905f4fe1c",
+          "acceptedAt": "2026-09-07T09:31:39.957Z",
+          "sandboxOnly": true,
+          "productionAuthority": false
+        },
+        "obligation": {
+          "obligationId": "obligation_417457f7-a746-44d9-979b-d217952463dc",
+          "obligationHash": "0xe46738ddcfe44a5383dbbeed41fbe6a40c16fc4f186f1c1f1424ab71ba0a6f45",
+          "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+          "principalId": "principal_c96b85fa-c0d4-4dbd-9a1f-30368446a907",
+          "creditIntentId": "credit_intent_8ba3319e-3ebe-4699-b263-844680b36127",
+          "riskDecisionId": "risk_decision_669edf510ad25b0e3c5be7541079eb8042d92c4f830aa6cbdd465800df742f2b",
+          "creditOfferId": "credit_offer_2ef3e544-36b3-4745-8fee-ee1119c07de1",
+          "creditOfferAcceptanceId": "credit_offer_acceptance_6c54a644bb5ef0f55d7a4dd0fe2f1a9cfed049d83921b40079ff37dee0c7988b",
+          "authorityType": "consent",
+          "authorityId": "consent_4cdfce17-2c23-46a3-8d87-1b233a6db164",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "originalPrincipalMinor": "2300",
+          "outstandingPrincipalMinor": "2300",
+          "annualRateBps": 0,
+          "originationFeeMinor": "0",
+          "accruedInterestMinor": "0",
+          "outstandingInterestMinor": "0",
+          "accruedFeesMinor": "0",
+          "outstandingFeesMinor": "0",
+          "totalRepaidMinor": "0",
+          "repaymentFrequency": "monthly",
+          "installmentCount": 2,
+          "firstPaymentAt": "2026-10-07T09:31:00.000Z",
+          "maturityAt": "2026-11-06T09:31:00.000Z",
+          "scheduleVersion": "obligation_schedule.v1",
+          "scheduleHash": "0x2fddfb533956192ea2b7d14365088b5a7b2d30e82304e24211fc564dca7da2f9",
+          "scheduleSequence": 1,
+          "installments": [
+            {
+              "installmentId": "obligation_installment_a819a2e546f5403811e4fac2e30a3ea6639df2266a0a4a6c92adfe06456e3097",
+              "obligationId": "obligation_417457f7-a746-44d9-979b-d217952463dc",
+              "installmentNumber": 1,
+              "dueAt": "2026-10-07T09:31:00.000Z",
+              "scheduledPrincipalMinor": "1150",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            },
+            {
+              "installmentId": "obligation_installment_603908a6d7a01e8ae78de1eb7917cbde3f63f0858de06036c9fd0a0c9ccb128e",
+              "obligationId": "obligation_417457f7-a746-44d9-979b-d217952463dc",
+              "installmentNumber": 2,
+              "dueAt": "2026-11-06T09:31:00.000Z",
+              "scheduledPrincipalMinor": "1150",
+              "scheduledInterestMinor": "0",
+              "scheduledFeeMinor": "0",
+              "paidPrincipalMinor": "0",
+              "paidInterestMinor": "0",
+              "paidFeeMinor": "0",
+              "status": "scheduled",
+              "scheduleVersion": "obligation_schedule.v1",
+              "scheduleSequence": 1,
+              "schemaVersion": "obligation_installment.v1"
+            }
+          ],
+          "executionStatus": "pending",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "status": "created",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "oldestUnpaidInstallmentId": "obligation_installment_a819a2e546f5403811e4fac2e30a3ea6639df2266a0a4a6c92adfe06456e3097",
+          "servicingEffectiveAt": "2026-09-07T09:31:39.957Z",
+          "servicingReasonCode": "obligation_created",
+          "servicingPolicyVersion": "sandbox-servicing-policy.v1",
+          "servicingOwnerCode": "sandbox_platform",
+          "writtenOffPrincipalMinor": "0",
+          "writtenOffInterestMinor": "0",
+          "writtenOffFeesMinor": "0",
+          "acceptedAt": "2026-09-07T09:31:39.957Z",
+          "createdAt": "2026-09-07T09:31:39.957Z",
+          "updatedAt": "2026-09-07T09:31:39.957Z",
+          "schemaVersion": "obligation.v2"
+        },
+        "offerStatus": "accepted",
+        "executionCreated": false,
+        "fundsAuthority": false,
+        "schemaVersion": "tenant_credit_offer_accepted.v1"
+      }
+    },
+    {
+      "step": "capital-facility-fully-repaid",
+      "visible": "Credit plan\n$21.00 repaid\nShared Obligation · synthetic funds\nStatus\nFully Repaid · Current\nOutstanding\n$0.00\nEvidence\n0 anchored / 10 pending\nView credit details\nTechnical references\nCredit plan\n$23.00 repaid\nShared Obligation · synthetic funds\nStatus\nFully Repaid · Current\nOutstanding\n$0.00\nEvidence\n0 anchored / 10 pending\nView credit details\nTechnical references\nCredit plan\n$23.00 repaid\nShared Obligation · synthetic funds\nStatus\nFully Repaid · Current\nOutstanding\n$0.00\nEvidence\n0 anchored / 10 pending\nView credit details\nTechnical references\nCredit plan\n$23.00 repaid\nShared Obligation · synthetic funds\nStatus\nFully Repaid · Current\nOutstanding\n$0.00\nEvidence\n0 anchored / 9 pending\nView credit details\nTechnical references"
+    },
+    {
+      "step": "owned-Facility-details",
+      "receipt": {
+        "facility": {
+          "facilityId": "facility_458694b37c4c995b805e94e164805caceb9cf50e681338767bfa9b035f5e0ced",
+          "capitalPartnerId": "capital_partner_4532c7456323a51390bb401ea32e5789b2f4793709dccd27e9e5764fbe5e6ded",
+          "creditOfferId": "credit_offer_2ef3e544-36b3-4745-8fee-ee1119c07de1",
+          "obligationId": "obligation_417457f7-a746-44d9-979b-d217952463dc",
+          "subjectId": "subject_6fe01ec1-c146-436f-ba59-0ecfc5ea13d9",
+          "assetId": "urn:ipo-one:sandbox-asset:usd-cent",
+          "facilityLimitMinor": "25000",
+          "utilizedMinor": "2300",
+          "outstandingMinor": "0",
+          "repaidMinor": "2300",
+          "availableMinor": "22700",
+          "status": "fully_repaid",
+          "servicingClassification": "current",
+          "daysPastDue": 0,
+          "nextPayment": null,
+          "scheduleHash": "0x2fddfb533956192ea2b7d14365088b5a7b2d30e82304e24211fc564dca7da2f9",
+          "latestServicingActionId": "sandbox_servicing_action_4b054ea5b1c4f0572e50fc3c03d2a1ea7b4b6f681e2c4535ddbeb36adf224b24",
+          "evidenceCoverage": {
+            "requiredEventCount": 9,
+            "anchoredEventCount": 0,
+            "pendingEventCount": 9,
+            "exceptionEventCount": 0,
+            "status": "pending",
+            "chainId": "eip155:84532",
+            "schemaVersion": "evidence_anchor_coverage.v1"
+          },
+          "asOf": "2026-09-07T09:31:40.863Z",
+          "sandboxOnly": true,
+          "productionFundsMoved": false,
+          "schemaVersion": "facility_view.v1"
+        },
+        "schemaVersion": "tenant_capital_partner_facility_view.v1"
+      }
+    },
+    {
+      "step": "both-sides-refresh-durable",
+      "pass": true
+    },
+    {
+      "step": "logout-login-durable",
+      "pass": true
+    }
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "schemaVersion": "web027m_verification_evidence.v1",
+  "verifiedAt": "2026-09-07T09:45:26.371Z",
+  "verdict": "BLOCKED — NOT COMPLETE",
+  "installedSource": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+  "scope": "isolated local no-real-funds acceptance; founder-delegated browser testing",
+  "states": {
+    "CODE": "205fe9b7ef6726e00ce107777c4d73c1041df6b4",
+    "RUNTIME": "API and worker running; 82 installed runtime file hashes match",
+    "DEPLOYED": "local candidate only; formal website not updated",
+    "REACHABLE": "seven visible role workspaces; current Human/Agent/Capital paths and exact Risk Agent selector",
+    "VERIFIED": "available paths only; servicing dual-control execution remains blocked"
+  },
+  "runtime": {
+    "database": "ipo_one_web027_candidate",
+    "migrations": 82,
+    "origins": [
+      {
+        "origin": "http://127.0.0.1:8935",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8936",
+        "status": 200
+      },
+      {
+        "origin": "http://localhost:8937",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8938",
+        "status": 200
+      },
+      {
+        "origin": "http://localhost:8939",
+        "status": 200
+      },
+      {
+        "origin": "http://localhost:8940",
+        "status": 200
+      },
+      {
+        "origin": "http://localhost:8941",
+        "status": 200
+      }
+    ],
+    "originalFounder": [
+      {
+        "name": "ipo-one-web026h-review",
+        "image": "ipo-one-web026h:0211f75",
+        "running": true
+      },
+      {
+        "name": "ipo-one-web026h-worker",
+        "image": "ipo-one-web026h:0211f75",
+        "running": true
+      }
+    ]
+  },
+  "verified": [
+    "Three exact invited roles: real SIWE signatures, native WebAuthn registration/assertion, independent durable grants and read-only Auditor controls",
+    "Expected server denials without MFA and for unavailable role capabilities",
+    "Same-browser role cookie isolation, isolated logout, re-login requiring fresh MFA, process restart recovery",
+    "A single new disposable pending Agent was visibly selected and frozen; current Principal shows Suspended and blocks proof/authority controls",
+    "Fresh Principal/Agent creation, account proof, explicit Mandate activation, synthetic 100 USD execution and full repayment, Evidence, process recovery and credential revocation",
+    "Human and Capital Partner: fresh 23 USD Offer, explicit selection/acceptance/execution/full repayment, exact Facility, refresh and re-login",
+    "Keyboard Offer selection; 1440/390/320 layouts; current Pool and Metered unavailable-state disclosure",
+    "Three 1 USD, one-day Human synthetic schedules accepted and executed through visible controls; server persistence checked"
+  ],
+  "firstFreeze": {
+    "source": "9fc020963aa9f4570bf36113d95f62c91fcfe3a9",
+    "subject": {
+      "id": "subject_36e5b0ed-a977-4f0d-af75-11919d67401d",
+      "status": "suspended"
+    },
+    "finalSourceRecovery": "205fe9b7ef6726e00ce107777c4d73c1041df6b4"
+  },
+  "tests": {
+    "postgres": {
+      "source": "3b761d77939cbd0086e3ea5a39f716023988e602",
+      "passed": 99,
+      "failed": 0,
+      "backendUnchangedAfterTest": true
+    },
+    "web": {
+      "passed": 205,
+      "failed": 0
+    },
+    "targetedRoleApprovalStatic": {
+      "passed": 34,
+      "failed": 0
+    },
+    "schemaContracts": 147,
+    "protocolOperations": 122,
+    "typeSurfaces": 3,
+    "typeRuntimeExports": 76,
+    "bundleModules": 45,
+    "bundleIds": 1117,
+    "lint": "passed"
+  },
+  "preparedPlans": [
+    {
+      "id": "obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",
+      "status": "active",
+      "execution_status": "executed",
+      "amount_minor": "100",
+      "outstanding_minor": "100",
+      "first_payment_at": "2026-09-08T09:33:43.789Z",
+      "maturity_at": "2026-09-08T09:33:43.789Z",
+      "days_past_due": 0,
+      "servicing_classification": "current"
+    },
+    {
+      "id": "obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",
+      "status": "active",
+      "execution_status": "executed",
+      "amount_minor": "100",
+      "outstanding_minor": "100",
+      "first_payment_at": "2026-09-08T09:35:34.204Z",
+      "maturity_at": "2026-09-08T09:35:34.204Z",
+      "days_past_due": 0,
+      "servicing_classification": "current"
+    },
+    {
+      "id": "obligation_c3746224-101c-4de6-a512-54cba5c7fc51",
+      "status": "active",
+      "execution_status": "executed",
+      "amount_minor": "100",
+      "outstanding_minor": "100",
+      "first_payment_at": "2026-09-08T09:35:37.822Z",
+      "maturity_at": "2026-09-08T09:35:37.822Z",
+      "days_past_due": 0,
+      "servicing_classification": "current"
+    }
+  ],
+  "remaining": [
+    {
+      "capability": "servicing proposal / dual approval / exact execution",
+      "status": "BLOCKED",
+      "reason": "Exact M grant has no separate Operations approver; approved grant set must not be widened silently. Test plans have not yet reached normal maturity.",
+      "nextReview": "../../codex/tasks/WEB_027N_INDEPENDENT_OPERATIONS_REVIEW.md"
+    },
+    {
+      "capability": "write-off",
+      "status": "UNVERIFIED",
+      "reason": "Requires defaulted/restructured/repurchased state and both independent approvals; mere maturity does not satisfy it."
+    },
+    {
+      "capability": "configured chain / Provider / venue and physical wallet-device coverage",
+      "status": "UNVERIFIED",
+      "reason": "Not activated by M or inferred from synthetic tests."
+    },
+    {
+      "capability": "formal website SHA acceptance",
+      "status": "NOT DEPLOYED",
+      "reason": "M explicitly excludes formal deployment; no push, merge, promotion, chain transaction or real funds activation performed."
+    }
+  ],
+  "testEnvironment": {
+    "apiMocks": false,
+    "fixtureQuery": false,
+    "syntheticWallets": true,
+    "virtualAuthenticators": true,
+    "physicalDeviceAcceptance": false,
+    "observations": [
+      "Corrected role enum comparison before installing M; PostgreSQL regression then passed",
+      "Bounded test waits account for observed sub-second VM clock slew; product expiry and backward-time guards unchanged",
+      "Chromium virtual authenticator default capacity is three resident credentials; M and original Risk use separate test authenticators with persisted counters"
+    ],
+    "authenticatorReference": "https://chromium.googlesource.com/chromium/src/+/HEAD/device/fido/virtual_ctap2_device.h"
+  },
+  "artifacts": [
+    {
+      "path": "m/browser.json",
+      "sha256": "c3d17a4e71590aac48e900c6604a2f5638b0647e5b0c0a57a9fa998f51f74578"
+    },
+    {
+      "path": "m/first-freeze.json",
+      "sha256": "02f27cb3b7d4ab9784b3e08b925ffaf9d49b6dc3e6e4ae6bcba498135bb8aa57"
+    },
+    {
+      "path": "m/roles-and-state.json",
+      "sha256": "94b42c413ab088d1cc02a8511ed5ff712e854c05a4245500a1d632b36476a62b"
+    },
+    {
+      "path": "m/servicing-preparation.json",
+      "sha256": "79c2949b474e1567aa786933a95be9c4471342dcbf8b1df573bfba1c59618b13"
+    },
+    {
+      "path": "m/agent-regression.json",
+      "sha256": "c7402d4b61cf9b9289c6bda2427905ea48cb4aca528bbcf8c629a2b734bdc210"
+    },
+    {
+      "path": "m/human-capital-regression.json",
+      "sha256": "c17ced93f790e70d1ea9936bd4b165aa8828bb01bb196807e97b71ad9991e812"
+    },
+    {
+      "path": "m/recovery-regression.json",
+      "sha256": "14f51022c2924a929b14eb1fefabda962fe9035d13511f910913c1161d63d4c4"
+    },
+    {
+      "path": "m/runtime.json",
+      "sha256": "4d27018df11d62d3bffef879fd6714f60bd33c75f30a1052a04a346035687f95"
+    },
+    {
+      "path": "m/postgres.json",
+      "sha256": "006a43f080d80921f03004243b1a606808e5f71f1d4367e636b810f3d866b989"
+    }
+  ]
+}

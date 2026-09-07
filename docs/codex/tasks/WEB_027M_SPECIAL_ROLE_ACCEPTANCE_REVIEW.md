@@ -1,10 +1,10 @@
 # WEB-027M — Remaining local role and servicing acceptance prerequisites
 
-Status: APPROVED for the exact local scope by the Founder on 2026-09-07 ("确认，同意，搞！"). Implementation and acceptance in progress.
+Status: APPROVED for the exact local scope by the Founder on 2026-09-07 ("确认，同意，搞！"). Local role implementation and available-path acceptance verified at `205fe9b`; final servicing execution remains BLOCKED — NOT COMPLETE.
 
 Implementation finding: the existing policy requires two approvers (Risk and Operations), both distinct from the proposer/command actor. The exact approved Operations grant has no `approval.decide`, and the approved identity set contains only one Operations actor. No grant or separation rule will be silently broadened. A separate Operations reviewer remains a concrete authorization gap for final execution; the approved three roles and existing policy can still be implemented and tested.
 
-## Context and verified facts
+## Baseline context and verified facts before M activation
 
 The Founder delegated role acceptance on 2026-09-07. WEB-027L therefore performs the available Human, Principal/Agent, Capital Partner and Risk journeys itself. Founder clicks are not a general prerequisite for this delegated software acceptance.
 
@@ -35,3 +35,9 @@ Local identity and host provisioning, selected-role authentication constraints, 
 No formal deployment, public exposure, real funds, chain transactions, signer, external Provider, venue, risk pricing/threshold changes, automatic approval, production capability grants, broad role union or removal of dual control. Configured Pool/Provider/venue acceptance, physical wallet/device coverage and formal hosted SHA acceptance remain separate explicit rows.
 
 This review is required by the approved WEB-027 directive §2.2: “若正确修复涉及权限模型或迁移，应提交具体方案供单独审阅”. WEB-027K explicitly approved K1/K2 and did not grant the remaining special roles. The Founder's delegated testing instruction is already applied; this document asks only about the **new privileged runtime configuration**, not permission to perform existing QA or a request that the Founder test manually.
+
+## Current result — 2026-09-07
+
+The three approved roles are activated exactly as listed, with signed wallet login, native Passkeys, visible authorized reads, role-denial checks and independent cookie/session recovery. Auditor write controls and suspended Principal controls were corrected and retested. The single disposable Agent was visibly frozen; server persistence, refresh and restart recovery pass. Human/Agent/Capital regressions pass on installed source `205fe9b`. See `docs/design/web-027/m-verification-evidence.json` for the five states, exact hashes and raw test artifacts.
+
+Three $1 synthetic Human plans now await normal September 8 maturity. Proposal/approval/execution remains unverified: a distinct Operations approver is absent from the exact approved M grant. The concrete supplemental review is `WEB_027N_INDEPENDENT_OPERATIONS_REVIEW.md`; it is not an activation or a new request for already-authorized QA. Whole-site verdict remains BLOCKED — NOT COMPLETE.

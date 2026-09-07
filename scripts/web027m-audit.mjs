@@ -1,6 +1,9 @@
 import {spawnSync} from "node:child_process";
 import {readFile,writeFile} from "node:fs/promises";
 import assert from "node:assert/strict";
+const prep=JSON.parse(await readFile("output/playwright/web-027/m-acceptance/servicing-preparation.json"));
+const target=JSON.parse(await readFile("output/playwright/web-027/m-acceptance/freeze-target.json"));
+assert.equal(prep.results.length,3);assert.ok(prep.results.every(x=>x.receipt?.obligation?.obligationId));
 const program=String.raw`
 import {Pool} from "pg";import assert from "node:assert/strict";
 import {LOCAL_SPECIAL_ROLE_SPECS} from "./apps/private-pilot/src/local-special-role-access.js";
@@ -16,7 +19,10 @@ for(const [name,spec] of Object.entries(LOCAL_SPECIAL_ROLE_SPECS)){
 }
 const migrations=(await c.query("SELECT count(*)::int AS count FROM schema_migrations")).rows[0].count;assert.equal(migrations,82);
 const proposals=(await c.query("SELECT count(*)::int AS count FROM approval_proposals WHERE command_actor_id='actor_web027m_operations'")).rows[0].count;
-await c.query("ROLLBACK");console.log(JSON.stringify({database:url.pathname.slice(1),roles,migrations,localServicingProposals:proposals,readOnly:true}));
+const plans=(await c.query("SELECT id,status,execution_status,amount_minor,outstanding_minor,first_payment_at,maturity_at,days_past_due,servicing_classification FROM obligations WHERE id=ANY($1::text[]) ORDER BY maturity_at",[${JSON.stringify(prep.results.map(x=>x.receipt.obligation.obligationId))}])).rows;
+assert.equal(plans.length,3);assert.ok(plans.every(x=>x.execution_status==="executed"&&x.amount_minor==="100"&&x.outstanding_minor==="100"));
+const frozenSubject=(await c.query("SELECT id,status FROM subjects WHERE id=$1",[${JSON.stringify(target.subjectId)}])).rows[0];assert.equal(frozenSubject.status,"suspended");
+await c.query("ROLLBACK");console.log(JSON.stringify({database:url.pathname.slice(1),roles,migrations,localServicingProposals:proposals,plans,frozenSubject,readOnly:true}));
 }finally{c.release();await pool.end();}`;
 const result=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker","exec","-i","ipo-one-web027-candidate","/nodejs/bin/node","--input-type=module","-"],{input:program,encoding:"utf8",maxBuffer:2000000});
 if(result.status!==0){console.error(result.stderr.replace(/postgres(?:ql)?:\/\/[^\s]+/g,"[redacted]"));process.exit(1);}

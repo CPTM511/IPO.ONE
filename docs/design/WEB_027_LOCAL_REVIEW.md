@@ -1,22 +1,39 @@
 # WEB-027 local candidate and release record
 
-Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. WEB-027L delegated acceptance has verified the available Human, Principal/Agent, Capital Partner and Risk workflows on installed source `3ecbf4b`; special-role/configured-path and formal hosted gates remain open.
+Verdict: **BLOCKED — NOT COMPLETE** for whole-site delivery. WEB-027M is installed at `205fe9b7ef6726e00ce107777c4d73c1041df6b4`. Delegated browser acceptance verifies available Human, Principal/Agent, Capital Partner, Risk, Operations, Auditor and independent Risk Reviewer paths. Dual-controlled servicing execution, configured-path and formal hosted gates remain open.
 
 ## Experience
 
 - Human: http://127.0.0.1:8935/#request-credit
 - Principal / Agent: http://127.0.0.1:8936/#agent-console
 - Invited Capital Partner: http://127.0.0.1:8938/#capital-partners
-- Invited Risk: http://localhost:8937/#risk-operations — invited wallet → Passkey → authorized Risk reads. The old IP entry redirects visibly.
+- Invited Risk: http://localhost:8937/#risk-operations — invited wallet → Passkey → authorized reads and bounded protective Agent selection.
+- Operations: http://localhost:8939/#risk-operations
+- Auditor: http://localhost:8940/#risk-operations
+- Independent Risk Reviewer: http://localhost:8941/#risk-operations
+
+The three M workspaces require their exact invited synthetic wallets and native Passkeys; they do not allow public privileged enrollment.
 
 Original Founder 8895–8898 images, configuration and database contents were retained. The old synthetic worker was restarted with its original configuration after the shared VM disk-full incident described below. No WEB-027 push, PR, merge or formal deployment has occurred.
 
-Candidate and worker source: `71f4723dffa99d99fd6a651b925fc2ebb47a1209`.
-Image: `ipo-one-web027:71f4723dffa9`.
+Candidate and worker source: `205fe9b7ef6726e00ce107777c4d73c1041df6b4`.
+Image: `ipo-one-web027:205fe9b7ef67`.
 Containers: `ipo-one-web027-candidate`, `ipo-one-web027-candidate-worker`, restart `unless-stopped`.
-Database: `ipo_one_web027_candidate` in the isolated QA PostgreSQL service. Existing main migrations 0074/75 and approved J/K migrations 0076/77/78/79 and K2 0080/81 are installed. The worker processes synthetic outbox/outcomes only; no chain signer or funds activation.
+Database: `ipo_one_web027_candidate` in the isolated QA PostgreSQL service. Existing main migrations 0074/75 and approved J/K migrations 0076/77/78/79 K2 0080/81 and M 0082 are installed. The worker processes synthetic outbox/outcomes only; no chain signer or funds activation.
 
-The installed hashes of all 60 changed runtime files match the source, including API/schema files. All four health endpoints return 200. Build, runtime, worker and read-only audit records are under `output/playwright/web-027/`. Docker readiness alone is not semantic acceptance.
+The installed hashes of all 82 changed runtime files match the source, including API/schema files. All seven health endpoints return 200. Build, runtime, worker and read-only audit records are under `output/playwright/web-027/`. Docker readiness alone is not semantic acceptance.
+
+## WEB-027M current acceptance, 2026-09-07
+
+[Evidence manifest](web-027/m-verification-evidence.json) records installed SHA, individual reports and hashes. The actual database has exactly the approved three memberships/grants, one native Passkey for each and 82 migrations. Same-browser cookies remain isolated across all three roles and the original Risk host; logout does not clear another role. SIWE alone is rejected for protected operations; fresh MFA, re-login and API restart recovery pass. Auditor cannot propose, decide, transition cases or execute.
+
+One dedicated disposable Agent was visibly frozen from pending to suspended on `9fc0209`; the backend is unchanged at `205fe9b`, where refresh/restart recovery and disabled Principal proof/Mandate controls were clicked and inspected. The original Risk selector no longer retains a suspended Agent as eligible. Browser QA uses real synthetic wallet cryptography and native WebAuthn with virtual authenticators; physical device acceptance remains unverified.
+
+On installed `205fe9b`, a fresh Agent completes its $100 synthetic lifecycle, full repayment, Evidence and credential revocation. Human and Capital Partner complete a fresh $23 Offer through explicit selection, acceptance, execution, full repayment and exact Facility reads. Keyboard navigation, responsive choices, refresh/re-login and restart recovery pass. Three separate $1 Human plans were created and executed for remaining servicing acceptance; current database status is active/executed and normal maturity is September 8, 17:33–17:36 Asia/Shanghai. They are not yet eligible servicing cases, and maturity alone does not qualify a write-off.
+
+Validation: 205 final web tests, 99 isolated PostgreSQL tests (backend unchanged after tested `3b761d7`), targeted role/auth/approval checks, schema/protocol/type/bundle/lint gates and actual browser runs. Failures uncovered during acceptance led to fixes for SQL role enum comparison, frontend role selection, read-only role controls and suspended Agent presentation. Initial failed attempts are retained separately; no expiry/state/authorization guard was relaxed.
+
+The exact M configuration has no independent Operations approver. Canonical policy requires both Risk and Operations approvers, distinct from the proposer/executor. No servicing execution is claimed. [WEB-027N review](../codex/tasks/WEB_027N_INDEPENDENT_OPERATIONS_REVIEW.md) contains the concrete additional grant and remaining visible servicing sequence. N is not activated. No formal push, merge, deployment or real-value action occurred.
 
 ## Implemented and verified
 
