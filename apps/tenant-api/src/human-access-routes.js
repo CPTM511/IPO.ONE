@@ -25,6 +25,7 @@ export const HUMAN_ACCESS_ROUTES = Object.freeze({
 
 const CONFIG_KEYS = new Set([
   "browserOrigin",
+  "passkeyOperation",
   "clock",
   "humanSessionBff",
   "oidcProviders",
@@ -56,7 +57,7 @@ function assertPlainObject(name, value, allowedKeys) {
   }
 }
 
-function exactBrowserOrigin(value) {
+function exactBrowserOrigin(value, allowRiskLocalhost = false) {
   let parsed;
   try {
     parsed = new URL(value);
@@ -65,7 +66,7 @@ function exactBrowserOrigin(value) {
   }
   const loopbackDevelopment =
     parsed.protocol === "http:" &&
-    parsed.hostname === "127.0.0.1" &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !loopbackDevelopment) ||
@@ -186,7 +187,7 @@ function exactQuery(url, requiredKeys) {
   ]));
 }
 
-async function readStrictBody(request, requiredKeys) {
+async function readStrictBody(request, requiredKeys, passkey = false) {
   const contentType = oneHeader(request.headers, "content-type", { required: true, maximum: 256 });
   if (contentType.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
     throw new ApiBoundaryError("unsupported_media_type", "application/json is required");
@@ -207,8 +208,8 @@ async function readStrictBody(request, requiredKeys) {
   try {
     value = parseStrictJson(Buffer.concat(chunks).toString("utf8"), {
       maximumBytes: MAX_AUTH_BODY_BYTES,
-      maximumDepth: 3,
-      maximumKeys: 8
+      maximumDepth: passkey ? 6 : 3,
+      maximumKeys: passkey ? 40 : 8
     });
   } catch {
     throw new ApiBoundaryError("invalid_json_body", "authentication request body is invalid");
@@ -342,7 +343,10 @@ export function createHumanAccessRouteHandler(input) {
     profile = "closed_non_funds_pilot",
     postLoginPath = "/#request-credit"
   } = input;
-  const browserOrigin = exactBrowserOrigin(input.browserOrigin);
+  const passkeyEnabled = typeof input.passkeyOperation === "function" && profile === "local_no_funds" &&
+    walletWorkspaceRoles.length === 1 && walletWorkspaceRoles[0] === "risk_operator";
+  if (input.passkeyOperation !== undefined && !passkeyEnabled) throw new DomainError("invalid_human_access_config", "Passkeys require the invited local Risk composition");
+  const browserOrigin = exactBrowserOrigin(input.browserOrigin, passkeyEnabled);
   const providers = normalizeProviders(oidcProviders);
   if (
     !humanSessionBff?.authenticateSession ||
@@ -355,7 +359,7 @@ export function createHumanAccessRouteHandler(input) {
   }
   const checkedWalletRoles = allowedWalletRoles(walletWorkspaceRoles);
   if (checkedWalletRoles.some(role => !ORDINARY_WALLET_ROLES.includes(role)) &&
-      (profile !== "local_no_funds" || !browserOrigin.startsWith("http://127.0.0.1:"))) {
+      (profile !== "local_no_funds" || !(browserOrigin.startsWith("http://127.0.0.1:") || (passkeyEnabled && ["http://localhost:8937", "http://localhost:8947"].includes(browserOrigin))))) {
     throw new DomainError("invalid_human_access_config", "invited wallet roles require an explicit loopback local profile");
   }
   const checkedProfile = assertSafeIdentifier("profile", profile);
@@ -395,6 +399,16 @@ export function createHumanAccessRouteHandler(input) {
   return async function serveHumanAccess({ request, response, url, requestId }) {
     if (!url.pathname.startsWith("/auth/v1/")) return false;
     const now = clock();
+    if (passkeyEnabled && url.pathname.startsWith("/auth/v1/passkey/")) {
+      const action = url.pathname.slice("/auth/v1/passkey/".length);
+      const routes = { status: ["GET", []], begin: ["POST", ["purpose"]], finish: ["POST", ["challengeId", "response"]], cancel: ["POST", ["challengeId"]], revoke: ["POST", ["passkeyId", "acknowledgement"]] };
+      if (!Object.hasOwn(routes, action) || request.method !== routes[action][0] || url.search) throw new ApiBoundaryError("authentication_input_rejected", "Passkey route is invalid");
+      if (request.method === "POST") requireOrigin(request, browserOrigin);
+      const body = request.method === "POST" ? await readStrictBody(request, routes[action][1], true) : undefined;
+      const result = await input.passkeyOperation({ request, operation: action === "cancel" ? "finish" : action, body, now });
+      sendJson(response, 200, result, requestId);
+      return true;
+    }
 
     if (url.pathname === HUMAN_ACCESS_ROUTES.options) {
       if (!new Set(["GET", "HEAD"]).has(request.method)) {
@@ -416,6 +430,7 @@ export function createHumanAccessRouteHandler(input) {
         sessionWorkspaceRole: activeSession.workspaceRole,
         oidcProviders: [...providers.keys()],
         walletAuthentication: walletBff !== undefined,
+        ...(passkeyEnabled ? { riskPasskey: true } : {}),
         walletWorkspaceRoles: walletBff === undefined ? [] : checkedWalletRoles,
         supportedChains: SUPPORTED_CHAINS,
         boundary: "Authentication proves presence; internal policy and Mandates separately decide authority."

@@ -435,3 +435,11 @@ body.product-experience .capital-partner-application-choice:is(:hover,[aria-chec
 .sandbox-activation-dialog h2 { margin: 8px 0 16px; font-size: 24px; }
 .sandbox-activation-dialog p { line-height: 1.6; }
 .sandbox-activation-dialog .button-row { margin-top: 24px; }
+
+/* WEB-027K2: a compact authentication control within the Risk workspace. */
+.risk-passkey-panel { border-top: 2px solid var(--brand); }
+.risk-passkey-keys { padding: 0; margin: 16px 0 0; list-style: none; }
+.risk-passkey-keys li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+.risk-passkey-dialog { color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; width: min(480px, calc(100vw - 32px)); box-sizing: border-box; }
+.risk-passkey-dialog::backdrop { background: rgb(0 0 0 / 60%); }
+.risk-passkey-dialog p { line-height: 1.6; }

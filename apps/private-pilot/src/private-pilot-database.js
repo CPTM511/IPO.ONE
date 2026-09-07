@@ -1,4 +1,4 @@
-import { rotateLocalAccessCredentials } from "./local-access-repair.js";
+import { assertLocalAccessDatabase, rotateLocalAccessCredentials } from "./local-access-repair.js";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -191,7 +191,7 @@ async function provisionApplicationRole(ownerPool, password) {
   );
 }
 
-async function provisionAuthenticationRole(ownerPool, password) {
+async function provisionAuthenticationRole(ownerPool, password, localPasskeys = false) {
   const quotedPassword = (
     await ownerPool.query("SELECT quote_literal($1) AS value", [password])
   ).rows[0].value;
@@ -270,6 +270,10 @@ async function provisionAuthenticationRole(ownerPool, password) {
   await ownerPool.query(
     `GRANT INSERT, UPDATE ON authentication_sessions TO ${quotedRole}`
   );
+  if (localPasskeys) {
+    await ownerPool.query(`GRANT SELECT, INSERT, UPDATE ON authentication_passkeys, authentication_passkey_challenges TO ${quotedRole}`);
+    await ownerPool.query(`GRANT SELECT, INSERT ON authentication_passkey_evidence, authentication_passkey_audit TO ${quotedRole}`);
+  }
   await ownerPool.query(
     `GRANT INSERT ON authentication_session_invalidations TO ${quotedRole}`
   );
@@ -764,6 +768,7 @@ export async function provisionPrivatePilotDatabase({
 }
 
 export async function provisionPrivatePilotAuthentication({
+  localPasskeys = false,
   ownerConnectionString,
   identities,
   profile,
@@ -772,6 +777,7 @@ export async function provisionPrivatePilotAuthentication({
   invitation
 }) {
   const checkedProfile = assertPrivatePilotProfile(profile);
+  if (localPasskeys) assertLocalAccessDatabase(ownerConnectionString, basePort);
   if (
     !Number.isSafeInteger(basePort) ||
     basePort < 1_024 ||
@@ -874,7 +880,8 @@ export async function provisionPrivatePilotAuthentication({
     });
     await provisionAuthenticationRole(
       ownerPool,
-      serverMaterial.authenticationRolePassword
+      serverMaterial.authenticationRolePassword,
+      localPasskeys
     );
   } finally {
     await ownerPool.end();
@@ -889,7 +896,7 @@ export async function provisionPrivatePilotAuthentication({
     applicationName: "ipo-one-private-pilot-authentication"
   });
   try {
-    await assertPostgresAuthenticationRole(pool);
+    await assertPostgresAuthenticationRole(pool, { localPasskeys });
   } catch (error) {
     await pool.end();
     throw error;

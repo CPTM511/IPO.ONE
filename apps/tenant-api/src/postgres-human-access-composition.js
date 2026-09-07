@@ -1,3 +1,4 @@
+import { LocalRiskPasskeys } from "../../../modules/authentication/src/local-risk-passkeys.js";
 import { INVITED_WALLET_ROLES, ORDINARY_WALLET_ROLES } from "../../../modules/authentication/src/wallet-workspace-roles.js";
 import {
   ActorType,
@@ -37,6 +38,7 @@ const ROOT_KEYS = new Set([
   "encryptionKeyRef",
   "idleTimeoutMs",
   "localInvitedWalletRole",
+  "localPasskeys",
   "legacyReferenceHashKey",
   "legacyReferenceHashKeyRef",
   "maximumSessions",
@@ -106,7 +108,7 @@ function immutableSecretRef(name, value) {
   return value;
 }
 
-function exactBrowserOrigin(value, { allowLoopback = false } = {}) {
+function exactBrowserOrigin(value, { allowLoopback = false, allowRiskLocalhost = false } = {}) {
   let parsed;
   try {
     parsed = new URL(value);
@@ -116,7 +118,7 @@ function exactBrowserOrigin(value, { allowLoopback = false } = {}) {
   const approvedLoopback =
     allowLoopback &&
     parsed.protocol === "http:" &&
-    parsed.hostname === "127.0.0.1" &&
+    (parsed.hostname === "127.0.0.1" || (allowRiskLocalhost && parsed.hostname === "localhost" && ["8937", "8947"].includes(parsed.port))) &&
     parsed.port !== "";
   if (
     (parsed.protocol !== "https:" && !approvedLoopback) ||
@@ -287,7 +289,8 @@ export async function createPostgresHumanAccessComposition(input) {
   const systemActorId = assertSafeIdentifier("systemActorId", input.systemActorId);
   const policyVersion = assertSafeIdentifier("policyVersion", input.policyVersion);
   const browserOrigin = exactBrowserOrigin(input.browserOrigin, {
-    allowLoopback: localProfile
+    allowLoopback: localProfile,
+    allowRiskLocalhost: input.localPasskeys === true && input.localInvitedWalletRole === "risk_operator"
   });
   const sessionOrigin = localProfile
     ? `https://${new URL(browserOrigin).host}`
@@ -381,7 +384,12 @@ export async function createPostgresHumanAccessComposition(input) {
     );
   }
 
-  const roleBoundary = await assertPostgresAuthenticationRole(input.pool);
+  if (input.localPasskeys !== undefined && input.localPasskeys !== true) throw authenticationError("authentication_deployment_gate_closed", "Passkey configuration is invalid");
+  if (input.localPasskeys) {
+    const database = (await input.pool.query("SELECT current_database() AS name")).rows[0]?.name;
+    if (!localProfile || !["ipo_one_web027_candidate", "ipo_one_web027_proof"].includes(database)) throw authenticationError("authentication_deployment_gate_closed", "Passkeys require the reviewed isolated database");
+  }
+  const roleBoundary = await assertPostgresAuthenticationRole(input.pool, { localPasskeys: input.localPasskeys === true });
   const tenantContext = createTenantSecurityContext({
     tenantId,
     actorId: systemActorId,
@@ -412,7 +420,10 @@ export async function createPostgresHumanAccessComposition(input) {
       ? { publicBetaWalletRoleProfiles: input.publicBetaWalletRoleProfiles }
       : {})
   });
+  const passkeys = input.localPasskeys && input.localInvitedWalletRole === "risk_operator"
+    ? new LocalRiskPasskeys({ origin: browserOrigin }) : undefined;
   const sessionStore = new PostgresHumanSessionStore({
+    ...(passkeys ? { resolveStepUp: (client, session, now) => passkeys.resolveStepUp(client, session, now) } : {}),
     eventRepository,
     tenantId,
     referenceHasher,
@@ -495,6 +506,16 @@ export async function createPostgresHumanAccessComposition(input) {
   }
 
   const serveAuthentication = createHumanAccessRouteHandler({
+    ...(passkeys ? { passkeyOperation: async ({ request, operation, body, now }) => {
+      const value = await sessionStore.withAuthenticatedSession({
+        sessionHandle: readHumanAccessCookie(request.headers.cookie, SESSION_COOKIE_NAME),
+        requestMethod: request.method,
+        requestOrigin: request.headers.origin === browserOrigin ? sessionOrigin : request.headers.origin,
+        csrfToken: request.headers["x-csrf-token"], now
+      }, (client, session, at) => passkeys[operation](client, session, at, body));
+      if (value?.rejected) throw authenticationError("passkey_verification_rejected", "Passkey verification was not accepted. Start a new verification.");
+      return value;
+    } } : {}),
     browserOrigin,
     humanSessionBff,
     oidcProviders,

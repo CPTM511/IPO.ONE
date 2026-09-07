@@ -1,8 +1,9 @@
 // WEB-027 isolated local candidate. Never stops or changes the review runtime.
 import { spawnSync } from "node:child_process";
-import { mkdir, readFile, writeFile, chmod, copyFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { mkdir, readFile, writeFile, chmod, copyFile, cp, realpath, symlink } from "node:fs/promises";
+import { dirname, resolve, relative } from "node:path";
 import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { readMigrationSet, migrationChecksumMatches } from "./migrate.mjs";
 
@@ -41,7 +42,7 @@ const image = "ipo-one-web027:" + sha.slice(0, 12);
 const action = process.argv[2];
 
 if (action === "build") {
-  assert.equal(run("git", ["diff", "--name-only", "HEAD", "--", "apps", "modules", "packages", "db", "deploy", "schemas", "api", "security", "product"]), "", "Commit candidate source before building");
+  assert.equal(run("git", ["diff", "--name-only", "HEAD", "--", "apps", "modules", "packages", "db", "deploy", "schemas", "api", "security", "product", "package.json", "pnpm-lock.yaml"]), "", "Commit candidate source before building");
   const context = resolve(state, "build-" + sha);
   await mkdir(context, { recursive: true });
   const changed = run("git", ["diff", "--name-only", "0211f75", sha, "--", "apps", "modules", "packages", "db", "deploy", "schemas", "api", "security", "product"]).split("\n").filter(Boolean);
@@ -50,13 +51,50 @@ if (action === "build") {
     await mkdir(dirname(resolve(context, path)), { recursive: true });
     await copyFile(resolve(root, path), resolve(context, path));
   }
+  // Copy only the approved pure-JS verifier closure, preserving package isolation and resolution.
+  // Existing base dependencies remain untouched. No registry access or install scripts during build.
+  const dependencyRoot = resolve(context, "passkey-dependencies");
+  const seen = new Map();
+  async function copyDependency(packagePath) {
+    const source = await realpath(packagePath);
+    if (seen.has(source)) return seen.get(source);
+    const pkg = JSON.parse(await readFile(resolve(source, "package.json"), "utf8"));
+    assert.ok(!pkg.scripts?.install && !pkg.scripts?.preinstall && !pkg.scripts?.postinstall, "Reviewed verifier closure must not execute install scripts");
+    const id = pkg.name.replaceAll("/", "+") + "@" + pkg.version;
+    const destination = resolve(dependencyRoot, id); seen.set(source, id);
+    await cp(source, destination, { recursive: true, filter: path => !path.slice(source.length).split("/").includes("node_modules") });
+    const require = createRequire(resolve(source, "package.json"));
+    for (const name of Object.keys(pkg.dependencies ?? {})) {
+      let dependency;
+      for (const lookup of require.resolve.paths(name)) {
+        try { dependency = await realpath(resolve(lookup, name)); break; } catch { /* next standard Node resolution path */ }
+      }
+      assert.ok(dependency, `Missing locked dependency ${name}`);
+      const target = resolve(dependencyRoot, await copyDependency(dependency));
+      const link = resolve(destination, "node_modules", name);
+      await mkdir(dirname(link), { recursive: true });
+      await symlink(relative(dirname(link), target), link);
+    }
+    return id;
+  }
+  const installed = JSON.parse(await readFile("node_modules/@simplewebauthn/server/package.json", "utf8"));
+  assert.equal(installed.version, "14.0.1");
+  const verifier = await copyDependency(resolve(root, "node_modules/@simplewebauthn/server"));
+  const top = resolve(context, "passkey-entry/@simplewebauthn"); await mkdir(top, { recursive: true });
+  await symlink("../.web027-passkey/" + verifier, resolve(top, "server"));
+  // At /app/node_modules/@simplewebauthn/server the sibling is one level above @simplewebauthn.
+  await copyFile(resolve(root, "package.json"), resolve(context, "package.json"));
+  await copyFile(resolve(root, "pnpm-lock.yaml"), resolve(context, "pnpm-lock.yaml"));
   await writeFile(resolve(context, "Dockerfile"), [
     "FROM ipo-one-web026h:0211f75",
     `LABEL org.opencontainers.image.revision="${sha}"`,
+    "COPY --chown=65532:65532 passkey-dependencies /app/node_modules/.web027-passkey",
+    "COPY --chown=65532:65532 passkey-entry /app/node_modules",
+    "COPY --chown=65532:65532 package.json pnpm-lock.yaml /app/",
     ...runtimeFiles.map(path => `COPY --chown=65532:65532 ${path} /app/${path}`)
   ].join("\n") + "\n");
   docker(["build", "--pull=false", "-t", image, context]);
-  await report("candidate-build", { source: sha, image, imageId: inspect(image).Id, runtimeFiles, dependencyChanges: false });
+  await report("candidate-build", { source: sha, image, imageId: inspect(image).Id, runtimeFiles, dependencyChanges: { package: "@simplewebauthn/server@14.0.1", lockedClosure: [...seen.values()], lockSha256: createHash("sha256").update(await readFile("pnpm-lock.yaml")).digest("hex") } });
 } else if (action === "create") {
   const source = inspect(sourceRuntime);
   const env = envMap(source);
@@ -101,7 +139,7 @@ if (action === "build") {
   const appliedRows = sql("SELECT name,checksum FROM schema_migrations ORDER BY name").split("\n").map(row => row.split("|"));
   appliedRows.forEach(([name, recordedChecksum], i) => assert.ok(name === migrationSet[i].name && migrationChecksumMatches({name,recordedChecksum,releaseChecksum:migrationSet[i].checksum})));
   const pendingNames = migrationSet.slice(appliedRows.length).map(m => m.name);
-  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime","0079_local_human_sandbox_activation"].includes(name)), "Only reviewed WEB-027J/K migrations may activate");
+  assert.ok(pendingNames.every(name => ["0076_invited_wallet_role_enrollment","0077_local_ordinary_wallet_access","0078_local_principal_agent_runtime","0079_local_human_sandbox_activation","0080_local_risk_passkeys"].includes(name)), "Only reviewed WEB-027J/K migrations may activate");
   env.IPO_ONE_LOCAL_ACCESS_REPAIR = "web027j_v1";
   env.IPO_ONE_M1_B_RELEASE_SHA = sha;
   const envFile = await secret("candidate.env", Object.entries(env).map(([k,v])=>k+"="+v).join("\n")+"\n");

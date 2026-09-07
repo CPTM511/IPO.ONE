@@ -1,6 +1,6 @@
 # ADR WEB-027K2 — Invited local Risk Passkey step-up
 
-Status: K2 implementation authorized by Founder; fixed new verification dependency review pending. No MFA capability has been activated. 2026-09-07.
+Status: K2 implementation authorized by Founder; fixed verification dependency approved on 2026-09-07 (“已确认，批准”). Runtime verification pending. 2026-09-07.
 
 ## Verified prerequisites and origin
 

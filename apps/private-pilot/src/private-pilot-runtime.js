@@ -179,7 +179,8 @@ async function createLocalHumanAccess({
   port,
   profile
 }) {
-  const browserOrigin = `http://127.0.0.1:${port}`;
+  const riskPasskey = localAccessEnabled() && identity.roleBundle === "risk_operator" && [8937, 8947].includes(port);
+  const browserOrigin = `http://${riskPasskey ? "localhost" : "127.0.0.1"}:${port}`;
   const secureOrigin = `https://127.0.0.1:${port}`;
   const walletSignatureVerifier = new EvmWalletSignatureVerifier();
   const ordinaryWalletEnrollment = ordinaryWalletEnrollmentAllowed && process.env.IPO_ONE_LOCAL_WALLET_SELF_SERVICE === "ordinary_verified_wallets" &&
@@ -194,6 +195,7 @@ async function createLocalHumanAccess({
 
   return createPostgresHumanAccessComposition({
     browserOrigin,
+    ...(localAccessEnabled() ? { localPasskeys: true } : {}),
     encryptionKey: authenticationMaterial.encryptionKey,
     encryptionKeyRef: "local-secret://authentication/encryption-key",
     oidcProviders: [],
@@ -221,8 +223,8 @@ async function createLocalHumanAccess({
     wallet: {
       issuer: secureOrigin,
       clientId: identity.clientId,
-      domain: `127.0.0.1:${port}`,
-      uri: secureOrigin,
+      domain: `${riskPasskey ? "localhost" : "127.0.0.1"}:${port}`,
+      uri: riskPasskey ? `https://localhost:${port}` : secureOrigin,
       signatureVerifier: {
         verify: (input) => walletSignatureVerifier.verifyMessage(input)
       }
@@ -279,6 +281,7 @@ export async function createPrivatePilotRuntime({
     identities: authentication.identities,
     profile: authentication.profile,
     basePort,
+    localPasskeys: localAccessEnabled(),
     serverMaterial,
     invitation
   });
@@ -473,6 +476,7 @@ export async function createPrivatePilotRuntime({
           })
         : undefined;
       const host = createTenantPilotHost({
+        localRiskHostname: localAccessEnabled() && [8937, 8947].includes(profile.port),
         gateway,
         humanBff: humanAccess.humanSessionBff,
         machineAuthenticator: {

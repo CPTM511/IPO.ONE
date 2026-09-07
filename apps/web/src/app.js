@@ -1201,6 +1201,7 @@ async function probeAccessOptions() {
   try {
     const options = await authJson("/auth/v1/options");
     const authorityAvailable = walletAuthorityLifecycle.getSnapshot().status === "available";
+    riskPasskeyState.enabled = options?.riskPasskey === true;
     accessState.authenticationProfile =
       typeof options?.profile === "string" ? options.profile : null;
     accessState.localSessionSignedOut = false;
@@ -1236,6 +1237,7 @@ async function probeAccessOptions() {
       authorityAvailable &&
       (options?.sessionActive === true || tenantPilot.connected);
     accessState.pendingWorkspaceBootstrap = false;
+    await refreshRiskPasskeyStatus();
     if (authorityAvailable) {
       accessState.helper = accessState.sessionActive
         ? "Secure session active. You can connect either approved test network."
@@ -13062,6 +13064,91 @@ async function recoverRiskWorkspace() {
     }
   }
 }
+
+const riskPasskeyState = { enabled: false, busy: false, status: null, revokeId: null };
+function renderRiskPasskeys(message) {
+  const panel = el("riskPasskeyPanel");
+  panel.hidden = !riskPasskeyState.enabled;
+  if (panel.hidden) return;
+  const status = riskPasskeyState.status;
+  const verified = status?.verified === true && Date.parse(status.expiresAt) > Date.now();
+  el("riskPasskeyBadge").textContent = verified ? "Recently verified" : "Verification required";
+  el("riskPasskeyBadge").className = `state-pill ${verified ? "success" : "neutral"}`;
+  el("riskPasskeyMessage").textContent = message ?? (!accessState.sessionActive ? "Sign in with the invited Risk wallet first." : status?.recoveryRequired
+    ? "No active Passkey remains. Named operator recovery must be reviewed; wallet sign-in cannot replace a revoked key."
+    : verified ? "Your presence is verified. Existing authorized Risk operations are available."
+      : "Use your device or security key to verify your presence. Protected Risk operations require verification within the last 15 minutes.");
+  el("riskPasskeyTime").textContent = verified ? `Verified ${new Date(status.verifiedAt).toLocaleTimeString()} · Expires ${new Date(status.expiresAt).toLocaleTimeString()}` : "Local Risk workspace · No funds movement";
+  el("registerRiskPasskeyBtn").hidden = !status?.canRegister;
+  el("registerRiskPasskeyBtn").disabled = riskPasskeyState.busy || !accessState.sessionActive;
+  el("verifyRiskPasskeyBtn").hidden = !status?.keys?.length;
+  el("verifyRiskPasskeyBtn").disabled = riskPasskeyState.busy || !accessState.sessionActive;
+  const list = el("riskPasskeyKeys"); list.replaceChildren();
+  for (const [index, key] of (status?.keys ?? []).entries()) {
+    const item = document.createElement("li"), label = document.createElement("span"), button = document.createElement("button");
+    label.textContent = `Passkey ${index + 1} · Added ${new Date(key.createdAt).toLocaleDateString()}`;
+    button.type = "button"; button.className = "secondary"; button.textContent = "Revoke";
+    button.setAttribute("aria-label", `Revoke Passkey ${index + 1}`);
+    button.disabled = riskPasskeyState.busy || !verified;
+    button.addEventListener("click", () => { riskPasskeyState.revokeId = key.id; el("revokeRiskPasskeyDialog").showModal(); });
+    item.append(label, button); list.append(item);
+  }
+}
+async function refreshRiskPasskeyStatus() {
+  if (!riskPasskeyState.enabled || !accessState.sessionActive) {
+    riskPasskeyState.status = null; renderRiskPasskeys(); return;
+  }
+  try { riskPasskeyState.status = await authJson("/auth/v1/passkey/status"); renderRiskPasskeys(); }
+  catch { riskPasskeyState.status = null; renderRiskPasskeys("Verification status is unavailable. Sign in again or retry; protected operations remain locked."); }
+}
+async function passkeyPost(action, body) {
+  const csrfToken = tenantCsrfToken();
+  if (!csrfToken) throw new Error("Refresh this page to restore your authenticated session.");
+  return authJson(`/auth/v1/passkey/${action}`, { method: "POST", body, headers: { "x-csrf-token": csrfToken } });
+}
+function passkeyBinary(value) { return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), char => char.charCodeAt(0)); }
+function passkeyBase64(value) { return btoa(String.fromCharCode(...new Uint8Array(value))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+async function runRiskPasskey(purpose) {
+  if (riskPasskeyState.busy) return;
+  riskPasskeyState.busy = true; renderRiskPasskeys("Complete the Passkey prompt on your device. You can cancel safely.");
+  let challengeId;
+  try {
+    if (!globalThis.PublicKeyCredential || !navigator.credentials) throw new Error("This browser does not support Passkeys. Open this local workspace in a supported browser.");
+    const challenge = await passkeyPost("begin", { purpose }); challengeId = challenge.challengeId;
+    const options = challenge.options; options.challenge = passkeyBinary(options.challenge);
+    for (const property of ["allowCredentials", "excludeCredentials"]) if (options[property]) options[property] = options[property].map(c => ({ ...c, id: passkeyBinary(c.id) }));
+    if (options.user) options.user.id = passkeyBinary(options.user.id);
+    const credential = await navigator.credentials[purpose === "register" ? "create" : "get"]({ publicKey: options });
+    if (!credential) throw new Error("Passkey verification cancelled.");
+    const response = { id: credential.id, rawId: passkeyBase64(credential.rawId), type: credential.type,
+      authenticatorAttachment: credential.authenticatorAttachment,
+      clientExtensionResults: credential.getClientExtensionResults(),
+      response: { clientDataJSON: passkeyBase64(credential.response.clientDataJSON), ...(purpose === "register"
+        ? { attestationObject: passkeyBase64(credential.response.attestationObject), transports: credential.response.getTransports?.() ?? [] }
+        : { authenticatorData: passkeyBase64(credential.response.authenticatorData), signature: passkeyBase64(credential.response.signature), userHandle: credential.response.userHandle ? passkeyBase64(credential.response.userHandle) : null }) } };
+    riskPasskeyState.status = await passkeyPost("finish", { challengeId, response }); challengeId = null;
+    renderRiskPasskeys(); await refreshRiskWorkspace();
+  } catch (error) {
+    if (challengeId) await passkeyPost("cancel", { challengeId }).catch(() => {});
+    await refreshRiskPasskeyStatus();
+    renderRiskPasskeys(error.name === "NotAllowedError" || error.name === "AbortError"
+      ? "Passkey verification was cancelled or timed out. No new verification was granted. Try again when ready."
+      : error.message || "Verification failed. Start a new Passkey verification.");
+  } finally { riskPasskeyState.busy = false; const message = el("riskPasskeyMessage").textContent; renderRiskPasskeys(message); }
+}
+el("registerRiskPasskeyBtn").addEventListener("click", () => runRiskPasskey("register"));
+el("verifyRiskPasskeyBtn").addEventListener("click", () => runRiskPasskey("verify"));
+el("cancelRiskPasskeyRevokeBtn").addEventListener("click", () => el("revokeRiskPasskeyDialog").close());
+el("confirmRiskPasskeyRevokeBtn").addEventListener("click", async () => {
+  if (riskPasskeyState.busy || !riskPasskeyState.revokeId) return;
+  riskPasskeyState.busy = true; el("revokeRiskPasskeyDialog").close(); renderRiskPasskeys("Revoking Passkey…");
+  try {
+    riskPasskeyState.status = await passkeyPost("revoke", { passkeyId: riskPasskeyState.revokeId, acknowledgement: "revoke_this_passkey" });
+    await refreshRiskWorkspace(); renderRiskPasskeys();
+  } catch (error) { renderRiskPasskeys(error.message); }
+  finally { riskPasskeyState.busy = false; riskPasskeyState.revokeId = null; const message = el("riskPasskeyMessage").textContent; renderRiskPasskeys(message); }
+});
+setInterval(() => { if (riskPasskeyState.enabled && !riskPasskeyState.busy && document.visibilityState === "visible") refreshRiskPasskeyStatus(); }, 30000);
 
 async function refreshRiskWorkspace() {
   if (

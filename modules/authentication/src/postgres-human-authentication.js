@@ -103,7 +103,7 @@ function assertRepository(repository, expectedTenantId) {
   return repository;
 }
 
-export async function assertPostgresAuthenticationRole(queryable) {
+export async function assertPostgresAuthenticationRole(queryable, { localPasskeys = false } = {}) {
   if (!queryable || typeof queryable.query !== "function") {
     throw authenticationError(
       "invalid_authentication_configuration",
@@ -186,7 +186,13 @@ export async function assertPostgresAuthenticationRole(queryable) {
     authentication_sessions: [true, true, true, false, false, false, false],
     authentication_session_invalidations: [true, true, false, false, false, false, false],
     authentication_replay_entries: [true, true, false, true, false, false, false],
-    authentication_events: [true, true, false, false, false, false, false]
+    authentication_events: [true, true, false, false, false, false, false],
+    ...(localPasskeys ? {
+      authentication_passkeys: [true, true, true, false, false, false, false],
+      authentication_passkey_challenges: [true, true, true, false, false, false, false],
+      authentication_passkey_evidence: [true, true, false, false, false, false, false],
+      authentication_passkey_audit: [true, true, false, false, false, false, false]
+    } : {})
   });
   for (const [table, privileges] of Object.entries(expected)) {
     const result = await queryable.query(
@@ -1810,7 +1816,8 @@ export class PostgresHumanSessionStore {
     origin,
     idleTimeoutMs = 30 * 60_000,
     absoluteTimeoutMs = 8 * 60 * 60_000,
-    maximumSessions = 10_000
+    maximumSessions = 10_000,
+    resolveStepUp
   }) {
     this.tenantId = tenantId(configuredTenantId);
     this.repository = assertRepository(eventRepository, this.tenantId);
@@ -1828,6 +1835,10 @@ export class PostgresHumanSessionStore {
       throw authenticationError("invalid_authentication_configuration", "session capacity is invalid");
     }
     this.maximumSessions = maximumSessions;
+    if (resolveStepUp !== undefined && typeof resolveStepUp !== "function") {
+      throw authenticationError("invalid_authentication_configuration", "step-up resolver is invalid");
+    }
+    this.resolveStepUp = resolveStepUp;
   }
 
   async create(input) {
@@ -1961,7 +1972,17 @@ export class PostgresHumanSessionStore {
     return this.#issued(sessionFromRow(row), handle, csrfToken);
   }
 
-  async authenticate({ sessionHandle, requestMethod, requestOrigin, csrfToken, now = new Date() }) {
+  async authenticate(input) {
+    return this.#authenticate(input);
+  }
+
+  // Internal server composition only: ceremony and session admission share one lock/transaction.
+  async withAuthenticatedSession(input, operation) {
+    if (typeof operation !== "function") throw authenticationError("invalid_authentication_configuration", "session operation is required");
+    return this.#authenticate(input, operation);
+  }
+
+  async #authenticate({ sessionHandle, requestMethod, requestOrigin, csrfToken, now = new Date() }, operation) {
     const method = assertBoundedString("requestMethod", requestMethod, {
       maximum: 16,
       pattern: /^[A-Za-z]+$/
@@ -2124,12 +2145,15 @@ export class PostgresHumanSessionStore {
         RETURNING *`,
         [this.tenantId, sessionRefHash, effectiveNow, nextIdleExpiresAt]
       );
-      return { session: sessionFromRow(updated.rows[0]) };
+      const currentSession = sessionFromRow(updated.rows[0]);
+      const value = operation ? await operation(client, currentSession, effectiveNow) : undefined;
+      const stepUp = this.resolveStepUp ? await this.resolveStepUp(client, currentSession, effectiveNow) : undefined;
+      return { session: currentSession, stepUp, value };
     });
     if (!result.session) {
       throw authenticationError("authentication_session_rejected", "session is not active");
     }
-    return this.#context(result.session, new Date(result.session.lastSeenAt));
+    return operation ? result.value : this.#context(result.session, new Date(result.session.lastSeenAt), result.stepUp);
   }
 
   async rotate({ sessionHandle, reasonCode = "session_rotation", now = new Date() }) {
@@ -2493,7 +2517,7 @@ export class PostgresHumanSessionStore {
     }
   }
 
-  #context(session, now) {
+  #context(session, now, stepUp) {
     return createAuthenticationContext({
       tenantId: session.tenantId,
       actorId: session.actorId,
@@ -2508,9 +2532,9 @@ export class PostgresHumanSessionStore {
       authenticationMethod: session.authenticationMethod,
       senderConstraintMethod: SenderConstraintMethod.HOST_SESSION,
       authenticatedAt: now,
-      authTime: session.authTime,
+      authTime: stepUp?.verifiedAt ?? session.authTime,
       acr: session.acr,
-      amr: session.amr
+      amr: stepUp ? [...new Set([...session.amr, "webauthn"])] : session.amr
     });
   }
 

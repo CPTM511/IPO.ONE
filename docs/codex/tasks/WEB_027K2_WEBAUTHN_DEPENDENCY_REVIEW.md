@@ -2,7 +2,9 @@
 
 Date: 2026-09-07. K2 implementation is approved; this record fulfills the proposal's separate fixed-dependency review requirement before adding a new verifier.
 
-Proposed exact package: `@simplewebauthn/server@14.0.1` (not a range), npm integrity `sha512-kjWgcm9NdSv+Tobo4Swxd1WnEawsBogpYFMjg9pKsVLPN3FdCmR6BipkL+DcPDgmQ7UKbbBZqRqn3E3YaA7NBw==`.
+Founder approved on 2026-09-07: “已确认，批准”. The exact dependency and locked closure below are authorized for K2 local work.
+
+Approved exact package: `@simplewebauthn/server@14.0.1` (not a range), npm integrity `sha512-kjWgcm9NdSv+Tobo4Swxd1WnEawsBogpYFMjg9pKsVLPN3FdCmR6BipkL+DcPDgmQ7UKbbBZqRqn3E3YaA7NBw==`.
 
 Official release: https://github.com/MasterKale/SimpleWebAuthn/releases/tag/v14.0.1 . npm metadata fetched 2026-09-07; Node >=20, compatible with the pinned project runtime. Current repository has jose/viem, which do not implement the WebAuthn registration/COSE/attestation verification flow. Reimplementing those security parsers for this UI repair adds avoidable authentication risk.
 
