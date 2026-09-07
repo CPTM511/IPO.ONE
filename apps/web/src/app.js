@@ -1213,7 +1213,7 @@ async function probeAccessOptions() {
     accessState.walletWorkspaceRoles = new Set(
       Array.isArray(options?.walletWorkspaceRoles)
         ? options.walletWorkspaceRoles.filter((role) =>
-            new Set(["human_borrower", "principal_controller", "capital_partner_operator", "risk_operator"]).has(role)
+            new Set(["human_borrower", "principal_controller", "capital_partner_operator", "risk_operator", "operations_operator", "auditor"]).has(role)
           )
         : []
     );

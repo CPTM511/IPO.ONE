@@ -5885,6 +5885,10 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
         requestId: `request-repay-human-sandbox-credit-${RUN_ID}`,
         correlationId: `correlation-repay-human-sandbox-credit-${RUN_ID}`
       };
+      // Leave bounded headroom for the local VM's observed sub-second clock slew.
+      // The request still uses trusted database time and the production backwards-time guard.
+      const humanAccrualClock = await ownerPool.query("SELECT last_accrued_at FROM obligations WHERE id=$1", [humanRepaymentCommand.obligationId]);
+      await waitForDatabaseClockAfter(ownerPool, new Date(new Date(humanAccrualClock.rows[0].last_accrued_at).getTime() + 1_000), "Human repayment", { timeoutMs: 5_000 });
       const humanRepayments = await executeConcurrentDuplicate(
         () => tenantOneBorrower.postSandboxRepayment(humanRepaymentCommand)
       );
@@ -5898,7 +5902,7 @@ test("durable Tenant Command Gateway is isolated, atomic, and restart-safe", { t
       // The VM PostgreSQL clock can slew behind a just-recorded accrual timestamp.
       // Wait for that persisted time before racing the same repayment; keep production fail-closed checks.
       const agentAccrualClock = await ownerPool.query("SELECT last_accrued_at FROM obligations WHERE id=$1", [agentRepaymentCommand.obligationId]);
-      await waitForDatabaseClockAfter(ownerPool, new Date(new Date(agentAccrualClock.rows[0].last_accrued_at).getTime() + 5), "Agent repayment");
+      await waitForDatabaseClockAfter(ownerPool, new Date(new Date(agentAccrualClock.rows[0].last_accrued_at).getTime() + 1_000), "Agent repayment", { timeoutMs: 5_000 });
       const agentRepayments = await executeConcurrentMcpDuplicate(
         creditAgentRuntimeMcpHost,
         {
