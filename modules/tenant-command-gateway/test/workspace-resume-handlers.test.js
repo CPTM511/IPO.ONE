@@ -171,6 +171,112 @@ test("Human workspace recovery derives one exact non-authorizing Offer review fr
   assert.equal(result.humanOfferReview.nonAuthorizing, true);
   assert.equal(result.humanOfferReview.fundsAuthority, false);
 });
+test("Human workspace recovery keeps multiple authorized Offers selectable without choosing one silently", async () => {
+  const intent = {
+    ...structuredClone(humanOfferFixture.creditIntent),
+    authorityRef: humanOfferFixture.creditIntent.authorityId,
+    principalId: "principal_workspace_test",
+    schemaVersion: "credit_intent.v1"
+  };
+  delete intent.authorityId;
+  const decision = {
+    ...structuredClone(humanOfferFixture.decision),
+    authorityRef: humanOfferFixture.decision.authorityId,
+    createdAt: humanOfferFixture.decision.decidedAt,
+    limitMinor: humanOfferFixture.decision.approvedPrincipalMinor,
+    modelVersion: humanOfferFixture.decision.policyVersion,
+    principalId: intent.principalId,
+    reasons: humanOfferFixture.decision.reasonCodes.map((code) => ({ code })),
+    schemaVersion: "risk_decision.v2"
+  };
+  delete decision.approvedPrincipalMinor;
+  delete decision.authorityId;
+  delete decision.decidedAt;
+  delete decision.decisionPassport;
+  delete decision.policyVersion;
+  delete decision.reasonCodes;
+  const offer = {
+    ...structuredClone(humanOfferFixture.offer),
+    validUntil: "2026-07-20T02:00:00.000Z",
+    schemaVersion: "credit_offer.v1"
+  };
+  const consent = {
+    consentId: intent.authorityRef,
+    subjectId: intent.subjectId,
+    principalId: intent.principalId,
+    purposes: [
+      "credit_application",
+      "credit_decision",
+      "credit_offer_acceptance",
+      "obligation_servicing",
+      "identity_reference_use"
+    ],
+    allowedAssetIds: [intent.assetId],
+    allowedCreditPurposeCodes: [intent.purposeCode],
+    allowedRepaymentFrequencies: [offer.repaymentFrequency],
+    maxRequestedPrincipalMinor: intent.requestedPrincipalMinor,
+    maxRequestedTermDays: intent.requestedTermDays,
+    maxInstallmentCount: intent.installmentCount,
+    validFrom: "2026-07-19T00:00:00.000Z",
+    expiresAt: "2026-07-21T00:00:00.000Z",
+    status: "active",
+    sandboxOnly: true,
+    productionAuthority: false,
+    schemaVersion: "consent_record.v1"
+  };
+  const states = new Map([
+    [`${CoreProjectionType.CREDIT_INTENT}:${intent.creditIntentId}`, { value: intent, aggregateVersion: 2 }],
+    [`${CoreProjectionType.RISK_DECISION}:${decision.riskDecisionId}`, { value: decision, aggregateVersion: 1 }],
+    [`${CoreProjectionType.CREDIT_OFFER}:${offer.creditOfferId}`, { value: offer, aggregateVersion: 1 }],
+    [`${CoreProjectionType.CONSENT_RECORD}:${consent.consentId}`, { value: consent, aggregateVersion: 1 }]
+  ]);
+  const secondIntent = { ...intent, creditIntentId: intent.creditIntentId + "_second" };
+  const secondDecision = { ...decision, creditIntentId: secondIntent.creditIntentId, riskDecisionId: decision.riskDecisionId + "_second" };
+  const secondOffer = { ...offer, creditIntentId: secondIntent.creditIntentId, riskDecisionId: secondDecision.riskDecisionId, creditOfferId: offer.creditOfferId + "_second" };
+  states.set(`${CoreProjectionType.CREDIT_INTENT}:${secondIntent.creditIntentId}`, { value: secondIntent, aggregateVersion: 2 });
+  states.set(`${CoreProjectionType.RISK_DECISION}:${secondDecision.riskDecisionId}`, { value: secondDecision, aggregateVersion: 1 });
+  states.set(`${CoreProjectionType.CREDIT_OFFER}:${secondOffer.creditOfferId}`, { value: secondOffer, aggregateVersion: 1 });
+  const result = await readWorkspaceResumeQueryHandler().execute({
+    client: {
+      async query() {
+        return { rows: [
+          { ...row(1), resource_id: intent.subjectId },
+          { ...row(2, "consent"), resource_id: consent.consentId },
+          { ...row(3, "credit_intent"), resource_id: intent.creditIntentId },
+          { ...row(4, "credit_intent"), resource_id: secondIntent.creditIntentId }
+        ] };
+      }
+    },
+    coreRepository: {
+      async getProjectionStateInTransaction(_client, type, id) {
+        return states.get(`${type}:${id}`);
+      },
+      async findRiskDecisionByCreditIntentInTransaction(_client, id) {
+        return id === intent.creditIntentId ? decision : secondDecision;
+      },
+      async findCreditOfferByIntentInTransaction(_client, id) {
+        return id === intent.creditIntentId ? offer : secondOffer;
+      }
+    },
+    directory: {
+      async resolveResource() {
+        return {
+          status: "active",
+          actorAuthorized: true,
+          bindingRelationship: "owner",
+          version: 1
+        };
+      }
+    },
+    payload: {},
+    authenticationContext: context(),
+    now: new Date("2026-07-20T00:00:00.000Z")
+  });
+
+  assert.equal(result.humanOfferReview, null);
+  assert.deepEqual(result.humanOfferReviews.map(r => r.offer.creditOfferId), [offer.creditOfferId, secondOffer.creditOfferId]);
+  assert.ok(result.humanOfferReviews.every(r => r.serverTruth && r.nonAuthorizing && !r.fundsAuthority));
+});
 
 test("Human workspace recovery returns no acceptance review for stale or unauthorized server truth", async () => {
   const handler = readWorkspaceResumeQueryHandler();

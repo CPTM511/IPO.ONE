@@ -5486,6 +5486,11 @@
             "$ref": "#/$defs/workspaceContinuationReceiptView"
           }
         },
+        "humanOfferReviews": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/humanOfferReviewRecovery" }
+        },
         "humanOfferReview": {
           "oneOf": [
             { "type": "null" },

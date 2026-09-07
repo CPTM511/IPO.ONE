@@ -6758,6 +6758,13 @@ function pilotCaseRow(item, { operator = false } = {}) {
     controls.append(uphold, correction, correct);
     row.append(controls);
   }
+  if (operator) {
+    const busy = riskOperations.caseBusy || riskOperations.recoveryBusy || riskOperations.catalogBusy;
+    for (const control of row.querySelectorAll("button, select")) {
+      control.disabled = busy || !riskOperations.caseTransitionCatalogAvailable;
+      control.setAttribute("aria-busy", String(busy));
+    }
+  }
   return row;
 }
 
@@ -9233,7 +9240,25 @@ function recoveredResource(resources, resourceType) {
   );
 }
 
+function renderHumanApplicationInbox() {
+  const panel = el("humanApplicationInbox");
+  const recovery = tenantPilot.workspaceResume;
+  const reviews = (recovery?.humanOfferReviews ?? (recovery?.humanOfferReview ? [recovery.humanOfferReview] : []))
+    .filter((review) => review.offer?.creditOfferId !== tenantPilot.obligation?.creditOfferId);
+  panel.hidden = recovery?.workspaceKind !== "human_borrower" || reviews.length === 0;
+  el("humanApplicationOptions").replaceChildren(...reviews.map((review) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.dataset.humanReviewOffer = review.offer.creditOfferId;
+    button.setAttribute("aria-pressed", String(tenantPilot.offer?.creditOfferId === review.offer.creditOfferId));
+    button.textContent = `${usdMinorToMoney(review.offer.approvedPrincipalMinor)} · ${bpsToPercent(review.offer.annualRateBps)} APR · ${review.offer.installmentCount} payments · Review Offer`;
+    return button;
+  }));
+}
+
 async function recoverAuthenticatedWorkspace({
+  selectedHumanOfferId,
   selectedAgentActorId = agentAuthorityPilot.workspaceSelection?.status === "selected"
     ? agentAuthorityPilot.workspaceSelection.actorId
     : undefined
@@ -9297,7 +9322,14 @@ async function recoverAuthenticatedWorkspace({
       el("humanConsentId").value = consent.resourceId;
       rememberOpaqueId(HUMAN_CONSENT_STORAGE_KEY, consent.resourceId);
     }
-    const recoveredOfferReview = recovery.humanOfferReview;
+    const reviews = recovery.humanOfferReviews ?? (recovery.humanOfferReview ? [recovery.humanOfferReview] : []);
+    const recoveredOfferReview = selectedHumanOfferId
+      ? reviews.find((review) => review.offer.creditOfferId === selectedHumanOfferId)
+      : recovery.humanOfferReview;
+    if (selectedHumanOfferId && !recoveredOfferReview) {
+      renderHumanApplicationInbox();
+      throw new Error("This Offer is no longer available. Refresh applications and choose current terms.");
+    }
     let actionableHumanOfferRecovered = false;
     if (recoveredOfferReview) {
       try {
@@ -9372,6 +9404,7 @@ async function recoverAuthenticatedWorkspace({
       ? "Borrower workspace restored from authenticated PostgreSQL server truth."
       : "Authenticated Borrower workspace ready. Create a Human Subject to begin.";
     setMode("human");
+    renderHumanApplicationInbox();
     return;
   }
 
@@ -10223,14 +10256,17 @@ async function acceptHumanCreditOffer() {
         });
         const currentBinding = assertRecoveredHumanCreditReviewUnchanged(
           tenantPilot.offerReview,
-          currentWorkspace.response.humanOfferReview
+          (currentWorkspace.response.humanOfferReviews ?? [currentWorkspace.response.humanOfferReview])
+            .find((review) => review?.offer.creditOfferId === offer.creditOfferId)
         );
         restoreHumanCreditRequest(currentBinding.creditRequest);
         tenantPilot.workspaceResume = currentWorkspace.response;
         tenantPilot.offerReview = currentBinding;
-        tenantPilot.intent = currentWorkspace.response.humanOfferReview.creditIntent;
-        tenantPilot.decision = currentWorkspace.response.humanOfferReview.decision;
-        tenantPilot.offer = currentWorkspace.response.humanOfferReview.offer;
+        const refreshedReview = (currentWorkspace.response.humanOfferReviews ?? [currentWorkspace.response.humanOfferReview])
+          .find((review) => review?.offer.creditOfferId === offer.creditOfferId);
+        tenantPilot.intent = refreshedReview.creditIntent;
+        tenantPilot.decision = refreshedReview.decision;
+        tenantPilot.offer = refreshedReview.offer;
         offer = tenantPilot.offer;
       }
       if (!el("humanOfferAcknowledge").checked) {
@@ -12367,7 +12403,7 @@ function renderRiskOperations() {
         ? "No open or assigned pilot cases require review."
         : "Load the authorized, privacy-safe case queue.")]));
   const caseLoadButton = el("loadPilotCaseQueueBtn");
-  caseLoadButton.disabled = riskOperations.caseBusy ||
+  caseLoadButton.disabled = riskOperations.recoveryBusy || riskOperations.catalogBusy || riskOperations.caseBusy ||
     !riskOperations.caseReadCatalogAvailable ||
     riskOperations.portfolioSelection.status !== "selected";
   caseLoadButton.toggleAttribute("aria-busy", riskOperations.caseBusy);
@@ -13776,6 +13812,26 @@ function bindActions() {
       "Enter one exact assigned ID. Missing, expired, denied, and cross-Provider resources are not enumerated.";
     renderCapitalNetwork();
   });
+  async function selectHumanApplication(selectedHumanOfferId) {
+    const controls = [el("refreshHumanApplicationsBtn"), ...el("humanApplicationOptions").querySelectorAll("button")];
+    controls.forEach((button) => { button.disabled = true; });
+    try {
+      await recoverAuthenticatedWorkspace({ selectedHumanOfferId });
+      el("humanOfferAcknowledge").checked = false;
+      renderTenantPilot();
+      renderHumanApplicationInbox();
+      if (selectedHumanOfferId) focusJumpTarget(el("humanOfferConsole"));
+    } catch (error) {
+      el("humanApplicationInboxHelper").textContent = error.message;
+      announce(error.message);
+    } finally { controls.forEach((button) => { button.disabled = false; }); }
+  }
+  el("refreshHumanApplicationsBtn").addEventListener("click", () => selectHumanApplication());
+  el("humanApplicationOptions").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-human-review-offer]");
+    if (button && !button.disabled) selectHumanApplication(button.dataset.humanReviewOffer);
+  });
+
   el("capitalPartnerOfferForm").addEventListener("submit", (event) => {
     event.preventDefault();
     authorCapitalPartnerOffer();

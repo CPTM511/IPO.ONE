@@ -2702,6 +2702,7 @@ export interface WorkspaceResumeViewResponseV2 {
   selectedAgentActorId?: string | null;
   continuationReceipts?: WorkspaceContinuationReceiptView[];
   humanOfferReview?: HumanOfferReviewRecovery | null;
+  humanOfferReviews?: HumanOfferReviewRecovery[];
   hasMore: boolean;
   serverTruth: true;
   schemaVersion: "tenant_workspace_resume_view.v2";
