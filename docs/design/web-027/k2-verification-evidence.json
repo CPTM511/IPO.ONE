@@ -1,0 +1,1018 @@
+{
+  "schemaVersion": "web027k2_local_acceptance.v1",
+  "verdict": "BLOCKED — NOT COMPLETE",
+  "scope": "K2 local Risk Passkeys verified; whole-site release remains incomplete",
+  "approval": {
+    "founder": "已确认，批准",
+    "date": "2026-09-07",
+    "exactDependency": "@simplewebauthn/server@14.0.1",
+    "productionDeployment": false
+  },
+  "states": {
+    "CODE": "71f4723dffa99d99fd6a651b925fc2ebb47a1209",
+    "RUNTIME": "candidate and synthetic worker running",
+    "DEPLOYED": {
+      "scope": "isolated local candidate",
+      "source": "71f4723dffa99d99fd6a651b925fc2ebb47a1209",
+      "production": false
+    },
+    "REACHABLE": [
+      {
+        "origin": "http://127.0.0.1:8935",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8936",
+        "status": 200
+      },
+      {
+        "origin": "http://localhost:8937",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8938",
+        "status": 200
+      }
+    ],
+    "VERIFIED": {
+      "method": "visible browser clicks, synthetic wallet signatures, real cryptographic virtual authenticator, durable PostgreSQL",
+      "founderPhysicalDevice": false
+    }
+  },
+  "runtime": {
+    "source": "71f4723dffa99d99fd6a651b925fc2ebb47a1209",
+    "verifiedAt": "2026-09-07T02:02:55.107Z",
+    "installedRuntimeFiles": 60,
+    "health": [
+      {
+        "origin": "http://127.0.0.1:8935",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8936",
+        "status": 200
+      },
+      {
+        "origin": "http://localhost:8937",
+        "status": 200
+      },
+      {
+        "origin": "http://127.0.0.1:8938",
+        "status": 200
+      }
+    ],
+    "current": [
+      {
+        "name": "ipo-one-web027-candidate",
+        "image": "ipo-one-web027:71f4723dffa9",
+        "running": true,
+        "restart": "unless-stopped"
+      },
+      {
+        "name": "ipo-one-web027-candidate-worker",
+        "image": "ipo-one-web027:71f4723dffa9",
+        "running": true,
+        "restart": "unless-stopped"
+      }
+    ],
+    "founder": [
+      {
+        "name": "ipo-one-web026h-review",
+        "image": "ipo-one-web026h:0211f75",
+        "running": true
+      },
+      {
+        "name": "ipo-one-web026h-worker",
+        "image": "ipo-one-web026h:0211f75",
+        "running": true
+      }
+    ],
+    "dependency": {
+      "package": "@simplewebauthn/server@14.0.1",
+      "lockedClosure": [
+        "@simplewebauthn+server@14.0.1",
+        "@hexagon+base64@1.1.28",
+        "@levischuck+tiny-cbor@0.2.11",
+        "@peculiar+asn1-android@2.9.4",
+        "@peculiar+asn1-schema@2.9.4",
+        "@peculiar+utils@2.0.3",
+        "tslib@2.8.1",
+        "asn1js@3.0.10",
+        "pvtsutils@1.3.6",
+        "pvutils@1.2.0",
+        "@peculiar+asn1-ecc@2.9.4",
+        "@peculiar+asn1-x509@2.9.4",
+        "@peculiar+asn1-rsa@2.9.4",
+        "@peculiar+asn1-x509-post-quantum@2.9.4",
+        "@peculiar+asn1-asym-key@2.9.4",
+        "@peculiar+asn1-pkcs8@2.9.4",
+        "@peculiar+x509@2.1.0",
+        "@peculiar+asn1-cms@2.9.4",
+        "@peculiar+asn1-x509-attr@2.9.4",
+        "@peculiar+asn1-csr@2.9.4",
+        "@peculiar+asn1-pkcs9@2.9.4",
+        "@peculiar+asn1-pfx@2.9.4",
+        "tsyringe@4.10.0",
+        "tslib@1.14.1",
+        "reflect-metadata@0.2.2"
+      ],
+      "lockSha256": "8aca10f9e2b97d73a749a1fe28ca03740947566681d98377552731d7e7bf92ff"
+    }
+  },
+  "passkey": {
+    "rpId": "localhost",
+    "origin": "http://localhost:8937",
+    "algorithm": "ES256",
+    "userPresenceRequired": true,
+    "userVerificationRequired": true,
+    "challengeLifetimeSeconds": 120,
+    "verificationLifetimeSeconds": 900,
+    "invitedRiskOnly": true,
+    "capabilitiesAdded": 0,
+    "originalSiweAmrPreserved": true,
+    "externalIdentityService": false,
+    "privateAuthenticatorMaterialStoredByServer": false
+  },
+  "browser": {
+    "source": "71f4723dffa99d99fd6a651b925fc2ebb47a1209",
+    "apiMocks": false,
+    "virtualAuthenticator": true,
+    "founderDeviceVerified": false,
+    "results": [
+      {
+        "name": "visible IP entry redirects to exact localhost",
+        "pass": true
+      },
+      {
+        "name": "wallet alone does not grant recent MFA",
+        "pass": true
+      },
+      {
+        "name": "existing key assertion",
+        "pass": true
+      },
+      {
+        "name": "visible Risk refresh",
+        "pass": true,
+        "portfolio": "Authorized point-in-time exposure loaded. No raw KYC or PII was returned."
+      },
+      {
+        "name": "refresh recovers durable MFA",
+        "pass": true
+      },
+      {
+        "name": "process restart recovers durable MFA",
+        "pass": true
+      },
+      {
+        "name": "logout/login invalidates previous session MFA",
+        "pass": true
+      },
+      {
+        "name": "fresh native assertion restores access after sign-in",
+        "pass": true
+      },
+      {
+        "name": "responsive Passkey and native revoke dialog",
+        "width": 1440,
+        "theme": "light",
+        "ratios": [
+          16.090803482422444,
+          16.090803482422444
+        ],
+        "fits": true,
+        "escapeCancelsWithoutMutation": true
+      },
+      {
+        "name": "responsive Passkey and native revoke dialog",
+        "width": 1440,
+        "theme": "dark",
+        "ratios": [
+          15.234359962122278,
+          15.234359962122278
+        ],
+        "fits": true,
+        "escapeCancelsWithoutMutation": true
+      },
+      {
+        "name": "responsive Passkey and native revoke dialog",
+        "width": 390,
+        "theme": "light",
+        "ratios": [
+          16.090803482422444,
+          16.090803482422444
+        ],
+        "fits": true,
+        "escapeCancelsWithoutMutation": true
+      },
+      {
+        "name": "responsive Passkey and native revoke dialog",
+        "width": 390,
+        "theme": "dark",
+        "ratios": [
+          15.234359962122278,
+          15.234359962122278
+        ],
+        "fits": true,
+        "escapeCancelsWithoutMutation": true
+      }
+    ],
+    "operationResults": [
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      }
+    ],
+    "errors": [],
+    "responses": [
+      {
+        "path": "/auth/v1/options",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/wallet/challenge",
+        "status": 201
+      },
+      {
+        "path": "/auth/v1/wallet/verify",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/options",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/begin",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/finish",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/options",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/options",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/wallet/challenge",
+        "status": 201
+      },
+      {
+        "path": "/auth/v1/wallet/verify",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/options",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/begin",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/finish",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/passkey/status",
+        "status": 200
+      }
+    ]
+  },
+  "security": {
+    "source": "30bed6fbdcd885f5e3cfe530d85872762ef082ab",
+    "apiMocks": false,
+    "virtualAuthenticator": true,
+    "founderDeviceVerified": false,
+    "results": [
+      {
+        "name": "existing key prevents wallet-only re-enrollment",
+        "pass": true
+      },
+      {
+        "name": "reject signature and replay without granting MFA",
+        "pass": true
+      },
+      {
+        "name": "reject origin and replay without granting MFA",
+        "pass": true
+      },
+      {
+        "name": "reject rp and replay without granting MFA",
+        "pass": true
+      },
+      {
+        "name": "reject handle and replay without granting MFA",
+        "pass": true
+      },
+      {
+        "name": "reject crossOrigin and replay without granting MFA",
+        "pass": true
+      },
+      {
+        "name": "reject rawId and replay without granting MFA",
+        "pass": true
+      },
+      {
+        "name": "reject unknownField and replay without granting MFA",
+        "pass": true
+      },
+      {
+        "name": "cancel consumes challenge without verification",
+        "pass": true
+      },
+      {
+        "name": "concurrent same challenge has exactly one accepted verification",
+        "pass": true
+      },
+      {
+        "name": "visible portfolio, health, feedback, case queue and readiness controls",
+        "pass": true
+      },
+      {
+        "name": "visible revoke cancellation preserves key",
+        "pass": true
+      },
+      {
+        "name": "revoking the key immediately invalidates its session evidence",
+        "pass": true
+      },
+      {
+        "name": "revocation cannot downgrade enrollment to wallet-only",
+        "pass": true
+      },
+      {
+        "name": "surviving Passkey restores protected Risk access",
+        "pass": true
+      },
+      {
+        "name": "real elapsed challenge expiry denies verification",
+        "pass": true
+      }
+    ],
+    "operationResults": [
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadPilotHealth",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_health_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadPilotFeedbackSummary",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_feedback_summary_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadClosedPilotReadiness",
+        "status": 200,
+        "schemaVersion": "tenant_public_beta_readiness_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadCaseQueue",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadCaseQueue",
+        "status": 200,
+        "schemaVersion": "tenant_pilot_case_queue.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadClosedPilotReadiness",
+        "status": 200,
+        "schemaVersion": "tenant_public_beta_readiness_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueue",
+        "status": 200,
+        "schemaVersion": "tenant_servicing_queue_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_reference_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRisk",
+        "status": 200,
+        "schemaVersion": "tenant_risk_portfolio_view.v1"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadTenantRiskPortfolioReference",
+        "status": 404,
+        "code": "authorization_denied"
+      },
+      {
+        "port": "8937",
+        "operationId": "pilotReadServicingQueueReference",
+        "status": 404,
+        "code": "authorization_denied"
+      }
+    ],
+    "errors": []
+  },
+  "database": {
+    "durableResolver": {
+      "current": true,
+      "expiredDenied": true,
+      "wrongTenantActorCredentialVersionSessionDenied": true,
+      "expiryMinutes": 15
+    },
+    "databaseGuards": [
+      {
+        "name": "valid 500-character credential",
+        "accepted": true,
+        "rolledBack": true
+      },
+      {
+        "name": "oversized credential",
+        "rejected": true,
+        "code": "23514",
+        "rolledBack": true
+      },
+      {
+        "name": "oversized public key",
+        "rejected": true,
+        "code": "23514",
+        "rolledBack": true
+      },
+      {
+        "name": "invalid public key encoding",
+        "rejected": true,
+        "code": "23514",
+        "rolledBack": true
+      },
+      {
+        "name": "immutable public key",
+        "rejected": true,
+        "code": "23514",
+        "rolledBack": true
+      },
+      {
+        "name": "immutable step-up evidence",
+        "rejected": true,
+        "code": "23514",
+        "rolledBack": true
+      },
+      {
+        "name": "terminal challenge consumption",
+        "rejected": true,
+        "code": "23514",
+        "rolledBack": true
+      },
+      {
+        "name": "populated bounds rollback prohibited",
+        "rejected": true,
+        "code": "P0001",
+        "rolledBack": true
+      }
+    ],
+    "originalSiweSessionAmrUnchanged": true,
+    "tenantRls": [
+      {
+        "relname": "authentication_passkey_audit",
+        "relrowsecurity": true,
+        "relforcerowsecurity": true
+      },
+      {
+        "relname": "authentication_passkey_challenges",
+        "relrowsecurity": true,
+        "relforcerowsecurity": true
+      },
+      {
+        "relname": "authentication_passkey_evidence",
+        "relrowsecurity": true,
+        "relforcerowsecurity": true
+      },
+      {
+        "relname": "authentication_passkeys",
+        "relrowsecurity": true,
+        "relforcerowsecurity": true
+      }
+    ],
+    "records": {
+      "keys": 4,
+      "activeKeys": 1,
+      "revokedKeys": 3
+    },
+    "migrations": 81,
+    "source": "71f4723dffa99d99fd6a651b925fc2ebb47a1209"
+  },
+  "humanRegression": {
+    "source": "71f4723dffa99d99fd6a651b925fc2ebb47a1209",
+    "mode": "local_no_funds",
+    "database": "ipo_one_web027_candidate",
+    "apiMocks": false,
+    "fixtureQuery": false,
+    "results": [
+      {
+        "role": "borrower",
+        "port": 8935,
+        "signatureLogin": true,
+        "automaticEntry": true,
+        "refresh": true,
+        "relogin": true,
+        "clickedViews": [
+          "request-credit",
+          "obligations",
+          "activity-proofs",
+          "wallet-permissions",
+          "overview",
+          "secured-pool",
+          "repay-settle",
+          "credit-passport",
+          "credit-track-record",
+          "reports-exports"
+        ],
+        "operations": "pending"
+      },
+      {
+        "role": "controller",
+        "port": 8936,
+        "signatureLogin": true,
+        "automaticEntry": true,
+        "refresh": true,
+        "relogin": true,
+        "clickedViews": [
+          "agent-console",
+          "request-credit",
+          "activity-proofs",
+          "wallet-permissions",
+          "overview",
+          "secured-pool",
+          "obligations",
+          "credit-track-record",
+          "reports-exports",
+          "architecture"
+        ],
+        "operations": "pending"
+      }
+    ],
+    "actionEvidence": [
+      {
+        "selector": "#humanGuideSecondaryBtn",
+        "label": "Start another request",
+        "at": "2026-09-07T01:58:14.270Z"
+      },
+      {
+        "selector": "#humanGuidePrimaryBtn",
+        "label": "Create scoped Consent",
+        "at": "2026-09-07T01:58:14.292Z"
+      },
+      {
+        "selector": "Create scoped Consent",
+        "label": "Create scoped Consent",
+        "at": "2026-09-07T01:58:14.292Z"
+      },
+      {
+        "selector": "#submitHumanCreditBtn",
+        "label": "Request & evaluate credit",
+        "at": "2026-09-07T01:58:14.508Z"
+      },
+      {
+        "selector": "#acceptHumanOfferBtn",
+        "label": "Reconnect wallet to continue",
+        "at": "2026-09-07T01:58:14.739Z"
+      },
+      {
+        "selector": "#acceptHumanOfferBtn",
+        "label": "Confirm & create sandbox Obligation",
+        "at": "2026-09-07T01:58:14.862Z"
+      },
+      {
+        "selector": "#economicActionConfirmBtn",
+        "label": "Confirm in wallet",
+        "at": "2026-09-07T01:58:14.880Z"
+      },
+      {
+        "selector": "#executeHumanObligationBtn",
+        "label": "Confirm sandbox execution",
+        "at": "2026-09-07T01:58:15.179Z"
+      },
+      {
+        "selector": "#economicActionConfirmBtn",
+        "label": "Confirm in wallet",
+        "at": "2026-09-07T01:58:15.205Z"
+      },
+      {
+        "selector": "#postHumanRepaymentBtn",
+        "label": "Confirm early or scheduled repayment",
+        "at": "2026-09-07T01:58:15.390Z"
+      },
+      {
+        "selector": "#economicActionConfirmBtn",
+        "label": "Confirm in wallet",
+        "at": "2026-09-07T01:58:15.413Z"
+      },
+      {
+        "selector": "#humanGuidePrimaryBtn",
+        "label": "Review next payment",
+        "at": "2026-09-07T01:58:15.854Z"
+      },
+      {
+        "selector": "#postHumanRepaymentBtn",
+        "label": "Confirm early or scheduled repayment",
+        "at": "2026-09-07T01:58:15.893Z"
+      },
+      {
+        "selector": "#postHumanRepaymentBtn",
+        "label": "Confirm early or scheduled repayment",
+        "at": "2026-09-07T01:58:16.016Z"
+      },
+      {
+        "selector": "#economicActionConfirmBtn",
+        "label": "Confirm in wallet",
+        "at": "2026-09-07T01:58:16.040Z"
+      }
+    ],
+    "errors": [],
+    "verdict": "PARTIAL — full capability acceptance pending"
+  },
+  "agentRegression": {
+    "source": "71f4723dffa99d99fd6a651b925fc2ebb47a1209",
+    "apiMocks": false,
+    "results": [
+      {
+        "freshPrincipalLifecycle": true,
+        "fullyRepaid": true,
+        "visibleClicks": true
+      },
+      {
+        "restartRecovery": true,
+        "credentialRevocation": true,
+        "revocationAfterRefresh": true
+      }
+    ],
+    "actionEvidence": [
+      {
+        "selector": "#createLocalSandboxAgentBtn",
+        "label": "Create my sandbox Agent",
+        "at": "2026-09-07T01:58:25.206Z"
+      },
+      {
+        "selector": "#createAccountChallengeBtn",
+        "label": "Create signing request",
+        "at": "2026-09-07T01:58:25.481Z"
+      },
+      {
+        "selector": "#proveAccountOnlineBtn",
+        "label": "Ask registered test Agent to prove",
+        "at": "2026-09-07T01:58:25.683Z"
+      },
+      {
+        "selector": "#createDraftMandateBtn",
+        "label": "Create Draft Mandate",
+        "at": "2026-09-07T01:58:25.907Z"
+      },
+      {
+        "selector": "#openAgentApplicationHandoffBtn",
+        "label": "Run local Agent application",
+        "at": "2026-09-07T01:58:26.122Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Review and activate this Mandate",
+        "at": "2026-09-07T01:58:26.437Z"
+      },
+      {
+        "selector": "#activateMandateBtn",
+        "label": "Activate sandbox Mandate",
+        "at": "2026-09-07T01:58:26.484Z"
+      },
+      {
+        "selector": "#continueAgentCreditBtn",
+        "label": "Open Agent workspace",
+        "at": "2026-09-07T01:58:26.736Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Complete sandbox Agent lifecycle",
+        "at": "2026-09-07T01:58:26.768Z"
+      },
+      {
+        "selector": "#agentOnlineReviewBtn",
+        "label": "Review Agent obligations",
+        "at": "2026-09-07T01:58:27.168Z"
+      },
+      {
+        "selector": "#agentOnlineRunBtn",
+        "label": "Verify Agent Evidence",
+        "at": "2026-09-07T01:58:27.547Z"
+      },
+      {
+        "selector": "#revokeLocalSandboxAgentBtn",
+        "label": "Revoke local runtime credential",
+        "at": "2026-09-07T01:58:31.453Z"
+      }
+    ]
+  },
+  "tests": {
+    "authenticationAndWeb": {
+      "passed": 265,
+      "source": "30bed6fbdcd885f5e3cfe530d85872762ef082ab"
+    },
+    "transportSecurityAndLocal": {
+      "passed": 224,
+      "source": "30bed6fbdcd885f5e3cfe530d85872762ef082ab"
+    },
+    "postgres": {
+      "passed": 99,
+      "source": "30bed6fbdcd885f5e3cfe530d85872762ef082ab"
+    },
+    "finalWeb": {
+      "passed": 203,
+      "source": "71f4723dffa99d99fd6a651b925fc2ebb47a1209"
+    },
+    "migrationPairs": 81,
+    "schemas": 147,
+    "contractTypes": "passed",
+    "productTraceability": "14 destinations / 77 actions / 116 bound business operations"
+  },
+  "evidenceReuse": {
+    "baseSource": "30bed6fbdcd885f5e3cfe530d85872762ef082ab",
+    "finalSource": "71f4723dffa99d99fd6a651b925fc2ebb47a1209",
+    "onlyChangedFile": "apps/web/src/workspace-experience.css",
+    "reason": "Backend bytes unchanged; all Human/Agent/Risk positive browser journeys, responsive review, runtime hashes and database audit also rerun on final installed SHA."
+  },
+  "resolvedFindings": [
+    "WebAuthn IP RP ID rejected by browser; exact localhost Risk origin and visible IP redirect implemented.",
+    "Standards-permitted signed client-data extensions accepted without trusting their contents; security bindings and duplicate-key rejection remain exact.",
+    "Library challenge input corrected to raw bytes so options and durable nonce match exactly.",
+    "PostgreSQL long regex repetition corrected by additive migration 0081, preserving migration history.",
+    "Passkey revocation prevents fallback to older session verification evidence."
+  ],
+  "environmentIncident": {
+    "cause": "Local VM disk exhausted during repeated isolated builds/regressions",
+    "affected": "PostgreSQL write checks and original synthetic worker; failed attempts were not counted as passes",
+    "recovery": "Removed three this-turn disposable test runners/databases and pruned rebuildable Docker cache (2.033 GB). Retained images/volumes and business databases; restarted original synthetic worker with its unchanged 0211f75 configuration. Original 8895-8898 and candidate endpoints verified healthy.",
+    "subsequentVerification": "99 PostgreSQL cases passed; full Risk challenge-expiry/security browser run passed after recovery."
+  },
+  "openGates": [
+    "Founder physical wallet/Passkey-device acceptance",
+    "Accepted/serviced Capital Facility lifecycle and remaining whole-site semantic coverage",
+    "Special-role dual control and separately configured Pool/Provider/venue paths",
+    "Full assistive-technology/browser zoom matrix",
+    "Formal deployment and visible browser acceptance on its actual hosted SHA"
+  ],
+  "formalDeployment": false,
+  "realFundsMoved": false
+}

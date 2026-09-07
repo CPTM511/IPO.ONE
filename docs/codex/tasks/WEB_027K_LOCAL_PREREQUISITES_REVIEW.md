@@ -1,6 +1,6 @@
 # WEB-027K — 剩余本地激活条件评审
 
-状态：APPROVED FOR ISOLATED LOCAL IMPLEMENTATION — Founder 于 2026-09-06 明确回复“批准”。实施记录 2026-09-07。K1/K2 及提案内迁移已授权；新增验证依赖仍按下文具体审阅条款办理。
+状态：APPROVED FOR ISOLATED LOCAL IMPLEMENTATION — Founder 于 2026-09-06 明确回复“批准”。实施记录 2026-09-07。K1/K2 及提案内迁移已授权；新增验证依赖已于 2026-09-07 经单独固定版本审阅并获“已确认，批准”；当前 K2 本地验证见 `docs/design/web-027/k2-verification-evidence.json`。
 
 ## 已完成的前提
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "web027_local_acceptance_record.v1",
-  "verdict": "BLOCKED \u2014 NOT COMPLETE",
+  "verdict": "BLOCKED — NOT COMPLETE",
   "runtime": {
     "source": "68c5036a50b2fcb3a5eea67f6f11e38e5193ba9b",
     "image": "ipo-one-web027:68c5036a50b2",
@@ -706,5 +706,5 @@
   "formalDeployment": false,
   "productionFundsMoved": false,
   "historicalRecord": "WEB-027J, retained at its explicit source",
-  "latestLocalFollowUp": "k1-verification-evidence.json"
+  "latestLocalFollowUp": "k2-verification-evidence.json"
 }

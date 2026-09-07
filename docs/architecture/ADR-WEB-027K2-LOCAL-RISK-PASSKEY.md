@@ -1,6 +1,6 @@
 # ADR WEB-027K2 — Invited local Risk Passkey step-up
 
-Status: K2 implementation authorized by Founder; fixed verification dependency approved on 2026-09-07 (“已确认，批准”). Runtime verification pending. 2026-09-07.
+Status: K2 implementation authorized by Founder; fixed verification dependency approved on 2026-09-07 (“已确认，批准”). Implemented and locally verified on `71f4723`; physical Founder-device and formal deployment acceptance remain open. 2026-09-07.
 
 ## Verified prerequisites and origin
 
@@ -18,7 +18,7 @@ Authenticate every ceremony request via existing session and CSRF checks. A cred
 
 Use the fixed verifier reviewed in `docs/codex/tasks/WEB_027K2_WEBAUTHN_DEPENDENCY_REVIEW.md`. Require UP/UV, exact WebAuthn type/origin/RP, one-use challenge and expected credential, cryptographic signature and applicable counter. Deny cross-origin ceremonies, unsolicited credentials, ambiguous counters, expiration, revocation and unknown application-envelope fields. WebAuthn `CollectedClientData` permits future keys under the W3C specification; ignore their values while verifying the original signed bytes and all security fields, and reject duplicate JSON keys. Serialize challenge consumption/credential counter/evidence admission in one transaction; failed attempts consume or terminally invalidate their challenge.
 
-Do not mutate immutable SIWE session `auth_time`/`amr` into invented historical evidence. On each authenticated request, resolve independently verified, current session-bound Passkey evidence and construct the trusted authentication context. Logout/session rotation must invalidate old evidence; refresh/process restart can recover current evidence only from durable truth. Passkey revocation immediately denies all evidence derived from that key. Capabilities remain identical before and after step-up.
+Do not mutate immutable SIWE session `auth_time`/`amr` into invented historical evidence. On each authenticated request, resolve independently verified, current session-bound Passkey evidence and construct the trusted authentication context. Logout/session rotation must invalidate old evidence; refresh/process restart can recover current evidence only from durable truth. Passkey revocation immediately denies all evidence derived from that key and prevents revival of any pre-revocation proof in an affected session. A new valid assertion after revocation is required. Capabilities remain identical before and after step-up.
 
 ## Visible experience and verification
 
@@ -29,3 +29,5 @@ Browser acceptance uses a real cryptographic virtual authenticator for repeatabl
 ## Delivery boundary and rollback
 
 Exact isolated local database/hosts only; preserve original 8895–8898, production, role capabilities, risk settings, chain and funds gates. Additional migration next after 0079, with up/down and upgrade/rollback evidence. Disable new routes and evidence resolution and revoke relevant sessions/keys to roll back; preserve events and original SIWE login. Never remove MFA requirements to manufacture a passing Risk screen.
+
+Implementation/evidence: migrations 0080 and corrective 0081 preserve authentication history; no populated down migration is allowed. `docs/design/web-027/k2-verification-evidence.json` records final-source visible journeys, the real-authenticator negative suite and durable/rollback checks.

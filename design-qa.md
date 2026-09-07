@@ -23,14 +23,14 @@ The source and implementation were opened together in the same tool comparison i
 - Colors: graphite/mint selected direction, independent Light palette, distinct semantic states. No fabricated live-health green indicator. Buttons and selected Capital rows use theme tokens.
 - Images/icons: source's fictional logos/avatars and company footer were intentionally omitted. Real brand assets and the existing bot/icon sprite are used; no approximate SVG illustration or CSS art.
 - Copy/state: Draft/Active distinction, exact Mandate acknowledgement and no-funds consequence are explicit. Completed Evidence can be read after refresh without another runtime goal. Human current-plan and new-request states are separate.
-- Additional inspected renders: Human/Agent tasks at 1440 Dark; authority at 390 Dark and 1440 Light; Capital at 1440 Dark; Risk at 390 Light. All four role layouts are captured/tested in six widths and both themes. Initial Capital/Risk screenshots were fixture-only. J1 now separately verifies real local invited login/recovery; `capital/partner.png` is a durable-service render. Risk MFA-protected operations remain blocked.
+- Additional inspected renders: Human/Agent tasks at 1440 Dark; authority at 390 Dark and 1440 Light; Capital at 1440 Dark; Risk at 390 Light. All four role layouts are captured/tested in six widths and both themes. Initial Capital/Risk screenshots were fixture-only. J1 now separately verifies real local invited login/recovery; `capital/partner.png` is a durable-service render. At the J checkpoint Risk MFA remained blocked; K2 verification below supersedes this.
 - Interactions: native navigation, More tools, theme, current-plan action, Agent review/activation, keyboard disclosure focus, login error recovery and reduced-motion checks pass in browser suites. Actual Human/Agent signed flows use durable local services and isolated QA wallets, without API response mocks.
 
 ## Intentional differences and remaining acceptance
 
 The source falsely says a Draft “Authorizes” and invents names, limits, health and legal claims. The implementation corrects those rather than copying them. The real exact-action checkbox and technical recovery disclosure add necessary content. No arbitrary “all functions complete” claim follows from this visual match.
 
-Visual corrections above are addressed. WEB-027J repaired invited login, legacy reports, Principal execution binding and fresh Principal Agent provisioning. Overall product handoff remains blocked by real Risk MFA and the remaining whole-site semantic acceptance matrix. Screen presence is not capability acceptance. Full 200% browser zoom and final hosted role acceptance remain to be recorded before release.
+Visual corrections above are addressed. WEB-027J repaired invited login, legacy reports, Principal execution binding and fresh Principal Agent provisioning. Overall product handoff remains blocked by the remaining whole-site semantic acceptance matrix and physical-device acceptance. Screen presence is not capability acceptance. Full 200% browser zoom and final hosted role acceptance remain to be recorded before release.
 
 final result: blocked
 
@@ -41,4 +41,8 @@ Inspected the actual fresh Principal `j4/before-restart.png` and Capital `capita
 
 ## WEB-027K1 follow-up
 
-Inspected real Human activation and completed-plan screens. Existing position form hiding initially orphaned activation; fixed by keeping the identity panel outside it. Screenshot review found white text on a light confirmation dialog; changed to the existing theme ink token. Final actual-browser contrast exceeds 6.49:1 at 1440/390 in Light/Dark, dialog fits and native Escape cancels. K1 activation and account proof use real local services; Risk Passkey remains pending concrete verifier review, not a fake authenticated state.
+Inspected real Human activation and completed-plan screens. Existing position form hiding initially orphaned activation; fixed by keeping the identity panel outside it. Screenshot review found white text on a light confirmation dialog; changed to the existing theme ink token. Final actual-browser contrast exceeds 6.49:1 at 1440/390 in Light/Dark, dialog fits and native Escape cancels. K1 activation and account proof use real local services; At this K1 checkpoint the Risk verifier review was pending; K2 below records its approved implementation.
+
+## WEB-027K2 follow-up
+
+Inspected final `71f4723` actual-service Risk desktop Dark and mobile Light revoke dialog; automated visible review also covers 1440/390 Light/Dark. Controls fit without horizontal overflow, dialog text contrast is at least 15.23:1 and native Escape cancels without mutation. Backup registration, verification and explicit revoke controls preserve the Precision palette. Full cryptographic browser acceptance, expiry/revocation and Human/Agent regressions are recorded in `docs/design/web-027/k2-verification-evidence.json`. No fixture result is presented as a physical Founder-device or formal-site acceptance.

@@ -74,7 +74,7 @@ try {
  // A second authenticator permits revocation testing while preserving a usable Risk key.
  const oldIds=(await status()).keys.map(k=>k.id);
  await cdp.send('WebAuthn.setAutomaticPresenceSimulation',{authenticatorId,enabled:false});
- const backup=(await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{protocol:'ctap2',transport:'internal',hasResidentKey:true,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true}})).authenticatorId;
+ const backup=(await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{protocol:'ctap2',transport:'usb',hasResidentKey:true,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true}})).authenticatorId;
  await clickCeremony('#registerRiskPasskeyBtn');
  const afterAdd=await status();assert.equal(afterAdd.keys.length,oldIds.length+1);const added=afterAdd.keys.find(k=>!oldIds.includes(k.id));
  const newIndex=afterAdd.keys.findIndex(k=>k.id===added.id)+1;

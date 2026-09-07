@@ -58,6 +58,22 @@ try {
  await w.page.reload();await expect(w.page.locator('#riskPasskeyBadge')).toHaveText('Recently verified',{timeout:20000});results.push({name:'process restart recovers durable MFA',pass:true});
  await w.page.getByRole('button',{name:'Sign out',exact:true}).click();await login();assert.equal((await status()).verified,false);results.push({name:'logout/login invalidates previous session MFA',pass:true});
  await clickCeremony('#verifyRiskPasskeyBtn');results.push({name:'fresh native assertion restores access after sign-in',pass:true});
+ await expect(w.page.locator('#riskPortfolioHelper')).toContainText('Authorized point-in-time exposure loaded',{timeout:20000});
+ for(const width of [1440,390]) for(const theme of ['light','dark']) {
+  await w.page.setViewportSize({width,height:1000});await w.page.getByRole('combobox',{name:'Appearance',exact:true}).selectOption(theme);
+  await w.page.locator('#riskPasskeyPanel').scrollIntoViewIfNeeded();
+  await w.page.screenshot({path:out+`/risk-${width}-${theme}.png`});
+  assert.equal(await w.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'horizontal viewport overflow');
+  await w.page.getByRole('button',{name:'Revoke Passkey 1',exact:true}).click();
+  const data=await w.page.locator('#revokeRiskPasskeyDialog').evaluate(d=>{
+   const lum=c=>{const a=c.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>x/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return .2126*a[0]+.7152*a[1]+.0722*a[2];};
+   const bg=lum(getComputedStyle(d).backgroundColor);const ratios=[...d.querySelectorAll('h3,p')].map(n=>{const fg=lum(getComputedStyle(n).color);return(Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05);});
+   const rect=d.getBoundingClientRect();return{ratios,fits:rect.left>=0&&rect.right<=innerWidth&&rect.top>=0&&rect.bottom<=innerHeight};
+  });assert.equal(data.fits,true);for(const ratio of data.ratios)assert.ok(ratio>=4.5);
+  await w.page.screenshot({path:out+`/revoke-dialog-${width}-${theme}.png`});await w.page.keyboard.press('Escape');await expect(w.page.locator('#revokeRiskPasskeyDialog')).toBeHidden();
+  assert.equal((await status()).verified,true);results.push({name:'responsive Passkey and native revoke dialog',width,theme,...data,escapeCancelsWithoutMutation:true});
+ }
+
 } catch(e){
  if(lastCeremony){const response=lastCeremony.response;const data=JSON.parse(Buffer.from(response.response.clientDataJSON,"base64url"));
   let library;try{const {verifyRegistrationResponse}=await import('@simplewebauthn/server');const check=await verifyRegistrationResponse({response,expectedChallenge:data.challenge,expectedOrigin:'http://localhost:8937',expectedRPID:'localhost',requireUserPresence:true,requireUserVerification:true,supportedAlgorithmIDs:[-7]});library={verified:check.verified,fmt:check.registrationInfo?.fmt,userVerified:check.registrationInfo?.userVerified};}catch(error){library={error:error.message};}

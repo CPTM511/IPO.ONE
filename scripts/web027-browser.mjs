@@ -159,7 +159,7 @@ try {
     await page.screenshot({ path: `${out}/durable-${role}-entry.png` });
     const entry = await page.locator("#mainContent").innerText();
     await writeFile(`${out}/durable-${role}-entry.txt`, entry);
-    if (process.argv[2] === "flow" && role === "borrower") await humanLifecycle(page);
+    if (process.argv[2] === "flow" && role === "borrower") { await humanLifecycle(page); await completeHumanRepayment(page); }
     if (process.argv[2] === "settle" && role === "borrower") await completeHumanRepayment(page);
     if (process.argv[2] === "agent" && role === "controller") {
       try { await agentLifecycle(page); } catch (error) {
