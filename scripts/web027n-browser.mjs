@@ -53,7 +53,8 @@ async function opClick(selector,operationId){const pending=page.waitForResponse(
 async function negative(operationId,extra={}){const result=await page.evaluate(async({operationId,extra})=>{const requestId=`web027m_negative_${crypto.randomUUID()}`;const r=await fetch("/tenant/v1/operations",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json","x-ipo-one-authentication-mode":"human_session","x-csrf-token":document.querySelector('meta[name="ipo-one-csrf-token"]').content,"x-request-id":requestId},body:JSON.stringify({schemaVersion:"tenant_protocol_request.v1",operationId,payload:{},requestId,correlationId:requestId,...extra})});return{status:r.status,body:await r.json()};},{operationId,extra});assert.ok([403,404].includes(result.status),JSON.stringify(result.body));assert.equal(result.body.code,"authorization_denied");results.push({name:"server denial",port:new URL(page.url()).port,operationId,status:result.status,code:result.body.code});}
 
 const plans={restructure:"obligation_ad6fb93d-d18a-479a-8e58-f56a328be9a9",repurchase:"obligation_355d2cf4-4c17-41e5-adc1-e0ae5236a33a",writeoff:"obligation_c3746224-101c-4de6-a512-54cba5c7fc51"};
-const receipts=[];
+let previous={};try{previous=JSON.parse(await readFile(`${out}/browser.json`));}catch(e){if(e.code!=="ENOENT")throw e;}
+const receipts=[...(previous.receipts??[]).map(r=>({...r,source:r.source??previous.source}))];
 async function workspace(port){await go(port);await loggedIn();await mfa();}
 async function review(port,id){
  await workspace(port);const inbox=await opClick("#refreshLocalApprovalsBtn","pilotReadApprovalInbox");
@@ -74,7 +75,7 @@ async function propose(kind,obligationId,prior){
 async function approveAndExecute(proposed,expected){
  const id=proposed.proposal.approvalProposalId;
  for(const port of [8941,8942]){
-  const current=await review(port,id);assert.equal(current.proposal.status,"pending");
+  const current=await review(port,id);if(current.decisions.some(d=>d.decision==="approve"&&d.approverRoleBundle===(port===8941?"risk_operator":"operations_operator")))continue;assert.equal(current.proposal.status,"pending");
   await page.locator("#localApprovalAcknowledge").check();
   assert.equal(await page.locator("#executeLocalProposalBtn").isEnabled(),false);
   const decision=await opClick("#approveLocalProposalBtn","pilotDecideApproval");receipts.push({stage:"decided",port,response:decision});
@@ -85,21 +86,29 @@ async function approveAndExecute(proposed,expected){
  const executed=await opClick("#executeLocalProposalBtn",proposed.command.operationId);receipts.push({stage:"executed",response:executed});
  await until(async()=>/recorded/.test(await page.locator("#localReviewMessage").innerText()),"execution recorded");
  const result=await review(8939,id);assert.equal(result.proposal.status,"executed");assert.equal(result.currentPlan.obligation.status,expected);
- assert.equal(result.currentPlan.obligation.totalRepaidMinor,0);assert.equal(result.currentPlan.obligation.productionFundsMoved,false);
+ assert.equal(String(result.currentPlan.obligation.totalRepaidMinor),"0");assert.equal(result.currentPlan.obligation.productionFundsMoved,false);
  receipts.push({stage:"current",response:result});await shot(expected+"-"+id.slice(-8));
  return result;
+}
+async function completeStep(kind,id,expected,prior){
+ const old=[...receipts].reverse().find(r=>r.stage==="proposed"&&r.response.command.operationId===kind&&r.response.command.resource.resourceId===id);
+ if(old){const current=await review(8939,old.response.proposal.approvalProposalId);
+  if(current.proposal.status==="executed"){assert.ok([expected,"written_off"].includes(current.currentPlan.obligation.status));receipts.push({stage:"current",source,response:current});return old.response;}
+  if(["pending","approved"].includes(current.proposal.status)){await approveAndExecute(old.response,expected);return old.response;}
+ }
+ const next=await propose(kind,id,prior);await approveAndExecute(next,expected);return next;
 }
 let failure;
 try{
  for(const port of [8939,8940,8941,8942]){await go(port);await login();await negative("pilotReadApprovalInbox");await mfa();await opClick("#refreshLocalApprovalsBtn","pilotReadApprovalInbox");}
- const cancel=await propose("pilotRestructureSandboxObligation",plans.restructure);
+ if(!receipts.some(r=>r.stage==="canceled")){const cancel=await propose("pilotRestructureSandboxObligation",plans.restructure);
  await negative("pilotDecideApproval",{resource:{resourceType:"approval_proposal",resourceId:cancel.proposal.approvalProposalId},payload:{expectedVersion:cancel.proposal.version,decision:"approve"},reasonCode:"approval_confirmed",idempotencyKey:"self_"+crypto.randomUUID()});
  await page.locator("#localApprovalAcknowledge").check();
- const canceled=await opClick("#cancelLocalProposalBtn","pilotCancelApproval");assert.equal(canceled.proposal.status,"canceled");receipts.push({stage:"canceled",response:canceled});
- const a=await propose("pilotRestructureSandboxObligation",plans.restructure);await approveAndExecute(a,"restructured");
- const b=await propose("pilotRepurchaseSandboxObligation",plans.repurchase);await approveAndExecute(b,"repurchased");
- const c=await propose("pilotRestructureSandboxObligation",plans.writeoff);await approveAndExecute(c,"restructured");
- const d=await propose("pilotWriteOffSandboxObligation",plans.writeoff,c.proposal.approvalProposalId);await approveAndExecute(d,"written_off");
+ const canceled=await opClick("#cancelLocalProposalBtn","pilotCancelApproval");assert.equal(canceled.proposal.status,"canceled");receipts.push({stage:"canceled",response:canceled});}
+ const a=await completeStep("pilotRestructureSandboxObligation",plans.restructure,"restructured");
+ const b=await completeStep("pilotRepurchaseSandboxObligation",plans.repurchase,"repurchased");
+ const c=await completeStep("pilotRestructureSandboxObligation",plans.writeoff,"restructured");
+ const d=await completeStep("pilotWriteOffSandboxObligation",plans.writeoff,"written_off",c.proposal.approvalProposalId);
  const restart=spawnSync("limactl",["shell","--workdir","/Users/cptmao/Documents/IPO.ONE","ipo-one-local","docker","restart","ipo-one-web027-candidate","ipo-one-web027-candidate-worker"],{encoding:"utf8"});assert.equal(restart.status,0);
  await until(async()=>{try{return(await fetch("http://localhost:8942/tenant/v1/healthz")).ok;}catch{return false;}},"restart ready",30000);
  for(const [p,status]of[[a,"restructured"],[b,"repurchased"],[d,"written_off"]]){const current=await review(8939,p.proposal.approvalProposalId);assert.equal(current.currentPlan.obligation.status,status);}

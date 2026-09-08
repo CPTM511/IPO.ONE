@@ -97,7 +97,7 @@ export function createLocalReviewWorkspace({ api, getState, selectAgent }) {
     if (!latest.currentPlan) throw new Error("Refresh the servicing queue to find an authorized current plan.");
     const p = latest.currentPlan.obligation;
     cases = [{ ...p, servicingStateHash:latest.currentPlan.servicingStateHash,
-      outstandingTotalMinor:p.outstandingPrincipalMinor+p.outstandingInterestMinor+p.outstandingFeesMinor }];
+      outstandingTotalMinor:(BigInt(p.outstandingPrincipalMinor)+BigInt(p.outstandingInterestMinor)+BigInt(p.outstandingFeesMinor)).toString() }];
     const option=document.createElement("option"); option.value="0";
     option.textContent=`Reviewed plan · ${p.status} · ${money(cases[0].outstandingTotalMinor)} outstanding · Schedule ${p.scheduleSequence}`;
     el("localServicingPosition").replaceChildren(option); draft=null; el("localServicingAcknowledge").checked=false;
